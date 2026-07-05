@@ -1,0 +1,25 @@
+[project]
+name = "renderhaus-agent"
+version = "0.1.0"
+description = "Basic LangChain agent wired to generation MCP servers."
+requires-python = ">=3.11"
+dependencies = [
+  "fastmcp>=2.0.0",
+  "google-genai>=1.0.0",
+  "httpx>=0.27.0",
+  "langchain>=1.0.0",
+  "langchain-mcp-adapters>=0.3.0",
+  "langchain-openai>=1.0.0",
+  "python-dotenv>=1.0.1",
+  "tenacity>=8.5.0",
+]
+
+[tool.ruff]
+line-length = 100
+
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["agent*", "mcps*"]

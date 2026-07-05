@@ -1,0 +1,58 @@
+{
+  "mcpServers": {
+    "gpt-image-2": {
+      "transport": "stdio",
+      "command": "node",
+      "args": ["${ROOT}/.external/mcps/gpt-image-2-mcp/build/index.js"],
+      "env": {
+        "OPENAI_API_KEY": "${OPENAI_API_KEY}",
+        "OPENAI_BASE_URL": "${OPENAI_BASE_URL}",
+        "OPENAI_ORG_ID": "${OPENAI_ORG_ID}",
+        "OPENAI_PROJECT_ID": "${OPENAI_PROJECT_ID}",
+        "GPT_IMAGE_2_OUTPUT_DIR": "${ROOT}/${GPT_IMAGE_2_OUTPUT_DIR}",
+        "GPT_IMAGE_2_SESSION_MAX": "20",
+        "GPT_IMAGE_2_SESSION_TTL_MS": "3600000"
+      }
+    },
+    "mureka": {
+      "transport": "stdio",
+      "command": "${ROOT}/.venv/bin/uvx",
+      "args": ["mureka-mcp"],
+      "env": {
+        "MUREKA_API_KEY": "${MUREKA_API_KEY}",
+        "MUREKA_API_URL": "${MUREKA_API_URL}",
+        "TIME_OUT_SECONDS": "${TIME_OUT_SECONDS}"
+      }
+    },
+    "elevenlabs": {
+      "transport": "stdio",
+      "command": "${ROOT}/.venv/bin/uvx",
+      "args": ["elevenlabs-mcp"],
+      "env": {
+        "ELEVENLABS_API_KEY": "${ELEVENLABS_API_KEY}"
+      }
+    },
+    "seedance": {
+      "transport": "stdio",
+      "command": "${ROOT}/.venv/bin/python",
+      "args": ["-m", "mcps.seedance.server"],
+      "env": {
+        "BYTEPLUS_API_KEY": "${BYTEPLUS_API_KEY}",
+        "BYTEPLUS_BASE_URL": "${BYTEPLUS_BASE_URL}",
+        "SEEDANCE_DRY_RUN": "${SEEDANCE_DRY_RUN}",
+        "RENDERHAUS_MEDIA_DIR": "${ROOT}/${RENDERHAUS_MEDIA_DIR}"
+      }
+    },
+    "gemini-tts": {
+      "transport": "stdio",
+      "command": "${ROOT}/.venv/bin/python",
+      "args": ["-m", "mcps.gemini_tts.server"],
+      "env": {
+        "GOOGLE_API_KEY": "${GOOGLE_API_KEY}",
+        "GEMINI_TTS_MODEL": "${GEMINI_TTS_MODEL}",
+        "GEMINI_TTS_DRY_RUN": "${GEMINI_TTS_DRY_RUN}",
+        "RENDERHAUS_MEDIA_DIR": "${ROOT}/${RENDERHAUS_MEDIA_DIR}"
+      }
+    }
+  }
+}
