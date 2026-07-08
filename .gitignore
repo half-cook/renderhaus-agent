@@ -4,6 +4,8 @@
 !.env.template
 
 node_modules/
+__pycache__/
+*.py[cod]
 .next/
 dist/
 build/

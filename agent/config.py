@@ -15,9 +15,25 @@ DEFAULT_MCP_CONFIG = ROOT / "configs" / "mcp.local.json"
 
 _VAR_RE = re.compile(r"\$\{([A-Za-z_][A-Za-z0-9_]*|ROOT)\}")
 
+DEFAULT_ENV = {
+    "AGENT_MODEL": "openai:gpt-4.1-mini",
+    "BYTEPLUS_BASE_URL": "https://ark.ap-southeast.bytepluses.com/api/v3",
+    "SEEDANCE_MODEL": "dreamina-seedance-2-0-fast-260128",
+    "SEEDANCE_DRY_RUN": "true",
+    "GEMINI_TTS_DRY_RUN": "true",
+    "GEMINI_TTS_MODEL": "gemini-3.1-flash-tts-preview",
+    "MUREKA_API_URL": "https://api.mureka.ai",
+    "TIME_OUT_SECONDS": "300",
+    "RENDERHAUS_MEDIA_DIR": ".renderhaus/media",
+    "GPT_IMAGE_2_OUTPUT_DIR": ".renderhaus/media/images",
+}
+
 
 def load_local_env() -> None:
     load_dotenv(ENV_FILE, override=False)
+    for key, value in DEFAULT_ENV.items():
+        if not os.getenv(key):
+            os.environ[key] = value
 
 
 def _expand(value: str) -> str:

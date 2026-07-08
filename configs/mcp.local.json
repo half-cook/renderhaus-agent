@@ -39,6 +39,7 @@
       "env": {
         "BYTEPLUS_API_KEY": "${BYTEPLUS_API_KEY}",
         "BYTEPLUS_BASE_URL": "${BYTEPLUS_BASE_URL}",
+        "SEEDANCE_MODEL": "${SEEDANCE_MODEL}",
         "SEEDANCE_DRY_RUN": "${SEEDANCE_DRY_RUN}",
         "RENDERHAUS_MEDIA_DIR": "${ROOT}/${RENDERHAUS_MEDIA_DIR}"
       }

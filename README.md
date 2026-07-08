@@ -30,5 +30,14 @@ This only prints `set` or `empty`, never secret values.
 .venv/bin/python -m agent.main "List the generation tools you can use and propose a 10 second product-video workflow."
 ```
 
-Seedance and Gemini TTS are dry-run local MCPs for now. Existing provider MCPs are wired through
-`configs/mcp.local.json`.
+## Headless Generation Runner
+
+```bash
+.venv/bin/python -m agent.generate models
+.venv/bin/python -m agent.generate video "simple abstract blue and white AI video editor timeline animation"
+```
+
+Generation job records are written under `.renderhaus/jobs/`.
+
+Existing provider MCPs are wired through `configs/mcp.local.json`. Seedance video generation is live
+when `SEEDANCE_DRY_RUN=false`; Gemini TTS is still a local dry-run MCP.
