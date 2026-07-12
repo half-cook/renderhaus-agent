@@ -2,11 +2,9 @@ from __future__ import annotations
 
 import argparse
 import asyncio
-import os
 from pathlib import Path
 from typing import Any
 
-from langchain.agents import create_agent
 from langchain_mcp_adapters.client import MultiServerMCPClient
 
 from agent.config import DEFAULT_MCP_CONFIG, load_local_env, load_mcp_servers, mask_secret_status
@@ -72,17 +70,10 @@ async def load_tools(config_path: Path) -> list[Any]:
 
 
 async def run_agent(config_path: Path, prompt: str) -> None:
-    tools = await load_tools(config_path)
-    model = os.getenv("AGENT_MODEL", "openai:gpt-4.1-mini")
-    agent = create_agent(model=model, tools=tools, system_prompt=SYSTEM_PROMPT)
-    result = await agent.ainvoke({"messages": [{"role": "user", "content": prompt}]})
-    messages = result.get("messages", [])
-    if not messages:
-        print(result)
-        return
-    final = messages[-1]
-    content = getattr(final, "content", final)
-    print(content)
+    from agent.service import invoke_agent
+
+    result = await invoke_agent(prompt, config_path=config_path)
+    print(result.get("message") or result)
 
 
 async def main() -> None:

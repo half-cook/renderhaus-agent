@@ -1,0 +1,1 @@
+"""Renderhaus local web application."""

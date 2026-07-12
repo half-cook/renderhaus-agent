@@ -2,6 +2,25 @@
 
 Basic LangChain agent wired to generation MCP servers.
 
+## Run the web app
+
+Install the project and start the local Renderhaus UI:
+
+```bash
+bash scripts/setup_agent.sh
+.venv/bin/python -m web.app
+```
+
+Then open [http://127.0.0.1:8000](http://127.0.0.1:8000).
+
+The web app provides the minimal prompt → create → review workflow. It sends generation and
+refinement requests through a video-only agent boundary, persists local job state under
+`.renderhaus/web-jobs/`, and serves completed MP4s through job-scoped media URLs.
+
+`SEEDANCE_DRY_RUN=true` keeps the full UI and agent flow in preview mode without creating a paid
+video task. Set `SEEDANCE_DRY_RUN=false` in `.env.local` only when you intend to run live video
+generation.
+
 ## Setup
 
 Populate `.env.local`, then run:

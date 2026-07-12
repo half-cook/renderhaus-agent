@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#f1f0eb" />
+    <title>Renderhaus — Vibe video generation</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22><rect width=%2232%22 height=%2232%22 rx=%227%22/><path fill=%22white%22 d=%22M10 6h12v4h4v12h-4v4H10v-4H6V10h4zm2 4v4h-2v4h2v4h8v-4h2v-4h-2v-4z%22/></svg>" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Doto:wght,ROND@400..900,0..100&family=IBM+Plex+Mono:wght@300;400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <main id="app">
+      <section class="screen screen--start is-active" data-screen="start" aria-label="Start a video">
+        <header class="topbar inset-bar">
+          <button class="brand" type="button" data-go="start" aria-label="Renderhaus home">
+            <span class="pixel-logo" aria-hidden="true">
+              <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+            </span>
+            <span>renderhaus</span>
+          </button>
+          <nav class="topnav" aria-label="Primary navigation">
+            <button type="button" data-scroll-history>my videos</button>
+            <span class="avatar">vc</span>
+          </nav>
+        </header>
+
+        <div class="start-hero">
+          <div class="signal-line" aria-hidden="true">
+            <span></span><b>prompt → cinema</b><span></span>
+          </div>
+          <div class="hero-copy">
+            <p class="eyebrow">vibe video generation / 001</p>
+            <h1>Make the video<br />you can already feel.</h1>
+            <p>Describe the idea. Renderhaus shapes the shots, sound, and motion.</p>
+          </div>
+
+          <form class="prompt-box" id="generation-form">
+            <label class="sr-only" for="prompt">Describe your video</label>
+            <textarea
+              id="prompt"
+              name="prompt"
+              rows="3"
+              maxlength="4000"
+              required
+              placeholder="A chrome perfume bottle floating through a sunlit concrete gallery..."
+            ></textarea>
+            <div class="prompt-actions">
+              <div class="prompt-options">
+                <label class="select-chip">
+                  <span class="sr-only">Aspect ratio</span>
+                  <select id="aspect-ratio" name="aspect_ratio">
+                    <option value="16:9">16:9</option>
+                    <option value="9:16">9:16</option>
+                    <option value="1:1">1:1</option>
+                  </select>
+                </label>
+                <label class="select-chip">
+                  <span class="sr-only">Duration</span>
+                  <select id="duration" name="duration_seconds">
+                    <option value="5">5 sec</option>
+                    <option value="10" selected>10 sec</option>
+                    <option value="15">15 sec</option>
+                  </select>
+                </label>
+                <label class="chip file-chip" for="reference-input">
+                  <span>＋ reference</span>
+                  <input id="reference-input" type="file" accept="image/png,image/jpeg,image/webp" />
+                </label>
+              </div>
+              <button class="square-action" type="submit" aria-label="Generate video">↑</button>
+            </div>
+            <div class="reference-name" id="reference-name" aria-live="polite"></div>
+          </form>
+
+          <div class="vibe-row" aria-label="Choose a vibe">
+            <span>try a vibe</span>
+            <button class="vibe-chip is-selected" type="button" data-vibe="quiet luxury">quiet luxury</button>
+            <button class="vibe-chip" type="button" data-vibe="y2k flash">y2k flash</button>
+            <button class="vibe-chip" type="button" data-vibe="soft surreal">soft surreal</button>
+            <button class="vibe-chip" type="button" data-vibe="raw handheld">raw handheld</button>
+          </div>
+        </div>
+
+        <section class="recent-section" id="recent-section" aria-labelledby="recent-heading">
+          <div class="section-heading">
+            <h2 id="recent-heading">recent</h2>
+            <span id="generation-mode">checking render mode...</span>
+          </div>
+          <div class="recent-grid" id="recent-grid">
+            <button class="video-card video-card--black" type="button">
+              <span class="metal-orb" aria-hidden="true"></span>
+              <span>chrome study · 00:10</span>
+            </button>
+            <button class="video-card video-card--paper" type="button">
+              <strong>FORM / 01</strong>
+            </button>
+            <button class="video-card video-card--soft" type="button">
+              <span class="capsule" aria-hidden="true"></span>
+            </button>
+            <button class="video-card video-card--new" type="button" data-focus-prompt>＋ start a new video</button>
+          </div>
+        </section>
+      </section>
+
+      <section class="screen screen--create" data-screen="create" aria-label="Create video" hidden>
+        <header class="topbar inset-bar">
+          <button class="back-button" type="button" data-go="start" aria-label="Back home">‹</button>
+          <button class="brand brand--compact" type="button" data-go="start">
+            <span class="pixel-logo" aria-hidden="true">
+              <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+            </span>
+            <span id="create-title">untitled film</span>
+          </button>
+          <button class="black-button" id="review-button" type="button" disabled>review</button>
+        </header>
+
+        <div class="create-layout">
+          <aside class="direction-panel">
+            <div class="direction-block">
+              <span class="eyebrow">your idea</span>
+              <h2 id="idea-copy">—</h2>
+              <p><span id="duration-copy">10 seconds</span> · <span id="ratio-copy">16:9</span></p>
+            </div>
+            <div class="direction-block">
+              <span class="eyebrow">vibe</span>
+              <div class="vibe-poster">
+                <span class="poster-signal"></span>
+                <strong id="vibe-copy">quiet luxury</strong>
+              </div>
+              <div class="tag-row">
+                <span>warm light</span><span>slow orbit</span><span>minimal</span>
+              </div>
+            </div>
+            <form class="mini-composer" id="create-refine-form">
+              <label class="sr-only" for="create-refine">Refine the film</label>
+              <textarea id="create-refine" placeholder="Make it feel more tactile..."></textarea>
+              <div>
+                <span>＋ add reference</span>
+                <button class="square-action square-action--small" type="submit" aria-label="Apply refinement">↑</button>
+              </div>
+            </form>
+          </aside>
+
+          <div class="canvas-column">
+            <div class="stage-wrap">
+              <div class="film-stage" id="create-stage">
+                <video id="create-video" playsinline loop controls hidden></video>
+                <div class="abstract-film" id="create-placeholder" aria-hidden="true">
+                  <span class="film-arc film-arc--top"></span>
+                  <span class="film-arc film-arc--bottom"></span>
+                  <span class="chrome-object"><i></i></span>
+                </div>
+                <span class="stage-label">first look</span>
+                <span class="stage-time" id="stage-time">00:00 / 00:10</span>
+                <div class="render-status">
+                  <span></span>
+                  <p id="render-message">Reading the idea and finding its visual rhythm.</p>
+                </div>
+              </div>
+            </div>
+            <div class="smart-timeline">
+              <div class="timeline-meta">
+                <button class="play-button" id="create-play" type="button" aria-label="Play preview">▶</button>
+                <span id="timeline-progress">00:00 / 00:10</span>
+                <div class="progress-track"><i id="progress-bar"></i></div>
+                <span id="save-status">queued</span>
+              </div>
+              <div class="shot-row">
+                <span class="is-current">reveal</span><span>orbit</span><span>macro</span><span>signature</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen screen--review" data-screen="review" aria-label="Review video" hidden>
+        <header class="topbar inset-bar">
+          <button class="back-button" type="button" data-go="create" aria-label="Back to create">‹</button>
+          <button class="brand brand--compact" type="button" data-go="start">
+            <span class="pixel-logo" aria-hidden="true">
+              <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+            </span>
+            <span id="review-title">chrome study</span>
+          </button>
+          <span class="completion-label">complete</span>
+          <div class="header-spacer"></div>
+          <button class="outline-button" id="share-button" type="button">share</button>
+          <button class="black-button" id="download-button" type="button">download</button>
+        </header>
+
+        <div class="review-layout">
+          <div class="review-film-column">
+            <div class="film-stage film-stage--review">
+              <video id="review-video" playsinline controls hidden></video>
+              <div class="abstract-film" id="review-placeholder" aria-hidden="true">
+                <span class="film-arc film-arc--top"></span>
+                <span class="film-arc film-arc--bottom"></span>
+                <span class="chrome-object"><i></i></span>
+              </div>
+              <button class="center-play" id="review-play" type="button" aria-label="Play final video">▶</button>
+              <span class="stage-label" id="film-label">chrome study</span>
+              <span class="stage-time">00:10</span>
+            </div>
+            <div class="review-shots" aria-label="Film shots">
+              <span></span><span></span><span></span><span></span>
+            </div>
+          </div>
+
+          <aside class="refine-panel">
+            <div>
+              <h2>Refine the feeling</h2>
+              <p>Describe a change and Renderhaus will update the film.</p>
+            </div>
+            <form class="review-composer" id="review-refine-form">
+              <label class="sr-only" for="review-refine">Refine your video</label>
+              <textarea id="review-refine" placeholder="Make the final shot linger longer..."></textarea>
+              <button class="square-action square-action--small" type="submit" aria-label="Apply refinement">↑</button>
+            </form>
+            <div class="quick-changes">
+              <span class="eyebrow">quick changes</span>
+              <button type="button" data-quick="Make it more cinematic.">more cinematic</button>
+              <button type="button" data-quick="Use faster pacing.">faster pacing</button>
+              <button type="button" data-quick="Give the soundtrack more presence.">stronger soundtrack</button>
+            </div>
+            <div class="toggle-list">
+              <label><span>sound</span><input type="checkbox" checked /><i></i></label>
+              <label><span>captions</span><input type="checkbox" /><i></i></label>
+            </div>
+            <p class="agent-note" id="agent-note"></p>
+          </aside>
+        </div>
+      </section>
+    </main>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <script src="/static/app.js" defer></script>
+  </body>
+</html>
