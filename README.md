@@ -2,6 +2,12 @@
 
 Basic LangChain agent wired to generation MCP servers.
 
+## Long-video program
+
+The evidence-backed product, architecture, continuity, evaluation, and six-sprint delivery package
+for evolving Renderhaus into a durable 60–180 second video-production agent starts at
+[docs/README.md](docs/README.md).
+
 ## Run the web app
 
 Install the project and start the local Renderhaus UI:
