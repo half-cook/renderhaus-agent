@@ -1,228 +1,193 @@
-# Renderhaus long-video delivery plan
+# The simple Renderhaus plan
 
-**Schedule:** 2026-07-13 through 2026-10-02  
-**Cadence:** Six two-week milestones  
-**Team:** `videogen-serving`  
-**Linear project:** [Renderhaus](https://linear.app/fuck-tcf/project/renderhaus-a39791d4c15a)
+**Goal:** Make a reliable 1–3 minute video from one idea.
 
-## 1. Delivery objective
+**Timeline:** July 13–October 2, 2026.
 
-Ship a reliable 60–180 second production workflow that creates an editable script/storyboard,
-renders short provider-backed shots with explicit continuity, evaluates and repairs defects, mixes
-audio, assembles a final MP4, and survives worker restarts without duplicate paid calls.
+**Work board:** [Renderhaus in Linear](https://linear.app/fuck-tcf/project/renderhaus-a39791d4c15a)
 
-The sequence follows the dependency structure supported by the literature: hierarchical planning
-before generation ([MovieAgent](https://arxiv.org/abs/2503.07314)); keyframes and explicit memory
-before multi-shot continuity ([Video Storyboarding](https://research.nvidia.com/labs/par/video_storyboarding/),
-[VideoMemory](https://arxiv.org/abs/2601.03655)); factorized evaluation before repair
-([VBench](https://openaccess.thecvf.com/content/CVPR2024/html/Huang_VBench_Comprehensive_Benchmark_Suite_for_Video_Generative_Models_CVPR_2024_paper.html));
-and durable execution around long external operations ([Temporal](https://docs.temporal.io/)).
+## The product in one line
 
-## 2. Ownership model
-
-Two workstreams may proceed concurrently:
-
-- **Platform/workflow:** domain model, persistence, Temporal, provider adapters, costs, FFmpeg,
-  reliability, and observability.
-- **Creative/product:** planner prompts/schemas, continuity bible, storyboard UX, evaluator rubrics,
-  approval UX, and acceptance films.
-
-Every issue has one directly responsible individual, one reviewer, acceptance criteria, evidence
-links, and dependency relations. Assignment in Linear is an initial load split, not a statement of
-exclusive expertise; rebalance during Sprint 0 after team confirmation.
-
-## 3. Definition of ready
-
-An issue is ready when it has:
-
-- User or system outcome.
-- Explicit scope and non-goals.
-- Acceptance criteria that can be demonstrated or tested.
-- Dependencies and required schema/API decisions.
-- Relevant design-doc section and research evidence.
-- Estimate small enough to finish inside one milestone; otherwise split.
-
-## 4. Definition of done
-
-- Code and migrations are reviewed.
-- Tests proportional to risk pass.
-- Structured logs/metrics exist for new workflow behavior.
-- User-visible errors are safe and actionable.
-- Documentation and fixtures reflect the implemented schema/API.
-- Paid provider behavior is dry-run/recording tested before live canary.
-- Acceptance evidence is attached to the issue.
-
-## 5. Milestones
-
-### Sprint 0 — Foundations and contracts
-
-**Dates:** 2026-07-13 to 2026-07-24  
-**Outcome:** A dry-run brief becomes a validated, exactly timed production manifest.
-
-Deliverables:
-
-- Domain package and schema v1.
-- SQLite persistence with migrations and repository layer.
-- `/api/productions` command/query skeleton.
-- Typed Director/Writer planning pipeline.
-- Exact duration reconciler and dependency graph.
-- Cost-policy and approval model.
-- Fixtures, contract tests, and manifest export.
-
-Exit gate: three representative briefs produce deterministic-valid manifests; durations sum to the
-requested frame; all entity references resolve; no paid generation occurs.
-
-### Sprint 1 — Storyboards and continuity
-
-**Dates:** 2026-07-27 to 2026-08-07  
-**Outcome:** An approved plan produces canonical entities, shot boards, and bounded memory packs.
-
-Deliverables:
-
-- Continuity bible and versioned entity state.
-- Character/location/prop/style canonical asset workflow.
-- Shot start/end keyframes through the existing image provider.
-- Memory-pack retrieval and verified-only update policy.
-- Storyboard grid, edit, lock, and approval UI.
-- Seedance adapter expansion for provider-neutral multimodal references.
-
-Exit gate: a 12-shot storyboard preserves one character and two locations under blind review and
-exports complete provenance.
-
-### Sprint 2 — Durable parallel rendering
-
-**Dates:** 2026-08-10 to 2026-08-21  
-**Outcome:** Approved shots render concurrently and recover safely from process failure.
-
-Deliverables:
-
-- Temporal local/dev infrastructure.
-- Production workflow and idempotent activity library.
-- Provider task ledger and submission reconciliation.
-- Bounded shot concurrency and budget semaphore.
-- Pause/resume/cancel and approval signals.
-- SSE event stream and per-shot progress UI.
-- Chaos and workflow replay tests.
-
-Exit gate: terminate API and worker during a live or recorded multi-shot run; restart and finish with
-zero duplicated provider submissions.
-
-### Sprint 3 — Editorial and audio
-
-**Dates:** 2026-08-24 to 2026-09-04  
-**Outcome:** Selected shots become a frame-accurate narrated preview and final master.
-
-Deliverables:
-
-- Live narration provider and duration-aware script segmentation.
-- Music/SFX plan and provider integration.
-- Immutable asset store and FFprobe validation.
-- FFmpeg normalization, concat, transitions, captions, stems, ducking, loudness, proxy, and master.
-- Timeline manifest and render provenance.
-- Shot replacement with minimal invalidation.
-
-Exit gate: deterministic 90-second preview and master with narration, music, captions, exact runtime,
-and successful one-shot replacement.
-
-### Sprint 4 — Evaluation and targeted repair
-
-**Dates:** 2026-09-07 to 2026-09-18  
-**Outcome:** Renderhaus detects defects and repairs the smallest affected unit within budget.
-
-Deliverables:
-
-- Media-integrity gates.
-- Shot adherence and intra-shot VLM rubric.
-- Entity presence/fidelity/state checks.
-- Pairwise transition evaluator.
-- Scene/film script, visual, audio, cross-modal, and stability evaluation.
-- Normalized defect schema, repair planner, bounded retry/fallback policy.
-- Human-labeled calibration set and evaluator dashboard.
-
-Exit gate: seeded defects are localized correctly; a continuity failure regenerates only its shot
-and downstream transition/final renders.
-
-### Sprint 5 — Product hardening and launch
-
-**Dates:** 2026-09-21 to 2026-10-02  
-**Outcome:** Internal beta reliably generates the PRD acceptance film with cost and operational
-controls.
-
-Deliverables:
-
-- Full screenplay/storyboard/shot-grid/timeline/issue-queue experience.
-- Security review for uploads, remote media, paths, subprocesses, secrets, and authorization.
-- Metrics, tracing, stuck-workflow alerts, provider kill switches, and runbooks.
-- Cost estimate calibration and budget approval UX.
-- 30-second, 90-second, and 180-second canaries.
-- Acceptance film, human evaluation, defect review, and release decision.
-
-Exit gate: PRD acceptance test passes twice from clean state, including one chaos interruption and
-one localized revision; no unresolved P0 defects.
-
-## 6. Critical path
-
-```mermaid
-flowchart LR
-    M["Manifest schema"] --> P["Typed planning"]
-    M --> DB["Persistence"]
-    P --> C["Continuity + boards"]
-    C --> R["Provider-neutral render specs"]
-    DB --> T["Temporal workflow"]
-    R --> T
-    T --> E["Shot evaluation"]
-    T --> A["Audio + timeline"]
-    E --> X["Repair loop"]
-    A --> F["Final assembly"]
-    X --> F
-    F --> L["Acceptance film"]
+```text
+idea → script → storyboard → short clips → finished video
 ```
 
-Do not begin autonomous repair before immutable attempts, evaluation schemas, and dependency
-invalidation exist. Do not enable multi-shot live spend before idempotency and crash recovery pass.
+Renderhaus generates short clips because current video models are still much more reliable at that
+length. It keeps characters and locations consistent by reusing approved reference images. It
+builds the final video with ordinary editing tools instead of asking one model to generate the
+whole film. The detailed research is in the
+[evidence document](../research/long-video-evidence-base.md).
 
-## 7. Quality gates by environment
+## The only six milestones
 
-| Environment | Allowed work | Required gates |
-|---|---|---|
-| Unit/CI | No network or paid calls | Schema, property, replay, provider fixture, media golden tests |
-| Local dry run | Planning and synthetic tasks | Valid manifest, exact duration, cost estimate, approval binding |
-| Recorded provider | Replayed API responses/media | Idempotency, polling, download, evaluation, assembly |
-| Live canary | Bounded internal prompts | Explicit spend approval, provider kill switch, full provenance |
-| Internal beta | Approved users/formats | Acceptance suite, security checks, monitoring and runbooks |
+### 1. Make the plan
 
-## 8. Team operating rhythm
+**Dates:** July 13–24
 
-- Monday: milestone planning, dependency review, and risk updates.
-- Daily: async update on outcome, blocker, and next executable slice.
-- Wednesday: integration demo using a shared acceptance-film fixture.
-- Friday: live artifact review, metric review, and milestone scope adjustment.
-- Every architecture change: short ADR or update to an existing ADR.
-- Every provider change: capability/contract test and cost-model update.
-- Every evaluator change: calibration report; no silent threshold tuning.
+**Goal:** Turn an idea into saved, timed scenes and shots.
 
-## 9. Risk register
+Build:
 
-| Risk | Trigger | Owner action |
-|---|---|---|
-| Schema churn blocks workflow | More than one breaking manifest change per sprint | Freeze core v1 after Sprint 0; use additive fields and migrations. |
-| Provider behavior differs from docs | Contract/canary failure | Update capability registry, disable path, retain fallback. |
-| Duplicate paid work | Same logical activity produces two tasks | Stop live rendering; reconcile ledger; add replay/idempotency regression. |
-| Evaluator over-rejects | Human false-reject rate exceeds target | Move criterion into review band; recalibrate; do not simply lower all gates. |
-| Continuity memory propagates defects | Rejected look reappears | Audit provenance; enforce selected/verified-only memory invariant. |
-| Audio determines different timing late | Narration overflows approved scenes | Move narration synthesis/timing before final video rendering. |
-| FFmpeg graph becomes ad hoc | Non-reproducible manual command fixes | Add typed render graph and golden fixture before accepting the fix. |
-| Sprint overload | More than 20% work rolls over | Split vertical slices; protect critical path; defer P1. |
+- A simple project record.
+- A script, scenes, and shots.
+- Shot lengths that add up to the requested video length.
+- A cost estimate and approval button.
 
-## 10. Release decision checklist
+Done when:
 
-- Product promise and limits are visible in the UI.
-- Quick clip remains functional.
-- Manifest export reproduces the accepted master from immutable inputs.
-- All paid provider calls have ledger entries and costs.
-- Storyboard and spend approvals bind to exact revisions.
-- No duplicate task in chaos suite.
-- Major continuity and transition defect recall meets calibrated targets.
-- Final film passes technical, narrative, audio, caption, runtime, and policy gates.
-- Provider outage and stuck-workflow runbooks have been exercised.
-- Data deletion and secret-redaction tests pass.
+> Three test ideas each produce a saved shot list with the correct total length. No video is
+> generated yet.
+
+Linear work: VID-1 through VID-6.
+
+### 2. Make the storyboard
+
+**Dates:** July 27–August 7
+
+**Goal:** Show what every character, location, and shot should look like before generating video.
+
+Build:
+
+- Reference sheets for people, places, props, and style.
+- A start image for every shot.
+- A storyboard page where the user can edit and approve the plan.
+- Seedance support for the approved references.
+
+Done when:
+
+> A 12-shot storyboard keeps one character recognizable in two locations.
+
+Linear work: VID-7 through VID-11.
+
+### 3. Generate safely
+
+**Dates:** August 10–21
+
+**Goal:** Generate many shots without losing work or paying twice.
+
+Build:
+
+- A durable background workflow.
+- Parallel shot generation with a small limit.
+- Pause, resume, cancel, and progress updates.
+- Protection against duplicate provider jobs.
+
+Done when:
+
+> We stop the worker in the middle of a test, restart it, and finish without generating or paying
+> for the same shot twice.
+
+Linear work: VID-12 through VID-16.
+
+### 4. Finish the video
+
+**Dates:** August 24–September 4
+
+**Goal:** Turn approved clips into a watchable video.
+
+Build:
+
+- Voice-over.
+- Music, sound effects, and captions.
+- A simple timeline.
+- Preview and final MP4 exports.
+- Replace-one-shot behavior.
+
+Done when:
+
+> Renderhaus exports a 90-second video, then replaces one shot without regenerating the others.
+
+Linear work: VID-17 through VID-21.
+
+### 5. Find and fix bad shots
+
+**Dates:** September 7–18
+
+**Goal:** Catch obvious problems and fix only the broken part.
+
+Check:
+
+- Does the file play correctly?
+- Does the shot match the storyboard?
+- Do the same people, locations, and props stay consistent?
+- Do cuts between shots look sensible?
+- Does the complete video tell the planned story?
+
+Done when:
+
+> We insert a known continuity mistake, Renderhaus finds it, replaces that shot, and rebuilds the
+> final video.
+
+Linear work: VID-22 through VID-27.
+
+### 6. Make it ready for the team
+
+**Dates:** September 21–October 2
+
+**Goal:** Make the complete workflow safe, understandable, and repeatable.
+
+Finish:
+
+- One clean production screen.
+- Upload and media security.
+- Cost tracking and useful error messages.
+- Logs and simple operator instructions.
+- 30-second, 90-second, and 180-second test videos.
+
+Done when:
+
+> The final 90-second acceptance video works twice from a clean start, including one forced restart
+> and one replaced shot.
+
+Linear work: VID-28 through VID-32.
+
+## What to do right now
+
+The first milestone is the only work that matters right now.
+
+1. **VID-1:** Define the smallest saved project/scene/shot format.
+2. **VID-4:** Make one model call produce that format.
+3. **VID-2:** Save and load it.
+4. **VID-5:** Make the shot lengths add up exactly.
+5. **VID-3:** Expose create/get/update endpoints.
+6. **VID-6:** Show cost and require approval.
+
+Do not start storyboards, Temporal, evaluation, or FFmpeg work until this demo passes.
+
+## Two people, two lanes
+
+### Satya: platform lane
+
+Own the saved data, APIs, provider calls, workflow safety, media pipeline, and reliability.
+
+### Baohan: creative lane
+
+Own the script/storyboard flow, approval experience, voice/audio experience, quality prompts, and
+production UI.
+
+Both people review the milestone demo. Ownership can move when one lane blocks the other.
+
+## Five rules that prevent over-engineering
+
+1. Build only what the current milestone demo needs.
+2. Use one director/planner flow; do not build an agent swarm.
+3. Start with Seedance for video and one provider for each other media type.
+4. Use SQLite locally; move to Postgres only when multi-user deployment requires it.
+5. A quality checker may recommend a retry, but code—not an agent—controls cost and retry limits.
+
+## Why this shape works
+
+- Hierarchical planning into scenes and shots is supported by
+  [MovieAgent](https://arxiv.org/abs/2503.07314).
+- Approved storyboards help recurring subjects stay consistent in
+  [NVIDIA Video Storyboarding](https://research.nvidia.com/labs/par/video_storyboarding/).
+- Explicit visual memory improves cross-shot continuity in
+  [StoryMem](https://arxiv.org/abs/2512.19539) and
+  [VideoMemory](https://arxiv.org/abs/2601.03655).
+- Separate shot and transition checks are justified by the failure analysis in
+  [DirectorBench](https://arxiv.org/abs/2605.30090).
+- Durable workflows prevent long-running work from disappearing or repeating after failure, as
+  described in the [Temporal documentation](https://docs.temporal.io/).
+
+These papers support the shape of the plan. They do not guarantee Renderhaus quality. Every
+milestone therefore ends with a concrete demo instead of a theoretical architecture review.

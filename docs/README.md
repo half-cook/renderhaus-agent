@@ -1,40 +1,57 @@
-# Renderhaus long-video program
+# Renderhaus: start here
 
-This directory is the source of truth for turning Renderhaus from a single-clip generator into a
-durable, agentic long-video production system.
+## What are we building?
 
-Execution is tracked in the [Renderhaus Linear project](https://linear.app/fuck-tcf/project/renderhaus-a39791d4c15a),
-which contains six dated milestones, assigned implementation issues, dependency relations, and
-project-level architecture, evidence, and delivery documents.
+Renderhaus takes one idea and makes a complete 1–3 minute video.
 
-## Documents
+It does five simple things:
 
-- [Product requirements](product/long-video-prd.md) — target users, promises, constraints, success
-  metrics, and launch scope.
-- [System design](architecture/long-video-system-design.md) — services, workflows, boundaries,
-  failure handling, security, observability, and deployment topology.
-- [Production manifest](architecture/production-manifest.md) — canonical domain model, lifecycle,
-  schemas, invariants, and versioning.
-- [Continuity and evaluation](architecture/continuity-and-evaluation.md) — memory packs, quality
-  gates, critic rubrics, repair policy, and benchmark plan.
-- [Delivery plan](plans/long-video-delivery-plan.md) — six two-week sprints, ownership model,
-  dependencies, release gates, and team ceremonies.
-- [Research evidence base](research/long-video-evidence-base.md) — primary-source evidence matrix,
-  limitations, and bibliography supporting the design.
-- [ADR-0001: durable workflow architecture](adr/0001-durable-production-workflows.md) — why workflow
-  code owns execution while agents author typed production artifacts.
+1. Writes a short script.
+2. Turns the script into a storyboard.
+3. Generates each shot as a short clip.
+4. Joins the clips with voice, music, and captions.
+5. Finds bad shots and replaces only those shots.
 
-## Reading order
+That is the whole product.
 
-New contributors should read the PRD, system design, manifest, and delivery plan in that order.
-Anyone changing generation, continuity, evaluation, or workflow behavior must also read the
-evidence base and ADR-0001.
+## What should the team read?
 
-## Evidence policy
+Start with only one document:
 
-Architectural claims are linked inline to primary research papers or official documentation. The
-evidence base labels each conclusion as demonstrated evidence, provider capability, or Renderhaus
-engineering inference. Research results are directional rather than guarantees: many papers use
-private models, limited benchmarks, or human evaluation protocols that do not reproduce the exact
-Renderhaus stack. We therefore require internal acceptance tests before promoting a technique to a
-production default.
+- [The simple delivery plan](plans/long-video-delivery-plan.md)
+
+Do not read the rest up front. Use these only when your Linear issue points to them:
+
+- [Product details](product/long-video-prd.md)
+- [System design](architecture/long-video-system-design.md)
+- [Data model](architecture/production-manifest.md)
+- [Continuity and quality checks](architecture/continuity-and-evaluation.md)
+- [Research and citations](research/long-video-evidence-base.md)
+- [Why we chose durable workflows](adr/0001-durable-production-workflows.md)
+
+## How we work
+
+- Work on the current milestone only.
+- Pick the first unblocked issue assigned to you.
+- Demo something visible at the end of every milestone.
+- Do not turn on paid multi-shot generation until restart safety works.
+- Do not add a new provider, agent, database, or framework unless the current milestone needs it.
+- If a design choice feels complicated, choose the smallest version that passes the milestone demo.
+
+## Where is the work?
+
+The [Renderhaus Linear project](https://linear.app/fuck-tcf/project/renderhaus-a39791d4c15a)
+contains the milestones, owners, issues, and dependencies.
+
+## What does success look like?
+
+The final demo is one 90-second video with:
+
+- 12–18 shots.
+- One person who looks consistent throughout.
+- Two locations.
+- Voice-over, music, and captions.
+- One intentionally bad shot that Renderhaus finds and replaces.
+- A forced worker restart that does not create duplicate paid jobs.
+
+If that demo works twice from a clean start, the first version is ready.
