@@ -10,6 +10,7 @@ from langchain.agents import create_agent
 
 from agent.config import DEFAULT_MCP_CONFIG
 from agent.main import SYSTEM_PROMPT, load_tools
+from agent.tracing import langchain_callbacks, traced_operation
 
 
 WEB_SYSTEM_PROMPT = """You are the private Renderhaus video-generation coordinator.
@@ -148,8 +149,29 @@ async def invoke_agent(
     tools = await load_tools(config_path)
     model = os.getenv("AGENT_MODEL", "openai:gpt-4.1-mini")
     agent = create_agent(model=model, tools=tools, system_prompt=system_prompt)
-    result = await agent.ainvoke({"messages": [{"role": "user", "content": prompt}]})
-    return summarize_agent_result(result)
+    callbacks = langchain_callbacks()
+    with traced_operation(
+        "invoke-agent",
+        as_type="agent",
+        input={"prompt": prompt},
+        tags=["renderhaus", "cli"],
+        metadata={"feature": "agent-cli"},
+        trace_name="agent-cli",
+    ) as observation:
+        result = await agent.ainvoke(
+            {"messages": [{"role": "user", "content": prompt}]},
+            config={"callbacks": callbacks} if callbacks else {},
+        )
+        summarized = summarize_agent_result(result)
+        if observation is not None:
+            observation.update(
+                output={
+                    "message": summarized.get("message"),
+                    "artifact_count": len(summarized.get("artifacts") or []),
+                    "tool_event_count": len(summarized.get("tool_events") or []),
+                }
+            )
+        return summarized
 
 
 async def _generation_runtime() -> tuple[Any, dict[str, Any]]:
@@ -181,8 +203,34 @@ async def _generation_runtime() -> tuple[Any, dict[str, Any]]:
 
 async def start_video_generation(prompt: str) -> dict[str, Any]:
     agent, _ = await _generation_runtime()
-    result = await agent.ainvoke({"messages": [{"role": "user", "content": prompt}]})
-    return summarize_agent_result(result)
+    callbacks = langchain_callbacks()
+    with traced_operation(
+        "start-video-generation",
+        as_type="agent",
+        input={"prompt": prompt},
+        tags=["renderhaus", "video-generation"],
+        metadata={"feature": "video-generation", "phase": "start"},
+    ) as observation:
+        result = await agent.ainvoke(
+            {"messages": [{"role": "user", "content": prompt}]},
+            config={"callbacks": callbacks} if callbacks else {},
+        )
+        summarized = summarize_agent_result(result)
+        if observation is not None:
+            artifacts = summarized.get("artifacts") or []
+            provider_job_id = None
+            for artifact in reversed(artifacts):
+                if isinstance(artifact, dict) and isinstance(artifact.get("job_id"), str):
+                    provider_job_id = artifact["job_id"]
+                    break
+            observation.update(
+                output={
+                    "message": summarized.get("message"),
+                    "provider_job_id": provider_job_id,
+                    "artifact_count": len(artifacts),
+                }
+            )
+        return summarized
 
 
 async def poll_video_generation(job_id: str) -> dict[str, Any]:

@@ -72,18 +72,23 @@ async function createGeneration(payload) {
 
 function updateMedia(job) {
   const mediaUrl = job.media_url;
-  const pairs = [
-    [$("#create-video"), $("#create-placeholder")],
-    [$("#review-video"), $("#review-placeholder")],
+  const stages = [
+    [$("#create-stage"), $("#create-video"), $("#create-placeholder")],
+    [$(".film-stage--review"), $("#review-video"), $("#review-placeholder")],
   ];
-  pairs.forEach(([video, placeholder]) => {
+  stages.forEach(([stage, video, placeholder]) => {
+    if (!stage || !video || !placeholder) return;
     if (mediaUrl) {
       if (video.src !== new URL(mediaUrl, window.location.href).href) video.src = mediaUrl;
       video.hidden = false;
       placeholder.hidden = true;
+      stage.classList.add("has-media");
     } else {
+      video.removeAttribute("src");
+      video.load();
       video.hidden = true;
       placeholder.hidden = false;
+      stage.classList.remove("has-media");
     }
   });
 }
@@ -214,7 +219,9 @@ async function loadHistory() {
 async function loadConfig() {
   try {
     state.config = await api("/api/config");
-    $("#generation-mode").textContent = state.config.live_generation ? "live rendering" : "preview mode";
+    const mode = state.config.live_generation ? "live rendering" : "preview mode";
+    const tracing = state.config.langfuse_ready ? " · langfuse on" : "";
+    $("#generation-mode").textContent = `${mode}${tracing}`;
   } catch {
     $("#generation-mode").textContent = "agent offline";
   }

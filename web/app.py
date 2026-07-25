@@ -16,6 +16,7 @@ from pydantic import BaseModel, Field
 
 from agent.config import ROOT, load_local_env
 from agent.service import poll_video_generation, start_video_generation
+from agent.tracing import flush_langfuse, traced_operation
 
 
 load_local_env()
@@ -245,47 +246,89 @@ async def _run_generation(job_id: str, *, resume: bool = False) -> None:
         job = await store.get(job_id)
         if not job:
             return
-        try:
-            if not resume:
-                job.update(
-                    status="planning", phase="planning", message="Finding the film's visual rhythm."
-                )
-                await store.put(job)
-                result = await start_video_generation(_generation_instruction(job))
-                artifact = _start_artifact(result)
-                if not artifact:
-                    raise RuntimeError("Video generation did not return a structured job result.")
-                if artifact.get("status") == "dry_run":
+        session_id = job.get("parent_id") or job_id
+        with traced_operation(
+            "video-generation",
+            as_type="agent",
+            input={
+                "prompt": job.get("prompt"),
+                "vibe": job.get("vibe"),
+                "aspect_ratio": job.get("aspect_ratio"),
+                "duration_seconds": job.get("duration_seconds"),
+                "resume": resume,
+            },
+            session_id=session_id,
+            tags=["renderhaus", "web", "video-generation"],
+            metadata={
+                "feature": "video-generation",
+                "job_id": job_id,
+                "parent_id": job.get("parent_id") or "",
+            },
+            trace_name="video-generation",
+        ) as observation:
+            try:
+                if not resume:
                     job.update(
-                        status="planned",
-                        phase="preview",
-                        message="The direction is ready. Turn on live rendering to create the MP4.",
+                        status="planning",
+                        phase="planning",
+                        message="Finding the film's visual rhythm.",
                     )
                     await store.put(job)
-                    return
-                job["_provider_job_id"] = artifact["job_id"]
+                    result = await start_video_generation(_generation_instruction(job))
+                    artifact = _start_artifact(result)
+                    if not artifact:
+                        raise RuntimeError(
+                            "Video generation did not return a structured job result."
+                        )
+                    if artifact.get("status") == "dry_run":
+                        job.update(
+                            status="planned",
+                            phase="preview",
+                            message=(
+                                "The direction is ready. Turn on live rendering to create the MP4."
+                            ),
+                        )
+                        await store.put(job)
+                        if observation is not None:
+                            observation.update(output={"status": "planned", "mode": "dry_run"})
+                        return
+                    job["_provider_job_id"] = artifact["job_id"]
+                    job.update(
+                        status="generating",
+                        phase="rendering",
+                        message="Shaping the shots, motion, and sound.",
+                    )
+                    await store.put(job)
+                await _poll_provider(job)
+                if observation is not None:
+                    observation.update(
+                        output={
+                            "status": job.get("status"),
+                            "has_media": bool(job.get("_output_path")),
+                        }
+                    )
+            except asyncio.CancelledError:
+                raise
+            except Exception as exc:
                 job.update(
-                    status="generating",
-                    phase="rendering",
-                    message="Shaping the shots, motion, and sound.",
+                    status="failed",
+                    phase="failed",
+                    message="The render stopped before it finished.",
+                    error={
+                        "code": "generation_failed",
+                        "message": "The render stopped before it finished.",
+                        "retryable": True,
+                    },
+                    _error_detail=str(exc)[:2000],
                 )
-                await store.put(job)
-            await _poll_provider(job)
-        except asyncio.CancelledError:
-            raise
-        except Exception as exc:
-            job.update(
-                status="failed",
-                phase="failed",
-                message="The render stopped before it finished.",
-                error={
-                    "code": "generation_failed",
-                    "message": "The render stopped before it finished.",
-                    "retryable": True,
-                },
-                _error_detail=str(exc)[:2000],
-            )
-        await store.put(job)
+                if observation is not None:
+                    observation.update(
+                        level="ERROR",
+                        status_message=str(exc)[:500],
+                        output={"status": "failed"},
+                    )
+            await store.put(job)
+            flush_langfuse()
 
 
 def _start_task(app: FastAPI, job_id: str, *, resume: bool = False) -> None:
@@ -309,6 +352,7 @@ async def lifespan(app: FastAPI):
         task.cancel()
     if tasks:
         await asyncio.gather(*tasks, return_exceptions=True)
+    flush_langfuse()
 
 
 app = FastAPI(title="Renderhaus", version="0.1.0", lifespan=lifespan)
@@ -325,6 +369,9 @@ async def config() -> dict[str, Any]:
     return {
         "live_generation": os.getenv("SEEDANCE_DRY_RUN", "true").lower() == "false",
         "agent_ready": bool(os.getenv("OPENAI_API_KEY")),
+        "langfuse_ready": bool(
+            os.getenv("LANGFUSE_PUBLIC_KEY") and os.getenv("LANGFUSE_SECRET_KEY")
+        ),
         "max_upload_mb": MAX_UPLOAD_BYTES // (1024 * 1024),
     }
 

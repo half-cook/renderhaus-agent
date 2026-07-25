@@ -150,7 +150,7 @@
           <div class="canvas-column">
             <div class="stage-wrap">
               <div class="film-stage" id="create-stage">
-                <video id="create-video" playsinline loop controls hidden></video>
+                <video id="create-video" playsinline controls preload="metadata" hidden></video>
                 <div class="abstract-film" id="create-placeholder" aria-hidden="true">
                   <span class="film-arc film-arc--top"></span>
                   <span class="film-arc film-arc--bottom"></span>
@@ -170,9 +170,6 @@
                 <span id="timeline-progress">00:00 / 00:10</span>
                 <div class="progress-track"><i id="progress-bar"></i></div>
                 <span id="save-status">queued</span>
-              </div>
-              <div class="shot-row">
-                <span class="is-current">reveal</span><span>orbit</span><span>macro</span><span>signature</span>
               </div>
             </div>
           </div>
@@ -197,7 +194,7 @@
         <div class="review-layout">
           <div class="review-film-column">
             <div class="film-stage film-stage--review">
-              <video id="review-video" playsinline controls hidden></video>
+              <video id="review-video" playsinline controls preload="metadata" hidden></video>
               <div class="abstract-film" id="review-placeholder" aria-hidden="true">
                 <span class="film-arc film-arc--top"></span>
                 <span class="film-arc film-arc--bottom"></span>
@@ -206,9 +203,6 @@
               <button class="center-play" id="review-play" type="button" aria-label="Play final video">▶</button>
               <span class="stage-label" id="film-label">chrome study</span>
               <span class="stage-time">00:10</span>
-            </div>
-            <div class="review-shots" aria-label="Film shots">
-              <span></span><span></span><span></span><span></span>
             </div>
           </div>
 

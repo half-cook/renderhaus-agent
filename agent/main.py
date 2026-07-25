@@ -22,6 +22,8 @@ GEN_SECRET_KEYS = [
     "ELEVENLABS_API_KEY",
     "BYTEPLUS_API_KEY",
     "GOOGLE_API_KEY",
+    "LANGFUSE_PUBLIC_KEY",
+    "LANGFUSE_SECRET_KEY",
 ]
 
 
@@ -71,8 +73,10 @@ async def load_tools(config_path: Path) -> list[Any]:
 
 async def run_agent(config_path: Path, prompt: str) -> None:
     from agent.service import invoke_agent
+    from agent.tracing import flush_langfuse
 
     result = await invoke_agent(prompt, config_path=config_path)
+    flush_langfuse()
     print(result.get("message") or result)
 
 

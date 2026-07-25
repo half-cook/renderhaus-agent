@@ -1,0 +1,1109 @@
+[
+    {
+        "label": "annotations",
+        "importPath": "__future__",
+        "description": "__future__",
+        "isExtraImport": true,
+        "detail": "__future__",
+        "documentation": {}
+    },
+    {
+        "label": "annotations",
+        "importPath": "__future__",
+        "description": "__future__",
+        "isExtraImport": true,
+        "detail": "__future__",
+        "documentation": {}
+    },
+    {
+        "label": "annotations",
+        "importPath": "__future__",
+        "description": "__future__",
+        "isExtraImport": true,
+        "detail": "__future__",
+        "documentation": {}
+    },
+    {
+        "label": "annotations",
+        "importPath": "__future__",
+        "description": "__future__",
+        "isExtraImport": true,
+        "detail": "__future__",
+        "documentation": {}
+    },
+    {
+        "label": "annotations",
+        "importPath": "__future__",
+        "description": "__future__",
+        "isExtraImport": true,
+        "detail": "__future__",
+        "documentation": {}
+    },
+    {
+        "label": "annotations",
+        "importPath": "__future__",
+        "description": "__future__",
+        "isExtraImport": true,
+        "detail": "__future__",
+        "documentation": {}
+    },
+    {
+        "label": "annotations",
+        "importPath": "__future__",
+        "description": "__future__",
+        "isExtraImport": true,
+        "detail": "__future__",
+        "documentation": {}
+    },
+    {
+        "label": "annotations",
+        "importPath": "__future__",
+        "description": "__future__",
+        "isExtraImport": true,
+        "detail": "__future__",
+        "documentation": {}
+    },
+    {
+        "label": "json",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "json",
+        "description": "json",
+        "detail": "json",
+        "documentation": {}
+    },
+    {
+        "label": "os",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "os",
+        "description": "os",
+        "detail": "os",
+        "documentation": {}
+    },
+    {
+        "label": "re",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "re",
+        "description": "re",
+        "detail": "re",
+        "documentation": {}
+    },
+    {
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
+        "isExtraImport": true,
+        "detail": "pathlib",
+        "documentation": {}
+    },
+    {
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
+        "isExtraImport": true,
+        "detail": "pathlib",
+        "documentation": {}
+    },
+    {
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
+        "isExtraImport": true,
+        "detail": "pathlib",
+        "documentation": {}
+    },
+    {
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
+        "isExtraImport": true,
+        "detail": "pathlib",
+        "documentation": {}
+    },
+    {
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
+        "isExtraImport": true,
+        "detail": "pathlib",
+        "documentation": {}
+    },
+    {
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
+        "isExtraImport": true,
+        "detail": "pathlib",
+        "documentation": {}
+    },
+    {
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
+        "isExtraImport": true,
+        "detail": "pathlib",
+        "documentation": {}
+    },
+    {
+        "label": "Any",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Any",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Any",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Any",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Any",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Any",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Literal",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Any",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "load_dotenv",
+        "importPath": "dotenv",
+        "description": "dotenv",
+        "isExtraImport": true,
+        "detail": "dotenv",
+        "documentation": {}
+    },
+    {
+        "label": "argparse",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "argparse",
+        "description": "argparse",
+        "detail": "argparse",
+        "documentation": {}
+    },
+    {
+        "label": "asyncio",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "asyncio",
+        "description": "asyncio",
+        "detail": "asyncio",
+        "documentation": {}
+    },
+    {
+        "label": "UTC",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
+        "label": "datetime",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
+        "label": "ROOT",
+        "importPath": "agent.config",
+        "description": "agent.config",
+        "isExtraImport": true,
+        "detail": "agent.config",
+        "documentation": {}
+    },
+    {
+        "label": "load_local_env",
+        "importPath": "agent.config",
+        "description": "agent.config",
+        "isExtraImport": true,
+        "detail": "agent.config",
+        "documentation": {}
+    },
+    {
+        "label": "DEFAULT_MCP_CONFIG",
+        "importPath": "agent.config",
+        "description": "agent.config",
+        "isExtraImport": true,
+        "detail": "agent.config",
+        "documentation": {}
+    },
+    {
+        "label": "load_local_env",
+        "importPath": "agent.config",
+        "description": "agent.config",
+        "isExtraImport": true,
+        "detail": "agent.config",
+        "documentation": {}
+    },
+    {
+        "label": "load_mcp_servers",
+        "importPath": "agent.config",
+        "description": "agent.config",
+        "isExtraImport": true,
+        "detail": "agent.config",
+        "documentation": {}
+    },
+    {
+        "label": "mask_secret_status",
+        "importPath": "agent.config",
+        "description": "agent.config",
+        "isExtraImport": true,
+        "detail": "agent.config",
+        "documentation": {}
+    },
+    {
+        "label": "DEFAULT_MCP_CONFIG",
+        "importPath": "agent.config",
+        "description": "agent.config",
+        "isExtraImport": true,
+        "detail": "agent.config",
+        "documentation": {}
+    },
+    {
+        "label": "ROOT",
+        "importPath": "agent.config",
+        "description": "agent.config",
+        "isExtraImport": true,
+        "detail": "agent.config",
+        "documentation": {}
+    },
+    {
+        "label": "load_local_env",
+        "importPath": "agent.config",
+        "description": "agent.config",
+        "isExtraImport": true,
+        "detail": "agent.config",
+        "documentation": {}
+    },
+    {
+        "label": "load_tools",
+        "importPath": "agent.main",
+        "description": "agent.main",
+        "isExtraImport": true,
+        "detail": "agent.main",
+        "documentation": {}
+    },
+    {
+        "label": "SYSTEM_PROMPT",
+        "importPath": "agent.main",
+        "description": "agent.main",
+        "isExtraImport": true,
+        "detail": "agent.main",
+        "documentation": {}
+    },
+    {
+        "label": "load_tools",
+        "importPath": "agent.main",
+        "description": "agent.main",
+        "isExtraImport": true,
+        "detail": "agent.main",
+        "documentation": {}
+    },
+    {
+        "label": "MultiServerMCPClient",
+        "importPath": "langchain_mcp_adapters.client",
+        "description": "langchain_mcp_adapters.client",
+        "isExtraImport": true,
+        "detail": "langchain_mcp_adapters.client",
+        "documentation": {}
+    },
+    {
+        "label": "create_agent",
+        "importPath": "langchain.agents",
+        "description": "langchain.agents",
+        "isExtraImport": true,
+        "detail": "langchain.agents",
+        "documentation": {}
+    },
+    {
+        "label": "langchain_callbacks",
+        "importPath": "agent.tracing",
+        "description": "agent.tracing",
+        "isExtraImport": true,
+        "detail": "agent.tracing",
+        "documentation": {}
+    },
+    {
+        "label": "traced_operation",
+        "importPath": "agent.tracing",
+        "description": "agent.tracing",
+        "isExtraImport": true,
+        "detail": "agent.tracing",
+        "documentation": {}
+    },
+    {
+        "label": "flush_langfuse",
+        "importPath": "agent.tracing",
+        "description": "agent.tracing",
+        "isExtraImport": true,
+        "detail": "agent.tracing",
+        "documentation": {}
+    },
+    {
+        "label": "traced_operation",
+        "importPath": "agent.tracing",
+        "description": "agent.tracing",
+        "isExtraImport": true,
+        "detail": "agent.tracing",
+        "documentation": {}
+    },
+    {
+        "label": "Iterator",
+        "importPath": "collections.abc",
+        "description": "collections.abc",
+        "isExtraImport": true,
+        "detail": "collections.abc",
+        "documentation": {}
+    },
+    {
+        "label": "contextmanager",
+        "importPath": "contextlib",
+        "description": "contextlib",
+        "isExtraImport": true,
+        "detail": "contextlib",
+        "documentation": {}
+    },
+    {
+        "label": "asynccontextmanager",
+        "importPath": "contextlib",
+        "description": "contextlib",
+        "isExtraImport": true,
+        "detail": "contextlib",
+        "documentation": {}
+    },
+    {
+        "label": "time",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "time",
+        "description": "time",
+        "detail": "time",
+        "documentation": {}
+    },
+    {
+        "label": "uuid",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "uuid",
+        "description": "uuid",
+        "detail": "uuid",
+        "documentation": {}
+    },
+    {
+        "label": "FastMCP",
+        "importPath": "fastmcp",
+        "description": "fastmcp",
+        "isExtraImport": true,
+        "detail": "fastmcp",
+        "documentation": {}
+    },
+    {
+        "label": "FastMCP",
+        "importPath": "fastmcp",
+        "description": "fastmcp",
+        "isExtraImport": true,
+        "detail": "fastmcp",
+        "documentation": {}
+    },
+    {
+        "label": "Field",
+        "importPath": "pydantic",
+        "description": "pydantic",
+        "isExtraImport": true,
+        "detail": "pydantic",
+        "documentation": {}
+    },
+    {
+        "label": "BaseModel",
+        "importPath": "pydantic",
+        "description": "pydantic",
+        "isExtraImport": true,
+        "detail": "pydantic",
+        "documentation": {}
+    },
+    {
+        "label": "Field",
+        "importPath": "pydantic",
+        "description": "pydantic",
+        "isExtraImport": true,
+        "detail": "pydantic",
+        "documentation": {}
+    },
+    {
+        "label": "BaseModel",
+        "importPath": "pydantic",
+        "description": "pydantic",
+        "isExtraImport": true,
+        "detail": "pydantic",
+        "documentation": {}
+    },
+    {
+        "label": "Field",
+        "importPath": "pydantic",
+        "description": "pydantic",
+        "isExtraImport": true,
+        "detail": "pydantic",
+        "documentation": {}
+    },
+    {
+        "label": "base64",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "base64",
+        "description": "base64",
+        "detail": "base64",
+        "documentation": {}
+    },
+    {
+        "label": "mimetypes",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "mimetypes",
+        "description": "mimetypes",
+        "detail": "mimetypes",
+        "documentation": {}
+    },
+    {
+        "label": "httpx",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "httpx",
+        "description": "httpx",
+        "detail": "httpx",
+        "documentation": {}
+    },
+    {
+        "label": "FieldInfo",
+        "importPath": "pydantic.fields",
+        "description": "pydantic.fields",
+        "isExtraImport": true,
+        "detail": "pydantic.fields",
+        "documentation": {}
+    },
+    {
+        "label": "FastAPI",
+        "importPath": "fastapi",
+        "description": "fastapi",
+        "isExtraImport": true,
+        "detail": "fastapi",
+        "documentation": {}
+    },
+    {
+        "label": "File",
+        "importPath": "fastapi",
+        "description": "fastapi",
+        "isExtraImport": true,
+        "detail": "fastapi",
+        "documentation": {}
+    },
+    {
+        "label": "HTTPException",
+        "importPath": "fastapi",
+        "description": "fastapi",
+        "isExtraImport": true,
+        "detail": "fastapi",
+        "documentation": {}
+    },
+    {
+        "label": "UploadFile",
+        "importPath": "fastapi",
+        "description": "fastapi",
+        "isExtraImport": true,
+        "detail": "fastapi",
+        "documentation": {}
+    },
+    {
+        "label": "FileResponse",
+        "importPath": "fastapi.responses",
+        "description": "fastapi.responses",
+        "isExtraImport": true,
+        "detail": "fastapi.responses",
+        "documentation": {}
+    },
+    {
+        "label": "StaticFiles",
+        "importPath": "fastapi.staticfiles",
+        "description": "fastapi.staticfiles",
+        "isExtraImport": true,
+        "detail": "fastapi.staticfiles",
+        "documentation": {}
+    },
+    {
+        "label": "poll_video_generation",
+        "importPath": "agent.service",
+        "description": "agent.service",
+        "isExtraImport": true,
+        "detail": "agent.service",
+        "documentation": {}
+    },
+    {
+        "label": "start_video_generation",
+        "importPath": "agent.service",
+        "description": "agent.service",
+        "isExtraImport": true,
+        "detail": "agent.service",
+        "documentation": {}
+    },
+    {
+        "label": "load_local_env",
+        "kind": 2,
+        "importPath": "agent.config",
+        "description": "agent.config",
+        "peekOfCode": "def load_local_env() -> None:\n    load_dotenv(ENV_FILE, override=False)\n    for key, value in DEFAULT_ENV.items():\n        if not os.getenv(key):\n            os.environ[key] = value\ndef _expand(value: str) -> str:\n    def replace(match: re.Match[str]) -> str:\n        name = match.group(1)\n        if name == \"ROOT\":\n            return str(ROOT)",
+        "detail": "agent.config",
+        "documentation": {}
+    },
+    {
+        "label": "load_mcp_servers",
+        "kind": 2,
+        "importPath": "agent.config",
+        "description": "agent.config",
+        "peekOfCode": "def load_mcp_servers(path: Path = DEFAULT_MCP_CONFIG) -> dict[str, dict[str, Any]]:\n    raw = json.loads(path.read_text())\n    return _walk_expand(raw[\"mcpServers\"])\ndef mask_secret_status(name: str) -> str:\n    return \"set\" if os.getenv(name) else \"empty\"",
+        "detail": "agent.config",
+        "documentation": {}
+    },
+    {
+        "label": "mask_secret_status",
+        "kind": 2,
+        "importPath": "agent.config",
+        "description": "agent.config",
+        "peekOfCode": "def mask_secret_status(name: str) -> str:\n    return \"set\" if os.getenv(name) else \"empty\"",
+        "detail": "agent.config",
+        "documentation": {}
+    },
+    {
+        "label": "ROOT",
+        "kind": 5,
+        "importPath": "agent.config",
+        "description": "agent.config",
+        "peekOfCode": "ROOT = Path(__file__).resolve().parents[1]\nENV_FILE = ROOT / \".env.local\"\nDEFAULT_MCP_CONFIG = ROOT / \"configs\" / \"mcp.local.json\"\n_VAR_RE = re.compile(r\"\\$\\{([A-Za-z_][A-Za-z0-9_]*|ROOT)\\}\")\nDEFAULT_ENV = {\n    \"AGENT_MODEL\": \"openai:gpt-4.1-mini\",\n    \"BYTEPLUS_BASE_URL\": \"https://ark.ap-southeast.bytepluses.com/api/v3\",\n    \"SEEDANCE_MODEL\": \"seedance-1-5-pro-251215\",\n    \"SEEDANCE_DRY_RUN\": \"true\",\n    \"GEMINI_TTS_DRY_RUN\": \"true\",",
+        "detail": "agent.config",
+        "documentation": {}
+    },
+    {
+        "label": "ENV_FILE",
+        "kind": 5,
+        "importPath": "agent.config",
+        "description": "agent.config",
+        "peekOfCode": "ENV_FILE = ROOT / \".env.local\"\nDEFAULT_MCP_CONFIG = ROOT / \"configs\" / \"mcp.local.json\"\n_VAR_RE = re.compile(r\"\\$\\{([A-Za-z_][A-Za-z0-9_]*|ROOT)\\}\")\nDEFAULT_ENV = {\n    \"AGENT_MODEL\": \"openai:gpt-4.1-mini\",\n    \"BYTEPLUS_BASE_URL\": \"https://ark.ap-southeast.bytepluses.com/api/v3\",\n    \"SEEDANCE_MODEL\": \"seedance-1-5-pro-251215\",\n    \"SEEDANCE_DRY_RUN\": \"true\",\n    \"GEMINI_TTS_DRY_RUN\": \"true\",\n    \"GEMINI_TTS_MODEL\": \"gemini-3.1-flash-tts-preview\",",
+        "detail": "agent.config",
+        "documentation": {}
+    },
+    {
+        "label": "DEFAULT_MCP_CONFIG",
+        "kind": 5,
+        "importPath": "agent.config",
+        "description": "agent.config",
+        "peekOfCode": "DEFAULT_MCP_CONFIG = ROOT / \"configs\" / \"mcp.local.json\"\n_VAR_RE = re.compile(r\"\\$\\{([A-Za-z_][A-Za-z0-9_]*|ROOT)\\}\")\nDEFAULT_ENV = {\n    \"AGENT_MODEL\": \"openai:gpt-4.1-mini\",\n    \"BYTEPLUS_BASE_URL\": \"https://ark.ap-southeast.bytepluses.com/api/v3\",\n    \"SEEDANCE_MODEL\": \"seedance-1-5-pro-251215\",\n    \"SEEDANCE_DRY_RUN\": \"true\",\n    \"GEMINI_TTS_DRY_RUN\": \"true\",\n    \"GEMINI_TTS_MODEL\": \"gemini-3.1-flash-tts-preview\",\n    \"MUREKA_API_URL\": \"https://api.mureka.ai\",",
+        "detail": "agent.config",
+        "documentation": {}
+    },
+    {
+        "label": "_VAR_RE",
+        "kind": 5,
+        "importPath": "agent.config",
+        "description": "agent.config",
+        "peekOfCode": "_VAR_RE = re.compile(r\"\\$\\{([A-Za-z_][A-Za-z0-9_]*|ROOT)\\}\")\nDEFAULT_ENV = {\n    \"AGENT_MODEL\": \"openai:gpt-4.1-mini\",\n    \"BYTEPLUS_BASE_URL\": \"https://ark.ap-southeast.bytepluses.com/api/v3\",\n    \"SEEDANCE_MODEL\": \"seedance-1-5-pro-251215\",\n    \"SEEDANCE_DRY_RUN\": \"true\",\n    \"GEMINI_TTS_DRY_RUN\": \"true\",\n    \"GEMINI_TTS_MODEL\": \"gemini-3.1-flash-tts-preview\",\n    \"MUREKA_API_URL\": \"https://api.mureka.ai\",\n    \"TIME_OUT_SECONDS\": \"300\",",
+        "detail": "agent.config",
+        "documentation": {}
+    },
+    {
+        "label": "DEFAULT_ENV",
+        "kind": 5,
+        "importPath": "agent.config",
+        "description": "agent.config",
+        "peekOfCode": "DEFAULT_ENV = {\n    \"AGENT_MODEL\": \"openai:gpt-4.1-mini\",\n    \"BYTEPLUS_BASE_URL\": \"https://ark.ap-southeast.bytepluses.com/api/v3\",\n    \"SEEDANCE_MODEL\": \"seedance-1-5-pro-251215\",\n    \"SEEDANCE_DRY_RUN\": \"true\",\n    \"GEMINI_TTS_DRY_RUN\": \"true\",\n    \"GEMINI_TTS_MODEL\": \"gemini-3.1-flash-tts-preview\",\n    \"MUREKA_API_URL\": \"https://api.mureka.ai\",\n    \"TIME_OUT_SECONDS\": \"300\",\n    \"RENDERHAUS_MEDIA_DIR\": \".renderhaus/media\",",
+        "detail": "agent.config",
+        "documentation": {}
+    },
+    {
+        "label": "parse_args",
+        "kind": 2,
+        "importPath": "agent.generate",
+        "description": "agent.generate",
+        "peekOfCode": "def parse_args() -> argparse.Namespace:\n    parser = argparse.ArgumentParser(description=\"Run generation MCP tools without the test UI.\")\n    subparsers = parser.add_subparsers(dest=\"command\", required=True)\n    subparsers.add_parser(\"models\", help=\"List visible Seedance/video models.\")\n    video = subparsers.add_parser(\"video\", help=\"Generate a Seedance text-to-video asset.\")\n    video.add_argument(\"prompt\")\n    video.add_argument(\"--duration\", type=int, default=4)\n    video.add_argument(\"--aspect-ratio\", default=\"16:9\")\n    video.add_argument(\"--resolution\", default=\"720p\")\n    video.add_argument(\"--model\", default=None)",
+        "detail": "agent.generate",
+        "documentation": {}
+    },
+    {
+        "label": "jsonable",
+        "kind": 2,
+        "importPath": "agent.generate",
+        "description": "agent.generate",
+        "peekOfCode": "def jsonable(value: Any) -> Any:\n    if value is None or isinstance(value, str | int | float | bool):\n        return value\n    if isinstance(value, dict):\n        return {str(k): jsonable(v) for k, v in value.items()}\n    if isinstance(value, list | tuple):\n        return [jsonable(v) for v in value]\n    return str(value)\ndef normalize_tool_output(output: Any) -> Any:\n    normalized = jsonable(output)",
+        "detail": "agent.generate",
+        "documentation": {}
+    },
+    {
+        "label": "normalize_tool_output",
+        "kind": 2,
+        "importPath": "agent.generate",
+        "description": "agent.generate",
+        "peekOfCode": "def normalize_tool_output(output: Any) -> Any:\n    normalized = jsonable(output)\n    if (\n        isinstance(normalized, list)\n        and len(normalized) == 1\n        and isinstance(normalized[0], dict)\n        and isinstance(normalized[0].get(\"text\"), str)\n    ):\n        text = normalized[0][\"text\"]\n        try:",
+        "detail": "agent.generate",
+        "documentation": {}
+    },
+    {
+        "label": "write_job_record",
+        "kind": 2,
+        "importPath": "agent.generate",
+        "description": "agent.generate",
+        "peekOfCode": "def write_job_record(tool_name: str, args: dict[str, Any], output: Any) -> Path:\n    JOBS_DIR.mkdir(parents=True, exist_ok=True)\n    timestamp = datetime.now(UTC).strftime(\"%Y%m%dT%H%M%SZ\")\n    path = JOBS_DIR / f\"{timestamp}-{tool_name}.json\"\n    record = {\n        \"tool\": tool_name,\n        \"args\": args,\n        \"output\": output,\n        \"created_at\": timestamp,\n    }",
+        "detail": "agent.generate",
+        "documentation": {}
+    },
+    {
+        "label": "JOBS_DIR",
+        "kind": 5,
+        "importPath": "agent.generate",
+        "description": "agent.generate",
+        "peekOfCode": "JOBS_DIR = ROOT / \".renderhaus\" / \"jobs\"\ndef parse_args() -> argparse.Namespace:\n    parser = argparse.ArgumentParser(description=\"Run generation MCP tools without the test UI.\")\n    subparsers = parser.add_subparsers(dest=\"command\", required=True)\n    subparsers.add_parser(\"models\", help=\"List visible Seedance/video models.\")\n    video = subparsers.add_parser(\"video\", help=\"Generate a Seedance text-to-video asset.\")\n    video.add_argument(\"prompt\")\n    video.add_argument(\"--duration\", type=int, default=4)\n    video.add_argument(\"--aspect-ratio\", default=\"16:9\")\n    video.add_argument(\"--resolution\", default=\"720p\")",
+        "detail": "agent.generate",
+        "documentation": {}
+    },
+    {
+        "label": "parse_args",
+        "kind": 2,
+        "importPath": "agent.main",
+        "description": "agent.main",
+        "peekOfCode": "def parse_args() -> argparse.Namespace:\n    parser = argparse.ArgumentParser(description=\"Run the basic Renderhaus LangChain MCP agent.\")\n    parser.add_argument(\"prompt\", nargs=\"*\", help=\"Prompt to send to the agent.\")\n    parser.add_argument(\"--config\", default=str(DEFAULT_MCP_CONFIG), help=\"MCP config JSON path.\")\n    parser.add_argument(\"--list-tools\", action=\"store_true\", help=\"Load MCP tools and print them.\")\n    parser.add_argument(\"--check-env\", action=\"store_true\", help=\"Print required secret status.\")\n    return parser.parse_args()\ndef print_env_status() -> None:\n    for key in GEN_SECRET_KEYS:\n        print(f\"{key}={mask_secret_status(key)}\")",
+        "detail": "agent.main",
+        "documentation": {}
+    },
+    {
+        "label": "print_env_status",
+        "kind": 2,
+        "importPath": "agent.main",
+        "description": "agent.main",
+        "peekOfCode": "def print_env_status() -> None:\n    for key in GEN_SECRET_KEYS:\n        print(f\"{key}={mask_secret_status(key)}\")\ndef print_tool(tool: Any) -> None:\n    description = getattr(tool, \"description\", \"\") or \"\"\n    description = \" \".join(description.split())\n    if len(description) > 180:\n        description = f\"{description[:177]}...\"\n    print(f\"- {tool.name}: {description}\")\ndef dedupe_tool_names(tools: list[Any]) -> list[Any]:",
+        "detail": "agent.main",
+        "documentation": {}
+    },
+    {
+        "label": "print_tool",
+        "kind": 2,
+        "importPath": "agent.main",
+        "description": "agent.main",
+        "peekOfCode": "def print_tool(tool: Any) -> None:\n    description = getattr(tool, \"description\", \"\") or \"\"\n    description = \" \".join(description.split())\n    if len(description) > 180:\n        description = f\"{description[:177]}...\"\n    print(f\"- {tool.name}: {description}\")\ndef dedupe_tool_names(tools: list[Any]) -> list[Any]:\n    counts: dict[str, int] = {}\n    for tool in tools:\n        original_name = tool.name",
+        "detail": "agent.main",
+        "documentation": {}
+    },
+    {
+        "label": "dedupe_tool_names",
+        "kind": 2,
+        "importPath": "agent.main",
+        "description": "agent.main",
+        "peekOfCode": "def dedupe_tool_names(tools: list[Any]) -> list[Any]:\n    counts: dict[str, int] = {}\n    for tool in tools:\n        original_name = tool.name\n        count = counts.get(original_name, 0)\n        counts[original_name] = count + 1\n        if count == 0:\n            continue\n        new_name = f\"{original_name}_{count + 1}\"\n        tool.name = new_name",
+        "detail": "agent.main",
+        "documentation": {}
+    },
+    {
+        "label": "SYSTEM_PROMPT",
+        "kind": 5,
+        "importPath": "agent.main",
+        "description": "agent.main",
+        "peekOfCode": "SYSTEM_PROMPT = \"\"\"You are the Renderhaus generation coordinator.\nUse MCP tools for image, video, audio, and music work. Prefer dry-run planning for expensive\ngeneration unless the user explicitly asks to generate real media. Summarize tool outputs with\nasset paths, job IDs, provider names, and estimated costs when available.\n\"\"\"\nGEN_SECRET_KEYS = [\n    \"OPENAI_API_KEY\",\n    \"MUREKA_API_KEY\",\n    \"ELEVENLABS_API_KEY\",\n    \"BYTEPLUS_API_KEY\",",
+        "detail": "agent.main",
+        "documentation": {}
+    },
+    {
+        "label": "GEN_SECRET_KEYS",
+        "kind": 5,
+        "importPath": "agent.main",
+        "description": "agent.main",
+        "peekOfCode": "GEN_SECRET_KEYS = [\n    \"OPENAI_API_KEY\",\n    \"MUREKA_API_KEY\",\n    \"ELEVENLABS_API_KEY\",\n    \"BYTEPLUS_API_KEY\",\n    \"GOOGLE_API_KEY\",\n    \"LANGFUSE_PUBLIC_KEY\",\n    \"LANGFUSE_SECRET_KEY\",\n]\ndef parse_args() -> argparse.Namespace:",
+        "detail": "agent.main",
+        "documentation": {}
+    },
+    {
+        "label": "normalize_tool_output",
+        "kind": 2,
+        "importPath": "agent.service",
+        "description": "agent.service",
+        "peekOfCode": "def normalize_tool_output(value: Any) -> Any:\n    normalized = _jsonable(value)\n    if (\n        isinstance(normalized, list)\n        and len(normalized) == 1\n        and isinstance(normalized[0], dict)\n        and isinstance(normalized[0].get(\"text\"), str)\n    ):\n        return _parse_content(normalized[0][\"text\"])\n    return _parse_content(normalized)",
+        "detail": "agent.service",
+        "documentation": {}
+    },
+    {
+        "label": "summarize_agent_result",
+        "kind": 2,
+        "importPath": "agent.service",
+        "description": "agent.service",
+        "peekOfCode": "def summarize_agent_result(result: dict[str, Any]) -> dict[str, Any]:\n    messages = result.get(\"messages\", [])\n    final_text = \"\"\n    tool_events: list[dict[str, Any]] = []\n    artifacts: list[dict[str, Any]] = []\n    for message in messages:\n        data = _jsonable(message)\n        content = data.get(\"content\") if isinstance(data, dict) else data\n        message_type = data.get(\"type\") if isinstance(data, dict) else None\n        if message_type == \"tool\" or (isinstance(data, dict) and data.get(\"tool_call_id\")):",
+        "detail": "agent.service",
+        "documentation": {}
+    },
+    {
+        "label": "WEB_SYSTEM_PROMPT",
+        "kind": 5,
+        "importPath": "agent.service",
+        "description": "agent.service",
+        "peekOfCode": "WEB_SYSTEM_PROMPT = \"\"\"You are the private Renderhaus video-generation coordinator.\nThe user has explicitly authorized exactly one video generation for this request.\nCall exactly one immediate-return generation tool: text_to_video for a text prompt, or\nimage_to_video when a local reference image path is supplied. Never call wait, polling, model\nlisting, audio, voice, music, playback, phone, or outbound communication tools. Do not reveal\nprovider, model, tool, credential, or internal path details in your prose. Keep the final response\nto one short sentence; the application reads the generation result structurally.\n\"\"\"\n_runtime_lock = asyncio.Lock()\n_cached_tools: dict[str, Any] | None = None",
+        "detail": "agent.service",
+        "documentation": {}
+    },
+    {
+        "label": "_runtime_lock",
+        "kind": 5,
+        "importPath": "agent.service",
+        "description": "agent.service",
+        "peekOfCode": "_runtime_lock = asyncio.Lock()\n_cached_tools: dict[str, Any] | None = None\n_cached_web_agent: Any | None = None\ndef _jsonable(value: Any) -> Any:\n    if value is None or isinstance(value, str | int | float | bool):\n        return value\n    if isinstance(value, dict):\n        return {str(key): _jsonable(item) for key, item in value.items()}\n    if isinstance(value, list | tuple):\n        return [_jsonable(item) for item in value]",
+        "detail": "agent.service",
+        "documentation": {}
+    },
+    {
+        "label": "langfuse_configured",
+        "kind": 2,
+        "importPath": "agent.tracing",
+        "description": "agent.tracing",
+        "peekOfCode": "def langfuse_configured() -> bool:\n    return bool(os.getenv(\"LANGFUSE_PUBLIC_KEY\") and os.getenv(\"LANGFUSE_SECRET_KEY\"))\ndef get_langfuse():\n    \"\"\"Return the Langfuse client. Call only after load_local_env().\"\"\"\n    from langfuse import get_client\n    return get_client()\ndef langchain_callbacks() -> list[Any]:\n    if not langfuse_configured():\n        return []\n    from langfuse.langchain import CallbackHandler",
+        "detail": "agent.tracing",
+        "documentation": {}
+    },
+    {
+        "label": "get_langfuse",
+        "kind": 2,
+        "importPath": "agent.tracing",
+        "description": "agent.tracing",
+        "peekOfCode": "def get_langfuse():\n    \"\"\"Return the Langfuse client. Call only after load_local_env().\"\"\"\n    from langfuse import get_client\n    return get_client()\ndef langchain_callbacks() -> list[Any]:\n    if not langfuse_configured():\n        return []\n    from langfuse.langchain import CallbackHandler\n    return [CallbackHandler()]\ndef flush_langfuse() -> None:",
+        "detail": "agent.tracing",
+        "documentation": {}
+    },
+    {
+        "label": "langchain_callbacks",
+        "kind": 2,
+        "importPath": "agent.tracing",
+        "description": "agent.tracing",
+        "peekOfCode": "def langchain_callbacks() -> list[Any]:\n    if not langfuse_configured():\n        return []\n    from langfuse.langchain import CallbackHandler\n    return [CallbackHandler()]\ndef flush_langfuse() -> None:\n    if not langfuse_configured():\n        return\n    get_langfuse().flush()\n@contextmanager",
+        "detail": "agent.tracing",
+        "documentation": {}
+    },
+    {
+        "label": "flush_langfuse",
+        "kind": 2,
+        "importPath": "agent.tracing",
+        "description": "agent.tracing",
+        "peekOfCode": "def flush_langfuse() -> None:\n    if not langfuse_configured():\n        return\n    get_langfuse().flush()\n@contextmanager\ndef traced_operation(\n    name: str,\n    *,\n    as_type: str = \"span\",\n    input: Any | None = None,",
+        "detail": "agent.tracing",
+        "documentation": {}
+    },
+    {
+        "label": "traced_operation",
+        "kind": 2,
+        "importPath": "agent.tracing",
+        "description": "agent.tracing",
+        "peekOfCode": "def traced_operation(\n    name: str,\n    *,\n    as_type: str = \"span\",\n    input: Any | None = None,\n    session_id: str | None = None,\n    tags: list[str] | None = None,\n    metadata: dict[str, Any] | None = None,\n    trace_name: str | None = None,\n) -> Iterator[Any | None]:",
+        "detail": "agent.tracing",
+        "documentation": {}
+    },
+    {
+        "label": "list_voices",
+        "kind": 2,
+        "importPath": "mcps.gemini_tts.server",
+        "description": "mcps.gemini_tts.server",
+        "peekOfCode": "def list_voices() -> dict:\n    \"\"\"List a starter set of Gemini TTS voice names for prompt planning.\"\"\"\n    return {\n        \"provider\": \"google-gemini-tts\",\n        \"model\": os.getenv(\"GEMINI_TTS_MODEL\", \"gemini-3.1-flash-tts-preview\"),\n        \"voices\": VOICES,\n        \"note\": \"Voice list is a starter set. Confirm against Google docs before production.\",\n    }\n@mcp.tool()\ndef generate_speech(",
+        "detail": "mcps.gemini_tts.server",
+        "documentation": {}
+    },
+    {
+        "label": "generate_speech",
+        "kind": 2,
+        "importPath": "mcps.gemini_tts.server",
+        "description": "mcps.gemini_tts.server",
+        "peekOfCode": "def generate_speech(\n    text: str = Field(description=\"Exact text to synthesize.\"),\n    voice: str = Field(default=\"Zephyr\"),\n    style_prompt: str = Field(default=\"Natural narration, clear pacing.\"),\n    output_format: str = Field(default=\"wav\"),\n) -> dict:\n    \"\"\"Generate Gemini TTS speech. Currently dry-runs the provider call.\"\"\"\n    job_id = f\"gemini_tts_{int(time.time())}_{uuid.uuid4().hex[:8]}\"\n    output_path = _media_dir() / \"audio\" / f\"{job_id}.{output_format}\"\n    output_path.parent.mkdir(parents=True, exist_ok=True)",
+        "detail": "mcps.gemini_tts.server",
+        "documentation": {}
+    },
+    {
+        "label": "estimate_tts_cost",
+        "kind": 2,
+        "importPath": "mcps.gemini_tts.server",
+        "description": "mcps.gemini_tts.server",
+        "peekOfCode": "def estimate_tts_cost(text: str) -> dict:\n    \"\"\"Return simple character-count data for Gemini TTS cost planning.\"\"\"\n    return {\n        \"provider\": \"google-gemini-tts\",\n        \"characters\": len(text),\n        \"note\": \"Pricing is provider/account dependent; use this count for preflight estimates.\",\n    }\nif __name__ == \"__main__\":\n    mcp.run(transport=\"stdio\", show_banner=False)",
+        "detail": "mcps.gemini_tts.server",
+        "documentation": {}
+    },
+    {
+        "label": "mcp",
+        "kind": 5,
+        "importPath": "mcps.gemini_tts.server",
+        "description": "mcps.gemini_tts.server",
+        "peekOfCode": "mcp = FastMCP(\"renderhaus-gemini-tts\")\nVOICES = [\n    \"Zephyr\",\n    \"Puck\",\n    \"Charon\",\n    \"Kore\",\n    \"Fenrir\",\n    \"Leda\",\n    \"Orus\",\n    \"Aoede\",",
+        "detail": "mcps.gemini_tts.server",
+        "documentation": {}
+    },
+    {
+        "label": "VOICES",
+        "kind": 5,
+        "importPath": "mcps.gemini_tts.server",
+        "description": "mcps.gemini_tts.server",
+        "peekOfCode": "VOICES = [\n    \"Zephyr\",\n    \"Puck\",\n    \"Charon\",\n    \"Kore\",\n    \"Fenrir\",\n    \"Leda\",\n    \"Orus\",\n    \"Aoede\",\n    \"Callirrhoe\",",
+        "detail": "mcps.gemini_tts.server",
+        "documentation": {}
+    },
+    {
+        "label": "SeedanceTask",
+        "kind": 6,
+        "importPath": "mcps.seedance.server",
+        "description": "mcps.seedance.server",
+        "peekOfCode": "class SeedanceTask(BaseModel):\n    job_id: str\n    status: str\n    provider: str = \"byteplus-seedance\"\n    mode: str\n    prompt: str\n    duration_seconds: int\n    aspect_ratio: str\n    resolution: str\n    model: str | None = None",
+        "detail": "mcps.seedance.server",
+        "documentation": {}
+    },
+    {
+        "label": "text_to_video",
+        "kind": 2,
+        "importPath": "mcps.seedance.server",
+        "description": "mcps.seedance.server",
+        "peekOfCode": "def text_to_video(\n    prompt: str = Field(description=\"Video prompt.\"),\n    duration_seconds: int = Field(default=5, ge=4, le=15),\n    aspect_ratio: str = Field(default=\"16:9\"),\n    resolution: str = Field(default=\"720p\"),\n    model: str | None = Field(default=None, description=\"Seedance model id. Defaults to SEEDANCE_MODEL.\"),\n    watermark: bool = Field(default=False),\n    generate_audio: bool = Field(default=False),\n    service_tier: Literal[\"default\", \"flex\"] | None = Field(\n        default=None,",
+        "detail": "mcps.seedance.server",
+        "documentation": {}
+    },
+    {
+        "label": "image_to_video",
+        "kind": 2,
+        "importPath": "mcps.seedance.server",
+        "description": "mcps.seedance.server",
+        "peekOfCode": "def image_to_video(\n    image_path_or_url: str = Field(description=\"Reference image path or URL.\"),\n    prompt: str = Field(description=\"Motion and style prompt.\"),\n    duration_seconds: int = Field(default=5, ge=4, le=15),\n    aspect_ratio: str = Field(default=\"16:9\"),\n    resolution: str = Field(default=\"720p\"),\n    model: str | None = Field(default=None, description=\"Seedance model id. Defaults to SEEDANCE_MODEL.\"),\n    watermark: bool = Field(default=False),\n    generate_audio: bool = Field(default=False),\n    service_tier: Literal[\"default\", \"flex\"] | None = Field(",
+        "detail": "mcps.seedance.server",
+        "documentation": {}
+    },
+    {
+        "label": "get_video_task",
+        "kind": 2,
+        "importPath": "mcps.seedance.server",
+        "description": "mcps.seedance.server",
+        "peekOfCode": "def get_video_task(\n    job_id: str,\n    download: bool = Field(default=True, description=\"Download the MP4 when the task has succeeded.\"),\n) -> dict:\n    \"\"\"Retrieve a Seedance task status and optionally download the finished MP4.\"\"\"\n    download = bool(_field_value(download, True))\n    return _retrieve_task(job_id=job_id, download=download)\n@mcp.tool()\ndef wait_for_video_task(\n    job_id: str,",
+        "detail": "mcps.seedance.server",
+        "documentation": {}
+    },
+    {
+        "label": "wait_for_video_task",
+        "kind": 2,
+        "importPath": "mcps.seedance.server",
+        "description": "mcps.seedance.server",
+        "peekOfCode": "def wait_for_video_task(\n    job_id: str,\n    timeout_seconds: int = Field(default=600, ge=30, le=1800),\n    poll_interval_seconds: int = Field(default=5, ge=2, le=60),\n    download: bool = Field(default=True),\n) -> dict:\n    \"\"\"Poll a Seedance task until it reaches a terminal status or times out.\"\"\"\n    timeout_seconds = int(_field_value(timeout_seconds, 600))\n    poll_interval_seconds = int(_field_value(poll_interval_seconds, 5))\n    download = bool(_field_value(download, True))",
+        "detail": "mcps.seedance.server",
+        "documentation": {}
+    },
+    {
+        "label": "text_to_video_and_wait",
+        "kind": 2,
+        "importPath": "mcps.seedance.server",
+        "description": "mcps.seedance.server",
+        "peekOfCode": "def text_to_video_and_wait(\n    prompt: str = Field(description=\"Video prompt.\"),\n    duration_seconds: int = Field(default=4, ge=4, le=15),\n    aspect_ratio: str = Field(default=\"16:9\"),\n    resolution: str = Field(default=\"720p\"),\n    timeout_seconds: int = Field(default=600, ge=30, le=1800),\n    poll_interval_seconds: int = Field(default=5, ge=2, le=60),\n    model: str | None = Field(default=None, description=\"Seedance model id. Defaults to SEEDANCE_MODEL.\"),\n    watermark: bool = Field(default=False),\n    generate_audio: bool = Field(default=False),",
+        "detail": "mcps.seedance.server",
+        "documentation": {}
+    },
+    {
+        "label": "list_seedance_models",
+        "kind": 2,
+        "importPath": "mcps.seedance.server",
+        "description": "mcps.seedance.server",
+        "peekOfCode": "def list_seedance_models() -> dict:\n    \"\"\"List Seedance/video generation models visible from this BytePlus API key.\"\"\"\n    if _dry_run():\n        return {\n            \"status\": \"dry_run\",\n            \"models\": [],\n            \"note\": \"Dry run is enabled; set SEEDANCE_DRY_RUN=false to query BytePlus /models.\",\n        }\n    with httpx.Client(timeout=60) as client:\n        response = client.get(f\"{_base_url()}/models\", headers=_headers())",
+        "detail": "mcps.seedance.server",
+        "documentation": {}
+    },
+    {
+        "label": "mcp",
+        "kind": 5,
+        "importPath": "mcps.seedance.server",
+        "description": "mcps.seedance.server",
+        "peekOfCode": "mcp = FastMCP(\"renderhaus-seedance\")\nclass SeedanceTask(BaseModel):\n    job_id: str\n    status: str\n    provider: str = \"byteplus-seedance\"\n    mode: str\n    prompt: str\n    duration_seconds: int\n    aspect_ratio: str\n    resolution: str",
+        "detail": "mcps.seedance.server",
+        "documentation": {}
+    },
+    {
+        "label": "TERMINAL_STATUSES",
+        "kind": 5,
+        "importPath": "mcps.seedance.server",
+        "description": "mcps.seedance.server",
+        "peekOfCode": "TERMINAL_STATUSES = {\"succeeded\", \"failed\", \"cancelled\", \"canceled\", \"deleted\"}\ndef _field_value(value: Any, default: Any) -> Any:\n    if isinstance(value, FieldInfo):\n        return getattr(value, \"default\", default)\n    return value\ndef _media_dir() -> Path:\n    path = Path(os.getenv(\"RENDERHAUS_MEDIA_DIR\", \".renderhaus/media\")).expanduser()\n    path.mkdir(parents=True, exist_ok=True)\n    return path\ndef _dry_run() -> bool:",
+        "detail": "mcps.seedance.server",
+        "documentation": {}
+    },
+    {
+        "label": "GenerationRequest",
+        "kind": 6,
+        "importPath": "web.app",
+        "description": "web.app",
+        "peekOfCode": "class GenerationRequest(BaseModel):\n    prompt: str = Field(min_length=3, max_length=4000)\n    vibe: str = Field(default=\"quiet luxury\", max_length=120)\n    aspect_ratio: str = Field(default=\"16:9\", pattern=r\"^(16:9|9:16|1:1)$\")\n    duration_seconds: int = Field(default=10, ge=4, le=15)\n    reference_asset_id: str | None = Field(default=None, pattern=r\"^[a-f0-9]{32}$\")\nclass RefinementRequest(BaseModel):\n    instruction: str = Field(min_length=3, max_length=2000)\nclass JobStore:\n    def __init__(self, directory: Path) -> None:",
+        "detail": "web.app",
+        "documentation": {}
+    },
+    {
+        "label": "RefinementRequest",
+        "kind": 6,
+        "importPath": "web.app",
+        "description": "web.app",
+        "peekOfCode": "class RefinementRequest(BaseModel):\n    instruction: str = Field(min_length=3, max_length=2000)\nclass JobStore:\n    def __init__(self, directory: Path) -> None:\n        self.directory = directory\n        self._jobs: dict[str, dict[str, Any]] = {}\n        self._lock = asyncio.Lock()\n    async def load(self) -> list[str]:\n        self.directory.mkdir(parents=True, exist_ok=True)\n        resumable: list[str] = []",
+        "detail": "web.app",
+        "documentation": {}
+    },
+    {
+        "label": "JobStore",
+        "kind": 6,
+        "importPath": "web.app",
+        "description": "web.app",
+        "peekOfCode": "class JobStore:\n    def __init__(self, directory: Path) -> None:\n        self.directory = directory\n        self._jobs: dict[str, dict[str, Any]] = {}\n        self._lock = asyncio.Lock()\n    async def load(self) -> list[str]:\n        self.directory.mkdir(parents=True, exist_ok=True)\n        resumable: list[str] = []\n        for path in self.directory.glob(\"*.json\"):\n            try:",
+        "detail": "web.app",
+        "documentation": {}
+    },
+    {
+        "label": "main",
+        "kind": 2,
+        "importPath": "web.app",
+        "description": "web.app",
+        "peekOfCode": "def main() -> None:\n    import uvicorn\n    uvicorn.run(\"web.app:app\", host=\"127.0.0.1\", port=8000, reload=False)\nif __name__ == \"__main__\":\n    main()",
+        "detail": "web.app",
+        "documentation": {}
+    },
+    {
+        "label": "STATIC_DIR",
+        "kind": 5,
+        "importPath": "web.app",
+        "description": "web.app",
+        "peekOfCode": "STATIC_DIR = Path(__file__).with_name(\"static\")\nSTATE_DIR = ROOT / \".renderhaus\" / \"web-jobs\"\nUPLOAD_DIR = ROOT / \".renderhaus\" / \"uploads\"\nMEDIA_DIR = (ROOT / os.getenv(\"RENDERHAUS_MEDIA_DIR\", \".renderhaus/media\")).resolve()\nMAX_UPLOAD_BYTES = 15 * 1024 * 1024\nTERMINAL_STATES = {\"complete\", \"planned\", \"failed\"}\nPROVIDER_TERMINAL_STATES = {\"succeeded\", \"failed\", \"cancelled\", \"canceled\", \"deleted\"}\nPUBLIC_JOB_FIELDS = {\n    \"id\",\n    \"schema_version\",",
+        "detail": "web.app",
+        "documentation": {}
+    },
+    {
+        "label": "STATE_DIR",
+        "kind": 5,
+        "importPath": "web.app",
+        "description": "web.app",
+        "peekOfCode": "STATE_DIR = ROOT / \".renderhaus\" / \"web-jobs\"\nUPLOAD_DIR = ROOT / \".renderhaus\" / \"uploads\"\nMEDIA_DIR = (ROOT / os.getenv(\"RENDERHAUS_MEDIA_DIR\", \".renderhaus/media\")).resolve()\nMAX_UPLOAD_BYTES = 15 * 1024 * 1024\nTERMINAL_STATES = {\"complete\", \"planned\", \"failed\"}\nPROVIDER_TERMINAL_STATES = {\"succeeded\", \"failed\", \"cancelled\", \"canceled\", \"deleted\"}\nPUBLIC_JOB_FIELDS = {\n    \"id\",\n    \"schema_version\",\n    \"status\",",
+        "detail": "web.app",
+        "documentation": {}
+    },
+    {
+        "label": "UPLOAD_DIR",
+        "kind": 5,
+        "importPath": "web.app",
+        "description": "web.app",
+        "peekOfCode": "UPLOAD_DIR = ROOT / \".renderhaus\" / \"uploads\"\nMEDIA_DIR = (ROOT / os.getenv(\"RENDERHAUS_MEDIA_DIR\", \".renderhaus/media\")).resolve()\nMAX_UPLOAD_BYTES = 15 * 1024 * 1024\nTERMINAL_STATES = {\"complete\", \"planned\", \"failed\"}\nPROVIDER_TERMINAL_STATES = {\"succeeded\", \"failed\", \"cancelled\", \"canceled\", \"deleted\"}\nPUBLIC_JOB_FIELDS = {\n    \"id\",\n    \"schema_version\",\n    \"status\",\n    \"phase\",",
+        "detail": "web.app",
+        "documentation": {}
+    },
+    {
+        "label": "MEDIA_DIR",
+        "kind": 5,
+        "importPath": "web.app",
+        "description": "web.app",
+        "peekOfCode": "MEDIA_DIR = (ROOT / os.getenv(\"RENDERHAUS_MEDIA_DIR\", \".renderhaus/media\")).resolve()\nMAX_UPLOAD_BYTES = 15 * 1024 * 1024\nTERMINAL_STATES = {\"complete\", \"planned\", \"failed\"}\nPROVIDER_TERMINAL_STATES = {\"succeeded\", \"failed\", \"cancelled\", \"canceled\", \"deleted\"}\nPUBLIC_JOB_FIELDS = {\n    \"id\",\n    \"schema_version\",\n    \"status\",\n    \"phase\",\n    \"prompt\",",
+        "detail": "web.app",
+        "documentation": {}
+    },
+    {
+        "label": "MAX_UPLOAD_BYTES",
+        "kind": 5,
+        "importPath": "web.app",
+        "description": "web.app",
+        "peekOfCode": "MAX_UPLOAD_BYTES = 15 * 1024 * 1024\nTERMINAL_STATES = {\"complete\", \"planned\", \"failed\"}\nPROVIDER_TERMINAL_STATES = {\"succeeded\", \"failed\", \"cancelled\", \"canceled\", \"deleted\"}\nPUBLIC_JOB_FIELDS = {\n    \"id\",\n    \"schema_version\",\n    \"status\",\n    \"phase\",\n    \"prompt\",\n    \"vibe\",",
+        "detail": "web.app",
+        "documentation": {}
+    },
+    {
+        "label": "TERMINAL_STATES",
+        "kind": 5,
+        "importPath": "web.app",
+        "description": "web.app",
+        "peekOfCode": "TERMINAL_STATES = {\"complete\", \"planned\", \"failed\"}\nPROVIDER_TERMINAL_STATES = {\"succeeded\", \"failed\", \"cancelled\", \"canceled\", \"deleted\"}\nPUBLIC_JOB_FIELDS = {\n    \"id\",\n    \"schema_version\",\n    \"status\",\n    \"phase\",\n    \"prompt\",\n    \"vibe\",\n    \"aspect_ratio\",",
+        "detail": "web.app",
+        "documentation": {}
+    },
+    {
+        "label": "PROVIDER_TERMINAL_STATES",
+        "kind": 5,
+        "importPath": "web.app",
+        "description": "web.app",
+        "peekOfCode": "PROVIDER_TERMINAL_STATES = {\"succeeded\", \"failed\", \"cancelled\", \"canceled\", \"deleted\"}\nPUBLIC_JOB_FIELDS = {\n    \"id\",\n    \"schema_version\",\n    \"status\",\n    \"phase\",\n    \"prompt\",\n    \"vibe\",\n    \"aspect_ratio\",\n    \"duration_seconds\",",
+        "detail": "web.app",
+        "documentation": {}
+    },
+    {
+        "label": "PUBLIC_JOB_FIELDS",
+        "kind": 5,
+        "importPath": "web.app",
+        "description": "web.app",
+        "peekOfCode": "PUBLIC_JOB_FIELDS = {\n    \"id\",\n    \"schema_version\",\n    \"status\",\n    \"phase\",\n    \"prompt\",\n    \"vibe\",\n    \"aspect_ratio\",\n    \"duration_seconds\",\n    \"reference_asset_id\",",
+        "detail": "web.app",
+        "documentation": {}
+    },
+    {
+        "label": "store",
+        "kind": 5,
+        "importPath": "web.app",
+        "description": "web.app",
+        "peekOfCode": "store = JobStore(STATE_DIR)\ngeneration_slots = asyncio.Semaphore(2)\ndef _public_job(job: dict[str, Any]) -> dict[str, Any]:\n    public = {key: job.get(key) for key in PUBLIC_JOB_FIELDS}\n    if job.get(\"_output_path\"):\n        public[\"media_url\"] = f\"/api/generations/{job['id']}/media\"\n    return public\ndef _asset_path(asset_id: str | None) -> str | None:\n    if not asset_id:\n        return None",
+        "detail": "web.app",
+        "documentation": {}
+    },
+    {
+        "label": "generation_slots",
+        "kind": 5,
+        "importPath": "web.app",
+        "description": "web.app",
+        "peekOfCode": "generation_slots = asyncio.Semaphore(2)\ndef _public_job(job: dict[str, Any]) -> dict[str, Any]:\n    public = {key: job.get(key) for key in PUBLIC_JOB_FIELDS}\n    if job.get(\"_output_path\"):\n        public[\"media_url\"] = f\"/api/generations/{job['id']}/media\"\n    return public\ndef _asset_path(asset_id: str | None) -> str | None:\n    if not asset_id:\n        return None\n    matches = list(UPLOAD_DIR.glob(f\"{asset_id}.*\"))",
+        "detail": "web.app",
+        "documentation": {}
+    },
+    {
+        "label": "app",
+        "kind": 5,
+        "importPath": "web.app",
+        "description": "web.app",
+        "peekOfCode": "app = FastAPI(title=\"Renderhaus\", version=\"0.1.0\", lifespan=lifespan)\napp.mount(\"/static\", StaticFiles(directory=STATIC_DIR), name=\"static\")\n@app.get(\"/\", include_in_schema=False)\nasync def index() -> FileResponse:\n    return FileResponse(STATIC_DIR / \"index.html\")\n@app.get(\"/api/config\")\nasync def config() -> dict[str, Any]:\n    return {\n        \"live_generation\": os.getenv(\"SEEDANCE_DRY_RUN\", \"true\").lower() == \"false\",\n        \"agent_ready\": bool(os.getenv(\"OPENAI_API_KEY\")),",
+        "detail": "web.app",
+        "documentation": {}
+    }
+]

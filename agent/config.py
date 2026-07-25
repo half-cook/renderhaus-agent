@@ -18,7 +18,7 @@ _VAR_RE = re.compile(r"\$\{([A-Za-z_][A-Za-z0-9_]*|ROOT)\}")
 DEFAULT_ENV = {
     "AGENT_MODEL": "openai:gpt-4.1-mini",
     "BYTEPLUS_BASE_URL": "https://ark.ap-southeast.bytepluses.com/api/v3",
-    "SEEDANCE_MODEL": "dreamina-seedance-2-0-fast-260128",
+    "SEEDANCE_MODEL": "seedance-1-5-pro-251215",
     "SEEDANCE_DRY_RUN": "true",
     "GEMINI_TTS_DRY_RUN": "true",
     "GEMINI_TTS_MODEL": "gemini-3.1-flash-tts-preview",
@@ -26,6 +26,7 @@ DEFAULT_ENV = {
     "TIME_OUT_SECONDS": "300",
     "RENDERHAUS_MEDIA_DIR": ".renderhaus/media",
     "GPT_IMAGE_2_OUTPUT_DIR": ".renderhaus/media/images",
+    "LANGFUSE_BASE_URL": "https://cloud.langfuse.com",
 }
 
 
