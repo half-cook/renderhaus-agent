@@ -64,7 +64,7 @@ def _base_url() -> str:
 
 
 def _model(model: str | None = None) -> str:
-    return model or os.getenv("SEEDANCE_MODEL") or "seedance-1-5-pro-251215"
+    return model or os.getenv("SEEDANCE_MODEL") or "dreamina-seedance-2-0-mini-260615"
 
 
 def _supports_service_tier(model: str) -> bool:

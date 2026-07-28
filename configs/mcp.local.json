@@ -44,6 +44,19 @@
         "RENDERHAUS_MEDIA_DIR": "${ROOT}/${RENDERHAUS_MEDIA_DIR}"
       }
     },
+    "seedream": {
+      "transport": "stdio",
+      "command": "${ROOT}/.venv/bin/python",
+      "args": ["-m", "mcps.seedream.server"],
+      "env": {
+        "BYTEPLUS_API_KEY": "${BYTEPLUS_API_KEY}",
+        "BYTEPLUS_BASE_URL": "${BYTEPLUS_BASE_URL}",
+        "SEEDREAM_MODEL": "${SEEDREAM_MODEL}",
+        "SEEDREAM_DRY_RUN": "${SEEDREAM_DRY_RUN}",
+        "SEEDANCE_DRY_RUN": "${SEEDANCE_DRY_RUN}",
+        "RENDERHAUS_MEDIA_DIR": "${ROOT}/${RENDERHAUS_MEDIA_DIR}"
+      }
+    },
     "gemini-tts": {
       "transport": "stdio",
       "command": "${ROOT}/.venv/bin/python",

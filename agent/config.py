@@ -18,8 +18,10 @@ _VAR_RE = re.compile(r"\$\{([A-Za-z_][A-Za-z0-9_]*|ROOT)\}")
 DEFAULT_ENV = {
     "AGENT_MODEL": "openai:gpt-4.1-mini",
     "BYTEPLUS_BASE_URL": "https://ark.ap-southeast.bytepluses.com/api/v3",
-    "SEEDANCE_MODEL": "seedance-1-5-pro-251215",
+    "SEEDANCE_MODEL": "dreamina-seedance-2-0-mini-260615",
     "SEEDANCE_DRY_RUN": "true",
+    "SEEDREAM_MODEL": "seedream-5-0-lite-260128",
+    "SEEDREAM_DRY_RUN": "true",
     "GEMINI_TTS_DRY_RUN": "true",
     "GEMINI_TTS_MODEL": "gemini-3.1-flash-tts-preview",
     "MUREKA_API_URL": "https://api.mureka.ai",

@@ -64,6 +64,22 @@
         "documentation": {}
     },
     {
+        "label": "annotations",
+        "importPath": "__future__",
+        "description": "__future__",
+        "isExtraImport": true,
+        "detail": "__future__",
+        "documentation": {}
+    },
+    {
+        "label": "annotations",
+        "importPath": "__future__",
+        "description": "__future__",
+        "isExtraImport": true,
+        "detail": "__future__",
+        "documentation": {}
+    },
+    {
         "label": "json",
         "kind": 6,
         "isExtraImport": true,
@@ -88,6 +104,22 @@
         "importPath": "re",
         "description": "re",
         "detail": "re",
+        "documentation": {}
+    },
+    {
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
+        "isExtraImport": true,
+        "detail": "pathlib",
+        "documentation": {}
+    },
+    {
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
+        "isExtraImport": true,
+        "detail": "pathlib",
         "documentation": {}
     },
     {
@@ -211,6 +243,30 @@
         "documentation": {}
     },
     {
+        "label": "Literal",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Any",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Literal",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
         "label": "load_dotenv",
         "importPath": "dotenv",
         "description": "dotenv",
@@ -302,6 +358,22 @@
     },
     {
         "label": "DEFAULT_MCP_CONFIG",
+        "importPath": "agent.config",
+        "description": "agent.config",
+        "isExtraImport": true,
+        "detail": "agent.config",
+        "documentation": {}
+    },
+    {
+        "label": "ROOT",
+        "importPath": "agent.config",
+        "description": "agent.config",
+        "isExtraImport": true,
+        "detail": "agent.config",
+        "documentation": {}
+    },
+    {
+        "label": "load_local_env",
         "importPath": "agent.config",
         "description": "agent.config",
         "isExtraImport": true,
@@ -455,6 +527,30 @@
         "documentation": {}
     },
     {
+        "label": "FastMCP",
+        "importPath": "fastmcp",
+        "description": "fastmcp",
+        "isExtraImport": true,
+        "detail": "fastmcp",
+        "documentation": {}
+    },
+    {
+        "label": "Field",
+        "importPath": "pydantic",
+        "description": "pydantic",
+        "isExtraImport": true,
+        "detail": "pydantic",
+        "documentation": {}
+    },
+    {
+        "label": "BaseModel",
+        "importPath": "pydantic",
+        "description": "pydantic",
+        "isExtraImport": true,
+        "detail": "pydantic",
+        "documentation": {}
+    },
+    {
         "label": "Field",
         "importPath": "pydantic",
         "description": "pydantic",
@@ -530,6 +626,48 @@
         "documentation": {}
     },
     {
+        "label": "FieldInfo",
+        "importPath": "pydantic.fields",
+        "description": "pydantic.fields",
+        "isExtraImport": true,
+        "detail": "pydantic.fields",
+        "documentation": {}
+    },
+    {
+        "label": "urlparse",
+        "importPath": "urllib.parse",
+        "description": "urllib.parse",
+        "isExtraImport": true,
+        "detail": "urllib.parse",
+        "documentation": {}
+    },
+    {
+        "label": "shutil",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "shutil",
+        "description": "shutil",
+        "detail": "shutil",
+        "documentation": {}
+    },
+    {
+        "label": "sys",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "sys",
+        "description": "sys",
+        "detail": "sys",
+        "documentation": {}
+    },
+    {
+        "label": "text_to_image",
+        "importPath": "mcps.seedream.server",
+        "description": "mcps.seedream.server",
+        "isExtraImport": true,
+        "detail": "mcps.seedream.server",
+        "documentation": {}
+    },
+    {
         "label": "FastAPI",
         "importPath": "fastapi",
         "description": "fastapi",
@@ -554,6 +692,22 @@
         "documentation": {}
     },
     {
+        "label": "Request",
+        "importPath": "fastapi",
+        "description": "fastapi",
+        "isExtraImport": true,
+        "detail": "fastapi",
+        "documentation": {}
+    },
+    {
+        "label": "Response",
+        "importPath": "fastapi",
+        "description": "fastapi",
+        "isExtraImport": true,
+        "detail": "fastapi",
+        "documentation": {}
+    },
+    {
         "label": "UploadFile",
         "importPath": "fastapi",
         "description": "fastapi",
@@ -570,6 +724,14 @@
         "documentation": {}
     },
     {
+        "label": "JSONResponse",
+        "importPath": "fastapi.responses",
+        "description": "fastapi.responses",
+        "isExtraImport": true,
+        "detail": "fastapi.responses",
+        "documentation": {}
+    },
+    {
         "label": "StaticFiles",
         "importPath": "fastapi.staticfiles",
         "description": "fastapi.staticfiles",
@@ -579,6 +741,14 @@
     },
     {
         "label": "poll_video_generation",
+        "importPath": "agent.service",
+        "description": "agent.service",
+        "isExtraImport": true,
+        "detail": "agent.service",
+        "documentation": {}
+    },
+    {
+        "label": "start_image_generation",
         "importPath": "agent.service",
         "description": "agent.service",
         "isExtraImport": true,
@@ -625,7 +795,7 @@
         "kind": 5,
         "importPath": "agent.config",
         "description": "agent.config",
-        "peekOfCode": "ROOT = Path(__file__).resolve().parents[1]\nENV_FILE = ROOT / \".env.local\"\nDEFAULT_MCP_CONFIG = ROOT / \"configs\" / \"mcp.local.json\"\n_VAR_RE = re.compile(r\"\\$\\{([A-Za-z_][A-Za-z0-9_]*|ROOT)\\}\")\nDEFAULT_ENV = {\n    \"AGENT_MODEL\": \"openai:gpt-4.1-mini\",\n    \"BYTEPLUS_BASE_URL\": \"https://ark.ap-southeast.bytepluses.com/api/v3\",\n    \"SEEDANCE_MODEL\": \"seedance-1-5-pro-251215\",\n    \"SEEDANCE_DRY_RUN\": \"true\",\n    \"GEMINI_TTS_DRY_RUN\": \"true\",",
+        "peekOfCode": "ROOT = Path(__file__).resolve().parents[1]\nENV_FILE = ROOT / \".env.local\"\nDEFAULT_MCP_CONFIG = ROOT / \"configs\" / \"mcp.local.json\"\n_VAR_RE = re.compile(r\"\\$\\{([A-Za-z_][A-Za-z0-9_]*|ROOT)\\}\")\nDEFAULT_ENV = {\n    \"AGENT_MODEL\": \"openai:gpt-4.1-mini\",\n    \"BYTEPLUS_BASE_URL\": \"https://ark.ap-southeast.bytepluses.com/api/v3\",\n    \"SEEDANCE_MODEL\": \"dreamina-seedance-2-0-mini-260615\",\n    \"SEEDANCE_DRY_RUN\": \"true\",\n    \"SEEDREAM_MODEL\": \"seedream-5-0-lite-260128\",",
         "detail": "agent.config",
         "documentation": {}
     },
@@ -634,7 +804,7 @@
         "kind": 5,
         "importPath": "agent.config",
         "description": "agent.config",
-        "peekOfCode": "ENV_FILE = ROOT / \".env.local\"\nDEFAULT_MCP_CONFIG = ROOT / \"configs\" / \"mcp.local.json\"\n_VAR_RE = re.compile(r\"\\$\\{([A-Za-z_][A-Za-z0-9_]*|ROOT)\\}\")\nDEFAULT_ENV = {\n    \"AGENT_MODEL\": \"openai:gpt-4.1-mini\",\n    \"BYTEPLUS_BASE_URL\": \"https://ark.ap-southeast.bytepluses.com/api/v3\",\n    \"SEEDANCE_MODEL\": \"seedance-1-5-pro-251215\",\n    \"SEEDANCE_DRY_RUN\": \"true\",\n    \"GEMINI_TTS_DRY_RUN\": \"true\",\n    \"GEMINI_TTS_MODEL\": \"gemini-3.1-flash-tts-preview\",",
+        "peekOfCode": "ENV_FILE = ROOT / \".env.local\"\nDEFAULT_MCP_CONFIG = ROOT / \"configs\" / \"mcp.local.json\"\n_VAR_RE = re.compile(r\"\\$\\{([A-Za-z_][A-Za-z0-9_]*|ROOT)\\}\")\nDEFAULT_ENV = {\n    \"AGENT_MODEL\": \"openai:gpt-4.1-mini\",\n    \"BYTEPLUS_BASE_URL\": \"https://ark.ap-southeast.bytepluses.com/api/v3\",\n    \"SEEDANCE_MODEL\": \"dreamina-seedance-2-0-mini-260615\",\n    \"SEEDANCE_DRY_RUN\": \"true\",\n    \"SEEDREAM_MODEL\": \"seedream-5-0-lite-260128\",\n    \"SEEDREAM_DRY_RUN\": \"true\",",
         "detail": "agent.config",
         "documentation": {}
     },
@@ -643,7 +813,7 @@
         "kind": 5,
         "importPath": "agent.config",
         "description": "agent.config",
-        "peekOfCode": "DEFAULT_MCP_CONFIG = ROOT / \"configs\" / \"mcp.local.json\"\n_VAR_RE = re.compile(r\"\\$\\{([A-Za-z_][A-Za-z0-9_]*|ROOT)\\}\")\nDEFAULT_ENV = {\n    \"AGENT_MODEL\": \"openai:gpt-4.1-mini\",\n    \"BYTEPLUS_BASE_URL\": \"https://ark.ap-southeast.bytepluses.com/api/v3\",\n    \"SEEDANCE_MODEL\": \"seedance-1-5-pro-251215\",\n    \"SEEDANCE_DRY_RUN\": \"true\",\n    \"GEMINI_TTS_DRY_RUN\": \"true\",\n    \"GEMINI_TTS_MODEL\": \"gemini-3.1-flash-tts-preview\",\n    \"MUREKA_API_URL\": \"https://api.mureka.ai\",",
+        "peekOfCode": "DEFAULT_MCP_CONFIG = ROOT / \"configs\" / \"mcp.local.json\"\n_VAR_RE = re.compile(r\"\\$\\{([A-Za-z_][A-Za-z0-9_]*|ROOT)\\}\")\nDEFAULT_ENV = {\n    \"AGENT_MODEL\": \"openai:gpt-4.1-mini\",\n    \"BYTEPLUS_BASE_URL\": \"https://ark.ap-southeast.bytepluses.com/api/v3\",\n    \"SEEDANCE_MODEL\": \"dreamina-seedance-2-0-mini-260615\",\n    \"SEEDANCE_DRY_RUN\": \"true\",\n    \"SEEDREAM_MODEL\": \"seedream-5-0-lite-260128\",\n    \"SEEDREAM_DRY_RUN\": \"true\",\n    \"GEMINI_TTS_DRY_RUN\": \"true\",",
         "detail": "agent.config",
         "documentation": {}
     },
@@ -652,7 +822,7 @@
         "kind": 5,
         "importPath": "agent.config",
         "description": "agent.config",
-        "peekOfCode": "_VAR_RE = re.compile(r\"\\$\\{([A-Za-z_][A-Za-z0-9_]*|ROOT)\\}\")\nDEFAULT_ENV = {\n    \"AGENT_MODEL\": \"openai:gpt-4.1-mini\",\n    \"BYTEPLUS_BASE_URL\": \"https://ark.ap-southeast.bytepluses.com/api/v3\",\n    \"SEEDANCE_MODEL\": \"seedance-1-5-pro-251215\",\n    \"SEEDANCE_DRY_RUN\": \"true\",\n    \"GEMINI_TTS_DRY_RUN\": \"true\",\n    \"GEMINI_TTS_MODEL\": \"gemini-3.1-flash-tts-preview\",\n    \"MUREKA_API_URL\": \"https://api.mureka.ai\",\n    \"TIME_OUT_SECONDS\": \"300\",",
+        "peekOfCode": "_VAR_RE = re.compile(r\"\\$\\{([A-Za-z_][A-Za-z0-9_]*|ROOT)\\}\")\nDEFAULT_ENV = {\n    \"AGENT_MODEL\": \"openai:gpt-4.1-mini\",\n    \"BYTEPLUS_BASE_URL\": \"https://ark.ap-southeast.bytepluses.com/api/v3\",\n    \"SEEDANCE_MODEL\": \"dreamina-seedance-2-0-mini-260615\",\n    \"SEEDANCE_DRY_RUN\": \"true\",\n    \"SEEDREAM_MODEL\": \"seedream-5-0-lite-260128\",\n    \"SEEDREAM_DRY_RUN\": \"true\",\n    \"GEMINI_TTS_DRY_RUN\": \"true\",\n    \"GEMINI_TTS_MODEL\": \"gemini-3.1-flash-tts-preview\",",
         "detail": "agent.config",
         "documentation": {}
     },
@@ -661,7 +831,7 @@
         "kind": 5,
         "importPath": "agent.config",
         "description": "agent.config",
-        "peekOfCode": "DEFAULT_ENV = {\n    \"AGENT_MODEL\": \"openai:gpt-4.1-mini\",\n    \"BYTEPLUS_BASE_URL\": \"https://ark.ap-southeast.bytepluses.com/api/v3\",\n    \"SEEDANCE_MODEL\": \"seedance-1-5-pro-251215\",\n    \"SEEDANCE_DRY_RUN\": \"true\",\n    \"GEMINI_TTS_DRY_RUN\": \"true\",\n    \"GEMINI_TTS_MODEL\": \"gemini-3.1-flash-tts-preview\",\n    \"MUREKA_API_URL\": \"https://api.mureka.ai\",\n    \"TIME_OUT_SECONDS\": \"300\",\n    \"RENDERHAUS_MEDIA_DIR\": \".renderhaus/media\",",
+        "peekOfCode": "DEFAULT_ENV = {\n    \"AGENT_MODEL\": \"openai:gpt-4.1-mini\",\n    \"BYTEPLUS_BASE_URL\": \"https://ark.ap-southeast.bytepluses.com/api/v3\",\n    \"SEEDANCE_MODEL\": \"dreamina-seedance-2-0-mini-260615\",\n    \"SEEDANCE_DRY_RUN\": \"true\",\n    \"SEEDREAM_MODEL\": \"seedream-5-0-lite-260128\",\n    \"SEEDREAM_DRY_RUN\": \"true\",\n    \"GEMINI_TTS_DRY_RUN\": \"true\",\n    \"GEMINI_TTS_MODEL\": \"gemini-3.1-flash-tts-preview\",\n    \"MUREKA_API_URL\": \"https://api.mureka.ai\",",
         "detail": "agent.config",
         "documentation": {}
     },
@@ -783,11 +953,20 @@
         "documentation": {}
     },
     {
-        "label": "WEB_SYSTEM_PROMPT",
+        "label": "WEB_VIDEO_SYSTEM_PROMPT",
         "kind": 5,
         "importPath": "agent.service",
         "description": "agent.service",
-        "peekOfCode": "WEB_SYSTEM_PROMPT = \"\"\"You are the private Renderhaus video-generation coordinator.\nThe user has explicitly authorized exactly one video generation for this request.\nCall exactly one immediate-return generation tool: text_to_video for a text prompt, or\nimage_to_video when a local reference image path is supplied. Never call wait, polling, model\nlisting, audio, voice, music, playback, phone, or outbound communication tools. Do not reveal\nprovider, model, tool, credential, or internal path details in your prose. Keep the final response\nto one short sentence; the application reads the generation result structurally.\n\"\"\"\n_runtime_lock = asyncio.Lock()\n_cached_tools: dict[str, Any] | None = None",
+        "peekOfCode": "WEB_VIDEO_SYSTEM_PROMPT = \"\"\"You are the private Renderhaus video-generation coordinator.\nThe user has explicitly authorized exactly one video generation for this request.\nCall exactly one immediate-return generation tool: text_to_video for a text prompt, or\nimage_to_video when a local reference image path is supplied. Never call wait, polling, model\nlisting, audio, voice, music, playback, phone, or outbound communication tools. Do not reveal\nprovider, model, tool, credential, or internal path details in your prose. Keep the final response\nto one short sentence; the application reads the generation result structurally.\n\"\"\"\nWEB_IMAGE_SYSTEM_PROMPT = \"\"\"You are the private Renderhaus image-generation coordinator.\nThe user has explicitly authorized exactly one image generation for this request.",
+        "detail": "agent.service",
+        "documentation": {}
+    },
+    {
+        "label": "WEB_IMAGE_SYSTEM_PROMPT",
+        "kind": 5,
+        "importPath": "agent.service",
+        "description": "agent.service",
+        "peekOfCode": "WEB_IMAGE_SYSTEM_PROMPT = \"\"\"You are the private Renderhaus image-generation coordinator.\nThe user has explicitly authorized exactly one image generation for this request.\nCall exactly one generation tool: text_to_image for a text prompt, or image_to_image when a local\nreference image path is supplied. Never call video, wait, polling, model listing, audio, voice,\nmusic, playback, phone, or outbound communication tools. Do not reveal provider, model, tool,\ncredential, or internal path details in your prose. Keep the final response to one short sentence;\nthe application reads the generation result structurally.\n\"\"\"\n_runtime_lock = asyncio.Lock()\n_cached_tools: dict[str, Any] | None = None",
         "detail": "agent.service",
         "documentation": {}
     },
@@ -796,7 +975,7 @@
         "kind": 5,
         "importPath": "agent.service",
         "description": "agent.service",
-        "peekOfCode": "_runtime_lock = asyncio.Lock()\n_cached_tools: dict[str, Any] | None = None\n_cached_web_agent: Any | None = None\ndef _jsonable(value: Any) -> Any:\n    if value is None or isinstance(value, str | int | float | bool):\n        return value\n    if isinstance(value, dict):\n        return {str(key): _jsonable(item) for key, item in value.items()}\n    if isinstance(value, list | tuple):\n        return [_jsonable(item) for item in value]",
+        "peekOfCode": "_runtime_lock = asyncio.Lock()\n_cached_tools: dict[str, Any] | None = None\n_cached_video_agent: Any | None = None\n_cached_image_agent: Any | None = None\ndef _jsonable(value: Any) -> Any:\n    if value is None or isinstance(value, str | int | float | bool):\n        return value\n    if isinstance(value, dict):\n        return {str(key): _jsonable(item) for key, item in value.items()}\n    if isinstance(value, list | tuple):",
         "detail": "agent.service",
         "documentation": {}
     },
@@ -972,11 +1151,83 @@
         "documentation": {}
     },
     {
+        "label": "SeedreamResult",
+        "kind": 6,
+        "importPath": "mcps.seedream.server",
+        "description": "mcps.seedream.server",
+        "peekOfCode": "class SeedreamResult(BaseModel):\n    job_id: str\n    status: str\n    provider: str = \"byteplus-seedream\"\n    mode: str\n    prompt: str\n    aspect_ratio: str\n    size: str\n    model: str | None = None\n    output_path: str | None = None",
+        "detail": "mcps.seedream.server",
+        "documentation": {}
+    },
+    {
+        "label": "text_to_image",
+        "kind": 2,
+        "importPath": "mcps.seedream.server",
+        "description": "mcps.seedream.server",
+        "peekOfCode": "def text_to_image(\n    prompt: str = Field(description=\"Image prompt.\"),\n    aspect_ratio: str = Field(default=\"1:1\"),\n    size: str = Field(default=\"2K\", description=\"Resolution tier (1K, 2K, 3K) or WxH.\"),\n    model: str | None = Field(\n        default=None, description=\"Seedream model id. Defaults to SEEDREAM_MODEL.\"\n    ),\n    watermark: bool = Field(default=False),\n    response_format: Literal[\"url\", \"b64_json\"] = Field(default=\"url\"),\n) -> dict:",
+        "detail": "mcps.seedream.server",
+        "documentation": {}
+    },
+    {
+        "label": "image_to_image",
+        "kind": 2,
+        "importPath": "mcps.seedream.server",
+        "description": "mcps.seedream.server",
+        "peekOfCode": "def image_to_image(\n    image_path_or_url: str = Field(description=\"Reference image path or URL.\"),\n    prompt: str = Field(description=\"Edit or style prompt.\"),\n    aspect_ratio: str = Field(default=\"1:1\"),\n    size: str = Field(default=\"2K\", description=\"Resolution tier (1K, 2K, 3K) or WxH.\"),\n    model: str | None = Field(\n        default=None, description=\"Seedream model id. Defaults to SEEDREAM_MODEL.\"\n    ),\n    watermark: bool = Field(default=False),\n    response_format: Literal[\"url\", \"b64_json\"] = Field(default=\"url\"),",
+        "detail": "mcps.seedream.server",
+        "documentation": {}
+    },
+    {
+        "label": "list_seedream_models",
+        "kind": 2,
+        "importPath": "mcps.seedream.server",
+        "description": "mcps.seedream.server",
+        "peekOfCode": "def list_seedream_models() -> dict:\n    \"\"\"List image generation models visible from this BytePlus API key.\"\"\"\n    if _dry_run():\n        return {\n            \"status\": \"dry_run\",\n            \"models\": [],\n            \"note\": \"Dry run is enabled; set SEEDREAM_DRY_RUN=false to query BytePlus /models.\",\n        }\n    with httpx.Client(timeout=60) as client:\n        response = client.get(f\"{_base_url()}/models\", headers=_headers())",
+        "detail": "mcps.seedream.server",
+        "documentation": {}
+    },
+    {
+        "label": "mcp",
+        "kind": 5,
+        "importPath": "mcps.seedream.server",
+        "description": "mcps.seedream.server",
+        "peekOfCode": "mcp = FastMCP(\"renderhaus-seedream\")\nclass SeedreamResult(BaseModel):\n    job_id: str\n    status: str\n    provider: str = \"byteplus-seedream\"\n    mode: str\n    prompt: str\n    aspect_ratio: str\n    size: str\n    model: str | None = None",
+        "detail": "mcps.seedream.server",
+        "documentation": {}
+    },
+    {
+        "label": "main",
+        "kind": 2,
+        "importPath": "scripts.generate_ui_assets",
+        "description": "scripts.generate_ui_assets",
+        "peekOfCode": "def main() -> int:\n    load_local_env()\n    TARGET_DIR.mkdir(parents=True, exist_ok=True)\n    for asset in ASSETS:\n        print(f\"generating {asset['name']}…\", flush=True)\n        result = text_to_image(\n            prompt=asset[\"prompt\"],\n            aspect_ratio=asset[\"aspect_ratio\"],\n            size=asset[\"size\"],\n        )",
+        "detail": "scripts.generate_ui_assets",
+        "documentation": {}
+    },
+    {
+        "label": "TARGET_DIR",
+        "kind": 5,
+        "importPath": "scripts.generate_ui_assets",
+        "description": "scripts.generate_ui_assets",
+        "peekOfCode": "TARGET_DIR = ROOT / \"web\" / \"static\" / \"img\"\nASSETS = [\n    {\n        \"name\": \"stage-backdrop\",\n        \"aspect_ratio\": \"16:9\",\n        \"size\": \"2K\",\n        \"prompt\": (\n            \"Very dark, near-black photograph of an empty brutalist concrete gallery at night. \"\n            \"One narrow shaft of cool daylight falls across a raw concrete floor, everything else \"\n            \"sinks into deep shadow. Shot on medium format film, shallow depth of field, heavy \"",
+        "detail": "scripts.generate_ui_assets",
+        "documentation": {}
+    },
+    {
+        "label": "ASSETS",
+        "kind": 5,
+        "importPath": "scripts.generate_ui_assets",
+        "description": "scripts.generate_ui_assets",
+        "peekOfCode": "ASSETS = [\n    {\n        \"name\": \"stage-backdrop\",\n        \"aspect_ratio\": \"16:9\",\n        \"size\": \"2K\",\n        \"prompt\": (\n            \"Very dark, near-black photograph of an empty brutalist concrete gallery at night. \"\n            \"One narrow shaft of cool daylight falls across a raw concrete floor, everything else \"\n            \"sinks into deep shadow. Shot on medium format film, shallow depth of field, heavy \"\n            \"atmospheric haze, visible film grain, muted desaturated neutral greys, no colour cast, \"",
+        "detail": "scripts.generate_ui_assets",
+        "documentation": {}
+    },
+    {
         "label": "GenerationRequest",
         "kind": 6,
         "importPath": "web.app",
         "description": "web.app",
-        "peekOfCode": "class GenerationRequest(BaseModel):\n    prompt: str = Field(min_length=3, max_length=4000)\n    vibe: str = Field(default=\"quiet luxury\", max_length=120)\n    aspect_ratio: str = Field(default=\"16:9\", pattern=r\"^(16:9|9:16|1:1)$\")\n    duration_seconds: int = Field(default=10, ge=4, le=15)\n    reference_asset_id: str | None = Field(default=None, pattern=r\"^[a-f0-9]{32}$\")\nclass RefinementRequest(BaseModel):\n    instruction: str = Field(min_length=3, max_length=2000)\nclass JobStore:\n    def __init__(self, directory: Path) -> None:",
+        "peekOfCode": "class GenerationRequest(BaseModel):\n    prompt: str = Field(min_length=3, max_length=4000)\n    media_type: Literal[\"video\", \"image\"] = \"video\"\n    vibe: str = Field(default=\"quiet luxury\", max_length=120)\n    aspect_ratio: str = Field(default=\"16:9\", pattern=r\"^(16:9|9:16|1:1)$\")\n    duration_seconds: int = Field(default=10, ge=4, le=15)\n    reference_asset_id: str | None = Field(default=None, pattern=r\"^[a-f0-9]{32}$\")\nclass RefinementRequest(BaseModel):\n    instruction: str = Field(min_length=3, max_length=2000)\nclass JobStore:",
         "detail": "web.app",
         "documentation": {}
     },
@@ -1039,7 +1290,7 @@
         "kind": 5,
         "importPath": "web.app",
         "description": "web.app",
-        "peekOfCode": "MEDIA_DIR = (ROOT / os.getenv(\"RENDERHAUS_MEDIA_DIR\", \".renderhaus/media\")).resolve()\nMAX_UPLOAD_BYTES = 15 * 1024 * 1024\nTERMINAL_STATES = {\"complete\", \"planned\", \"failed\"}\nPROVIDER_TERMINAL_STATES = {\"succeeded\", \"failed\", \"cancelled\", \"canceled\", \"deleted\"}\nPUBLIC_JOB_FIELDS = {\n    \"id\",\n    \"schema_version\",\n    \"status\",\n    \"phase\",\n    \"prompt\",",
+        "peekOfCode": "MEDIA_DIR = (ROOT / os.getenv(\"RENDERHAUS_MEDIA_DIR\", \".renderhaus/media\")).resolve()\nMAX_UPLOAD_BYTES = 15 * 1024 * 1024\nTERMINAL_STATES = {\"complete\", \"planned\", \"failed\"}\nPROVIDER_TERMINAL_STATES = {\"succeeded\", \"failed\", \"cancelled\", \"canceled\", \"deleted\"}\nPUBLIC_JOB_FIELDS = {\n    \"id\",\n    \"schema_version\",\n    \"status\",\n    \"phase\",\n    \"media_type\",",
         "detail": "web.app",
         "documentation": {}
     },
@@ -1048,7 +1299,7 @@
         "kind": 5,
         "importPath": "web.app",
         "description": "web.app",
-        "peekOfCode": "MAX_UPLOAD_BYTES = 15 * 1024 * 1024\nTERMINAL_STATES = {\"complete\", \"planned\", \"failed\"}\nPROVIDER_TERMINAL_STATES = {\"succeeded\", \"failed\", \"cancelled\", \"canceled\", \"deleted\"}\nPUBLIC_JOB_FIELDS = {\n    \"id\",\n    \"schema_version\",\n    \"status\",\n    \"phase\",\n    \"prompt\",\n    \"vibe\",",
+        "peekOfCode": "MAX_UPLOAD_BYTES = 15 * 1024 * 1024\nTERMINAL_STATES = {\"complete\", \"planned\", \"failed\"}\nPROVIDER_TERMINAL_STATES = {\"succeeded\", \"failed\", \"cancelled\", \"canceled\", \"deleted\"}\nPUBLIC_JOB_FIELDS = {\n    \"id\",\n    \"schema_version\",\n    \"status\",\n    \"phase\",\n    \"media_type\",\n    \"prompt\",",
         "detail": "web.app",
         "documentation": {}
     },
@@ -1057,7 +1308,7 @@
         "kind": 5,
         "importPath": "web.app",
         "description": "web.app",
-        "peekOfCode": "TERMINAL_STATES = {\"complete\", \"planned\", \"failed\"}\nPROVIDER_TERMINAL_STATES = {\"succeeded\", \"failed\", \"cancelled\", \"canceled\", \"deleted\"}\nPUBLIC_JOB_FIELDS = {\n    \"id\",\n    \"schema_version\",\n    \"status\",\n    \"phase\",\n    \"prompt\",\n    \"vibe\",\n    \"aspect_ratio\",",
+        "peekOfCode": "TERMINAL_STATES = {\"complete\", \"planned\", \"failed\"}\nPROVIDER_TERMINAL_STATES = {\"succeeded\", \"failed\", \"cancelled\", \"canceled\", \"deleted\"}\nPUBLIC_JOB_FIELDS = {\n    \"id\",\n    \"schema_version\",\n    \"status\",\n    \"phase\",\n    \"media_type\",\n    \"prompt\",\n    \"vibe\",",
         "detail": "web.app",
         "documentation": {}
     },
@@ -1066,7 +1317,7 @@
         "kind": 5,
         "importPath": "web.app",
         "description": "web.app",
-        "peekOfCode": "PROVIDER_TERMINAL_STATES = {\"succeeded\", \"failed\", \"cancelled\", \"canceled\", \"deleted\"}\nPUBLIC_JOB_FIELDS = {\n    \"id\",\n    \"schema_version\",\n    \"status\",\n    \"phase\",\n    \"prompt\",\n    \"vibe\",\n    \"aspect_ratio\",\n    \"duration_seconds\",",
+        "peekOfCode": "PROVIDER_TERMINAL_STATES = {\"succeeded\", \"failed\", \"cancelled\", \"canceled\", \"deleted\"}\nPUBLIC_JOB_FIELDS = {\n    \"id\",\n    \"schema_version\",\n    \"status\",\n    \"phase\",\n    \"media_type\",\n    \"prompt\",\n    \"vibe\",\n    \"aspect_ratio\",",
         "detail": "web.app",
         "documentation": {}
     },
@@ -1075,7 +1326,7 @@
         "kind": 5,
         "importPath": "web.app",
         "description": "web.app",
-        "peekOfCode": "PUBLIC_JOB_FIELDS = {\n    \"id\",\n    \"schema_version\",\n    \"status\",\n    \"phase\",\n    \"prompt\",\n    \"vibe\",\n    \"aspect_ratio\",\n    \"duration_seconds\",\n    \"reference_asset_id\",",
+        "peekOfCode": "PUBLIC_JOB_FIELDS = {\n    \"id\",\n    \"schema_version\",\n    \"status\",\n    \"phase\",\n    \"media_type\",\n    \"prompt\",\n    \"vibe\",\n    \"aspect_ratio\",\n    \"duration_seconds\",",
         "detail": "web.app",
         "documentation": {}
     },
@@ -1102,7 +1353,7 @@
         "kind": 5,
         "importPath": "web.app",
         "description": "web.app",
-        "peekOfCode": "app = FastAPI(title=\"Renderhaus\", version=\"0.1.0\", lifespan=lifespan)\napp.mount(\"/static\", StaticFiles(directory=STATIC_DIR), name=\"static\")\n@app.get(\"/\", include_in_schema=False)\nasync def index() -> FileResponse:\n    return FileResponse(STATIC_DIR / \"index.html\")\n@app.get(\"/api/config\")\nasync def config() -> dict[str, Any]:\n    return {\n        \"live_generation\": os.getenv(\"SEEDANCE_DRY_RUN\", \"true\").lower() == \"false\",\n        \"agent_ready\": bool(os.getenv(\"OPENAI_API_KEY\")),",
+        "peekOfCode": "app = FastAPI(title=\"Renderhaus\", version=\"0.1.0\", lifespan=lifespan)\napp.mount(\"/static\", StaticFiles(directory=STATIC_DIR), name=\"static\")\n@app.get(\"/\", include_in_schema=False)\nasync def index() -> FileResponse:\n    return FileResponse(STATIC_DIR / \"index.html\")\n@app.exception_handler(404)\nasync def not_found(request: Request, exc: HTTPException) -> Response:\n    \"\"\"Serve the branded page for browsers and keep JSON for the API surface.\"\"\"\n    wants_html = \"text/html\" in request.headers.get(\"accept\", \"\")\n    if request.url.path.startswith(\"/api/\") or not wants_html:",
         "detail": "web.app",
         "documentation": {}
     }

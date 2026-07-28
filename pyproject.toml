@@ -29,4 +29,4 @@ build-backend = "setuptools.build_meta"
 include = ["agent*", "mcps*", "web*"]
 
 [tool.setuptools.package-data]
-web = ["static/*"]
+web = ["static/*", "static/img/*"]

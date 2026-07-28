@@ -3,56 +3,95 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#f1f0eb" />
-    <title>Renderhaus — Vibe video generation</title>
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22><rect width=%2232%22 height=%2232%22 rx=%227%22/><path fill=%22white%22 d=%22M10 6h12v4h4v12h-4v4H10v-4H6V10h4zm2 4v4h-2v4h2v4h8v-4h2v-4h-2v-4z%22/></svg>" />
+    <meta name="theme-color" content="#000000" />
+    <meta name="color-scheme" content="dark" />
+    <title>Renderhaus — direct a film from one prompt</title>
+    <meta
+      name="description"
+      content="Renderhaus turns a written idea into a finished shot. Write the prompt, watch the agent choose its tools, and get back an MP4 or a still in a few minutes."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Renderhaus — direct a film from one prompt" />
+    <meta
+      property="og:description"
+      content="Write the prompt, watch the agent choose its tools, and get back an MP4 or a still in a few minutes."
+    />
+    <meta property="og:image" content="/static/img/social-card.jpg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:image" content="/static/img/social-card.jpg" />
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22><rect width=%2232%22 height=%2232%22 rx=%226%22 fill=%22%23000000%22/><path fill=%22%23ffffff%22 d=%22M10 6h12v4h4v12h-4v4H10v-4H6V10h4zm2 4v4h-2v4h2v4h8v-4h2v-4h-2v-4z%22/></svg>" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Doto:wght,ROND@400..900,0..100&family=IBM+Plex+Mono:wght@300;400;500;600&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap"
       rel="stylesheet"
     />
     <link rel="stylesheet" href="/static/styles.css" />
   </head>
   <body>
-    <main id="app">
-      <section class="screen screen--start is-active" data-screen="start" aria-label="Start a video">
-        <header class="topbar inset-bar">
-          <button class="brand" type="button" data-go="start" aria-label="Renderhaus home">
-            <span class="pixel-logo" aria-hidden="true">
-              <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
-            </span>
-            <span>renderhaus</span>
-          </button>
-          <nav class="topnav" aria-label="Primary navigation">
-            <button type="button" data-scroll-history>my videos</button>
-            <span class="avatar">vc</span>
-          </nav>
-        </header>
+    <a class="skip-link" href="#stage">Skip to the result</a>
 
-        <div class="start-hero">
-          <div class="signal-line" aria-hidden="true">
-            <span></span><b>prompt → cinema</b><span></span>
-          </div>
-          <div class="hero-copy">
-            <p class="eyebrow">vibe video generation / 001</p>
-            <h1>Make the video<br />you can already feel.</h1>
-            <p>Describe the idea. Renderhaus shapes the shots, sound, and motion.</p>
+    <svg class="sprite" aria-hidden="true" focusable="false">
+      <symbol id="i-arrow-up" viewBox="0 0 256 256"><path d="M205.66,117.66a8,8,0,0,1-11.32,0L136,59.31V216a8,8,0,0,1-16,0V59.31L61.66,117.66a8,8,0,0,1-11.32-11.32l72-72a8,8,0,0,1,11.32,0l72,72A8,8,0,0,1,205.66,117.66Z"/></symbol>
+      <symbol id="i-image" viewBox="0 0 256 256"><path d="M208,32H48A16,16,0,0,0,32,48V208a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V48A16,16,0,0,0,208,32ZM48,48H208v77.38l-24.69-24.7a16,16,0,0,0-22.62,0L53.37,208H48ZM208,208H76l96-96,36,36v60ZM96,120A24,24,0,1,0,72,96,24,24,0,0,0,96,120Zm0-32a8,8,0,1,1-8,8A8,8,0,0,1,96,88Z"/></symbol>
+      <symbol id="i-download" viewBox="0 0 256 256"><path d="M224,144v64a8,8,0,0,1-8,8H40a8,8,0,0,1-8-8V144a8,8,0,0,1,16,0v56H208V144a8,8,0,0,1,16,0Zm-101.66,5.66a8,8,0,0,0,11.32,0l40-40a8,8,0,0,0-11.32-11.32L136,124.69V32a8,8,0,0,0-16,0v92.69L93.66,98.34a8,8,0,0,0-11.32,11.32Z"/></symbol>
+      <symbol id="i-plus" viewBox="0 0 256 256"><path d="M224,128a8,8,0,0,1-8,8H136v80a8,8,0,0,1-16,0V136H40a8,8,0,0,1,0-16h80V40a8,8,0,0,1,16,0v80h80A8,8,0,0,1,224,128Z"/></symbol>
+      <symbol id="i-rail" viewBox="0 0 256 256"><path d="M216,40H40A16,16,0,0,0,24,56V200a16,16,0,0,0,16,16H216a16,16,0,0,0,16-16V56A16,16,0,0,0,216,40ZM40,56H80V200H40ZM216,200H96V56H216V200Z"/></symbol>
+      <symbol id="i-warning" viewBox="0 0 256 256"><path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm0,192a88,88,0,1,1,88-88A88.1,88.1,0,0,1,128,216Zm-8-80V80a8,8,0,0,1,16,0v56a8,8,0,0,1-16,0Zm20,36a12,12,0,1,1-12-12A12,12,0,0,1,140,172Z"/></symbol>
+      <symbol id="i-slate" viewBox="0 0 256 256"><path d="M216,104H102.09L210,75.51a8,8,0,0,0,5.68-9.84l-8.16-30a15.93,15.93,0,0,0-19.42-11.13L35.81,64.74a15.75,15.75,0,0,0-9.7,7.4,15.51,15.51,0,0,0-1.55,12L32,111.56c0,.14,0,.29,0,.44v88a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V112A8,8,0,0,0,216,104ZM192.16,40l6,22.07-22.62,6L147.42,51.83Zm-66.69,17.6,28.12,16.24-36.94,9.75L88.53,67.37Zm-79.4,44.62-6-22.08,26.5-7L94.69,89.4ZM208,200H48V120H208v80Z"/></symbol>
+      <symbol id="i-x" viewBox="0 0 256 256"><path d="M205.66,194.34a8,8,0,0,1-11.32,11.32L128,139.31,61.66,205.66a8,8,0,0,1-11.32-11.32L116.69,128,50.34,61.66A8,8,0,0,1,61.66,50.34L128,116.69l66.34-66.35a8,8,0,0,1,11.32,11.32L139.31,128Z"/></symbol>
+    </svg>
+
+    <div class="grain" aria-hidden="true"></div>
+
+    <div id="app" class="app" data-mode="home" data-rail="open">
+      <header class="titlebar">
+        <button class="brand" type="button" id="home-button">
+          <span class="brand-mark" aria-hidden="true"></span>
+          <span class="brand-name">renderhaus</span>
+        </button>
+        <div class="titlebar-meta">
+          <span class="badge" id="mode-pill">agent</span>
+          <span class="badge badge--quiet" id="config-status">checking</span>
+        </div>
+      </header>
+
+      <section class="home" id="home" aria-label="Start a render">
+        <div class="home-center">
+          <div class="home-intro">
+            <p class="home-kicker">Renderhaus agent</p>
+            <h1>What should we make?</h1>
+            <p class="home-lede">
+              Describe the shot the way you would describe it to a cinematographer. The agent picks
+              the model, writes the technical prompt, and hands back the finished file.
+            </p>
           </div>
 
-          <form class="prompt-box" id="generation-form">
-            <label class="sr-only" for="prompt">Describe your video</label>
+          <form class="composer composer--hero" id="generation-form" novalidate>
+            <div class="segmented" role="tablist" aria-label="Media type">
+              <button type="button" class="tab is-active" data-media-type="video" role="tab" aria-selected="true">Video</button>
+              <button type="button" class="tab" data-media-type="image" role="tab" aria-selected="false">Image</button>
+            </div>
+
+            <label class="sr-only" for="prompt">Prompt</label>
             <textarea
               id="prompt"
               name="prompt"
-              rows="3"
+              rows="4"
               maxlength="4000"
               required
-              placeholder="A chrome perfume bottle floating through a sunlit concrete gallery..."
+              aria-describedby="prompt-error"
+              placeholder="A chrome perfume bottle drifting through a sunlit concrete gallery, slow dolly in, dust in the light…"
             ></textarea>
-            <div class="prompt-actions">
-              <div class="prompt-options">
-                <label class="select-chip">
+
+            <p class="field-error" id="prompt-error" role="alert" hidden>
+              <svg class="icon" aria-hidden="true"><use href="#i-warning" /></svg>
+              <span id="prompt-error-text"></span>
+            </p>
+
+            <div class="composer-footer">
+              <div class="composer-controls">
+                <label class="select">
                   <span class="sr-only">Aspect ratio</span>
                   <select id="aspect-ratio" name="aspect_ratio">
                     <option value="16:9">16:9</option>
@@ -60,177 +99,124 @@
                     <option value="1:1">1:1</option>
                   </select>
                 </label>
-                <label class="select-chip">
+                <label class="select" id="duration-wrap">
                   <span class="sr-only">Duration</span>
                   <select id="duration" name="duration_seconds">
-                    <option value="5">5 sec</option>
-                    <option value="10" selected>10 sec</option>
-                    <option value="15">15 sec</option>
+                    <option value="5">5s</option>
+                    <option value="10" selected>10s</option>
+                    <option value="15">15s</option>
                   </select>
                 </label>
-                <label class="chip file-chip" for="reference-input">
-                  <span>＋ reference</span>
+                <label class="file-button" for="reference-input">
+                  <svg class="icon" aria-hidden="true"><use href="#i-image" /></svg>
+                  <span>Reference</span>
                   <input id="reference-input" type="file" accept="image/png,image/jpeg,image/webp" />
                 </label>
+                <span class="reference-name" id="reference-name" hidden>
+                  <span id="reference-name-text"></span>
+                  <button type="button" class="reference-clear" id="reference-clear" aria-label="Remove the reference image">
+                    <svg class="icon" aria-hidden="true"><use href="#i-x" /></svg>
+                  </button>
+                </span>
               </div>
-              <button class="square-action" type="submit" aria-label="Generate video">↑</button>
+              <button class="button button--primary" type="submit" id="generate-button">
+                <span id="generate-label">Generate video</span>
+                <svg class="icon" aria-hidden="true"><use href="#i-arrow-up" /></svg>
+              </button>
             </div>
-            <div class="reference-name" id="reference-name" aria-live="polite"></div>
           </form>
 
-          <div class="vibe-row" aria-label="Choose a vibe">
-            <span>try a vibe</span>
-            <button class="vibe-chip is-selected" type="button" data-vibe="quiet luxury">quiet luxury</button>
-            <button class="vibe-chip" type="button" data-vibe="y2k flash">y2k flash</button>
-            <button class="vibe-chip" type="button" data-vibe="soft surreal">soft surreal</button>
-            <button class="vibe-chip" type="button" data-vibe="raw handheld">raw handheld</button>
-          </div>
-        </div>
+          <p class="model-hint" id="model-hint">Video · Dreamina Seedance 2.0 mini</p>
 
-        <section class="recent-section" id="recent-section" aria-labelledby="recent-heading">
-          <div class="section-heading">
-            <h2 id="recent-heading">recent</h2>
-            <span id="generation-mode">checking render mode...</span>
-          </div>
-          <div class="recent-grid" id="recent-grid">
-            <button class="video-card video-card--black" type="button">
-              <span class="metal-orb" aria-hidden="true"></span>
-              <span>chrome study · 00:10</span>
-            </button>
-            <button class="video-card video-card--paper" type="button">
-              <strong>FORM / 01</strong>
-            </button>
-            <button class="video-card video-card--soft" type="button">
-              <span class="capsule" aria-hidden="true"></span>
-            </button>
-            <button class="video-card video-card--new" type="button" data-focus-prompt>＋ start a new video</button>
-          </div>
-        </section>
+          <section class="history" id="history" aria-label="Recent renders" hidden>
+            <h2 class="eyebrow">Recent</h2>
+            <div class="history-list" id="history-list"></div>
+          </section>
+        </div>
       </section>
 
-      <section class="screen screen--create" data-screen="create" aria-label="Create video" hidden>
-        <header class="topbar inset-bar">
-          <button class="back-button" type="button" data-go="start" aria-label="Back home">‹</button>
-          <button class="brand brand--compact" type="button" data-go="start">
-            <span class="pixel-logo" aria-hidden="true">
-              <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
-            </span>
-            <span id="create-title">untitled film</span>
-          </button>
-          <button class="black-button" id="review-button" type="button" disabled>review</button>
-        </header>
-
-        <div class="create-layout">
-          <aside class="direction-panel">
-            <div class="direction-block">
-              <span class="eyebrow">your idea</span>
-              <h2 id="idea-copy">—</h2>
-              <p><span id="duration-copy">10 seconds</span> · <span id="ratio-copy">16:9</span></p>
+      <div class="workspace" id="workspace" hidden>
+        <main class="canvas">
+          <div class="canvas-toolbar">
+            <span class="canvas-label" id="canvas-label">Preview</span>
+            <div class="canvas-actions">
+              <button type="button" class="button" id="download-button" disabled>
+                <svg class="icon" aria-hidden="true"><use href="#i-download" /></svg>
+                <span id="download-label">Download</span>
+              </button>
+              <button type="button" class="button" id="new-button">
+                <svg class="icon" aria-hidden="true"><use href="#i-plus" /></svg>
+                <span>New render</span>
+              </button>
+              <button type="button" class="button button--icon" id="rail-toggle" aria-expanded="true" aria-controls="agent-rail">
+                <svg class="icon" aria-hidden="true"><use href="#i-rail" /></svg>
+                <span class="sr-only">Hide the agent panel</span>
+              </button>
             </div>
-            <div class="direction-block">
-              <span class="eyebrow">vibe</span>
-              <div class="vibe-poster">
-                <span class="poster-signal"></span>
-                <strong id="vibe-copy">quiet luxury</strong>
-              </div>
-              <div class="tag-row">
-                <span>warm light</span><span>slow orbit</span><span>minimal</span>
-              </div>
-            </div>
-            <form class="mini-composer" id="create-refine-form">
-              <label class="sr-only" for="create-refine">Refine the film</label>
-              <textarea id="create-refine" placeholder="Make it feel more tactile..."></textarea>
-              <div>
-                <span>＋ add reference</span>
-                <button class="square-action square-action--small" type="submit" aria-label="Apply refinement">↑</button>
-              </div>
-            </form>
-          </aside>
+          </div>
 
-          <div class="canvas-column">
-            <div class="stage-wrap">
-              <div class="film-stage" id="create-stage">
-                <video id="create-video" playsinline controls preload="metadata" hidden></video>
-                <div class="abstract-film" id="create-placeholder" aria-hidden="true">
-                  <span class="film-arc film-arc--top"></span>
-                  <span class="film-arc film-arc--bottom"></span>
-                  <span class="chrome-object"><i></i></span>
-                </div>
-                <span class="stage-label">first look</span>
-                <span class="stage-time" id="stage-time">00:00 / 00:10</span>
-                <div class="render-status">
-                  <span></span>
-                  <p id="render-message">Reading the idea and finding its visual rhythm.</p>
+          <div class="stage" id="stage" data-stage="loading">
+            <video id="result-video" playsinline controls preload="metadata" hidden></video>
+            <img id="result-image" alt="" hidden />
+
+            <div class="stage-loading" id="stage-loading">
+              <div class="skeleton" aria-hidden="true">
+                <div class="skeleton-frame"></div>
+                <div class="skeleton-row">
+                  <span class="skeleton-bar skeleton-bar--wide"></span>
+                  <span class="skeleton-bar skeleton-bar--narrow"></span>
                 </div>
               </div>
-            </div>
-            <div class="smart-timeline">
-              <div class="timeline-meta">
-                <button class="play-button" id="create-play" type="button" aria-label="Play preview">▶</button>
-                <span id="timeline-progress">00:00 / 00:10</span>
-                <div class="progress-track"><i id="progress-bar"></i></div>
-                <span id="save-status">queued</span>
+              <p class="stage-message" id="stage-message">Reading the idea and finding its visual rhythm.</p>
+              <div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" id="progress">
+                <i id="progress-bar"></i>
               </div>
             </div>
-          </div>
-        </div>
-      </section>
 
-      <section class="screen screen--review" data-screen="review" aria-label="Review video" hidden>
-        <header class="topbar inset-bar">
-          <button class="back-button" type="button" data-go="create" aria-label="Back to create">‹</button>
-          <button class="brand brand--compact" type="button" data-go="start">
-            <span class="pixel-logo" aria-hidden="true">
-              <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
-            </span>
-            <span id="review-title">chrome study</span>
-          </button>
-          <span class="completion-label">complete</span>
-          <div class="header-spacer"></div>
-          <button class="outline-button" id="share-button" type="button">share</button>
-          <button class="black-button" id="download-button" type="button">download</button>
-        </header>
-
-        <div class="review-layout">
-          <div class="review-film-column">
-            <div class="film-stage film-stage--review">
-              <video id="review-video" playsinline controls preload="metadata" hidden></video>
-              <div class="abstract-film" id="review-placeholder" aria-hidden="true">
-                <span class="film-arc film-arc--top"></span>
-                <span class="film-arc film-arc--bottom"></span>
-                <span class="chrome-object"><i></i></span>
-              </div>
-              <button class="center-play" id="review-play" type="button" aria-label="Play final video">▶</button>
-              <span class="stage-label" id="film-label">chrome study</span>
-              <span class="stage-time">00:10</span>
+            <div class="stage-notice" id="stage-notice">
+              <svg class="icon icon--lg" aria-hidden="true" id="notice-icon"><use href="#i-slate" /></svg>
+              <h2 id="notice-title">Nothing rendered yet</h2>
+              <p id="notice-body">Write a prompt and the agent will take it from there.</p>
+              <button type="button" class="button button--primary" id="notice-action">Start a render</button>
             </div>
           </div>
+        </main>
 
-          <aside class="refine-panel">
-            <div>
-              <h2>Refine the feeling</h2>
-              <p>Describe a change and Renderhaus will update the film.</p>
+        <aside class="rail" id="agent-rail" aria-label="Agent activity">
+          <div class="rail-header">
+            <div class="rail-heading">
+              <p class="eyebrow">Agent</p>
+              <p class="rail-title" id="job-title">untitled</p>
             </div>
-            <form class="review-composer" id="review-refine-form">
-              <label class="sr-only" for="review-refine">Refine your video</label>
-              <textarea id="review-refine" placeholder="Make the final shot linger longer..."></textarea>
-              <button class="square-action square-action--small" type="submit" aria-label="Apply refinement">↑</button>
-            </form>
-            <div class="quick-changes">
-              <span class="eyebrow">quick changes</span>
-              <button type="button" data-quick="Make it more cinematic.">more cinematic</button>
-              <button type="button" data-quick="Use faster pacing.">faster pacing</button>
-              <button type="button" data-quick="Give the soundtrack more presence.">stronger soundtrack</button>
+            <span class="badge" id="job-status">queued</span>
+          </div>
+
+          <article class="prompt-card">
+            <h2 class="eyebrow">Prompt</h2>
+            <p id="job-prompt">—</p>
+            <div class="meta-row">
+              <span id="job-media-type">video</span>
+              <span id="job-ratio">16:9</span>
+              <span id="job-duration">10s</span>
             </div>
-            <div class="toggle-list">
-              <label><span>sound</span><input type="checkbox" checked /><i></i></label>
-              <label><span>captions</span><input type="checkbox" /><i></i></label>
-            </div>
-            <p class="agent-note" id="agent-note"></p>
-          </aside>
-        </div>
-      </section>
-    </main>
+          </article>
+
+          <div class="trace-panel">
+            <h2 class="eyebrow">Traces</h2>
+            <ol class="trace-list" id="trace-list" aria-live="polite"></ol>
+          </div>
+
+          <form class="composer composer--dock" id="refine-form" novalidate>
+            <label class="sr-only" for="refine">Refinement</label>
+            <textarea id="refine" rows="2" placeholder="Slower push in, warmer key light…"></textarea>
+            <button class="button button--primary button--icon" type="submit" id="refine-button">
+              <svg class="icon" aria-hidden="true"><use href="#i-arrow-up" /></svg>
+              <span class="sr-only">Send the refinement</span>
+            </button>
+          </form>
+        </aside>
+      </div>
+    </div>
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
     <script src="/static/app.js" defer></script>

@@ -2,20 +2,21 @@ from __future__ import annotations
 
 import asyncio
 import json
+import mimetypes
 import os
 import time
 import uuid
 from contextlib import asynccontextmanager
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
-from fastapi import FastAPI, File, HTTPException, UploadFile
-from fastapi.responses import FileResponse
+from fastapi import FastAPI, File, HTTPException, Request, Response, UploadFile
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from agent.config import ROOT, load_local_env
-from agent.service import poll_video_generation, start_video_generation
+from agent.service import poll_video_generation, start_image_generation, start_video_generation
 from agent.tracing import flush_langfuse, traced_operation
 
 
@@ -33,6 +34,7 @@ PUBLIC_JOB_FIELDS = {
     "schema_version",
     "status",
     "phase",
+    "media_type",
     "prompt",
     "vibe",
     "aspect_ratio",
@@ -44,11 +46,14 @@ PUBLIC_JOB_FIELDS = {
     "message",
     "media_url",
     "error",
+    "traces",
+    "progress",
 }
 
 
 class GenerationRequest(BaseModel):
     prompt: str = Field(min_length=3, max_length=4000)
+    media_type: Literal["video", "image"] = "video"
     vibe: str = Field(default="quiet luxury", max_length=120)
     aspect_ratio: str = Field(default="16:9", pattern=r"^(16:9|9:16|1:1)$")
     duration_seconds: int = Field(default=10, ge=4, le=15)
@@ -75,8 +80,11 @@ class JobStore:
                 continue
             if not isinstance(job, dict) or not isinstance(job.get("id"), str):
                 continue
+            job.setdefault("media_type", "video")
+            job.setdefault("traces", [])
+            job.setdefault("progress", 0)
             if job.get("status") not in TERMINAL_STATES:
-                if job.get("_provider_job_id"):
+                if job.get("_provider_job_id") and job.get("media_type") == "video":
                     job.update(status="generating", phase="rendering")
                     resumable.append(job["id"])
                 else:
@@ -105,10 +113,11 @@ class JobStore:
             "schema_version": 1,
             "status": "queued",
             "phase": "queued",
+            "media_type": request.media_type,
             "prompt": request.prompt,
             "vibe": request.vibe,
             "aspect_ratio": request.aspect_ratio,
-            "duration_seconds": request.duration_seconds,
+            "duration_seconds": request.duration_seconds if request.media_type == "video" else None,
             "reference_asset_id": request.reference_asset_id,
             "parent_id": parent_id,
             "created_at": now,
@@ -116,6 +125,8 @@ class JobStore:
             "message": "Reading the idea and finding its visual rhythm.",
             "media_url": None,
             "error": None,
+            "traces": [],
+            "progress": 4,
             "_reference_path": reference_path,
             "_provider_job_id": None,
             "_output_path": None,
@@ -177,6 +188,59 @@ def _detect_image(content: bytes) -> tuple[str, str] | None:
     return None
 
 
+def _append_trace(
+    job: dict[str, Any],
+    *,
+    title: str,
+    detail: str = "",
+    status: str = "done",
+    kind: str = "status",
+    trace_id: str | None = None,
+) -> None:
+    traces = list(job.get("traces") or [])
+    entry_id = trace_id or f"{kind}-{uuid.uuid4().hex[:8]}"
+    for index, existing in enumerate(traces):
+        if existing.get("id") == entry_id:
+            updated = dict(existing)
+            updated.update(
+                {
+                    "title": title,
+                    "detail": detail,
+                    "status": status,
+                    "kind": kind,
+                    "at": int(time.time()),
+                }
+            )
+            traces[index] = updated
+            job["traces"] = traces
+            return
+    traces.append(
+        {
+            "id": entry_id,
+            "kind": kind,
+            "title": title,
+            "detail": detail,
+            "status": status,
+            "at": int(time.time()),
+        }
+    )
+    job["traces"] = traces
+
+
+def _merge_agent_traces(job: dict[str, Any], result: dict[str, Any]) -> None:
+    for trace in result.get("traces") or []:
+        if not isinstance(trace, dict):
+            continue
+        _append_trace(
+            job,
+            title=str(trace.get("title") or "tool"),
+            detail=str(trace.get("detail") or ""),
+            status=str(trace.get("status") or "done"),
+            kind=str(trace.get("kind") or "tool"),
+            trace_id=str(trace.get("id") or f"tool-{uuid.uuid4().hex[:8]}"),
+        )
+
+
 def _generation_instruction(job: dict[str, Any]) -> str:
     reference = job.get("_reference_path")
     reference_instruction = (
@@ -184,6 +248,13 @@ def _generation_instruction(job: dict[str, Any]) -> str:
         if reference
         else "No reference image is supplied. "
     )
+    if job.get("media_type") == "image":
+        return (
+            f"Creative prompt: {job['prompt']}\n"
+            f"Vibe: {job['vibe']}. Aspect ratio: {job['aspect_ratio']}. "
+            f"{reference_instruction}"
+            "Start exactly one image generation and return."
+        )
     return (
         f"Creative prompt: {job['prompt']}\n"
         f"Vibe: {job['vibe']}. Aspect ratio: {job['aspect_ratio']}. "
@@ -208,7 +279,9 @@ def _artifact_path(value: dict[str, Any]) -> str | None:
 
 def _start_artifact(result: dict[str, Any]) -> dict[str, Any] | None:
     for artifact in reversed(result.get("artifacts", [])):
-        if isinstance(artifact, dict) and isinstance(artifact.get("job_id"), str):
+        if isinstance(artifact, dict) and (
+            isinstance(artifact.get("job_id"), str) or isinstance(artifact.get("output_path"), str)
+        ):
             return artifact
     return None
 
@@ -218,9 +291,19 @@ async def _poll_provider(job: dict[str, Any]) -> None:
     if not isinstance(provider_job_id, str):
         raise RuntimeError("Video generation did not return a job identifier.")
 
+    poll_count = 0
     while True:
         result = await poll_video_generation(provider_job_id)
         status = str(result.get("status", "unknown")).lower()
+        poll_count += 1
+        _append_trace(
+            job,
+            title="Polling Seedance task",
+            detail=f"Provider status: {status}",
+            status="running" if status not in PROVIDER_TERMINAL_STATES else "done",
+            kind="tool",
+            trace_id="poll-video",
+        )
         if status == "succeeded":
             output_path = _artifact_path(result)
             if not output_path:
@@ -229,13 +312,25 @@ async def _poll_provider(job: dict[str, Any]) -> None:
                 status="complete",
                 phase="complete",
                 message="Your film is ready.",
+                progress=100,
                 _output_path=output_path,
+            )
+            _append_trace(
+                job,
+                title="Video ready",
+                detail="Downloaded the finished MP4.",
+                status="done",
+                kind="status",
+                trace_id="complete",
             )
             return
         if status in PROVIDER_TERMINAL_STATES:
             raise RuntimeError(f"Video generation ended with status {status}.")
         job.update(
-            status="generating", phase="rendering", message="Shaping the shots, motion, and sound."
+            status="generating",
+            phase="rendering",
+            message="Shaping the shots, motion, and sound.",
+            progress=min(92, 35 + poll_count * 4),
         )
         await store.put(job)
         await asyncio.sleep(5)
@@ -246,60 +341,148 @@ async def _run_generation(job_id: str, *, resume: bool = False) -> None:
         job = await store.get(job_id)
         if not job:
             return
+        media_type = job.get("media_type") or "video"
         session_id = job.get("parent_id") or job_id
+        feature = "image-generation" if media_type == "image" else "video-generation"
         with traced_operation(
-            "video-generation",
+            feature,
             as_type="agent",
             input={
                 "prompt": job.get("prompt"),
                 "vibe": job.get("vibe"),
                 "aspect_ratio": job.get("aspect_ratio"),
                 "duration_seconds": job.get("duration_seconds"),
+                "media_type": media_type,
                 "resume": resume,
             },
             session_id=session_id,
-            tags=["renderhaus", "web", "video-generation"],
+            tags=["renderhaus", "web", feature],
             metadata={
-                "feature": "video-generation",
+                "feature": feature,
                 "job_id": job_id,
                 "parent_id": job.get("parent_id") or "",
+                "media_type": media_type,
             },
-            trace_name="video-generation",
+            trace_name=feature,
         ) as observation:
             try:
                 if not resume:
                     job.update(
                         status="planning",
                         phase="planning",
-                        message="Finding the film's visual rhythm.",
+                        message="Finding the visual direction.",
+                        progress=12,
+                    )
+                    _append_trace(
+                        job,
+                        title="Planning",
+                        detail="Reading the prompt and choosing a generation path.",
+                        status="running",
+                        kind="status",
+                        trace_id="planning",
                     )
                     await store.put(job)
-                    result = await start_video_generation(_generation_instruction(job))
+
+                    if media_type == "image":
+                        result = await start_image_generation(_generation_instruction(job))
+                    else:
+                        result = await start_video_generation(_generation_instruction(job))
+
+                    _append_trace(
+                        job,
+                        title="Planning",
+                        detail="Agent finished selecting tools.",
+                        status="done",
+                        kind="status",
+                        trace_id="planning",
+                    )
+                    _merge_agent_traces(job, result)
                     artifact = _start_artifact(result)
                     if not artifact:
                         raise RuntimeError(
-                            "Video generation did not return a structured job result."
+                            "Generation did not return a structured job result."
                         )
+
                     if artifact.get("status") == "dry_run":
                         job.update(
                             status="planned",
                             phase="preview",
                             message=(
-                                "The direction is ready. Turn on live rendering to create the MP4."
+                                "The direction is ready. Turn on live rendering to create the asset."
                             ),
+                            progress=100,
+                        )
+                        _append_trace(
+                            job,
+                            title="Dry run complete",
+                            detail="Live generation is currently disabled.",
+                            status="done",
+                            kind="status",
+                            trace_id="complete",
                         )
                         await store.put(job)
                         if observation is not None:
                             observation.update(output={"status": "planned", "mode": "dry_run"})
                         return
+
+                    if media_type == "image":
+                        output_path = _artifact_path(artifact)
+                        if not output_path and artifact.get("status") != "succeeded":
+                            raise RuntimeError(
+                                "Image generation did not return a downloadable file."
+                            )
+                        if not output_path:
+                            raise RuntimeError(
+                                "Image generation succeeded without a downloadable media file."
+                            )
+                        job.update(
+                            status="complete",
+                            phase="complete",
+                            message="Your image is ready.",
+                            progress=100,
+                            _output_path=output_path,
+                        )
+                        _append_trace(
+                            job,
+                            title="Image ready",
+                            detail="Seedream finished generating the still.",
+                            status="done",
+                            kind="status",
+                            trace_id="complete",
+                        )
+                        await store.put(job)
+                        if observation is not None:
+                            observation.update(
+                                output={"status": "complete", "has_media": True}
+                            )
+                        return
+
                     job["_provider_job_id"] = artifact["job_id"]
                     job.update(
                         status="generating",
                         phase="rendering",
                         message="Shaping the shots, motion, and sound.",
+                        progress=32,
+                    )
+                    _append_trace(
+                        job,
+                        title="Rendering video",
+                        detail="Seedance task created. Waiting for frames.",
+                        status="running",
+                        kind="status",
+                        trace_id="rendering",
                     )
                     await store.put(job)
+
                 await _poll_provider(job)
+                _append_trace(
+                    job,
+                    title="Rendering video",
+                    detail="Provider finished.",
+                    status="done",
+                    kind="status",
+                    trace_id="rendering",
+                )
                 if observation is not None:
                     observation.update(
                         output={
@@ -314,12 +497,21 @@ async def _run_generation(job_id: str, *, resume: bool = False) -> None:
                     status="failed",
                     phase="failed",
                     message="The render stopped before it finished.",
+                    progress=100,
                     error={
                         "code": "generation_failed",
                         "message": "The render stopped before it finished.",
                         "retryable": True,
                     },
                     _error_detail=str(exc)[:2000],
+                )
+                _append_trace(
+                    job,
+                    title="Generation failed",
+                    detail=str(exc)[:240],
+                    status="error",
+                    kind="status",
+                    trace_id="failed",
                 )
                 if observation is not None:
                     observation.update(
@@ -364,14 +556,28 @@ async def index() -> FileResponse:
     return FileResponse(STATIC_DIR / "index.html")
 
 
+@app.exception_handler(404)
+async def not_found(request: Request, exc: HTTPException) -> Response:
+    """Serve the branded page for browsers and keep JSON for the API surface."""
+    wants_html = "text/html" in request.headers.get("accept", "")
+    if request.url.path.startswith("/api/") or not wants_html:
+        return JSONResponse({"detail": exc.detail}, status_code=404)
+    return FileResponse(STATIC_DIR / "404.html", status_code=404)
+
+
 @app.get("/api/config")
 async def config() -> dict[str, Any]:
     return {
         "live_generation": os.getenv("SEEDANCE_DRY_RUN", "true").lower() == "false",
+        "live_image_generation": (
+            os.getenv("SEEDREAM_DRY_RUN", os.getenv("SEEDANCE_DRY_RUN", "true")).lower() == "false"
+        ),
         "agent_ready": bool(os.getenv("OPENAI_API_KEY")),
         "langfuse_ready": bool(
             os.getenv("LANGFUSE_PUBLIC_KEY") and os.getenv("LANGFUSE_SECRET_KEY")
         ),
+        "video_model": os.getenv("SEEDANCE_MODEL", "dreamina-seedance-2-0-mini-260615"),
+        "image_model": os.getenv("SEEDREAM_MODEL", "seedream-5-0-lite-260128"),
         "max_upload_mb": MAX_UPLOAD_BYTES // (1024 * 1024),
     }
 
@@ -396,6 +602,15 @@ async def upload_reference(file: UploadFile = File(...)) -> dict[str, str]:
 async def create_generation(request: GenerationRequest) -> dict[str, Any]:
     reference_path = _asset_path(request.reference_asset_id)
     job = await store.create(request, reference_path=reference_path)
+    _append_trace(
+        job,
+        title="Queued",
+        detail=f"{request.media_type.capitalize()} generation accepted.",
+        status="done",
+        kind="status",
+        trace_id="queued",
+    )
+    await store.put(job)
     _start_task(app, job["id"])
     return _public_job(job)
 
@@ -425,7 +640,12 @@ async def get_generation_media(job_id: str) -> FileResponse:
         raise HTTPException(status_code=404, detail="Generated media not found.")
     if not path.is_file():
         raise HTTPException(status_code=404, detail="Generated media not found.")
-    return FileResponse(path, media_type="video/mp4")
+    media_type = mimetypes.guess_type(path.name)[0]
+    if job.get("media_type") == "image":
+        media_type = media_type or "image/png"
+    else:
+        media_type = media_type or "video/mp4"
+    return FileResponse(path, media_type=media_type)
 
 
 @app.post("/api/generations/{job_id}/refine", status_code=202)
@@ -437,9 +657,10 @@ async def refine_generation(job_id: str, request: RefinementRequest) -> dict[str
     base_prompt = original["prompt"][: 4000 - len(refinement_suffix)]
     generation = GenerationRequest(
         prompt=f"{base_prompt}{refinement_suffix}",
+        media_type=original.get("media_type") or "video",
         vibe=original["vibe"],
         aspect_ratio=original["aspect_ratio"],
-        duration_seconds=original["duration_seconds"],
+        duration_seconds=original.get("duration_seconds") or 10,
         reference_asset_id=original.get("reference_asset_id"),
     )
     job = await store.create(
@@ -447,6 +668,15 @@ async def refine_generation(job_id: str, request: RefinementRequest) -> dict[str
         reference_path=original.get("_reference_path"),
         parent_id=job_id,
     )
+    _append_trace(
+        job,
+        title="Queued refinement",
+        detail=request.instruction[:240],
+        status="done",
+        kind="status",
+        trace_id="queued",
+    )
+    await store.put(job)
     _start_task(app, job["id"])
     return _public_job(job)
 
