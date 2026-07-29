@@ -1,11 +1,35 @@
 const MIN_PROMPT_LENGTH = 3;
 const TERMINAL_STATES = ["complete", "planned", "failed"];
+const FILMSTRIP_FRAMES = 16;
+
+const EDIT_IDEAS = [
+  { label: "Slow the push in", instruction: "Slow the camera push in and let the motion breathe." },
+  { label: "Hold on the hero", instruction: "Hold longer on the hero subject before any camera move." },
+  { label: "Warmer grade", instruction: "Warm the grade with golden key light and softer contrast." },
+  { label: "Tighter framing", instruction: "Tighten the framing so the subject fills more of the frame." },
+  { label: "Add a reverse", instruction: "End with a subtle reverse move that reveals the space." },
+  { label: "Softer motion", instruction: "Soften the motion so every move feels more deliberate." },
+  { label: "More atmosphere", instruction: "Add more atmosphere: dust, haze, and light falloff in the air." },
+  { label: "Cleaner product", instruction: "Keep the product cleaner and more centered with less distraction." },
+];
+
+const MUSIC_EDIT_IDEAS = [
+  { label: "Slower tempo", instruction: "Slow the tempo and leave more space between phrases." },
+  { label: "Warmer pads", instruction: "Warm the arrangement with softer pads and less sharp percussion." },
+  { label: "More tension", instruction: "Build more tension with rising harmony and restrained drums." },
+  { label: "Strip it back", instruction: "Strip the arrangement back to a sparse, intimate instrumental." },
+  { label: "Cinematic swell", instruction: "Add a cinematic swell in the second half with richer strings." },
+  { label: "Pulse under it", instruction: "Add a subtle low pulse that keeps the track moving without crowding the melody." },
+];
 
 const state = {
   mediaType: "video",
   currentJob: null,
   pollTimer: null,
   config: null,
+  filmstripToken: 0,
+  filmstripSrc: null,
+  scrubbing: false,
 };
 
 const $ = (selector, root = document) => root.querySelector(selector);
@@ -57,23 +81,39 @@ function setMediaType(mediaType) {
     tab.classList.toggle("is-active", active);
     tab.setAttribute("aria-selected", String(active));
   });
-  $("#duration-wrap").hidden = mediaType === "image";
-  $("#generate-label").textContent = mediaType === "image" ? "Generate image" : "Generate video";
+  $("#duration-wrap").hidden = mediaType !== "video";
+  $("#aspect-ratio").closest("label").hidden = mediaType === "music";
+  const referenceButton = $('label.file-button[for="reference-input"]');
+  if (referenceButton) referenceButton.hidden = mediaType === "music";
+  if (mediaType === "music") clearReference();
+  $("#generate-label").textContent =
+    mediaType === "image" ? "Generate image" : mediaType === "music" ? "Generate music" : "Generate video";
+  const prompt = $("#prompt");
+  prompt.placeholder =
+    mediaType === "music"
+      ? "A quiet luxury product score: soft analog pads, restrained percussion, warm low end, slow bloom…"
+      : "A chrome perfume bottle drifting through a sunlit concrete gallery, slow dolly in, dust in the light…";
   updateModelHint();
 }
 
 function updateModelHint() {
-  const videoModel = state.config?.video_model || "dreamina-seedance-2-0-mini-260615";
+  const videoModel = state.config?.video_model || "seedance-1-5-pro-251215";
   const imageModel = state.config?.image_model || "seedream-5-0-lite-260128";
-  $("#model-hint").textContent =
-    state.mediaType === "image"
-      ? `Image · ${prettyModel(imageModel)}`
-      : `Video · ${prettyModel(videoModel)}`;
+  const musicModel = state.config?.music_model || "auto";
+  if (state.mediaType === "image") {
+    $("#model-hint").textContent = `Image · ${prettyModel(imageModel)}`;
+  } else if (state.mediaType === "music") {
+    $("#model-hint").textContent = `Music · ${prettyModel(musicModel)}`;
+  } else {
+    $("#model-hint").textContent = `Video · ${prettyModel(videoModel)}`;
+  }
 }
 
 function prettyModel(model) {
+  if (model.includes("seedance-1-5-pro")) return "Seedance 1.5 Pro";
   if (model.includes("seedance-2-0-mini")) return "Dreamina Seedance 2.0 mini";
   if (model.includes("seedream-5-0-lite") || model.includes("seedream-5-0")) return "Seedream 5.0 Lite";
+  if (model === "auto" || model.includes("mureka")) return "Mureka";
   return model;
 }
 
@@ -100,74 +140,437 @@ function clearReference() {
   $("#reference-name-text").textContent = "";
 }
 
+function formatClock(seconds) {
+  const value = Math.max(0, Number(seconds) || 0);
+  const whole = Math.floor(value);
+  const m = Math.floor(whole / 60);
+  const s = whole % 60;
+  return `${m}:${String(s).padStart(2, "0")}`;
+}
+
+function formatTraceTime(epochSeconds) {
+  if (!epochSeconds) return "";
+  const date = new Date(Number(epochSeconds) * 1000);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+}
+
+function prettyKind(kind) {
+  const value = String(kind || "status").toLowerCase();
+  if (value === "tool") return "tool";
+  if (value === "agent") return "agent";
+  return "status";
+}
+
+function prettyToolTitle(title) {
+  const words = String(title || "step").replace(/_/g, " ").split(/\s+/).filter(Boolean);
+  return words
+    .map((word, index) =>
+      index === 0 ? word.charAt(0).toUpperCase() + word.slice(1).toLowerCase() : word.toLowerCase()
+    )
+    .join(" ");
+}
+
+function summarizeTraceDetail(trace) {
+  const raw = String(trace?.detail || "").trim();
+  if (!raw) return trace?.status || "";
+  if (!raw.startsWith("[") && !raw.startsWith("{")) return raw;
+
+  try {
+    const parsed = JSON.parse(raw);
+    const payload = Array.isArray(parsed)
+      ? parsed.find((item) => item && typeof item.text === "string")
+      : parsed;
+    const nested =
+      payload && typeof payload.text === "string"
+        ? JSON.parse(payload.text)
+        : payload;
+    if (nested && typeof nested === "object") {
+      if (nested.note) return String(nested.note);
+      if (nested.status && nested.job_id) {
+        return `Task ${nested.status}${nested.mode ? ` · ${String(nested.mode).replace(/_/g, " ")}` : ""}.`;
+      }
+      if (nested.status) return `Provider status: ${nested.status}`;
+    }
+  } catch {
+    /* fall through */
+  }
+  return "Tool finished.";
+}
+
+function makeTraceItem(trace, index, { empty = false } = {}) {
+  const status = empty ? "running" : trace.status || "done";
+  const li = document.createElement("li");
+  li.className = `trace-item is-${status}`;
+  li.style.animationDelay = `${Math.min(index, 8) * 60}ms`;
+
+  const node = document.createElement("span");
+  node.className = "trace-node";
+  node.setAttribute("aria-hidden", "true");
+
+  const body = document.createElement("div");
+  body.className = "trace-body";
+
+  const meta = document.createElement("div");
+  meta.className = "trace-meta";
+  const kind = document.createElement("span");
+  kind.className = "trace-kind";
+  kind.textContent = empty ? "live" : prettyKind(trace.kind);
+  meta.append(kind);
+  const time = formatTraceTime(trace?.at);
+  if (time) {
+    const stamp = document.createElement("span");
+    stamp.className = "trace-time";
+    stamp.textContent = time;
+    meta.append(stamp);
+  }
+
+  const title = document.createElement("div");
+  title.className = "trace-title";
+  title.textContent = empty
+    ? "Waiting for the agent"
+    : String(trace.title || "").includes("_")
+      ? prettyToolTitle(trace.title)
+      : trace.title || "step";
+
+  const detail = document.createElement("div");
+  detail.className = "trace-detail";
+  detail.textContent = empty
+    ? "Each step appears here as the agent plans and calls tools."
+    : summarizeTraceDetail(trace) || status;
+
+  body.append(meta, title, detail);
+  li.append(node, body);
+  return li;
+}
+
 function renderTraces(traces) {
   const list = $("#trace-list");
   list.innerHTML = "";
   const items = Array.isArray(traces) ? traces : [];
+  $("#trace-count").textContent = String(items.length);
   if (!items.length) {
-    const empty = document.createElement("li");
-    empty.className = "trace-item is-running";
-    const dot = document.createElement("span");
-    dot.className = "trace-dot";
-    dot.setAttribute("aria-hidden", "true");
-    const body = document.createElement("div");
-    const title = document.createElement("div");
-    title.className = "trace-title";
-    title.textContent = "Waiting for the agent";
-    const detail = document.createElement("div");
-    detail.className = "trace-detail";
-    detail.textContent = "Each step appears here as the agent calls a tool.";
-    body.append(title, detail);
-    empty.append(dot, body);
-    list.append(empty);
+    list.append(makeTraceItem(null, 0, { empty: true }));
     return;
   }
-  items.forEach((trace, index) => {
-    const li = document.createElement("li");
-    const status = trace.status || "done";
-    li.className = `trace-item is-${status}`;
-    li.style.animationDelay = `${Math.min(index, 8) * 60}ms`;
-    const title = document.createElement("div");
-    title.className = "trace-title";
-    title.textContent = trace.title || "step";
-    const detail = document.createElement("div");
-    detail.className = "trace-detail";
-    detail.textContent = trace.detail || status;
-    const body = document.createElement("div");
-    body.append(title, detail);
-    const dot = document.createElement("span");
-    dot.className = "trace-dot";
-    dot.setAttribute("aria-hidden", "true");
-    li.append(dot, body);
-    list.append(li);
-  });
+  items.forEach((trace, index) => list.append(makeTraceItem(trace, index)));
   list.scrollTop = list.scrollHeight;
+}
+
+function renderEditIdeas(job) {
+  const deck = $("#edit-deck");
+  const chips = $("#idea-chips");
+  chips.innerHTML = "";
+  if (!job?.media_url || job.media_type === "image") {
+    deck.hidden = true;
+    return;
+  }
+  deck.hidden = false;
+  const ideas = job.media_type === "music" ? MUSIC_EDIT_IDEAS : EDIT_IDEAS;
+  ideas.forEach((idea) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "idea-chip";
+    button.textContent = idea.label;
+    button.setAttribute("role", "listitem");
+    button.addEventListener("click", () => {
+      const refineInput = $("#refine");
+      refineInput.value = idea.instruction;
+      refineInput.dispatchEvent(new Event("input", { bubbles: true }));
+      refineInput.focus();
+      setRail(true);
+      showToast("Edit idea loaded into refine.");
+    });
+    chips.append(button);
+  });
+}
+
+function clearFilmstrip(note = "Frames appear when the clip is ready") {
+  const strip = $("#filmstrip");
+  strip.innerHTML = "";
+  strip.classList.add("is-empty");
+  strip.classList.remove("is-loading");
+  strip.dataset.note = note;
+  $("#timeline-ruler").innerHTML = "";
+  $("#timeline-clock").textContent = "0:00 / 0:00";
+  $("#playhead").style.left = "60px";
+  state.filmstripSrc = null;
+}
+
+function setScoreTrack(active, label = "Score") {
+  const track = $("#track-score");
+  const clip = $("#score-clip");
+  const placeholder = $("#score-placeholder");
+  track.classList.toggle("track--idle", !active);
+  track.classList.toggle("track--music", active);
+  track.setAttribute("aria-disabled", String(!active));
+  clip.hidden = !active;
+  placeholder.hidden = active;
+  $("#score-label").textContent = label;
+}
+
+function renderRuler(duration) {
+  const ruler = $("#timeline-ruler");
+  ruler.innerHTML = "";
+  const spacer = document.createElement("div");
+  spacer.className = "timeline-ruler-spacer";
+  const marks = document.createElement("div");
+  marks.className = "timeline-ruler-marks";
+  const safeDuration = Math.max(duration || 0, 0.001);
+  const step = safeDuration <= 6 ? 1 : safeDuration <= 12 ? 2 : safeDuration <= 60 ? 5 : 15;
+  for (let t = 0; t <= safeDuration + 0.001; t += step) {
+    const mark = document.createElement("span");
+    mark.className = "ruler-mark";
+    mark.style.left = `${(t / safeDuration) * 100}%`;
+    const tick = document.createElement("i");
+    const label = document.createElement("span");
+    label.textContent = formatClock(t);
+    mark.append(tick, label);
+    marks.append(mark);
+  }
+  ruler.append(spacer, marks);
+}
+
+function updatePlayheadFromMedia(media) {
+  const body = $("#timeline-body");
+  const strip = media?.tagName === "AUDIO" ? $("#score-clip") : $("#filmstrip");
+  if (!media?.duration || media.hidden || !strip || strip.hidden) return;
+  const ratio = Math.min(1, Math.max(0, media.currentTime / media.duration));
+  const laneLeft = strip.getBoundingClientRect().left - body.getBoundingClientRect().left;
+  const laneWidth = strip.getBoundingClientRect().width;
+  $("#playhead").style.left = `${laneLeft + ratio * laneWidth}px`;
+  $("#timeline-clock").textContent = `${formatClock(media.currentTime)} / ${formatClock(media.duration)}`;
+  strip.setAttribute("aria-valuenow", String(Math.round(ratio * 100)));
+  strip.setAttribute("aria-valuemax", "100");
+}
+
+function updatePlayhead() {
+  const video = $("#result-video");
+  const audio = $("#result-audio");
+  if (!video.hidden && video.duration) {
+    updatePlayheadFromMedia(video);
+    return;
+  }
+  if (!audio.hidden && audio.duration) {
+    updatePlayheadFromMedia(audio);
+  }
+}
+
+async function captureFilmstrip(mediaUrl) {
+  const token = ++state.filmstripToken;
+  const strip = $("#filmstrip");
+  strip.innerHTML = "";
+  strip.classList.remove("is-empty");
+  strip.classList.add("is-loading");
+  strip.dataset.note = "Pulling frames…";
+
+  const probe = document.createElement("video");
+  probe.muted = true;
+  probe.playsInline = true;
+  probe.preload = "auto";
+  probe.src = mediaUrl;
+
+  try {
+    await new Promise((resolve, reject) => {
+      probe.addEventListener("loadedmetadata", resolve, { once: true });
+      probe.addEventListener("error", () => reject(new Error("Could not read video frames.")), {
+        once: true,
+      });
+    });
+    if (token !== state.filmstripToken) return;
+
+    const duration = probe.duration || 0;
+    renderRuler(duration);
+    const count = Math.max(8, Math.min(FILMSTRIP_FRAMES, Math.round(duration * 2) || 8));
+    const canvas = document.createElement("canvas");
+    const width = 160;
+    const height = 90;
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext("2d", { alpha: false });
+
+    for (let index = 0; index < count; index += 1) {
+      if (token !== state.filmstripToken) return;
+      const time = duration <= 0 ? 0 : (index / Math.max(count - 1, 1)) * Math.max(duration - 0.05, 0);
+      await new Promise((resolve, reject) => {
+        const onSeeked = () => {
+          probe.removeEventListener("seeked", onSeeked);
+          resolve();
+        };
+        probe.addEventListener("seeked", onSeeked);
+        probe.addEventListener(
+          "error",
+          () => {
+            probe.removeEventListener("seeked", onSeeked);
+            reject(new Error("Frame seek failed."));
+          },
+          { once: true }
+        );
+        try {
+          probe.currentTime = time;
+        } catch (error) {
+          probe.removeEventListener("seeked", onSeeked);
+          reject(error);
+        }
+      });
+      ctx.drawImage(probe, 0, 0, width, height);
+      const img = document.createElement("img");
+      img.className = "film-frame";
+      img.alt = "";
+      img.draggable = false;
+      img.src = canvas.toDataURL("image/jpeg", 0.72);
+      strip.append(img);
+    }
+
+    strip.classList.remove("is-loading");
+    state.filmstripSrc = mediaUrl;
+    updatePlayhead();
+  } catch {
+    if (token !== state.filmstripToken) return;
+    clearFilmstrip("Frames unavailable for this clip");
+  } finally {
+    probe.removeAttribute("src");
+    probe.load();
+  }
+}
+
+function seekFromClientX(clientX) {
+  const video = $("#result-video");
+  const audio = $("#result-audio");
+  const media = !video.hidden && video.duration ? video : !audio.hidden && audio.duration ? audio : null;
+  const strip = media?.tagName === "AUDIO" ? $("#score-clip") : $("#filmstrip");
+  if (!media || !strip || strip.hidden) return;
+  const rect = strip.getBoundingClientRect();
+  const ratio = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width));
+  media.currentTime = ratio * media.duration;
+  updatePlayhead();
+}
+
+function bindTimelineControls() {
+  const video = $("#result-video");
+  const audio = $("#result-audio");
+  const strip = $("#filmstrip");
+  const score = $("#score-clip");
+  const body = $("#timeline-body");
+
+  [video, audio].forEach((media) => {
+    media.addEventListener("timeupdate", updatePlayhead);
+    media.addEventListener("loadedmetadata", () => {
+      renderRuler(media.duration || 0);
+      updatePlayhead();
+    });
+    media.addEventListener("seeked", updatePlayhead);
+  });
+
+  const startScrub = (event) => {
+    if (event.button != null && event.button !== 0) return;
+    state.scrubbing = true;
+    body.classList.add("is-scrubbing");
+    seekFromClientX(event.clientX);
+    event.preventDefault();
+  };
+  const moveScrub = (event) => {
+    if (!state.scrubbing) return;
+    seekFromClientX(event.clientX);
+  };
+  const endScrub = () => {
+    state.scrubbing = false;
+    body.classList.remove("is-scrubbing");
+  };
+
+  [strip, score].forEach((target) => {
+    target.addEventListener("pointerdown", startScrub);
+    target.addEventListener("keydown", (event) => {
+      const media =
+        !video.hidden && video.duration ? video : !audio.hidden && audio.duration ? audio : null;
+      if (!media) return;
+      const step = event.shiftKey ? 1 : 0.25;
+      if (event.key === "ArrowRight") {
+        media.currentTime = Math.min(media.duration, media.currentTime + step);
+        event.preventDefault();
+      } else if (event.key === "ArrowLeft") {
+        media.currentTime = Math.max(0, media.currentTime - step);
+        event.preventDefault();
+      }
+    });
+  });
+  window.addEventListener("pointermove", moveScrub);
+  window.addEventListener("pointerup", endScrub);
+  window.addEventListener("pointercancel", endScrub);
+  window.addEventListener("resize", updatePlayhead);
 }
 
 function updateMedia(job) {
   const video = $("#result-video");
   const image = $("#result-image");
+  const audio = $("#result-audio");
   const stage = $("#stage");
   const mediaUrl = job.media_url;
   if (!mediaUrl) {
     video.hidden = true;
     image.hidden = true;
+    audio.hidden = true;
     video.removeAttribute("src");
     image.removeAttribute("src");
+    audio.removeAttribute("src");
     stage.classList.remove("has-media");
+    clearFilmstrip();
+    setScoreTrack(false);
+    $("#edit-deck").hidden = true;
     return;
   }
   if (job.media_type === "image") {
     video.hidden = true;
+    audio.hidden = true;
     video.removeAttribute("src");
+    audio.removeAttribute("src");
     if (image.src !== new URL(mediaUrl, window.location.href).href) image.src = mediaUrl;
     image.alt = `Generated still: ${job.prompt}`;
     image.hidden = false;
+    clearFilmstrip();
+    setScoreTrack(false);
+    $("#edit-deck").hidden = true;
+  } else if (job.media_type === "music") {
+    video.hidden = true;
+    image.hidden = true;
+    video.removeAttribute("src");
+    image.removeAttribute("src");
+    const absolute = new URL(mediaUrl, window.location.href).href;
+    if (audio.src !== absolute) {
+      audio.src = mediaUrl;
+      state.filmstripSrc = null;
+    }
+    audio.hidden = false;
+    clearFilmstrip("Score only · no picture track");
+    setScoreTrack(true, filmName(job.prompt));
+    $("#edit-deck").hidden = false;
+    if (state.filmstripSrc !== absolute) {
+      state.filmstripSrc = absolute;
+      audio.addEventListener(
+        "loadedmetadata",
+        () => {
+          renderRuler(audio.duration || 0);
+          updatePlayhead();
+        },
+        { once: true }
+      );
+    }
   } else {
     image.hidden = true;
+    audio.hidden = true;
     image.removeAttribute("src");
-    if (video.src !== new URL(mediaUrl, window.location.href).href) video.src = mediaUrl;
+    audio.removeAttribute("src");
+    const absolute = new URL(mediaUrl, window.location.href).href;
+    if (video.src !== absolute) {
+      video.src = mediaUrl;
+      state.filmstripSrc = null;
+    }
     video.hidden = false;
+    setScoreTrack(false);
+    $("#edit-deck").hidden = false;
+    if (state.filmstripSrc !== absolute) {
+      captureFilmstrip(mediaUrl);
+    }
   }
   stage.classList.add("has-media");
 }
@@ -182,8 +585,14 @@ function updateStageState(job) {
     stage.dataset.stage = "notice";
     $("#notice-icon").firstElementChild.setAttribute("href", "#i-slate");
     $("#notice-title").textContent = "The direction is ready";
+    const dryEnv =
+      job.media_type === "music"
+        ? "MUREKA_DRY_RUN"
+        : job.media_type === "image"
+          ? "SEEDREAM_DRY_RUN"
+          : "SEEDANCE_DRY_RUN";
     $("#notice-body").textContent =
-      "Live rendering is off, so the agent stopped after planning the shot. Set SEEDANCE_DRY_RUN to false and run it again to get the file.";
+      `Live rendering is off, so the agent stopped after planning. Set ${dryEnv} to false and run it again to get the file.`;
     $("#notice-action").textContent = "Write another prompt";
     return;
   }
@@ -211,8 +620,9 @@ function updateJobUI(job) {
   $("#job-title").textContent = filmName(job.prompt);
   $("#job-prompt").textContent = job.prompt;
   $("#job-media-type").textContent = job.media_type || "video";
+  $("#job-ratio").hidden = job.media_type === "music";
   $("#job-ratio").textContent = job.aspect_ratio;
-  $("#job-duration").hidden = job.media_type === "image";
+  $("#job-duration").hidden = job.media_type !== "video";
   $("#job-duration").textContent = job.duration_seconds ? `${job.duration_seconds}s` : "";
   $("#job-status").textContent = job.status;
   $("#job-status").className = `badge is-${job.status}`;
@@ -229,10 +639,15 @@ function updateJobUI(job) {
     : "Rendering";
   $("#download-button").disabled = !job.media_url;
   $("#download-label").textContent =
-    job.media_type === "image" ? "Download image" : "Download video";
+    job.media_type === "image"
+      ? "Download image"
+      : job.media_type === "music"
+        ? "Download music"
+        : "Download video";
 
   renderTraces(job.traces);
   updateMedia(job);
+  renderEditIdeas(job);
   updateStageState(job);
 }
 
@@ -246,7 +661,13 @@ async function pollJob(jobId) {
         window.clearInterval(state.pollTimer);
         await loadHistory();
         if (job.status === "complete") {
-          showToast(job.media_type === "image" ? "Your image is ready." : "Your film is ready.");
+          showToast(
+            job.media_type === "image"
+              ? "Your image is ready."
+              : job.media_type === "music"
+                ? "Your score is ready."
+                : "Your film is ready."
+          );
         } else if (job.status === "planned") {
           showToast("The direction is ready. Live rendering is off.");
         } else if (job.status === "failed") {
@@ -266,7 +687,11 @@ async function submitGeneration(event) {
   event.preventDefault();
   const prompt = $("#prompt").value.trim();
   if (prompt.length < MIN_PROMPT_LENGTH) {
-    setPromptError("Describe the shot in at least a few words before generating.");
+    setPromptError(
+      state.mediaType === "music"
+        ? "Describe the score in at least a few words before generating."
+        : "Describe the shot in at least a few words before generating."
+    );
     $("#prompt").focus();
     return;
   }
@@ -275,7 +700,7 @@ async function submitGeneration(event) {
   const submit = $("#generate-button");
   submit.disabled = true;
   try {
-    const reference = $("#reference-input").files[0];
+    const reference = state.mediaType === "music" ? null : $("#reference-input").files[0];
     const referencePath = await uploadReference(reference);
     const payload = {
       prompt,
@@ -365,7 +790,9 @@ async function loadConfig() {
     const live =
       state.mediaType === "image"
         ? state.config.live_image_generation
-        : state.config.live_generation;
+        : state.mediaType === "music"
+          ? state.config.live_music_generation
+          : state.config.live_generation;
     const tracing = state.config.langfuse_ready ? " · langfuse" : "";
     $("#config-status").textContent = `${live ? "live" : "preview"}${tracing}`;
     updateModelHint();
@@ -422,11 +849,14 @@ function bindEvents() {
       window.open(state.currentJob.media_url, "_blank", "noopener");
     }
   });
+
+  bindTimelineControls();
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
   bindEvents();
   setMediaType("video");
   setMode("home");
+  clearFilmstrip();
   await Promise.all([loadConfig(), loadHistory()]);
 });

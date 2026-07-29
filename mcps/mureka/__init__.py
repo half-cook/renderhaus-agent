@@ -1,0 +1,1 @@
+"""Mureka music MCP server."""

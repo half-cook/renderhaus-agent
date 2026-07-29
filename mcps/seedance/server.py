@@ -36,6 +36,10 @@ class SeedanceTask(BaseModel):
 
 TERMINAL_STATUSES = {"succeeded", "failed", "cancelled", "canceled", "deleted"}
 
+# Seedance 1.5 Pro accepts 4-12 second clips; longer requests are rejected by BytePlus.
+MIN_DURATION_SECONDS = 4
+MAX_DURATION_SECONDS = 12
+
 
 def _field_value(value: Any, default: Any) -> Any:
     if isinstance(value, FieldInfo):
@@ -64,7 +68,7 @@ def _base_url() -> str:
 
 
 def _model(model: str | None = None) -> str:
-    return model or os.getenv("SEEDANCE_MODEL") or "dreamina-seedance-2-0-mini-260615"
+    return model or os.getenv("SEEDANCE_MODEL") or "seedance-1-5-pro-251215"
 
 
 def _supports_service_tier(model: str) -> bool:
@@ -313,7 +317,7 @@ def _retrieve_task(job_id: str, download: bool) -> dict:
 @mcp.tool()
 def text_to_video(
     prompt: str = Field(description="Video prompt."),
-    duration_seconds: int = Field(default=5, ge=4, le=15),
+    duration_seconds: int = Field(default=5, ge=MIN_DURATION_SECONDS, le=MAX_DURATION_SECONDS),
     aspect_ratio: str = Field(default="16:9"),
     resolution: str = Field(default="720p"),
     model: str | None = Field(default=None, description="Seedance model id. Defaults to SEEDANCE_MODEL."),
@@ -359,7 +363,7 @@ def text_to_video(
 def image_to_video(
     image_path_or_url: str = Field(description="Reference image path or URL."),
     prompt: str = Field(description="Motion and style prompt."),
-    duration_seconds: int = Field(default=5, ge=4, le=15),
+    duration_seconds: int = Field(default=5, ge=MIN_DURATION_SECONDS, le=MAX_DURATION_SECONDS),
     aspect_ratio: str = Field(default="16:9"),
     resolution: str = Field(default="720p"),
     model: str | None = Field(default=None, description="Seedance model id. Defaults to SEEDANCE_MODEL."),
@@ -445,7 +449,7 @@ def wait_for_video_task(
 @mcp.tool()
 def text_to_video_and_wait(
     prompt: str = Field(description="Video prompt."),
-    duration_seconds: int = Field(default=4, ge=4, le=15),
+    duration_seconds: int = Field(default=4, ge=MIN_DURATION_SECONDS, le=MAX_DURATION_SECONDS),
     aspect_ratio: str = Field(default="16:9"),
     resolution: str = Field(default="720p"),
     timeout_seconds: int = Field(default=600, ge=30, le=1800),

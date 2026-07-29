@@ -16,12 +16,14 @@
     },
     "mureka": {
       "transport": "stdio",
-      "command": "${ROOT}/.venv/bin/uvx",
-      "args": ["mureka-mcp"],
+      "command": "${ROOT}/.venv/bin/python",
+      "args": ["-m", "mcps.mureka.server"],
       "env": {
         "MUREKA_API_KEY": "${MUREKA_API_KEY}",
         "MUREKA_API_URL": "${MUREKA_API_URL}",
-        "TIME_OUT_SECONDS": "${TIME_OUT_SECONDS}"
+        "MUREKA_MODEL": "${MUREKA_MODEL}",
+        "MUREKA_DRY_RUN": "${MUREKA_DRY_RUN}",
+        "RENDERHAUS_MEDIA_DIR": "${ROOT}/${RENDERHAUS_MEDIA_DIR}"
       }
     },
     "elevenlabs": {

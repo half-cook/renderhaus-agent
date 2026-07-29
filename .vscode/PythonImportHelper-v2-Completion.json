@@ -80,6 +80,14 @@
         "documentation": {}
     },
     {
+        "label": "annotations",
+        "importPath": "__future__",
+        "description": "__future__",
+        "isExtraImport": true,
+        "detail": "__future__",
+        "documentation": {}
+    },
+    {
         "label": "json",
         "kind": 6,
         "isExtraImport": true,
@@ -179,11 +187,11 @@
         "documentation": {}
     },
     {
-        "label": "Any",
-        "importPath": "typing",
-        "description": "typing",
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
         "isExtraImport": true,
-        "detail": "typing",
+        "detail": "pathlib",
         "documentation": {}
     },
     {
@@ -212,6 +220,30 @@
     },
     {
         "label": "Any",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Any",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Any",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Literal",
         "importPath": "typing",
         "description": "typing",
         "isExtraImport": true,
@@ -535,19 +567,11 @@
         "documentation": {}
     },
     {
-        "label": "Field",
-        "importPath": "pydantic",
-        "description": "pydantic",
+        "label": "FastMCP",
+        "importPath": "fastmcp",
+        "description": "fastmcp",
         "isExtraImport": true,
-        "detail": "pydantic",
-        "documentation": {}
-    },
-    {
-        "label": "BaseModel",
-        "importPath": "pydantic",
-        "description": "pydantic",
-        "isExtraImport": true,
-        "detail": "pydantic",
+        "detail": "fastmcp",
         "documentation": {}
     },
     {
@@ -591,21 +615,51 @@
         "documentation": {}
     },
     {
-        "label": "base64",
-        "kind": 6,
+        "label": "BaseModel",
+        "importPath": "pydantic",
+        "description": "pydantic",
         "isExtraImport": true,
-        "importPath": "base64",
-        "description": "base64",
-        "detail": "base64",
+        "detail": "pydantic",
         "documentation": {}
     },
     {
-        "label": "mimetypes",
-        "kind": 6,
+        "label": "Field",
+        "importPath": "pydantic",
+        "description": "pydantic",
         "isExtraImport": true,
-        "importPath": "mimetypes",
-        "description": "mimetypes",
-        "detail": "mimetypes",
+        "detail": "pydantic",
+        "documentation": {}
+    },
+    {
+        "label": "BaseModel",
+        "importPath": "pydantic",
+        "description": "pydantic",
+        "isExtraImport": true,
+        "detail": "pydantic",
+        "documentation": {}
+    },
+    {
+        "label": "Field",
+        "importPath": "pydantic",
+        "description": "pydantic",
+        "isExtraImport": true,
+        "detail": "pydantic",
+        "documentation": {}
+    },
+    {
+        "label": "urlparse",
+        "importPath": "urllib.parse",
+        "description": "urllib.parse",
+        "isExtraImport": true,
+        "detail": "urllib.parse",
+        "documentation": {}
+    },
+    {
+        "label": "urlparse",
+        "importPath": "urllib.parse",
+        "description": "urllib.parse",
+        "isExtraImport": true,
+        "detail": "urllib.parse",
         "documentation": {}
     },
     {
@@ -634,11 +688,29 @@
         "documentation": {}
     },
     {
-        "label": "urlparse",
-        "importPath": "urllib.parse",
-        "description": "urllib.parse",
+        "label": "FieldInfo",
+        "importPath": "pydantic.fields",
+        "description": "pydantic.fields",
         "isExtraImport": true,
-        "detail": "urllib.parse",
+        "detail": "pydantic.fields",
+        "documentation": {}
+    },
+    {
+        "label": "base64",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "base64",
+        "description": "base64",
+        "detail": "base64",
+        "documentation": {}
+    },
+    {
+        "label": "mimetypes",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "mimetypes",
+        "description": "mimetypes",
+        "detail": "mimetypes",
         "documentation": {}
     },
     {
@@ -740,6 +812,14 @@
         "documentation": {}
     },
     {
+        "label": "poll_music_generation",
+        "importPath": "agent.service",
+        "description": "agent.service",
+        "isExtraImport": true,
+        "detail": "agent.service",
+        "documentation": {}
+    },
+    {
         "label": "poll_video_generation",
         "importPath": "agent.service",
         "description": "agent.service",
@@ -749,6 +829,14 @@
     },
     {
         "label": "start_image_generation",
+        "importPath": "agent.service",
+        "description": "agent.service",
+        "isExtraImport": true,
+        "detail": "agent.service",
+        "documentation": {}
+    },
+    {
+        "label": "start_music_generation",
         "importPath": "agent.service",
         "description": "agent.service",
         "isExtraImport": true,
@@ -795,7 +883,7 @@
         "kind": 5,
         "importPath": "agent.config",
         "description": "agent.config",
-        "peekOfCode": "ROOT = Path(__file__).resolve().parents[1]\nENV_FILE = ROOT / \".env.local\"\nDEFAULT_MCP_CONFIG = ROOT / \"configs\" / \"mcp.local.json\"\n_VAR_RE = re.compile(r\"\\$\\{([A-Za-z_][A-Za-z0-9_]*|ROOT)\\}\")\nDEFAULT_ENV = {\n    \"AGENT_MODEL\": \"openai:gpt-4.1-mini\",\n    \"BYTEPLUS_BASE_URL\": \"https://ark.ap-southeast.bytepluses.com/api/v3\",\n    \"SEEDANCE_MODEL\": \"dreamina-seedance-2-0-mini-260615\",\n    \"SEEDANCE_DRY_RUN\": \"true\",\n    \"SEEDREAM_MODEL\": \"seedream-5-0-lite-260128\",",
+        "peekOfCode": "ROOT = Path(__file__).resolve().parents[1]\nENV_FILE = ROOT / \".env.local\"\nDEFAULT_MCP_CONFIG = ROOT / \"configs\" / \"mcp.local.json\"\n_VAR_RE = re.compile(r\"\\$\\{([A-Za-z_][A-Za-z0-9_]*|ROOT)\\}\")\nDEFAULT_ENV = {\n    \"AGENT_MODEL\": \"openai:gpt-4.1-mini\",\n    \"BYTEPLUS_BASE_URL\": \"https://ark.ap-southeast.bytepluses.com/api/v3\",\n    \"SEEDANCE_MODEL\": \"seedance-1-5-pro-251215\",\n    \"SEEDANCE_DRY_RUN\": \"true\",\n    \"SEEDREAM_MODEL\": \"seedream-5-0-lite-260128\",",
         "detail": "agent.config",
         "documentation": {}
     },
@@ -804,7 +892,7 @@
         "kind": 5,
         "importPath": "agent.config",
         "description": "agent.config",
-        "peekOfCode": "ENV_FILE = ROOT / \".env.local\"\nDEFAULT_MCP_CONFIG = ROOT / \"configs\" / \"mcp.local.json\"\n_VAR_RE = re.compile(r\"\\$\\{([A-Za-z_][A-Za-z0-9_]*|ROOT)\\}\")\nDEFAULT_ENV = {\n    \"AGENT_MODEL\": \"openai:gpt-4.1-mini\",\n    \"BYTEPLUS_BASE_URL\": \"https://ark.ap-southeast.bytepluses.com/api/v3\",\n    \"SEEDANCE_MODEL\": \"dreamina-seedance-2-0-mini-260615\",\n    \"SEEDANCE_DRY_RUN\": \"true\",\n    \"SEEDREAM_MODEL\": \"seedream-5-0-lite-260128\",\n    \"SEEDREAM_DRY_RUN\": \"true\",",
+        "peekOfCode": "ENV_FILE = ROOT / \".env.local\"\nDEFAULT_MCP_CONFIG = ROOT / \"configs\" / \"mcp.local.json\"\n_VAR_RE = re.compile(r\"\\$\\{([A-Za-z_][A-Za-z0-9_]*|ROOT)\\}\")\nDEFAULT_ENV = {\n    \"AGENT_MODEL\": \"openai:gpt-4.1-mini\",\n    \"BYTEPLUS_BASE_URL\": \"https://ark.ap-southeast.bytepluses.com/api/v3\",\n    \"SEEDANCE_MODEL\": \"seedance-1-5-pro-251215\",\n    \"SEEDANCE_DRY_RUN\": \"true\",\n    \"SEEDREAM_MODEL\": \"seedream-5-0-lite-260128\",\n    \"SEEDREAM_DRY_RUN\": \"true\",",
         "detail": "agent.config",
         "documentation": {}
     },
@@ -813,7 +901,7 @@
         "kind": 5,
         "importPath": "agent.config",
         "description": "agent.config",
-        "peekOfCode": "DEFAULT_MCP_CONFIG = ROOT / \"configs\" / \"mcp.local.json\"\n_VAR_RE = re.compile(r\"\\$\\{([A-Za-z_][A-Za-z0-9_]*|ROOT)\\}\")\nDEFAULT_ENV = {\n    \"AGENT_MODEL\": \"openai:gpt-4.1-mini\",\n    \"BYTEPLUS_BASE_URL\": \"https://ark.ap-southeast.bytepluses.com/api/v3\",\n    \"SEEDANCE_MODEL\": \"dreamina-seedance-2-0-mini-260615\",\n    \"SEEDANCE_DRY_RUN\": \"true\",\n    \"SEEDREAM_MODEL\": \"seedream-5-0-lite-260128\",\n    \"SEEDREAM_DRY_RUN\": \"true\",\n    \"GEMINI_TTS_DRY_RUN\": \"true\",",
+        "peekOfCode": "DEFAULT_MCP_CONFIG = ROOT / \"configs\" / \"mcp.local.json\"\n_VAR_RE = re.compile(r\"\\$\\{([A-Za-z_][A-Za-z0-9_]*|ROOT)\\}\")\nDEFAULT_ENV = {\n    \"AGENT_MODEL\": \"openai:gpt-4.1-mini\",\n    \"BYTEPLUS_BASE_URL\": \"https://ark.ap-southeast.bytepluses.com/api/v3\",\n    \"SEEDANCE_MODEL\": \"seedance-1-5-pro-251215\",\n    \"SEEDANCE_DRY_RUN\": \"true\",\n    \"SEEDREAM_MODEL\": \"seedream-5-0-lite-260128\",\n    \"SEEDREAM_DRY_RUN\": \"true\",\n    \"GEMINI_TTS_DRY_RUN\": \"true\",",
         "detail": "agent.config",
         "documentation": {}
     },
@@ -822,7 +910,7 @@
         "kind": 5,
         "importPath": "agent.config",
         "description": "agent.config",
-        "peekOfCode": "_VAR_RE = re.compile(r\"\\$\\{([A-Za-z_][A-Za-z0-9_]*|ROOT)\\}\")\nDEFAULT_ENV = {\n    \"AGENT_MODEL\": \"openai:gpt-4.1-mini\",\n    \"BYTEPLUS_BASE_URL\": \"https://ark.ap-southeast.bytepluses.com/api/v3\",\n    \"SEEDANCE_MODEL\": \"dreamina-seedance-2-0-mini-260615\",\n    \"SEEDANCE_DRY_RUN\": \"true\",\n    \"SEEDREAM_MODEL\": \"seedream-5-0-lite-260128\",\n    \"SEEDREAM_DRY_RUN\": \"true\",\n    \"GEMINI_TTS_DRY_RUN\": \"true\",\n    \"GEMINI_TTS_MODEL\": \"gemini-3.1-flash-tts-preview\",",
+        "peekOfCode": "_VAR_RE = re.compile(r\"\\$\\{([A-Za-z_][A-Za-z0-9_]*|ROOT)\\}\")\nDEFAULT_ENV = {\n    \"AGENT_MODEL\": \"openai:gpt-4.1-mini\",\n    \"BYTEPLUS_BASE_URL\": \"https://ark.ap-southeast.bytepluses.com/api/v3\",\n    \"SEEDANCE_MODEL\": \"seedance-1-5-pro-251215\",\n    \"SEEDANCE_DRY_RUN\": \"true\",\n    \"SEEDREAM_MODEL\": \"seedream-5-0-lite-260128\",\n    \"SEEDREAM_DRY_RUN\": \"true\",\n    \"GEMINI_TTS_DRY_RUN\": \"true\",\n    \"GEMINI_TTS_MODEL\": \"gemini-3.1-flash-tts-preview\",",
         "detail": "agent.config",
         "documentation": {}
     },
@@ -831,7 +919,7 @@
         "kind": 5,
         "importPath": "agent.config",
         "description": "agent.config",
-        "peekOfCode": "DEFAULT_ENV = {\n    \"AGENT_MODEL\": \"openai:gpt-4.1-mini\",\n    \"BYTEPLUS_BASE_URL\": \"https://ark.ap-southeast.bytepluses.com/api/v3\",\n    \"SEEDANCE_MODEL\": \"dreamina-seedance-2-0-mini-260615\",\n    \"SEEDANCE_DRY_RUN\": \"true\",\n    \"SEEDREAM_MODEL\": \"seedream-5-0-lite-260128\",\n    \"SEEDREAM_DRY_RUN\": \"true\",\n    \"GEMINI_TTS_DRY_RUN\": \"true\",\n    \"GEMINI_TTS_MODEL\": \"gemini-3.1-flash-tts-preview\",\n    \"MUREKA_API_URL\": \"https://api.mureka.ai\",",
+        "peekOfCode": "DEFAULT_ENV = {\n    \"AGENT_MODEL\": \"openai:gpt-4.1-mini\",\n    \"BYTEPLUS_BASE_URL\": \"https://ark.ap-southeast.bytepluses.com/api/v3\",\n    \"SEEDANCE_MODEL\": \"seedance-1-5-pro-251215\",\n    \"SEEDANCE_DRY_RUN\": \"true\",\n    \"SEEDREAM_MODEL\": \"seedream-5-0-lite-260128\",\n    \"SEEDREAM_DRY_RUN\": \"true\",\n    \"GEMINI_TTS_DRY_RUN\": \"true\",\n    \"GEMINI_TTS_MODEL\": \"gemini-3.1-flash-tts-preview\",\n    \"MUREKA_API_URL\": \"https://api.mureka.ai\",",
         "detail": "agent.config",
         "documentation": {}
     },
@@ -966,7 +1054,16 @@
         "kind": 5,
         "importPath": "agent.service",
         "description": "agent.service",
-        "peekOfCode": "WEB_IMAGE_SYSTEM_PROMPT = \"\"\"You are the private Renderhaus image-generation coordinator.\nThe user has explicitly authorized exactly one image generation for this request.\nCall exactly one generation tool: text_to_image for a text prompt, or image_to_image when a local\nreference image path is supplied. Never call video, wait, polling, model listing, audio, voice,\nmusic, playback, phone, or outbound communication tools. Do not reveal provider, model, tool,\ncredential, or internal path details in your prose. Keep the final response to one short sentence;\nthe application reads the generation result structurally.\n\"\"\"\n_runtime_lock = asyncio.Lock()\n_cached_tools: dict[str, Any] | None = None",
+        "peekOfCode": "WEB_IMAGE_SYSTEM_PROMPT = \"\"\"You are the private Renderhaus image-generation coordinator.\nThe user has explicitly authorized exactly one image generation for this request.\nCall exactly one generation tool: text_to_image for a text prompt, or image_to_image when a local\nreference image path is supplied. Never call video, wait, polling, model listing, audio, voice,\nmusic, playback, phone, or outbound communication tools. Do not reveal provider, model, tool,\ncredential, or internal path details in your prose. Keep the final response to one short sentence;\nthe application reads the generation result structurally.\n\"\"\"\nWEB_MUSIC_SYSTEM_PROMPT = \"\"\"You are the private Renderhaus music-generation coordinator.\nThe user has explicitly authorized exactly one music generation for this request.",
+        "detail": "agent.service",
+        "documentation": {}
+    },
+    {
+        "label": "WEB_MUSIC_SYSTEM_PROMPT",
+        "kind": 5,
+        "importPath": "agent.service",
+        "description": "agent.service",
+        "peekOfCode": "WEB_MUSIC_SYSTEM_PROMPT = \"\"\"You are the private Renderhaus music-generation coordinator.\nThe user has explicitly authorized exactly one music generation for this request.\nCall exactly one immediate-return generation tool: text_to_music. Prefer an instrumental score\nunless the user explicitly supplies lyrics. Never call wait, polling, model listing, video, image,\nvoice, playback, phone, or outbound communication tools. Do not reveal provider, model, tool,\ncredential, or internal path details in your prose. Keep the final response to one short sentence;\nthe application reads the generation result structurally.\n\"\"\"\n_runtime_lock = asyncio.Lock()\n_cached_tools: dict[str, Any] | None = None",
         "detail": "agent.service",
         "documentation": {}
     },
@@ -975,7 +1072,7 @@
         "kind": 5,
         "importPath": "agent.service",
         "description": "agent.service",
-        "peekOfCode": "_runtime_lock = asyncio.Lock()\n_cached_tools: dict[str, Any] | None = None\n_cached_video_agent: Any | None = None\n_cached_image_agent: Any | None = None\ndef _jsonable(value: Any) -> Any:\n    if value is None or isinstance(value, str | int | float | bool):\n        return value\n    if isinstance(value, dict):\n        return {str(key): _jsonable(item) for key, item in value.items()}\n    if isinstance(value, list | tuple):",
+        "peekOfCode": "_runtime_lock = asyncio.Lock()\n_cached_tools: dict[str, Any] | None = None\n_cached_video_agent: Any | None = None\n_cached_image_agent: Any | None = None\n_cached_music_agent: Any | None = None\ndef _jsonable(value: Any) -> Any:\n    if value is None or isinstance(value, str | int | float | bool):\n        return value\n    if isinstance(value, dict):\n        return {str(key): _jsonable(item) for key, item in value.items()}",
         "detail": "agent.service",
         "documentation": {}
     },
@@ -1070,6 +1167,69 @@
         "documentation": {}
     },
     {
+        "label": "MurekaTask",
+        "kind": 6,
+        "importPath": "mcps.mureka.server",
+        "description": "mcps.mureka.server",
+        "peekOfCode": "class MurekaTask(BaseModel):\n    job_id: str\n    status: str\n    provider: str = \"mureka\"\n    mode: str\n    prompt: str\n    model: str | None = None\n    output_path: str | None = None\n    audio_url: str | None = None\n    note: str",
+        "detail": "mcps.mureka.server",
+        "documentation": {}
+    },
+    {
+        "label": "text_to_music",
+        "kind": 2,
+        "importPath": "mcps.mureka.server",
+        "description": "mcps.mureka.server",
+        "peekOfCode": "def text_to_music(\n    prompt: str = Field(\n        description=\"Music direction: genre, mood, tempo, instruments, and use case.\"\n    ),\n    lyrics: str | None = Field(\n        default=None,\n        description=\"Optional lyrics. When omitted, generates an instrumental score.\",\n    ),\n    model: str | None = Field(\n        default=None,",
+        "detail": "mcps.mureka.server",
+        "documentation": {}
+    },
+    {
+        "label": "get_music_task",
+        "kind": 2,
+        "importPath": "mcps.mureka.server",
+        "description": "mcps.mureka.server",
+        "peekOfCode": "def get_music_task(\n    job_id: str = Field(description=\"Mureka task id returned by text_to_music.\"),\n    download: bool = Field(default=True, description=\"Download the audio when succeeded.\"),\n) -> dict:\n    \"\"\"Poll a Mureka music task and optionally download the finished audio.\"\"\"\n    download = bool(_field_value(download, True))\n    return _retrieve_task(job_id, download=download)\n@mcp.tool()\ndef list_mureka_models() -> dict:\n    \"\"\"Describe the default Mureka model selection for this workspace.\"\"\"",
+        "detail": "mcps.mureka.server",
+        "documentation": {}
+    },
+    {
+        "label": "list_mureka_models",
+        "kind": 2,
+        "importPath": "mcps.mureka.server",
+        "description": "mcps.mureka.server",
+        "peekOfCode": "def list_mureka_models() -> dict:\n    \"\"\"Describe the default Mureka model selection for this workspace.\"\"\"\n    return {\n        \"provider\": \"mureka\",\n        \"default_model\": _model(),\n        \"supported\": [\"auto\", \"mureka-6\", \"mureka-5.5\", \"mureka-7.6\", \"mureka-o2\"],\n        \"note\": \"Use auto unless a specific Mureka model id is required.\",\n    }\nif __name__ == \"__main__\":\n    mcp.run(transport=\"stdio\", show_banner=False)",
+        "detail": "mcps.mureka.server",
+        "documentation": {}
+    },
+    {
+        "label": "mcp",
+        "kind": 5,
+        "importPath": "mcps.mureka.server",
+        "description": "mcps.mureka.server",
+        "peekOfCode": "mcp = FastMCP(\"renderhaus-mureka\")\nclass MurekaTask(BaseModel):\n    job_id: str\n    status: str\n    provider: str = \"mureka\"\n    mode: str\n    prompt: str\n    model: str | None = None\n    output_path: str | None = None\n    audio_url: str | None = None",
+        "detail": "mcps.mureka.server",
+        "documentation": {}
+    },
+    {
+        "label": "TERMINAL_STATUSES",
+        "kind": 5,
+        "importPath": "mcps.mureka.server",
+        "description": "mcps.mureka.server",
+        "peekOfCode": "TERMINAL_STATUSES = {\"succeeded\", \"failed\", \"cancelled\", \"canceled\", \"timeouted\", \"timeout\"}\nQUERY_KIND = Literal[\"instrumental\", \"song\"]\ndef _field_value(value: Any, default: Any) -> Any:\n    if isinstance(value, FieldInfo):\n        return getattr(value, \"default\", default)\n    return value\ndef _media_dir() -> Path:\n    path = Path(os.getenv(\"RENDERHAUS_MEDIA_DIR\", \".renderhaus/media\")).expanduser()\n    path.mkdir(parents=True, exist_ok=True)\n    return path",
+        "detail": "mcps.mureka.server",
+        "documentation": {}
+    },
+    {
+        "label": "QUERY_KIND",
+        "kind": 5,
+        "importPath": "mcps.mureka.server",
+        "description": "mcps.mureka.server",
+        "peekOfCode": "QUERY_KIND = Literal[\"instrumental\", \"song\"]\ndef _field_value(value: Any, default: Any) -> Any:\n    if isinstance(value, FieldInfo):\n        return getattr(value, \"default\", default)\n    return value\ndef _media_dir() -> Path:\n    path = Path(os.getenv(\"RENDERHAUS_MEDIA_DIR\", \".renderhaus/media\")).expanduser()\n    path.mkdir(parents=True, exist_ok=True)\n    return path\ndef _dry_run() -> bool:",
+        "detail": "mcps.mureka.server",
+        "documentation": {}
+    },
+    {
         "label": "SeedanceTask",
         "kind": 6,
         "importPath": "mcps.seedance.server",
@@ -1083,7 +1243,7 @@
         "kind": 2,
         "importPath": "mcps.seedance.server",
         "description": "mcps.seedance.server",
-        "peekOfCode": "def text_to_video(\n    prompt: str = Field(description=\"Video prompt.\"),\n    duration_seconds: int = Field(default=5, ge=4, le=15),\n    aspect_ratio: str = Field(default=\"16:9\"),\n    resolution: str = Field(default=\"720p\"),\n    model: str | None = Field(default=None, description=\"Seedance model id. Defaults to SEEDANCE_MODEL.\"),\n    watermark: bool = Field(default=False),\n    generate_audio: bool = Field(default=False),\n    service_tier: Literal[\"default\", \"flex\"] | None = Field(\n        default=None,",
+        "peekOfCode": "def text_to_video(\n    prompt: str = Field(description=\"Video prompt.\"),\n    duration_seconds: int = Field(default=5, ge=MIN_DURATION_SECONDS, le=MAX_DURATION_SECONDS),\n    aspect_ratio: str = Field(default=\"16:9\"),\n    resolution: str = Field(default=\"720p\"),\n    model: str | None = Field(default=None, description=\"Seedance model id. Defaults to SEEDANCE_MODEL.\"),\n    watermark: bool = Field(default=False),\n    generate_audio: bool = Field(default=False),\n    service_tier: Literal[\"default\", \"flex\"] | None = Field(\n        default=None,",
         "detail": "mcps.seedance.server",
         "documentation": {}
     },
@@ -1092,7 +1252,7 @@
         "kind": 2,
         "importPath": "mcps.seedance.server",
         "description": "mcps.seedance.server",
-        "peekOfCode": "def image_to_video(\n    image_path_or_url: str = Field(description=\"Reference image path or URL.\"),\n    prompt: str = Field(description=\"Motion and style prompt.\"),\n    duration_seconds: int = Field(default=5, ge=4, le=15),\n    aspect_ratio: str = Field(default=\"16:9\"),\n    resolution: str = Field(default=\"720p\"),\n    model: str | None = Field(default=None, description=\"Seedance model id. Defaults to SEEDANCE_MODEL.\"),\n    watermark: bool = Field(default=False),\n    generate_audio: bool = Field(default=False),\n    service_tier: Literal[\"default\", \"flex\"] | None = Field(",
+        "peekOfCode": "def image_to_video(\n    image_path_or_url: str = Field(description=\"Reference image path or URL.\"),\n    prompt: str = Field(description=\"Motion and style prompt.\"),\n    duration_seconds: int = Field(default=5, ge=MIN_DURATION_SECONDS, le=MAX_DURATION_SECONDS),\n    aspect_ratio: str = Field(default=\"16:9\"),\n    resolution: str = Field(default=\"720p\"),\n    model: str | None = Field(default=None, description=\"Seedance model id. Defaults to SEEDANCE_MODEL.\"),\n    watermark: bool = Field(default=False),\n    generate_audio: bool = Field(default=False),\n    service_tier: Literal[\"default\", \"flex\"] | None = Field(",
         "detail": "mcps.seedance.server",
         "documentation": {}
     },
@@ -1119,7 +1279,7 @@
         "kind": 2,
         "importPath": "mcps.seedance.server",
         "description": "mcps.seedance.server",
-        "peekOfCode": "def text_to_video_and_wait(\n    prompt: str = Field(description=\"Video prompt.\"),\n    duration_seconds: int = Field(default=4, ge=4, le=15),\n    aspect_ratio: str = Field(default=\"16:9\"),\n    resolution: str = Field(default=\"720p\"),\n    timeout_seconds: int = Field(default=600, ge=30, le=1800),\n    poll_interval_seconds: int = Field(default=5, ge=2, le=60),\n    model: str | None = Field(default=None, description=\"Seedance model id. Defaults to SEEDANCE_MODEL.\"),\n    watermark: bool = Field(default=False),\n    generate_audio: bool = Field(default=False),",
+        "peekOfCode": "def text_to_video_and_wait(\n    prompt: str = Field(description=\"Video prompt.\"),\n    duration_seconds: int = Field(default=4, ge=MIN_DURATION_SECONDS, le=MAX_DURATION_SECONDS),\n    aspect_ratio: str = Field(default=\"16:9\"),\n    resolution: str = Field(default=\"720p\"),\n    timeout_seconds: int = Field(default=600, ge=30, le=1800),\n    poll_interval_seconds: int = Field(default=5, ge=2, le=60),\n    model: str | None = Field(default=None, description=\"Seedance model id. Defaults to SEEDANCE_MODEL.\"),\n    watermark: bool = Field(default=False),\n    generate_audio: bool = Field(default=False),",
         "detail": "mcps.seedance.server",
         "documentation": {}
     },
@@ -1146,7 +1306,25 @@
         "kind": 5,
         "importPath": "mcps.seedance.server",
         "description": "mcps.seedance.server",
-        "peekOfCode": "TERMINAL_STATUSES = {\"succeeded\", \"failed\", \"cancelled\", \"canceled\", \"deleted\"}\ndef _field_value(value: Any, default: Any) -> Any:\n    if isinstance(value, FieldInfo):\n        return getattr(value, \"default\", default)\n    return value\ndef _media_dir() -> Path:\n    path = Path(os.getenv(\"RENDERHAUS_MEDIA_DIR\", \".renderhaus/media\")).expanduser()\n    path.mkdir(parents=True, exist_ok=True)\n    return path\ndef _dry_run() -> bool:",
+        "peekOfCode": "TERMINAL_STATUSES = {\"succeeded\", \"failed\", \"cancelled\", \"canceled\", \"deleted\"}\n# Seedance 1.5 Pro accepts 4-12 second clips; longer requests are rejected by BytePlus.\nMIN_DURATION_SECONDS = 4\nMAX_DURATION_SECONDS = 12\ndef _field_value(value: Any, default: Any) -> Any:\n    if isinstance(value, FieldInfo):\n        return getattr(value, \"default\", default)\n    return value\ndef _media_dir() -> Path:\n    path = Path(os.getenv(\"RENDERHAUS_MEDIA_DIR\", \".renderhaus/media\")).expanduser()",
+        "detail": "mcps.seedance.server",
+        "documentation": {}
+    },
+    {
+        "label": "MIN_DURATION_SECONDS",
+        "kind": 5,
+        "importPath": "mcps.seedance.server",
+        "description": "mcps.seedance.server",
+        "peekOfCode": "MIN_DURATION_SECONDS = 4\nMAX_DURATION_SECONDS = 12\ndef _field_value(value: Any, default: Any) -> Any:\n    if isinstance(value, FieldInfo):\n        return getattr(value, \"default\", default)\n    return value\ndef _media_dir() -> Path:\n    path = Path(os.getenv(\"RENDERHAUS_MEDIA_DIR\", \".renderhaus/media\")).expanduser()\n    path.mkdir(parents=True, exist_ok=True)\n    return path",
+        "detail": "mcps.seedance.server",
+        "documentation": {}
+    },
+    {
+        "label": "MAX_DURATION_SECONDS",
+        "kind": 5,
+        "importPath": "mcps.seedance.server",
+        "description": "mcps.seedance.server",
+        "peekOfCode": "MAX_DURATION_SECONDS = 12\ndef _field_value(value: Any, default: Any) -> Any:\n    if isinstance(value, FieldInfo):\n        return getattr(value, \"default\", default)\n    return value\ndef _media_dir() -> Path:\n    path = Path(os.getenv(\"RENDERHAUS_MEDIA_DIR\", \".renderhaus/media\")).expanduser()\n    path.mkdir(parents=True, exist_ok=True)\n    return path\ndef _dry_run() -> bool:",
         "detail": "mcps.seedance.server",
         "documentation": {}
     },
@@ -1227,7 +1405,7 @@
         "kind": 6,
         "importPath": "web.app",
         "description": "web.app",
-        "peekOfCode": "class GenerationRequest(BaseModel):\n    prompt: str = Field(min_length=3, max_length=4000)\n    media_type: Literal[\"video\", \"image\"] = \"video\"\n    vibe: str = Field(default=\"quiet luxury\", max_length=120)\n    aspect_ratio: str = Field(default=\"16:9\", pattern=r\"^(16:9|9:16|1:1)$\")\n    duration_seconds: int = Field(default=10, ge=4, le=15)\n    reference_asset_id: str | None = Field(default=None, pattern=r\"^[a-f0-9]{32}$\")\nclass RefinementRequest(BaseModel):\n    instruction: str = Field(min_length=3, max_length=2000)\nclass JobStore:",
+        "peekOfCode": "class GenerationRequest(BaseModel):\n    prompt: str = Field(min_length=3, max_length=4000)\n    media_type: Literal[\"video\", \"image\", \"music\"] = \"video\"\n    vibe: str = Field(default=\"quiet luxury\", max_length=120)\n    aspect_ratio: str = Field(default=\"16:9\", pattern=r\"^(16:9|9:16|1:1)$\")\n    duration_seconds: int = Field(default=10, ge=MIN_VIDEO_SECONDS, le=MAX_VIDEO_SECONDS)\n    reference_asset_id: str | None = Field(default=None, pattern=r\"^[a-f0-9]{32}$\")\nclass RefinementRequest(BaseModel):\n    instruction: str = Field(min_length=3, max_length=2000)\nclass JobStore:",
         "detail": "web.app",
         "documentation": {}
     },
@@ -1263,7 +1441,7 @@
         "kind": 5,
         "importPath": "web.app",
         "description": "web.app",
-        "peekOfCode": "STATIC_DIR = Path(__file__).with_name(\"static\")\nSTATE_DIR = ROOT / \".renderhaus\" / \"web-jobs\"\nUPLOAD_DIR = ROOT / \".renderhaus\" / \"uploads\"\nMEDIA_DIR = (ROOT / os.getenv(\"RENDERHAUS_MEDIA_DIR\", \".renderhaus/media\")).resolve()\nMAX_UPLOAD_BYTES = 15 * 1024 * 1024\nTERMINAL_STATES = {\"complete\", \"planned\", \"failed\"}\nPROVIDER_TERMINAL_STATES = {\"succeeded\", \"failed\", \"cancelled\", \"canceled\", \"deleted\"}\nPUBLIC_JOB_FIELDS = {\n    \"id\",\n    \"schema_version\",",
+        "peekOfCode": "STATIC_DIR = Path(__file__).with_name(\"static\")\nSTATE_DIR = ROOT / \".renderhaus\" / \"web-jobs\"\nUPLOAD_DIR = ROOT / \".renderhaus\" / \"uploads\"\nMEDIA_DIR = (ROOT / os.getenv(\"RENDERHAUS_MEDIA_DIR\", \".renderhaus/media\")).resolve()\nMAX_UPLOAD_BYTES = 15 * 1024 * 1024\nMIN_VIDEO_SECONDS = 4\nMAX_VIDEO_SECONDS = 12\nTERMINAL_STATES = {\"complete\", \"planned\", \"failed\"}\nPROVIDER_TERMINAL_STATES = {\n    \"succeeded\",",
         "detail": "web.app",
         "documentation": {}
     },
@@ -1272,7 +1450,7 @@
         "kind": 5,
         "importPath": "web.app",
         "description": "web.app",
-        "peekOfCode": "STATE_DIR = ROOT / \".renderhaus\" / \"web-jobs\"\nUPLOAD_DIR = ROOT / \".renderhaus\" / \"uploads\"\nMEDIA_DIR = (ROOT / os.getenv(\"RENDERHAUS_MEDIA_DIR\", \".renderhaus/media\")).resolve()\nMAX_UPLOAD_BYTES = 15 * 1024 * 1024\nTERMINAL_STATES = {\"complete\", \"planned\", \"failed\"}\nPROVIDER_TERMINAL_STATES = {\"succeeded\", \"failed\", \"cancelled\", \"canceled\", \"deleted\"}\nPUBLIC_JOB_FIELDS = {\n    \"id\",\n    \"schema_version\",\n    \"status\",",
+        "peekOfCode": "STATE_DIR = ROOT / \".renderhaus\" / \"web-jobs\"\nUPLOAD_DIR = ROOT / \".renderhaus\" / \"uploads\"\nMEDIA_DIR = (ROOT / os.getenv(\"RENDERHAUS_MEDIA_DIR\", \".renderhaus/media\")).resolve()\nMAX_UPLOAD_BYTES = 15 * 1024 * 1024\nMIN_VIDEO_SECONDS = 4\nMAX_VIDEO_SECONDS = 12\nTERMINAL_STATES = {\"complete\", \"planned\", \"failed\"}\nPROVIDER_TERMINAL_STATES = {\n    \"succeeded\",\n    \"failed\",",
         "detail": "web.app",
         "documentation": {}
     },
@@ -1281,7 +1459,7 @@
         "kind": 5,
         "importPath": "web.app",
         "description": "web.app",
-        "peekOfCode": "UPLOAD_DIR = ROOT / \".renderhaus\" / \"uploads\"\nMEDIA_DIR = (ROOT / os.getenv(\"RENDERHAUS_MEDIA_DIR\", \".renderhaus/media\")).resolve()\nMAX_UPLOAD_BYTES = 15 * 1024 * 1024\nTERMINAL_STATES = {\"complete\", \"planned\", \"failed\"}\nPROVIDER_TERMINAL_STATES = {\"succeeded\", \"failed\", \"cancelled\", \"canceled\", \"deleted\"}\nPUBLIC_JOB_FIELDS = {\n    \"id\",\n    \"schema_version\",\n    \"status\",\n    \"phase\",",
+        "peekOfCode": "UPLOAD_DIR = ROOT / \".renderhaus\" / \"uploads\"\nMEDIA_DIR = (ROOT / os.getenv(\"RENDERHAUS_MEDIA_DIR\", \".renderhaus/media\")).resolve()\nMAX_UPLOAD_BYTES = 15 * 1024 * 1024\nMIN_VIDEO_SECONDS = 4\nMAX_VIDEO_SECONDS = 12\nTERMINAL_STATES = {\"complete\", \"planned\", \"failed\"}\nPROVIDER_TERMINAL_STATES = {\n    \"succeeded\",\n    \"failed\",\n    \"cancelled\",",
         "detail": "web.app",
         "documentation": {}
     },
@@ -1290,7 +1468,7 @@
         "kind": 5,
         "importPath": "web.app",
         "description": "web.app",
-        "peekOfCode": "MEDIA_DIR = (ROOT / os.getenv(\"RENDERHAUS_MEDIA_DIR\", \".renderhaus/media\")).resolve()\nMAX_UPLOAD_BYTES = 15 * 1024 * 1024\nTERMINAL_STATES = {\"complete\", \"planned\", \"failed\"}\nPROVIDER_TERMINAL_STATES = {\"succeeded\", \"failed\", \"cancelled\", \"canceled\", \"deleted\"}\nPUBLIC_JOB_FIELDS = {\n    \"id\",\n    \"schema_version\",\n    \"status\",\n    \"phase\",\n    \"media_type\",",
+        "peekOfCode": "MEDIA_DIR = (ROOT / os.getenv(\"RENDERHAUS_MEDIA_DIR\", \".renderhaus/media\")).resolve()\nMAX_UPLOAD_BYTES = 15 * 1024 * 1024\nMIN_VIDEO_SECONDS = 4\nMAX_VIDEO_SECONDS = 12\nTERMINAL_STATES = {\"complete\", \"planned\", \"failed\"}\nPROVIDER_TERMINAL_STATES = {\n    \"succeeded\",\n    \"failed\",\n    \"cancelled\",\n    \"canceled\",",
         "detail": "web.app",
         "documentation": {}
     },
@@ -1299,7 +1477,25 @@
         "kind": 5,
         "importPath": "web.app",
         "description": "web.app",
-        "peekOfCode": "MAX_UPLOAD_BYTES = 15 * 1024 * 1024\nTERMINAL_STATES = {\"complete\", \"planned\", \"failed\"}\nPROVIDER_TERMINAL_STATES = {\"succeeded\", \"failed\", \"cancelled\", \"canceled\", \"deleted\"}\nPUBLIC_JOB_FIELDS = {\n    \"id\",\n    \"schema_version\",\n    \"status\",\n    \"phase\",\n    \"media_type\",\n    \"prompt\",",
+        "peekOfCode": "MAX_UPLOAD_BYTES = 15 * 1024 * 1024\nMIN_VIDEO_SECONDS = 4\nMAX_VIDEO_SECONDS = 12\nTERMINAL_STATES = {\"complete\", \"planned\", \"failed\"}\nPROVIDER_TERMINAL_STATES = {\n    \"succeeded\",\n    \"failed\",\n    \"cancelled\",\n    \"canceled\",\n    \"deleted\",",
+        "detail": "web.app",
+        "documentation": {}
+    },
+    {
+        "label": "MIN_VIDEO_SECONDS",
+        "kind": 5,
+        "importPath": "web.app",
+        "description": "web.app",
+        "peekOfCode": "MIN_VIDEO_SECONDS = 4\nMAX_VIDEO_SECONDS = 12\nTERMINAL_STATES = {\"complete\", \"planned\", \"failed\"}\nPROVIDER_TERMINAL_STATES = {\n    \"succeeded\",\n    \"failed\",\n    \"cancelled\",\n    \"canceled\",\n    \"deleted\",\n    \"timeouted\",",
+        "detail": "web.app",
+        "documentation": {}
+    },
+    {
+        "label": "MAX_VIDEO_SECONDS",
+        "kind": 5,
+        "importPath": "web.app",
+        "description": "web.app",
+        "peekOfCode": "MAX_VIDEO_SECONDS = 12\nTERMINAL_STATES = {\"complete\", \"planned\", \"failed\"}\nPROVIDER_TERMINAL_STATES = {\n    \"succeeded\",\n    \"failed\",\n    \"cancelled\",\n    \"canceled\",\n    \"deleted\",\n    \"timeouted\",\n    \"timeout\",",
         "detail": "web.app",
         "documentation": {}
     },
@@ -1308,7 +1504,7 @@
         "kind": 5,
         "importPath": "web.app",
         "description": "web.app",
-        "peekOfCode": "TERMINAL_STATES = {\"complete\", \"planned\", \"failed\"}\nPROVIDER_TERMINAL_STATES = {\"succeeded\", \"failed\", \"cancelled\", \"canceled\", \"deleted\"}\nPUBLIC_JOB_FIELDS = {\n    \"id\",\n    \"schema_version\",\n    \"status\",\n    \"phase\",\n    \"media_type\",\n    \"prompt\",\n    \"vibe\",",
+        "peekOfCode": "TERMINAL_STATES = {\"complete\", \"planned\", \"failed\"}\nPROVIDER_TERMINAL_STATES = {\n    \"succeeded\",\n    \"failed\",\n    \"cancelled\",\n    \"canceled\",\n    \"deleted\",\n    \"timeouted\",\n    \"timeout\",\n}",
         "detail": "web.app",
         "documentation": {}
     },
@@ -1317,7 +1513,7 @@
         "kind": 5,
         "importPath": "web.app",
         "description": "web.app",
-        "peekOfCode": "PROVIDER_TERMINAL_STATES = {\"succeeded\", \"failed\", \"cancelled\", \"canceled\", \"deleted\"}\nPUBLIC_JOB_FIELDS = {\n    \"id\",\n    \"schema_version\",\n    \"status\",\n    \"phase\",\n    \"media_type\",\n    \"prompt\",\n    \"vibe\",\n    \"aspect_ratio\",",
+        "peekOfCode": "PROVIDER_TERMINAL_STATES = {\n    \"succeeded\",\n    \"failed\",\n    \"cancelled\",\n    \"canceled\",\n    \"deleted\",\n    \"timeouted\",\n    \"timeout\",\n}\nPUBLIC_JOB_FIELDS = {",
         "detail": "web.app",
         "documentation": {}
     },

@@ -31,11 +31,21 @@ credential, or internal path details in your prose. Keep the final response to o
 the application reads the generation result structurally.
 """
 
+WEB_MUSIC_SYSTEM_PROMPT = """You are the private Renderhaus music-generation coordinator.
+The user has explicitly authorized exactly one music generation for this request.
+Call exactly one immediate-return generation tool: text_to_music. Prefer an instrumental score
+unless the user explicitly supplies lyrics. Never call wait, polling, model listing, video, image,
+voice, playback, phone, or outbound communication tools. Do not reveal provider, model, tool,
+credential, or internal path details in your prose. Keep the final response to one short sentence;
+the application reads the generation result structurally.
+"""
+
 
 _runtime_lock = asyncio.Lock()
 _cached_tools: dict[str, Any] | None = None
 _cached_video_agent: Any | None = None
 _cached_image_agent: Any | None = None
+_cached_music_agent: Any | None = None
 
 
 def _jsonable(value: Any) -> Any:
@@ -91,7 +101,7 @@ def _walk_artifacts(value: Any, artifacts: list[dict[str, Any]]) -> None:
     value = _parse_content(value)
     if isinstance(value, dict):
         path = value.get("output_path")
-        url = value.get("video_url") or value.get("image_url")
+        url = value.get("video_url") or value.get("image_url") or value.get("audio_url")
         if isinstance(path, str) or isinstance(url, str):
             artifact: dict[str, Any] = {}
             if isinstance(path, str):
@@ -99,6 +109,8 @@ def _walk_artifacts(value: Any, artifacts: list[dict[str, Any]]) -> None:
             if isinstance(url, str):
                 if value.get("video_url"):
                     artifact["video_url"] = url
+                elif value.get("audio_url"):
+                    artifact["audio_url"] = url
                 else:
                     artifact["image_url"] = url
             status = value.get("status")
@@ -153,19 +165,24 @@ def _tool_trace_events(tool_events: list[dict[str, Any]]) -> list[dict[str, Any]
         detail = ""
         status = "done"
         if payload is not None:
-            detail = str(payload.get("note") or payload.get("status") or "")[:240]
+            note = payload.get("note")
             raw_status = str(payload.get("status") or "").lower()
+            mode = str(payload.get("mode") or "").replace("_", " ")
+            if isinstance(note, str) and note.strip():
+                detail = note.strip()[:240]
+            elif raw_status:
+                detail = f"Task {raw_status}" + (f" · {mode}" if mode else "")
             if raw_status in {"failed", "error"}:
                 status = "error"
             elif raw_status in {"queued", "running", "processing"}:
                 status = "running"
         elif content is not None:
-            detail = str(content)[:240]
+            detail = "Tool finished."
         traces.append(
             {
                 "id": f"tool-{index}-{name}",
                 "kind": "tool",
-                "title": name,
+                "title": name.replace("_", " "),
                 "detail": detail,
                 "status": status,
             }
@@ -196,12 +213,13 @@ def summarize_agent_result(result: dict[str, Any]) -> dict[str, Any]:
                 final_text = text
 
     unique_artifacts: list[dict[str, Any]] = []
-    seen: set[tuple[str | None, str | None, str | None]] = set()
+    seen: set[tuple[str | None, str | None, str | None, str | None]] = set()
     for artifact in artifacts:
         key = (
             artifact.get("output_path"),
             artifact.get("video_url"),
             artifact.get("image_url"),
+            artifact.get("audio_url"),
         )
         if key in seen:
             continue
@@ -250,22 +268,29 @@ async def invoke_agent(
         return summarized
 
 
-async def _generation_runtime() -> tuple[Any, Any, dict[str, Any]]:
-    global _cached_tools, _cached_video_agent, _cached_image_agent
+async def _generation_runtime() -> tuple[Any, Any, Any, dict[str, Any]]:
+    global _cached_tools, _cached_video_agent, _cached_image_agent, _cached_music_agent
     if (
         _cached_tools is not None
         and _cached_video_agent is not None
         and _cached_image_agent is not None
+        and _cached_music_agent is not None
     ):
-        return _cached_video_agent, _cached_image_agent, _cached_tools
+        return _cached_video_agent, _cached_image_agent, _cached_music_agent, _cached_tools
 
     async with _runtime_lock:
         if (
             _cached_tools is not None
             and _cached_video_agent is not None
             and _cached_image_agent is not None
+            and _cached_music_agent is not None
         ):
-            return _cached_video_agent, _cached_image_agent, _cached_tools
+            return (
+                _cached_video_agent,
+                _cached_image_agent,
+                _cached_music_agent,
+                _cached_tools,
+            )
         tools = await load_tools(DEFAULT_MCP_CONFIG)
         by_name = {tool.name: tool for tool in tools}
         required = {
@@ -274,6 +299,8 @@ async def _generation_runtime() -> tuple[Any, Any, dict[str, Any]]:
             "get_video_task",
             "text_to_image",
             "image_to_image",
+            "text_to_music",
+            "get_music_task",
         }
         missing = sorted(required - by_name.keys())
         if missing:
@@ -291,12 +318,22 @@ async def _generation_runtime() -> tuple[Any, Any, dict[str, Any]]:
             tools=[by_name["text_to_image"], by_name["image_to_image"]],
             system_prompt=WEB_IMAGE_SYSTEM_PROMPT,
         )
+        _cached_music_agent = create_agent(
+            model=model,
+            tools=[by_name["text_to_music"]],
+            system_prompt=WEB_MUSIC_SYSTEM_PROMPT,
+        )
         _cached_tools = {name: by_name[name] for name in required}
-        return _cached_video_agent, _cached_image_agent, _cached_tools
+        return (
+            _cached_video_agent,
+            _cached_image_agent,
+            _cached_music_agent,
+            _cached_tools,
+        )
 
 
 async def start_video_generation(prompt: str) -> dict[str, Any]:
-    video_agent, _, _ = await _generation_runtime()
+    video_agent, _, _, _ = await _generation_runtime()
     callbacks = langchain_callbacks()
     with traced_operation(
         "start-video-generation",
@@ -328,7 +365,7 @@ async def start_video_generation(prompt: str) -> dict[str, Any]:
 
 
 async def start_image_generation(prompt: str) -> dict[str, Any]:
-    _, image_agent, _ = await _generation_runtime()
+    _, image_agent, _, _ = await _generation_runtime()
     callbacks = langchain_callbacks()
     with traced_operation(
         "start-image-generation",
@@ -361,10 +398,51 @@ async def start_image_generation(prompt: str) -> dict[str, Any]:
         return summarized
 
 
+async def start_music_generation(prompt: str) -> dict[str, Any]:
+    _, _, music_agent, _ = await _generation_runtime()
+    callbacks = langchain_callbacks()
+    with traced_operation(
+        "start-music-generation",
+        as_type="agent",
+        input={"prompt": prompt},
+        tags=["renderhaus", "music-generation"],
+        metadata={"feature": "music-generation", "phase": "start"},
+    ) as observation:
+        result = await music_agent.ainvoke(
+            {"messages": [{"role": "user", "content": prompt}]},
+            config={"callbacks": callbacks} if callbacks else {},
+        )
+        summarized = summarize_agent_result(result)
+        if observation is not None:
+            artifacts = summarized.get("artifacts") or []
+            provider_job_id = None
+            for artifact in reversed(artifacts):
+                if isinstance(artifact, dict) and isinstance(artifact.get("job_id"), str):
+                    provider_job_id = artifact["job_id"]
+                    break
+            observation.update(
+                output={
+                    "message": summarized.get("message"),
+                    "provider_job_id": provider_job_id,
+                    "artifact_count": len(artifacts),
+                }
+            )
+        return summarized
+
+
 async def poll_video_generation(job_id: str) -> dict[str, Any]:
-    _, _, tools = await _generation_runtime()
+    _, _, _, tools = await _generation_runtime()
     output = await tools["get_video_task"].ainvoke({"job_id": job_id, "download": True})
     normalized = normalize_tool_output(output)
     if not isinstance(normalized, dict):
         raise RuntimeError("Video generation returned an invalid status payload.")
+    return normalized
+
+
+async def poll_music_generation(job_id: str) -> dict[str, Any]:
+    _, _, _, tools = await _generation_runtime()
+    output = await tools["get_music_task"].ainvoke({"job_id": job_id, "download": True})
+    normalized = normalize_tool_output(output)
+    if not isinstance(normalized, dict):
+        raise RuntimeError("Music generation returned an invalid status payload.")
     return normalized
