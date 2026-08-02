@@ -47,7 +47,7 @@
 
     <div class="grain" aria-hidden="true"></div>
 
-    <div id="app" class="app" data-mode="home" data-rail="open" data-library="closed">
+    <div id="app" class="app" data-mode="home" data-rail="open" data-library="open">
       <header class="titlebar">
         <button class="brand" type="button" id="home-button">
           <span class="brand-mark" aria-hidden="true"></span>
@@ -64,10 +64,11 @@
             type="button"
             class="button button--ghost button--compact"
             id="library-toggle"
-            aria-expanded="false"
+            aria-expanded="true"
             aria-controls="library-sidebar"
           >
-            Library
+            <svg class="icon" aria-hidden="true"><use href="#i-rail" /></svg>
+            <span id="library-toggle-label">Hide projects</span>
           </button>
           <div class="auth-slot" id="auth-slot" hidden>
             <button class="button button--ghost button--compact" type="button" id="sign-in-button" hidden>
@@ -78,54 +79,63 @@
         </div>
       </header>
 
-      <aside class="library" id="library-sidebar" aria-label="Library">
-        <div class="library-panel">
-          <div class="library-section">
-            <div class="library-section-head">
-              <h2 class="eyebrow">Projects</h2>
-              <button type="button" class="button button--ghost button--compact" id="clear-project-button" hidden>
-                Standalone
+      <div class="body-shell">
+        <aside class="library" id="library-sidebar" aria-label="Projects and library">
+          <div class="library-panel">
+            <div class="library-section">
+              <div class="library-section-head">
+                <h2 class="eyebrow">Projects</h2>
+              </div>
+              <form class="project-create project-create--sidebar" id="project-create-form" novalidate>
+                <label class="sr-only" for="project-title">Project name</label>
+                <input
+                  id="project-title"
+                  name="title"
+                  type="text"
+                  maxlength="120"
+                  required
+                  placeholder="New project name"
+                  autocomplete="off"
+                />
+                <button class="button button--primary button--compact" type="submit" id="project-create-button" aria-label="Create project">
+                  <svg class="icon" aria-hidden="true"><use href="#i-plus" /></svg>
+                </button>
+              </form>
+              <button
+                type="button"
+                class="sidebar-nav-item"
+                id="clear-project-button"
+                hidden
+              >
+                <svg class="icon" aria-hidden="true"><use href="#i-x" /></svg>
+                <span>Leave project · back to standalone</span>
               </button>
+              <p class="library-empty" id="projects-empty">No projects yet. Name one above to start organizing renders.</p>
+              <div class="sidebar-list" id="project-grid"></div>
             </div>
-            <form class="project-create project-create--sidebar" id="project-create-form" novalidate>
-              <label class="sr-only" for="project-title">Project name</label>
-              <input
-                id="project-title"
-                name="title"
-                type="text"
-                maxlength="120"
-                required
-                placeholder="New project name"
-                autocomplete="off"
-              />
-              <button class="button button--primary button--compact" type="submit" id="project-create-button" aria-label="Create project">
-                <svg class="icon" aria-hidden="true"><use href="#i-plus" /></svg>
-              </button>
-            </form>
-            <p class="library-empty" id="projects-empty">No projects yet.</p>
-            <div class="sidebar-list" id="project-grid"></div>
-          </div>
 
-          <div class="library-section" id="project-library" hidden>
-            <div class="library-section-head">
-              <h2 class="eyebrow">In project</h2>
+            <div class="library-section" id="project-library" hidden>
+              <div class="library-section-head">
+                <h2 class="eyebrow">In this project</h2>
+              </div>
+              <div class="sidebar-list" id="project-artifact-list"></div>
+              <p class="library-empty" id="project-library-empty">
+                Nothing here yet. Generate on the left, or use "Add" on any standalone render below.
+              </p>
             </div>
-            <div class="sidebar-list" id="project-artifact-list"></div>
-            <p class="library-empty" id="project-library-empty">Nothing in this project yet.</p>
-          </div>
 
-          <div class="library-section" id="unassigned-inbox">
-            <div class="library-section-head">
-              <h2 class="eyebrow">Standalone</h2>
-              <p class="inbox-hint">Drag onto a project</p>
+            <div class="library-section" id="unassigned-inbox">
+              <div class="library-section-head">
+                <h2 class="eyebrow">Standalone</h2>
+                <p class="inbox-hint">Not in a project</p>
+              </div>
+              <div class="sidebar-list" id="unassigned-list"></div>
+              <p class="library-empty" id="unassigned-empty">No standalone renders yet.</p>
             </div>
-            <div class="sidebar-list" id="unassigned-list"></div>
-            <p class="library-empty" id="unassigned-empty">No standalone renders yet.</p>
           </div>
-        </div>
-      </aside>
+        </aside>
 
-      <section class="home" id="home" aria-label="Start a render">
+        <section class="home" id="home" aria-label="Start a render">
         <div class="home-center">
           <div class="home-intro">
             <p class="home-kicker" id="home-kicker">Renderhaus agent</p>
@@ -208,7 +218,11 @@
       <div class="workspace" id="workspace" hidden>
         <main class="canvas">
           <div class="canvas-toolbar">
-            <span class="canvas-label" id="canvas-label">Preview</span>
+            <div class="canvas-crumb">
+              <button type="button" class="crumb-link" id="crumb-home">Renderhaus</button>
+              <span class="crumb-sep" aria-hidden="true">/</span>
+              <span class="canvas-label" id="canvas-label">Preview</span>
+            </div>
             <div class="canvas-actions">
               <button type="button" class="button" id="download-button" disabled>
                 <svg class="icon" aria-hidden="true"><use href="#i-download" /></svg>
@@ -269,44 +283,54 @@
                   <div class="timeline-actions">
                     <button type="button" class="button button--compact" id="merge-button" disabled>
                       <svg class="icon" aria-hidden="true"><use href="#i-merge" /></svg>
-                      <span>Merge clips</span>
+                      <span>Merge to new</span>
                     </button>
                   </div>
-                </div>
-                <div
-                  class="sequence-track"
-                  id="sequence-track"
-                  aria-label="Project sequence"
-                  data-drop="timeline"
-                >
-                  <div class="sequence-empty" id="sequence-empty">
-                    Drop finished clips here to build a sequence
-                  </div>
-                  <div class="sequence-clips" id="sequence-clips"></div>
                 </div>
                 <div class="timeline-body" id="timeline-body">
                   <div class="timeline-ruler" id="timeline-ruler" aria-hidden="true"></div>
                   <div class="timeline-tracks">
-                    <div class="track track--video">
+                    <div class="track track--video" id="track-video">
                       <span class="track-label">V1</span>
-                      <div class="track-lane">
-                        <div class="filmstrip" id="filmstrip" role="slider" aria-label="Scrub video frames" tabindex="0" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"></div>
+                      <div class="track-lane" id="video-lane" data-drop="video">
+                        <div class="timeline-clips" id="video-clips"></div>
+                        <div
+                          class="filmstrip"
+                          id="filmstrip"
+                          role="slider"
+                          aria-label="Scrub video frames"
+                          tabindex="0"
+                          aria-valuemin="0"
+                          aria-valuemax="100"
+                          aria-valuenow="0"
+                          hidden
+                        ></div>
+                        <div class="track-placeholder" id="video-placeholder">
+                          Drop video clips here · each stays independent until merge
+                        </div>
                       </div>
                     </div>
-                    <div class="track track--idle" id="track-dialogue" aria-disabled="true">
-                      <span class="track-label">A1</span>
-                      <div class="track-lane">
-                        <div class="track-placeholder">Dialogue · coming next</div>
-                      </div>
-                    </div>
-                    <div class="track track--idle" id="track-score" aria-disabled="true">
+                    <div class="track track--music" id="track-score">
                       <span class="track-label">M1</span>
-                      <div class="track-lane">
-                        <div class="score-clip" id="score-clip" hidden role="slider" aria-label="Scrub score" tabindex="0" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+                      <div class="track-lane" id="music-lane" data-drop="music">
+                        <div class="timeline-clips" id="music-clips"></div>
+                        <div
+                          class="score-clip"
+                          id="score-clip"
+                          hidden
+                          role="slider"
+                          aria-label="Scrub score"
+                          tabindex="0"
+                          aria-valuemin="0"
+                          aria-valuemax="100"
+                          aria-valuenow="0"
+                        >
                           <span class="score-wave" aria-hidden="true"></span>
                           <span class="score-label" id="score-label">Score</span>
                         </div>
-                        <div class="track-placeholder" id="score-placeholder">Score · coming next</div>
+                        <div class="track-placeholder" id="score-placeholder">
+                          Drop music here · separate from the picture track
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -355,6 +379,7 @@
             </button>
           </form>
         </aside>
+      </div>
       </div>
     </div>
 

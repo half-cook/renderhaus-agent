@@ -93,14 +93,18 @@ function syncProjectChrome() {
   if (projectLibrary) projectLibrary.hidden = !project;
   $("#home-kicker").textContent = project ? project.title : "Renderhaus agent";
   $("#home-lede").textContent = project
-    ? "Generate into this project, or keep working standalone. Drag finished clips onto the timeline when you want to arrange or merge them."
+    ? "Generate into this project, or keep working standalone. Use \u201cAdd to V1/M1\u201d on any clip to arrange the timeline."
     : "Describe the shot or score the way you would brief a collaborator. The agent picks the model, writes the technical prompt, and hands back the finished file.";
   $("#history-label").textContent = project ? "Recent in project" : "Recent";
   $$(".project-card").forEach((card) => {
     card.classList.toggle("is-active", Boolean(project && card.dataset.projectId === project.id));
   });
-  const clearButton = $("#clear-project-button");
-  if (clearButton) clearButton.hidden = !project;
+  const standaloneNav = $("#clear-project-button");
+  if (standaloneNav) standaloneNav.hidden = !project;
+  const canvasLabel = $("#canvas-label");
+  if (canvasLabel && canvasLabel.dataset.base) {
+    canvasLabel.textContent = project ? `${project.title} \u00b7 ${canvasLabel.dataset.base}` : canvasLabel.dataset.base;
+  }
 }
 
 function setRail(open) {
@@ -114,6 +118,8 @@ function setLibrary(open) {
   $("#app").dataset.library = open ? "open" : "closed";
   const toggle = $("#library-toggle");
   if (toggle) toggle.setAttribute("aria-expanded", String(open));
+  const label = $("#library-toggle-label");
+  if (label) label.textContent = open ? "Hide projects" : "Show projects";
 }
 
 function setMediaType(mediaType) {
@@ -427,11 +433,13 @@ function renderEditIdeas(job) {
   const deck = $("#edit-deck");
   const chips = $("#idea-chips");
   chips.innerHTML = "";
+  const showDeck =
+    Boolean(state.currentProject) ||
+    Boolean(job?.media_url && job.media_type !== "image");
+  deck.hidden = !showDeck;
   if (!job?.media_url || job.media_type === "image") {
-    deck.hidden = true;
     return;
   }
-  deck.hidden = false;
   const ideas = job.media_type === "music" ? MUSIC_EDIT_IDEAS : EDIT_IDEAS;
   ideas.forEach((idea) => {
     const button = document.createElement("button");
@@ -453,26 +461,31 @@ function renderEditIdeas(job) {
 
 function clearFilmstrip(note = "Frames appear when the clip is ready") {
   const strip = $("#filmstrip");
+  if (!strip) return;
   strip.innerHTML = "";
   strip.classList.add("is-empty");
   strip.classList.remove("is-loading");
   strip.dataset.note = note;
+  strip.hidden = true;
   $("#timeline-ruler").innerHTML = "";
   $("#timeline-clock").textContent = "0:00 / 0:00";
   $("#playhead").style.left = "60px";
   state.filmstripSrc = null;
 }
 
+function timelineItems(mediaType = null) {
+  const items = state.currentProject?.timeline?.items || [];
+  if (!mediaType) return items;
+  return items.filter((item) => item.media_type === mediaType);
+}
+
 function setScoreTrack(active, label = "Score") {
-  const track = $("#track-score");
   const clip = $("#score-clip");
-  const placeholder = $("#score-placeholder");
-  track.classList.toggle("track--idle", !active);
-  track.classList.toggle("track--music", active);
-  track.setAttribute("aria-disabled", String(!active));
-  clip.hidden = !active;
-  placeholder.hidden = active;
-  $("#score-label").textContent = label;
+  if (!clip) return;
+  // Preview scrubber only when the music track has no arranged clips yet.
+  const hasMusicClips = timelineItems("music").length > 0;
+  clip.hidden = !active || hasMusicClips;
+  if (active) $("#score-label").textContent = label;
 }
 
 function renderRuler(duration) {
@@ -497,17 +510,29 @@ function renderRuler(duration) {
   ruler.append(spacer, marks);
 }
 
+function activeScrubSurface(media) {
+  if (!media) return null;
+  if (media.tagName === "AUDIO") {
+    const clips = $("#music-clips");
+    if (clips && clips.childElementCount > 0) return clips;
+    const score = $("#score-clip");
+    return score && !score.hidden ? score : null;
+  }
+  const clips = $("#video-clips");
+  if (clips && clips.childElementCount > 0) return clips;
+  const strip = $("#filmstrip");
+  return strip && !strip.hidden ? strip : null;
+}
+
 function updatePlayheadFromMedia(media) {
   const body = $("#timeline-body");
-  const strip = media?.tagName === "AUDIO" ? $("#score-clip") : $("#filmstrip");
-  if (!media?.duration || media.hidden || !strip || strip.hidden) return;
+  const strip = activeScrubSurface(media);
+  if (!media?.duration || media.hidden || !strip) return;
   const ratio = Math.min(1, Math.max(0, media.currentTime / media.duration));
   const laneLeft = strip.getBoundingClientRect().left - body.getBoundingClientRect().left;
   const laneWidth = strip.getBoundingClientRect().width;
   $("#playhead").style.left = `${laneLeft + ratio * laneWidth}px`;
   $("#timeline-clock").textContent = `${formatClock(media.currentTime)} / ${formatClock(media.duration)}`;
-  strip.setAttribute("aria-valuenow", String(Math.round(ratio * 100)));
-  strip.setAttribute("aria-valuemax", "100");
 }
 
 function updatePlayhead() {
@@ -561,6 +586,12 @@ async function seekVideo(video, time) {
 async function captureFilmstrip(mediaUrl) {
   const token = ++state.filmstripToken;
   const strip = $("#filmstrip");
+  // Filmstrip is only for previewing a single clip when V1 has no arranged clips.
+  if (timelineItems("video").length > 0) {
+    strip.hidden = true;
+    return;
+  }
+  strip.hidden = false;
   strip.innerHTML = "";
   strip.classList.remove("is-empty");
   strip.classList.add("is-loading");
@@ -629,8 +660,8 @@ function seekFromClientX(clientX) {
   const video = $("#result-video");
   const audio = $("#result-audio");
   const media = !video.hidden && video.duration ? video : !audio.hidden && audio.duration ? audio : null;
-  const strip = media?.tagName === "AUDIO" ? $("#score-clip") : $("#filmstrip");
-  if (!media || !strip || strip.hidden) return;
+  const strip = activeScrubSurface(media);
+  if (!media || !strip) return;
   const rect = strip.getBoundingClientRect();
   const ratio = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width));
   media.currentTime = ratio * media.duration;
@@ -796,6 +827,7 @@ function updateMedia(job) {
         () => {
           renderRuler(audio.duration || 0);
           updatePlayhead();
+          renderTimeline();
         },
         { once: true }
       );
@@ -811,10 +843,15 @@ function updateMedia(job) {
       state.filmstripSrc = null;
     }
     video.hidden = false;
+    // Keep M1 preview scrubber off while watching picture; arranged music clips stay on the track.
     setScoreTrack(false);
     $("#edit-deck").hidden = false;
-    if (state.filmstripSrc !== absolute) {
+    if (timelineItems("video").length === 0 && state.filmstripSrc !== absolute) {
       captureFilmstrip(mediaUrl);
+    } else if (timelineItems("video").length > 0) {
+      $("#filmstrip").hidden = true;
+      const duration = Number(job.duration_seconds) || video.duration || 0;
+      if (duration) renderRuler(duration);
     }
   }
   stage.classList.add("has-media");
@@ -877,11 +914,12 @@ function updateJobUI(job) {
   bar.dataset.progress = progress;
   $("#progress").setAttribute("aria-valuenow", String(progress));
 
-  $("#canvas-label").textContent = terminal
-    ? job.status === "complete"
-      ? "Result"
-      : job.status
-    : "Rendering";
+  const canvasLabelBase = terminal ? (job.status === "complete" ? "Result" : job.status) : "Rendering";
+  const canvasLabel = $("#canvas-label");
+  canvasLabel.dataset.base = canvasLabelBase;
+  canvasLabel.textContent = state.currentProject
+    ? `${state.currentProject.title} \u00b7 ${canvasLabelBase}`
+    : canvasLabelBase;
   $("#download-button").disabled = !job.media_url;
   $("#download-label").textContent =
     job.media_type === "image"
@@ -894,7 +932,7 @@ function updateJobUI(job) {
   updateMedia(job);
   renderEditIdeas(job);
   updateStageState(job);
-  renderSequence();
+  renderTimeline();
 }
 
 function upsertLibraryJob(job) {
@@ -911,18 +949,20 @@ function upsertLibraryJob(job) {
   } else {
     const others = state.unassignedJobs.filter((item) => item.id !== job.id);
     state.unassignedJobs = [job, ...others];
-    renderJobList($("#unassigned-list"), $("#unassigned-empty"), state.unassignedJobs);
+    renderJobList($("#unassigned-list"), $("#unassigned-empty"), state.unassignedJobs, {
+      assignable: true,
+    });
   }
 }
 
-function renderJobList(list, empty, jobs, { removable = false } = {}) {
+function renderJobList(list, empty, jobs, { removable = false, assignable = false } = {}) {
   if (!list || !empty) return;
   list.innerHTML = "";
   const visible = jobs.filter(
     (job) => job.status === "complete" || !TERMINAL_STATES.includes(job.status)
   );
   empty.hidden = visible.length > 0;
-  visible.slice(0, 24).forEach((job) => list.append(makeArtifactCard(job, { removable })));
+  visible.slice(0, 24).forEach((job) => list.append(makeArtifactCard(job, { removable, assignable })));
 }
 
 async function revealJobInLibrary(job) {
@@ -1091,15 +1131,37 @@ function makeHistoryItem(job) {
   return button;
 }
 
-function makeArtifactCard(job, { removable = false } = {}) {
-  const card = document.createElement("button");
-  card.type = "button";
+async function addJobToProject(jobId) {
+  if (!state.currentProject) return;
+  try {
+    const result = await api(`/api/projects/${state.currentProject.id}/artifacts`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ job_id: jobId }),
+    });
+    state.currentProject = result.project;
+    await loadProjectJobs();
+    await loadUnassigned();
+    showToast("Added to project.");
+  } catch (error) {
+    showToast(error.message);
+  }
+}
+
+function makeArtifactCard(job, { removable = false, assignable = false } = {}) {
+  const card = document.createElement("div");
   const running = !TERMINAL_STATES.includes(job.status);
   card.className = `artifact-card artifact-card--${job.media_type || "video"}${
     running ? " is-running" : ""
   }`;
-  card.draggable = job.status === "complete" && Boolean(job.output_asset_id || job.media_url);
+  const ready = job.status === "complete" && Boolean(job.output_asset_id || job.media_url);
+  card.draggable = ready;
   card.dataset.jobId = job.id;
+  card.tabIndex = 0;
+  card.setAttribute("role", "button");
+
+  const main = document.createElement("div");
+  main.className = "artifact-card-main";
   const kind = document.createElement("span");
   kind.className = "artifact-kind";
   kind.textContent = job.media_type || "video";
@@ -1109,17 +1171,65 @@ function makeArtifactCard(job, { removable = false } = {}) {
   meta.className = "artifact-meta";
   meta.textContent =
     job.status === "complete" ? "Ready" : job.status === "failed" ? "Failed" : job.status;
-  card.append(kind, title, meta);
+  main.append(kind, title, meta);
+  card.append(main);
+
+  const openCard = () => openJob(job);
+  main.addEventListener("click", openCard);
+  card.addEventListener("keydown", (event) => {
+    if (event.target !== card) return;
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      openCard();
+    }
+  });
+
+  const actions = document.createElement("div");
+  actions.className = "artifact-actions";
+  let hasActions = false;
+
+  if (ready && state.currentProject) {
+    const mediaType = job.media_type || "video";
+    if (mediaType === "video" || mediaType === "music") {
+      const addToTrack = document.createElement("button");
+      addToTrack.type = "button";
+      addToTrack.className = "artifact-action";
+      addToTrack.textContent = mediaType === "music" ? "Add to M1" : "Add to V1";
+      addToTrack.addEventListener("click", async (event) => {
+        event.stopPropagation();
+        await addJobToTimeline(job.id, mediaType);
+      });
+      actions.append(addToTrack);
+      hasActions = true;
+    } else if (assignable) {
+      const addToProject = document.createElement("button");
+      addToProject.type = "button";
+      addToProject.className = "artifact-action";
+      addToProject.textContent = "Add to project";
+      addToProject.addEventListener("click", async (event) => {
+        event.stopPropagation();
+        await addJobToProject(job.id);
+      });
+      actions.append(addToProject);
+      hasActions = true;
+    }
+  }
+
   if (removable) {
-    const remove = document.createElement("span");
-    remove.className = "artifact-remove";
+    const remove = document.createElement("button");
+    remove.type = "button";
+    remove.className = "artifact-action artifact-action--remove";
     remove.textContent = "Remove";
     remove.addEventListener("click", async (event) => {
       event.stopPropagation();
       await removeArtifactFromProject(job.id);
     });
-    card.append(remove);
+    actions.append(remove);
+    hasActions = true;
   }
+
+  if (hasActions) card.append(actions);
+
   card.addEventListener("dragstart", (event) => {
     state.dragJobId = job.id;
     event.dataTransfer.setData("text/plain", job.id);
@@ -1131,7 +1241,6 @@ function makeArtifactCard(job, { removable = false } = {}) {
     card.classList.remove("is-dragging");
     clearDropTargets();
   });
-  card.addEventListener("click", () => openJob(job));
   return card;
 }
 
@@ -1188,45 +1297,64 @@ function bindProjectDropTarget(element, projectId) {
 }
 
 function bindTimelineDropTarget() {
-  const track = $("#sequence-track");
-  if (!track || track.dataset.bound === "true") return;
-  track.dataset.bound = "true";
-  track.addEventListener("dragover", (event) => {
-    if (!state.dragJobId || !state.currentProject) return;
-    event.preventDefault();
-    event.dataTransfer.dropEffect = "copy";
-    track.classList.add("is-drop-target");
-  });
-  track.addEventListener("dragleave", () => track.classList.remove("is-drop-target"));
-  track.addEventListener("drop", async (event) => {
-    event.preventDefault();
-    track.classList.remove("is-drop-target");
-    const jobId = event.dataTransfer.getData("text/plain") || state.dragJobId;
-    if (!jobId || !state.currentProject) return;
-    await addJobToTimeline(jobId);
+  ["video-lane", "music-lane"].forEach((id) => {
+    const lane = document.getElementById(id);
+    if (!lane || lane.dataset.bound === "true") return;
+    lane.dataset.bound = "true";
+    const accept = lane.dataset.drop;
+    lane.addEventListener("dragover", (event) => {
+      if (!state.dragJobId || !state.currentProject) return;
+      event.preventDefault();
+      event.dataTransfer.dropEffect = "copy";
+      lane.classList.add("is-drop-target");
+    });
+    lane.addEventListener("dragleave", () => lane.classList.remove("is-drop-target"));
+    lane.addEventListener("drop", async (event) => {
+      event.preventDefault();
+      lane.classList.remove("is-drop-target");
+      const jobId = event.dataTransfer.getData("text/plain") || state.dragJobId;
+      if (!jobId || !state.currentProject) return;
+      await addJobToTimeline(jobId, accept);
+    });
   });
 }
 
-async function addJobToTimeline(jobId) {
-  if (!state.currentProject) return;
+async function resolveJob(jobId) {
   let job =
     state.projectJobs.find((item) => item.id === jobId) ||
     state.unassignedJobs.find((item) => item.id === jobId) ||
     state.currentJob;
   if (!job || job.id !== jobId) {
-    try {
-      job = await api(`/api/generations/${jobId}`);
-    } catch (error) {
-      showToast(error.message);
-      return;
-    }
+    job = await api(`/api/generations/${jobId}`);
+  }
+  return job;
+}
+
+async function addJobToTimeline(jobId, trackHint = null) {
+  if (!state.currentProject) return;
+  let job;
+  try {
+    job = await resolveJob(jobId);
+  } catch (error) {
+    showToast(error.message);
+    return;
   }
   if (job.status !== "complete" || !(job.output_asset_id || job.media_url)) {
     showToast("Only finished artifacts can go on the timeline.");
     return;
   }
-  if (job.media_type !== "video") {
-    showToast("Timeline merge currently supports video clips.");
+  const mediaType = job.media_type || "video";
+  if (mediaType !== "video" && mediaType !== "music") {
+    showToast("Only video and music can go on the timeline.");
+    return;
+  }
+  if (trackHint && trackHint !== mediaType) {
+    showToast(
+      mediaType === "music"
+        ? "Drop music on the M1 track."
+        : "Drop video on the V1 track."
+    );
+    return;
   }
   const items = [...(state.currentProject.timeline?.items || [])];
   if (items.some((item) => item.job_id === jobId)) {
@@ -1236,7 +1364,7 @@ async function addJobToTimeline(jobId) {
   items.push({
     job_id: job.id,
     asset_id: job.output_asset_id,
-    media_type: job.media_type || "video",
+    media_type: mediaType,
     label: filmName(job.prompt),
     duration_seconds: job.duration_seconds,
   });
@@ -1247,10 +1375,10 @@ async function addJobToTimeline(jobId) {
       body: JSON.stringify({ items }),
     });
     state.currentProject = project;
-    renderSequence();
+    renderTimeline();
     await loadProjectJobs();
     await loadUnassigned();
-    showToast("Clip added to timeline.");
+    showToast(mediaType === "music" ? "Music added to M1." : "Clip added to V1.");
   } catch (error) {
     showToast(error.message);
   }
@@ -1266,87 +1394,142 @@ async function removeTimelineItem(itemId) {
       body: JSON.stringify({ items }),
     });
     state.currentProject = project;
-    renderSequence();
+    renderTimeline();
   } catch (error) {
     showToast(error.message);
   }
 }
 
-function renderSequence() {
-  const clips = $("#sequence-clips");
-  const empty = $("#sequence-empty");
-  const mergeButton = $("#merge-button");
-  if (!clips || !empty) return;
-  const items = state.currentProject?.timeline?.items || [];
-  clips.innerHTML = "";
-  empty.hidden = items.length > 0;
-  let videoCount = 0;
-  items.forEach((item, index) => {
-    if (item.media_type === "video") videoCount += 1;
-    const chip = document.createElement("div");
-    chip.className = "sequence-clip";
-    chip.draggable = true;
-    chip.dataset.itemId = item.id;
-    const label = document.createElement("strong");
-    label.textContent = item.label || `Clip ${index + 1}`;
-    const meta = document.createElement("span");
-    meta.textContent = item.media_type || "video";
-    const remove = document.createElement("button");
-    remove.type = "button";
-    remove.className = "sequence-remove";
-    remove.setAttribute("aria-label", "Remove from timeline");
-    remove.textContent = "×";
-    remove.addEventListener("click", (event) => {
-      event.stopPropagation();
-      removeTimelineItem(item.id);
+async function reorderTimelineItem(draggedId, targetId) {
+  if (!state.currentProject || !draggedId || draggedId === targetId) return;
+  const current = [...(state.currentProject.timeline?.items || [])];
+  const from = current.findIndex((entry) => entry.id === draggedId);
+  const to = current.findIndex((entry) => entry.id === targetId);
+  if (from < 0 || to < 0) return;
+  // Keep video and music tracks independent — only reorder within the same kind.
+  if (current[from].media_type !== current[to].media_type) {
+    showToast("Clips stay on their own track.");
+    return;
+  }
+  const [moved] = current.splice(from, 1);
+  current.splice(to, 0, moved);
+  try {
+    const project = await api(`/api/projects/${state.currentProject.id}/timeline`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ items: current }),
     });
-    chip.append(label, meta, remove);
-    chip.addEventListener("dragstart", (event) => {
-      event.dataTransfer.setData("application/x-timeline-item", item.id);
-      event.dataTransfer.effectAllowed = "move";
-      chip.classList.add("is-dragging");
-    });
-    chip.addEventListener("dragend", () => chip.classList.remove("is-dragging"));
-    chip.addEventListener("dragover", (event) => {
-      if (![...event.dataTransfer.types].includes("application/x-timeline-item")) return;
-      event.preventDefault();
-      chip.classList.add("is-drop-target");
-    });
-    chip.addEventListener("dragleave", () => chip.classList.remove("is-drop-target"));
-    chip.addEventListener("drop", async (event) => {
-      event.preventDefault();
-      chip.classList.remove("is-drop-target");
-      const draggedId = event.dataTransfer.getData("application/x-timeline-item");
-      if (!draggedId || draggedId === item.id) return;
-      const current = [...(state.currentProject.timeline?.items || [])];
-      const from = current.findIndex((entry) => entry.id === draggedId);
-      const to = current.findIndex((entry) => entry.id === item.id);
-      if (from < 0 || to < 0) return;
-      const [moved] = current.splice(from, 1);
-      current.splice(to, 0, moved);
-      try {
-        const project = await api(`/api/projects/${state.currentProject.id}/timeline`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ items: current }),
-        });
-        state.currentProject = project;
-        renderSequence();
-      } catch (error) {
-        showToast(error.message);
-      }
-    });
-    chip.addEventListener("click", async () => {
-      try {
-        const job = await api(`/api/generations/${item.job_id}`);
-        openJob(job);
-      } catch (error) {
-        showToast(error.message);
-      }
-    });
-    clips.append(chip);
+    state.currentProject = project;
+    renderTimeline();
+  } catch (error) {
+    showToast(error.message);
+  }
+}
+
+function clipDuration(item) {
+  const value = Number(item.duration_seconds);
+  return Number.isFinite(value) && value > 0 ? value : 10;
+}
+
+function makeTimelineClip(item, index, totalDuration) {
+  const clip = document.createElement("div");
+  clip.className = `timeline-clip timeline-clip--${item.media_type || "video"}`;
+  clip.draggable = true;
+  clip.dataset.itemId = item.id;
+  clip.dataset.jobId = item.job_id;
+  const widthPct = Math.max(12, (clipDuration(item) / Math.max(totalDuration, 0.001)) * 100);
+  clip.style.flex = `${widthPct} 1 0`;
+  if (state.currentJob?.id === item.job_id) clip.classList.add("is-active");
+
+  const label = document.createElement("strong");
+  label.textContent = item.label || `Clip ${index + 1}`;
+  const meta = document.createElement("span");
+  meta.textContent =
+    item.media_type === "music"
+      ? "music"
+      : `${Math.round(clipDuration(item))}s`;
+  const remove = document.createElement("button");
+  remove.type = "button";
+  remove.className = "timeline-clip-remove";
+  remove.setAttribute("aria-label", "Remove from timeline");
+  remove.textContent = "×";
+  remove.addEventListener("click", (event) => {
+    event.stopPropagation();
+    removeTimelineItem(item.id);
   });
-  if (mergeButton) mergeButton.disabled = videoCount < 2;
+  clip.append(label, meta, remove);
+
+  clip.addEventListener("dragstart", (event) => {
+    event.dataTransfer.setData("application/x-timeline-item", item.id);
+    event.dataTransfer.effectAllowed = "move";
+    clip.classList.add("is-dragging");
+  });
+  clip.addEventListener("dragend", () => clip.classList.remove("is-dragging"));
+  clip.addEventListener("dragover", (event) => {
+    if (![...event.dataTransfer.types].includes("application/x-timeline-item")) return;
+    event.preventDefault();
+    clip.classList.add("is-drop-target");
+  });
+  clip.addEventListener("dragleave", () => clip.classList.remove("is-drop-target"));
+  clip.addEventListener("drop", async (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    clip.classList.remove("is-drop-target");
+    const draggedId = event.dataTransfer.getData("application/x-timeline-item");
+    await reorderTimelineItem(draggedId, item.id);
+  });
+  clip.addEventListener("click", async () => {
+    try {
+      const job = await api(`/api/generations/${item.job_id}`);
+      openJob(job);
+    } catch (error) {
+      showToast(error.message);
+    }
+  });
+  return clip;
+}
+
+function renderTimeline() {
+  const videoClips = $("#video-clips");
+  const musicClips = $("#music-clips");
+  const videoPlaceholder = $("#video-placeholder");
+  const musicPlaceholder = $("#score-placeholder");
+  const mergeButton = $("#merge-button");
+  if (!videoClips || !musicClips) return;
+
+  const videos = timelineItems("video");
+  const music = timelineItems("music");
+  const videoTotal = videos.reduce((sum, item) => sum + clipDuration(item), 0) || 1;
+  const musicTotal = music.reduce((sum, item) => sum + clipDuration(item), 0) || videoTotal;
+
+  videoClips.innerHTML = "";
+  musicClips.innerHTML = "";
+  videos.forEach((item, index) => videoClips.append(makeTimelineClip(item, index, videoTotal)));
+  music.forEach((item, index) => musicClips.append(makeTimelineClip(item, index, musicTotal)));
+
+  if (videoPlaceholder) videoPlaceholder.hidden = videos.length > 0;
+  if (musicPlaceholder) musicPlaceholder.hidden = music.length > 0;
+  $("#filmstrip").hidden = videos.length > 0 || !$("#result-video")?.src || $("#result-video").hidden;
+  $("#score-clip").hidden = music.length > 0 || $("#result-audio")?.hidden !== false;
+
+  const trackVideo = $("#track-video");
+  const trackScore = $("#track-score");
+  if (trackVideo) trackVideo.classList.toggle("track--idle", videos.length === 0 && $("#filmstrip").hidden);
+  if (trackScore) {
+    trackScore.classList.toggle("track--idle", music.length === 0 && $("#score-clip").hidden);
+    trackScore.classList.toggle("track--music", music.length > 0 || !$("#score-clip").hidden);
+  }
+
+  if (videos.length > 0) renderRuler(videoTotal);
+  else if (music.length > 0) renderRuler(musicTotal);
+
+  if (mergeButton) {
+    mergeButton.disabled = videos.length < 2;
+    mergeButton.title =
+      videos.length < 2
+        ? "Add at least two videos on V1 to merge into a new clip"
+        : "Merge V1 clips into a new independent video";
+  }
 }
 
 async function mergeTimeline() {
@@ -1359,14 +1542,14 @@ async function mergeTimeline() {
     });
     state.currentProject = result.project;
     state.currentJob = result.job;
-    renderSequence();
+    renderTimeline();
     updateJobUI(result.job);
     await loadProjectJobs();
-    showToast("Merged timeline into one video.");
+    showToast("Created a new merged video. Sources stay in the library.");
   } catch (error) {
     showToast(error.message);
   } finally {
-    renderSequence();
+    renderTimeline();
   }
 }
 
@@ -1378,7 +1561,7 @@ async function removeArtifactFromProject(jobId) {
       { method: "DELETE" }
     );
     state.currentProject = result.project;
-    renderSequence();
+    renderTimeline();
     await loadProjectJobs();
     await loadUnassigned();
     await loadHistory();
@@ -1410,7 +1593,7 @@ async function loadUnassigned() {
   try {
     const { items } = await api("/api/generations?unassigned=true");
     state.unassignedJobs = items;
-    renderJobList($("#unassigned-list"), $("#unassigned-empty"), items);
+    renderJobList($("#unassigned-list"), $("#unassigned-empty"), items, { assignable: true });
   } catch {
     $("#unassigned-empty").hidden = false;
   }
@@ -1443,7 +1626,8 @@ async function openProject(project) {
   }
   setLibrary(true);
   syncProjectChrome();
-  renderSequence();
+  $("#edit-deck").hidden = false;
+  renderTimeline();
   await loadProjectJobs();
   await loadHistory();
   if ($("#app").dataset.mode !== "workspace") setMode("home");
@@ -1452,7 +1636,7 @@ async function openProject(project) {
 async function clearProject() {
   state.currentProject = null;
   syncProjectChrome();
-  renderSequence();
+  renderTimeline();
   await loadProjectJobs();
   await loadHistory();
   if ($("#app").dataset.mode !== "workspace") setMode("home");
@@ -1573,6 +1757,7 @@ function bindEvents() {
   $("#reference-clear").addEventListener("click", clearReference);
 
   $("#home-button").addEventListener("click", startNewRender);
+  $("#crumb-home").addEventListener("click", startNewRender);
   $("#project-chip").addEventListener("click", () => {
     setLibrary(true);
     if (state.currentProject) setMode("home");
@@ -1614,7 +1799,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   bindEvents();
   setMediaType("video");
   setMode("home");
-  setLibrary(false);
+  // Persistent sidebar on desktop; overlay, closed by default, on narrow screens.
+  setLibrary(window.innerWidth > 1100);
   clearFilmstrip();
   await loadConfig();
   await refreshLibrary();

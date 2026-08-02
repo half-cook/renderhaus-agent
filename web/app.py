@@ -43,9 +43,11 @@ from web.projects import (
     ProjectStore,
     add_artifact,
     merge_video_paths,
+    probe_media_duration,
     public_project,
     remove_artifact,
     set_timeline_items,
+    timeline_items_by_kind,
 )
 
 
@@ -1046,18 +1048,23 @@ async def update_project_timeline(
 
 @app.post("/api/projects/{project_id}/merge", status_code=202)
 async def merge_project_timeline(project_id: str, auth: AuthUser) -> dict[str, Any]:
-    """Concatenate video clips currently on the project timeline into one MP4."""
+    """Merge video-track clips into a new independent video job.
+
+    Source clips stay in the project library. The video track is replaced by
+    the merged result; the music track is left untouched.
+    """
     user_id = current_user_id(auth)
     project = _require_owned_project(await projects.get(project_id), user_id)
-    timeline_items = (project.get("timeline") or {}).get("items") or []
-    video_items = [item for item in timeline_items if item.get("media_type") == "video"]
+    video_items = timeline_items_by_kind(project, "video")
+    music_items = timeline_items_by_kind(project, "music")
     if len(video_items) < 2:
         raise HTTPException(
             status_code=400,
-            detail="Add at least two video clips to the timeline before merging.",
+            detail="Add at least two video clips to the V1 track before merging.",
         )
 
     clip_paths: list[Path] = []
+    total_duration = 0.0
     for item in video_items:
         job = _require_owned_job(await store.get(item["job_id"]), user_id)
         if _ensure_output_asset(job):
@@ -1072,12 +1079,16 @@ async def merge_project_timeline(project_id: str, auth: AuthUser) -> dict[str, A
         if not asset:
             raise HTTPException(status_code=400, detail="A timeline clip is missing.")
         try:
-            clip_paths.append(materialize_asset_path(asset))
+            clip_path = materialize_asset_path(asset)
         except Exception as exc:
             raise HTTPException(
                 status_code=400,
                 detail="Could not load a timeline clip for merge.",
             ) from exc
+        clip_paths.append(clip_path)
+        item_duration = item.get("duration_seconds") or job.get("duration_seconds")
+        if isinstance(item_duration, (int, float)) and item_duration > 0:
+            total_duration += float(item_duration)
 
     output_path = MEDIA_DIR / "merges" / f"{project_id}-{uuid.uuid4().hex[:10]}.mp4"
     try:
@@ -1085,19 +1096,23 @@ async def merge_project_timeline(project_id: str, auth: AuthUser) -> dict[str, A
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc)[:500]) from exc
 
+    probed = probe_media_duration(output_path)
+    duration_seconds = int(round(probed or total_duration or MAX_VIDEO_SECONDS))
+    duration_seconds = max(MIN_VIDEO_SECONDS, min(duration_seconds, 600))
+
     asset = register_output_file(
         user_id=user_id,
         source_path=output_path,
         kind="video",
         mime_type="video/mp4",
     )
-    prompt = f"Merged timeline for {project.get('title') or 'project'}"
+    prompt = f"Merged sequence · {len(clip_paths)} clips"
     generation = GenerationRequest(
         prompt=prompt,
         media_type="video",
         vibe="quiet luxury",
         aspect_ratio="16:9",
-        duration_seconds=MAX_VIDEO_SECONDS,
+        duration_seconds=min(duration_seconds, MAX_VIDEO_SECONDS),
         project_id=project_id,
     )
     job = await store.create(generation, user_id=user_id, project_id=project_id)
@@ -1105,21 +1120,35 @@ async def merge_project_timeline(project_id: str, auth: AuthUser) -> dict[str, A
         status="complete",
         phase="complete",
         progress=100,
-        message="Timeline clips merged into one video.",
+        message="Merged into a new video. Source clips stay in the library.",
         output_asset_id=asset.id,
         media_url=None,
-        duration_seconds=None,
+        duration_seconds=duration_seconds,
     )
     _append_trace(
         job,
-        title="Merged timeline",
-        detail=f"Combined {len(clip_paths)} clips.",
+        title="Merged video track",
+        detail=f"Created a new clip from {len(clip_paths)} independent videos.",
         status="done",
         kind="status",
         trace_id="merged",
     )
     await store.put(job)
-    add_artifact(project, job["id"])
+
+    # Video track becomes the new merged clip; music track is preserved as-is.
+    set_timeline_items(
+        project,
+        [
+            {
+                "job_id": job["id"],
+                "asset_id": asset.id,
+                "media_type": "video",
+                "label": "merged sequence",
+                "duration_seconds": duration_seconds,
+            },
+            *music_items,
+        ],
+    )
     await projects.put(project)
     return {
         "project": public_project(project),
@@ -1189,7 +1218,7 @@ async def get_generation(job_id: str, auth: AuthUser) -> dict[str, Any]:
     return await _public_job_persisted(job)
 
 
-@app.get("/api/generations/{job_id}/media")
+@app.get("/api/generations/{job_id}/media", response_model=None)
 async def get_generation_media(job_id: str, auth: AuthUser) -> RedirectResponse:
     """Compatibility redirect to a short-lived signed asset URL."""
     user_id = current_user_id(auth)
@@ -1205,7 +1234,7 @@ async def get_generation_media(job_id: str, auth: AuthUser) -> RedirectResponse:
     return RedirectResponse(url=sign_content_url(asset.id), status_code=307)
 
 
-@app.get("/api/assets/{asset_id}/content")
+@app.get("/api/assets/{asset_id}/content", response_model=None)
 async def get_asset_content(
     asset_id: str,
     exp: str | None = None,

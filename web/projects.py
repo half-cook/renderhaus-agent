@@ -27,6 +27,12 @@ PUBLIC_PROJECT_FIELDS = {
     "timeline",
 }
 
+# Normalize every clip to this before concat so mismatched providers still merge.
+_MERGE_WIDTH = 1280
+_MERGE_HEIGHT = 720
+_MERGE_FPS = 24
+_MERGE_SAMPLE_RATE = 44100
+
 
 def _now() -> int:
     return int(time.time())
@@ -159,6 +165,18 @@ def remove_artifact(project: dict[str, Any], job_id: str) -> bool:
     return True
 
 
+def timeline_items_by_kind(
+    project: dict[str, Any],
+    media_type: str,
+) -> list[dict[str, Any]]:
+    timeline = project.get("timeline") or _empty_timeline()
+    return [
+        item
+        for item in (timeline.get("items") or [])
+        if item.get("media_type") == media_type
+    ]
+
+
 def set_timeline_items(
     project: dict[str, Any],
     items: list[dict[str, Any]],
@@ -168,18 +186,24 @@ def set_timeline_items(
         job_id = raw.get("job_id")
         if not isinstance(job_id, str) or not job_id:
             continue
+        media_type = raw.get("media_type") or "video"
+        if media_type not in {"video", "music"}:
+            # Images and other kinds stay in the library, not on the edit timeline.
+            continue
         cleaned.append(
             {
                 "id": raw.get("id") if isinstance(raw.get("id"), str) else uuid.uuid4().hex,
                 "job_id": job_id,
                 "asset_id": raw.get("asset_id") if isinstance(raw.get("asset_id"), str) else None,
-                "media_type": raw.get("media_type") or "video",
+                "media_type": media_type,
                 "label": (raw.get("label") or "")[:120],
                 "duration_seconds": raw.get("duration_seconds"),
             }
         )
-    project["timeline"] = {"items": cleaned}
-    # Ensure timeline jobs are also in the library.
+    # Keep video clips ahead of music so order stays predictable across clients.
+    videos = [item for item in cleaned if item["media_type"] == "video"]
+    music = [item for item in cleaned if item["media_type"] == "music"]
+    project["timeline"] = {"items": [*videos, *music]}
     for item in cleaned:
         add_artifact(project, item["job_id"])
 
@@ -188,12 +212,67 @@ def ffmpeg_available() -> bool:
     return shutil.which("ffmpeg") is not None
 
 
+def probe_media_duration(path: Path) -> float | None:
+    if not path.is_file() or not shutil.which("ffprobe"):
+        return None
+    result = subprocess.run(
+        [
+            "ffprobe",
+            "-v",
+            "error",
+            "-show_entries",
+            "format=duration",
+            "-of",
+            "default=noprint_wrappers=1:nokey=1",
+            str(path),
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if result.returncode != 0:
+        return None
+    try:
+        duration = float((result.stdout or "").strip())
+    except ValueError:
+        return None
+    return duration if duration > 0 else None
+
+
+def _has_audio_stream(path: Path) -> bool:
+    if not shutil.which("ffprobe"):
+        return True
+    result = subprocess.run(
+        [
+            "ffprobe",
+            "-v",
+            "error",
+            "-select_streams",
+            "a:0",
+            "-show_entries",
+            "stream=codec_type",
+            "-of",
+            "csv=p=0",
+            str(path),
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    return result.returncode == 0 and "audio" in (result.stdout or "")
+
+
 def merge_video_paths(
     paths: list[Path],
     *,
     output_path: Path,
 ) -> Path:
-    """Concatenate video files with ffmpeg. All inputs should be playable MP4s."""
+    """Concatenate video clips into a new file.
+
+    Each input is normalized first so clips from different provider runs
+    (fps, sample rate, missing audio) still concatenate cleanly. Source
+    clips are never modified.
+    """
     if len(paths) < 2:
         raise ValueError("Merge needs at least two clips.")
     if not ffmpeg_available():
@@ -201,12 +280,18 @@ def merge_video_paths(
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix="renderhaus-merge-") as tmp:
-        list_path = Path(tmp) / "concat.txt"
-        lines = []
-        for path in paths:
+        tmp_dir = Path(tmp)
+        normalized: list[Path] = []
+        for index, path in enumerate(paths):
             if not path.is_file():
                 raise FileNotFoundError(f"Missing clip: {path}")
-            # ffmpeg concat demuxer requires escaped single quotes in paths.
+            normalized_path = tmp_dir / f"clip-{index:03d}.mp4"
+            _normalize_clip(path, normalized_path)
+            normalized.append(normalized_path)
+
+        list_path = tmp_dir / "concat.txt"
+        lines = []
+        for path in normalized:
             escaped = str(path.resolve()).replace("'", r"'\''")
             lines.append(f"file '{escaped}'")
         list_path.write_text("\n".join(lines) + "\n")
@@ -222,6 +307,8 @@ def merge_video_paths(
             str(list_path),
             "-c",
             "copy",
+            "-movflags",
+            "+faststart",
             str(output_path),
         ]
         result = subprocess.run(
@@ -231,35 +318,79 @@ def merge_video_paths(
             check=False,
         )
         if result.returncode != 0 or not output_path.is_file():
-            # Re-encode fallback when stream copy fails (mismatched codecs).
-            command = [
-                "ffmpeg",
-                "-y",
-                "-f",
-                "concat",
-                "-safe",
-                "0",
-                "-i",
-                str(list_path),
-                "-c:v",
-                "libx264",
-                "-preset",
-                "veryfast",
-                "-crf",
-                "18",
-                "-c:a",
-                "aac",
-                "-movflags",
-                "+faststart",
-                str(output_path),
-            ]
-            result = subprocess.run(
-                command,
-                capture_output=True,
-                text=True,
-                check=False,
-            )
-            if result.returncode != 0 or not output_path.is_file():
-                detail = (result.stderr or result.stdout or "ffmpeg failed").strip()
-                raise RuntimeError(detail[-800:] or "ffmpeg failed to merge clips.")
+            detail = (result.stderr or result.stdout or "ffmpeg failed").strip()
+            raise RuntimeError(detail[-800:] or "ffmpeg failed to merge clips.")
     return output_path
+
+
+def _normalize_clip(source: Path, destination: Path) -> None:
+    """Re-encode one clip to a shared video/audio profile for concat."""
+    has_audio = _has_audio_stream(source)
+    video_filter = (
+        f"scale={_MERGE_WIDTH}:{_MERGE_HEIGHT}:force_original_aspect_ratio=decrease,"
+        f"pad={_MERGE_WIDTH}:{_MERGE_HEIGHT}:(ow-iw)/2:(oh-ih)/2,"
+        f"fps={_MERGE_FPS},format=yuv420p,setsar=1"
+    )
+    if has_audio:
+        command = [
+            "ffmpeg",
+            "-y",
+            "-i",
+            str(source),
+            "-vf",
+            video_filter,
+            "-af",
+            f"aformat=sample_rates={_MERGE_SAMPLE_RATE}:channel_layouts=stereo",
+            "-c:v",
+            "libx264",
+            "-preset",
+            "veryfast",
+            "-crf",
+            "18",
+            "-c:a",
+            "aac",
+            "-ar",
+            str(_MERGE_SAMPLE_RATE),
+            "-ac",
+            "2",
+            "-shortest",
+            str(destination),
+        ]
+    else:
+        # Synthetic silence keeps concat demuxer stream maps consistent.
+        command = [
+            "ffmpeg",
+            "-y",
+            "-i",
+            str(source),
+            "-f",
+            "lavfi",
+            "-i",
+            f"anullsrc=channel_layout=stereo:sample_rate={_MERGE_SAMPLE_RATE}",
+            "-vf",
+            video_filter,
+            "-c:v",
+            "libx264",
+            "-preset",
+            "veryfast",
+            "-crf",
+            "18",
+            "-c:a",
+            "aac",
+            "-ar",
+            str(_MERGE_SAMPLE_RATE),
+            "-ac",
+            "2",
+            "-shortest",
+            str(destination),
+        ]
+    result = subprocess.run(
+        command,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if result.returncode != 0 or not destination.is_file():
+        detail = (result.stderr or result.stdout or "ffmpeg normalize failed").strip()
+        raise RuntimeError(detail[-800:] or "ffmpeg failed to normalize a clip.")
+

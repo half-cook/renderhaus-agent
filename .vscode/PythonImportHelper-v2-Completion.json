@@ -1577,6 +1577,14 @@
         "documentation": {}
     },
     {
+        "label": "probe_media_duration",
+        "importPath": "web.projects",
+        "description": "web.projects",
+        "isExtraImport": true,
+        "detail": "web.projects",
+        "documentation": {}
+    },
+    {
         "label": "public_project",
         "importPath": "web.projects",
         "description": "web.projects",
@@ -1594,6 +1602,14 @@
     },
     {
         "label": "set_timeline_items",
+        "importPath": "web.projects",
+        "description": "web.projects",
+        "isExtraImport": true,
+        "detail": "web.projects",
+        "documentation": {}
+    },
+    {
+        "label": "timeline_items_by_kind",
         "importPath": "web.projects",
         "description": "web.projects",
         "isExtraImport": true,
@@ -3116,11 +3132,20 @@
         "documentation": {}
     },
     {
+        "label": "timeline_items_by_kind",
+        "kind": 2,
+        "importPath": "web.projects",
+        "description": "web.projects",
+        "peekOfCode": "def timeline_items_by_kind(\n    project: dict[str, Any],\n    media_type: str,\n) -> list[dict[str, Any]]:\n    timeline = project.get(\"timeline\") or _empty_timeline()\n    return [\n        item\n        for item in (timeline.get(\"items\") or [])\n        if item.get(\"media_type\") == media_type\n    ]",
+        "detail": "web.projects",
+        "documentation": {}
+    },
+    {
         "label": "set_timeline_items",
         "kind": 2,
         "importPath": "web.projects",
         "description": "web.projects",
-        "peekOfCode": "def set_timeline_items(\n    project: dict[str, Any],\n    items: list[dict[str, Any]],\n) -> None:\n    cleaned: list[dict[str, Any]] = []\n    for raw in items:\n        job_id = raw.get(\"job_id\")\n        if not isinstance(job_id, str) or not job_id:\n            continue\n        cleaned.append(",
+        "peekOfCode": "def set_timeline_items(\n    project: dict[str, Any],\n    items: list[dict[str, Any]],\n) -> None:\n    cleaned: list[dict[str, Any]] = []\n    for raw in items:\n        job_id = raw.get(\"job_id\")\n        if not isinstance(job_id, str) or not job_id:\n            continue\n        media_type = raw.get(\"media_type\") or \"video\"",
         "detail": "web.projects",
         "documentation": {}
     },
@@ -3129,7 +3154,16 @@
         "kind": 2,
         "importPath": "web.projects",
         "description": "web.projects",
-        "peekOfCode": "def ffmpeg_available() -> bool:\n    return shutil.which(\"ffmpeg\") is not None\ndef merge_video_paths(\n    paths: list[Path],\n    *,\n    output_path: Path,\n) -> Path:\n    \"\"\"Concatenate video files with ffmpeg. All inputs should be playable MP4s.\"\"\"\n    if len(paths) < 2:\n        raise ValueError(\"Merge needs at least two clips.\")",
+        "peekOfCode": "def ffmpeg_available() -> bool:\n    return shutil.which(\"ffmpeg\") is not None\ndef probe_media_duration(path: Path) -> float | None:\n    if not path.is_file() or not shutil.which(\"ffprobe\"):\n        return None\n    result = subprocess.run(\n        [\n            \"ffprobe\",\n            \"-v\",\n            \"error\",",
+        "detail": "web.projects",
+        "documentation": {}
+    },
+    {
+        "label": "probe_media_duration",
+        "kind": 2,
+        "importPath": "web.projects",
+        "description": "web.projects",
+        "peekOfCode": "def probe_media_duration(path: Path) -> float | None:\n    if not path.is_file() or not shutil.which(\"ffprobe\"):\n        return None\n    result = subprocess.run(\n        [\n            \"ffprobe\",\n            \"-v\",\n            \"error\",\n            \"-show_entries\",\n            \"format=duration\",",
         "detail": "web.projects",
         "documentation": {}
     },
@@ -3138,7 +3172,7 @@
         "kind": 2,
         "importPath": "web.projects",
         "description": "web.projects",
-        "peekOfCode": "def merge_video_paths(\n    paths: list[Path],\n    *,\n    output_path: Path,\n) -> Path:\n    \"\"\"Concatenate video files with ffmpeg. All inputs should be playable MP4s.\"\"\"\n    if len(paths) < 2:\n        raise ValueError(\"Merge needs at least two clips.\")\n    if not ffmpeg_available():\n        raise RuntimeError(\"ffmpeg is not installed on this machine.\")",
+        "peekOfCode": "def merge_video_paths(\n    paths: list[Path],\n    *,\n    output_path: Path,\n) -> Path:\n    \"\"\"Concatenate video clips into a new file.\n    Each input is normalized first so clips from different provider runs\n    (fps, sample rate, missing audio) still concatenate cleanly. Source\n    clips are never modified.\n    \"\"\"",
         "detail": "web.projects",
         "documentation": {}
     },
@@ -3157,6 +3191,42 @@
         "importPath": "web.projects",
         "description": "web.projects",
         "peekOfCode": "PUBLIC_PROJECT_FIELDS = {\n    \"id\",\n    \"schema_version\",\n    \"title\",\n    \"description\",\n    \"user_id\",\n    \"created_at\",\n    \"updated_at\",\n    \"artifact_ids\",\n    \"timeline\",",
+        "detail": "web.projects",
+        "documentation": {}
+    },
+    {
+        "label": "_MERGE_WIDTH",
+        "kind": 5,
+        "importPath": "web.projects",
+        "description": "web.projects",
+        "peekOfCode": "_MERGE_WIDTH = 1280\n_MERGE_HEIGHT = 720\n_MERGE_FPS = 24\n_MERGE_SAMPLE_RATE = 44100\ndef _now() -> int:\n    return int(time.time())\ndef _empty_timeline() -> dict[str, Any]:\n    return {\"items\": []}\nclass ProjectStore:\n    def __init__(self, directory: Path | None = None) -> None:",
+        "detail": "web.projects",
+        "documentation": {}
+    },
+    {
+        "label": "_MERGE_HEIGHT",
+        "kind": 5,
+        "importPath": "web.projects",
+        "description": "web.projects",
+        "peekOfCode": "_MERGE_HEIGHT = 720\n_MERGE_FPS = 24\n_MERGE_SAMPLE_RATE = 44100\ndef _now() -> int:\n    return int(time.time())\ndef _empty_timeline() -> dict[str, Any]:\n    return {\"items\": []}\nclass ProjectStore:\n    def __init__(self, directory: Path | None = None) -> None:\n        self.directory = directory or PROJECTS_DIR",
+        "detail": "web.projects",
+        "documentation": {}
+    },
+    {
+        "label": "_MERGE_FPS",
+        "kind": 5,
+        "importPath": "web.projects",
+        "description": "web.projects",
+        "peekOfCode": "_MERGE_FPS = 24\n_MERGE_SAMPLE_RATE = 44100\ndef _now() -> int:\n    return int(time.time())\ndef _empty_timeline() -> dict[str, Any]:\n    return {\"items\": []}\nclass ProjectStore:\n    def __init__(self, directory: Path | None = None) -> None:\n        self.directory = directory or PROJECTS_DIR\n        self._projects: dict[str, dict[str, Any]] = {}",
+        "detail": "web.projects",
+        "documentation": {}
+    },
+    {
+        "label": "_MERGE_SAMPLE_RATE",
+        "kind": 5,
+        "importPath": "web.projects",
+        "description": "web.projects",
+        "peekOfCode": "_MERGE_SAMPLE_RATE = 44100\ndef _now() -> int:\n    return int(time.time())\ndef _empty_timeline() -> dict[str, Any]:\n    return {\"items\": []}\nclass ProjectStore:\n    def __init__(self, directory: Path | None = None) -> None:\n        self.directory = directory or PROJECTS_DIR\n        self._projects: dict[str, dict[str, Any]] = {}\n        self._lock = asyncio.Lock()",
         "detail": "web.projects",
         "documentation": {}
     }
