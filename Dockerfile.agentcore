@@ -1,0 +1,22 @@
+# Amazon Bedrock AgentCore requires linux/arm64.
+FROM --platform=linux/arm64 python:3.11-slim-bookworm
+
+WORKDIR /app
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    AGENTCORE_RUNTIME=1 \
+    RENDERHAUS_MEDIA_DIR=/tmp/renderhaus/media \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
+
+COPY pyproject.toml README.md ./
+COPY agent ./agent
+COPY mcps ./mcps
+COPY configs ./configs
+COPY web ./web
+
+RUN pip install --no-cache-dir -e .
+
+EXPOSE 8080
+
+CMD ["uvicorn", "agent.runtime_app:app", "--host", "0.0.0.0", "--port", "8080"]

@@ -24,12 +24,14 @@ from agent.service import (
     start_video_generation,
 )
 from agent.tracing import flush_langfuse, traced_operation
+from agent.agentcore_client import agentcore_enabled
 from web.assets import (
     get_asset,
     get_asset_for_user,
     init_assets_db,
     materialize_asset_path,
     presigned_content_url,
+    register_existing_s3_object,
     register_output_file,
     register_upload,
     sign_content_url,
@@ -139,6 +141,7 @@ class JobStore:
         *,
         user_id: str,
         reference_path: str | None = None,
+        reference_storage_key: str | None = None,
         parent_id: str | None = None,
     ) -> dict[str, Any]:
         now = int(time.time())
@@ -168,6 +171,7 @@ class JobStore:
             "traces": [],
             "progress": 4,
             "_reference_path": reference_path,
+            "_reference_storage_key": reference_storage_key,
             "_provider_job_id": None,
             "_output_path": None,
             "_error_detail": None,
@@ -248,12 +252,19 @@ def _require_owned_job(job: dict[str, Any] | None, user_id: str) -> dict[str, An
     return job
 
 
-def _reference_path_for_user(asset_id: str | None, user_id: str) -> str | None:
+def _reference_asset_for_user(asset_id: str | None, user_id: str):
     if not asset_id:
         return None
     asset = get_asset_for_user(asset_id, user_id)
     if not asset or asset.kind != "upload":
         raise HTTPException(status_code=400, detail="Reference image no longer exists.")
+    return asset
+
+
+def _reference_path_for_user(asset_id: str | None, user_id: str) -> str | None:
+    asset = _reference_asset_for_user(asset_id, user_id)
+    if asset is None:
+        return None
     try:
         path = materialize_asset_path(asset)
     except Exception:
@@ -326,13 +337,37 @@ def _merge_agent_traces(job: dict[str, Any], result: dict[str, Any]) -> None:
         )
 
 
+def _agent_session_id(job: dict[str, Any]) -> str:
+    return str(job.get("parent_id") or job.get("id") or uuid.uuid4().hex)
+
+
+def _generation_kwargs(job: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "session_id": _agent_session_id(job),
+        "user_id": str(job.get("user_id") or "local"),
+        "reference_storage_key": (
+            job.get("_reference_storage_key")
+            if isinstance(job.get("_reference_storage_key"), str)
+            else None
+        ),
+    }
+
+
 def _generation_instruction(job: dict[str, Any]) -> str:
     reference = job.get("_reference_path")
-    reference_instruction = (
-        f"Use this local reference image: {reference}. "
-        if reference
-        else "No reference image is supplied. "
-    )
+    # When AgentCore owns MCP tools, the runtime materializes the S3 reference itself.
+    if agentcore_enabled():
+        reference_instruction = (
+            "A reference image will be supplied by the runtime. "
+            if job.get("_reference_storage_key")
+            else "No reference image is supplied. "
+        )
+    else:
+        reference_instruction = (
+            f"Use this local reference image: {reference}. "
+            if reference
+            else "No reference image is supplied. "
+        )
     media_type = job.get("media_type") or "video"
     if media_type == "image":
         return (
@@ -370,24 +405,51 @@ def _artifact_path(value: dict[str, Any]) -> str | None:
     return None
 
 
+def _remote_storage(value: dict[str, Any]) -> dict[str, Any] | None:
+    storage_key = value.get("storage_key")
+    if not isinstance(storage_key, str) or not storage_key:
+        return None
+    mime_type = value.get("mime_type")
+    size_bytes = value.get("size_bytes")
+    checksum = value.get("checksum")
+    filename = value.get("filename")
+    if not isinstance(mime_type, str) or not isinstance(filename, str):
+        return None
+    if not isinstance(size_bytes, int) or not isinstance(checksum, str):
+        return None
+    asset_id = value.get("asset_id")
+    return {
+        "storage_key": storage_key,
+        "mime_type": mime_type,
+        "size_bytes": size_bytes,
+        "checksum": checksum,
+        "filename": filename,
+        "asset_id": asset_id if isinstance(asset_id, str) else None,
+    }
+
+
 def _start_artifact(result: dict[str, Any]) -> dict[str, Any] | None:
     for artifact in reversed(result.get("artifacts", [])):
         if isinstance(artifact, dict) and (
-            isinstance(artifact.get("job_id"), str) or isinstance(artifact.get("output_path"), str)
+            isinstance(artifact.get("job_id"), str)
+            or isinstance(artifact.get("output_path"), str)
+            or isinstance(artifact.get("storage_key"), str)
         ):
             return artifact
     return None
 
 
-def _attach_output_asset(job: dict[str, Any], output_path: str) -> None:
+def _media_kind(job: dict[str, Any]) -> Literal["video", "image", "music"]:
     media_type = job.get("media_type") or "video"
-    kind: Literal["video", "image", "music"]
     if media_type == "image":
-        kind = "image"
-    elif media_type == "music":
-        kind = "music"
-    else:
-        kind = "video"
+        return "image"
+    if media_type == "music":
+        return "music"
+    return "video"
+
+
+def _attach_output_asset(job: dict[str, Any], output_path: str) -> None:
+    kind = _media_kind(job)
     user_id = str(job.get("user_id") or "local")
     asset = register_output_file(
         user_id=user_id,
@@ -398,6 +460,34 @@ def _attach_output_asset(job: dict[str, Any], output_path: str) -> None:
     job["_output_path"] = str(Path(output_path).expanduser().resolve())
     job["output_asset_id"] = asset.id
     job["_storage_key"] = asset.storage_key
+
+
+def _attach_remote_output_asset(job: dict[str, Any], remote: dict[str, Any]) -> None:
+    kind = _media_kind(job)
+    user_id = str(job.get("user_id") or "local")
+    asset = register_existing_s3_object(
+        user_id=user_id,
+        storage_key=str(remote["storage_key"]),
+        kind=kind,
+        mime_type=str(remote["mime_type"]),
+        size_bytes=int(remote["size_bytes"]),
+        checksum=str(remote["checksum"]),
+        filename=str(remote["filename"]),
+        asset_id=remote.get("asset_id"),
+    )
+    job["output_asset_id"] = asset.id
+    job["_storage_key"] = asset.storage_key
+
+
+def _attach_generation_output(job: dict[str, Any], payload: dict[str, Any]) -> None:
+    remote = _remote_storage(payload)
+    if remote:
+        _attach_remote_output_asset(job, remote)
+        return
+    output_path = _artifact_path(payload)
+    if not output_path:
+        raise RuntimeError("Generation succeeded without a downloadable media file.")
+    _attach_output_asset(job, output_path)
 
 
 async def _poll_provider(job: dict[str, Any]) -> None:
@@ -421,10 +511,14 @@ async def _poll_provider(job: dict[str, Any]) -> None:
     )
     poll_fn = poll_music_generation if media_type == "music" else poll_video_generation
     trace_id = "poll-music" if media_type == "music" else "poll-video"
+    poll_kwargs = {
+        "session_id": _agent_session_id(job),
+        "user_id": str(job.get("user_id") or "local"),
+    }
 
     poll_count = 0
     while True:
-        result = await poll_fn(provider_job_id)
+        result = await poll_fn(provider_job_id, **poll_kwargs)
         status = str(result.get("status", "unknown")).lower()
         poll_count += 1
         _append_trace(
@@ -436,12 +530,7 @@ async def _poll_provider(job: dict[str, Any]) -> None:
             trace_id=trace_id,
         )
         if status == "succeeded":
-            output_path = _artifact_path(result)
-            if not output_path:
-                raise RuntimeError(
-                    f"{media_type.capitalize()} generation succeeded without a downloadable media file."
-                )
-            _attach_output_asset(job, output_path)
+            _attach_generation_output(job, result)
             job.update(
                 status="complete",
                 phase="complete",
@@ -527,12 +616,18 @@ async def _run_generation(job_id: str, *, resume: bool = False) -> None:
                     )
                     await store.put(job)
 
+                    agent_kwargs = _generation_kwargs(job)
+                    instruction = _generation_instruction(job)
                     if media_type == "image":
-                        result = await start_image_generation(_generation_instruction(job))
+                        result = await start_image_generation(instruction, **agent_kwargs)
                     elif media_type == "music":
-                        result = await start_music_generation(_generation_instruction(job))
+                        result = await start_music_generation(
+                            instruction,
+                            session_id=agent_kwargs["session_id"],
+                            user_id=agent_kwargs["user_id"],
+                        )
                     else:
-                        result = await start_video_generation(_generation_instruction(job))
+                        result = await start_video_generation(instruction, **agent_kwargs)
 
                     _append_trace(
                         job,
@@ -572,16 +667,7 @@ async def _run_generation(job_id: str, *, resume: bool = False) -> None:
                         return
 
                     if media_type == "image":
-                        output_path = _artifact_path(artifact)
-                        if not output_path and artifact.get("status") != "succeeded":
-                            raise RuntimeError(
-                                "Image generation did not return a downloadable file."
-                            )
-                        if not output_path:
-                            raise RuntimeError(
-                                "Image generation succeeded without a downloadable media file."
-                            )
-                        _attach_output_asset(job, output_path)
+                        _attach_generation_output(job, artifact)
                         job.update(
                             status="complete",
                             phase="complete",
@@ -788,8 +874,17 @@ async def upload_reference(
 @app.post("/api/generations", status_code=202)
 async def create_generation(request: GenerationRequest, auth: AuthUser) -> dict[str, Any]:
     user_id = current_user_id(auth)
-    reference_path = _reference_path_for_user(request.reference_asset_id, user_id)
-    job = await store.create(request, user_id=user_id, reference_path=reference_path)
+    reference_asset = _reference_asset_for_user(request.reference_asset_id, user_id)
+    reference_storage_key = reference_asset.storage_key if reference_asset else None
+    reference_path = None
+    if reference_asset and not agentcore_enabled():
+        reference_path = _reference_path_for_user(request.reference_asset_id, user_id)
+    job = await store.create(
+        request,
+        user_id=user_id,
+        reference_path=reference_path,
+        reference_storage_key=reference_storage_key,
+    )
     _append_trace(
         job,
         title="Queued",
@@ -871,13 +966,20 @@ async def refine_generation(
         duration_seconds=min(original.get("duration_seconds") or 10, MAX_VIDEO_SECONDS),
         reference_asset_id=original.get("reference_asset_id"),
     )
-    reference_path = original.get("_reference_path")
-    if original.get("reference_asset_id"):
+    reference_asset = _reference_asset_for_user(original.get("reference_asset_id"), user_id)
+    reference_storage_key = (
+        original.get("_reference_storage_key")
+        if isinstance(original.get("_reference_storage_key"), str)
+        else (reference_asset.storage_key if reference_asset else None)
+    )
+    reference_path = None
+    if reference_asset and not agentcore_enabled():
         reference_path = _reference_path_for_user(original.get("reference_asset_id"), user_id)
     job = await store.create(
         generation,
         user_id=user_id,
         reference_path=reference_path,
+        reference_storage_key=reference_storage_key,
         parent_id=job_id,
     )
     _append_trace(

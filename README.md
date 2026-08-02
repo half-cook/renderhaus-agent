@@ -19,6 +19,36 @@ bash scripts/setup_agent.sh
 
 Then open [http://127.0.0.1:8000](http://127.0.0.1:8000).
 
+### Secrets (AWS Secrets Manager)
+
+Application secrets live in Secrets Manager (`renderhaus/app` by default). Sync from a local
+env file, then keep only bootstrap keys locally:
+
+```bash
+.venv/bin/python scripts/sync_secrets.py --rewrite-bootstrap
+```
+
+`load_local_env()` reads `.env.local` for bootstrap (`AWS_REGION`, `RENDERHAUS_SECRETS_NAME`),
+then loads the JSON secret into the process environment. AgentCore Runtime uses the same secret
+via its execution role.
+
+### AgentCore (cloud agent + MCPs)
+
+The LangChain agent and generation MCPs (Seedance, Seedream, Mureka, Gemini TTS) can run on
+Amazon Bedrock AgentCore Runtime. The web app stays local (or on its own host) and calls the
+runtime when `AGENTCORE_RUNTIME_ARN` is set.
+
+```bash
+# Requires Docker Desktop + AWS credentials with deploy access
+.venv/bin/python scripts/sync_secrets.py --rewrite-bootstrap
+.venv/bin/python scripts/deploy_agentcore.py --region us-east-1
+.venv/bin/python scripts/smoke_agentcore.py
+.venv/bin/python -m web.app
+```
+
+With `AGENTCORE_RUNTIME_ARN` set (from Secrets Manager or bootstrap), generation/poll calls go to
+AgentCore. Leave it unset to keep the local in-process agent + stdio MCPs.
+
 The web app provides the minimal prompt → create → review workflow. It sends generation and
 refinement requests through a video-only agent boundary, persists local job state under
 `.renderhaus/web-jobs/`, and serves completed MP4s through job-scoped media URLs.

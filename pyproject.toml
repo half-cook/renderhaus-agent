@@ -32,3 +32,6 @@ include = ["agent*", "mcps*", "web*"]
 
 [tool.setuptools.package-data]
 web = ["static/*", "static/img/*"]
+
+[tool.setuptools]
+include-package-data = true

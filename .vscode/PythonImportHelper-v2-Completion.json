@@ -156,6 +156,62 @@
         "documentation": {}
     },
     {
+        "label": "annotations",
+        "importPath": "__future__",
+        "description": "__future__",
+        "isExtraImport": true,
+        "detail": "__future__",
+        "documentation": {}
+    },
+    {
+        "label": "annotations",
+        "importPath": "__future__",
+        "description": "__future__",
+        "isExtraImport": true,
+        "detail": "__future__",
+        "documentation": {}
+    },
+    {
+        "label": "annotations",
+        "importPath": "__future__",
+        "description": "__future__",
+        "isExtraImport": true,
+        "detail": "__future__",
+        "documentation": {}
+    },
+    {
+        "label": "annotations",
+        "importPath": "__future__",
+        "description": "__future__",
+        "isExtraImport": true,
+        "detail": "__future__",
+        "documentation": {}
+    },
+    {
+        "label": "annotations",
+        "importPath": "__future__",
+        "description": "__future__",
+        "isExtraImport": true,
+        "detail": "__future__",
+        "documentation": {}
+    },
+    {
+        "label": "annotations",
+        "importPath": "__future__",
+        "description": "__future__",
+        "isExtraImport": true,
+        "detail": "__future__",
+        "documentation": {}
+    },
+    {
+        "label": "annotations",
+        "importPath": "__future__",
+        "description": "__future__",
+        "isExtraImport": true,
+        "detail": "__future__",
+        "documentation": {}
+    },
+    {
         "label": "os",
         "kind": 6,
         "isExtraImport": true,
@@ -174,95 +230,56 @@
         "documentation": {}
     },
     {
-        "label": "Path",
-        "importPath": "pathlib",
-        "description": "pathlib",
+        "label": "uuid",
+        "kind": 6,
         "isExtraImport": true,
-        "detail": "pathlib",
-        "documentation": {}
-    },
-    {
-        "label": "Path",
-        "importPath": "pathlib",
-        "description": "pathlib",
-        "isExtraImport": true,
-        "detail": "pathlib",
-        "documentation": {}
-    },
-    {
-        "label": "Path",
-        "importPath": "pathlib",
-        "description": "pathlib",
-        "isExtraImport": true,
-        "detail": "pathlib",
-        "documentation": {}
-    },
-    {
-        "label": "Path",
-        "importPath": "pathlib",
-        "description": "pathlib",
-        "isExtraImport": true,
-        "detail": "pathlib",
-        "documentation": {}
-    },
-    {
-        "label": "Path",
-        "importPath": "pathlib",
-        "description": "pathlib",
-        "isExtraImport": true,
-        "detail": "pathlib",
-        "documentation": {}
-    },
-    {
-        "label": "Path",
-        "importPath": "pathlib",
-        "description": "pathlib",
-        "isExtraImport": true,
-        "detail": "pathlib",
-        "documentation": {}
-    },
-    {
-        "label": "Path",
-        "importPath": "pathlib",
-        "description": "pathlib",
-        "isExtraImport": true,
-        "detail": "pathlib",
-        "documentation": {}
-    },
-    {
-        "label": "Path",
-        "importPath": "pathlib",
-        "description": "pathlib",
-        "isExtraImport": true,
-        "detail": "pathlib",
-        "documentation": {}
-    },
-    {
-        "label": "Path",
-        "importPath": "pathlib",
-        "description": "pathlib",
-        "isExtraImport": true,
-        "detail": "pathlib",
-        "documentation": {}
-    },
-    {
-        "label": "Path",
-        "importPath": "pathlib",
-        "description": "pathlib",
-        "isExtraImport": true,
-        "detail": "pathlib",
-        "documentation": {}
-    },
-    {
-        "label": "Path",
-        "importPath": "pathlib",
-        "description": "pathlib",
-        "isExtraImport": true,
-        "detail": "pathlib",
+        "importPath": "uuid",
+        "description": "uuid",
+        "detail": "uuid",
         "documentation": {}
     },
     {
         "label": "Any",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Any",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Any",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Any",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Any",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Literal",
         "importPath": "typing",
         "description": "typing",
         "isExtraImport": true,
@@ -390,11 +407,204 @@
         "documentation": {}
     },
     {
+        "label": "boto3",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "boto3",
+        "description": "boto3",
+        "detail": "boto3",
+        "documentation": {}
+    },
+    {
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
+        "isExtraImport": true,
+        "detail": "pathlib",
+        "documentation": {}
+    },
+    {
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
+        "isExtraImport": true,
+        "detail": "pathlib",
+        "documentation": {}
+    },
+    {
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
+        "isExtraImport": true,
+        "detail": "pathlib",
+        "documentation": {}
+    },
+    {
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
+        "isExtraImport": true,
+        "detail": "pathlib",
+        "documentation": {}
+    },
+    {
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
+        "isExtraImport": true,
+        "detail": "pathlib",
+        "documentation": {}
+    },
+    {
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
+        "isExtraImport": true,
+        "detail": "pathlib",
+        "documentation": {}
+    },
+    {
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
+        "isExtraImport": true,
+        "detail": "pathlib",
+        "documentation": {}
+    },
+    {
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
+        "isExtraImport": true,
+        "detail": "pathlib",
+        "documentation": {}
+    },
+    {
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
+        "isExtraImport": true,
+        "detail": "pathlib",
+        "documentation": {}
+    },
+    {
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
+        "isExtraImport": true,
+        "detail": "pathlib",
+        "documentation": {}
+    },
+    {
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
+        "isExtraImport": true,
+        "detail": "pathlib",
+        "documentation": {}
+    },
+    {
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
+        "isExtraImport": true,
+        "detail": "pathlib",
+        "documentation": {}
+    },
+    {
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
+        "isExtraImport": true,
+        "detail": "pathlib",
+        "documentation": {}
+    },
+    {
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
+        "isExtraImport": true,
+        "detail": "pathlib",
+        "documentation": {}
+    },
+    {
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
+        "isExtraImport": true,
+        "detail": "pathlib",
+        "documentation": {}
+    },
+    {
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
+        "isExtraImport": true,
+        "detail": "pathlib",
+        "documentation": {}
+    },
+    {
         "label": "load_dotenv",
         "importPath": "dotenv",
         "description": "dotenv",
         "isExtraImport": true,
         "detail": "dotenv",
+        "documentation": {}
+    },
+    {
+        "label": "dotenv_values",
+        "importPath": "dotenv",
+        "description": "dotenv",
+        "isExtraImport": true,
+        "detail": "dotenv",
+        "documentation": {}
+    },
+    {
+        "label": "load_secrets_from_manager",
+        "importPath": "agent.secrets",
+        "description": "agent.secrets",
+        "isExtraImport": true,
+        "detail": "agent.secrets",
+        "documentation": {}
+    },
+    {
+        "label": "secrets_locator",
+        "importPath": "agent.secrets",
+        "description": "agent.secrets",
+        "isExtraImport": true,
+        "detail": "agent.secrets",
+        "documentation": {}
+    },
+    {
+        "label": "BOOTSTRAP_ENV_KEYS",
+        "importPath": "agent.secrets",
+        "description": "agent.secrets",
+        "isExtraImport": true,
+        "detail": "agent.secrets",
+        "documentation": {}
+    },
+    {
+        "label": "EXCLUDED_SECRET_KEYS",
+        "importPath": "agent.secrets",
+        "description": "agent.secrets",
+        "isExtraImport": true,
+        "detail": "agent.secrets",
+        "documentation": {}
+    },
+    {
+        "label": "clear_secrets_cache",
+        "importPath": "agent.secrets",
+        "description": "agent.secrets",
+        "isExtraImport": true,
+        "detail": "agent.secrets",
+        "documentation": {}
+    },
+    {
+        "label": "secret_payload_from_mapping",
+        "importPath": "agent.secrets",
+        "description": "agent.secrets",
+        "isExtraImport": true,
+        "detail": "agent.secrets",
         "documentation": {}
     },
     {
@@ -471,7 +681,23 @@
         "documentation": {}
     },
     {
-        "label": "DEFAULT_MCP_CONFIG",
+        "label": "load_local_env",
+        "importPath": "agent.config",
+        "description": "agent.config",
+        "isExtraImport": true,
+        "detail": "agent.config",
+        "documentation": {}
+    },
+    {
+        "label": "mcp_config_path",
+        "importPath": "agent.config",
+        "description": "agent.config",
+        "isExtraImport": true,
+        "detail": "agent.config",
+        "documentation": {}
+    },
+    {
+        "label": "mcp_config_path",
         "importPath": "agent.config",
         "description": "agent.config",
         "isExtraImport": true,
@@ -480,6 +706,14 @@
     },
     {
         "label": "ROOT",
+        "importPath": "agent.config",
+        "description": "agent.config",
+        "isExtraImport": true,
+        "detail": "agent.config",
+        "documentation": {}
+    },
+    {
+        "label": "load_local_env",
         "importPath": "agent.config",
         "description": "agent.config",
         "isExtraImport": true,
@@ -551,11 +785,310 @@
         "documentation": {}
     },
     {
+        "label": "hashlib",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "hashlib",
+        "description": "hashlib",
+        "detail": "hashlib",
+        "documentation": {}
+    },
+    {
+        "label": "mimetypes",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "mimetypes",
+        "description": "mimetypes",
+        "detail": "mimetypes",
+        "documentation": {}
+    },
+    {
+        "label": "FastAPI",
+        "importPath": "fastapi",
+        "description": "fastapi",
+        "isExtraImport": true,
+        "detail": "fastapi",
+        "documentation": {}
+    },
+    {
+        "label": "HTTPException",
+        "importPath": "fastapi",
+        "description": "fastapi",
+        "isExtraImport": true,
+        "detail": "fastapi",
+        "documentation": {}
+    },
+    {
+        "label": "Request",
+        "importPath": "fastapi",
+        "description": "fastapi",
+        "isExtraImport": true,
+        "detail": "fastapi",
+        "documentation": {}
+    },
+    {
+        "label": "FastAPI",
+        "importPath": "fastapi",
+        "description": "fastapi",
+        "isExtraImport": true,
+        "detail": "fastapi",
+        "documentation": {}
+    },
+    {
+        "label": "File",
+        "importPath": "fastapi",
+        "description": "fastapi",
+        "isExtraImport": true,
+        "detail": "fastapi",
+        "documentation": {}
+    },
+    {
+        "label": "HTTPException",
+        "importPath": "fastapi",
+        "description": "fastapi",
+        "isExtraImport": true,
+        "detail": "fastapi",
+        "documentation": {}
+    },
+    {
+        "label": "Request",
+        "importPath": "fastapi",
+        "description": "fastapi",
+        "isExtraImport": true,
+        "detail": "fastapi",
+        "documentation": {}
+    },
+    {
+        "label": "Response",
+        "importPath": "fastapi",
+        "description": "fastapi",
+        "isExtraImport": true,
+        "detail": "fastapi",
+        "documentation": {}
+    },
+    {
+        "label": "UploadFile",
+        "importPath": "fastapi",
+        "description": "fastapi",
+        "isExtraImport": true,
+        "detail": "fastapi",
+        "documentation": {}
+    },
+    {
+        "label": "Depends",
+        "importPath": "fastapi",
+        "description": "fastapi",
+        "isExtraImport": true,
+        "detail": "fastapi",
+        "documentation": {}
+    },
+    {
+        "label": "HTTPException",
+        "importPath": "fastapi",
+        "description": "fastapi",
+        "isExtraImport": true,
+        "detail": "fastapi",
+        "documentation": {}
+    },
+    {
+        "label": "Request",
+        "importPath": "fastapi",
+        "description": "fastapi",
+        "isExtraImport": true,
+        "detail": "fastapi",
+        "documentation": {}
+    },
+    {
+        "label": "download_storage_key",
+        "importPath": "agent.media_store",
+        "description": "agent.media_store",
+        "isExtraImport": true,
+        "detail": "agent.media_store",
+        "documentation": {}
+    },
+    {
+        "label": "upload_local_media",
+        "importPath": "agent.media_store",
+        "description": "agent.media_store",
+        "isExtraImport": true,
+        "detail": "agent.media_store",
+        "documentation": {}
+    },
+    {
+        "label": "invoke_agent",
+        "importPath": "agent.service",
+        "description": "agent.service",
+        "isExtraImport": true,
+        "detail": "agent.service",
+        "documentation": {}
+    },
+    {
+        "label": "poll_music_generation",
+        "importPath": "agent.service",
+        "description": "agent.service",
+        "isExtraImport": true,
+        "detail": "agent.service",
+        "documentation": {}
+    },
+    {
+        "label": "poll_video_generation",
+        "importPath": "agent.service",
+        "description": "agent.service",
+        "isExtraImport": true,
+        "detail": "agent.service",
+        "documentation": {}
+    },
+    {
+        "label": "start_image_generation",
+        "importPath": "agent.service",
+        "description": "agent.service",
+        "isExtraImport": true,
+        "detail": "agent.service",
+        "documentation": {}
+    },
+    {
+        "label": "start_music_generation",
+        "importPath": "agent.service",
+        "description": "agent.service",
+        "isExtraImport": true,
+        "detail": "agent.service",
+        "documentation": {}
+    },
+    {
+        "label": "start_video_generation",
+        "importPath": "agent.service",
+        "description": "agent.service",
+        "isExtraImport": true,
+        "detail": "agent.service",
+        "documentation": {}
+    },
+    {
+        "label": "poll_music_generation",
+        "importPath": "agent.service",
+        "description": "agent.service",
+        "isExtraImport": true,
+        "detail": "agent.service",
+        "documentation": {}
+    },
+    {
+        "label": "poll_video_generation",
+        "importPath": "agent.service",
+        "description": "agent.service",
+        "isExtraImport": true,
+        "detail": "agent.service",
+        "documentation": {}
+    },
+    {
+        "label": "start_image_generation",
+        "importPath": "agent.service",
+        "description": "agent.service",
+        "isExtraImport": true,
+        "detail": "agent.service",
+        "documentation": {}
+    },
+    {
+        "label": "start_music_generation",
+        "importPath": "agent.service",
+        "description": "agent.service",
+        "isExtraImport": true,
+        "detail": "agent.service",
+        "documentation": {}
+    },
+    {
+        "label": "start_video_generation",
+        "importPath": "agent.service",
+        "description": "agent.service",
+        "isExtraImport": true,
+        "detail": "agent.service",
+        "documentation": {}
+    },
+    {
+        "label": "logging",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "logging",
+        "description": "logging",
+        "detail": "logging",
+        "documentation": {}
+    },
+    {
+        "label": "lru_cache",
+        "importPath": "functools",
+        "description": "functools",
+        "isExtraImport": true,
+        "detail": "functools",
+        "documentation": {}
+    },
+    {
+        "label": "lru_cache",
+        "importPath": "functools",
+        "description": "functools",
+        "isExtraImport": true,
+        "detail": "functools",
+        "documentation": {}
+    },
+    {
+        "label": "ClientError",
+        "importPath": "botocore.exceptions",
+        "description": "botocore.exceptions",
+        "isExtraImport": true,
+        "detail": "botocore.exceptions",
+        "documentation": {}
+    },
+    {
+        "label": "ClientError",
+        "importPath": "botocore.exceptions",
+        "description": "botocore.exceptions",
+        "isExtraImport": true,
+        "detail": "botocore.exceptions",
+        "documentation": {}
+    },
+    {
+        "label": "ClientError",
+        "importPath": "botocore.exceptions",
+        "description": "botocore.exceptions",
+        "isExtraImport": true,
+        "detail": "botocore.exceptions",
+        "documentation": {}
+    },
+    {
+        "label": "ClientError",
+        "importPath": "botocore.exceptions",
+        "description": "botocore.exceptions",
+        "isExtraImport": true,
+        "detail": "botocore.exceptions",
+        "documentation": {}
+    },
+    {
         "label": "create_agent",
         "importPath": "langchain.agents",
         "description": "langchain.agents",
         "isExtraImport": true,
         "detail": "langchain.agents",
+        "documentation": {}
+    },
+    {
+        "label": "agentcore_enabled",
+        "importPath": "agent.agentcore_client",
+        "description": "agent.agentcore_client",
+        "isExtraImport": true,
+        "detail": "agent.agentcore_client",
+        "documentation": {}
+    },
+    {
+        "label": "invoke",
+        "importPath": "agent.agentcore_client",
+        "description": "agent.agentcore_client",
+        "isExtraImport": true,
+        "detail": "agent.agentcore_client",
+        "documentation": {}
+    },
+    {
+        "label": "agentcore_enabled",
+        "importPath": "agent.agentcore_client",
+        "description": "agent.agentcore_client",
+        "isExtraImport": true,
+        "detail": "agent.agentcore_client",
         "documentation": {}
     },
     {
@@ -621,15 +1154,6 @@
         "importPath": "time",
         "description": "time",
         "detail": "time",
-        "documentation": {}
-    },
-    {
-        "label": "uuid",
-        "kind": 6,
-        "isExtraImport": true,
-        "importPath": "uuid",
-        "description": "uuid",
-        "detail": "uuid",
         "documentation": {}
     },
     {
@@ -803,12 +1327,12 @@
         "documentation": {}
     },
     {
-        "label": "mimetypes",
+        "label": "subprocess",
         "kind": 6,
         "isExtraImport": true,
-        "importPath": "mimetypes",
-        "description": "mimetypes",
-        "detail": "mimetypes",
+        "importPath": "subprocess",
+        "description": "subprocess",
+        "detail": "subprocess",
         "documentation": {}
     },
     {
@@ -826,78 +1350,6 @@
         "description": "mcps.seedream.server",
         "isExtraImport": true,
         "detail": "mcps.seedream.server",
-        "documentation": {}
-    },
-    {
-        "label": "FastAPI",
-        "importPath": "fastapi",
-        "description": "fastapi",
-        "isExtraImport": true,
-        "detail": "fastapi",
-        "documentation": {}
-    },
-    {
-        "label": "File",
-        "importPath": "fastapi",
-        "description": "fastapi",
-        "isExtraImport": true,
-        "detail": "fastapi",
-        "documentation": {}
-    },
-    {
-        "label": "HTTPException",
-        "importPath": "fastapi",
-        "description": "fastapi",
-        "isExtraImport": true,
-        "detail": "fastapi",
-        "documentation": {}
-    },
-    {
-        "label": "Request",
-        "importPath": "fastapi",
-        "description": "fastapi",
-        "isExtraImport": true,
-        "detail": "fastapi",
-        "documentation": {}
-    },
-    {
-        "label": "Response",
-        "importPath": "fastapi",
-        "description": "fastapi",
-        "isExtraImport": true,
-        "detail": "fastapi",
-        "documentation": {}
-    },
-    {
-        "label": "UploadFile",
-        "importPath": "fastapi",
-        "description": "fastapi",
-        "isExtraImport": true,
-        "detail": "fastapi",
-        "documentation": {}
-    },
-    {
-        "label": "Depends",
-        "importPath": "fastapi",
-        "description": "fastapi",
-        "isExtraImport": true,
-        "detail": "fastapi",
-        "documentation": {}
-    },
-    {
-        "label": "HTTPException",
-        "importPath": "fastapi",
-        "description": "fastapi",
-        "isExtraImport": true,
-        "detail": "fastapi",
-        "documentation": {}
-    },
-    {
-        "label": "Request",
-        "importPath": "fastapi",
-        "description": "fastapi",
-        "isExtraImport": true,
-        "detail": "fastapi",
         "documentation": {}
     },
     {
@@ -930,46 +1382,6 @@
         "description": "fastapi.staticfiles",
         "isExtraImport": true,
         "detail": "fastapi.staticfiles",
-        "documentation": {}
-    },
-    {
-        "label": "poll_music_generation",
-        "importPath": "agent.service",
-        "description": "agent.service",
-        "isExtraImport": true,
-        "detail": "agent.service",
-        "documentation": {}
-    },
-    {
-        "label": "poll_video_generation",
-        "importPath": "agent.service",
-        "description": "agent.service",
-        "isExtraImport": true,
-        "detail": "agent.service",
-        "documentation": {}
-    },
-    {
-        "label": "start_image_generation",
-        "importPath": "agent.service",
-        "description": "agent.service",
-        "isExtraImport": true,
-        "detail": "agent.service",
-        "documentation": {}
-    },
-    {
-        "label": "start_music_generation",
-        "importPath": "agent.service",
-        "description": "agent.service",
-        "isExtraImport": true,
-        "detail": "agent.service",
-        "documentation": {}
-    },
-    {
-        "label": "start_video_generation",
-        "importPath": "agent.service",
-        "description": "agent.service",
-        "isExtraImport": true,
-        "detail": "agent.service",
         "documentation": {}
     },
     {
@@ -1006,6 +1418,14 @@
     },
     {
         "label": "presigned_content_url",
+        "importPath": "web.assets",
+        "description": "web.assets",
+        "isExtraImport": true,
+        "detail": "web.assets",
+        "documentation": {}
+    },
+    {
+        "label": "register_existing_s3_object",
         "importPath": "web.assets",
         "description": "web.assets",
         "isExtraImport": true,
@@ -1085,15 +1505,6 @@
         "documentation": {}
     },
     {
-        "label": "hashlib",
-        "kind": 6,
-        "isExtraImport": true,
-        "importPath": "hashlib",
-        "description": "hashlib",
-        "detail": "hashlib",
-        "documentation": {}
-    },
-    {
         "label": "hmac",
         "kind": 6,
         "isExtraImport": true,
@@ -1103,45 +1514,11 @@
         "documentation": {}
     },
     {
-        "label": "logging",
-        "kind": 6,
-        "isExtraImport": true,
-        "importPath": "logging",
-        "description": "logging",
-        "detail": "logging",
-        "documentation": {}
-    },
-    {
         "label": "dataclass",
         "importPath": "dataclasses",
         "description": "dataclasses",
         "isExtraImport": true,
         "detail": "dataclasses",
-        "documentation": {}
-    },
-    {
-        "label": "lru_cache",
-        "importPath": "functools",
-        "description": "functools",
-        "isExtraImport": true,
-        "detail": "functools",
-        "documentation": {}
-    },
-    {
-        "label": "boto3",
-        "kind": 6,
-        "isExtraImport": true,
-        "importPath": "boto3",
-        "description": "boto3",
-        "detail": "boto3",
-        "documentation": {}
-    },
-    {
-        "label": "ClientError",
-        "importPath": "botocore.exceptions",
-        "description": "botocore.exceptions",
-        "isExtraImport": true,
-        "detail": "botocore.exceptions",
         "documentation": {}
     },
     {
@@ -1194,11 +1571,47 @@
         "documentation": {}
     },
     {
+        "label": "agentcore_enabled",
+        "kind": 2,
+        "importPath": "agent.agentcore_client",
+        "description": "agent.agentcore_client",
+        "peekOfCode": "def agentcore_enabled() -> bool:\n    return bool((os.getenv(\"AGENTCORE_RUNTIME_ARN\") or \"\").strip())\ndef agentcore_region() -> str:\n    return (\n        os.getenv(\"AGENTCORE_REGION\")\n        or os.getenv(\"AWS_REGION\")\n        or os.getenv(\"AWS_DEFAULT_REGION\")\n        or \"us-east-1\"\n    )\ndef _runtime_arn() -> str:",
+        "detail": "agent.agentcore_client",
+        "documentation": {}
+    },
+    {
+        "label": "agentcore_region",
+        "kind": 2,
+        "importPath": "agent.agentcore_client",
+        "description": "agent.agentcore_client",
+        "peekOfCode": "def agentcore_region() -> str:\n    return (\n        os.getenv(\"AGENTCORE_REGION\")\n        or os.getenv(\"AWS_REGION\")\n        or os.getenv(\"AWS_DEFAULT_REGION\")\n        or \"us-east-1\"\n    )\ndef _runtime_arn() -> str:\n    arn = (os.getenv(\"AGENTCORE_RUNTIME_ARN\") or \"\").strip()\n    if not arn:",
+        "detail": "agent.agentcore_client",
+        "documentation": {}
+    },
+    {
+        "label": "invoke",
+        "kind": 2,
+        "importPath": "agent.agentcore_client",
+        "description": "agent.agentcore_client",
+        "peekOfCode": "def invoke(\n    action: str,\n    payload: dict[str, Any] | None = None,\n    *,\n    session_id: str | None = None,\n) -> dict[str, Any]:\n    body = {\"action\": action, **(payload or {})}\n    client = boto3.client(\"bedrock-agentcore\", region_name=agentcore_region())\n    response = client.invoke_agent_runtime(\n        agentRuntimeArn=_runtime_arn(),",
+        "detail": "agent.agentcore_client",
+        "documentation": {}
+    },
+    {
+        "label": "mcp_config_path",
+        "kind": 2,
+        "importPath": "agent.config",
+        "description": "agent.config",
+        "peekOfCode": "def mcp_config_path() -> Path:\n    override = (os.getenv(\"MCP_CONFIG\") or \"\").strip()\n    if override:\n        return Path(override).expanduser().resolve()\n    if os.getenv(\"AGENTCORE_RUNTIME\", \"\").lower() in {\"1\", \"true\", \"yes\"}:\n        return AGENTCORE_MCP_CONFIG\n    return DEFAULT_MCP_CONFIG\n_VAR_RE = re.compile(r\"\\$\\{([A-Za-z_][A-Za-z0-9_]*|ROOT)\\}\")\nDEFAULT_ENV = {\n    \"AGENT_MODEL\": \"openai:gpt-4.1-mini\",",
+        "detail": "agent.config",
+        "documentation": {}
+    },
+    {
         "label": "load_local_env",
         "kind": 2,
         "importPath": "agent.config",
         "description": "agent.config",
-        "peekOfCode": "def load_local_env() -> None:\n    load_dotenv(ENV_FILE, override=False)\n    for key, value in DEFAULT_ENV.items():\n        if not os.getenv(key):\n            os.environ[key] = value\ndef _expand(value: str) -> str:\n    def replace(match: re.Match[str]) -> str:\n        name = match.group(1)\n        if name == \"ROOT\":\n            return str(ROOT)",
+        "peekOfCode": "def load_local_env() -> None:\n    \"\"\"Load bootstrap .env, then AWS Secrets Manager, then defaults.\"\"\"\n    load_dotenv(ENV_FILE, override=False)\n    if secrets_locator():\n        # Secrets Manager is the source of truth when configured.\n        load_secrets_from_manager(override=True)\n    for key, value in DEFAULT_ENV.items():\n        if not os.getenv(key):\n            os.environ[key] = value\ndef _expand(value: str) -> str:",
         "detail": "agent.config",
         "documentation": {}
     },
@@ -1225,7 +1638,7 @@
         "kind": 5,
         "importPath": "agent.config",
         "description": "agent.config",
-        "peekOfCode": "ROOT = Path(__file__).resolve().parents[1]\nENV_FILE = ROOT / \".env.local\"\nDEFAULT_MCP_CONFIG = ROOT / \"configs\" / \"mcp.local.json\"\n_VAR_RE = re.compile(r\"\\$\\{([A-Za-z_][A-Za-z0-9_]*|ROOT)\\}\")\nDEFAULT_ENV = {\n    \"AGENT_MODEL\": \"openai:gpt-4.1-mini\",\n    \"BYTEPLUS_BASE_URL\": \"https://ark.ap-southeast.bytepluses.com/api/v3\",\n    \"SEEDANCE_MODEL\": \"seedance-1-5-pro-251215\",\n    \"SEEDANCE_DRY_RUN\": \"true\",\n    \"SEEDREAM_MODEL\": \"seedream-5-0-lite-260128\",",
+        "peekOfCode": "ROOT = Path(__file__).resolve().parents[1]\nENV_FILE = ROOT / \".env.local\"\nDEFAULT_MCP_CONFIG = ROOT / \"configs\" / \"mcp.local.json\"\nAGENTCORE_MCP_CONFIG = ROOT / \"configs\" / \"mcp.agentcore.json\"\ndef mcp_config_path() -> Path:\n    override = (os.getenv(\"MCP_CONFIG\") or \"\").strip()\n    if override:\n        return Path(override).expanduser().resolve()\n    if os.getenv(\"AGENTCORE_RUNTIME\", \"\").lower() in {\"1\", \"true\", \"yes\"}:\n        return AGENTCORE_MCP_CONFIG",
         "detail": "agent.config",
         "documentation": {}
     },
@@ -1234,7 +1647,7 @@
         "kind": 5,
         "importPath": "agent.config",
         "description": "agent.config",
-        "peekOfCode": "ENV_FILE = ROOT / \".env.local\"\nDEFAULT_MCP_CONFIG = ROOT / \"configs\" / \"mcp.local.json\"\n_VAR_RE = re.compile(r\"\\$\\{([A-Za-z_][A-Za-z0-9_]*|ROOT)\\}\")\nDEFAULT_ENV = {\n    \"AGENT_MODEL\": \"openai:gpt-4.1-mini\",\n    \"BYTEPLUS_BASE_URL\": \"https://ark.ap-southeast.bytepluses.com/api/v3\",\n    \"SEEDANCE_MODEL\": \"seedance-1-5-pro-251215\",\n    \"SEEDANCE_DRY_RUN\": \"true\",\n    \"SEEDREAM_MODEL\": \"seedream-5-0-lite-260128\",\n    \"SEEDREAM_DRY_RUN\": \"true\",",
+        "peekOfCode": "ENV_FILE = ROOT / \".env.local\"\nDEFAULT_MCP_CONFIG = ROOT / \"configs\" / \"mcp.local.json\"\nAGENTCORE_MCP_CONFIG = ROOT / \"configs\" / \"mcp.agentcore.json\"\ndef mcp_config_path() -> Path:\n    override = (os.getenv(\"MCP_CONFIG\") or \"\").strip()\n    if override:\n        return Path(override).expanduser().resolve()\n    if os.getenv(\"AGENTCORE_RUNTIME\", \"\").lower() in {\"1\", \"true\", \"yes\"}:\n        return AGENTCORE_MCP_CONFIG\n    return DEFAULT_MCP_CONFIG",
         "detail": "agent.config",
         "documentation": {}
     },
@@ -1243,7 +1656,16 @@
         "kind": 5,
         "importPath": "agent.config",
         "description": "agent.config",
-        "peekOfCode": "DEFAULT_MCP_CONFIG = ROOT / \"configs\" / \"mcp.local.json\"\n_VAR_RE = re.compile(r\"\\$\\{([A-Za-z_][A-Za-z0-9_]*|ROOT)\\}\")\nDEFAULT_ENV = {\n    \"AGENT_MODEL\": \"openai:gpt-4.1-mini\",\n    \"BYTEPLUS_BASE_URL\": \"https://ark.ap-southeast.bytepluses.com/api/v3\",\n    \"SEEDANCE_MODEL\": \"seedance-1-5-pro-251215\",\n    \"SEEDANCE_DRY_RUN\": \"true\",\n    \"SEEDREAM_MODEL\": \"seedream-5-0-lite-260128\",\n    \"SEEDREAM_DRY_RUN\": \"true\",\n    \"GEMINI_TTS_DRY_RUN\": \"true\",",
+        "peekOfCode": "DEFAULT_MCP_CONFIG = ROOT / \"configs\" / \"mcp.local.json\"\nAGENTCORE_MCP_CONFIG = ROOT / \"configs\" / \"mcp.agentcore.json\"\ndef mcp_config_path() -> Path:\n    override = (os.getenv(\"MCP_CONFIG\") or \"\").strip()\n    if override:\n        return Path(override).expanduser().resolve()\n    if os.getenv(\"AGENTCORE_RUNTIME\", \"\").lower() in {\"1\", \"true\", \"yes\"}:\n        return AGENTCORE_MCP_CONFIG\n    return DEFAULT_MCP_CONFIG\n_VAR_RE = re.compile(r\"\\$\\{([A-Za-z_][A-Za-z0-9_]*|ROOT)\\}\")",
+        "detail": "agent.config",
+        "documentation": {}
+    },
+    {
+        "label": "AGENTCORE_MCP_CONFIG",
+        "kind": 5,
+        "importPath": "agent.config",
+        "description": "agent.config",
+        "peekOfCode": "AGENTCORE_MCP_CONFIG = ROOT / \"configs\" / \"mcp.agentcore.json\"\ndef mcp_config_path() -> Path:\n    override = (os.getenv(\"MCP_CONFIG\") or \"\").strip()\n    if override:\n        return Path(override).expanduser().resolve()\n    if os.getenv(\"AGENTCORE_RUNTIME\", \"\").lower() in {\"1\", \"true\", \"yes\"}:\n        return AGENTCORE_MCP_CONFIG\n    return DEFAULT_MCP_CONFIG\n_VAR_RE = re.compile(r\"\\$\\{([A-Za-z_][A-Za-z0-9_]*|ROOT)\\}\")\nDEFAULT_ENV = {",
         "detail": "agent.config",
         "documentation": {}
     },
@@ -1362,6 +1784,159 @@
         "description": "agent.main",
         "peekOfCode": "GEN_SECRET_KEYS = [\n    \"OPENAI_API_KEY\",\n    \"MUREKA_API_KEY\",\n    \"ELEVENLABS_API_KEY\",\n    \"BYTEPLUS_API_KEY\",\n    \"GOOGLE_API_KEY\",\n    \"LANGFUSE_PUBLIC_KEY\",\n    \"LANGFUSE_SECRET_KEY\",\n    \"CLERK_PUBLISHABLE_KEY\",\n    \"NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY\",",
         "detail": "agent.main",
+        "documentation": {}
+    },
+    {
+        "label": "aws_region",
+        "kind": 2,
+        "importPath": "agent.media_store",
+        "description": "agent.media_store",
+        "peekOfCode": "def aws_region() -> str:\n    return os.getenv(\"AWS_REGION\") or os.getenv(\"AWS_DEFAULT_REGION\") or \"us-east-1\"\ndef s3_bucket() -> str:\n    return (os.getenv(\"AWS_S3_BUCKET\") or \"\").strip()\ndef _s3():\n    return boto3.client(\"s3\", region_name=aws_region())\ndef _sha256_file(path: Path) -> str:\n    digest = hashlib.sha256()\n    with path.open(\"rb\") as handle:\n        while True:",
+        "detail": "agent.media_store",
+        "documentation": {}
+    },
+    {
+        "label": "s3_bucket",
+        "kind": 2,
+        "importPath": "agent.media_store",
+        "description": "agent.media_store",
+        "peekOfCode": "def s3_bucket() -> str:\n    return (os.getenv(\"AWS_S3_BUCKET\") or \"\").strip()\ndef _s3():\n    return boto3.client(\"s3\", region_name=aws_region())\ndef _sha256_file(path: Path) -> str:\n    digest = hashlib.sha256()\n    with path.open(\"rb\") as handle:\n        while True:\n            chunk = handle.read(1024 * 1024)\n            if not chunk:",
+        "detail": "agent.media_store",
+        "documentation": {}
+    },
+    {
+        "label": "upload_local_media",
+        "kind": 2,
+        "importPath": "agent.media_store",
+        "description": "agent.media_store",
+        "peekOfCode": "def upload_local_media(\n    *,\n    user_id: str,\n    source_path: str | Path,\n    kind: AssetKind,\n    mime_type: str | None = None,\n) -> dict[str, Any]:\n    \"\"\"Upload a local file and return durable storage metadata (no DynamoDB write).\"\"\"\n    source = Path(source_path).expanduser().resolve()\n    if not source.is_file() or source.stat().st_size <= 0:",
+        "detail": "agent.media_store",
+        "documentation": {}
+    },
+    {
+        "label": "download_storage_key",
+        "kind": 2,
+        "importPath": "agent.media_store",
+        "description": "agent.media_store",
+        "peekOfCode": "def download_storage_key(storage_key: str, destination: Path) -> Path:\n    bucket = s3_bucket()\n    if not bucket:\n        raise RuntimeError(\"AWS_S3_BUCKET is required to materialize reference media.\")\n    destination.parent.mkdir(parents=True, exist_ok=True)\n    temporary = destination.with_suffix(destination.suffix + \".tmp\")\n    _s3().download_file(Bucket=bucket, Key=storage_key, Filename=str(temporary))\n    temporary.replace(destination)\n    return destination",
+        "detail": "agent.media_store",
+        "documentation": {}
+    },
+    {
+        "label": "AssetKind",
+        "kind": 5,
+        "importPath": "agent.media_store",
+        "description": "agent.media_store",
+        "peekOfCode": "AssetKind = Literal[\"video\", \"image\", \"music\", \"upload\"]\ndef aws_region() -> str:\n    return os.getenv(\"AWS_REGION\") or os.getenv(\"AWS_DEFAULT_REGION\") or \"us-east-1\"\ndef s3_bucket() -> str:\n    return (os.getenv(\"AWS_S3_BUCKET\") or \"\").strip()\ndef _s3():\n    return boto3.client(\"s3\", region_name=aws_region())\ndef _sha256_file(path: Path) -> str:\n    digest = hashlib.sha256()\n    with path.open(\"rb\") as handle:",
+        "detail": "agent.media_store",
+        "documentation": {}
+    },
+    {
+        "label": "app",
+        "kind": 5,
+        "importPath": "agent.runtime_app",
+        "description": "agent.runtime_app",
+        "peekOfCode": "app = FastAPI(title=\"Renderhaus AgentCore Runtime\", version=\"0.1.0\")\nREF_DIR = Path(os.getenv(\"RENDERHAUS_MEDIA_DIR\", \".renderhaus/media\")).expanduser() / \".refs\"\nREF_DIR.mkdir(parents=True, exist_ok=True)\nasync def _payload(request: Request) -> dict[str, Any]:\n    \"\"\"Normalize AgentCore / local payloads into a flat action dict.\"\"\"\n    try:\n        body = await request.json()\n    except Exception as exc:  # noqa: BLE001\n        raise HTTPException(status_code=400, detail=f\"Invalid JSON body: {exc}\") from exc\n    if not isinstance(body, dict):",
+        "detail": "agent.runtime_app",
+        "documentation": {}
+    },
+    {
+        "label": "REF_DIR",
+        "kind": 5,
+        "importPath": "agent.runtime_app",
+        "description": "agent.runtime_app",
+        "peekOfCode": "REF_DIR = Path(os.getenv(\"RENDERHAUS_MEDIA_DIR\", \".renderhaus/media\")).expanduser() / \".refs\"\nREF_DIR.mkdir(parents=True, exist_ok=True)\nasync def _payload(request: Request) -> dict[str, Any]:\n    \"\"\"Normalize AgentCore / local payloads into a flat action dict.\"\"\"\n    try:\n        body = await request.json()\n    except Exception as exc:  # noqa: BLE001\n        raise HTTPException(status_code=400, detail=f\"Invalid JSON body: {exc}\") from exc\n    if not isinstance(body, dict):\n        raise HTTPException(status_code=400, detail=\"JSON object body required.\")",
+        "detail": "agent.runtime_app",
+        "documentation": {}
+    },
+    {
+        "label": "secrets_locator",
+        "kind": 2,
+        "importPath": "agent.secrets",
+        "description": "agent.secrets",
+        "peekOfCode": "def secrets_locator() -> str | None:\n    return (\n        (os.getenv(\"RENDERHAUS_SECRETS_ARN\") or \"\").strip()\n        or (os.getenv(\"RENDERHAUS_SECRETS_NAME\") or \"\").strip()\n        or None\n    )\ndef aws_region() -> str:\n    return os.getenv(\"AWS_REGION\") or os.getenv(\"AWS_DEFAULT_REGION\") or \"us-east-1\"\n@lru_cache(maxsize=4)\ndef fetch_secret_map(secret_id: str) -> dict[str, str]:",
+        "detail": "agent.secrets",
+        "documentation": {}
+    },
+    {
+        "label": "aws_region",
+        "kind": 2,
+        "importPath": "agent.secrets",
+        "description": "agent.secrets",
+        "peekOfCode": "def aws_region() -> str:\n    return os.getenv(\"AWS_REGION\") or os.getenv(\"AWS_DEFAULT_REGION\") or \"us-east-1\"\n@lru_cache(maxsize=4)\ndef fetch_secret_map(secret_id: str) -> dict[str, str]:\n    client = boto3.client(\"secretsmanager\", region_name=aws_region())\n    response = client.get_secret_value(SecretId=secret_id)\n    payload = response.get(\"SecretString\") or \"\"\n    if not payload and response.get(\"SecretBinary\"):\n        payload = response[\"SecretBinary\"].decode(\"utf-8\")\n    data = json.loads(payload)",
+        "detail": "agent.secrets",
+        "documentation": {}
+    },
+    {
+        "label": "fetch_secret_map",
+        "kind": 2,
+        "importPath": "agent.secrets",
+        "description": "agent.secrets",
+        "peekOfCode": "def fetch_secret_map(secret_id: str) -> dict[str, str]:\n    client = boto3.client(\"secretsmanager\", region_name=aws_region())\n    response = client.get_secret_value(SecretId=secret_id)\n    payload = response.get(\"SecretString\") or \"\"\n    if not payload and response.get(\"SecretBinary\"):\n        payload = response[\"SecretBinary\"].decode(\"utf-8\")\n    data = json.loads(payload)\n    if not isinstance(data, dict):\n        raise RuntimeError(f\"Secret {secret_id} must be a JSON object of string values.\")\n    result: dict[str, str] = {}",
+        "detail": "agent.secrets",
+        "documentation": {}
+    },
+    {
+        "label": "apply_secret_map",
+        "kind": 2,
+        "importPath": "agent.secrets",
+        "description": "agent.secrets",
+        "peekOfCode": "def apply_secret_map(values: dict[str, str], *, override: bool = True) -> list[str]:\n    applied: list[str] = []\n    for key, value in values.items():\n        if key in EXCLUDED_SECRET_KEYS:\n            continue\n        if not override and os.getenv(key):\n            continue\n        os.environ[key] = value\n        applied.append(key)\n    return applied",
+        "detail": "agent.secrets",
+        "documentation": {}
+    },
+    {
+        "label": "load_secrets_from_manager",
+        "kind": 2,
+        "importPath": "agent.secrets",
+        "description": "agent.secrets",
+        "peekOfCode": "def load_secrets_from_manager(*, override: bool = True) -> list[str]:\n    \"\"\"Fetch RENDERHAUS_SECRETS_* and inject into the process environment.\"\"\"\n    secret_id = secrets_locator()\n    if not secret_id:\n        return []\n    try:\n        values = fetch_secret_map(secret_id)\n    except ClientError as exc:\n        code = exc.response.get(\"Error\", {}).get(\"Code\", \"ClientError\")\n        raise RuntimeError(",
+        "detail": "agent.secrets",
+        "documentation": {}
+    },
+    {
+        "label": "clear_secrets_cache",
+        "kind": 2,
+        "importPath": "agent.secrets",
+        "description": "agent.secrets",
+        "peekOfCode": "def clear_secrets_cache() -> None:\n    fetch_secret_map.cache_clear()\ndef secret_payload_from_mapping(values: dict[str, Any]) -> dict[str, str]:\n    payload: dict[str, str] = {}\n    for key, value in values.items():\n        if key in EXCLUDED_SECRET_KEYS or key in BOOTSTRAP_ENV_KEYS:\n            continue\n        if value is None:\n            continue\n        text = str(value).strip()",
+        "detail": "agent.secrets",
+        "documentation": {}
+    },
+    {
+        "label": "secret_payload_from_mapping",
+        "kind": 2,
+        "importPath": "agent.secrets",
+        "description": "agent.secrets",
+        "peekOfCode": "def secret_payload_from_mapping(values: dict[str, Any]) -> dict[str, str]:\n    payload: dict[str, str] = {}\n    for key, value in values.items():\n        if key in EXCLUDED_SECRET_KEYS or key in BOOTSTRAP_ENV_KEYS:\n            continue\n        if value is None:\n            continue\n        text = str(value).strip()\n        if text:\n            payload[str(key)] = text",
+        "detail": "agent.secrets",
+        "documentation": {}
+    },
+    {
+        "label": "logger",
+        "kind": 5,
+        "importPath": "agent.secrets",
+        "description": "agent.secrets",
+        "peekOfCode": "logger = logging.getLogger(__name__)\n# Never sync or inject these into Secrets Manager payloads.\nEXCLUDED_SECRET_KEYS = {\n    \"AWS_ACCESS_KEY_ID\",\n    \"AWS_SECRET_ACCESS_KEY\",\n    \"AWS_SESSION_TOKEN\",\n    \"AWS_PROFILE\",\n    \"AWS_SECURITY_TOKEN\",\n}\n# Bootstrap keys that may remain in a local .env file to find the secret.",
+        "detail": "agent.secrets",
+        "documentation": {}
+    },
+    {
+        "label": "EXCLUDED_SECRET_KEYS",
+        "kind": 5,
+        "importPath": "agent.secrets",
+        "description": "agent.secrets",
+        "peekOfCode": "EXCLUDED_SECRET_KEYS = {\n    \"AWS_ACCESS_KEY_ID\",\n    \"AWS_SECRET_ACCESS_KEY\",\n    \"AWS_SESSION_TOKEN\",\n    \"AWS_PROFILE\",\n    \"AWS_SECURITY_TOKEN\",\n}\n# Bootstrap keys that may remain in a local .env file to find the secret.\nBOOTSTRAP_ENV_KEYS = {\n    \"AWS_REGION\",",
+        "detail": "agent.secrets",
+        "documentation": {}
+    },
+    {
+        "label": "BOOTSTRAP_ENV_KEYS",
+        "kind": 5,
+        "importPath": "agent.secrets",
+        "description": "agent.secrets",
+        "peekOfCode": "BOOTSTRAP_ENV_KEYS = {\n    \"AWS_REGION\",\n    \"AWS_DEFAULT_REGION\",\n    \"RENDERHAUS_SECRETS_NAME\",\n    \"RENDERHAUS_SECRETS_ARN\",\n    \"AGENTCORE_RUNTIME\",\n}\ndef secrets_locator() -> str | None:\n    return (\n        (os.getenv(\"RENDERHAUS_SECRETS_ARN\") or \"\").strip()",
+        "detail": "agent.secrets",
         "documentation": {}
     },
     {
@@ -1716,6 +2291,123 @@
         "documentation": {}
     },
     {
+        "label": "load_bootstrap_env",
+        "kind": 2,
+        "importPath": "scripts.deploy_agentcore",
+        "description": "scripts.deploy_agentcore",
+        "peekOfCode": "def load_bootstrap_env(*, secret_name: str) -> dict[str, str]:\n    from agent.config import load_local_env\n    # Prefer Secrets Manager when configured; fall back to .env.local during migration.\n    os.environ.setdefault(\"RENDERHAUS_SECRETS_NAME\", secret_name)\n    load_local_env()\n    env: dict[str, str] = {\n        \"AGENTCORE_RUNTIME\": \"1\",\n        \"RENDERHAUS_SECRETS_NAME\": secret_name,\n        \"RENDERHAUS_MEDIA_DIR\": os.getenv(\"RENDERHAUS_MEDIA_DIR\") or \"/tmp/renderhaus/media\",\n    }",
+        "detail": "scripts.deploy_agentcore",
+        "documentation": {}
+    },
+    {
+        "label": "ensure_role",
+        "kind": 2,
+        "importPath": "scripts.deploy_agentcore",
+        "description": "scripts.deploy_agentcore",
+        "peekOfCode": "def ensure_role(iam, account: str, region: str, bucket: str, secret_name: str) -> str:\n    role_arn = f\"arn:aws:iam::{account}:role/{ROLE_NAME}\"\n    trust = {\n        \"Version\": \"2012-10-17\",\n        \"Statement\": [\n            {\n                \"Sid\": \"AssumeRolePolicy\",\n                \"Effect\": \"Allow\",\n                \"Principal\": {\"Service\": \"bedrock-agentcore.amazonaws.com\"},\n                \"Action\": \"sts:AssumeRole\",",
+        "detail": "scripts.deploy_agentcore",
+        "documentation": {}
+    },
+    {
+        "label": "docker_login_and_image_uri",
+        "kind": 2,
+        "importPath": "scripts.deploy_agentcore",
+        "description": "scripts.deploy_agentcore",
+        "peekOfCode": "def docker_login_and_image_uri(ecr) -> str:\n    try:\n        ecr.create_repository(repositoryName=REPO_NAME)\n        print(f\"Created ECR repository {REPO_NAME}\")\n    except ClientError as exc:\n        if exc.response.get(\"Error\", {}).get(\"Code\") != \"RepositoryAlreadyExistsException\":\n            raise\n    auth = ecr.get_authorization_token()[\"authorizationData\"][0]\n    user_pass = base64.b64decode(auth[\"authorizationToken\"]).decode(\"utf-8\")\n    username, password = user_pass.split(\":\", 1)",
+        "detail": "scripts.deploy_agentcore",
+        "documentation": {}
+    },
+    {
+        "label": "build_and_push",
+        "kind": 2,
+        "importPath": "scripts.deploy_agentcore",
+        "description": "scripts.deploy_agentcore",
+        "peekOfCode": "def build_and_push(image_uri: str) -> None:\n    cmd = [\n        \"docker\",\n        \"buildx\",\n        \"build\",\n        \"--platform\",\n        \"linux/arm64\",\n        \"-f\",\n        \"Dockerfile.agentcore\",\n        \"-t\",",
+        "detail": "scripts.deploy_agentcore",
+        "documentation": {}
+    },
+    {
+        "label": "upsert_runtime",
+        "kind": 2,
+        "importPath": "scripts.deploy_agentcore",
+        "description": "scripts.deploy_agentcore",
+        "peekOfCode": "def upsert_runtime(control, *, role_arn: str, image_uri: str, env: dict[str, str]):\n    existing = control.list_agent_runtimes().get(\"agentRuntimes\") or []\n    match = next((item for item in existing if item.get(\"agentRuntimeName\") == RUNTIME_NAME), None)\n    artifact = {\"containerConfiguration\": {\"containerUri\": f\"{image_uri}:latest\"}}\n    common = {\n        \"roleArn\": role_arn,\n        \"networkConfiguration\": {\"networkMode\": \"PUBLIC\"},\n        \"protocolConfiguration\": {\"serverProtocol\": \"HTTP\"},\n        \"lifecycleConfiguration\": {\n            \"idleRuntimeSessionTimeout\": 900,",
+        "detail": "scripts.deploy_agentcore",
+        "documentation": {}
+    },
+    {
+        "label": "write_env_hint",
+        "kind": 2,
+        "importPath": "scripts.deploy_agentcore",
+        "description": "scripts.deploy_agentcore",
+        "peekOfCode": "def write_env_hint(arn: str, region: str, secret_name: str) -> None:\n    hint = ROOT / \".env.agentcore\"\n    hint.write_text(\n        \"\\n\".join(\n            [\n                f\"AGENTCORE_RUNTIME_ARN={arn}\",\n                f\"AGENTCORE_REGION={region}\",\n                \"AGENTCORE_QUALIFIER=DEFAULT\",\n                f\"RENDERHAUS_SECRETS_NAME={secret_name}\",\n                f\"AWS_REGION={region}\",",
+        "detail": "scripts.deploy_agentcore",
+        "documentation": {}
+    },
+    {
+        "label": "main",
+        "kind": 2,
+        "importPath": "scripts.deploy_agentcore",
+        "description": "scripts.deploy_agentcore",
+        "peekOfCode": "def main() -> int:\n    parser = argparse.ArgumentParser(description=__doc__)\n    parser.add_argument(\"--region\", default=os.getenv(\"AWS_REGION\") or \"us-east-1\")\n    parser.add_argument(\n        \"--secret-name\",\n        default=os.getenv(\"RENDERHAUS_SECRETS_NAME\") or DEFAULT_SECRET_NAME,\n    )\n    parser.add_argument(\"--skip-build\", action=\"store_true\")\n    args = parser.parse_args()\n    region = args.region",
+        "detail": "scripts.deploy_agentcore",
+        "documentation": {}
+    },
+    {
+        "label": "ROOT",
+        "kind": 5,
+        "importPath": "scripts.deploy_agentcore",
+        "description": "scripts.deploy_agentcore",
+        "peekOfCode": "ROOT = Path(__file__).resolve().parents[1]\nROLE_NAME = \"RenderhausAgentCoreRuntimeRole\"\nREPO_NAME = \"renderhaus-agentcore\"\nRUNTIME_NAME = \"renderhaus_agent\"\nDEFAULT_SECRET_NAME = \"renderhaus/app\"\n# Non-secret runtime bootstrap only. Application secrets come from Secrets Manager.\nRUNTIME_BOOTSTRAP_KEYS = [\n    \"AGENT_MODEL\",\n    \"BYTEPLUS_BASE_URL\",\n    \"SEEDANCE_MODEL\",",
+        "detail": "scripts.deploy_agentcore",
+        "documentation": {}
+    },
+    {
+        "label": "ROLE_NAME",
+        "kind": 5,
+        "importPath": "scripts.deploy_agentcore",
+        "description": "scripts.deploy_agentcore",
+        "peekOfCode": "ROLE_NAME = \"RenderhausAgentCoreRuntimeRole\"\nREPO_NAME = \"renderhaus-agentcore\"\nRUNTIME_NAME = \"renderhaus_agent\"\nDEFAULT_SECRET_NAME = \"renderhaus/app\"\n# Non-secret runtime bootstrap only. Application secrets come from Secrets Manager.\nRUNTIME_BOOTSTRAP_KEYS = [\n    \"AGENT_MODEL\",\n    \"BYTEPLUS_BASE_URL\",\n    \"SEEDANCE_MODEL\",\n    \"SEEDANCE_DRY_RUN\",",
+        "detail": "scripts.deploy_agentcore",
+        "documentation": {}
+    },
+    {
+        "label": "REPO_NAME",
+        "kind": 5,
+        "importPath": "scripts.deploy_agentcore",
+        "description": "scripts.deploy_agentcore",
+        "peekOfCode": "REPO_NAME = \"renderhaus-agentcore\"\nRUNTIME_NAME = \"renderhaus_agent\"\nDEFAULT_SECRET_NAME = \"renderhaus/app\"\n# Non-secret runtime bootstrap only. Application secrets come from Secrets Manager.\nRUNTIME_BOOTSTRAP_KEYS = [\n    \"AGENT_MODEL\",\n    \"BYTEPLUS_BASE_URL\",\n    \"SEEDANCE_MODEL\",\n    \"SEEDANCE_DRY_RUN\",\n    \"SEEDREAM_MODEL\",",
+        "detail": "scripts.deploy_agentcore",
+        "documentation": {}
+    },
+    {
+        "label": "RUNTIME_NAME",
+        "kind": 5,
+        "importPath": "scripts.deploy_agentcore",
+        "description": "scripts.deploy_agentcore",
+        "peekOfCode": "RUNTIME_NAME = \"renderhaus_agent\"\nDEFAULT_SECRET_NAME = \"renderhaus/app\"\n# Non-secret runtime bootstrap only. Application secrets come from Secrets Manager.\nRUNTIME_BOOTSTRAP_KEYS = [\n    \"AGENT_MODEL\",\n    \"BYTEPLUS_BASE_URL\",\n    \"SEEDANCE_MODEL\",\n    \"SEEDANCE_DRY_RUN\",\n    \"SEEDREAM_MODEL\",\n    \"SEEDREAM_DRY_RUN\",",
+        "detail": "scripts.deploy_agentcore",
+        "documentation": {}
+    },
+    {
+        "label": "DEFAULT_SECRET_NAME",
+        "kind": 5,
+        "importPath": "scripts.deploy_agentcore",
+        "description": "scripts.deploy_agentcore",
+        "peekOfCode": "DEFAULT_SECRET_NAME = \"renderhaus/app\"\n# Non-secret runtime bootstrap only. Application secrets come from Secrets Manager.\nRUNTIME_BOOTSTRAP_KEYS = [\n    \"AGENT_MODEL\",\n    \"BYTEPLUS_BASE_URL\",\n    \"SEEDANCE_MODEL\",\n    \"SEEDANCE_DRY_RUN\",\n    \"SEEDREAM_MODEL\",\n    \"SEEDREAM_DRY_RUN\",\n    \"MUREKA_API_URL\",",
+        "detail": "scripts.deploy_agentcore",
+        "documentation": {}
+    },
+    {
+        "label": "RUNTIME_BOOTSTRAP_KEYS",
+        "kind": 5,
+        "importPath": "scripts.deploy_agentcore",
+        "description": "scripts.deploy_agentcore",
+        "peekOfCode": "RUNTIME_BOOTSTRAP_KEYS = [\n    \"AGENT_MODEL\",\n    \"BYTEPLUS_BASE_URL\",\n    \"SEEDANCE_MODEL\",\n    \"SEEDANCE_DRY_RUN\",\n    \"SEEDREAM_MODEL\",\n    \"SEEDREAM_DRY_RUN\",\n    \"MUREKA_API_URL\",\n    \"MUREKA_MODEL\",\n    \"MUREKA_DRY_RUN\",",
+        "detail": "scripts.deploy_agentcore",
+        "documentation": {}
+    },
+    {
         "label": "main",
         "kind": 2,
         "importPath": "scripts.generate_ui_assets",
@@ -1740,6 +2432,60 @@
         "description": "scripts.generate_ui_assets",
         "peekOfCode": "ASSETS = [\n    {\n        \"name\": \"stage-backdrop\",\n        \"aspect_ratio\": \"16:9\",\n        \"size\": \"2K\",\n        \"prompt\": (\n            \"Very dark, near-black photograph of an empty brutalist concrete gallery at night. \"\n            \"One narrow shaft of cool daylight falls across a raw concrete floor, everything else \"\n            \"sinks into deep shadow. Shot on medium format film, shallow depth of field, heavy \"\n            \"atmospheric haze, visible film grain, muted desaturated neutral greys, no colour cast, \"",
         "detail": "scripts.generate_ui_assets",
+        "documentation": {}
+    },
+    {
+        "label": "ROOT",
+        "kind": 5,
+        "importPath": "scripts.smoke_agentcore",
+        "description": "scripts.smoke_agentcore",
+        "peekOfCode": "ROOT = Path(__file__).resolve().parents[1]\nasync def main() -> int:\n    load_local_env()\n    from agent.agentcore_client import agentcore_enabled, invoke\n    if not agentcore_enabled():\n        print(\"AGENTCORE_RUNTIME_ARN is not set.\", file=sys.stderr)\n        return 1\n    result = invoke(\n        \"start_video_generation\",\n        {",
+        "detail": "scripts.smoke_agentcore",
+        "documentation": {}
+    },
+    {
+        "label": "ensure_secret",
+        "kind": 2,
+        "importPath": "scripts.sync_secrets",
+        "description": "scripts.sync_secrets",
+        "peekOfCode": "def ensure_secret(client, *, name: str, payload: dict[str, str], description: str) -> str:\n    body = json.dumps(payload, indent=2, sort_keys=True)\n    try:\n        response = client.create_secret(\n            Name=name,\n            Description=description,\n            SecretString=body,\n        )\n        print(f\"Created secret {name}\")\n        return response[\"ARN\"]",
+        "detail": "scripts.sync_secrets",
+        "documentation": {}
+    },
+    {
+        "label": "write_bootstrap_env",
+        "kind": 2,
+        "importPath": "scripts.sync_secrets",
+        "description": "scripts.sync_secrets",
+        "peekOfCode": "def write_bootstrap_env(\n    *,\n    path: Path,\n    secret_name: str,\n    region: str,\n    keep: dict[str, str],\n) -> None:\n    lines = [\n        \"# Bootstrap only — application secrets live in AWS Secrets Manager.\",\n        f\"AWS_REGION={region}\",",
+        "detail": "scripts.sync_secrets",
+        "documentation": {}
+    },
+    {
+        "label": "main",
+        "kind": 2,
+        "importPath": "scripts.sync_secrets",
+        "description": "scripts.sync_secrets",
+        "peekOfCode": "def main() -> int:\n    parser = argparse.ArgumentParser(description=__doc__)\n    parser.add_argument(\n        \"--secret-name\",\n        default=os.getenv(\"RENDERHAUS_SECRETS_NAME\") or DEFAULT_SECRET_NAME,\n    )\n    parser.add_argument(\"--region\", default=os.getenv(\"AWS_REGION\") or \"us-east-1\")\n    parser.add_argument(\n        \"--env-file\",\n        default=str(ROOT / \".env.local\"),",
+        "detail": "scripts.sync_secrets",
+        "documentation": {}
+    },
+    {
+        "label": "ROOT",
+        "kind": 5,
+        "importPath": "scripts.sync_secrets",
+        "description": "scripts.sync_secrets",
+        "peekOfCode": "ROOT = Path(__file__).resolve().parents[1]\nDEFAULT_SECRET_NAME = \"renderhaus/app\"\ndef ensure_secret(client, *, name: str, payload: dict[str, str], description: str) -> str:\n    body = json.dumps(payload, indent=2, sort_keys=True)\n    try:\n        response = client.create_secret(\n            Name=name,\n            Description=description,\n            SecretString=body,\n        )",
+        "detail": "scripts.sync_secrets",
+        "documentation": {}
+    },
+    {
+        "label": "DEFAULT_SECRET_NAME",
+        "kind": 5,
+        "importPath": "scripts.sync_secrets",
+        "description": "scripts.sync_secrets",
+        "peekOfCode": "DEFAULT_SECRET_NAME = \"renderhaus/app\"\ndef ensure_secret(client, *, name: str, payload: dict[str, str], description: str) -> str:\n    body = json.dumps(payload, indent=2, sort_keys=True)\n    try:\n        response = client.create_secret(\n            Name=name,\n            Description=description,\n            SecretString=body,\n        )\n        print(f\"Created secret {name}\")",
+        "detail": "scripts.sync_secrets",
         "documentation": {}
     },
     {
@@ -1973,6 +2719,15 @@
         "importPath": "web.assets",
         "description": "web.assets",
         "peekOfCode": "def register_output_file(\n    *,\n    user_id: str,\n    source_path: str | Path,\n    kind: AssetKind,\n    mime_type: str | None = None,\n) -> Asset:\n    source = Path(source_path).expanduser().resolve()\n    if not source.is_file() or source.stat().st_size <= 0:\n        raise FileNotFoundError(f\"Output file missing: {source}\")",
+        "detail": "web.assets",
+        "documentation": {}
+    },
+    {
+        "label": "register_existing_s3_object",
+        "kind": 2,
+        "importPath": "web.assets",
+        "description": "web.assets",
+        "peekOfCode": "def register_existing_s3_object(\n    *,\n    user_id: str,\n    storage_key: str,\n    kind: AssetKind,\n    mime_type: str,\n    size_bytes: int,\n    checksum: str,\n    filename: str,\n    asset_id: str | None = None,",
         "detail": "web.assets",
         "documentation": {}
     },

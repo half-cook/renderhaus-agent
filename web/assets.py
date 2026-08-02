@@ -355,6 +355,31 @@ def register_output_file(
     )
 
 
+def register_existing_s3_object(
+    *,
+    user_id: str,
+    storage_key: str,
+    kind: AssetKind,
+    mime_type: str,
+    size_bytes: int,
+    checksum: str,
+    filename: str,
+    asset_id: str | None = None,
+) -> Asset:
+    """Register an object already uploaded (e.g. by AgentCore) into the assets table."""
+    resolved_id = asset_id or uuid.uuid4().hex
+    return _put_asset_record(
+        asset_id=resolved_id,
+        user_id=user_id,
+        kind=kind,
+        mime_type=mime_type,
+        size_bytes=size_bytes,
+        checksum=checksum,
+        storage_key=storage_key,
+        filename=filename,
+    )
+
+
 def materialize_asset_path(asset: Asset) -> Path:
     """Download an S3 asset into a local cache for agent/tool use."""
     if asset.storage_backend not in {"s3", "local"}:

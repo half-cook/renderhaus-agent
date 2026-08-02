@@ -8,7 +8,8 @@ from typing import Any
 
 from langchain.agents import create_agent
 
-from agent.config import DEFAULT_MCP_CONFIG
+from agent.agentcore_client import agentcore_enabled, invoke as invoke_agentcore
+from agent.config import mcp_config_path
 from agent.main import SYSTEM_PROMPT, load_tools
 from agent.tracing import langchain_callbacks, traced_operation
 
@@ -237,10 +238,25 @@ def summarize_agent_result(result: dict[str, Any]) -> dict[str, Any]:
 async def invoke_agent(
     prompt: str,
     *,
-    config_path: Path = DEFAULT_MCP_CONFIG,
+    config_path: Path | None = None,
     system_prompt: str = SYSTEM_PROMPT,
+    local_only: bool = False,
+    session_id: str | None = None,
+    user_id: str | None = None,
+    reference_storage_key: str | None = None,
 ) -> dict[str, Any]:
-    tools = await load_tools(config_path)
+    if not local_only and agentcore_enabled():
+        return invoke_agentcore(
+            "invoke_agent",
+            {
+                "prompt": prompt,
+                "user_id": user_id or "local",
+                "reference_storage_key": reference_storage_key,
+            },
+            session_id=session_id,
+        )
+
+    tools = await load_tools(config_path or mcp_config_path())
     model = os.getenv("AGENT_MODEL", "openai:gpt-4.1-mini")
     agent = create_agent(model=model, tools=tools, system_prompt=system_prompt)
     callbacks = langchain_callbacks()
@@ -291,7 +307,7 @@ async def _generation_runtime() -> tuple[Any, Any, Any, dict[str, Any]]:
                 _cached_music_agent,
                 _cached_tools,
             )
-        tools = await load_tools(DEFAULT_MCP_CONFIG)
+        tools = await load_tools(mcp_config_path())
         by_name = {tool.name: tool for tool in tools}
         required = {
             "text_to_video",
@@ -332,7 +348,25 @@ async def _generation_runtime() -> tuple[Any, Any, Any, dict[str, Any]]:
         )
 
 
-async def start_video_generation(prompt: str) -> dict[str, Any]:
+async def start_video_generation(
+    prompt: str,
+    *,
+    local_only: bool = False,
+    session_id: str | None = None,
+    user_id: str | None = None,
+    reference_storage_key: str | None = None,
+) -> dict[str, Any]:
+    if not local_only and agentcore_enabled():
+        return invoke_agentcore(
+            "start_video_generation",
+            {
+                "prompt": prompt,
+                "user_id": user_id or "local",
+                "reference_storage_key": reference_storage_key,
+            },
+            session_id=session_id,
+        )
+
     video_agent, _, _, _ = await _generation_runtime()
     callbacks = langchain_callbacks()
     with traced_operation(
@@ -364,7 +398,25 @@ async def start_video_generation(prompt: str) -> dict[str, Any]:
         return summarized
 
 
-async def start_image_generation(prompt: str) -> dict[str, Any]:
+async def start_image_generation(
+    prompt: str,
+    *,
+    local_only: bool = False,
+    session_id: str | None = None,
+    user_id: str | None = None,
+    reference_storage_key: str | None = None,
+) -> dict[str, Any]:
+    if not local_only and agentcore_enabled():
+        return invoke_agentcore(
+            "start_image_generation",
+            {
+                "prompt": prompt,
+                "user_id": user_id or "local",
+                "reference_storage_key": reference_storage_key,
+            },
+            session_id=session_id,
+        )
+
     _, image_agent, _, _ = await _generation_runtime()
     callbacks = langchain_callbacks()
     with traced_operation(
@@ -398,7 +450,20 @@ async def start_image_generation(prompt: str) -> dict[str, Any]:
         return summarized
 
 
-async def start_music_generation(prompt: str) -> dict[str, Any]:
+async def start_music_generation(
+    prompt: str,
+    *,
+    local_only: bool = False,
+    session_id: str | None = None,
+    user_id: str | None = None,
+) -> dict[str, Any]:
+    if not local_only and agentcore_enabled():
+        return invoke_agentcore(
+            "start_music_generation",
+            {"prompt": prompt, "user_id": user_id or "local"},
+            session_id=session_id,
+        )
+
     _, _, music_agent, _ = await _generation_runtime()
     callbacks = langchain_callbacks()
     with traced_operation(
@@ -430,7 +495,20 @@ async def start_music_generation(prompt: str) -> dict[str, Any]:
         return summarized
 
 
-async def poll_video_generation(job_id: str) -> dict[str, Any]:
+async def poll_video_generation(
+    job_id: str,
+    *,
+    local_only: bool = False,
+    session_id: str | None = None,
+    user_id: str | None = None,
+) -> dict[str, Any]:
+    if not local_only and agentcore_enabled():
+        return invoke_agentcore(
+            "poll_video_generation",
+            {"job_id": job_id, "user_id": user_id or "local"},
+            session_id=session_id,
+        )
+
     _, _, _, tools = await _generation_runtime()
     output = await tools["get_video_task"].ainvoke({"job_id": job_id, "download": True})
     normalized = normalize_tool_output(output)
@@ -439,7 +517,20 @@ async def poll_video_generation(job_id: str) -> dict[str, Any]:
     return normalized
 
 
-async def poll_music_generation(job_id: str) -> dict[str, Any]:
+async def poll_music_generation(
+    job_id: str,
+    *,
+    local_only: bool = False,
+    session_id: str | None = None,
+    user_id: str | None = None,
+) -> dict[str, Any]:
+    if not local_only and agentcore_enabled():
+        return invoke_agentcore(
+            "poll_music_generation",
+            {"job_id": job_id, "user_id": user_id or "local"},
+            session_id=session_id,
+        )
+
     _, _, _, tools = await _generation_runtime()
     output = await tools["get_music_task"].ainvoke({"job_id": job_id, "download": True})
     normalized = normalize_tool_output(output)

@@ -8,10 +8,22 @@ from typing import Any
 
 from dotenv import load_dotenv
 
+from agent.secrets import load_secrets_from_manager, secrets_locator
+
 
 ROOT = Path(__file__).resolve().parents[1]
 ENV_FILE = ROOT / ".env.local"
 DEFAULT_MCP_CONFIG = ROOT / "configs" / "mcp.local.json"
+AGENTCORE_MCP_CONFIG = ROOT / "configs" / "mcp.agentcore.json"
+
+
+def mcp_config_path() -> Path:
+    override = (os.getenv("MCP_CONFIG") or "").strip()
+    if override:
+        return Path(override).expanduser().resolve()
+    if os.getenv("AGENTCORE_RUNTIME", "").lower() in {"1", "true", "yes"}:
+        return AGENTCORE_MCP_CONFIG
+    return DEFAULT_MCP_CONFIG
 
 _VAR_RE = re.compile(r"\$\{([A-Za-z_][A-Za-z0-9_]*|ROOT)\}")
 
@@ -35,7 +47,11 @@ DEFAULT_ENV = {
 
 
 def load_local_env() -> None:
+    """Load bootstrap .env, then AWS Secrets Manager, then defaults."""
     load_dotenv(ENV_FILE, override=False)
+    if secrets_locator():
+        # Secrets Manager is the source of truth when configured.
+        load_secrets_from_manager(override=True)
     for key, value in DEFAULT_ENV.items():
         if not os.getenv(key):
             os.environ[key] = value
