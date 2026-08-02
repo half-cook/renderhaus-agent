@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Any, Literal
 
 from fastapi import FastAPI, File, HTTPException, Request, Response, UploadFile
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
@@ -24,13 +24,24 @@ from agent.service import (
     start_video_generation,
 )
 from agent.tracing import flush_langfuse, traced_operation
+from web.assets import (
+    get_asset,
+    get_asset_for_user,
+    init_assets_db,
+    materialize_asset_path,
+    presigned_content_url,
+    register_output_file,
+    register_upload,
+    sign_content_url,
+    verify_content_signature,
+)
+from web.auth import AuthUser, clerk_enabled, current_user_id, optional_user, publishable_key
 
 
 load_local_env()
 
 STATIC_DIR = Path(__file__).with_name("static")
 STATE_DIR = ROOT / ".renderhaus" / "web-jobs"
-UPLOAD_DIR = ROOT / ".renderhaus" / "uploads"
 MEDIA_DIR = (ROOT / os.getenv("RENDERHAUS_MEDIA_DIR", ".renderhaus/media")).resolve()
 MAX_UPLOAD_BYTES = 15 * 1024 * 1024
 MIN_VIDEO_SECONDS = 4
@@ -56,6 +67,7 @@ PUBLIC_JOB_FIELDS = {
     "aspect_ratio",
     "duration_seconds",
     "reference_asset_id",
+    "output_asset_id",
     "parent_id",
     "created_at",
     "updated_at",
@@ -99,6 +111,8 @@ class JobStore:
             job.setdefault("media_type", "video")
             job.setdefault("traces", [])
             job.setdefault("progress", 0)
+            job.setdefault("user_id", "local")
+            job.setdefault("output_asset_id", None)
             if job.get("status") not in TERMINAL_STATES:
                 if job.get("_provider_job_id") and job.get("media_type") in {
                     "video",
@@ -123,13 +137,14 @@ class JobStore:
         self,
         request: GenerationRequest,
         *,
+        user_id: str,
         reference_path: str | None = None,
         parent_id: str | None = None,
     ) -> dict[str, Any]:
         now = int(time.time())
         job = {
             "id": uuid.uuid4().hex,
-            "schema_version": 1,
+            "schema_version": 2,
             "status": "queued",
             "phase": "queued",
             "media_type": request.media_type,
@@ -138,6 +153,8 @@ class JobStore:
             "aspect_ratio": request.aspect_ratio,
             "duration_seconds": request.duration_seconds if request.media_type == "video" else None,
             "reference_asset_id": request.reference_asset_id,
+            "output_asset_id": None,
+            "user_id": user_id,
             "parent_id": parent_id,
             "created_at": now,
             "updated_at": now,
@@ -173,10 +190,16 @@ class JobStore:
             job = self._jobs.get(job_id)
             return dict(job) if job else None
 
-    async def recent(self, limit: int = 20) -> list[dict[str, Any]]:
+    async def recent_for_user(self, user_id: str, limit: int = 20) -> list[dict[str, Any]]:
         async with self._lock:
             jobs = sorted(
-                self._jobs.values(), key=lambda item: item.get("created_at", 0), reverse=True
+                (
+                    job
+                    for job in self._jobs.values()
+                    if job.get("user_id") == user_id
+                ),
+                key=lambda item: item.get("created_at", 0),
+                reverse=True,
             )
             return [dict(job) for job in jobs[:limit]]
 
@@ -185,20 +208,59 @@ store = JobStore(STATE_DIR)
 generation_slots = asyncio.Semaphore(2)
 
 
+def _ensure_output_asset(job: dict[str, Any]) -> bool:
+    """Register a legacy `_output_path` as an owned asset. Returns True if job mutated."""
+    asset_id = job.get("output_asset_id")
+    if isinstance(asset_id, str) and asset_id:
+        return False
+    output_path = job.get("_output_path")
+    if not isinstance(output_path, str) or not output_path:
+        return False
+    try:
+        _attach_output_asset(job, output_path)
+    except (OSError, ValueError, FileNotFoundError):
+        return False
+    job["schema_version"] = max(int(job.get("schema_version") or 1), 2)
+    return True
+
+
 def _public_job(job: dict[str, Any]) -> dict[str, Any]:
     public = {key: job.get(key) for key in PUBLIC_JOB_FIELDS}
-    if job.get("_output_path"):
-        public["media_url"] = f"/api/generations/{job['id']}/media"
+    asset_id = job.get("output_asset_id")
+    if isinstance(asset_id, str) and asset_id:
+        public["media_url"] = sign_content_url(asset_id)
+        public["output_asset_id"] = asset_id
+    else:
+        public["media_url"] = None
+        public["output_asset_id"] = None
     return public
 
 
-def _asset_path(asset_id: str | None) -> str | None:
+async def _public_job_persisted(job: dict[str, Any]) -> dict[str, Any]:
+    if _ensure_output_asset(job):
+        await store.put(job)
+    return _public_job(job)
+
+
+def _require_owned_job(job: dict[str, Any] | None, user_id: str) -> dict[str, Any]:
+    if not job or job.get("user_id") != user_id:
+        raise HTTPException(status_code=404, detail="Generation not found.")
+    return job
+
+
+def _reference_path_for_user(asset_id: str | None, user_id: str) -> str | None:
     if not asset_id:
         return None
-    matches = list(UPLOAD_DIR.glob(f"{asset_id}.*"))
-    if len(matches) != 1 or not matches[0].is_file():
+    asset = get_asset_for_user(asset_id, user_id)
+    if not asset or asset.kind != "upload":
         raise HTTPException(status_code=400, detail="Reference image no longer exists.")
-    return str(matches[0].resolve())
+    try:
+        path = materialize_asset_path(asset)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Reference image no longer exists.")
+    if not path.is_file():
+        raise HTTPException(status_code=400, detail="Reference image no longer exists.")
+    return str(path)
 
 
 def _detect_image(content: bytes) -> tuple[str, str] | None:
@@ -317,6 +379,27 @@ def _start_artifact(result: dict[str, Any]) -> dict[str, Any] | None:
     return None
 
 
+def _attach_output_asset(job: dict[str, Any], output_path: str) -> None:
+    media_type = job.get("media_type") or "video"
+    kind: Literal["video", "image", "music"]
+    if media_type == "image":
+        kind = "image"
+    elif media_type == "music":
+        kind = "music"
+    else:
+        kind = "video"
+    user_id = str(job.get("user_id") or "local")
+    asset = register_output_file(
+        user_id=user_id,
+        source_path=output_path,
+        kind=kind,
+    )
+    # Keep the provider's local path for debugging; canonical bytes live in S3.
+    job["_output_path"] = str(Path(output_path).expanduser().resolve())
+    job["output_asset_id"] = asset.id
+    job["_storage_key"] = asset.storage_key
+
+
 async def _poll_provider(job: dict[str, Any]) -> None:
     media_type = job.get("media_type") or "video"
     provider_job_id = job.get("_provider_job_id")
@@ -358,12 +441,12 @@ async def _poll_provider(job: dict[str, Any]) -> None:
                 raise RuntimeError(
                     f"{media_type.capitalize()} generation succeeded without a downloadable media file."
                 )
+            _attach_output_asset(job, output_path)
             job.update(
                 status="complete",
                 phase="complete",
                 message=ready_message,
                 progress=100,
-                _output_path=output_path,
             )
             _append_trace(
                 job,
@@ -417,6 +500,7 @@ async def _run_generation(job_id: str, *, resume: bool = False) -> None:
                 "job_id": job_id,
                 "parent_id": job.get("parent_id") or "",
                 "media_type": media_type,
+                "user_id": job.get("user_id") or "",
             },
             trace_name=feature,
         ) as observation:
@@ -497,12 +581,12 @@ async def _run_generation(job_id: str, *, resume: bool = False) -> None:
                             raise RuntimeError(
                                 "Image generation succeeded without a downloadable media file."
                             )
+                        _attach_output_asset(job, output_path)
                         job.update(
                             status="complete",
                             phase="complete",
                             message="Your image is ready.",
                             progress=100,
-                            _output_path=output_path,
                         )
                         _append_trace(
                             job,
@@ -565,7 +649,7 @@ async def _run_generation(job_id: str, *, resume: bool = False) -> None:
                     observation.update(
                         output={
                             "status": job.get("status"),
-                            "has_media": bool(job.get("_output_path")),
+                            "has_media": bool(job.get("output_asset_id")),
                         }
                     )
             except asyncio.CancelledError:
@@ -610,8 +694,8 @@ def _start_task(app: FastAPI, job_id: str, *, resume: bool = False) -> None:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     STATE_DIR.mkdir(parents=True, exist_ok=True)
-    UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
     MEDIA_DIR.mkdir(parents=True, exist_ok=True)
+    init_assets_db()
     app.state.generation_tasks = set()
     resumable = await store.load()
     for job_id in resumable:
@@ -655,6 +739,8 @@ async def config() -> dict[str, Any]:
         "langfuse_ready": bool(
             os.getenv("LANGFUSE_PUBLIC_KEY") and os.getenv("LANGFUSE_SECRET_KEY")
         ),
+        "clerk_enabled": clerk_enabled(),
+        "clerk_publishable_key": publishable_key(),
         "video_model": os.getenv("SEEDANCE_MODEL", "seedance-1-5-pro-251215"),
         "image_model": os.getenv("SEEDREAM_MODEL", "seedream-5-0-lite-260128"),
         "music_model": os.getenv("MUREKA_MODEL", "auto"),
@@ -662,8 +748,24 @@ async def config() -> dict[str, Any]:
     }
 
 
+@app.get("/api/me")
+async def me(request: Request) -> dict[str, Any]:
+    auth = optional_user(request)
+    if auth is None or not auth.payload:
+        return {"authenticated": False, "user_id": None if clerk_enabled() else "local"}
+    return {
+        "authenticated": True,
+        "user_id": auth.payload.get("sub"),
+        "session_id": auth.payload.get("sid"),
+    }
+
+
 @app.post("/api/uploads", status_code=201)
-async def upload_reference(file: UploadFile = File(...)) -> dict[str, str]:
+async def upload_reference(
+    auth: AuthUser,
+    file: UploadFile = File(...),
+) -> dict[str, str]:
+    user_id = current_user_id(auth)
     content = await file.read(MAX_UPLOAD_BYTES + 1)
     if len(content) > MAX_UPLOAD_BYTES:
         raise HTTPException(status_code=413, detail="Reference image is larger than 15 MB.")
@@ -672,16 +774,22 @@ async def upload_reference(file: UploadFile = File(...)) -> dict[str, str]:
         raise HTTPException(
             status_code=415, detail="Use a valid PNG, JPEG, or WebP reference image."
         )
-    suffix, _ = image_type
-    asset_id = uuid.uuid4().hex
-    (UPLOAD_DIR / f"{asset_id}{suffix}").write_bytes(content)
-    return {"asset_id": asset_id, "name": file.filename or "reference"}
+    suffix, mime_type = image_type
+    asset = register_upload(
+        user_id=user_id,
+        content=content,
+        suffix=suffix,
+        mime_type=mime_type,
+        filename=file.filename or f"reference{suffix}",
+    )
+    return {"asset_id": asset.id, "name": asset.filename}
 
 
 @app.post("/api/generations", status_code=202)
-async def create_generation(request: GenerationRequest) -> dict[str, Any]:
-    reference_path = _asset_path(request.reference_asset_id)
-    job = await store.create(request, reference_path=reference_path)
+async def create_generation(request: GenerationRequest, auth: AuthUser) -> dict[str, Any]:
+    user_id = current_user_id(auth)
+    reference_path = _reference_path_for_user(request.reference_asset_id, user_id)
+    job = await store.create(request, user_id=user_id, reference_path=reference_path)
     _append_trace(
         job,
         title="Queued",
@@ -692,49 +800,67 @@ async def create_generation(request: GenerationRequest) -> dict[str, Any]:
     )
     await store.put(job)
     _start_task(app, job["id"])
-    return _public_job(job)
+    return await _public_job_persisted(job)
 
 
 @app.get("/api/generations")
-async def list_generations() -> dict[str, Any]:
-    return {"items": [_public_job(job) for job in await store.recent()]}
+async def list_generations(auth: AuthUser) -> dict[str, Any]:
+    user_id = current_user_id(auth)
+    items = []
+    for job in await store.recent_for_user(user_id):
+        items.append(await _public_job_persisted(job))
+    return {"items": items}
 
 
 @app.get("/api/generations/{job_id}")
-async def get_generation(job_id: str) -> dict[str, Any]:
-    job = await store.get(job_id)
-    if not job:
-        raise HTTPException(status_code=404, detail="Generation not found.")
-    return _public_job(job)
+async def get_generation(job_id: str, auth: AuthUser) -> dict[str, Any]:
+    user_id = current_user_id(auth)
+    job = _require_owned_job(await store.get(job_id), user_id)
+    return await _public_job_persisted(job)
 
 
 @app.get("/api/generations/{job_id}/media")
-async def get_generation_media(job_id: str) -> FileResponse:
-    job = await store.get(job_id)
-    if not job or not job.get("_output_path"):
+async def get_generation_media(job_id: str, auth: AuthUser) -> RedirectResponse:
+    """Compatibility redirect to a short-lived signed asset URL."""
+    user_id = current_user_id(auth)
+    job = _require_owned_job(await store.get(job_id), user_id)
+    if _ensure_output_asset(job):
+        await store.put(job)
+    asset_id = job.get("output_asset_id")
+    if not isinstance(asset_id, str) or not asset_id:
         raise HTTPException(status_code=404, detail="Generated media not found.")
+    asset = get_asset_for_user(asset_id, user_id)
+    if not asset:
+        raise HTTPException(status_code=404, detail="Generated media not found.")
+    return RedirectResponse(url=sign_content_url(asset.id), status_code=307)
+
+
+@app.get("/api/assets/{asset_id}/content")
+async def get_asset_content(
+    asset_id: str,
+    exp: str | None = None,
+    sig: str | None = None,
+) -> RedirectResponse:
+    if not verify_content_signature(asset_id, exp, sig):
+        raise HTTPException(status_code=401, detail="Invalid or expired media link.")
+    asset = get_asset(asset_id)
+    if not asset:
+        raise HTTPException(status_code=404, detail="Asset not found.")
     try:
-        path = Path(job["_output_path"]).resolve()
-        path.relative_to(MEDIA_DIR)
-    except (OSError, ValueError):
-        raise HTTPException(status_code=404, detail="Generated media not found.")
-    if not path.is_file():
-        raise HTTPException(status_code=404, detail="Generated media not found.")
-    media_type = mimetypes.guess_type(path.name)[0]
-    if job.get("media_type") == "image":
-        media_type = media_type or "image/png"
-    elif job.get("media_type") == "music":
-        media_type = media_type or "audio/mpeg"
-    else:
-        media_type = media_type or "video/mp4"
-    return FileResponse(path, media_type=media_type)
+        url = presigned_content_url(asset)
+    except Exception as exc:
+        raise HTTPException(status_code=404, detail="Asset not found.") from exc
+    return RedirectResponse(url=url, status_code=307)
 
 
 @app.post("/api/generations/{job_id}/refine", status_code=202)
-async def refine_generation(job_id: str, request: RefinementRequest) -> dict[str, Any]:
-    original = await store.get(job_id)
-    if not original:
-        raise HTTPException(status_code=404, detail="Generation not found.")
+async def refine_generation(
+    job_id: str,
+    request: RefinementRequest,
+    auth: AuthUser,
+) -> dict[str, Any]:
+    user_id = current_user_id(auth)
+    original = _require_owned_job(await store.get(job_id), user_id)
     refinement_suffix = f"\nRefinement: {request.instruction}"
     base_prompt = original["prompt"][: 4000 - len(refinement_suffix)]
     generation = GenerationRequest(
@@ -745,9 +871,13 @@ async def refine_generation(job_id: str, request: RefinementRequest) -> dict[str
         duration_seconds=min(original.get("duration_seconds") or 10, MAX_VIDEO_SECONDS),
         reference_asset_id=original.get("reference_asset_id"),
     )
+    reference_path = original.get("_reference_path")
+    if original.get("reference_asset_id"):
+        reference_path = _reference_path_for_user(original.get("reference_asset_id"), user_id)
     job = await store.create(
         generation,
-        reference_path=original.get("_reference_path"),
+        user_id=user_id,
+        reference_path=reference_path,
         parent_id=job_id,
     )
     _append_trace(
@@ -760,7 +890,7 @@ async def refine_generation(job_id: str, request: RefinementRequest) -> dict[str
     )
     await store.put(job)
     _start_task(app, job["id"])
-    return _public_job(job)
+    return await _public_job_persisted(job)
 
 
 def main() -> None:

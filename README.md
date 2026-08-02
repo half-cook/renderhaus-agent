@@ -35,6 +35,47 @@ Populate `.env.local`, then run:
 bash scripts/setup_agent.sh
 ```
 
+### Clerk authentication
+
+The web app uses [Clerk](https://clerk.com) for sign-in. Add keys from the
+[Clerk API keys](https://dashboard.clerk.com/last-active?path=api-keys) page to `.env.local`:
+
+```env
+# Either name works for the publishable key
+CLERK_PUBLISHABLE_KEY=pk_test_...
+# NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_...
+CLERK_SECRET_KEY=sk_test_...
+CLERK_AUTHORIZED_PARTIES=http://127.0.0.1:8000,http://localhost:8000
+# Optional: PEM public key for networkless JWT verification (newlines as \n)
+CLERK_JWT_KEY=
+```
+
+When both a publishable key and `CLERK_SECRET_KEY` are set, generation/upload APIs require a
+signed-in session. Leave them empty to keep the local UI open during setup.
+
+### Artifact storage
+
+Generated media and reference uploads are owned by the signed-in Clerk user (or `local` when
+Clerk is off).
+
+- **Bytes:** Amazon S3 (`AWS_S3_BUCKET`), keys like `users/{user_id}/assets/{asset_id}/...`
+- **Metadata:** DynamoDB table `AWS_DYNAMODB_ASSETS_TABLE` (default `renderhaus-assets`)
+- **Playback:** job `media_url` is an opaque app URL that redirects to a short-lived S3
+  presigned GET (`/api/assets/{id}/content?exp=...&sig=...`)
+
+```env
+AWS_ACCESS_KEY_ID=...
+AWS_SECRET_ACCESS_KEY=...
+AWS_REGION=us-east-1
+AWS_S3_BUCKET=your-unique-bucket-name
+AWS_DYNAMODB_ASSETS_TABLE=renderhaus-assets
+# Optional HMAC secret for the opaque media URL
+ASSET_SIGNING_SECRET=
+```
+
+On startup the app creates the DynamoDB table (and bucket, if missing) when credentials allow.
+Reference images used by the agent are cached under `.renderhaus/cache/`.
+
 ## Check Secrets
 
 ```bash

@@ -54,6 +54,12 @@
         <div class="titlebar-meta">
           <span class="badge" id="mode-pill">agent</span>
           <span class="badge badge--quiet" id="config-status">checking</span>
+          <div class="auth-slot" id="auth-slot" hidden>
+            <button class="button button--ghost button--compact" type="button" id="sign-in-button" hidden>
+              Sign in
+            </button>
+            <div id="user-button" class="user-button" hidden></div>
+          </div>
         </div>
       </header>
 
@@ -274,6 +280,6 @@
     </div>
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
-    <script src="/static/app.js" defer></script>
+    <script src="/static/app.js?v=assets-1" defer></script>
   </body>
 </html>

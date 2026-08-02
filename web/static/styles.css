@@ -260,6 +260,35 @@ textarea {
   gap: 8px;
 }
 
+.auth-slot {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+}
+
+.user-button {
+  display: inline-flex;
+  align-items: center;
+  line-height: 0;
+}
+
+.button--compact {
+  min-height: 28px;
+  padding: 4px 10px;
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.button--ghost {
+  border: 1px solid var(--line-strong);
+  background: transparent;
+  color: var(--text);
+}
+
+.button--ghost:hover {
+  background: var(--accent-wash);
+}
+
 /* Square badges rather than the default pill. */
 .badge {
   padding: 2px 8px;

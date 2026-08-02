@@ -30,6 +30,8 @@ const state = {
   filmstripToken: 0,
   filmstripSrc: null,
   scrubbing: false,
+  clerk: null,
+  signedIn: false,
 };
 
 const $ = (selector, root = document) => root.querySelector(selector);
@@ -117,11 +119,132 @@ function prettyModel(model) {
   return model;
 }
 
+function clerkFrontendHost(publishableKey) {
+  try {
+    return atob(publishableKey.split("_")[2]).slice(0, -1);
+  } catch {
+    return "";
+  }
+}
+
+function loadScript(src, attributes = {}) {
+  return new Promise((resolve, reject) => {
+    const existing = document.querySelector(`script[src="${src}"]`);
+    if (existing) {
+      if (existing.dataset.loaded === "true") {
+        resolve();
+        return;
+      }
+      existing.addEventListener("load", () => resolve(), { once: true });
+      existing.addEventListener("error", () => reject(new Error(`Failed to load ${src}`)), {
+        once: true,
+      });
+      return;
+    }
+    const script = document.createElement("script");
+    script.src = src;
+    script.async = true;
+    script.crossOrigin = "anonymous";
+    Object.entries(attributes).forEach(([key, value]) => script.setAttribute(key, value));
+    script.onload = () => {
+      script.dataset.loaded = "true";
+      resolve();
+    };
+    script.onerror = () => reject(new Error(`Failed to load ${src}`));
+    document.head.appendChild(script);
+  });
+}
+
+function renderAuthControls() {
+  const slot = $("#auth-slot");
+  const signInButton = $("#sign-in-button");
+  const userButton = $("#user-button");
+  if (!slot || !signInButton || !userButton) return;
+  if (!state.config?.clerk_enabled) {
+    slot.hidden = true;
+    return;
+  }
+  slot.hidden = false;
+  if (state.signedIn && state.clerk) {
+    signInButton.hidden = true;
+    userButton.hidden = false;
+    if (!userButton.dataset.mounted) {
+      state.clerk.mountUserButton(userButton);
+      userButton.dataset.mounted = "true";
+    }
+  } else {
+    userButton.hidden = true;
+    signInButton.hidden = false;
+  }
+}
+
+async function ensureSignedIn() {
+  if (!state.config?.clerk_enabled) return true;
+  if (state.signedIn && state.clerk?.session) return true;
+  if (!state.clerk) {
+    showToast("Sign in is still loading. Try again in a moment.");
+    return false;
+  }
+  state.clerk.openSignIn();
+  showToast("Sign in to generate.");
+  return false;
+}
+
+async function initClerk(publishableKey) {
+  if (!publishableKey || state.clerk) return state.clerk;
+  const host = clerkFrontendHost(publishableKey);
+  if (!host) throw new Error("Invalid Clerk publishable key.");
+
+  await loadScript(`https://${host}/npm/@clerk/ui@1/dist/ui.browser.js`);
+  await loadScript(`https://${host}/npm/@clerk/clerk-js@6/dist/clerk.browser.js`, {
+    "data-clerk-publishable-key": publishableKey,
+  });
+
+  // clerk-js may attach window.Clerk slightly after the script load event.
+  let clerk = window.Clerk;
+  for (let i = 0; i < 20 && !clerk; i += 1) {
+    await new Promise((resolve) => window.setTimeout(resolve, 50));
+    clerk = window.Clerk;
+  }
+  if (!clerk) throw new Error("Clerk failed to initialize.");
+  await clerk.load({
+    ui: { ClerkUI: window.__internal_ClerkUICtor },
+  });
+  state.clerk = clerk;
+  state.signedIn = Boolean(clerk.isSignedIn);
+  clerk.addListener(({ user }) => {
+    state.signedIn = Boolean(user);
+    renderAuthControls();
+    if (state.signedIn) loadHistory();
+  });
+  renderAuthControls();
+  return clerk;
+}
+
+async function authHeaders() {
+  const headers = {};
+  if (state.clerk?.session) {
+    const token = await state.clerk.session.getToken();
+    if (token) headers.Authorization = `Bearer ${token}`;
+  }
+  return headers;
+}
+
 async function api(path, options = {}) {
-  const response = await fetch(path, options);
+  const headers = new Headers(options.headers || {});
+  const auth = await authHeaders();
+  Object.entries(auth).forEach(([key, value]) => headers.set(key, value));
+  const response = await fetch(path, { ...options, headers });
+  if (response.status === 401 && state.config?.clerk_enabled) {
+    if (!state.signedIn) state.clerk?.openSignIn?.();
+    throw new Error("Sign in to continue.");
+  }
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) {
-    throw new Error(payload.detail || payload.error || `The request failed (${response.status}).`);
+    const detail = payload.detail || payload.error;
+    throw new Error(
+      typeof detail === "string" ? detail : `The request failed (${response.status}).`
+    );
   }
   return payload;
 }
@@ -500,12 +623,35 @@ function bindTimelineControls() {
   window.addEventListener("resize", updatePlayhead);
 }
 
+async function refreshMediaUrl() {
+  if (!state.currentJob?.id || !state.currentJob.media_url) return;
+  try {
+    const job = await api(`/api/generations/${state.currentJob.id}`);
+    state.currentJob = job;
+    updateJobUI(job);
+  } catch {
+    /* keep the existing URL; download/playback may still fail visibly */
+  }
+}
+
+function bindMediaAuthRecovery() {
+  ["#result-video", "#result-image", "#result-audio"].forEach((selector) => {
+    const el = $(selector);
+    if (!el || el.dataset.authRecovery === "1") return;
+    el.dataset.authRecovery = "1";
+    el.addEventListener("error", () => {
+      if (state.currentJob?.media_url) refreshMediaUrl();
+    });
+  });
+}
+
 function updateMedia(job) {
   const video = $("#result-video");
   const image = $("#result-image");
   const audio = $("#result-audio");
   const stage = $("#stage");
   const mediaUrl = job.media_url;
+  bindMediaAuthRecovery();
   if (!mediaUrl) {
     video.hidden = true;
     image.hidden = true;
@@ -696,6 +842,7 @@ async function submitGeneration(event) {
     return;
   }
   setPromptError("");
+  if (!(await ensureSignedIn())) return;
 
   const submit = $("#generate-button");
   submit.disabled = true;
@@ -786,7 +933,9 @@ async function loadHistory() {
 
 async function loadConfig() {
   try {
-    state.config = await api("/api/config");
+    const response = await fetch("/api/config");
+    state.config = await response.json();
+    if (!response.ok) throw new Error("config unavailable");
     const live =
       state.mediaType === "image"
         ? state.config.live_image_generation
@@ -794,8 +943,19 @@ async function loadConfig() {
           ? state.config.live_music_generation
           : state.config.live_generation;
     const tracing = state.config.langfuse_ready ? " · langfuse" : "";
-    $("#config-status").textContent = `${live ? "live" : "preview"}${tracing}`;
+    const authLabel = state.config.clerk_enabled ? " · clerk" : "";
+    $("#config-status").textContent = `${live ? "live" : "preview"}${tracing}${authLabel}`;
     updateModelHint();
+    renderAuthControls();
+    if (state.config.clerk_enabled && state.config.clerk_publishable_key) {
+      try {
+        await initClerk(state.config.clerk_publishable_key);
+      } catch (error) {
+        console.error(error);
+        showToast("Clerk failed to load. Check your publishable key.");
+        renderAuthControls();
+      }
+    }
   } catch {
     $("#config-status").textContent = "offline";
   }
@@ -844,10 +1004,21 @@ function bindEvents() {
     setRail($("#app").dataset.rail !== "open");
   });
 
-  $("#download-button").addEventListener("click", () => {
-    if (state.currentJob?.media_url) {
-      window.open(state.currentJob.media_url, "_blank", "noopener");
+  $("#download-button").addEventListener("click", async () => {
+    if (!state.currentJob?.id) return;
+    try {
+      // Refresh the short-lived signed media URL before opening it.
+      const job = await api(`/api/generations/${state.currentJob.id}`);
+      state.currentJob = job;
+      updateJobUI(job);
+      if (job.media_url) window.open(job.media_url, "_blank", "noopener");
+    } catch (error) {
+      showToast(error.message);
     }
+  });
+
+  $("#sign-in-button").addEventListener("click", () => {
+    state.clerk?.openSignIn?.();
   });
 
   bindTimelineControls();
@@ -858,5 +1029,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   setMediaType("video");
   setMode("home");
   clearFilmstrip();
-  await Promise.all([loadConfig(), loadHistory()]);
+  await loadConfig();
+  await loadHistory();
 });

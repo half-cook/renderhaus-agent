@@ -1,90 +1,11 @@
 [
     {
-        "label": "annotations",
-        "importPath": "__future__",
-        "description": "__future__",
+        "label": "sys",
+        "kind": 6,
         "isExtraImport": true,
-        "detail": "__future__",
-        "documentation": {}
-    },
-    {
-        "label": "annotations",
-        "importPath": "__future__",
-        "description": "__future__",
-        "isExtraImport": true,
-        "detail": "__future__",
-        "documentation": {}
-    },
-    {
-        "label": "annotations",
-        "importPath": "__future__",
-        "description": "__future__",
-        "isExtraImport": true,
-        "detail": "__future__",
-        "documentation": {}
-    },
-    {
-        "label": "annotations",
-        "importPath": "__future__",
-        "description": "__future__",
-        "isExtraImport": true,
-        "detail": "__future__",
-        "documentation": {}
-    },
-    {
-        "label": "annotations",
-        "importPath": "__future__",
-        "description": "__future__",
-        "isExtraImport": true,
-        "detail": "__future__",
-        "documentation": {}
-    },
-    {
-        "label": "annotations",
-        "importPath": "__future__",
-        "description": "__future__",
-        "isExtraImport": true,
-        "detail": "__future__",
-        "documentation": {}
-    },
-    {
-        "label": "annotations",
-        "importPath": "__future__",
-        "description": "__future__",
-        "isExtraImport": true,
-        "detail": "__future__",
-        "documentation": {}
-    },
-    {
-        "label": "annotations",
-        "importPath": "__future__",
-        "description": "__future__",
-        "isExtraImport": true,
-        "detail": "__future__",
-        "documentation": {}
-    },
-    {
-        "label": "annotations",
-        "importPath": "__future__",
-        "description": "__future__",
-        "isExtraImport": true,
-        "detail": "__future__",
-        "documentation": {}
-    },
-    {
-        "label": "annotations",
-        "importPath": "__future__",
-        "description": "__future__",
-        "isExtraImport": true,
-        "detail": "__future__",
-        "documentation": {}
-    },
-    {
-        "label": "annotations",
-        "importPath": "__future__",
-        "description": "__future__",
-        "isExtraImport": true,
-        "detail": "__future__",
+        "importPath": "sys",
+        "description": "sys",
+        "detail": "sys",
         "documentation": {}
     },
     {
@@ -94,6 +15,144 @@
         "importPath": "json",
         "description": "json",
         "detail": "json",
+        "documentation": {}
+    },
+    {
+        "label": "argparse",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "argparse",
+        "description": "argparse",
+        "detail": "argparse",
+        "documentation": {}
+    },
+    {
+        "label": "pformat",
+        "importPath": "pprint",
+        "description": "pprint",
+        "isExtraImport": true,
+        "detail": "pprint",
+        "documentation": {}
+    },
+    {
+        "label": "jmespath",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "jmespath",
+        "description": "jmespath",
+        "detail": "jmespath",
+        "documentation": {}
+    },
+    {
+        "label": "exceptions",
+        "importPath": "jmespath",
+        "description": "jmespath",
+        "isExtraImport": true,
+        "detail": "jmespath",
+        "documentation": {}
+    },
+    {
+        "label": "annotations",
+        "importPath": "__future__",
+        "description": "__future__",
+        "isExtraImport": true,
+        "detail": "__future__",
+        "documentation": {}
+    },
+    {
+        "label": "annotations",
+        "importPath": "__future__",
+        "description": "__future__",
+        "isExtraImport": true,
+        "detail": "__future__",
+        "documentation": {}
+    },
+    {
+        "label": "annotations",
+        "importPath": "__future__",
+        "description": "__future__",
+        "isExtraImport": true,
+        "detail": "__future__",
+        "documentation": {}
+    },
+    {
+        "label": "annotations",
+        "importPath": "__future__",
+        "description": "__future__",
+        "isExtraImport": true,
+        "detail": "__future__",
+        "documentation": {}
+    },
+    {
+        "label": "annotations",
+        "importPath": "__future__",
+        "description": "__future__",
+        "isExtraImport": true,
+        "detail": "__future__",
+        "documentation": {}
+    },
+    {
+        "label": "annotations",
+        "importPath": "__future__",
+        "description": "__future__",
+        "isExtraImport": true,
+        "detail": "__future__",
+        "documentation": {}
+    },
+    {
+        "label": "annotations",
+        "importPath": "__future__",
+        "description": "__future__",
+        "isExtraImport": true,
+        "detail": "__future__",
+        "documentation": {}
+    },
+    {
+        "label": "annotations",
+        "importPath": "__future__",
+        "description": "__future__",
+        "isExtraImport": true,
+        "detail": "__future__",
+        "documentation": {}
+    },
+    {
+        "label": "annotations",
+        "importPath": "__future__",
+        "description": "__future__",
+        "isExtraImport": true,
+        "detail": "__future__",
+        "documentation": {}
+    },
+    {
+        "label": "annotations",
+        "importPath": "__future__",
+        "description": "__future__",
+        "isExtraImport": true,
+        "detail": "__future__",
+        "documentation": {}
+    },
+    {
+        "label": "annotations",
+        "importPath": "__future__",
+        "description": "__future__",
+        "isExtraImport": true,
+        "detail": "__future__",
+        "documentation": {}
+    },
+    {
+        "label": "annotations",
+        "importPath": "__future__",
+        "description": "__future__",
+        "isExtraImport": true,
+        "detail": "__future__",
+        "documentation": {}
+    },
+    {
+        "label": "annotations",
+        "importPath": "__future__",
+        "description": "__future__",
+        "isExtraImport": true,
+        "detail": "__future__",
         "documentation": {}
     },
     {
@@ -195,11 +254,11 @@
         "documentation": {}
     },
     {
-        "label": "Any",
-        "importPath": "typing",
-        "description": "typing",
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
         "isExtraImport": true,
-        "detail": "typing",
+        "detail": "pathlib",
         "documentation": {}
     },
     {
@@ -228,6 +287,46 @@
     },
     {
         "label": "Any",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Any",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Any",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Literal",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Any",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Literal",
         "importPath": "typing",
         "description": "typing",
         "isExtraImport": true,
@@ -283,15 +382,7 @@
         "documentation": {}
     },
     {
-        "label": "Any",
-        "importPath": "typing",
-        "description": "typing",
-        "isExtraImport": true,
-        "detail": "typing",
-        "documentation": {}
-    },
-    {
-        "label": "Literal",
+        "label": "Annotated",
         "importPath": "typing",
         "description": "typing",
         "isExtraImport": true,
@@ -304,15 +395,6 @@
         "description": "dotenv",
         "isExtraImport": true,
         "detail": "dotenv",
-        "documentation": {}
-    },
-    {
-        "label": "argparse",
-        "kind": 6,
-        "isExtraImport": true,
-        "importPath": "argparse",
-        "description": "argparse",
-        "detail": "argparse",
         "documentation": {}
     },
     {
@@ -422,6 +504,14 @@
     },
     {
         "label": "load_local_env",
+        "importPath": "agent.config",
+        "description": "agent.config",
+        "isExtraImport": true,
+        "detail": "agent.config",
+        "documentation": {}
+    },
+    {
+        "label": "ROOT",
         "importPath": "agent.config",
         "description": "agent.config",
         "isExtraImport": true,
@@ -663,6 +753,14 @@
         "documentation": {}
     },
     {
+        "label": "urlencode",
+        "importPath": "urllib.parse",
+        "description": "urllib.parse",
+        "isExtraImport": true,
+        "detail": "urllib.parse",
+        "documentation": {}
+    },
+    {
         "label": "httpx",
         "kind": 6,
         "isExtraImport": true,
@@ -723,15 +821,6 @@
         "documentation": {}
     },
     {
-        "label": "sys",
-        "kind": 6,
-        "isExtraImport": true,
-        "importPath": "sys",
-        "description": "sys",
-        "detail": "sys",
-        "documentation": {}
-    },
-    {
         "label": "text_to_image",
         "importPath": "mcps.seedream.server",
         "description": "mcps.seedream.server",
@@ -788,6 +877,30 @@
         "documentation": {}
     },
     {
+        "label": "Depends",
+        "importPath": "fastapi",
+        "description": "fastapi",
+        "isExtraImport": true,
+        "detail": "fastapi",
+        "documentation": {}
+    },
+    {
+        "label": "HTTPException",
+        "importPath": "fastapi",
+        "description": "fastapi",
+        "isExtraImport": true,
+        "detail": "fastapi",
+        "documentation": {}
+    },
+    {
+        "label": "Request",
+        "importPath": "fastapi",
+        "description": "fastapi",
+        "isExtraImport": true,
+        "detail": "fastapi",
+        "documentation": {}
+    },
+    {
         "label": "FileResponse",
         "importPath": "fastapi.responses",
         "description": "fastapi.responses",
@@ -797,6 +910,14 @@
     },
     {
         "label": "JSONResponse",
+        "importPath": "fastapi.responses",
+        "description": "fastapi.responses",
+        "isExtraImport": true,
+        "detail": "fastapi.responses",
+        "documentation": {}
+    },
+    {
+        "label": "RedirectResponse",
         "importPath": "fastapi.responses",
         "description": "fastapi.responses",
         "isExtraImport": true,
@@ -849,6 +970,227 @@
         "description": "agent.service",
         "isExtraImport": true,
         "detail": "agent.service",
+        "documentation": {}
+    },
+    {
+        "label": "get_asset",
+        "importPath": "web.assets",
+        "description": "web.assets",
+        "isExtraImport": true,
+        "detail": "web.assets",
+        "documentation": {}
+    },
+    {
+        "label": "get_asset_for_user",
+        "importPath": "web.assets",
+        "description": "web.assets",
+        "isExtraImport": true,
+        "detail": "web.assets",
+        "documentation": {}
+    },
+    {
+        "label": "init_assets_db",
+        "importPath": "web.assets",
+        "description": "web.assets",
+        "isExtraImport": true,
+        "detail": "web.assets",
+        "documentation": {}
+    },
+    {
+        "label": "materialize_asset_path",
+        "importPath": "web.assets",
+        "description": "web.assets",
+        "isExtraImport": true,
+        "detail": "web.assets",
+        "documentation": {}
+    },
+    {
+        "label": "presigned_content_url",
+        "importPath": "web.assets",
+        "description": "web.assets",
+        "isExtraImport": true,
+        "detail": "web.assets",
+        "documentation": {}
+    },
+    {
+        "label": "register_output_file",
+        "importPath": "web.assets",
+        "description": "web.assets",
+        "isExtraImport": true,
+        "detail": "web.assets",
+        "documentation": {}
+    },
+    {
+        "label": "register_upload",
+        "importPath": "web.assets",
+        "description": "web.assets",
+        "isExtraImport": true,
+        "detail": "web.assets",
+        "documentation": {}
+    },
+    {
+        "label": "sign_content_url",
+        "importPath": "web.assets",
+        "description": "web.assets",
+        "isExtraImport": true,
+        "detail": "web.assets",
+        "documentation": {}
+    },
+    {
+        "label": "verify_content_signature",
+        "importPath": "web.assets",
+        "description": "web.assets",
+        "isExtraImport": true,
+        "detail": "web.assets",
+        "documentation": {}
+    },
+    {
+        "label": "AuthUser",
+        "importPath": "web.auth",
+        "description": "web.auth",
+        "isExtraImport": true,
+        "detail": "web.auth",
+        "documentation": {}
+    },
+    {
+        "label": "clerk_enabled",
+        "importPath": "web.auth",
+        "description": "web.auth",
+        "isExtraImport": true,
+        "detail": "web.auth",
+        "documentation": {}
+    },
+    {
+        "label": "current_user_id",
+        "importPath": "web.auth",
+        "description": "web.auth",
+        "isExtraImport": true,
+        "detail": "web.auth",
+        "documentation": {}
+    },
+    {
+        "label": "optional_user",
+        "importPath": "web.auth",
+        "description": "web.auth",
+        "isExtraImport": true,
+        "detail": "web.auth",
+        "documentation": {}
+    },
+    {
+        "label": "publishable_key",
+        "importPath": "web.auth",
+        "description": "web.auth",
+        "isExtraImport": true,
+        "detail": "web.auth",
+        "documentation": {}
+    },
+    {
+        "label": "hashlib",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "hashlib",
+        "description": "hashlib",
+        "detail": "hashlib",
+        "documentation": {}
+    },
+    {
+        "label": "hmac",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "hmac",
+        "description": "hmac",
+        "detail": "hmac",
+        "documentation": {}
+    },
+    {
+        "label": "logging",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "logging",
+        "description": "logging",
+        "detail": "logging",
+        "documentation": {}
+    },
+    {
+        "label": "dataclass",
+        "importPath": "dataclasses",
+        "description": "dataclasses",
+        "isExtraImport": true,
+        "detail": "dataclasses",
+        "documentation": {}
+    },
+    {
+        "label": "lru_cache",
+        "importPath": "functools",
+        "description": "functools",
+        "isExtraImport": true,
+        "detail": "functools",
+        "documentation": {}
+    },
+    {
+        "label": "boto3",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "boto3",
+        "description": "boto3",
+        "detail": "boto3",
+        "documentation": {}
+    },
+    {
+        "label": "ClientError",
+        "importPath": "botocore.exceptions",
+        "description": "botocore.exceptions",
+        "isExtraImport": true,
+        "detail": "botocore.exceptions",
+        "documentation": {}
+    },
+    {
+        "label": "AuthenticateRequestOptions",
+        "importPath": "clerk_backend_api",
+        "description": "clerk_backend_api",
+        "isExtraImport": true,
+        "detail": "clerk_backend_api",
+        "documentation": {}
+    },
+    {
+        "label": "authenticate_request",
+        "importPath": "clerk_backend_api",
+        "description": "clerk_backend_api",
+        "isExtraImport": true,
+        "detail": "clerk_backend_api",
+        "documentation": {}
+    },
+    {
+        "label": "RequestState",
+        "importPath": "clerk_backend_api.security.types",
+        "description": "clerk_backend_api.security.types",
+        "isExtraImport": true,
+        "detail": "clerk_backend_api.security.types",
+        "documentation": {}
+    },
+    {
+        "label": "HTTPAuthorizationCredentials",
+        "importPath": "fastapi.security",
+        "description": "fastapi.security",
+        "isExtraImport": true,
+        "detail": "fastapi.security",
+        "documentation": {}
+    },
+    {
+        "label": "HTTPBearer",
+        "importPath": "fastapi.security",
+        "description": "fastapi.security",
+        "isExtraImport": true,
+        "detail": "fastapi.security",
+        "documentation": {}
+    },
+    {
+        "label": "main",
+        "kind": 2,
+        "importPath": ".venv.bin.jp",
+        "description": ".venv.bin.jp",
+        "peekOfCode": "def main():\n    parser = argparse.ArgumentParser()\n    parser.add_argument('expression')\n    parser.add_argument('-f', '--filename',\n                        help=('The filename containing the input data.  '\n                              'If a filename is not given then data is '\n                              'read from stdin.'))\n    parser.add_argument('--ast', action='store_true',\n                        help=('Pretty print the AST, do not search the data.'))\n    args = parser.parse_args()",
+        "detail": ".venv.bin.jp",
         "documentation": {}
     },
     {
@@ -1018,7 +1360,7 @@
         "kind": 5,
         "importPath": "agent.main",
         "description": "agent.main",
-        "peekOfCode": "GEN_SECRET_KEYS = [\n    \"OPENAI_API_KEY\",\n    \"MUREKA_API_KEY\",\n    \"ELEVENLABS_API_KEY\",\n    \"BYTEPLUS_API_KEY\",\n    \"GOOGLE_API_KEY\",\n    \"LANGFUSE_PUBLIC_KEY\",\n    \"LANGFUSE_SECRET_KEY\",\n]\ndef parse_args() -> argparse.Namespace:",
+        "peekOfCode": "GEN_SECRET_KEYS = [\n    \"OPENAI_API_KEY\",\n    \"MUREKA_API_KEY\",\n    \"ELEVENLABS_API_KEY\",\n    \"BYTEPLUS_API_KEY\",\n    \"GOOGLE_API_KEY\",\n    \"LANGFUSE_PUBLIC_KEY\",\n    \"LANGFUSE_SECRET_KEY\",\n    \"CLERK_PUBLISHABLE_KEY\",\n    \"NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY\",",
         "detail": "agent.main",
         "documentation": {}
     },
@@ -1441,7 +1783,7 @@
         "kind": 5,
         "importPath": "web.app",
         "description": "web.app",
-        "peekOfCode": "STATIC_DIR = Path(__file__).with_name(\"static\")\nSTATE_DIR = ROOT / \".renderhaus\" / \"web-jobs\"\nUPLOAD_DIR = ROOT / \".renderhaus\" / \"uploads\"\nMEDIA_DIR = (ROOT / os.getenv(\"RENDERHAUS_MEDIA_DIR\", \".renderhaus/media\")).resolve()\nMAX_UPLOAD_BYTES = 15 * 1024 * 1024\nMIN_VIDEO_SECONDS = 4\nMAX_VIDEO_SECONDS = 12\nTERMINAL_STATES = {\"complete\", \"planned\", \"failed\"}\nPROVIDER_TERMINAL_STATES = {\n    \"succeeded\",",
+        "peekOfCode": "STATIC_DIR = Path(__file__).with_name(\"static\")\nSTATE_DIR = ROOT / \".renderhaus\" / \"web-jobs\"\nMEDIA_DIR = (ROOT / os.getenv(\"RENDERHAUS_MEDIA_DIR\", \".renderhaus/media\")).resolve()\nMAX_UPLOAD_BYTES = 15 * 1024 * 1024\nMIN_VIDEO_SECONDS = 4\nMAX_VIDEO_SECONDS = 12\nTERMINAL_STATES = {\"complete\", \"planned\", \"failed\"}\nPROVIDER_TERMINAL_STATES = {\n    \"succeeded\",\n    \"failed\",",
         "detail": "web.app",
         "documentation": {}
     },
@@ -1450,16 +1792,7 @@
         "kind": 5,
         "importPath": "web.app",
         "description": "web.app",
-        "peekOfCode": "STATE_DIR = ROOT / \".renderhaus\" / \"web-jobs\"\nUPLOAD_DIR = ROOT / \".renderhaus\" / \"uploads\"\nMEDIA_DIR = (ROOT / os.getenv(\"RENDERHAUS_MEDIA_DIR\", \".renderhaus/media\")).resolve()\nMAX_UPLOAD_BYTES = 15 * 1024 * 1024\nMIN_VIDEO_SECONDS = 4\nMAX_VIDEO_SECONDS = 12\nTERMINAL_STATES = {\"complete\", \"planned\", \"failed\"}\nPROVIDER_TERMINAL_STATES = {\n    \"succeeded\",\n    \"failed\",",
-        "detail": "web.app",
-        "documentation": {}
-    },
-    {
-        "label": "UPLOAD_DIR",
-        "kind": 5,
-        "importPath": "web.app",
-        "description": "web.app",
-        "peekOfCode": "UPLOAD_DIR = ROOT / \".renderhaus\" / \"uploads\"\nMEDIA_DIR = (ROOT / os.getenv(\"RENDERHAUS_MEDIA_DIR\", \".renderhaus/media\")).resolve()\nMAX_UPLOAD_BYTES = 15 * 1024 * 1024\nMIN_VIDEO_SECONDS = 4\nMAX_VIDEO_SECONDS = 12\nTERMINAL_STATES = {\"complete\", \"planned\", \"failed\"}\nPROVIDER_TERMINAL_STATES = {\n    \"succeeded\",\n    \"failed\",\n    \"cancelled\",",
+        "peekOfCode": "STATE_DIR = ROOT / \".renderhaus\" / \"web-jobs\"\nMEDIA_DIR = (ROOT / os.getenv(\"RENDERHAUS_MEDIA_DIR\", \".renderhaus/media\")).resolve()\nMAX_UPLOAD_BYTES = 15 * 1024 * 1024\nMIN_VIDEO_SECONDS = 4\nMAX_VIDEO_SECONDS = 12\nTERMINAL_STATES = {\"complete\", \"planned\", \"failed\"}\nPROVIDER_TERMINAL_STATES = {\n    \"succeeded\",\n    \"failed\",\n    \"cancelled\",",
         "detail": "web.app",
         "documentation": {}
     },
@@ -1531,7 +1864,7 @@
         "kind": 5,
         "importPath": "web.app",
         "description": "web.app",
-        "peekOfCode": "store = JobStore(STATE_DIR)\ngeneration_slots = asyncio.Semaphore(2)\ndef _public_job(job: dict[str, Any]) -> dict[str, Any]:\n    public = {key: job.get(key) for key in PUBLIC_JOB_FIELDS}\n    if job.get(\"_output_path\"):\n        public[\"media_url\"] = f\"/api/generations/{job['id']}/media\"\n    return public\ndef _asset_path(asset_id: str | None) -> str | None:\n    if not asset_id:\n        return None",
+        "peekOfCode": "store = JobStore(STATE_DIR)\ngeneration_slots = asyncio.Semaphore(2)\ndef _ensure_output_asset(job: dict[str, Any]) -> bool:\n    \"\"\"Register a legacy `_output_path` as an owned asset. Returns True if job mutated.\"\"\"\n    asset_id = job.get(\"output_asset_id\")\n    if isinstance(asset_id, str) and asset_id:\n        return False\n    output_path = job.get(\"_output_path\")\n    if not isinstance(output_path, str) or not output_path:\n        return False",
         "detail": "web.app",
         "documentation": {}
     },
@@ -1540,7 +1873,7 @@
         "kind": 5,
         "importPath": "web.app",
         "description": "web.app",
-        "peekOfCode": "generation_slots = asyncio.Semaphore(2)\ndef _public_job(job: dict[str, Any]) -> dict[str, Any]:\n    public = {key: job.get(key) for key in PUBLIC_JOB_FIELDS}\n    if job.get(\"_output_path\"):\n        public[\"media_url\"] = f\"/api/generations/{job['id']}/media\"\n    return public\ndef _asset_path(asset_id: str | None) -> str | None:\n    if not asset_id:\n        return None\n    matches = list(UPLOAD_DIR.glob(f\"{asset_id}.*\"))",
+        "peekOfCode": "generation_slots = asyncio.Semaphore(2)\ndef _ensure_output_asset(job: dict[str, Any]) -> bool:\n    \"\"\"Register a legacy `_output_path` as an owned asset. Returns True if job mutated.\"\"\"\n    asset_id = job.get(\"output_asset_id\")\n    if isinstance(asset_id, str) and asset_id:\n        return False\n    output_path = job.get(\"_output_path\")\n    if not isinstance(output_path, str) or not output_path:\n        return False\n    try:",
         "detail": "web.app",
         "documentation": {}
     },
@@ -1551,6 +1884,267 @@
         "description": "web.app",
         "peekOfCode": "app = FastAPI(title=\"Renderhaus\", version=\"0.1.0\", lifespan=lifespan)\napp.mount(\"/static\", StaticFiles(directory=STATIC_DIR), name=\"static\")\n@app.get(\"/\", include_in_schema=False)\nasync def index() -> FileResponse:\n    return FileResponse(STATIC_DIR / \"index.html\")\n@app.exception_handler(404)\nasync def not_found(request: Request, exc: HTTPException) -> Response:\n    \"\"\"Serve the branded page for browsers and keep JSON for the API surface.\"\"\"\n    wants_html = \"text/html\" in request.headers.get(\"accept\", \"\")\n    if request.url.path.startswith(\"/api/\") or not wants_html:",
         "detail": "web.app",
+        "documentation": {}
+    },
+    {
+        "label": "Asset",
+        "kind": 6,
+        "importPath": "web.assets",
+        "description": "web.assets",
+        "peekOfCode": "class Asset:\n    id: str\n    user_id: str\n    kind: str\n    mime_type: str\n    size_bytes: int\n    checksum: str\n    storage_backend: str\n    storage_key: str\n    filename: str",
+        "detail": "web.assets",
+        "documentation": {}
+    },
+    {
+        "label": "aws_region",
+        "kind": 2,
+        "importPath": "web.assets",
+        "description": "web.assets",
+        "peekOfCode": "def aws_region() -> str:\n    return os.getenv(\"AWS_REGION\") or os.getenv(\"AWS_DEFAULT_REGION\") or \"us-east-1\"\ndef s3_bucket() -> str:\n    return (os.getenv(\"AWS_S3_BUCKET\") or \"\").strip()\ndef dynamodb_table_name() -> str:\n    return (\n        os.getenv(\"AWS_DYNAMODB_ASSETS_TABLE\")\n        or os.getenv(\"AWS_DYNAMODB_TABLE\")\n        or DEFAULT_ASSETS_TABLE\n    ).strip()",
+        "detail": "web.assets",
+        "documentation": {}
+    },
+    {
+        "label": "s3_bucket",
+        "kind": 2,
+        "importPath": "web.assets",
+        "description": "web.assets",
+        "peekOfCode": "def s3_bucket() -> str:\n    return (os.getenv(\"AWS_S3_BUCKET\") or \"\").strip()\ndef dynamodb_table_name() -> str:\n    return (\n        os.getenv(\"AWS_DYNAMODB_ASSETS_TABLE\")\n        or os.getenv(\"AWS_DYNAMODB_TABLE\")\n        or DEFAULT_ASSETS_TABLE\n    ).strip()\ndef aws_configured() -> bool:\n    return bool(",
+        "detail": "web.assets",
+        "documentation": {}
+    },
+    {
+        "label": "dynamodb_table_name",
+        "kind": 2,
+        "importPath": "web.assets",
+        "description": "web.assets",
+        "peekOfCode": "def dynamodb_table_name() -> str:\n    return (\n        os.getenv(\"AWS_DYNAMODB_ASSETS_TABLE\")\n        or os.getenv(\"AWS_DYNAMODB_TABLE\")\n        or DEFAULT_ASSETS_TABLE\n    ).strip()\ndef aws_configured() -> bool:\n    return bool(\n        s3_bucket()\n        and (",
+        "detail": "web.assets",
+        "documentation": {}
+    },
+    {
+        "label": "aws_configured",
+        "kind": 2,
+        "importPath": "web.assets",
+        "description": "web.assets",
+        "peekOfCode": "def aws_configured() -> bool:\n    return bool(\n        s3_bucket()\n        and (\n            os.getenv(\"AWS_ACCESS_KEY_ID\")\n            or os.getenv(\"AWS_PROFILE\")\n            or os.getenv(\"AWS_CONTAINER_CREDENTIALS_RELATIVE_URI\")\n        )\n    )\n@lru_cache(maxsize=1)",
+        "detail": "web.assets",
+        "documentation": {}
+    },
+    {
+        "label": "init_assets_db",
+        "kind": 2,
+        "importPath": "web.assets",
+        "description": "web.assets",
+        "peekOfCode": "def init_assets_db() -> None:\n    \"\"\"Initialize DynamoDB table and verify/create the S3 bucket.\"\"\"\n    _session.cache_clear()\n    CACHE_DIR.mkdir(parents=True, exist_ok=True)\n    if not s3_bucket():\n        raise RuntimeError(\n            \"AWS_S3_BUCKET is not set. Add your bucket name to .env.local before starting the app.\"\n        )\n    _ensure_dynamodb_table()\n    _ensure_s3_bucket()",
+        "detail": "web.assets",
+        "documentation": {}
+    },
+    {
+        "label": "get_asset",
+        "kind": 2,
+        "importPath": "web.assets",
+        "description": "web.assets",
+        "peekOfCode": "def get_asset(asset_id: str) -> Asset | None:\n    table = _dynamodb().Table(dynamodb_table_name())\n    response = table.get_item(Key={\"asset_id\": asset_id})\n    item = response.get(\"Item\")\n    return _item_to_asset(item) if item else None\ndef get_asset_for_user(asset_id: str, user_id: str) -> Asset | None:\n    asset = get_asset(asset_id)\n    if asset is None or asset.user_id != user_id:\n        return None\n    return asset",
+        "detail": "web.assets",
+        "documentation": {}
+    },
+    {
+        "label": "get_asset_for_user",
+        "kind": 2,
+        "importPath": "web.assets",
+        "description": "web.assets",
+        "peekOfCode": "def get_asset_for_user(asset_id: str, user_id: str) -> Asset | None:\n    asset = get_asset(asset_id)\n    if asset is None or asset.user_id != user_id:\n        return None\n    return asset\ndef _sha256_file(path: Path) -> str:\n    digest = hashlib.sha256()\n    with path.open(\"rb\") as handle:\n        while True:\n            chunk = handle.read(1024 * 1024)",
+        "detail": "web.assets",
+        "documentation": {}
+    },
+    {
+        "label": "register_upload",
+        "kind": 2,
+        "importPath": "web.assets",
+        "description": "web.assets",
+        "peekOfCode": "def register_upload(\n    *,\n    user_id: str,\n    content: bytes,\n    suffix: str,\n    mime_type: str,\n    filename: str | None = None,\n) -> Asset:\n    asset_id = uuid.uuid4().hex\n    safe_name = filename or f\"reference{suffix}\"",
+        "detail": "web.assets",
+        "documentation": {}
+    },
+    {
+        "label": "register_output_file",
+        "kind": 2,
+        "importPath": "web.assets",
+        "description": "web.assets",
+        "peekOfCode": "def register_output_file(\n    *,\n    user_id: str,\n    source_path: str | Path,\n    kind: AssetKind,\n    mime_type: str | None = None,\n) -> Asset:\n    source = Path(source_path).expanduser().resolve()\n    if not source.is_file() or source.stat().st_size <= 0:\n        raise FileNotFoundError(f\"Output file missing: {source}\")",
+        "detail": "web.assets",
+        "documentation": {}
+    },
+    {
+        "label": "materialize_asset_path",
+        "kind": 2,
+        "importPath": "web.assets",
+        "description": "web.assets",
+        "peekOfCode": "def materialize_asset_path(asset: Asset) -> Path:\n    \"\"\"Download an S3 asset into a local cache for agent/tool use.\"\"\"\n    if asset.storage_backend not in {\"s3\", \"local\"}:\n        raise ValueError(f\"Unsupported storage backend: {asset.storage_backend}\")\n    destination = CACHE_DIR / asset.user_id / asset.id / asset.filename\n    if destination.is_file() and destination.stat().st_size == asset.size_bytes:\n        return destination\n    destination.parent.mkdir(parents=True, exist_ok=True)\n    temporary = destination.with_suffix(destination.suffix + \".tmp\")\n    _s3().download_file(",
+        "detail": "web.assets",
+        "documentation": {}
+    },
+    {
+        "label": "local_path_for_asset",
+        "kind": 2,
+        "importPath": "web.assets",
+        "description": "web.assets",
+        "peekOfCode": "def local_path_for_asset(asset: Asset) -> Path:\n    \"\"\"Compatibility alias used by the web app for reference materialization.\"\"\"\n    return materialize_asset_path(asset)\ndef presigned_content_url(asset: Asset, *, ttl_seconds: int = CONTENT_URL_TTL_SECONDS) -> str:\n    return _s3().generate_presigned_url(\n        \"get_object\",\n        Params={\n            \"Bucket\": _require_bucket(),\n            \"Key\": asset.storage_key,\n            \"ResponseContentType\": asset.mime_type,",
+        "detail": "web.assets",
+        "documentation": {}
+    },
+    {
+        "label": "presigned_content_url",
+        "kind": 2,
+        "importPath": "web.assets",
+        "description": "web.assets",
+        "peekOfCode": "def presigned_content_url(asset: Asset, *, ttl_seconds: int = CONTENT_URL_TTL_SECONDS) -> str:\n    return _s3().generate_presigned_url(\n        \"get_object\",\n        Params={\n            \"Bucket\": _require_bucket(),\n            \"Key\": asset.storage_key,\n            \"ResponseContentType\": asset.mime_type,\n            \"ResponseContentDisposition\": f'inline; filename=\"{asset.filename}\"',\n        },\n        ExpiresIn=ttl_seconds,",
+        "detail": "web.assets",
+        "documentation": {}
+    },
+    {
+        "label": "sign_content_url",
+        "kind": 2,
+        "importPath": "web.assets",
+        "description": "web.assets",
+        "peekOfCode": "def sign_content_url(asset_id: str, *, ttl_seconds: int = CONTENT_URL_TTL_SECONDS) -> str:\n    \"\"\"App-level opaque URL; the handler redirects to an S3 presigned GET.\"\"\"\n    exp = int(time.time()) + ttl_seconds\n    message = f\"{asset_id}:{exp}\".encode(\"utf-8\")\n    signature = hmac.new(_signing_secret(), message, hashlib.sha256).hexdigest()\n    query = urlencode({\"exp\": str(exp), \"sig\": signature})\n    return f\"/api/assets/{asset_id}/content?{query}\"\ndef verify_content_signature(asset_id: str, exp: str | int | None, sig: str | None) -> bool:\n    if exp is None or not sig:\n        return False",
+        "detail": "web.assets",
+        "documentation": {}
+    },
+    {
+        "label": "verify_content_signature",
+        "kind": 2,
+        "importPath": "web.assets",
+        "description": "web.assets",
+        "peekOfCode": "def verify_content_signature(asset_id: str, exp: str | int | None, sig: str | None) -> bool:\n    if exp is None or not sig:\n        return False\n    try:\n        expires = int(exp)\n    except (TypeError, ValueError):\n        return False\n    if expires < int(time.time()):\n        return False\n    message = f\"{asset_id}:{expires}\".encode(\"utf-8\")",
+        "detail": "web.assets",
+        "documentation": {}
+    },
+    {
+        "label": "asset_public_dict",
+        "kind": 2,
+        "importPath": "web.assets",
+        "description": "web.assets",
+        "peekOfCode": "def asset_public_dict(asset: Asset, *, include_url: bool = True) -> dict[str, Any]:\n    payload: dict[str, Any] = {\n        \"id\": asset.id,\n        \"kind\": asset.kind,\n        \"mime_type\": asset.mime_type,\n        \"size_bytes\": asset.size_bytes,\n        \"filename\": asset.filename,\n        \"created_at\": asset.created_at,\n        \"storage_backend\": asset.storage_backend,\n    }",
+        "detail": "web.assets",
+        "documentation": {}
+    },
+    {
+        "label": "AssetKind",
+        "kind": 5,
+        "importPath": "web.assets",
+        "description": "web.assets",
+        "peekOfCode": "AssetKind = Literal[\"upload\", \"video\", \"image\", \"music\"]\nlogger = logging.getLogger(__name__)\nCACHE_DIR = ROOT / \".renderhaus\" / \"cache\"\nCONTENT_URL_TTL_SECONDS = 15 * 60\nDEFAULT_ASSETS_TABLE = \"renderhaus-assets\"\n@dataclass(frozen=True)\nclass Asset:\n    id: str\n    user_id: str\n    kind: str",
+        "detail": "web.assets",
+        "documentation": {}
+    },
+    {
+        "label": "logger",
+        "kind": 5,
+        "importPath": "web.assets",
+        "description": "web.assets",
+        "peekOfCode": "logger = logging.getLogger(__name__)\nCACHE_DIR = ROOT / \".renderhaus\" / \"cache\"\nCONTENT_URL_TTL_SECONDS = 15 * 60\nDEFAULT_ASSETS_TABLE = \"renderhaus-assets\"\n@dataclass(frozen=True)\nclass Asset:\n    id: str\n    user_id: str\n    kind: str\n    mime_type: str",
+        "detail": "web.assets",
+        "documentation": {}
+    },
+    {
+        "label": "CACHE_DIR",
+        "kind": 5,
+        "importPath": "web.assets",
+        "description": "web.assets",
+        "peekOfCode": "CACHE_DIR = ROOT / \".renderhaus\" / \"cache\"\nCONTENT_URL_TTL_SECONDS = 15 * 60\nDEFAULT_ASSETS_TABLE = \"renderhaus-assets\"\n@dataclass(frozen=True)\nclass Asset:\n    id: str\n    user_id: str\n    kind: str\n    mime_type: str\n    size_bytes: int",
+        "detail": "web.assets",
+        "documentation": {}
+    },
+    {
+        "label": "CONTENT_URL_TTL_SECONDS",
+        "kind": 5,
+        "importPath": "web.assets",
+        "description": "web.assets",
+        "peekOfCode": "CONTENT_URL_TTL_SECONDS = 15 * 60\nDEFAULT_ASSETS_TABLE = \"renderhaus-assets\"\n@dataclass(frozen=True)\nclass Asset:\n    id: str\n    user_id: str\n    kind: str\n    mime_type: str\n    size_bytes: int\n    checksum: str",
+        "detail": "web.assets",
+        "documentation": {}
+    },
+    {
+        "label": "DEFAULT_ASSETS_TABLE",
+        "kind": 5,
+        "importPath": "web.assets",
+        "description": "web.assets",
+        "peekOfCode": "DEFAULT_ASSETS_TABLE = \"renderhaus-assets\"\n@dataclass(frozen=True)\nclass Asset:\n    id: str\n    user_id: str\n    kind: str\n    mime_type: str\n    size_bytes: int\n    checksum: str\n    storage_backend: str",
+        "detail": "web.assets",
+        "documentation": {}
+    },
+    {
+        "label": "publishable_key",
+        "kind": 2,
+        "importPath": "web.auth",
+        "description": "web.auth",
+        "peekOfCode": "def publishable_key() -> str:\n    return (\n        os.getenv(\"CLERK_PUBLISHABLE_KEY\")\n        or os.getenv(\"NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY\")\n        or \"\"\n    )\ndef secret_key() -> str:\n    return os.getenv(\"CLERK_SECRET_KEY\") or \"\"\ndef clerk_enabled() -> bool:\n    return bool(secret_key() and publishable_key())",
+        "detail": "web.auth",
+        "documentation": {}
+    },
+    {
+        "label": "secret_key",
+        "kind": 2,
+        "importPath": "web.auth",
+        "description": "web.auth",
+        "peekOfCode": "def secret_key() -> str:\n    return os.getenv(\"CLERK_SECRET_KEY\") or \"\"\ndef clerk_enabled() -> bool:\n    return bool(secret_key() and publishable_key())\ndef _authorized_parties() -> list[str]:\n    raw = os.getenv(\"CLERK_AUTHORIZED_PARTIES\", \"\").strip()\n    if raw:\n        return [party.strip() for party in raw.split(\",\") if party.strip()]\n    parties = [\n        \"http://127.0.0.1:8000\",",
+        "detail": "web.auth",
+        "documentation": {}
+    },
+    {
+        "label": "clerk_enabled",
+        "kind": 2,
+        "importPath": "web.auth",
+        "description": "web.auth",
+        "peekOfCode": "def clerk_enabled() -> bool:\n    return bool(secret_key() and publishable_key())\ndef _authorized_parties() -> list[str]:\n    raw = os.getenv(\"CLERK_AUTHORIZED_PARTIES\", \"\").strip()\n    if raw:\n        return [party.strip() for party in raw.split(\",\") if party.strip()]\n    parties = [\n        \"http://127.0.0.1:8000\",\n        \"http://localhost:8000\",\n    ]",
+        "detail": "web.auth",
+        "documentation": {}
+    },
+    {
+        "label": "require_auth",
+        "kind": 2,
+        "importPath": "web.auth",
+        "description": "web.auth",
+        "peekOfCode": "def require_auth(\n    request: Request,\n    _creds: Annotated[HTTPAuthorizationCredentials | None, Depends(http_bearer)] = None,\n) -> RequestState | None:\n    \"\"\"Require a signed-in Clerk session when Clerk is configured.\"\"\"\n    if not clerk_enabled():\n        return None\n    state = authenticate_request(\n        request,\n        AuthenticateRequestOptions(",
+        "detail": "web.auth",
+        "documentation": {}
+    },
+    {
+        "label": "optional_user",
+        "kind": 2,
+        "importPath": "web.auth",
+        "description": "web.auth",
+        "peekOfCode": "def optional_user(request: Request) -> RequestState | None:\n    \"\"\"Return auth state when present; never raise for missing credentials.\"\"\"\n    if not clerk_enabled():\n        return None\n    state = authenticate_request(\n        request,\n        AuthenticateRequestOptions(\n            secret_key=secret_key(),\n            jwt_key=_jwt_key(),\n            authorized_parties=_authorized_parties(),",
+        "detail": "web.auth",
+        "documentation": {}
+    },
+    {
+        "label": "current_user_id",
+        "kind": 2,
+        "importPath": "web.auth",
+        "description": "web.auth",
+        "peekOfCode": "def current_user_id(auth: RequestState | None) -> str:\n    \"\"\"Clerk subject when signed in; stable local owner when Clerk is off.\"\"\"\n    if auth is not None and auth.payload:\n        subject = auth.payload.get(\"sub\")\n        if isinstance(subject, str) and subject:\n            return subject\n    if clerk_enabled():\n        raise HTTPException(\n            status_code=401,\n            detail=\"unauthorized\",",
+        "detail": "web.auth",
+        "documentation": {}
+    },
+    {
+        "label": "http_bearer",
+        "kind": 5,
+        "importPath": "web.auth",
+        "description": "web.auth",
+        "peekOfCode": "http_bearer = HTTPBearer(auto_error=False)\ndef publishable_key() -> str:\n    return (\n        os.getenv(\"CLERK_PUBLISHABLE_KEY\")\n        or os.getenv(\"NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY\")\n        or \"\"\n    )\ndef secret_key() -> str:\n    return os.getenv(\"CLERK_SECRET_KEY\") or \"\"\ndef clerk_enabled() -> bool:",
+        "detail": "web.auth",
+        "documentation": {}
+    },
+    {
+        "label": "AuthUser",
+        "kind": 5,
+        "importPath": "web.auth",
+        "description": "web.auth",
+        "peekOfCode": "AuthUser = Annotated[RequestState | None, Depends(require_auth)]\ndef current_user_id(auth: RequestState | None) -> str:\n    \"\"\"Clerk subject when signed in; stable local owner when Clerk is off.\"\"\"\n    if auth is not None and auth.payload:\n        subject = auth.payload.get(\"sub\")\n        if isinstance(subject, str) and subject:\n            return subject\n    if clerk_enabled():\n        raise HTTPException(\n            status_code=401,",
+        "detail": "web.auth",
         "documentation": {}
     }
 ]
