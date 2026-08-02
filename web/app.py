@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Any, Literal
 
 from fastapi import FastAPI, File, HTTPException, Request, Response, UploadFile
-from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
+from fastapi.responses import FileResponse, JSONResponse, RedirectResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
@@ -29,6 +29,7 @@ from web.assets import (
     get_asset,
     get_asset_for_user,
     init_assets_db,
+    iter_asset_bytes,
     materialize_asset_path,
     presigned_content_url,
     register_existing_s3_object,
@@ -38,6 +39,14 @@ from web.assets import (
     verify_content_signature,
 )
 from web.auth import AuthUser, clerk_enabled, current_user_id, optional_user, publishable_key
+from web.projects import (
+    ProjectStore,
+    add_artifact,
+    merge_video_paths,
+    public_project,
+    remove_artifact,
+    set_timeline_items,
+)
 
 
 load_local_env()
@@ -71,6 +80,7 @@ PUBLIC_JOB_FIELDS = {
     "reference_asset_id",
     "output_asset_id",
     "parent_id",
+    "project_id",
     "created_at",
     "updated_at",
     "message",
@@ -88,10 +98,38 @@ class GenerationRequest(BaseModel):
     aspect_ratio: str = Field(default="16:9", pattern=r"^(16:9|9:16|1:1)$")
     duration_seconds: int = Field(default=10, ge=MIN_VIDEO_SECONDS, le=MAX_VIDEO_SECONDS)
     reference_asset_id: str | None = Field(default=None, pattern=r"^[a-f0-9]{32}$")
+    project_id: str | None = Field(default=None, pattern=r"^[a-f0-9]{32}$")
 
 
 class RefinementRequest(BaseModel):
     instruction: str = Field(min_length=3, max_length=2000)
+
+
+class ProjectCreateRequest(BaseModel):
+    title: str = Field(min_length=1, max_length=120)
+    description: str = Field(default="", max_length=2000)
+
+
+class ProjectUpdateRequest(BaseModel):
+    title: str | None = Field(default=None, min_length=1, max_length=120)
+    description: str | None = Field(default=None, max_length=2000)
+
+
+class ProjectArtifactRequest(BaseModel):
+    job_id: str = Field(pattern=r"^[a-f0-9]{32}$")
+
+
+class TimelineItemModel(BaseModel):
+    id: str | None = None
+    job_id: str = Field(pattern=r"^[a-f0-9]{32}$")
+    asset_id: str | None = None
+    media_type: Literal["video", "image", "music"] = "video"
+    label: str = Field(default="", max_length=120)
+    duration_seconds: float | int | None = None
+
+
+class TimelineUpdateRequest(BaseModel):
+    items: list[TimelineItemModel] = Field(default_factory=list)
 
 
 class JobStore:
@@ -115,6 +153,7 @@ class JobStore:
             job.setdefault("progress", 0)
             job.setdefault("user_id", "local")
             job.setdefault("output_asset_id", None)
+            job.setdefault("project_id", None)
             if job.get("status") not in TERMINAL_STATES:
                 if job.get("_provider_job_id") and job.get("media_type") in {
                     "video",
@@ -143,6 +182,7 @@ class JobStore:
         reference_path: str | None = None,
         reference_storage_key: str | None = None,
         parent_id: str | None = None,
+        project_id: str | None = None,
     ) -> dict[str, Any]:
         now = int(time.time())
         job = {
@@ -159,6 +199,7 @@ class JobStore:
             "output_asset_id": None,
             "user_id": user_id,
             "parent_id": parent_id,
+            "project_id": project_id or request.project_id,
             "created_at": now,
             "updated_at": now,
             "message": (
@@ -194,21 +235,31 @@ class JobStore:
             job = self._jobs.get(job_id)
             return dict(job) if job else None
 
-    async def recent_for_user(self, user_id: str, limit: int = 20) -> list[dict[str, Any]]:
+    async def recent_for_user(
+        self,
+        user_id: str,
+        limit: int = 20,
+        *,
+        project_id: str | None = None,
+        unassigned: bool = False,
+    ) -> list[dict[str, Any]]:
         async with self._lock:
-            jobs = sorted(
-                (
-                    job
-                    for job in self._jobs.values()
-                    if job.get("user_id") == user_id
-                ),
-                key=lambda item: item.get("created_at", 0),
-                reverse=True,
-            )
+            jobs = []
+            for job in self._jobs.values():
+                if job.get("user_id") != user_id:
+                    continue
+                job_project = job.get("project_id")
+                if project_id is not None and job_project != project_id:
+                    continue
+                if unassigned and job_project:
+                    continue
+                jobs.append(job)
+            jobs.sort(key=lambda item: item.get("created_at", 0), reverse=True)
             return [dict(job) for job in jobs[:limit]]
 
 
 store = JobStore(STATE_DIR)
+projects = ProjectStore()
 generation_slots = asyncio.Semaphore(2)
 
 
@@ -250,6 +301,12 @@ def _require_owned_job(job: dict[str, Any] | None, user_id: str) -> dict[str, An
     if not job or job.get("user_id") != user_id:
         raise HTTPException(status_code=404, detail="Generation not found.")
     return job
+
+
+def _require_owned_project(project: dict[str, Any] | None, user_id: str) -> dict[str, Any]:
+    if not project or project.get("user_id") != user_id:
+        raise HTTPException(status_code=404, detail="Project not found.")
+    return project
 
 
 def _reference_asset_for_user(asset_id: str | None, user_id: str):
@@ -782,6 +839,7 @@ async def lifespan(app: FastAPI):
     STATE_DIR.mkdir(parents=True, exist_ok=True)
     MEDIA_DIR.mkdir(parents=True, exist_ok=True)
     init_assets_db()
+    await projects.load()
     app.state.generation_tasks = set()
     resumable = await store.load()
     for job_id in resumable:
@@ -871,9 +929,210 @@ async def upload_reference(
     return {"asset_id": asset.id, "name": asset.filename}
 
 
+@app.post("/api/projects", status_code=201)
+async def create_project(request: ProjectCreateRequest, auth: AuthUser) -> dict[str, Any]:
+    user_id = current_user_id(auth)
+    project = await projects.create(
+        user_id=user_id,
+        title=request.title,
+        description=request.description,
+    )
+    return public_project(project)
+
+
+@app.get("/api/projects")
+async def list_projects(auth: AuthUser) -> dict[str, Any]:
+    user_id = current_user_id(auth)
+    items = [public_project(project) for project in await projects.list_for_user(user_id)]
+    return {"items": items}
+
+
+@app.get("/api/projects/{project_id}")
+async def get_project(project_id: str, auth: AuthUser) -> dict[str, Any]:
+    user_id = current_user_id(auth)
+    project = _require_owned_project(await projects.get(project_id), user_id)
+    return public_project(project)
+
+
+@app.patch("/api/projects/{project_id}")
+async def update_project(
+    project_id: str,
+    request: ProjectUpdateRequest,
+    auth: AuthUser,
+) -> dict[str, Any]:
+    user_id = current_user_id(auth)
+    project = _require_owned_project(await projects.get(project_id), user_id)
+    if request.title is not None:
+        project["title"] = request.title.strip() or project["title"]
+    if request.description is not None:
+        project["description"] = request.description.strip()
+    await projects.put(project)
+    return public_project(project)
+
+
+@app.delete("/api/projects/{project_id}", status_code=204)
+async def delete_project(project_id: str, auth: AuthUser) -> Response:
+    user_id = current_user_id(auth)
+    _require_owned_project(await projects.get(project_id), user_id)
+    await projects.delete(project_id)
+    return Response(status_code=204)
+
+
+@app.post("/api/projects/{project_id}/artifacts", status_code=200)
+async def add_project_artifact(
+    project_id: str,
+    request: ProjectArtifactRequest,
+    auth: AuthUser,
+) -> dict[str, Any]:
+    user_id = current_user_id(auth)
+    project = _require_owned_project(await projects.get(project_id), user_id)
+    job = _require_owned_job(await store.get(request.job_id), user_id)
+    job["project_id"] = project_id
+    add_artifact(project, job["id"])
+    await store.put(job)
+    await projects.put(project)
+    return {
+        "project": public_project(project),
+        "job": await _public_job_persisted(job),
+    }
+
+
+@app.delete("/api/projects/{project_id}/artifacts/{job_id}", status_code=200)
+async def remove_project_artifact(
+    project_id: str,
+    job_id: str,
+    auth: AuthUser,
+) -> dict[str, Any]:
+    user_id = current_user_id(auth)
+    project = _require_owned_project(await projects.get(project_id), user_id)
+    job = await store.get(job_id)
+    if job and job.get("user_id") == user_id and job.get("project_id") == project_id:
+        job["project_id"] = None
+        await store.put(job)
+    remove_artifact(project, job_id)
+    await projects.put(project)
+    return {"project": public_project(project)}
+
+
+@app.put("/api/projects/{project_id}/timeline")
+async def update_project_timeline(
+    project_id: str,
+    request: TimelineUpdateRequest,
+    auth: AuthUser,
+) -> dict[str, Any]:
+    user_id = current_user_id(auth)
+    project = _require_owned_project(await projects.get(project_id), user_id)
+    items: list[dict[str, Any]] = []
+    for item in request.items:
+        job = _require_owned_job(await store.get(item.job_id), user_id)
+        if _ensure_output_asset(job):
+            await store.put(job)
+        payload = item.model_dump()
+        payload["asset_id"] = job.get("output_asset_id") or item.asset_id
+        payload["media_type"] = job.get("media_type") or item.media_type
+        if not payload.get("label"):
+            words = str(job.get("prompt") or "").strip().split()[:3]
+            payload["label"] = " ".join(words).lower() or "clip"
+        if payload.get("duration_seconds") is None:
+            payload["duration_seconds"] = job.get("duration_seconds")
+        items.append(payload)
+        job["project_id"] = project_id
+        add_artifact(project, job["id"])
+        await store.put(job)
+    set_timeline_items(project, items)
+    await projects.put(project)
+    return public_project(project)
+
+
+@app.post("/api/projects/{project_id}/merge", status_code=202)
+async def merge_project_timeline(project_id: str, auth: AuthUser) -> dict[str, Any]:
+    """Concatenate video clips currently on the project timeline into one MP4."""
+    user_id = current_user_id(auth)
+    project = _require_owned_project(await projects.get(project_id), user_id)
+    timeline_items = (project.get("timeline") or {}).get("items") or []
+    video_items = [item for item in timeline_items if item.get("media_type") == "video"]
+    if len(video_items) < 2:
+        raise HTTPException(
+            status_code=400,
+            detail="Add at least two video clips to the timeline before merging.",
+        )
+
+    clip_paths: list[Path] = []
+    for item in video_items:
+        job = _require_owned_job(await store.get(item["job_id"]), user_id)
+        if _ensure_output_asset(job):
+            await store.put(job)
+        asset_id = job.get("output_asset_id")
+        if not isinstance(asset_id, str) or not asset_id:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Clip '{item.get('label') or item['job_id'][:8]}' has no finished media yet.",
+            )
+        asset = get_asset_for_user(asset_id, user_id)
+        if not asset:
+            raise HTTPException(status_code=400, detail="A timeline clip is missing.")
+        try:
+            clip_paths.append(materialize_asset_path(asset))
+        except Exception as exc:
+            raise HTTPException(
+                status_code=400,
+                detail="Could not load a timeline clip for merge.",
+            ) from exc
+
+    output_path = MEDIA_DIR / "merges" / f"{project_id}-{uuid.uuid4().hex[:10]}.mp4"
+    try:
+        merge_video_paths(clip_paths, output_path=output_path)
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc)[:500]) from exc
+
+    asset = register_output_file(
+        user_id=user_id,
+        source_path=output_path,
+        kind="video",
+        mime_type="video/mp4",
+    )
+    prompt = f"Merged timeline for {project.get('title') or 'project'}"
+    generation = GenerationRequest(
+        prompt=prompt,
+        media_type="video",
+        vibe="quiet luxury",
+        aspect_ratio="16:9",
+        duration_seconds=MAX_VIDEO_SECONDS,
+        project_id=project_id,
+    )
+    job = await store.create(generation, user_id=user_id, project_id=project_id)
+    job.update(
+        status="complete",
+        phase="complete",
+        progress=100,
+        message="Timeline clips merged into one video.",
+        output_asset_id=asset.id,
+        media_url=None,
+        duration_seconds=None,
+    )
+    _append_trace(
+        job,
+        title="Merged timeline",
+        detail=f"Combined {len(clip_paths)} clips.",
+        status="done",
+        kind="status",
+        trace_id="merged",
+    )
+    await store.put(job)
+    add_artifact(project, job["id"])
+    await projects.put(project)
+    return {
+        "project": public_project(project),
+        "job": await _public_job_persisted(job),
+    }
+
+
 @app.post("/api/generations", status_code=202)
 async def create_generation(request: GenerationRequest, auth: AuthUser) -> dict[str, Any]:
     user_id = current_user_id(auth)
+    project_id = request.project_id
+    if project_id:
+        _require_owned_project(await projects.get(project_id), user_id)
     reference_asset = _reference_asset_for_user(request.reference_asset_id, user_id)
     reference_storage_key = reference_asset.storage_key if reference_asset else None
     reference_path = None
@@ -884,7 +1143,12 @@ async def create_generation(request: GenerationRequest, auth: AuthUser) -> dict[
         user_id=user_id,
         reference_path=reference_path,
         reference_storage_key=reference_storage_key,
+        project_id=project_id,
     )
+    if project_id:
+        project = _require_owned_project(await projects.get(project_id), user_id)
+        add_artifact(project, job["id"])
+        await projects.put(project)
     _append_trace(
         job,
         title="Queued",
@@ -899,10 +1163,21 @@ async def create_generation(request: GenerationRequest, auth: AuthUser) -> dict[
 
 
 @app.get("/api/generations")
-async def list_generations(auth: AuthUser) -> dict[str, Any]:
+async def list_generations(
+    auth: AuthUser,
+    project_id: str | None = None,
+    unassigned: bool = False,
+) -> dict[str, Any]:
     user_id = current_user_id(auth)
+    if project_id:
+        _require_owned_project(await projects.get(project_id), user_id)
     items = []
-    for job in await store.recent_for_user(user_id):
+    for job in await store.recent_for_user(
+        user_id,
+        limit=50,
+        project_id=project_id,
+        unassigned=unassigned,
+    ):
         items.append(await _public_job_persisted(job))
     return {"items": items}
 
@@ -935,12 +1210,26 @@ async def get_asset_content(
     asset_id: str,
     exp: str | None = None,
     sig: str | None = None,
-) -> RedirectResponse:
+    proxy: bool = False,
+) -> RedirectResponse | StreamingResponse:
     if not verify_content_signature(asset_id, exp, sig):
         raise HTTPException(status_code=401, detail="Invalid or expired media link.")
     asset = get_asset(asset_id)
     if not asset:
         raise HTTPException(status_code=404, detail="Asset not found.")
+    # Same-origin proxy avoids canvas CORS tainting for filmstrip frame capture.
+    if proxy:
+        try:
+            return StreamingResponse(
+                iter_asset_bytes(asset),
+                media_type=asset.mime_type or "application/octet-stream",
+                headers={
+                    "Content-Disposition": f'inline; filename="{asset.filename}"',
+                    "Cache-Control": "private, max-age=60",
+                },
+            )
+        except Exception as exc:
+            raise HTTPException(status_code=404, detail="Asset not found.") from exc
     try:
         url = presigned_content_url(asset)
     except Exception as exc:
@@ -975,13 +1264,20 @@ async def refine_generation(
     reference_path = None
     if reference_asset and not agentcore_enabled():
         reference_path = _reference_path_for_user(original.get("reference_asset_id"), user_id)
+    project_id = original.get("project_id") if isinstance(original.get("project_id"), str) else None
     job = await store.create(
         generation,
         user_id=user_id,
         reference_path=reference_path,
         reference_storage_key=reference_storage_key,
         parent_id=job_id,
+        project_id=project_id,
     )
+    if project_id:
+        project = await projects.get(project_id)
+        if project and project.get("user_id") == user_id:
+            add_artifact(project, job["id"])
+            await projects.put(project)
     _append_trace(
         job,
         title="Queued refinement",

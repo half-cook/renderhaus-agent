@@ -41,19 +41,34 @@
       <symbol id="i-slate" viewBox="0 0 256 256"><path d="M216,104H102.09L210,75.51a8,8,0,0,0,5.68-9.84l-8.16-30a15.93,15.93,0,0,0-19.42-11.13L35.81,64.74a15.75,15.75,0,0,0-9.7,7.4,15.51,15.51,0,0,0-1.55,12L32,111.56c0,.14,0,.29,0,.44v88a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V112A8,8,0,0,0,216,104ZM192.16,40l6,22.07-22.62,6L147.42,51.83Zm-66.69,17.6,28.12,16.24-36.94,9.75L88.53,67.37Zm-79.4,44.62-6-22.08,26.5-7L94.69,89.4ZM208,200H48V120H208v80Z"/></symbol>
       <symbol id="i-x" viewBox="0 0 256 256"><path d="M205.66,194.34a8,8,0,0,1-11.32,11.32L128,139.31,61.66,205.66a8,8,0,0,1-11.32-11.32L116.69,128,50.34,61.66A8,8,0,0,1,61.66,50.34L128,116.69l66.34-66.35a8,8,0,0,1,11.32,11.32L139.31,128Z"/></symbol>
       <symbol id="i-spark" viewBox="0 0 256 256"><path d="M208,144a16,16,0,0,1-16,16H144v48a16,16,0,0,1-32,0V160H64a16,16,0,0,1,0-32h48V80a16,16,0,0,1,32,0v48h48A16,16,0,0,1,208,144ZM152,48a8,8,0,0,0,8-8V16a8,8,0,0,0-16,0V40A8,8,0,0,0,152,48Zm80,80a8,8,0,0,0,0-16H208a8,8,0,0,0,0,16Zm-12.69,53.66a8,8,0,0,0-11.32,0l-16.97,16.97a8,8,0,0,0,11.32,11.31l16.97-16.96A8,8,0,0,0,219.31,181.66ZM48,136H24a8,8,0,0,0,0,16H48a8,8,0,0,0,0-16ZM60.69,74.34,43.72,57.37A8,8,0,0,0,32.4,68.69L49.37,85.66a8,8,0,0,0,11.32-11.32Z"/></symbol>
+      <symbol id="i-folder" viewBox="0 0 256 256"><path d="M216,72H131.31L104,44.69A15.86,15.86,0,0,0,92.69,40H40A16,16,0,0,0,24,56V200.62A15.4,15.4,0,0,0,39.38,216H216.89A15.13,15.13,0,0,0,232,200.89V88A16,16,0,0,0,216,72ZM40,56H92.69l16,16H40Zm176,144H40V88H216Z"/></symbol>
+      <symbol id="i-merge" viewBox="0 0 256 256"><path d="M224,152a8,8,0,0,1-8,8H143.31l50.35,50.34a8,8,0,0,1-11.32,11.32L128,167.31l-54.34,54.35a8,8,0,0,1-11.32-11.32L112.69,160H40a8,8,0,0,1,0-16H216A8,8,0,0,1,224,152ZM40,112H216a8,8,0,0,0,0-16H143.31l50.35-50.34a8,8,0,0,0-11.32-11.32L128,88.69,73.66,34.34A8,8,0,0,0,62.34,45.66L112.69,96H40a8,8,0,0,0,0,16Z"/></symbol>
     </svg>
 
     <div class="grain" aria-hidden="true"></div>
 
-    <div id="app" class="app" data-mode="home" data-rail="open">
+    <div id="app" class="app" data-mode="home" data-rail="open" data-library="closed">
       <header class="titlebar">
         <button class="brand" type="button" id="home-button">
           <span class="brand-mark" aria-hidden="true"></span>
           <span class="brand-name">renderhaus</span>
         </button>
         <div class="titlebar-meta">
+          <button class="badge badge--quiet project-chip" type="button" id="project-chip" hidden>
+            <svg class="icon" aria-hidden="true"><use href="#i-folder" /></svg>
+            <span id="project-chip-label">Project</span>
+          </button>
           <span class="badge" id="mode-pill">agent</span>
           <span class="badge badge--quiet" id="config-status">checking</span>
+          <button
+            type="button"
+            class="button button--ghost button--compact"
+            id="library-toggle"
+            aria-expanded="false"
+            aria-controls="library-sidebar"
+          >
+            Library
+          </button>
           <div class="auth-slot" id="auth-slot" hidden>
             <button class="button button--ghost button--compact" type="button" id="sign-in-button" hidden>
               Sign in
@@ -63,12 +78,59 @@
         </div>
       </header>
 
+      <aside class="library" id="library-sidebar" aria-label="Library">
+        <div class="library-panel">
+          <div class="library-section">
+            <div class="library-section-head">
+              <h2 class="eyebrow">Projects</h2>
+              <button type="button" class="button button--ghost button--compact" id="clear-project-button" hidden>
+                Standalone
+              </button>
+            </div>
+            <form class="project-create project-create--sidebar" id="project-create-form" novalidate>
+              <label class="sr-only" for="project-title">Project name</label>
+              <input
+                id="project-title"
+                name="title"
+                type="text"
+                maxlength="120"
+                required
+                placeholder="New project name"
+                autocomplete="off"
+              />
+              <button class="button button--primary button--compact" type="submit" id="project-create-button" aria-label="Create project">
+                <svg class="icon" aria-hidden="true"><use href="#i-plus" /></svg>
+              </button>
+            </form>
+            <p class="library-empty" id="projects-empty">No projects yet.</p>
+            <div class="sidebar-list" id="project-grid"></div>
+          </div>
+
+          <div class="library-section" id="project-library" hidden>
+            <div class="library-section-head">
+              <h2 class="eyebrow">In project</h2>
+            </div>
+            <div class="sidebar-list" id="project-artifact-list"></div>
+            <p class="library-empty" id="project-library-empty">Nothing in this project yet.</p>
+          </div>
+
+          <div class="library-section" id="unassigned-inbox">
+            <div class="library-section-head">
+              <h2 class="eyebrow">Standalone</h2>
+              <p class="inbox-hint">Drag onto a project</p>
+            </div>
+            <div class="sidebar-list" id="unassigned-list"></div>
+            <p class="library-empty" id="unassigned-empty">No standalone renders yet.</p>
+          </div>
+        </div>
+      </aside>
+
       <section class="home" id="home" aria-label="Start a render">
         <div class="home-center">
           <div class="home-intro">
-            <p class="home-kicker">Renderhaus agent</p>
-            <h1>What should we make?</h1>
-            <p class="home-lede">
+            <p class="home-kicker" id="home-kicker">Renderhaus agent</p>
+            <h1 id="home-title">What should we make?</h1>
+            <p class="home-lede" id="home-lede">
               Describe the shot or score the way you would brief a collaborator. The agent picks
               the model, writes the technical prompt, and hands back the finished file.
             </p>
@@ -137,7 +199,7 @@
           <p class="model-hint" id="model-hint">Video · Seedance 1.5 Pro</p>
 
           <section class="history" id="history" aria-label="Recent renders" hidden>
-            <h2 class="eyebrow">Recent</h2>
+            <h2 class="eyebrow" id="history-label">Recent</h2>
             <div class="history-list" id="history-list"></div>
           </section>
         </div>
@@ -204,6 +266,23 @@
                 <div class="timeline-toolbar">
                   <span class="timeline-label">Timeline</span>
                   <span class="timeline-clock" id="timeline-clock">0:00 / 0:00</span>
+                  <div class="timeline-actions">
+                    <button type="button" class="button button--compact" id="merge-button" disabled>
+                      <svg class="icon" aria-hidden="true"><use href="#i-merge" /></svg>
+                      <span>Merge clips</span>
+                    </button>
+                  </div>
+                </div>
+                <div
+                  class="sequence-track"
+                  id="sequence-track"
+                  aria-label="Project sequence"
+                  data-drop="timeline"
+                >
+                  <div class="sequence-empty" id="sequence-empty">
+                    Drop finished clips here to build a sequence
+                  </div>
+                  <div class="sequence-clips" id="sequence-clips"></div>
                 </div>
                 <div class="timeline-body" id="timeline-body">
                   <div class="timeline-ruler" id="timeline-ruler" aria-hidden="true"></div>

@@ -26,12 +26,20 @@ const state = {
   mediaType: "video",
   currentJob: null,
   pollTimer: null,
+  pollToken: 0,
+  pollJobId: null,
+  mediaRefreshToken: 0,
   config: null,
   filmstripToken: 0,
   filmstripSrc: null,
   scrubbing: false,
   clerk: null,
   signedIn: false,
+  projects: [],
+  currentProject: null,
+  projectJobs: [],
+  unassignedJobs: [],
+  dragJobId: null,
 };
 
 const $ = (selector, root = document) => root.querySelector(selector);
@@ -67,6 +75,32 @@ function setMode(mode) {
   $("#home").hidden = mode !== "home";
   $("#workspace").hidden = mode !== "workspace";
   $("#mode-pill").textContent = mode === "workspace" ? "agent · live" : "agent";
+  syncProjectChrome();
+}
+
+function syncProjectChrome() {
+  const chip = $("#project-chip");
+  const project = state.currentProject;
+  const projectLibrary = $("#project-library");
+  if (chip) {
+    if (project) {
+      chip.hidden = false;
+      $("#project-chip-label").textContent = project.title;
+    } else {
+      chip.hidden = true;
+    }
+  }
+  if (projectLibrary) projectLibrary.hidden = !project;
+  $("#home-kicker").textContent = project ? project.title : "Renderhaus agent";
+  $("#home-lede").textContent = project
+    ? "Generate into this project, or keep working standalone. Drag finished clips onto the timeline when you want to arrange or merge them."
+    : "Describe the shot or score the way you would brief a collaborator. The agent picks the model, writes the technical prompt, and hands back the finished file.";
+  $("#history-label").textContent = project ? "Recent in project" : "Recent";
+  $$(".project-card").forEach((card) => {
+    card.classList.toggle("is-active", Boolean(project && card.dataset.projectId === project.id));
+  });
+  const clearButton = $("#clear-project-button");
+  if (clearButton) clearButton.hidden = !project;
 }
 
 function setRail(open) {
@@ -74,6 +108,12 @@ function setRail(open) {
   const toggle = $("#rail-toggle");
   toggle.setAttribute("aria-expanded", String(open));
   $("span.sr-only", toggle).textContent = open ? "Hide the agent panel" : "Show the agent panel";
+}
+
+function setLibrary(open) {
+  $("#app").dataset.library = open ? "open" : "closed";
+  const toggle = $("#library-toggle");
+  if (toggle) toggle.setAttribute("aria-expanded", String(open));
 }
 
 function setMediaType(mediaType) {
@@ -215,7 +255,10 @@ async function initClerk(publishableKey) {
   clerk.addListener(({ user }) => {
     state.signedIn = Boolean(user);
     renderAuthControls();
-    if (state.signedIn) loadHistory();
+    if (state.signedIn) {
+      refreshLibrary();
+      loadHistory();
+    }
   });
   renderAuthControls();
   return clerk;
@@ -479,6 +522,42 @@ function updatePlayhead() {
   }
 }
 
+function waitForVideoEvent(video, eventName, { timeoutMs = 8000 } = {}) {
+  return new Promise((resolve, reject) => {
+    const timer = window.setTimeout(() => {
+      cleanup();
+      reject(new Error(`Timed out waiting for ${eventName}.`));
+    }, timeoutMs);
+    const onEvent = () => {
+      cleanup();
+      resolve();
+    };
+    const onError = () => {
+      cleanup();
+      reject(new Error("Could not read video frames."));
+    };
+    const cleanup = () => {
+      window.clearTimeout(timer);
+      video.removeEventListener(eventName, onEvent);
+      video.removeEventListener("error", onError);
+    };
+    video.addEventListener(eventName, onEvent, { once: true });
+    video.addEventListener("error", onError, { once: true });
+  });
+}
+
+async function seekVideo(video, time) {
+  if (!Number.isFinite(time)) return;
+  if (Math.abs((video.currentTime || 0) - time) < 0.01) return;
+  const seeked = waitForVideoEvent(video, "seeked", { timeoutMs: 5000 });
+  try {
+    video.currentTime = time;
+  } catch (error) {
+    throw error;
+  }
+  await seeked;
+}
+
 async function captureFilmstrip(mediaUrl) {
   const token = ++state.filmstripToken;
   const strip = $("#filmstrip");
@@ -487,19 +566,25 @@ async function captureFilmstrip(mediaUrl) {
   strip.classList.add("is-loading");
   strip.dataset.note = "Pulling frames…";
 
+  // Prefer a same-origin blob so canvas frame export is never CORS-tainted.
+  let objectUrl = null;
   const probe = document.createElement("video");
   probe.muted = true;
   probe.playsInline = true;
   probe.preload = "auto";
-  probe.src = mediaUrl;
 
   try {
-    await new Promise((resolve, reject) => {
-      probe.addEventListener("loadedmetadata", resolve, { once: true });
-      probe.addEventListener("error", () => reject(new Error("Could not read video frames.")), {
-        once: true,
-      });
-    });
+    // Proxy through our origin so canvas exports are never CORS-tainted by S3.
+    const proxyUrl = new URL(mediaUrl, window.location.href);
+    proxyUrl.searchParams.set("proxy", "1");
+    const response = await fetch(proxyUrl.toString(), { credentials: "same-origin" });
+    if (!response.ok) throw new Error(`Could not fetch video (${response.status}).`);
+    const blob = await response.blob();
+    if (token !== state.filmstripToken) return;
+    objectUrl = URL.createObjectURL(blob);
+    probe.src = objectUrl;
+
+    await waitForVideoEvent(probe, "loadeddata");
     if (token !== state.filmstripToken) return;
 
     const duration = probe.duration || 0;
@@ -514,28 +599,9 @@ async function captureFilmstrip(mediaUrl) {
 
     for (let index = 0; index < count; index += 1) {
       if (token !== state.filmstripToken) return;
-      const time = duration <= 0 ? 0 : (index / Math.max(count - 1, 1)) * Math.max(duration - 0.05, 0);
-      await new Promise((resolve, reject) => {
-        const onSeeked = () => {
-          probe.removeEventListener("seeked", onSeeked);
-          resolve();
-        };
-        probe.addEventListener("seeked", onSeeked);
-        probe.addEventListener(
-          "error",
-          () => {
-            probe.removeEventListener("seeked", onSeeked);
-            reject(new Error("Frame seek failed."));
-          },
-          { once: true }
-        );
-        try {
-          probe.currentTime = time;
-        } catch (error) {
-          probe.removeEventListener("seeked", onSeeked);
-          reject(error);
-        }
-      });
+      const time =
+        duration <= 0 ? 0 : (index / Math.max(count - 1, 1)) * Math.max(duration - 0.05, 0);
+      await seekVideo(probe, time);
       ctx.drawImage(probe, 0, 0, width, height);
       const img = document.createElement("img");
       img.className = "film-frame";
@@ -548,12 +614,14 @@ async function captureFilmstrip(mediaUrl) {
     strip.classList.remove("is-loading");
     state.filmstripSrc = mediaUrl;
     updatePlayhead();
-  } catch {
+  } catch (error) {
     if (token !== state.filmstripToken) return;
+    console.warn("Filmstrip capture failed:", error);
     clearFilmstrip("Frames unavailable for this clip");
   } finally {
     probe.removeAttribute("src");
     probe.load();
+    if (objectUrl) URL.revokeObjectURL(objectUrl);
   }
 }
 
@@ -625,8 +693,12 @@ function bindTimelineControls() {
 
 async function refreshMediaUrl() {
   if (!state.currentJob?.id || !state.currentJob.media_url) return;
+  const jobId = state.currentJob.id;
+  const token = ++state.mediaRefreshToken;
   try {
-    const job = await api(`/api/generations/${state.currentJob.id}`);
+    const job = await api(`/api/generations/${jobId}`);
+    // A newer open/poll/refresh won; drop this stale media recovery.
+    if (token !== state.mediaRefreshToken || state.currentJob?.id !== jobId) return;
     state.currentJob = job;
     updateJobUI(job);
   } catch {
@@ -640,9 +712,35 @@ function bindMediaAuthRecovery() {
     if (!el || el.dataset.authRecovery === "1") return;
     el.dataset.authRecovery = "1";
     el.addEventListener("error", () => {
-      if (state.currentJob?.media_url) refreshMediaUrl();
+      // Hidden leftover nodes (e.g. previous image) must not steal the current job.
+      if (el.hidden) return;
+      if (!state.currentJob?.media_url) return;
+      if (el.dataset.refreshing === "1") return;
+      el.dataset.refreshing = "1";
+      refreshMediaUrl().finally(() => {
+        el.dataset.refreshing = "0";
+      });
     });
   });
+}
+
+function stopPolling() {
+  window.clearInterval(state.pollTimer);
+  state.pollTimer = null;
+  state.pollJobId = null;
+  state.pollToken += 1;
+}
+
+function openJob(job, { poll = true } = {}) {
+  if (!job?.id) return;
+  stopPolling();
+  state.mediaRefreshToken += 1;
+  state.currentJob = job;
+  setMode("workspace");
+  updateJobUI(job);
+  if (poll && !TERMINAL_STATES.includes(job.status)) {
+    pollJob(job.id);
+  }
 }
 
 function updateMedia(job) {
@@ -662,7 +760,8 @@ function updateMedia(job) {
     stage.classList.remove("has-media");
     clearFilmstrip();
     setScoreTrack(false);
-    $("#edit-deck").hidden = true;
+    // Keep the project sequence visible even while a render is in flight.
+    $("#edit-deck").hidden = !state.currentProject;
     return;
   }
   if (job.media_type === "image") {
@@ -675,7 +774,7 @@ function updateMedia(job) {
     image.hidden = false;
     clearFilmstrip();
     setScoreTrack(false);
-    $("#edit-deck").hidden = true;
+    $("#edit-deck").hidden = !state.currentProject;
   } else if (job.media_type === "music") {
     video.hidden = true;
     image.hidden = true;
@@ -795,38 +894,106 @@ function updateJobUI(job) {
   updateMedia(job);
   renderEditIdeas(job);
   updateStageState(job);
+  renderSequence();
+}
+
+function upsertLibraryJob(job) {
+  if (!job?.id) return;
+  const inProject = Boolean(job.project_id);
+  if (inProject) {
+    const others = state.projectJobs.filter((item) => item.id !== job.id);
+    state.projectJobs = [job, ...others];
+    if (state.currentProject?.id === job.project_id) {
+      renderJobList($("#project-artifact-list"), $("#project-library-empty"), state.projectJobs, {
+        removable: true,
+      });
+    }
+  } else {
+    const others = state.unassignedJobs.filter((item) => item.id !== job.id);
+    state.unassignedJobs = [job, ...others];
+    renderJobList($("#unassigned-list"), $("#unassigned-empty"), state.unassignedJobs);
+  }
+}
+
+function renderJobList(list, empty, jobs, { removable = false } = {}) {
+  if (!list || !empty) return;
+  list.innerHTML = "";
+  const visible = jobs.filter(
+    (job) => job.status === "complete" || !TERMINAL_STATES.includes(job.status)
+  );
+  empty.hidden = visible.length > 0;
+  visible.slice(0, 24).forEach((job) => list.append(makeArtifactCard(job, { removable })));
+}
+
+async function revealJobInLibrary(job) {
+  upsertLibraryJob(job);
+  setLibrary(true);
+  if (job.project_id && state.currentProject?.id !== job.project_id) {
+    // Keep current selection; the card still lands under Standalone/project on next refresh.
+  }
+  await Promise.all([loadHistory(), refreshLibrary()]);
+  upsertLibraryJob(job);
 }
 
 async function pollJob(jobId) {
-  window.clearInterval(state.pollTimer);
+  stopPolling();
+  const token = ++state.pollToken;
+  state.pollJobId = jobId;
+  let sawRunning = false;
+
   const check = async () => {
+    if (token !== state.pollToken || state.pollJobId !== jobId) return null;
     try {
       const job = await api(`/api/generations/${jobId}`);
+      if (token !== state.pollToken || state.pollJobId !== jobId) return null;
+      // Never let a stale poll clobber a job the user just opened.
+      if (state.currentJob?.id && state.currentJob.id !== jobId) return null;
+
+      if (!TERMINAL_STATES.includes(job.status)) sawRunning = true;
       updateJobUI(job);
+      upsertLibraryJob(job);
+
       if (TERMINAL_STATES.includes(job.status)) {
         window.clearInterval(state.pollTimer);
+        state.pollTimer = null;
+        state.pollJobId = null;
         await loadHistory();
-        if (job.status === "complete") {
-          showToast(
-            job.media_type === "image"
-              ? "Your image is ready."
-              : job.media_type === "music"
-                ? "Your score is ready."
-                : "Your film is ready."
-          );
-        } else if (job.status === "planned") {
-          showToast("The direction is ready. Live rendering is off.");
-        } else if (job.status === "failed") {
-          showToast(job.error?.message || "The render stopped before it finished.");
+        await refreshLibrary();
+        if (token !== state.pollToken) return job;
+        upsertLibraryJob(job);
+        // Only toast when this poll watched the job finish (not when opening a completed one).
+        if (sawRunning) {
+          if (job.status === "complete") {
+            showToast(
+              job.media_type === "image"
+                ? "Your image is ready."
+                : job.media_type === "music"
+                  ? "Your score is ready."
+                  : "Your film is ready."
+            );
+          } else if (job.status === "planned") {
+            showToast("The direction is ready. Live rendering is off.");
+          } else if (job.status === "failed") {
+            showToast(job.error?.message || "The render stopped before it finished.");
+          }
         }
       }
+      return job;
     } catch (error) {
+      if (token !== state.pollToken) return null;
       window.clearInterval(state.pollTimer);
+      state.pollTimer = null;
+      state.pollJobId = null;
       showToast(error.message);
+      return null;
     }
   };
-  await check();
-  state.pollTimer = window.setInterval(check, 1500);
+
+  const first = await check();
+  if (token !== state.pollToken) return;
+  if (first && !TERMINAL_STATES.includes(first.status)) {
+    state.pollTimer = window.setInterval(check, 1500);
+  }
 }
 
 async function submitGeneration(event) {
@@ -857,13 +1024,14 @@ async function submitGeneration(event) {
       duration_seconds: Number($("#duration").value),
       reference_asset_id: referencePath,
     };
+    if (state.currentProject) payload.project_id = state.currentProject.id;
     const job = await api("/api/generations", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
-    setMode("workspace");
-    updateJobUI(job);
+    openJob(job, { poll: false });
+    await revealJobInLibrary(job);
     await pollJob(job.id);
   } catch (error) {
     setPromptError(error.message);
@@ -886,9 +1054,9 @@ async function refine(event) {
       body: JSON.stringify({ instruction }),
     });
     $("#refine").value = "";
-    setMode("workspace");
-    updateJobUI(job);
     showToast("Refinement started.");
+    openJob(job, { poll: false });
+    await revealJobInLibrary(job);
     await pollJob(job.id);
   } catch (error) {
     showToast(error.message);
@@ -901,23 +1069,429 @@ function makeHistoryItem(job) {
   const button = document.createElement("button");
   button.type = "button";
   button.className = "history-item";
+  button.draggable = job.status === "complete" && Boolean(job.media_url);
+  button.dataset.jobId = job.id;
   const title = document.createElement("strong");
   title.textContent = filmName(job.prompt);
   const meta = document.createElement("span");
   meta.textContent = `${job.media_type || "video"} · ${job.status}`;
   button.append(title, meta);
-  button.addEventListener("click", () => {
-    state.currentJob = job;
-    setMode("workspace");
-    updateJobUI(job);
-    if (!TERMINAL_STATES.includes(job.status)) pollJob(job.id);
+  button.addEventListener("dragstart", (event) => {
+    state.dragJobId = job.id;
+    event.dataTransfer.setData("text/plain", job.id);
+    event.dataTransfer.effectAllowed = "copyMove";
+    button.classList.add("is-dragging");
   });
+  button.addEventListener("dragend", () => {
+    state.dragJobId = null;
+    button.classList.remove("is-dragging");
+    clearDropTargets();
+  });
+  button.addEventListener("click", () => openJob(job));
   return button;
+}
+
+function makeArtifactCard(job, { removable = false } = {}) {
+  const card = document.createElement("button");
+  card.type = "button";
+  const running = !TERMINAL_STATES.includes(job.status);
+  card.className = `artifact-card artifact-card--${job.media_type || "video"}${
+    running ? " is-running" : ""
+  }`;
+  card.draggable = job.status === "complete" && Boolean(job.output_asset_id || job.media_url);
+  card.dataset.jobId = job.id;
+  const kind = document.createElement("span");
+  kind.className = "artifact-kind";
+  kind.textContent = job.media_type || "video";
+  const title = document.createElement("strong");
+  title.textContent = filmName(job.prompt);
+  const meta = document.createElement("span");
+  meta.className = "artifact-meta";
+  meta.textContent =
+    job.status === "complete" ? "Ready" : job.status === "failed" ? "Failed" : job.status;
+  card.append(kind, title, meta);
+  if (removable) {
+    const remove = document.createElement("span");
+    remove.className = "artifact-remove";
+    remove.textContent = "Remove";
+    remove.addEventListener("click", async (event) => {
+      event.stopPropagation();
+      await removeArtifactFromProject(job.id);
+    });
+    card.append(remove);
+  }
+  card.addEventListener("dragstart", (event) => {
+    state.dragJobId = job.id;
+    event.dataTransfer.setData("text/plain", job.id);
+    event.dataTransfer.effectAllowed = "copyMove";
+    card.classList.add("is-dragging");
+  });
+  card.addEventListener("dragend", () => {
+    state.dragJobId = null;
+    card.classList.remove("is-dragging");
+    clearDropTargets();
+  });
+  card.addEventListener("click", () => openJob(job));
+  return card;
+}
+
+function makeProjectCard(project) {
+  const card = document.createElement("button");
+  card.type = "button";
+  card.className = "project-card";
+  if (state.currentProject?.id === project.id) card.classList.add("is-active");
+  card.dataset.projectId = project.id;
+  card.dataset.drop = "project";
+  const title = document.createElement("strong");
+  title.textContent = project.title;
+  const meta = document.createElement("span");
+  const artifacts = project.artifact_count ?? (project.artifact_ids || []).length;
+  const clips = project.timeline_count ?? (project.timeline?.items || []).length;
+  meta.textContent = `${artifacts} · ${clips} on timeline`;
+  card.append(title, meta);
+  card.addEventListener("click", () => openProject(project));
+  bindProjectDropTarget(card, project.id);
+  return card;
+}
+
+function clearDropTargets() {
+  $$(".is-drop-target").forEach((el) => el.classList.remove("is-drop-target"));
+}
+
+function bindProjectDropTarget(element, projectId) {
+  element.addEventListener("dragover", (event) => {
+    if (!state.dragJobId) return;
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "move";
+    element.classList.add("is-drop-target");
+  });
+  element.addEventListener("dragleave", () => element.classList.remove("is-drop-target"));
+  element.addEventListener("drop", async (event) => {
+    event.preventDefault();
+    element.classList.remove("is-drop-target");
+    const jobId = event.dataTransfer.getData("text/plain") || state.dragJobId;
+    if (!jobId) return;
+    try {
+      await api(`/api/projects/${projectId}/artifacts`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ job_id: jobId }),
+      });
+      showToast("Added to project.");
+      await loadProjects();
+      await loadUnassigned();
+      if (state.currentProject?.id === projectId) await loadProjectJobs();
+    } catch (error) {
+      showToast(error.message);
+    }
+  });
+}
+
+function bindTimelineDropTarget() {
+  const track = $("#sequence-track");
+  if (!track || track.dataset.bound === "true") return;
+  track.dataset.bound = "true";
+  track.addEventListener("dragover", (event) => {
+    if (!state.dragJobId || !state.currentProject) return;
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "copy";
+    track.classList.add("is-drop-target");
+  });
+  track.addEventListener("dragleave", () => track.classList.remove("is-drop-target"));
+  track.addEventListener("drop", async (event) => {
+    event.preventDefault();
+    track.classList.remove("is-drop-target");
+    const jobId = event.dataTransfer.getData("text/plain") || state.dragJobId;
+    if (!jobId || !state.currentProject) return;
+    await addJobToTimeline(jobId);
+  });
+}
+
+async function addJobToTimeline(jobId) {
+  if (!state.currentProject) return;
+  let job =
+    state.projectJobs.find((item) => item.id === jobId) ||
+    state.unassignedJobs.find((item) => item.id === jobId) ||
+    state.currentJob;
+  if (!job || job.id !== jobId) {
+    try {
+      job = await api(`/api/generations/${jobId}`);
+    } catch (error) {
+      showToast(error.message);
+      return;
+    }
+  }
+  if (job.status !== "complete" || !(job.output_asset_id || job.media_url)) {
+    showToast("Only finished artifacts can go on the timeline.");
+    return;
+  }
+  if (job.media_type !== "video") {
+    showToast("Timeline merge currently supports video clips.");
+  }
+  const items = [...(state.currentProject.timeline?.items || [])];
+  if (items.some((item) => item.job_id === jobId)) {
+    showToast("That clip is already on the timeline.");
+    return;
+  }
+  items.push({
+    job_id: job.id,
+    asset_id: job.output_asset_id,
+    media_type: job.media_type || "video",
+    label: filmName(job.prompt),
+    duration_seconds: job.duration_seconds,
+  });
+  try {
+    const project = await api(`/api/projects/${state.currentProject.id}/timeline`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ items }),
+    });
+    state.currentProject = project;
+    renderSequence();
+    await loadProjectJobs();
+    await loadUnassigned();
+    showToast("Clip added to timeline.");
+  } catch (error) {
+    showToast(error.message);
+  }
+}
+
+async function removeTimelineItem(itemId) {
+  if (!state.currentProject) return;
+  const items = (state.currentProject.timeline?.items || []).filter((item) => item.id !== itemId);
+  try {
+    const project = await api(`/api/projects/${state.currentProject.id}/timeline`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ items }),
+    });
+    state.currentProject = project;
+    renderSequence();
+  } catch (error) {
+    showToast(error.message);
+  }
+}
+
+function renderSequence() {
+  const clips = $("#sequence-clips");
+  const empty = $("#sequence-empty");
+  const mergeButton = $("#merge-button");
+  if (!clips || !empty) return;
+  const items = state.currentProject?.timeline?.items || [];
+  clips.innerHTML = "";
+  empty.hidden = items.length > 0;
+  let videoCount = 0;
+  items.forEach((item, index) => {
+    if (item.media_type === "video") videoCount += 1;
+    const chip = document.createElement("div");
+    chip.className = "sequence-clip";
+    chip.draggable = true;
+    chip.dataset.itemId = item.id;
+    const label = document.createElement("strong");
+    label.textContent = item.label || `Clip ${index + 1}`;
+    const meta = document.createElement("span");
+    meta.textContent = item.media_type || "video";
+    const remove = document.createElement("button");
+    remove.type = "button";
+    remove.className = "sequence-remove";
+    remove.setAttribute("aria-label", "Remove from timeline");
+    remove.textContent = "×";
+    remove.addEventListener("click", (event) => {
+      event.stopPropagation();
+      removeTimelineItem(item.id);
+    });
+    chip.append(label, meta, remove);
+    chip.addEventListener("dragstart", (event) => {
+      event.dataTransfer.setData("application/x-timeline-item", item.id);
+      event.dataTransfer.effectAllowed = "move";
+      chip.classList.add("is-dragging");
+    });
+    chip.addEventListener("dragend", () => chip.classList.remove("is-dragging"));
+    chip.addEventListener("dragover", (event) => {
+      if (![...event.dataTransfer.types].includes("application/x-timeline-item")) return;
+      event.preventDefault();
+      chip.classList.add("is-drop-target");
+    });
+    chip.addEventListener("dragleave", () => chip.classList.remove("is-drop-target"));
+    chip.addEventListener("drop", async (event) => {
+      event.preventDefault();
+      chip.classList.remove("is-drop-target");
+      const draggedId = event.dataTransfer.getData("application/x-timeline-item");
+      if (!draggedId || draggedId === item.id) return;
+      const current = [...(state.currentProject.timeline?.items || [])];
+      const from = current.findIndex((entry) => entry.id === draggedId);
+      const to = current.findIndex((entry) => entry.id === item.id);
+      if (from < 0 || to < 0) return;
+      const [moved] = current.splice(from, 1);
+      current.splice(to, 0, moved);
+      try {
+        const project = await api(`/api/projects/${state.currentProject.id}/timeline`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ items: current }),
+        });
+        state.currentProject = project;
+        renderSequence();
+      } catch (error) {
+        showToast(error.message);
+      }
+    });
+    chip.addEventListener("click", async () => {
+      try {
+        const job = await api(`/api/generations/${item.job_id}`);
+        openJob(job);
+      } catch (error) {
+        showToast(error.message);
+      }
+    });
+    clips.append(chip);
+  });
+  if (mergeButton) mergeButton.disabled = videoCount < 2;
+}
+
+async function mergeTimeline() {
+  if (!state.currentProject) return;
+  const button = $("#merge-button");
+  button.disabled = true;
+  try {
+    const result = await api(`/api/projects/${state.currentProject.id}/merge`, {
+      method: "POST",
+    });
+    state.currentProject = result.project;
+    state.currentJob = result.job;
+    renderSequence();
+    updateJobUI(result.job);
+    await loadProjectJobs();
+    showToast("Merged timeline into one video.");
+  } catch (error) {
+    showToast(error.message);
+  } finally {
+    renderSequence();
+  }
+}
+
+async function removeArtifactFromProject(jobId) {
+  if (!state.currentProject) return;
+  try {
+    const result = await api(
+      `/api/projects/${state.currentProject.id}/artifacts/${jobId}`,
+      { method: "DELETE" }
+    );
+    state.currentProject = result.project;
+    renderSequence();
+    await loadProjectJobs();
+    await loadUnassigned();
+    await loadHistory();
+  } catch (error) {
+    showToast(error.message);
+  }
+}
+
+async function refreshLibrary() {
+  await Promise.all([loadProjects(), loadUnassigned(), loadProjectJobs()]);
+}
+
+async function loadProjects() {
+  try {
+    const { items } = await api("/api/projects");
+    state.projects = items;
+    const grid = $("#project-grid");
+    const empty = $("#projects-empty");
+    grid.innerHTML = "";
+    empty.hidden = items.length > 0;
+    items.forEach((project) => grid.append(makeProjectCard(project)));
+    syncProjectChrome();
+  } catch {
+    $("#projects-empty").hidden = false;
+  }
+}
+
+async function loadUnassigned() {
+  try {
+    const { items } = await api("/api/generations?unassigned=true");
+    state.unassignedJobs = items;
+    renderJobList($("#unassigned-list"), $("#unassigned-empty"), items);
+  } catch {
+    $("#unassigned-empty").hidden = false;
+  }
+}
+
+async function loadProjectJobs() {
+  const list = $("#project-artifact-list");
+  const empty = $("#project-library-empty");
+  if (!list || !empty) return;
+  if (!state.currentProject) {
+    state.projectJobs = [];
+    list.innerHTML = "";
+    empty.hidden = false;
+    return;
+  }
+  try {
+    const { items } = await api(`/api/generations?project_id=${state.currentProject.id}`);
+    state.projectJobs = items;
+    renderJobList(list, empty, items, { removable: true });
+  } catch {
+    empty.hidden = false;
+  }
+}
+
+async function openProject(project) {
+  try {
+    state.currentProject = await api(`/api/projects/${project.id}`);
+  } catch {
+    state.currentProject = project;
+  }
+  setLibrary(true);
+  syncProjectChrome();
+  renderSequence();
+  await loadProjectJobs();
+  await loadHistory();
+  if ($("#app").dataset.mode !== "workspace") setMode("home");
+}
+
+async function clearProject() {
+  state.currentProject = null;
+  syncProjectChrome();
+  renderSequence();
+  await loadProjectJobs();
+  await loadHistory();
+  if ($("#app").dataset.mode !== "workspace") setMode("home");
+}
+
+async function createProject(event) {
+  event.preventDefault();
+  if (!(await ensureSignedIn())) return;
+  const title = $("#project-title").value.trim();
+  if (!title) {
+    showToast("Give the project a name.");
+    $("#project-title").focus();
+    return;
+  }
+  const button = $("#project-create-button");
+  button.disabled = true;
+  try {
+    const project = await api("/api/projects", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title }),
+    });
+    $("#project-title").value = "";
+    await loadProjects();
+    await openProject(project);
+    showToast("Project created.");
+  } catch (error) {
+    showToast(error.message);
+  } finally {
+    button.disabled = false;
+  }
 }
 
 async function loadHistory() {
   try {
-    const { items } = await api("/api/generations");
+    const path = state.currentProject
+      ? `/api/generations?project_id=${state.currentProject.id}`
+      : "/api/generations";
+    const { items } = await api(path);
     const list = $("#history-list");
     list.innerHTML = "";
     if (!items.length) {
@@ -925,7 +1499,7 @@ async function loadHistory() {
       return;
     }
     $("#history").hidden = false;
-    items.slice(0, 6).forEach((job) => list.append(makeHistoryItem(job)));
+    items.slice(0, 8).forEach((job) => list.append(makeHistoryItem(job)));
   } catch {
     $("#history").hidden = true;
   }
@@ -962,7 +1536,8 @@ async function loadConfig() {
 }
 
 function startNewRender() {
-  window.clearInterval(state.pollTimer);
+  stopPolling();
+  state.mediaRefreshToken += 1;
   state.currentJob = null;
   setPromptError("");
   setMode("home");
@@ -972,6 +1547,7 @@ function startNewRender() {
 function bindEvents() {
   $("#generation-form").addEventListener("submit", submitGeneration);
   $("#refine-form").addEventListener("submit", refine);
+  $("#project-create-form").addEventListener("submit", createProject);
 
   $("#prompt").addEventListener("input", () => setPromptError(""));
 
@@ -996,9 +1572,18 @@ function bindEvents() {
   });
   $("#reference-clear").addEventListener("click", clearReference);
 
-  $("#home-button").addEventListener("click", () => setMode("home"));
+  $("#home-button").addEventListener("click", startNewRender);
+  $("#project-chip").addEventListener("click", () => {
+    setLibrary(true);
+    if (state.currentProject) setMode("home");
+  });
+  $("#clear-project-button").addEventListener("click", clearProject);
   $("#new-button").addEventListener("click", startNewRender);
   $("#notice-action").addEventListener("click", startNewRender);
+  $("#merge-button").addEventListener("click", mergeTimeline);
+  $("#library-toggle").addEventListener("click", () => {
+    setLibrary($("#app").dataset.library !== "open");
+  });
 
   $("#rail-toggle").addEventListener("click", () => {
     setRail($("#app").dataset.rail !== "open");
@@ -1022,13 +1607,16 @@ function bindEvents() {
   });
 
   bindTimelineControls();
+  bindTimelineDropTarget();
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
   bindEvents();
   setMediaType("video");
   setMode("home");
+  setLibrary(false);
   clearFilmstrip();
   await loadConfig();
+  await refreshLibrary();
   await loadHistory();
 });

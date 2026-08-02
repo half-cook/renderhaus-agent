@@ -157,6 +157,23 @@ def _tool_payload(content: Any) -> dict[str, Any] | None:
     return decoded if isinstance(decoded, dict) else None
 
 
+_TOOL_TRACE_TITLES = {
+    "text_to_video": "Seedance · text → video",
+    "image_to_video": "Seedance · image → video",
+    "get_video_task": "Seedance · poll video",
+    "text_to_image": "Seedream · text → image",
+    "image_to_image": "Seedream · image → image",
+    "generate_song": "Mureka · generate song",
+    "query_song_task": "Mureka · poll song",
+}
+
+
+def _tool_trace_title(name: str) -> str:
+    if name in _TOOL_TRACE_TITLES:
+        return _TOOL_TRACE_TITLES[name]
+    return name.replace("_", " ")
+
+
 def _tool_trace_events(tool_events: list[dict[str, Any]]) -> list[dict[str, Any]]:
     traces: list[dict[str, Any]] = []
     for index, event in enumerate(tool_events):
@@ -183,7 +200,7 @@ def _tool_trace_events(tool_events: list[dict[str, Any]]) -> list[dict[str, Any]
             {
                 "id": f"tool-{index}-{name}",
                 "kind": "tool",
-                "title": name.replace("_", " "),
+                "title": _tool_trace_title(name),
                 "detail": detail,
                 "status": status,
             }

@@ -212,6 +212,14 @@
         "documentation": {}
     },
     {
+        "label": "annotations",
+        "importPath": "__future__",
+        "description": "__future__",
+        "isExtraImport": true,
+        "detail": "__future__",
+        "documentation": {}
+    },
+    {
         "label": "os",
         "kind": 6,
         "isExtraImport": true,
@@ -407,12 +415,28 @@
         "documentation": {}
     },
     {
+        "label": "Any",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
         "label": "boto3",
         "kind": 6,
         "isExtraImport": true,
         "importPath": "boto3",
         "description": "boto3",
         "detail": "boto3",
+        "documentation": {}
+    },
+    {
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
+        "isExtraImport": true,
+        "detail": "pathlib",
         "documentation": {}
     },
     {
@@ -738,6 +762,14 @@
     },
     {
         "label": "load_local_env",
+        "importPath": "agent.config",
+        "description": "agent.config",
+        "isExtraImport": true,
+        "detail": "agent.config",
+        "documentation": {}
+    },
+    {
+        "label": "ROOT",
         "importPath": "agent.config",
         "description": "agent.config",
         "isExtraImport": true,
@@ -1377,6 +1409,14 @@
         "documentation": {}
     },
     {
+        "label": "StreamingResponse",
+        "importPath": "fastapi.responses",
+        "description": "fastapi.responses",
+        "isExtraImport": true,
+        "detail": "fastapi.responses",
+        "documentation": {}
+    },
+    {
         "label": "StaticFiles",
         "importPath": "fastapi.staticfiles",
         "description": "fastapi.staticfiles",
@@ -1402,6 +1442,14 @@
     },
     {
         "label": "init_assets_db",
+        "importPath": "web.assets",
+        "description": "web.assets",
+        "isExtraImport": true,
+        "detail": "web.assets",
+        "documentation": {}
+    },
+    {
+        "label": "iter_asset_bytes",
         "importPath": "web.assets",
         "description": "web.assets",
         "isExtraImport": true,
@@ -1505,6 +1553,54 @@
         "documentation": {}
     },
     {
+        "label": "ProjectStore",
+        "importPath": "web.projects",
+        "description": "web.projects",
+        "isExtraImport": true,
+        "detail": "web.projects",
+        "documentation": {}
+    },
+    {
+        "label": "add_artifact",
+        "importPath": "web.projects",
+        "description": "web.projects",
+        "isExtraImport": true,
+        "detail": "web.projects",
+        "documentation": {}
+    },
+    {
+        "label": "merge_video_paths",
+        "importPath": "web.projects",
+        "description": "web.projects",
+        "isExtraImport": true,
+        "detail": "web.projects",
+        "documentation": {}
+    },
+    {
+        "label": "public_project",
+        "importPath": "web.projects",
+        "description": "web.projects",
+        "isExtraImport": true,
+        "detail": "web.projects",
+        "documentation": {}
+    },
+    {
+        "label": "remove_artifact",
+        "importPath": "web.projects",
+        "description": "web.projects",
+        "isExtraImport": true,
+        "detail": "web.projects",
+        "documentation": {}
+    },
+    {
+        "label": "set_timeline_items",
+        "importPath": "web.projects",
+        "description": "web.projects",
+        "isExtraImport": true,
+        "detail": "web.projects",
+        "documentation": {}
+    },
+    {
         "label": "hmac",
         "kind": 6,
         "isExtraImport": true,
@@ -1559,6 +1655,15 @@
         "description": "fastapi.security",
         "isExtraImport": true,
         "detail": "fastapi.security",
+        "documentation": {}
+    },
+    {
+        "label": "tempfile",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "tempfile",
+        "description": "tempfile",
+        "detail": "tempfile",
         "documentation": {}
     },
     {
@@ -1990,6 +2095,15 @@
         "importPath": "agent.service",
         "description": "agent.service",
         "peekOfCode": "_runtime_lock = asyncio.Lock()\n_cached_tools: dict[str, Any] | None = None\n_cached_video_agent: Any | None = None\n_cached_image_agent: Any | None = None\n_cached_music_agent: Any | None = None\ndef _jsonable(value: Any) -> Any:\n    if value is None or isinstance(value, str | int | float | bool):\n        return value\n    if isinstance(value, dict):\n        return {str(key): _jsonable(item) for key, item in value.items()}",
+        "detail": "agent.service",
+        "documentation": {}
+    },
+    {
+        "label": "_TOOL_TRACE_TITLES",
+        "kind": 5,
+        "importPath": "agent.service",
+        "description": "agent.service",
+        "peekOfCode": "_TOOL_TRACE_TITLES = {\n    \"text_to_video\": \"Seedance · text → video\",\n    \"image_to_video\": \"Seedance · image → video\",\n    \"get_video_task\": \"Seedance · poll video\",\n    \"text_to_image\": \"Seedream · text → image\",\n    \"image_to_image\": \"Seedream · image → image\",\n    \"generate_song\": \"Mureka · generate song\",\n    \"query_song_task\": \"Mureka · poll song\",\n}\ndef _tool_trace_title(name: str) -> str:",
         "detail": "agent.service",
         "documentation": {}
     },
@@ -2493,7 +2607,7 @@
         "kind": 6,
         "importPath": "web.app",
         "description": "web.app",
-        "peekOfCode": "class GenerationRequest(BaseModel):\n    prompt: str = Field(min_length=3, max_length=4000)\n    media_type: Literal[\"video\", \"image\", \"music\"] = \"video\"\n    vibe: str = Field(default=\"quiet luxury\", max_length=120)\n    aspect_ratio: str = Field(default=\"16:9\", pattern=r\"^(16:9|9:16|1:1)$\")\n    duration_seconds: int = Field(default=10, ge=MIN_VIDEO_SECONDS, le=MAX_VIDEO_SECONDS)\n    reference_asset_id: str | None = Field(default=None, pattern=r\"^[a-f0-9]{32}$\")\nclass RefinementRequest(BaseModel):\n    instruction: str = Field(min_length=3, max_length=2000)\nclass JobStore:",
+        "peekOfCode": "class GenerationRequest(BaseModel):\n    prompt: str = Field(min_length=3, max_length=4000)\n    media_type: Literal[\"video\", \"image\", \"music\"] = \"video\"\n    vibe: str = Field(default=\"quiet luxury\", max_length=120)\n    aspect_ratio: str = Field(default=\"16:9\", pattern=r\"^(16:9|9:16|1:1)$\")\n    duration_seconds: int = Field(default=10, ge=MIN_VIDEO_SECONDS, le=MAX_VIDEO_SECONDS)\n    reference_asset_id: str | None = Field(default=None, pattern=r\"^[a-f0-9]{32}$\")\n    project_id: str | None = Field(default=None, pattern=r\"^[a-f0-9]{32}$\")\nclass RefinementRequest(BaseModel):\n    instruction: str = Field(min_length=3, max_length=2000)",
         "detail": "web.app",
         "documentation": {}
     },
@@ -2502,7 +2616,52 @@
         "kind": 6,
         "importPath": "web.app",
         "description": "web.app",
-        "peekOfCode": "class RefinementRequest(BaseModel):\n    instruction: str = Field(min_length=3, max_length=2000)\nclass JobStore:\n    def __init__(self, directory: Path) -> None:\n        self.directory = directory\n        self._jobs: dict[str, dict[str, Any]] = {}\n        self._lock = asyncio.Lock()\n    async def load(self) -> list[str]:\n        self.directory.mkdir(parents=True, exist_ok=True)\n        resumable: list[str] = []",
+        "peekOfCode": "class RefinementRequest(BaseModel):\n    instruction: str = Field(min_length=3, max_length=2000)\nclass ProjectCreateRequest(BaseModel):\n    title: str = Field(min_length=1, max_length=120)\n    description: str = Field(default=\"\", max_length=2000)\nclass ProjectUpdateRequest(BaseModel):\n    title: str | None = Field(default=None, min_length=1, max_length=120)\n    description: str | None = Field(default=None, max_length=2000)\nclass ProjectArtifactRequest(BaseModel):\n    job_id: str = Field(pattern=r\"^[a-f0-9]{32}$\")",
+        "detail": "web.app",
+        "documentation": {}
+    },
+    {
+        "label": "ProjectCreateRequest",
+        "kind": 6,
+        "importPath": "web.app",
+        "description": "web.app",
+        "peekOfCode": "class ProjectCreateRequest(BaseModel):\n    title: str = Field(min_length=1, max_length=120)\n    description: str = Field(default=\"\", max_length=2000)\nclass ProjectUpdateRequest(BaseModel):\n    title: str | None = Field(default=None, min_length=1, max_length=120)\n    description: str | None = Field(default=None, max_length=2000)\nclass ProjectArtifactRequest(BaseModel):\n    job_id: str = Field(pattern=r\"^[a-f0-9]{32}$\")\nclass TimelineItemModel(BaseModel):\n    id: str | None = None",
+        "detail": "web.app",
+        "documentation": {}
+    },
+    {
+        "label": "ProjectUpdateRequest",
+        "kind": 6,
+        "importPath": "web.app",
+        "description": "web.app",
+        "peekOfCode": "class ProjectUpdateRequest(BaseModel):\n    title: str | None = Field(default=None, min_length=1, max_length=120)\n    description: str | None = Field(default=None, max_length=2000)\nclass ProjectArtifactRequest(BaseModel):\n    job_id: str = Field(pattern=r\"^[a-f0-9]{32}$\")\nclass TimelineItemModel(BaseModel):\n    id: str | None = None\n    job_id: str = Field(pattern=r\"^[a-f0-9]{32}$\")\n    asset_id: str | None = None\n    media_type: Literal[\"video\", \"image\", \"music\"] = \"video\"",
+        "detail": "web.app",
+        "documentation": {}
+    },
+    {
+        "label": "ProjectArtifactRequest",
+        "kind": 6,
+        "importPath": "web.app",
+        "description": "web.app",
+        "peekOfCode": "class ProjectArtifactRequest(BaseModel):\n    job_id: str = Field(pattern=r\"^[a-f0-9]{32}$\")\nclass TimelineItemModel(BaseModel):\n    id: str | None = None\n    job_id: str = Field(pattern=r\"^[a-f0-9]{32}$\")\n    asset_id: str | None = None\n    media_type: Literal[\"video\", \"image\", \"music\"] = \"video\"\n    label: str = Field(default=\"\", max_length=120)\n    duration_seconds: float | int | None = None\nclass TimelineUpdateRequest(BaseModel):",
+        "detail": "web.app",
+        "documentation": {}
+    },
+    {
+        "label": "TimelineItemModel",
+        "kind": 6,
+        "importPath": "web.app",
+        "description": "web.app",
+        "peekOfCode": "class TimelineItemModel(BaseModel):\n    id: str | None = None\n    job_id: str = Field(pattern=r\"^[a-f0-9]{32}$\")\n    asset_id: str | None = None\n    media_type: Literal[\"video\", \"image\", \"music\"] = \"video\"\n    label: str = Field(default=\"\", max_length=120)\n    duration_seconds: float | int | None = None\nclass TimelineUpdateRequest(BaseModel):\n    items: list[TimelineItemModel] = Field(default_factory=list)\nclass JobStore:",
+        "detail": "web.app",
+        "documentation": {}
+    },
+    {
+        "label": "TimelineUpdateRequest",
+        "kind": 6,
+        "importPath": "web.app",
+        "description": "web.app",
+        "peekOfCode": "class TimelineUpdateRequest(BaseModel):\n    items: list[TimelineItemModel] = Field(default_factory=list)\nclass JobStore:\n    def __init__(self, directory: Path) -> None:\n        self.directory = directory\n        self._jobs: dict[str, dict[str, Any]] = {}\n        self._lock = asyncio.Lock()\n    async def load(self) -> list[str]:\n        self.directory.mkdir(parents=True, exist_ok=True)\n        resumable: list[str] = []",
         "detail": "web.app",
         "documentation": {}
     },
@@ -2610,7 +2769,16 @@
         "kind": 5,
         "importPath": "web.app",
         "description": "web.app",
-        "peekOfCode": "store = JobStore(STATE_DIR)\ngeneration_slots = asyncio.Semaphore(2)\ndef _ensure_output_asset(job: dict[str, Any]) -> bool:\n    \"\"\"Register a legacy `_output_path` as an owned asset. Returns True if job mutated.\"\"\"\n    asset_id = job.get(\"output_asset_id\")\n    if isinstance(asset_id, str) and asset_id:\n        return False\n    output_path = job.get(\"_output_path\")\n    if not isinstance(output_path, str) or not output_path:\n        return False",
+        "peekOfCode": "store = JobStore(STATE_DIR)\nprojects = ProjectStore()\ngeneration_slots = asyncio.Semaphore(2)\ndef _ensure_output_asset(job: dict[str, Any]) -> bool:\n    \"\"\"Register a legacy `_output_path` as an owned asset. Returns True if job mutated.\"\"\"\n    asset_id = job.get(\"output_asset_id\")\n    if isinstance(asset_id, str) and asset_id:\n        return False\n    output_path = job.get(\"_output_path\")\n    if not isinstance(output_path, str) or not output_path:",
+        "detail": "web.app",
+        "documentation": {}
+    },
+    {
+        "label": "projects",
+        "kind": 5,
+        "importPath": "web.app",
+        "description": "web.app",
+        "peekOfCode": "projects = ProjectStore()\ngeneration_slots = asyncio.Semaphore(2)\ndef _ensure_output_asset(job: dict[str, Any]) -> bool:\n    \"\"\"Register a legacy `_output_path` as an owned asset. Returns True if job mutated.\"\"\"\n    asset_id = job.get(\"output_asset_id\")\n    if isinstance(asset_id, str) and asset_id:\n        return False\n    output_path = job.get(\"_output_path\")\n    if not isinstance(output_path, str) or not output_path:\n        return False",
         "detail": "web.app",
         "documentation": {}
     },
@@ -2759,6 +2927,15 @@
         "documentation": {}
     },
     {
+        "label": "iter_asset_bytes",
+        "kind": 2,
+        "importPath": "web.assets",
+        "description": "web.assets",
+        "peekOfCode": "def iter_asset_bytes(asset: Asset, *, chunk_size: int = 1024 * 1024):\n    \"\"\"Stream asset bytes from S3 for same-origin proxy responses.\"\"\"\n    response = _s3().get_object(Bucket=_require_bucket(), Key=asset.storage_key)\n    body = response[\"Body\"]\n    try:\n        while True:\n            chunk = body.read(chunk_size)\n            if not chunk:\n                break\n            yield chunk",
+        "detail": "web.assets",
+        "documentation": {}
+    },
+    {
         "label": "sign_content_url",
         "kind": 2,
         "importPath": "web.assets",
@@ -2900,6 +3077,87 @@
         "description": "web.auth",
         "peekOfCode": "AuthUser = Annotated[RequestState | None, Depends(require_auth)]\ndef current_user_id(auth: RequestState | None) -> str:\n    \"\"\"Clerk subject when signed in; stable local owner when Clerk is off.\"\"\"\n    if auth is not None and auth.payload:\n        subject = auth.payload.get(\"sub\")\n        if isinstance(subject, str) and subject:\n            return subject\n    if clerk_enabled():\n        raise HTTPException(\n            status_code=401,",
         "detail": "web.auth",
+        "documentation": {}
+    },
+    {
+        "label": "ProjectStore",
+        "kind": 6,
+        "importPath": "web.projects",
+        "description": "web.projects",
+        "peekOfCode": "class ProjectStore:\n    def __init__(self, directory: Path | None = None) -> None:\n        self.directory = directory or PROJECTS_DIR\n        self._projects: dict[str, dict[str, Any]] = {}\n        self._lock = asyncio.Lock()\n    async def load(self) -> None:\n        self.directory.mkdir(parents=True, exist_ok=True)\n        for path in self.directory.glob(\"*.json\"):\n            try:\n                project = json.loads(path.read_text())",
+        "detail": "web.projects",
+        "documentation": {}
+    },
+    {
+        "label": "public_project",
+        "kind": 2,
+        "importPath": "web.projects",
+        "description": "web.projects",
+        "peekOfCode": "def public_project(project: dict[str, Any]) -> dict[str, Any]:\n    public = {key: project.get(key) for key in PUBLIC_PROJECT_FIELDS}\n    timeline = project.get(\"timeline\") or _empty_timeline()\n    items = timeline.get(\"items\") if isinstance(timeline, dict) else []\n    public[\"timeline\"] = {\"items\": list(items or [])}\n    public[\"artifact_ids\"] = list(project.get(\"artifact_ids\") or [])\n    public[\"artifact_count\"] = len(public[\"artifact_ids\"])\n    public[\"timeline_count\"] = len(public[\"timeline\"][\"items\"])\n    return public\ndef add_artifact(project: dict[str, Any], job_id: str) -> bool:",
+        "detail": "web.projects",
+        "documentation": {}
+    },
+    {
+        "label": "add_artifact",
+        "kind": 2,
+        "importPath": "web.projects",
+        "description": "web.projects",
+        "peekOfCode": "def add_artifact(project: dict[str, Any], job_id: str) -> bool:\n    \"\"\"Add a generation id to the project library. Returns True if changed.\"\"\"\n    artifacts = list(project.get(\"artifact_ids\") or [])\n    if job_id in artifacts:\n        return False\n    artifacts.append(job_id)\n    project[\"artifact_ids\"] = artifacts\n    return True\ndef remove_artifact(project: dict[str, Any], job_id: str) -> bool:\n    artifacts = list(project.get(\"artifact_ids\") or [])",
+        "detail": "web.projects",
+        "documentation": {}
+    },
+    {
+        "label": "remove_artifact",
+        "kind": 2,
+        "importPath": "web.projects",
+        "description": "web.projects",
+        "peekOfCode": "def remove_artifact(project: dict[str, Any], job_id: str) -> bool:\n    artifacts = list(project.get(\"artifact_ids\") or [])\n    if job_id not in artifacts:\n        return False\n    project[\"artifact_ids\"] = [item for item in artifacts if item != job_id]\n    timeline = project.get(\"timeline\") or _empty_timeline()\n    items = [\n        item\n        for item in (timeline.get(\"items\") or [])\n        if item.get(\"job_id\") != job_id",
+        "detail": "web.projects",
+        "documentation": {}
+    },
+    {
+        "label": "set_timeline_items",
+        "kind": 2,
+        "importPath": "web.projects",
+        "description": "web.projects",
+        "peekOfCode": "def set_timeline_items(\n    project: dict[str, Any],\n    items: list[dict[str, Any]],\n) -> None:\n    cleaned: list[dict[str, Any]] = []\n    for raw in items:\n        job_id = raw.get(\"job_id\")\n        if not isinstance(job_id, str) or not job_id:\n            continue\n        cleaned.append(",
+        "detail": "web.projects",
+        "documentation": {}
+    },
+    {
+        "label": "ffmpeg_available",
+        "kind": 2,
+        "importPath": "web.projects",
+        "description": "web.projects",
+        "peekOfCode": "def ffmpeg_available() -> bool:\n    return shutil.which(\"ffmpeg\") is not None\ndef merge_video_paths(\n    paths: list[Path],\n    *,\n    output_path: Path,\n) -> Path:\n    \"\"\"Concatenate video files with ffmpeg. All inputs should be playable MP4s.\"\"\"\n    if len(paths) < 2:\n        raise ValueError(\"Merge needs at least two clips.\")",
+        "detail": "web.projects",
+        "documentation": {}
+    },
+    {
+        "label": "merge_video_paths",
+        "kind": 2,
+        "importPath": "web.projects",
+        "description": "web.projects",
+        "peekOfCode": "def merge_video_paths(\n    paths: list[Path],\n    *,\n    output_path: Path,\n) -> Path:\n    \"\"\"Concatenate video files with ffmpeg. All inputs should be playable MP4s.\"\"\"\n    if len(paths) < 2:\n        raise ValueError(\"Merge needs at least two clips.\")\n    if not ffmpeg_available():\n        raise RuntimeError(\"ffmpeg is not installed on this machine.\")",
+        "detail": "web.projects",
+        "documentation": {}
+    },
+    {
+        "label": "PROJECTS_DIR",
+        "kind": 5,
+        "importPath": "web.projects",
+        "description": "web.projects",
+        "peekOfCode": "PROJECTS_DIR = ROOT / \".renderhaus\" / \"projects\"\nPUBLIC_PROJECT_FIELDS = {\n    \"id\",\n    \"schema_version\",\n    \"title\",\n    \"description\",\n    \"user_id\",\n    \"created_at\",\n    \"updated_at\",\n    \"artifact_ids\",",
+        "detail": "web.projects",
+        "documentation": {}
+    },
+    {
+        "label": "PUBLIC_PROJECT_FIELDS",
+        "kind": 5,
+        "importPath": "web.projects",
+        "description": "web.projects",
+        "peekOfCode": "PUBLIC_PROJECT_FIELDS = {\n    \"id\",\n    \"schema_version\",\n    \"title\",\n    \"description\",\n    \"user_id\",\n    \"created_at\",\n    \"updated_at\",\n    \"artifact_ids\",\n    \"timeline\",",
+        "detail": "web.projects",
         "documentation": {}
     }
 ]

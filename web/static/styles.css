@@ -49,6 +49,7 @@
 
   --bar-h: 48px;
   --rail-w: 360px;
+  --library-w: 260px;
 
   /* One light source, above. Shadows carry the background hue. */
   --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.48);
@@ -334,6 +335,7 @@ textarea {
   background: rgba(24, 24, 24, 0.72);
   backdrop-filter: blur(24px) saturate(1.2);
   box-shadow: var(--shadow-md), var(--inner-light);
+  z-index: calc(var(--z-header) + 1);
 }
 
 [data-mode="workspace"] .titlebar {
@@ -357,6 +359,16 @@ textarea {
   place-items: center;
   padding: 96px 24px 80px;
   overflow: hidden;
+  transition: padding var(--dur) var(--ease);
+}
+
+/* Keep the composer clear of the fixed library panel when it is open. */
+.app[data-library="open"][data-mode="home"] .home {
+  padding-left: calc(var(--library-w) + 24px);
+}
+
+.app[data-library="open"][data-mode="workspace"] .workspace {
+  padding-left: var(--library-w);
 }
 
 /* Depth comes from real imagery held at low opacity, never an ambient wash. */
@@ -1277,6 +1289,13 @@ a.brand,
   background: var(--surface-2);
 }
 
+.timeline-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .timeline-label,
 .timeline-clock {
   font-family: var(--mono);
@@ -1700,4 +1719,321 @@ a.brand,
     width: 32px;
     padding: 0;
   }
+
+}
+
+/* ==========================================================================
+   Library sidebar · projects + standalone
+   ========================================================================== */
+
+.project-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 160px;
+  cursor: pointer;
+}
+
+.project-chip span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.project-chip .icon {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+}
+
+.library {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: var(--library-w);
+  z-index: calc(var(--z-header) + 5);
+  border-right: 1px solid var(--line);
+  background: #181818;
+  box-shadow: var(--shadow-md);
+  transform: translateX(0);
+  transition: transform var(--dur) var(--ease), opacity var(--dur) var(--ease);
+}
+
+.app[data-library="closed"] .library {
+  transform: translateX(-105%);
+  pointer-events: none;
+  opacity: 0;
+}
+
+.library-panel {
+  height: 100%;
+  overflow-y: auto;
+  padding: 88px 14px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+[data-mode="workspace"] .library-panel {
+  padding-top: 16px;
+}
+
+[data-mode="workspace"] .library {
+  top: var(--bar-h);
+}
+
+.library-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
+.library-section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.library-section-head .eyebrow {
+  margin: 0;
+}
+
+.inbox-hint,
+.library-empty {
+  margin: 0;
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--text-muted);
+}
+
+.project-create--sidebar {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+}
+
+.project-create--sidebar input {
+  flex: 1;
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background: var(--bg);
+  padding: 8px 10px;
+  outline: none;
+  font-size: 14px;
+  line-height: 20px;
+  transition: border-color var(--dur-micro) var(--ease), background var(--dur-micro) var(--ease);
+}
+
+.project-create--sidebar input:focus {
+  border-color: var(--line-strong);
+  background: var(--surface-2);
+}
+
+.project-create--sidebar .button {
+  flex-shrink: 0;
+  width: 32px;
+  padding: 0;
+  justify-content: center;
+}
+
+.sidebar-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.project-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  width: 100%;
+  text-align: left;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-xl);
+  background: var(--bg);
+  transition:
+    border-color var(--dur-micro) var(--ease),
+    background var(--dur-micro) var(--ease),
+    transform var(--dur-micro) var(--ease);
+}
+
+.project-card strong {
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 600;
+}
+
+.project-card span {
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--text-muted);
+}
+
+.project-card:hover,
+.project-card.is-active {
+  border-color: var(--line-strong);
+  background: var(--surface-2);
+}
+
+.project-card.is-active {
+  box-shadow: inset 2px 0 0 var(--text);
+}
+
+.project-card:active {
+  transform: scale(0.98);
+}
+
+.project-card.is-drop-target,
+.sequence-track.is-drop-target,
+.sequence-clip.is-drop-target {
+  border-color: var(--text);
+  background: var(--surface-3);
+  outline: 1px dashed rgba(255, 255, 255, 0.35);
+  outline-offset: -4px;
+}
+
+.artifact-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  width: 100%;
+  text-align: left;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background: var(--bg);
+  cursor: grab;
+  transition:
+    border-color var(--dur-micro) var(--ease),
+    background var(--dur-micro) var(--ease),
+    transform var(--dur-micro) var(--ease);
+}
+
+.artifact-card:hover {
+  border-color: var(--line-strong);
+  background: var(--surface-2);
+}
+
+.artifact-card.is-running .artifact-meta {
+  color: var(--hold);
+}
+
+.artifact-card:active,
+.artifact-card.is-dragging,
+.history-item.is-dragging,
+.sequence-clip.is-dragging {
+  cursor: grabbing;
+  opacity: 0.72;
+  transform: scale(0.98);
+}
+
+.artifact-kind {
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--text-faint);
+  text-transform: lowercase;
+}
+
+.artifact-card strong {
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 600;
+}
+
+.artifact-meta,
+.artifact-remove {
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--text-muted);
+}
+
+.artifact-remove:hover {
+  color: var(--text);
+}
+
+.sequence-track {
+  margin: 0;
+  padding: 12px;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface-2);
+  min-height: 72px;
+}
+
+.sequence-empty {
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--text-faint);
+  padding: 16px 4px;
+}
+
+.sequence-clips {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+}
+
+.sequence-clip {
+  position: relative;
+  flex: 0 0 140px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-lg);
+  background: var(--surface-3);
+  cursor: grab;
+}
+
+.sequence-clip strong {
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 600;
+  padding-right: 16px;
+}
+
+.sequence-clip span {
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--text-muted);
+}
+
+.sequence-remove {
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  width: 20px;
+  height: 20px;
+  color: var(--text-muted);
+  font-size: 16px;
+  line-height: 20px;
+}
+
+.sequence-remove:hover {
+  color: var(--text);
+}
+
+.button--compact {
+  min-height: 32px;
+  padding: 6px 10px;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 600;
+}
+
+#library-toggle.is-active,
+.app[data-library="open"] #library-toggle {
+  background: var(--accent-wash);
 }

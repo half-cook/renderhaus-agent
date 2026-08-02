@@ -416,6 +416,23 @@ def presigned_content_url(asset: Asset, *, ttl_seconds: int = CONTENT_URL_TTL_SE
     )
 
 
+def iter_asset_bytes(asset: Asset, *, chunk_size: int = 1024 * 1024):
+    """Stream asset bytes from S3 for same-origin proxy responses."""
+    response = _s3().get_object(Bucket=_require_bucket(), Key=asset.storage_key)
+    body = response["Body"]
+    try:
+        while True:
+            chunk = body.read(chunk_size)
+            if not chunk:
+                break
+            yield chunk
+    finally:
+        try:
+            body.close()
+        except Exception:
+            pass
+
+
 def sign_content_url(asset_id: str, *, ttl_seconds: int = CONTENT_URL_TTL_SECONDS) -> str:
     """App-level opaque URL; the handler redirects to an S3 presigned GET."""
     exp = int(time.time()) + ttl_seconds
