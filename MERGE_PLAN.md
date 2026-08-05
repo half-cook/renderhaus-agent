@@ -96,10 +96,34 @@ Note: `docs/` doesn't actually collide on file paths — renderhaus-agent's `doc
       status body, `/api/*` and everything else stays JSON-only. Dropped the matching
       `[tool.setuptools.package-data]` block in `pyproject.toml`. See §6 for the now-orphaned
       `scripts/generate_ui_assets.py`.
-- [ ] **8.** Update root `README.md` to describe the combined structure and link `ARCHITECTURE.md`.
-- [ ] **9.** Add `next.config.ts` `rewrites()` proxying `/api/*` → `http://127.0.0.1:8000` for local dev.
-- [ ] **10.** Verify both halves run together locally: `server/` (FastAPI) + `web/` (Next.js) up at
-      once, a basic API call round-trips through the proxy.
+- [x] **8.** Updated root `README.md`: two-process dev setup, structure section, links to
+      `ARCHITECTURE.md`/`MERGE_PLAN.md`, `:3000` added to the Clerk `CLERK_AUTHORIZED_PARTIES`
+      example. Also fixed a stale `web/app.py` path reference in
+      `docs/architecture/long-video-system-design.md` → `server/app.py`.
+- [x] **9.** Added `web/next.config.ts` `rewrites()`: `/api/:path*` → `BACKEND_ORIGIN`
+      (`http://127.0.0.1:8000` by default, overridable via env). Confirmed against this repo's
+      pinned Next.js 16.2.12 docs (`web/AGENTS.md` warns this version has non-standard APIs vs.
+      training data) that `rewrites()` + external-destination rewrites are still supported as-is.
+- [x] **10.** Verified. `server/`: `.venv` built with Homebrew Python 3.13 (system `python3` was
+      3.9.6, below the `>=3.11` requirement in `pyproject.toml`), `pip install -e .` clean,
+      `from server.app import app` imports and lists all expected routes with no dead `/static`
+      routes. Full live boot needs real AWS credentials (`assets.py`'s `init_assets_db()` requires
+      `AWS_S3_BUCKET`) — pre-existing requirement, unrelated to this merge, not exercised here.
+      `web/`: `npm install` (491M `node_modules` had to be reinstalled — see note below),
+      `npm run dev` serves `/` with 200, `npx tsc --noEmit` clean. Proxy itself verified end-to-end
+      against a throwaway stub standing in for the backend (avoids needing real AWS): stub served
+      `GET /api/config` on `:8000`, `curl http://localhost:3000/api/config` through the Next.js dev
+      server returned the stub's body — rewrite confirmed working. Stub and dev server torn down
+      after.
+
+  **Correction on `web/node_modules`**: step 4's commit message called the untracked Next.js
+  artifacts found in the old `web/` path (during the branch switch) "checkout cruft" and deleted
+  them. That was wrong — they were the real, previously-installed `node_modules` (488M) from
+  before any of this branch surgery, left in place because untracked/gitignored files survive
+  `git checkout` across branches. Nothing precious was lost (fully reproducible from
+  `package-lock.json`, no local patches), but it did mean an extra `npm install` was needed here
+  that shouldn't have been necessary. Flagging so it doesn't read as intentional in the git log.
+
 - [ ] **11.** Design pass on timeline reconciliation (§2) — separate follow-up, not required for the
       merge to be "done," but tracked here so it doesn't get lost.
 - [ ] **12.** Push branch / open PR — only after explicit confirmation (§3).
