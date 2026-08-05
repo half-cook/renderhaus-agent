@@ -1,0 +1,158 @@
+.app {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+header h1 {
+  font-size: 22px;
+  margin: 0 0 4px;
+}
+
+header p {
+  max-width: 720px;
+  font-size: 14px;
+  color: var(--text);
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 20px;
+  padding: 12px 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.control-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.control-label {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text);
+  margin-right: 4px;
+}
+
+.control-group button {
+  font: inherit;
+  font-size: 13px;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-h);
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.control-group button.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.stats {
+  display: flex;
+  gap: 18px;
+  margin-left: auto;
+}
+
+.stats > div {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 64px;
+}
+
+.stats strong {
+  font-size: 20px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-h);
+}
+
+.stats span {
+  font-size: 11px;
+  color: var(--text);
+}
+
+.stage {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.timeline-surface {
+  position: relative;
+  overflow: hidden;
+  cursor: grab;
+  touch-action: none;
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent,
+    transparent 61px,
+    var(--border) 61px,
+    var(--border) 62px
+  );
+}
+
+.timeline-surface:active {
+  cursor: grabbing;
+}
+
+.dom-world {
+  position: absolute;
+  inset: 0;
+  will-change: transform;
+}
+
+.dom-clip {
+  position: absolute;
+  border-radius: 4px;
+  box-sizing: border-box;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+}
+
+.dom-clip-label {
+  display: block;
+  padding: 4px 6px;
+  font-size: 11px;
+  color: rgba(0, 0, 0, 0.65);
+  white-space: nowrap;
+}
+
+.playhead {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 2px;
+  height: 100%;
+  background: #ff3b3b;
+  pointer-events: none;
+  will-change: transform;
+}
+
+footer p {
+  font-size: 12px;
+  color: var(--text);
+}
+
+footer code {
+  font-size: 11px;
+}

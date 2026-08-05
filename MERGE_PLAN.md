@@ -1,0 +1,108 @@
+# Merge plan — warm-light → renderhaus-agent
+
+Living document. Update this as decisions get made and steps get done — don't let it drift out
+of sync with reality. Status tags follow `ARCHITECTURE.md`'s convention: `[DONE]`, `[IN PROGRESS]`,
+`[TODO]`, `[OPEN QUESTION]` (undecided, needs discussion before it can move to TODO).
+
+## 1. Goal
+
+Combine two codebases for the same product into one repo:
+
+- **warm-light** (this repo, uncommitted) — Next.js/TypeScript browser timeline editor. The
+  manual-editing engine (Layer A in `ARCHITECTURE.md`), plus the eventual agent-orchestrator UI
+  (Layer B) on top of it.
+- **[renderhaus-agent](https://github.com/half-cook/renderhaus-agent)** — Python/FastAPI backend:
+  LangChain agent, AWS Bedrock AgentCore runtime, per-provider generation MCPs (Seedance/Seedream/
+  Mureka/Gemini TTS), Clerk auth, S3 + DynamoDB asset storage, a project/timeline persistence
+  layer, and a disposable static-HTML/vanilla-JS frontend.
+
+Target end state: warm-light's Next.js app becomes the frontend; renderhaus-agent's Python app
+becomes the backend it talks to. Neither codebase is thrown away.
+
+## 2. Key decisions
+
+Decision log — newest first. Each entry: the call, the reasoning, the date.
+
+- **2026-08-04 — Renamed Python dir is called `server/`.** `app.py`/`auth.py`/`assets.py`/
+  `projects.py` are all server-side logic (route handlers, Clerk token verification, S3/DynamoDB
+  access, ffmpeg orchestration) — none of it moves to the frontend when merged, a Next.js frontend
+  just calls it as an API. `server/` pairs cleanly with `web/` and avoids clashing with the `/api/...`
+  route prefix already used inside the app.
+- **2026-08-04 — Preserve renderhaus-agent's git history.** Real merge (`--allow-unrelated-histories`)
+  rather than a snapshot copy — the repo is small and the history is recent/relevant enough to be
+  worth the extra git surgery.
+- **2026-08-04 — Timeline: client Command model is authoritative; server timeline is a persisted
+  snapshot.** warm-light's client-side Zustand + invertible-Command model
+  (`web/src/lib/timeline/commands.ts`) drives active editing (instant edits, undo/redo, and it's
+  what the planned agent orchestrator is designed to emit against). `server/projects.py`'s
+  `ProjectStore` + `timeline.items` + ffmpeg merge/export step aren't replaced — they become the
+  save/checkpoint target (`PUT /api/projects/{id}/timeline`) and the thing that hydrates the client
+  store on project reload, and the export pipeline. `timeline.items`'s shape may need adjusting to
+  represent the Command model's serialized clips, but nothing here gets thrown away.
+- **2026-08-04 — Local dev wiring: Next.js `rewrites()` proxy.** `next.config.ts` proxies `/api/*`
+  to `http://127.0.0.1:8000` in dev, keeping the browser same-origin (no CORS setup) and letting
+  frontend code call `/api/...` as relative paths. Production hosting story is deferred.
+- **2026-08-04 — Delete `web/static/*` (old frontend) outright, no archive folder.** Fully
+  recoverable from git history (and specifically from the pre-merge commit) whenever needed for
+  reference — an `archive/` directory would just be one more thing nobody maintains.
+
+## 3. Open questions
+
+- **[OPEN QUESTION] Push destination.** Branch + PR against `half-cook/renderhaus-agent`, or
+  something else? Deferred per instruction — reconcile and verify everything works locally first,
+  revisit push once that's done. No push happens without explicit confirmation regardless.
+
+## 4. Target layout (proposed, pending the naming question above)
+
+```
+renderhaus-agent/                  (repo root — combined)
+├── README.md                      existing, updated to describe both halves + link ARCHITECTURE.md
+├── ARCHITECTURE.md                from warm-light
+├── agent/                         existing — LangChain agent, AgentCore client, tracing
+├── mcps/                          existing — generation provider MCP servers
+├── server/                        renamed from existing web/ — FastAPI app (auth, projects, assets, app.py)
+├── web/                           from warm-light — Next.js editor frontend
+├── docs/                          merged: existing research/adr/plans/product/architecture + warm-light's assets/
+├── spikes/                        from warm-light — timeline-render spike
+├── configs/, scripts/, .cursor/, .vscode/   existing, unchanged
+├── pyproject.toml                 existing, package refs updated web.* → server.*
+└── Dockerfile.agentcore           existing, checked for web.* references
+```
+
+Note: `docs/` doesn't actually collide on file paths — renderhaus-agent's `docs/` has
+`research/ adr/ plans/ product/ architecture/ README.md`; warm-light's only has
+`docs/assets/architecture-diagram.png`. Those merge cleanly as-is.
+
+## 5. Migration steps
+
+- [ ] **1.** Commit warm-light's current working tree as a baseline commit (safety snapshot before
+      any surgery — nothing is committed yet as of this writing).
+- [ ] **2.** Add renderhaus-agent as a git remote, fetch.
+- [ ] **3.** Create an integration branch from `renderhaus-agent/main`.
+- [ ] **4.** On that branch: `git mv web server`; fix `from web.` imports across `app.py`,
+      `auth.py`, `assets.py`, `projects.py`; update `pyproject.toml` (`packages.find.include` and
+      the `[tool.setuptools.package-data]` block both list `web` explicitly — confirmed by reading
+      the file), `scripts/setup_agent.sh`, README run instructions (`python -m web.app` →
+      `python -m server.app`), check `Dockerfile.agentcore` for `web.*` references.
+- [ ] **5.** Merge the warm-light baseline commit into the integration branch
+      (`--allow-unrelated-histories`).
+- [ ] **6.** Resolve any conflicts (expected: none, given disjoint paths after the rename).
+- [ ] **7.** Delete `server/static/*` (old frontend, ex-`web/static/*`).
+- [ ] **8.** Update root `README.md` to describe the combined structure and link `ARCHITECTURE.md`.
+- [ ] **9.** Add `next.config.ts` `rewrites()` proxying `/api/*` → `http://127.0.0.1:8000` for local dev.
+- [ ] **10.** Verify both halves run together locally: `server/` (FastAPI) + `web/` (Next.js) up at
+      once, a basic API call round-trips through the proxy.
+- [ ] **11.** Design pass on timeline reconciliation (§2) — separate follow-up, not required for the
+      merge to be "done," but tracked here so it doesn't get lost.
+- [ ] **12.** Push branch / open PR — only after explicit confirmation (§3).
+
+## 6. Risks / things to watch
+
+- Both sides define secrets/env loading (`agent/config.py`'s `.env.local` + AWS Secrets Manager vs.
+  whatever warm-light's Next.js app expects) — needs a single documented story, not two.
+- `pyproject.toml` package discovery (confirmed): `[tool.setuptools.packages.find] include =
+  ["agent*", "mcps*", "web*"]` and `[tool.setuptools.package-data] web = ["static/*", "static/img/*"]`
+  both need `web` → `server`. Since `server/static/*` is getting deleted anyway (step 7), the
+  package-data line can likely just be dropped rather than renamed — revisit once we're there.
+- No CI configured on either side yet as far as I've seen — worth flagging separately, not in scope
+  for this merge.
