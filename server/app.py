@@ -11,8 +11,7 @@ from pathlib import Path
 from typing import Any, Literal
 
 from fastapi import FastAPI, File, HTTPException, Request, Response, UploadFile
-from fastapi.responses import FileResponse, JSONResponse, RedirectResponse, StreamingResponse
-from fastapi.staticfiles import StaticFiles
+from fastapi.responses import JSONResponse, RedirectResponse, StreamingResponse
 from pydantic import BaseModel, Field
 
 from agent.config import ROOT, load_local_env
@@ -53,7 +52,6 @@ from server.projects import (
 
 load_local_env()
 
-STATIC_DIR = Path(__file__).with_name("static")
 STATE_DIR = ROOT / ".renderhaus" / "web-jobs"
 MEDIA_DIR = (ROOT / os.getenv("RENDERHAUS_MEDIA_DIR", ".renderhaus/media")).resolve()
 MAX_UPLOAD_BYTES = 15 * 1024 * 1024
@@ -856,21 +854,16 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="Renderhaus", version="0.1.0", lifespan=lifespan)
-app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 
 @app.get("/", include_in_schema=False)
-async def index() -> FileResponse:
-    return FileResponse(STATIC_DIR / "index.html")
+async def index() -> dict[str, str]:
+    return {"service": "renderhaus-agent api"}
 
 
 @app.exception_handler(404)
 async def not_found(request: Request, exc: HTTPException) -> Response:
-    """Serve the branded page for browsers and keep JSON for the API surface."""
-    wants_html = "text/html" in request.headers.get("accept", "")
-    if request.url.path.startswith("/api/") or not wants_html:
-        return JSONResponse({"detail": exc.detail}, status_code=404)
-    return FileResponse(STATIC_DIR / "404.html", status_code=404)
+    return JSONResponse({"detail": exc.detail}, status_code=404)
 
 
 @app.get("/api/config")

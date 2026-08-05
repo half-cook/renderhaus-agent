@@ -75,19 +75,27 @@ Note: `docs/` doesn't actually collide on file paths — renderhaus-agent's `doc
 
 ## 5. Migration steps
 
-- [ ] **1.** Commit warm-light's current working tree as a baseline commit (safety snapshot before
-      any surgery — nothing is committed yet as of this writing).
-- [ ] **2.** Add renderhaus-agent as a git remote, fetch.
-- [ ] **3.** Create an integration branch from `renderhaus-agent/main`.
-- [ ] **4.** On that branch: `git mv web server`; fix `from web.` imports across `app.py`,
-      `auth.py`, `assets.py`, `projects.py`; update `pyproject.toml` (`packages.find.include` and
-      the `[tool.setuptools.package-data]` block both list `web` explicitly — confirmed by reading
-      the file), `scripts/setup_agent.sh`, README run instructions (`python -m web.app` →
-      `python -m server.app`), check `Dockerfile.agentcore` for `web.*` references.
-- [ ] **5.** Merge the warm-light baseline commit into the integration branch
-      (`--allow-unrelated-histories`).
-- [ ] **6.** Resolve any conflicts (expected: none, given disjoint paths after the rename).
-- [ ] **7.** Delete `server/static/*` (old frontend, ex-`web/static/*`).
+- [x] **1.** Commit warm-light's current working tree as a baseline commit (safety snapshot before
+      any surgery). Done: `main` @ `c87cbfc`.
+- [x] **2.** Add renderhaus-agent as a git remote, fetch.
+- [x] **3.** Create an integration branch from `renderhaus-agent/main` (`merge-renderhaus-agent`,
+      upstream tracking deliberately unset so nothing can accidentally push to their `main`).
+- [x] **4.** On that branch: `git mv web server`; fixed `from web.` imports across `app.py`,
+      `auth.py`, `assets.py`, `projects.py`; updated `pyproject.toml`, `Dockerfile.agentcore`,
+      README run instructions, `scripts/generate_ui_assets.py`. Done @ `c93ee07`. Note: checking out
+      this branch left stray untracked Next.js build artifacts (`node_modules`, `.next` leftovers)
+      physically inside the old `web/` path from the prior branch switch — cleaned those out before
+      the `git mv` landed, so `server/` only contains intentionally-renamed content.
+- [x] **5.** Merged the warm-light baseline commit into the integration branch
+      (`--allow-unrelated-histories`). Done @ `99167a1` — clean merge, no conflicts, exactly the
+      disjoint-paths result predicted in §4.
+- [x] **6.** (Conflict resolution — not needed, see above.)
+- [x] **7.** Deleted `server/static/*` (old frontend). Also removed the now-dead `StaticFiles`
+      mount, `/` index route, and branded-404 handling in `server/app.py` (it served
+      `server/static/index.html` / `404.html`, which no longer exist) — `/` now returns a small JSON
+      status body, `/api/*` and everything else stays JSON-only. Dropped the matching
+      `[tool.setuptools.package-data]` block in `pyproject.toml`. See §6 for the now-orphaned
+      `scripts/generate_ui_assets.py`.
 - [ ] **8.** Update root `README.md` to describe the combined structure and link `ARCHITECTURE.md`.
 - [ ] **9.** Add `next.config.ts` `rewrites()` proxying `/api/*` → `http://127.0.0.1:8000` for local dev.
 - [ ] **10.** Verify both halves run together locally: `server/` (FastAPI) + `web/` (Next.js) up at
@@ -100,9 +108,11 @@ Note: `docs/` doesn't actually collide on file paths — renderhaus-agent's `doc
 
 - Both sides define secrets/env loading (`agent/config.py`'s `.env.local` + AWS Secrets Manager vs.
   whatever warm-light's Next.js app expects) — needs a single documented story, not two.
-- `pyproject.toml` package discovery (confirmed): `[tool.setuptools.packages.find] include =
-  ["agent*", "mcps*", "web*"]` and `[tool.setuptools.package-data] web = ["static/*", "static/img/*"]`
-  both need `web` → `server`. Since `server/static/*` is getting deleted anyway (step 7), the
-  package-data line can likely just be dropped rather than renamed — revisit once we're there.
+- **`scripts/generate_ui_assets.py` is now orphaned.** It generated `stage-backdrop.jpg` /
+  `social-card.jpg` for the old static frontend's `<meta>` tags — that frontend is deleted (step 7).
+  Path reference was mechanically updated to `server/static/img` so it wouldn't silently point at a
+  dead `web/` path, but running it now just creates an unused directory. Leaving it in place rather
+  than deleting, in case the art-generation logic (Seedream prompt, aspect ratios) is worth reusing
+  for `web/public/` assets later — needs an explicit call, not a silent delete.
 - No CI configured on either side yet as far as I've seen — worth flagging separately, not in scope
   for this merge.
