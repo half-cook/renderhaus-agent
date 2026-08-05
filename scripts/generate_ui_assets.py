@@ -1,7 +1,7 @@
 """Generate the static backdrop and social-share art used by the web UI.
 
 Run once when the art direction changes; the results are committed under
-web/static/img so the UI never depends on a live provider call at page load.
+server/static/img so the UI never depends on a live provider call at page load.
 """
 
 from __future__ import annotations
@@ -14,7 +14,7 @@ from agent.config import ROOT, load_local_env
 from mcps.seedream.server import text_to_image
 
 
-TARGET_DIR = ROOT / "web" / "static" / "img"
+TARGET_DIR = ROOT / "server" / "static" / "img"
 
 ASSETS = [
     {

@@ -13,7 +13,7 @@ COPY pyproject.toml README.md ./
 COPY agent ./agent
 COPY mcps ./mcps
 COPY configs ./configs
-COPY web ./web
+COPY server ./server
 
 RUN pip install --no-cache-dir -e .
 

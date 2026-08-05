@@ -25,7 +25,7 @@ from agent.service import (
 )
 from agent.tracing import flush_langfuse, traced_operation
 from agent.agentcore_client import agentcore_enabled
-from web.assets import (
+from server.assets import (
     get_asset,
     get_asset_for_user,
     init_assets_db,
@@ -38,8 +38,8 @@ from web.assets import (
     sign_content_url,
     verify_content_signature,
 )
-from web.auth import AuthUser, clerk_enabled, current_user_id, optional_user, publishable_key
-from web.projects import (
+from server.auth import AuthUser, clerk_enabled, current_user_id, optional_user, publishable_key
+from server.projects import (
     ProjectStore,
     add_artifact,
     merge_video_paths,
@@ -1323,7 +1323,7 @@ async def refine_generation(
 def main() -> None:
     import uvicorn
 
-    uvicorn.run("web.app:app", host="127.0.0.1", port=8000, reload=False)
+    uvicorn.run("server.app:app", host="127.0.0.1", port=8000, reload=False)
 
 
 if __name__ == "__main__":

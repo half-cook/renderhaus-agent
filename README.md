@@ -14,7 +14,7 @@ Install the project and start the local Renderhaus UI:
 
 ```bash
 bash scripts/setup_agent.sh
-.venv/bin/python -m web.app
+.venv/bin/python -m server.app
 ```
 
 Then open [http://127.0.0.1:8000](http://127.0.0.1:8000).
@@ -43,7 +43,7 @@ runtime when `AGENTCORE_RUNTIME_ARN` is set.
 .venv/bin/python scripts/sync_secrets.py --rewrite-bootstrap
 .venv/bin/python scripts/deploy_agentcore.py --region us-east-1
 .venv/bin/python scripts/smoke_agentcore.py
-.venv/bin/python -m web.app
+.venv/bin/python -m server.app
 ```
 
 With `AGENTCORE_RUNTIME_ARN` set (from Secrets Manager or bootstrap), generation/poll calls go to

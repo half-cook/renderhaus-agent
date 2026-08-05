@@ -28,10 +28,10 @@ requires = ["setuptools>=69", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
-include = ["agent*", "mcps*", "web*"]
+include = ["agent*", "mcps*", "server*"]
 
 [tool.setuptools.package-data]
-web = ["static/*", "static/img/*"]
+server = ["static/*", "static/img/*"]
 
 [tool.setuptools]
 include-package-data = true
