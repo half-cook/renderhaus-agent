@@ -1,6 +1,23 @@
-# Renderhaus Agent
+# Renderhaus
 
-Basic LangChain agent wired to generation MCP servers.
+An AI-native video editor: a Next.js timeline editor (`web/`) in front of a Python
+generation/agent backend (`server/`, `agent/`, `mcps/`).
+
+## Structure
+
+- **`web/`** — Next.js editor frontend. Multi-track timeline, Remotion/WebCodecs preview, the
+  manual-editing engine. Product plan and architecture: [ARCHITECTURE.md](ARCHITECTURE.md).
+- **`server/`** — FastAPI backend: Clerk auth, S3/DynamoDB asset storage, project/timeline
+  persistence, generation job endpoints. Talked to over HTTP by `web/`, proxied at `/api/*` in dev
+  (see `web/next.config.ts`).
+- **`agent/`** — LangChain agent orchestration; runs in-process locally or on Amazon Bedrock
+  AgentCore Runtime.
+- **`mcps/`** — one MCP server per generation provider (Seedance video, Seedream image, Mureka
+  music, Gemini TTS).
+- **`docs/`** — the long-video production-agent program (below).
+
+See [MERGE_PLAN.md](MERGE_PLAN.md) for how `web/` and `server/` came to live in one repo, and
+what's still outstanding.
 
 ## Long-video program
 
@@ -8,16 +25,26 @@ The evidence-backed product, architecture, continuity, evaluation, and six-sprin
 for evolving Renderhaus into a durable 60–180 second video-production agent starts at
 [docs/README.md](docs/README.md).
 
-## Run the web app
+## Run the app
 
-Install the project and start the local Renderhaus UI:
+Two processes: the FastAPI backend and the Next.js frontend.
 
 ```bash
+# backend — installs the Python project, starts the API on :8000
 bash scripts/setup_agent.sh
 .venv/bin/python -m server.app
 ```
 
-Then open [http://127.0.0.1:8000](http://127.0.0.1:8000).
+```bash
+# frontend — installs and starts the Next.js dev server on :3000,
+# proxying /api/* to the backend above
+cd web
+npm install
+npm run dev
+```
+
+Then open [http://localhost:3000](http://localhost:3000). The backend alone (`:8000`) now serves
+JSON only — there's no bundled UI there anymore, `web/` is the UI.
 
 ### Secrets (AWS Secrets Manager)
 
@@ -35,7 +62,7 @@ via its execution role.
 ### AgentCore (cloud agent + MCPs)
 
 The LangChain agent and generation MCPs (Seedance, Seedream, Mureka, Gemini TTS) can run on
-Amazon Bedrock AgentCore Runtime. The web app stays local (or on its own host) and calls the
+Amazon Bedrock AgentCore Runtime. The backend stays local (or on its own host) and calls the
 runtime when `AGENTCORE_RUNTIME_ARN` is set.
 
 ```bash
@@ -49,13 +76,12 @@ runtime when `AGENTCORE_RUNTIME_ARN` is set.
 With `AGENTCORE_RUNTIME_ARN` set (from Secrets Manager or bootstrap), generation/poll calls go to
 AgentCore. Leave it unset to keep the local in-process agent + stdio MCPs.
 
-The web app provides the minimal prompt → create → review workflow. It sends generation and
-refinement requests through a video-only agent boundary, persists local job state under
-`.renderhaus/web-jobs/`, and serves completed MP4s through job-scoped media URLs.
+The backend exposes generation and refinement requests through a video-only agent boundary,
+persists local job state under `.renderhaus/web-jobs/`, and serves completed MP4s through
+job-scoped media URLs. `web/` is what drives it now instead of the old bundled UI.
 
-`SEEDANCE_DRY_RUN=true` keeps the full UI and agent flow in preview mode without creating a paid
-video task. Set `SEEDANCE_DRY_RUN=false` in `.env.local` only when you intend to run live video
-generation.
+`SEEDANCE_DRY_RUN=true` keeps the full flow in preview mode without creating a paid video task.
+Set `SEEDANCE_DRY_RUN=false` in `.env.local` only when you intend to run live video generation.
 
 ## Setup
 
@@ -67,7 +93,7 @@ bash scripts/setup_agent.sh
 
 ### Clerk authentication
 
-The web app uses [Clerk](https://clerk.com) for sign-in. Add keys from the
+The backend uses [Clerk](https://clerk.com) for sign-in, called from `web/`. Add keys from the
 [Clerk API keys](https://dashboard.clerk.com/last-active?path=api-keys) page to `.env.local`:
 
 ```env
@@ -75,10 +101,13 @@ The web app uses [Clerk](https://clerk.com) for sign-in. Add keys from the
 CLERK_PUBLISHABLE_KEY=pk_test_...
 # NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_...
 CLERK_SECRET_KEY=sk_test_...
-CLERK_AUTHORIZED_PARTIES=http://127.0.0.1:8000,http://localhost:8000
+CLERK_AUTHORIZED_PARTIES=http://localhost:3000,http://127.0.0.1:8000,http://localhost:8000
 # Optional: PEM public key for networkless JWT verification (newlines as \n)
 CLERK_JWT_KEY=
 ```
+
+`localhost:3000` is the Next.js dev origin users actually sign in from; the `:8000` entries cover
+hitting the backend directly (docs, scripts, tests).
 
 When both a publishable key and `CLERK_SECRET_KEY` are set, generation/upload APIs require a
 signed-in session. Leave them empty to keep the local UI open during setup.

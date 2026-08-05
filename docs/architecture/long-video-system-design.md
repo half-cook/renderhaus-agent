@@ -53,7 +53,7 @@ Renderhaus adopts those separations but makes the orchestration deterministic an
 
 Today the web agent is intentionally limited to one immediate video tool call and explicitly
 forbids audio and music (`agent/service.py`). The API represents one job, one provider job, and one
-output path (`web/app.py`). The async task loop can resume polling a submitted clip after restart,
+output path (`server/app.py`). The async task loop can resume polling a submitted clip after restart,
 but it cannot replay a graph of planning, parallel generation, evaluation, approval, and assembly.
 The Seedance MCP already provides a useful asynchronous provider boundary; Gemini TTS is a dry-run
 stub.
