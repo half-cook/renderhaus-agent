@@ -25,6 +25,7 @@ const MUSIC_EDIT_IDEAS = [
 const state = {
   mediaType: "video",
   currentJob: null,
+  currentProduction: null,
   pollTimer: null,
   pollToken: 0,
   pollJobId: null,
@@ -124,23 +125,35 @@ function setLibrary(open) {
 
 function setMediaType(mediaType) {
   state.mediaType = mediaType;
+  state.currentProduction = state.currentProduction || null;
   $$(".tab").forEach((tab) => {
     const active = tab.dataset.mediaType === mediaType;
     tab.classList.toggle("is-active", active);
     tab.setAttribute("aria-selected", String(active));
   });
+  const isProduction = mediaType === "production";
   $("#duration-wrap").hidden = mediaType !== "video";
-  $("#aspect-ratio").closest("label").hidden = mediaType === "music";
+  $("#aspect-ratio").closest("label").hidden = mediaType === "music" || isProduction;
   const referenceButton = $('label.file-button[for="reference-input"]');
-  if (referenceButton) referenceButton.hidden = mediaType === "music";
-  if (mediaType === "music") clearReference();
+  if (referenceButton) referenceButton.hidden = mediaType === "music" || isProduction;
+  if (mediaType === "music" || isProduction) clearReference();
+  const productionPanel = $("#production-panel");
+  if (productionPanel) productionPanel.hidden = !isProduction;
   $("#generate-label").textContent =
-    mediaType === "image" ? "Generate image" : mediaType === "music" ? "Generate music" : "Generate video";
+    mediaType === "image"
+      ? "Generate image"
+      : mediaType === "music"
+        ? "Generate music"
+        : isProduction
+          ? "Plan production"
+          : "Generate video";
   const prompt = $("#prompt");
   prompt.placeholder =
     mediaType === "music"
       ? "A quiet luxury product score: soft analog pads, restrained percussion, warm low end, slow bloom…"
-      : "A chrome perfume bottle drifting through a sunlit concrete gallery, slow dolly in, dust in the light…";
+      : isProduction
+        ? "30s product teaser: chrome bottle on concrete, soft daylight, calm piano underscore…"
+        : "A chrome perfume bottle drifting through a sunlit concrete gallery, slow dolly in, dust in the light…";
   updateModelHint();
 }
 
@@ -152,8 +165,102 @@ function updateModelHint() {
     $("#model-hint").textContent = `Image · ${prettyModel(imageModel)}`;
   } else if (state.mediaType === "music") {
     $("#model-hint").textContent = `Music · ${prettyModel(musicModel)}`;
+  } else if (state.mediaType === "production") {
+    $("#model-hint").textContent = "Director · typed plan · workers";
   } else {
     $("#model-hint").textContent = `Video · ${prettyModel(videoModel)}`;
+  }
+}
+
+function renderProduction(production) {
+  state.currentProduction = production;
+  const status = $("#production-status");
+  const summary = $("#production-summary");
+  const nodes = $("#production-nodes");
+  const approve = $("#production-approve");
+  if (!status || !summary || !nodes || !approve) return;
+  status.textContent = production?.status || "idle";
+  const plan = production?.plan;
+  if (plan) {
+    summary.textContent = plan.summary || production.title || "Plan ready.";
+    nodes.innerHTML = "";
+    for (const node of plan.nodes || []) {
+      const item = document.createElement("li");
+      item.textContent = `${node.id} · ${node.kind} — ${node.prompt}`;
+      nodes.appendChild(item);
+    }
+  } else if (production?.error) {
+    summary.textContent = production.error;
+    nodes.innerHTML = "";
+  } else {
+    summary.textContent = "Planning… the Director is drafting a typed multi-shot plan.";
+    nodes.innerHTML = "";
+  }
+  approve.hidden = production?.status !== "plan_ready";
+}
+
+async function pollProduction(productionId, { until = ["plan_ready", "completed", "failed", "approved"] } = {}) {
+  const token = ++state.pollToken;
+  const check = async () => {
+    if (token !== state.pollToken) return null;
+    try {
+      const production = await api(`/api/productions/${productionId}`);
+      if (token !== state.pollToken) return null;
+      renderProduction(production);
+      if (until.includes(production.status)) {
+        window.clearInterval(state.pollTimer);
+        state.pollTimer = null;
+        if (production.status === "plan_ready") showToast("Plan ready — review and approve.");
+        if (production.status === "completed") showToast("Production finished.");
+        if (production.status === "failed") showToast(production.error || "Production failed.");
+      }
+      return production;
+    } catch (error) {
+      if (token !== state.pollToken) return null;
+      window.clearInterval(state.pollTimer);
+      state.pollTimer = null;
+      showToast(error.message);
+      return null;
+    }
+  };
+  const first = await check();
+  if (token !== state.pollToken) return;
+  if (first && !until.includes(first.status)) {
+    state.pollTimer = window.setInterval(check, 1500);
+  }
+}
+
+async function submitProduction(prompt) {
+  const production = await api("/api/productions", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ brief: prompt, plan_now: true }),
+  });
+  renderProduction(production);
+  showToast("Director planning…");
+  await pollProduction(production.id, { until: ["plan_ready", "failed"] });
+}
+
+async function approveProduction() {
+  if (!state.currentProduction?.id) return;
+  const button = $("#production-approve");
+  if (button) button.disabled = true;
+  try {
+    const production = await api(
+      `/api/productions/${state.currentProduction.id}/commands/approve-plan`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ execute: true }),
+      }
+    );
+    renderProduction(production);
+    showToast("Workers running…");
+    await pollProduction(production.id, { until: ["completed", "failed"] });
+  } catch (error) {
+    showToast(error.message);
+  } finally {
+    if (button) button.disabled = false;
   }
 }
 
@@ -1043,7 +1150,9 @@ async function submitGeneration(event) {
     setPromptError(
       state.mediaType === "music"
         ? "Describe the score in at least a few words before generating."
-        : "Describe the shot in at least a few words before generating."
+        : state.mediaType === "production"
+          ? "Describe the production brief in at least a few words."
+          : "Describe the shot in at least a few words before generating."
     );
     $("#prompt").focus();
     return;
@@ -1054,6 +1163,10 @@ async function submitGeneration(event) {
   const submit = $("#generate-button");
   submit.disabled = true;
   try {
+    if (state.mediaType === "production") {
+      await submitProduction(prompt);
+      return;
+    }
     const reference = state.mediaType === "music" ? null : $("#reference-input").files[0];
     const referencePath = await uploadReference(reference);
     const payload = {
@@ -1734,6 +1847,8 @@ function bindEvents() {
   $("#project-create-form").addEventListener("submit", createProject);
 
   $("#prompt").addEventListener("input", () => setPromptError(""));
+  const approveButton = $("#production-approve");
+  if (approveButton) approveButton.addEventListener("click", () => approveProduction());
 
   const refineInput = $("#refine");
   const syncRefineButton = () => {

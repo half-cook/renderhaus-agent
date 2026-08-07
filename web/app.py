@@ -22,6 +22,7 @@ from agent.service import (
     start_image_generation,
     start_music_generation,
     start_video_generation,
+    supervise_production,
 )
 from agent.tracing import flush_langfuse, traced_operation
 from agent.agentcore_client import agentcore_enabled
@@ -39,6 +40,7 @@ from web.assets import (
     verify_content_signature,
 )
 from web.auth import AuthUser, clerk_enabled, current_user_id, optional_user, publishable_key
+from web.productions import ProductionStore, public_production
 from web.projects import (
     ProjectStore,
     add_artifact,
@@ -132,6 +134,16 @@ class TimelineItemModel(BaseModel):
 
 class TimelineUpdateRequest(BaseModel):
     items: list[TimelineItemModel] = Field(default_factory=list)
+
+
+class ProductionCreateRequest(BaseModel):
+    brief: str = Field(min_length=1, max_length=8000)
+    title: str = ""
+    plan_now: bool = True
+
+
+class ProductionApproveRequest(BaseModel):
+    execute: bool = True
 
 
 class JobStore:
@@ -262,6 +274,7 @@ class JobStore:
 
 store = JobStore(STATE_DIR)
 projects = ProjectStore()
+productions = ProductionStore()
 generation_slots = asyncio.Semaphore(2)
 
 
@@ -309,6 +322,14 @@ def _require_owned_project(project: dict[str, Any] | None, user_id: str) -> dict
     if not project or project.get("user_id") != user_id:
         raise HTTPException(status_code=404, detail="Project not found.")
     return project
+
+
+def _require_owned_production(
+    production: dict[str, Any] | None, user_id: str
+) -> dict[str, Any]:
+    if not production or production.get("user_id") != user_id:
+        raise HTTPException(status_code=404, detail="Production not found.")
+    return production
 
 
 def _reference_asset_for_user(asset_id: str | None, user_id: str):
@@ -842,12 +863,14 @@ async def lifespan(app: FastAPI):
     MEDIA_DIR.mkdir(parents=True, exist_ok=True)
     init_assets_db()
     await projects.load()
+    await productions.load()
     app.state.generation_tasks = set()
+    app.state.production_tasks = set()
     resumable = await store.load()
     for job_id in resumable:
         _start_task(app, job_id, resume=True)
     yield
-    tasks = list(app.state.generation_tasks)
+    tasks = list(app.state.generation_tasks) + list(getattr(app.state, "production_tasks", set()))
     for task in tasks:
         task.cancel()
     if tasks:
@@ -929,6 +952,165 @@ async def upload_reference(
         filename=file.filename or f"reference{suffix}",
     )
     return {"asset_id": asset.id, "name": asset.filename}
+
+
+async def _plan_production_record(production_id: str) -> None:
+    production = await productions.get(production_id)
+    if not production:
+        return
+    production["status"] = "planning"
+    production["error"] = None
+    await productions.put(production)
+    try:
+        result = await supervise_production(
+            production["brief"],
+            execute=False,
+            user_id=str(production.get("user_id") or "local"),
+            session_id=f"production-{production_id}",
+        )
+        plan = result.get("plan") if isinstance(result, dict) else None
+        if not isinstance(plan, dict):
+            raise RuntimeError("Director did not return a typed plan.")
+        production = await productions.get(production_id) or production
+        production["plan"] = plan
+        production["title"] = str(plan.get("title") or production.get("title") or "Production")
+        production["status"] = "plan_ready"
+        production["error"] = None
+        await productions.put(production)
+    except Exception as exc:  # noqa: BLE001
+        production = await productions.get(production_id) or production
+        production["status"] = "failed"
+        production["error"] = str(exc)
+        await productions.put(production)
+
+
+async def _execute_production_record(production_id: str) -> None:
+    production = await productions.get(production_id)
+    if not production or not isinstance(production.get("plan"), dict):
+        return
+    production["status"] = "running"
+    production["error"] = None
+    await productions.put(production)
+    try:
+        result = await supervise_production(
+            production["brief"],
+            execute=True,
+            user_id=str(production.get("user_id") or "local"),
+            session_id=f"production-{production_id}",
+            plan=production["plan"],
+        )
+        production = await productions.get(production_id) or production
+        production["execution"] = result.get("execution") if isinstance(result, dict) else result
+        production["status"] = "completed"
+        production["completed_at"] = int(time.time())
+        production["error"] = None
+        await productions.put(production)
+    except Exception as exc:  # noqa: BLE001
+        production = await productions.get(production_id) or production
+        production["status"] = "failed"
+        production["error"] = str(exc)
+        await productions.put(production)
+
+
+def _start_production_task(app: FastAPI, coro, *, name: str) -> None:
+    task = asyncio.create_task(coro, name=name)
+    tasks = getattr(app.state, "production_tasks", None)
+    if tasks is None:
+        app.state.production_tasks = set()
+        tasks = app.state.production_tasks
+    tasks.add(task)
+    task.add_done_callback(tasks.discard)
+
+
+@app.post("/api/productions", status_code=202)
+async def create_production(
+    request: ProductionCreateRequest,
+    auth: AuthUser,
+    raw_request: Request,
+) -> dict[str, Any]:
+    user_id = current_user_id(auth)
+    production = await productions.create(
+        user_id=user_id,
+        brief=request.brief,
+        title=request.title,
+    )
+    if request.plan_now:
+        production["status"] = "planning"
+        await productions.put(production)
+        _start_production_task(
+            raw_request.app,
+            _plan_production_record(production["id"]),
+            name=f"plan-{production['id']}",
+        )
+    return public_production(production)
+
+
+@app.get("/api/productions")
+async def list_productions(auth: AuthUser) -> dict[str, Any]:
+    user_id = current_user_id(auth)
+    items = [public_production(item) for item in await productions.list_for_user(user_id)]
+    return {"items": items}
+
+
+@app.get("/api/productions/{production_id}")
+async def get_production(production_id: str, auth: AuthUser) -> dict[str, Any]:
+    user_id = current_user_id(auth)
+    production = _require_owned_production(await productions.get(production_id), user_id)
+    return public_production(production)
+
+
+@app.post("/api/productions/{production_id}/commands/plan", status_code=202)
+async def command_plan_production(
+    production_id: str,
+    auth: AuthUser,
+    raw_request: Request,
+) -> dict[str, Any]:
+    user_id = current_user_id(auth)
+    production = _require_owned_production(await productions.get(production_id), user_id)
+    if production.get("status") in {"planning", "running"}:
+        raise HTTPException(status_code=409, detail="Production is already busy.")
+    _start_production_task(
+        raw_request.app,
+        _plan_production_record(production_id),
+        name=f"plan-{production_id}",
+    )
+    production["status"] = "planning"
+    await productions.put(production)
+    return public_production(production)
+
+
+@app.post("/api/productions/{production_id}/commands/approve-plan", status_code=202)
+async def command_approve_plan(
+    production_id: str,
+    request: ProductionApproveRequest,
+    auth: AuthUser,
+    raw_request: Request,
+) -> dict[str, Any]:
+    user_id = current_user_id(auth)
+    production = _require_owned_production(await productions.get(production_id), user_id)
+    if production.get("status") != "plan_ready" or not isinstance(production.get("plan"), dict):
+        raise HTTPException(status_code=409, detail="Production needs a ready plan first.")
+    production["approved_at"] = int(time.time())
+    if not request.execute:
+        production["status"] = "approved"
+        await productions.put(production)
+        return public_production(production)
+    production["status"] = "running"
+    await productions.put(production)
+    _start_production_task(
+        raw_request.app,
+        _execute_production_record(production_id),
+        name=f"execute-{production_id}",
+    )
+    return public_production(production)
+
+
+@app.delete("/api/productions/{production_id}", status_code=204)
+async def delete_production(production_id: str, auth: AuthUser) -> Response:
+    user_id = current_user_id(auth)
+    _require_owned_production(await productions.get(production_id), user_id)
+    await productions.delete(production_id)
+    return Response(status_code=204)
 
 
 @app.post("/api/projects", status_code=201)

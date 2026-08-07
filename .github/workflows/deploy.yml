@@ -1,0 +1,188 @@
+name: Deploy
+
+# Manual by default. Optional auto-deploy on main when relevant paths change.
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: What to deploy
+        required: true
+        type: choice
+        options:
+          - gateway
+          - runtime
+          - all
+        default: all
+      region:
+        description: AWS region
+        required: true
+        default: us-east-1
+      skip_runtime_build:
+        description: Skip Docker rebuild for runtime (config-only update)
+        type: boolean
+        default: false
+  push:
+    branches: [main, master]
+    paths:
+      - "mcps/mureka/**"
+      - "lambdas/mureka/**"
+      - "configs/mureka_gateway_tools.json"
+      - "scripts/deploy_mureka_gateway.py"
+      - "agent/**"
+      - "configs/mcp.agentcore.json"
+      - "Dockerfile.agentcore"
+      - "scripts/deploy_agentcore.py"
+      - "pyproject.toml"
+
+permissions:
+  id-token: write
+  contents: read
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  decide:
+    name: Decide targets
+    runs-on: ubuntu-latest
+    outputs:
+      deploy_gateway: ${{ steps.pick.outputs.deploy_gateway }}
+      deploy_runtime: ${{ steps.pick.outputs.deploy_runtime }}
+      region: ${{ steps.pick.outputs.region }}
+      skip_build: ${{ steps.pick.outputs.skip_build }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - id: pick
+        shell: bash
+        run: |
+          set -euo pipefail
+          REGION="${{ github.event.inputs.region || 'us-east-1' }}"
+          SKIP="${{ github.event.inputs.skip_runtime_build || 'false' }}"
+          TARGET="${{ github.event.inputs.target || '' }}"
+
+          GW=false
+          RT=false
+
+          if [ -n "$TARGET" ]; then
+            case "$TARGET" in
+              gateway) GW=true ;;
+              runtime) RT=true ;;
+              all) GW=true; RT=true ;;
+            esac
+          else
+            # Push to main: deploy only what changed.
+            BEFORE="${{ github.event.before }}"
+            if [ -z "$BEFORE" ] || [ "$BEFORE" = "0000000000000000000000000000000000000000" ]; then
+              GW=true
+              RT=true
+            else
+              CHANGED=$(git diff --name-only "$BEFORE" "${{ github.sha }}" || true)
+              echo "$CHANGED"
+              if echo "$CHANGED" | grep -E '^(mcps/mureka/|lambdas/mureka/|configs/mureka_gateway_tools\.json|scripts/deploy_mureka_gateway\.py)' >/dev/null; then
+                GW=true
+              fi
+              if echo "$CHANGED" | grep -E '^(agent/|mcps/|configs/mcp\.agentcore\.json|Dockerfile\.agentcore|scripts/deploy_agentcore\.py|pyproject\.toml)' >/dev/null; then
+                RT=true
+              fi
+            fi
+          fi
+
+          echo "deploy_gateway=$GW" >> "$GITHUB_OUTPUT"
+          echo "deploy_runtime=$RT" >> "$GITHUB_OUTPUT"
+          echo "region=$REGION" >> "$GITHUB_OUTPUT"
+          echo "skip_build=$SKIP" >> "$GITHUB_OUTPUT"
+          echo "Decision gateway=$GW runtime=$RT region=$REGION"
+
+  gateway:
+    name: Deploy Mureka Gateway
+    needs: decide
+    if: needs.decide.outputs.deploy_gateway == 'true'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install package
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+
+      - name: Configure AWS (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ needs.decide.outputs.region }}
+
+      - name: Deploy gateway + Lambda
+        run: python scripts/deploy_mureka_gateway.py --region "${{ needs.decide.outputs.region }}"
+        env:
+          RENDERHAUS_SECRETS_NAME: ${{ secrets.RENDERHAUS_SECRETS_NAME }}
+          AWS_REGION: ${{ needs.decide.outputs.region }}
+
+      - name: Upload gateway env hint
+        uses: actions/upload-artifact@v4
+        with:
+          name: env-agentcore-gateway
+          path: .env.agentcore.gateway
+          if-no-files-found: warn
+
+  runtime:
+    name: Deploy AgentCore Runtime
+    needs: decide
+    if: needs.decide.outputs.deploy_runtime == 'true'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install package
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+
+      - name: Configure AWS (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ needs.decide.outputs.region }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Deploy AgentCore runtime
+        run: |
+          EXTRA=()
+          if [ "${{ needs.decide.outputs.skip_build }}" = "true" ]; then
+            EXTRA+=(--skip-build)
+          fi
+          python scripts/deploy_agentcore.py --region "${{ needs.decide.outputs.region }}" "${EXTRA[@]}"
+        env:
+          RENDERHAUS_SECRETS_NAME: ${{ secrets.RENDERHAUS_SECRETS_NAME }}
+          AWS_REGION: ${{ needs.decide.outputs.region }}
+
+      - name: Smoke test
+        run: python scripts/smoke_agentcore.py
+        env:
+          RENDERHAUS_SECRETS_NAME: ${{ secrets.RENDERHAUS_SECRETS_NAME }}
+          AWS_REGION: ${{ needs.decide.outputs.region }}
+
+      - name: Upload runtime env hint
+        uses: actions/upload-artifact@v4
+        with:
+          name: env-agentcore
+          path: .env.agentcore
+          if-no-files-found: warn

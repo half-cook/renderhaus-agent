@@ -151,6 +151,7 @@
               <button type="button" class="tab is-active" data-media-type="video" role="tab" aria-selected="true">Video</button>
               <button type="button" class="tab" data-media-type="image" role="tab" aria-selected="false">Image</button>
               <button type="button" class="tab" data-media-type="music" role="tab" aria-selected="false">Music</button>
+              <button type="button" class="tab" data-media-type="production" role="tab" aria-selected="false">Production</button>
             </div>
 
             <label class="sr-only" for="prompt">Prompt</label>
@@ -168,6 +169,23 @@
               <svg class="icon" aria-hidden="true"><use href="#i-warning" /></svg>
               <span id="prompt-error-text"></span>
             </p>
+
+            <div class="production-panel" id="production-panel" hidden>
+              <div class="production-panel-head">
+                <h2 class="eyebrow">Supervisor plan</h2>
+                <span class="badge badge--quiet" id="production-status">idle</span>
+              </div>
+              <p class="production-summary" id="production-summary">
+                Production mode asks the Director for a typed multi-shot plan first. Approve it to
+                run image, video, and music workers in order.
+              </p>
+              <ol class="production-nodes" id="production-nodes"></ol>
+              <div class="production-actions">
+                <button type="button" class="button button--ghost" id="production-approve" hidden>
+                  Approve &amp; run
+                </button>
+              </div>
+            </div>
 
             <div class="composer-footer">
               <div class="composer-controls">

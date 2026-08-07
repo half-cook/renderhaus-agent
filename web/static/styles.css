@@ -511,6 +511,43 @@ textarea {
   gap: 12px;
 }
 
+.production-panel {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+  display: grid;
+  gap: 10px;
+}
+
+.production-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.production-summary {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.production-nodes {
+  margin: 0;
+  padding-left: 1.2rem;
+  display: grid;
+  gap: 6px;
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.production-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
 .composer-controls {
   display: flex;
   align-items: center;
