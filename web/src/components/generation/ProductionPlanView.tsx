@@ -18,8 +18,36 @@ const POLL_INTERVAL_MS = 1500;
 const PLANNING_STATUSES = new Set(["draft", "planning"]);
 const RUNNING_STATUSES = new Set(["approved", "running"]);
 
+// Traced through agent/executor.py + agent/service.py's summarize_agent_result:
+// video/music node results carry their real terminal status at
+// result.poll.status ("succeeded"/"failed"/"timeout"/...), NOT a top-level
+// result.status -- summarize_agent_result only ever returns
+// {message, tool_events, traces, artifacts}, no status key. Only the
+// unwired "speech" kind gets a top-level status ("skipped"). Reading
+// result?.status alone would show a flat "done" for every video/music node
+// regardless of whether it actually succeeded or failed.
+function nodeResultStatus(result: NodeResult | undefined): string | undefined {
+  if (!result) return undefined;
+  const pollStatus = typeof result.poll?.status === "string" ? result.poll.status : undefined;
+  if (pollStatus) return pollStatus;
+  if (typeof result.status === "string") return result.status;
+  // Image nodes have no poll wrapper and no status field at all -- their
+  // mere presence in node_results (didn't throw) plus having artifacts is
+  // the only completion signal available.
+  return result.artifacts && result.artifacts.length > 0 ? "done" : undefined;
+}
+
+const STATUS_COLORS: Record<string, string> = {
+  succeeded: "text-emerald-400",
+  done: "text-emerald-400",
+  failed: "text-red-400",
+  timeout: "text-red-400",
+  timeouted: "text-red-400",
+  skipped: "text-neutral-500",
+};
+
 function NodeCard({ node, result }: { node: PlanNode; result?: NodeResult }) {
-  const status = result?.status ?? (result ? "done" : undefined);
+  const status = nodeResultStatus(result);
   return (
     <div className="flex min-w-0 flex-col gap-1 rounded-md border border-neutral-800 bg-neutral-900 p-2 text-xs">
       <div className="flex items-center justify-between gap-2">
@@ -30,7 +58,9 @@ function NodeCard({ node, result }: { node: PlanNode; result?: NodeResult }) {
       {node.depends_on.length > 0 && (
         <p className="text-[10px] text-neutral-600">after {node.depends_on.join(", ")}</p>
       )}
-      {status && <p className="text-[10px] text-indigo-400">{status}</p>}
+      {status && (
+        <p className={`text-[10px] ${STATUS_COLORS[status] ?? "text-indigo-400"}`}>{status}</p>
+      )}
     </div>
   );
 }

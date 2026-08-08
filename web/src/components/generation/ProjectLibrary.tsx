@@ -242,7 +242,8 @@ export function ProjectLibrary() {
               />
             ))}
           </div>
-          {projectJobs.filter((job) => job.media_type === "video").length >= 2 && (
+          {projectJobs.filter((job) => job.media_type === "video" && job.status === "complete").length >=
+            2 && (
             <button
               onClick={handleMerge}
               disabled={merging}
@@ -317,7 +318,7 @@ function ArtifactCard({
       <div className="flex shrink-0 gap-1">
         {isReady && job.media_type !== "image" && (
           <button
-            onClick={() => addToTimeline(job)}
+            onClick={() => void addToTimeline(job)}
             className="rounded bg-neutral-800 px-1.5 py-0.5 text-[10px] hover:bg-neutral-700"
           >
             Add to timeline

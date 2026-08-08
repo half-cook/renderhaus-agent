@@ -130,6 +130,7 @@ export function JobWorkspace() {
   // pattern as useSyntheticProgress (see comment there), not an effect.
   const [addedState, setAddedState] = useState({ jobId: activeJobId, added: false });
   const addedToTimeline = addedState.jobId === activeJobId && addedState.added;
+  const [addingToTimeline, setAddingToTimeline] = useState(false);
 
   const { data, error } = usePoll(
     () => api.getGeneration(activeJobId as string),
@@ -171,14 +172,20 @@ export function JobWorkspace() {
         <div className="flex gap-2 px-4 pb-3">
           {canAddToTimeline && (
             <button
-              onClick={() => {
-                addToTimeline(activeJob);
+              onClick={async () => {
+                setAddingToTimeline(true);
+                await addToTimeline(activeJob);
+                setAddingToTimeline(false);
                 setAddedState({ jobId: activeJobId, added: true });
               }}
-              disabled={addedToTimeline}
+              disabled={addedToTimeline || addingToTimeline}
               className="flex-1 rounded-md bg-neutral-800 py-1.5 text-xs text-neutral-200 hover:bg-neutral-700 disabled:opacity-50"
             >
-              {addedToTimeline ? "Added to timeline" : `Add to ${activeJob.media_type === "music" ? "audio" : "video"} track`}
+              {addedToTimeline
+                ? "Added to timeline"
+                : addingToTimeline
+                  ? "Adding…"
+                  : `Add to ${activeJob.media_type === "music" ? "audio" : "video"} track`}
             </button>
           )}
           <a

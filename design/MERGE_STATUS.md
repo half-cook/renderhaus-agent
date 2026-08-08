@@ -129,6 +129,37 @@ behind them — confirmed via the original code's own comment ("Stub tonight —
 behind these yet"). Import (what "Media" was aspirationally for) already lived inline in
 `PreviewPanel`/`TimelinePanel` and still does. Nothing functional was lost dropping those tabs.
 
+### 5.6 Bugs found during pre-push review, not gaps vs. the old apps — all fixed 2026-08-07
+
+Not regressions against either original app (these are new code, so there's nothing to regress
+from) — found by re-reading the rebuild's own code and tracing it against the actual backend
+implementation rather than the documented API spec.
+
+- **Merge button's precondition was wrong.** Checked `media_type === "video"` count only, not
+  `status === "complete"` — the button could appear enabled with 2 video jobs where one was still
+  generating, guaranteeing a `400 "has no finished media yet"` from the backend on click. Fixed:
+  now requires ≥2 *complete* video jobs.
+- **Completed music generations would add an invisible, zero-length clip to the timeline.**
+  Traced `server/app.py`'s `_poll_provider`/`_attach_generation_output` end to end: a music job's
+  `duration_seconds` is `null` at creation (only video gets a real value there) and **nothing in
+  the completion path ever sets it** — it stays `null` forever, even after the track finishes
+  generating. `useAddToTimeline.ts` was falling back to `0`. Fixed the same way
+  `lib/timeline/import.ts` already handles untrusted video metadata: probe the real duration
+  client-side (an off-DOM `<audio>` element) before building the clip, only when needed.
+- **Production node status display showed "done" for every video/music node regardless of
+  whether it actually succeeded or failed.** Traced `agent/executor.py` + `agent/service.py`'s
+  `summarize_agent_result` (returns `{message, tool_events, traces, artifacts}` — no `status`
+  key at all): a video/music node's real terminal status lives at `result.poll.status`, not the
+  top-level `result.status` my code was reading. Fixed: prefer `poll.status`, fall back to
+  top-level `status` (the unwired "speech" kind's `"skipped"`), fall back to a presence check only
+  for image nodes (which have neither field). Also added color-coding
+  (succeeded/done green, failed/timeout red) so a failed node is visually obvious, not just
+  differently-labeled text.
+
+All three found by re-reading code paths end to end (not by running the app, since the deepest
+verification still needs the pending signed-in session, §4) — worth another look once that
+session happens, in case anything here was still subtly wrong.
+
 ## 6. Where to look for more detail
 
 - **Git mechanics of the repo merge itself** (conflicts, resolutions, verification steps): `MERGE_PLAN.md`
