@@ -1,20 +1,29 @@
 "use client";
 
-import { Captions, Film, Settings, Sparkles, Type } from "lucide-react";
-import { useState } from "react";
+import { Captions, Library, Settings, Sparkles, Type, Workflow } from "lucide-react";
+import { useGenerationStore, type PanelKey } from "@/lib/generation/store";
 
-const ITEMS = [
-  { key: "media", label: "Media", icon: Film },
+// "Media"/"Transitions" (the original two stub tabs) are dropped here:
+// Media's import affordance already lives inline in PreviewPanel/
+// TimelinePanel (drag-drop, "+ Import"), and Transitions isn't built yet --
+// neither needs a dedicated tab. Sparkles (previously Transitions' unused
+// icon) moves to Generate.
+const ITEMS: { key: PanelKey; label: string; icon: typeof Sparkles }[] = [
+  { key: "generate", label: "Generate", icon: Sparkles },
+  { key: "library", label: "Library", icon: Library },
+  { key: "production", label: "Production", icon: Workflow },
   { key: "captions", label: "Captions", icon: Captions },
   { key: "text", label: "Text", icon: Type },
-  { key: "transitions", label: "Transitions", icon: Sparkles },
   { key: "settings", label: "Settings", icon: Settings },
-] as const;
+];
 
-// Stub tonight — no panel content behind these yet, just the shell (§13.2
-// step 1). Import (behind "Media") is tomorrow's step 4.
+// Active-tab state lives in the generation store (not local useState)
+// so EditorShell can render panel content next to this rail -- see
+// GenerationPanel.tsx and ARCHITECTURE.md §6's "chat/prompt panel sits
+// alongside the timeline" framing.
 export function IconRail() {
-  const [active, setActive] = useState<(typeof ITEMS)[number]["key"]>("media");
+  const active = useGenerationStore((s) => s.activePanel);
+  const setActive = useGenerationStore((s) => s.setActivePanel);
 
   return (
     <div className="flex w-16 shrink-0 flex-col items-center gap-1 border-r border-neutral-800 py-3">

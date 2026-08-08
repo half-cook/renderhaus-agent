@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { useTimelineStore } from "@/lib/timeline/store";
+import { GenerationPanel } from "./GenerationPanel";
 import { IconRail } from "./IconRail";
 import { PreviewPanel } from "./PreviewPanel";
 import { TimelinePanel } from "./TimelinePanel";
@@ -40,6 +41,7 @@ export function EditorShell() {
       <TopBar />
       <div className="flex min-h-0 flex-1">
         <IconRail />
+        <GenerationPanel />
         <div className="flex min-h-0 min-w-0 flex-1 flex-col">
           <PreviewPanel />
           <TimelinePanel />
