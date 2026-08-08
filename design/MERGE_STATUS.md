@@ -160,7 +160,35 @@ All three found by re-reading code paths end to end (not by running the app, sin
 verification still needs the pending signed-in session, §4) — worth another look once that
 session happens, in case anything here was still subtly wrong.
 
-## 6. Where to look for more detail
+## 6. Needs revisit
+
+Consolidated pointer list — decisions made under time pressure, deliberately deferred scope, or
+open questions from elsewhere in this doc set. Not duplicating `PRODUCTION_READINESS.md`'s detail
+here, just making sure every open item is discoverable from this one entry-point doc.
+
+- **The signed-in verification pass itself (§4)** — still the top item. Everything below is
+  lower priority than this.
+- **Auth provider is Clerk, not settled as final.** Wired in and working (required to reach the
+  live backend at all), but this was explicitly raised as "a placeholder, not the final solution"
+  before it was built — revisit if there's a reason to move off it later.
+- **§5.3 drag-directly-onto-timeline** — deliberately deferred as optional/low-priority when the
+  gap was found. Revisit only if the button-only path turns out to be real friction.
+- **§5.4 project delete/rename** — gap in both the old and new UI, never built either.
+- **Backend architecture** (`PRODUCTION_READINESS.md`, none of this is fixed yet): the blocking
+  `subprocess` call in `/api/projects/{id}/merge` (§4.1 there — directly relevant now that §5.1's
+  fix makes merge reachable from the UI for the first time, so this bug is now actually
+  triggerable, not just theoretical), three separate local-JSON/in-process stores with no shared
+  concurrency control (§4.2/§4.3), imperative infra creation at boot (§4.4), no Dockerfile/worker
+  model for `server.app` (§4.6), no CORS/rate-limit policy (§4.7), zero test coverage on either
+  side (§4.8), CI not covering `web/` at all (§4.9).
+- **Open architecture questions, none decided**: job queue tech (Temporal, already accepted in
+  `docs/adr/0001`, vs. Inngest — real evidence now that even the Production feature itself was
+  built without Temporal despite that ADR), IaC tool (Terraform/CDK/Pulumi), deploy target (ECS/
+  Cloud Run/EKS), prod topology (same-origin proxy vs. separate origins), and a non-blocking one:
+  whether `web/`'s Next.js 16 choice is worth reconsidering against the original Vite+React+TS
+  spike, given `web/AGENTS.md`'s own warning about this pinned version's non-standard APIs.
+
+## 7. Where to look for more detail
 
 - **Git mechanics of the repo merge itself** (conflicts, resolutions, verification steps): `MERGE_PLAN.md`
 - **Scale/architecture audit** (blocking subprocess bug, local-JSON stores, Temporal ADR question):
