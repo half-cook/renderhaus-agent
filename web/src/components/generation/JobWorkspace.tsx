@@ -167,18 +167,27 @@ export function JobWorkspace() {
         )}
         {activeJob.status === "complete" && <MediaResult job={activeJob} />}
       </div>
-      {canAddToTimeline && (
-        <div className="px-4 pb-3">
-          <button
-            onClick={() => {
-              addToTimeline(activeJob);
-              setAddedState({ jobId: activeJobId, added: true });
-            }}
-            disabled={addedToTimeline}
-            className="w-full rounded-md bg-neutral-800 py-1.5 text-xs text-neutral-200 hover:bg-neutral-700 disabled:opacity-50"
+      {activeJob.status === "complete" && activeJob.media_url && (
+        <div className="flex gap-2 px-4 pb-3">
+          {canAddToTimeline && (
+            <button
+              onClick={() => {
+                addToTimeline(activeJob);
+                setAddedState({ jobId: activeJobId, added: true });
+              }}
+              disabled={addedToTimeline}
+              className="flex-1 rounded-md bg-neutral-800 py-1.5 text-xs text-neutral-200 hover:bg-neutral-700 disabled:opacity-50"
+            >
+              {addedToTimeline ? "Added to timeline" : `Add to ${activeJob.media_type === "music" ? "audio" : "video"} track`}
+            </button>
+          )}
+          <a
+            href={activeJob.media_url}
+            download
+            className="flex items-center justify-center rounded-md bg-neutral-800 px-3 py-1.5 text-xs text-neutral-200 hover:bg-neutral-700"
           >
-            {addedToTimeline ? "Added to timeline" : `Add to ${activeJob.media_type === "music" ? "audio" : "video"} track`}
-          </button>
+            Download
+          </a>
         </div>
       )}
     </>

@@ -58,41 +58,38 @@ alone. **This is the single most important next step**, ahead of any of the gaps
 
 Verified against the actual code (not assumed), 2026-08-07.
 
-### 5.1 Merge (combine multiple clips into one job) — broken, not just unbuilt
+### 5.1 Merge (combine multiple clips into one job) — fixed 2026-08-07
 
 **Before**: the old static frontend's "Merge" button (`POST /api/projects/{id}/merge`) worked,
 because the same UI maintained the project's server-side `timeline.items` via drag-and-drop
 (`PUT /api/projects/{id}/timeline`).
 
-**Now**: `putProjectTimeline` and `mergeProject` both exist in `web/src/lib/api/client.ts` — but
-grepped the whole `web/src` tree and **neither is called from any component**. Nothing populates
-`project.timeline.items` anymore, so `mergeProject`'s precondition (≥2 video items on the
-project's timeline) can never be met. The merge feature is present in the backend, wired in the
-client, and completely unreachable from the UI.
+**Was broken because**: `putProjectTimeline` and `mergeProject` both existed in
+`web/src/lib/api/client.ts`, but neither was called from any component — nothing populated
+`project.timeline.items`, so `mergeProject`'s precondition (≥2 video items on the project's
+timeline) could never be met. Fell out of the Unified Timeline decision: the "don't build a
+second timeline UI" half was done, the "still sync the snapshot" half wasn't.
 
-**Why**: this fell out of the decision to make `project.timeline` a snapshot-sync target instead
-of a second visible timeline widget (Unified Timeline, "Approach A") — the sync side of that
-decision (write to `project.timeline` when artifacts change) was never actually implemented, only
-the "don't build a second timeline UI" side was.
+**Fix**: `ProjectLibrary.tsx`'s `handleDropOnProject` now calls a new `syncProjectTimeline`
+helper after every `addProjectArtifact` — refetches the project's current video/music jobs and
+`PUT`s them (just `{job_id}` per item; the backend fills in `asset_id`/`media_type`/`label`/
+`duration_seconds` from each job record itself, doesn't trust those fields from the client). A
+"Merge video clips" button now appears in the "In this project" section once ≥2 video jobs are
+present, calling `mergeProject` and opening the resulting merged job in the workspace. Verified
+type-checking/linting clean and rendering correctly (button correctly absent with <2 video jobs);
+the actual merge call itself still needs the pending signed-in verification pass (§4).
 
-**Path forward**: when a video/music job is added to a project (`ProjectLibrary.tsx`'s
-`handleDropOnProject`, or a future "add to project" action), also call `putProjectTimeline` with
-the current list of that project's video/music artifacts — keeps the snapshot in sync
-automatically, invisibly, no new UI needed for the sync itself. Then add a visible "Merge" action
-in `ProjectLibrary.tsx`'s "In this project" section (enabled once ≥2 video artifacts are present)
-that calls `mergeProject`.
-
-### 5.2 Download finished media — missing
+### 5.2 Download finished media — fixed 2026-08-07
 
 **Before**: the old frontend's canvas toolbar had a "Download" button, enabled once `media_url`
 was present.
 
-**Now**: grepped `web/src/components/generation` for "download" — zero matches. No download
-affordance anywhere in the rebuild.
+**Was missing**: zero download affordance anywhere in the rebuild.
 
-**Path forward**: trivial — `job.media_url` is already available wherever a completed job renders
-(`JobWorkspace.tsx`'s `MediaResult`). Add `<a href={job.media_url} download>Download</a>` (or a
-styled button wrapping the same), enabled once `job.status === "complete"`.
+**Fix**: `JobWorkspace.tsx` now renders a Download link (`<a href={job.media_url} download>`)
+alongside the "Add to timeline" button, for any completed job with a `media_url` — video, image,
+or music, matching the old UI's scope (image jobs get a download link too, they just never got an
+"add to timeline" button, consistent with §5.1's video/music-only timeline scope).
 
 ### 5.3 Drag a clip directly onto the timeline — narrowed, not lost
 

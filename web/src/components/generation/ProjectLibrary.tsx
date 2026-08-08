@@ -12,18 +12,26 @@ import {
 import { useAddToTimeline } from "./useAddToTimeline";
 
 const JOB_DRAG_TYPE = "text/plain";
+const TIMELINE_MEDIA_TYPES = new Set(["video", "music"]);
 
 // Create/list/open projects, "in this project"/"standalone" job sections,
 // drag-drop from RecentHistoryStrip onto a project card. Per decision #1
 // (Unified Timeline), artifact cards' only drop target is a project card --
 // there's no separate timeline drop zone, "add to timeline" is the button
 // built in the previous step.
+//
+// project.timeline (server-side) is kept as a snapshot, synced whenever
+// membership changes (syncProjectTimeline below) -- not a second visible
+// widget, but it has to actually be written for POST /.../merge to have
+// anything to merge (design/MERGE_STATUS.md §5.1: this was the one piece
+// that hadn't been wired up).
 export function ProjectLibrary() {
   const api = useApiClient();
   const { isSignedIn } = useAuth();
   const projects = useGenerationStore((s) => s.projects);
   const setProjects = useGenerationStore((s) => s.setProjects);
   const upsertProject = useGenerationStore((s) => s.upsertProject);
+  const upsertJob = useGenerationStore((s) => s.upsertJob);
   const currentProjectId = useGenerationStore((s) => s.currentProjectId);
   const setCurrentProject = useGenerationStore((s) => s.setCurrentProject);
   const currentProject = useGenerationStore(selectCurrentProject);
@@ -34,6 +42,7 @@ export function ProjectLibrary() {
   const [standaloneJobs, setStandaloneJobs] = useState<Job[]>([]);
   const [title, setTitle] = useState("");
   const [creating, setCreating] = useState(false);
+  const [merging, setMerging] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -91,13 +100,51 @@ export function ProjectLibrary() {
     }
   }
 
+  // Writes the project's video/music artifacts to its server-side timeline
+  // snapshot (PUT /api/projects/{id}/timeline). The backend fills in
+  // asset_id/media_type/label/duration_seconds from each job record itself
+  // (server/app.py's timeline handler doesn't trust those fields from the
+  // client) -- {job_id} per item is all that's needed here. Images are
+  // excluded: the backend silently drops them from the persisted timeline
+  // anyway (video/music only), and they were never mergeable in the old UI.
+  const syncProjectTimeline = useCallback(
+    async (projectId: string, jobs: Job[]) => {
+      const items = jobs
+        .filter((job) => TIMELINE_MEDIA_TYPES.has(job.media_type))
+        .map((job) => ({ job_id: job.id }));
+      const project = await api.putProjectTimeline(projectId, items);
+      upsertProject(project);
+    },
+    [api, upsertProject],
+  );
+
   async function handleDropOnProject(projectId: string, jobId: string) {
     try {
       const { project } = await api.addProjectArtifact(projectId, jobId);
       upsertProject(project);
+      const { items } = await api.listGenerations({ project_id: projectId });
+      await syncProjectTimeline(projectId, items);
       await refreshJobs();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Could not add that generation to the project.");
+    }
+  }
+
+  async function handleMerge() {
+    if (!currentProjectId) return;
+    setMerging(true);
+    setError(null);
+    try {
+      const { project, job } = await api.mergeProject(currentProjectId);
+      upsertProject(project);
+      upsertJob(job);
+      setActiveJob(job.id);
+      setActivePanel("generate" as PanelKey);
+      await refreshJobs();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Could not merge the timeline clips.");
+    } finally {
+      setMerging(false);
     }
   }
 
@@ -195,6 +242,15 @@ export function ProjectLibrary() {
               />
             ))}
           </div>
+          {projectJobs.filter((job) => job.media_type === "video").length >= 2 && (
+            <button
+              onClick={handleMerge}
+              disabled={merging}
+              className="rounded-md bg-neutral-800 py-1.5 text-xs text-neutral-200 hover:bg-neutral-700 disabled:opacity-50"
+            >
+              {merging ? "Merging…" : "Merge video clips"}
+            </button>
+          )}
         </section>
       )}
 
