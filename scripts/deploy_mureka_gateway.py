@@ -223,10 +223,21 @@ def _upsert_lambda(
     try:
         lam.get_function(FunctionName=FUNCTION_NAME)
         print(f"Updating Lambda {FUNCTION_NAME}")
-        lam.update_function_code(FunctionName=FUNCTION_NAME, ZipFile=zip_bytes)
+        # Architectures is valid on create_function / update_function_code only —
+        # not on update_function_configuration.
+        lam.update_function_code(
+            FunctionName=FUNCTION_NAME,
+            ZipFile=zip_bytes,
+            Architectures=config["Architectures"],
+        )
         # Wait briefly for code update before config update.
         time.sleep(3)
-        lam.update_function_configuration(**{k: v for k, v in config.items() if k != "FunctionName"}, FunctionName=FUNCTION_NAME)
+        config_update = {
+            k: v
+            for k, v in config.items()
+            if k not in ("FunctionName", "Architectures")
+        }
+        lam.update_function_configuration(FunctionName=FUNCTION_NAME, **config_update)
     except ClientError as exc:
         if exc.response["Error"]["Code"] != "ResourceNotFoundException":
             raise
