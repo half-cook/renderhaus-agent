@@ -1,0 +1,313 @@
+[
+  {
+    "name": "text_to_music",
+    "description": "Create a Mureka music task. With lyrics -> song; without lyrics -> instrumental. Returns job_id immediately.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "prompt": {"type": "string", "description": "Genre, mood, tempo, instruments, use case."},
+        "lyrics": {"type": "string", "description": "Optional lyrics. Omit for instrumental."},
+        "model": {"type": "string", "description": "Mureka model id or auto."}
+      },
+      "required": ["prompt"]
+    }
+  },
+  {
+    "name": "create_instrumental",
+    "description": "Generate instrumental/BGM from a prompt (POST /v1/instrumental/generate).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "prompt": {"type": "string"},
+        "model": {"type": "string"},
+        "n": {"type": "integer", "description": "Number of choices (1-3)."},
+        "instrumental_id": {"type": "string", "description": "Reference instrumental file id."},
+        "stream": {"type": "boolean"}
+      },
+      "required": ["prompt"]
+    }
+  },
+  {
+    "name": "create_song",
+    "description": "Generate a song from lyrics (POST /v1/song/generate).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "lyrics": {"type": "string"},
+        "prompt": {"type": "string"},
+        "model": {"type": "string"},
+        "n": {"type": "integer"},
+        "gender": {"type": "string"},
+        "reference_id": {"type": "string"},
+        "vocal_id": {"type": "string"},
+        "melody_id": {"type": "string"},
+        "instrumental_id": {"type": "string"},
+        "stream": {"type": "boolean"}
+      },
+      "required": ["lyrics"]
+    }
+  },
+  {
+    "name": "create_song_from_prompt",
+    "description": "Prompt-to-song without separate lyrics (POST /v1/song/easy-generate).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "prompt": {"type": "string"},
+        "model": {"type": "string"},
+        "n": {"type": "integer"},
+        "gender": {"type": "string"}
+      },
+      "required": ["prompt"]
+    }
+  },
+  {
+    "name": "generate_lyrics",
+    "description": "Generate song lyrics and title from a prompt (POST /v1/lyrics/generate).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "prompt": {"type": "string"}
+      },
+      "required": ["prompt"]
+    }
+  },
+  {
+    "name": "extend_lyrics",
+    "description": "Extend existing lyrics (POST /v1/lyrics/extend).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "lyrics": {"type": "string"},
+        "prompt": {"type": "string"}
+      },
+      "required": ["lyrics"]
+    }
+  },
+  {
+    "name": "query_music_task",
+    "description": "Poll a Mureka song or instrumental task; optionally download audio when succeeded.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "job_id": {"type": "string"},
+        "download": {"type": "boolean"}
+      },
+      "required": ["job_id"]
+    }
+  },
+  {
+    "name": "get_music_task",
+    "description": "Alias for query_music_task.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "job_id": {"type": "string"},
+        "download": {"type": "boolean"}
+      },
+      "required": ["job_id"]
+    }
+  },
+  {
+    "name": "extend_song",
+    "description": "Extend an existing song from extend_at_ms (POST /v1/song/extend).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "lyrics": {"type": "string"},
+        "extend_at_ms": {"type": "integer"},
+        "song_id": {"type": "string"},
+        "upload_audio_id": {"type": "string"}
+      },
+      "required": ["lyrics", "extend_at_ms"]
+    }
+  },
+  {
+    "name": "region_edit_song",
+    "description": "Rewrite a time region of a song (POST /v1/song/region-edit).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "lyrics": {"type": "string"},
+        "edit_start_ms": {"type": "integer"},
+        "edit_end_ms": {"type": "integer"},
+        "song_id": {"type": "string"},
+        "upload_audio_id": {"type": "string"}
+      },
+      "required": ["lyrics", "edit_start_ms", "edit_end_ms"]
+    }
+  },
+  {
+    "name": "remix_song",
+    "description": "Remix a song or uploaded audio (POST /v1/song/remix).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "prompt": {"type": "string"},
+        "song_id": {"type": "string"},
+        "upload_audio_id": {"type": "string"},
+        "n": {"type": "integer"}
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "stem_song",
+    "description": "Separate stems / vocal+instrumental (POST /v1/song/stem).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "song_id": {"type": "string"},
+        "upload_audio_id": {"type": "string"},
+        "model": {"type": "string"}
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "recognize_song",
+    "description": "Recognize / analyze uploaded audio (POST /v1/song/recognize).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "upload_audio_id": {"type": "string"},
+        "audio_url": {"type": "string"}
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "describe_song",
+    "description": "Describe a song or upload (POST /v1/song/describe).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "upload_audio_id": {"type": "string"},
+        "song_id": {"type": "string"}
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "transcribe_song",
+    "description": "Music transcription (POST /v1/song/transcribe).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "upload_audio_id": {"type": "string"},
+        "song_id": {"type": "string"}
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "vocal_clone",
+    "description": "Create a vocal clone from uploaded audio (POST /v1/song/vocal-clone).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "upload_audio_id": {"type": "string"},
+        "name": {"type": "string"}
+      },
+      "required": ["upload_audio_id"]
+    }
+  },
+  {
+    "name": "generate_track",
+    "description": "Generate complementary track: vocals | accompaniment | instrument (POST /v1/track/generate).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "track_type": {"type": "string", "description": "vocals | accompaniment | instrument"},
+        "song_id": {"type": "string"},
+        "upload_audio_id": {"type": "string"},
+        "prompt": {"type": "string"}
+      },
+      "required": ["track_type"]
+    }
+  },
+  {
+    "name": "generate_soundtrack",
+    "description": "Image/video to soundtrack (POST /v1/soundtrack/generate). Supports audio_start/audio_end.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "prompt": {"type": "string"},
+        "upload_file_id": {"type": "string"},
+        "audio_start": {"type": "number"},
+        "audio_end": {"type": "number"},
+        "model": {"type": "string"}
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "generate_lyrics_video",
+    "description": "Generate a lyrics video (POST /v1/lyrics-video/generate).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "song_id": {"type": "string"},
+        "upload_audio_id": {"type": "string"},
+        "aspect_ratio": {"type": "string"},
+        "layout": {"type": "string"}
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "upload_file",
+    "description": "Upload reference media to Mureka (POST /v1/files/upload). purpose: reference|melody|instrumental|voice|audio|remix|soundtrack.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "purpose": {"type": "string"},
+        "filename": {"type": "string"},
+        "content_b64": {"type": "string", "description": "Base64-encoded file bytes."}
+      },
+      "required": ["purpose", "filename", "content_b64"]
+    }
+  },
+  {
+    "name": "create_speech",
+    "description": "Mureka TTS (POST /v1/tts/generate).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "text": {"type": "string"},
+        "voice": {"type": "string"}
+      },
+      "required": ["text"]
+    }
+  },
+  {
+    "name": "create_podcast",
+    "description": "Mureka podcast generation (POST /v1/tts/podcast).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "script": {"type": "string"},
+        "title": {"type": "string"}
+      },
+      "required": ["script"]
+    }
+  },
+  {
+    "name": "query_billing",
+    "description": "Query Mureka account billing (GET /v1/account/billing).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": []
+    }
+  },
+  {
+    "name": "list_mureka_models",
+    "description": "List supported Mureka model ids for this workspace.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": []
+    }
+  }
+]

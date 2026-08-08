@@ -79,7 +79,28 @@ def _walk_expand(value: Any) -> Any:
 
 def load_mcp_servers(path: Path = DEFAULT_MCP_CONFIG) -> dict[str, dict[str, Any]]:
     raw = json.loads(path.read_text())
-    return _walk_expand(raw["mcpServers"])
+    servers = _walk_expand(raw["mcpServers"])
+    return _maybe_attach_gateway(servers)
+
+
+def _maybe_attach_gateway(servers: dict[str, dict[str, Any]]) -> dict[str, dict[str, Any]]:
+    """Prefer AgentCore Gateway for Mureka when AGENTCORE_GATEWAY_URL is set."""
+    gateway_url = (os.getenv("AGENTCORE_GATEWAY_URL") or "").strip()
+    if not gateway_url:
+        return servers
+    updated = dict(servers)
+    # Gateway exposes Mureka___* tools; drop local stdio mureka to avoid duplicates.
+    updated.pop("mureka", None)
+    headers: dict[str, str] = {}
+    token = (os.getenv("AGENTCORE_GATEWAY_AUTH_TOKEN") or "").strip()
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+    updated["mureka-gateway"] = {
+        "transport": "streamable_http",
+        "url": gateway_url,
+        **({"headers": headers} if headers else {}),
+    }
+    return updated
 
 
 def mask_secret_status(name: str) -> str:

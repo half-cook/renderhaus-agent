@@ -25,6 +25,18 @@ The evidence-backed product, architecture, continuity, evaluation, and six-sprin
 for evolving Renderhaus into a durable 60–180 second video-production agent starts at
 [docs/README.md](docs/README.md).
 
+## Development workflow
+
+Day-to-day local + CI/CD map: [docs/development.md](docs/development.md).
+
+```bash
+make setup    # once
+make check    # before push
+make web      # backend API only (see "Run the app" below for the full two-process setup)
+make gateway  # deploy Mureka Lambda + Gateway
+make runtime  # deploy AgentCore Runtime
+```
+
 ## Run the app
 
 Two processes: the FastAPI backend and the Next.js frontend.
@@ -148,6 +160,36 @@ This only prints `set` or `empty`, never secret values.
 ```bash
 .venv/bin/python -m agent.main --list-tools
 ```
+
+## Mureka via AgentCore Gateway
+
+Full Mureka APIs are implemented in `mcps/mureka/api.py` and exposed both as the local stdio
+MCP and as a single Lambda target behind AgentCore Gateway:
+
+```bash
+.venv/bin/python scripts/deploy_mureka_gateway.py --region us-east-1
+# Writes .env.agentcore.gateway with AGENTCORE_GATEWAY_URL
+# Sync that URL into Secrets Manager, then:
+.venv/bin/python scripts/deploy_agentcore.py --region us-east-1
+```
+
+When `AGENTCORE_GATEWAY_URL` is set, the agent loads Mureka tools from the Gateway MCP endpoint
+instead of the local `mcps.mureka.server` process.
+
+## Supervisor (Director + Executor)
+
+Multi-shot flow: Director plans → you approve → Executor runs modality workers.
+
+```bash
+make supervise ARGS='30s product teaser with calm piano BGM'
+make supervise ARGS='30s product teaser with calm piano BGM' EXECUTE=1
+```
+
+In the web UI, use the **Production** tab: brief → plan → **Approve & run**.
+API: `POST /api/productions`, `POST /api/productions/{id}/commands/approve-plan`.
+
+The Director emits a typed plan only; the Executor deterministically calls modality workers. This is
+not an LLM swarm over paid tools.
 
 ## Run A Prompt
 

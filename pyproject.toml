@@ -23,12 +23,17 @@ dependencies = [
 [tool.ruff]
 line-length = 100
 
+[tool.ruff.lint]
+# Keep CI focused on real breakage; expand later when cleaning style.
+select = ["E9", "F"]
+ignore = ["F401"]
+
 [build-system]
 requires = ["setuptools>=69", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
-include = ["agent*", "mcps*", "server*"]
+include = ["agent*", "mcps*", "server*", "lambdas*"]
 
 [tool.setuptools]
 include-package-data = true

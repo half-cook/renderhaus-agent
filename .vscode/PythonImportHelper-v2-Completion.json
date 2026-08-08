@@ -220,6 +220,78 @@
         "documentation": {}
     },
     {
+        "label": "annotations",
+        "importPath": "__future__",
+        "description": "__future__",
+        "isExtraImport": true,
+        "detail": "__future__",
+        "documentation": {}
+    },
+    {
+        "label": "annotations",
+        "importPath": "__future__",
+        "description": "__future__",
+        "isExtraImport": true,
+        "detail": "__future__",
+        "documentation": {}
+    },
+    {
+        "label": "annotations",
+        "importPath": "__future__",
+        "description": "__future__",
+        "isExtraImport": true,
+        "detail": "__future__",
+        "documentation": {}
+    },
+    {
+        "label": "annotations",
+        "importPath": "__future__",
+        "description": "__future__",
+        "isExtraImport": true,
+        "detail": "__future__",
+        "documentation": {}
+    },
+    {
+        "label": "annotations",
+        "importPath": "__future__",
+        "description": "__future__",
+        "isExtraImport": true,
+        "detail": "__future__",
+        "documentation": {}
+    },
+    {
+        "label": "annotations",
+        "importPath": "__future__",
+        "description": "__future__",
+        "isExtraImport": true,
+        "detail": "__future__",
+        "documentation": {}
+    },
+    {
+        "label": "annotations",
+        "importPath": "__future__",
+        "description": "__future__",
+        "isExtraImport": true,
+        "detail": "__future__",
+        "documentation": {}
+    },
+    {
+        "label": "annotations",
+        "importPath": "__future__",
+        "description": "__future__",
+        "isExtraImport": true,
+        "detail": "__future__",
+        "documentation": {}
+    },
+    {
+        "label": "annotations",
+        "importPath": "__future__",
+        "description": "__future__",
+        "isExtraImport": true,
+        "detail": "__future__",
+        "documentation": {}
+    },
+    {
         "label": "os",
         "kind": 6,
         "isExtraImport": true,
@@ -271,6 +343,30 @@
         "documentation": {}
     },
     {
+        "label": "Literal",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Any",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Any",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
         "label": "Any",
         "importPath": "typing",
         "description": "typing",
@@ -335,7 +431,15 @@
         "documentation": {}
     },
     {
-        "label": "Literal",
+        "label": "Any",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Any",
         "importPath": "typing",
         "description": "typing",
         "isExtraImport": true,
@@ -423,12 +527,52 @@
         "documentation": {}
     },
     {
+        "label": "Any",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
         "label": "boto3",
         "kind": 6,
         "isExtraImport": true,
         "importPath": "boto3",
         "description": "boto3",
         "detail": "boto3",
+        "documentation": {}
+    },
+    {
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
+        "isExtraImport": true,
+        "detail": "pathlib",
+        "documentation": {}
+    },
+    {
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
+        "isExtraImport": true,
+        "detail": "pathlib",
+        "documentation": {}
+    },
+    {
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
+        "isExtraImport": true,
+        "detail": "pathlib",
+        "documentation": {}
+    },
+    {
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
+        "isExtraImport": true,
+        "detail": "pathlib",
         "documentation": {}
     },
     {
@@ -632,12 +776,124 @@
         "documentation": {}
     },
     {
+        "label": "BaseModel",
+        "importPath": "pydantic",
+        "description": "pydantic",
+        "isExtraImport": true,
+        "detail": "pydantic",
+        "documentation": {}
+    },
+    {
+        "label": "Field",
+        "importPath": "pydantic",
+        "description": "pydantic",
+        "isExtraImport": true,
+        "detail": "pydantic",
+        "documentation": {}
+    },
+    {
+        "label": "Field",
+        "importPath": "pydantic",
+        "description": "pydantic",
+        "isExtraImport": true,
+        "detail": "pydantic",
+        "documentation": {}
+    },
+    {
+        "label": "Field",
+        "importPath": "pydantic",
+        "description": "pydantic",
+        "isExtraImport": true,
+        "detail": "pydantic",
+        "documentation": {}
+    },
+    {
+        "label": "BaseModel",
+        "importPath": "pydantic",
+        "description": "pydantic",
+        "isExtraImport": true,
+        "detail": "pydantic",
+        "documentation": {}
+    },
+    {
+        "label": "Field",
+        "importPath": "pydantic",
+        "description": "pydantic",
+        "isExtraImport": true,
+        "detail": "pydantic",
+        "documentation": {}
+    },
+    {
+        "label": "BaseModel",
+        "importPath": "pydantic",
+        "description": "pydantic",
+        "isExtraImport": true,
+        "detail": "pydantic",
+        "documentation": {}
+    },
+    {
+        "label": "Field",
+        "importPath": "pydantic",
+        "description": "pydantic",
+        "isExtraImport": true,
+        "detail": "pydantic",
+        "documentation": {}
+    },
+    {
+        "label": "BaseModel",
+        "importPath": "pydantic",
+        "description": "pydantic",
+        "isExtraImport": true,
+        "detail": "pydantic",
+        "documentation": {}
+    },
+    {
+        "label": "Field",
+        "importPath": "pydantic",
+        "description": "pydantic",
+        "isExtraImport": true,
+        "detail": "pydantic",
+        "documentation": {}
+    },
+    {
         "label": "asyncio",
         "kind": 6,
         "isExtraImport": true,
         "importPath": "asyncio",
         "description": "asyncio",
         "detail": "asyncio",
+        "documentation": {}
+    },
+    {
+        "label": "PlanNode",
+        "importPath": "agent.director",
+        "description": "agent.director",
+        "isExtraImport": true,
+        "detail": "agent.director",
+        "documentation": {}
+    },
+    {
+        "label": "TypedProductionPlan",
+        "importPath": "agent.director",
+        "description": "agent.director",
+        "isExtraImport": true,
+        "detail": "agent.director",
+        "documentation": {}
+    },
+    {
+        "label": "plan_production",
+        "importPath": "agent.director",
+        "description": "agent.director",
+        "isExtraImport": true,
+        "detail": "agent.director",
+        "documentation": {}
+    },
+    {
+        "label": "TypedProductionPlan",
+        "importPath": "agent.director",
+        "description": "agent.director",
+        "isExtraImport": true,
+        "detail": "agent.director",
         "documentation": {}
     },
     {
@@ -729,22 +985,6 @@
         "documentation": {}
     },
     {
-        "label": "ROOT",
-        "importPath": "agent.config",
-        "description": "agent.config",
-        "isExtraImport": true,
-        "detail": "agent.config",
-        "documentation": {}
-    },
-    {
-        "label": "load_local_env",
-        "importPath": "agent.config",
-        "description": "agent.config",
-        "isExtraImport": true,
-        "detail": "agent.config",
-        "documentation": {}
-    },
-    {
         "label": "load_local_env",
         "importPath": "agent.config",
         "description": "agent.config",
@@ -762,6 +1002,38 @@
     },
     {
         "label": "load_local_env",
+        "importPath": "agent.config",
+        "description": "agent.config",
+        "isExtraImport": true,
+        "detail": "agent.config",
+        "documentation": {}
+    },
+    {
+        "label": "load_local_env",
+        "importPath": "agent.config",
+        "description": "agent.config",
+        "isExtraImport": true,
+        "detail": "agent.config",
+        "documentation": {}
+    },
+    {
+        "label": "ROOT",
+        "importPath": "agent.config",
+        "description": "agent.config",
+        "isExtraImport": true,
+        "detail": "agent.config",
+        "documentation": {}
+    },
+    {
+        "label": "load_local_env",
+        "importPath": "agent.config",
+        "description": "agent.config",
+        "isExtraImport": true,
+        "detail": "agent.config",
+        "documentation": {}
+    },
+    {
+        "label": "ROOT",
         "importPath": "agent.config",
         "description": "agent.config",
         "isExtraImport": true,
@@ -995,6 +1267,22 @@
         "documentation": {}
     },
     {
+        "label": "supervise_production",
+        "importPath": "agent.service",
+        "description": "agent.service",
+        "isExtraImport": true,
+        "detail": "agent.service",
+        "documentation": {}
+    },
+    {
+        "label": "supervise_production",
+        "importPath": "agent.service",
+        "description": "agent.service",
+        "isExtraImport": true,
+        "detail": "agent.service",
+        "documentation": {}
+    },
+    {
         "label": "poll_music_generation",
         "importPath": "agent.service",
         "description": "agent.service",
@@ -1035,6 +1323,14 @@
         "documentation": {}
     },
     {
+        "label": "supervise_production",
+        "importPath": "agent.service",
+        "description": "agent.service",
+        "isExtraImport": true,
+        "detail": "agent.service",
+        "documentation": {}
+    },
+    {
         "label": "logging",
         "kind": 6,
         "isExtraImport": true,
@@ -1057,6 +1353,22 @@
         "description": "functools",
         "isExtraImport": true,
         "detail": "functools",
+        "documentation": {}
+    },
+    {
+        "label": "ClientError",
+        "importPath": "botocore.exceptions",
+        "description": "botocore.exceptions",
+        "isExtraImport": true,
+        "detail": "botocore.exceptions",
+        "documentation": {}
+    },
+    {
+        "label": "ClientError",
+        "importPath": "botocore.exceptions",
+        "description": "botocore.exceptions",
+        "isExtraImport": true,
+        "detail": "botocore.exceptions",
         "documentation": {}
     },
     {
@@ -1124,6 +1436,14 @@
         "documentation": {}
     },
     {
+        "label": "supervise_brief",
+        "importPath": "agent.executor",
+        "description": "agent.executor",
+        "isExtraImport": true,
+        "detail": "agent.executor",
+        "documentation": {}
+    },
+    {
         "label": "langchain_callbacks",
         "importPath": "agent.tracing",
         "description": "agent.tracing",
@@ -1133,6 +1453,14 @@
     },
     {
         "label": "traced_operation",
+        "importPath": "agent.tracing",
+        "description": "agent.tracing",
+        "isExtraImport": true,
+        "detail": "agent.tracing",
+        "documentation": {}
+    },
+    {
+        "label": "flush_langfuse",
         "importPath": "agent.tracing",
         "description": "agent.tracing",
         "isExtraImport": true,
@@ -1180,6 +1508,23 @@
         "documentation": {}
     },
     {
+        "label": "traceback",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "traceback",
+        "description": "traceback",
+        "detail": "traceback",
+        "documentation": {}
+    },
+    {
+        "label": "dispatch_tool",
+        "importPath": "mcps.mureka.api",
+        "description": "mcps.mureka.api",
+        "isExtraImport": true,
+        "detail": "mcps.mureka.api",
+        "documentation": {}
+    },
+    {
         "label": "time",
         "kind": 6,
         "isExtraImport": true,
@@ -1221,75 +1566,12 @@
         "documentation": {}
     },
     {
-        "label": "Field",
-        "importPath": "pydantic",
-        "description": "pydantic",
+        "label": "base64",
+        "kind": 6,
         "isExtraImport": true,
-        "detail": "pydantic",
-        "documentation": {}
-    },
-    {
-        "label": "BaseModel",
-        "importPath": "pydantic",
-        "description": "pydantic",
-        "isExtraImport": true,
-        "detail": "pydantic",
-        "documentation": {}
-    },
-    {
-        "label": "Field",
-        "importPath": "pydantic",
-        "description": "pydantic",
-        "isExtraImport": true,
-        "detail": "pydantic",
-        "documentation": {}
-    },
-    {
-        "label": "BaseModel",
-        "importPath": "pydantic",
-        "description": "pydantic",
-        "isExtraImport": true,
-        "detail": "pydantic",
-        "documentation": {}
-    },
-    {
-        "label": "Field",
-        "importPath": "pydantic",
-        "description": "pydantic",
-        "isExtraImport": true,
-        "detail": "pydantic",
-        "documentation": {}
-    },
-    {
-        "label": "BaseModel",
-        "importPath": "pydantic",
-        "description": "pydantic",
-        "isExtraImport": true,
-        "detail": "pydantic",
-        "documentation": {}
-    },
-    {
-        "label": "Field",
-        "importPath": "pydantic",
-        "description": "pydantic",
-        "isExtraImport": true,
-        "detail": "pydantic",
-        "documentation": {}
-    },
-    {
-        "label": "BaseModel",
-        "importPath": "pydantic",
-        "description": "pydantic",
-        "isExtraImport": true,
-        "detail": "pydantic",
-        "documentation": {}
-    },
-    {
-        "label": "Field",
-        "importPath": "pydantic",
-        "description": "pydantic",
-        "isExtraImport": true,
-        "detail": "pydantic",
+        "importPath": "base64",
+        "description": "base64",
+        "detail": "base64",
         "documentation": {}
     },
     {
@@ -1350,12 +1632,11 @@
         "documentation": {}
     },
     {
-        "label": "base64",
-        "kind": 6,
+        "label": "api",
+        "importPath": "mcps.mureka",
+        "description": "mcps.mureka",
         "isExtraImport": true,
-        "importPath": "base64",
-        "description": "base64",
-        "detail": "base64",
+        "detail": "mcps.mureka",
         "documentation": {}
     },
     {
@@ -1368,12 +1649,39 @@
         "documentation": {}
     },
     {
+        "label": "io",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "io",
+        "description": "io",
+        "detail": "io",
+        "documentation": {}
+    },
+    {
         "label": "shutil",
         "kind": 6,
         "isExtraImport": true,
         "importPath": "shutil",
         "description": "shutil",
         "detail": "shutil",
+        "documentation": {}
+    },
+    {
+        "label": "tempfile",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "tempfile",
+        "description": "tempfile",
+        "detail": "tempfile",
+        "documentation": {}
+    },
+    {
+        "label": "zipfile",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "zipfile",
+        "description": "zipfile",
+        "detail": "zipfile",
         "documentation": {}
     },
     {
@@ -1553,6 +1861,22 @@
         "documentation": {}
     },
     {
+        "label": "ProductionStore",
+        "importPath": "web.productions",
+        "description": "web.productions",
+        "isExtraImport": true,
+        "detail": "web.productions",
+        "documentation": {}
+    },
+    {
+        "label": "public_production",
+        "importPath": "web.productions",
+        "description": "web.productions",
+        "isExtraImport": true,
+        "detail": "web.productions",
+        "documentation": {}
+    },
+    {
         "label": "ProjectStore",
         "importPath": "web.projects",
         "description": "web.projects",
@@ -1674,15 +1998,6 @@
         "documentation": {}
     },
     {
-        "label": "tempfile",
-        "kind": 6,
-        "isExtraImport": true,
-        "importPath": "tempfile",
-        "description": "tempfile",
-        "detail": "tempfile",
-        "documentation": {}
-    },
-    {
         "label": "main",
         "kind": 2,
         "importPath": ".venv.bin.jp",
@@ -1741,7 +2056,7 @@
         "kind": 2,
         "importPath": "agent.config",
         "description": "agent.config",
-        "peekOfCode": "def load_mcp_servers(path: Path = DEFAULT_MCP_CONFIG) -> dict[str, dict[str, Any]]:\n    raw = json.loads(path.read_text())\n    return _walk_expand(raw[\"mcpServers\"])\ndef mask_secret_status(name: str) -> str:\n    return \"set\" if os.getenv(name) else \"empty\"",
+        "peekOfCode": "def load_mcp_servers(path: Path = DEFAULT_MCP_CONFIG) -> dict[str, dict[str, Any]]:\n    raw = json.loads(path.read_text())\n    servers = _walk_expand(raw[\"mcpServers\"])\n    return _maybe_attach_gateway(servers)\ndef _maybe_attach_gateway(servers: dict[str, dict[str, Any]]) -> dict[str, dict[str, Any]]:\n    \"\"\"Prefer AgentCore Gateway for Mureka when AGENTCORE_GATEWAY_URL is set.\"\"\"\n    gateway_url = (os.getenv(\"AGENTCORE_GATEWAY_URL\") or \"\").strip()\n    if not gateway_url:\n        return servers\n    updated = dict(servers)",
         "detail": "agent.config",
         "documentation": {}
     },
@@ -1806,6 +2121,42 @@
         "description": "agent.config",
         "peekOfCode": "DEFAULT_ENV = {\n    \"AGENT_MODEL\": \"openai:gpt-4.1-mini\",\n    \"BYTEPLUS_BASE_URL\": \"https://ark.ap-southeast.bytepluses.com/api/v3\",\n    \"SEEDANCE_MODEL\": \"seedance-1-5-pro-251215\",\n    \"SEEDANCE_DRY_RUN\": \"true\",\n    \"SEEDREAM_MODEL\": \"seedream-5-0-lite-260128\",\n    \"SEEDREAM_DRY_RUN\": \"true\",\n    \"GEMINI_TTS_DRY_RUN\": \"true\",\n    \"GEMINI_TTS_MODEL\": \"gemini-3.1-flash-tts-preview\",\n    \"MUREKA_API_URL\": \"https://api.mureka.ai\",",
         "detail": "agent.config",
+        "documentation": {}
+    },
+    {
+        "label": "PlanNode",
+        "kind": 6,
+        "importPath": "agent.director",
+        "description": "agent.director",
+        "peekOfCode": "class PlanNode(BaseModel):\n    id: str = Field(description=\"Stable node id used for idempotent execution.\")\n    kind: MediaKind\n    prompt: str\n    depends_on: list[str] = Field(default_factory=list)\n    lyrics: str | None = None\n    notes: str | None = None\nclass TypedProductionPlan(BaseModel):\n    title: str\n    summary: str",
+        "detail": "agent.director",
+        "documentation": {}
+    },
+    {
+        "label": "TypedProductionPlan",
+        "kind": 6,
+        "importPath": "agent.director",
+        "description": "agent.director",
+        "peekOfCode": "class TypedProductionPlan(BaseModel):\n    title: str\n    summary: str\n    nodes: list[PlanNode]\n    rationale: str = \"\"\nDIRECTOR_SYSTEM = \"\"\"You are the Renderhaus Director/Planner.\nGiven a creative brief, produce a compact JSON production plan.\nRules:\n- Emit ONLY valid JSON matching the schema (title, summary, nodes[], rationale).\n- Each node needs a stable snake_case id, kind in {video,image,music,speech}, prompt, optional depends_on.",
+        "detail": "agent.director",
+        "documentation": {}
+    },
+    {
+        "label": "MediaKind",
+        "kind": 5,
+        "importPath": "agent.director",
+        "description": "agent.director",
+        "peekOfCode": "MediaKind = Literal[\"video\", \"image\", \"music\", \"speech\"]\nclass PlanNode(BaseModel):\n    id: str = Field(description=\"Stable node id used for idempotent execution.\")\n    kind: MediaKind\n    prompt: str\n    depends_on: list[str] = Field(default_factory=list)\n    lyrics: str | None = None\n    notes: str | None = None\nclass TypedProductionPlan(BaseModel):\n    title: str",
+        "detail": "agent.director",
+        "documentation": {}
+    },
+    {
+        "label": "DIRECTOR_SYSTEM",
+        "kind": 5,
+        "importPath": "agent.director",
+        "description": "agent.director",
+        "peekOfCode": "DIRECTOR_SYSTEM = \"\"\"You are the Renderhaus Director/Planner.\nGiven a creative brief, produce a compact JSON production plan.\nRules:\n- Emit ONLY valid JSON matching the schema (title, summary, nodes[], rationale).\n- Each node needs a stable snake_case id, kind in {video,image,music,speech}, prompt, optional depends_on.\n- Prefer 2–6 nodes. Do not invent provider names or tool calls.\n- For music BGM use kind=music without lyrics. For songs include lyrics on the node.\n- Video nodes should be short clip prompts (under ~15s intent). Image nodes are keyframes/reference stills.\n- depends_on lists prior node ids that must finish first.\n\"\"\"",
+        "detail": "agent.director",
         "documentation": {}
     },
     {
@@ -2092,7 +2443,7 @@
         "kind": 5,
         "importPath": "agent.service",
         "description": "agent.service",
-        "peekOfCode": "WEB_IMAGE_SYSTEM_PROMPT = \"\"\"You are the private Renderhaus image-generation coordinator.\nThe user has explicitly authorized exactly one image generation for this request.\nCall exactly one generation tool: text_to_image for a text prompt, or image_to_image when a local\nreference image path is supplied. Never call video, wait, polling, model listing, audio, voice,\nmusic, playback, phone, or outbound communication tools. Do not reveal provider, model, tool,\ncredential, or internal path details in your prose. Keep the final response to one short sentence;\nthe application reads the generation result structurally.\n\"\"\"\nWEB_MUSIC_SYSTEM_PROMPT = \"\"\"You are the private Renderhaus music-generation coordinator.\nThe user has explicitly authorized exactly one music generation for this request.",
+        "peekOfCode": "WEB_IMAGE_SYSTEM_PROMPT = \"\"\"You are the private Renderhaus image-generation coordinator.\nThe user has explicitly authorized exactly one image generation for this request.\nCall exactly one generation tool: text_to_image for a text prompt, or image_to_image when a local\nreference image path is supplied. Never call video, wait, polling, model listing, audio, voice,\nmusic, playback, phone, or outbound communication tools. Do not reveal provider, model, tool,\ncredential, or internal path details in your prose. Keep the final response to one short sentence;\nthe application reads the generation result structurally.\n\"\"\"\nWEB_MUSIC_SYSTEM_PROMPT = \"\"\"You are the private Renderhaus music-generation coordinator.\nThe user has explicitly authorized music work for this request.",
         "detail": "agent.service",
         "documentation": {}
     },
@@ -2101,7 +2452,16 @@
         "kind": 5,
         "importPath": "agent.service",
         "description": "agent.service",
-        "peekOfCode": "WEB_MUSIC_SYSTEM_PROMPT = \"\"\"You are the private Renderhaus music-generation coordinator.\nThe user has explicitly authorized exactly one music generation for this request.\nCall exactly one immediate-return generation tool: text_to_music. Prefer an instrumental score\nunless the user explicitly supplies lyrics. Never call wait, polling, model listing, video, image,\nvoice, playback, phone, or outbound communication tools. Do not reveal provider, model, tool,\ncredential, or internal path details in your prose. Keep the final response to one short sentence;\nthe application reads the generation result structurally.\n\"\"\"\n_runtime_lock = asyncio.Lock()\n_cached_tools: dict[str, Any] | None = None",
+        "peekOfCode": "WEB_MUSIC_SYSTEM_PROMPT = \"\"\"You are the private Renderhaus music-generation coordinator.\nThe user has explicitly authorized music work for this request.\nChoose the single best immediate-return Mureka tool:\n- create_instrumental or text_to_music (no lyrics) for BGM/score\n- create_song or text_to_music (with lyrics) when lyrics are provided\n- create_song_from_prompt when the user wants a full song from a brief without lyrics\n- generate_lyrics only when they asked for lyrics and not audio yet\n- generate_soundtrack when scoring an image/video upload (upload_file_id / audio_start / audio_end)\nDo not call query/get poll tools, billing, TTS/podcast, phone, video, or image tools.\nDo not reveal provider, model, tool, credential, or internal path details in your prose.",
+        "detail": "agent.service",
+        "documentation": {}
+    },
+    {
+        "label": "MUSIC_TOOL_NAMES",
+        "kind": 5,
+        "importPath": "agent.service",
+        "description": "agent.service",
+        "peekOfCode": "MUSIC_TOOL_NAMES = (\n    \"text_to_music\",\n    \"create_instrumental\",\n    \"create_song\",\n    \"create_song_from_prompt\",\n    \"generate_lyrics\",\n    \"generate_soundtrack\",\n    \"extend_song\",\n    \"region_edit_song\",\n    \"remix_song\",",
         "detail": "agent.service",
         "documentation": {}
     },
@@ -2121,6 +2481,15 @@
         "description": "agent.service",
         "peekOfCode": "_TOOL_TRACE_TITLES = {\n    \"text_to_video\": \"Seedance · text → video\",\n    \"image_to_video\": \"Seedance · image → video\",\n    \"get_video_task\": \"Seedance · poll video\",\n    \"text_to_image\": \"Seedream · text → image\",\n    \"image_to_image\": \"Seedream · image → image\",\n    \"generate_song\": \"Mureka · generate song\",\n    \"query_song_task\": \"Mureka · poll song\",\n}\ndef _tool_trace_title(name: str) -> str:",
         "detail": "agent.service",
+        "documentation": {}
+    },
+    {
+        "label": "parse_args",
+        "kind": 2,
+        "importPath": "agent.supervise",
+        "description": "agent.supervise",
+        "peekOfCode": "def parse_args() -> argparse.Namespace:\n    parser = argparse.ArgumentParser(\n        description=\"Plan (and optionally execute) a Renderhaus supervised production.\"\n    )\n    parser.add_argument(\"brief\", nargs=\"+\", help=\"Creative brief for the Director.\")\n    parser.add_argument(\n        \"--execute\",\n        action=\"store_true\",\n        help=\"After planning, run modality workers (respects *_DRY_RUN flags).\",\n    )",
+        "detail": "agent.supervise",
         "documentation": {}
     },
     {
@@ -2169,6 +2538,51 @@
         "documentation": {}
     },
     {
+        "label": "handler",
+        "kind": 2,
+        "importPath": "lambdas.mureka.handler",
+        "description": "lambdas.mureka.handler",
+        "peekOfCode": "def handler(event: dict[str, Any] | None, context: Any) -> dict[str, Any]:\n    event = event or {}\n    try:\n        tool_name = _tool_name_from_context(context)\n        if not tool_name:\n            tool_name = str(event.pop(\"_tool_name\", \"\") or \"\")\n        if not tool_name:\n            raise ValueError(\"Missing bedrockAgentCoreToolName in Lambda context.\")\n        # Strip gateway-injected bookkeeping keys if any.\n        args = {k: v for k, v in event.items() if not str(k).startswith(\"_\")}",
+        "detail": "lambdas.mureka.handler",
+        "documentation": {}
+    },
+    {
+        "label": "Event",
+        "kind": 5,
+        "importPath": "lambdas.mureka.handler",
+        "description": "lambdas.mureka.handler",
+        "peekOfCode": "Event = flat tool arguments. Tool name comes from\ncontext.client_context.custom['bedrockAgentCoreToolName'] as TargetName___tool_name.\n\"\"\"\nfrom __future__ import annotations\nimport json\nimport os\nimport sys\nimport traceback\nfrom pathlib import Path\nfrom typing import Any",
+        "detail": "lambdas.mureka.handler",
+        "documentation": {}
+    },
+    {
+        "label": "_ROOT",
+        "kind": 5,
+        "importPath": "lambdas.mureka.handler",
+        "description": "lambdas.mureka.handler",
+        "peekOfCode": "_ROOT = Path(__file__).resolve().parents[2]\nif str(_ROOT) not in sys.path:\n    sys.path.insert(0, str(_ROOT))\nfrom mcps.mureka.api import dispatch_tool  # noqa: E402\nTOOL_DELIMITER = \"___\"\ndef _tool_name_from_context(context: Any) -> str:\n    custom = {}\n    client_context = getattr(context, \"client_context\", None)\n    if client_context is not None:\n        custom = getattr(client_context, \"custom\", None) or {}",
+        "detail": "lambdas.mureka.handler",
+        "documentation": {}
+    },
+    {
+        "label": "TOOL_DELIMITER",
+        "kind": 5,
+        "importPath": "lambdas.mureka.handler",
+        "description": "lambdas.mureka.handler",
+        "peekOfCode": "TOOL_DELIMITER = \"___\"\ndef _tool_name_from_context(context: Any) -> str:\n    custom = {}\n    client_context = getattr(context, \"client_context\", None)\n    if client_context is not None:\n        custom = getattr(client_context, \"custom\", None) or {}\n    if not isinstance(custom, dict):\n        custom = {}\n    raw = str(custom.get(\"bedrockAgentCoreToolName\") or \"\")\n    if TOOL_DELIMITER in raw:",
+        "detail": "lambdas.mureka.handler",
+        "documentation": {}
+    },
+    {
+        "label": "lambda_handler",
+        "kind": 5,
+        "importPath": "lambdas.mureka.handler",
+        "description": "lambdas.mureka.handler",
+        "peekOfCode": "lambda_handler = handler",
+        "detail": "lambdas.mureka.handler",
+        "documentation": {}
+    },
+    {
         "label": "list_voices",
         "kind": 2,
         "importPath": "mcps.gemini_tts.server",
@@ -2214,12 +2628,381 @@
         "documentation": {}
     },
     {
-        "label": "MurekaTask",
-        "kind": 6,
-        "importPath": "mcps.mureka.server",
-        "description": "mcps.mureka.server",
-        "peekOfCode": "class MurekaTask(BaseModel):\n    job_id: str\n    status: str\n    provider: str = \"mureka\"\n    mode: str\n    prompt: str\n    model: str | None = None\n    output_path: str | None = None\n    audio_url: str | None = None\n    note: str",
-        "detail": "mcps.mureka.server",
+        "label": "dry_run",
+        "kind": 2,
+        "importPath": "mcps.mureka.api",
+        "description": "mcps.mureka.api",
+        "peekOfCode": "def dry_run() -> bool:\n    return os.getenv(\"MUREKA_DRY_RUN\", \"true\").lower() != \"false\"\ndef base_url() -> str:\n    return os.getenv(\"MUREKA_API_URL\", \"https://api.mureka.ai\").rstrip(\"/\")\ndef default_model(model: str | None = None) -> str:\n    return (model or os.getenv(\"MUREKA_MODEL\") or \"auto\").strip() or \"auto\"\ndef api_key() -> str:\n    key = (os.getenv(\"MUREKA_API_KEY\") or \"\").strip()\n    if not key:\n        raise RuntimeError(\"MUREKA_API_KEY is required for live Mureka calls.\")",
+        "detail": "mcps.mureka.api",
+        "documentation": {}
+    },
+    {
+        "label": "base_url",
+        "kind": 2,
+        "importPath": "mcps.mureka.api",
+        "description": "mcps.mureka.api",
+        "peekOfCode": "def base_url() -> str:\n    return os.getenv(\"MUREKA_API_URL\", \"https://api.mureka.ai\").rstrip(\"/\")\ndef default_model(model: str | None = None) -> str:\n    return (model or os.getenv(\"MUREKA_MODEL\") or \"auto\").strip() or \"auto\"\ndef api_key() -> str:\n    key = (os.getenv(\"MUREKA_API_KEY\") or \"\").strip()\n    if not key:\n        raise RuntimeError(\"MUREKA_API_KEY is required for live Mureka calls.\")\n    return key\ndef headers() -> dict[str, str]:",
+        "detail": "mcps.mureka.api",
+        "documentation": {}
+    },
+    {
+        "label": "default_model",
+        "kind": 2,
+        "importPath": "mcps.mureka.api",
+        "description": "mcps.mureka.api",
+        "peekOfCode": "def default_model(model: str | None = None) -> str:\n    return (model or os.getenv(\"MUREKA_MODEL\") or \"auto\").strip() or \"auto\"\ndef api_key() -> str:\n    key = (os.getenv(\"MUREKA_API_KEY\") or \"\").strip()\n    if not key:\n        raise RuntimeError(\"MUREKA_API_KEY is required for live Mureka calls.\")\n    return key\ndef headers() -> dict[str, str]:\n    return {\n        \"Authorization\": f\"Bearer {api_key()}\",",
+        "detail": "mcps.mureka.api",
+        "documentation": {}
+    },
+    {
+        "label": "api_key",
+        "kind": 2,
+        "importPath": "mcps.mureka.api",
+        "description": "mcps.mureka.api",
+        "peekOfCode": "def api_key() -> str:\n    key = (os.getenv(\"MUREKA_API_KEY\") or \"\").strip()\n    if not key:\n        raise RuntimeError(\"MUREKA_API_KEY is required for live Mureka calls.\")\n    return key\ndef headers() -> dict[str, str]:\n    return {\n        \"Authorization\": f\"Bearer {api_key()}\",\n        \"Content-Type\": \"application/json\",\n    }",
+        "detail": "mcps.mureka.api",
+        "documentation": {}
+    },
+    {
+        "label": "headers",
+        "kind": 2,
+        "importPath": "mcps.mureka.api",
+        "description": "mcps.mureka.api",
+        "peekOfCode": "def headers() -> dict[str, str]:\n    return {\n        \"Authorization\": f\"Bearer {api_key()}\",\n        \"Content-Type\": \"application/json\",\n    }\ndef media_dir() -> Path:\n    path = Path(os.getenv(\"RENDERHAUS_MEDIA_DIR\", \".renderhaus/media\")).expanduser()\n    path.mkdir(parents=True, exist_ok=True)\n    return path\ndef music_dir() -> Path:",
+        "detail": "mcps.mureka.api",
+        "documentation": {}
+    },
+    {
+        "label": "media_dir",
+        "kind": 2,
+        "importPath": "mcps.mureka.api",
+        "description": "mcps.mureka.api",
+        "peekOfCode": "def media_dir() -> Path:\n    path = Path(os.getenv(\"RENDERHAUS_MEDIA_DIR\", \".renderhaus/media\")).expanduser()\n    path.mkdir(parents=True, exist_ok=True)\n    return path\ndef music_dir() -> Path:\n    path = media_dir() / \"music\"\n    path.mkdir(parents=True, exist_ok=True)\n    return path\ndef task_meta_dir() -> Path:\n    path = music_dir() / \".tasks\"",
+        "detail": "mcps.mureka.api",
+        "documentation": {}
+    },
+    {
+        "label": "music_dir",
+        "kind": 2,
+        "importPath": "mcps.mureka.api",
+        "description": "mcps.mureka.api",
+        "peekOfCode": "def music_dir() -> Path:\n    path = media_dir() / \"music\"\n    path.mkdir(parents=True, exist_ok=True)\n    return path\ndef task_meta_dir() -> Path:\n    path = music_dir() / \".tasks\"\n    path.mkdir(parents=True, exist_ok=True)\n    return path\ndef task_meta_path(job_id: str) -> Path:\n    return task_meta_dir() / f\"{job_id}.json\"",
+        "detail": "mcps.mureka.api",
+        "documentation": {}
+    },
+    {
+        "label": "task_meta_dir",
+        "kind": 2,
+        "importPath": "mcps.mureka.api",
+        "description": "mcps.mureka.api",
+        "peekOfCode": "def task_meta_dir() -> Path:\n    path = music_dir() / \".tasks\"\n    path.mkdir(parents=True, exist_ok=True)\n    return path\ndef task_meta_path(job_id: str) -> Path:\n    return task_meta_dir() / f\"{job_id}.json\"\ndef write_task_meta(job_id: str, metadata: dict[str, Any]) -> None:\n    task_meta_path(job_id).write_text(json.dumps(metadata, indent=2, sort_keys=True))\ndef read_task_meta(job_id: str) -> dict[str, Any]:\n    path = task_meta_path(job_id)",
+        "detail": "mcps.mureka.api",
+        "documentation": {}
+    },
+    {
+        "label": "task_meta_path",
+        "kind": 2,
+        "importPath": "mcps.mureka.api",
+        "description": "mcps.mureka.api",
+        "peekOfCode": "def task_meta_path(job_id: str) -> Path:\n    return task_meta_dir() / f\"{job_id}.json\"\ndef write_task_meta(job_id: str, metadata: dict[str, Any]) -> None:\n    task_meta_path(job_id).write_text(json.dumps(metadata, indent=2, sort_keys=True))\ndef read_task_meta(job_id: str) -> dict[str, Any]:\n    path = task_meta_path(job_id)\n    if not path.exists():\n        return {}\n    return json.loads(path.read_text())\ndef output_path(job_id: str, suffix: str = \".mp3\") -> Path:",
+        "detail": "mcps.mureka.api",
+        "documentation": {}
+    },
+    {
+        "label": "write_task_meta",
+        "kind": 2,
+        "importPath": "mcps.mureka.api",
+        "description": "mcps.mureka.api",
+        "peekOfCode": "def write_task_meta(job_id: str, metadata: dict[str, Any]) -> None:\n    task_meta_path(job_id).write_text(json.dumps(metadata, indent=2, sort_keys=True))\ndef read_task_meta(job_id: str) -> dict[str, Any]:\n    path = task_meta_path(job_id)\n    if not path.exists():\n        return {}\n    return json.loads(path.read_text())\ndef output_path(job_id: str, suffix: str = \".mp3\") -> Path:\n    return music_dir() / f\"{job_id}{suffix}\"\ndef provider_error(response: httpx.Response) -> RuntimeError:",
+        "detail": "mcps.mureka.api",
+        "documentation": {}
+    },
+    {
+        "label": "read_task_meta",
+        "kind": 2,
+        "importPath": "mcps.mureka.api",
+        "description": "mcps.mureka.api",
+        "peekOfCode": "def read_task_meta(job_id: str) -> dict[str, Any]:\n    path = task_meta_path(job_id)\n    if not path.exists():\n        return {}\n    return json.loads(path.read_text())\ndef output_path(job_id: str, suffix: str = \".mp3\") -> Path:\n    return music_dir() / f\"{job_id}{suffix}\"\ndef provider_error(response: httpx.Response) -> RuntimeError:\n    try:\n        payload = response.json()",
+        "detail": "mcps.mureka.api",
+        "documentation": {}
+    },
+    {
+        "label": "output_path",
+        "kind": 2,
+        "importPath": "mcps.mureka.api",
+        "description": "mcps.mureka.api",
+        "peekOfCode": "def output_path(job_id: str, suffix: str = \".mp3\") -> Path:\n    return music_dir() / f\"{job_id}{suffix}\"\ndef provider_error(response: httpx.Response) -> RuntimeError:\n    try:\n        payload = response.json()\n    except ValueError:\n        return RuntimeError(f\"Mureka API error {response.status_code}: {response.text[:1000]}\")\n    if isinstance(payload, dict):\n        message = payload.get(\"message\") or payload.get(\"error\") or payload\n        return RuntimeError(f\"Mureka API error {response.status_code}: {message}\")",
+        "detail": "mcps.mureka.api",
+        "documentation": {}
+    },
+    {
+        "label": "provider_error",
+        "kind": 2,
+        "importPath": "mcps.mureka.api",
+        "description": "mcps.mureka.api",
+        "peekOfCode": "def provider_error(response: httpx.Response) -> RuntimeError:\n    try:\n        payload = response.json()\n    except ValueError:\n        return RuntimeError(f\"Mureka API error {response.status_code}: {response.text[:1000]}\")\n    if isinstance(payload, dict):\n        message = payload.get(\"message\") or payload.get(\"error\") or payload\n        return RuntimeError(f\"Mureka API error {response.status_code}: {message}\")\n    return RuntimeError(f\"Mureka API error {response.status_code}: {payload}\")\ndef raise_for_status(response: httpx.Response) -> None:",
+        "detail": "mcps.mureka.api",
+        "documentation": {}
+    },
+    {
+        "label": "raise_for_status",
+        "kind": 2,
+        "importPath": "mcps.mureka.api",
+        "description": "mcps.mureka.api",
+        "peekOfCode": "def raise_for_status(response: httpx.Response) -> None:\n    if response.is_error:\n        raise provider_error(response)\ndef suffix_from_url(url: str) -> str:\n    path = urlparse(url).path\n    suffix = Path(path).suffix.lower()\n    if suffix in {\".mp3\", \".wav\", \".m4a\", \".flac\", \".ogg\"}:\n        return suffix\n    return \".mp3\"\ndef extract_audio_url(payload: dict[str, Any]) -> str | None:",
+        "detail": "mcps.mureka.api",
+        "documentation": {}
+    },
+    {
+        "label": "suffix_from_url",
+        "kind": 2,
+        "importPath": "mcps.mureka.api",
+        "description": "mcps.mureka.api",
+        "peekOfCode": "def suffix_from_url(url: str) -> str:\n    path = urlparse(url).path\n    suffix = Path(path).suffix.lower()\n    if suffix in {\".mp3\", \".wav\", \".m4a\", \".flac\", \".ogg\"}:\n        return suffix\n    return \".mp3\"\ndef extract_audio_url(payload: dict[str, Any]) -> str | None:\n    choices = payload.get(\"choices\")\n    if not isinstance(choices, list):\n        return None",
+        "detail": "mcps.mureka.api",
+        "documentation": {}
+    },
+    {
+        "label": "extract_audio_url",
+        "kind": 2,
+        "importPath": "mcps.mureka.api",
+        "description": "mcps.mureka.api",
+        "peekOfCode": "def extract_audio_url(payload: dict[str, Any]) -> str | None:\n    choices = payload.get(\"choices\")\n    if not isinstance(choices, list):\n        return None\n    for choice in choices:\n        if isinstance(choice, dict):\n            url = choice.get(\"url\") or choice.get(\"mp3_url\") or choice.get(\"wav_url\")\n            if isinstance(url, str) and url:\n                return url\n    return None",
+        "detail": "mcps.mureka.api",
+        "documentation": {}
+    },
+    {
+        "label": "create_instrumental",
+        "kind": 2,
+        "importPath": "mcps.mureka.api",
+        "description": "mcps.mureka.api",
+        "peekOfCode": "def create_instrumental(\n    *,\n    prompt: str,\n    model: str | None = None,\n    n: int | None = None,\n    instrumental_id: str | None = None,\n    stream: bool | None = None,\n) -> dict[str, Any]:\n    selected = default_model(model)\n    if dry_run():",
+        "detail": "mcps.mureka.api",
+        "documentation": {}
+    },
+    {
+        "label": "create_song",
+        "kind": 2,
+        "importPath": "mcps.mureka.api",
+        "description": "mcps.mureka.api",
+        "peekOfCode": "def create_song(\n    *,\n    lyrics: str,\n    prompt: str = \"\",\n    model: str | None = None,\n    n: int | None = None,\n    gender: str | None = None,\n    reference_id: str | None = None,\n    vocal_id: str | None = None,\n    melody_id: str | None = None,",
+        "detail": "mcps.mureka.api",
+        "documentation": {}
+    },
+    {
+        "label": "create_song_from_prompt",
+        "kind": 2,
+        "importPath": "mcps.mureka.api",
+        "description": "mcps.mureka.api",
+        "peekOfCode": "def create_song_from_prompt(\n    *,\n    prompt: str,\n    model: str | None = None,\n    n: int | None = None,\n    gender: str | None = None,\n) -> dict[str, Any]:\n    selected = default_model(model)\n    if dry_run():\n        return _dry_async(\"prompt_to_song\", prompt=prompt, model=selected)",
+        "detail": "mcps.mureka.api",
+        "documentation": {}
+    },
+    {
+        "label": "generate_lyrics",
+        "kind": 2,
+        "importPath": "mcps.mureka.api",
+        "description": "mcps.mureka.api",
+        "peekOfCode": "def generate_lyrics(*, prompt: str) -> dict[str, Any]:\n    if dry_run():\n        return {\n            \"provider\": \"mureka\",\n            \"mode\": \"generate_lyrics\",\n            \"status\": \"dry_run\",\n            \"title\": \"Dry-run title\",\n            \"lyrics\": f\"[Verse]\\nDry-run lyrics for: {prompt[:200]}\",\n            \"note\": \"Dry run only.\",\n        }",
+        "detail": "mcps.mureka.api",
+        "documentation": {}
+    },
+    {
+        "label": "extend_lyrics",
+        "kind": 2,
+        "importPath": "mcps.mureka.api",
+        "description": "mcps.mureka.api",
+        "peekOfCode": "def extend_lyrics(*, lyrics: str, prompt: str = \"\") -> dict[str, Any]:\n    if dry_run():\n        return {\n            \"provider\": \"mureka\",\n            \"mode\": \"extend_lyrics\",\n            \"status\": \"dry_run\",\n            \"lyrics\": f\"{lyrics}\\n[Verse]\\nDry-run extension\",\n            \"note\": \"Dry run only.\",\n        }\n    body: dict[str, Any] = {\"lyrics\": lyrics}",
+        "detail": "mcps.mureka.api",
+        "documentation": {}
+    },
+    {
+        "label": "query_task",
+        "kind": 2,
+        "importPath": "mcps.mureka.api",
+        "description": "mcps.mureka.api",
+        "peekOfCode": "def query_task(*, job_id: str, download: bool = False) -> dict[str, Any]:\n    if dry_run() or job_id.startswith(\"mureka_\"):\n        meta = read_task_meta(job_id)\n        if meta.get(\"status\") == \"dry_run\" or dry_run():\n            return {\n                \"job_id\": job_id,\n                \"status\": \"dry_run\",\n                \"provider\": \"mureka\",\n                \"note\": \"Dry run is enabled; no live Mureka task exists.\",\n            }",
+        "detail": "mcps.mureka.api",
+        "documentation": {}
+    },
+    {
+        "label": "extend_song",
+        "kind": 2,
+        "importPath": "mcps.mureka.api",
+        "description": "mcps.mureka.api",
+        "peekOfCode": "def extend_song(\n    *,\n    lyrics: str,\n    extend_at_ms: int,\n    song_id: str | None = None,\n    upload_audio_id: str | None = None,\n) -> dict[str, Any]:\n    if dry_run():\n        return _dry_async(\"extend_song\", song_id=song_id, extend_at_ms=extend_at_ms)\n    body: dict[str, Any] = {\"lyrics\": lyrics, \"extend_at\": str(extend_at_ms)}",
+        "detail": "mcps.mureka.api",
+        "documentation": {}
+    },
+    {
+        "label": "region_edit_song",
+        "kind": 2,
+        "importPath": "mcps.mureka.api",
+        "description": "mcps.mureka.api",
+        "peekOfCode": "def region_edit_song(\n    *,\n    lyrics: str,\n    edit_start_ms: int,\n    edit_end_ms: int,\n    song_id: str | None = None,\n    upload_audio_id: str | None = None,\n) -> dict[str, Any]:\n    if dry_run():\n        return _dry_async(",
+        "detail": "mcps.mureka.api",
+        "documentation": {}
+    },
+    {
+        "label": "remix_song",
+        "kind": 2,
+        "importPath": "mcps.mureka.api",
+        "description": "mcps.mureka.api",
+        "peekOfCode": "def remix_song(\n    *,\n    prompt: str = \"\",\n    song_id: str | None = None,\n    upload_audio_id: str | None = None,\n    n: int | None = None,\n) -> dict[str, Any]:\n    if dry_run():\n        return _dry_async(\"remix_song\", prompt=prompt, song_id=song_id)\n    body: dict[str, Any] = {}",
+        "detail": "mcps.mureka.api",
+        "documentation": {}
+    },
+    {
+        "label": "stem_song",
+        "kind": 2,
+        "importPath": "mcps.mureka.api",
+        "description": "mcps.mureka.api",
+        "peekOfCode": "def stem_song(\n    *,\n    song_id: str | None = None,\n    upload_audio_id: str | None = None,\n    model: str | None = None,\n) -> dict[str, Any]:\n    if dry_run():\n        return _dry_async(\"stem_song\", song_id=song_id)\n    body: dict[str, Any] = {}\n    if song_id:",
+        "detail": "mcps.mureka.api",
+        "documentation": {}
+    },
+    {
+        "label": "recognize_song",
+        "kind": 2,
+        "importPath": "mcps.mureka.api",
+        "description": "mcps.mureka.api",
+        "peekOfCode": "def recognize_song(*, upload_audio_id: str | None = None, audio_url: str | None = None) -> dict[str, Any]:\n    if dry_run():\n        return {\"provider\": \"mureka\", \"mode\": \"recognize_song\", \"status\": \"dry_run\", \"note\": \"Dry run only.\"}\n    body: dict[str, Any] = {}\n    if upload_audio_id:\n        body[\"upload_audio_id\"] = upload_audio_id\n    if audio_url:\n        body[\"url\"] = audio_url\n    payload = _request(\"POST\", \"/v1/song/recognize\", json_body=body)\n    return {\"provider\": \"mureka\", \"mode\": \"recognize_song\", \"status\": \"succeeded\", \"raw\": payload}",
+        "detail": "mcps.mureka.api",
+        "documentation": {}
+    },
+    {
+        "label": "describe_song",
+        "kind": 2,
+        "importPath": "mcps.mureka.api",
+        "description": "mcps.mureka.api",
+        "peekOfCode": "def describe_song(*, upload_audio_id: str | None = None, song_id: str | None = None) -> dict[str, Any]:\n    if dry_run():\n        return {\"provider\": \"mureka\", \"mode\": \"describe_song\", \"status\": \"dry_run\", \"description\": \"Dry-run description\"}\n    body: dict[str, Any] = {}\n    if upload_audio_id:\n        body[\"upload_audio_id\"] = upload_audio_id\n    if song_id:\n        body[\"song_id\"] = song_id\n    payload = _request(\"POST\", \"/v1/song/describe\", json_body=body)\n    return {\"provider\": \"mureka\", \"mode\": \"describe_song\", \"status\": \"succeeded\", \"raw\": payload}",
+        "detail": "mcps.mureka.api",
+        "documentation": {}
+    },
+    {
+        "label": "transcribe_song",
+        "kind": 2,
+        "importPath": "mcps.mureka.api",
+        "description": "mcps.mureka.api",
+        "peekOfCode": "def transcribe_song(*, upload_audio_id: str | None = None, song_id: str | None = None) -> dict[str, Any]:\n    if dry_run():\n        return {\"provider\": \"mureka\", \"mode\": \"transcribe_song\", \"status\": \"dry_run\"}\n    body: dict[str, Any] = {}\n    if upload_audio_id:\n        body[\"upload_audio_id\"] = upload_audio_id\n    if song_id:\n        body[\"song_id\"] = song_id\n    payload = _request(\"POST\", \"/v1/song/transcribe\", json_body=body)\n    return {\"provider\": \"mureka\", \"mode\": \"transcribe_song\", \"status\": \"succeeded\", \"raw\": payload}",
+        "detail": "mcps.mureka.api",
+        "documentation": {}
+    },
+    {
+        "label": "vocal_clone",
+        "kind": 2,
+        "importPath": "mcps.mureka.api",
+        "description": "mcps.mureka.api",
+        "peekOfCode": "def vocal_clone(*, upload_audio_id: str, name: str | None = None) -> dict[str, Any]:\n    if dry_run():\n        return {\"provider\": \"mureka\", \"mode\": \"vocal_clone\", \"status\": \"dry_run\", \"vocal_id\": \"dry_vocal\"}\n    body: dict[str, Any] = {\"upload_audio_id\": upload_audio_id}\n    if name:\n        body[\"name\"] = name\n    payload = _request(\"POST\", \"/v1/song/vocal-clone\", json_body=body)\n    return {\"provider\": \"mureka\", \"mode\": \"vocal_clone\", \"status\": \"succeeded\", \"raw\": payload}\ndef generate_track(\n    *,",
+        "detail": "mcps.mureka.api",
+        "documentation": {}
+    },
+    {
+        "label": "generate_track",
+        "kind": 2,
+        "importPath": "mcps.mureka.api",
+        "description": "mcps.mureka.api",
+        "peekOfCode": "def generate_track(\n    *,\n    track_type: str,\n    song_id: str | None = None,\n    upload_audio_id: str | None = None,\n    prompt: str = \"\",\n) -> dict[str, Any]:\n    if dry_run():\n        return _dry_async(\"generate_track\", track_type=track_type, prompt=prompt)\n    body: dict[str, Any] = {\"track_type\": track_type}",
+        "detail": "mcps.mureka.api",
+        "documentation": {}
+    },
+    {
+        "label": "generate_soundtrack",
+        "kind": 2,
+        "importPath": "mcps.mureka.api",
+        "description": "mcps.mureka.api",
+        "peekOfCode": "def generate_soundtrack(\n    *,\n    prompt: str = \"\",\n    upload_file_id: str | None = None,\n    audio_start: float | None = None,\n    audio_end: float | None = None,\n    model: str | None = None,\n) -> dict[str, Any]:\n    selected = default_model(model)\n    if dry_run():",
+        "detail": "mcps.mureka.api",
+        "documentation": {}
+    },
+    {
+        "label": "generate_lyrics_video",
+        "kind": 2,
+        "importPath": "mcps.mureka.api",
+        "description": "mcps.mureka.api",
+        "peekOfCode": "def generate_lyrics_video(\n    *,\n    song_id: str | None = None,\n    upload_audio_id: str | None = None,\n    aspect_ratio: str | None = None,\n    layout: str | None = None,\n) -> dict[str, Any]:\n    if dry_run():\n        return _dry_async(\"generate_lyrics_video\", song_id=song_id)\n    body: dict[str, Any] = {}",
+        "detail": "mcps.mureka.api",
+        "documentation": {}
+    },
+    {
+        "label": "upload_file",
+        "kind": 2,
+        "importPath": "mcps.mureka.api",
+        "description": "mcps.mureka.api",
+        "peekOfCode": "def upload_file(*, purpose: str, filename: str, content_b64: str) -> dict[str, Any]:\n    if dry_run():\n        return {\n            \"provider\": \"mureka\",\n            \"mode\": \"upload_file\",\n            \"status\": \"dry_run\",\n            \"id\": f\"upload_{uuid.uuid4().hex[:12]}\",\n            \"purpose\": purpose,\n            \"filename\": filename,\n        }",
+        "detail": "mcps.mureka.api",
+        "documentation": {}
+    },
+    {
+        "label": "create_speech",
+        "kind": 2,
+        "importPath": "mcps.mureka.api",
+        "description": "mcps.mureka.api",
+        "peekOfCode": "def create_speech(*, text: str, voice: str | None = None) -> dict[str, Any]:\n    if dry_run():\n        return _dry_async(\"create_speech\", text=text[:80], voice=voice)\n    body: dict[str, Any] = {\"text\": text}\n    if voice:\n        body[\"voice\"] = voice\n    payload = _request(\"POST\", \"/v1/tts/generate\", json_body=body)\n    return {\"provider\": \"mureka\", \"mode\": \"create_speech\", \"status\": payload.get(\"status\") or \"queued\", \"raw\": payload}\ndef create_podcast(*, script: str, title: str | None = None) -> dict[str, Any]:\n    if dry_run():",
+        "detail": "mcps.mureka.api",
+        "documentation": {}
+    },
+    {
+        "label": "create_podcast",
+        "kind": 2,
+        "importPath": "mcps.mureka.api",
+        "description": "mcps.mureka.api",
+        "peekOfCode": "def create_podcast(*, script: str, title: str | None = None) -> dict[str, Any]:\n    if dry_run():\n        return _dry_async(\"create_podcast\", title=title or \"dry-run\")\n    body: dict[str, Any] = {\"script\": script}\n    if title:\n        body[\"title\"] = title\n    payload = _request(\"POST\", \"/v1/tts/podcast\", json_body=body)\n    return {\"provider\": \"mureka\", \"mode\": \"create_podcast\", \"status\": payload.get(\"status\") or \"queued\", \"raw\": payload}\ndef query_billing() -> dict[str, Any]:\n    if dry_run():",
+        "detail": "mcps.mureka.api",
+        "documentation": {}
+    },
+    {
+        "label": "query_billing",
+        "kind": 2,
+        "importPath": "mcps.mureka.api",
+        "description": "mcps.mureka.api",
+        "peekOfCode": "def query_billing() -> dict[str, Any]:\n    if dry_run():\n        return {\"provider\": \"mureka\", \"mode\": \"query_billing\", \"status\": \"dry_run\", \"note\": \"Dry run only.\"}\n    payload = _request(\"GET\", \"/v1/account/billing\")\n    return {\"provider\": \"mureka\", \"mode\": \"query_billing\", \"status\": \"succeeded\", \"raw\": payload}\ndef list_models() -> dict[str, Any]:\n    return {\n        \"provider\": \"mureka\",\n        \"default_model\": default_model(),\n        \"supported\": [",
+        "detail": "mcps.mureka.api",
+        "documentation": {}
+    },
+    {
+        "label": "list_models",
+        "kind": 2,
+        "importPath": "mcps.mureka.api",
+        "description": "mcps.mureka.api",
+        "peekOfCode": "def list_models() -> dict[str, Any]:\n    return {\n        \"provider\": \"mureka\",\n        \"default_model\": default_model(),\n        \"supported\": [\n            \"auto\",\n            \"mureka-6\",\n            \"mureka-5.5\",\n            \"mureka-7.5\",\n            \"mureka-7.6\",",
+        "detail": "mcps.mureka.api",
+        "documentation": {}
+    },
+    {
+        "label": "text_to_music",
+        "kind": 2,
+        "importPath": "mcps.mureka.api",
+        "description": "mcps.mureka.api",
+        "peekOfCode": "def text_to_music(\n    *,\n    prompt: str,\n    lyrics: str | None = None,\n    model: str | None = None,\n) -> dict[str, Any]:\n    \"\"\"Backward-compatible entry used by the existing music agent.\"\"\"\n    lyrics_text = (lyrics or \"\").strip()\n    if lyrics_text:\n        return create_song(lyrics=lyrics_text, prompt=prompt, model=model)",
+        "detail": "mcps.mureka.api",
+        "documentation": {}
+    },
+    {
+        "label": "dispatch_tool",
+        "kind": 2,
+        "importPath": "mcps.mureka.api",
+        "description": "mcps.mureka.api",
+        "peekOfCode": "def dispatch_tool(tool_name: str, arguments: dict[str, Any] | None = None) -> dict[str, Any]:\n    args = dict(arguments or {})\n    # Normalize common aliases from older callers.\n    if \"job_id\" in args and tool_name in {\"query_music_task\", \"get_music_task\"}:\n        pass\n    if tool_name == \"get_music_task\":\n        tool_name = \"query_music_task\"\n    handler = TOOL_HANDLERS.get(tool_name)\n    if handler is None:\n        raise ValueError(f\"Unknown Mureka tool: {tool_name}\")",
+        "detail": "mcps.mureka.api",
+        "documentation": {}
+    },
+    {
+        "label": "TERMINAL_STATUSES",
+        "kind": 5,
+        "importPath": "mcps.mureka.api",
+        "description": "mcps.mureka.api",
+        "peekOfCode": "TERMINAL_STATUSES = {\"succeeded\", \"failed\", \"cancelled\", \"canceled\", \"timeouted\", \"timeout\"}\ndef dry_run() -> bool:\n    return os.getenv(\"MUREKA_DRY_RUN\", \"true\").lower() != \"false\"\ndef base_url() -> str:\n    return os.getenv(\"MUREKA_API_URL\", \"https://api.mureka.ai\").rstrip(\"/\")\ndef default_model(model: str | None = None) -> str:\n    return (model or os.getenv(\"MUREKA_MODEL\") or \"auto\").strip() or \"auto\"\ndef api_key() -> str:\n    key = (os.getenv(\"MUREKA_API_KEY\") or \"\").strip()\n    if not key:",
+        "detail": "mcps.mureka.api",
+        "documentation": {}
+    },
+    {
+        "label": "TOOL_HANDLERS[\"text_to_music\"]",
+        "kind": 5,
+        "importPath": "mcps.mureka.api",
+        "description": "mcps.mureka.api",
+        "peekOfCode": "TOOL_HANDLERS[\"text_to_music\"] = text_to_music\ndef dispatch_tool(tool_name: str, arguments: dict[str, Any] | None = None) -> dict[str, Any]:\n    args = dict(arguments or {})\n    # Normalize common aliases from older callers.\n    if \"job_id\" in args and tool_name in {\"query_music_task\", \"get_music_task\"}:\n        pass\n    if tool_name == \"get_music_task\":\n        tool_name = \"query_music_task\"\n    handler = TOOL_HANDLERS.get(tool_name)\n    if handler is None:",
+        "detail": "mcps.mureka.api",
         "documentation": {}
     },
     {
@@ -2227,7 +3010,61 @@
         "kind": 2,
         "importPath": "mcps.mureka.server",
         "description": "mcps.mureka.server",
-        "peekOfCode": "def text_to_music(\n    prompt: str = Field(\n        description=\"Music direction: genre, mood, tempo, instruments, and use case.\"\n    ),\n    lyrics: str | None = Field(\n        default=None,\n        description=\"Optional lyrics. When omitted, generates an instrumental score.\",\n    ),\n    model: str | None = Field(\n        default=None,",
+        "peekOfCode": "def text_to_music(\n    prompt: str = Field(description=\"Music direction: genre, mood, tempo, instruments, use case.\"),\n    lyrics: str | None = Field(default=None, description=\"Optional lyrics. Omit for instrumental.\"),\n    model: str | None = Field(default=None, description=\"Mureka model id. Defaults to MUREKA_MODEL or auto.\"),\n) -> dict:\n    \"\"\"Create a Mureka music task and return the task id immediately.\"\"\"\n    return api.text_to_music(\n        prompt=prompt,\n        lyrics=_field_value(lyrics, None),\n        model=_field_value(model, None),",
+        "detail": "mcps.mureka.server",
+        "documentation": {}
+    },
+    {
+        "label": "create_instrumental",
+        "kind": 2,
+        "importPath": "mcps.mureka.server",
+        "description": "mcps.mureka.server",
+        "peekOfCode": "def create_instrumental(\n    prompt: str = Field(description=\"Instrumental / BGM prompt.\"),\n    model: str | None = None,\n    n: int | None = None,\n    instrumental_id: str | None = None,\n    stream: bool | None = None,\n) -> dict:\n    \"\"\"Generate instrumental music (POST /v1/instrumental/generate).\"\"\"\n    return api.create_instrumental(\n        prompt=prompt,",
+        "detail": "mcps.mureka.server",
+        "documentation": {}
+    },
+    {
+        "label": "create_song",
+        "kind": 2,
+        "importPath": "mcps.mureka.server",
+        "description": "mcps.mureka.server",
+        "peekOfCode": "def create_song(\n    lyrics: str = Field(description=\"Full lyrics for the song.\"),\n    prompt: str = \"\",\n    model: str | None = None,\n    n: int | None = None,\n    gender: str | None = None,\n    reference_id: str | None = None,\n    vocal_id: str | None = None,\n    melody_id: str | None = None,\n    instrumental_id: str | None = None,",
+        "detail": "mcps.mureka.server",
+        "documentation": {}
+    },
+    {
+        "label": "create_song_from_prompt",
+        "kind": 2,
+        "importPath": "mcps.mureka.server",
+        "description": "mcps.mureka.server",
+        "peekOfCode": "def create_song_from_prompt(\n    prompt: str = Field(description=\"Natural-language song brief.\"),\n    model: str | None = None,\n    n: int | None = None,\n    gender: str | None = None,\n) -> dict:\n    \"\"\"Prompt-to-song without separate lyrics (POST /v1/song/easy-generate).\"\"\"\n    return api.create_song_from_prompt(\n        prompt=prompt,\n        model=_field_value(model, None),",
+        "detail": "mcps.mureka.server",
+        "documentation": {}
+    },
+    {
+        "label": "generate_lyrics",
+        "kind": 2,
+        "importPath": "mcps.mureka.server",
+        "description": "mcps.mureka.server",
+        "peekOfCode": "def generate_lyrics(prompt: str = Field(description=\"Theme / story for lyrics.\")) -> dict:\n    \"\"\"Generate lyrics and title from a prompt.\"\"\"\n    return api.generate_lyrics(prompt=prompt)\n@mcp.tool()\ndef extend_lyrics(lyrics: str, prompt: str = \"\") -> dict:\n    \"\"\"Extend existing lyrics.\"\"\"\n    return api.extend_lyrics(lyrics=lyrics, prompt=prompt)\n@mcp.tool()\ndef query_music_task(\n    job_id: str = Field(description=\"Mureka task id.\"),",
+        "detail": "mcps.mureka.server",
+        "documentation": {}
+    },
+    {
+        "label": "extend_lyrics",
+        "kind": 2,
+        "importPath": "mcps.mureka.server",
+        "description": "mcps.mureka.server",
+        "peekOfCode": "def extend_lyrics(lyrics: str, prompt: str = \"\") -> dict:\n    \"\"\"Extend existing lyrics.\"\"\"\n    return api.extend_lyrics(lyrics=lyrics, prompt=prompt)\n@mcp.tool()\ndef query_music_task(\n    job_id: str = Field(description=\"Mureka task id.\"),\n    download: bool = Field(default=True, description=\"Download audio when succeeded.\"),\n) -> dict:\n    \"\"\"Poll a Mureka music task and optionally download the finished audio.\"\"\"\n    return api.query_task(job_id=job_id, download=bool(_field_value(download, True)))",
+        "detail": "mcps.mureka.server",
+        "documentation": {}
+    },
+    {
+        "label": "query_music_task",
+        "kind": 2,
+        "importPath": "mcps.mureka.server",
+        "description": "mcps.mureka.server",
+        "peekOfCode": "def query_music_task(\n    job_id: str = Field(description=\"Mureka task id.\"),\n    download: bool = Field(default=True, description=\"Download audio when succeeded.\"),\n) -> dict:\n    \"\"\"Poll a Mureka music task and optionally download the finished audio.\"\"\"\n    return api.query_task(job_id=job_id, download=bool(_field_value(download, True)))\n@mcp.tool()\ndef get_music_task(\n    job_id: str = Field(description=\"Mureka task id returned by text_to_music.\"),\n    download: bool = Field(default=True, description=\"Download the audio when succeeded.\"),",
         "detail": "mcps.mureka.server",
         "documentation": {}
     },
@@ -2236,7 +3073,142 @@
         "kind": 2,
         "importPath": "mcps.mureka.server",
         "description": "mcps.mureka.server",
-        "peekOfCode": "def get_music_task(\n    job_id: str = Field(description=\"Mureka task id returned by text_to_music.\"),\n    download: bool = Field(default=True, description=\"Download the audio when succeeded.\"),\n) -> dict:\n    \"\"\"Poll a Mureka music task and optionally download the finished audio.\"\"\"\n    download = bool(_field_value(download, True))\n    return _retrieve_task(job_id, download=download)\n@mcp.tool()\ndef list_mureka_models() -> dict:\n    \"\"\"Describe the default Mureka model selection for this workspace.\"\"\"",
+        "peekOfCode": "def get_music_task(\n    job_id: str = Field(description=\"Mureka task id returned by text_to_music.\"),\n    download: bool = Field(default=True, description=\"Download the audio when succeeded.\"),\n) -> dict:\n    \"\"\"Alias for query_music_task (kept for existing callers).\"\"\"\n    return api.query_task(job_id=job_id, download=bool(_field_value(download, True)))\n@mcp.tool()\ndef extend_song(\n    lyrics: str,\n    extend_at_ms: int = Field(description=\"Extension start time in milliseconds.\"),",
+        "detail": "mcps.mureka.server",
+        "documentation": {}
+    },
+    {
+        "label": "extend_song",
+        "kind": 2,
+        "importPath": "mcps.mureka.server",
+        "description": "mcps.mureka.server",
+        "peekOfCode": "def extend_song(\n    lyrics: str,\n    extend_at_ms: int = Field(description=\"Extension start time in milliseconds.\"),\n    song_id: str | None = None,\n    upload_audio_id: str | None = None,\n) -> dict:\n    \"\"\"Extend an existing song from a timestamp.\"\"\"\n    return api.extend_song(\n        lyrics=lyrics,\n        extend_at_ms=extend_at_ms,",
+        "detail": "mcps.mureka.server",
+        "documentation": {}
+    },
+    {
+        "label": "region_edit_song",
+        "kind": 2,
+        "importPath": "mcps.mureka.server",
+        "description": "mcps.mureka.server",
+        "peekOfCode": "def region_edit_song(\n    lyrics: str,\n    edit_start_ms: int,\n    edit_end_ms: int,\n    song_id: str | None = None,\n    upload_audio_id: str | None = None,\n) -> dict:\n    \"\"\"Rewrite a time region of a song.\"\"\"\n    return api.region_edit_song(\n        lyrics=lyrics,",
+        "detail": "mcps.mureka.server",
+        "documentation": {}
+    },
+    {
+        "label": "remix_song",
+        "kind": 2,
+        "importPath": "mcps.mureka.server",
+        "description": "mcps.mureka.server",
+        "peekOfCode": "def remix_song(\n    prompt: str = \"\",\n    song_id: str | None = None,\n    upload_audio_id: str | None = None,\n    n: int | None = None,\n) -> dict:\n    \"\"\"Remix a song or uploaded audio.\"\"\"\n    return api.remix_song(\n        prompt=prompt,\n        song_id=_field_value(song_id, None),",
+        "detail": "mcps.mureka.server",
+        "documentation": {}
+    },
+    {
+        "label": "stem_song",
+        "kind": 2,
+        "importPath": "mcps.mureka.server",
+        "description": "mcps.mureka.server",
+        "peekOfCode": "def stem_song(\n    song_id: str | None = None,\n    upload_audio_id: str | None = None,\n    model: str | None = None,\n) -> dict:\n    \"\"\"Separate stems / vocal+instrumental.\"\"\"\n    return api.stem_song(\n        song_id=_field_value(song_id, None),\n        upload_audio_id=_field_value(upload_audio_id, None),\n        model=_field_value(model, None),",
+        "detail": "mcps.mureka.server",
+        "documentation": {}
+    },
+    {
+        "label": "recognize_song",
+        "kind": 2,
+        "importPath": "mcps.mureka.server",
+        "description": "mcps.mureka.server",
+        "peekOfCode": "def recognize_song(upload_audio_id: str | None = None, audio_url: str | None = None) -> dict:\n    \"\"\"Recognize / analyze audio.\"\"\"\n    return api.recognize_song(\n        upload_audio_id=_field_value(upload_audio_id, None),\n        audio_url=_field_value(audio_url, None),\n    )\n@mcp.tool()\ndef describe_song(upload_audio_id: str | None = None, song_id: str | None = None) -> dict:\n    \"\"\"Describe a song or upload.\"\"\"\n    return api.describe_song(",
+        "detail": "mcps.mureka.server",
+        "documentation": {}
+    },
+    {
+        "label": "describe_song",
+        "kind": 2,
+        "importPath": "mcps.mureka.server",
+        "description": "mcps.mureka.server",
+        "peekOfCode": "def describe_song(upload_audio_id: str | None = None, song_id: str | None = None) -> dict:\n    \"\"\"Describe a song or upload.\"\"\"\n    return api.describe_song(\n        upload_audio_id=_field_value(upload_audio_id, None),\n        song_id=_field_value(song_id, None),\n    )\n@mcp.tool()\ndef transcribe_song(upload_audio_id: str | None = None, song_id: str | None = None) -> dict:\n    \"\"\"Transcribe music.\"\"\"\n    return api.transcribe_song(",
+        "detail": "mcps.mureka.server",
+        "documentation": {}
+    },
+    {
+        "label": "transcribe_song",
+        "kind": 2,
+        "importPath": "mcps.mureka.server",
+        "description": "mcps.mureka.server",
+        "peekOfCode": "def transcribe_song(upload_audio_id: str | None = None, song_id: str | None = None) -> dict:\n    \"\"\"Transcribe music.\"\"\"\n    return api.transcribe_song(\n        upload_audio_id=_field_value(upload_audio_id, None),\n        song_id=_field_value(song_id, None),\n    )\n@mcp.tool()\ndef vocal_clone(upload_audio_id: str, name: str | None = None) -> dict:\n    \"\"\"Clone a vocal from uploaded audio.\"\"\"\n    return api.vocal_clone(upload_audio_id=upload_audio_id, name=_field_value(name, None))",
+        "detail": "mcps.mureka.server",
+        "documentation": {}
+    },
+    {
+        "label": "vocal_clone",
+        "kind": 2,
+        "importPath": "mcps.mureka.server",
+        "description": "mcps.mureka.server",
+        "peekOfCode": "def vocal_clone(upload_audio_id: str, name: str | None = None) -> dict:\n    \"\"\"Clone a vocal from uploaded audio.\"\"\"\n    return api.vocal_clone(upload_audio_id=upload_audio_id, name=_field_value(name, None))\n@mcp.tool()\ndef generate_track(\n    track_type: str = Field(description=\"vocals | accompaniment | instrument\"),\n    song_id: str | None = None,\n    upload_audio_id: str | None = None,\n    prompt: str = \"\",\n) -> dict:",
+        "detail": "mcps.mureka.server",
+        "documentation": {}
+    },
+    {
+        "label": "generate_track",
+        "kind": 2,
+        "importPath": "mcps.mureka.server",
+        "description": "mcps.mureka.server",
+        "peekOfCode": "def generate_track(\n    track_type: str = Field(description=\"vocals | accompaniment | instrument\"),\n    song_id: str | None = None,\n    upload_audio_id: str | None = None,\n    prompt: str = \"\",\n) -> dict:\n    \"\"\"Generate a complementary track from reference audio.\"\"\"\n    return api.generate_track(\n        track_type=track_type,\n        song_id=_field_value(song_id, None),",
+        "detail": "mcps.mureka.server",
+        "documentation": {}
+    },
+    {
+        "label": "generate_soundtrack",
+        "kind": 2,
+        "importPath": "mcps.mureka.server",
+        "description": "mcps.mureka.server",
+        "peekOfCode": "def generate_soundtrack(\n    prompt: str = \"\",\n    upload_file_id: str | None = None,\n    audio_start: float | None = None,\n    audio_end: float | None = None,\n    model: str | None = None,\n) -> dict:\n    \"\"\"Generate a soundtrack from image/video or prompt.\"\"\"\n    return api.generate_soundtrack(\n        prompt=prompt,",
+        "detail": "mcps.mureka.server",
+        "documentation": {}
+    },
+    {
+        "label": "generate_lyrics_video",
+        "kind": 2,
+        "importPath": "mcps.mureka.server",
+        "description": "mcps.mureka.server",
+        "peekOfCode": "def generate_lyrics_video(\n    song_id: str | None = None,\n    upload_audio_id: str | None = None,\n    aspect_ratio: str | None = None,\n    layout: str | None = None,\n) -> dict:\n    \"\"\"Generate a lyrics video.\"\"\"\n    return api.generate_lyrics_video(\n        song_id=_field_value(song_id, None),\n        upload_audio_id=_field_value(upload_audio_id, None),",
+        "detail": "mcps.mureka.server",
+        "documentation": {}
+    },
+    {
+        "label": "upload_file",
+        "kind": 2,
+        "importPath": "mcps.mureka.server",
+        "description": "mcps.mureka.server",
+        "peekOfCode": "def upload_file(\n    purpose: str = Field(description=\"reference|melody|instrumental|voice|audio|remix|soundtrack\"),\n    filename: str = Field(description=\"Original filename with extension.\"),\n    content_b64: str = Field(description=\"Base64-encoded file bytes.\"),\n) -> dict:\n    \"\"\"Upload a file to Mureka for use as a reference.\"\"\"\n    return api.upload_file(purpose=purpose, filename=filename, content_b64=content_b64)\n@mcp.tool()\ndef create_speech(text: str, voice: str | None = None) -> dict:\n    \"\"\"Mureka text-to-speech.\"\"\"",
+        "detail": "mcps.mureka.server",
+        "documentation": {}
+    },
+    {
+        "label": "create_speech",
+        "kind": 2,
+        "importPath": "mcps.mureka.server",
+        "description": "mcps.mureka.server",
+        "peekOfCode": "def create_speech(text: str, voice: str | None = None) -> dict:\n    \"\"\"Mureka text-to-speech.\"\"\"\n    return api.create_speech(text=text, voice=_field_value(voice, None))\n@mcp.tool()\ndef create_podcast(script: str, title: str | None = None) -> dict:\n    \"\"\"Mureka podcast generation.\"\"\"\n    return api.create_podcast(script=script, title=_field_value(title, None))\n@mcp.tool()\ndef query_billing() -> dict:\n    \"\"\"Query Mureka billing.\"\"\"",
+        "detail": "mcps.mureka.server",
+        "documentation": {}
+    },
+    {
+        "label": "create_podcast",
+        "kind": 2,
+        "importPath": "mcps.mureka.server",
+        "description": "mcps.mureka.server",
+        "peekOfCode": "def create_podcast(script: str, title: str | None = None) -> dict:\n    \"\"\"Mureka podcast generation.\"\"\"\n    return api.create_podcast(script=script, title=_field_value(title, None))\n@mcp.tool()\ndef query_billing() -> dict:\n    \"\"\"Query Mureka billing.\"\"\"\n    return api.query_billing()\n@mcp.tool()\ndef list_mureka_models() -> dict:\n    \"\"\"Describe available Mureka models for this workspace.\"\"\"",
+        "detail": "mcps.mureka.server",
+        "documentation": {}
+    },
+    {
+        "label": "query_billing",
+        "kind": 2,
+        "importPath": "mcps.mureka.server",
+        "description": "mcps.mureka.server",
+        "peekOfCode": "def query_billing() -> dict:\n    \"\"\"Query Mureka billing.\"\"\"\n    return api.query_billing()\n@mcp.tool()\ndef list_mureka_models() -> dict:\n    \"\"\"Describe available Mureka models for this workspace.\"\"\"\n    return api.list_models()\nif __name__ == \"__main__\":\n    mcp.run(transport=\"stdio\", show_banner=False)",
         "detail": "mcps.mureka.server",
         "documentation": {}
     },
@@ -2245,7 +3217,7 @@
         "kind": 2,
         "importPath": "mcps.mureka.server",
         "description": "mcps.mureka.server",
-        "peekOfCode": "def list_mureka_models() -> dict:\n    \"\"\"Describe the default Mureka model selection for this workspace.\"\"\"\n    return {\n        \"provider\": \"mureka\",\n        \"default_model\": _model(),\n        \"supported\": [\"auto\", \"mureka-6\", \"mureka-5.5\", \"mureka-7.6\", \"mureka-o2\"],\n        \"note\": \"Use auto unless a specific Mureka model id is required.\",\n    }\nif __name__ == \"__main__\":\n    mcp.run(transport=\"stdio\", show_banner=False)",
+        "peekOfCode": "def list_mureka_models() -> dict:\n    \"\"\"Describe available Mureka models for this workspace.\"\"\"\n    return api.list_models()\nif __name__ == \"__main__\":\n    mcp.run(transport=\"stdio\", show_banner=False)",
         "detail": "mcps.mureka.server",
         "documentation": {}
     },
@@ -2254,25 +3226,7 @@
         "kind": 5,
         "importPath": "mcps.mureka.server",
         "description": "mcps.mureka.server",
-        "peekOfCode": "mcp = FastMCP(\"renderhaus-mureka\")\nclass MurekaTask(BaseModel):\n    job_id: str\n    status: str\n    provider: str = \"mureka\"\n    mode: str\n    prompt: str\n    model: str | None = None\n    output_path: str | None = None\n    audio_url: str | None = None",
-        "detail": "mcps.mureka.server",
-        "documentation": {}
-    },
-    {
-        "label": "TERMINAL_STATUSES",
-        "kind": 5,
-        "importPath": "mcps.mureka.server",
-        "description": "mcps.mureka.server",
-        "peekOfCode": "TERMINAL_STATUSES = {\"succeeded\", \"failed\", \"cancelled\", \"canceled\", \"timeouted\", \"timeout\"}\nQUERY_KIND = Literal[\"instrumental\", \"song\"]\ndef _field_value(value: Any, default: Any) -> Any:\n    if isinstance(value, FieldInfo):\n        return getattr(value, \"default\", default)\n    return value\ndef _media_dir() -> Path:\n    path = Path(os.getenv(\"RENDERHAUS_MEDIA_DIR\", \".renderhaus/media\")).expanduser()\n    path.mkdir(parents=True, exist_ok=True)\n    return path",
-        "detail": "mcps.mureka.server",
-        "documentation": {}
-    },
-    {
-        "label": "QUERY_KIND",
-        "kind": 5,
-        "importPath": "mcps.mureka.server",
-        "description": "mcps.mureka.server",
-        "peekOfCode": "QUERY_KIND = Literal[\"instrumental\", \"song\"]\ndef _field_value(value: Any, default: Any) -> Any:\n    if isinstance(value, FieldInfo):\n        return getattr(value, \"default\", default)\n    return value\ndef _media_dir() -> Path:\n    path = Path(os.getenv(\"RENDERHAUS_MEDIA_DIR\", \".renderhaus/media\")).expanduser()\n    path.mkdir(parents=True, exist_ok=True)\n    return path\ndef _dry_run() -> bool:",
+        "peekOfCode": "mcp = FastMCP(\"renderhaus-mureka\")\ndef _field_value(value: Any, default: Any) -> Any:\n    if isinstance(value, FieldInfo):\n        return getattr(value, \"default\", default)\n    return value\n@mcp.tool()\ndef text_to_music(\n    prompt: str = Field(description=\"Music direction: genre, mood, tempo, instruments, use case.\"),\n    lyrics: str | None = Field(default=None, description=\"Optional lyrics. Omit for instrumental.\"),\n    model: str | None = Field(default=None, description=\"Mureka model id. Defaults to MUREKA_MODEL or auto.\"),",
         "detail": "mcps.mureka.server",
         "documentation": {}
     },
@@ -2421,6 +3375,51 @@
         "documentation": {}
     },
     {
+        "label": "check_gateway_tools_schema",
+        "kind": 2,
+        "importPath": "scripts.ci_check",
+        "description": "scripts.ci_check",
+        "peekOfCode": "def check_gateway_tools_schema() -> None:\n    path = ROOT / \"configs\" / \"mureka_gateway_tools.json\"\n    tools = json.loads(path.read_text())\n    assert isinstance(tools, list) and tools, \"gateway tools schema must be a non-empty list\"\n    names = [t[\"name\"] for t in tools]\n    required = {\n        \"text_to_music\",\n        \"create_instrumental\",\n        \"create_song\",\n        \"create_song_from_prompt\",",
+        "detail": "scripts.ci_check",
+        "documentation": {}
+    },
+    {
+        "label": "check_imports",
+        "kind": 2,
+        "importPath": "scripts.ci_check",
+        "description": "scripts.ci_check",
+        "peekOfCode": "def check_imports() -> None:\n    import sys\n    if str(ROOT) not in sys.path:\n        sys.path.insert(0, str(ROOT))\n    from mcps.mureka import api  # noqa: F401\n    from agent import config, director, executor, service  # noqa: F401\n    from lambdas.mureka import handler  # noqa: F401\n    assert isinstance(api.dry_run(), bool)\n    print(\"ok python imports\")\ndef check_mcp_configs() -> None:",
+        "detail": "scripts.ci_check",
+        "documentation": {}
+    },
+    {
+        "label": "check_mcp_configs",
+        "kind": 2,
+        "importPath": "scripts.ci_check",
+        "description": "scripts.ci_check",
+        "peekOfCode": "def check_mcp_configs() -> None:\n    for name in (\"mcp.local.json\", \"mcp.agentcore.json\"):\n        raw = json.loads((ROOT / \"configs\" / name).read_text())\n        assert \"mcpServers\" in raw\n        print(f\"ok configs/{name}\")\ndef main() -> int:\n    check_gateway_tools_schema()\n    check_mcp_configs()\n    check_imports()\n    print(\"ci_check passed\")",
+        "detail": "scripts.ci_check",
+        "documentation": {}
+    },
+    {
+        "label": "main",
+        "kind": 2,
+        "importPath": "scripts.ci_check",
+        "description": "scripts.ci_check",
+        "peekOfCode": "def main() -> int:\n    check_gateway_tools_schema()\n    check_mcp_configs()\n    check_imports()\n    print(\"ci_check passed\")\n    return 0\nif __name__ == \"__main__\":\n    try:\n        raise SystemExit(main())\n    except Exception as exc:  # noqa: BLE001",
+        "detail": "scripts.ci_check",
+        "documentation": {}
+    },
+    {
+        "label": "ROOT",
+        "kind": 5,
+        "importPath": "scripts.ci_check",
+        "description": "scripts.ci_check",
+        "peekOfCode": "ROOT = Path(__file__).resolve().parents[1]\ndef check_gateway_tools_schema() -> None:\n    path = ROOT / \"configs\" / \"mureka_gateway_tools.json\"\n    tools = json.loads(path.read_text())\n    assert isinstance(tools, list) and tools, \"gateway tools schema must be a non-empty list\"\n    names = [t[\"name\"] for t in tools]\n    required = {\n        \"text_to_music\",\n        \"create_instrumental\",\n        \"create_song\",",
+        "detail": "scripts.ci_check",
+        "documentation": {}
+    },
+    {
         "label": "load_bootstrap_env",
         "kind": 2,
         "importPath": "scripts.deploy_agentcore",
@@ -2540,6 +3539,105 @@
     {
         "label": "main",
         "kind": 2,
+        "importPath": "scripts.deploy_mureka_gateway",
+        "description": "scripts.deploy_mureka_gateway",
+        "peekOfCode": "def main() -> int:\n    parser = argparse.ArgumentParser(description=__doc__)\n    parser.add_argument(\"--region\", default=os.getenv(\"AWS_REGION\") or \"us-east-1\")\n    parser.add_argument(\n        \"--secret-name\",\n        default=os.getenv(\"RENDERHAUS_SECRETS_NAME\") or DEFAULT_SECRET_NAME,\n    )\n    args = parser.parse_args()\n    region = args.region\n    secret_name = args.secret_name",
+        "detail": "scripts.deploy_mureka_gateway",
+        "documentation": {}
+    },
+    {
+        "label": "ROOT",
+        "kind": 5,
+        "importPath": "scripts.deploy_mureka_gateway",
+        "description": "scripts.deploy_mureka_gateway",
+        "peekOfCode": "ROOT = Path(__file__).resolve().parents[1]\nTOOLS_SCHEMA_PATH = ROOT / \"configs\" / \"mureka_gateway_tools.json\"\nHANDLER_PATH = ROOT / \"lambdas\" / \"mureka\" / \"handler.py\"\nMUREKA_PKG = ROOT / \"mcps\" / \"mureka\"\nFUNCTION_NAME = \"renderhaus-mureka-tools\"\nLAMBDA_ROLE_NAME = \"RenderhausMurekaLambdaRole\"\nGATEWAY_ROLE_NAME = \"RenderhausMurekaGatewayRole\"\nGATEWAY_NAME = \"renderhaus-mureka-gateway\"\nTARGET_NAME = \"Mureka\"\nDEFAULT_SECRET_NAME = \"renderhaus/app\"",
+        "detail": "scripts.deploy_mureka_gateway",
+        "documentation": {}
+    },
+    {
+        "label": "TOOLS_SCHEMA_PATH",
+        "kind": 5,
+        "importPath": "scripts.deploy_mureka_gateway",
+        "description": "scripts.deploy_mureka_gateway",
+        "peekOfCode": "TOOLS_SCHEMA_PATH = ROOT / \"configs\" / \"mureka_gateway_tools.json\"\nHANDLER_PATH = ROOT / \"lambdas\" / \"mureka\" / \"handler.py\"\nMUREKA_PKG = ROOT / \"mcps\" / \"mureka\"\nFUNCTION_NAME = \"renderhaus-mureka-tools\"\nLAMBDA_ROLE_NAME = \"RenderhausMurekaLambdaRole\"\nGATEWAY_ROLE_NAME = \"RenderhausMurekaGatewayRole\"\nGATEWAY_NAME = \"renderhaus-mureka-gateway\"\nTARGET_NAME = \"Mureka\"\nDEFAULT_SECRET_NAME = \"renderhaus/app\"\ndef _load_tools_schema() -> list[dict]:",
+        "detail": "scripts.deploy_mureka_gateway",
+        "documentation": {}
+    },
+    {
+        "label": "HANDLER_PATH",
+        "kind": 5,
+        "importPath": "scripts.deploy_mureka_gateway",
+        "description": "scripts.deploy_mureka_gateway",
+        "peekOfCode": "HANDLER_PATH = ROOT / \"lambdas\" / \"mureka\" / \"handler.py\"\nMUREKA_PKG = ROOT / \"mcps\" / \"mureka\"\nFUNCTION_NAME = \"renderhaus-mureka-tools\"\nLAMBDA_ROLE_NAME = \"RenderhausMurekaLambdaRole\"\nGATEWAY_ROLE_NAME = \"RenderhausMurekaGatewayRole\"\nGATEWAY_NAME = \"renderhaus-mureka-gateway\"\nTARGET_NAME = \"Mureka\"\nDEFAULT_SECRET_NAME = \"renderhaus/app\"\ndef _load_tools_schema() -> list[dict]:\n    return json.loads(TOOLS_SCHEMA_PATH.read_text())",
+        "detail": "scripts.deploy_mureka_gateway",
+        "documentation": {}
+    },
+    {
+        "label": "MUREKA_PKG",
+        "kind": 5,
+        "importPath": "scripts.deploy_mureka_gateway",
+        "description": "scripts.deploy_mureka_gateway",
+        "peekOfCode": "MUREKA_PKG = ROOT / \"mcps\" / \"mureka\"\nFUNCTION_NAME = \"renderhaus-mureka-tools\"\nLAMBDA_ROLE_NAME = \"RenderhausMurekaLambdaRole\"\nGATEWAY_ROLE_NAME = \"RenderhausMurekaGatewayRole\"\nGATEWAY_NAME = \"renderhaus-mureka-gateway\"\nTARGET_NAME = \"Mureka\"\nDEFAULT_SECRET_NAME = \"renderhaus/app\"\ndef _load_tools_schema() -> list[dict]:\n    return json.loads(TOOLS_SCHEMA_PATH.read_text())\ndef _ensure_lambda_role(iam, account: str, region: str, secret_name: str) -> str:",
+        "detail": "scripts.deploy_mureka_gateway",
+        "documentation": {}
+    },
+    {
+        "label": "FUNCTION_NAME",
+        "kind": 5,
+        "importPath": "scripts.deploy_mureka_gateway",
+        "description": "scripts.deploy_mureka_gateway",
+        "peekOfCode": "FUNCTION_NAME = \"renderhaus-mureka-tools\"\nLAMBDA_ROLE_NAME = \"RenderhausMurekaLambdaRole\"\nGATEWAY_ROLE_NAME = \"RenderhausMurekaGatewayRole\"\nGATEWAY_NAME = \"renderhaus-mureka-gateway\"\nTARGET_NAME = \"Mureka\"\nDEFAULT_SECRET_NAME = \"renderhaus/app\"\ndef _load_tools_schema() -> list[dict]:\n    return json.loads(TOOLS_SCHEMA_PATH.read_text())\ndef _ensure_lambda_role(iam, account: str, region: str, secret_name: str) -> str:\n    role_arn = f\"arn:aws:iam::{account}:role/{LAMBDA_ROLE_NAME}\"",
+        "detail": "scripts.deploy_mureka_gateway",
+        "documentation": {}
+    },
+    {
+        "label": "LAMBDA_ROLE_NAME",
+        "kind": 5,
+        "importPath": "scripts.deploy_mureka_gateway",
+        "description": "scripts.deploy_mureka_gateway",
+        "peekOfCode": "LAMBDA_ROLE_NAME = \"RenderhausMurekaLambdaRole\"\nGATEWAY_ROLE_NAME = \"RenderhausMurekaGatewayRole\"\nGATEWAY_NAME = \"renderhaus-mureka-gateway\"\nTARGET_NAME = \"Mureka\"\nDEFAULT_SECRET_NAME = \"renderhaus/app\"\ndef _load_tools_schema() -> list[dict]:\n    return json.loads(TOOLS_SCHEMA_PATH.read_text())\ndef _ensure_lambda_role(iam, account: str, region: str, secret_name: str) -> str:\n    role_arn = f\"arn:aws:iam::{account}:role/{LAMBDA_ROLE_NAME}\"\n    trust = {",
+        "detail": "scripts.deploy_mureka_gateway",
+        "documentation": {}
+    },
+    {
+        "label": "GATEWAY_ROLE_NAME",
+        "kind": 5,
+        "importPath": "scripts.deploy_mureka_gateway",
+        "description": "scripts.deploy_mureka_gateway",
+        "peekOfCode": "GATEWAY_ROLE_NAME = \"RenderhausMurekaGatewayRole\"\nGATEWAY_NAME = \"renderhaus-mureka-gateway\"\nTARGET_NAME = \"Mureka\"\nDEFAULT_SECRET_NAME = \"renderhaus/app\"\ndef _load_tools_schema() -> list[dict]:\n    return json.loads(TOOLS_SCHEMA_PATH.read_text())\ndef _ensure_lambda_role(iam, account: str, region: str, secret_name: str) -> str:\n    role_arn = f\"arn:aws:iam::{account}:role/{LAMBDA_ROLE_NAME}\"\n    trust = {\n        \"Version\": \"2012-10-17\",",
+        "detail": "scripts.deploy_mureka_gateway",
+        "documentation": {}
+    },
+    {
+        "label": "GATEWAY_NAME",
+        "kind": 5,
+        "importPath": "scripts.deploy_mureka_gateway",
+        "description": "scripts.deploy_mureka_gateway",
+        "peekOfCode": "GATEWAY_NAME = \"renderhaus-mureka-gateway\"\nTARGET_NAME = \"Mureka\"\nDEFAULT_SECRET_NAME = \"renderhaus/app\"\ndef _load_tools_schema() -> list[dict]:\n    return json.loads(TOOLS_SCHEMA_PATH.read_text())\ndef _ensure_lambda_role(iam, account: str, region: str, secret_name: str) -> str:\n    role_arn = f\"arn:aws:iam::{account}:role/{LAMBDA_ROLE_NAME}\"\n    trust = {\n        \"Version\": \"2012-10-17\",\n        \"Statement\": [",
+        "detail": "scripts.deploy_mureka_gateway",
+        "documentation": {}
+    },
+    {
+        "label": "TARGET_NAME",
+        "kind": 5,
+        "importPath": "scripts.deploy_mureka_gateway",
+        "description": "scripts.deploy_mureka_gateway",
+        "peekOfCode": "TARGET_NAME = \"Mureka\"\nDEFAULT_SECRET_NAME = \"renderhaus/app\"\ndef _load_tools_schema() -> list[dict]:\n    return json.loads(TOOLS_SCHEMA_PATH.read_text())\ndef _ensure_lambda_role(iam, account: str, region: str, secret_name: str) -> str:\n    role_arn = f\"arn:aws:iam::{account}:role/{LAMBDA_ROLE_NAME}\"\n    trust = {\n        \"Version\": \"2012-10-17\",\n        \"Statement\": [\n            {",
+        "detail": "scripts.deploy_mureka_gateway",
+        "documentation": {}
+    },
+    {
+        "label": "DEFAULT_SECRET_NAME",
+        "kind": 5,
+        "importPath": "scripts.deploy_mureka_gateway",
+        "description": "scripts.deploy_mureka_gateway",
+        "peekOfCode": "DEFAULT_SECRET_NAME = \"renderhaus/app\"\ndef _load_tools_schema() -> list[dict]:\n    return json.loads(TOOLS_SCHEMA_PATH.read_text())\ndef _ensure_lambda_role(iam, account: str, region: str, secret_name: str) -> str:\n    role_arn = f\"arn:aws:iam::{account}:role/{LAMBDA_ROLE_NAME}\"\n    trust = {\n        \"Version\": \"2012-10-17\",\n        \"Statement\": [\n            {\n                \"Effect\": \"Allow\",",
+        "detail": "scripts.deploy_mureka_gateway",
+        "documentation": {}
+    },
+    {
+        "label": "main",
+        "kind": 2,
         "importPath": "scripts.generate_ui_assets",
         "description": "scripts.generate_ui_assets",
         "peekOfCode": "def main() -> int:\n    load_local_env()\n    TARGET_DIR.mkdir(parents=True, exist_ok=True)\n    for asset in ASSETS:\n        print(f\"generating {asset['name']}…\", flush=True)\n        result = text_to_image(\n            prompt=asset[\"prompt\"],\n            aspect_ratio=asset[\"aspect_ratio\"],\n            size=asset[\"size\"],\n        )",
@@ -2562,6 +3660,87 @@
         "description": "scripts.generate_ui_assets",
         "peekOfCode": "ASSETS = [\n    {\n        \"name\": \"stage-backdrop\",\n        \"aspect_ratio\": \"16:9\",\n        \"size\": \"2K\",\n        \"prompt\": (\n            \"Very dark, near-black photograph of an empty brutalist concrete gallery at night. \"\n            \"One narrow shaft of cool daylight falls across a raw concrete floor, everything else \"\n            \"sinks into deep shadow. Shot on medium format film, shallow depth of field, heavy \"\n            \"atmospheric haze, visible film grain, muted desaturated neutral greys, no colour cast, \"",
         "detail": "scripts.generate_ui_assets",
+        "documentation": {}
+    },
+    {
+        "label": "ensure_role",
+        "kind": 2,
+        "importPath": "scripts.setup_github_oidc",
+        "description": "scripts.setup_github_oidc",
+        "peekOfCode": "def ensure_role(iam) -> str:\n    role_arn = f\"arn:aws:iam::{ACCOUNT}:role/{ROLE_NAME}\"\n    trust = {\n        \"Version\": \"2012-10-17\",\n        \"Statement\": [\n            {\n                \"Effect\": \"Allow\",\n                \"Principal\": {\"Federated\": OIDC_PROVIDER_ARN},\n                \"Action\": \"sts:AssumeRoleWithWebIdentity\",\n                \"Condition\": {",
+        "detail": "scripts.setup_github_oidc",
+        "documentation": {}
+    },
+    {
+        "label": "ensure_github",
+        "kind": 2,
+        "importPath": "scripts.setup_github_oidc",
+        "description": "scripts.setup_github_oidc",
+        "peekOfCode": "def ensure_github(role_arn: str) -> None:\n    # Environment (empty body = create/update with defaults)\n    subprocess.run(\n        [\n            \"gh\",\n            \"api\",\n            \"--method\",\n            \"PUT\",\n            f\"repos/{REPO}/environments/production\",\n            \"--input\",",
+        "detail": "scripts.setup_github_oidc",
+        "documentation": {}
+    },
+    {
+        "label": "main",
+        "kind": 2,
+        "importPath": "scripts.setup_github_oidc",
+        "description": "scripts.setup_github_oidc",
+        "peekOfCode": "def main() -> int:\n    iam = boto3.client(\"iam\")\n    role_arn = ensure_role(iam)\n    ensure_github(role_arn)\n    print(\"\\nDone.\")\n    print(f\"Role: {role_arn}\")\n    print(\"Next: push workflows (if not already) then Actions → Deploy → Run workflow\")\n    return 0\nif __name__ == \"__main__\":\n    try:",
+        "detail": "scripts.setup_github_oidc",
+        "documentation": {}
+    },
+    {
+        "label": "ACCOUNT",
+        "kind": 5,
+        "importPath": "scripts.setup_github_oidc",
+        "description": "scripts.setup_github_oidc",
+        "peekOfCode": "ACCOUNT = \"648597472910\"\nREGION = \"us-east-1\"\nROLE_NAME = \"RenderhausGitHubActionsDeployRole\"\nOIDC_PROVIDER_ARN = f\"arn:aws:iam::{ACCOUNT}:oidc-provider/token.actions.githubusercontent.com\"\nREPO = \"half-cook/renderhaus-agent\"\nSECRET_NAME = \"renderhaus/app\"\ndef ensure_role(iam) -> str:\n    role_arn = f\"arn:aws:iam::{ACCOUNT}:role/{ROLE_NAME}\"\n    trust = {\n        \"Version\": \"2012-10-17\",",
+        "detail": "scripts.setup_github_oidc",
+        "documentation": {}
+    },
+    {
+        "label": "REGION",
+        "kind": 5,
+        "importPath": "scripts.setup_github_oidc",
+        "description": "scripts.setup_github_oidc",
+        "peekOfCode": "REGION = \"us-east-1\"\nROLE_NAME = \"RenderhausGitHubActionsDeployRole\"\nOIDC_PROVIDER_ARN = f\"arn:aws:iam::{ACCOUNT}:oidc-provider/token.actions.githubusercontent.com\"\nREPO = \"half-cook/renderhaus-agent\"\nSECRET_NAME = \"renderhaus/app\"\ndef ensure_role(iam) -> str:\n    role_arn = f\"arn:aws:iam::{ACCOUNT}:role/{ROLE_NAME}\"\n    trust = {\n        \"Version\": \"2012-10-17\",\n        \"Statement\": [",
+        "detail": "scripts.setup_github_oidc",
+        "documentation": {}
+    },
+    {
+        "label": "ROLE_NAME",
+        "kind": 5,
+        "importPath": "scripts.setup_github_oidc",
+        "description": "scripts.setup_github_oidc",
+        "peekOfCode": "ROLE_NAME = \"RenderhausGitHubActionsDeployRole\"\nOIDC_PROVIDER_ARN = f\"arn:aws:iam::{ACCOUNT}:oidc-provider/token.actions.githubusercontent.com\"\nREPO = \"half-cook/renderhaus-agent\"\nSECRET_NAME = \"renderhaus/app\"\ndef ensure_role(iam) -> str:\n    role_arn = f\"arn:aws:iam::{ACCOUNT}:role/{ROLE_NAME}\"\n    trust = {\n        \"Version\": \"2012-10-17\",\n        \"Statement\": [\n            {",
+        "detail": "scripts.setup_github_oidc",
+        "documentation": {}
+    },
+    {
+        "label": "OIDC_PROVIDER_ARN",
+        "kind": 5,
+        "importPath": "scripts.setup_github_oidc",
+        "description": "scripts.setup_github_oidc",
+        "peekOfCode": "OIDC_PROVIDER_ARN = f\"arn:aws:iam::{ACCOUNT}:oidc-provider/token.actions.githubusercontent.com\"\nREPO = \"half-cook/renderhaus-agent\"\nSECRET_NAME = \"renderhaus/app\"\ndef ensure_role(iam) -> str:\n    role_arn = f\"arn:aws:iam::{ACCOUNT}:role/{ROLE_NAME}\"\n    trust = {\n        \"Version\": \"2012-10-17\",\n        \"Statement\": [\n            {\n                \"Effect\": \"Allow\",",
+        "detail": "scripts.setup_github_oidc",
+        "documentation": {}
+    },
+    {
+        "label": "REPO",
+        "kind": 5,
+        "importPath": "scripts.setup_github_oidc",
+        "description": "scripts.setup_github_oidc",
+        "peekOfCode": "REPO = \"half-cook/renderhaus-agent\"\nSECRET_NAME = \"renderhaus/app\"\ndef ensure_role(iam) -> str:\n    role_arn = f\"arn:aws:iam::{ACCOUNT}:role/{ROLE_NAME}\"\n    trust = {\n        \"Version\": \"2012-10-17\",\n        \"Statement\": [\n            {\n                \"Effect\": \"Allow\",\n                \"Principal\": {\"Federated\": OIDC_PROVIDER_ARN},",
+        "detail": "scripts.setup_github_oidc",
+        "documentation": {}
+    },
+    {
+        "label": "SECRET_NAME",
+        "kind": 5,
+        "importPath": "scripts.setup_github_oidc",
+        "description": "scripts.setup_github_oidc",
+        "peekOfCode": "SECRET_NAME = \"renderhaus/app\"\ndef ensure_role(iam) -> str:\n    role_arn = f\"arn:aws:iam::{ACCOUNT}:role/{ROLE_NAME}\"\n    trust = {\n        \"Version\": \"2012-10-17\",\n        \"Statement\": [\n            {\n                \"Effect\": \"Allow\",\n                \"Principal\": {\"Federated\": OIDC_PROVIDER_ARN},\n                \"Action\": \"sts:AssumeRoleWithWebIdentity\",",
+        "detail": "scripts.setup_github_oidc",
         "documentation": {}
     },
     {
@@ -2668,7 +3847,7 @@
         "kind": 6,
         "importPath": "web.app",
         "description": "web.app",
-        "peekOfCode": "class TimelineItemModel(BaseModel):\n    id: str | None = None\n    job_id: str = Field(pattern=r\"^[a-f0-9]{32}$\")\n    asset_id: str | None = None\n    media_type: Literal[\"video\", \"image\", \"music\"] = \"video\"\n    label: str = Field(default=\"\", max_length=120)\n    duration_seconds: float | int | None = None\nclass TimelineUpdateRequest(BaseModel):\n    items: list[TimelineItemModel] = Field(default_factory=list)\nclass JobStore:",
+        "peekOfCode": "class TimelineItemModel(BaseModel):\n    id: str | None = None\n    job_id: str = Field(pattern=r\"^[a-f0-9]{32}$\")\n    asset_id: str | None = None\n    media_type: Literal[\"video\", \"image\", \"music\"] = \"video\"\n    label: str = Field(default=\"\", max_length=120)\n    duration_seconds: float | int | None = None\nclass TimelineUpdateRequest(BaseModel):\n    items: list[TimelineItemModel] = Field(default_factory=list)\nclass ProductionCreateRequest(BaseModel):",
         "detail": "web.app",
         "documentation": {}
     },
@@ -2677,7 +3856,25 @@
         "kind": 6,
         "importPath": "web.app",
         "description": "web.app",
-        "peekOfCode": "class TimelineUpdateRequest(BaseModel):\n    items: list[TimelineItemModel] = Field(default_factory=list)\nclass JobStore:\n    def __init__(self, directory: Path) -> None:\n        self.directory = directory\n        self._jobs: dict[str, dict[str, Any]] = {}\n        self._lock = asyncio.Lock()\n    async def load(self) -> list[str]:\n        self.directory.mkdir(parents=True, exist_ok=True)\n        resumable: list[str] = []",
+        "peekOfCode": "class TimelineUpdateRequest(BaseModel):\n    items: list[TimelineItemModel] = Field(default_factory=list)\nclass ProductionCreateRequest(BaseModel):\n    brief: str = Field(min_length=1, max_length=8000)\n    title: str = \"\"\n    plan_now: bool = True\nclass ProductionApproveRequest(BaseModel):\n    execute: bool = True\nclass JobStore:\n    def __init__(self, directory: Path) -> None:",
+        "detail": "web.app",
+        "documentation": {}
+    },
+    {
+        "label": "ProductionCreateRequest",
+        "kind": 6,
+        "importPath": "web.app",
+        "description": "web.app",
+        "peekOfCode": "class ProductionCreateRequest(BaseModel):\n    brief: str = Field(min_length=1, max_length=8000)\n    title: str = \"\"\n    plan_now: bool = True\nclass ProductionApproveRequest(BaseModel):\n    execute: bool = True\nclass JobStore:\n    def __init__(self, directory: Path) -> None:\n        self.directory = directory\n        self._jobs: dict[str, dict[str, Any]] = {}",
+        "detail": "web.app",
+        "documentation": {}
+    },
+    {
+        "label": "ProductionApproveRequest",
+        "kind": 6,
+        "importPath": "web.app",
+        "description": "web.app",
+        "peekOfCode": "class ProductionApproveRequest(BaseModel):\n    execute: bool = True\nclass JobStore:\n    def __init__(self, directory: Path) -> None:\n        self.directory = directory\n        self._jobs: dict[str, dict[str, Any]] = {}\n        self._lock = asyncio.Lock()\n    async def load(self) -> list[str]:\n        self.directory.mkdir(parents=True, exist_ok=True)\n        resumable: list[str] = []",
         "detail": "web.app",
         "documentation": {}
     },
@@ -2785,7 +3982,7 @@
         "kind": 5,
         "importPath": "web.app",
         "description": "web.app",
-        "peekOfCode": "store = JobStore(STATE_DIR)\nprojects = ProjectStore()\ngeneration_slots = asyncio.Semaphore(2)\ndef _ensure_output_asset(job: dict[str, Any]) -> bool:\n    \"\"\"Register a legacy `_output_path` as an owned asset. Returns True if job mutated.\"\"\"\n    asset_id = job.get(\"output_asset_id\")\n    if isinstance(asset_id, str) and asset_id:\n        return False\n    output_path = job.get(\"_output_path\")\n    if not isinstance(output_path, str) or not output_path:",
+        "peekOfCode": "store = JobStore(STATE_DIR)\nprojects = ProjectStore()\nproductions = ProductionStore()\ngeneration_slots = asyncio.Semaphore(2)\ndef _ensure_output_asset(job: dict[str, Any]) -> bool:\n    \"\"\"Register a legacy `_output_path` as an owned asset. Returns True if job mutated.\"\"\"\n    asset_id = job.get(\"output_asset_id\")\n    if isinstance(asset_id, str) and asset_id:\n        return False\n    output_path = job.get(\"_output_path\")",
         "detail": "web.app",
         "documentation": {}
     },
@@ -2794,7 +3991,16 @@
         "kind": 5,
         "importPath": "web.app",
         "description": "web.app",
-        "peekOfCode": "projects = ProjectStore()\ngeneration_slots = asyncio.Semaphore(2)\ndef _ensure_output_asset(job: dict[str, Any]) -> bool:\n    \"\"\"Register a legacy `_output_path` as an owned asset. Returns True if job mutated.\"\"\"\n    asset_id = job.get(\"output_asset_id\")\n    if isinstance(asset_id, str) and asset_id:\n        return False\n    output_path = job.get(\"_output_path\")\n    if not isinstance(output_path, str) or not output_path:\n        return False",
+        "peekOfCode": "projects = ProjectStore()\nproductions = ProductionStore()\ngeneration_slots = asyncio.Semaphore(2)\ndef _ensure_output_asset(job: dict[str, Any]) -> bool:\n    \"\"\"Register a legacy `_output_path` as an owned asset. Returns True if job mutated.\"\"\"\n    asset_id = job.get(\"output_asset_id\")\n    if isinstance(asset_id, str) and asset_id:\n        return False\n    output_path = job.get(\"_output_path\")\n    if not isinstance(output_path, str) or not output_path:",
+        "detail": "web.app",
+        "documentation": {}
+    },
+    {
+        "label": "productions",
+        "kind": 5,
+        "importPath": "web.app",
+        "description": "web.app",
+        "peekOfCode": "productions = ProductionStore()\ngeneration_slots = asyncio.Semaphore(2)\ndef _ensure_output_asset(job: dict[str, Any]) -> bool:\n    \"\"\"Register a legacy `_output_path` as an owned asset. Returns True if job mutated.\"\"\"\n    asset_id = job.get(\"output_asset_id\")\n    if isinstance(asset_id, str) and asset_id:\n        return False\n    output_path = job.get(\"_output_path\")\n    if not isinstance(output_path, str) or not output_path:\n        return False",
         "detail": "web.app",
         "documentation": {}
     },
@@ -3093,6 +4299,42 @@
         "description": "web.auth",
         "peekOfCode": "AuthUser = Annotated[RequestState | None, Depends(require_auth)]\ndef current_user_id(auth: RequestState | None) -> str:\n    \"\"\"Clerk subject when signed in; stable local owner when Clerk is off.\"\"\"\n    if auth is not None and auth.payload:\n        subject = auth.payload.get(\"sub\")\n        if isinstance(subject, str) and subject:\n            return subject\n    if clerk_enabled():\n        raise HTTPException(\n            status_code=401,",
         "detail": "web.auth",
+        "documentation": {}
+    },
+    {
+        "label": "ProductionStore",
+        "kind": 6,
+        "importPath": "web.productions",
+        "description": "web.productions",
+        "peekOfCode": "class ProductionStore:\n    def __init__(self, directory: Path | None = None) -> None:\n        self.directory = directory or PRODUCTIONS_DIR\n        self._items: dict[str, dict[str, Any]] = {}\n        self._lock = asyncio.Lock()\n    async def load(self) -> None:\n        self.directory.mkdir(parents=True, exist_ok=True)\n        for path in self.directory.glob(\"*.json\"):\n            try:\n                item = json.loads(path.read_text())",
+        "detail": "web.productions",
+        "documentation": {}
+    },
+    {
+        "label": "public_production",
+        "kind": 2,
+        "importPath": "web.productions",
+        "description": "web.productions",
+        "peekOfCode": "def public_production(record: dict[str, Any]) -> dict[str, Any]:\n    return {key: record.get(key) for key in PUBLIC_FIELDS if key in record}\nclass ProductionStore:\n    def __init__(self, directory: Path | None = None) -> None:\n        self.directory = directory or PRODUCTIONS_DIR\n        self._items: dict[str, dict[str, Any]] = {}\n        self._lock = asyncio.Lock()\n    async def load(self) -> None:\n        self.directory.mkdir(parents=True, exist_ok=True)\n        for path in self.directory.glob(\"*.json\"):",
+        "detail": "web.productions",
+        "documentation": {}
+    },
+    {
+        "label": "PRODUCTIONS_DIR",
+        "kind": 5,
+        "importPath": "web.productions",
+        "description": "web.productions",
+        "peekOfCode": "PRODUCTIONS_DIR = ROOT / \".renderhaus\" / \"productions\"\nPUBLIC_FIELDS = {\n    \"id\",\n    \"schema_version\",\n    \"user_id\",\n    \"brief\",\n    \"title\",\n    \"status\",\n    \"plan\",\n    \"execution\",",
+        "detail": "web.productions",
+        "documentation": {}
+    },
+    {
+        "label": "PUBLIC_FIELDS",
+        "kind": 5,
+        "importPath": "web.productions",
+        "description": "web.productions",
+        "peekOfCode": "PUBLIC_FIELDS = {\n    \"id\",\n    \"schema_version\",\n    \"user_id\",\n    \"brief\",\n    \"title\",\n    \"status\",\n    \"plan\",\n    \"execution\",\n    \"error\",",
+        "detail": "web.productions",
         "documentation": {}
     },
     {

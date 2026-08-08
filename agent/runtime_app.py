@@ -17,6 +17,7 @@ from agent.service import (
     start_image_generation,
     start_music_generation,
     start_video_generation,
+    supervise_production,
 )
 
 
@@ -178,6 +179,24 @@ async def invocations(request: Request) -> dict[str, Any]:
                 raise HTTPException(status_code=400, detail="job_id is required.")
             result = await poll_music_generation(job_id, local_only=True)
             return {"output": _enrich_poll(result, user_id=user_id, kind="music")}
+
+        if action == "supervise_production":
+            if not isinstance(prompt, str) or not prompt.strip():
+                raise HTTPException(status_code=400, detail="prompt is required.")
+            execute = data.get("execute", True)
+            if not isinstance(execute, bool):
+                execute = str(execute).lower() not in {"0", "false", "no"}
+            plan = data.get("plan")
+            if plan is not None and not isinstance(plan, dict):
+                raise HTTPException(status_code=400, detail="plan must be an object.")
+            result = await supervise_production(
+                prompt,
+                execute=execute,
+                local_only=True,
+                user_id=user_id,
+                plan=plan,
+            )
+            return {"output": result}
 
         raise HTTPException(status_code=400, detail=f"Unsupported action: {action}")
     except HTTPException:

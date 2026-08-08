@@ -10,6 +10,8 @@ from langchain.agents import create_agent
 
 from agent.agentcore_client import agentcore_enabled, invoke as invoke_agentcore
 from agent.config import mcp_config_path
+from agent.director import TypedProductionPlan
+from agent.executor import supervise_brief
 from agent.main import SYSTEM_PROMPT, load_tools
 from agent.tracing import langchain_callbacks, traced_operation
 
@@ -33,13 +35,29 @@ the application reads the generation result structurally.
 """
 
 WEB_MUSIC_SYSTEM_PROMPT = """You are the private Renderhaus music-generation coordinator.
-The user has explicitly authorized exactly one music generation for this request.
-Call exactly one immediate-return generation tool: text_to_music. Prefer an instrumental score
-unless the user explicitly supplies lyrics. Never call wait, polling, model listing, video, image,
-voice, playback, phone, or outbound communication tools. Do not reveal provider, model, tool,
-credential, or internal path details in your prose. Keep the final response to one short sentence;
-the application reads the generation result structurally.
+The user has explicitly authorized music work for this request.
+Choose the single best immediate-return Mureka tool:
+- create_instrumental or text_to_music (no lyrics) for BGM/score
+- create_song or text_to_music (with lyrics) when lyrics are provided
+- create_song_from_prompt when the user wants a full song from a brief without lyrics
+- generate_lyrics only when they asked for lyrics and not audio yet
+- generate_soundtrack when scoring an image/video upload (upload_file_id / audio_start / audio_end)
+Do not call query/get poll tools, billing, TTS/podcast, phone, video, or image tools.
+Do not reveal provider, model, tool, credential, or internal path details in your prose.
+Keep the final response to one short sentence; the application reads the generation result structurally.
 """
+
+MUSIC_TOOL_NAMES = (
+    "text_to_music",
+    "create_instrumental",
+    "create_song",
+    "create_song_from_prompt",
+    "generate_lyrics",
+    "generate_soundtrack",
+    "extend_song",
+    "region_edit_song",
+    "remix_song",
+)
 
 
 _runtime_lock = asyncio.Lock()
@@ -325,7 +343,7 @@ async def _generation_runtime() -> tuple[Any, Any, Any, dict[str, Any]]:
                 _cached_tools,
             )
         tools = await load_tools(mcp_config_path())
-        by_name = {tool.name: tool for tool in tools}
+        by_name = _index_tools(tools)
         required = {
             "text_to_video",
             "image_to_video",
@@ -335,12 +353,20 @@ async def _generation_runtime() -> tuple[Any, Any, Any, dict[str, Any]]:
             "text_to_music",
             "get_music_task",
         }
+        # get_music_task may be named query_music_task after Gateway expansion.
+        if "get_music_task" not in by_name and "query_music_task" in by_name:
+            by_name["get_music_task"] = by_name["query_music_task"]
         missing = sorted(required - by_name.keys())
         if missing:
             raise RuntimeError(
                 f"Required generation tools are unavailable: {', '.join(missing)}"
             )
         model = os.getenv("AGENT_MODEL", "openai:gpt-4.1-mini")
+        music_tools = [
+            by_name[name]
+            for name in MUSIC_TOOL_NAMES
+            if name in by_name
+        ] or [by_name["text_to_music"]]
         _cached_video_agent = create_agent(
             model=model,
             tools=[by_name["text_to_video"], by_name["image_to_video"]],
@@ -353,7 +379,7 @@ async def _generation_runtime() -> tuple[Any, Any, Any, dict[str, Any]]:
         )
         _cached_music_agent = create_agent(
             model=model,
-            tools=[by_name["text_to_music"]],
+            tools=music_tools,
             system_prompt=WEB_MUSIC_SYSTEM_PROMPT,
         )
         _cached_tools = {name: by_name[name] for name in required}
@@ -363,6 +389,18 @@ async def _generation_runtime() -> tuple[Any, Any, Any, dict[str, Any]]:
             _cached_music_agent,
             _cached_tools,
         )
+
+
+def _index_tools(tools: list[Any]) -> dict[str, Any]:
+    """Index tools by bare name, stripping AgentCore Gateway target prefixes (Target___tool)."""
+    by_name: dict[str, Any] = {}
+    for tool in tools:
+        name = tool.name
+        by_name[name] = tool
+        if "___" in name:
+            bare = name.split("___", 1)[1]
+            by_name.setdefault(bare, tool)
+    return by_name
 
 
 async def start_video_generation(
@@ -554,3 +592,35 @@ async def poll_music_generation(
     if not isinstance(normalized, dict):
         raise RuntimeError("Music generation returned an invalid status payload.")
     return normalized
+
+
+async def supervise_production(
+    brief: str,
+    *,
+    execute: bool = True,
+    local_only: bool = False,
+    session_id: str | None = None,
+    user_id: str | None = None,
+    plan: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Director plans a typed production; deterministic executor runs modality workers."""
+    if not local_only and agentcore_enabled():
+        return invoke_agentcore(
+            "supervise_production",
+            {
+                "prompt": brief,
+                "execute": execute,
+                "user_id": user_id or "local",
+                "plan": plan,
+            },
+            session_id=session_id,
+        )
+    typed = TypedProductionPlan.model_validate(plan) if plan else None
+    return await supervise_brief(
+        brief,
+        session_id=session_id,
+        user_id=user_id,
+        execute=execute,
+        local_only=True if local_only else False,
+        plan=typed,
+    )

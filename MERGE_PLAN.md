@@ -132,11 +132,65 @@ Note: `docs/` doesn't actually collide on file paths — renderhaus-agent's `doc
 
 - Both sides define secrets/env loading (`agent/config.py`'s `.env.local` + AWS Secrets Manager vs.
   whatever warm-light's Next.js app expects) — needs a single documented story, not two.
-- **`scripts/generate_ui_assets.py` is now orphaned.** It generated `stage-backdrop.jpg` /
-  `social-card.jpg` for the old static frontend's `<meta>` tags — that frontend is deleted (step 7).
-  Path reference was mechanically updated to `server/static/img` so it wouldn't silently point at a
-  dead `web/` path, but running it now just creates an unused directory. Leaving it in place rather
-  than deleting, in case the art-generation logic (Seedream prompt, aspect ratios) is worth reusing
-  for `web/public/` assets later — needs an explicit call, not a silent delete.
-- No CI configured on either side yet as far as I've seen — worth flagging separately, not in scope
-  for this merge.
+- ~~`scripts/generate_ui_assets.py` is now orphaned.~~ **Resolved 2026-08-06**: deleted outright
+  (no reuse call made, and it was already dead — the directory it wrote to doesn't exist).
+- ~~No CI configured on either side yet.~~ **Resolved 2026-08-07**: `renderhaus-agent/main` shipped
+  `.github/workflows/ci.yml`/`deploy.yml` since this merge started — see §7. Still incomplete
+  (no `web/` job) — tracked in `PRODUCTION_READINESS.md` §4.9, not re-tracked here.
+
+## 7. Second reconciliation pass — 2026-08-07
+
+`renderhaus-agent/main` moved one commit (`2e3aaac`) after the original merge (§5) had already
+landed. Fetched and merged locally into `merge-renderhaus-agent`; **not pushed**. Full context and
+the production-readiness implications of what this commit added (the Production feature, the CI
+gap it left, a newly-found concurrency bug) are in `PRODUCTION_READINESS.md` §4.2/§4.3/§4.9 — this
+section only covers the merge mechanics.
+
+**What came in**: `agent/director.py` + `agent/executor.py` (LLM plan → deterministic DAG
+execution — a new "Production" feature: brief → typed plan → approve → execute), `server/productions.py`
+(landed at `web/productions.py` upstream, moved), new `/api/productions*` routes, a Mureka overhaul
+(`mcps/mureka/api.py`, Lambda-backed gateway under `lambdas/mureka/`), `.github/workflows/ci.yml` +
+`deploy.yml`, a `Makefile`, `docs/development.md`.
+
+**Conflicts (6 files) and how each was resolved**:
+- `README.md` — content conflict between our "Run the app" section and their new "Development
+  workflow" section. Resolved by keeping both, sequenced workflow-quickref first then the detailed
+  two-process setup; corrected `make web`'s description (backend API only, not "the UI").
+- `pyproject.toml` — our `web*→server*` rename vs. their `+lambdas*` addition and a `web`
+  package-data block. Resolved as `include = ["agent*", "mcps*", "server*", "lambdas*"]`;
+  package-data block dropped (matches our static-frontend deletion, not re-added).
+- `server/app.py` — single hunk, the import block (`server.*` vs. `web.*` naming). Resolved to
+  `server.*`, added the `productions` import. Rest of the file (1,277 lines) auto-merged clean —
+  verified our earlier `/`-returns-JSON and no-`StaticFiles`-mount changes survived intact.
+- `web/static/{app.js,index.html,styles.css}` — delete/modify (we deleted this frontend in the
+  first pass, they added a Production tab to it). **Resolved: kept deleted.** `server/app.py` no
+  longer mounts `StaticFiles` at all, so keeping these would just be three unreachable files;
+  the Production tab's UX is recoverable from git history whenever the Next.js app gets an
+  equivalent screen, not preserved as dead code in the meantime.
+
+**Non-conflict items that still needed handling** (git didn't flag these, but a correct merge
+needed them):
+- `web/productions.py` → moved to `server/productions.py` (`git mv`) — landed inside the Next.js
+  dir upstream since that's where their `web/` was; no internal import fixes needed, it only
+  imports `agent.config`.
+- `Makefile`'s `web` target recipe (`python -m web.app` → `server.app`) and its `help` text
+  (was: "Run local UI" — now clarified it's the backend API only).
+- `docs/development.md` — several `web/` mentions were ambiguous post-rename (old Python dir vs.
+  new Next.js dir) or referenced a Production UI tab that no longer exists; corrected to describe
+  current reality (API-only for now via CLI/`curl`, not a UI).
+- `ci.yml`'s ruff scope: was `agent mcps lambdas scripts`, never included `server`/`web` even
+  before this merge. Added `server` — verified it passes clean first (`ruff check server`).
+- Tracked `.pyc` files (`agent/__pycache__/*.pyc` ×3, `mcps/**/__pycache__/*.pyc` ×5) — stale,
+  wrong-interpreter-version (`cpython-314` vs. the `>=3.11` the project targets), predates
+  `__pycache__/` being added to `.gitignore`. Untracked via `git rm --cached` (files stay on disk).
+
+**Verification performed** (all before committing): every changed/new `.py` file
+(`agent/config.py`, `agent/runtime_app.py`, `agent/service.py`, `agent/director.py`,
+`agent/executor.py`, `agent/supervise.py`, `server/productions.py`, `server/app.py`,
+`mcps/mureka/api.py`, `mcps/mureka/server.py`, `lambdas/mureka/handler.py`, all `scripts/*.py`
+additions) parses; `from server.app import app` imports cleanly with the full expected route list
+(including `/api/productions*`, no stray `/static` routes); `ruff check agent mcps lambdas scripts
+server` passes; `scripts/ci_check.py` passes; `web/`'s `tsc --noEmit` stays clean (untouched by
+this pass). Also checked `Dockerfile.agentcore` against the new `lambdas*`/Gateway-env-var
+additions — no gap: the Mureka Lambda deploy path (`scripts/deploy_mureka_gateway.py`) builds its
+own zip independently, doesn't go through the Docker image at all.

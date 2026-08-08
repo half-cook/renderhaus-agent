@@ -44,24 +44,28 @@ a guess.
 │ server/ — FastAPI, N stateless replicas                       [PARTIAL]  │
 │  - JWT verification (server/auth.py, Clerk today — provider     [DONE*] │
 │    open per §4.5, "*" = works today but not a settled decision)         │
-│  - project/generation CRUD routes (server/app.py)                [DONE] │
+│  - project/generation/production CRUD routes (server/app.py)     [DONE] │
 │  - in-request ffmpeg calls block the event loop            [BUG] §4.1   │
-│  - JobStore/ProjectStore: local JSON, in-process dict        [BUG] §4.2 │
-│  - generation jobs: in-process asyncio.create_task           [BUG] §4.3 │
+│  - JobStore/ProjectStore/ProductionStore: local JSON,        [BUG] §4.2 │
+│    in-process dict (three instances of the same pattern)                │
+│  - generation + production jobs: in-process                  [BUG] §4.3 │
+│    asyncio.create_task, no shared concurrency limit                     │
 │  - S3 bucket / DynamoDB table created imperatively at boot   [BUG] §4.4 │
 │  - CORS policy / rate limiting                                   [TODO] │
 └──────────────────────────────────────────────────────────────────────────┘
    │                                    │
    ▼                                    ▼
 ┌───────────────────────────┐   ┌──────────────────────────────────────────┐
-│ DynamoDB                   │   │ Job queue (SQS / Inngest / Trigger.dev)   │
-│  - assets table    [DONE]  │   │                                   [TODO] │
-│  - jobs table       [TODO] │   └──────────────────────────────────────────┘
-│  - projects table   [TODO] │                  │
+│ DynamoDB                   │   │ Job queue (Temporal — leaning, per §4.3;  │
+│  - assets table    [DONE]  │   │ accepted in docs/adr/0001 — not yet built │
+│  - jobs table       [TODO] │   │ for this path)                    [TODO] │
+│  - projects table   [TODO] │   └──────────────────────────────────────────┘
+│  - productions table[TODO] │                  │
 └───────────────────────────┘                    ▼
                                    ┌──────────────────────────────────────────┐
-                                   │ Worker pool — generation + ffmpeg merge,  │
-                                   │ off the request-handling path      [TODO]│
+                                   │ Worker pool — generation, production      │
+                                   │ execution, ffmpeg merge, off the          │
+                                   │ request-handling path               [TODO]│
                                    └──────────────────────────────────────────┘
                                                   │
                                                   ▼
@@ -75,9 +79,9 @@ a guess.
 The shape of the fix, in one sentence: **everything in `server/` that isn't already S3/DynamoDB
 needs to become either (a) stateless and safe to run N-wide, or (b) moved off the request path
 entirely into a queue + worker pool** — nothing here needs a new pattern invented, it's applying
-the pattern `server/assets.py` already uses (S3 + DynamoDB + presigned URLs) to the two places that
-don't use it yet (jobs, projects), plus getting the actual generation/merge work off the request
-thread.
+the pattern `server/assets.py` already uses (S3 + DynamoDB + presigned URLs) to the three places
+that don't use it yet (jobs, projects, productions), plus getting the actual generation/production/
+merge work off the request thread.
 
 ## 3. Issue index
 
@@ -88,14 +92,14 @@ safe to build").
 | Rank | § | Issue | Layer | Why this rank |
 |---|---|---|---|---|
 | 1 | 4.1 | Blocking `subprocess` calls inside async routes | Compute | Broken *today* at any concurrency, small fix, unblocks nothing else but nothing blocks it either — do it first and move on |
-| 2 | 4.2 | `JobStore`/`ProjectStore` on local JSON, in-process dict | State | Everything downstream (queueing, multi-replica deploy) needs durable shared state first |
+| 2 | 4.2 | `JobStore`/`ProjectStore`/`ProductionStore` on local JSON, in-process dict | State | Everything downstream (queueing, multi-replica deploy) needs durable shared state first |
 | 3 | 4.4 | S3 bucket / DynamoDB table created imperatively at boot | Infra | Same moment as #2 — new tables should be provisioned correctly from day one, not retrofitted |
-| 4 | 4.3 | Generation jobs run as in-process `asyncio.create_task` | State | Needs #2's durable job rows to enqueue against; biggest single lift in this doc |
+| 4 | 4.3 | Generation + production jobs run as in-process `asyncio.create_task`, no shared concurrency limit | State | Needs #2's durable job rows to enqueue against; biggest single lift in this doc |
 | 5 | 4.6 | No Dockerfile for `server.app`, no worker model | Deploy | Adding replicas is only safe once #2–#4 remove the state-sharing problems |
 | 6 | 4.7 | No CORS policy / rate limiting for a non-proxied prod topology | Networking | Depends on the deploy topology decided in #5 |
 | 7 | 4.5 | No auth integration in `web/` (provider TBD — see below) | Auth | Feature-completeness gap, not a scaling blocker — parallelizable with the rest, not sequenced by them |
 | 8 | 4.8 | Zero test coverage | Quality | Backfilled alongside each fix above, not a standalone phase |
-| 9 | 4.9 | No CI | Quality | Cheapest to add once there's something (tests, lint) for it to run |
+| 9 | 4.9 | CI partially in place (backend lint only, merged 2026-08-07); no `web/` job, no `server.app` deploy path, no real tests | Quality | Remaining gaps still cheapest to close once #8 gives it something to run |
 
 ## 4. Issues → reconciliation
 
@@ -103,7 +107,7 @@ safe to build").
 
 **Where**: `server/projects.py:218,245,314,387` (`probe_media_duration`, `_has_audio_stream`,
 `merge_video_paths`, and one more) call `subprocess.run` directly. Reached from `async def` routes,
-e.g. the `/api/projects/{id}/merge` handler at `server/app.py:1088`.
+e.g. the `/api/projects/{id}/merge` handler at `server/app.py:1225`.
 
 **Why it matters now, not just at scale**: `subprocess.run` blocks the calling thread. FastAPI/
 uvicorn runs the event loop on one thread by default, so one in-flight ffmpeg merge freezes every
@@ -122,34 +126,39 @@ exactly the kind of job that shouldn't hold an HTTP request open anyway).
       during a merge and asserts the others aren't blocked.
 - [ ] If full fix: no separate work here, tracked under §4.3.
 
-### 4.2 `JobStore` / `ProjectStore` on local JSON, in-process dict — `[BUG]` (scaling)
+### 4.2 `JobStore` / `ProjectStore` / `ProductionStore` on local JSON, in-process dict — `[BUG]` (scaling)
 
-**Where**: `server/app.py:135` (`JobStore`) and `server/projects.py:46` (`ProjectStore`) both keep
-a `dict[str, Any]` in memory, loaded from `*.json` files under `.renderhaus/web-jobs/` and
-`.renderhaus/projects/` on startup (`JobStore.load`, `server/app.py:141`), guarded by a
-process-local `asyncio.Lock`.
+**Where**: `server/app.py:147` (`JobStore`), `server/projects.py:45` (`ProjectStore`), and — added
+2026-08-07, merged in from `renderhaus-agent/main` — `server/productions.py:41` (`ProductionStore`,
+backing the new brief→plan→approve→execute Production feature) all keep a `dict[str, Any]` in
+memory, loaded from `*.json` files under `.renderhaus/web-jobs/`, `.renderhaus/projects/`, and
+`.renderhaus/productions/` respectively on startup (`JobStore.load`, `server/app.py:153`), each
+guarded by its own process-local `asyncio.Lock`. Three independent instances of the identical
+pattern now, not two.
 
 **Why it matters**: two replicas behind a load balancer don't share memory or (usually) disk.
 Replica A creates a project; a request routed to replica B can't see it. Most container platforms
 (ECS Fargate, Cloud Run, k8s without a persistent volume) also wipe local disk on every
-restart/redeploy/scale-down, so even single-replica deployments lose all job/project history on
-every deploy.
+restart/redeploy/scale-down, so even single-replica deployments lose all job/project/production
+history on every deploy.
 
-**Reconciliation**: replace both stores with DynamoDB tables, following the exact pattern
+**Reconciliation**: replace all three stores with DynamoDB tables, following the exact pattern
 `server/assets.py` already uses for the assets table (`AWS_DYNAMODB_ASSETS_TABLE`, auto-created —
-see §4.4 for why that auto-create part specifically needs to change). Two new tables: jobs,
-projects. Keep the same public shape (`ProjectStore`/`JobStore` method signatures) so `server/app.py`
-doesn't need route-level changes — swap the storage engine underneath.
+see §4.4 for why that auto-create part specifically needs to change). Three new tables: jobs,
+projects, productions. Keep the same public shape (`ProjectStore`/`JobStore`/`ProductionStore`
+method signatures) so `server/app.py` doesn't need route-level changes — swap the storage engine
+underneath.
 
 **Moving pieces**:
-- [ ] Design the DynamoDB item shape for jobs and projects (partition key, any GSIs needed for
-      "list projects by user" / "list jobs by project" queries the current code does over the
-      in-memory dict).
-- [ ] Port `JobStore` (`server/app.py:135`) to a DynamoDB-backed implementation with the same
+- [ ] Design the DynamoDB item shape for jobs, projects, and productions (partition key, any GSIs
+      needed for "list projects by user" / "list jobs by project" / "list productions by user"
+      queries the current code does over the in-memory dicts).
+- [ ] Port `JobStore` (`server/app.py:147`) to a DynamoDB-backed implementation with the same
       interface (`load`, `create`, `get`, `put`, list-by-user).
-- [ ] Port `ProjectStore` (`server/projects.py:46`) the same way.
+- [ ] Port `ProjectStore` (`server/projects.py:45`) the same way.
+- [ ] Port `ProductionStore` (`server/productions.py:41`) the same way.
 - [ ] Decide what happens to the resumable-job-on-restart logic in `JobStore.load`
-      (`server/app.py:154-169`) — DynamoDB doesn't need a disk-scan-on-boot step, but the
+      (`server/app.py:153-192`) — DynamoDB doesn't need a disk-scan-on-boot step, but the
       "mark stuck jobs as failed on restart" semantics still need a home (probably a scheduled
       sweep, not a boot-time scan).
 - [ ] Migration: is there existing local `.renderhaus/` data worth carrying over, or is this a
@@ -157,42 +166,67 @@ doesn't need route-level changes — swap the storage engine underneath.
 
 ### 4.3 Generation jobs as in-process `asyncio.create_task` — `[BUG]` (scaling)
 
-**Where**: `_start_task` (`server/app.py:831`) does `asyncio.create_task(_run_generation(...))`,
-tracked in `app.state.generation_tasks`. Called from job creation (`server/app.py:1183`) and
-refinement (`server/app.py:1312`).
+**Where**: `_start_task` (`server/app.py:852`) does `asyncio.create_task(_run_generation(...))`,
+tracked in `app.state.generation_tasks`. Called from job creation and refinement
+(`server/app.py:1365,1494`). Added 2026-08-07: the new Production feature has its own equivalent,
+`_start_production_task` (`server/app.py:1008`), tracked in `app.state.production_tasks` — same
+in-process, non-durable pattern, second instance of it.
 
 **Why it matters**: the task exists only in that process's event loop. It doesn't survive a
 restart (there's already a partial workaround for this — `JobStore.load` marks jobs as `failed` on
-boot if they weren't far enough along, `server/app.py:158-169` — which is itself a symptom of not
+boot if they weren't far enough along, `server/app.py:153-192` — which is itself a symptom of not
 having a durable queue), and it can't be picked up by a different replica than the one that
-started it. `docs/architecture/long-video-system-design.md` already names this as the design
-target (Inngest/Trigger.dev, "durable workflows" — see `docs/adr/0001-durable-production-workflows.md`)
-but it isn't implemented for the current web app path.
+started it. `docs/architecture/long-video-system-design.md` names durable workflow orchestration as
+the design target — see the correction below on which engine is actually accepted for that — but
+it isn't implemented for the current web app path (either job kind).
 
-**Reconciliation**: move job execution (generation calls, and the `/merge` ffmpeg work from §4.1)
-into a real queue + worker pool. `server/app.py` route handlers become thin: validate, write a
-`queued` job row to DynamoDB (§4.2), enqueue, return the job id immediately. A separate worker
-process (not the request-handling replicas) consumes the queue and does the actual work, updating
-the job row as it progresses. Frontend polling (`GET /api/generations/{id}`) doesn't change shape.
+**Correction (2026-08-07)**: this section originally named "Inngest/Trigger.dev" as a candidate,
+sourced from `ARCHITECTURE.md`'s informal placeholder. That's not the accepted decision —
+`docs/adr/0001-durable-production-workflows.md` formally accepts **Temporal** for exactly this
+problem (durable orchestration of expensive external side effects, idempotency so paid generation
+calls never double-fire, crash recovery). Weighed against Inngest in discussion; leaning Temporal
+specifically because it's already the accepted ADR and today's simple job shapes are a strict
+subset of what it's designed for (see the operation inventory pulled together 2026-08-06 across
+both `ARCHITECTURE.md` and `docs/architecture/long-video-system-design.md` — still not written up
+as a standalone doc section, worth doing before this is decided for real).
+
+**New finding (2026-08-07): the two in-process task paths don't even share a concurrency limit.**
+`generation_slots = asyncio.Semaphore(2)` (`server/app.py:276`) is acquired inside
+`_run_generation` (`server/app.py:639-640`) — it only guards the single-clip `/api/generations`
+path. The Production executor (`agent/executor.py`'s `run_plan`, fans out independent plan nodes
+via plain `asyncio.gather`) calls the same underlying generation workers with **no semaphore at
+all** — a single Production plan with N independent nodes fires N concurrent provider calls,
+uncapped, on top of whatever's already running through the semaphore-guarded path. The
+semaphore-of-2 was already a crude stand-in before this; now it isn't even consistently applied.
+This is exactly the kind of thing a real queue with proper concurrency controls fixes by
+construction (one place to configure it, covering every job kind) rather than something to
+patch in two places by hand.
+
+**Reconciliation**: move job execution (generation calls, production execution, and the `/merge`
+ffmpeg work from §4.1) into a real queue + worker pool. `server/app.py` route handlers become
+thin: validate, write a `queued` row to DynamoDB (§4.2), enqueue, return the job/production id
+immediately. A separate worker process (not the request-handling replicas) consumes the queue and
+does the actual work — generation, production execution, and merge all become jobs in the same
+system rather than three different in-process patterns. Frontend polling (`GET /api/generations/{id}`,
+`GET /api/productions/{id}`) doesn't change shape.
 
 **Moving pieces**:
-- [ ] **[OPEN QUESTION]** Queue technology: SQS (simplest, fits the existing AWS-native stack —
-      S3, DynamoDB, Secrets Manager) vs. Inngest/Trigger.dev (matches what the long-video docs
-      already assume, gives retries/step-functions-style orchestration for free) vs. something
-      else. This is the single biggest architecture decision in this whole doc — worth its own
-      discussion before building anything here.
-- [ ] Define the worker process: a separate deployable (own Dockerfile/entrypoint) that long-polls
-      the queue, reuses `agent/service.py`'s generation logic and `server/projects.py`'s merge
-      logic.
-- [ ] Rework `/api/generations` and `/api/projects/{id}/merge` to enqueue instead of
-      `asyncio.create_task`.
+- [ ] **[OPEN QUESTION]** Queue technology — Temporal vs. Inngest vs. other, per the correction
+      above. Still the single biggest architecture decision in this whole doc.
+- [ ] Define the worker process: a separate deployable (own Dockerfile/entrypoint) that consumes
+      the queue, reuses `agent/service.py`'s generation logic, `agent/executor.py`'s production
+      logic, and `server/projects.py`'s merge logic.
+- [ ] Rework `/api/generations`, `/api/productions/*`, and `/api/projects/{id}/merge` to enqueue
+      instead of `asyncio.create_task`.
+- [ ] Replace the semaphore-of-2 with a real concurrency/rate control at the queue layer, covering
+      both generation and production jobs uniformly (see the new finding above).
 - [ ] Decide fate of the restart-resume logic in `JobStore.load` once a real queue provides
       redelivery/retry — likely simplifies or goes away entirely.
 
 ### 4.4 Infra created imperatively at boot — `[BUG]` (once N>1)
 
 **Where**: `init_assets_db()` (`server/assets.py:206`, called from the FastAPI `lifespan` at
-`server/app.py:841`) calls `client.create_table(...)` (`server/assets.py:133`) and
+`server/app.py:862`) calls `client.create_table(...)` (`server/assets.py:133`) and
 `client.create_bucket(...)` (`server/assets.py:173,175`) if they don't already exist.
 
 **Why it matters**: with one instance this is a convenience. With N replicas starting concurrently
@@ -254,7 +288,7 @@ of `server/auth.py`'s verification logic.
 **Where**: the only Dockerfile in the repo, `Dockerfile.agentcore`, is specific to Bedrock
 AgentCore (`linux/arm64`, port 8080, `CMD ["uvicorn", "agent.runtime_app:app", ...]`) — it doesn't
 run `server.app` at all. Locally, `server.app` runs via a bare `uvicorn.run(..., reload=False)`
-(`server/app.py:1326`), single process, no worker count.
+(`server/app.py:1501`), single process, no worker count.
 
 **Reconciliation**: a real container image for `server.app`, run with multiple uvicorn workers (or
 multiple container replicas — likely both: N containers × M workers each), behind the load
@@ -314,26 +348,38 @@ mentioned there.
 - [ ] Backfill tests for the DynamoDB-backed stores (§4.2) and queue integration (§4.3) as they're
       built, not after.
 
-### 4.9 No CI — `[TODO]`
+### 4.9 No CI — `[PARTIAL]`, updated 2026-08-07
 
-**Where**: no `.github/workflows` or equivalent anywhere in the repo.
+**Where**: `.github/workflows/ci.yml` and `.github/workflows/deploy.yml` merged in from
+`renderhaus-agent/main` (2026-08-07). CI runs `ruff check agent mcps lambdas scripts server` (we
+added `server` to that list during the merge reconciliation — it was previously `agent mcps
+lambdas scripts` only, and before this merge, `server`/`web` was never linted at all) plus
+`scripts/ci_check.py` — schema/import/config sanity checks, not real tests. Deploy is OIDC-based
+(`scripts/setup_github_oidc.py`), covers the Mureka Lambda gateway and the AgentCore runtime.
 
-**Reconciliation**: GitHub Actions (repo's already on GitHub) running lint + typecheck + tests for
-both `web/` and `server/` on every PR, plus the container build from §4.6 once it exists.
+**What's still missing**: `web/` (Next.js) has no CI job at all — no lint, no typecheck, no build
+check on PRs. Neither workflow covers a deploy path for `server.app` itself (§4.6). And
+`scripts/ci_check.py` is smoke checks, not a test suite — §4.8 (zero test coverage) is still fully
+true; CI existing doesn't mean anything is tested yet, just that syntax/import breakage and
+`server/`'s narrow ruff rules (`E9`, `F` minus `F401` — see `pyproject.toml`) get caught.
+
+**Reconciliation**: add a `web/` job to `ci.yml` (`npm run lint`, `npx tsc --noEmit`, tests once
+§4.8 lands), and a deploy path for `server.app` once §4.6's Dockerfile/deploy-target decisions land.
 
 **Moving pieces**:
-- [ ] `.github/workflows/ci.yml`: `web/` job (`npm run lint`, `npx tsc --noEmit`, tests once §4.8
-      lands), `server/` job (ruff — already configured in `pyproject.toml` but not run anywhere —
-      plus tests once §4.8 lands).
-- [ ] Decide if/when a deploy workflow gets added here too, or stays manual until the infra in
-      §4.4/§4.6 is real.
+- [ ] Add a `web/` CI job (lint, typecheck, build; tests once §4.8 lands).
+- [ ] Extend `deploy.yml` (or add a parallel workflow) to cover `server.app` once §4.6 exists.
+- [ ] Backfill real tests behind `scripts/ci_check.py`'s smoke checks as §4.8 progresses.
 
 ## 5. Open questions requiring a decision before implementation
 
 Pulled together from §4 so they're not buried:
 
-- **[OPEN QUESTION] Job queue technology** (§4.3) — SQS vs. Inngest/Trigger.dev vs. other. Biggest
-  single decision in this doc.
+- **[OPEN QUESTION] Job queue technology** (§4.3) — Temporal (accepted in `docs/adr/0001`, leaning
+  this way) vs. Inngest vs. other. Biggest single decision in this doc. Note the new evidence from
+  2026-08-07: the just-merged Production feature (`agent/executor.py`) was built with plain
+  `asyncio`, not Temporal, despite the ADR — worth weighing before treating the ADR as settled in
+  practice, not just on paper.
 - **[OPEN QUESTION] IaC tool** (§4.4) — Terraform vs. CDK vs. Pulumi.
 - **[OPEN QUESTION] Auth provider** (§4.5) — keep Clerk (already partially built server-side) vs.
   something else. Deliberately not resolved in this doc — raised 2026-08-06, discuss separately.
