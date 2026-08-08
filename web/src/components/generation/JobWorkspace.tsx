@@ -5,6 +5,7 @@ import { useApiClient } from "@/lib/api/useApiClient";
 import { usePoll } from "@/lib/api/usePolling";
 import { TERMINAL_JOB_STATES, type Job } from "@/lib/api/types";
 import { useGenerationStore, selectActiveJob } from "@/lib/generation/store";
+import { useAddToTimeline } from "./useAddToTimeline";
 
 const POLL_INTERVAL_MS = 1500;
 
@@ -117,14 +118,18 @@ function MediaResult({ job }: { job: Job }) {
 }
 
 // Post-submit view: polls the active job until terminal, renders
-// loading/notice/media states. See plan §6.3 -- "add to timeline" wiring
-// lands in a later step once useAddToTimeline exists.
+// loading/notice/media states.
 export function JobWorkspace() {
   const api = useApiClient();
   const activeJob = useGenerationStore(selectActiveJob);
   const activeJobId = useGenerationStore((s) => s.activeJobId);
   const upsertJob = useGenerationStore((s) => s.upsertJob);
   const setActiveJob = useGenerationStore((s) => s.setActiveJob);
+  const addToTimeline = useAddToTimeline();
+  // "Added" flag resets when the job changes -- same render-time-adjustment
+  // pattern as useSyntheticProgress (see comment there), not an effect.
+  const [addedState, setAddedState] = useState({ jobId: activeJobId, added: false });
+  const addedToTimeline = addedState.jobId === activeJobId && addedState.added;
 
   const { data, error } = usePoll(
     () => api.getGeneration(activeJobId as string),
@@ -150,14 +155,32 @@ export function JobWorkspace() {
   }
 
   const isLoading = !TERMINAL_JOB_STATES.has(activeJob.status);
+  const canAddToTimeline =
+    activeJob.status === "complete" && activeJob.media_type !== "image" && Boolean(activeJob.media_url);
 
   return (
-    <div className="flex aspect-video shrink-0 flex-col items-center justify-center overflow-hidden bg-neutral-950 p-4">
-      {isLoading && <LoadingResult job={activeJob} />}
-      {!isLoading && activeJob.status !== "complete" && (
-        <NoticeResult job={activeJob} onRestart={() => setActiveJob(null)} />
+    <>
+      <div className="flex aspect-video shrink-0 flex-col items-center justify-center overflow-hidden bg-neutral-950 p-4">
+        {isLoading && <LoadingResult job={activeJob} />}
+        {!isLoading && activeJob.status !== "complete" && (
+          <NoticeResult job={activeJob} onRestart={() => setActiveJob(null)} />
+        )}
+        {activeJob.status === "complete" && <MediaResult job={activeJob} />}
+      </div>
+      {canAddToTimeline && (
+        <div className="px-4 pb-3">
+          <button
+            onClick={() => {
+              addToTimeline(activeJob);
+              setAddedState({ jobId: activeJobId, added: true });
+            }}
+            disabled={addedToTimeline}
+            className="w-full rounded-md bg-neutral-800 py-1.5 text-xs text-neutral-200 hover:bg-neutral-700 disabled:opacity-50"
+          >
+            {addedToTimeline ? "Added to timeline" : `Add to ${activeJob.media_type === "music" ? "audio" : "video"} track`}
+          </button>
+        </div>
       )}
-      {activeJob.status === "complete" && <MediaResult job={activeJob} />}
-    </div>
+    </>
   );
 }
