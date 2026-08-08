@@ -1,9 +1,14 @@
 "use client";
 
 import { Redo2, Undo2 } from "lucide-react";
+import { SignInButton, UserButton, useAuth } from "@clerk/nextjs";
 import { useTimelineStore } from "@/lib/timeline/store";
 
 export function TopBar() {
+  // @clerk/nextjs 7.x has no SignedIn/SignedOut components (replaced by
+  // <Show>, an unfamiliar API) -- plain useAuth() + conditional matches this
+  // file's existing style better than reaching for a wrapper component.
+  const { isLoaded, isSignedIn } = useAuth();
   const projectName = useTimelineStore((s) => s.document.name);
   const canUndo = useTimelineStore((s) => s.past.length > 0);
   const canRedo = useTimelineStore((s) => s.future.length > 0);
@@ -36,6 +41,16 @@ export function TopBar() {
       </div>
 
       <div className="flex-1" />
+
+      {isLoaded && (isSignedIn ? (
+        <UserButton />
+      ) : (
+        <SignInButton mode="modal">
+          <button className="rounded-md px-3 py-1.5 text-sm text-neutral-300 hover:bg-neutral-800 hover:text-neutral-100">
+            Sign in
+          </button>
+        </SignInButton>
+      ))}
 
       <button
         disabled
