@@ -57,9 +57,10 @@ Multi-shot productions use a typed plan, not a free-form LLM with paid tools:
 
 1. **Director** (`agent/director.py`) — LLM emits `TypedProductionPlan` only.
 2. **Executor** (`agent/executor.py`) — walks nodes → modality workers (`start_*` / `poll_*`).
-3. **API** — `/api/productions` (plan → approve → run). No frontend for this yet — the old
-   static UI's Production tab was removed along with that frontend (see `MERGE_PLAN.md`); the
-   Next.js app under `web/` doesn't have an equivalent screen built yet.
+3. **API** — `/api/productions` (plan → approve → run). The old static UI's Production tab was
+   removed along with that frontend (see `design/MERGE_PLAN.md`); it's since been rebuilt as a
+   real Next.js panel under `web/` (Production tab in the editor's icon rail — see
+   `design/MERGE_STATUS.md` §4/§5 for current status and known gaps).
 4. **CLI** — `make supervise ARGS='30s product teaser…'` (add `EXECUTE=1` to run workers).
 
 ```bash
@@ -68,9 +69,8 @@ make supervise ARGS='quiet luxury perfume teaser with soft piano'
 make supervise ARGS='…' EXECUTE=1
 ```
 
-Until the frontend catches up, exercise this via the CLI above or directly against
-`/api/productions` — not through a UI. Workers respect `*_DRY_RUN` flags the same way as
-single-clip generates.
+The CLI above and `/api/productions` directly both still work too, independent of the UI.
+Workers respect `*_DRY_RUN` flags the same way as single-clip generates.
 
 ## When to deploy what
 
@@ -79,7 +79,7 @@ single-clip generates.
 | `mcps/mureka/**`, `lambdas/mureka/**`, `configs/mureka_gateway_tools.json` | **Gateway** |
 | `agent/**`, other MCPs, `Dockerfile.agentcore` | **Runtime** |
 | Both | **All** |
-| Only the Next.js frontend (`web/**`) | Nothing in this table — that's a separate deploy (Cloudflare, per `ARCHITECTURE.md`), not AWS |
+| Only the Next.js frontend (`web/**`) | Nothing in this table — that's a separate deploy (Cloudflare, per `design/ARCHITECTURE.md`), not AWS |
 
 ```bash
 make gateway          # music Lambda + AgentCore Gateway

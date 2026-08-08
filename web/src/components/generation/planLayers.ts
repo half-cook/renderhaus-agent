@@ -5,7 +5,7 @@ import type { PlanNode } from "@/lib/api/types";
 // waves, etc. A small deliberate improvement over the old static
 // frontend's flat <ol> of nodes (plan §6.9) -- lets the approval view show
 // structure, not just a list, which is what a plan-then-approve gate
-// (ARCHITECTURE.md §13.4) is supposed to make legible.
+// (design/ARCHITECTURE.md §13.4) is supposed to make legible.
 export function computePlanLayers(nodes: PlanNode[]): PlanNode[][] {
   const byId = new Map(nodes.map((node) => [node.id, node]));
   const layerOf = new Map<string, number>();

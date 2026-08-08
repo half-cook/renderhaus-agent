@@ -1,4 +1,4 @@
-// v0 composition constants (ARCHITECTURE.md §13.6). Fixed for now — becomes
+// v0 composition constants (design/ARCHITECTURE.md §13.6). Fixed for now — becomes
 // per-project/export-preset config once §5's proxy pipeline and multi-aspect
 // export (Phase 5) land.
 export const COMPOSITION_FPS = 30;

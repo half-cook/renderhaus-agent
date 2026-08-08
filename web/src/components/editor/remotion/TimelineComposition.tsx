@@ -61,7 +61,7 @@ export interface TimelineCompositionProps {
 }
 
 /**
- * Maps the OTIO-inspired timeline document (ARCHITECTURE.md §13.7) straight
+ * Maps the OTIO-inspired timeline document (design/ARCHITECTURE.md §13.7) straight
  * to Remotion composition props — this component is the shared render
  * target for both the interactive Player (here) and, later, the headless
  * Node renderer/Lambda export (§13.6), so it deliberately holds no

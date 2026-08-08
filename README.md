@@ -6,7 +6,8 @@ generation/agent backend (`server/`, `agent/`, `mcps/`).
 ## Structure
 
 - **`web/`** — Next.js editor frontend. Multi-track timeline, Remotion/WebCodecs preview, the
-  manual-editing engine. Product plan and architecture: [ARCHITECTURE.md](ARCHITECTURE.md).
+  manual-editing engine, and (as of the merge) the generation/library/production panels that used
+  to live in a separate app. Product plan and architecture: [design/ARCHITECTURE.md](design/ARCHITECTURE.md).
 - **`server/`** — FastAPI backend: Clerk auth, S3/DynamoDB asset storage, project/timeline
   persistence, generation job endpoints. Talked to over HTTP by `web/`, proxied at `/api/*` in dev
   (see `web/next.config.ts`).
@@ -15,9 +16,11 @@ generation/agent backend (`server/`, `agent/`, `mcps/`).
 - **`mcps/`** — one MCP server per generation provider (Seedance video, Seedream image, Mureka
   music, Gemini TTS).
 - **`docs/`** — the long-video production-agent program (below).
-
-See [MERGE_PLAN.md](MERGE_PLAN.md) for how `web/` and `server/` came to live in one repo, and
-what's still outstanding.
+- **`design/`** — planning/status docs for how `web/` and `server/` came to live in one repo:
+  [design/MERGE_STATUS.md](design/MERGE_STATUS.md) (start here — current state, what's verified,
+  known gaps), [design/MERGE_PLAN.md](design/MERGE_PLAN.md) (git mechanics),
+  [design/PRODUCTION_READINESS.md](design/PRODUCTION_READINESS.md) (scale/architecture audit),
+  [design/ARCHITECTURE.md](design/ARCHITECTURE.md) (product vision).
 
 ## Long-video program
 

@@ -19,7 +19,7 @@ const ITEMS: { key: PanelKey; label: string; icon: typeof Sparkles }[] = [
 
 // Active-tab state lives in the generation store (not local useState)
 // so EditorShell can render panel content next to this rail -- see
-// GenerationPanel.tsx and ARCHITECTURE.md §6's "chat/prompt panel sits
+// GenerationPanel.tsx and design/ARCHITECTURE.md §6's "chat/prompt panel sits
 // alongside the timeline" framing.
 export function IconRail() {
   const active = useGenerationStore((s) => s.activePanel);

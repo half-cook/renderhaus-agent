@@ -32,7 +32,7 @@ function readVideoDuration(url: string): Promise<number> {
 }
 
 /**
- * Proxy-transcode on import (ARCHITECTURE.md §6, §11) — never edit against
+ * Proxy-transcode on import (design/ARCHITECTURE.md §6, §11) — never edit against
  * the original upload. Posts to the local dev stand-in for the managed
  * transcode job (`/api/transcode`); falls back to the raw blob URL if that
  * fails (e.g. ffmpeg missing) so import degrades instead of hard-failing —

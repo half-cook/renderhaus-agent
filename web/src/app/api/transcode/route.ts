@@ -6,14 +6,14 @@ import path from "node:path";
 import { COMPOSITION_HEIGHT, COMPOSITION_WIDTH } from "@/components/editor/remotion/constants";
 
 // Local-dev stand-in for the managed proxy-transcode job planned in
-// ARCHITECTURE.md §10.2/§10.3. Shells out to the ffmpeg on this machine; a
+// design/ARCHITECTURE.md §10.2/§10.3. Shells out to the ffmpeg on this machine; a
 // real deploy replaces this route's body with a job enqueue against managed
 // workers, not a redesign of the client contract (upload -> proxy URL).
 const PROXY_DIR = path.join(process.cwd(), "public", "proxies");
 
 // Hardening below responds directly to real ffmpeg-as-a-service incidents
 // (untrusted input is a code-execution surface via decoder bugs, not just a
-// shell-escaping problem — see ARCHITECTURE.md §10.3) rather than
+// shell-escaping problem — see design/ARCHITECTURE.md §10.3) rather than
 // hypothetical ones.
 const MAX_UPLOAD_BYTES = 2 * 1024 * 1024 * 1024; // 2 GiB — tune once real usage data exists
 const FFMPEG_TIMEOUT_MS = 5 * 60 * 1000; // kill runaway/hung encodes rather than block the worker forever

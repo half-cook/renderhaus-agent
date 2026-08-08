@@ -28,7 +28,7 @@ export function PreviewPanel() {
 
   const durationInFrames = Math.max(1, Math.round(getTimelineDuration(document) * COMPOSITION_FPS));
 
-  // Per-asset decode status (ARCHITECTURE.md §11 — ProRes-in-Chrome etc.),
+  // Per-asset decode status (design/ARCHITECTURE.md §11 — ProRes-in-Chrome etc.),
   // reported by each <Video> inside the composition via onVideoFrame/onError
   // (TimelineComposition.tsx) — this is the same signal the old
   // requestVideoFrameCallback check used, now sourced from Remotion directly

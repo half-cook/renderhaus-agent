@@ -1,5 +1,5 @@
 /**
- * OTIO-inspired timeline schema (ARCHITECTURE.md §13.7): Timeline -> Track[] ->
+ * OTIO-inspired timeline schema (design/ARCHITECTURE.md §13.7): Timeline -> Track[] ->
  * TrackItem[], with Transition modeled as its own item type rather than a
  * clip property. Only Clip is actually produced by a Command tonight; Gap
  * and Transition exist now so later Commands don't need a schema migration.

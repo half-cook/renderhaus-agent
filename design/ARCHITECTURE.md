@@ -129,7 +129,7 @@ Note the split this diagram makes explicit: the **track/arrangement UI** (drag, 
 
 **Deployment target, illustrated.** The block diagram above is deliberately vendor-agnostic (it's the timeline/orchestrator shape, true regardless of where it runs). The diagram below is the concrete candidate from §10.2 — Cloudflare for the app/edge/queue/storage/transcode-worker, AWS for Postgres only, connected via Hyperdrive:
 
-![Renderhaus candidate deployment: Cloudflare app, edge, queue, storage, and transcode Container; AWS RDS/Aurora Postgres reached via Hyperdrive](docs/assets/architecture-diagram.png)
+![Renderhaus candidate deployment: Cloudflare app, edge, queue, storage, and transcode Container; AWS RDS/Aurora Postgres reached via Hyperdrive](../docs/assets/architecture-diagram.png)
 
 ---
 

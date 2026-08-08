@@ -1,7 +1,7 @@
 import type { Asset, Clip, TimelineDocument } from "./types";
 
 /**
- * Every timeline mutation is one of these (ARCHITECTURE.md §6). The manual
+ * Every timeline mutation is one of these (design/ARCHITECTURE.md §6). The manual
  * UI and the future agent orchestrator both produce Command objects — there
  * is no other way to mutate a TimelineDocument.
  */
