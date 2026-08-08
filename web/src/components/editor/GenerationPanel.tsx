@@ -4,6 +4,7 @@ import { ArrowLeft } from "lucide-react";
 import { AgentRail } from "@/components/generation/AgentRail";
 import { ComposerForm } from "@/components/generation/ComposerForm";
 import { JobWorkspace } from "@/components/generation/JobWorkspace";
+import { RecentHistoryStrip } from "@/components/generation/RecentHistoryStrip";
 import { useGenerationStore, selectActiveJob } from "@/lib/generation/store";
 
 // Renders whatever IconRail's active tab calls for, in the panel slot
@@ -33,7 +34,10 @@ export function GenerationPanel() {
             <AgentRail />
           </div>
         ) : (
-          <ComposerForm />
+          <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
+            <ComposerForm />
+            <RecentHistoryStrip />
+          </div>
         ))}
       {active === "library" && (
         <div className="p-4 text-sm text-neutral-500">Library panel coming soon.</div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useGenerationStore, selectActiveJob } from "@/lib/generation/store";
+import { RefineComposer } from "./RefineComposer";
 
 const STATUS_STYLES: Record<string, string> = {
   running: "text-indigo-400",
@@ -12,10 +13,10 @@ function prettyTitle(title: string): string {
   return title.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-// Job title/status/prompt/meta + the live trace log. Refine composer lands
-// in a later step (plan §6.5). Traces update in place by trace.id -- React's
-// keyed reconciliation already gives this for free (job objects from
-// polling are the full current state, not deltas), no manual merge needed.
+// Job title/status/prompt/meta + the live trace log + refine composer.
+// Traces update in place by trace.id -- React's keyed reconciliation
+// already gives this for free (job objects from polling are the full
+// current state, not deltas), no manual merge needed.
 export function AgentRail() {
   const job = useGenerationStore(selectActiveJob);
 
@@ -56,6 +57,8 @@ export function AgentRail() {
           </div>
         ))}
       </div>
+
+      <RefineComposer job={job} />
     </div>
   );
 }
