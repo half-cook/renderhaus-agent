@@ -4,18 +4,23 @@ import { ArrowLeft } from "lucide-react";
 import { AgentRail } from "@/components/generation/AgentRail";
 import { ComposerForm } from "@/components/generation/ComposerForm";
 import { JobWorkspace } from "@/components/generation/JobWorkspace";
+import { ProductionComposer } from "@/components/generation/ProductionComposer";
+import { ProductionPlanView } from "@/components/generation/ProductionPlanView";
 import { ProjectLibrary } from "@/components/generation/ProjectLibrary";
 import { RecentHistoryStrip } from "@/components/generation/RecentHistoryStrip";
-import { useGenerationStore, selectActiveJob } from "@/lib/generation/store";
+import {
+  useGenerationStore,
+  selectActiveJob,
+  selectActiveProduction,
+} from "@/lib/generation/store";
 
 // Renders whatever IconRail's active tab calls for, in the panel slot
 // between IconRail and the preview/timeline column (see EditorShell.tsx).
-// Production body lands in the next step of the plan
-// (inherited-wishing-flurry.md §6/§7).
 export function GenerationPanel() {
   const active = useGenerationStore((s) => s.activePanel);
   const activeJob = useGenerationStore(selectActiveJob);
   const setActiveJob = useGenerationStore((s) => s.setActiveJob);
+  const activeProduction = useGenerationStore(selectActiveProduction);
 
   if (active === "captions" || active === "text" || active === "settings") return null;
 
@@ -41,9 +46,7 @@ export function GenerationPanel() {
           </div>
         ))}
       {active === "library" && <ProjectLibrary />}
-      {active === "production" && (
-        <div className="p-4 text-sm text-neutral-500">Production panel coming soon.</div>
-      )}
+      {active === "production" && (activeProduction ? <ProductionPlanView /> : <ProductionComposer />)}
     </div>
   );
 }
