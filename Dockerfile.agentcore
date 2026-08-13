@@ -19,4 +19,5 @@ RUN pip install --no-cache-dir -e .
 
 EXPOSE 8080
 
-CMD ["uvicorn", "agent.runtime_app:app", "--host", "0.0.0.0", "--port", "8080"]
+# The LangChain AgentCore runtime was removed. Rebuild with the OpenAI Agents SDK.
+CMD ["python", "-c", "raise SystemExit('AgentCore runtime removed; OpenAI Agents SDK rewrite pending.')"]

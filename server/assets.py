@@ -16,7 +16,7 @@ from urllib.parse import urlencode
 import boto3
 from botocore.exceptions import ClientError
 
-from agent.config import ROOT
+from server.config import ROOT
 
 AssetKind = Literal["upload", "video", "image", "music"]
 

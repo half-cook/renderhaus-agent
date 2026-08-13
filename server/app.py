@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import asyncio
 import json
-import mimetypes
 import os
 import time
 import uuid
@@ -14,17 +13,6 @@ from fastapi import FastAPI, File, HTTPException, Request, Response, UploadFile
 from fastapi.responses import JSONResponse, RedirectResponse, StreamingResponse
 from pydantic import BaseModel, Field
 
-from agent.config import ROOT, load_local_env
-from agent.service import (
-    poll_music_generation,
-    poll_video_generation,
-    start_image_generation,
-    start_music_generation,
-    start_video_generation,
-    supervise_production,
-)
-from agent.tracing import flush_langfuse, traced_operation
-from agent.agentcore_client import agentcore_enabled
 from server.assets import (
     get_asset,
     get_asset_for_user,
@@ -32,13 +20,13 @@ from server.assets import (
     iter_asset_bytes,
     materialize_asset_path,
     presigned_content_url,
-    register_existing_s3_object,
     register_output_file,
     register_upload,
     sign_content_url,
     verify_content_signature,
 )
 from server.auth import AuthUser, clerk_enabled, current_user_id, optional_user, publishable_key
+from server.config import ROOT, load_local_env
 from server.productions import ProductionStore, public_production
 from server.projects import (
     ProjectStore,
@@ -60,15 +48,9 @@ MAX_UPLOAD_BYTES = 15 * 1024 * 1024
 MIN_VIDEO_SECONDS = 4
 MAX_VIDEO_SECONDS = 12
 TERMINAL_STATES = {"complete", "planned", "failed"}
-PROVIDER_TERMINAL_STATES = {
-    "succeeded",
-    "failed",
-    "cancelled",
-    "canceled",
-    "deleted",
-    "timeouted",
-    "timeout",
-}
+AGENT_HARNESS_UNAVAILABLE = (
+    "The LangChain agent harness was removed. Generation returns after the OpenAI Agents SDK rewrite."
+)
 PUBLIC_JOB_FIELDS = {
     "id",
     "schema_version",
@@ -401,122 +383,6 @@ def _append_trace(
     job["traces"] = traces
 
 
-def _merge_agent_traces(job: dict[str, Any], result: dict[str, Any]) -> None:
-    for trace in result.get("traces") or []:
-        if not isinstance(trace, dict):
-            continue
-        _append_trace(
-            job,
-            title=str(trace.get("title") or "tool"),
-            detail=str(trace.get("detail") or ""),
-            status=str(trace.get("status") or "done"),
-            kind=str(trace.get("kind") or "tool"),
-            trace_id=str(trace.get("id") or f"tool-{uuid.uuid4().hex[:8]}"),
-        )
-
-
-def _agent_session_id(job: dict[str, Any]) -> str:
-    return str(job.get("parent_id") or job.get("id") or uuid.uuid4().hex)
-
-
-def _generation_kwargs(job: dict[str, Any]) -> dict[str, Any]:
-    return {
-        "session_id": _agent_session_id(job),
-        "user_id": str(job.get("user_id") or "local"),
-        "reference_storage_key": (
-            job.get("_reference_storage_key")
-            if isinstance(job.get("_reference_storage_key"), str)
-            else None
-        ),
-    }
-
-
-def _generation_instruction(job: dict[str, Any]) -> str:
-    reference = job.get("_reference_path")
-    # When AgentCore owns MCP tools, the runtime materializes the S3 reference itself.
-    if agentcore_enabled():
-        reference_instruction = (
-            "A reference image will be supplied by the runtime. "
-            if job.get("_reference_storage_key")
-            else "No reference image is supplied. "
-        )
-    else:
-        reference_instruction = (
-            f"Use this local reference image: {reference}. "
-            if reference
-            else "No reference image is supplied. "
-        )
-    media_type = job.get("media_type") or "video"
-    if media_type == "image":
-        return (
-            f"Creative prompt: {job['prompt']}\n"
-            f"Vibe: {job['vibe']}. Aspect ratio: {job['aspect_ratio']}. "
-            f"{reference_instruction}"
-            "Start exactly one image generation and return."
-        )
-    if media_type == "music":
-        return (
-            f"Creative prompt: {job['prompt']}\n"
-            f"Vibe: {job['vibe']}. "
-            "Generate an instrumental score unless the prompt explicitly includes lyrics. "
-            "Start exactly one music generation and return."
-        )
-    return (
-        f"Creative prompt: {job['prompt']}\n"
-        f"Vibe: {job['vibe']}. Aspect ratio: {job['aspect_ratio']}. "
-        f"Duration: {job['duration_seconds']} seconds. {reference_instruction}"
-        "Generate native sound when supported. Start exactly one video generation and return."
-    )
-
-
-def _artifact_path(value: dict[str, Any]) -> str | None:
-    output_path = value.get("output_path")
-    if not isinstance(output_path, str):
-        return None
-    try:
-        resolved = Path(output_path).expanduser().resolve()
-        resolved.relative_to(MEDIA_DIR)
-    except (OSError, ValueError):
-        return None
-    if resolved.is_file() and resolved.stat().st_size > 0:
-        return str(resolved)
-    return None
-
-
-def _remote_storage(value: dict[str, Any]) -> dict[str, Any] | None:
-    storage_key = value.get("storage_key")
-    if not isinstance(storage_key, str) or not storage_key:
-        return None
-    mime_type = value.get("mime_type")
-    size_bytes = value.get("size_bytes")
-    checksum = value.get("checksum")
-    filename = value.get("filename")
-    if not isinstance(mime_type, str) or not isinstance(filename, str):
-        return None
-    if not isinstance(size_bytes, int) or not isinstance(checksum, str):
-        return None
-    asset_id = value.get("asset_id")
-    return {
-        "storage_key": storage_key,
-        "mime_type": mime_type,
-        "size_bytes": size_bytes,
-        "checksum": checksum,
-        "filename": filename,
-        "asset_id": asset_id if isinstance(asset_id, str) else None,
-    }
-
-
-def _start_artifact(result: dict[str, Any]) -> dict[str, Any] | None:
-    for artifact in reversed(result.get("artifacts", [])):
-        if isinstance(artifact, dict) and (
-            isinstance(artifact.get("job_id"), str)
-            or isinstance(artifact.get("output_path"), str)
-            or isinstance(artifact.get("storage_key"), str)
-        ):
-            return artifact
-    return None
-
-
 def _media_kind(job: dict[str, Any]) -> Literal["video", "image", "music"]:
     media_type = job.get("media_type") or "video"
     if media_type == "image":
@@ -540,313 +406,32 @@ def _attach_output_asset(job: dict[str, Any], output_path: str) -> None:
     job["_storage_key"] = asset.storage_key
 
 
-def _attach_remote_output_asset(job: dict[str, Any], remote: dict[str, Any]) -> None:
-    kind = _media_kind(job)
-    user_id = str(job.get("user_id") or "local")
-    asset = register_existing_s3_object(
-        user_id=user_id,
-        storage_key=str(remote["storage_key"]),
-        kind=kind,
-        mime_type=str(remote["mime_type"]),
-        size_bytes=int(remote["size_bytes"]),
-        checksum=str(remote["checksum"]),
-        filename=str(remote["filename"]),
-        asset_id=remote.get("asset_id"),
-    )
-    job["output_asset_id"] = asset.id
-    job["_storage_key"] = asset.storage_key
-
-
-def _attach_generation_output(job: dict[str, Any], payload: dict[str, Any]) -> None:
-    remote = _remote_storage(payload)
-    if remote:
-        _attach_remote_output_asset(job, remote)
-        return
-    output_path = _artifact_path(payload)
-    if not output_path:
-        raise RuntimeError("Generation succeeded without a downloadable media file.")
-    _attach_output_asset(job, output_path)
-
-
-async def _poll_provider(job: dict[str, Any]) -> None:
-    media_type = job.get("media_type") or "video"
-    provider_job_id = job.get("_provider_job_id")
-    if not isinstance(provider_job_id, str):
-        raise RuntimeError(f"{media_type.capitalize()} generation did not return a job identifier.")
-
-    poll_title = "Polling Mureka task" if media_type == "music" else "Polling Seedance task"
-    ready_title = "Music ready" if media_type == "music" else "Video ready"
-    ready_detail = (
-        "Downloaded the finished track."
-        if media_type == "music"
-        else "Downloaded the finished MP4."
-    )
-    ready_message = "Your score is ready." if media_type == "music" else "Your film is ready."
-    running_message = (
-        "Composing melody, arrangement, and mix."
-        if media_type == "music"
-        else "Shaping the shots, motion, and sound."
-    )
-    poll_fn = poll_music_generation if media_type == "music" else poll_video_generation
-    trace_id = "poll-music" if media_type == "music" else "poll-video"
-    poll_kwargs = {
-        "session_id": _agent_session_id(job),
-        "user_id": str(job.get("user_id") or "local"),
-    }
-
-    poll_count = 0
-    while True:
-        result = await poll_fn(provider_job_id, **poll_kwargs)
-        status = str(result.get("status", "unknown")).lower()
-        poll_count += 1
-        _append_trace(
-            job,
-            title=poll_title,
-            detail=f"Provider status: {status}",
-            status="running" if status not in PROVIDER_TERMINAL_STATES else "done",
-            kind="tool",
-            trace_id=trace_id,
-        )
-        if status == "succeeded":
-            _attach_generation_output(job, result)
-            job.update(
-                status="complete",
-                phase="complete",
-                message=ready_message,
-                progress=100,
-            )
-            _append_trace(
-                job,
-                title=ready_title,
-                detail=ready_detail,
-                status="done",
-                kind="status",
-                trace_id="complete",
-            )
-            return
-        if status in PROVIDER_TERMINAL_STATES:
-            raise RuntimeError(f"{media_type.capitalize()} generation ended with status {status}.")
-        job.update(
-            status="generating",
-            phase="rendering",
-            message=running_message,
-            progress=min(92, 35 + poll_count * 4),
-        )
-        await store.put(job)
-        await asyncio.sleep(5)
-
-
 async def _run_generation(job_id: str, *, resume: bool = False) -> None:
     async with generation_slots:
         job = await store.get(job_id)
         if not job:
             return
-        media_type = job.get("media_type") or "video"
-        session_id = job.get("parent_id") or job_id
-        if media_type == "image":
-            feature = "image-generation"
-        elif media_type == "music":
-            feature = "music-generation"
-        else:
-            feature = "video-generation"
-        with traced_operation(
-            feature,
-            as_type="agent",
-            input={
-                "prompt": job.get("prompt"),
-                "vibe": job.get("vibe"),
-                "aspect_ratio": job.get("aspect_ratio"),
-                "duration_seconds": job.get("duration_seconds"),
-                "media_type": media_type,
-                "resume": resume,
+        _ = resume
+        job.update(
+            status="failed",
+            phase="failed",
+            message=AGENT_HARNESS_UNAVAILABLE,
+            progress=100,
+            error={
+                "code": "agent_unavailable",
+                "message": AGENT_HARNESS_UNAVAILABLE,
+                "retryable": False,
             },
-            session_id=session_id,
-            tags=["renderhaus", "web", feature],
-            metadata={
-                "feature": feature,
-                "job_id": job_id,
-                "parent_id": job.get("parent_id") or "",
-                "media_type": media_type,
-                "user_id": job.get("user_id") or "",
-            },
-            trace_name=feature,
-        ) as observation:
-            try:
-                if not resume:
-                    planning_message = (
-                        "Finding the musical direction."
-                        if media_type == "music"
-                        else "Finding the visual direction."
-                    )
-                    job.update(
-                        status="planning",
-                        phase="planning",
-                        message=planning_message,
-                        progress=12,
-                    )
-                    _append_trace(
-                        job,
-                        title="Planning",
-                        detail="Reading the prompt and choosing a generation path.",
-                        status="running",
-                        kind="status",
-                        trace_id="planning",
-                    )
-                    await store.put(job)
-
-                    agent_kwargs = _generation_kwargs(job)
-                    instruction = _generation_instruction(job)
-                    if media_type == "image":
-                        result = await start_image_generation(instruction, **agent_kwargs)
-                    elif media_type == "music":
-                        result = await start_music_generation(
-                            instruction,
-                            session_id=agent_kwargs["session_id"],
-                            user_id=agent_kwargs["user_id"],
-                        )
-                    else:
-                        result = await start_video_generation(instruction, **agent_kwargs)
-
-                    _append_trace(
-                        job,
-                        title="Planning",
-                        detail="Agent finished selecting tools.",
-                        status="done",
-                        kind="status",
-                        trace_id="planning",
-                    )
-                    _merge_agent_traces(job, result)
-                    artifact = _start_artifact(result)
-                    if not artifact:
-                        raise RuntimeError(
-                            "Generation did not return a structured job result."
-                        )
-
-                    if artifact.get("status") == "dry_run":
-                        job.update(
-                            status="planned",
-                            phase="preview",
-                            message=(
-                                "The direction is ready. Turn on live rendering to create the asset."
-                            ),
-                            progress=100,
-                        )
-                        _append_trace(
-                            job,
-                            title="Dry run complete",
-                            detail="Live generation is currently disabled.",
-                            status="done",
-                            kind="status",
-                            trace_id="complete",
-                        )
-                        await store.put(job)
-                        if observation is not None:
-                            observation.update(output={"status": "planned", "mode": "dry_run"})
-                        return
-
-                    if media_type == "image":
-                        _attach_generation_output(job, artifact)
-                        job.update(
-                            status="complete",
-                            phase="complete",
-                            message="Your image is ready.",
-                            progress=100,
-                        )
-                        _append_trace(
-                            job,
-                            title="Image ready",
-                            detail="Seedream finished generating the still.",
-                            status="done",
-                            kind="status",
-                            trace_id="complete",
-                        )
-                        await store.put(job)
-                        if observation is not None:
-                            observation.update(
-                                output={"status": "complete", "has_media": True}
-                            )
-                        return
-
-                    job["_provider_job_id"] = artifact["job_id"]
-                    rendering_message = (
-                        "Composing melody, arrangement, and mix."
-                        if media_type == "music"
-                        else "Shaping the shots, motion, and sound."
-                    )
-                    rendering_detail = (
-                        "Mureka task created. Waiting for the track."
-                        if media_type == "music"
-                        else "Seedance task created. Waiting for frames."
-                    )
-                    rendering_title = (
-                        "Rendering music" if media_type == "music" else "Rendering video"
-                    )
-                    job.update(
-                        status="generating",
-                        phase="rendering",
-                        message=rendering_message,
-                        progress=32,
-                    )
-                    _append_trace(
-                        job,
-                        title=rendering_title,
-                        detail=rendering_detail,
-                        status="running",
-                        kind="status",
-                        trace_id="rendering",
-                    )
-                    await store.put(job)
-
-                await _poll_provider(job)
-                rendering_title = (
-                    "Rendering music" if media_type == "music" else "Rendering video"
-                )
-                _append_trace(
-                    job,
-                    title=rendering_title,
-                    detail="Provider finished.",
-                    status="done",
-                    kind="status",
-                    trace_id="rendering",
-                )
-                if observation is not None:
-                    observation.update(
-                        output={
-                            "status": job.get("status"),
-                            "has_media": bool(job.get("output_asset_id")),
-                        }
-                    )
-            except asyncio.CancelledError:
-                raise
-            except Exception as exc:
-                job.update(
-                    status="failed",
-                    phase="failed",
-                    message="The render stopped before it finished.",
-                    progress=100,
-                    error={
-                        "code": "generation_failed",
-                        "message": "The render stopped before it finished.",
-                        "retryable": True,
-                    },
-                    _error_detail=str(exc)[:2000],
-                )
-                _append_trace(
-                    job,
-                    title="Generation failed",
-                    detail=str(exc)[:240],
-                    status="error",
-                    kind="status",
-                    trace_id="failed",
-                )
-                if observation is not None:
-                    observation.update(
-                        level="ERROR",
-                        status_message=str(exc)[:500],
-                        output={"status": "failed"},
-                    )
-            await store.put(job)
-            flush_langfuse()
+        )
+        _append_trace(
+            job,
+            title="Agent harness removed",
+            detail=AGENT_HARNESS_UNAVAILABLE,
+            status="error",
+            kind="status",
+            trace_id="failed",
+        )
+        await store.put(job)
 
 
 def _start_task(app: FastAPI, job_id: str, *, resume: bool = False) -> None:
@@ -873,7 +458,6 @@ async def lifespan(app: FastAPI):
         task.cancel()
     if tasks:
         await asyncio.gather(*tasks, return_exceptions=True)
-    flush_langfuse()
 
 
 app = FastAPI(title="Renderhaus", version="0.1.0", lifespan=lifespan)
@@ -897,10 +481,8 @@ async def config() -> dict[str, Any]:
             os.getenv("SEEDREAM_DRY_RUN", os.getenv("SEEDANCE_DRY_RUN", "true")).lower() == "false"
         ),
         "live_music_generation": os.getenv("MUREKA_DRY_RUN", "true").lower() == "false",
-        "agent_ready": bool(os.getenv("OPENAI_API_KEY")),
-        "langfuse_ready": bool(
-            os.getenv("LANGFUSE_PUBLIC_KEY") and os.getenv("LANGFUSE_SECRET_KEY")
-        ),
+        "agent_ready": False,
+        "langfuse_ready": False,
         "clerk_enabled": clerk_enabled(),
         "clerk_publishable_key": publishable_key(),
         "video_model": os.getenv("SEEDANCE_MODEL", "seedance-1-5-pro-251215"),
@@ -951,58 +533,18 @@ async def _plan_production_record(production_id: str) -> None:
     production = await productions.get(production_id)
     if not production:
         return
-    production["status"] = "planning"
-    production["error"] = None
+    production["status"] = "failed"
+    production["error"] = AGENT_HARNESS_UNAVAILABLE
     await productions.put(production)
-    try:
-        result = await supervise_production(
-            production["brief"],
-            execute=False,
-            user_id=str(production.get("user_id") or "local"),
-            session_id=f"production-{production_id}",
-        )
-        plan = result.get("plan") if isinstance(result, dict) else None
-        if not isinstance(plan, dict):
-            raise RuntimeError("Director did not return a typed plan.")
-        production = await productions.get(production_id) or production
-        production["plan"] = plan
-        production["title"] = str(plan.get("title") or production.get("title") or "Production")
-        production["status"] = "plan_ready"
-        production["error"] = None
-        await productions.put(production)
-    except Exception as exc:  # noqa: BLE001
-        production = await productions.get(production_id) or production
-        production["status"] = "failed"
-        production["error"] = str(exc)
-        await productions.put(production)
 
 
 async def _execute_production_record(production_id: str) -> None:
     production = await productions.get(production_id)
     if not production or not isinstance(production.get("plan"), dict):
         return
-    production["status"] = "running"
-    production["error"] = None
+    production["status"] = "failed"
+    production["error"] = AGENT_HARNESS_UNAVAILABLE
     await productions.put(production)
-    try:
-        result = await supervise_production(
-            production["brief"],
-            execute=True,
-            user_id=str(production.get("user_id") or "local"),
-            session_id=f"production-{production_id}",
-            plan=production["plan"],
-        )
-        production = await productions.get(production_id) or production
-        production["execution"] = result.get("execution") if isinstance(result, dict) else result
-        production["status"] = "completed"
-        production["completed_at"] = int(time.time())
-        production["error"] = None
-        await productions.put(production)
-    except Exception as exc:  # noqa: BLE001
-        production = await productions.get(production_id) or production
-        production["status"] = "failed"
-        production["error"] = str(exc)
-        await productions.put(production)
 
 
 def _start_production_task(app: FastAPI, coro, *, name: str) -> None:
@@ -1339,9 +881,9 @@ async def create_generation(request: GenerationRequest, auth: AuthUser) -> dict[
         _require_owned_project(await projects.get(project_id), user_id)
     reference_asset = _reference_asset_for_user(request.reference_asset_id, user_id)
     reference_storage_key = reference_asset.storage_key if reference_asset else None
-    reference_path = None
-    if reference_asset and not agentcore_enabled():
-        reference_path = _reference_path_for_user(request.reference_asset_id, user_id)
+    reference_path = (
+        _reference_path_for_user(request.reference_asset_id, user_id) if reference_asset else None
+    )
     job = await store.create(
         request,
         user_id=user_id,
@@ -1465,9 +1007,11 @@ async def refine_generation(
         if isinstance(original.get("_reference_storage_key"), str)
         else (reference_asset.storage_key if reference_asset else None)
     )
-    reference_path = None
-    if reference_asset and not agentcore_enabled():
-        reference_path = _reference_path_for_user(original.get("reference_asset_id"), user_id)
+    reference_path = (
+        _reference_path_for_user(original.get("reference_asset_id"), user_id)
+        if reference_asset
+        else None
+    )
     project_id = original.get("project_id") if isinstance(original.get("project_id"), str) else None
     job = await store.create(
         generation,

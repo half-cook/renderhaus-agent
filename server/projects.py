@@ -12,7 +12,7 @@ import uuid
 from pathlib import Path
 from typing import Any
 
-from agent.config import ROOT
+from server.config import ROOT
 
 PROJECTS_DIR = ROOT / ".renderhaus" / "projects"
 PUBLIC_PROJECT_FIELDS = {

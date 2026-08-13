@@ -45,7 +45,7 @@ RUNTIME_BOOTSTRAP_KEYS = [
 
 
 def load_bootstrap_env(*, secret_name: str) -> dict[str, str]:
-    from agent.config import load_local_env
+    from server.config import load_local_env
 
     # Prefer Secrets Manager when configured; fall back to .env.local during migration.
     os.environ.setdefault("RENDERHAUS_SECRETS_NAME", secret_name)

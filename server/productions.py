@@ -9,7 +9,7 @@ import uuid
 from pathlib import Path
 from typing import Any
 
-from agent.config import ROOT
+from server.config import ROOT
 
 PRODUCTIONS_DIR = ROOT / ".renderhaus" / "productions"
 

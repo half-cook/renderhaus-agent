@@ -13,7 +13,7 @@ import boto3
 from botocore.exceptions import ClientError
 from dotenv import dotenv_values
 
-from agent.secrets import (
+from server.secrets import (
     BOOTSTRAP_ENV_KEYS,
     EXCLUDED_SECRET_KEYS,
     clear_secrets_cache,

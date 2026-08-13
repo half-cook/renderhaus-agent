@@ -351,7 +351,7 @@ def _upsert_target(control, *, gateway_id: str, lambda_arn: str) -> str:
 
 
 def _bootstrap_env(secret_name: str) -> dict[str, str]:
-    from agent.config import load_local_env
+    from server.config import load_local_env
 
     os.environ.setdefault("RENDERHAUS_SECRETS_NAME", secret_name)
     load_local_env()

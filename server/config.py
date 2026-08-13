@@ -8,7 +8,7 @@ from typing import Any
 
 from dotenv import load_dotenv
 
-from agent.secrets import load_secrets_from_manager, secrets_locator
+from server.secrets import load_secrets_from_manager, secrets_locator
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -28,7 +28,7 @@ def mcp_config_path() -> Path:
 _VAR_RE = re.compile(r"\$\{([A-Za-z_][A-Za-z0-9_]*|ROOT)\}")
 
 DEFAULT_ENV = {
-    "AGENT_MODEL": "openai:gpt-4.1-mini",
+    "AGENT_MODEL": "gpt-4.1-mini",
     "BYTEPLUS_BASE_URL": "https://ark.ap-southeast.bytepluses.com/api/v3",
     "SEEDANCE_MODEL": "seedance-1-5-pro-251215",
     "SEEDANCE_DRY_RUN": "true",
@@ -42,7 +42,6 @@ DEFAULT_ENV = {
     "TIME_OUT_SECONDS": "300",
     "RENDERHAUS_MEDIA_DIR": ".renderhaus/media",
     "GPT_IMAGE_2_OUTPUT_DIR": ".renderhaus/media/images",
-    "LANGFUSE_BASE_URL": "https://cloud.langfuse.com",
 }
 
 

@@ -35,7 +35,7 @@ def check_imports() -> None:
     if str(ROOT) not in sys.path:
         sys.path.insert(0, str(ROOT))
     from mcps.mureka import api  # noqa: F401
-    from agent import config, director, executor, service  # noqa: F401
+    from server import config, app  # noqa: F401
     from lambdas.mureka import handler  # noqa: F401
 
     assert isinstance(api.dry_run(), bool)

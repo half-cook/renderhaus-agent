@@ -204,94 +204,6 @@
         "documentation": {}
     },
     {
-        "label": "annotations",
-        "importPath": "__future__",
-        "description": "__future__",
-        "isExtraImport": true,
-        "detail": "__future__",
-        "documentation": {}
-    },
-    {
-        "label": "annotations",
-        "importPath": "__future__",
-        "description": "__future__",
-        "isExtraImport": true,
-        "detail": "__future__",
-        "documentation": {}
-    },
-    {
-        "label": "annotations",
-        "importPath": "__future__",
-        "description": "__future__",
-        "isExtraImport": true,
-        "detail": "__future__",
-        "documentation": {}
-    },
-    {
-        "label": "annotations",
-        "importPath": "__future__",
-        "description": "__future__",
-        "isExtraImport": true,
-        "detail": "__future__",
-        "documentation": {}
-    },
-    {
-        "label": "annotations",
-        "importPath": "__future__",
-        "description": "__future__",
-        "isExtraImport": true,
-        "detail": "__future__",
-        "documentation": {}
-    },
-    {
-        "label": "annotations",
-        "importPath": "__future__",
-        "description": "__future__",
-        "isExtraImport": true,
-        "detail": "__future__",
-        "documentation": {}
-    },
-    {
-        "label": "annotations",
-        "importPath": "__future__",
-        "description": "__future__",
-        "isExtraImport": true,
-        "detail": "__future__",
-        "documentation": {}
-    },
-    {
-        "label": "annotations",
-        "importPath": "__future__",
-        "description": "__future__",
-        "isExtraImport": true,
-        "detail": "__future__",
-        "documentation": {}
-    },
-    {
-        "label": "annotations",
-        "importPath": "__future__",
-        "description": "__future__",
-        "isExtraImport": true,
-        "detail": "__future__",
-        "documentation": {}
-    },
-    {
-        "label": "annotations",
-        "importPath": "__future__",
-        "description": "__future__",
-        "isExtraImport": true,
-        "detail": "__future__",
-        "documentation": {}
-    },
-    {
-        "label": "annotations",
-        "importPath": "__future__",
-        "description": "__future__",
-        "isExtraImport": true,
-        "detail": "__future__",
-        "documentation": {}
-    },
-    {
         "label": "os",
         "kind": 6,
         "isExtraImport": true,
@@ -301,125 +213,124 @@
         "documentation": {}
     },
     {
-        "label": "re",
+        "label": "traceback",
         "kind": 6,
         "isExtraImport": true,
-        "importPath": "re",
-        "description": "re",
-        "detail": "re",
+        "importPath": "traceback",
+        "description": "traceback",
+        "detail": "traceback",
         "documentation": {}
     },
     {
-        "label": "uuid",
-        "kind": 6,
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
         "isExtraImport": true,
-        "importPath": "uuid",
-        "description": "uuid",
-        "detail": "uuid",
+        "detail": "pathlib",
         "documentation": {}
     },
     {
-        "label": "Any",
-        "importPath": "typing",
-        "description": "typing",
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
         "isExtraImport": true,
-        "detail": "typing",
+        "detail": "pathlib",
         "documentation": {}
     },
     {
-        "label": "Any",
-        "importPath": "typing",
-        "description": "typing",
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
         "isExtraImport": true,
-        "detail": "typing",
+        "detail": "pathlib",
         "documentation": {}
     },
     {
-        "label": "Any",
-        "importPath": "typing",
-        "description": "typing",
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
         "isExtraImport": true,
-        "detail": "typing",
+        "detail": "pathlib",
         "documentation": {}
     },
     {
-        "label": "Literal",
-        "importPath": "typing",
-        "description": "typing",
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
         "isExtraImport": true,
-        "detail": "typing",
+        "detail": "pathlib",
         "documentation": {}
     },
     {
-        "label": "Any",
-        "importPath": "typing",
-        "description": "typing",
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
         "isExtraImport": true,
-        "detail": "typing",
+        "detail": "pathlib",
         "documentation": {}
     },
     {
-        "label": "Any",
-        "importPath": "typing",
-        "description": "typing",
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
         "isExtraImport": true,
-        "detail": "typing",
+        "detail": "pathlib",
         "documentation": {}
     },
     {
-        "label": "Any",
-        "importPath": "typing",
-        "description": "typing",
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
         "isExtraImport": true,
-        "detail": "typing",
+        "detail": "pathlib",
         "documentation": {}
     },
     {
-        "label": "Any",
-        "importPath": "typing",
-        "description": "typing",
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
         "isExtraImport": true,
-        "detail": "typing",
+        "detail": "pathlib",
         "documentation": {}
     },
     {
-        "label": "Literal",
-        "importPath": "typing",
-        "description": "typing",
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
         "isExtraImport": true,
-        "detail": "typing",
+        "detail": "pathlib",
         "documentation": {}
     },
     {
-        "label": "Any",
-        "importPath": "typing",
-        "description": "typing",
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
         "isExtraImport": true,
-        "detail": "typing",
+        "detail": "pathlib",
         "documentation": {}
     },
     {
-        "label": "Any",
-        "importPath": "typing",
-        "description": "typing",
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
         "isExtraImport": true,
-        "detail": "typing",
+        "detail": "pathlib",
         "documentation": {}
     },
     {
-        "label": "Any",
-        "importPath": "typing",
-        "description": "typing",
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
         "isExtraImport": true,
-        "detail": "typing",
+        "detail": "pathlib",
         "documentation": {}
     },
     {
-        "label": "Any",
-        "importPath": "typing",
-        "description": "typing",
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
         "isExtraImport": true,
-        "detail": "typing",
+        "detail": "pathlib",
         "documentation": {}
     },
     {
@@ -535,985 +446,19 @@
         "documentation": {}
     },
     {
-        "label": "boto3",
-        "kind": 6,
+        "label": "Any",
+        "importPath": "typing",
+        "description": "typing",
         "isExtraImport": true,
-        "importPath": "boto3",
-        "description": "boto3",
-        "detail": "boto3",
+        "detail": "typing",
         "documentation": {}
     },
     {
-        "label": "Path",
-        "importPath": "pathlib",
-        "description": "pathlib",
+        "label": "Any",
+        "importPath": "typing",
+        "description": "typing",
         "isExtraImport": true,
-        "detail": "pathlib",
-        "documentation": {}
-    },
-    {
-        "label": "Path",
-        "importPath": "pathlib",
-        "description": "pathlib",
-        "isExtraImport": true,
-        "detail": "pathlib",
-        "documentation": {}
-    },
-    {
-        "label": "Path",
-        "importPath": "pathlib",
-        "description": "pathlib",
-        "isExtraImport": true,
-        "detail": "pathlib",
-        "documentation": {}
-    },
-    {
-        "label": "Path",
-        "importPath": "pathlib",
-        "description": "pathlib",
-        "isExtraImport": true,
-        "detail": "pathlib",
-        "documentation": {}
-    },
-    {
-        "label": "Path",
-        "importPath": "pathlib",
-        "description": "pathlib",
-        "isExtraImport": true,
-        "detail": "pathlib",
-        "documentation": {}
-    },
-    {
-        "label": "Path",
-        "importPath": "pathlib",
-        "description": "pathlib",
-        "isExtraImport": true,
-        "detail": "pathlib",
-        "documentation": {}
-    },
-    {
-        "label": "Path",
-        "importPath": "pathlib",
-        "description": "pathlib",
-        "isExtraImport": true,
-        "detail": "pathlib",
-        "documentation": {}
-    },
-    {
-        "label": "Path",
-        "importPath": "pathlib",
-        "description": "pathlib",
-        "isExtraImport": true,
-        "detail": "pathlib",
-        "documentation": {}
-    },
-    {
-        "label": "Path",
-        "importPath": "pathlib",
-        "description": "pathlib",
-        "isExtraImport": true,
-        "detail": "pathlib",
-        "documentation": {}
-    },
-    {
-        "label": "Path",
-        "importPath": "pathlib",
-        "description": "pathlib",
-        "isExtraImport": true,
-        "detail": "pathlib",
-        "documentation": {}
-    },
-    {
-        "label": "Path",
-        "importPath": "pathlib",
-        "description": "pathlib",
-        "isExtraImport": true,
-        "detail": "pathlib",
-        "documentation": {}
-    },
-    {
-        "label": "Path",
-        "importPath": "pathlib",
-        "description": "pathlib",
-        "isExtraImport": true,
-        "detail": "pathlib",
-        "documentation": {}
-    },
-    {
-        "label": "Path",
-        "importPath": "pathlib",
-        "description": "pathlib",
-        "isExtraImport": true,
-        "detail": "pathlib",
-        "documentation": {}
-    },
-    {
-        "label": "Path",
-        "importPath": "pathlib",
-        "description": "pathlib",
-        "isExtraImport": true,
-        "detail": "pathlib",
-        "documentation": {}
-    },
-    {
-        "label": "Path",
-        "importPath": "pathlib",
-        "description": "pathlib",
-        "isExtraImport": true,
-        "detail": "pathlib",
-        "documentation": {}
-    },
-    {
-        "label": "Path",
-        "importPath": "pathlib",
-        "description": "pathlib",
-        "isExtraImport": true,
-        "detail": "pathlib",
-        "documentation": {}
-    },
-    {
-        "label": "Path",
-        "importPath": "pathlib",
-        "description": "pathlib",
-        "isExtraImport": true,
-        "detail": "pathlib",
-        "documentation": {}
-    },
-    {
-        "label": "Path",
-        "importPath": "pathlib",
-        "description": "pathlib",
-        "isExtraImport": true,
-        "detail": "pathlib",
-        "documentation": {}
-    },
-    {
-        "label": "Path",
-        "importPath": "pathlib",
-        "description": "pathlib",
-        "isExtraImport": true,
-        "detail": "pathlib",
-        "documentation": {}
-    },
-    {
-        "label": "Path",
-        "importPath": "pathlib",
-        "description": "pathlib",
-        "isExtraImport": true,
-        "detail": "pathlib",
-        "documentation": {}
-    },
-    {
-        "label": "Path",
-        "importPath": "pathlib",
-        "description": "pathlib",
-        "isExtraImport": true,
-        "detail": "pathlib",
-        "documentation": {}
-    },
-    {
-        "label": "load_dotenv",
-        "importPath": "dotenv",
-        "description": "dotenv",
-        "isExtraImport": true,
-        "detail": "dotenv",
-        "documentation": {}
-    },
-    {
-        "label": "dotenv_values",
-        "importPath": "dotenv",
-        "description": "dotenv",
-        "isExtraImport": true,
-        "detail": "dotenv",
-        "documentation": {}
-    },
-    {
-        "label": "load_secrets_from_manager",
-        "importPath": "agent.secrets",
-        "description": "agent.secrets",
-        "isExtraImport": true,
-        "detail": "agent.secrets",
-        "documentation": {}
-    },
-    {
-        "label": "secrets_locator",
-        "importPath": "agent.secrets",
-        "description": "agent.secrets",
-        "isExtraImport": true,
-        "detail": "agent.secrets",
-        "documentation": {}
-    },
-    {
-        "label": "BOOTSTRAP_ENV_KEYS",
-        "importPath": "agent.secrets",
-        "description": "agent.secrets",
-        "isExtraImport": true,
-        "detail": "agent.secrets",
-        "documentation": {}
-    },
-    {
-        "label": "EXCLUDED_SECRET_KEYS",
-        "importPath": "agent.secrets",
-        "description": "agent.secrets",
-        "isExtraImport": true,
-        "detail": "agent.secrets",
-        "documentation": {}
-    },
-    {
-        "label": "clear_secrets_cache",
-        "importPath": "agent.secrets",
-        "description": "agent.secrets",
-        "isExtraImport": true,
-        "detail": "agent.secrets",
-        "documentation": {}
-    },
-    {
-        "label": "secret_payload_from_mapping",
-        "importPath": "agent.secrets",
-        "description": "agent.secrets",
-        "isExtraImport": true,
-        "detail": "agent.secrets",
-        "documentation": {}
-    },
-    {
-        "label": "BaseModel",
-        "importPath": "pydantic",
-        "description": "pydantic",
-        "isExtraImport": true,
-        "detail": "pydantic",
-        "documentation": {}
-    },
-    {
-        "label": "Field",
-        "importPath": "pydantic",
-        "description": "pydantic",
-        "isExtraImport": true,
-        "detail": "pydantic",
-        "documentation": {}
-    },
-    {
-        "label": "Field",
-        "importPath": "pydantic",
-        "description": "pydantic",
-        "isExtraImport": true,
-        "detail": "pydantic",
-        "documentation": {}
-    },
-    {
-        "label": "Field",
-        "importPath": "pydantic",
-        "description": "pydantic",
-        "isExtraImport": true,
-        "detail": "pydantic",
-        "documentation": {}
-    },
-    {
-        "label": "BaseModel",
-        "importPath": "pydantic",
-        "description": "pydantic",
-        "isExtraImport": true,
-        "detail": "pydantic",
-        "documentation": {}
-    },
-    {
-        "label": "Field",
-        "importPath": "pydantic",
-        "description": "pydantic",
-        "isExtraImport": true,
-        "detail": "pydantic",
-        "documentation": {}
-    },
-    {
-        "label": "BaseModel",
-        "importPath": "pydantic",
-        "description": "pydantic",
-        "isExtraImport": true,
-        "detail": "pydantic",
-        "documentation": {}
-    },
-    {
-        "label": "Field",
-        "importPath": "pydantic",
-        "description": "pydantic",
-        "isExtraImport": true,
-        "detail": "pydantic",
-        "documentation": {}
-    },
-    {
-        "label": "BaseModel",
-        "importPath": "pydantic",
-        "description": "pydantic",
-        "isExtraImport": true,
-        "detail": "pydantic",
-        "documentation": {}
-    },
-    {
-        "label": "Field",
-        "importPath": "pydantic",
-        "description": "pydantic",
-        "isExtraImport": true,
-        "detail": "pydantic",
-        "documentation": {}
-    },
-    {
-        "label": "asyncio",
-        "kind": 6,
-        "isExtraImport": true,
-        "importPath": "asyncio",
-        "description": "asyncio",
-        "detail": "asyncio",
-        "documentation": {}
-    },
-    {
-        "label": "PlanNode",
-        "importPath": "agent.director",
-        "description": "agent.director",
-        "isExtraImport": true,
-        "detail": "agent.director",
-        "documentation": {}
-    },
-    {
-        "label": "TypedProductionPlan",
-        "importPath": "agent.director",
-        "description": "agent.director",
-        "isExtraImport": true,
-        "detail": "agent.director",
-        "documentation": {}
-    },
-    {
-        "label": "plan_production",
-        "importPath": "agent.director",
-        "description": "agent.director",
-        "isExtraImport": true,
-        "detail": "agent.director",
-        "documentation": {}
-    },
-    {
-        "label": "TypedProductionPlan",
-        "importPath": "agent.director",
-        "description": "agent.director",
-        "isExtraImport": true,
-        "detail": "agent.director",
-        "documentation": {}
-    },
-    {
-        "label": "UTC",
-        "importPath": "datetime",
-        "description": "datetime",
-        "isExtraImport": true,
-        "detail": "datetime",
-        "documentation": {}
-    },
-    {
-        "label": "datetime",
-        "importPath": "datetime",
-        "description": "datetime",
-        "isExtraImport": true,
-        "detail": "datetime",
-        "documentation": {}
-    },
-    {
-        "label": "ROOT",
-        "importPath": "agent.config",
-        "description": "agent.config",
-        "isExtraImport": true,
-        "detail": "agent.config",
-        "documentation": {}
-    },
-    {
-        "label": "load_local_env",
-        "importPath": "agent.config",
-        "description": "agent.config",
-        "isExtraImport": true,
-        "detail": "agent.config",
-        "documentation": {}
-    },
-    {
-        "label": "DEFAULT_MCP_CONFIG",
-        "importPath": "agent.config",
-        "description": "agent.config",
-        "isExtraImport": true,
-        "detail": "agent.config",
-        "documentation": {}
-    },
-    {
-        "label": "load_local_env",
-        "importPath": "agent.config",
-        "description": "agent.config",
-        "isExtraImport": true,
-        "detail": "agent.config",
-        "documentation": {}
-    },
-    {
-        "label": "load_mcp_servers",
-        "importPath": "agent.config",
-        "description": "agent.config",
-        "isExtraImport": true,
-        "detail": "agent.config",
-        "documentation": {}
-    },
-    {
-        "label": "mask_secret_status",
-        "importPath": "agent.config",
-        "description": "agent.config",
-        "isExtraImport": true,
-        "detail": "agent.config",
-        "documentation": {}
-    },
-    {
-        "label": "load_local_env",
-        "importPath": "agent.config",
-        "description": "agent.config",
-        "isExtraImport": true,
-        "detail": "agent.config",
-        "documentation": {}
-    },
-    {
-        "label": "mcp_config_path",
-        "importPath": "agent.config",
-        "description": "agent.config",
-        "isExtraImport": true,
-        "detail": "agent.config",
-        "documentation": {}
-    },
-    {
-        "label": "mcp_config_path",
-        "importPath": "agent.config",
-        "description": "agent.config",
-        "isExtraImport": true,
-        "detail": "agent.config",
-        "documentation": {}
-    },
-    {
-        "label": "load_local_env",
-        "importPath": "agent.config",
-        "description": "agent.config",
-        "isExtraImport": true,
-        "detail": "agent.config",
-        "documentation": {}
-    },
-    {
-        "label": "ROOT",
-        "importPath": "agent.config",
-        "description": "agent.config",
-        "isExtraImport": true,
-        "detail": "agent.config",
-        "documentation": {}
-    },
-    {
-        "label": "load_local_env",
-        "importPath": "agent.config",
-        "description": "agent.config",
-        "isExtraImport": true,
-        "detail": "agent.config",
-        "documentation": {}
-    },
-    {
-        "label": "load_local_env",
-        "importPath": "agent.config",
-        "description": "agent.config",
-        "isExtraImport": true,
-        "detail": "agent.config",
-        "documentation": {}
-    },
-    {
-        "label": "ROOT",
-        "importPath": "agent.config",
-        "description": "agent.config",
-        "isExtraImport": true,
-        "detail": "agent.config",
-        "documentation": {}
-    },
-    {
-        "label": "load_local_env",
-        "importPath": "agent.config",
-        "description": "agent.config",
-        "isExtraImport": true,
-        "detail": "agent.config",
-        "documentation": {}
-    },
-    {
-        "label": "ROOT",
-        "importPath": "agent.config",
-        "description": "agent.config",
-        "isExtraImport": true,
-        "detail": "agent.config",
-        "documentation": {}
-    },
-    {
-        "label": "ROOT",
-        "importPath": "agent.config",
-        "description": "agent.config",
-        "isExtraImport": true,
-        "detail": "agent.config",
-        "documentation": {}
-    },
-    {
-        "label": "ROOT",
-        "importPath": "agent.config",
-        "description": "agent.config",
-        "isExtraImport": true,
-        "detail": "agent.config",
-        "documentation": {}
-    },
-    {
-        "label": "load_tools",
-        "importPath": "agent.main",
-        "description": "agent.main",
-        "isExtraImport": true,
-        "detail": "agent.main",
-        "documentation": {}
-    },
-    {
-        "label": "SYSTEM_PROMPT",
-        "importPath": "agent.main",
-        "description": "agent.main",
-        "isExtraImport": true,
-        "detail": "agent.main",
-        "documentation": {}
-    },
-    {
-        "label": "load_tools",
-        "importPath": "agent.main",
-        "description": "agent.main",
-        "isExtraImport": true,
-        "detail": "agent.main",
-        "documentation": {}
-    },
-    {
-        "label": "MultiServerMCPClient",
-        "importPath": "langchain_mcp_adapters.client",
-        "description": "langchain_mcp_adapters.client",
-        "isExtraImport": true,
-        "detail": "langchain_mcp_adapters.client",
-        "documentation": {}
-    },
-    {
-        "label": "hashlib",
-        "kind": 6,
-        "isExtraImport": true,
-        "importPath": "hashlib",
-        "description": "hashlib",
-        "detail": "hashlib",
-        "documentation": {}
-    },
-    {
-        "label": "mimetypes",
-        "kind": 6,
-        "isExtraImport": true,
-        "importPath": "mimetypes",
-        "description": "mimetypes",
-        "detail": "mimetypes",
-        "documentation": {}
-    },
-    {
-        "label": "FastAPI",
-        "importPath": "fastapi",
-        "description": "fastapi",
-        "isExtraImport": true,
-        "detail": "fastapi",
-        "documentation": {}
-    },
-    {
-        "label": "HTTPException",
-        "importPath": "fastapi",
-        "description": "fastapi",
-        "isExtraImport": true,
-        "detail": "fastapi",
-        "documentation": {}
-    },
-    {
-        "label": "Request",
-        "importPath": "fastapi",
-        "description": "fastapi",
-        "isExtraImport": true,
-        "detail": "fastapi",
-        "documentation": {}
-    },
-    {
-        "label": "FastAPI",
-        "importPath": "fastapi",
-        "description": "fastapi",
-        "isExtraImport": true,
-        "detail": "fastapi",
-        "documentation": {}
-    },
-    {
-        "label": "File",
-        "importPath": "fastapi",
-        "description": "fastapi",
-        "isExtraImport": true,
-        "detail": "fastapi",
-        "documentation": {}
-    },
-    {
-        "label": "HTTPException",
-        "importPath": "fastapi",
-        "description": "fastapi",
-        "isExtraImport": true,
-        "detail": "fastapi",
-        "documentation": {}
-    },
-    {
-        "label": "Request",
-        "importPath": "fastapi",
-        "description": "fastapi",
-        "isExtraImport": true,
-        "detail": "fastapi",
-        "documentation": {}
-    },
-    {
-        "label": "Response",
-        "importPath": "fastapi",
-        "description": "fastapi",
-        "isExtraImport": true,
-        "detail": "fastapi",
-        "documentation": {}
-    },
-    {
-        "label": "UploadFile",
-        "importPath": "fastapi",
-        "description": "fastapi",
-        "isExtraImport": true,
-        "detail": "fastapi",
-        "documentation": {}
-    },
-    {
-        "label": "Depends",
-        "importPath": "fastapi",
-        "description": "fastapi",
-        "isExtraImport": true,
-        "detail": "fastapi",
-        "documentation": {}
-    },
-    {
-        "label": "HTTPException",
-        "importPath": "fastapi",
-        "description": "fastapi",
-        "isExtraImport": true,
-        "detail": "fastapi",
-        "documentation": {}
-    },
-    {
-        "label": "Request",
-        "importPath": "fastapi",
-        "description": "fastapi",
-        "isExtraImport": true,
-        "detail": "fastapi",
-        "documentation": {}
-    },
-    {
-        "label": "download_storage_key",
-        "importPath": "agent.media_store",
-        "description": "agent.media_store",
-        "isExtraImport": true,
-        "detail": "agent.media_store",
-        "documentation": {}
-    },
-    {
-        "label": "upload_local_media",
-        "importPath": "agent.media_store",
-        "description": "agent.media_store",
-        "isExtraImport": true,
-        "detail": "agent.media_store",
-        "documentation": {}
-    },
-    {
-        "label": "invoke_agent",
-        "importPath": "agent.service",
-        "description": "agent.service",
-        "isExtraImport": true,
-        "detail": "agent.service",
-        "documentation": {}
-    },
-    {
-        "label": "poll_music_generation",
-        "importPath": "agent.service",
-        "description": "agent.service",
-        "isExtraImport": true,
-        "detail": "agent.service",
-        "documentation": {}
-    },
-    {
-        "label": "poll_video_generation",
-        "importPath": "agent.service",
-        "description": "agent.service",
-        "isExtraImport": true,
-        "detail": "agent.service",
-        "documentation": {}
-    },
-    {
-        "label": "start_image_generation",
-        "importPath": "agent.service",
-        "description": "agent.service",
-        "isExtraImport": true,
-        "detail": "agent.service",
-        "documentation": {}
-    },
-    {
-        "label": "start_music_generation",
-        "importPath": "agent.service",
-        "description": "agent.service",
-        "isExtraImport": true,
-        "detail": "agent.service",
-        "documentation": {}
-    },
-    {
-        "label": "start_video_generation",
-        "importPath": "agent.service",
-        "description": "agent.service",
-        "isExtraImport": true,
-        "detail": "agent.service",
-        "documentation": {}
-    },
-    {
-        "label": "supervise_production",
-        "importPath": "agent.service",
-        "description": "agent.service",
-        "isExtraImport": true,
-        "detail": "agent.service",
-        "documentation": {}
-    },
-    {
-        "label": "supervise_production",
-        "importPath": "agent.service",
-        "description": "agent.service",
-        "isExtraImport": true,
-        "detail": "agent.service",
-        "documentation": {}
-    },
-    {
-        "label": "poll_music_generation",
-        "importPath": "agent.service",
-        "description": "agent.service",
-        "isExtraImport": true,
-        "detail": "agent.service",
-        "documentation": {}
-    },
-    {
-        "label": "poll_video_generation",
-        "importPath": "agent.service",
-        "description": "agent.service",
-        "isExtraImport": true,
-        "detail": "agent.service",
-        "documentation": {}
-    },
-    {
-        "label": "start_image_generation",
-        "importPath": "agent.service",
-        "description": "agent.service",
-        "isExtraImport": true,
-        "detail": "agent.service",
-        "documentation": {}
-    },
-    {
-        "label": "start_music_generation",
-        "importPath": "agent.service",
-        "description": "agent.service",
-        "isExtraImport": true,
-        "detail": "agent.service",
-        "documentation": {}
-    },
-    {
-        "label": "start_video_generation",
-        "importPath": "agent.service",
-        "description": "agent.service",
-        "isExtraImport": true,
-        "detail": "agent.service",
-        "documentation": {}
-    },
-    {
-        "label": "supervise_production",
-        "importPath": "agent.service",
-        "description": "agent.service",
-        "isExtraImport": true,
-        "detail": "agent.service",
-        "documentation": {}
-    },
-    {
-        "label": "logging",
-        "kind": 6,
-        "isExtraImport": true,
-        "importPath": "logging",
-        "description": "logging",
-        "detail": "logging",
-        "documentation": {}
-    },
-    {
-        "label": "lru_cache",
-        "importPath": "functools",
-        "description": "functools",
-        "isExtraImport": true,
-        "detail": "functools",
-        "documentation": {}
-    },
-    {
-        "label": "lru_cache",
-        "importPath": "functools",
-        "description": "functools",
-        "isExtraImport": true,
-        "detail": "functools",
-        "documentation": {}
-    },
-    {
-        "label": "ClientError",
-        "importPath": "botocore.exceptions",
-        "description": "botocore.exceptions",
-        "isExtraImport": true,
-        "detail": "botocore.exceptions",
-        "documentation": {}
-    },
-    {
-        "label": "ClientError",
-        "importPath": "botocore.exceptions",
-        "description": "botocore.exceptions",
-        "isExtraImport": true,
-        "detail": "botocore.exceptions",
-        "documentation": {}
-    },
-    {
-        "label": "ClientError",
-        "importPath": "botocore.exceptions",
-        "description": "botocore.exceptions",
-        "isExtraImport": true,
-        "detail": "botocore.exceptions",
-        "documentation": {}
-    },
-    {
-        "label": "ClientError",
-        "importPath": "botocore.exceptions",
-        "description": "botocore.exceptions",
-        "isExtraImport": true,
-        "detail": "botocore.exceptions",
-        "documentation": {}
-    },
-    {
-        "label": "ClientError",
-        "importPath": "botocore.exceptions",
-        "description": "botocore.exceptions",
-        "isExtraImport": true,
-        "detail": "botocore.exceptions",
-        "documentation": {}
-    },
-    {
-        "label": "ClientError",
-        "importPath": "botocore.exceptions",
-        "description": "botocore.exceptions",
-        "isExtraImport": true,
-        "detail": "botocore.exceptions",
-        "documentation": {}
-    },
-    {
-        "label": "create_agent",
-        "importPath": "langchain.agents",
-        "description": "langchain.agents",
-        "isExtraImport": true,
-        "detail": "langchain.agents",
-        "documentation": {}
-    },
-    {
-        "label": "agentcore_enabled",
-        "importPath": "agent.agentcore_client",
-        "description": "agent.agentcore_client",
-        "isExtraImport": true,
-        "detail": "agent.agentcore_client",
-        "documentation": {}
-    },
-    {
-        "label": "invoke",
-        "importPath": "agent.agentcore_client",
-        "description": "agent.agentcore_client",
-        "isExtraImport": true,
-        "detail": "agent.agentcore_client",
-        "documentation": {}
-    },
-    {
-        "label": "agentcore_enabled",
-        "importPath": "agent.agentcore_client",
-        "description": "agent.agentcore_client",
-        "isExtraImport": true,
-        "detail": "agent.agentcore_client",
-        "documentation": {}
-    },
-    {
-        "label": "supervise_brief",
-        "importPath": "agent.executor",
-        "description": "agent.executor",
-        "isExtraImport": true,
-        "detail": "agent.executor",
-        "documentation": {}
-    },
-    {
-        "label": "langchain_callbacks",
-        "importPath": "agent.tracing",
-        "description": "agent.tracing",
-        "isExtraImport": true,
-        "detail": "agent.tracing",
-        "documentation": {}
-    },
-    {
-        "label": "traced_operation",
-        "importPath": "agent.tracing",
-        "description": "agent.tracing",
-        "isExtraImport": true,
-        "detail": "agent.tracing",
-        "documentation": {}
-    },
-    {
-        "label": "flush_langfuse",
-        "importPath": "agent.tracing",
-        "description": "agent.tracing",
-        "isExtraImport": true,
-        "detail": "agent.tracing",
-        "documentation": {}
-    },
-    {
-        "label": "flush_langfuse",
-        "importPath": "agent.tracing",
-        "description": "agent.tracing",
-        "isExtraImport": true,
-        "detail": "agent.tracing",
-        "documentation": {}
-    },
-    {
-        "label": "traced_operation",
-        "importPath": "agent.tracing",
-        "description": "agent.tracing",
-        "isExtraImport": true,
-        "detail": "agent.tracing",
-        "documentation": {}
-    },
-    {
-        "label": "Iterator",
-        "importPath": "collections.abc",
-        "description": "collections.abc",
-        "isExtraImport": true,
-        "detail": "collections.abc",
-        "documentation": {}
-    },
-    {
-        "label": "contextmanager",
-        "importPath": "contextlib",
-        "description": "contextlib",
-        "isExtraImport": true,
-        "detail": "contextlib",
-        "documentation": {}
-    },
-    {
-        "label": "asynccontextmanager",
-        "importPath": "contextlib",
-        "description": "contextlib",
-        "isExtraImport": true,
-        "detail": "contextlib",
-        "documentation": {}
-    },
-    {
-        "label": "traceback",
-        "kind": 6,
-        "isExtraImport": true,
-        "importPath": "traceback",
-        "description": "traceback",
-        "detail": "traceback",
+        "detail": "typing",
         "documentation": {}
     },
     {
@@ -1534,11 +479,12 @@
         "documentation": {}
     },
     {
-        "label": "FastMCP",
-        "importPath": "fastmcp",
-        "description": "fastmcp",
+        "label": "uuid",
+        "kind": 6,
         "isExtraImport": true,
-        "detail": "fastmcp",
+        "importPath": "uuid",
+        "description": "uuid",
+        "detail": "uuid",
         "documentation": {}
     },
     {
@@ -1563,6 +509,78 @@
         "description": "fastmcp",
         "isExtraImport": true,
         "detail": "fastmcp",
+        "documentation": {}
+    },
+    {
+        "label": "FastMCP",
+        "importPath": "fastmcp",
+        "description": "fastmcp",
+        "isExtraImport": true,
+        "detail": "fastmcp",
+        "documentation": {}
+    },
+    {
+        "label": "Field",
+        "importPath": "pydantic",
+        "description": "pydantic",
+        "isExtraImport": true,
+        "detail": "pydantic",
+        "documentation": {}
+    },
+    {
+        "label": "Field",
+        "importPath": "pydantic",
+        "description": "pydantic",
+        "isExtraImport": true,
+        "detail": "pydantic",
+        "documentation": {}
+    },
+    {
+        "label": "BaseModel",
+        "importPath": "pydantic",
+        "description": "pydantic",
+        "isExtraImport": true,
+        "detail": "pydantic",
+        "documentation": {}
+    },
+    {
+        "label": "Field",
+        "importPath": "pydantic",
+        "description": "pydantic",
+        "isExtraImport": true,
+        "detail": "pydantic",
+        "documentation": {}
+    },
+    {
+        "label": "BaseModel",
+        "importPath": "pydantic",
+        "description": "pydantic",
+        "isExtraImport": true,
+        "detail": "pydantic",
+        "documentation": {}
+    },
+    {
+        "label": "Field",
+        "importPath": "pydantic",
+        "description": "pydantic",
+        "isExtraImport": true,
+        "detail": "pydantic",
+        "documentation": {}
+    },
+    {
+        "label": "BaseModel",
+        "importPath": "pydantic",
+        "description": "pydantic",
+        "isExtraImport": true,
+        "detail": "pydantic",
+        "documentation": {}
+    },
+    {
+        "label": "Field",
+        "importPath": "pydantic",
+        "description": "pydantic",
+        "isExtraImport": true,
+        "detail": "pydantic",
         "documentation": {}
     },
     {
@@ -1640,12 +658,78 @@
         "documentation": {}
     },
     {
+        "label": "mimetypes",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "mimetypes",
+        "description": "mimetypes",
+        "detail": "mimetypes",
+        "documentation": {}
+    },
+    {
         "label": "subprocess",
         "kind": 6,
         "isExtraImport": true,
         "importPath": "subprocess",
         "description": "subprocess",
         "detail": "subprocess",
+        "documentation": {}
+    },
+    {
+        "label": "boto3",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "boto3",
+        "description": "boto3",
+        "detail": "boto3",
+        "documentation": {}
+    },
+    {
+        "label": "ClientError",
+        "importPath": "botocore.exceptions",
+        "description": "botocore.exceptions",
+        "isExtraImport": true,
+        "detail": "botocore.exceptions",
+        "documentation": {}
+    },
+    {
+        "label": "ClientError",
+        "importPath": "botocore.exceptions",
+        "description": "botocore.exceptions",
+        "isExtraImport": true,
+        "detail": "botocore.exceptions",
+        "documentation": {}
+    },
+    {
+        "label": "ClientError",
+        "importPath": "botocore.exceptions",
+        "description": "botocore.exceptions",
+        "isExtraImport": true,
+        "detail": "botocore.exceptions",
+        "documentation": {}
+    },
+    {
+        "label": "ClientError",
+        "importPath": "botocore.exceptions",
+        "description": "botocore.exceptions",
+        "isExtraImport": true,
+        "detail": "botocore.exceptions",
+        "documentation": {}
+    },
+    {
+        "label": "ClientError",
+        "importPath": "botocore.exceptions",
+        "description": "botocore.exceptions",
+        "isExtraImport": true,
+        "detail": "botocore.exceptions",
+        "documentation": {}
+    },
+    {
+        "label": "ClientError",
+        "importPath": "botocore.exceptions",
+        "description": "botocore.exceptions",
+        "isExtraImport": true,
+        "detail": "botocore.exceptions",
         "documentation": {}
     },
     {
@@ -1685,19 +769,156 @@
         "documentation": {}
     },
     {
-        "label": "text_to_image",
-        "importPath": "mcps.seedream.server",
-        "description": "mcps.seedream.server",
+        "label": "dotenv_values",
+        "importPath": "dotenv",
+        "description": "dotenv",
         "isExtraImport": true,
-        "detail": "mcps.seedream.server",
+        "detail": "dotenv",
         "documentation": {}
     },
     {
-        "label": "FileResponse",
-        "importPath": "fastapi.responses",
-        "description": "fastapi.responses",
+        "label": "load_dotenv",
+        "importPath": "dotenv",
+        "description": "dotenv",
         "isExtraImport": true,
-        "detail": "fastapi.responses",
+        "detail": "dotenv",
+        "documentation": {}
+    },
+    {
+        "label": "BOOTSTRAP_ENV_KEYS",
+        "importPath": "server.secrets",
+        "description": "server.secrets",
+        "isExtraImport": true,
+        "detail": "server.secrets",
+        "documentation": {}
+    },
+    {
+        "label": "EXCLUDED_SECRET_KEYS",
+        "importPath": "server.secrets",
+        "description": "server.secrets",
+        "isExtraImport": true,
+        "detail": "server.secrets",
+        "documentation": {}
+    },
+    {
+        "label": "clear_secrets_cache",
+        "importPath": "server.secrets",
+        "description": "server.secrets",
+        "isExtraImport": true,
+        "detail": "server.secrets",
+        "documentation": {}
+    },
+    {
+        "label": "secret_payload_from_mapping",
+        "importPath": "server.secrets",
+        "description": "server.secrets",
+        "isExtraImport": true,
+        "detail": "server.secrets",
+        "documentation": {}
+    },
+    {
+        "label": "load_secrets_from_manager",
+        "importPath": "server.secrets",
+        "description": "server.secrets",
+        "isExtraImport": true,
+        "detail": "server.secrets",
+        "documentation": {}
+    },
+    {
+        "label": "secrets_locator",
+        "importPath": "server.secrets",
+        "description": "server.secrets",
+        "isExtraImport": true,
+        "detail": "server.secrets",
+        "documentation": {}
+    },
+    {
+        "label": "asyncio",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "asyncio",
+        "description": "asyncio",
+        "detail": "asyncio",
+        "documentation": {}
+    },
+    {
+        "label": "asynccontextmanager",
+        "importPath": "contextlib",
+        "description": "contextlib",
+        "isExtraImport": true,
+        "detail": "contextlib",
+        "documentation": {}
+    },
+    {
+        "label": "FastAPI",
+        "importPath": "fastapi",
+        "description": "fastapi",
+        "isExtraImport": true,
+        "detail": "fastapi",
+        "documentation": {}
+    },
+    {
+        "label": "File",
+        "importPath": "fastapi",
+        "description": "fastapi",
+        "isExtraImport": true,
+        "detail": "fastapi",
+        "documentation": {}
+    },
+    {
+        "label": "HTTPException",
+        "importPath": "fastapi",
+        "description": "fastapi",
+        "isExtraImport": true,
+        "detail": "fastapi",
+        "documentation": {}
+    },
+    {
+        "label": "Request",
+        "importPath": "fastapi",
+        "description": "fastapi",
+        "isExtraImport": true,
+        "detail": "fastapi",
+        "documentation": {}
+    },
+    {
+        "label": "Response",
+        "importPath": "fastapi",
+        "description": "fastapi",
+        "isExtraImport": true,
+        "detail": "fastapi",
+        "documentation": {}
+    },
+    {
+        "label": "UploadFile",
+        "importPath": "fastapi",
+        "description": "fastapi",
+        "isExtraImport": true,
+        "detail": "fastapi",
+        "documentation": {}
+    },
+    {
+        "label": "Depends",
+        "importPath": "fastapi",
+        "description": "fastapi",
+        "isExtraImport": true,
+        "detail": "fastapi",
+        "documentation": {}
+    },
+    {
+        "label": "HTTPException",
+        "importPath": "fastapi",
+        "description": "fastapi",
+        "isExtraImport": true,
+        "detail": "fastapi",
+        "documentation": {}
+    },
+    {
+        "label": "Request",
+        "importPath": "fastapi",
+        "description": "fastapi",
+        "isExtraImport": true,
+        "detail": "fastapi",
         "documentation": {}
     },
     {
@@ -1725,219 +946,252 @@
         "documentation": {}
     },
     {
-        "label": "StaticFiles",
-        "importPath": "fastapi.staticfiles",
-        "description": "fastapi.staticfiles",
-        "isExtraImport": true,
-        "detail": "fastapi.staticfiles",
-        "documentation": {}
-    },
-    {
         "label": "get_asset",
-        "importPath": "web.assets",
-        "description": "web.assets",
+        "importPath": "server.assets",
+        "description": "server.assets",
         "isExtraImport": true,
-        "detail": "web.assets",
+        "detail": "server.assets",
         "documentation": {}
     },
     {
         "label": "get_asset_for_user",
-        "importPath": "web.assets",
-        "description": "web.assets",
+        "importPath": "server.assets",
+        "description": "server.assets",
         "isExtraImport": true,
-        "detail": "web.assets",
+        "detail": "server.assets",
         "documentation": {}
     },
     {
         "label": "init_assets_db",
-        "importPath": "web.assets",
-        "description": "web.assets",
+        "importPath": "server.assets",
+        "description": "server.assets",
         "isExtraImport": true,
-        "detail": "web.assets",
+        "detail": "server.assets",
         "documentation": {}
     },
     {
         "label": "iter_asset_bytes",
-        "importPath": "web.assets",
-        "description": "web.assets",
+        "importPath": "server.assets",
+        "description": "server.assets",
         "isExtraImport": true,
-        "detail": "web.assets",
+        "detail": "server.assets",
         "documentation": {}
     },
     {
         "label": "materialize_asset_path",
-        "importPath": "web.assets",
-        "description": "web.assets",
+        "importPath": "server.assets",
+        "description": "server.assets",
         "isExtraImport": true,
-        "detail": "web.assets",
+        "detail": "server.assets",
         "documentation": {}
     },
     {
         "label": "presigned_content_url",
-        "importPath": "web.assets",
-        "description": "web.assets",
+        "importPath": "server.assets",
+        "description": "server.assets",
         "isExtraImport": true,
-        "detail": "web.assets",
-        "documentation": {}
-    },
-    {
-        "label": "register_existing_s3_object",
-        "importPath": "web.assets",
-        "description": "web.assets",
-        "isExtraImport": true,
-        "detail": "web.assets",
+        "detail": "server.assets",
         "documentation": {}
     },
     {
         "label": "register_output_file",
-        "importPath": "web.assets",
-        "description": "web.assets",
+        "importPath": "server.assets",
+        "description": "server.assets",
         "isExtraImport": true,
-        "detail": "web.assets",
+        "detail": "server.assets",
         "documentation": {}
     },
     {
         "label": "register_upload",
-        "importPath": "web.assets",
-        "description": "web.assets",
+        "importPath": "server.assets",
+        "description": "server.assets",
         "isExtraImport": true,
-        "detail": "web.assets",
+        "detail": "server.assets",
         "documentation": {}
     },
     {
         "label": "sign_content_url",
-        "importPath": "web.assets",
-        "description": "web.assets",
+        "importPath": "server.assets",
+        "description": "server.assets",
         "isExtraImport": true,
-        "detail": "web.assets",
+        "detail": "server.assets",
         "documentation": {}
     },
     {
         "label": "verify_content_signature",
-        "importPath": "web.assets",
-        "description": "web.assets",
+        "importPath": "server.assets",
+        "description": "server.assets",
         "isExtraImport": true,
-        "detail": "web.assets",
+        "detail": "server.assets",
         "documentation": {}
     },
     {
         "label": "AuthUser",
-        "importPath": "web.auth",
-        "description": "web.auth",
+        "importPath": "server.auth",
+        "description": "server.auth",
         "isExtraImport": true,
-        "detail": "web.auth",
+        "detail": "server.auth",
         "documentation": {}
     },
     {
         "label": "clerk_enabled",
-        "importPath": "web.auth",
-        "description": "web.auth",
+        "importPath": "server.auth",
+        "description": "server.auth",
         "isExtraImport": true,
-        "detail": "web.auth",
+        "detail": "server.auth",
         "documentation": {}
     },
     {
         "label": "current_user_id",
-        "importPath": "web.auth",
-        "description": "web.auth",
+        "importPath": "server.auth",
+        "description": "server.auth",
         "isExtraImport": true,
-        "detail": "web.auth",
+        "detail": "server.auth",
         "documentation": {}
     },
     {
         "label": "optional_user",
-        "importPath": "web.auth",
-        "description": "web.auth",
+        "importPath": "server.auth",
+        "description": "server.auth",
         "isExtraImport": true,
-        "detail": "web.auth",
+        "detail": "server.auth",
         "documentation": {}
     },
     {
         "label": "publishable_key",
-        "importPath": "web.auth",
-        "description": "web.auth",
+        "importPath": "server.auth",
+        "description": "server.auth",
         "isExtraImport": true,
-        "detail": "web.auth",
+        "detail": "server.auth",
+        "documentation": {}
+    },
+    {
+        "label": "ROOT",
+        "importPath": "server.config",
+        "description": "server.config",
+        "isExtraImport": true,
+        "detail": "server.config",
+        "documentation": {}
+    },
+    {
+        "label": "load_local_env",
+        "importPath": "server.config",
+        "description": "server.config",
+        "isExtraImport": true,
+        "detail": "server.config",
+        "documentation": {}
+    },
+    {
+        "label": "ROOT",
+        "importPath": "server.config",
+        "description": "server.config",
+        "isExtraImport": true,
+        "detail": "server.config",
+        "documentation": {}
+    },
+    {
+        "label": "ROOT",
+        "importPath": "server.config",
+        "description": "server.config",
+        "isExtraImport": true,
+        "detail": "server.config",
+        "documentation": {}
+    },
+    {
+        "label": "ROOT",
+        "importPath": "server.config",
+        "description": "server.config",
+        "isExtraImport": true,
+        "detail": "server.config",
         "documentation": {}
     },
     {
         "label": "ProductionStore",
-        "importPath": "web.productions",
-        "description": "web.productions",
+        "importPath": "server.productions",
+        "description": "server.productions",
         "isExtraImport": true,
-        "detail": "web.productions",
+        "detail": "server.productions",
         "documentation": {}
     },
     {
         "label": "public_production",
-        "importPath": "web.productions",
-        "description": "web.productions",
+        "importPath": "server.productions",
+        "description": "server.productions",
         "isExtraImport": true,
-        "detail": "web.productions",
+        "detail": "server.productions",
         "documentation": {}
     },
     {
         "label": "ProjectStore",
-        "importPath": "web.projects",
-        "description": "web.projects",
+        "importPath": "server.projects",
+        "description": "server.projects",
         "isExtraImport": true,
-        "detail": "web.projects",
+        "detail": "server.projects",
         "documentation": {}
     },
     {
         "label": "add_artifact",
-        "importPath": "web.projects",
-        "description": "web.projects",
+        "importPath": "server.projects",
+        "description": "server.projects",
         "isExtraImport": true,
-        "detail": "web.projects",
+        "detail": "server.projects",
         "documentation": {}
     },
     {
         "label": "merge_video_paths",
-        "importPath": "web.projects",
-        "description": "web.projects",
+        "importPath": "server.projects",
+        "description": "server.projects",
         "isExtraImport": true,
-        "detail": "web.projects",
+        "detail": "server.projects",
         "documentation": {}
     },
     {
         "label": "probe_media_duration",
-        "importPath": "web.projects",
-        "description": "web.projects",
+        "importPath": "server.projects",
+        "description": "server.projects",
         "isExtraImport": true,
-        "detail": "web.projects",
+        "detail": "server.projects",
         "documentation": {}
     },
     {
         "label": "public_project",
-        "importPath": "web.projects",
-        "description": "web.projects",
+        "importPath": "server.projects",
+        "description": "server.projects",
         "isExtraImport": true,
-        "detail": "web.projects",
+        "detail": "server.projects",
         "documentation": {}
     },
     {
         "label": "remove_artifact",
-        "importPath": "web.projects",
-        "description": "web.projects",
+        "importPath": "server.projects",
+        "description": "server.projects",
         "isExtraImport": true,
-        "detail": "web.projects",
+        "detail": "server.projects",
         "documentation": {}
     },
     {
         "label": "set_timeline_items",
-        "importPath": "web.projects",
-        "description": "web.projects",
+        "importPath": "server.projects",
+        "description": "server.projects",
         "isExtraImport": true,
-        "detail": "web.projects",
+        "detail": "server.projects",
         "documentation": {}
     },
     {
         "label": "timeline_items_by_kind",
-        "importPath": "web.projects",
-        "description": "web.projects",
+        "importPath": "server.projects",
+        "description": "server.projects",
         "isExtraImport": true,
-        "detail": "web.projects",
+        "detail": "server.projects",
+        "documentation": {}
+    },
+    {
+        "label": "hashlib",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "hashlib",
+        "description": "hashlib",
+        "detail": "hashlib",
         "documentation": {}
     },
     {
@@ -1950,11 +1204,36 @@
         "documentation": {}
     },
     {
+        "label": "logging",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "logging",
+        "description": "logging",
+        "detail": "logging",
+        "documentation": {}
+    },
+    {
         "label": "dataclass",
         "importPath": "dataclasses",
         "description": "dataclasses",
         "isExtraImport": true,
         "detail": "dataclasses",
+        "documentation": {}
+    },
+    {
+        "label": "lru_cache",
+        "importPath": "functools",
+        "description": "functools",
+        "isExtraImport": true,
+        "detail": "functools",
+        "documentation": {}
+    },
+    {
+        "label": "lru_cache",
+        "importPath": "functools",
+        "description": "functools",
+        "isExtraImport": true,
+        "detail": "functools",
         "documentation": {}
     },
     {
@@ -1998,543 +1277,21 @@
         "documentation": {}
     },
     {
+        "label": "re",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "re",
+        "description": "re",
+        "detail": "re",
+        "documentation": {}
+    },
+    {
         "label": "main",
         "kind": 2,
         "importPath": ".venv.bin.jp",
         "description": ".venv.bin.jp",
         "peekOfCode": "def main():\n    parser = argparse.ArgumentParser()\n    parser.add_argument('expression')\n    parser.add_argument('-f', '--filename',\n                        help=('The filename containing the input data.  '\n                              'If a filename is not given then data is '\n                              'read from stdin.'))\n    parser.add_argument('--ast', action='store_true',\n                        help=('Pretty print the AST, do not search the data.'))\n    args = parser.parse_args()",
         "detail": ".venv.bin.jp",
-        "documentation": {}
-    },
-    {
-        "label": "agentcore_enabled",
-        "kind": 2,
-        "importPath": "agent.agentcore_client",
-        "description": "agent.agentcore_client",
-        "peekOfCode": "def agentcore_enabled() -> bool:\n    return bool((os.getenv(\"AGENTCORE_RUNTIME_ARN\") or \"\").strip())\ndef agentcore_region() -> str:\n    return (\n        os.getenv(\"AGENTCORE_REGION\")\n        or os.getenv(\"AWS_REGION\")\n        or os.getenv(\"AWS_DEFAULT_REGION\")\n        or \"us-east-1\"\n    )\ndef _runtime_arn() -> str:",
-        "detail": "agent.agentcore_client",
-        "documentation": {}
-    },
-    {
-        "label": "agentcore_region",
-        "kind": 2,
-        "importPath": "agent.agentcore_client",
-        "description": "agent.agentcore_client",
-        "peekOfCode": "def agentcore_region() -> str:\n    return (\n        os.getenv(\"AGENTCORE_REGION\")\n        or os.getenv(\"AWS_REGION\")\n        or os.getenv(\"AWS_DEFAULT_REGION\")\n        or \"us-east-1\"\n    )\ndef _runtime_arn() -> str:\n    arn = (os.getenv(\"AGENTCORE_RUNTIME_ARN\") or \"\").strip()\n    if not arn:",
-        "detail": "agent.agentcore_client",
-        "documentation": {}
-    },
-    {
-        "label": "invoke",
-        "kind": 2,
-        "importPath": "agent.agentcore_client",
-        "description": "agent.agentcore_client",
-        "peekOfCode": "def invoke(\n    action: str,\n    payload: dict[str, Any] | None = None,\n    *,\n    session_id: str | None = None,\n) -> dict[str, Any]:\n    body = {\"action\": action, **(payload or {})}\n    client = boto3.client(\"bedrock-agentcore\", region_name=agentcore_region())\n    response = client.invoke_agent_runtime(\n        agentRuntimeArn=_runtime_arn(),",
-        "detail": "agent.agentcore_client",
-        "documentation": {}
-    },
-    {
-        "label": "mcp_config_path",
-        "kind": 2,
-        "importPath": "agent.config",
-        "description": "agent.config",
-        "peekOfCode": "def mcp_config_path() -> Path:\n    override = (os.getenv(\"MCP_CONFIG\") or \"\").strip()\n    if override:\n        return Path(override).expanduser().resolve()\n    if os.getenv(\"AGENTCORE_RUNTIME\", \"\").lower() in {\"1\", \"true\", \"yes\"}:\n        return AGENTCORE_MCP_CONFIG\n    return DEFAULT_MCP_CONFIG\n_VAR_RE = re.compile(r\"\\$\\{([A-Za-z_][A-Za-z0-9_]*|ROOT)\\}\")\nDEFAULT_ENV = {\n    \"AGENT_MODEL\": \"openai:gpt-4.1-mini\",",
-        "detail": "agent.config",
-        "documentation": {}
-    },
-    {
-        "label": "load_local_env",
-        "kind": 2,
-        "importPath": "agent.config",
-        "description": "agent.config",
-        "peekOfCode": "def load_local_env() -> None:\n    \"\"\"Load bootstrap .env, then AWS Secrets Manager, then defaults.\"\"\"\n    load_dotenv(ENV_FILE, override=False)\n    if secrets_locator():\n        # Secrets Manager is the source of truth when configured.\n        load_secrets_from_manager(override=True)\n    for key, value in DEFAULT_ENV.items():\n        if not os.getenv(key):\n            os.environ[key] = value\ndef _expand(value: str) -> str:",
-        "detail": "agent.config",
-        "documentation": {}
-    },
-    {
-        "label": "load_mcp_servers",
-        "kind": 2,
-        "importPath": "agent.config",
-        "description": "agent.config",
-        "peekOfCode": "def load_mcp_servers(path: Path = DEFAULT_MCP_CONFIG) -> dict[str, dict[str, Any]]:\n    raw = json.loads(path.read_text())\n    servers = _walk_expand(raw[\"mcpServers\"])\n    return _maybe_attach_gateway(servers)\ndef _maybe_attach_gateway(servers: dict[str, dict[str, Any]]) -> dict[str, dict[str, Any]]:\n    \"\"\"Prefer AgentCore Gateway for Mureka when AGENTCORE_GATEWAY_URL is set.\"\"\"\n    gateway_url = (os.getenv(\"AGENTCORE_GATEWAY_URL\") or \"\").strip()\n    if not gateway_url:\n        return servers\n    updated = dict(servers)",
-        "detail": "agent.config",
-        "documentation": {}
-    },
-    {
-        "label": "mask_secret_status",
-        "kind": 2,
-        "importPath": "agent.config",
-        "description": "agent.config",
-        "peekOfCode": "def mask_secret_status(name: str) -> str:\n    return \"set\" if os.getenv(name) else \"empty\"",
-        "detail": "agent.config",
-        "documentation": {}
-    },
-    {
-        "label": "ROOT",
-        "kind": 5,
-        "importPath": "agent.config",
-        "description": "agent.config",
-        "peekOfCode": "ROOT = Path(__file__).resolve().parents[1]\nENV_FILE = ROOT / \".env.local\"\nDEFAULT_MCP_CONFIG = ROOT / \"configs\" / \"mcp.local.json\"\nAGENTCORE_MCP_CONFIG = ROOT / \"configs\" / \"mcp.agentcore.json\"\ndef mcp_config_path() -> Path:\n    override = (os.getenv(\"MCP_CONFIG\") or \"\").strip()\n    if override:\n        return Path(override).expanduser().resolve()\n    if os.getenv(\"AGENTCORE_RUNTIME\", \"\").lower() in {\"1\", \"true\", \"yes\"}:\n        return AGENTCORE_MCP_CONFIG",
-        "detail": "agent.config",
-        "documentation": {}
-    },
-    {
-        "label": "ENV_FILE",
-        "kind": 5,
-        "importPath": "agent.config",
-        "description": "agent.config",
-        "peekOfCode": "ENV_FILE = ROOT / \".env.local\"\nDEFAULT_MCP_CONFIG = ROOT / \"configs\" / \"mcp.local.json\"\nAGENTCORE_MCP_CONFIG = ROOT / \"configs\" / \"mcp.agentcore.json\"\ndef mcp_config_path() -> Path:\n    override = (os.getenv(\"MCP_CONFIG\") or \"\").strip()\n    if override:\n        return Path(override).expanduser().resolve()\n    if os.getenv(\"AGENTCORE_RUNTIME\", \"\").lower() in {\"1\", \"true\", \"yes\"}:\n        return AGENTCORE_MCP_CONFIG\n    return DEFAULT_MCP_CONFIG",
-        "detail": "agent.config",
-        "documentation": {}
-    },
-    {
-        "label": "DEFAULT_MCP_CONFIG",
-        "kind": 5,
-        "importPath": "agent.config",
-        "description": "agent.config",
-        "peekOfCode": "DEFAULT_MCP_CONFIG = ROOT / \"configs\" / \"mcp.local.json\"\nAGENTCORE_MCP_CONFIG = ROOT / \"configs\" / \"mcp.agentcore.json\"\ndef mcp_config_path() -> Path:\n    override = (os.getenv(\"MCP_CONFIG\") or \"\").strip()\n    if override:\n        return Path(override).expanduser().resolve()\n    if os.getenv(\"AGENTCORE_RUNTIME\", \"\").lower() in {\"1\", \"true\", \"yes\"}:\n        return AGENTCORE_MCP_CONFIG\n    return DEFAULT_MCP_CONFIG\n_VAR_RE = re.compile(r\"\\$\\{([A-Za-z_][A-Za-z0-9_]*|ROOT)\\}\")",
-        "detail": "agent.config",
-        "documentation": {}
-    },
-    {
-        "label": "AGENTCORE_MCP_CONFIG",
-        "kind": 5,
-        "importPath": "agent.config",
-        "description": "agent.config",
-        "peekOfCode": "AGENTCORE_MCP_CONFIG = ROOT / \"configs\" / \"mcp.agentcore.json\"\ndef mcp_config_path() -> Path:\n    override = (os.getenv(\"MCP_CONFIG\") or \"\").strip()\n    if override:\n        return Path(override).expanduser().resolve()\n    if os.getenv(\"AGENTCORE_RUNTIME\", \"\").lower() in {\"1\", \"true\", \"yes\"}:\n        return AGENTCORE_MCP_CONFIG\n    return DEFAULT_MCP_CONFIG\n_VAR_RE = re.compile(r\"\\$\\{([A-Za-z_][A-Za-z0-9_]*|ROOT)\\}\")\nDEFAULT_ENV = {",
-        "detail": "agent.config",
-        "documentation": {}
-    },
-    {
-        "label": "_VAR_RE",
-        "kind": 5,
-        "importPath": "agent.config",
-        "description": "agent.config",
-        "peekOfCode": "_VAR_RE = re.compile(r\"\\$\\{([A-Za-z_][A-Za-z0-9_]*|ROOT)\\}\")\nDEFAULT_ENV = {\n    \"AGENT_MODEL\": \"openai:gpt-4.1-mini\",\n    \"BYTEPLUS_BASE_URL\": \"https://ark.ap-southeast.bytepluses.com/api/v3\",\n    \"SEEDANCE_MODEL\": \"seedance-1-5-pro-251215\",\n    \"SEEDANCE_DRY_RUN\": \"true\",\n    \"SEEDREAM_MODEL\": \"seedream-5-0-lite-260128\",\n    \"SEEDREAM_DRY_RUN\": \"true\",\n    \"GEMINI_TTS_DRY_RUN\": \"true\",\n    \"GEMINI_TTS_MODEL\": \"gemini-3.1-flash-tts-preview\",",
-        "detail": "agent.config",
-        "documentation": {}
-    },
-    {
-        "label": "DEFAULT_ENV",
-        "kind": 5,
-        "importPath": "agent.config",
-        "description": "agent.config",
-        "peekOfCode": "DEFAULT_ENV = {\n    \"AGENT_MODEL\": \"openai:gpt-4.1-mini\",\n    \"BYTEPLUS_BASE_URL\": \"https://ark.ap-southeast.bytepluses.com/api/v3\",\n    \"SEEDANCE_MODEL\": \"seedance-1-5-pro-251215\",\n    \"SEEDANCE_DRY_RUN\": \"true\",\n    \"SEEDREAM_MODEL\": \"seedream-5-0-lite-260128\",\n    \"SEEDREAM_DRY_RUN\": \"true\",\n    \"GEMINI_TTS_DRY_RUN\": \"true\",\n    \"GEMINI_TTS_MODEL\": \"gemini-3.1-flash-tts-preview\",\n    \"MUREKA_API_URL\": \"https://api.mureka.ai\",",
-        "detail": "agent.config",
-        "documentation": {}
-    },
-    {
-        "label": "PlanNode",
-        "kind": 6,
-        "importPath": "agent.director",
-        "description": "agent.director",
-        "peekOfCode": "class PlanNode(BaseModel):\n    id: str = Field(description=\"Stable node id used for idempotent execution.\")\n    kind: MediaKind\n    prompt: str\n    depends_on: list[str] = Field(default_factory=list)\n    lyrics: str | None = None\n    notes: str | None = None\nclass TypedProductionPlan(BaseModel):\n    title: str\n    summary: str",
-        "detail": "agent.director",
-        "documentation": {}
-    },
-    {
-        "label": "TypedProductionPlan",
-        "kind": 6,
-        "importPath": "agent.director",
-        "description": "agent.director",
-        "peekOfCode": "class TypedProductionPlan(BaseModel):\n    title: str\n    summary: str\n    nodes: list[PlanNode]\n    rationale: str = \"\"\nDIRECTOR_SYSTEM = \"\"\"You are the Renderhaus Director/Planner.\nGiven a creative brief, produce a compact JSON production plan.\nRules:\n- Emit ONLY valid JSON matching the schema (title, summary, nodes[], rationale).\n- Each node needs a stable snake_case id, kind in {video,image,music,speech}, prompt, optional depends_on.",
-        "detail": "agent.director",
-        "documentation": {}
-    },
-    {
-        "label": "MediaKind",
-        "kind": 5,
-        "importPath": "agent.director",
-        "description": "agent.director",
-        "peekOfCode": "MediaKind = Literal[\"video\", \"image\", \"music\", \"speech\"]\nclass PlanNode(BaseModel):\n    id: str = Field(description=\"Stable node id used for idempotent execution.\")\n    kind: MediaKind\n    prompt: str\n    depends_on: list[str] = Field(default_factory=list)\n    lyrics: str | None = None\n    notes: str | None = None\nclass TypedProductionPlan(BaseModel):\n    title: str",
-        "detail": "agent.director",
-        "documentation": {}
-    },
-    {
-        "label": "DIRECTOR_SYSTEM",
-        "kind": 5,
-        "importPath": "agent.director",
-        "description": "agent.director",
-        "peekOfCode": "DIRECTOR_SYSTEM = \"\"\"You are the Renderhaus Director/Planner.\nGiven a creative brief, produce a compact JSON production plan.\nRules:\n- Emit ONLY valid JSON matching the schema (title, summary, nodes[], rationale).\n- Each node needs a stable snake_case id, kind in {video,image,music,speech}, prompt, optional depends_on.\n- Prefer 2–6 nodes. Do not invent provider names or tool calls.\n- For music BGM use kind=music without lyrics. For songs include lyrics on the node.\n- Video nodes should be short clip prompts (under ~15s intent). Image nodes are keyframes/reference stills.\n- depends_on lists prior node ids that must finish first.\n\"\"\"",
-        "detail": "agent.director",
-        "documentation": {}
-    },
-    {
-        "label": "parse_args",
-        "kind": 2,
-        "importPath": "agent.generate",
-        "description": "agent.generate",
-        "peekOfCode": "def parse_args() -> argparse.Namespace:\n    parser = argparse.ArgumentParser(description=\"Run generation MCP tools without the test UI.\")\n    subparsers = parser.add_subparsers(dest=\"command\", required=True)\n    subparsers.add_parser(\"models\", help=\"List visible Seedance/video models.\")\n    video = subparsers.add_parser(\"video\", help=\"Generate a Seedance text-to-video asset.\")\n    video.add_argument(\"prompt\")\n    video.add_argument(\"--duration\", type=int, default=4)\n    video.add_argument(\"--aspect-ratio\", default=\"16:9\")\n    video.add_argument(\"--resolution\", default=\"720p\")\n    video.add_argument(\"--model\", default=None)",
-        "detail": "agent.generate",
-        "documentation": {}
-    },
-    {
-        "label": "jsonable",
-        "kind": 2,
-        "importPath": "agent.generate",
-        "description": "agent.generate",
-        "peekOfCode": "def jsonable(value: Any) -> Any:\n    if value is None or isinstance(value, str | int | float | bool):\n        return value\n    if isinstance(value, dict):\n        return {str(k): jsonable(v) for k, v in value.items()}\n    if isinstance(value, list | tuple):\n        return [jsonable(v) for v in value]\n    return str(value)\ndef normalize_tool_output(output: Any) -> Any:\n    normalized = jsonable(output)",
-        "detail": "agent.generate",
-        "documentation": {}
-    },
-    {
-        "label": "normalize_tool_output",
-        "kind": 2,
-        "importPath": "agent.generate",
-        "description": "agent.generate",
-        "peekOfCode": "def normalize_tool_output(output: Any) -> Any:\n    normalized = jsonable(output)\n    if (\n        isinstance(normalized, list)\n        and len(normalized) == 1\n        and isinstance(normalized[0], dict)\n        and isinstance(normalized[0].get(\"text\"), str)\n    ):\n        text = normalized[0][\"text\"]\n        try:",
-        "detail": "agent.generate",
-        "documentation": {}
-    },
-    {
-        "label": "write_job_record",
-        "kind": 2,
-        "importPath": "agent.generate",
-        "description": "agent.generate",
-        "peekOfCode": "def write_job_record(tool_name: str, args: dict[str, Any], output: Any) -> Path:\n    JOBS_DIR.mkdir(parents=True, exist_ok=True)\n    timestamp = datetime.now(UTC).strftime(\"%Y%m%dT%H%M%SZ\")\n    path = JOBS_DIR / f\"{timestamp}-{tool_name}.json\"\n    record = {\n        \"tool\": tool_name,\n        \"args\": args,\n        \"output\": output,\n        \"created_at\": timestamp,\n    }",
-        "detail": "agent.generate",
-        "documentation": {}
-    },
-    {
-        "label": "JOBS_DIR",
-        "kind": 5,
-        "importPath": "agent.generate",
-        "description": "agent.generate",
-        "peekOfCode": "JOBS_DIR = ROOT / \".renderhaus\" / \"jobs\"\ndef parse_args() -> argparse.Namespace:\n    parser = argparse.ArgumentParser(description=\"Run generation MCP tools without the test UI.\")\n    subparsers = parser.add_subparsers(dest=\"command\", required=True)\n    subparsers.add_parser(\"models\", help=\"List visible Seedance/video models.\")\n    video = subparsers.add_parser(\"video\", help=\"Generate a Seedance text-to-video asset.\")\n    video.add_argument(\"prompt\")\n    video.add_argument(\"--duration\", type=int, default=4)\n    video.add_argument(\"--aspect-ratio\", default=\"16:9\")\n    video.add_argument(\"--resolution\", default=\"720p\")",
-        "detail": "agent.generate",
-        "documentation": {}
-    },
-    {
-        "label": "parse_args",
-        "kind": 2,
-        "importPath": "agent.main",
-        "description": "agent.main",
-        "peekOfCode": "def parse_args() -> argparse.Namespace:\n    parser = argparse.ArgumentParser(description=\"Run the basic Renderhaus LangChain MCP agent.\")\n    parser.add_argument(\"prompt\", nargs=\"*\", help=\"Prompt to send to the agent.\")\n    parser.add_argument(\"--config\", default=str(DEFAULT_MCP_CONFIG), help=\"MCP config JSON path.\")\n    parser.add_argument(\"--list-tools\", action=\"store_true\", help=\"Load MCP tools and print them.\")\n    parser.add_argument(\"--check-env\", action=\"store_true\", help=\"Print required secret status.\")\n    return parser.parse_args()\ndef print_env_status() -> None:\n    for key in GEN_SECRET_KEYS:\n        print(f\"{key}={mask_secret_status(key)}\")",
-        "detail": "agent.main",
-        "documentation": {}
-    },
-    {
-        "label": "print_env_status",
-        "kind": 2,
-        "importPath": "agent.main",
-        "description": "agent.main",
-        "peekOfCode": "def print_env_status() -> None:\n    for key in GEN_SECRET_KEYS:\n        print(f\"{key}={mask_secret_status(key)}\")\ndef print_tool(tool: Any) -> None:\n    description = getattr(tool, \"description\", \"\") or \"\"\n    description = \" \".join(description.split())\n    if len(description) > 180:\n        description = f\"{description[:177]}...\"\n    print(f\"- {tool.name}: {description}\")\ndef dedupe_tool_names(tools: list[Any]) -> list[Any]:",
-        "detail": "agent.main",
-        "documentation": {}
-    },
-    {
-        "label": "print_tool",
-        "kind": 2,
-        "importPath": "agent.main",
-        "description": "agent.main",
-        "peekOfCode": "def print_tool(tool: Any) -> None:\n    description = getattr(tool, \"description\", \"\") or \"\"\n    description = \" \".join(description.split())\n    if len(description) > 180:\n        description = f\"{description[:177]}...\"\n    print(f\"- {tool.name}: {description}\")\ndef dedupe_tool_names(tools: list[Any]) -> list[Any]:\n    counts: dict[str, int] = {}\n    for tool in tools:\n        original_name = tool.name",
-        "detail": "agent.main",
-        "documentation": {}
-    },
-    {
-        "label": "dedupe_tool_names",
-        "kind": 2,
-        "importPath": "agent.main",
-        "description": "agent.main",
-        "peekOfCode": "def dedupe_tool_names(tools: list[Any]) -> list[Any]:\n    counts: dict[str, int] = {}\n    for tool in tools:\n        original_name = tool.name\n        count = counts.get(original_name, 0)\n        counts[original_name] = count + 1\n        if count == 0:\n            continue\n        new_name = f\"{original_name}_{count + 1}\"\n        tool.name = new_name",
-        "detail": "agent.main",
-        "documentation": {}
-    },
-    {
-        "label": "SYSTEM_PROMPT",
-        "kind": 5,
-        "importPath": "agent.main",
-        "description": "agent.main",
-        "peekOfCode": "SYSTEM_PROMPT = \"\"\"You are the Renderhaus generation coordinator.\nUse MCP tools for image, video, audio, and music work. Prefer dry-run planning for expensive\ngeneration unless the user explicitly asks to generate real media. Summarize tool outputs with\nasset paths, job IDs, provider names, and estimated costs when available.\n\"\"\"\nGEN_SECRET_KEYS = [\n    \"OPENAI_API_KEY\",\n    \"MUREKA_API_KEY\",\n    \"ELEVENLABS_API_KEY\",\n    \"BYTEPLUS_API_KEY\",",
-        "detail": "agent.main",
-        "documentation": {}
-    },
-    {
-        "label": "GEN_SECRET_KEYS",
-        "kind": 5,
-        "importPath": "agent.main",
-        "description": "agent.main",
-        "peekOfCode": "GEN_SECRET_KEYS = [\n    \"OPENAI_API_KEY\",\n    \"MUREKA_API_KEY\",\n    \"ELEVENLABS_API_KEY\",\n    \"BYTEPLUS_API_KEY\",\n    \"GOOGLE_API_KEY\",\n    \"LANGFUSE_PUBLIC_KEY\",\n    \"LANGFUSE_SECRET_KEY\",\n    \"CLERK_PUBLISHABLE_KEY\",\n    \"NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY\",",
-        "detail": "agent.main",
-        "documentation": {}
-    },
-    {
-        "label": "aws_region",
-        "kind": 2,
-        "importPath": "agent.media_store",
-        "description": "agent.media_store",
-        "peekOfCode": "def aws_region() -> str:\n    return os.getenv(\"AWS_REGION\") or os.getenv(\"AWS_DEFAULT_REGION\") or \"us-east-1\"\ndef s3_bucket() -> str:\n    return (os.getenv(\"AWS_S3_BUCKET\") or \"\").strip()\ndef _s3():\n    return boto3.client(\"s3\", region_name=aws_region())\ndef _sha256_file(path: Path) -> str:\n    digest = hashlib.sha256()\n    with path.open(\"rb\") as handle:\n        while True:",
-        "detail": "agent.media_store",
-        "documentation": {}
-    },
-    {
-        "label": "s3_bucket",
-        "kind": 2,
-        "importPath": "agent.media_store",
-        "description": "agent.media_store",
-        "peekOfCode": "def s3_bucket() -> str:\n    return (os.getenv(\"AWS_S3_BUCKET\") or \"\").strip()\ndef _s3():\n    return boto3.client(\"s3\", region_name=aws_region())\ndef _sha256_file(path: Path) -> str:\n    digest = hashlib.sha256()\n    with path.open(\"rb\") as handle:\n        while True:\n            chunk = handle.read(1024 * 1024)\n            if not chunk:",
-        "detail": "agent.media_store",
-        "documentation": {}
-    },
-    {
-        "label": "upload_local_media",
-        "kind": 2,
-        "importPath": "agent.media_store",
-        "description": "agent.media_store",
-        "peekOfCode": "def upload_local_media(\n    *,\n    user_id: str,\n    source_path: str | Path,\n    kind: AssetKind,\n    mime_type: str | None = None,\n) -> dict[str, Any]:\n    \"\"\"Upload a local file and return durable storage metadata (no DynamoDB write).\"\"\"\n    source = Path(source_path).expanduser().resolve()\n    if not source.is_file() or source.stat().st_size <= 0:",
-        "detail": "agent.media_store",
-        "documentation": {}
-    },
-    {
-        "label": "download_storage_key",
-        "kind": 2,
-        "importPath": "agent.media_store",
-        "description": "agent.media_store",
-        "peekOfCode": "def download_storage_key(storage_key: str, destination: Path) -> Path:\n    bucket = s3_bucket()\n    if not bucket:\n        raise RuntimeError(\"AWS_S3_BUCKET is required to materialize reference media.\")\n    destination.parent.mkdir(parents=True, exist_ok=True)\n    temporary = destination.with_suffix(destination.suffix + \".tmp\")\n    _s3().download_file(Bucket=bucket, Key=storage_key, Filename=str(temporary))\n    temporary.replace(destination)\n    return destination",
-        "detail": "agent.media_store",
-        "documentation": {}
-    },
-    {
-        "label": "AssetKind",
-        "kind": 5,
-        "importPath": "agent.media_store",
-        "description": "agent.media_store",
-        "peekOfCode": "AssetKind = Literal[\"video\", \"image\", \"music\", \"upload\"]\ndef aws_region() -> str:\n    return os.getenv(\"AWS_REGION\") or os.getenv(\"AWS_DEFAULT_REGION\") or \"us-east-1\"\ndef s3_bucket() -> str:\n    return (os.getenv(\"AWS_S3_BUCKET\") or \"\").strip()\ndef _s3():\n    return boto3.client(\"s3\", region_name=aws_region())\ndef _sha256_file(path: Path) -> str:\n    digest = hashlib.sha256()\n    with path.open(\"rb\") as handle:",
-        "detail": "agent.media_store",
-        "documentation": {}
-    },
-    {
-        "label": "app",
-        "kind": 5,
-        "importPath": "agent.runtime_app",
-        "description": "agent.runtime_app",
-        "peekOfCode": "app = FastAPI(title=\"Renderhaus AgentCore Runtime\", version=\"0.1.0\")\nREF_DIR = Path(os.getenv(\"RENDERHAUS_MEDIA_DIR\", \".renderhaus/media\")).expanduser() / \".refs\"\nREF_DIR.mkdir(parents=True, exist_ok=True)\nasync def _payload(request: Request) -> dict[str, Any]:\n    \"\"\"Normalize AgentCore / local payloads into a flat action dict.\"\"\"\n    try:\n        body = await request.json()\n    except Exception as exc:  # noqa: BLE001\n        raise HTTPException(status_code=400, detail=f\"Invalid JSON body: {exc}\") from exc\n    if not isinstance(body, dict):",
-        "detail": "agent.runtime_app",
-        "documentation": {}
-    },
-    {
-        "label": "REF_DIR",
-        "kind": 5,
-        "importPath": "agent.runtime_app",
-        "description": "agent.runtime_app",
-        "peekOfCode": "REF_DIR = Path(os.getenv(\"RENDERHAUS_MEDIA_DIR\", \".renderhaus/media\")).expanduser() / \".refs\"\nREF_DIR.mkdir(parents=True, exist_ok=True)\nasync def _payload(request: Request) -> dict[str, Any]:\n    \"\"\"Normalize AgentCore / local payloads into a flat action dict.\"\"\"\n    try:\n        body = await request.json()\n    except Exception as exc:  # noqa: BLE001\n        raise HTTPException(status_code=400, detail=f\"Invalid JSON body: {exc}\") from exc\n    if not isinstance(body, dict):\n        raise HTTPException(status_code=400, detail=\"JSON object body required.\")",
-        "detail": "agent.runtime_app",
-        "documentation": {}
-    },
-    {
-        "label": "secrets_locator",
-        "kind": 2,
-        "importPath": "agent.secrets",
-        "description": "agent.secrets",
-        "peekOfCode": "def secrets_locator() -> str | None:\n    return (\n        (os.getenv(\"RENDERHAUS_SECRETS_ARN\") or \"\").strip()\n        or (os.getenv(\"RENDERHAUS_SECRETS_NAME\") or \"\").strip()\n        or None\n    )\ndef aws_region() -> str:\n    return os.getenv(\"AWS_REGION\") or os.getenv(\"AWS_DEFAULT_REGION\") or \"us-east-1\"\n@lru_cache(maxsize=4)\ndef fetch_secret_map(secret_id: str) -> dict[str, str]:",
-        "detail": "agent.secrets",
-        "documentation": {}
-    },
-    {
-        "label": "aws_region",
-        "kind": 2,
-        "importPath": "agent.secrets",
-        "description": "agent.secrets",
-        "peekOfCode": "def aws_region() -> str:\n    return os.getenv(\"AWS_REGION\") or os.getenv(\"AWS_DEFAULT_REGION\") or \"us-east-1\"\n@lru_cache(maxsize=4)\ndef fetch_secret_map(secret_id: str) -> dict[str, str]:\n    client = boto3.client(\"secretsmanager\", region_name=aws_region())\n    response = client.get_secret_value(SecretId=secret_id)\n    payload = response.get(\"SecretString\") or \"\"\n    if not payload and response.get(\"SecretBinary\"):\n        payload = response[\"SecretBinary\"].decode(\"utf-8\")\n    data = json.loads(payload)",
-        "detail": "agent.secrets",
-        "documentation": {}
-    },
-    {
-        "label": "fetch_secret_map",
-        "kind": 2,
-        "importPath": "agent.secrets",
-        "description": "agent.secrets",
-        "peekOfCode": "def fetch_secret_map(secret_id: str) -> dict[str, str]:\n    client = boto3.client(\"secretsmanager\", region_name=aws_region())\n    response = client.get_secret_value(SecretId=secret_id)\n    payload = response.get(\"SecretString\") or \"\"\n    if not payload and response.get(\"SecretBinary\"):\n        payload = response[\"SecretBinary\"].decode(\"utf-8\")\n    data = json.loads(payload)\n    if not isinstance(data, dict):\n        raise RuntimeError(f\"Secret {secret_id} must be a JSON object of string values.\")\n    result: dict[str, str] = {}",
-        "detail": "agent.secrets",
-        "documentation": {}
-    },
-    {
-        "label": "apply_secret_map",
-        "kind": 2,
-        "importPath": "agent.secrets",
-        "description": "agent.secrets",
-        "peekOfCode": "def apply_secret_map(values: dict[str, str], *, override: bool = True) -> list[str]:\n    applied: list[str] = []\n    for key, value in values.items():\n        if key in EXCLUDED_SECRET_KEYS:\n            continue\n        if not override and os.getenv(key):\n            continue\n        os.environ[key] = value\n        applied.append(key)\n    return applied",
-        "detail": "agent.secrets",
-        "documentation": {}
-    },
-    {
-        "label": "load_secrets_from_manager",
-        "kind": 2,
-        "importPath": "agent.secrets",
-        "description": "agent.secrets",
-        "peekOfCode": "def load_secrets_from_manager(*, override: bool = True) -> list[str]:\n    \"\"\"Fetch RENDERHAUS_SECRETS_* and inject into the process environment.\"\"\"\n    secret_id = secrets_locator()\n    if not secret_id:\n        return []\n    try:\n        values = fetch_secret_map(secret_id)\n    except ClientError as exc:\n        code = exc.response.get(\"Error\", {}).get(\"Code\", \"ClientError\")\n        raise RuntimeError(",
-        "detail": "agent.secrets",
-        "documentation": {}
-    },
-    {
-        "label": "clear_secrets_cache",
-        "kind": 2,
-        "importPath": "agent.secrets",
-        "description": "agent.secrets",
-        "peekOfCode": "def clear_secrets_cache() -> None:\n    fetch_secret_map.cache_clear()\ndef secret_payload_from_mapping(values: dict[str, Any]) -> dict[str, str]:\n    payload: dict[str, str] = {}\n    for key, value in values.items():\n        if key in EXCLUDED_SECRET_KEYS or key in BOOTSTRAP_ENV_KEYS:\n            continue\n        if value is None:\n            continue\n        text = str(value).strip()",
-        "detail": "agent.secrets",
-        "documentation": {}
-    },
-    {
-        "label": "secret_payload_from_mapping",
-        "kind": 2,
-        "importPath": "agent.secrets",
-        "description": "agent.secrets",
-        "peekOfCode": "def secret_payload_from_mapping(values: dict[str, Any]) -> dict[str, str]:\n    payload: dict[str, str] = {}\n    for key, value in values.items():\n        if key in EXCLUDED_SECRET_KEYS or key in BOOTSTRAP_ENV_KEYS:\n            continue\n        if value is None:\n            continue\n        text = str(value).strip()\n        if text:\n            payload[str(key)] = text",
-        "detail": "agent.secrets",
-        "documentation": {}
-    },
-    {
-        "label": "logger",
-        "kind": 5,
-        "importPath": "agent.secrets",
-        "description": "agent.secrets",
-        "peekOfCode": "logger = logging.getLogger(__name__)\n# Never sync or inject these into Secrets Manager payloads.\nEXCLUDED_SECRET_KEYS = {\n    \"AWS_ACCESS_KEY_ID\",\n    \"AWS_SECRET_ACCESS_KEY\",\n    \"AWS_SESSION_TOKEN\",\n    \"AWS_PROFILE\",\n    \"AWS_SECURITY_TOKEN\",\n}\n# Bootstrap keys that may remain in a local .env file to find the secret.",
-        "detail": "agent.secrets",
-        "documentation": {}
-    },
-    {
-        "label": "EXCLUDED_SECRET_KEYS",
-        "kind": 5,
-        "importPath": "agent.secrets",
-        "description": "agent.secrets",
-        "peekOfCode": "EXCLUDED_SECRET_KEYS = {\n    \"AWS_ACCESS_KEY_ID\",\n    \"AWS_SECRET_ACCESS_KEY\",\n    \"AWS_SESSION_TOKEN\",\n    \"AWS_PROFILE\",\n    \"AWS_SECURITY_TOKEN\",\n}\n# Bootstrap keys that may remain in a local .env file to find the secret.\nBOOTSTRAP_ENV_KEYS = {\n    \"AWS_REGION\",",
-        "detail": "agent.secrets",
-        "documentation": {}
-    },
-    {
-        "label": "BOOTSTRAP_ENV_KEYS",
-        "kind": 5,
-        "importPath": "agent.secrets",
-        "description": "agent.secrets",
-        "peekOfCode": "BOOTSTRAP_ENV_KEYS = {\n    \"AWS_REGION\",\n    \"AWS_DEFAULT_REGION\",\n    \"RENDERHAUS_SECRETS_NAME\",\n    \"RENDERHAUS_SECRETS_ARN\",\n    \"AGENTCORE_RUNTIME\",\n}\ndef secrets_locator() -> str | None:\n    return (\n        (os.getenv(\"RENDERHAUS_SECRETS_ARN\") or \"\").strip()",
-        "detail": "agent.secrets",
-        "documentation": {}
-    },
-    {
-        "label": "normalize_tool_output",
-        "kind": 2,
-        "importPath": "agent.service",
-        "description": "agent.service",
-        "peekOfCode": "def normalize_tool_output(value: Any) -> Any:\n    normalized = _jsonable(value)\n    if (\n        isinstance(normalized, list)\n        and len(normalized) == 1\n        and isinstance(normalized[0], dict)\n        and isinstance(normalized[0].get(\"text\"), str)\n    ):\n        return _parse_content(normalized[0][\"text\"])\n    return _parse_content(normalized)",
-        "detail": "agent.service",
-        "documentation": {}
-    },
-    {
-        "label": "summarize_agent_result",
-        "kind": 2,
-        "importPath": "agent.service",
-        "description": "agent.service",
-        "peekOfCode": "def summarize_agent_result(result: dict[str, Any]) -> dict[str, Any]:\n    messages = result.get(\"messages\", [])\n    final_text = \"\"\n    tool_events: list[dict[str, Any]] = []\n    artifacts: list[dict[str, Any]] = []\n    for message in messages:\n        data = _jsonable(message)\n        content = data.get(\"content\") if isinstance(data, dict) else data\n        message_type = data.get(\"type\") if isinstance(data, dict) else None\n        if message_type == \"tool\" or (isinstance(data, dict) and data.get(\"tool_call_id\")):",
-        "detail": "agent.service",
-        "documentation": {}
-    },
-    {
-        "label": "WEB_VIDEO_SYSTEM_PROMPT",
-        "kind": 5,
-        "importPath": "agent.service",
-        "description": "agent.service",
-        "peekOfCode": "WEB_VIDEO_SYSTEM_PROMPT = \"\"\"You are the private Renderhaus video-generation coordinator.\nThe user has explicitly authorized exactly one video generation for this request.\nCall exactly one immediate-return generation tool: text_to_video for a text prompt, or\nimage_to_video when a local reference image path is supplied. Never call wait, polling, model\nlisting, audio, voice, music, playback, phone, or outbound communication tools. Do not reveal\nprovider, model, tool, credential, or internal path details in your prose. Keep the final response\nto one short sentence; the application reads the generation result structurally.\n\"\"\"\nWEB_IMAGE_SYSTEM_PROMPT = \"\"\"You are the private Renderhaus image-generation coordinator.\nThe user has explicitly authorized exactly one image generation for this request.",
-        "detail": "agent.service",
-        "documentation": {}
-    },
-    {
-        "label": "WEB_IMAGE_SYSTEM_PROMPT",
-        "kind": 5,
-        "importPath": "agent.service",
-        "description": "agent.service",
-        "peekOfCode": "WEB_IMAGE_SYSTEM_PROMPT = \"\"\"You are the private Renderhaus image-generation coordinator.\nThe user has explicitly authorized exactly one image generation for this request.\nCall exactly one generation tool: text_to_image for a text prompt, or image_to_image when a local\nreference image path is supplied. Never call video, wait, polling, model listing, audio, voice,\nmusic, playback, phone, or outbound communication tools. Do not reveal provider, model, tool,\ncredential, or internal path details in your prose. Keep the final response to one short sentence;\nthe application reads the generation result structurally.\n\"\"\"\nWEB_MUSIC_SYSTEM_PROMPT = \"\"\"You are the private Renderhaus music-generation coordinator.\nThe user has explicitly authorized music work for this request.",
-        "detail": "agent.service",
-        "documentation": {}
-    },
-    {
-        "label": "WEB_MUSIC_SYSTEM_PROMPT",
-        "kind": 5,
-        "importPath": "agent.service",
-        "description": "agent.service",
-        "peekOfCode": "WEB_MUSIC_SYSTEM_PROMPT = \"\"\"You are the private Renderhaus music-generation coordinator.\nThe user has explicitly authorized music work for this request.\nChoose the single best immediate-return Mureka tool:\n- create_instrumental or text_to_music (no lyrics) for BGM/score\n- create_song or text_to_music (with lyrics) when lyrics are provided\n- create_song_from_prompt when the user wants a full song from a brief without lyrics\n- generate_lyrics only when they asked for lyrics and not audio yet\n- generate_soundtrack when scoring an image/video upload (upload_file_id / audio_start / audio_end)\nDo not call query/get poll tools, billing, TTS/podcast, phone, video, or image tools.\nDo not reveal provider, model, tool, credential, or internal path details in your prose.",
-        "detail": "agent.service",
-        "documentation": {}
-    },
-    {
-        "label": "MUSIC_TOOL_NAMES",
-        "kind": 5,
-        "importPath": "agent.service",
-        "description": "agent.service",
-        "peekOfCode": "MUSIC_TOOL_NAMES = (\n    \"text_to_music\",\n    \"create_instrumental\",\n    \"create_song\",\n    \"create_song_from_prompt\",\n    \"generate_lyrics\",\n    \"generate_soundtrack\",\n    \"extend_song\",\n    \"region_edit_song\",\n    \"remix_song\",",
-        "detail": "agent.service",
-        "documentation": {}
-    },
-    {
-        "label": "_runtime_lock",
-        "kind": 5,
-        "importPath": "agent.service",
-        "description": "agent.service",
-        "peekOfCode": "_runtime_lock = asyncio.Lock()\n_cached_tools: dict[str, Any] | None = None\n_cached_video_agent: Any | None = None\n_cached_image_agent: Any | None = None\n_cached_music_agent: Any | None = None\ndef _jsonable(value: Any) -> Any:\n    if value is None or isinstance(value, str | int | float | bool):\n        return value\n    if isinstance(value, dict):\n        return {str(key): _jsonable(item) for key, item in value.items()}",
-        "detail": "agent.service",
-        "documentation": {}
-    },
-    {
-        "label": "_TOOL_TRACE_TITLES",
-        "kind": 5,
-        "importPath": "agent.service",
-        "description": "agent.service",
-        "peekOfCode": "_TOOL_TRACE_TITLES = {\n    \"text_to_video\": \"Seedance · text → video\",\n    \"image_to_video\": \"Seedance · image → video\",\n    \"get_video_task\": \"Seedance · poll video\",\n    \"text_to_image\": \"Seedream · text → image\",\n    \"image_to_image\": \"Seedream · image → image\",\n    \"generate_song\": \"Mureka · generate song\",\n    \"query_song_task\": \"Mureka · poll song\",\n}\ndef _tool_trace_title(name: str) -> str:",
-        "detail": "agent.service",
-        "documentation": {}
-    },
-    {
-        "label": "parse_args",
-        "kind": 2,
-        "importPath": "agent.supervise",
-        "description": "agent.supervise",
-        "peekOfCode": "def parse_args() -> argparse.Namespace:\n    parser = argparse.ArgumentParser(\n        description=\"Plan (and optionally execute) a Renderhaus supervised production.\"\n    )\n    parser.add_argument(\"brief\", nargs=\"+\", help=\"Creative brief for the Director.\")\n    parser.add_argument(\n        \"--execute\",\n        action=\"store_true\",\n        help=\"After planning, run modality workers (respects *_DRY_RUN flags).\",\n    )",
-        "detail": "agent.supervise",
-        "documentation": {}
-    },
-    {
-        "label": "langfuse_configured",
-        "kind": 2,
-        "importPath": "agent.tracing",
-        "description": "agent.tracing",
-        "peekOfCode": "def langfuse_configured() -> bool:\n    return bool(os.getenv(\"LANGFUSE_PUBLIC_KEY\") and os.getenv(\"LANGFUSE_SECRET_KEY\"))\ndef get_langfuse():\n    \"\"\"Return the Langfuse client. Call only after load_local_env().\"\"\"\n    from langfuse import get_client\n    return get_client()\ndef langchain_callbacks() -> list[Any]:\n    if not langfuse_configured():\n        return []\n    from langfuse.langchain import CallbackHandler",
-        "detail": "agent.tracing",
-        "documentation": {}
-    },
-    {
-        "label": "get_langfuse",
-        "kind": 2,
-        "importPath": "agent.tracing",
-        "description": "agent.tracing",
-        "peekOfCode": "def get_langfuse():\n    \"\"\"Return the Langfuse client. Call only after load_local_env().\"\"\"\n    from langfuse import get_client\n    return get_client()\ndef langchain_callbacks() -> list[Any]:\n    if not langfuse_configured():\n        return []\n    from langfuse.langchain import CallbackHandler\n    return [CallbackHandler()]\ndef flush_langfuse() -> None:",
-        "detail": "agent.tracing",
-        "documentation": {}
-    },
-    {
-        "label": "langchain_callbacks",
-        "kind": 2,
-        "importPath": "agent.tracing",
-        "description": "agent.tracing",
-        "peekOfCode": "def langchain_callbacks() -> list[Any]:\n    if not langfuse_configured():\n        return []\n    from langfuse.langchain import CallbackHandler\n    return [CallbackHandler()]\ndef flush_langfuse() -> None:\n    if not langfuse_configured():\n        return\n    get_langfuse().flush()\n@contextmanager",
-        "detail": "agent.tracing",
-        "documentation": {}
-    },
-    {
-        "label": "flush_langfuse",
-        "kind": 2,
-        "importPath": "agent.tracing",
-        "description": "agent.tracing",
-        "peekOfCode": "def flush_langfuse() -> None:\n    if not langfuse_configured():\n        return\n    get_langfuse().flush()\n@contextmanager\ndef traced_operation(\n    name: str,\n    *,\n    as_type: str = \"span\",\n    input: Any | None = None,",
-        "detail": "agent.tracing",
-        "documentation": {}
-    },
-    {
-        "label": "traced_operation",
-        "kind": 2,
-        "importPath": "agent.tracing",
-        "description": "agent.tracing",
-        "peekOfCode": "def traced_operation(\n    name: str,\n    *,\n    as_type: str = \"span\",\n    input: Any | None = None,\n    session_id: str | None = None,\n    tags: list[str] | None = None,\n    metadata: dict[str, Any] | None = None,\n    trace_name: str | None = None,\n) -> Iterator[Any | None]:",
-        "detail": "agent.tracing",
         "documentation": {}
     },
     {
@@ -3388,7 +2145,7 @@
         "kind": 2,
         "importPath": "scripts.ci_check",
         "description": "scripts.ci_check",
-        "peekOfCode": "def check_imports() -> None:\n    import sys\n    if str(ROOT) not in sys.path:\n        sys.path.insert(0, str(ROOT))\n    from mcps.mureka import api  # noqa: F401\n    from agent import config, director, executor, service  # noqa: F401\n    from lambdas.mureka import handler  # noqa: F401\n    assert isinstance(api.dry_run(), bool)\n    print(\"ok python imports\")\ndef check_mcp_configs() -> None:",
+        "peekOfCode": "def check_imports() -> None:\n    import sys\n    if str(ROOT) not in sys.path:\n        sys.path.insert(0, str(ROOT))\n    from mcps.mureka import api  # noqa: F401\n    from server import config, app  # noqa: F401\n    from lambdas.mureka import handler  # noqa: F401\n    assert isinstance(api.dry_run(), bool)\n    print(\"ok python imports\")\ndef check_mcp_configs() -> None:",
         "detail": "scripts.ci_check",
         "documentation": {}
     },
@@ -3424,7 +2181,7 @@
         "kind": 2,
         "importPath": "scripts.deploy_agentcore",
         "description": "scripts.deploy_agentcore",
-        "peekOfCode": "def load_bootstrap_env(*, secret_name: str) -> dict[str, str]:\n    from agent.config import load_local_env\n    # Prefer Secrets Manager when configured; fall back to .env.local during migration.\n    os.environ.setdefault(\"RENDERHAUS_SECRETS_NAME\", secret_name)\n    load_local_env()\n    env: dict[str, str] = {\n        \"AGENTCORE_RUNTIME\": \"1\",\n        \"RENDERHAUS_SECRETS_NAME\": secret_name,\n        \"RENDERHAUS_MEDIA_DIR\": os.getenv(\"RENDERHAUS_MEDIA_DIR\") or \"/tmp/renderhaus/media\",\n    }",
+        "peekOfCode": "def load_bootstrap_env(*, secret_name: str) -> dict[str, str]:\n    from server.config import load_local_env\n    # Prefer Secrets Manager when configured; fall back to .env.local during migration.\n    os.environ.setdefault(\"RENDERHAUS_SECRETS_NAME\", secret_name)\n    load_local_env()\n    env: dict[str, str] = {\n        \"AGENTCORE_RUNTIME\": \"1\",\n        \"RENDERHAUS_SECRETS_NAME\": secret_name,\n        \"RENDERHAUS_MEDIA_DIR\": os.getenv(\"RENDERHAUS_MEDIA_DIR\") or \"/tmp/renderhaus/media\",\n    }",
         "detail": "scripts.deploy_agentcore",
         "documentation": {}
     },
@@ -3636,33 +2393,6 @@
         "documentation": {}
     },
     {
-        "label": "main",
-        "kind": 2,
-        "importPath": "scripts.generate_ui_assets",
-        "description": "scripts.generate_ui_assets",
-        "peekOfCode": "def main() -> int:\n    load_local_env()\n    TARGET_DIR.mkdir(parents=True, exist_ok=True)\n    for asset in ASSETS:\n        print(f\"generating {asset['name']}…\", flush=True)\n        result = text_to_image(\n            prompt=asset[\"prompt\"],\n            aspect_ratio=asset[\"aspect_ratio\"],\n            size=asset[\"size\"],\n        )",
-        "detail": "scripts.generate_ui_assets",
-        "documentation": {}
-    },
-    {
-        "label": "TARGET_DIR",
-        "kind": 5,
-        "importPath": "scripts.generate_ui_assets",
-        "description": "scripts.generate_ui_assets",
-        "peekOfCode": "TARGET_DIR = ROOT / \"web\" / \"static\" / \"img\"\nASSETS = [\n    {\n        \"name\": \"stage-backdrop\",\n        \"aspect_ratio\": \"16:9\",\n        \"size\": \"2K\",\n        \"prompt\": (\n            \"Very dark, near-black photograph of an empty brutalist concrete gallery at night. \"\n            \"One narrow shaft of cool daylight falls across a raw concrete floor, everything else \"\n            \"sinks into deep shadow. Shot on medium format film, shallow depth of field, heavy \"",
-        "detail": "scripts.generate_ui_assets",
-        "documentation": {}
-    },
-    {
-        "label": "ASSETS",
-        "kind": 5,
-        "importPath": "scripts.generate_ui_assets",
-        "description": "scripts.generate_ui_assets",
-        "peekOfCode": "ASSETS = [\n    {\n        \"name\": \"stage-backdrop\",\n        \"aspect_ratio\": \"16:9\",\n        \"size\": \"2K\",\n        \"prompt\": (\n            \"Very dark, near-black photograph of an empty brutalist concrete gallery at night. \"\n            \"One narrow shaft of cool daylight falls across a raw concrete floor, everything else \"\n            \"sinks into deep shadow. Shot on medium format film, shallow depth of field, heavy \"\n            \"atmospheric haze, visible film grain, muted desaturated neutral greys, no colour cast, \"",
-        "detail": "scripts.generate_ui_assets",
-        "documentation": {}
-    },
-    {
         "label": "ensure_role",
         "kind": 2,
         "importPath": "scripts.setup_github_oidc",
@@ -3744,11 +2474,11 @@
         "documentation": {}
     },
     {
-        "label": "ROOT",
-        "kind": 5,
+        "label": "main",
+        "kind": 2,
         "importPath": "scripts.smoke_agentcore",
         "description": "scripts.smoke_agentcore",
-        "peekOfCode": "ROOT = Path(__file__).resolve().parents[1]\nasync def main() -> int:\n    load_local_env()\n    from agent.agentcore_client import agentcore_enabled, invoke\n    if not agentcore_enabled():\n        print(\"AGENTCORE_RUNTIME_ARN is not set.\", file=sys.stderr)\n        return 1\n    result = invoke(\n        \"start_video_generation\",\n        {",
+        "peekOfCode": "def main() -> int:\n    print(\n        \"AgentCore smoke test is disabled until the OpenAI Agents SDK harness is rebuilt.\",\n        file=sys.stderr,\n    )\n    return 1\nif __name__ == \"__main__\":\n    raise SystemExit(main())",
         "detail": "scripts.smoke_agentcore",
         "documentation": {}
     },
@@ -3800,676 +2530,883 @@
     {
         "label": "GenerationRequest",
         "kind": 6,
-        "importPath": "web.app",
-        "description": "web.app",
+        "importPath": "server.app",
+        "description": "server.app",
         "peekOfCode": "class GenerationRequest(BaseModel):\n    prompt: str = Field(min_length=3, max_length=4000)\n    media_type: Literal[\"video\", \"image\", \"music\"] = \"video\"\n    vibe: str = Field(default=\"quiet luxury\", max_length=120)\n    aspect_ratio: str = Field(default=\"16:9\", pattern=r\"^(16:9|9:16|1:1)$\")\n    duration_seconds: int = Field(default=10, ge=MIN_VIDEO_SECONDS, le=MAX_VIDEO_SECONDS)\n    reference_asset_id: str | None = Field(default=None, pattern=r\"^[a-f0-9]{32}$\")\n    project_id: str | None = Field(default=None, pattern=r\"^[a-f0-9]{32}$\")\nclass RefinementRequest(BaseModel):\n    instruction: str = Field(min_length=3, max_length=2000)",
-        "detail": "web.app",
+        "detail": "server.app",
         "documentation": {}
     },
     {
         "label": "RefinementRequest",
         "kind": 6,
-        "importPath": "web.app",
-        "description": "web.app",
+        "importPath": "server.app",
+        "description": "server.app",
         "peekOfCode": "class RefinementRequest(BaseModel):\n    instruction: str = Field(min_length=3, max_length=2000)\nclass ProjectCreateRequest(BaseModel):\n    title: str = Field(min_length=1, max_length=120)\n    description: str = Field(default=\"\", max_length=2000)\nclass ProjectUpdateRequest(BaseModel):\n    title: str | None = Field(default=None, min_length=1, max_length=120)\n    description: str | None = Field(default=None, max_length=2000)\nclass ProjectArtifactRequest(BaseModel):\n    job_id: str = Field(pattern=r\"^[a-f0-9]{32}$\")",
-        "detail": "web.app",
+        "detail": "server.app",
         "documentation": {}
     },
     {
         "label": "ProjectCreateRequest",
         "kind": 6,
-        "importPath": "web.app",
-        "description": "web.app",
+        "importPath": "server.app",
+        "description": "server.app",
         "peekOfCode": "class ProjectCreateRequest(BaseModel):\n    title: str = Field(min_length=1, max_length=120)\n    description: str = Field(default=\"\", max_length=2000)\nclass ProjectUpdateRequest(BaseModel):\n    title: str | None = Field(default=None, min_length=1, max_length=120)\n    description: str | None = Field(default=None, max_length=2000)\nclass ProjectArtifactRequest(BaseModel):\n    job_id: str = Field(pattern=r\"^[a-f0-9]{32}$\")\nclass TimelineItemModel(BaseModel):\n    id: str | None = None",
-        "detail": "web.app",
+        "detail": "server.app",
         "documentation": {}
     },
     {
         "label": "ProjectUpdateRequest",
         "kind": 6,
-        "importPath": "web.app",
-        "description": "web.app",
+        "importPath": "server.app",
+        "description": "server.app",
         "peekOfCode": "class ProjectUpdateRequest(BaseModel):\n    title: str | None = Field(default=None, min_length=1, max_length=120)\n    description: str | None = Field(default=None, max_length=2000)\nclass ProjectArtifactRequest(BaseModel):\n    job_id: str = Field(pattern=r\"^[a-f0-9]{32}$\")\nclass TimelineItemModel(BaseModel):\n    id: str | None = None\n    job_id: str = Field(pattern=r\"^[a-f0-9]{32}$\")\n    asset_id: str | None = None\n    media_type: Literal[\"video\", \"image\", \"music\"] = \"video\"",
-        "detail": "web.app",
+        "detail": "server.app",
         "documentation": {}
     },
     {
         "label": "ProjectArtifactRequest",
         "kind": 6,
-        "importPath": "web.app",
-        "description": "web.app",
+        "importPath": "server.app",
+        "description": "server.app",
         "peekOfCode": "class ProjectArtifactRequest(BaseModel):\n    job_id: str = Field(pattern=r\"^[a-f0-9]{32}$\")\nclass TimelineItemModel(BaseModel):\n    id: str | None = None\n    job_id: str = Field(pattern=r\"^[a-f0-9]{32}$\")\n    asset_id: str | None = None\n    media_type: Literal[\"video\", \"image\", \"music\"] = \"video\"\n    label: str = Field(default=\"\", max_length=120)\n    duration_seconds: float | int | None = None\nclass TimelineUpdateRequest(BaseModel):",
-        "detail": "web.app",
+        "detail": "server.app",
         "documentation": {}
     },
     {
         "label": "TimelineItemModel",
         "kind": 6,
-        "importPath": "web.app",
-        "description": "web.app",
+        "importPath": "server.app",
+        "description": "server.app",
         "peekOfCode": "class TimelineItemModel(BaseModel):\n    id: str | None = None\n    job_id: str = Field(pattern=r\"^[a-f0-9]{32}$\")\n    asset_id: str | None = None\n    media_type: Literal[\"video\", \"image\", \"music\"] = \"video\"\n    label: str = Field(default=\"\", max_length=120)\n    duration_seconds: float | int | None = None\nclass TimelineUpdateRequest(BaseModel):\n    items: list[TimelineItemModel] = Field(default_factory=list)\nclass ProductionCreateRequest(BaseModel):",
-        "detail": "web.app",
+        "detail": "server.app",
         "documentation": {}
     },
     {
         "label": "TimelineUpdateRequest",
         "kind": 6,
-        "importPath": "web.app",
-        "description": "web.app",
+        "importPath": "server.app",
+        "description": "server.app",
         "peekOfCode": "class TimelineUpdateRequest(BaseModel):\n    items: list[TimelineItemModel] = Field(default_factory=list)\nclass ProductionCreateRequest(BaseModel):\n    brief: str = Field(min_length=1, max_length=8000)\n    title: str = \"\"\n    plan_now: bool = True\nclass ProductionApproveRequest(BaseModel):\n    execute: bool = True\nclass JobStore:\n    def __init__(self, directory: Path) -> None:",
-        "detail": "web.app",
+        "detail": "server.app",
         "documentation": {}
     },
     {
         "label": "ProductionCreateRequest",
         "kind": 6,
-        "importPath": "web.app",
-        "description": "web.app",
+        "importPath": "server.app",
+        "description": "server.app",
         "peekOfCode": "class ProductionCreateRequest(BaseModel):\n    brief: str = Field(min_length=1, max_length=8000)\n    title: str = \"\"\n    plan_now: bool = True\nclass ProductionApproveRequest(BaseModel):\n    execute: bool = True\nclass JobStore:\n    def __init__(self, directory: Path) -> None:\n        self.directory = directory\n        self._jobs: dict[str, dict[str, Any]] = {}",
-        "detail": "web.app",
+        "detail": "server.app",
         "documentation": {}
     },
     {
         "label": "ProductionApproveRequest",
         "kind": 6,
-        "importPath": "web.app",
-        "description": "web.app",
+        "importPath": "server.app",
+        "description": "server.app",
         "peekOfCode": "class ProductionApproveRequest(BaseModel):\n    execute: bool = True\nclass JobStore:\n    def __init__(self, directory: Path) -> None:\n        self.directory = directory\n        self._jobs: dict[str, dict[str, Any]] = {}\n        self._lock = asyncio.Lock()\n    async def load(self) -> list[str]:\n        self.directory.mkdir(parents=True, exist_ok=True)\n        resumable: list[str] = []",
-        "detail": "web.app",
+        "detail": "server.app",
         "documentation": {}
     },
     {
         "label": "JobStore",
         "kind": 6,
-        "importPath": "web.app",
-        "description": "web.app",
+        "importPath": "server.app",
+        "description": "server.app",
         "peekOfCode": "class JobStore:\n    def __init__(self, directory: Path) -> None:\n        self.directory = directory\n        self._jobs: dict[str, dict[str, Any]] = {}\n        self._lock = asyncio.Lock()\n    async def load(self) -> list[str]:\n        self.directory.mkdir(parents=True, exist_ok=True)\n        resumable: list[str] = []\n        for path in self.directory.glob(\"*.json\"):\n            try:",
-        "detail": "web.app",
+        "detail": "server.app",
         "documentation": {}
     },
     {
         "label": "main",
         "kind": 2,
-        "importPath": "web.app",
-        "description": "web.app",
-        "peekOfCode": "def main() -> None:\n    import uvicorn\n    uvicorn.run(\"web.app:app\", host=\"127.0.0.1\", port=8000, reload=False)\nif __name__ == \"__main__\":\n    main()",
-        "detail": "web.app",
-        "documentation": {}
-    },
-    {
-        "label": "STATIC_DIR",
-        "kind": 5,
-        "importPath": "web.app",
-        "description": "web.app",
-        "peekOfCode": "STATIC_DIR = Path(__file__).with_name(\"static\")\nSTATE_DIR = ROOT / \".renderhaus\" / \"web-jobs\"\nMEDIA_DIR = (ROOT / os.getenv(\"RENDERHAUS_MEDIA_DIR\", \".renderhaus/media\")).resolve()\nMAX_UPLOAD_BYTES = 15 * 1024 * 1024\nMIN_VIDEO_SECONDS = 4\nMAX_VIDEO_SECONDS = 12\nTERMINAL_STATES = {\"complete\", \"planned\", \"failed\"}\nPROVIDER_TERMINAL_STATES = {\n    \"succeeded\",\n    \"failed\",",
-        "detail": "web.app",
+        "importPath": "server.app",
+        "description": "server.app",
+        "peekOfCode": "def main() -> None:\n    import uvicorn\n    uvicorn.run(\"server.app:app\", host=\"127.0.0.1\", port=8000, reload=False)\nif __name__ == \"__main__\":\n    main()",
+        "detail": "server.app",
         "documentation": {}
     },
     {
         "label": "STATE_DIR",
         "kind": 5,
-        "importPath": "web.app",
-        "description": "web.app",
-        "peekOfCode": "STATE_DIR = ROOT / \".renderhaus\" / \"web-jobs\"\nMEDIA_DIR = (ROOT / os.getenv(\"RENDERHAUS_MEDIA_DIR\", \".renderhaus/media\")).resolve()\nMAX_UPLOAD_BYTES = 15 * 1024 * 1024\nMIN_VIDEO_SECONDS = 4\nMAX_VIDEO_SECONDS = 12\nTERMINAL_STATES = {\"complete\", \"planned\", \"failed\"}\nPROVIDER_TERMINAL_STATES = {\n    \"succeeded\",\n    \"failed\",\n    \"cancelled\",",
-        "detail": "web.app",
+        "importPath": "server.app",
+        "description": "server.app",
+        "peekOfCode": "STATE_DIR = ROOT / \".renderhaus\" / \"web-jobs\"\nMEDIA_DIR = (ROOT / os.getenv(\"RENDERHAUS_MEDIA_DIR\", \".renderhaus/media\")).resolve()\nMAX_UPLOAD_BYTES = 15 * 1024 * 1024\nMIN_VIDEO_SECONDS = 4\nMAX_VIDEO_SECONDS = 12\nTERMINAL_STATES = {\"complete\", \"planned\", \"failed\"}\nAGENT_HARNESS_UNAVAILABLE = (\n    \"The LangChain agent harness was removed. Generation returns after the OpenAI Agents SDK rewrite.\"\n)\nPUBLIC_JOB_FIELDS = {",
+        "detail": "server.app",
         "documentation": {}
     },
     {
         "label": "MEDIA_DIR",
         "kind": 5,
-        "importPath": "web.app",
-        "description": "web.app",
-        "peekOfCode": "MEDIA_DIR = (ROOT / os.getenv(\"RENDERHAUS_MEDIA_DIR\", \".renderhaus/media\")).resolve()\nMAX_UPLOAD_BYTES = 15 * 1024 * 1024\nMIN_VIDEO_SECONDS = 4\nMAX_VIDEO_SECONDS = 12\nTERMINAL_STATES = {\"complete\", \"planned\", \"failed\"}\nPROVIDER_TERMINAL_STATES = {\n    \"succeeded\",\n    \"failed\",\n    \"cancelled\",\n    \"canceled\",",
-        "detail": "web.app",
+        "importPath": "server.app",
+        "description": "server.app",
+        "peekOfCode": "MEDIA_DIR = (ROOT / os.getenv(\"RENDERHAUS_MEDIA_DIR\", \".renderhaus/media\")).resolve()\nMAX_UPLOAD_BYTES = 15 * 1024 * 1024\nMIN_VIDEO_SECONDS = 4\nMAX_VIDEO_SECONDS = 12\nTERMINAL_STATES = {\"complete\", \"planned\", \"failed\"}\nAGENT_HARNESS_UNAVAILABLE = (\n    \"The LangChain agent harness was removed. Generation returns after the OpenAI Agents SDK rewrite.\"\n)\nPUBLIC_JOB_FIELDS = {\n    \"id\",",
+        "detail": "server.app",
         "documentation": {}
     },
     {
         "label": "MAX_UPLOAD_BYTES",
         "kind": 5,
-        "importPath": "web.app",
-        "description": "web.app",
-        "peekOfCode": "MAX_UPLOAD_BYTES = 15 * 1024 * 1024\nMIN_VIDEO_SECONDS = 4\nMAX_VIDEO_SECONDS = 12\nTERMINAL_STATES = {\"complete\", \"planned\", \"failed\"}\nPROVIDER_TERMINAL_STATES = {\n    \"succeeded\",\n    \"failed\",\n    \"cancelled\",\n    \"canceled\",\n    \"deleted\",",
-        "detail": "web.app",
+        "importPath": "server.app",
+        "description": "server.app",
+        "peekOfCode": "MAX_UPLOAD_BYTES = 15 * 1024 * 1024\nMIN_VIDEO_SECONDS = 4\nMAX_VIDEO_SECONDS = 12\nTERMINAL_STATES = {\"complete\", \"planned\", \"failed\"}\nAGENT_HARNESS_UNAVAILABLE = (\n    \"The LangChain agent harness was removed. Generation returns after the OpenAI Agents SDK rewrite.\"\n)\nPUBLIC_JOB_FIELDS = {\n    \"id\",\n    \"schema_version\",",
+        "detail": "server.app",
         "documentation": {}
     },
     {
         "label": "MIN_VIDEO_SECONDS",
         "kind": 5,
-        "importPath": "web.app",
-        "description": "web.app",
-        "peekOfCode": "MIN_VIDEO_SECONDS = 4\nMAX_VIDEO_SECONDS = 12\nTERMINAL_STATES = {\"complete\", \"planned\", \"failed\"}\nPROVIDER_TERMINAL_STATES = {\n    \"succeeded\",\n    \"failed\",\n    \"cancelled\",\n    \"canceled\",\n    \"deleted\",\n    \"timeouted\",",
-        "detail": "web.app",
+        "importPath": "server.app",
+        "description": "server.app",
+        "peekOfCode": "MIN_VIDEO_SECONDS = 4\nMAX_VIDEO_SECONDS = 12\nTERMINAL_STATES = {\"complete\", \"planned\", \"failed\"}\nAGENT_HARNESS_UNAVAILABLE = (\n    \"The LangChain agent harness was removed. Generation returns after the OpenAI Agents SDK rewrite.\"\n)\nPUBLIC_JOB_FIELDS = {\n    \"id\",\n    \"schema_version\",\n    \"status\",",
+        "detail": "server.app",
         "documentation": {}
     },
     {
         "label": "MAX_VIDEO_SECONDS",
         "kind": 5,
-        "importPath": "web.app",
-        "description": "web.app",
-        "peekOfCode": "MAX_VIDEO_SECONDS = 12\nTERMINAL_STATES = {\"complete\", \"planned\", \"failed\"}\nPROVIDER_TERMINAL_STATES = {\n    \"succeeded\",\n    \"failed\",\n    \"cancelled\",\n    \"canceled\",\n    \"deleted\",\n    \"timeouted\",\n    \"timeout\",",
-        "detail": "web.app",
+        "importPath": "server.app",
+        "description": "server.app",
+        "peekOfCode": "MAX_VIDEO_SECONDS = 12\nTERMINAL_STATES = {\"complete\", \"planned\", \"failed\"}\nAGENT_HARNESS_UNAVAILABLE = (\n    \"The LangChain agent harness was removed. Generation returns after the OpenAI Agents SDK rewrite.\"\n)\nPUBLIC_JOB_FIELDS = {\n    \"id\",\n    \"schema_version\",\n    \"status\",\n    \"phase\",",
+        "detail": "server.app",
         "documentation": {}
     },
     {
         "label": "TERMINAL_STATES",
         "kind": 5,
-        "importPath": "web.app",
-        "description": "web.app",
-        "peekOfCode": "TERMINAL_STATES = {\"complete\", \"planned\", \"failed\"}\nPROVIDER_TERMINAL_STATES = {\n    \"succeeded\",\n    \"failed\",\n    \"cancelled\",\n    \"canceled\",\n    \"deleted\",\n    \"timeouted\",\n    \"timeout\",\n}",
-        "detail": "web.app",
+        "importPath": "server.app",
+        "description": "server.app",
+        "peekOfCode": "TERMINAL_STATES = {\"complete\", \"planned\", \"failed\"}\nAGENT_HARNESS_UNAVAILABLE = (\n    \"The LangChain agent harness was removed. Generation returns after the OpenAI Agents SDK rewrite.\"\n)\nPUBLIC_JOB_FIELDS = {\n    \"id\",\n    \"schema_version\",\n    \"status\",\n    \"phase\",\n    \"media_type\",",
+        "detail": "server.app",
         "documentation": {}
     },
     {
-        "label": "PROVIDER_TERMINAL_STATES",
+        "label": "AGENT_HARNESS_UNAVAILABLE",
         "kind": 5,
-        "importPath": "web.app",
-        "description": "web.app",
-        "peekOfCode": "PROVIDER_TERMINAL_STATES = {\n    \"succeeded\",\n    \"failed\",\n    \"cancelled\",\n    \"canceled\",\n    \"deleted\",\n    \"timeouted\",\n    \"timeout\",\n}\nPUBLIC_JOB_FIELDS = {",
-        "detail": "web.app",
+        "importPath": "server.app",
+        "description": "server.app",
+        "peekOfCode": "AGENT_HARNESS_UNAVAILABLE = (\n    \"The LangChain agent harness was removed. Generation returns after the OpenAI Agents SDK rewrite.\"\n)\nPUBLIC_JOB_FIELDS = {\n    \"id\",\n    \"schema_version\",\n    \"status\",\n    \"phase\",\n    \"media_type\",\n    \"prompt\",",
+        "detail": "server.app",
         "documentation": {}
     },
     {
         "label": "PUBLIC_JOB_FIELDS",
         "kind": 5,
-        "importPath": "web.app",
-        "description": "web.app",
+        "importPath": "server.app",
+        "description": "server.app",
         "peekOfCode": "PUBLIC_JOB_FIELDS = {\n    \"id\",\n    \"schema_version\",\n    \"status\",\n    \"phase\",\n    \"media_type\",\n    \"prompt\",\n    \"vibe\",\n    \"aspect_ratio\",\n    \"duration_seconds\",",
-        "detail": "web.app",
+        "detail": "server.app",
         "documentation": {}
     },
     {
         "label": "store",
         "kind": 5,
-        "importPath": "web.app",
-        "description": "web.app",
+        "importPath": "server.app",
+        "description": "server.app",
         "peekOfCode": "store = JobStore(STATE_DIR)\nprojects = ProjectStore()\nproductions = ProductionStore()\ngeneration_slots = asyncio.Semaphore(2)\ndef _ensure_output_asset(job: dict[str, Any]) -> bool:\n    \"\"\"Register a legacy `_output_path` as an owned asset. Returns True if job mutated.\"\"\"\n    asset_id = job.get(\"output_asset_id\")\n    if isinstance(asset_id, str) and asset_id:\n        return False\n    output_path = job.get(\"_output_path\")",
-        "detail": "web.app",
+        "detail": "server.app",
         "documentation": {}
     },
     {
         "label": "projects",
         "kind": 5,
-        "importPath": "web.app",
-        "description": "web.app",
+        "importPath": "server.app",
+        "description": "server.app",
         "peekOfCode": "projects = ProjectStore()\nproductions = ProductionStore()\ngeneration_slots = asyncio.Semaphore(2)\ndef _ensure_output_asset(job: dict[str, Any]) -> bool:\n    \"\"\"Register a legacy `_output_path` as an owned asset. Returns True if job mutated.\"\"\"\n    asset_id = job.get(\"output_asset_id\")\n    if isinstance(asset_id, str) and asset_id:\n        return False\n    output_path = job.get(\"_output_path\")\n    if not isinstance(output_path, str) or not output_path:",
-        "detail": "web.app",
+        "detail": "server.app",
         "documentation": {}
     },
     {
         "label": "productions",
         "kind": 5,
-        "importPath": "web.app",
-        "description": "web.app",
+        "importPath": "server.app",
+        "description": "server.app",
         "peekOfCode": "productions = ProductionStore()\ngeneration_slots = asyncio.Semaphore(2)\ndef _ensure_output_asset(job: dict[str, Any]) -> bool:\n    \"\"\"Register a legacy `_output_path` as an owned asset. Returns True if job mutated.\"\"\"\n    asset_id = job.get(\"output_asset_id\")\n    if isinstance(asset_id, str) and asset_id:\n        return False\n    output_path = job.get(\"_output_path\")\n    if not isinstance(output_path, str) or not output_path:\n        return False",
-        "detail": "web.app",
+        "detail": "server.app",
         "documentation": {}
     },
     {
         "label": "generation_slots",
         "kind": 5,
-        "importPath": "web.app",
-        "description": "web.app",
+        "importPath": "server.app",
+        "description": "server.app",
         "peekOfCode": "generation_slots = asyncio.Semaphore(2)\ndef _ensure_output_asset(job: dict[str, Any]) -> bool:\n    \"\"\"Register a legacy `_output_path` as an owned asset. Returns True if job mutated.\"\"\"\n    asset_id = job.get(\"output_asset_id\")\n    if isinstance(asset_id, str) and asset_id:\n        return False\n    output_path = job.get(\"_output_path\")\n    if not isinstance(output_path, str) or not output_path:\n        return False\n    try:",
-        "detail": "web.app",
+        "detail": "server.app",
         "documentation": {}
     },
     {
         "label": "app",
         "kind": 5,
-        "importPath": "web.app",
-        "description": "web.app",
-        "peekOfCode": "app = FastAPI(title=\"Renderhaus\", version=\"0.1.0\", lifespan=lifespan)\napp.mount(\"/static\", StaticFiles(directory=STATIC_DIR), name=\"static\")\n@app.get(\"/\", include_in_schema=False)\nasync def index() -> FileResponse:\n    return FileResponse(STATIC_DIR / \"index.html\")\n@app.exception_handler(404)\nasync def not_found(request: Request, exc: HTTPException) -> Response:\n    \"\"\"Serve the branded page for browsers and keep JSON for the API surface.\"\"\"\n    wants_html = \"text/html\" in request.headers.get(\"accept\", \"\")\n    if request.url.path.startswith(\"/api/\") or not wants_html:",
-        "detail": "web.app",
+        "importPath": "server.app",
+        "description": "server.app",
+        "peekOfCode": "app = FastAPI(title=\"Renderhaus\", version=\"0.1.0\", lifespan=lifespan)\n@app.get(\"/\", include_in_schema=False)\nasync def index() -> dict[str, str]:\n    return {\"service\": \"renderhaus-agent api\"}\n@app.exception_handler(404)\nasync def not_found(request: Request, exc: HTTPException) -> Response:\n    return JSONResponse({\"detail\": exc.detail}, status_code=404)\n@app.get(\"/api/config\")\nasync def config() -> dict[str, Any]:\n    return {",
+        "detail": "server.app",
         "documentation": {}
     },
     {
         "label": "Asset",
         "kind": 6,
-        "importPath": "web.assets",
-        "description": "web.assets",
+        "importPath": "server.assets",
+        "description": "server.assets",
         "peekOfCode": "class Asset:\n    id: str\n    user_id: str\n    kind: str\n    mime_type: str\n    size_bytes: int\n    checksum: str\n    storage_backend: str\n    storage_key: str\n    filename: str",
-        "detail": "web.assets",
+        "detail": "server.assets",
         "documentation": {}
     },
     {
         "label": "aws_region",
         "kind": 2,
-        "importPath": "web.assets",
-        "description": "web.assets",
+        "importPath": "server.assets",
+        "description": "server.assets",
         "peekOfCode": "def aws_region() -> str:\n    return os.getenv(\"AWS_REGION\") or os.getenv(\"AWS_DEFAULT_REGION\") or \"us-east-1\"\ndef s3_bucket() -> str:\n    return (os.getenv(\"AWS_S3_BUCKET\") or \"\").strip()\ndef dynamodb_table_name() -> str:\n    return (\n        os.getenv(\"AWS_DYNAMODB_ASSETS_TABLE\")\n        or os.getenv(\"AWS_DYNAMODB_TABLE\")\n        or DEFAULT_ASSETS_TABLE\n    ).strip()",
-        "detail": "web.assets",
+        "detail": "server.assets",
         "documentation": {}
     },
     {
         "label": "s3_bucket",
         "kind": 2,
-        "importPath": "web.assets",
-        "description": "web.assets",
+        "importPath": "server.assets",
+        "description": "server.assets",
         "peekOfCode": "def s3_bucket() -> str:\n    return (os.getenv(\"AWS_S3_BUCKET\") or \"\").strip()\ndef dynamodb_table_name() -> str:\n    return (\n        os.getenv(\"AWS_DYNAMODB_ASSETS_TABLE\")\n        or os.getenv(\"AWS_DYNAMODB_TABLE\")\n        or DEFAULT_ASSETS_TABLE\n    ).strip()\ndef aws_configured() -> bool:\n    return bool(",
-        "detail": "web.assets",
+        "detail": "server.assets",
         "documentation": {}
     },
     {
         "label": "dynamodb_table_name",
         "kind": 2,
-        "importPath": "web.assets",
-        "description": "web.assets",
+        "importPath": "server.assets",
+        "description": "server.assets",
         "peekOfCode": "def dynamodb_table_name() -> str:\n    return (\n        os.getenv(\"AWS_DYNAMODB_ASSETS_TABLE\")\n        or os.getenv(\"AWS_DYNAMODB_TABLE\")\n        or DEFAULT_ASSETS_TABLE\n    ).strip()\ndef aws_configured() -> bool:\n    return bool(\n        s3_bucket()\n        and (",
-        "detail": "web.assets",
+        "detail": "server.assets",
         "documentation": {}
     },
     {
         "label": "aws_configured",
         "kind": 2,
-        "importPath": "web.assets",
-        "description": "web.assets",
+        "importPath": "server.assets",
+        "description": "server.assets",
         "peekOfCode": "def aws_configured() -> bool:\n    return bool(\n        s3_bucket()\n        and (\n            os.getenv(\"AWS_ACCESS_KEY_ID\")\n            or os.getenv(\"AWS_PROFILE\")\n            or os.getenv(\"AWS_CONTAINER_CREDENTIALS_RELATIVE_URI\")\n        )\n    )\n@lru_cache(maxsize=1)",
-        "detail": "web.assets",
+        "detail": "server.assets",
         "documentation": {}
     },
     {
         "label": "init_assets_db",
         "kind": 2,
-        "importPath": "web.assets",
-        "description": "web.assets",
+        "importPath": "server.assets",
+        "description": "server.assets",
         "peekOfCode": "def init_assets_db() -> None:\n    \"\"\"Initialize DynamoDB table and verify/create the S3 bucket.\"\"\"\n    _session.cache_clear()\n    CACHE_DIR.mkdir(parents=True, exist_ok=True)\n    if not s3_bucket():\n        raise RuntimeError(\n            \"AWS_S3_BUCKET is not set. Add your bucket name to .env.local before starting the app.\"\n        )\n    _ensure_dynamodb_table()\n    _ensure_s3_bucket()",
-        "detail": "web.assets",
+        "detail": "server.assets",
         "documentation": {}
     },
     {
         "label": "get_asset",
         "kind": 2,
-        "importPath": "web.assets",
-        "description": "web.assets",
+        "importPath": "server.assets",
+        "description": "server.assets",
         "peekOfCode": "def get_asset(asset_id: str) -> Asset | None:\n    table = _dynamodb().Table(dynamodb_table_name())\n    response = table.get_item(Key={\"asset_id\": asset_id})\n    item = response.get(\"Item\")\n    return _item_to_asset(item) if item else None\ndef get_asset_for_user(asset_id: str, user_id: str) -> Asset | None:\n    asset = get_asset(asset_id)\n    if asset is None or asset.user_id != user_id:\n        return None\n    return asset",
-        "detail": "web.assets",
+        "detail": "server.assets",
         "documentation": {}
     },
     {
         "label": "get_asset_for_user",
         "kind": 2,
-        "importPath": "web.assets",
-        "description": "web.assets",
+        "importPath": "server.assets",
+        "description": "server.assets",
         "peekOfCode": "def get_asset_for_user(asset_id: str, user_id: str) -> Asset | None:\n    asset = get_asset(asset_id)\n    if asset is None or asset.user_id != user_id:\n        return None\n    return asset\ndef _sha256_file(path: Path) -> str:\n    digest = hashlib.sha256()\n    with path.open(\"rb\") as handle:\n        while True:\n            chunk = handle.read(1024 * 1024)",
-        "detail": "web.assets",
+        "detail": "server.assets",
         "documentation": {}
     },
     {
         "label": "register_upload",
         "kind": 2,
-        "importPath": "web.assets",
-        "description": "web.assets",
+        "importPath": "server.assets",
+        "description": "server.assets",
         "peekOfCode": "def register_upload(\n    *,\n    user_id: str,\n    content: bytes,\n    suffix: str,\n    mime_type: str,\n    filename: str | None = None,\n) -> Asset:\n    asset_id = uuid.uuid4().hex\n    safe_name = filename or f\"reference{suffix}\"",
-        "detail": "web.assets",
+        "detail": "server.assets",
         "documentation": {}
     },
     {
         "label": "register_output_file",
         "kind": 2,
-        "importPath": "web.assets",
-        "description": "web.assets",
+        "importPath": "server.assets",
+        "description": "server.assets",
         "peekOfCode": "def register_output_file(\n    *,\n    user_id: str,\n    source_path: str | Path,\n    kind: AssetKind,\n    mime_type: str | None = None,\n) -> Asset:\n    source = Path(source_path).expanduser().resolve()\n    if not source.is_file() or source.stat().st_size <= 0:\n        raise FileNotFoundError(f\"Output file missing: {source}\")",
-        "detail": "web.assets",
+        "detail": "server.assets",
         "documentation": {}
     },
     {
         "label": "register_existing_s3_object",
         "kind": 2,
-        "importPath": "web.assets",
-        "description": "web.assets",
+        "importPath": "server.assets",
+        "description": "server.assets",
         "peekOfCode": "def register_existing_s3_object(\n    *,\n    user_id: str,\n    storage_key: str,\n    kind: AssetKind,\n    mime_type: str,\n    size_bytes: int,\n    checksum: str,\n    filename: str,\n    asset_id: str | None = None,",
-        "detail": "web.assets",
+        "detail": "server.assets",
         "documentation": {}
     },
     {
         "label": "materialize_asset_path",
         "kind": 2,
-        "importPath": "web.assets",
-        "description": "web.assets",
+        "importPath": "server.assets",
+        "description": "server.assets",
         "peekOfCode": "def materialize_asset_path(asset: Asset) -> Path:\n    \"\"\"Download an S3 asset into a local cache for agent/tool use.\"\"\"\n    if asset.storage_backend not in {\"s3\", \"local\"}:\n        raise ValueError(f\"Unsupported storage backend: {asset.storage_backend}\")\n    destination = CACHE_DIR / asset.user_id / asset.id / asset.filename\n    if destination.is_file() and destination.stat().st_size == asset.size_bytes:\n        return destination\n    destination.parent.mkdir(parents=True, exist_ok=True)\n    temporary = destination.with_suffix(destination.suffix + \".tmp\")\n    _s3().download_file(",
-        "detail": "web.assets",
+        "detail": "server.assets",
         "documentation": {}
     },
     {
         "label": "local_path_for_asset",
         "kind": 2,
-        "importPath": "web.assets",
-        "description": "web.assets",
+        "importPath": "server.assets",
+        "description": "server.assets",
         "peekOfCode": "def local_path_for_asset(asset: Asset) -> Path:\n    \"\"\"Compatibility alias used by the web app for reference materialization.\"\"\"\n    return materialize_asset_path(asset)\ndef presigned_content_url(asset: Asset, *, ttl_seconds: int = CONTENT_URL_TTL_SECONDS) -> str:\n    return _s3().generate_presigned_url(\n        \"get_object\",\n        Params={\n            \"Bucket\": _require_bucket(),\n            \"Key\": asset.storage_key,\n            \"ResponseContentType\": asset.mime_type,",
-        "detail": "web.assets",
+        "detail": "server.assets",
         "documentation": {}
     },
     {
         "label": "presigned_content_url",
         "kind": 2,
-        "importPath": "web.assets",
-        "description": "web.assets",
+        "importPath": "server.assets",
+        "description": "server.assets",
         "peekOfCode": "def presigned_content_url(asset: Asset, *, ttl_seconds: int = CONTENT_URL_TTL_SECONDS) -> str:\n    return _s3().generate_presigned_url(\n        \"get_object\",\n        Params={\n            \"Bucket\": _require_bucket(),\n            \"Key\": asset.storage_key,\n            \"ResponseContentType\": asset.mime_type,\n            \"ResponseContentDisposition\": f'inline; filename=\"{asset.filename}\"',\n        },\n        ExpiresIn=ttl_seconds,",
-        "detail": "web.assets",
+        "detail": "server.assets",
         "documentation": {}
     },
     {
         "label": "iter_asset_bytes",
         "kind": 2,
-        "importPath": "web.assets",
-        "description": "web.assets",
+        "importPath": "server.assets",
+        "description": "server.assets",
         "peekOfCode": "def iter_asset_bytes(asset: Asset, *, chunk_size: int = 1024 * 1024):\n    \"\"\"Stream asset bytes from S3 for same-origin proxy responses.\"\"\"\n    response = _s3().get_object(Bucket=_require_bucket(), Key=asset.storage_key)\n    body = response[\"Body\"]\n    try:\n        while True:\n            chunk = body.read(chunk_size)\n            if not chunk:\n                break\n            yield chunk",
-        "detail": "web.assets",
+        "detail": "server.assets",
         "documentation": {}
     },
     {
         "label": "sign_content_url",
         "kind": 2,
-        "importPath": "web.assets",
-        "description": "web.assets",
+        "importPath": "server.assets",
+        "description": "server.assets",
         "peekOfCode": "def sign_content_url(asset_id: str, *, ttl_seconds: int = CONTENT_URL_TTL_SECONDS) -> str:\n    \"\"\"App-level opaque URL; the handler redirects to an S3 presigned GET.\"\"\"\n    exp = int(time.time()) + ttl_seconds\n    message = f\"{asset_id}:{exp}\".encode(\"utf-8\")\n    signature = hmac.new(_signing_secret(), message, hashlib.sha256).hexdigest()\n    query = urlencode({\"exp\": str(exp), \"sig\": signature})\n    return f\"/api/assets/{asset_id}/content?{query}\"\ndef verify_content_signature(asset_id: str, exp: str | int | None, sig: str | None) -> bool:\n    if exp is None or not sig:\n        return False",
-        "detail": "web.assets",
+        "detail": "server.assets",
         "documentation": {}
     },
     {
         "label": "verify_content_signature",
         "kind": 2,
-        "importPath": "web.assets",
-        "description": "web.assets",
+        "importPath": "server.assets",
+        "description": "server.assets",
         "peekOfCode": "def verify_content_signature(asset_id: str, exp: str | int | None, sig: str | None) -> bool:\n    if exp is None or not sig:\n        return False\n    try:\n        expires = int(exp)\n    except (TypeError, ValueError):\n        return False\n    if expires < int(time.time()):\n        return False\n    message = f\"{asset_id}:{expires}\".encode(\"utf-8\")",
-        "detail": "web.assets",
+        "detail": "server.assets",
         "documentation": {}
     },
     {
         "label": "asset_public_dict",
         "kind": 2,
-        "importPath": "web.assets",
-        "description": "web.assets",
+        "importPath": "server.assets",
+        "description": "server.assets",
         "peekOfCode": "def asset_public_dict(asset: Asset, *, include_url: bool = True) -> dict[str, Any]:\n    payload: dict[str, Any] = {\n        \"id\": asset.id,\n        \"kind\": asset.kind,\n        \"mime_type\": asset.mime_type,\n        \"size_bytes\": asset.size_bytes,\n        \"filename\": asset.filename,\n        \"created_at\": asset.created_at,\n        \"storage_backend\": asset.storage_backend,\n    }",
-        "detail": "web.assets",
+        "detail": "server.assets",
         "documentation": {}
     },
     {
         "label": "AssetKind",
         "kind": 5,
-        "importPath": "web.assets",
-        "description": "web.assets",
+        "importPath": "server.assets",
+        "description": "server.assets",
         "peekOfCode": "AssetKind = Literal[\"upload\", \"video\", \"image\", \"music\"]\nlogger = logging.getLogger(__name__)\nCACHE_DIR = ROOT / \".renderhaus\" / \"cache\"\nCONTENT_URL_TTL_SECONDS = 15 * 60\nDEFAULT_ASSETS_TABLE = \"renderhaus-assets\"\n@dataclass(frozen=True)\nclass Asset:\n    id: str\n    user_id: str\n    kind: str",
-        "detail": "web.assets",
+        "detail": "server.assets",
         "documentation": {}
     },
     {
         "label": "logger",
         "kind": 5,
-        "importPath": "web.assets",
-        "description": "web.assets",
+        "importPath": "server.assets",
+        "description": "server.assets",
         "peekOfCode": "logger = logging.getLogger(__name__)\nCACHE_DIR = ROOT / \".renderhaus\" / \"cache\"\nCONTENT_URL_TTL_SECONDS = 15 * 60\nDEFAULT_ASSETS_TABLE = \"renderhaus-assets\"\n@dataclass(frozen=True)\nclass Asset:\n    id: str\n    user_id: str\n    kind: str\n    mime_type: str",
-        "detail": "web.assets",
+        "detail": "server.assets",
         "documentation": {}
     },
     {
         "label": "CACHE_DIR",
         "kind": 5,
-        "importPath": "web.assets",
-        "description": "web.assets",
+        "importPath": "server.assets",
+        "description": "server.assets",
         "peekOfCode": "CACHE_DIR = ROOT / \".renderhaus\" / \"cache\"\nCONTENT_URL_TTL_SECONDS = 15 * 60\nDEFAULT_ASSETS_TABLE = \"renderhaus-assets\"\n@dataclass(frozen=True)\nclass Asset:\n    id: str\n    user_id: str\n    kind: str\n    mime_type: str\n    size_bytes: int",
-        "detail": "web.assets",
+        "detail": "server.assets",
         "documentation": {}
     },
     {
         "label": "CONTENT_URL_TTL_SECONDS",
         "kind": 5,
-        "importPath": "web.assets",
-        "description": "web.assets",
+        "importPath": "server.assets",
+        "description": "server.assets",
         "peekOfCode": "CONTENT_URL_TTL_SECONDS = 15 * 60\nDEFAULT_ASSETS_TABLE = \"renderhaus-assets\"\n@dataclass(frozen=True)\nclass Asset:\n    id: str\n    user_id: str\n    kind: str\n    mime_type: str\n    size_bytes: int\n    checksum: str",
-        "detail": "web.assets",
+        "detail": "server.assets",
         "documentation": {}
     },
     {
         "label": "DEFAULT_ASSETS_TABLE",
         "kind": 5,
-        "importPath": "web.assets",
-        "description": "web.assets",
+        "importPath": "server.assets",
+        "description": "server.assets",
         "peekOfCode": "DEFAULT_ASSETS_TABLE = \"renderhaus-assets\"\n@dataclass(frozen=True)\nclass Asset:\n    id: str\n    user_id: str\n    kind: str\n    mime_type: str\n    size_bytes: int\n    checksum: str\n    storage_backend: str",
-        "detail": "web.assets",
+        "detail": "server.assets",
         "documentation": {}
     },
     {
         "label": "publishable_key",
         "kind": 2,
-        "importPath": "web.auth",
-        "description": "web.auth",
+        "importPath": "server.auth",
+        "description": "server.auth",
         "peekOfCode": "def publishable_key() -> str:\n    return (\n        os.getenv(\"CLERK_PUBLISHABLE_KEY\")\n        or os.getenv(\"NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY\")\n        or \"\"\n    )\ndef secret_key() -> str:\n    return os.getenv(\"CLERK_SECRET_KEY\") or \"\"\ndef clerk_enabled() -> bool:\n    return bool(secret_key() and publishable_key())",
-        "detail": "web.auth",
+        "detail": "server.auth",
         "documentation": {}
     },
     {
         "label": "secret_key",
         "kind": 2,
-        "importPath": "web.auth",
-        "description": "web.auth",
+        "importPath": "server.auth",
+        "description": "server.auth",
         "peekOfCode": "def secret_key() -> str:\n    return os.getenv(\"CLERK_SECRET_KEY\") or \"\"\ndef clerk_enabled() -> bool:\n    return bool(secret_key() and publishable_key())\ndef _authorized_parties() -> list[str]:\n    raw = os.getenv(\"CLERK_AUTHORIZED_PARTIES\", \"\").strip()\n    if raw:\n        return [party.strip() for party in raw.split(\",\") if party.strip()]\n    parties = [\n        \"http://127.0.0.1:8000\",",
-        "detail": "web.auth",
+        "detail": "server.auth",
         "documentation": {}
     },
     {
         "label": "clerk_enabled",
         "kind": 2,
-        "importPath": "web.auth",
-        "description": "web.auth",
+        "importPath": "server.auth",
+        "description": "server.auth",
         "peekOfCode": "def clerk_enabled() -> bool:\n    return bool(secret_key() and publishable_key())\ndef _authorized_parties() -> list[str]:\n    raw = os.getenv(\"CLERK_AUTHORIZED_PARTIES\", \"\").strip()\n    if raw:\n        return [party.strip() for party in raw.split(\",\") if party.strip()]\n    parties = [\n        \"http://127.0.0.1:8000\",\n        \"http://localhost:8000\",\n    ]",
-        "detail": "web.auth",
+        "detail": "server.auth",
         "documentation": {}
     },
     {
         "label": "require_auth",
         "kind": 2,
-        "importPath": "web.auth",
-        "description": "web.auth",
+        "importPath": "server.auth",
+        "description": "server.auth",
         "peekOfCode": "def require_auth(\n    request: Request,\n    _creds: Annotated[HTTPAuthorizationCredentials | None, Depends(http_bearer)] = None,\n) -> RequestState | None:\n    \"\"\"Require a signed-in Clerk session when Clerk is configured.\"\"\"\n    if not clerk_enabled():\n        return None\n    state = authenticate_request(\n        request,\n        AuthenticateRequestOptions(",
-        "detail": "web.auth",
+        "detail": "server.auth",
         "documentation": {}
     },
     {
         "label": "optional_user",
         "kind": 2,
-        "importPath": "web.auth",
-        "description": "web.auth",
+        "importPath": "server.auth",
+        "description": "server.auth",
         "peekOfCode": "def optional_user(request: Request) -> RequestState | None:\n    \"\"\"Return auth state when present; never raise for missing credentials.\"\"\"\n    if not clerk_enabled():\n        return None\n    state = authenticate_request(\n        request,\n        AuthenticateRequestOptions(\n            secret_key=secret_key(),\n            jwt_key=_jwt_key(),\n            authorized_parties=_authorized_parties(),",
-        "detail": "web.auth",
+        "detail": "server.auth",
         "documentation": {}
     },
     {
         "label": "current_user_id",
         "kind": 2,
-        "importPath": "web.auth",
-        "description": "web.auth",
+        "importPath": "server.auth",
+        "description": "server.auth",
         "peekOfCode": "def current_user_id(auth: RequestState | None) -> str:\n    \"\"\"Clerk subject when signed in; stable local owner when Clerk is off.\"\"\"\n    if auth is not None and auth.payload:\n        subject = auth.payload.get(\"sub\")\n        if isinstance(subject, str) and subject:\n            return subject\n    if clerk_enabled():\n        raise HTTPException(\n            status_code=401,\n            detail=\"unauthorized\",",
-        "detail": "web.auth",
+        "detail": "server.auth",
         "documentation": {}
     },
     {
         "label": "http_bearer",
         "kind": 5,
-        "importPath": "web.auth",
-        "description": "web.auth",
+        "importPath": "server.auth",
+        "description": "server.auth",
         "peekOfCode": "http_bearer = HTTPBearer(auto_error=False)\ndef publishable_key() -> str:\n    return (\n        os.getenv(\"CLERK_PUBLISHABLE_KEY\")\n        or os.getenv(\"NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY\")\n        or \"\"\n    )\ndef secret_key() -> str:\n    return os.getenv(\"CLERK_SECRET_KEY\") or \"\"\ndef clerk_enabled() -> bool:",
-        "detail": "web.auth",
+        "detail": "server.auth",
         "documentation": {}
     },
     {
         "label": "AuthUser",
         "kind": 5,
-        "importPath": "web.auth",
-        "description": "web.auth",
+        "importPath": "server.auth",
+        "description": "server.auth",
         "peekOfCode": "AuthUser = Annotated[RequestState | None, Depends(require_auth)]\ndef current_user_id(auth: RequestState | None) -> str:\n    \"\"\"Clerk subject when signed in; stable local owner when Clerk is off.\"\"\"\n    if auth is not None and auth.payload:\n        subject = auth.payload.get(\"sub\")\n        if isinstance(subject, str) and subject:\n            return subject\n    if clerk_enabled():\n        raise HTTPException(\n            status_code=401,",
-        "detail": "web.auth",
+        "detail": "server.auth",
+        "documentation": {}
+    },
+    {
+        "label": "mcp_config_path",
+        "kind": 2,
+        "importPath": "server.config",
+        "description": "server.config",
+        "peekOfCode": "def mcp_config_path() -> Path:\n    override = (os.getenv(\"MCP_CONFIG\") or \"\").strip()\n    if override:\n        return Path(override).expanduser().resolve()\n    if os.getenv(\"AGENTCORE_RUNTIME\", \"\").lower() in {\"1\", \"true\", \"yes\"}:\n        return AGENTCORE_MCP_CONFIG\n    return DEFAULT_MCP_CONFIG\n_VAR_RE = re.compile(r\"\\$\\{([A-Za-z_][A-Za-z0-9_]*|ROOT)\\}\")\nDEFAULT_ENV = {\n    \"AGENT_MODEL\": \"gpt-4.1-mini\",",
+        "detail": "server.config",
+        "documentation": {}
+    },
+    {
+        "label": "load_local_env",
+        "kind": 2,
+        "importPath": "server.config",
+        "description": "server.config",
+        "peekOfCode": "def load_local_env() -> None:\n    \"\"\"Load bootstrap .env, then AWS Secrets Manager, then defaults.\"\"\"\n    load_dotenv(ENV_FILE, override=False)\n    if secrets_locator():\n        # Secrets Manager is the source of truth when configured.\n        load_secrets_from_manager(override=True)\n    for key, value in DEFAULT_ENV.items():\n        if not os.getenv(key):\n            os.environ[key] = value\ndef _expand(value: str) -> str:",
+        "detail": "server.config",
+        "documentation": {}
+    },
+    {
+        "label": "load_mcp_servers",
+        "kind": 2,
+        "importPath": "server.config",
+        "description": "server.config",
+        "peekOfCode": "def load_mcp_servers(path: Path = DEFAULT_MCP_CONFIG) -> dict[str, dict[str, Any]]:\n    raw = json.loads(path.read_text())\n    servers = _walk_expand(raw[\"mcpServers\"])\n    return _maybe_attach_gateway(servers)\ndef _maybe_attach_gateway(servers: dict[str, dict[str, Any]]) -> dict[str, dict[str, Any]]:\n    \"\"\"Prefer AgentCore Gateway for Mureka when AGENTCORE_GATEWAY_URL is set.\"\"\"\n    gateway_url = (os.getenv(\"AGENTCORE_GATEWAY_URL\") or \"\").strip()\n    if not gateway_url:\n        return servers\n    updated = dict(servers)",
+        "detail": "server.config",
+        "documentation": {}
+    },
+    {
+        "label": "mask_secret_status",
+        "kind": 2,
+        "importPath": "server.config",
+        "description": "server.config",
+        "peekOfCode": "def mask_secret_status(name: str) -> str:\n    return \"set\" if os.getenv(name) else \"empty\"",
+        "detail": "server.config",
+        "documentation": {}
+    },
+    {
+        "label": "ROOT",
+        "kind": 5,
+        "importPath": "server.config",
+        "description": "server.config",
+        "peekOfCode": "ROOT = Path(__file__).resolve().parents[1]\nENV_FILE = ROOT / \".env.local\"\nDEFAULT_MCP_CONFIG = ROOT / \"configs\" / \"mcp.local.json\"\nAGENTCORE_MCP_CONFIG = ROOT / \"configs\" / \"mcp.agentcore.json\"\ndef mcp_config_path() -> Path:\n    override = (os.getenv(\"MCP_CONFIG\") or \"\").strip()\n    if override:\n        return Path(override).expanduser().resolve()\n    if os.getenv(\"AGENTCORE_RUNTIME\", \"\").lower() in {\"1\", \"true\", \"yes\"}:\n        return AGENTCORE_MCP_CONFIG",
+        "detail": "server.config",
+        "documentation": {}
+    },
+    {
+        "label": "ENV_FILE",
+        "kind": 5,
+        "importPath": "server.config",
+        "description": "server.config",
+        "peekOfCode": "ENV_FILE = ROOT / \".env.local\"\nDEFAULT_MCP_CONFIG = ROOT / \"configs\" / \"mcp.local.json\"\nAGENTCORE_MCP_CONFIG = ROOT / \"configs\" / \"mcp.agentcore.json\"\ndef mcp_config_path() -> Path:\n    override = (os.getenv(\"MCP_CONFIG\") or \"\").strip()\n    if override:\n        return Path(override).expanduser().resolve()\n    if os.getenv(\"AGENTCORE_RUNTIME\", \"\").lower() in {\"1\", \"true\", \"yes\"}:\n        return AGENTCORE_MCP_CONFIG\n    return DEFAULT_MCP_CONFIG",
+        "detail": "server.config",
+        "documentation": {}
+    },
+    {
+        "label": "DEFAULT_MCP_CONFIG",
+        "kind": 5,
+        "importPath": "server.config",
+        "description": "server.config",
+        "peekOfCode": "DEFAULT_MCP_CONFIG = ROOT / \"configs\" / \"mcp.local.json\"\nAGENTCORE_MCP_CONFIG = ROOT / \"configs\" / \"mcp.agentcore.json\"\ndef mcp_config_path() -> Path:\n    override = (os.getenv(\"MCP_CONFIG\") or \"\").strip()\n    if override:\n        return Path(override).expanduser().resolve()\n    if os.getenv(\"AGENTCORE_RUNTIME\", \"\").lower() in {\"1\", \"true\", \"yes\"}:\n        return AGENTCORE_MCP_CONFIG\n    return DEFAULT_MCP_CONFIG\n_VAR_RE = re.compile(r\"\\$\\{([A-Za-z_][A-Za-z0-9_]*|ROOT)\\}\")",
+        "detail": "server.config",
+        "documentation": {}
+    },
+    {
+        "label": "AGENTCORE_MCP_CONFIG",
+        "kind": 5,
+        "importPath": "server.config",
+        "description": "server.config",
+        "peekOfCode": "AGENTCORE_MCP_CONFIG = ROOT / \"configs\" / \"mcp.agentcore.json\"\ndef mcp_config_path() -> Path:\n    override = (os.getenv(\"MCP_CONFIG\") or \"\").strip()\n    if override:\n        return Path(override).expanduser().resolve()\n    if os.getenv(\"AGENTCORE_RUNTIME\", \"\").lower() in {\"1\", \"true\", \"yes\"}:\n        return AGENTCORE_MCP_CONFIG\n    return DEFAULT_MCP_CONFIG\n_VAR_RE = re.compile(r\"\\$\\{([A-Za-z_][A-Za-z0-9_]*|ROOT)\\}\")\nDEFAULT_ENV = {",
+        "detail": "server.config",
+        "documentation": {}
+    },
+    {
+        "label": "_VAR_RE",
+        "kind": 5,
+        "importPath": "server.config",
+        "description": "server.config",
+        "peekOfCode": "_VAR_RE = re.compile(r\"\\$\\{([A-Za-z_][A-Za-z0-9_]*|ROOT)\\}\")\nDEFAULT_ENV = {\n    \"AGENT_MODEL\": \"gpt-4.1-mini\",\n    \"BYTEPLUS_BASE_URL\": \"https://ark.ap-southeast.bytepluses.com/api/v3\",\n    \"SEEDANCE_MODEL\": \"seedance-1-5-pro-251215\",\n    \"SEEDANCE_DRY_RUN\": \"true\",\n    \"SEEDREAM_MODEL\": \"seedream-5-0-lite-260128\",\n    \"SEEDREAM_DRY_RUN\": \"true\",\n    \"GEMINI_TTS_DRY_RUN\": \"true\",\n    \"GEMINI_TTS_MODEL\": \"gemini-3.1-flash-tts-preview\",",
+        "detail": "server.config",
+        "documentation": {}
+    },
+    {
+        "label": "DEFAULT_ENV",
+        "kind": 5,
+        "importPath": "server.config",
+        "description": "server.config",
+        "peekOfCode": "DEFAULT_ENV = {\n    \"AGENT_MODEL\": \"gpt-4.1-mini\",\n    \"BYTEPLUS_BASE_URL\": \"https://ark.ap-southeast.bytepluses.com/api/v3\",\n    \"SEEDANCE_MODEL\": \"seedance-1-5-pro-251215\",\n    \"SEEDANCE_DRY_RUN\": \"true\",\n    \"SEEDREAM_MODEL\": \"seedream-5-0-lite-260128\",\n    \"SEEDREAM_DRY_RUN\": \"true\",\n    \"GEMINI_TTS_DRY_RUN\": \"true\",\n    \"GEMINI_TTS_MODEL\": \"gemini-3.1-flash-tts-preview\",\n    \"MUREKA_API_URL\": \"https://api.mureka.ai\",",
+        "detail": "server.config",
         "documentation": {}
     },
     {
         "label": "ProductionStore",
         "kind": 6,
-        "importPath": "web.productions",
-        "description": "web.productions",
+        "importPath": "server.productions",
+        "description": "server.productions",
         "peekOfCode": "class ProductionStore:\n    def __init__(self, directory: Path | None = None) -> None:\n        self.directory = directory or PRODUCTIONS_DIR\n        self._items: dict[str, dict[str, Any]] = {}\n        self._lock = asyncio.Lock()\n    async def load(self) -> None:\n        self.directory.mkdir(parents=True, exist_ok=True)\n        for path in self.directory.glob(\"*.json\"):\n            try:\n                item = json.loads(path.read_text())",
-        "detail": "web.productions",
+        "detail": "server.productions",
         "documentation": {}
     },
     {
         "label": "public_production",
         "kind": 2,
-        "importPath": "web.productions",
-        "description": "web.productions",
+        "importPath": "server.productions",
+        "description": "server.productions",
         "peekOfCode": "def public_production(record: dict[str, Any]) -> dict[str, Any]:\n    return {key: record.get(key) for key in PUBLIC_FIELDS if key in record}\nclass ProductionStore:\n    def __init__(self, directory: Path | None = None) -> None:\n        self.directory = directory or PRODUCTIONS_DIR\n        self._items: dict[str, dict[str, Any]] = {}\n        self._lock = asyncio.Lock()\n    async def load(self) -> None:\n        self.directory.mkdir(parents=True, exist_ok=True)\n        for path in self.directory.glob(\"*.json\"):",
-        "detail": "web.productions",
+        "detail": "server.productions",
         "documentation": {}
     },
     {
         "label": "PRODUCTIONS_DIR",
         "kind": 5,
-        "importPath": "web.productions",
-        "description": "web.productions",
+        "importPath": "server.productions",
+        "description": "server.productions",
         "peekOfCode": "PRODUCTIONS_DIR = ROOT / \".renderhaus\" / \"productions\"\nPUBLIC_FIELDS = {\n    \"id\",\n    \"schema_version\",\n    \"user_id\",\n    \"brief\",\n    \"title\",\n    \"status\",\n    \"plan\",\n    \"execution\",",
-        "detail": "web.productions",
+        "detail": "server.productions",
         "documentation": {}
     },
     {
         "label": "PUBLIC_FIELDS",
         "kind": 5,
-        "importPath": "web.productions",
-        "description": "web.productions",
+        "importPath": "server.productions",
+        "description": "server.productions",
         "peekOfCode": "PUBLIC_FIELDS = {\n    \"id\",\n    \"schema_version\",\n    \"user_id\",\n    \"brief\",\n    \"title\",\n    \"status\",\n    \"plan\",\n    \"execution\",\n    \"error\",",
-        "detail": "web.productions",
+        "detail": "server.productions",
         "documentation": {}
     },
     {
         "label": "ProjectStore",
         "kind": 6,
-        "importPath": "web.projects",
-        "description": "web.projects",
+        "importPath": "server.projects",
+        "description": "server.projects",
         "peekOfCode": "class ProjectStore:\n    def __init__(self, directory: Path | None = None) -> None:\n        self.directory = directory or PROJECTS_DIR\n        self._projects: dict[str, dict[str, Any]] = {}\n        self._lock = asyncio.Lock()\n    async def load(self) -> None:\n        self.directory.mkdir(parents=True, exist_ok=True)\n        for path in self.directory.glob(\"*.json\"):\n            try:\n                project = json.loads(path.read_text())",
-        "detail": "web.projects",
+        "detail": "server.projects",
         "documentation": {}
     },
     {
         "label": "public_project",
         "kind": 2,
-        "importPath": "web.projects",
-        "description": "web.projects",
+        "importPath": "server.projects",
+        "description": "server.projects",
         "peekOfCode": "def public_project(project: dict[str, Any]) -> dict[str, Any]:\n    public = {key: project.get(key) for key in PUBLIC_PROJECT_FIELDS}\n    timeline = project.get(\"timeline\") or _empty_timeline()\n    items = timeline.get(\"items\") if isinstance(timeline, dict) else []\n    public[\"timeline\"] = {\"items\": list(items or [])}\n    public[\"artifact_ids\"] = list(project.get(\"artifact_ids\") or [])\n    public[\"artifact_count\"] = len(public[\"artifact_ids\"])\n    public[\"timeline_count\"] = len(public[\"timeline\"][\"items\"])\n    return public\ndef add_artifact(project: dict[str, Any], job_id: str) -> bool:",
-        "detail": "web.projects",
+        "detail": "server.projects",
         "documentation": {}
     },
     {
         "label": "add_artifact",
         "kind": 2,
-        "importPath": "web.projects",
-        "description": "web.projects",
+        "importPath": "server.projects",
+        "description": "server.projects",
         "peekOfCode": "def add_artifact(project: dict[str, Any], job_id: str) -> bool:\n    \"\"\"Add a generation id to the project library. Returns True if changed.\"\"\"\n    artifacts = list(project.get(\"artifact_ids\") or [])\n    if job_id in artifacts:\n        return False\n    artifacts.append(job_id)\n    project[\"artifact_ids\"] = artifacts\n    return True\ndef remove_artifact(project: dict[str, Any], job_id: str) -> bool:\n    artifacts = list(project.get(\"artifact_ids\") or [])",
-        "detail": "web.projects",
+        "detail": "server.projects",
         "documentation": {}
     },
     {
         "label": "remove_artifact",
         "kind": 2,
-        "importPath": "web.projects",
-        "description": "web.projects",
+        "importPath": "server.projects",
+        "description": "server.projects",
         "peekOfCode": "def remove_artifact(project: dict[str, Any], job_id: str) -> bool:\n    artifacts = list(project.get(\"artifact_ids\") or [])\n    if job_id not in artifacts:\n        return False\n    project[\"artifact_ids\"] = [item for item in artifacts if item != job_id]\n    timeline = project.get(\"timeline\") or _empty_timeline()\n    items = [\n        item\n        for item in (timeline.get(\"items\") or [])\n        if item.get(\"job_id\") != job_id",
-        "detail": "web.projects",
+        "detail": "server.projects",
         "documentation": {}
     },
     {
         "label": "timeline_items_by_kind",
         "kind": 2,
-        "importPath": "web.projects",
-        "description": "web.projects",
+        "importPath": "server.projects",
+        "description": "server.projects",
         "peekOfCode": "def timeline_items_by_kind(\n    project: dict[str, Any],\n    media_type: str,\n) -> list[dict[str, Any]]:\n    timeline = project.get(\"timeline\") or _empty_timeline()\n    return [\n        item\n        for item in (timeline.get(\"items\") or [])\n        if item.get(\"media_type\") == media_type\n    ]",
-        "detail": "web.projects",
+        "detail": "server.projects",
         "documentation": {}
     },
     {
         "label": "set_timeline_items",
         "kind": 2,
-        "importPath": "web.projects",
-        "description": "web.projects",
+        "importPath": "server.projects",
+        "description": "server.projects",
         "peekOfCode": "def set_timeline_items(\n    project: dict[str, Any],\n    items: list[dict[str, Any]],\n) -> None:\n    cleaned: list[dict[str, Any]] = []\n    for raw in items:\n        job_id = raw.get(\"job_id\")\n        if not isinstance(job_id, str) or not job_id:\n            continue\n        media_type = raw.get(\"media_type\") or \"video\"",
-        "detail": "web.projects",
+        "detail": "server.projects",
         "documentation": {}
     },
     {
         "label": "ffmpeg_available",
         "kind": 2,
-        "importPath": "web.projects",
-        "description": "web.projects",
+        "importPath": "server.projects",
+        "description": "server.projects",
         "peekOfCode": "def ffmpeg_available() -> bool:\n    return shutil.which(\"ffmpeg\") is not None\ndef probe_media_duration(path: Path) -> float | None:\n    if not path.is_file() or not shutil.which(\"ffprobe\"):\n        return None\n    result = subprocess.run(\n        [\n            \"ffprobe\",\n            \"-v\",\n            \"error\",",
-        "detail": "web.projects",
+        "detail": "server.projects",
         "documentation": {}
     },
     {
         "label": "probe_media_duration",
         "kind": 2,
-        "importPath": "web.projects",
-        "description": "web.projects",
+        "importPath": "server.projects",
+        "description": "server.projects",
         "peekOfCode": "def probe_media_duration(path: Path) -> float | None:\n    if not path.is_file() or not shutil.which(\"ffprobe\"):\n        return None\n    result = subprocess.run(\n        [\n            \"ffprobe\",\n            \"-v\",\n            \"error\",\n            \"-show_entries\",\n            \"format=duration\",",
-        "detail": "web.projects",
+        "detail": "server.projects",
         "documentation": {}
     },
     {
         "label": "merge_video_paths",
         "kind": 2,
-        "importPath": "web.projects",
-        "description": "web.projects",
+        "importPath": "server.projects",
+        "description": "server.projects",
         "peekOfCode": "def merge_video_paths(\n    paths: list[Path],\n    *,\n    output_path: Path,\n) -> Path:\n    \"\"\"Concatenate video clips into a new file.\n    Each input is normalized first so clips from different provider runs\n    (fps, sample rate, missing audio) still concatenate cleanly. Source\n    clips are never modified.\n    \"\"\"",
-        "detail": "web.projects",
+        "detail": "server.projects",
         "documentation": {}
     },
     {
         "label": "PROJECTS_DIR",
         "kind": 5,
-        "importPath": "web.projects",
-        "description": "web.projects",
+        "importPath": "server.projects",
+        "description": "server.projects",
         "peekOfCode": "PROJECTS_DIR = ROOT / \".renderhaus\" / \"projects\"\nPUBLIC_PROJECT_FIELDS = {\n    \"id\",\n    \"schema_version\",\n    \"title\",\n    \"description\",\n    \"user_id\",\n    \"created_at\",\n    \"updated_at\",\n    \"artifact_ids\",",
-        "detail": "web.projects",
+        "detail": "server.projects",
         "documentation": {}
     },
     {
         "label": "PUBLIC_PROJECT_FIELDS",
         "kind": 5,
-        "importPath": "web.projects",
-        "description": "web.projects",
+        "importPath": "server.projects",
+        "description": "server.projects",
         "peekOfCode": "PUBLIC_PROJECT_FIELDS = {\n    \"id\",\n    \"schema_version\",\n    \"title\",\n    \"description\",\n    \"user_id\",\n    \"created_at\",\n    \"updated_at\",\n    \"artifact_ids\",\n    \"timeline\",",
-        "detail": "web.projects",
+        "detail": "server.projects",
         "documentation": {}
     },
     {
         "label": "_MERGE_WIDTH",
         "kind": 5,
-        "importPath": "web.projects",
-        "description": "web.projects",
+        "importPath": "server.projects",
+        "description": "server.projects",
         "peekOfCode": "_MERGE_WIDTH = 1280\n_MERGE_HEIGHT = 720\n_MERGE_FPS = 24\n_MERGE_SAMPLE_RATE = 44100\ndef _now() -> int:\n    return int(time.time())\ndef _empty_timeline() -> dict[str, Any]:\n    return {\"items\": []}\nclass ProjectStore:\n    def __init__(self, directory: Path | None = None) -> None:",
-        "detail": "web.projects",
+        "detail": "server.projects",
         "documentation": {}
     },
     {
         "label": "_MERGE_HEIGHT",
         "kind": 5,
-        "importPath": "web.projects",
-        "description": "web.projects",
+        "importPath": "server.projects",
+        "description": "server.projects",
         "peekOfCode": "_MERGE_HEIGHT = 720\n_MERGE_FPS = 24\n_MERGE_SAMPLE_RATE = 44100\ndef _now() -> int:\n    return int(time.time())\ndef _empty_timeline() -> dict[str, Any]:\n    return {\"items\": []}\nclass ProjectStore:\n    def __init__(self, directory: Path | None = None) -> None:\n        self.directory = directory or PROJECTS_DIR",
-        "detail": "web.projects",
+        "detail": "server.projects",
         "documentation": {}
     },
     {
         "label": "_MERGE_FPS",
         "kind": 5,
-        "importPath": "web.projects",
-        "description": "web.projects",
+        "importPath": "server.projects",
+        "description": "server.projects",
         "peekOfCode": "_MERGE_FPS = 24\n_MERGE_SAMPLE_RATE = 44100\ndef _now() -> int:\n    return int(time.time())\ndef _empty_timeline() -> dict[str, Any]:\n    return {\"items\": []}\nclass ProjectStore:\n    def __init__(self, directory: Path | None = None) -> None:\n        self.directory = directory or PROJECTS_DIR\n        self._projects: dict[str, dict[str, Any]] = {}",
-        "detail": "web.projects",
+        "detail": "server.projects",
         "documentation": {}
     },
     {
         "label": "_MERGE_SAMPLE_RATE",
         "kind": 5,
-        "importPath": "web.projects",
-        "description": "web.projects",
+        "importPath": "server.projects",
+        "description": "server.projects",
         "peekOfCode": "_MERGE_SAMPLE_RATE = 44100\ndef _now() -> int:\n    return int(time.time())\ndef _empty_timeline() -> dict[str, Any]:\n    return {\"items\": []}\nclass ProjectStore:\n    def __init__(self, directory: Path | None = None) -> None:\n        self.directory = directory or PROJECTS_DIR\n        self._projects: dict[str, dict[str, Any]] = {}\n        self._lock = asyncio.Lock()",
-        "detail": "web.projects",
+        "detail": "server.projects",
+        "documentation": {}
+    },
+    {
+        "label": "secrets_locator",
+        "kind": 2,
+        "importPath": "server.secrets",
+        "description": "server.secrets",
+        "peekOfCode": "def secrets_locator() -> str | None:\n    return (\n        (os.getenv(\"RENDERHAUS_SECRETS_ARN\") or \"\").strip()\n        or (os.getenv(\"RENDERHAUS_SECRETS_NAME\") or \"\").strip()\n        or None\n    )\ndef aws_region() -> str:\n    return os.getenv(\"AWS_REGION\") or os.getenv(\"AWS_DEFAULT_REGION\") or \"us-east-1\"\n@lru_cache(maxsize=4)\ndef fetch_secret_map(secret_id: str) -> dict[str, str]:",
+        "detail": "server.secrets",
+        "documentation": {}
+    },
+    {
+        "label": "aws_region",
+        "kind": 2,
+        "importPath": "server.secrets",
+        "description": "server.secrets",
+        "peekOfCode": "def aws_region() -> str:\n    return os.getenv(\"AWS_REGION\") or os.getenv(\"AWS_DEFAULT_REGION\") or \"us-east-1\"\n@lru_cache(maxsize=4)\ndef fetch_secret_map(secret_id: str) -> dict[str, str]:\n    client = boto3.client(\"secretsmanager\", region_name=aws_region())\n    response = client.get_secret_value(SecretId=secret_id)\n    payload = response.get(\"SecretString\") or \"\"\n    if not payload and response.get(\"SecretBinary\"):\n        payload = response[\"SecretBinary\"].decode(\"utf-8\")\n    data = json.loads(payload)",
+        "detail": "server.secrets",
+        "documentation": {}
+    },
+    {
+        "label": "fetch_secret_map",
+        "kind": 2,
+        "importPath": "server.secrets",
+        "description": "server.secrets",
+        "peekOfCode": "def fetch_secret_map(secret_id: str) -> dict[str, str]:\n    client = boto3.client(\"secretsmanager\", region_name=aws_region())\n    response = client.get_secret_value(SecretId=secret_id)\n    payload = response.get(\"SecretString\") or \"\"\n    if not payload and response.get(\"SecretBinary\"):\n        payload = response[\"SecretBinary\"].decode(\"utf-8\")\n    data = json.loads(payload)\n    if not isinstance(data, dict):\n        raise RuntimeError(f\"Secret {secret_id} must be a JSON object of string values.\")\n    result: dict[str, str] = {}",
+        "detail": "server.secrets",
+        "documentation": {}
+    },
+    {
+        "label": "apply_secret_map",
+        "kind": 2,
+        "importPath": "server.secrets",
+        "description": "server.secrets",
+        "peekOfCode": "def apply_secret_map(values: dict[str, str], *, override: bool = True) -> list[str]:\n    applied: list[str] = []\n    for key, value in values.items():\n        if key in EXCLUDED_SECRET_KEYS:\n            continue\n        if not override and os.getenv(key):\n            continue\n        os.environ[key] = value\n        applied.append(key)\n    return applied",
+        "detail": "server.secrets",
+        "documentation": {}
+    },
+    {
+        "label": "load_secrets_from_manager",
+        "kind": 2,
+        "importPath": "server.secrets",
+        "description": "server.secrets",
+        "peekOfCode": "def load_secrets_from_manager(*, override: bool = True) -> list[str]:\n    \"\"\"Fetch RENDERHAUS_SECRETS_* and inject into the process environment.\"\"\"\n    secret_id = secrets_locator()\n    if not secret_id:\n        return []\n    try:\n        values = fetch_secret_map(secret_id)\n    except ClientError as exc:\n        code = exc.response.get(\"Error\", {}).get(\"Code\", \"ClientError\")\n        raise RuntimeError(",
+        "detail": "server.secrets",
+        "documentation": {}
+    },
+    {
+        "label": "clear_secrets_cache",
+        "kind": 2,
+        "importPath": "server.secrets",
+        "description": "server.secrets",
+        "peekOfCode": "def clear_secrets_cache() -> None:\n    fetch_secret_map.cache_clear()\ndef secret_payload_from_mapping(values: dict[str, Any]) -> dict[str, str]:\n    payload: dict[str, str] = {}\n    for key, value in values.items():\n        if key in EXCLUDED_SECRET_KEYS or key in BOOTSTRAP_ENV_KEYS:\n            continue\n        if value is None:\n            continue\n        text = str(value).strip()",
+        "detail": "server.secrets",
+        "documentation": {}
+    },
+    {
+        "label": "secret_payload_from_mapping",
+        "kind": 2,
+        "importPath": "server.secrets",
+        "description": "server.secrets",
+        "peekOfCode": "def secret_payload_from_mapping(values: dict[str, Any]) -> dict[str, str]:\n    payload: dict[str, str] = {}\n    for key, value in values.items():\n        if key in EXCLUDED_SECRET_KEYS or key in BOOTSTRAP_ENV_KEYS:\n            continue\n        if value is None:\n            continue\n        text = str(value).strip()\n        if text:\n            payload[str(key)] = text",
+        "detail": "server.secrets",
+        "documentation": {}
+    },
+    {
+        "label": "logger",
+        "kind": 5,
+        "importPath": "server.secrets",
+        "description": "server.secrets",
+        "peekOfCode": "logger = logging.getLogger(__name__)\n# Never sync or inject these into Secrets Manager payloads.\nEXCLUDED_SECRET_KEYS = {\n    \"AWS_ACCESS_KEY_ID\",\n    \"AWS_SECRET_ACCESS_KEY\",\n    \"AWS_SESSION_TOKEN\",\n    \"AWS_PROFILE\",\n    \"AWS_SECURITY_TOKEN\",\n}\n# Bootstrap keys that may remain in a local .env file to find the secret.",
+        "detail": "server.secrets",
+        "documentation": {}
+    },
+    {
+        "label": "EXCLUDED_SECRET_KEYS",
+        "kind": 5,
+        "importPath": "server.secrets",
+        "description": "server.secrets",
+        "peekOfCode": "EXCLUDED_SECRET_KEYS = {\n    \"AWS_ACCESS_KEY_ID\",\n    \"AWS_SECRET_ACCESS_KEY\",\n    \"AWS_SESSION_TOKEN\",\n    \"AWS_PROFILE\",\n    \"AWS_SECURITY_TOKEN\",\n}\n# Bootstrap keys that may remain in a local .env file to find the secret.\nBOOTSTRAP_ENV_KEYS = {\n    \"AWS_REGION\",",
+        "detail": "server.secrets",
+        "documentation": {}
+    },
+    {
+        "label": "BOOTSTRAP_ENV_KEYS",
+        "kind": 5,
+        "importPath": "server.secrets",
+        "description": "server.secrets",
+        "peekOfCode": "BOOTSTRAP_ENV_KEYS = {\n    \"AWS_REGION\",\n    \"AWS_DEFAULT_REGION\",\n    \"RENDERHAUS_SECRETS_NAME\",\n    \"RENDERHAUS_SECRETS_ARN\",\n    \"AGENTCORE_RUNTIME\",\n}\ndef secrets_locator() -> str | None:\n    return (\n        (os.getenv(\"RENDERHAUS_SECRETS_ARN\") or \"\").strip()",
+        "detail": "server.secrets",
+        "documentation": {}
+    },
+    {
+        "label": "_Known",
+        "kind": 6,
+        "importPath": "web.node_modules.flatted.python.flatted",
+        "description": "web.node_modules.flatted.python.flatted",
+        "peekOfCode": "class _Known:\n    def __init__(self):\n        self.key = []\n        self.value = []\nclass _String:\n    def __init__(self, value):\n        self.value = value\ndef _array_keys(value):\n    for i in range(len(value)):\n        yield i",
+        "detail": "web.node_modules.flatted.python.flatted",
+        "documentation": {}
+    },
+    {
+        "label": "_String",
+        "kind": 6,
+        "importPath": "web.node_modules.flatted.python.flatted",
+        "description": "web.node_modules.flatted.python.flatted",
+        "peekOfCode": "class _String:\n    def __init__(self, value):\n        self.value = value\ndef _array_keys(value):\n    for i in range(len(value)):\n        yield i\ndef _object_keys(value):\n    for key in value:\n        yield key\ndef _is_array(value):",
+        "detail": "web.node_modules.flatted.python.flatted",
+        "documentation": {}
+    },
+    {
+        "label": "parse",
+        "kind": 2,
+        "importPath": "web.node_modules.flatted.python.flatted",
+        "description": "web.node_modules.flatted.python.flatted",
+        "peekOfCode": "def parse(value, *args, **kwargs):\n    json = _json.loads(value, *args, **kwargs)\n    wrapped = []\n    for value in json:\n        wrapped.append(_wrap(value))\n    input = []\n    for value in wrapped:\n        if isinstance(value, _String):\n            input.append(value.value)\n        else:",
+        "detail": "web.node_modules.flatted.python.flatted",
+        "documentation": {}
+    },
+    {
+        "label": "stringify",
+        "kind": 2,
+        "importPath": "web.node_modules.flatted.python.flatted",
+        "description": "web.node_modules.flatted.python.flatted",
+        "peekOfCode": "def stringify(value, *args, **kwargs):\n    known = _Known()\n    input = []\n    output = []\n    i = int(_index(known, input, value))\n    while i < len(input):\n        output.append(_transform(known, input, input[i]))\n        i += 1\n    return _json.dumps(output, *args, **kwargs)",
+        "detail": "web.node_modules.flatted.python.flatted",
         "documentation": {}
     }
 ]
