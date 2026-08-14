@@ -13,6 +13,17 @@ on:
           - runtime
           - all
         default: all
+      provider:
+        description: Gateway provider(s)
+        required: true
+        type: choice
+        options:
+          - all
+          - seedance
+          - seedream
+          - mureka
+          - gemini_tts
+        default: all
       region:
         description: AWS region
         required: true
@@ -24,9 +35,12 @@ on:
   push:
     branches: [main, master]
     paths:
-      - "mcps/mureka/**"
-      - "lambdas/mureka/**"
+      - "providers/**"
+      - "mcps/**"
+      - "lambdas/**"
+      - "configs/gateway/**"
       - "configs/mureka_gateway_tools.json"
+      - "scripts/deploy_gateway.py"
       - "scripts/deploy_mureka_gateway.py"
       - "agent/**"
       - "configs/mcp.agentcore.json"
@@ -49,6 +63,7 @@ jobs:
     outputs:
       deploy_gateway: ${{ steps.pick.outputs.deploy_gateway }}
       deploy_runtime: ${{ steps.pick.outputs.deploy_runtime }}
+      provider: ${{ steps.pick.outputs.provider }}
       region: ${{ steps.pick.outputs.region }}
       skip_build: ${{ steps.pick.outputs.skip_build }}
     steps:
@@ -63,6 +78,7 @@ jobs:
           REGION="${{ github.event.inputs.region || 'us-east-1' }}"
           SKIP="${{ github.event.inputs.skip_runtime_build || 'false' }}"
           TARGET="${{ github.event.inputs.target || '' }}"
+          PROVIDER="${{ github.event.inputs.provider || 'all' }}"
 
           GW=false
           RT=false
@@ -79,11 +95,27 @@ jobs:
             if [ -z "$BEFORE" ] || [ "$BEFORE" = "0000000000000000000000000000000000000000" ]; then
               GW=true
               RT=true
+              PROVIDER=all
             else
               CHANGED=$(git diff --name-only "$BEFORE" "${{ github.sha }}" || true)
               echo "$CHANGED"
-              if echo "$CHANGED" | grep -E '^(mcps/mureka/|lambdas/mureka/|configs/mureka_gateway_tools\.json|scripts/deploy_mureka_gateway\.py)' >/dev/null; then
+              if echo "$CHANGED" | grep -E '^(providers/|lambdas/|configs/gateway/|configs/mureka_gateway_tools\.json|scripts/deploy_gateway\.py|scripts/deploy_mureka_gateway\.py|mcps/mureka/)' >/dev/null; then
                 GW=true
+                if echo "$CHANGED" | grep -E '^(lambdas/handler\.py|providers/catalog\.py|providers/registry\.py|scripts/deploy_gateway\.py)' >/dev/null; then
+                  PROVIDER=all
+                else
+                  SELECTED=()
+                  echo "$CHANGED" | grep -E '^providers/seedance/|^lambdas/seedance/' >/dev/null && SELECTED+=(seedance)
+                  echo "$CHANGED" | grep -E '^providers/seedream/|^lambdas/seedream/' >/dev/null && SELECTED+=(seedream)
+                  echo "$CHANGED" | grep -E '^providers/mureka/|^lambdas/mureka/|^mcps/mureka/|^configs/mureka_gateway_tools\.json|^configs/gateway/mureka\.tools\.json' >/dev/null && SELECTED+=(mureka)
+                  echo "$CHANGED" | grep -E '^providers/gemini_tts/|^lambdas/gemini' >/dev/null && SELECTED+=(gemini_tts)
+                  if [ "${#SELECTED[@]}" -eq 0 ] || [ "${#SELECTED[@]}" -eq 4 ]; then
+                    PROVIDER=all
+                  else
+                    IFS=,
+                    PROVIDER="${SELECTED[*]}"
+                  fi
+                fi
               fi
               if echo "$CHANGED" | grep -E '^(agent/|mcps/|configs/mcp\.agentcore\.json|Dockerfile\.agentcore|scripts/deploy_agentcore\.py|pyproject\.toml)' >/dev/null; then
                 RT=true
@@ -93,12 +125,13 @@ jobs:
 
           echo "deploy_gateway=$GW" >> "$GITHUB_OUTPUT"
           echo "deploy_runtime=$RT" >> "$GITHUB_OUTPUT"
+          echo "provider=$PROVIDER" >> "$GITHUB_OUTPUT"
           echo "region=$REGION" >> "$GITHUB_OUTPUT"
           echo "skip_build=$SKIP" >> "$GITHUB_OUTPUT"
-          echo "Decision gateway=$GW runtime=$RT region=$REGION"
+          echo "Decision gateway=$GW runtime=$RT provider=$PROVIDER region=$REGION"
 
   gateway:
-    name: Deploy Mureka Gateway
+    name: Deploy Gateway
     needs: decide
     if: needs.decide.outputs.deploy_gateway == 'true'
     runs-on: ubuntu-latest
@@ -122,8 +155,8 @@ jobs:
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
           aws-region: ${{ needs.decide.outputs.region }}
 
-      - name: Deploy gateway + Lambda
-        run: python scripts/deploy_mureka_gateway.py --region "${{ needs.decide.outputs.region }}"
+      - name: Deploy gateway + Lambdas
+        run: python scripts/deploy_gateway.py --region "${{ needs.decide.outputs.region }}" --provider "${{ needs.decide.outputs.provider }}"
         env:
           RENDERHAUS_SECRETS_NAME: ${{ secrets.RENDERHAUS_SECRETS_NAME }}
           AWS_REGION: ${{ needs.decide.outputs.region }}

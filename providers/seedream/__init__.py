@@ -1,0 +1,1 @@
+"""Seedream (BytePlus image) provider."""

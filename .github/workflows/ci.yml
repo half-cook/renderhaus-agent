@@ -28,7 +28,7 @@ jobs:
           pip install ruff
 
       - name: Ruff
-        run: ruff check agent mcps lambdas scripts server
+        run: ruff check agent mcps lambdas scripts server providers
 
       - name: CI checks
         run: python scripts/ci_check.py

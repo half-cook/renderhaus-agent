@@ -29,7 +29,7 @@ requires = ["setuptools>=69", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
-include = ["agent*", "mcps*", "server*", "lambdas*"]
+include = ["agent*", "mcps*", "server*", "lambdas*", "providers*"]
 
 [tool.setuptools]
 include-package-data = true

@@ -102,6 +102,7 @@ def ensure_role(iam) -> str:
                 "Resource": [
                     f"arn:aws:iam::{ACCOUNT}:role/RenderhausMurekaLambdaRole",
                     f"arn:aws:iam::{ACCOUNT}:role/RenderhausMurekaGatewayRole",
+                    f"arn:aws:iam::{ACCOUNT}:role/RenderhausGatewayLambdaRole",
                     f"arn:aws:iam::{ACCOUNT}:role/RenderhausAgentCoreRuntimeRole",
                 ],
             },
@@ -112,6 +113,7 @@ def ensure_role(iam) -> str:
                 "Resource": [
                     f"arn:aws:iam::{ACCOUNT}:role/RenderhausMurekaLambdaRole",
                     f"arn:aws:iam::{ACCOUNT}:role/RenderhausMurekaGatewayRole",
+                    f"arn:aws:iam::{ACCOUNT}:role/RenderhausGatewayLambdaRole",
                     f"arn:aws:iam::{ACCOUNT}:role/RenderhausAgentCoreRuntimeRole",
                 ],
             },

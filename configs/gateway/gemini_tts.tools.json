@@ -1,0 +1,50 @@
+[
+  {
+    "name": "list_voices",
+    "description": "List a starter set of Gemini TTS voice names for prompt planning.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": []
+    }
+  },
+  {
+    "name": "generate_speech",
+    "description": "Generate Gemini TTS speech. Currently dry-runs the provider call.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "text": {
+          "type": "string"
+        },
+        "voice": {
+          "type": "string"
+        },
+        "style_prompt": {
+          "type": "string"
+        },
+        "output_format": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "text"
+      ]
+    }
+  },
+  {
+    "name": "estimate_tts_cost",
+    "description": "Return simple character-count data for Gemini TTS cost planning.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "text": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "text"
+      ]
+    }
+  }
+]

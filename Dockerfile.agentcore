@@ -12,6 +12,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 COPY pyproject.toml README.md ./
 COPY agent ./agent
 COPY mcps ./mcps
+COPY providers ./providers
 COPY configs ./configs
 COPY server ./server
 

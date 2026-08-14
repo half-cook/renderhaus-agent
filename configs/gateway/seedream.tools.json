@@ -1,0 +1,83 @@
+[
+  {
+    "name": "text_to_image",
+    "description": "Generate an image with Seedream and save it locally when live.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "prompt": {
+          "type": "string"
+        },
+        "aspect_ratio": {
+          "type": "string"
+        },
+        "size": {
+          "type": "string"
+        },
+        "model": {
+          "type": "string"
+        },
+        "watermark": {
+          "type": "boolean"
+        },
+        "response_format": {
+          "enum": [
+            "url",
+            "b64_json"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "prompt"
+      ]
+    }
+  },
+  {
+    "name": "image_to_image",
+    "description": "Edit or restyle an image with Seedream and save it locally when live.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "image_path_or_url": {
+          "type": "string"
+        },
+        "prompt": {
+          "type": "string"
+        },
+        "aspect_ratio": {
+          "type": "string"
+        },
+        "size": {
+          "type": "string"
+        },
+        "model": {
+          "type": "string"
+        },
+        "watermark": {
+          "type": "boolean"
+        },
+        "response_format": {
+          "enum": [
+            "url",
+            "b64_json"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "image_path_or_url",
+        "prompt"
+      ]
+    }
+  },
+  {
+    "name": "list_seedream_models",
+    "description": "List image generation models visible from this BytePlus API key.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": []
+    }
+  }
+]

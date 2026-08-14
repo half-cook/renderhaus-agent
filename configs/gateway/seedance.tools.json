@@ -1,0 +1,113 @@
+[
+  {
+    "name": "text_to_video",
+    "description": "Create a Seedance text-to-video task and return the task id.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "prompt": {
+          "type": "string"
+        },
+        "duration_seconds": {
+          "type": "integer"
+        },
+        "aspect_ratio": {
+          "type": "string"
+        },
+        "resolution": {
+          "type": "string"
+        },
+        "model": {
+          "type": "string"
+        },
+        "watermark": {
+          "type": "boolean"
+        },
+        "generate_audio": {
+          "type": "boolean"
+        },
+        "service_tier": {
+          "enum": [
+            "default",
+            "flex"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "prompt"
+      ]
+    }
+  },
+  {
+    "name": "image_to_video",
+    "description": "Create a Seedance image-to-video task and return the task id.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "image_path_or_url": {
+          "type": "string"
+        },
+        "prompt": {
+          "type": "string"
+        },
+        "duration_seconds": {
+          "type": "integer"
+        },
+        "aspect_ratio": {
+          "type": "string"
+        },
+        "resolution": {
+          "type": "string"
+        },
+        "model": {
+          "type": "string"
+        },
+        "watermark": {
+          "type": "boolean"
+        },
+        "generate_audio": {
+          "type": "boolean"
+        },
+        "service_tier": {
+          "enum": [
+            "default",
+            "flex"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "image_path_or_url",
+        "prompt"
+      ]
+    }
+  },
+  {
+    "name": "get_video_task",
+    "description": "Retrieve a Seedance task status and optionally download the finished MP4.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "job_id": {
+          "type": "string"
+        },
+        "download": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "job_id"
+      ]
+    }
+  },
+  {
+    "name": "list_seedance_models",
+    "description": "List Seedance/video generation models visible from this BytePlus API key.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": []
+    }
+  }
+]
