@@ -5,11 +5,12 @@ from __future__ import annotations
 import asyncio
 import mimetypes
 import os
+import uuid
 from pathlib import Path
 from typing import Any
 from urllib.parse import quote
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, File, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
@@ -200,6 +201,38 @@ async def invoke_tool(body: InvokeBody) -> dict[str, Any]:
         "result": result,
         "assets": collect_assets(result),
     }
+
+
+@router.post("/upload")
+async def studio_upload(file: UploadFile = File(...)) -> dict[str, str]:
+    filename = file.filename or "upload.bin"
+    kind = _kind_from_suffix(filename)
+    if kind is None:
+        raise HTTPException(status_code=415, detail="Use an image, video, or audio file.")
+    payload = await file.read()
+    if not payload:
+        raise HTTPException(status_code=400, detail="The file was empty.")
+    folder = media_root() / "uploads"
+    folder.mkdir(parents=True, exist_ok=True)
+    stored = folder / f"{uuid.uuid4().hex}{Path(filename).suffix.lower()}"
+    stored.write_bytes(payload)
+    url = _local_media_url(stored)
+    if url is None:
+        raise HTTPException(status_code=500, detail="Could not store the upload.")
+    return {"kind": kind, "url": url, "path": str(stored), "filename": filename}
+
+
+class AgentBody(BaseModel):
+    prompt: str = Field(min_length=1)
+    node_ids: list[str] = Field(default_factory=list)
+
+
+@router.post("/agent")
+async def studio_agent(_body: AgentBody) -> dict[str, Any]:
+    raise HTTPException(
+        status_code=501,
+        detail="The agent is not connected yet. Add nodes from the rail to build the graph.",
+    )
 
 
 @router.get("/media")

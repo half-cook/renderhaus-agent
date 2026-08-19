@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Renderhaus studio",
-  description: "Local canvas for calling Renderhaus MCP tools without the agent.",
+  title: "Renderhaus",
+  description: "An agentic video production canvas.",
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {

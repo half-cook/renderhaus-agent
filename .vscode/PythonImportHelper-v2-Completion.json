@@ -1677,7 +1677,23 @@
         "documentation": {}
     },
     {
+        "label": "File",
+        "importPath": "fastapi",
+        "description": "fastapi",
+        "isExtraImport": true,
+        "detail": "fastapi",
+        "documentation": {}
+    },
+    {
         "label": "HTTPException",
+        "importPath": "fastapi",
+        "description": "fastapi",
+        "isExtraImport": true,
+        "detail": "fastapi",
+        "documentation": {}
+    },
+    {
+        "label": "UploadFile",
         "importPath": "fastapi",
         "description": "fastapi",
         "isExtraImport": true,
@@ -4272,6 +4288,15 @@
         "importPath": "server.studio",
         "description": "server.studio",
         "peekOfCode": "class InvokeBody(BaseModel):\n    provider: str = Field(min_length=1)\n    tool: str = Field(min_length=1)\n    arguments: dict[str, Any] = Field(default_factory=dict)\ndef media_root() -> Path:\n    raw = Path(os.getenv(\"RENDERHAUS_MEDIA_DIR\", \".renderhaus/media\")).expanduser()\n    path = raw if raw.is_absolute() else ROOT / raw\n    return path.resolve()\ndef _kind_from_suffix(value: str) -> str | None:\n    suffix = Path(value.split(\"?\", 1)[0]).suffix.lower()",
+        "detail": "server.studio",
+        "documentation": {}
+    },
+    {
+        "label": "AgentBody",
+        "kind": 6,
+        "importPath": "server.studio",
+        "description": "server.studio",
+        "peekOfCode": "class AgentBody(BaseModel):\n    prompt: str = Field(min_length=1)\n    node_ids: list[str] = Field(default_factory=list)\n@router.post(\"/agent\")\nasync def studio_agent(_body: AgentBody) -> dict[str, Any]:\n    raise HTTPException(\n        status_code=501,\n        detail=\"The agent is not connected yet. Add nodes from the rail to build the graph.\",\n    )\n@router.get(\"/media\")",
         "detail": "server.studio",
         "documentation": {}
     },

@@ -1,14 +1,11 @@
 "use client";
 
 import type { JsonSchema } from "@/lib/types";
+import { fieldLabel, isPromptField } from "@/lib/canvas/field-labels";
 
-const PROMPT_FIELDS = new Set(["prompt", "text", "lyrics", "script", "style_prompt"]);
 const OPAQUE_FIELDS = new Set([
-  "title",
-  "name",
   "filename",
   "content_b64",
-  "image_path_or_url",
   "job_id",
   "song_id",
   "upload_audio_id",
@@ -18,12 +15,15 @@ const OPAQUE_FIELDS = new Set([
   "vocal_id",
   "melody_id",
   "audio_url",
+  "path",
 ]);
 
 type Props = {
   schema: JsonSchema;
   values: Record<string, unknown>;
   options?: Record<string, Array<string | number>>;
+  hiddenFields?: string[];
+  onlyFields?: string[];
   onChange: (name: string, value: unknown) => void;
 };
 
@@ -39,7 +39,7 @@ function choicesFor(
   field: JsonSchema,
   options?: Record<string, Array<string | number>>,
 ): Array<string | number> {
-  if (PROMPT_FIELDS.has(name) || isOpaqueField(name)) {
+  if (isPromptField(name) || isOpaqueField(name)) {
     return [];
   }
   const catalog = options?.[name];
@@ -52,11 +52,7 @@ function choicesFor(
   return [];
 }
 
-function coerceChoice(
-  raw: string,
-  field: JsonSchema,
-  choices: Array<string | number>,
-): unknown {
+function coerceChoice(raw: string, field: JsonSchema, choices: Array<string | number>): unknown {
   if (raw === "") {
     return undefined;
   }
@@ -69,21 +65,24 @@ function coerceChoice(
   return raw;
 }
 
-export function SchemaForm({ schema, values, options, onChange }: Props) {
+export function SchemaForm({ schema, values, options, hiddenFields, onlyFields, onChange }: Props) {
   const properties = schema.properties || {};
   const required = new Set(schema.required || []);
+  const hidden = new Set(hiddenFields || []);
+  const allow = onlyFields ? new Set(onlyFields) : null;
   const names = [
     ...Object.keys(properties).filter((name) => required.has(name)),
     ...Object.keys(properties).filter((name) => !required.has(name)),
-  ];
+  ].filter((name) => !hidden.has(name) && (!allow || allow.has(name)));
 
   return (
     <>
       {names.map((name) => {
         const field = properties[name];
-        const requiredMark = required.has(name) ? <span className="req">required</span> : null;
+        const requiredMark = required.has(name) ? <span className="req">Required</span> : null;
         const value = values[name];
         const choices = choicesFor(name, field, options);
+        const label = fieldLabel(name);
 
         if (field.type === "boolean") {
           return (
@@ -94,7 +93,7 @@ export function SchemaForm({ schema, values, options, onChange }: Props) {
                 onChange={(event) => onChange(name, event.target.checked)}
               />
               <span>
-                {name}
+                {label}
                 {requiredMark}
               </span>
             </label>
@@ -108,14 +107,14 @@ export function SchemaForm({ schema, values, options, onChange }: Props) {
           return (
             <label className="field" key={name}>
               <span>
-                {name}
+                {label}
                 {requiredMark}
               </span>
               <select
                 value={selected}
                 onChange={(event) => onChange(name, coerceChoice(event.target.value, field, choices))}
               >
-                <option value="">unset</option>
+                <option value="">Unset</option>
                 {[...choices, ...extras].map((option) => (
                   <option key={String(option)} value={String(option)}>
                     {String(option)}
@@ -130,7 +129,7 @@ export function SchemaForm({ schema, values, options, onChange }: Props) {
           return (
             <label className="field" key={name}>
               <span>
-                {name}
+                {label}
                 {requiredMark}
               </span>
               <input
@@ -150,16 +149,16 @@ export function SchemaForm({ schema, values, options, onChange }: Props) {
           );
         }
 
-        if (PROMPT_FIELDS.has(name)) {
+        if (isPromptField(name)) {
           return (
             <label className="field" key={name}>
               <span>
-                {name}
+                {label}
                 {requiredMark}
               </span>
               <textarea
                 value={String(value ?? "")}
-                placeholder={field.description || name}
+                placeholder={field.description || label}
                 onChange={(event) => onChange(name, event.target.value)}
               />
             </label>
@@ -169,12 +168,12 @@ export function SchemaForm({ schema, values, options, onChange }: Props) {
         return (
           <label className="field" key={name}>
             <span>
-              {name}
+              {label}
               {requiredMark}
             </span>
             <input
               value={String(value ?? "")}
-              placeholder={field.description || name}
+              placeholder={field.description || label}
               onChange={(event) => onChange(name, event.target.value)}
             />
           </label>

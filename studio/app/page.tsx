@@ -1,5 +1,5 @@
-import { StudioCanvas } from "@/components/StudioCanvas";
+import { CanvasShell } from "@/components/canvas/CanvasShell";
 
 export default function Page() {
-  return <StudioCanvas />;
+  return <CanvasShell />;
 }
