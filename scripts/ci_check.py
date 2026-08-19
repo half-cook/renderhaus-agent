@@ -18,7 +18,7 @@ def _force_dry_run() -> None:
     os.environ["SEEDANCE_DRY_RUN"] = "true"
     os.environ["SEEDREAM_DRY_RUN"] = "true"
     os.environ["MUREKA_DRY_RUN"] = "true"
-    os.environ["GEMINI_TTS_DRY_RUN"] = "true"
+    os.environ["FISH_AUDIO_DRY_RUN"] = "true"
 
 
 _force_dry_run()

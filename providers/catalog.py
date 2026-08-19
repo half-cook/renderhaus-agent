@@ -70,18 +70,19 @@ PROVIDERS: tuple[ProviderSpec, ...] = (
         },
     ),
     ProviderSpec(
-        id="gemini_tts",
-        target_name="GeminiTts",
-        function_name="renderhaus-gemini-tts-tools",
-        module_path="providers.gemini_tts.api",
+        id="fish_audio",
+        target_name="FishAudio",
+        function_name="renderhaus-fish-audio-tools",
+        module_path="providers.fish_audio.api",
         env_keys=(
-            "GOOGLE_API_KEY",
-            "GEMINI_TTS_MODEL",
-            "GEMINI_TTS_DRY_RUN",
+            "FISH_API_KEY",
+            "FISH_AUDIO_API_KEY",
+            "FISH_AUDIO_MODEL",
+            "FISH_AUDIO_DRY_RUN",
         ),
         default_env={
-            "GEMINI_TTS_DRY_RUN": "true",
-            "GEMINI_TTS_MODEL": "gemini-3.1-flash-tts-preview",
+            "FISH_AUDIO_DRY_RUN": "true",
+            "FISH_AUDIO_MODEL": "s2.1-pro-free",
         },
     ),
 )

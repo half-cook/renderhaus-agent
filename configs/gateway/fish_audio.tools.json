@@ -1,7 +1,7 @@
 [
   {
     "name": "list_voices",
-    "description": "List a starter set of Gemini TTS voice names for prompt planning.",
+    "description": "List starter Fish Audio voices, plus popular public models when live.",
     "inputSchema": {
       "type": "object",
       "properties": {},
@@ -10,7 +10,7 @@
   },
   {
     "name": "generate_speech",
-    "description": "Generate Gemini TTS speech. Currently dry-runs the provider call.",
+    "description": "Generate Fish Audio speech and save a local audio file when live.",
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -20,10 +20,20 @@
         "voice": {
           "type": "string"
         },
-        "style_prompt": {
+        "output_format": {
+          "enum": [
+            "wav",
+            "mp3"
+          ],
           "type": "string"
         },
-        "output_format": {
+        "model": {
+          "enum": [
+            "s1",
+            "s2-pro",
+            "s2.1-pro",
+            "s2.1-pro-free"
+          ],
           "type": "string"
         }
       },
@@ -34,7 +44,7 @@
   },
   {
     "name": "estimate_tts_cost",
-    "description": "Return simple character-count data for Gemini TTS cost planning.",
+    "description": "Return simple character-count data for Fish Audio TTS cost planning.",
     "inputSchema": {
       "type": "object",
       "properties": {

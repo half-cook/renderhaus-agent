@@ -5,7 +5,7 @@ from __future__ import annotations
 from copy import deepcopy
 from typing import Any
 
-from providers.gemini_tts.api import VOICES
+from providers.fish_audio.api import MODELS, VOICES
 from providers.mureka.api import list_models as list_mureka_models
 from providers.seedance.api import MAX_DURATION_SECONDS, MIN_DURATION_SECONDS
 
@@ -49,16 +49,17 @@ STATIC_FIELD_OPTIONS: dict[str, dict[str, list[str | int]]] = {
         "purpose": list(MUREKA_PURPOSES),
         "aspect_ratio": ["16:9", "9:16", "1:1", "4:3", "3:4"],
     },
-    "gemini_tts": {
+    "fish_audio": {
         "voice": list(VOICES),
         "output_format": ["wav", "mp3"],
+        "model": list(MODELS),
     },
 }
 
 LIVE_CHOICE_TOOLS: tuple[tuple[str, str, str], ...] = (
     ("seedance", "list_seedance_models", "model"),
     ("seedream", "list_seedream_models", "model"),
-    ("gemini_tts", "list_voices", "voice"),
+    ("fish_audio", "list_voices", "voice"),
 )
 
 

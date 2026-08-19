@@ -28,7 +28,7 @@ const PREFERRED: Record<string, Record<string, string | number>> = {
   seedance: { duration_seconds: 5, aspect_ratio: "16:9", resolution: "720p" },
   seedream: { aspect_ratio: "1:1", size: "2K", response_format: "url" },
   mureka: { model: "auto" },
-  gemini_tts: { voice: "Zephyr", output_format: "wav" },
+  fish_audio: { voice: "Energetic Male", output_format: "mp3", model: "s2.1-pro-free" },
 };
 
 type PersistedGraph = {

@@ -38,4 +38,4 @@ jobs:
           SEEDANCE_DRY_RUN: "true"
           SEEDREAM_DRY_RUN: "true"
           MUREKA_DRY_RUN: "true"
-          GEMINI_TTS_DRY_RUN: "true"
+          FISH_AUDIO_DRY_RUN: "true"

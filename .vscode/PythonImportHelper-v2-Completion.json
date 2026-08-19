@@ -518,6 +518,14 @@
         "documentation": {}
     },
     {
+        "label": "Literal",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
         "label": "Any",
         "importPath": "typing",
         "description": "typing",
@@ -831,18 +839,26 @@
     },
     {
         "label": "TOOL_HANDLERS",
-        "importPath": "providers.gemini_tts.api",
-        "description": "providers.gemini_tts.api",
+        "importPath": "providers.fish_audio.api",
+        "description": "providers.fish_audio.api",
         "isExtraImport": true,
-        "detail": "providers.gemini_tts.api",
+        "detail": "providers.fish_audio.api",
+        "documentation": {}
+    },
+    {
+        "label": "MODELS",
+        "importPath": "providers.fish_audio.api",
+        "description": "providers.fish_audio.api",
+        "isExtraImport": true,
+        "detail": "providers.fish_audio.api",
         "documentation": {}
     },
     {
         "label": "VOICES",
-        "importPath": "providers.gemini_tts.api",
-        "description": "providers.gemini_tts.api",
+        "importPath": "providers.fish_audio.api",
+        "description": "providers.fish_audio.api",
         "isExtraImport": true,
-        "detail": "providers.gemini_tts.api",
+        "detail": "providers.fish_audio.api",
         "documentation": {}
     },
     {
@@ -1159,6 +1175,15 @@
         "documentation": {}
     },
     {
+        "label": "re",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "re",
+        "description": "re",
+        "detail": "re",
+        "documentation": {}
+    },
+    {
         "label": "time",
         "kind": 6,
         "isExtraImport": true,
@@ -1174,6 +1199,15 @@
         "importPath": "uuid",
         "description": "uuid",
         "detail": "uuid",
+        "documentation": {}
+    },
+    {
+        "label": "httpx",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "httpx",
+        "description": "httpx",
+        "detail": "httpx",
         "documentation": {}
     },
     {
@@ -1215,15 +1249,6 @@
         "description": "urllib.parse",
         "isExtraImport": true,
         "detail": "urllib.parse",
-        "documentation": {}
-    },
-    {
-        "label": "httpx",
-        "kind": 6,
-        "isExtraImport": true,
-        "importPath": "httpx",
-        "description": "httpx",
-        "detail": "httpx",
         "documentation": {}
     },
     {
@@ -1333,15 +1358,6 @@
         "documentation": {}
     },
     {
-        "label": "re",
-        "kind": 6,
-        "isExtraImport": true,
-        "importPath": "re",
-        "description": "re",
-        "detail": "re",
-        "documentation": {}
-    },
-    {
         "label": "UnionType",
         "importPath": "types",
         "description": "types",
@@ -1407,6 +1423,14 @@
     },
     {
         "label": "PROVIDERS",
+        "importPath": "providers.catalog",
+        "description": "providers.catalog",
+        "isExtraImport": true,
+        "detail": "providers.catalog",
+        "documentation": {}
+    },
+    {
+        "label": "get_provider",
         "importPath": "providers.catalog",
         "description": "providers.catalog",
         "isExtraImport": true,
@@ -2170,10 +2194,10 @@
     {
         "label": "mcp",
         "kind": 5,
-        "importPath": "mcps.gemini_tts.server",
-        "description": "mcps.gemini_tts.server",
-        "peekOfCode": "mcp = FastMCP(\"renderhaus-gemini-tts\")\nbind_tools(mcp, TOOL_HANDLERS)\nif __name__ == \"__main__\":\n    mcp.run(transport=\"stdio\", show_banner=False)",
-        "detail": "mcps.gemini_tts.server",
+        "importPath": "mcps.fish_audio.server",
+        "description": "mcps.fish_audio.server",
+        "peekOfCode": "mcp = FastMCP(\"renderhaus-fish-audio\")\nbind_tools(mcp, TOOL_HANDLERS)\nif __name__ == \"__main__\":\n    mcp.run(transport=\"stdio\", show_banner=False)",
+        "detail": "mcps.fish_audio.server",
         "documentation": {}
     },
     {
@@ -2215,55 +2239,100 @@
     {
         "label": "dry_run",
         "kind": 2,
-        "importPath": "providers.gemini_tts.api",
-        "description": "providers.gemini_tts.api",
-        "peekOfCode": "def dry_run() -> bool:\n    return os.getenv(\"GEMINI_TTS_DRY_RUN\", \"true\").lower() != \"false\"\ndef list_voices() -> dict:\n    \"\"\"List a starter set of Gemini TTS voice names for prompt planning.\"\"\"\n    return {\n        \"provider\": \"google-gemini-tts\",\n        \"model\": os.getenv(\"GEMINI_TTS_MODEL\", \"gemini-3.1-flash-tts-preview\"),\n        \"voices\": VOICES,\n        \"note\": \"Voice list is a starter set. Confirm against Google docs before production.\",\n    }",
-        "detail": "providers.gemini_tts.api",
+        "importPath": "providers.fish_audio.api",
+        "description": "providers.fish_audio.api",
+        "peekOfCode": "def dry_run() -> bool:\n    return os.getenv(\"FISH_AUDIO_DRY_RUN\", \"true\").lower() != \"false\"\ndef _model(model: str | None = None) -> str:\n    selected = (model or os.getenv(\"FISH_AUDIO_MODEL\") or DEFAULT_MODEL).strip()\n    return selected or DEFAULT_MODEL\ndef _api_key() -> str:\n    key = (os.getenv(\"FISH_API_KEY\") or os.getenv(\"FISH_AUDIO_API_KEY\") or \"\").strip()\n    if not key:\n        raise RuntimeError(\"FISH_API_KEY is required for live Fish Audio calls.\")\n    return key",
+        "detail": "providers.fish_audio.api",
         "documentation": {}
     },
     {
         "label": "list_voices",
         "kind": 2,
-        "importPath": "providers.gemini_tts.api",
-        "description": "providers.gemini_tts.api",
-        "peekOfCode": "def list_voices() -> dict:\n    \"\"\"List a starter set of Gemini TTS voice names for prompt planning.\"\"\"\n    return {\n        \"provider\": \"google-gemini-tts\",\n        \"model\": os.getenv(\"GEMINI_TTS_MODEL\", \"gemini-3.1-flash-tts-preview\"),\n        \"voices\": VOICES,\n        \"note\": \"Voice list is a starter set. Confirm against Google docs before production.\",\n    }\ndef generate_speech(\n    text: str,",
-        "detail": "providers.gemini_tts.api",
+        "importPath": "providers.fish_audio.api",
+        "description": "providers.fish_audio.api",
+        "peekOfCode": "def list_voices() -> dict:\n    \"\"\"List starter Fish Audio voices, plus popular public models when live.\"\"\"\n    voices = list(VOICES)\n    voice_ids = {label: voice_id for label, voice_id in STARTER_VOICES}\n    note = \"Starter voices from the Fish Audio quickstart. Paste any fish.audio model id.\"\n    if dry_run():\n        return {\n            \"provider\": \"fish-audio\",\n            \"model\": _model(),\n            \"voices\": voices,",
+        "detail": "providers.fish_audio.api",
         "documentation": {}
     },
     {
         "label": "generate_speech",
         "kind": 2,
-        "importPath": "providers.gemini_tts.api",
-        "description": "providers.gemini_tts.api",
-        "peekOfCode": "def generate_speech(\n    text: str,\n    voice: str = \"Zephyr\",\n    style_prompt: str = \"Natural narration, clear pacing.\",\n    output_format: str = \"wav\",\n) -> dict:\n    \"\"\"Generate Gemini TTS speech. Currently dry-runs the provider call.\"\"\"\n    job_id = f\"gemini_tts_{int(time.time())}_{uuid.uuid4().hex[:8]}\"\n    output_path = _media_dir() / \"audio\" / f\"{job_id}.{output_format}\"\n    output_path.parent.mkdir(parents=True, exist_ok=True)",
-        "detail": "providers.gemini_tts.api",
+        "importPath": "providers.fish_audio.api",
+        "description": "providers.fish_audio.api",
+        "peekOfCode": "def generate_speech(\n    text: str,\n    voice: str = \"Energetic Male\",\n    output_format: Literal[\"wav\", \"mp3\"] = \"mp3\",\n    model: Literal[\"s1\", \"s2-pro\", \"s2.1-pro\", \"s2.1-pro-free\"] | None = None,\n) -> dict:\n    \"\"\"Generate Fish Audio speech and save a local audio file when live.\"\"\"\n    job_id = f\"fish_audio_{int(time.time())}_{uuid.uuid4().hex[:8]}\"\n    selected_model = _model(model)\n    requested = str(output_format or \"mp3\").strip().lower().lstrip(\".\") or \"mp3\"",
+        "detail": "providers.fish_audio.api",
         "documentation": {}
     },
     {
         "label": "estimate_tts_cost",
         "kind": 2,
-        "importPath": "providers.gemini_tts.api",
-        "description": "providers.gemini_tts.api",
-        "peekOfCode": "def estimate_tts_cost(text: str) -> dict:\n    \"\"\"Return simple character-count data for Gemini TTS cost planning.\"\"\"\n    return {\n        \"provider\": \"google-gemini-tts\",\n        \"characters\": len(text),\n        \"note\": \"Pricing is provider/account dependent; use this count for preflight estimates.\",\n    }\nTOOL_HANDLERS: dict[str, Any] = {\n    \"list_voices\": list_voices,\n    \"generate_speech\": generate_speech,",
-        "detail": "providers.gemini_tts.api",
+        "importPath": "providers.fish_audio.api",
+        "description": "providers.fish_audio.api",
+        "peekOfCode": "def estimate_tts_cost(text: str) -> dict:\n    \"\"\"Return simple character-count data for Fish Audio TTS cost planning.\"\"\"\n    return {\n        \"provider\": \"fish-audio\",\n        \"characters\": len(text),\n        \"note\": \"Pricing is provider/account dependent; use this count for preflight estimates.\",\n    }\nTOOL_HANDLERS: dict[str, Any] = {\n    \"list_voices\": list_voices,\n    \"generate_speech\": generate_speech,",
+        "detail": "providers.fish_audio.api",
+        "documentation": {}
+    },
+    {
+        "label": "FISH_BASE_URL",
+        "kind": 5,
+        "importPath": "providers.fish_audio.api",
+        "description": "providers.fish_audio.api",
+        "peekOfCode": "FISH_BASE_URL = \"https://api.fish.audio\"\nDEFAULT_MODEL = \"s2.1-pro-free\"\nMODELS = (\"s1\", \"s2-pro\", \"s2.1-pro\", \"s2.1-pro-free\")\nHEX_ID = re.compile(r\"^[0-9a-f]{32}$\", re.IGNORECASE)\n# Starter voices from https://docs.fish.audio/developer-guide/getting-started/quickstart\nSTARTER_VOICES: tuple[tuple[str, str], ...] = (\n    (\"Energetic Male\", \"9a9cf47702da476aa4629e2506d4a857\"),\n    (\"E-Girl\", \"ca3007f96ae7499ab87d27ea3599956a\"),\n)\nVOICES = [label for label, _voice_id in STARTER_VOICES]",
+        "detail": "providers.fish_audio.api",
+        "documentation": {}
+    },
+    {
+        "label": "DEFAULT_MODEL",
+        "kind": 5,
+        "importPath": "providers.fish_audio.api",
+        "description": "providers.fish_audio.api",
+        "peekOfCode": "DEFAULT_MODEL = \"s2.1-pro-free\"\nMODELS = (\"s1\", \"s2-pro\", \"s2.1-pro\", \"s2.1-pro-free\")\nHEX_ID = re.compile(r\"^[0-9a-f]{32}$\", re.IGNORECASE)\n# Starter voices from https://docs.fish.audio/developer-guide/getting-started/quickstart\nSTARTER_VOICES: tuple[tuple[str, str], ...] = (\n    (\"Energetic Male\", \"9a9cf47702da476aa4629e2506d4a857\"),\n    (\"E-Girl\", \"ca3007f96ae7499ab87d27ea3599956a\"),\n)\nVOICES = [label for label, _voice_id in STARTER_VOICES]\nVOICE_IDS = {label.lower(): voice_id for label, voice_id in STARTER_VOICES}",
+        "detail": "providers.fish_audio.api",
+        "documentation": {}
+    },
+    {
+        "label": "MODELS",
+        "kind": 5,
+        "importPath": "providers.fish_audio.api",
+        "description": "providers.fish_audio.api",
+        "peekOfCode": "MODELS = (\"s1\", \"s2-pro\", \"s2.1-pro\", \"s2.1-pro-free\")\nHEX_ID = re.compile(r\"^[0-9a-f]{32}$\", re.IGNORECASE)\n# Starter voices from https://docs.fish.audio/developer-guide/getting-started/quickstart\nSTARTER_VOICES: tuple[tuple[str, str], ...] = (\n    (\"Energetic Male\", \"9a9cf47702da476aa4629e2506d4a857\"),\n    (\"E-Girl\", \"ca3007f96ae7499ab87d27ea3599956a\"),\n)\nVOICES = [label for label, _voice_id in STARTER_VOICES]\nVOICE_IDS = {label.lower(): voice_id for label, voice_id in STARTER_VOICES}\ndef _media_dir() -> Path:",
+        "detail": "providers.fish_audio.api",
+        "documentation": {}
+    },
+    {
+        "label": "HEX_ID",
+        "kind": 5,
+        "importPath": "providers.fish_audio.api",
+        "description": "providers.fish_audio.api",
+        "peekOfCode": "HEX_ID = re.compile(r\"^[0-9a-f]{32}$\", re.IGNORECASE)\n# Starter voices from https://docs.fish.audio/developer-guide/getting-started/quickstart\nSTARTER_VOICES: tuple[tuple[str, str], ...] = (\n    (\"Energetic Male\", \"9a9cf47702da476aa4629e2506d4a857\"),\n    (\"E-Girl\", \"ca3007f96ae7499ab87d27ea3599956a\"),\n)\nVOICES = [label for label, _voice_id in STARTER_VOICES]\nVOICE_IDS = {label.lower(): voice_id for label, voice_id in STARTER_VOICES}\ndef _media_dir() -> Path:\n    path = Path(os.getenv(\"RENDERHAUS_MEDIA_DIR\", \".renderhaus/media\")).expanduser()",
+        "detail": "providers.fish_audio.api",
         "documentation": {}
     },
     {
         "label": "VOICES",
         "kind": 5,
-        "importPath": "providers.gemini_tts.api",
-        "description": "providers.gemini_tts.api",
-        "peekOfCode": "VOICES = [\n    \"Zephyr\",\n    \"Puck\",\n    \"Charon\",\n    \"Kore\",\n    \"Fenrir\",\n    \"Leda\",\n    \"Orus\",\n    \"Aoede\",\n    \"Callirrhoe\",",
-        "detail": "providers.gemini_tts.api",
+        "importPath": "providers.fish_audio.api",
+        "description": "providers.fish_audio.api",
+        "peekOfCode": "VOICES = [label for label, _voice_id in STARTER_VOICES]\nVOICE_IDS = {label.lower(): voice_id for label, voice_id in STARTER_VOICES}\ndef _media_dir() -> Path:\n    path = Path(os.getenv(\"RENDERHAUS_MEDIA_DIR\", \".renderhaus/media\")).expanduser()\n    path.mkdir(parents=True, exist_ok=True)\n    return path\ndef dry_run() -> bool:\n    return os.getenv(\"FISH_AUDIO_DRY_RUN\", \"true\").lower() != \"false\"\ndef _model(model: str | None = None) -> str:\n    selected = (model or os.getenv(\"FISH_AUDIO_MODEL\") or DEFAULT_MODEL).strip()",
+        "detail": "providers.fish_audio.api",
+        "documentation": {}
+    },
+    {
+        "label": "VOICE_IDS",
+        "kind": 5,
+        "importPath": "providers.fish_audio.api",
+        "description": "providers.fish_audio.api",
+        "peekOfCode": "VOICE_IDS = {label.lower(): voice_id for label, voice_id in STARTER_VOICES}\ndef _media_dir() -> Path:\n    path = Path(os.getenv(\"RENDERHAUS_MEDIA_DIR\", \".renderhaus/media\")).expanduser()\n    path.mkdir(parents=True, exist_ok=True)\n    return path\ndef dry_run() -> bool:\n    return os.getenv(\"FISH_AUDIO_DRY_RUN\", \"true\").lower() != \"false\"\ndef _model(model: str | None = None) -> str:\n    selected = (model or os.getenv(\"FISH_AUDIO_MODEL\") or DEFAULT_MODEL).strip()\n    return selected or DEFAULT_MODEL",
+        "detail": "providers.fish_audio.api",
         "documentation": {}
     },
     {
         "label": "GATEWAY_TOOLS",
         "kind": 5,
-        "importPath": "providers.gemini_tts.api",
-        "description": "providers.gemini_tts.api",
+        "importPath": "providers.fish_audio.api",
+        "description": "providers.fish_audio.api",
         "peekOfCode": "GATEWAY_TOOLS = (\n    \"list_voices\",\n    \"generate_speech\",\n    \"estimate_tts_cost\",\n)",
-        "detail": "providers.gemini_tts.api",
+        "detail": "providers.fish_audio.api",
         "documentation": {}
     },
     {
@@ -3045,7 +3114,7 @@
         "kind": 5,
         "importPath": "scripts.ci_check",
         "description": "scripts.ci_check",
-        "peekOfCode": "ROOT = Path(__file__).resolve().parents[1]\nif str(ROOT) not in sys.path:\n    sys.path.insert(0, str(ROOT))\ndef _force_dry_run() -> None:\n    os.environ[\"SEEDANCE_DRY_RUN\"] = \"true\"\n    os.environ[\"SEEDREAM_DRY_RUN\"] = \"true\"\n    os.environ[\"MUREKA_DRY_RUN\"] = \"true\"\n    os.environ[\"GEMINI_TTS_DRY_RUN\"] = \"true\"\n_force_dry_run()\ndef check_gateway_tools_schema() -> None:",
+        "peekOfCode": "ROOT = Path(__file__).resolve().parents[1]\nif str(ROOT) not in sys.path:\n    sys.path.insert(0, str(ROOT))\ndef _force_dry_run() -> None:\n    os.environ[\"SEEDANCE_DRY_RUN\"] = \"true\"\n    os.environ[\"SEEDREAM_DRY_RUN\"] = \"true\"\n    os.environ[\"MUREKA_DRY_RUN\"] = \"true\"\n    os.environ[\"FISH_AUDIO_DRY_RUN\"] = \"true\"\n_force_dry_run()\ndef check_gateway_tools_schema() -> None:",
         "detail": "scripts.ci_check",
         "documentation": {}
     },
@@ -4008,7 +4077,7 @@
         "kind": 5,
         "importPath": "server.config",
         "description": "server.config",
-        "peekOfCode": "_VAR_RE = re.compile(r\"\\$\\{([A-Za-z_][A-Za-z0-9_]*|ROOT)\\}\")\nDEFAULT_ENV = {\n    \"AGENT_MODEL\": \"gpt-4.1-mini\",\n    \"BYTEPLUS_BASE_URL\": \"https://ark.ap-southeast.bytepluses.com/api/v3\",\n    \"SEEDANCE_MODEL\": \"seedance-1-5-pro-251215\",\n    \"SEEDANCE_DRY_RUN\": \"true\",\n    \"SEEDREAM_MODEL\": \"seedream-5-0-lite-260128\",\n    \"SEEDREAM_DRY_RUN\": \"true\",\n    \"GEMINI_TTS_DRY_RUN\": \"true\",\n    \"GEMINI_TTS_MODEL\": \"gemini-3.1-flash-tts-preview\",",
+        "peekOfCode": "_VAR_RE = re.compile(r\"\\$\\{([A-Za-z_][A-Za-z0-9_]*|ROOT)\\}\")\nDEFAULT_ENV = {\n    \"AGENT_MODEL\": \"gpt-4.1-mini\",\n    \"BYTEPLUS_BASE_URL\": \"https://ark.ap-southeast.bytepluses.com/api/v3\",\n    \"SEEDANCE_MODEL\": \"seedance-1-5-pro-251215\",\n    \"SEEDANCE_DRY_RUN\": \"true\",\n    \"SEEDREAM_MODEL\": \"seedream-5-0-lite-260128\",\n    \"SEEDREAM_DRY_RUN\": \"true\",\n    \"FISH_AUDIO_DRY_RUN\": \"true\",\n    \"FISH_AUDIO_MODEL\": \"s2.1-pro-free\",",
         "detail": "server.config",
         "documentation": {}
     },
@@ -4017,7 +4086,7 @@
         "kind": 5,
         "importPath": "server.config",
         "description": "server.config",
-        "peekOfCode": "DEFAULT_ENV = {\n    \"AGENT_MODEL\": \"gpt-4.1-mini\",\n    \"BYTEPLUS_BASE_URL\": \"https://ark.ap-southeast.bytepluses.com/api/v3\",\n    \"SEEDANCE_MODEL\": \"seedance-1-5-pro-251215\",\n    \"SEEDANCE_DRY_RUN\": \"true\",\n    \"SEEDREAM_MODEL\": \"seedream-5-0-lite-260128\",\n    \"SEEDREAM_DRY_RUN\": \"true\",\n    \"GEMINI_TTS_DRY_RUN\": \"true\",\n    \"GEMINI_TTS_MODEL\": \"gemini-3.1-flash-tts-preview\",\n    \"MUREKA_API_URL\": \"https://api.mureka.ai\",",
+        "peekOfCode": "DEFAULT_ENV = {\n    \"AGENT_MODEL\": \"gpt-4.1-mini\",\n    \"BYTEPLUS_BASE_URL\": \"https://ark.ap-southeast.bytepluses.com/api/v3\",\n    \"SEEDANCE_MODEL\": \"seedance-1-5-pro-251215\",\n    \"SEEDANCE_DRY_RUN\": \"true\",\n    \"SEEDREAM_MODEL\": \"seedream-5-0-lite-260128\",\n    \"SEEDREAM_DRY_RUN\": \"true\",\n    \"FISH_AUDIO_DRY_RUN\": \"true\",\n    \"FISH_AUDIO_MODEL\": \"s2.1-pro-free\",\n    \"MUREKA_API_URL\": \"https://api.mureka.ai\",",
         "detail": "server.config",
         "documentation": {}
     },

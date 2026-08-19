@@ -1,1 +1,0 @@
-"""Gemini TTS MCP server."""

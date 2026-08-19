@@ -22,7 +22,7 @@ on:
           - seedance
           - seedream
           - mureka
-          - gemini_tts
+          - fish_audio
         default: all
       region:
         description: AWS region
@@ -108,7 +108,7 @@ jobs:
                   echo "$CHANGED" | grep -E '^providers/seedance/|^lambdas/seedance/' >/dev/null && SELECTED+=(seedance)
                   echo "$CHANGED" | grep -E '^providers/seedream/|^lambdas/seedream/' >/dev/null && SELECTED+=(seedream)
                   echo "$CHANGED" | grep -E '^providers/mureka/|^lambdas/mureka/|^mcps/mureka/|^configs/mureka_gateway_tools\.json|^configs/gateway/mureka\.tools\.json' >/dev/null && SELECTED+=(mureka)
-                  echo "$CHANGED" | grep -E '^providers/gemini_tts/|^lambdas/gemini' >/dev/null && SELECTED+=(gemini_tts)
+                  echo "$CHANGED" | grep -E '^providers/fish_audio/|^lambdas/fish' >/dev/null && SELECTED+=(fish_audio)
                   if [ "${#SELECTED[@]}" -eq 0 ] || [ "${#SELECTED[@]}" -eq 4 ]; then
                     PROVIDER=all
                   else

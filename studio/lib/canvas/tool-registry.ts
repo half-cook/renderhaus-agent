@@ -70,11 +70,11 @@ export const CREATIVE_TOOLS: ToolDefinition[] = [
     displayName: "Voiceover",
     description: "Read text as speech",
     category: "audio",
-    providerId: "gemini_tts",
+    providerId: "fish_audio",
     toolName: "generate_speech",
     inputPorts: [{ id: "text", label: "Script", dataType: "text", targetField: "text", required: true }],
     outputPorts: [{ id: "audio", label: "Audio", dataType: "audio" }],
-    primaryFields: ["text", "voice", "style_prompt", "output_format"],
+    primaryFields: ["text", "voice", "model", "output_format"],
   },
 ];
 

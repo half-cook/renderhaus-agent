@@ -14,7 +14,7 @@ generation/agent backend (`server/`, `agent/`, `mcps/`).
 - **`agent/`** — LangChain agent orchestration; runs in-process locally or on Amazon Bedrock
   AgentCore Runtime.
 - **`mcps/`** — one MCP server per generation provider (Seedance video, Seedream image, Mureka
-  music, Gemini TTS).
+  music, Fish Audio TTS).
 - **`docs/`** — the long-video production-agent program (below).
 - **`design/`** — planning/status docs for how `web/` and `server/` came to live in one repo:
   [design/MERGE_STATUS.md](design/MERGE_STATUS.md) (start here — current state, what's verified,
@@ -76,7 +76,7 @@ via its execution role.
 
 ### AgentCore (cloud agent + MCPs)
 
-The LangChain agent and generation MCPs (Seedance, Seedream, Mureka, Gemini TTS) can run on
+The LangChain agent and generation MCPs (Seedance, Seedream, Mureka, Fish Audio) can run on
 Amazon Bedrock AgentCore Runtime. The backend stays local (or on its own host) and calls the
 runtime when `AGENTCORE_RUNTIME_ARN` is set.
 
@@ -210,4 +210,4 @@ not an LLM swarm over paid tools.
 Generation job records are written under `.renderhaus/jobs/`.
 
 Existing provider MCPs are wired through `configs/mcp.local.json`. Seedance video generation is live
-when `SEEDANCE_DRY_RUN=false`; Gemini TTS is still a local dry-run MCP.
+when `SEEDANCE_DRY_RUN=false`; Fish Audio TTS is live when `FISH_AUDIO_DRY_RUN=false`.

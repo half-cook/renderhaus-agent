@@ -1,6 +1,6 @@
 """AgentCore Gateway Lambda entrypoint for a single provider.
 
-Set RENDERHAUS_PROVIDER to a catalog id (seedance, seedream, mureka, gemini_tts).
+Set RENDERHAUS_PROVIDER to a catalog id (seedance, seedream, mureka, fish_audio).
 
 Event = flat tool arguments. Tool name comes from
 context.client_context.custom['bedrockAgentCoreToolName'] as TargetName___tool_name.

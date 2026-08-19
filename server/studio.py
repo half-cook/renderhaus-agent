@@ -14,7 +14,7 @@ from fastapi import APIRouter, File, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
-from providers.catalog import PROVIDERS
+from providers.catalog import PROVIDERS, get_provider
 from providers.registry import dispatch, load_committed_schemas
 from server.config import ROOT
 from server.studio_options import LIVE_CHOICE_TOOLS, extract_choice_ids, static_field_options
@@ -129,7 +129,7 @@ async def studio_status() -> dict[str, Any]:
             "seedream": os.getenv("SEEDREAM_DRY_RUN", os.getenv("SEEDANCE_DRY_RUN", "true")).lower()
             != "false",
             "mureka": os.getenv("MUREKA_DRY_RUN", "true").lower() != "false",
-            "gemini_tts": os.getenv("GEMINI_TTS_DRY_RUN", "true").lower() != "false",
+            "fish_audio": os.getenv("FISH_AUDIO_DRY_RUN", "true").lower() != "false",
         },
     }
 
@@ -186,9 +186,24 @@ async def list_tools() -> dict[str, Any]:
     return {"providers": providers}
 
 
+def _tool_arguments(provider: str, tool: str, arguments: dict[str, Any]) -> dict[str, Any]:
+    cleaned = {key: value for key, value in arguments.items() if value not in (None, "")}
+    try:
+        schema = next(
+            (item for item in load_committed_schemas(get_provider(provider)) if item.get("name") == tool),
+            None,
+        )
+    except Exception:  # noqa: BLE001 - fall back to the raw payload
+        return cleaned
+    allowed = set(((schema or {}).get("inputSchema") or {}).get("properties") or {})
+    if not allowed:
+        return cleaned
+    return {key: value for key, value in cleaned.items() if key in allowed}
+
+
 @router.post("/invoke")
 async def invoke_tool(body: InvokeBody) -> dict[str, Any]:
-    cleaned = {key: value for key, value in body.arguments.items() if value not in (None, "")}
+    cleaned = _tool_arguments(body.provider, body.tool, body.arguments)
     try:
         result = await asyncio.to_thread(dispatch, body.provider, body.tool, cleaned)
     except ValueError as exc:

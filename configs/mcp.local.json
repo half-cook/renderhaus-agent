@@ -59,14 +59,14 @@
         "RENDERHAUS_MEDIA_DIR": "${ROOT}/${RENDERHAUS_MEDIA_DIR}"
       }
     },
-    "gemini-tts": {
+    "fish-audio": {
       "transport": "stdio",
       "command": "${ROOT}/.venv/bin/python",
-      "args": ["-m", "mcps.gemini_tts.server"],
+      "args": ["-m", "mcps.fish_audio.server"],
       "env": {
-        "GOOGLE_API_KEY": "${GOOGLE_API_KEY}",
-        "GEMINI_TTS_MODEL": "${GEMINI_TTS_MODEL}",
-        "GEMINI_TTS_DRY_RUN": "${GEMINI_TTS_DRY_RUN}",
+        "FISH_API_KEY": "${FISH_API_KEY}",
+        "FISH_AUDIO_MODEL": "${FISH_AUDIO_MODEL}",
+        "FISH_AUDIO_DRY_RUN": "${FISH_AUDIO_DRY_RUN}",
         "RENDERHAUS_MEDIA_DIR": "${ROOT}/${RENDERHAUS_MEDIA_DIR}"
       }
     }
