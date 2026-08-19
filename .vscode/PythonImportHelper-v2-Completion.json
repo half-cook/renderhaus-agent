@@ -284,12 +284,36 @@
         "documentation": {}
     },
     {
+        "label": "annotations",
+        "importPath": "__future__",
+        "description": "__future__",
+        "isExtraImport": true,
+        "detail": "__future__",
+        "documentation": {}
+    },
+    {
+        "label": "annotations",
+        "importPath": "__future__",
+        "description": "__future__",
+        "isExtraImport": true,
+        "detail": "__future__",
+        "documentation": {}
+    },
+    {
         "label": "os",
         "kind": 6,
         "isExtraImport": true,
         "importPath": "os",
         "description": "os",
         "detail": "os",
+        "documentation": {}
+    },
+    {
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
+        "isExtraImport": true,
+        "detail": "pathlib",
         "documentation": {}
     },
     {
@@ -654,6 +678,22 @@
         "documentation": {}
     },
     {
+        "label": "Any",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Any",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
         "label": "dispatch",
         "importPath": "providers.registry",
         "description": "providers.registry",
@@ -695,6 +735,22 @@
     },
     {
         "label": "dispatch",
+        "importPath": "providers.registry",
+        "description": "providers.registry",
+        "isExtraImport": true,
+        "detail": "providers.registry",
+        "documentation": {}
+    },
+    {
+        "label": "dispatch",
+        "importPath": "providers.registry",
+        "description": "providers.registry",
+        "isExtraImport": true,
+        "detail": "providers.registry",
+        "documentation": {}
+    },
+    {
+        "label": "load_committed_schemas",
         "importPath": "providers.registry",
         "description": "providers.registry",
         "isExtraImport": true,
@@ -775,6 +831,14 @@
     },
     {
         "label": "TOOL_HANDLERS",
+        "importPath": "providers.gemini_tts.api",
+        "description": "providers.gemini_tts.api",
+        "isExtraImport": true,
+        "detail": "providers.gemini_tts.api",
+        "documentation": {}
+    },
+    {
+        "label": "VOICES",
         "importPath": "providers.gemini_tts.api",
         "description": "providers.gemini_tts.api",
         "isExtraImport": true,
@@ -1014,7 +1078,31 @@
         "documentation": {}
     },
     {
+        "label": "list_models",
+        "importPath": "providers.mureka.api",
+        "description": "providers.mureka.api",
+        "isExtraImport": true,
+        "detail": "providers.mureka.api",
+        "documentation": {}
+    },
+    {
         "label": "TOOL_HANDLERS",
+        "importPath": "providers.seedance.api",
+        "description": "providers.seedance.api",
+        "isExtraImport": true,
+        "detail": "providers.seedance.api",
+        "documentation": {}
+    },
+    {
+        "label": "MAX_DURATION_SECONDS",
+        "importPath": "providers.seedance.api",
+        "description": "providers.seedance.api",
+        "isExtraImport": true,
+        "detail": "providers.seedance.api",
+        "documentation": {}
+    },
+    {
+        "label": "MIN_DURATION_SECONDS",
         "importPath": "providers.seedance.api",
         "description": "providers.seedance.api",
         "isExtraImport": true,
@@ -1122,6 +1210,14 @@
         "documentation": {}
     },
     {
+        "label": "quote",
+        "importPath": "urllib.parse",
+        "description": "urllib.parse",
+        "isExtraImport": true,
+        "detail": "urllib.parse",
+        "documentation": {}
+    },
+    {
         "label": "httpx",
         "kind": 6,
         "isExtraImport": true,
@@ -1149,6 +1245,22 @@
     },
     {
         "label": "BaseModel",
+        "importPath": "pydantic",
+        "description": "pydantic",
+        "isExtraImport": true,
+        "detail": "pydantic",
+        "documentation": {}
+    },
+    {
+        "label": "BaseModel",
+        "importPath": "pydantic",
+        "description": "pydantic",
+        "isExtraImport": true,
+        "detail": "pydantic",
+        "documentation": {}
+    },
+    {
+        "label": "Field",
         "importPath": "pydantic",
         "description": "pydantic",
         "isExtraImport": true,
@@ -1287,6 +1399,14 @@
     },
     {
         "label": "get_provider",
+        "importPath": "providers.catalog",
+        "description": "providers.catalog",
+        "isExtraImport": true,
+        "detail": "providers.catalog",
+        "documentation": {}
+    },
+    {
+        "label": "PROVIDERS",
         "importPath": "providers.catalog",
         "description": "providers.catalog",
         "isExtraImport": true,
@@ -1549,6 +1669,30 @@
         "documentation": {}
     },
     {
+        "label": "APIRouter",
+        "importPath": "fastapi",
+        "description": "fastapi",
+        "isExtraImport": true,
+        "detail": "fastapi",
+        "documentation": {}
+    },
+    {
+        "label": "HTTPException",
+        "importPath": "fastapi",
+        "description": "fastapi",
+        "isExtraImport": true,
+        "detail": "fastapi",
+        "documentation": {}
+    },
+    {
+        "label": "CORSMiddleware",
+        "importPath": "fastapi.middleware.cors",
+        "description": "fastapi.middleware.cors",
+        "isExtraImport": true,
+        "detail": "fastapi.middleware.cors",
+        "documentation": {}
+    },
+    {
         "label": "JSONResponse",
         "importPath": "fastapi.responses",
         "description": "fastapi.responses",
@@ -1566,6 +1710,14 @@
     },
     {
         "label": "StreamingResponse",
+        "importPath": "fastapi.responses",
+        "description": "fastapi.responses",
+        "isExtraImport": true,
+        "detail": "fastapi.responses",
+        "documentation": {}
+    },
+    {
+        "label": "FileResponse",
         "importPath": "fastapi.responses",
         "description": "fastapi.responses",
         "isExtraImport": true,
@@ -1733,6 +1885,22 @@
         "documentation": {}
     },
     {
+        "label": "ROOT",
+        "importPath": "server.config",
+        "description": "server.config",
+        "isExtraImport": true,
+        "detail": "server.config",
+        "documentation": {}
+    },
+    {
+        "label": "router",
+        "importPath": "server.studio",
+        "description": "server.studio",
+        "isExtraImport": true,
+        "detail": "server.studio",
+        "documentation": {}
+    },
+    {
         "label": "ProductionStore",
         "importPath": "server.productions",
         "description": "server.productions",
@@ -1877,6 +2045,38 @@
         "description": "fastapi.security",
         "isExtraImport": true,
         "detail": "fastapi.security",
+        "documentation": {}
+    },
+    {
+        "label": "LIVE_CHOICE_TOOLS",
+        "importPath": "server.studio_options",
+        "description": "server.studio_options",
+        "isExtraImport": true,
+        "detail": "server.studio_options",
+        "documentation": {}
+    },
+    {
+        "label": "extract_choice_ids",
+        "importPath": "server.studio_options",
+        "description": "server.studio_options",
+        "isExtraImport": true,
+        "detail": "server.studio_options",
+        "documentation": {}
+    },
+    {
+        "label": "static_field_options",
+        "importPath": "server.studio_options",
+        "description": "server.studio_options",
+        "isExtraImport": true,
+        "detail": "server.studio_options",
+        "documentation": {}
+    },
+    {
+        "label": "deepcopy",
+        "importPath": "copy",
+        "description": "copy",
+        "isExtraImport": true,
+        "detail": "copy",
         "documentation": {}
     },
     {
@@ -3432,7 +3632,7 @@
         "kind": 5,
         "importPath": "server.app",
         "description": "server.app",
-        "peekOfCode": "app = FastAPI(title=\"Renderhaus\", version=\"0.1.0\", lifespan=lifespan)\n@app.get(\"/\", include_in_schema=False)\nasync def index() -> dict[str, str]:\n    return {\"service\": \"renderhaus-agent api\"}\n@app.exception_handler(404)\nasync def not_found(request: Request, exc: HTTPException) -> Response:\n    return JSONResponse({\"detail\": exc.detail}, status_code=404)\n@app.get(\"/api/config\")\nasync def config() -> dict[str, Any]:\n    return {",
+        "peekOfCode": "app = FastAPI(title=\"Renderhaus\", version=\"0.1.0\", lifespan=lifespan)\napp.add_middleware(\n    CORSMiddleware,\n    allow_origins=[\n        \"http://127.0.0.1:5174\",\n        \"http://localhost:5174\",\n    ],\n    allow_credentials=True,\n    allow_methods=[\"*\"],\n    allow_headers=[\"*\"],",
         "detail": "server.app",
         "documentation": {}
     },
@@ -4064,6 +4264,159 @@
         "description": "server.secrets",
         "peekOfCode": "BOOTSTRAP_ENV_KEYS = {\n    \"AWS_REGION\",\n    \"AWS_DEFAULT_REGION\",\n    \"RENDERHAUS_SECRETS_NAME\",\n    \"RENDERHAUS_SECRETS_ARN\",\n    \"AGENTCORE_RUNTIME\",\n}\ndef secrets_locator() -> str | None:\n    return (\n        (os.getenv(\"RENDERHAUS_SECRETS_ARN\") or \"\").strip()",
         "detail": "server.secrets",
+        "documentation": {}
+    },
+    {
+        "label": "InvokeBody",
+        "kind": 6,
+        "importPath": "server.studio",
+        "description": "server.studio",
+        "peekOfCode": "class InvokeBody(BaseModel):\n    provider: str = Field(min_length=1)\n    tool: str = Field(min_length=1)\n    arguments: dict[str, Any] = Field(default_factory=dict)\ndef media_root() -> Path:\n    raw = Path(os.getenv(\"RENDERHAUS_MEDIA_DIR\", \".renderhaus/media\")).expanduser()\n    path = raw if raw.is_absolute() else ROOT / raw\n    return path.resolve()\ndef _kind_from_suffix(value: str) -> str | None:\n    suffix = Path(value.split(\"?\", 1)[0]).suffix.lower()",
+        "detail": "server.studio",
+        "documentation": {}
+    },
+    {
+        "label": "media_root",
+        "kind": 2,
+        "importPath": "server.studio",
+        "description": "server.studio",
+        "peekOfCode": "def media_root() -> Path:\n    raw = Path(os.getenv(\"RENDERHAUS_MEDIA_DIR\", \".renderhaus/media\")).expanduser()\n    path = raw if raw.is_absolute() else ROOT / raw\n    return path.resolve()\ndef _kind_from_suffix(value: str) -> str | None:\n    suffix = Path(value.split(\"?\", 1)[0]).suffix.lower()\n    if suffix in IMAGE_SUFFIXES:\n        return \"image\"\n    if suffix in VIDEO_SUFFIXES:\n        return \"video\"",
+        "detail": "server.studio",
+        "documentation": {}
+    },
+    {
+        "label": "collect_assets",
+        "kind": 2,
+        "importPath": "server.studio",
+        "description": "server.studio",
+        "peekOfCode": "def collect_assets(payload: Any) -> list[dict[str, str]]:\n    found: list[dict[str, str]] = []\n    seen: set[str] = set()\n    def add(kind: str, url: str) -> None:\n        if url in seen:\n            return\n        seen.add(url)\n        found.append({\"kind\": kind, \"url\": url})\n    def walk(obj: Any) -> None:\n        if isinstance(obj, dict):",
+        "detail": "server.studio",
+        "documentation": {}
+    },
+    {
+        "label": "router",
+        "kind": 5,
+        "importPath": "server.studio",
+        "description": "server.studio",
+        "peekOfCode": "router = APIRouter(prefix=\"/api/studio\", tags=[\"studio\"])\nIMAGE_SUFFIXES = {\".png\", \".jpg\", \".jpeg\", \".webp\", \".gif\"}\nVIDEO_SUFFIXES = {\".mp4\", \".webm\", \".mov\", \".m4v\"}\nAUDIO_SUFFIXES = {\".mp3\", \".wav\", \".m4a\", \".ogg\", \".flac\"}\nURL_KEYS = {\n    \"image_url\": \"image\",\n    \"video_url\": \"video\",\n    \"audio_url\": \"audio\",\n    \"mp3_url\": \"audio\",\n    \"wav_url\": \"audio\",",
+        "detail": "server.studio",
+        "documentation": {}
+    },
+    {
+        "label": "IMAGE_SUFFIXES",
+        "kind": 5,
+        "importPath": "server.studio",
+        "description": "server.studio",
+        "peekOfCode": "IMAGE_SUFFIXES = {\".png\", \".jpg\", \".jpeg\", \".webp\", \".gif\"}\nVIDEO_SUFFIXES = {\".mp4\", \".webm\", \".mov\", \".m4v\"}\nAUDIO_SUFFIXES = {\".mp3\", \".wav\", \".m4a\", \".ogg\", \".flac\"}\nURL_KEYS = {\n    \"image_url\": \"image\",\n    \"video_url\": \"video\",\n    \"audio_url\": \"audio\",\n    \"mp3_url\": \"audio\",\n    \"wav_url\": \"audio\",\n}",
+        "detail": "server.studio",
+        "documentation": {}
+    },
+    {
+        "label": "VIDEO_SUFFIXES",
+        "kind": 5,
+        "importPath": "server.studio",
+        "description": "server.studio",
+        "peekOfCode": "VIDEO_SUFFIXES = {\".mp4\", \".webm\", \".mov\", \".m4v\"}\nAUDIO_SUFFIXES = {\".mp3\", \".wav\", \".m4a\", \".ogg\", \".flac\"}\nURL_KEYS = {\n    \"image_url\": \"image\",\n    \"video_url\": \"video\",\n    \"audio_url\": \"audio\",\n    \"mp3_url\": \"audio\",\n    \"wav_url\": \"audio\",\n}\nclass InvokeBody(BaseModel):",
+        "detail": "server.studio",
+        "documentation": {}
+    },
+    {
+        "label": "AUDIO_SUFFIXES",
+        "kind": 5,
+        "importPath": "server.studio",
+        "description": "server.studio",
+        "peekOfCode": "AUDIO_SUFFIXES = {\".mp3\", \".wav\", \".m4a\", \".ogg\", \".flac\"}\nURL_KEYS = {\n    \"image_url\": \"image\",\n    \"video_url\": \"video\",\n    \"audio_url\": \"audio\",\n    \"mp3_url\": \"audio\",\n    \"wav_url\": \"audio\",\n}\nclass InvokeBody(BaseModel):\n    provider: str = Field(min_length=1)",
+        "detail": "server.studio",
+        "documentation": {}
+    },
+    {
+        "label": "URL_KEYS",
+        "kind": 5,
+        "importPath": "server.studio",
+        "description": "server.studio",
+        "peekOfCode": "URL_KEYS = {\n    \"image_url\": \"image\",\n    \"video_url\": \"video\",\n    \"audio_url\": \"audio\",\n    \"mp3_url\": \"audio\",\n    \"wav_url\": \"audio\",\n}\nclass InvokeBody(BaseModel):\n    provider: str = Field(min_length=1)\n    tool: str = Field(min_length=1)",
+        "detail": "server.studio",
+        "documentation": {}
+    },
+    {
+        "label": "extract_choice_ids",
+        "kind": 2,
+        "importPath": "server.studio_options",
+        "description": "server.studio_options",
+        "peekOfCode": "def extract_choice_ids(payload: Any) -> list[str]:\n    found: list[str] = []\n    def add(value: Any) -> None:\n        if isinstance(value, str) and value and value not in found:\n            found.append(value)\n    if not isinstance(payload, dict):\n        return found\n    for key in (\"supported\", \"voices\"):\n        values = payload.get(key)\n        if isinstance(values, list):",
+        "detail": "server.studio_options",
+        "documentation": {}
+    },
+    {
+        "label": "static_field_options",
+        "kind": 2,
+        "importPath": "server.studio_options",
+        "description": "server.studio_options",
+        "peekOfCode": "def static_field_options() -> dict[str, dict[str, list[str | int]]]:\n    return deepcopy(STATIC_FIELD_OPTIONS)",
+        "detail": "server.studio_options",
+        "documentation": {}
+    },
+    {
+        "label": "SEEDANCE_RATIOS",
+        "kind": 5,
+        "importPath": "server.studio_options",
+        "description": "server.studio_options",
+        "peekOfCode": "SEEDANCE_RATIOS = (\"16:9\", \"9:16\", \"1:1\", \"4:3\", \"3:4\", \"21:9\", \"adaptive\")\nSEEDREAM_RATIOS = (\"1:1\", \"16:9\", \"9:16\")\nSEEDANCE_RESOLUTIONS = (\"480p\", \"720p\", \"1080p\")\nSEEDREAM_SIZES = (\"1K\", \"2K\", \"3K\")\nMUREKA_MODELS = tuple(list_mureka_models()[\"supported\"])\nMUREKA_PURPOSES = (\n    \"reference\",\n    \"melody\",\n    \"instrumental\",\n    \"voice\",",
+        "detail": "server.studio_options",
+        "documentation": {}
+    },
+    {
+        "label": "SEEDREAM_RATIOS",
+        "kind": 5,
+        "importPath": "server.studio_options",
+        "description": "server.studio_options",
+        "peekOfCode": "SEEDREAM_RATIOS = (\"1:1\", \"16:9\", \"9:16\")\nSEEDANCE_RESOLUTIONS = (\"480p\", \"720p\", \"1080p\")\nSEEDREAM_SIZES = (\"1K\", \"2K\", \"3K\")\nMUREKA_MODELS = tuple(list_mureka_models()[\"supported\"])\nMUREKA_PURPOSES = (\n    \"reference\",\n    \"melody\",\n    \"instrumental\",\n    \"voice\",\n    \"audio\",",
+        "detail": "server.studio_options",
+        "documentation": {}
+    },
+    {
+        "label": "SEEDANCE_RESOLUTIONS",
+        "kind": 5,
+        "importPath": "server.studio_options",
+        "description": "server.studio_options",
+        "peekOfCode": "SEEDANCE_RESOLUTIONS = (\"480p\", \"720p\", \"1080p\")\nSEEDREAM_SIZES = (\"1K\", \"2K\", \"3K\")\nMUREKA_MODELS = tuple(list_mureka_models()[\"supported\"])\nMUREKA_PURPOSES = (\n    \"reference\",\n    \"melody\",\n    \"instrumental\",\n    \"voice\",\n    \"audio\",\n    \"remix\",",
+        "detail": "server.studio_options",
+        "documentation": {}
+    },
+    {
+        "label": "SEEDREAM_SIZES",
+        "kind": 5,
+        "importPath": "server.studio_options",
+        "description": "server.studio_options",
+        "peekOfCode": "SEEDREAM_SIZES = (\"1K\", \"2K\", \"3K\")\nMUREKA_MODELS = tuple(list_mureka_models()[\"supported\"])\nMUREKA_PURPOSES = (\n    \"reference\",\n    \"melody\",\n    \"instrumental\",\n    \"voice\",\n    \"audio\",\n    \"remix\",\n    \"soundtrack\",",
+        "detail": "server.studio_options",
+        "documentation": {}
+    },
+    {
+        "label": "MUREKA_MODELS",
+        "kind": 5,
+        "importPath": "server.studio_options",
+        "description": "server.studio_options",
+        "peekOfCode": "MUREKA_MODELS = tuple(list_mureka_models()[\"supported\"])\nMUREKA_PURPOSES = (\n    \"reference\",\n    \"melody\",\n    \"instrumental\",\n    \"voice\",\n    \"audio\",\n    \"remix\",\n    \"soundtrack\",\n    \"lyrics-video\",",
+        "detail": "server.studio_options",
+        "documentation": {}
+    },
+    {
+        "label": "MUREKA_PURPOSES",
+        "kind": 5,
+        "importPath": "server.studio_options",
+        "description": "server.studio_options",
+        "peekOfCode": "MUREKA_PURPOSES = (\n    \"reference\",\n    \"melody\",\n    \"instrumental\",\n    \"voice\",\n    \"audio\",\n    \"remix\",\n    \"soundtrack\",\n    \"lyrics-video\",\n)",
+        "detail": "server.studio_options",
+        "documentation": {}
+    },
+    {
+        "label": "MUREKA_TRACK_TYPES",
+        "kind": 5,
+        "importPath": "server.studio_options",
+        "description": "server.studio_options",
+        "peekOfCode": "MUREKA_TRACK_TYPES = (\"vocals\", \"accompaniment\", \"instrument\")\nSTATIC_FIELD_OPTIONS: dict[str, dict[str, list[str | int]]] = {\n    \"seedance\": {\n        \"aspect_ratio\": list(SEEDANCE_RATIOS),\n        \"resolution\": list(SEEDANCE_RESOLUTIONS),\n        \"duration_seconds\": list(range(MIN_DURATION_SECONDS, MAX_DURATION_SECONDS + 1)),\n        \"service_tier\": [\"default\", \"flex\"],\n        \"model\": [\"seedance-1-5-pro-251215\"],\n    },\n    \"seedream\": {",
+        "detail": "server.studio_options",
         "documentation": {}
     },
     {

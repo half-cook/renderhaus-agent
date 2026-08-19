@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Any, Literal
 
 from fastapi import FastAPI, File, HTTPException, Request, Response, UploadFile
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, RedirectResponse, StreamingResponse
 from pydantic import BaseModel, Field
 
@@ -27,6 +28,7 @@ from server.assets import (
 )
 from server.auth import AuthUser, clerk_enabled, current_user_id, optional_user, publishable_key
 from server.config import ROOT, load_local_env
+from server.studio import router as studio_router
 from server.productions import ProductionStore, public_production
 from server.projects import (
     ProjectStore,
@@ -461,6 +463,17 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="Renderhaus", version="0.1.0", lifespan=lifespan)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://127.0.0.1:5174",
+        "http://localhost:5174",
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+app.include_router(studio_router)
 
 
 @app.get("/", include_in_schema=False)

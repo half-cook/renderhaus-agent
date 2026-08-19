@@ -3,7 +3,7 @@ PYTHON ?= .venv/bin/python
 REGION ?= us-east-1
 PROVIDER ?= all
 
-.PHONY: help setup check lint tools web dry-flags gateway smoke-gateway runtime smoke deploy-all invoke-tool schemas
+.PHONY: help setup check lint tools web studio dry-flags gateway smoke-gateway runtime smoke deploy-all invoke-tool schemas
 
 help:
 	@echo "Local development"
@@ -12,7 +12,7 @@ help:
 	@echo "  make lint          Ruff check"
 	@echo "  make tools         List Gateway tools generated from providers/"
 	@echo "  make schemas       Write configs/gateway/*.tools.json from provider APIs"
-	@echo "  make web           Run the backend API only"
+	@echo "  make studio        Canvas UI for calling MCP tools locally (needs make web too)"
 	@echo "  make dry-flags     Print dry-run flags the process sees"
 	@echo "  make invoke-tool   Local Lambda-shaped invoke (PROVIDER=seedance TOOL=list_seedance_models)"
 	@echo ""
@@ -40,6 +40,9 @@ schemas:
 
 web:
 	$(PYTHON) -m server.app
+
+studio:
+	cd studio && npm run dev
 
 invoke-tool:
 	$(PYTHON) scripts/invoke_tool.py --provider $(PROVIDER) --tool $(TOOL) --args '$(or $(ARGS),{})'
