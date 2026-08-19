@@ -50,6 +50,7 @@ type CanvasStore = {
   selectedNodeIds: string[];
   activeTool: RailTool;
   inspectorOpen: boolean;
+  composerOpen: boolean;
   advancedOpen: boolean;
   connectionHint: string | null;
   composerMessage: string | null;
@@ -67,6 +68,7 @@ type CanvasStore = {
   createProject: () => void;
   setActiveTool: (tool: RailTool) => void;
   setInspectorOpen: (open: boolean) => void;
+  setComposerOpen: (open: boolean) => void;
   toggleAdvanced: () => void;
   setViewport: (viewport: Viewport) => void;
   onNodesChange: (changes: NodeChange<CanvasNode>[]) => void;
@@ -119,6 +121,9 @@ function defaultsFor(tool: ToolDefinition, fieldOptions: FieldOptions): Record<s
       args[name] = value;
     }
   }
+  if (args.model === undefined && catalog.model && catalog.model.length > 0) {
+    args.model = catalog.model[0];
+  }
   return args;
 }
 
@@ -163,7 +168,8 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
   viewport: { x: 80, y: 80, zoom: 1 },
   selectedNodeIds: [],
   activeTool: "select",
-  inspectorOpen: true,
+  inspectorOpen: false,
+  composerOpen: false,
   advancedOpen: false,
   connectionHint: null,
   composerMessage: null,
@@ -260,10 +266,16 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
     get().persist();
   },
 
-  setActiveTool: (tool) => set({ activeTool: tool }),
+  setActiveTool: (tool) =>
+    set(tool === "agent" ? { activeTool: tool, composerOpen: true } : { activeTool: tool }),
   setInspectorOpen: (open) => set({ inspectorOpen: open }),
+  setComposerOpen: (open) => set({ composerOpen: open }),
   toggleAdvanced: () => set({ advancedOpen: !get().advancedOpen }),
   setViewport: (viewport) => {
+    const current = get().viewport;
+    if (current.x === viewport.x && current.y === viewport.y && current.zoom === viewport.zoom) {
+      return;
+    }
     set({ viewport });
     get().persist();
   },
@@ -280,8 +292,15 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
       get().pushHistory();
     }
     const next = applyNodeChanges(changes, get().nodes);
-    const selectedNodeIds = next.filter((node) => node.selected).map((node) => node.id);
-    set({ nodes: next, selectedNodeIds });
+    const nextSelected = next.filter((node) => node.selected).map((node) => node.id);
+    const prevSelected = get().selectedNodeIds;
+    const selectionChanged =
+      prevSelected.length !== nextSelected.length || prevSelected.some((id, index) => id !== nextSelected[index]);
+    set({
+      nodes: next,
+      selectedNodeIds: selectionChanged ? nextSelected : prevSelected,
+      ...(selectionChanged ? { inspectorOpen: nextSelected.length === 1 } : {}),
+    });
     const structural = changes.some((change) => change.type === "remove" || change.type === "add");
     if (structural) {
       get().persist();
@@ -327,7 +346,16 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
     get().persist();
   },
 
-  onSelectionChange: (ids) => set({ selectedNodeIds: ids }),
+  onSelectionChange: (ids) => {
+    const prev = get().selectedNodeIds;
+    if (prev.length === ids.length && prev.every((id, index) => id === ids[index])) {
+      return;
+    }
+    set({
+      selectedNodeIds: ids,
+      inspectorOpen: ids.length === 1,
+    });
+  },
 
   addCreativeNode: ({ kind, position, toolId, title, config, output }) => {
     get().pushHistory();

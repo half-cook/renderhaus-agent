@@ -2,6 +2,7 @@
 
 import type { JsonSchema } from "@/lib/types";
 import { fieldLabel, isPromptField } from "@/lib/canvas/field-labels";
+import { choiceLabel } from "@/lib/canvas/model-labels";
 
 const OPAQUE_FIELDS = new Set([
   "filename",
@@ -83,6 +84,12 @@ export function SchemaForm({ schema, values, options, hiddenFields, onlyFields, 
         const value = values[name];
         const choices = choicesFor(name, field, options);
         const label = fieldLabel(name);
+        const empty =
+          value === undefined ||
+          value === null ||
+          value === "" ||
+          (typeof value === "string" && !value.trim());
+        const needsInput = required.has(name) && empty;
 
         if (field.type === "boolean") {
           return (
@@ -105,7 +112,7 @@ export function SchemaForm({ schema, values, options, hiddenFields, onlyFields, 
           const extras =
             selected && !choices.some((choice) => String(choice) === selected) ? [value as string | number] : [];
           return (
-            <label className="field" key={name}>
+            <label className={`field ${needsInput ? "needs-input" : ""}`} key={name}>
               <span>
                 {label}
                 {requiredMark}
@@ -114,10 +121,10 @@ export function SchemaForm({ schema, values, options, hiddenFields, onlyFields, 
                 value={selected}
                 onChange={(event) => onChange(name, coerceChoice(event.target.value, field, choices))}
               >
-                <option value="">Unset</option>
+                <option value="">Choose {label.toLowerCase()}</option>
                 {[...choices, ...extras].map((option) => (
                   <option key={String(option)} value={String(option)}>
-                    {String(option)}
+                    {choiceLabel(name, String(option))}
                   </option>
                 ))}
               </select>
@@ -127,7 +134,7 @@ export function SchemaForm({ schema, values, options, hiddenFields, onlyFields, 
 
         if (field.type === "integer" || field.type === "number") {
           return (
-            <label className="field" key={name}>
+            <label className={`field ${needsInput ? "needs-input" : ""}`} key={name}>
               <span>
                 {label}
                 {requiredMark}
@@ -151,14 +158,14 @@ export function SchemaForm({ schema, values, options, hiddenFields, onlyFields, 
 
         if (isPromptField(name)) {
           return (
-            <label className="field" key={name}>
+            <label className={`field ${needsInput ? "needs-input" : ""}`} key={name}>
               <span>
                 {label}
                 {requiredMark}
               </span>
               <textarea
                 value={String(value ?? "")}
-                placeholder={field.description || label}
+                placeholder={field.description || `Write a ${label.toLowerCase()}`}
                 onChange={(event) => onChange(name, event.target.value)}
               />
             </label>
@@ -166,7 +173,7 @@ export function SchemaForm({ schema, values, options, hiddenFields, onlyFields, 
         }
 
         return (
-          <label className="field" key={name}>
+          <label className={`field ${needsInput ? "needs-input" : ""}`} key={name}>
             <span>
               {label}
               {requiredMark}

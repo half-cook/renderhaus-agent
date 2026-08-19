@@ -1,7 +1,7 @@
 "use client";
 
 import { ChevronDown, Ellipsis, Redo2, Share2, Undo2 } from "lucide-react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { queueSize, useCanvasStore } from "@/lib/canvas/store";
 
 export function CanvasHeader() {
@@ -11,6 +11,7 @@ export function CanvasHeader() {
   const status = useCanvasStore((state) => state.status);
   const loadError = useCanvasStore((state) => state.loadError);
   const nodes = useCanvasStore((state) => state.nodes);
+  const selectedNodeIds = useCanvasStore((state) => state.selectedNodeIds);
   const past = useCanvasStore((state) => state.past);
   const future = useCanvasStore((state) => state.future);
   const setProjectName = useCanvasStore((state) => state.setProjectName);
@@ -19,9 +20,27 @@ export function CanvasHeader() {
   const undo = useCanvasStore((state) => state.undo);
   const redo = useCanvasStore((state) => state.redo);
   const persist = useCanvasStore((state) => state.persist);
-  const [menu, setMenu] = useState<"project" | "status" | "more" | null>(null);
+  const duplicateSelected = useCanvasStore((state) => state.duplicateSelected);
+  const deleteSelected = useCanvasStore((state) => state.deleteSelected);
+  const [menu, setMenu] = useState<"project" | "status" | "share" | "more" | null>(null);
+  const [exported, setExported] = useState(false);
   const fileRef = useRef<HTMLAnchorElement>(null);
+  const headerRef = useRef<HTMLElement>(null);
   const queued = queueSize(nodes);
+  const hasSelection = selectedNodeIds.length > 0;
+
+  useEffect(() => {
+    if (!menu) {
+      return;
+    }
+    const onPointerDown = (event: PointerEvent) => {
+      if (headerRef.current && !headerRef.current.contains(event.target as Node)) {
+        setMenu(null);
+      }
+    };
+    window.addEventListener("pointerdown", onPointerDown);
+    return () => window.removeEventListener("pointerdown", onPointerDown);
+  }, [menu]);
 
   const exportGraph = () => {
     persist();
@@ -38,29 +57,36 @@ export function CanvasHeader() {
     link.download = `${projectName.replaceAll(" ", "-").toLowerCase() || "renderhaus"}.json`;
     link.click();
     URL.revokeObjectURL(url);
+    setExported(true);
+    window.setTimeout(() => setExported(false), 2000);
   };
 
   return (
-    <header className="chrome-header">
+    <header className="chrome-header" ref={headerRef}>
       <div className="header-left">
         <div className="wordmark">Renderhaus</div>
-        <input
-          className="project-name"
-          value={projectName}
-          aria-label="Project name"
-          onChange={(event) => setProjectName(event.target.value)}
-        />
         <div className="header-menu-wrap">
           <button
-            className="icon-btn"
+            className="project-switcher"
             type="button"
-            aria-label="Switch project"
+            aria-haspopup="listbox"
+            aria-expanded={menu === "project"}
             onClick={() => setMenu(menu === "project" ? null : "project")}
           >
+            <span className="project-name-display">{projectName || "Untitled"}</span>
             <ChevronDown size={16} />
           </button>
           {menu === "project" ? (
-            <div className="popover">
+            <div className="popover project-pop">
+              <label className="field">
+                <span>Project name</span>
+                <input
+                  value={projectName}
+                  aria-label="Project name"
+                  onChange={(event) => setProjectName(event.target.value)}
+                  onClick={(event) => event.stopPropagation()}
+                />
+              </label>
               {projects.map((project) => (
                 <button
                   key={project.id}
@@ -74,7 +100,13 @@ export function CanvasHeader() {
                   {project.name}
                 </button>
               ))}
-              <button type="button" onClick={() => { createProject(); setMenu(null); }}>
+              <button
+                type="button"
+                onClick={() => {
+                  createProject();
+                  setMenu(null);
+                }}
+              >
                 New project
               </button>
             </div>
@@ -92,6 +124,7 @@ export function CanvasHeader() {
           <button
             className="queue-chip"
             type="button"
+            aria-expanded={menu === "status"}
             onClick={() => setMenu(menu === "status" ? null : "status")}
           >
             {queued > 0 ? `${queued} running` : "Queue idle"}
@@ -102,30 +135,64 @@ export function CanvasHeader() {
               {status
                 ? Object.entries(status.dry_run).map(([id, dry]) => (
                     <p key={id}>
-                      {id}: {dry ? "dry run" : "live"}
+                      {id.replaceAll("_", " ")}: {dry ? "dry run" : "live"}
                     </p>
                   ))
                 : null}
             </div>
           ) : null}
         </div>
-        <button className="text-btn" type="button" disabled title="Sharing is not available locally">
-          <Share2 size={14} />
-          Share
-        </button>
-        <button className="text-btn" type="button" onClick={exportGraph}>
-          Export
+        <div className="header-menu-wrap">
+          <button
+            className="text-btn"
+            type="button"
+            aria-expanded={menu === "share"}
+            onClick={() => setMenu(menu === "share" ? null : "share")}
+          >
+            <Share2 size={14} />
+            Share
+          </button>
+          {menu === "share" ? (
+            <div className="popover status-pop">
+              <p>Share is unavailable in the local studio. Cloud sharing is not connected yet.</p>
+            </div>
+          ) : null}
+        </div>
+        <button className="text-btn" type="button" aria-live="polite" onClick={exportGraph}>
+          {exported ? "Exported" : "Export"}
         </button>
         <div className="header-menu-wrap">
-          <button className="icon-btn" type="button" aria-label="More" onClick={() => setMenu(menu === "more" ? null : "more")}>
+          <button
+            className="icon-btn"
+            type="button"
+            aria-label="More"
+            aria-expanded={menu === "more"}
+            onClick={() => setMenu(menu === "more" ? null : "more")}
+          >
             <Ellipsis size={16} />
           </button>
           {menu === "more" ? (
             <div className="popover">
-              <button type="button" onClick={() => { useCanvasStore.getState().duplicateSelected(); setMenu(null); }}>
+              <button
+                type="button"
+                disabled={!hasSelection}
+                title={hasSelection ? "Duplicate selected nodes" : "Select a node to duplicate"}
+                onClick={() => {
+                  duplicateSelected();
+                  setMenu(null);
+                }}
+              >
                 Duplicate
               </button>
-              <button type="button" onClick={() => { useCanvasStore.getState().deleteSelected(); setMenu(null); }}>
+              <button
+                type="button"
+                disabled={!hasSelection}
+                title={hasSelection ? "Delete selected nodes" : "Select a node to delete"}
+                onClick={() => {
+                  deleteSelected();
+                  setMenu(null);
+                }}
+              >
                 Delete selected
               </button>
             </div>

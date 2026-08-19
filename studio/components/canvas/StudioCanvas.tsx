@@ -8,9 +8,11 @@ import {
   useReactFlow,
   type Connection,
   type Edge,
+  type OnMove,
 } from "@xyflow/react";
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { isCompatibleConnection } from "@/lib/canvas/connection-validation";
+import { FIT_VIEW_PADDING } from "@/lib/canvas/safe-area";
 import { useCanvasStore } from "@/lib/canvas/store";
 import type { CreativeNodeKind } from "@/lib/canvas/types";
 import { CanvasControls } from "./CanvasControls";
@@ -27,6 +29,27 @@ const QUICK_ADD: Array<{ label: string; kind: CreativeNodeKind; toolId?: string 
   { label: "Storyboard", kind: "storyboard" },
 ];
 
+const FIT_VIEW_OPTIONS = { padding: FIT_VIEW_PADDING };
+const DEFAULT_EDGE_OPTIONS = { type: "smoothstep" as const };
+const CONNECTION_LINE_STYLE = { stroke: "#5eead4", strokeWidth: 1.5 };
+const PAN_ON_DRAG_SELECT: number[] = [1, 2];
+const PRO_OPTIONS = { hideAttribution: true };
+const DELETE_KEY_CODE = ["Backspace", "Delete"];
+const MULTI_SELECTION_KEY_CODE = ["Meta", "Control"];
+
+const EMPTY_ACTIONS: Array<{
+  label: string;
+  hint: string;
+  kind?: CreativeNodeKind;
+  toolId?: string;
+  upload?: boolean;
+}> = [
+  { label: "Generate image", hint: "Start from a prompt", kind: "image", toolId: "image.generate" },
+  { label: "Upload reference", hint: "Drop in a still or clip", upload: true },
+  { label: "Add text", hint: "Write a prompt or script", kind: "text" },
+  { label: "Storyboard", hint: "Block out the sequence", kind: "storyboard" },
+];
+
 export function StudioCanvas() {
   const nodes = useCanvasStore((state) => state.nodes);
   const edges = useCanvasStore((state) => state.edges);
@@ -38,15 +61,40 @@ export function StudioCanvas() {
   const onSelectionChange = useCanvasStore((state) => state.onSelectionChange);
   const setViewport = useCanvasStore((state) => state.setViewport);
   const addCreativeNode = useCanvasStore((state) => state.addCreativeNode);
+  const addUploadNode = useCanvasStore((state) => state.addUploadNode);
   const pushHistory = useCanvasStore((state) => state.pushHistory);
   const persist = useCanvasStore((state) => state.persist);
   const { screenToFlowPosition } = useReactFlow();
   const [menu, setMenu] = useState<MenuState>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   const isValidConnection = useCallback(
     (connection: Connection | Edge) => isCompatibleConnection(connection, useCanvasStore.getState().nodes).ok,
     [],
   );
+
+  const handleSelectionChange = useCallback(
+    ({ nodes: selected }: { nodes: Array<{ id: string }> }) => {
+      onSelectionChange(selected.map((node) => node.id));
+    },
+    [onSelectionChange],
+  );
+
+  const handleMoveEnd: OnMove = useCallback(
+    (_event, viewport) => {
+      setViewport(viewport);
+    },
+    [setViewport],
+  );
+
+  const center = () => {
+    const pane = document.querySelector(".react-flow");
+    const rect = pane?.getBoundingClientRect();
+    return screenToFlowPosition({
+      x: (rect?.left || 0) + (rect?.width || 800) / 2,
+      y: (rect?.top || 0) + (rect?.height || 600) / 2,
+    });
+  };
 
   return (
     <div className="flow-host">
@@ -58,8 +106,8 @@ export function StudioCanvas() {
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
         isValidConnection={isValidConnection}
-        onSelectionChange={({ nodes: selected }) => onSelectionChange(selected.map((node) => node.id))}
-        onMoveEnd={(_, viewport) => setViewport(viewport)}
+        onSelectionChange={handleSelectionChange}
+        onMoveEnd={handleMoveEnd}
         onNodeDragStart={() => pushHistory()}
         onNodeDragStop={() => persist()}
         onPaneClick={(event) => {
@@ -88,25 +136,47 @@ export function StudioCanvas() {
           });
         }}
         defaultViewport={useCanvasStore.getState().viewport}
+        fitViewOptions={FIT_VIEW_OPTIONS}
         selectionOnDrag={activeTool === "select"}
-        panOnDrag={activeTool === "hand" ? true : [1, 2]}
+        panOnDrag={activeTool === "hand" ? true : PAN_ON_DRAG_SELECT}
         selectionMode={SelectionMode.Partial}
-        deleteKeyCode={["Backspace", "Delete"]}
-        multiSelectionKeyCode={["Meta", "Control"]}
+        deleteKeyCode={DELETE_KEY_CODE}
+        multiSelectionKeyCode={MULTI_SELECTION_KEY_CODE}
         panOnScroll
         minZoom={0.2}
         maxZoom={2.2}
-        defaultEdgeOptions={{ type: "smoothstep" }}
-        connectionLineStyle={{ stroke: "#5eead4", strokeWidth: 1.5 }}
-        proOptions={{ hideAttribution: true }}
+        defaultEdgeOptions={DEFAULT_EDGE_OPTIONS}
+        connectionLineStyle={CONNECTION_LINE_STYLE}
+        proOptions={PRO_OPTIONS}
       >
         <Background id="grid" variant={BackgroundVariant.Dots} gap={24} size={1} color="#252529" />
         <CanvasControls />
       </ReactFlow>
       {nodes.length === 0 ? (
         <div className="empty-canvas">
-          <h1>Start with a shot</h1>
-          <p>Add text, generate an image, or upload a reference. Connect outputs into the next node.</p>
+          <h1>Add something to the canvas</h1>
+          <p>Generate a still, drop in a reference, write a prompt, or block out a storyboard.</p>
+          <div className="empty-actions">
+            {EMPTY_ACTIONS.map((action) => (
+              <button
+                key={action.label}
+                className="empty-action"
+                type="button"
+                onClick={() => {
+                  if (action.upload) {
+                    fileRef.current?.click();
+                    return;
+                  }
+                  if (action.kind) {
+                    addCreativeNode({ kind: action.kind, toolId: action.toolId, position: center() });
+                  }
+                }}
+              >
+                <span>{action.label}</span>
+                <small>{action.hint}</small>
+              </button>
+            ))}
+          </div>
         </div>
       ) : null}
       {connectionHint ? <div className="connection-hint">{connectionHint}</div> : null}
@@ -130,6 +200,19 @@ export function StudioCanvas() {
           ))}
         </div>
       ) : null}
+      <input
+        ref={fileRef}
+        type="file"
+        hidden
+        accept="image/*,video/*,audio/*"
+        onChange={(event) => {
+          const file = event.target.files?.[0];
+          event.target.value = "";
+          if (file) {
+            void addUploadNode(file, center());
+          }
+        }}
+      />
     </div>
   );
 }

@@ -22,17 +22,49 @@ type Props = {
   onUpload: (file: File) => void;
 };
 
-const RAIL: Array<{ id: RailTool; label: string; icon: typeof Upload }> = [
-  { id: "select", label: "Select", icon: MousePointer2 },
-  { id: "hand", label: "Pan", icon: Hand },
-  { id: "upload", label: "Upload", icon: Upload },
-  { id: "text", label: "Text", icon: Type },
-  { id: "image", label: "Image", icon: ImageIcon },
-  { id: "video", label: "Video", icon: Video },
-  { id: "audio", label: "Music", icon: Music },
-  { id: "voice", label: "Voiceover", icon: Mic },
-  { id: "storyboard", label: "Storyboard", icon: LayoutGrid },
-  { id: "agent", label: "Agent", icon: Sparkles },
+type RailItem = { id: RailTool; label: string; icon: typeof Upload };
+
+const GROUPS: Array<{ id: string; label: string; items: RailItem[] }> = [
+  {
+    id: "canvas",
+    label: "Canvas",
+    items: [
+      { id: "select", label: "Select", icon: MousePointer2 },
+      { id: "hand", label: "Pan", icon: Hand },
+    ],
+  },
+  {
+    id: "inputs",
+    label: "Inputs",
+    items: [
+      { id: "upload", label: "Upload", icon: Upload },
+      { id: "text", label: "Text", icon: Type },
+    ],
+  },
+  {
+    id: "generation",
+    label: "Generation",
+    items: [
+      { id: "image", label: "Image", icon: ImageIcon },
+      { id: "video", label: "Video", icon: Video },
+    ],
+  },
+  {
+    id: "audio",
+    label: "Audio",
+    items: [
+      { id: "audio", label: "Music", icon: Music },
+      { id: "voice", label: "Voiceover", icon: Mic },
+    ],
+  },
+  {
+    id: "workflow",
+    label: "Workflow",
+    items: [
+      { id: "storyboard", label: "Storyboard", icon: LayoutGrid },
+      { id: "agent", label: "Agent", icon: Sparkles },
+    ],
+  },
 ];
 
 function handleRailAction(
@@ -78,25 +110,31 @@ export function ToolRail({ onPlace, onUpload }: Props) {
 
   return (
     <nav className="tool-rail" aria-label="Creation tools">
-      {RAIL.map((item) => {
-        const Icon = item.icon;
-        return (
-          <button
-            key={item.id}
-            type="button"
-            className={activeTool === item.id ? "rail-btn active" : "rail-btn"}
-            title={item.label}
-            aria-label={item.label}
-            aria-pressed={activeTool === item.id}
-            onClick={() => {
-              setActiveTool(item.id);
-              handleRailAction(item.id, onPlace, fileRef);
-            }}
-          >
-            <Icon size={18} />
-          </button>
-        );
-      })}
+      {GROUPS.map((group) => (
+        <div className="rail-group" key={group.id} role="group" aria-label={group.label}>
+          <p className="rail-group-label">{group.label}</p>
+          {group.items.map((item) => {
+            const Icon = item.icon;
+            return (
+              <button
+                key={item.id}
+                type="button"
+                className={activeTool === item.id ? "rail-btn active" : "rail-btn"}
+                title={item.label}
+                aria-label={item.label}
+                aria-pressed={activeTool === item.id}
+                onClick={() => {
+                  setActiveTool(item.id);
+                  handleRailAction(item.id, onPlace, fileRef);
+                }}
+              >
+                <Icon size={18} />
+                <span className="rail-btn-label">{item.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      ))}
       <input
         ref={fileRef}
         type="file"

@@ -20,6 +20,10 @@ function Workspace() {
   const undo = useCanvasStore((state) => state.undo);
   const redo = useCanvasStore((state) => state.redo);
   const setActiveTool = useCanvasStore((state) => state.setActiveTool);
+  const inspectorVisible = useCanvasStore(
+    (state) => state.inspectorOpen && state.selectedNodeIds.length === 1,
+  );
+  const composerOpen = useCanvasStore((state) => state.composerOpen);
   const { screenToFlowPosition } = useReactFlow();
 
   useEffect(() => {
@@ -66,7 +70,15 @@ function Workspace() {
   }
 
   return (
-    <div className="workspace">
+    <div
+      className={[
+        "workspace",
+        inspectorVisible ? "inspector-open" : "",
+        composerOpen ? "composer-open" : "",
+      ]
+        .filter(Boolean)
+        .join(" ")}
+    >
       <a className="skip-link" href="#canvas">
         Skip to canvas
       </a>

@@ -3,6 +3,7 @@
 import { ChevronDown, ChevronRight, PanelRightClose, PanelRightOpen } from "lucide-react";
 import { SchemaForm } from "@/components/forms/SchemaForm";
 import { PRIMARY_FIELD_ORDER } from "@/lib/canvas/field-labels";
+import { generateBlockers } from "@/lib/canvas/generate-readiness";
 import { schemaFor } from "@/lib/canvas/types";
 import { selectedNode, useCanvasStore } from "@/lib/canvas/store";
 import { toolById } from "@/lib/canvas/tool-registry";
@@ -22,25 +23,15 @@ export function NodeInspector() {
   const runNode = useCanvasStore((state) => state.runNode);
   const node = selectedNode(nodes, selectedNodeIds);
 
+  if (!node) {
+    return null;
+  }
+
   if (!inspectorOpen) {
     return (
       <button className="inspector-toggle" type="button" aria-label="Open inspector" onClick={() => setInspectorOpen(true)}>
         <PanelRightOpen size={16} />
       </button>
-    );
-  }
-
-  if (!node) {
-    return (
-      <aside className="inspector">
-        <header className="inspector-head">
-          <h2>Inspector</h2>
-          <button className="icon-btn" type="button" aria-label="Close inspector" onClick={() => setInspectorOpen(false)}>
-            <PanelRightClose size={16} />
-          </button>
-        </header>
-        <p className="inspector-empty">Select a node to edit its settings.</p>
-      </aside>
     );
   }
 
@@ -56,6 +47,9 @@ export function NodeInspector() {
   const advanced = Object.keys(schema?.inputSchema.properties || {}).filter(
     (field) => !primary.includes(field) && !connectedFields.includes(field),
   );
+  const blockers = generateBlockers(node.data, schema, connectedFields);
+  const busy = node.data.status === "running" || node.data.status === "queued";
+  const generateDisabled = busy || blockers.length > 0;
 
   return (
     <aside className="inspector">
@@ -73,8 +67,11 @@ export function NodeInspector() {
         <p className="inspector-note">Some inputs come from connected nodes.</p>
       ) : null}
       {node.data.kind === "text" ? (
-        <label className="field">
-          <span>Prompt</span>
+        <label className={`field ${String(node.data.config.prompt ?? "").trim() ? "" : "needs-input"}`}>
+          <span>
+            Prompt
+            <span className="req">Required</span>
+          </span>
           <textarea
             value={String(node.data.config.prompt ?? "")}
             onChange={(event) => updateNodeConfig(node.id, "prompt", event.target.value)}
@@ -112,16 +109,24 @@ export function NodeInspector() {
         </>
       ) : null}
       {node.data.toolId ? (
-        <button
-          className="generate-lg"
-          type="button"
-          disabled={node.data.status === "running" || node.data.status === "queued"}
-          onClick={() => {
-            void runNode(node.id);
-          }}
-        >
-          {node.data.output ? "Regenerate" : "Generate"}
-        </button>
+        <>
+          <button
+            className="generate-lg"
+            type="button"
+            disabled={generateDisabled}
+            title={blockers[0]}
+            onClick={() => {
+              void runNode(node.id);
+            }}
+          >
+            {node.data.output ? "Regenerate" : "Generate"}
+          </button>
+          {blockers.length > 0 ? (
+            <p className="generate-hint" role="status">
+              {blockers.join(" ")}
+            </p>
+          ) : null}
+        </>
       ) : null}
       {node.data.error ? <p className="node-error">{node.data.error}</p> : null}
     </aside>

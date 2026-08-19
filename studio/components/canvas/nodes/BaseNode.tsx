@@ -1,11 +1,13 @@
 "use client";
 
 import { Handle, Position } from "@xyflow/react";
-import type { ReactNode } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import { NodeToolbar } from "../NodeToolbar";
 import { statusLabel, useCanvasStore } from "@/lib/canvas/store";
 import { portsForNode } from "@/lib/canvas/tool-registry";
-import type { CanvasNodeData } from "@/lib/canvas/types";
+import { generateBlockers } from "@/lib/canvas/generate-readiness";
+import { choiceLabel } from "@/lib/canvas/model-labels";
+import { schemaFor, type CanvasNodeData, type JobStatus } from "@/lib/canvas/types";
 
 type Props = {
   id: string;
@@ -25,72 +27,178 @@ function metaBits(data: CanvasNodeData): string[] {
   for (const key of ["model", "aspect_ratio", "resolution", "size", "duration_seconds", "voice"]) {
     const value = data.config[key];
     if (value !== undefined && value !== null && value !== "") {
-      bits.push(String(value));
+      bits.push(key === "model" ? choiceLabel("model", String(value)) : String(value));
     }
   }
   return bits.slice(0, 4);
 }
 
+function showStatus(status: JobStatus): boolean {
+  switch (status) {
+    case "queued":
+    case "running":
+    case "failed":
+      return true;
+    case "idle":
+    case "completed":
+      return false;
+    default: {
+      const exhaustive: never = status;
+      return exhaustive;
+    }
+  }
+}
+
+function NodeTag({
+  title,
+  status,
+  selected,
+  onRename,
+}: {
+  title: string;
+  status: JobStatus;
+  selected?: boolean;
+  onRename: (title: string) => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(title);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    setDraft(title);
+  }, [title]);
+
+  useEffect(() => {
+    if (editing) {
+      inputRef.current?.focus();
+      inputRef.current?.select();
+    }
+  }, [editing]);
+
+  const commit = () => {
+    const next = draft.trim();
+    onRename(next || title);
+    setDraft(next || title);
+    setEditing(false);
+  };
+
+  const cancel = () => {
+    setDraft(title);
+    setEditing(false);
+  };
+
+  const onKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      commit();
+    }
+    if (event.key === "Escape") {
+      event.preventDefault();
+      cancel();
+    }
+  };
+
+  return (
+    <div className={`node-tag ${selected ? "selected" : ""}`}>
+      {editing ? (
+        <input
+          ref={inputRef}
+          className="nodrag nopan nowheel node-tag-input"
+          value={draft}
+          aria-label="Node title"
+          onChange={(event) => setDraft(event.target.value)}
+          onBlur={commit}
+          onKeyDown={onKeyDown}
+        />
+      ) : (
+        <button
+          className="node-tag-name"
+          type="button"
+          title="Double click to rename"
+          onDoubleClick={(event) => {
+            event.stopPropagation();
+            setEditing(true);
+          }}
+        >
+          {title || "Untitled"}
+        </button>
+      )}
+      {showStatus(status) ? <span className={`node-status ${status}`}>{statusLabel(status)}</span> : null}
+    </div>
+  );
+}
+
 export function BaseNode({ id, data, selected, widthClass, children }: Props) {
   const runNode = useCanvasStore((state) => state.runNode);
   const updateNodeData = useCanvasStore((state) => state.updateNodeData);
+  const providers = useCanvasStore((state) => state.providers);
+  const edges = useCanvasStore((state) => state.edges);
   const ports = portsForNode(data.toolId, data.kind);
   const summary = promptSummary(data);
   const meta = metaBits(data);
   const canGenerate = Boolean(data.toolId);
+  const schema = schemaFor(providers, data.providerId, data.toolName);
+  const connectedFields = edges
+    .filter((edge) => edge.target === id)
+    .map((edge) => edge.data?.targetField)
+    .filter((field): field is string => Boolean(field));
+  const blockers = generateBlockers(data, schema, connectedFields);
+  const generateDisabled =
+    data.status === "running" || data.status === "queued" || blockers.length > 0;
 
   return (
-    <article className={`flow-node ${widthClass} ${selected ? "selected" : ""} status-${data.status}`}>
+    <div className={`flow-node-wrap ${widthClass}`}>
+      <NodeTag
+        title={data.title}
+        status={data.status}
+        selected={selected}
+        onRename={(title) => updateNodeData(id, { title })}
+      />
       {selected ? <NodeToolbar id={id} data={data} /> : null}
-      {ports.inputs.map((port, index) => (
-        <Handle
-          key={port.id}
-          id={port.id}
-          type="target"
-          position={Position.Left}
-          className={`port port-${port.dataType}`}
-          style={{ top: 48 + index * 22 }}
-          title={port.label}
-        />
-      ))}
-      {ports.outputs.map((port, index) => (
-        <Handle
-          key={port.id}
-          id={port.id}
-          type="source"
-          position={Position.Right}
-          className={`port port-${port.dataType}`}
-          style={{ top: 48 + index * 22 }}
-          title={port.label}
-        />
-      ))}
-      <header className="flow-node-head">
-        <input
-          className="nodrag nopan node-title"
-          value={data.title}
-          aria-label="Node title"
-          onChange={(event) => updateNodeData(id, { title: event.target.value })}
-        />
-        <span className={`node-status ${data.status}`}>{statusLabel(data.status)}</span>
-      </header>
-      <div className="flow-node-stage">{children}</div>
-      {summary ? <p className="node-prompt">{summary}</p> : null}
-      {meta.length > 0 ? <div className="node-meta">{meta.join(" · ")}</div> : null}
-      {canGenerate ? (
-        <div className="node-actions">
-          <button
-            className="generate nodrag"
-            type="button"
-            disabled={data.status === "running" || data.status === "queued"}
-            onClick={() => {
-              void runNode(id);
-            }}
-          >
-            {data.output ? "Regenerate" : "Generate"}
-          </button>
-        </div>
-      ) : null}
-      {data.error ? <p className="node-error">{data.error}</p> : null}
-    </article>
+      <article className={`flow-node ${selected ? "selected" : ""} status-${data.status}`}>
+        {ports.inputs.map((port, index) => (
+          <Handle
+            key={port.id}
+            id={port.id}
+            type="target"
+            position={Position.Left}
+            className={`port port-${port.dataType}`}
+            style={{ top: 28 + index * 22 }}
+            title={port.label}
+          />
+        ))}
+        {ports.outputs.map((port, index) => (
+          <Handle
+            key={port.id}
+            id={port.id}
+            type="source"
+            position={Position.Right}
+            className={`port port-${port.dataType}`}
+            style={{ top: 28 + index * 22 }}
+            title={port.label}
+          />
+        ))}
+        <div className="flow-node-stage">{children}</div>
+        {summary ? <p className="node-prompt">{summary}</p> : null}
+        {meta.length > 0 ? <div className="node-meta">{meta.join(" · ")}</div> : null}
+        {canGenerate ? (
+          <div className="node-actions">
+            <button
+              className="generate nodrag"
+              type="button"
+              disabled={generateDisabled}
+              title={blockers[0]}
+              onClick={() => {
+                void runNode(id);
+              }}
+            >
+              {data.output ? "Regenerate" : "Generate"}
+            </button>
+            {blockers.length > 0 ? <p className="generate-hint">{blockers[0]}</p> : null}
+          </div>
+        ) : null}
+        {data.error ? <p className="node-error">{data.error}</p> : null}
+      </article>
+    </div>
   );
 }
