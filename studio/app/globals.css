@@ -18,13 +18,12 @@
 }
 
 html,
-body,
-#root {
+body {
   margin: 0;
   height: 100%;
   background: var(--bg);
   color: var(--text);
-  font-family: Geist, "Segoe UI", system-ui, sans-serif;
+  font-family: var(--font-geist), "Segoe UI", system-ui, sans-serif;
 }
 
 button,
@@ -385,7 +384,7 @@ textarea {
   border: 1px solid var(--line);
   border-radius: 8px;
   padding: 8px;
-  font-family: "Geist Mono", ui-monospace, monospace;
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
   font-size: 11px;
   line-height: 1.45;
   white-space: pre-wrap;

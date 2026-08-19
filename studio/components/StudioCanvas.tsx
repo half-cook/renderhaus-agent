@@ -1,7 +1,9 @@
+"use client";
+
 import { useEffect, useMemo, useRef, useState } from "react";
-import { fetchOptions, fetchStatus, fetchTools, invokeTool } from "./api";
 import { ToolNodeCard } from "./ToolNodeCard";
-import type { FieldOptions, ProviderCatalog, StudioStatus, ToolNode, ToolSchema, Viewport } from "./types";
+import { fetchOptions, fetchStatus, fetchTools, invokeTool } from "@/lib/api";
+import type { FieldOptions, ProviderCatalog, StudioStatus, ToolNode, ToolSchema, Viewport } from "@/lib/types";
 
 function uid(): string {
   return crypto.randomUUID();
@@ -56,7 +58,7 @@ function defaultsFor(
   return args;
 }
 
-export function App() {
+export function StudioCanvas() {
   const [providers, setProviders] = useState<ProviderCatalog[]>([]);
   const [fieldOptions, setFieldOptions] = useState<FieldOptions>({});
   const [status, setStatus] = useState<StudioStatus | null>(null);
@@ -180,18 +182,6 @@ export function App() {
           dragOrigin.current = null;
           setPanning(false);
         }}
-        onDoubleClick={(event) => {
-          if ((event.target as HTMLElement).closest(".node, .menu")) {
-            return;
-          }
-          const world = screenToWorld(event.clientX, event.clientY);
-          setMenu({ x: event.clientX, y: event.clientY, worldX: world.x, worldY: world.y });
-        }}
-        onContextMenu={(event) => {
-          event.preventDefault();
-          const world = screenToWorld(event.clientX, event.clientY);
-          setMenu({ x: event.clientX, y: event.clientY, worldX: world.x, worldY: world.y });
-        }}
         onWheel={(event) => {
           event.preventDefault();
           const factor = event.deltaY > 0 ? 0.92 : 1.08;
@@ -206,6 +196,18 @@ export function App() {
             x: px - worldX * nextZoom,
             y: py - worldY * nextZoom,
           });
+        }}
+        onDoubleClick={(event) => {
+          if ((event.target as HTMLElement).closest(".node, .menu")) {
+            return;
+          }
+          const world = screenToWorld(event.clientX, event.clientY);
+          setMenu({ x: event.clientX, y: event.clientY, worldX: world.x, worldY: world.y });
+        }}
+        onContextMenu={(event) => {
+          event.preventDefault();
+          const world = screenToWorld(event.clientX, event.clientY);
+          setMenu({ x: event.clientX, y: event.clientY, worldX: world.x, worldY: world.y });
         }}
       >
         <div

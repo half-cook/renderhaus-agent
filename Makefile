@@ -12,7 +12,7 @@ help:
 	@echo "  make lint          Ruff check"
 	@echo "  make tools         List Gateway tools generated from providers/"
 	@echo "  make schemas       Write configs/gateway/*.tools.json from provider APIs"
-	@echo "  make studio        Canvas UI for calling MCP tools locally (needs make web too)"
+	@echo "  make studio        Next.js canvas UI for calling MCP tools locally (needs make web too)"
 	@echo "  make dry-flags     Print dry-run flags the process sees"
 	@echo "  make invoke-tool   Local Lambda-shaped invoke (PROVIDER=seedance TOOL=list_seedance_models)"
 	@echo ""

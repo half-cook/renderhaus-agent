@@ -1,4 +1,6 @@
-import type { JsonSchema } from "./types";
+"use client";
+
+import type { JsonSchema } from "@/lib/types";
 
 const PROMPT_FIELDS = new Set(["prompt", "text", "lyrics", "script", "style_prompt"]);
 const OPAQUE_FIELDS = new Set([

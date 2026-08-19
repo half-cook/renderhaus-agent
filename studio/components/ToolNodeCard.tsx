@@ -1,5 +1,7 @@
+"use client";
+
 import { SchemaForm } from "./SchemaForm";
-import type { StudioAsset, ToolNode } from "./types";
+import type { StudioAsset, ToolNode } from "@/lib/types";
 
 type Props = {
   node: ToolNode;
