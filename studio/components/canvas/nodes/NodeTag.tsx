@@ -1,0 +1,99 @@
+"use client";
+
+import { useEffect, useRef, useState, type KeyboardEvent } from "react";
+import { statusLabel } from "@/lib/canvas/store";
+import type { JobStatus } from "@/lib/canvas/types";
+
+function showStatus(status: JobStatus): boolean {
+  switch (status) {
+    case "queued":
+    case "running":
+    case "failed":
+      return true;
+    case "idle":
+    case "completed":
+      return false;
+    default: {
+      const exhaustive: never = status;
+      return exhaustive;
+    }
+  }
+}
+
+type Props = {
+  title: string;
+  status: JobStatus;
+  selected?: boolean;
+  badge?: string;
+  onRename: (title: string) => void;
+};
+
+export function NodeTag({ title, status, selected, badge, onRename }: Props) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(title);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    setDraft(title);
+  }, [title]);
+
+  useEffect(() => {
+    if (editing) {
+      inputRef.current?.focus();
+      inputRef.current?.select();
+    }
+  }, [editing]);
+
+  const commit = () => {
+    const next = draft.trim();
+    onRename(next || title);
+    setDraft(next || title);
+    setEditing(false);
+  };
+
+  const cancel = () => {
+    setDraft(title);
+    setEditing(false);
+  };
+
+  const onKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      commit();
+    }
+    if (event.key === "Escape") {
+      event.preventDefault();
+      cancel();
+    }
+  };
+
+  return (
+    <div className={`node-tag ${selected ? "selected" : ""}`}>
+      {badge ? <span className="node-tag-badge">{badge}</span> : null}
+      {editing ? (
+        <input
+          ref={inputRef}
+          className="nodrag nopan nowheel node-tag-input"
+          value={draft}
+          aria-label="Node title"
+          onChange={(event) => setDraft(event.target.value)}
+          onBlur={commit}
+          onKeyDown={onKeyDown}
+        />
+      ) : (
+        <button
+          className="node-tag-name"
+          type="button"
+          title="Double click to rename"
+          onDoubleClick={(event) => {
+            event.stopPropagation();
+            setEditing(true);
+          }}
+        >
+          {title || "Untitled"}
+        </button>
+      )}
+      {showStatus(status) ? <span className={`node-status ${status}`}>{statusLabel(status)}</span> : null}
+    </div>
+  );
+}

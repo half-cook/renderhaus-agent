@@ -7,6 +7,7 @@ import type { CreativeNodeKind } from "@/lib/canvas/types";
 import { AgentComposer } from "./AgentComposer";
 import { CanvasHeader } from "./CanvasHeader";
 import { NodeInspector } from "./NodeInspector";
+import { SequenceStrip } from "./SequenceStrip";
 import { StudioCanvas } from "./StudioCanvas";
 import { ToolRail } from "./ToolRail";
 import "@xyflow/react/dist/style.css";
@@ -96,6 +97,7 @@ function Workspace() {
       </main>
       <NodeInspector />
       <AgentComposer />
+      <SequenceStrip />
     </div>
   );
 }

@@ -1,10 +1,21 @@
 import { invokeTool } from "@/lib/api";
+import type { StudioAsset } from "@/lib/types";
 import type { CanvasEdge } from "./connection-validation";
 import type { CanvasNode } from "./connection-validation";
 import { toolById } from "./tool-registry";
 import type { CanvasNodeData, PortDataType } from "./types";
 
 const TERMINAL = new Set(["succeeded", "failed", "cancelled", "canceled", "deleted", "dry_run"]);
+
+function mergeVariants(existing: StudioAsset[] | undefined, incoming: StudioAsset[]): StudioAsset[] {
+  const merged = [...(existing || [])];
+  for (const asset of incoming) {
+    if (!merged.some((item) => item.url === asset.url)) {
+      merged.push(asset);
+    }
+  }
+  return merged;
+}
 
 export function outputValue(node: CanvasNode, dataType: PortDataType): unknown {
   switch (dataType) {
@@ -77,10 +88,11 @@ export async function runCreativeNode(
   const jobId = jobIdFrom(payload.result);
   const providerStatus = statusFrom(payload.result);
   if (assets.length > 0) {
+    const variants = mergeVariants(node.data.variants, assets);
     return {
       status: "completed",
       output: assets[0],
-      variants: assets,
+      variants,
       result: payload.result,
       error: undefined,
       jobId,
@@ -120,7 +132,7 @@ export async function pollCreativeNode(node: CanvasNode): Promise<Partial<Canvas
     return {
       status: "completed",
       output: payload.assets[0],
-      variants: payload.assets,
+      variants: mergeVariants(node.data.variants, payload.assets),
       result: payload.result,
       error: undefined,
     };

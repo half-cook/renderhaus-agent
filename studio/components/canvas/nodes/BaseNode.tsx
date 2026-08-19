@@ -1,13 +1,14 @@
 "use client";
 
 import { Handle, Position } from "@xyflow/react";
-import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import { NodeToolbar } from "../NodeToolbar";
-import { statusLabel, useCanvasStore } from "@/lib/canvas/store";
-import { portsForNode } from "@/lib/canvas/tool-registry";
+import { NodeTag } from "./NodeTag";
 import { generateBlockers } from "@/lib/canvas/generate-readiness";
 import { choiceLabel } from "@/lib/canvas/model-labels";
-import { schemaFor, type CanvasNodeData, type JobStatus } from "@/lib/canvas/types";
+import { schemaFor, type CanvasNodeData } from "@/lib/canvas/types";
+import { useCanvasStore } from "@/lib/canvas/store";
+import { portsForNode } from "@/lib/canvas/tool-registry";
 
 type Props = {
   id: string;
@@ -31,101 +32,6 @@ function metaBits(data: CanvasNodeData): string[] {
     }
   }
   return bits.slice(0, 4);
-}
-
-function showStatus(status: JobStatus): boolean {
-  switch (status) {
-    case "queued":
-    case "running":
-    case "failed":
-      return true;
-    case "idle":
-    case "completed":
-      return false;
-    default: {
-      const exhaustive: never = status;
-      return exhaustive;
-    }
-  }
-}
-
-function NodeTag({
-  title,
-  status,
-  selected,
-  onRename,
-}: {
-  title: string;
-  status: JobStatus;
-  selected?: boolean;
-  onRename: (title: string) => void;
-}) {
-  const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState(title);
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    setDraft(title);
-  }, [title]);
-
-  useEffect(() => {
-    if (editing) {
-      inputRef.current?.focus();
-      inputRef.current?.select();
-    }
-  }, [editing]);
-
-  const commit = () => {
-    const next = draft.trim();
-    onRename(next || title);
-    setDraft(next || title);
-    setEditing(false);
-  };
-
-  const cancel = () => {
-    setDraft(title);
-    setEditing(false);
-  };
-
-  const onKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
-    if (event.key === "Enter") {
-      event.preventDefault();
-      commit();
-    }
-    if (event.key === "Escape") {
-      event.preventDefault();
-      cancel();
-    }
-  };
-
-  return (
-    <div className={`node-tag ${selected ? "selected" : ""}`}>
-      {editing ? (
-        <input
-          ref={inputRef}
-          className="nodrag nopan nowheel node-tag-input"
-          value={draft}
-          aria-label="Node title"
-          onChange={(event) => setDraft(event.target.value)}
-          onBlur={commit}
-          onKeyDown={onKeyDown}
-        />
-      ) : (
-        <button
-          className="node-tag-name"
-          type="button"
-          title="Double click to rename"
-          onDoubleClick={(event) => {
-            event.stopPropagation();
-            setEditing(true);
-          }}
-        >
-          {title || "Untitled"}
-        </button>
-      )}
-      {showStatus(status) ? <span className={`node-status ${status}`}>{statusLabel(status)}</span> : null}
-    </div>
-  );
 }
 
 export function BaseNode({ id, data, selected, widthClass, children }: Props) {

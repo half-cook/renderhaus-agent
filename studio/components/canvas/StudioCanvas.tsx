@@ -22,7 +22,7 @@ type MenuState = { x: number; y: number; flowX: number; flowY: number } | null;
 
 const QUICK_ADD: Array<{ label: string; kind: CreativeNodeKind; toolId?: string }> = [
   { label: "Text", kind: "text" },
-  { label: "Image", kind: "image", toolId: "image.generate" },
+  { label: "Scene", kind: "image", toolId: "image.generate" },
   { label: "Video", kind: "video", toolId: "video.generate" },
   { label: "Music", kind: "audio", toolId: "music.generate" },
   { label: "Voiceover", kind: "audio", toolId: "voice.generate" },
@@ -43,11 +43,12 @@ const EMPTY_ACTIONS: Array<{
   kind?: CreativeNodeKind;
   toolId?: string;
   upload?: boolean;
+  sequence?: boolean;
 }> = [
-  { label: "Generate image", hint: "Start from a prompt", kind: "image", toolId: "image.generate" },
+  { label: "Add scene", hint: "Start from a still", kind: "image", toolId: "image.generate" },
+  { label: "Start sequence", hint: "Three empty scenes in a row", sequence: true },
   { label: "Upload reference", hint: "Drop in a still or clip", upload: true },
   { label: "Add text", hint: "Write a prompt or script", kind: "text" },
-  { label: "Storyboard", hint: "Block out the sequence", kind: "storyboard" },
 ];
 
 export function StudioCanvas() {
@@ -62,6 +63,7 @@ export function StudioCanvas() {
   const setViewport = useCanvasStore((state) => state.setViewport);
   const addCreativeNode = useCanvasStore((state) => state.addCreativeNode);
   const addUploadNode = useCanvasStore((state) => state.addUploadNode);
+  const startSequence = useCanvasStore((state) => state.startSequence);
   const pushHistory = useCanvasStore((state) => state.pushHistory);
   const persist = useCanvasStore((state) => state.persist);
   const { screenToFlowPosition } = useReactFlow();
@@ -154,8 +156,8 @@ export function StudioCanvas() {
       </ReactFlow>
       {nodes.length === 0 ? (
         <div className="empty-canvas">
-          <h1>Add something to the canvas</h1>
-          <p>Generate a still, drop in a reference, write a prompt, or block out a storyboard.</p>
+          <h1>Start the storyboard</h1>
+          <p>Scenes run left to right. Approve the ones that belong in the final sequence.</p>
           <div className="empty-actions">
             {EMPTY_ACTIONS.map((action) => (
               <button
@@ -165,6 +167,10 @@ export function StudioCanvas() {
                 onClick={() => {
                   if (action.upload) {
                     fileRef.current?.click();
+                    return;
+                  }
+                  if (action.sequence) {
+                    startSequence(center());
                     return;
                   }
                   if (action.kind) {

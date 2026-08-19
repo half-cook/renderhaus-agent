@@ -52,6 +52,8 @@ export type CanvasNodeData = {
   status: JobStatus;
   error?: string;
   jobId?: string;
+  approved?: boolean;
+  storyOrder?: number;
 };
 
 export type CanvasEdgeData = {

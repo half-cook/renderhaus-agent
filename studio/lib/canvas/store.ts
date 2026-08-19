@@ -17,6 +17,14 @@ import {
   type CanvasNode,
 } from "./connection-validation";
 import { pollCreativeNode, runCreativeNode } from "./graph-execution";
+import {
+  approvedSequence,
+  compactStoryOrders,
+  isSceneKind,
+  nextStoryOrder,
+  SCENE_CARD_GAP,
+  SCENE_CARD_WIDTH,
+} from "./story";
 import { defaultToolForRail, toolById } from "./tool-registry";
 import type { CreativeNodeKind, JobStatus, ProjectRecord, RailTool, ToolDefinition } from "./types";
 
@@ -90,6 +98,12 @@ type CanvasStore = {
   deleteSelected: () => void;
   connectImageToVideo: (imageNodeId: string) => void;
   addToStoryboard: (mediaNodeId: string) => void;
+  setApproved: (id: string, approved: boolean) => void;
+  cycleVariant: (id: string, direction: 1 | -1) => void;
+  moveInSequence: (id: string, direction: 1 | -1) => void;
+  arrangeSequence: () => void;
+  startSequence: (origin: { x: number; y: number }) => void;
+  focusNode: (id: string) => void;
   runNode: (id: string) => Promise<void>;
   undo: () => void;
   redo: () => void;
@@ -153,6 +167,37 @@ function readGraph(projectId: string): PersistedGraph | null {
   } catch {
     return null;
   }
+}
+
+function makeNode(input: {
+  kind: CreativeNodeKind;
+  position: { x: number; y: number };
+  toolId?: string;
+  title?: string;
+  config?: Record<string, unknown>;
+  output?: StudioAsset;
+  fieldOptions: FieldOptions;
+}): CanvasNode {
+  const tool = toolById(input.toolId);
+  const id = uid();
+  return {
+    id,
+    type: input.kind,
+    position: input.position,
+    selected: false,
+    data: {
+      kind: input.kind,
+      title: input.title || (isSceneKind(input.kind) ? "Scene" : tool?.displayName || input.kind),
+      toolId: tool?.id,
+      providerId: tool?.providerId,
+      toolName: tool?.toolName,
+      config: input.config || (tool ? defaultsFor(tool, input.fieldOptions) : {}),
+      output: input.output,
+      variants: input.output ? [input.output] : [],
+      status: input.output ? "completed" : "idle",
+      approved: false,
+    },
+  };
 }
 
 function runningCount(nodes: CanvasNode[]): number {
@@ -359,32 +404,23 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
 
   addCreativeNode: ({ kind, position, toolId, title, config, output }) => {
     get().pushHistory();
-    const tool = toolById(toolId);
-    const id = uid();
-    const node: CanvasNode = {
-      id,
-      type: kind,
+    const node = makeNode({
+      kind,
       position,
-      selected: true,
-      data: {
-        kind,
-        title: title || tool?.displayName || kind,
-        toolId: tool?.id,
-        providerId: tool?.providerId,
-        toolName: tool?.toolName,
-        config: config || (tool ? defaultsFor(tool, get().fieldOptions) : {}),
-        output,
-        variants: output ? [output] : [],
-        status: output ? "completed" : "idle",
-      },
-    };
+      toolId,
+      title,
+      config,
+      output,
+      fieldOptions: get().fieldOptions,
+    });
+    node.selected = true;
     set({
       nodes: [...get().nodes.map((item) => ({ ...item, selected: false })), node],
-      selectedNodeIds: [id],
+      selectedNodeIds: [node.id],
       inspectorOpen: true,
     });
     get().persist();
-    return id;
+    return node.id;
   },
 
   addUploadNode: async (file, position) => {
@@ -430,6 +466,7 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
       id: uid(),
       position: { x: node.position.x + 40, y: node.position.y + 40 },
       selected: true,
+      data: { ...structuredClone(node.data), approved: false, storyOrder: undefined },
     }));
     set({
       nodes: [
@@ -448,7 +485,7 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
     }
     get().pushHistory();
     set({
-      nodes: get().nodes.filter((node) => !ids.has(node.id)),
+      nodes: compactStoryOrders(get().nodes.filter((node) => !ids.has(node.id))),
       edges: get().edges.filter((edge) => !ids.has(edge.source) && !ids.has(edge.target)),
       selectedNodeIds: [],
     });
@@ -499,6 +536,114 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
       target: board.id,
       sourceHandle: handle,
       targetHandle: handle,
+    });
+  },
+
+  setApproved: (id, approved) => {
+    const node = get().nodes.find((item) => item.id === id);
+    if (!node || !isSceneKind(node.data.kind)) {
+      return;
+    }
+    get().pushHistory();
+    const storyOrder = approved ? nextStoryOrder(get().nodes) : undefined;
+    const next = get().nodes.map((item) =>
+      item.id === id ? { ...item, data: { ...item.data, approved, storyOrder } } : item,
+    );
+    set({ nodes: compactStoryOrders(next) });
+    get().persist();
+  },
+
+  cycleVariant: (id, direction) => {
+    const node = get().nodes.find((item) => item.id === id);
+    const variants = node?.data.variants || [];
+    if (!node || variants.length < 2) {
+      return;
+    }
+    const current = Math.max(
+      0,
+      variants.findIndex((item) => item.url === node.data.output?.url),
+    );
+    const next = (current + direction + variants.length) % variants.length;
+    get().updateNodeData(id, { output: variants[next] });
+  },
+
+  moveInSequence: (id, direction) => {
+    const sequence = approvedSequence(get().nodes);
+    const index = sequence.findIndex((item) => item.id === id);
+    const swapWith = sequence[index + direction];
+    if (index < 0 || !swapWith) {
+      return;
+    }
+    get().pushHistory();
+    const currentOrder = sequence[index]?.data.storyOrder ?? index + 1;
+    const otherOrder = swapWith.data.storyOrder ?? index + direction + 1;
+    const next = get().nodes.map((node) => {
+      if (node.id === id) {
+        return { ...node, data: { ...node.data, storyOrder: otherOrder } };
+      }
+      if (node.id === swapWith.id) {
+        return { ...node, data: { ...node.data, storyOrder: currentOrder } };
+      }
+      return node;
+    });
+    set({ nodes: compactStoryOrders(next) });
+    get().persist();
+  },
+
+  arrangeSequence: () => {
+    const sequence = approvedSequence(get().nodes);
+    if (sequence.length === 0) {
+      return;
+    }
+    get().pushHistory();
+    const originY = sequence[0]?.position.y ?? 80;
+    const placed = new Map(
+      sequence.map((node, index) => [
+        node.id,
+        { x: 80 + index * (SCENE_CARD_WIDTH + SCENE_CARD_GAP), y: originY },
+      ]),
+    );
+    set({
+      nodes: get().nodes.map((node) => {
+        const position = placed.get(node.id);
+        return position ? { ...node, position } : node;
+      }),
+    });
+    get().persist();
+  },
+
+  startSequence: (origin) => {
+    get().pushHistory();
+    const created = [0, 1, 2].map((index) => {
+      const node = makeNode({
+        kind: "image",
+        position: { x: origin.x + index * (SCENE_CARD_WIDTH + SCENE_CARD_GAP), y: origin.y },
+        toolId: "image.generate",
+        title: `Scene ${index + 1}`,
+        fieldOptions: get().fieldOptions,
+      });
+      return node;
+    });
+    const last = created[created.length - 1];
+    if (last) {
+      last.selected = true;
+    }
+    set({
+      nodes: [...get().nodes.map((node) => ({ ...node, selected: false })), ...created],
+      selectedNodeIds: last ? [last.id] : [],
+      inspectorOpen: Boolean(last),
+    });
+    get().persist();
+  },
+
+  focusNode: (id) => {
+    if (!get().nodes.some((node) => node.id === id)) {
+      return;
+    }
+    set({
+      nodes: get().nodes.map((node) => ({ ...node, selected: node.id === id })),
+      selectedNodeIds: [id],
+      inspectorOpen: true,
     });
   },
 

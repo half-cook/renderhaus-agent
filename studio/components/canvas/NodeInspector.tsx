@@ -4,6 +4,7 @@ import { ChevronDown, ChevronRight, PanelRightClose, PanelRightOpen } from "luci
 import { SchemaForm } from "@/components/forms/SchemaForm";
 import { PRIMARY_FIELD_ORDER } from "@/lib/canvas/field-labels";
 import { generateBlockers } from "@/lib/canvas/generate-readiness";
+import { isSceneNode, sceneBadge, variantPosition } from "@/lib/canvas/story";
 import { schemaFor } from "@/lib/canvas/types";
 import { selectedNode, useCanvasStore } from "@/lib/canvas/store";
 import { toolById } from "@/lib/canvas/tool-registry";
@@ -21,6 +22,8 @@ export function NodeInspector() {
   const updateNodeConfig = useCanvasStore((state) => state.updateNodeConfig);
   const updateNodeData = useCanvasStore((state) => state.updateNodeData);
   const runNode = useCanvasStore((state) => state.runNode);
+  const setApproved = useCanvasStore((state) => state.setApproved);
+  const cycleVariant = useCanvasStore((state) => state.cycleVariant);
   const node = selectedNode(nodes, selectedNodeIds);
 
   if (!node) {
@@ -50,6 +53,7 @@ export function NodeInspector() {
   const blockers = generateBlockers(node.data, schema, connectedFields);
   const busy = node.data.status === "running" || node.data.status === "queued";
   const generateDisabled = busy || blockers.length > 0;
+  const variants = variantPosition(node.data);
 
   return (
     <aside className="inspector">
@@ -63,6 +67,29 @@ export function NodeInspector() {
         <span>Title</span>
         <input value={node.data.title} onChange={(event) => updateNodeData(node.id, { title: event.target.value })} />
       </label>
+      {isSceneNode(node.data) ? (
+        <div className="scene-inspector">
+          <p className="inspector-note">
+            {node.data.approved
+              ? `${sceneBadge(node.data)} is in the approved sequence.`
+              : "Approve this scene to add it to playback order."}
+          </p>
+          <div className="scene-actions">
+            {variants.total > 1 ? (
+              <button className="text-btn" type="button" onClick={() => cycleVariant(node.id, 1)}>
+                Variant {variants.current} of {variants.total}
+              </button>
+            ) : null}
+            <button
+              className={`text-btn ${node.data.approved ? "approved" : ""}`}
+              type="button"
+              onClick={() => setApproved(node.id, !node.data.approved)}
+            >
+              {node.data.approved ? "Remove from sequence" : "Approve"}
+            </button>
+          </div>
+        </div>
+      ) : null}
       {connectedFields.length > 0 ? (
         <p className="inspector-note">Some inputs come from connected nodes.</p>
       ) : null}

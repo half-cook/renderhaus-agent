@@ -4,3 +4,5 @@ export const FIT_VIEW_PADDING = {
   bottom: "32px",
   left: "32px",
 } as const;
+
+export { SEQUENCE_STRIP_HEIGHT } from "./story";

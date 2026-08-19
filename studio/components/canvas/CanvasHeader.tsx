@@ -3,6 +3,7 @@
 import { ChevronDown, Ellipsis, Redo2, Share2, Undo2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { queueSize, useCanvasStore } from "@/lib/canvas/store";
+import { approvedSequence } from "@/lib/canvas/story";
 
 export function CanvasHeader() {
   const projectName = useCanvasStore((state) => state.projectName);
@@ -22,12 +23,14 @@ export function CanvasHeader() {
   const persist = useCanvasStore((state) => state.persist);
   const duplicateSelected = useCanvasStore((state) => state.duplicateSelected);
   const deleteSelected = useCanvasStore((state) => state.deleteSelected);
+  const arrangeSequence = useCanvasStore((state) => state.arrangeSequence);
   const [menu, setMenu] = useState<"project" | "status" | "share" | "more" | null>(null);
   const [exported, setExported] = useState(false);
   const fileRef = useRef<HTMLAnchorElement>(null);
   const headerRef = useRef<HTMLElement>(null);
   const queued = queueSize(nodes);
   const hasSelection = selectedNodeIds.length > 0;
+  const hasSequence = approvedSequence(nodes).length > 0;
 
   useEffect(() => {
     if (!menu) {
@@ -173,6 +176,17 @@ export function CanvasHeader() {
           </button>
           {menu === "more" ? (
             <div className="popover">
+              <button
+                type="button"
+                disabled={!hasSequence}
+                title={hasSequence ? "Arrange approved scenes left to right" : "Approve a scene to arrange the sequence"}
+                onClick={() => {
+                  arrangeSequence();
+                  setMenu(null);
+                }}
+              >
+                Arrange sequence
+              </button>
               <button
                 type="button"
                 disabled={!hasSelection}
