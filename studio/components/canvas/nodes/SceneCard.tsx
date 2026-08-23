@@ -8,6 +8,7 @@ import { aspectLabel, durationLabel, sceneBadge, variantPosition } from "@/lib/c
 import { schemaFor, type CanvasNodeData } from "@/lib/canvas/types";
 import { useCanvasStore } from "@/lib/canvas/store";
 import { portsForNode } from "@/lib/canvas/tool-registry";
+import { AssetMedia } from "../AssetMedia";
 
 type Props = {
   id: string;
@@ -73,10 +74,10 @@ export function SceneCard({ id, data, selected }: Props) {
           />
         ))}
         <div className="scene-stage">
-          {data.kind === "video" && data.output?.url ? (
-            <video className="media-preview" src={data.output.url} controls playsInline />
-          ) : data.output?.url ? (
-            <img className="media-preview" src={data.output.url} alt={data.title} />
+          {data.kind === "video" && data.output ? (
+            <AssetMedia asset={data.output} className="media-preview" alt={data.title} controls />
+          ) : data.output ? (
+            <AssetMedia asset={data.output} className="media-preview" alt={data.title} />
           ) : (
             <div className="media-placeholder">
               <span>{data.kind === "video" ? "No clip yet" : "No still yet"}</span>

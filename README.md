@@ -22,6 +22,10 @@ generation/agent backend (`server/`, `agent/`, `mcps/`).
   [design/PRODUCTION_READINESS.md](design/PRODUCTION_READINESS.md) (scale/architecture audit),
   [design/ARCHITECTURE.md](design/ARCHITECTURE.md) (product vision).
 
+The Studio's workspace, canvas, immutable asset-version, provenance, and durable execution model is
+documented in [docs/STUDIO_STATE.md](docs/STUDIO_STATE.md). The end-to-end Studio manager, media
+playback, Remotion, UI, and operations guide is [docs/STUDIO_AGENT.md](docs/STUDIO_AGENT.md).
+
 ## Long-video program
 
 The evidence-backed product, architecture, continuity, evaluation, and six-sprint delivery package
@@ -98,6 +102,25 @@ job-scoped media URLs. `web/` is what drives it now instead of the old bundled U
 `SEEDANCE_DRY_RUN=true` keeps the full flow in preview mode without creating a paid video task.
 Set `SEEDANCE_DRY_RUN=false` in `.env.local` only when you intend to run live video generation.
 
+### Remotion Lambda renders
+
+The OpenAI canvas agent exposes `render_remotion_video` for assembling generated images, videos,
+voiceovers, and music into one downloadable MP4. The render site reuses the same typed
+`TimelineComposition` as the editor preview.
+
+```bash
+# Creates/updates the official Remotion IAM role, Lambda renderer, and S3 render site.
+make remotion
+
+# Renders the first successful multi-tool artifact set as an end-to-end smoke test.
+make smoke-remotion
+```
+
+Deployment metadata is stored under `.renderhaus/remotion/deployment.json` for local runs. The
+same non-secret runtime settings are synchronized into the configured `renderhaus/app` Secrets
+Manager secret for AgentCore deployments. Remotion packages are pinned to the same exact version;
+upgrade the NPM and Python packages together before redeploying the function and site.
+
 ## Setup
 
 Populate `.env.local`, then run:
@@ -116,13 +139,15 @@ The backend uses [Clerk](https://clerk.com) for sign-in, called from `web/`. Add
 CLERK_PUBLISHABLE_KEY=pk_test_...
 # NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_...
 CLERK_SECRET_KEY=sk_test_...
-CLERK_AUTHORIZED_PARTIES=http://localhost:3000,http://127.0.0.1:8000,http://localhost:8000
+CLERK_AUTHORIZED_PARTIES=http://localhost:3000,http://127.0.0.1:3000,http://localhost:5174,http://127.0.0.1:5174,http://localhost:8000,http://127.0.0.1:8000
 # Optional: PEM public key for networkless JWT verification (newlines as \n)
 CLERK_JWT_KEY=
 ```
 
-`localhost:3000` is the Next.js dev origin users actually sign in from; the `:8000` entries cover
-hitting the backend directly (docs, scripts, tests).
+`localhost:3000` is the editor origin and `localhost:5174` is the Studio origin; their
+`127.0.0.1` variants cover opening either UI through that hostname. The `:8000` entries cover
+hitting the backend directly (docs, scripts, tests). Clerk compares this allowlist against the
+session token's exact `azp` origin, including the port.
 
 When both a publishable key and `CLERK_SECRET_KEY` are set, generation/upload APIs require a
 signed-in session. Leave them empty to keep the local UI open during setup.

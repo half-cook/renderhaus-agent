@@ -24,6 +24,8 @@ def secret_key() -> str:
 
 
 def clerk_enabled() -> bool:
+    if os.getenv("RENDERHAUS_DISABLE_AUTH", "").lower() in {"1", "true", "yes"}:
+        return False
     return bool(secret_key() and publishable_key())
 
 
@@ -32,6 +34,10 @@ def _authorized_parties() -> list[str]:
     if raw:
         return [party.strip() for party in raw.split(",") if party.strip()]
     parties = [
+        "http://127.0.0.1:3000",
+        "http://localhost:3000",
+        "http://127.0.0.1:5174",
+        "http://localhost:5174",
         "http://127.0.0.1:8000",
         "http://localhost:8000",
     ]
@@ -92,6 +98,7 @@ def optional_user(request: Request) -> RequestState | None:
 
 
 AuthUser = Annotated[RequestState | None, Depends(require_auth)]
+OptionalAuthUser = Annotated[RequestState | None, Depends(optional_user)]
 
 
 def current_user_id(auth: RequestState | None) -> str:
@@ -107,3 +114,16 @@ def current_user_id(auth: RequestState | None) -> str:
             headers={"WWW-Authenticate": "Bearer"},
         )
     return "local"
+
+
+def current_workspace_id(auth: RequestState | None) -> str:
+    """Return the active Clerk organization, or a stable personal workspace.
+
+    Clerk proves identity and organization membership. Renderhaus still scopes
+    every database lookup to this workspace identifier before returning data.
+    """
+    if auth is not None and auth.payload:
+        organization_id = auth.payload.get("org_id")
+        if isinstance(organization_id, str) and organization_id:
+            return f"org:{organization_id}"
+    return f"user:{current_user_id(auth)}"

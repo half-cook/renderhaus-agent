@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { Geist, Geist_Mono } from "next/font/google";
+import { StudioClerkBootstrap } from "@/components/StudioAuth";
 import "./globals.css";
 
 const geist = Geist({
@@ -19,9 +20,14 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
+  const publishableKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
   return (
     <html lang="en" className={`${geist.variable} ${geistMono.variable}`}>
-      <body>{children}</body>
+      <body>
+        <StudioClerkBootstrap publishableKey={publishableKey}>
+          {children}
+        </StudioClerkBootstrap>
+      </body>
     </html>
   );
 }

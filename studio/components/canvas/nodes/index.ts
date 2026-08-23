@@ -1,5 +1,6 @@
 import type { NodeTypes } from "@xyflow/react";
 import { AgentResultNode } from "./AgentResultNode";
+import { AgentRunNode } from "./AgentRunNode";
 import { AudioNode } from "./AudioNode";
 import { GeneratorNode } from "./GeneratorNode";
 import { ImageNode } from "./ImageNode";
@@ -15,4 +16,5 @@ export const nodeTypes: NodeTypes = {
   generator: GeneratorNode,
   storyboard: StoryboardNode,
   agentResult: AgentResultNode,
+  agentRun: AgentRunNode,
 };

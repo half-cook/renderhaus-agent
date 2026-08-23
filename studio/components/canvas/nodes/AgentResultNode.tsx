@@ -2,10 +2,14 @@
 
 import { Handle, Position, type NodeProps } from "@xyflow/react";
 import { Bot, Download } from "lucide-react";
-import { agentResultDownloadUrl } from "@/lib/canvas/download";
+import {
+  agentResultDownloadFilename,
+  agentResultDownloadUrl,
+} from "@/lib/canvas/download";
 import { useCanvasStore } from "@/lib/canvas/store";
 import type { CanvasNodeData } from "@/lib/canvas/types";
 import { NodeToolbar } from "../NodeToolbar";
+import { AssetDownloadLink, AssetMedia } from "../AssetMedia";
 import { NodeTag } from "./NodeTag";
 
 function eventClass(status: string): string {
@@ -43,27 +47,41 @@ export function AgentResultNode({ id, data, selected }: NodeProps) {
             <Bot size={15} aria-hidden="true" />
             Agent result
           </span>
-          <a
-            className="agent-result-download nodrag"
-            href={agentResultDownloadUrl(result)}
-            download={result.filename}
-            aria-label={`Download ${result.filename}`}
-          >
-            <Download size={14} aria-hidden="true" />
-            Download
-          </a>
+          {result.primaryAsset ? (
+            <AssetDownloadLink
+              className="agent-result-download nodrag"
+              asset={result.primaryAsset}
+              ariaLabel={`Download ${result.primaryAsset.filename}`}
+            >
+              <Download size={14} aria-hidden="true" />
+              Download
+            </AssetDownloadLink>
+          ) : (
+            <a
+              className="agent-result-download nodrag"
+              href={agentResultDownloadUrl(result)}
+              download={agentResultDownloadFilename(result)}
+              aria-label={`Download ${agentResultDownloadFilename(result)}`}
+            >
+              <Download size={14} aria-hidden="true" />
+              Download
+            </a>
+          )}
         </header>
         <p className="agent-result-summary">{result.summary}</p>
         {result.assets.length > 0 ? (
           <div className="agent-result-assets" aria-label="Created media">
-            {result.assets.map((asset) => {
-              if (asset.kind === "image") {
-                return <img key={asset.url} src={asset.url} alt="Agent-created result" />;
-              }
-              if (asset.kind === "video") {
-                return <video key={asset.url} src={asset.url} controls preload="metadata" />;
-              }
-              return <audio key={asset.url} src={asset.url} controls preload="metadata" />;
+            {result.assets.map((asset, index) => {
+              const key = asset.versionId || asset.assetId || `${asset.kind}-${index}`;
+              return (
+                <AssetMedia
+                  key={key}
+                  asset={asset}
+                  className="agent-result-media"
+                  alt="Agent-created result"
+                  controls={asset.kind !== "image"}
+                />
+              );
             })}
           </div>
         ) : null}

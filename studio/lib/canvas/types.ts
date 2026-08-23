@@ -7,7 +7,8 @@ export type CreativeNodeKind =
   | "audio"
   | "generator"
   | "storyboard"
-  | "agentResult";
+  | "agentResult"
+  | "agentRun";
 
 export type PortDataType = "text" | "image" | "video" | "audio";
 
@@ -47,13 +48,18 @@ export type ToolDefinition = {
 };
 
 export type AgentToolEvent = {
+  id: string;
   name: string;
   label: string;
   status: string;
   summary: string;
+  provider?: string;
+  providerJobId?: string;
+  assets: StudioAsset[];
 };
 
 export type AgentResultData = {
+  executionId?: string;
   title: string;
   summary: string;
   markdown: string;
@@ -61,6 +67,15 @@ export type AgentResultData = {
   mimeType: string;
   toolEvents: AgentToolEvent[];
   assets: StudioAsset[];
+  primaryAsset?: StudioAsset;
+  partial?: boolean;
+};
+
+export type AgentRunData = AgentResultData & {
+  executionId?: string;
+  artifactNodeIds: string[];
+  finalNodeId?: string;
+  collapsed: boolean;
 };
 
 export type CanvasNodeData = {
@@ -79,6 +94,9 @@ export type CanvasNodeData = {
   approved?: boolean;
   storyOrder?: number;
   agentResult?: AgentResultData;
+  agentRun?: AgentRunData;
+  agentRunId?: string;
+  agentRole?: "artifact" | "final";
 };
 
 export type CanvasEdgeData = {

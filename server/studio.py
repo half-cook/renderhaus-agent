@@ -3,16 +3,20 @@
 from __future__ import annotations
 
 import asyncio
+import base64
+import hashlib
+import hmac
+import json
 import logging
 import mimetypes
 import os
+import secrets
 import time
-import uuid
-from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
-from urllib.parse import parse_qs, quote, urlparse
+from urllib.parse import parse_qs, quote, unquote, urlparse
 
+from agents.exceptions import MaxTurnsExceeded
 from fastapi import APIRouter, File, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
@@ -20,7 +24,9 @@ from pydantic import BaseModel, Field
 from agent.studio_agent import StudioNodeReference, run_studio_agent
 from providers.catalog import PROVIDERS, get_provider
 from providers.registry import dispatch, load_committed_schemas
+from server.auth import AuthUser, OptionalAuthUser, current_user_id, current_workspace_id
 from server.config import ROOT
+from server.studio_state import CanvasConflictError, StudioAssetKind, repository
 from server.studio_options import LIVE_CHOICE_TOOLS, extract_choice_ids, static_field_options
 
 
@@ -38,36 +44,18 @@ URL_KEYS = {
     "wav_url": "audio",
 }
 
-AGENT_JOB_LIMIT = 100
-AGENT_JOB_TTL_SECONDS = 60 * 60 * 24
-
-
-@dataclass(slots=True)
-class StudioAgentJob:
-    id: str
-    status: str
-    message: str
-    created_at: float
-    updated_at: float
-    result: dict[str, Any] | None = None
-
-    def public(self) -> dict[str, Any]:
-        return {
-            "job_id": self.id,
-            "status": self.status,
-            "message": self.message,
-            **({"result": self.result} if self.result is not None else {}),
-        }
-
-
-_AGENT_JOBS: dict[str, StudioAgentJob] = {}
 _AGENT_TASKS: set[asyncio.Task[None]] = set()
+_PLAYBACK_TICKET_SECRET = secrets.token_bytes(32)
+_PLAYBACK_TICKET_TTL_SECONDS = 15 * 60
 
 
 class InvokeBody(BaseModel):
     provider: str = Field(min_length=1)
     tool: str = Field(min_length=1)
     arguments: dict[str, Any] = Field(default_factory=dict)
+    project_id: str = Field(default="untitled", min_length=1, max_length=120)
+    asset_id: str | None = Field(default=None, max_length=120)
+    source_version_ids: list[str] = Field(default_factory=list, max_length=32)
 
 
 def media_root() -> Path:
@@ -107,15 +95,54 @@ def _local_media_url(path: Path) -> str | None:
     return f"/api/studio/media?path={quote(str(resolved))}"
 
 
-def collect_assets(payload: Any) -> list[dict[str, str]]:
+def _playback_secret() -> bytes:
+    """Use a dedicated secret when configured, with a safe local fallback."""
+    value = os.getenv("STUDIO_MEDIA_TICKET_SECRET") or os.getenv("CLERK_SECRET_KEY")
+    return value.encode("utf-8") if value else _PLAYBACK_TICKET_SECRET
+
+
+def _encode_playback_ticket(*, workspace_id: str, version_id: str, expires_at: int) -> str:
+    payload = json.dumps(
+        {"workspace": workspace_id, "version": version_id, "expires_at": expires_at},
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode("utf-8")
+    encoded = base64.urlsafe_b64encode(payload).rstrip(b"=")
+    signature = hmac.new(_playback_secret(), encoded, hashlib.sha256).digest()
+    return f"{encoded.decode('ascii')}.{base64.urlsafe_b64encode(signature).rstrip(b'=').decode('ascii')}"
+
+
+def _playback_ticket_workspace(ticket: str, version_id: str) -> str | None:
+    try:
+        encoded, provided_signature = ticket.split(".", 1)
+        expected_signature = base64.urlsafe_b64encode(
+            hmac.new(_playback_secret(), encoded.encode("ascii"), hashlib.sha256).digest()
+        ).rstrip(b"=").decode("ascii")
+        if not hmac.compare_digest(provided_signature, expected_signature):
+            return None
+        padding = "=" * (-len(encoded) % 4)
+        payload = json.loads(base64.urlsafe_b64decode(encoded + padding))
+        if payload.get("version") != version_id or int(payload.get("expires_at", 0)) < int(time.time()):
+            return None
+        workspace_id = payload.get("workspace")
+        return workspace_id if isinstance(workspace_id, str) and workspace_id else None
+    except (TypeError, ValueError, UnicodeDecodeError, json.JSONDecodeError):
+        return None
+
+
+def collect_asset_sources(payload: Any) -> list[dict[str, str]]:
+    """Extract provider media locations before they are ingested into managed storage."""
     found: list[dict[str, str]] = []
     seen: set[str] = set()
 
-    def add(kind: str, url: str) -> None:
-        if url in seen:
+    def add(kind: str, source: str, filename: str | None = None) -> None:
+        if source in seen:
             return
-        seen.add(url)
-        found.append({"kind": kind, "url": url})
+        seen.add(source)
+        asset = {"kind": kind, "source": source}
+        if filename:
+            asset["filename"] = filename
+        found.append(asset)
 
     def walk(obj: Any) -> None:
         if isinstance(obj, dict):
@@ -125,10 +152,10 @@ def collect_assets(payload: Any) -> list[dict[str, str]]:
                     if mapped and value.startswith(("http://", "https://", "data:")):
                         add(mapped, value)
                     elif key == "output_path":
-                        local = _local_media_url(Path(value))
                         kind = _kind_from_suffix(value)
-                        if local and kind:
-                            add(kind, local)
+                        resolved = _resolved_media_file(Path(value))
+                        if resolved and kind:
+                            add(kind, str(resolved), Path(value).name)
                     elif key == "url":
                         kind = _kind_from_suffix(value)
                         if kind and value.startswith(("http://", "https://", "data:")):
@@ -140,13 +167,67 @@ def collect_assets(payload: Any) -> list[dict[str, str]]:
                 walk(item)
 
     walk(payload)
-    preferred: dict[str, dict[str, str]] = {}
-    for asset in found:
-        current = preferred.get(asset["kind"])
-        local = asset["url"].startswith("/api/studio/media")
-        if current is None or (local and not current["url"].startswith("/api/studio/media")):
-            preferred[asset["kind"]] = asset
-    return list(preferred.values())
+    local_kinds = {
+        item["kind"]
+        for item in found
+        if not item["source"].startswith(("http://", "https://", "data:"))
+    }
+    return [
+        item
+        for item in found
+        if item["kind"] not in local_kinds
+        or not item["source"].startswith(("http://", "https://", "data:"))
+    ]
+
+
+def _register_payload_assets(
+    *,
+    payload: Any,
+    workspace_id: str,
+    project_id: str | None,
+    user_id: str,
+    kind: StudioAssetKind | None = None,
+    asset_id: str | None = None,
+    execution_id: str | None = None,
+    tool_call_id: str | None = None,
+    source_version_ids: list[str] | None = None,
+    relation_type: str = "derived_from",
+) -> list[dict[str, Any]]:
+    registered: list[dict[str, Any]] = []
+    for candidate in collect_asset_sources(payload):
+        candidate_kind = candidate["kind"]
+        if kind and candidate_kind != kind:
+            continue
+        reference = repository.register_source(
+            workspace_id=workspace_id,
+            project_id=project_id,
+            user_id=user_id,
+            source=candidate["source"],
+            kind=kind or candidate_kind,  # type: ignore[arg-type]
+            filename=candidate.get("filename"),
+            asset_id=asset_id if not registered else None,
+            execution_id=execution_id,
+            tool_call_id=tool_call_id,
+            source_version_ids=source_version_ids,
+            relation_type=relation_type,
+        )
+        registered.append(reference.public())
+    return registered
+
+
+def _resolve_asset_handles(value: Any, workspace_id: str) -> Any:
+    """Resolve transient agent/provider handles at the execution boundary."""
+    if isinstance(value, dict):
+        return {key: _resolve_asset_handles(item, workspace_id) for key, item in value.items()}
+    if isinstance(value, list):
+        return [_resolve_asset_handles(item, workspace_id) for item in value]
+    if isinstance(value, str) and value.startswith("renderhaus-asset://"):
+        version_id = value.removeprefix("renderhaus-asset://")
+        try:
+            return str(repository.version_path(workspace_id, version_id))
+        except (KeyError, FileNotFoundError, ValueError) as exc:
+            raise HTTPException(status_code=404, detail="Referenced asset version not found.") from exc
+    return value
 
 
 @router.get("/status")
@@ -162,6 +243,178 @@ async def studio_status() -> dict[str, Any]:
             "fish_audio": os.getenv("FISH_AUDIO_DRY_RUN", "true").lower() != "false",
         },
     }
+
+
+class StudioProjectBody(BaseModel):
+    name: str = Field(default="Untitled", min_length=1, max_length=120)
+    project_id: str | None = Field(default=None, min_length=1, max_length=120)
+
+
+class StudioCanvasBody(BaseModel):
+    document: dict[str, Any]
+    base_revision: int | None = Field(default=None, ge=1)
+
+
+def _legacy_source(asset: dict[str, Any]) -> str | None:
+    value = asset.get("url") or asset.get("content_url")
+    if not isinstance(value, str) or not value:
+        return None
+    if value.startswith("/api/studio/media"):
+        paths = parse_qs(urlparse(value).query).get("path") or []
+        if not paths:
+            return None
+        resolved = _resolved_media_file(Path(unquote(paths[0])))
+        return str(resolved) if resolved else None
+    if value.startswith(("http://", "https://", "data:")):
+        return value
+    return None
+
+
+def _normalize_canvas_document(
+    document: dict[str, Any],
+    *,
+    workspace_id: str,
+    project_id: str,
+    user_id: str,
+) -> dict[str, Any]:
+    """Migrate legacy URL/path media references to immutable version IDs."""
+    normalized = json.loads(json.dumps(document))
+    normalized["schemaVersion"] = 2
+    adopted: dict[str, dict[str, Any]] = {}
+
+    def normalize_asset(value: Any) -> dict[str, Any] | None:
+        if not isinstance(value, dict):
+            return None
+        version_id = value.get("versionId") or value.get("version_id")
+        if isinstance(version_id, str) and version_id:
+            reference = repository.get_version(workspace_id, version_id)
+            if reference is None:
+                raise ValueError("Canvas references an asset version outside this workspace.")
+            return reference.canvas()
+        source = _legacy_source(value)
+        if not source:
+            return None
+        if source in adopted:
+            return adopted[source]
+        raw_kind = value.get("kind")
+        kind = raw_kind if raw_kind in {"image", "video", "audio"} else _kind_from_suffix(source)
+        if kind is None:
+            return None
+        reference = repository.register_source(
+            workspace_id=workspace_id,
+            project_id=project_id,
+            user_id=user_id,
+            source=source,
+            kind=kind,
+            filename=value.get("filename") if isinstance(value.get("filename"), str) else None,
+        )
+        adopted[source] = reference.canvas()
+        return adopted[source]
+
+    for node in normalized.get("nodes") or []:
+        if not isinstance(node, dict) or not isinstance(node.get("data"), dict):
+            continue
+        data = node["data"]
+        output = normalize_asset(data.get("output"))
+        data["output"] = output
+        variants = [
+            migrated
+            for value in data.get("variants") or []
+            if (migrated := normalize_asset(value)) is not None
+        ]
+        if output and not any(item["versionId"] == output["versionId"] for item in variants):
+            variants.insert(0, output)
+        data["variants"] = variants
+        config = data.get("config")
+        if isinstance(config, dict):
+            config.pop("path", None)
+        def normalize_agent_payload(payload: dict[str, Any]) -> None:
+            payload["assets"] = [
+                migrated
+                for value in payload.get("assets") or []
+                if (migrated := normalize_asset(value)) is not None
+            ]
+            payload["primaryAsset"] = normalize_asset(payload.get("primaryAsset"))
+            for event in payload.get("toolEvents") or payload.get("tool_events") or []:
+                if not isinstance(event, dict):
+                    continue
+                event["assets"] = [
+                    migrated
+                    for value in event.get("assets") or []
+                    if (migrated := normalize_asset(value)) is not None
+                ]
+
+        agent_result = data.get("agentResult")
+        if isinstance(agent_result, dict):
+            normalize_agent_payload(agent_result)
+        agent_run = data.get("agentRun")
+        if isinstance(agent_run, dict):
+            normalize_agent_payload(agent_run)
+    return normalized
+
+
+@router.get("/projects")
+async def studio_projects(auth: AuthUser) -> dict[str, Any]:
+    workspace_id = current_workspace_id(auth)
+    user_id = current_user_id(auth)
+    return {"items": await asyncio.to_thread(repository.list_projects, workspace_id, user_id)}
+
+
+@router.post("/projects", status_code=201)
+async def create_studio_project(body: StudioProjectBody, auth: AuthUser) -> dict[str, Any]:
+    workspace_id = current_workspace_id(auth)
+    user_id = current_user_id(auth)
+    try:
+        return await asyncio.to_thread(
+            repository.create_project,
+            workspace_id,
+            user_id,
+            body.name,
+            project_id=body.project_id,
+        )
+    except Exception as exc:
+        logger.exception("Could not create Studio project")
+        raise HTTPException(status_code=409, detail="Could not create project.") from exc
+
+
+@router.get("/projects/{project_id}/canvas")
+async def studio_canvas(project_id: str, auth: AuthUser) -> dict[str, Any]:
+    try:
+        return await asyncio.to_thread(repository.get_canvas, current_workspace_id(auth), project_id)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="Project not found.") from exc
+
+
+@router.put("/projects/{project_id}/canvas")
+async def save_studio_canvas(
+    project_id: str,
+    body: StudioCanvasBody,
+    auth: AuthUser,
+) -> dict[str, Any]:
+    workspace_id = current_workspace_id(auth)
+    user_id = current_user_id(auth)
+    try:
+        document = await asyncio.to_thread(
+            _normalize_canvas_document,
+            body.document,
+            workspace_id=workspace_id,
+            project_id=project_id,
+            user_id=user_id,
+        )
+        return await asyncio.to_thread(
+            repository.save_canvas,
+            workspace_id,
+            project_id,
+            user_id,
+            document,
+            expected_revision=body.base_revision,
+        )
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="Project not found.") from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except CanvasConflictError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
 
 
 @router.get("/options")
@@ -232,24 +485,54 @@ def _tool_arguments(provider: str, tool: str, arguments: dict[str, Any]) -> dict
 
 
 @router.post("/invoke")
-async def invoke_tool(body: InvokeBody) -> dict[str, Any]:
+async def invoke_tool(body: InvokeBody, auth: AuthUser) -> dict[str, Any]:
+    workspace_id = current_workspace_id(auth)
+    user_id = current_user_id(auth)
+    try:
+        await asyncio.to_thread(repository.require_project, workspace_id, body.project_id)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="Project not found.") from exc
     cleaned = _tool_arguments(body.provider, body.tool, body.arguments)
+    cleaned = _resolve_asset_handles(cleaned, workspace_id)
     try:
         result = await asyncio.to_thread(dispatch, body.provider, body.tool, cleaned)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except Exception as exc:  # noqa: BLE001 - surface provider errors in the node
         raise HTTPException(status_code=500, detail=str(exc)) from exc
+    try:
+        assets = await asyncio.to_thread(
+            _register_payload_assets,
+            payload=result,
+            workspace_id=workspace_id,
+            project_id=body.project_id,
+            user_id=user_id,
+            asset_id=body.asset_id,
+            source_version_ids=body.source_version_ids,
+        )
+    except Exception as exc:  # noqa: BLE001 - provider output must become durable or fail visibly
+        logger.exception("Could not ingest provider output for %s.%s", body.provider, body.tool)
+        raise HTTPException(status_code=502, detail="Provider output could not be saved.") from exc
     return {
         "provider": body.provider,
         "tool": body.tool,
         "result": result,
-        "assets": collect_assets(result),
+        "assets": assets,
     }
 
 
 @router.post("/upload")
-async def studio_upload(file: UploadFile = File(...)) -> dict[str, str]:
+async def studio_upload(
+    auth: AuthUser,
+    file: UploadFile = File(...),
+    project_id: str = "untitled",
+) -> dict[str, Any]:
+    workspace_id = current_workspace_id(auth)
+    user_id = current_user_id(auth)
+    try:
+        await asyncio.to_thread(repository.require_project, workspace_id, project_id)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="Project not found.") from exc
     filename = file.filename or "upload.bin"
     kind = _kind_from_suffix(filename)
     if kind is None:
@@ -257,18 +540,71 @@ async def studio_upload(file: UploadFile = File(...)) -> dict[str, str]:
     payload = await file.read()
     if not payload:
         raise HTTPException(status_code=400, detail="The file was empty.")
-    folder = media_root() / "uploads"
-    folder.mkdir(parents=True, exist_ok=True)
-    stored = folder / f"{uuid.uuid4().hex}{Path(filename).suffix.lower()}"
-    stored.write_bytes(payload)
-    url = _local_media_url(stored)
-    if url is None:
-        raise HTTPException(status_code=500, detail="Could not store the upload.")
-    return {"kind": kind, "url": url, "path": str(stored), "filename": filename}
+    reference = await asyncio.to_thread(
+        repository.register_bytes,
+        workspace_id=workspace_id,
+        project_id=project_id,
+        user_id=user_id,
+        content=payload,
+        filename=filename,
+        kind=kind,
+        mime_type=file.content_type,
+    )
+    return reference.public()
+
+
+@router.post("/assets/{version_id}/playback")
+async def studio_asset_playback(version_id: str, auth: AuthUser) -> dict[str, Any]:
+    """Mint a short-lived, asset-scoped URL for native media elements.
+
+    HTML image/video/audio elements cannot attach the Clerk bearer token used by
+    Studio's JSON client. The ticket keeps media private without exposing that
+    bearer token in a URL.
+    """
+    workspace_id = current_workspace_id(auth)
+    reference = await asyncio.to_thread(repository.get_version, workspace_id, version_id)
+    if reference is None:
+        raise HTTPException(status_code=404, detail="Asset version not found.")
+    expires_at = int(time.time()) + _PLAYBACK_TICKET_TTL_SECONDS
+    ticket = _encode_playback_ticket(
+        workspace_id=workspace_id,
+        version_id=version_id,
+        expires_at=expires_at,
+    )
+    return {
+        "url": f"/api/studio/assets/{quote(version_id)}/content?ticket={quote(ticket)}",
+        "expires_at": expires_at,
+    }
+
+
+@router.get("/assets/{version_id}/content")
+async def studio_asset_content(
+    version_id: str,
+    auth: OptionalAuthUser,
+    ticket: str | None = None,
+) -> FileResponse:
+    workspace_id = _playback_ticket_workspace(ticket, version_id) if ticket else None
+    if workspace_id is None:
+        workspace_id = current_workspace_id(auth)
+    reference = await asyncio.to_thread(repository.get_version, workspace_id, version_id)
+    if reference is None:
+        raise HTTPException(status_code=404, detail="Asset version not found.")
+    try:
+        path = await asyncio.to_thread(repository.version_path, workspace_id, version_id)
+    except (KeyError, FileNotFoundError, ValueError) as exc:
+        raise HTTPException(status_code=404, detail="Asset content not found.") from exc
+    return FileResponse(
+        path,
+        media_type=reference.mime_type,
+        filename=reference.filename,
+        content_disposition_type="inline",
+        headers={"Cache-Control": "private, max-age=300"},
+    )
 
 
 class AgentBody(BaseModel):
     prompt: str = Field(min_length=1, max_length=8_000)
+    project_id: str = Field(default="untitled", min_length=1, max_length=120)
     node_ids: list[str] = Field(default_factory=list, max_length=16)
     nodes: list["AgentNodeBody"] = Field(default_factory=list, max_length=16)
 
@@ -278,6 +614,9 @@ class AgentNodeBody(BaseModel):
     title: str = Field(min_length=1, max_length=160)
     kind: str = Field(min_length=1, max_length=40)
     prompt: str = Field(default="", max_length=4_000)
+    asset_id: str | None = Field(default=None, max_length=120)
+    version_id: str | None = Field(default=None, max_length=120)
+    # Legacy migration fields. New clients send only asset/version IDs.
     output_url: str | None = Field(default=None, max_length=12_000)
     local_path: str | None = Field(default=None, max_length=4_000)
 
@@ -303,7 +642,7 @@ def _agent_node_source(node: AgentNodeBody) -> str | None:
     return None
 
 
-def _agent_references(body: AgentBody) -> list[StudioNodeReference]:
+def _agent_references(body: AgentBody, workspace_id: str) -> list[StudioNodeReference]:
     references = [
         StudioNodeReference(
             id=node.id,
@@ -311,9 +650,14 @@ def _agent_references(body: AgentBody) -> list[StudioNodeReference]:
             kind=node.kind,
             prompt=node.prompt,
             source=_agent_node_source(node),
+            asset_id=node.asset_id,
+            version_id=node.version_id,
         )
         for node in body.nodes
     ]
+    for reference in references:
+        if reference.version_id and repository.get_version(workspace_id, reference.version_id) is None:
+            raise HTTPException(status_code=404, detail="Referenced asset version not found.")
     known_ids = {node.id for node in references}
     references.extend(
         StudioNodeReference(id=node_id, title=node_id, kind="unknown")
@@ -324,12 +668,13 @@ def _agent_references(body: AgentBody) -> list[StudioNodeReference]:
 
 
 def _agent_result(outcome: Any) -> dict[str, Any]:
-    assets: list[dict[str, str]] = []
+    assets: list[dict[str, Any]] = []
     seen: set[str] = set()
     for event in outcome.tool_events:
-        for asset in collect_assets(event.result):
-            if asset["url"] not in seen:
-                seen.add(asset["url"])
+        for asset in event.assets:
+            version_id = str(asset.get("version_id") or "")
+            if version_id and version_id not in seen:
+                seen.add(version_id)
                 assets.append(asset)
 
     final = outcome.final
@@ -341,93 +686,235 @@ def _agent_result(outcome: Any) -> dict[str, Any]:
         "mime_type": "text/markdown;charset=utf-8",
         "tool_events": [event.public() for event in outcome.tool_events],
         "assets": assets,
+        "primary_asset": next(
+            (
+                asset
+                for event in reversed(outcome.tool_events)
+                for asset in reversed(event.assets)
+                if asset.get("kind") == "video"
+            ),
+            assets[-1] if assets else None,
+        ),
     }
 
 
-def _prune_agent_jobs(now: float) -> None:
-    expired = [
-        job_id
-        for job_id, job in _AGENT_JOBS.items()
-        if job.status in {"completed", "error"}
-        and now - job.updated_at > AGENT_JOB_TTL_SECONDS
-    ]
-    for job_id in expired:
-        _AGENT_JOBS.pop(job_id, None)
-    if len(_AGENT_JOBS) <= AGENT_JOB_LIMIT:
-        return
-    removable = sorted(
-        (job for job in _AGENT_JOBS.values() if job.status in {"completed", "error"}),
-        key=lambda job: job.updated_at,
+def _partial_agent_result(execution: dict[str, Any]) -> dict[str, Any]:
+    calls = execution.get("tool_calls") or []
+    assets: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for call in calls:
+        for asset in call.get("assets") or []:
+            version_id = str(asset.get("version_id") or "")
+            if version_id and version_id not in seen:
+                seen.add(version_id)
+                assets.append(asset)
+    primary = next(
+        (
+            asset
+            for call in reversed(calls)
+            for asset in reversed(call.get("assets") or [])
+            if asset.get("kind") == "video"
+        ),
+        assets[-1] if assets else None,
     )
-    for job in removable[: max(0, len(_AGENT_JOBS) - AGENT_JOB_LIMIT)]:
-        _AGENT_JOBS.pop(job.id, None)
+    completed = [call for call in calls if call.get("status") not in {"failed", "error"}]
+    markdown = "# Partial agent result\n\n"
+    if completed:
+        markdown += "Completed work:\n\n" + "\n".join(
+            f"- {call.get('label')}: {call.get('summary')}" for call in completed
+        )
+    else:
+        markdown += "No media tool completed before the run stopped."
+    return {
+        "title": "Recovered agent result" if assets else "Partial agent result",
+        "summary": (
+            "Completed media was recovered even though the manager did not finish its final reply."
+            if assets
+            else "The manager stopped before producing a final artifact."
+        ),
+        "markdown": markdown,
+        "filename": primary.get("filename") if primary else "partial-agent-result.md",
+        "mime_type": primary.get("mime_type") if primary else "text/markdown;charset=utf-8",
+        "tool_events": calls,
+        "assets": assets,
+        "primary_asset": primary,
+        "partial": True,
+    }
 
 
 async def _run_studio_agent_job(
     job_id: str,
     prompt: str,
     references: list[StudioNodeReference],
+    *,
+    workspace_id: str,
+    project_id: str,
+    user_id: str,
 ) -> None:
-    job = _AGENT_JOBS.get(job_id)
-    if job is None:
-        return
-    job.status = "running"
-    job.message = "Choosing tools and building the result."
-    job.updated_at = time.time()
+    await asyncio.to_thread(
+        repository.update_execution,
+        workspace_id,
+        job_id,
+        status="running",
+        message="Choosing tools and building the result.",
+    )
+
+    def register_assets(**kwargs: Any) -> list[dict[str, Any]]:
+        return _register_payload_assets(
+            payload=kwargs["result"],
+            workspace_id=workspace_id,
+            project_id=project_id,
+            user_id=user_id,
+            kind=kwargs.get("kind"),
+            asset_id=kwargs.get("asset_id"),
+            execution_id=job_id,
+            tool_call_id=kwargs.get("tool_call_id"),
+            source_version_ids=kwargs.get("source_version_ids") or [],
+            relation_type=(
+                "composed_from"
+                if kwargs.get("label") == "Remotion video render"
+                else "derived_from"
+            ),
+        )
+
+    def resolve_source(version_id: str) -> str:
+        return str(repository.version_path(workspace_id, version_id))
+
+    def record_event(event: Any) -> None:
+        payload = event.public()
+        payload["result"] = event.result
+        repository.append_tool_call(
+            workspace_id=workspace_id,
+            execution_id=job_id,
+            event=payload,
+        )
+
     try:
-        outcome = await run_studio_agent(prompt, nodes=references)
+        outcome = await run_studio_agent(
+            prompt,
+            nodes=references,
+            asset_registrar=register_assets,
+            source_resolver=resolve_source,
+            event_sink=record_event,
+        )
     except asyncio.CancelledError:
-        job.status = "error"
-        job.message = "The agent job was interrupted before it finished."
-        job.updated_at = time.time()
+        execution = await asyncio.to_thread(repository.get_execution, workspace_id, job_id)
+        await asyncio.to_thread(
+            repository.update_execution,
+            workspace_id,
+            job_id,
+            status="error",
+            message="The agent job was interrupted before it finished.",
+            result=_partial_agent_result(execution or {}),
+            error_type="CancelledError",
+        )
         raise
+    except MaxTurnsExceeded as exc:
+        logger.exception("Studio agent job %s reached its turn limit", job_id)
+        execution = await asyncio.to_thread(repository.get_execution, workspace_id, job_id) or {}
+        partial = _partial_agent_result(execution)
+        recovered_render = any(
+            call.get("name") == "render_remotion_video"
+            and call.get("status") in {"succeeded", "success", "completed"}
+            and call.get("assets")
+            for call in execution.get("tool_calls") or []
+        )
+        await asyncio.to_thread(
+            repository.update_execution,
+            workspace_id,
+            job_id,
+            status="completed" if recovered_render else "error",
+            message=(
+                "Recovered the completed render after the manager reached its turn limit."
+                if recovered_render
+                else "The manager reached its turn limit; completed tool outputs were preserved."
+            ),
+            result=partial,
+            error_type=type(exc).__name__,
+        )
+        return
     except Exception as exc:  # noqa: BLE001 - the full failure belongs in server logs
         logger.exception("Studio agent job %s failed", job_id)
-        job.status = "error"
-        job.message = f"The OpenAI agent could not finish this request ({type(exc).__name__})."
-        job.updated_at = time.time()
+        execution = await asyncio.to_thread(repository.get_execution, workspace_id, job_id) or {}
+        await asyncio.to_thread(
+            repository.update_execution,
+            workspace_id,
+            job_id,
+            status="error",
+            message=(
+                f"The OpenAI agent could not finish this request ({type(exc).__name__}); "
+                "completed tool outputs were preserved."
+            ),
+            result=_partial_agent_result(execution),
+            error_type=type(exc).__name__,
+        )
         return
 
-    job.result = _agent_result(outcome)
-    job.status = "completed"
-    job.message = f"Added {outcome.final.title} to the canvas."
-    job.updated_at = time.time()
+    await asyncio.to_thread(
+        repository.update_execution,
+        workspace_id,
+        job_id,
+        status="completed",
+        message=f"Added {outcome.final.title} to the canvas.",
+        result=_agent_result(outcome),
+    )
 
 
 @router.post("/agent", status_code=202)
-async def studio_agent(body: AgentBody) -> dict[str, Any]:
+async def studio_agent(body: AgentBody, auth: AuthUser) -> dict[str, Any]:
     if not os.getenv("OPENAI_API_KEY"):
         raise HTTPException(status_code=503, detail="The OpenAI agent is not configured.")
-    now = time.time()
-    _prune_agent_jobs(now)
-    job_id = uuid.uuid4().hex
-    job = StudioAgentJob(
-        id=job_id,
-        status="queued",
-        message="Agent job queued.",
-        created_at=now,
-        updated_at=now,
+    workspace_id = current_workspace_id(auth)
+    user_id = current_user_id(auth)
+    try:
+        await asyncio.to_thread(repository.require_project, workspace_id, body.project_id)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="Project not found.") from exc
+    references = await asyncio.to_thread(_agent_references, body, workspace_id)
+    job = await asyncio.to_thread(
+        repository.create_execution,
+        workspace_id=workspace_id,
+        project_id=body.project_id,
+        user_id=user_id,
+        prompt=body.prompt,
     )
-    _AGENT_JOBS[job_id] = job
+    job_id = str(job["job_id"])
     task = asyncio.create_task(
-        _run_studio_agent_job(job_id, body.prompt, _agent_references(body)),
+        _run_studio_agent_job(
+            job_id,
+            body.prompt,
+            references,
+            workspace_id=workspace_id,
+            project_id=body.project_id,
+            user_id=user_id,
+        ),
         name=f"studio-agent-{job_id}",
     )
     _AGENT_TASKS.add(task)
     task.add_done_callback(_AGENT_TASKS.discard)
-    return job.public()
+    return job
+
+
+@router.get("/agent")
+async def studio_agent_jobs(auth: AuthUser, limit: int = 50) -> dict[str, Any]:
+    items = await asyncio.to_thread(
+        repository.list_executions,
+        current_workspace_id(auth),
+        limit=limit,
+    )
+    return {"items": items}
 
 
 @router.get("/agent/{job_id}")
-async def studio_agent_job(job_id: str) -> dict[str, Any]:
-    job = _AGENT_JOBS.get(job_id)
+async def studio_agent_job(job_id: str, auth: AuthUser) -> dict[str, Any]:
+    job = await asyncio.to_thread(repository.get_execution, current_workspace_id(auth), job_id)
     if job is None:
         raise HTTPException(status_code=404, detail="Agent job not found.")
-    return job.public()
+    return job
 
 
 @router.get("/media")
-async def studio_media(path: str) -> FileResponse:
+async def studio_media(path: str, auth: AuthUser) -> FileResponse:
     resolved = _resolved_media_file(Path(path))
     if resolved is None:
         raise HTTPException(status_code=404, detail="Media file not found.")

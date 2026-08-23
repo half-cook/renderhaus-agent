@@ -1,8 +1,46 @@
 import type { FieldOptions, ProviderCatalog, StudioAsset, StudioStatus } from "./types";
 import type { AgentResultData, CreativeNodeKind } from "./canvas/types";
+import { studioFetch } from "./authenticated-fetch";
+
+function studioAsset(value: unknown): StudioAsset | null {
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+  const record = value as Record<string, unknown>;
+  const assetId = record.asset_id ?? record.assetId;
+  const versionId = record.version_id ?? record.versionId;
+  const kind = record.kind;
+  if (
+    typeof assetId !== "string" ||
+    typeof versionId !== "string" ||
+    !["image", "video", "audio"].includes(String(kind))
+  ) {
+    return null;
+  }
+  return {
+    assetId,
+    versionId,
+    kind: kind as StudioAsset["kind"],
+    filename: String(record.filename || `${kind}-${versionId}`),
+    mimeType: String(record.mime_type ?? record.mimeType ?? "application/octet-stream"),
+    ...(typeof (record.size_bytes ?? record.sizeBytes) === "number"
+      ? { sizeBytes: Number(record.size_bytes ?? record.sizeBytes) }
+      : {}),
+    ...(typeof (record.created_at ?? record.createdAt) === "number"
+      ? { createdAt: Number(record.created_at ?? record.createdAt) }
+      : {}),
+  };
+}
+
+function studioAssets(value: unknown): StudioAsset[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+  return value.map(studioAsset).filter((asset): asset is StudioAsset => asset !== null);
+}
 
 export async function fetchStatus(): Promise<StudioStatus> {
-  const response = await fetch("/api/studio/status");
+  const response = await studioFetch("/api/studio/status");
   if (!response.ok) {
     throw new Error(`status ${response.status}`);
   }
@@ -10,7 +48,7 @@ export async function fetchStatus(): Promise<StudioStatus> {
 }
 
 export async function fetchTools(): Promise<ProviderCatalog[]> {
-  const response = await fetch("/api/studio/tools");
+  const response = await studioFetch("/api/studio/tools");
   if (!response.ok) {
     throw new Error(`tools ${response.status}`);
   }
@@ -19,7 +57,7 @@ export async function fetchTools(): Promise<ProviderCatalog[]> {
 }
 
 export async function fetchOptions(): Promise<FieldOptions> {
-  const response = await fetch("/api/studio/options");
+  const response = await studioFetch("/api/studio/options");
   if (!response.ok) {
     throw new Error(`options ${response.status}`);
   }
@@ -31,11 +69,23 @@ export async function invokeTool(
   provider: string,
   tool: string,
   arguments_: Record<string, unknown>,
+  options: {
+    projectId: string;
+    assetId?: string;
+    sourceVersionIds?: string[];
+  },
 ): Promise<{ result: unknown; assets: StudioAsset[] }> {
-  const response = await fetch("/api/studio/invoke", {
+  const response = await studioFetch("/api/studio/invoke", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ provider, tool, arguments: arguments_ }),
+    body: JSON.stringify({
+      provider,
+      tool,
+      arguments: arguments_,
+      project_id: options.projectId,
+      asset_id: options.assetId,
+      source_version_ids: options.sourceVersionIds || [],
+    }),
   });
   const payload = await response.json();
   if (!response.ok) {
@@ -43,34 +93,147 @@ export async function invokeTool(
   }
   return {
     result: payload.result,
-    assets: Array.isArray(payload.assets) ? payload.assets : [],
+    assets: studioAssets(payload.assets),
   };
 }
 
 export async function uploadStudioFile(
   file: File,
-): Promise<{ kind: StudioAsset["kind"]; url: string; path: string; filename: string }> {
+  projectId: string,
+): Promise<StudioAsset> {
   const body = new FormData();
   body.append("file", file);
-  const response = await fetch("/api/studio/upload", { method: "POST", body });
+  const response = await studioFetch(
+    `/api/studio/upload?project_id=${encodeURIComponent(projectId)}`,
+    { method: "POST", body },
+  );
   const payload = await response.json();
   if (!response.ok) {
     throw new Error(payload.detail || `upload ${response.status}`);
   }
+  const asset = studioAsset(payload);
+  if (!asset) {
+    throw new Error("The upload did not return an asset version.");
+  }
+  return asset;
+}
+
+export type StudioProject = { id: string; name: string };
+
+export type StudioCanvasDocument = {
+  schemaVersion?: number;
+  projectName: string;
+  nodes: unknown[];
+  edges: unknown[];
+  viewport: { x: number; y: number; zoom: number };
+};
+
+export async function fetchStudioProjects(): Promise<StudioProject[]> {
+  const response = await studioFetch("/api/studio/projects", { cache: "no-store" });
+  const payload = await response.json();
+  if (!response.ok) {
+    throw new Error(payload.detail || `projects ${response.status}`);
+  }
+  return Array.isArray(payload.items) ? payload.items : [];
+}
+
+export async function createStudioProject(
+  name = "Untitled",
+  projectId?: string,
+): Promise<StudioProject> {
+  const response = await studioFetch("/api/studio/projects", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name, project_id: projectId }),
+  });
+  const payload = await response.json();
+  if (!response.ok) {
+    throw new Error(payload.detail || `create project ${response.status}`);
+  }
   return payload;
+}
+
+export type StudioCanvasSnapshot = {
+  revision: number;
+  document: StudioCanvasDocument;
+};
+
+export async function fetchStudioCanvas(projectId: string): Promise<StudioCanvasSnapshot> {
+  const response = await studioFetch(
+    `/api/studio/projects/${encodeURIComponent(projectId)}/canvas`,
+    { cache: "no-store" },
+  );
+  const payload = await response.json();
+  if (!response.ok) {
+    throw new Error(payload.detail || `canvas ${response.status}`);
+  }
+  return { revision: Number(payload.revision || 1), document: payload.document };
+}
+
+export async function saveStudioCanvas(
+  projectId: string,
+  document: StudioCanvasDocument,
+  baseRevision?: number,
+): Promise<StudioCanvasSnapshot> {
+  const response = await studioFetch(
+    `/api/studio/projects/${encodeURIComponent(projectId)}/canvas`,
+    {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ document, base_revision: baseRevision }),
+    },
+  );
+  const payload = await response.json();
+  if (!response.ok) {
+    throw new Error(payload.detail || `save canvas ${response.status}`);
+  }
+  return { revision: Number(payload.revision || baseRevision || 1), document: payload.document };
+}
+
+export type StudioExecution = {
+  jobId: string;
+  projectId?: string;
+  status: string;
+  message: string;
+  title?: string;
+  summary?: string;
+  primaryAsset?: StudioAsset;
+  updatedAt?: number;
+};
+
+export async function fetchStudioExecutions(limit = 20): Promise<StudioExecution[]> {
+  const response = await studioFetch(`/api/studio/agent?limit=${limit}`, { cache: "no-store" });
+  const payload = await response.json();
+  if (!response.ok) {
+    throw new Error(payload.detail || `agent jobs ${response.status}`);
+  }
+  return (Array.isArray(payload.items) ? payload.items : []).map((value: unknown) => {
+    const item = value as Record<string, unknown>;
+    const result = (item.result || {}) as Record<string, unknown>;
+    return {
+      jobId: String(item.job_id || ""),
+      projectId: typeof item.project_id === "string" ? item.project_id : undefined,
+      status: String(item.status || "unknown"),
+      message: String(item.message || ""),
+      title: typeof result.title === "string" ? result.title : undefined,
+      summary: typeof result.summary === "string" ? result.summary : undefined,
+      primaryAsset: studioAsset(result.primary_asset) || undefined,
+      updatedAt: typeof item.updated_at === "number" ? item.updated_at : undefined,
+    };
+  });
 }
 
 export type AgentComposerResult =
   | { status: "completed"; message: string; result: AgentResultData }
-  | { status: "error"; message: string };
+  | { status: "error"; message: string; result?: AgentResultData };
 
 export type AgentNodeContext = {
   id: string;
   title: string;
   kind: CreativeNodeKind;
   prompt: string;
-  output_url?: string;
-  local_path?: string;
+  asset_id?: string;
+  version_id?: string;
 };
 
 type AgentJobPayload = {
@@ -100,13 +263,34 @@ function completedAgentResult(payload: AgentJobPayload): AgentComposerResult {
     status: "completed",
     message: typeof payload.message === "string" ? payload.message : "Added the result to the canvas.",
     result: {
+      executionId: typeof payload.job_id === "string" ? payload.job_id : undefined,
       title: String(value.title || "Agent result"),
       summary: String(value.summary || "The agent completed the request."),
       markdown: String(value.markdown || ""),
       filename: String(value.filename || "agent-result.md"),
       mimeType: String(value.mime_type || "text/markdown;charset=utf-8"),
-      toolEvents: Array.isArray(value.tool_events) ? value.tool_events : [],
-      assets: Array.isArray(value.assets) ? value.assets : [],
+      toolEvents: Array.isArray(value.tool_events)
+        ? value.tool_events.map((event) => {
+            const item = event as Record<string, unknown>;
+            return {
+              id: String(item.id || crypto.randomUUID()),
+              name: String(item.name || "tool"),
+              label: String(item.label || "Tool"),
+              status: String(item.status || "completed"),
+              summary: String(item.summary || ""),
+              provider: typeof item.provider === "string" ? item.provider : undefined,
+              providerJobId:
+                typeof item.provider_job_id === "string" ? item.provider_job_id : undefined,
+              assets: studioAssets(item.assets),
+            };
+          })
+        : [],
+      assets: studioAssets(value.assets),
+      primaryAsset:
+        value.primary_asset && typeof value.primary_asset === "object"
+          ? studioAsset(value.primary_asset) || undefined
+          : undefined,
+      partial: value.partial === true,
     },
   };
 }
@@ -118,7 +302,7 @@ async function waitForAgentJob(
   const deadline = Date.now() + AGENT_POLL_TIMEOUT_MS;
   while (Date.now() < deadline) {
     await new Promise((resolve) => window.setTimeout(resolve, AGENT_POLL_INTERVAL_MS));
-    const response = await fetch(`/api/studio/agent/${encodeURIComponent(jobId)}`, {
+    const response = await studioFetch(`/api/studio/agent/${encodeURIComponent(jobId)}`, {
       cache: "no-store",
     });
     const payload = (await response.json().catch(() => ({}))) as AgentJobPayload;
@@ -132,9 +316,11 @@ async function waitForAgentJob(
       return completedAgentResult(payload);
     }
     if (payload.status === "error") {
+      const partial = payload.result ? completedAgentResult(payload) : null;
       return {
         status: "error",
         message: payload.message || "The agent could not finish this request.",
+        ...(partial?.status === "completed" ? { result: partial.result } : {}),
       };
     }
   }
@@ -146,14 +332,15 @@ async function waitForAgentJob(
 
 export async function submitAgentPrompt(
   prompt: string,
+  projectId: string,
   nodeIds: string[],
   nodes: AgentNodeContext[],
   onProgress?: (message: string) => void,
 ): Promise<AgentComposerResult> {
-  const response = await fetch("/api/studio/agent", {
+  const response = await studioFetch("/api/studio/agent", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ prompt, node_ids: nodeIds, nodes }),
+    body: JSON.stringify({ prompt, project_id: projectId, node_ids: nodeIds, nodes }),
   });
   const payload = (await response.json().catch(() => ({}))) as AgentJobPayload;
   if (!response.ok) {

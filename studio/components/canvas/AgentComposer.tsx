@@ -8,6 +8,7 @@ import { useCanvasStore } from "@/lib/canvas/store";
 
 export function AgentComposer() {
   const nodes = useCanvasStore((state) => state.nodes);
+  const projectId = useCanvasStore((state) => state.projectId);
   const selectedNodeIds = useCanvasStore((state) => state.selectedNodeIds);
   const composerMessage = useCanvasStore((state) => state.composerMessage);
   const composerOpen = useCanvasStore((state) => state.composerOpen);
@@ -15,6 +16,7 @@ export function AgentComposer() {
   const setComposerOpen = useCanvasStore((state) => state.setComposerOpen);
   const setActiveTool = useCanvasStore((state) => state.setActiveTool);
   const addAgentResult = useCanvasStore((state) => state.addAgentResult);
+  const refreshExecutions = useCanvasStore((state) => state.refreshExecutions);
   const status = useCanvasStore((state) => state.status);
   const [value, setValue] = useState("");
   const [busy, setBusy] = useState(false);
@@ -45,20 +47,24 @@ export function AgentComposer() {
       const promptValue = ["prompt", "text", "script", "lyrics"]
         .map((key) => node.data.config[key])
         .find((item): item is string => typeof item === "string" && item.trim().length > 0);
-      const localPath = node.data.config.path;
       return {
         id: node.id,
         title: node.data.title,
         kind: node.data.kind,
         prompt: promptValue || node.data.agentResult?.markdown || "",
-        ...(node.data.output?.url ? { output_url: node.data.output.url } : {}),
-        ...(typeof localPath === "string" ? { local_path: localPath } : {}),
+        ...(node.data.output
+          ? {
+              asset_id: node.data.output.assetId,
+              version_id: node.data.output.versionId,
+            }
+          : {}),
       };
     });
     try {
-      const result = await submitAgentPrompt(prompt, ids, contexts, setComposerMessage);
+      const result = await submitAgentPrompt(prompt, projectId, ids, contexts, setComposerMessage);
       setComposerMessage(result.message);
-      if (result.status === "completed") {
+      const completedResult = result.result;
+      if (completedResult) {
         const position = referencedNodes.length
           ? {
               x: Math.max(...referencedNodes.map((node) => node.position.x)) + 440,
@@ -73,12 +79,13 @@ export function AgentComposer() {
               });
               return { x: center.x - 210, y: center.y - 180 };
             })();
-        addAgentResult(result.result, position);
+        addAgentResult(completedResult, position);
         setValue("");
       }
     } catch (error) {
       setComposerMessage(error instanceof Error ? error.message : "The agent could not run.");
     } finally {
+      await refreshExecutions();
       setBusy(false);
     }
   };

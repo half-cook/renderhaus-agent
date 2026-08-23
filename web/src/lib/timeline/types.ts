@@ -30,6 +30,8 @@ export interface Clip extends TrackItemBase {
   /** In/out points within the source asset, in seconds. */
   sourceIn: number;
   sourceOut: number;
+  /** Linear audio gain. Omitted means full volume. */
+  volume?: number;
 }
 
 export interface Gap extends TrackItemBase {

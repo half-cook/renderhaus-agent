@@ -8,7 +8,19 @@ import {
   type Viewport,
 } from "@xyflow/react";
 import { create } from "zustand";
-import { fetchOptions, fetchStatus, fetchTools, uploadStudioFile } from "@/lib/api";
+import {
+  createStudioProject,
+  fetchOptions,
+  fetchStatus,
+  fetchStudioCanvas,
+  fetchStudioExecutions,
+  fetchStudioProjects,
+  fetchTools,
+  saveStudioCanvas,
+  uploadStudioFile,
+  type StudioCanvasDocument,
+  type StudioExecution,
+} from "@/lib/api";
 import type { FieldOptions, ProviderCatalog, StudioAsset, StudioStatus } from "@/lib/types";
 import {
   edgeAlreadyOccupiesHandle,
@@ -27,7 +39,9 @@ import {
 } from "./story";
 import { defaultToolForRail, toolById } from "./tool-registry";
 import type {
+  AgentRunData,
   AgentResultData,
+  AgentToolEvent,
   CreativeNodeKind,
   JobStatus,
   ProjectRecord,
@@ -37,6 +51,7 @@ import type {
 
 const PROJECTS_KEY = "renderhaus.studio.projects";
 const GRAPH_KEY = (id: string) => `renderhaus.studio.graph.${id}`;
+const MIGRATED_KEY = "renderhaus.studio.server-migration.v2";
 const HISTORY_LIMIT = 50;
 
 const PREFERRED: Record<string, Record<string, string | number>> = {
@@ -72,15 +87,17 @@ type CanvasStore = {
   providers: ProviderCatalog[];
   fieldOptions: FieldOptions;
   status: StudioStatus | null;
+  executions: StudioExecution[];
   loadError: string | null;
   hydrated: boolean;
   past: Snapshot[];
   future: Snapshot[];
-  hydrate: () => void;
+  hydrate: () => Promise<void>;
   loadCatalog: () => Promise<void>;
+  refreshExecutions: () => Promise<void>;
   setProjectName: (name: string) => void;
-  switchProject: (id: string) => void;
-  createProject: () => void;
+  switchProject: (id: string) => Promise<void>;
+  createProject: () => Promise<void>;
   setActiveTool: (tool: RailTool) => void;
   setInspectorOpen: (open: boolean) => void;
   setComposerOpen: (open: boolean) => void;
@@ -99,6 +116,7 @@ type CanvasStore = {
     output?: StudioAsset;
   }) => string;
   addAgentResult: (result: AgentResultData, position: { x: number; y: number }) => string;
+  toggleAgentRun: (id: string) => void;
   addUploadNode: (file: File, position: { x: number; y: number }) => Promise<void>;
   updateNodeData: (id: string, patch: Partial<CanvasNode["data"]>) => void;
   updateNodeConfig: (id: string, name: string, value: unknown) => void;
@@ -116,11 +134,14 @@ type CanvasStore = {
   undo: () => void;
   redo: () => void;
   pushHistory: () => void;
-  persist: () => void;
+  persist: () => Promise<void>;
   setComposerMessage: (message: string | null) => void;
 };
 
 const pollTimers = new Map<string, number>();
+let persistQueue: Promise<void> = Promise.resolve();
+let viewportPersistTimer: number | null = null;
+let persistedRevision = 0;
 
 function uid(): string {
   return crypto.randomUUID();
@@ -177,6 +198,26 @@ function readGraph(projectId: string): PersistedGraph | null {
   }
 }
 
+function documentFromGraph(graph: PersistedGraph): StudioCanvasDocument {
+  return {
+    schemaVersion: 2,
+    projectName: graph.projectName,
+    nodes: graph.nodes,
+    edges: graph.edges,
+    viewport: graph.viewport,
+  };
+}
+
+function graphFromDocument(document: StudioCanvasDocument): PersistedGraph {
+  const graph = {
+    projectName: document.projectName || "Untitled",
+    nodes: document.nodes as CanvasNode[],
+    edges: document.edges as CanvasEdge[],
+    viewport: document.viewport || { x: 80, y: 80, zoom: 1 },
+  };
+  return expandLegacyAgentResults(graph);
+}
+
 function makeNode(input: {
   kind: CreativeNodeKind;
   position: { x: number; y: number };
@@ -185,6 +226,7 @@ function makeNode(input: {
   config?: Record<string, unknown>;
   output?: StudioAsset;
   agentResult?: AgentResultData;
+  agentRun?: AgentRunData;
   fieldOptions: FieldOptions;
 }): CanvasNode {
   const tool = toolById(input.toolId);
@@ -204,9 +246,102 @@ function makeNode(input: {
       output: input.output,
       variants: input.output ? [input.output] : [],
       agentResult: input.agentResult,
-      status: input.output || input.agentResult ? "completed" : "idle",
+      agentRun: input.agentRun,
+      status: input.output || input.agentResult || input.agentRun ? "completed" : "idle",
       approved: false,
     },
+  };
+}
+
+type AgentAsset = { asset: StudioAsset; event?: AgentToolEvent };
+
+function assetsForAgentRun(result: AgentResultData): AgentAsset[] {
+  const assets = new Map<string, AgentAsset>();
+  for (const event of result.toolEvents) {
+    for (const asset of event.assets) {
+      assets.set(asset.versionId, { asset, event });
+    }
+  }
+  for (const asset of result.assets) {
+    if (!assets.has(asset.versionId)) assets.set(asset.versionId, { asset });
+  }
+  return [...assets.values()];
+}
+
+function labelForAgentAsset(asset: StudioAsset, event: AgentToolEvent | undefined, index: number): string {
+  const base = event?.label || `${asset.kind[0]?.toUpperCase() || "A"}${asset.kind.slice(1)}`;
+  return `${base} ${index + 1}`;
+}
+
+function createAgentRunCluster(
+  result: AgentResultData,
+  position: { x: number; y: number },
+  fieldOptions: FieldOptions,
+): { nodes: CanvasNode[]; finalNodeId?: string } {
+  const runId = result.executionId || uid();
+  const assets = assetsForAgentRun(result);
+  const finalAsset =
+    result.primaryAsset?.kind === "video"
+      ? result.primaryAsset
+      : [...assets].reverse().find((item) => item.asset.kind === "video")?.asset;
+  const artifacts = assets.filter((item) => item.asset.versionId !== finalAsset?.versionId);
+  const artifactNodes = artifacts.map(({ asset, event }, index) => {
+    const node = makeNode({
+      kind: asset.kind,
+      position: {
+        x: position.x + Math.floor(index / 3) * 440,
+        y: position.y + (index % 3) * 260,
+      },
+      title: labelForAgentAsset(asset, event, index),
+      output: asset,
+      fieldOptions,
+    });
+    node.data.agentRunId = runId;
+    node.data.agentRole = "artifact";
+    return node;
+  });
+  const finalX = position.x + Math.max(1, Math.ceil(artifacts.length / 3)) * 440 + 40;
+  const finalNode = finalAsset
+    ? makeNode({
+        kind: "video",
+        position: { x: finalX, y: position.y + 120 },
+        title: `Final · ${result.title}`,
+        output: finalAsset,
+        fieldOptions,
+      })
+    : undefined;
+  if (finalNode) {
+    finalNode.data.agentRunId = runId;
+    finalNode.data.agentRole = "final";
+    finalNode.selected = true;
+  }
+  const runNode = makeNode({
+    kind: "agentRun",
+    position: { x: finalX, y: position.y + 430 },
+    title: `Agent run · ${result.title}`,
+    agentRun: {
+      ...result,
+      executionId: result.executionId || runId,
+      artifactNodeIds: artifactNodes.map((node) => node.id),
+      ...(finalNode ? { finalNodeId: finalNode.id } : {}),
+      collapsed: true,
+    },
+    fieldOptions,
+  });
+  return { nodes: [...artifactNodes, ...(finalNode ? [finalNode] : []), runNode], finalNodeId: finalNode?.id };
+}
+
+function expandLegacyAgentResults(graph: PersistedGraph): PersistedGraph {
+  const legacy = graph.nodes.filter((node) => node.data.kind === "agentResult" && node.data.agentResult);
+  if (legacy.length === 0) return graph;
+  const legacyIds = new Set(legacy.map((node) => node.id));
+  const created = legacy.flatMap((node) =>
+    createAgentRunCluster(node.data.agentResult as AgentResultData, node.position, {}).nodes,
+  );
+  return {
+    ...graph,
+    nodes: [...graph.nodes.filter((node) => !legacyIds.has(node.id)), ...created],
+    edges: graph.edges.filter((edge) => !legacyIds.has(edge.source) && !legacyIds.has(edge.target)),
   };
 }
 
@@ -231,54 +366,128 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
   providers: [],
   fieldOptions: {},
   status: null,
+  executions: [],
   loadError: null,
   hydrated: false,
   past: [],
   future: [],
 
-  hydrate: () => {
-    const projects = readProjects();
-    const project = projects[0];
-    const graph = readGraph(project.id);
-    set({
-      projects,
-      projectId: project.id,
-      projectName: graph?.projectName || project.name,
-      nodes: graph?.nodes || [],
-      edges: graph?.edges || [],
-      viewport: graph?.viewport || { x: 80, y: 80, zoom: 1 },
-      hydrated: true,
-      past: [],
-      future: [],
-    });
+  hydrate: async () => {
+    const legacyProjects = readProjects();
+    try {
+      let projects = await fetchStudioProjects();
+      const migrated =
+        typeof window !== "undefined" && window.localStorage.getItem(MIGRATED_KEY) === "true";
+      if (!migrated) {
+        for (const legacy of legacyProjects) {
+          if (!projects.some((project) => project.id === legacy.id)) {
+            await createStudioProject(legacy.name, legacy.id);
+          }
+          const legacyGraph = readGraph(legacy.id);
+          if (legacyGraph) {
+            const remote = await fetchStudioCanvas(legacy.id);
+            if (remote.document.nodes.length === 0 && legacyGraph.nodes.length > 0) {
+              await saveStudioCanvas(legacy.id, documentFromGraph(legacyGraph));
+            }
+          }
+        }
+        window.localStorage.setItem(MIGRATED_KEY, "true");
+        projects = await fetchStudioProjects();
+      }
+      const project =
+        projects.find((candidate) => candidate.id === legacyProjects[0]?.id) || projects[0];
+      const snapshot = await fetchStudioCanvas(project.id);
+      persistedRevision = snapshot.revision;
+      const graph = graphFromDocument(snapshot.document);
+      const migratedLegacyResults = snapshot.document.nodes.some(
+        (node) =>
+          Boolean(node) &&
+          typeof node === "object" &&
+          (node as { data?: { kind?: string } }).data?.kind === "agentResult",
+      );
+      set({
+        projects,
+        projectId: project.id,
+        projectName: graph.projectName || project.name,
+        nodes: graph.nodes,
+        edges: graph.edges,
+        viewport: graph.viewport,
+        hydrated: true,
+        loadError: null,
+        past: [],
+        future: [],
+      });
+      if (migratedLegacyResults) {
+        window.setTimeout(() => void get().persist(), 0);
+      }
+    } catch (error) {
+      const project = legacyProjects[0] || { id: "untitled", name: "Untitled" };
+      const graph = readGraph(project.id);
+      set({
+        projects: legacyProjects,
+        projectId: project.id,
+        projectName: graph?.projectName || project.name,
+        nodes: graph?.nodes || [],
+        edges: graph?.edges || [],
+        viewport: graph?.viewport || { x: 80, y: 80, zoom: 1 },
+        hydrated: true,
+        loadError:
+          error instanceof Error ? error.message : "Could not load the server canvas.",
+        past: [],
+        future: [],
+      });
+    }
   },
 
-  persist: () => {
-    if (typeof window === "undefined") {
-      return;
-    }
+  persist: async () => {
     const { projectId, projectName, nodes, edges, viewport, projects } = get();
     const nextProjects = projects.map((item) =>
       item.id === projectId ? { ...item, name: projectName } : item,
     );
-    window.localStorage.setItem(PROJECTS_KEY, JSON.stringify(nextProjects));
-    window.localStorage.setItem(
-      GRAPH_KEY(projectId),
-      JSON.stringify({ projectName, nodes, edges, viewport } satisfies PersistedGraph),
-    );
     set({ projects: nextProjects });
+    const document = documentFromGraph({ projectName, nodes, edges, viewport });
+    const save = async () => {
+      const snapshot = await saveStudioCanvas(
+        projectId,
+        document,
+        persistedRevision || undefined,
+      );
+      persistedRevision = snapshot.revision;
+    };
+    persistQueue = persistQueue.then(save, save);
+    try {
+      await persistQueue;
+      if (get().loadError?.startsWith("Canvas save failed:")) {
+        set({ loadError: null });
+      }
+    } catch (error) {
+      set({
+        loadError: `Canvas save failed: ${
+          error instanceof Error ? error.message : "unknown error"
+        }`,
+      });
+    }
   },
 
   loadCatalog: async () => {
     try {
-      const [providers, status, fieldOptions] = await Promise.all([
+      const [providers, status, fieldOptions, executions] = await Promise.all([
         fetchTools(),
         fetchStatus(),
         fetchOptions().catch(() => ({})),
+        fetchStudioExecutions().catch(() => []),
       ]);
-      set({ providers, status, fieldOptions, loadError: null });
+      set({ providers, status, fieldOptions, executions, loadError: null });
     } catch (error) {
       set({ loadError: error instanceof Error ? error.message : "Could not load tools." });
+    }
+  },
+
+  refreshExecutions: async () => {
+    try {
+      set({ executions: await fetchStudioExecutions(), loadError: null });
+    } catch (error) {
+      set({ loadError: error instanceof Error ? error.message : "Could not load agent jobs." });
     }
   },
 
@@ -287,38 +496,58 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
     get().persist();
   },
 
-  switchProject: (id) => {
-    get().persist();
-    const graph = readGraph(id);
-    const project = get().projects.find((item) => item.id === id);
-    set({
-      projectId: id,
-      projectName: graph?.projectName || project?.name || "Untitled",
-      nodes: graph?.nodes || [],
-      edges: graph?.edges || [],
-      viewport: graph?.viewport || { x: 80, y: 80, zoom: 1 },
-      selectedNodeIds: [],
-      past: [],
-      future: [],
-    });
+  switchProject: async (id) => {
+    await get().persist();
+    try {
+      const snapshot = await fetchStudioCanvas(id);
+      persistedRevision = snapshot.revision;
+      const graph = graphFromDocument(snapshot.document);
+      const migratedLegacyResults = snapshot.document.nodes.some(
+        (node) =>
+          Boolean(node) &&
+          typeof node === "object" &&
+          (node as { data?: { kind?: string } }).data?.kind === "agentResult",
+      );
+      const project = get().projects.find((item) => item.id === id);
+      set({
+        projectId: id,
+        projectName: graph.projectName || project?.name || "Untitled",
+        nodes: graph.nodes,
+        edges: graph.edges,
+        viewport: graph.viewport,
+        selectedNodeIds: [],
+        past: [],
+        future: [],
+        loadError: null,
+      });
+      if (migratedLegacyResults) {
+        window.setTimeout(() => void get().persist(), 0);
+      }
+    } catch (error) {
+      set({ loadError: error instanceof Error ? error.message : "Could not switch project." });
+    }
   },
 
-  createProject: () => {
-    get().persist();
-    const id = uid();
-    const record = { id, name: "Untitled" };
-    set({
-      projects: [...get().projects, record],
-      projectId: id,
-      projectName: "Untitled",
-      nodes: [],
-      edges: [],
-      viewport: { x: 80, y: 80, zoom: 1 },
-      selectedNodeIds: [],
-      past: [],
-      future: [],
-    });
-    get().persist();
+  createProject: async () => {
+    await get().persist();
+    try {
+      const record = await createStudioProject("Untitled");
+      persistedRevision = 1;
+      set({
+        projects: [record, ...get().projects],
+        projectId: record.id,
+        projectName: "Untitled",
+        nodes: [],
+        edges: [],
+        viewport: { x: 80, y: 80, zoom: 1 },
+        selectedNodeIds: [],
+        past: [],
+        future: [],
+        loadError: null,
+      });
+    } catch (error) {
+      set({ loadError: error instanceof Error ? error.message : "Could not create project." });
+    }
   },
 
   setActiveTool: (tool) =>
@@ -332,7 +561,13 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
       return;
     }
     set({ viewport });
-    get().persist();
+    if (viewportPersistTimer !== null) {
+      window.clearTimeout(viewportPersistTimer);
+    }
+    viewportPersistTimer = window.setTimeout(() => {
+      viewportPersistTimer = null;
+      void get().persist();
+    }, 350);
   },
   setComposerMessage: (message) => set({ composerMessage: message }),
 
@@ -435,33 +670,37 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
 
   addAgentResult: (result, position) => {
     get().pushHistory();
-    const node = makeNode({
-      kind: "agentResult",
-      position,
-      title: result.title,
-      config: {},
-      agentResult: result,
-      fieldOptions: get().fieldOptions,
-    });
-    node.selected = true;
+    const cluster = createAgentRunCluster(result, position, get().fieldOptions);
+    const selectedNodeId = cluster.finalNodeId || cluster.nodes[cluster.nodes.length - 1]?.id;
     set({
-      nodes: [...get().nodes.map((item) => ({ ...item, selected: false })), node],
-      selectedNodeIds: [node.id],
+      nodes: [
+        ...get().nodes.map((item) => ({ ...item, selected: false })),
+        ...cluster.nodes,
+      ],
+      selectedNodeIds: selectedNodeId ? [selectedNodeId] : [],
       inspectorOpen: false,
     });
     get().persist();
-    return node.id;
+    return selectedNodeId || "";
+  },
+
+  toggleAgentRun: (id) => {
+    const node = get().nodes.find((item) => item.id === id);
+    if (!node?.data.agentRun) return;
+    get().updateNodeData(id, {
+      agentRun: { ...node.data.agentRun, collapsed: !node.data.agentRun.collapsed },
+    });
   },
 
   addUploadNode: async (file, position) => {
-    const uploaded = await uploadStudioFile(file);
+    const uploaded = await uploadStudioFile(file, get().projectId);
     const kind = uploaded.kind;
     get().addCreativeNode({
       kind,
       position,
       title: uploaded.filename.replace(/\.[^.]+$/, ""),
-      output: { kind, url: uploaded.url },
-      config: { path: uploaded.path },
+      output: uploaded,
+      config: {},
     });
   },
 
@@ -591,7 +830,7 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
     }
     const current = Math.max(
       0,
-      variants.findIndex((item) => item.url === node.data.output?.url),
+      variants.findIndex((item) => item.versionId === node.data.output?.versionId),
     );
     const next = (current + direction + variants.length) % variants.length;
     get().updateNodeData(id, { output: variants[next] });
@@ -684,7 +923,7 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
     }
     get().updateNodeData(id, { status: "running", error: undefined });
     try {
-      const patch = await runCreativeNode(node, get().nodes, get().edges);
+      const patch = await runCreativeNode(node, get().nodes, get().edges, get().projectId);
       get().updateNodeData(id, patch);
       if (patch.status === "queued" && patch.jobId) {
         const tick = async () => {
@@ -693,7 +932,7 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
             return;
           }
           try {
-            const next = await pollCreativeNode(current);
+            const next = await pollCreativeNode(current, get().projectId);
             if (!next) {
               return;
             }

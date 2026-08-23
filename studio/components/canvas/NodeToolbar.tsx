@@ -5,6 +5,7 @@ import { Check, Copy, Download, LayoutGrid, Pencil, RefreshCw, Trash2, Video } f
 import { agentResultDownloadUrl } from "@/lib/canvas/download";
 import type { CanvasNodeData } from "@/lib/canvas/types";
 import { useCanvasStore } from "@/lib/canvas/store";
+import { AssetDownloadLink } from "./AssetMedia";
 
 type Props = {
   id: string;
@@ -19,8 +20,7 @@ export function NodeToolbar({ id, data }: Props) {
   const connectImageToVideo = useCanvasStore((state) => state.connectImageToVideo);
   const addToStoryboard = useCanvasStore((state) => state.addToStoryboard);
   const setApproved = useCanvasStore((state) => state.setApproved);
-  const canVideo = data.kind === "image" && Boolean(data.output?.url);
-  const canDownload = Boolean(data.output?.url || data.agentResult);
+  const canVideo = data.kind === "image" && Boolean(data.output);
   const canStoryboard = Boolean(data.output) && (data.kind === "image" || data.kind === "video");
   const canApprove = data.kind === "image" || data.kind === "video" || data.kind === "storyboard";
 
@@ -63,7 +63,15 @@ export function NodeToolbar({ id, data }: Props) {
           <LayoutGrid size={14} />
         </button>
       ) : null}
-      {data.agentResult ? (
+      {data.output || data.agentResult?.primaryAsset ? (
+        <AssetDownloadLink
+          className="toolbar-link"
+          asset={data.output || data.agentResult?.primaryAsset}
+          ariaLabel="Download"
+        >
+          <Download size={14} />
+        </AssetDownloadLink>
+      ) : data.agentResult ? (
         <a
           className="toolbar-link"
           href={agentResultDownloadUrl(data.agentResult)}
@@ -71,10 +79,6 @@ export function NodeToolbar({ id, data }: Props) {
           aria-label={`Download ${data.agentResult.filename}`}
           title="Download"
         >
-          <Download size={14} />
-        </a>
-      ) : canDownload ? (
-        <a className="toolbar-link" href={data.output?.url} download aria-label="Download" title="Download">
           <Download size={14} />
         </a>
       ) : null}

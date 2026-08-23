@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { AbsoluteFill, Sequence, Video, useVideoConfig } from "remotion";
+import { AbsoluteFill, Audio, Img, Sequence, Video, useVideoConfig } from "remotion";
 import type { Asset, Clip, TimelineDocument } from "@/lib/timeline/types";
 
 // How long to wait for a real decoded frame before concluding the codec
@@ -78,12 +78,39 @@ export function TimelineComposition({ document, onClipStatusChange }: TimelineCo
         .filter((item): item is Clip => item.type === "clip")
         .map((clip) => {
           const asset = document.assets.find((a) => a.id === clip.assetId);
-          if (!asset || asset.kind !== "video") return null;
+          if (!asset || !["video", "image"].includes(asset.kind)) return null;
           const from = Math.round(clip.start * fps);
           const durationInFrames = Math.max(1, Math.round(clip.duration * fps));
           return (
             <Sequence key={clip.id} from={from} durationInFrames={durationInFrames}>
-              <TimelineClip clip={clip} asset={asset} onStatusChange={onClipStatusChange} />
+              {asset.kind === "video" ? (
+                <TimelineClip clip={clip} asset={asset} onStatusChange={onClipStatusChange} />
+              ) : (
+                <Img
+                  src={asset.url}
+                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                />
+              )}
+            </Sequence>
+          );
+        })}
+      {document.tracks
+        .filter((track) => track.kind === "audio")
+        .flatMap((track) => track.items)
+        .filter((item): item is Clip => item.type === "clip")
+        .map((clip) => {
+          const asset = document.assets.find((item) => item.id === clip.assetId);
+          if (!asset || asset.kind !== "audio") return null;
+          const from = Math.round(clip.start * fps);
+          const durationInFrames = Math.max(1, Math.round(clip.duration * fps));
+          return (
+            <Sequence key={clip.id} from={from} durationInFrames={durationInFrames}>
+              <Audio
+                src={asset.url}
+                trimBefore={Math.round(clip.sourceIn * fps)}
+                trimAfter={Math.round(clip.sourceOut * fps)}
+                volume={clip.volume ?? 1}
+              />
             </Sequence>
           );
         })}
