@@ -1,6 +1,13 @@
 import type { ProviderCatalog, StudioAsset, ToolSchema } from "@/lib/types";
 
-export type CreativeNodeKind = "text" | "image" | "video" | "audio" | "generator" | "storyboard";
+export type CreativeNodeKind =
+  | "text"
+  | "image"
+  | "video"
+  | "audio"
+  | "generator"
+  | "storyboard"
+  | "agentResult";
 
 export type PortDataType = "text" | "image" | "video" | "audio";
 
@@ -39,6 +46,23 @@ export type ToolDefinition = {
   pollTool?: string;
 };
 
+export type AgentToolEvent = {
+  name: string;
+  label: string;
+  status: string;
+  summary: string;
+};
+
+export type AgentResultData = {
+  title: string;
+  summary: string;
+  markdown: string;
+  filename: string;
+  mimeType: string;
+  toolEvents: AgentToolEvent[];
+  assets: StudioAsset[];
+};
+
 export type CanvasNodeData = {
   kind: CreativeNodeKind;
   title: string;
@@ -54,6 +78,7 @@ export type CanvasNodeData = {
   jobId?: string;
   approved?: boolean;
   storyOrder?: number;
+  agentResult?: AgentResultData;
 };
 
 export type CanvasEdgeData = {

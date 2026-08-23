@@ -14,6 +14,7 @@ export function isSceneKind(kind: CreativeNodeKind): boolean {
     case "text":
     case "audio":
     case "generator":
+    case "agentResult":
       return false;
     default: {
       const exhaustive: never = kind;

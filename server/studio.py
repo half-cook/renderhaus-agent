@@ -3,17 +3,21 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 import mimetypes
 import os
+import time
 import uuid
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
-from urllib.parse import quote
+from urllib.parse import parse_qs, quote, urlparse
 
 from fastapi import APIRouter, File, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
+from agent.studio_agent import StudioNodeReference, run_studio_agent
 from providers.catalog import PROVIDERS, get_provider
 from providers.registry import dispatch, load_committed_schemas
 from server.config import ROOT
@@ -21,6 +25,7 @@ from server.studio_options import LIVE_CHOICE_TOOLS, extract_choice_ids, static_
 
 
 router = APIRouter(prefix="/api/studio", tags=["studio"])
+logger = logging.getLogger(__name__)
 
 IMAGE_SUFFIXES = {".png", ".jpg", ".jpeg", ".webp", ".gif"}
 VIDEO_SUFFIXES = {".mp4", ".webm", ".mov", ".m4v"}
@@ -32,6 +37,31 @@ URL_KEYS = {
     "mp3_url": "audio",
     "wav_url": "audio",
 }
+
+AGENT_JOB_LIMIT = 100
+AGENT_JOB_TTL_SECONDS = 60 * 60 * 24
+
+
+@dataclass(slots=True)
+class StudioAgentJob:
+    id: str
+    status: str
+    message: str
+    created_at: float
+    updated_at: float
+    result: dict[str, Any] | None = None
+
+    def public(self) -> dict[str, Any]:
+        return {
+            "job_id": self.id,
+            "status": self.status,
+            "message": self.message,
+            **({"result": self.result} if self.result is not None else {}),
+        }
+
+
+_AGENT_JOBS: dict[str, StudioAgentJob] = {}
+_AGENT_TASKS: set[asyncio.Task[None]] = set()
 
 
 class InvokeBody(BaseModel):
@@ -123,7 +153,7 @@ def collect_assets(payload: Any) -> list[dict[str, str]]:
 async def studio_status() -> dict[str, Any]:
     return {
         "mode": "local",
-        "agent": False,
+        "agent": bool(os.getenv("OPENAI_API_KEY")),
         "dry_run": {
             "seedance": os.getenv("SEEDANCE_DRY_RUN", "true").lower() != "false",
             "seedream": os.getenv("SEEDREAM_DRY_RUN", os.getenv("SEEDANCE_DRY_RUN", "true")).lower()
@@ -238,16 +268,162 @@ async def studio_upload(file: UploadFile = File(...)) -> dict[str, str]:
 
 
 class AgentBody(BaseModel):
-    prompt: str = Field(min_length=1)
-    node_ids: list[str] = Field(default_factory=list)
+    prompt: str = Field(min_length=1, max_length=8_000)
+    node_ids: list[str] = Field(default_factory=list, max_length=16)
+    nodes: list["AgentNodeBody"] = Field(default_factory=list, max_length=16)
 
 
-@router.post("/agent")
-async def studio_agent(_body: AgentBody) -> dict[str, Any]:
-    raise HTTPException(
-        status_code=501,
-        detail="The agent is not connected yet. Add nodes from the rail to build the graph.",
+class AgentNodeBody(BaseModel):
+    id: str = Field(min_length=1, max_length=120)
+    title: str = Field(min_length=1, max_length=160)
+    kind: str = Field(min_length=1, max_length=40)
+    prompt: str = Field(default="", max_length=4_000)
+    output_url: str | None = Field(default=None, max_length=12_000)
+    local_path: str | None = Field(default=None, max_length=4_000)
+
+
+AgentBody.model_rebuild()
+
+
+def _agent_node_source(node: AgentNodeBody) -> str | None:
+    if node.local_path:
+        resolved = _resolved_media_file(Path(node.local_path))
+        if resolved is not None:
+            return str(resolved)
+    output_url = node.output_url or ""
+    if output_url.startswith("/api/studio/media"):
+        values = parse_qs(urlparse(output_url).query).get("path") or []
+        if values:
+            resolved = _resolved_media_file(Path(values[0]))
+            if resolved is not None:
+                return str(resolved)
+        return None
+    if output_url.startswith(("https://", "http://", "data:")):
+        return output_url
+    return None
+
+
+def _agent_references(body: AgentBody) -> list[StudioNodeReference]:
+    references = [
+        StudioNodeReference(
+            id=node.id,
+            title=node.title,
+            kind=node.kind,
+            prompt=node.prompt,
+            source=_agent_node_source(node),
+        )
+        for node in body.nodes
+    ]
+    known_ids = {node.id for node in references}
+    references.extend(
+        StudioNodeReference(id=node_id, title=node_id, kind="unknown")
+        for node_id in body.node_ids
+        if node_id not in known_ids
     )
+    return references
+
+
+def _agent_result(outcome: Any) -> dict[str, Any]:
+    assets: list[dict[str, str]] = []
+    seen: set[str] = set()
+    for event in outcome.tool_events:
+        for asset in collect_assets(event.result):
+            if asset["url"] not in seen:
+                seen.add(asset["url"])
+                assets.append(asset)
+
+    final = outcome.final
+    return {
+        "title": final.title,
+        "summary": final.summary,
+        "markdown": final.markdown,
+        "filename": final.filename,
+        "mime_type": "text/markdown;charset=utf-8",
+        "tool_events": [event.public() for event in outcome.tool_events],
+        "assets": assets,
+    }
+
+
+def _prune_agent_jobs(now: float) -> None:
+    expired = [
+        job_id
+        for job_id, job in _AGENT_JOBS.items()
+        if job.status in {"completed", "error"}
+        and now - job.updated_at > AGENT_JOB_TTL_SECONDS
+    ]
+    for job_id in expired:
+        _AGENT_JOBS.pop(job_id, None)
+    if len(_AGENT_JOBS) <= AGENT_JOB_LIMIT:
+        return
+    removable = sorted(
+        (job for job in _AGENT_JOBS.values() if job.status in {"completed", "error"}),
+        key=lambda job: job.updated_at,
+    )
+    for job in removable[: max(0, len(_AGENT_JOBS) - AGENT_JOB_LIMIT)]:
+        _AGENT_JOBS.pop(job.id, None)
+
+
+async def _run_studio_agent_job(
+    job_id: str,
+    prompt: str,
+    references: list[StudioNodeReference],
+) -> None:
+    job = _AGENT_JOBS.get(job_id)
+    if job is None:
+        return
+    job.status = "running"
+    job.message = "Choosing tools and building the result."
+    job.updated_at = time.time()
+    try:
+        outcome = await run_studio_agent(prompt, nodes=references)
+    except asyncio.CancelledError:
+        job.status = "error"
+        job.message = "The agent job was interrupted before it finished."
+        job.updated_at = time.time()
+        raise
+    except Exception as exc:  # noqa: BLE001 - the full failure belongs in server logs
+        logger.exception("Studio agent job %s failed", job_id)
+        job.status = "error"
+        job.message = f"The OpenAI agent could not finish this request ({type(exc).__name__})."
+        job.updated_at = time.time()
+        return
+
+    job.result = _agent_result(outcome)
+    job.status = "completed"
+    job.message = f"Added {outcome.final.title} to the canvas."
+    job.updated_at = time.time()
+
+
+@router.post("/agent", status_code=202)
+async def studio_agent(body: AgentBody) -> dict[str, Any]:
+    if not os.getenv("OPENAI_API_KEY"):
+        raise HTTPException(status_code=503, detail="The OpenAI agent is not configured.")
+    now = time.time()
+    _prune_agent_jobs(now)
+    job_id = uuid.uuid4().hex
+    job = StudioAgentJob(
+        id=job_id,
+        status="queued",
+        message="Agent job queued.",
+        created_at=now,
+        updated_at=now,
+    )
+    _AGENT_JOBS[job_id] = job
+    task = asyncio.create_task(
+        _run_studio_agent_job(job_id, body.prompt, _agent_references(body)),
+        name=f"studio-agent-{job_id}",
+    )
+    _AGENT_TASKS.add(task)
+    task.add_done_callback(_AGENT_TASKS.discard)
+    return job.public()
+
+
+@router.get("/agent/{job_id}")
+async def studio_agent_job(job_id: str) -> dict[str, Any]:
+    job = _AGENT_JOBS.get(job_id)
+    if job is None:
+        raise HTTPException(status_code=404, detail="Agent job not found.")
+    return job.public()
 
 
 @router.get("/media")

@@ -20,7 +20,11 @@ function mergeVariants(existing: StudioAsset[] | undefined, incoming: StudioAsse
 export function outputValue(node: CanvasNode, dataType: PortDataType): unknown {
   switch (dataType) {
     case "text": {
-      const prompt = node.data.config.prompt ?? node.data.config.text ?? node.data.config.script;
+      const prompt =
+        node.data.agentResult?.markdown ??
+        node.data.config.prompt ??
+        node.data.config.text ??
+        node.data.config.script;
       return typeof prompt === "string" && prompt.trim() ? prompt : node.data.title;
     }
     case "image":

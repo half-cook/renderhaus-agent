@@ -26,7 +26,14 @@ import {
   SCENE_CARD_WIDTH,
 } from "./story";
 import { defaultToolForRail, toolById } from "./tool-registry";
-import type { CreativeNodeKind, JobStatus, ProjectRecord, RailTool, ToolDefinition } from "./types";
+import type {
+  AgentResultData,
+  CreativeNodeKind,
+  JobStatus,
+  ProjectRecord,
+  RailTool,
+  ToolDefinition,
+} from "./types";
 
 const PROJECTS_KEY = "renderhaus.studio.projects";
 const GRAPH_KEY = (id: string) => `renderhaus.studio.graph.${id}`;
@@ -91,6 +98,7 @@ type CanvasStore = {
     config?: Record<string, unknown>;
     output?: StudioAsset;
   }) => string;
+  addAgentResult: (result: AgentResultData, position: { x: number; y: number }) => string;
   addUploadNode: (file: File, position: { x: number; y: number }) => Promise<void>;
   updateNodeData: (id: string, patch: Partial<CanvasNode["data"]>) => void;
   updateNodeConfig: (id: string, name: string, value: unknown) => void;
@@ -176,6 +184,7 @@ function makeNode(input: {
   title?: string;
   config?: Record<string, unknown>;
   output?: StudioAsset;
+  agentResult?: AgentResultData;
   fieldOptions: FieldOptions;
 }): CanvasNode {
   const tool = toolById(input.toolId);
@@ -194,7 +203,8 @@ function makeNode(input: {
       config: input.config || (tool ? defaultsFor(tool, input.fieldOptions) : {}),
       output: input.output,
       variants: input.output ? [input.output] : [],
-      status: input.output ? "completed" : "idle",
+      agentResult: input.agentResult,
+      status: input.output || input.agentResult ? "completed" : "idle",
       approved: false,
     },
   };
@@ -418,6 +428,26 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
       nodes: [...get().nodes.map((item) => ({ ...item, selected: false })), node],
       selectedNodeIds: [node.id],
       inspectorOpen: true,
+    });
+    get().persist();
+    return node.id;
+  },
+
+  addAgentResult: (result, position) => {
+    get().pushHistory();
+    const node = makeNode({
+      kind: "agentResult",
+      position,
+      title: result.title,
+      config: {},
+      agentResult: result,
+      fieldOptions: get().fieldOptions,
+    });
+    node.selected = true;
+    set({
+      nodes: [...get().nodes.map((item) => ({ ...item, selected: false })), node],
+      selectedNodeIds: [node.id],
+      inspectorOpen: false,
     });
     get().persist();
     return node.id;

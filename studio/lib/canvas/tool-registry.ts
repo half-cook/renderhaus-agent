@@ -135,6 +135,8 @@ export function portsForNode(toolId: string | undefined, kind: CreativeNodeKind)
       };
     case "generator":
       return { inputs: [], outputs: [] };
+    case "agentResult":
+      return { inputs: [], outputs: [{ id: "text", label: "Result", dataType: "text" }] };
     default: {
       const exhaustive: never = kind;
       return exhaustive;
