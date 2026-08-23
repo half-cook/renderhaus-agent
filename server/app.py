@@ -27,6 +27,7 @@ from server.assets import (
     verify_content_signature,
 )
 from server.auth import AuthUser, clerk_enabled, current_user_id, optional_user, publishable_key
+from server.canvas.routes import router as canvas_router
 from server.config import ROOT, load_local_env
 from server.studio import router as studio_router
 from server.productions import ProductionStore, public_production
@@ -474,6 +475,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.include_router(studio_router)
+app.include_router(canvas_router)
 
 
 @app.get("/", include_in_schema=False)

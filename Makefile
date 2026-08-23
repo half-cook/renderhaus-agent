@@ -3,13 +3,15 @@ PYTHON ?= .venv/bin/python
 REGION ?= us-east-1
 PROVIDER ?= all
 
-.PHONY: help setup check lint tools web studio dry-flags gateway smoke-gateway runtime smoke deploy-all invoke-tool schemas
+.PHONY: help setup check lint test migrate tools web studio dry-flags gateway smoke-gateway runtime smoke deploy-all invoke-tool schemas
 
 help:
 	@echo "Local development"
 	@echo "  make setup         Create venv + install deps"
 	@echo "  make check         Fast CI checks (no paid APIs)"
 	@echo "  make lint          Ruff check"
+	@echo "  make test          Run pytest (needs Postgres — see CLAUDE.md Environment)"
+	@echo "  make migrate       Apply Alembic migrations to DATABASE_URL"
 	@echo "  make tools         List Gateway tools generated from providers/"
 	@echo "  make schemas       Write configs/gateway/*.tools.json from provider APIs"
 	@echo "  make studio        Next.js canvas UI for calling MCP tools locally (needs make web too)"
@@ -30,7 +32,13 @@ check:
 	$(PYTHON) scripts/ci_check.py
 
 lint:
-	$(PYTHON) -m ruff check agent mcps lambdas scripts server providers
+	$(PYTHON) -m ruff check agent mcps lambdas scripts server providers tests
+
+test:
+	$(PYTHON) -m pytest -q
+
+migrate:
+	$(PYTHON) -m alembic upgrade head
 
 tools:
 	$(PYTHON) scripts/generate_gateway_schemas.py --list --provider $(PROVIDER)

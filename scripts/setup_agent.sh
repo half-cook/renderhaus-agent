@@ -6,7 +6,7 @@ cd "$ROOT"
 
 python3 -m venv .venv
 .venv/bin/python -m pip install --upgrade pip
-.venv/bin/python -m pip install -e . uv
+.venv/bin/python -m pip install -e ".[dev]" uv
 
 mkdir -p .external/mcps
 if [ ! -d ".external/mcps/gpt-image-2-mcp/.git" ]; then
