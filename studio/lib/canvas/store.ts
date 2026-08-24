@@ -42,6 +42,7 @@ import type {
   AgentRunData,
   AgentResultData,
   AgentToolEvent,
+  CanvasNodeData,
   CreativeNodeKind,
   JobStatus,
   ProjectRecord,
@@ -215,7 +216,50 @@ function graphFromDocument(document: StudioCanvasDocument): PersistedGraph {
     edges: document.edges as CanvasEdge[],
     viewport: document.viewport || { x: 80, y: 80, zoom: 1 },
   };
-  return expandLegacyAgentResults(graph);
+  return migrateLegacyAgentPresentation(expandLegacyAgentResults(graph));
+}
+
+function needsAgentPresentationMigration(document: StudioCanvasDocument): boolean {
+  return document.nodes.some((node) => {
+    if (!node || typeof node !== "object") return false;
+    const data = (node as { data?: CanvasNodeData }).data;
+    if (!data) return false;
+    if (data.kind === "agentResult") return true;
+    const agentOutput = Boolean(data.agentRun || data.agentRunId || data.agentRole);
+    return (
+      data.agentRole === "final" ||
+      Boolean(data.agentRun?.finalNodeId && !data.agentRun.primaryNodeId) ||
+      (agentOutput && typeof data.title === "string" && data.title.startsWith("Final · "))
+    );
+  });
+}
+
+function migrateLegacyAgentPresentation(graph: PersistedGraph): PersistedGraph {
+  let changed = false;
+  const nodes = graph.nodes.map((node) => {
+    const data = node.data;
+    const legacyPrimaryNodeId = data.agentRun?.finalNodeId;
+    const shouldMigrateRun = Boolean(legacyPrimaryNodeId && !data.agentRun?.primaryNodeId);
+    const shouldMigrateRole = data.agentRole === "final";
+    const shouldMigrateTitle =
+      Boolean(data.agentRun || data.agentRunId || data.agentRole) && data.title.startsWith("Final · ");
+    if (!shouldMigrateRun && !shouldMigrateRole && !shouldMigrateTitle) return node;
+    changed = true;
+    const migratedRun =
+      shouldMigrateRun && data.agentRun && legacyPrimaryNodeId
+        ? { ...data.agentRun, primaryNodeId: legacyPrimaryNodeId, finalNodeId: undefined }
+        : undefined;
+    return {
+      ...node,
+      data: {
+        ...data,
+        ...(migratedRun ? { agentRun: migratedRun } : {}),
+        ...(shouldMigrateRole ? { agentRole: "primary" as const } : {}),
+        ...(shouldMigrateTitle ? { title: `Result · ${data.title.slice("Final · ".length)}` } : {}),
+      },
+    };
+  });
+  return changed ? { ...graph, nodes } : graph;
 }
 
 function makeNode(input: {
@@ -277,14 +321,11 @@ function createAgentRunCluster(
   result: AgentResultData,
   position: { x: number; y: number },
   fieldOptions: FieldOptions,
-): { nodes: CanvasNode[]; finalNodeId?: string } {
+): { nodes: CanvasNode[]; primaryNodeId?: string } {
   const runId = result.executionId || uid();
   const assets = assetsForAgentRun(result);
-  const finalAsset =
-    result.primaryAsset?.kind === "video"
-      ? result.primaryAsset
-      : [...assets].reverse().find((item) => item.asset.kind === "video")?.asset;
-  const artifacts = assets.filter((item) => item.asset.versionId !== finalAsset?.versionId);
+  const primaryAsset = result.primaryAsset || assets.at(-1)?.asset;
+  const artifacts = assets.filter((item) => item.asset.versionId !== primaryAsset?.versionId);
   const artifactNodes = artifacts.map(({ asset, event }, index) => {
     const node = makeNode({
       kind: asset.kind,
@@ -300,35 +341,38 @@ function createAgentRunCluster(
     node.data.agentRole = "artifact";
     return node;
   });
-  const finalX = position.x + Math.max(1, Math.ceil(artifacts.length / 3)) * 440 + 40;
-  const finalNode = finalAsset
+  const primaryX = position.x + Math.max(1, Math.ceil(artifacts.length / 3)) * 440 + 40;
+  const primaryNode = primaryAsset
     ? makeNode({
-        kind: "video",
-        position: { x: finalX, y: position.y + 120 },
-        title: `Final · ${result.title}`,
-        output: finalAsset,
+        kind: primaryAsset.kind,
+        position: { x: primaryX, y: position.y + 120 },
+        title: `Result · ${result.title}`,
+        output: primaryAsset,
         fieldOptions,
       })
     : undefined;
-  if (finalNode) {
-    finalNode.data.agentRunId = runId;
-    finalNode.data.agentRole = "final";
-    finalNode.selected = true;
+  if (primaryNode) {
+    primaryNode.data.agentRunId = runId;
+    primaryNode.data.agentRole = "primary";
+    primaryNode.selected = true;
   }
   const runNode = makeNode({
     kind: "agentRun",
-    position: { x: finalX, y: position.y + 430 },
+    position: { x: primaryX, y: position.y + 430 },
     title: `Agent run · ${result.title}`,
     agentRun: {
       ...result,
       executionId: result.executionId || runId,
       artifactNodeIds: artifactNodes.map((node) => node.id),
-      ...(finalNode ? { finalNodeId: finalNode.id } : {}),
+      ...(primaryNode ? { primaryNodeId: primaryNode.id } : {}),
       collapsed: true,
     },
     fieldOptions,
   });
-  return { nodes: [...artifactNodes, ...(finalNode ? [finalNode] : []), runNode], finalNodeId: finalNode?.id };
+  return {
+    nodes: [...artifactNodes, ...(primaryNode ? [primaryNode] : []), runNode],
+    primaryNodeId: primaryNode?.id,
+  };
 }
 
 function expandLegacyAgentResults(graph: PersistedGraph): PersistedGraph {
@@ -399,12 +443,7 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
       const snapshot = await fetchStudioCanvas(project.id);
       persistedRevision = snapshot.revision;
       const graph = graphFromDocument(snapshot.document);
-      const migratedLegacyResults = snapshot.document.nodes.some(
-        (node) =>
-          Boolean(node) &&
-          typeof node === "object" &&
-          (node as { data?: { kind?: string } }).data?.kind === "agentResult",
-      );
+      const migratedAgentPresentation = needsAgentPresentationMigration(snapshot.document);
       set({
         projects,
         projectId: project.id,
@@ -417,7 +456,7 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
         past: [],
         future: [],
       });
-      if (migratedLegacyResults) {
+      if (migratedAgentPresentation) {
         window.setTimeout(() => void get().persist(), 0);
       }
     } catch (error) {
@@ -502,12 +541,7 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
       const snapshot = await fetchStudioCanvas(id);
       persistedRevision = snapshot.revision;
       const graph = graphFromDocument(snapshot.document);
-      const migratedLegacyResults = snapshot.document.nodes.some(
-        (node) =>
-          Boolean(node) &&
-          typeof node === "object" &&
-          (node as { data?: { kind?: string } }).data?.kind === "agentResult",
-      );
+      const migratedAgentPresentation = needsAgentPresentationMigration(snapshot.document);
       const project = get().projects.find((item) => item.id === id);
       set({
         projectId: id,
@@ -520,7 +554,7 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
         future: [],
         loadError: null,
       });
-      if (migratedLegacyResults) {
+      if (migratedAgentPresentation) {
         window.setTimeout(() => void get().persist(), 0);
       }
     } catch (error) {
@@ -671,7 +705,7 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
   addAgentResult: (result, position) => {
     get().pushHistory();
     const cluster = createAgentRunCluster(result, position, get().fieldOptions);
-    const selectedNodeId = cluster.finalNodeId || cluster.nodes[cluster.nodes.length - 1]?.id;
+    const selectedNodeId = cluster.primaryNodeId || cluster.nodes[cluster.nodes.length - 1]?.id;
     set({
       nodes: [
         ...get().nodes.map((item) => ({ ...item, selected: false })),

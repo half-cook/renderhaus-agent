@@ -686,15 +686,10 @@ def _agent_result(outcome: Any) -> dict[str, Any]:
         "mime_type": "text/markdown;charset=utf-8",
         "tool_events": [event.public() for event in outcome.tool_events],
         "assets": assets,
-        "primary_asset": next(
-            (
-                asset
-                for event in reversed(outcome.tool_events)
-                for asset in reversed(event.assets)
-                if asset.get("kind") == "video"
-            ),
-            assets[-1] if assets else None,
-        ),
+        # The primary result is the latest successfully registered media, whatever
+        # its kind. A video gets no special preference: an image-only or audio-only
+        # request should lead with that image or audio on the canvas.
+        "primary_asset": assets[-1] if assets else None,
     }
 
 
@@ -708,15 +703,7 @@ def _partial_agent_result(execution: dict[str, Any]) -> dict[str, Any]:
             if version_id and version_id not in seen:
                 seen.add(version_id)
                 assets.append(asset)
-    primary = next(
-        (
-            asset
-            for call in reversed(calls)
-            for asset in reversed(call.get("assets") or [])
-            if asset.get("kind") == "video"
-        ),
-        assets[-1] if assets else None,
-    )
+    primary = assets[-1] if assets else None
     completed = [call for call in calls if call.get("status") not in {"failed", "error"}]
     markdown = "# Partial agent result\n\n"
     if completed:

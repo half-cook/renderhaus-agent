@@ -22,7 +22,8 @@ export function AgentRunNode({ id, data, selected }: NodeProps) {
   const nodes = useCanvasStore((state) => state.nodes);
 
   if (!run) return null;
-  const outputCount = run.artifactNodeIds.length + (run.finalNodeId ? 1 : 0);
+  const primaryNodeId = run.primaryNodeId || run.finalNodeId;
+  const outputCount = run.artifactNodeIds.length + (primaryNodeId ? 1 : 0);
 
   return (
     <div className="flow-node-wrap node-agent-run">
@@ -46,13 +47,13 @@ export function AgentRunNode({ id, data, selected }: NodeProps) {
         </button>
         <div className="agent-run-summary-row">
           <p>{run.summary}</p>
-          {run.finalNodeId ? (
+          {primaryNodeId ? (
             <button
               className="agent-run-focus nodrag"
               type="button"
-              title="Focus final video"
-              aria-label="Focus final video"
-              onClick={() => focusNode(run.finalNodeId as string)}
+              title="Focus primary result"
+              aria-label="Focus primary result"
+              onClick={() => focusNode(primaryNodeId)}
             >
               <Focus size={14} />
             </button>

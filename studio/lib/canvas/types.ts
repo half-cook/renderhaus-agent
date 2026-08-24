@@ -74,6 +74,8 @@ export type AgentResultData = {
 export type AgentRunData = AgentResultData & {
   executionId?: string;
   artifactNodeIds: string[];
+  primaryNodeId?: string;
+  /** Compatibility with run ledgers created before primary results could be non-video. */
   finalNodeId?: string;
   collapsed: boolean;
 };
@@ -96,7 +98,7 @@ export type CanvasNodeData = {
   agentResult?: AgentResultData;
   agentRun?: AgentRunData;
   agentRunId?: string;
-  agentRole?: "artifact" | "final";
+  agentRole?: "artifact" | "primary" | "final";
 };
 
 export type CanvasEdgeData = {

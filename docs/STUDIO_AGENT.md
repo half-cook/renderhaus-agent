@@ -30,7 +30,7 @@ ordinary image / video / audio nodes                     collapsible Agent run n
        +-----------------------------+
                                      |
                                      v
-                        Final · <title> video node
+                          Result · <title> media node
                            (playable + downloadable)
 ```
 
@@ -216,7 +216,7 @@ large base64 payloads, and deeply nested provider output are excluded.
 | `animate_image` | Seedance `image_to_video` | video version | Requires a source image handle; records derivation. |
 | `generate_music` | Mureka `create_song_from_prompt` | audio version | Polls `query_music_task`. |
 | `generate_voiceover` | Fish Audio `generate_speech` | audio version | Creates a speech track. |
-| `render_remotion_video` | Remotion Lambda | final video version | Composes image/video visuals and one or more audio tracks into a downloadable MP4. |
+| `render_remotion_video` | Remotion Lambda | video version | Composes image/video visuals and one or more audio tracks into a downloadable MP4. |
 
 The agent clamps user-facing video duration to 1–30 seconds and accepts 16:9, 9:16, or 1:1
 formats for image/video/remotion tools. The exact provider schemas/options are served from the
@@ -313,13 +313,13 @@ When agent polling returns `completed`, `completedAgentResult()` captures the du
 the `executionId`. `addAgentResult()` then creates a cluster:
 
 1. Collects each unique asset returned by an event or the final asset list.
-2. Identifies the final video: `primaryAsset` when it is a video, otherwise the last video asset.
+2. Identifies the primary result: `primaryAsset` when supplied, otherwise the most recent media asset, regardless of kind.
 3. Creates ordinary image/video/audio nodes for every other asset.
-4. Creates a normal `Final · <title>` video node for the final video.
+4. Creates a normal `Result · <title>` node using that asset's actual kind—image, audio, or video.
 5. Creates a collapsed `Agent run · <title>` node that holds the event ledger, notes, artifact node
    IDs, final node ID, and execution ID.
 
-The asset nodes have `agentRunId` and either `agentRole: artifact` or `agentRole: final`. That lets
+The asset nodes have `agentRunId` and either `agentRole: artifact` or `agentRole: primary`. That lets
 the ledger focus an output without relying on display position as data.
 
 Legacy `agentResult` cards migrate to this cluster shape when the graph is loaded. The client then
@@ -473,7 +473,7 @@ cd studio && npx tsc --noEmit && npm run build
 | Remotion reports it is not configured | Deployment metadata or `REMOTION_APP_*` values are absent. | Run `make remotion`, or restore the deployment file/settings from the configured secrets source. |
 | Remotion smoke test says an artifact is missing | The smoke script intentionally requires its named first-run files. | Run it only after those artifacts exist, or construct a separate explicit smoke input—do not fake the test's expected files. |
 | Canvas save returns 409 | Another client saved a newer canvas revision. | Reload the project, reconcile the change, and save against the new revision. |
-| Existing giant Agent Result card is still visible | The client has not loaded/saved the migration yet, or the old app bundle is still open. | Refresh Studio with the new build; the legacy node becomes artifact nodes, a final video node, and an Agent run ledger. |
+| Existing giant Agent Result card is still visible | The client has not loaded/saved the migration yet, or the old app bundle is still open. | Refresh Studio with the new build; the legacy node becomes ordinary artifact nodes, a primary image/audio/video result node, and an Agent run ledger. |
 
 ## Safe extension rules
 

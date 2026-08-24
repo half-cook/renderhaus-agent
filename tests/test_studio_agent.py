@@ -25,6 +25,8 @@ from agent.studio_agent import (
 )
 from server.studio import (
     AgentBody,
+    _agent_result,
+    _partial_agent_result,
     _encode_playback_ticket,
     _playback_ticket_workspace,
     studio_asset_content,
@@ -58,6 +60,57 @@ class FakeRunner:
 
 
 class StudioAgentTests(unittest.IsolatedAsyncioTestCase):
+    def test_primary_agent_asset_preserves_the_latest_media_kind(self) -> None:
+        audio = {
+            "asset_id": "audio-asset",
+            "version_id": "audio-version",
+            "kind": "audio",
+            "filename": "bed.mp3",
+            "mime_type": "audio/mpeg",
+        }
+        image = {
+            "asset_id": "image-asset",
+            "version_id": "image-version",
+            "kind": "image",
+            "filename": "cover.png",
+            "mime_type": "image/png",
+        }
+        final = StudioAgentOutput(
+            title="Campaign assets",
+            summary="A music bed and cover image are ready.",
+            markdown="# Campaign assets",
+            filename="campaign-assets.md",
+        )
+        outcome = StudioAgentRun(
+            final=final,
+            tool_events=[
+                StudioToolEvent(
+                    id="audio-call",
+                    name="generate_music",
+                    label="Music generation",
+                    status="succeeded",
+                    summary="Music ready.",
+                    assets=[audio],
+                ),
+                StudioToolEvent(
+                    id="image-call",
+                    name="generate_image",
+                    label="Image generation",
+                    status="succeeded",
+                    summary="Image ready.",
+                    assets=[image],
+                ),
+            ],
+        )
+
+        self.assertEqual(_agent_result(outcome)["primary_asset"], image)
+        self.assertEqual(
+            _partial_agent_result({"tool_calls": [event.public() for event in outcome.tool_events]})[
+                "primary_asset"
+            ],
+            image,
+        )
+
     def test_playback_ticket_is_asset_and_workspace_scoped(self) -> None:
         with patch.dict(os.environ, {"STUDIO_MEDIA_TICKET_SECRET": "test-ticket-secret"}):
             ticket = _encode_playback_ticket(
