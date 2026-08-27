@@ -1,7 +1,7 @@
 # Renderhaus
 
 An AI-native video editor: a Next.js timeline editor (`web/`) in front of a Python
-generation/agent backend (`server/`, `agent/`, `mcps/`).
+generation/agent backend (`server/`, `agent/`, `providers/`).
 
 ## Structure
 
@@ -11,10 +11,10 @@ generation/agent backend (`server/`, `agent/`, `mcps/`).
 - **`server/`** — FastAPI backend: Clerk auth, S3/DynamoDB asset storage, project/timeline
   persistence, generation job endpoints. Talked to over HTTP by `web/`, proxied at `/api/*` in dev
   (see `web/next.config.ts`).
-- **`agent/`** — LangChain agent orchestration; runs in-process locally or on Amazon Bedrock
+- **`agent/`** — OpenAI Agents SDK manager; runs in-process locally or on Amazon Bedrock
   AgentCore Runtime.
-- **`mcps/`** — one MCP server per generation provider (Seedance video, Seedream image, Mureka
-  music, Fish Audio TTS).
+- **`providers/`** — Seedance, Seedream, Mureka, Fish Audio, and Remotion implementations.
+  AgentCore Gateway Lambdas call these; the Runtime agent never hosts them locally.
 - **`docs/`** — the long-video production-agent program (below).
 - **`design/`** — planning/status docs for how `web/` and `server/` came to live in one repo:
   [design/MERGE_STATUS.md](design/MERGE_STATUS.md) (start here — current state, what's verified,
@@ -93,7 +93,8 @@ runtime when `AGENTCORE_RUNTIME_ARN` is set.
 ```
 
 With `AGENTCORE_RUNTIME_ARN` set (from Secrets Manager or bootstrap), generation/poll calls go to
-AgentCore. Leave it unset to keep the local in-process agent + stdio MCPs.
+AgentCore. Leave it unset to keep the local in-process agent. Tools still require
+`AGENTCORE_GATEWAY_URL`.
 
 The backend exposes generation and refinement requests through a video-only agent boundary,
 persists local job state under `.renderhaus/web-jobs/`, and serves completed MP4s through
@@ -186,23 +187,22 @@ This only prints `set` or `empty`, never secret values.
 ## List MCP Tools
 
 ```bash
-.venv/bin/python -m agent.main --list-tools
+make tools
 ```
 
-## Mureka via AgentCore Gateway
+## Provider tools via AgentCore Gateway
 
-Full Mureka APIs are implemented in `mcps/mureka/api.py` and exposed both as the local stdio
-MCP and as a single Lambda target behind AgentCore Gateway:
+Seedance, Seedream, Mureka, Fish Audio, and Remotion are Lambda targets behind one Amazon Bedrock
+AgentCore Gateway. The Runtime agent is an MCP client of that URL. There is no local MCP process.
 
 ```bash
-.venv/bin/python scripts/deploy_mureka_gateway.py --region us-east-1
+.venv/bin/python scripts/deploy_gateway.py --region us-east-1
 # Writes .env.agentcore.gateway with AGENTCORE_GATEWAY_URL
 # Sync that URL into Secrets Manager, then:
 .venv/bin/python scripts/deploy_agentcore.py --region us-east-1
 ```
 
-When `AGENTCORE_GATEWAY_URL` is set, the agent loads Mureka tools from the Gateway MCP endpoint
-instead of the local `mcps.mureka.server` process.
+`AGENTCORE_GATEWAY_URL` is required. The agent does not spawn provider MCP servers.
 
 ## Supervisor (Director + Executor)
 
@@ -234,5 +234,5 @@ not an LLM swarm over paid tools.
 
 Generation job records are written under `.renderhaus/jobs/`.
 
-Existing provider MCPs are wired through `configs/mcp.local.json`. Seedance video generation is live
-when `SEEDANCE_DRY_RUN=false`; Fish Audio TTS is live when `FISH_AUDIO_DRY_RUN=false`.
+Seedance video generation is live when `SEEDANCE_DRY_RUN=false`; Fish Audio TTS is live when
+`FISH_AUDIO_DRY_RUN=false`.

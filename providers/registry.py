@@ -53,22 +53,34 @@ def _json_schema_for_hint(hint: Any) -> dict[str, Any]:
             stripped = stripped[: -len("|None")]
         if stripped.startswith("Literal["):
             return {"type": "string"}
+        if stripped.startswith("list["):
+            return {"type": "array", "items": {"type": "object"}}
+        if stripped.startswith("dict["):
+            return {"type": "object"}
         hint = _STRING_TYPE_MAP.get(stripped, hint)
     hint = _unwrap_optional(hint)
     origin = get_origin(hint)
     args = get_args(hint)
     if origin is Literal:
         values = list(args)
-        schema: dict[str, Any] = {"enum": list(values)}
         if values and all(isinstance(value, bool) for value in values):
-            schema["type"] = "boolean"
+            json_type = "boolean"
         elif values and all(isinstance(value, int) and not isinstance(value, bool) for value in values):
-            schema["type"] = "integer"
+            json_type = "integer"
         elif values and all(isinstance(value, (int, float)) and not isinstance(value, bool) for value in values):
-            schema["type"] = "number"
+            json_type = "number"
         else:
-            schema["type"] = "string"
-        return schema
+            json_type = "string"
+        # AgentCore Gateway Lambda schemas allow only type/properties/required/items/description.
+        return {
+            "type": json_type,
+            "description": f"One of: {', '.join(str(value) for value in values)}.",
+        }
+    if origin is list:
+        items = _json_schema_for_hint(args[0]) if args else {"type": "object"}
+        return {"type": "array", "items": items}
+    if origin is dict:
+        return {"type": "object"}
     mapping = {
         str: "string",
         int: "integer",
@@ -117,6 +129,48 @@ def schema_from_callable(name: str, fn: Callable[..., Any]) -> dict[str, Any]:
     return schema
 
 
+_GATEWAY_SCHEMA_KEYS = frozenset({"type", "properties", "required", "items", "description"})
+
+
+def _sanitize_json_schema_object(schema: Any) -> Any:
+    if not isinstance(schema, dict):
+        return schema
+    enum_values = schema.get("enum")
+    cleaned: dict[str, Any] = {}
+    for key, value in schema.items():
+        if key not in _GATEWAY_SCHEMA_KEYS:
+            continue
+        if key == "properties" and isinstance(value, dict):
+            cleaned[key] = {
+                name: _sanitize_json_schema_object(child) for name, child in value.items()
+            }
+        elif key == "items":
+            cleaned[key] = _sanitize_json_schema_object(value)
+        else:
+            cleaned[key] = value
+    if enum_values:
+        choices = ", ".join(str(value) for value in enum_values)
+        existing = str(cleaned.get("description") or "").strip()
+        note = f"One of: {choices}."
+        cleaned["description"] = f"{existing} {note}".strip() if existing else note
+    return cleaned
+
+
+def sanitize_gateway_json_schema(node: Any) -> Any:
+    """Drop JSON Schema fields AgentCore Gateway Lambda targets reject (e.g. enum)."""
+    if isinstance(node, list):
+        return [sanitize_gateway_json_schema(item) for item in node]
+    if not isinstance(node, dict):
+        return node
+    if "name" in node and "inputSchema" in node:
+        return {
+            "name": node["name"],
+            "description": str(node.get("description") or ""),
+            "inputSchema": _sanitize_json_schema_object(node["inputSchema"]),
+        }
+    return _sanitize_json_schema_object(node)
+
+
 def gateway_tools(spec: ProviderSpec) -> tuple[str, ...]:
     module = __import__(spec.module_path, fromlist=["GATEWAY_TOOLS", "TOOL_HANDLERS"])
     names = getattr(module, "GATEWAY_TOOLS", None)
@@ -129,7 +183,7 @@ def generate_schemas(spec: ProviderSpec) -> list[dict[str, Any]]:
     module = __import__(spec.module_path, fromlist=["GATEWAY_SCHEMAS", "TOOL_HANDLERS", "GATEWAY_TOOLS"])
     explicit = getattr(module, "GATEWAY_SCHEMAS", None)
     if explicit is not None:
-        return list(explicit)
+        return [sanitize_gateway_json_schema(tool) for tool in explicit]
     handlers = getattr(module, "TOOL_HANDLERS")
     tools = []
     for name in gateway_tools(spec):
@@ -141,7 +195,7 @@ def generate_schemas(spec: ProviderSpec) -> list[dict[str, Any]]:
         handler = handlers.get(name)
         if handler is None:
             raise ValueError(f"{spec.id} GATEWAY_TOOLS lists {name!r} but TOOL_HANDLERS does not.")
-        tools.append(schema_from_callable(name, handler))
+        tools.append(sanitize_gateway_json_schema(schema_from_callable(name, handler)))
     return tools
 
 
@@ -162,7 +216,7 @@ def load_committed_schemas(spec: ProviderSpec) -> list[dict[str, Any]]:
     tools = json.loads(path.read_text())
     if not isinstance(tools, list) or not tools:
         raise ValueError(f"{path} must be a non-empty list of tool schemas")
-    return tools
+    return [sanitize_gateway_json_schema(tool) for tool in tools]
 
 
 def dispatch(provider_id: str, tool_name: str, arguments: dict[str, Any] | None = None) -> dict[str, Any]:

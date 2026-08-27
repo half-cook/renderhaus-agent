@@ -26,6 +26,7 @@ from agent.studio_agent import (
 from server.studio import (
     AgentBody,
     _agent_result,
+    _hydrate_tool_event_assets,
     _partial_agent_result,
     _encode_playback_ticket,
     _playback_ticket_workspace,
@@ -110,6 +111,74 @@ class StudioAgentTests(unittest.IsolatedAsyncioTestCase):
             ],
             image,
         )
+
+    def test_hydrate_ingests_gateway_http_urls_and_skips_lambda_tmp_paths(self) -> None:
+        event = StudioToolEvent(
+            id="call-1",
+            name="Seedream___text_to_image",
+            label="Seedream text to image",
+            status="succeeded",
+            summary="Image ready.",
+            result={
+                "status": "succeeded",
+                "image_url": "https://cdn.example/hero.png",
+                "output_path": "/tmp/renderhaus/media/hero.png",
+            },
+        )
+        captured: list[dict] = []
+
+        def fake_register(**kwargs):
+            captured.append(kwargs)
+            return [
+                {
+                    "asset_id": "asset-1",
+                    "version_id": "version-1",
+                    "kind": "image",
+                    "filename": "hero.png",
+                }
+            ]
+
+        with patch.object(studio_module, "_register_payload_assets", side_effect=fake_register):
+            _hydrate_tool_event_assets(
+                [event],
+                workspace_id="user:local",
+                project_id="untitled",
+                user_id="local",
+                execution_id="job-1",
+            )
+
+        self.assertEqual(event.assets[0]["version_id"], "version-1")
+        self.assertEqual(captured[0]["payload"], {"image_url": "https://cdn.example/hero.png"})
+        self.assertEqual(captured[0]["kind"], "image")
+        self.assertEqual(_agent_result(StudioAgentRun(
+            final=StudioAgentOutput(
+                title="Hero",
+                summary="Ready.",
+                markdown="# Hero",
+                filename="hero.md",
+            ),
+            tool_events=[event],
+        ))["primary_asset"]["version_id"], "version-1")
+
+    def test_hydrate_skips_queued_poll_results(self) -> None:
+        event = StudioToolEvent(
+            id="poll-1",
+            name="Seedance___get_video_task",
+            label="Get video task",
+            status="queued",
+            summary="Still rendering.",
+            result={"status": "queued", "video_url": "https://cdn.example/clip.mp4"},
+        )
+        with patch.object(studio_module, "_register_payload_assets") as register:
+            _hydrate_tool_event_assets(
+                [event],
+                workspace_id="user:local",
+                project_id="untitled",
+                user_id="local",
+                execution_id="job-1",
+            )
+        register.assert_not_called()
+        self.assertEqual(event.assets, [])
 
     def test_playback_ticket_is_asset_and_workspace_scoped(self) -> None:
         with patch.dict(os.environ, {"STUDIO_MEDIA_TICKET_SECRET": "test-ticket-secret"}):

@@ -1,1 +1,0 @@
-"""Seedance MCP server."""

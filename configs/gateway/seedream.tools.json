@@ -21,11 +21,8 @@
           "type": "boolean"
         },
         "response_format": {
-          "enum": [
-            "url",
-            "b64_json"
-          ],
-          "type": "string"
+          "type": "string",
+          "description": "One of: url, b64_json."
         }
       },
       "required": [
@@ -58,11 +55,8 @@
           "type": "boolean"
         },
         "response_format": {
-          "enum": [
-            "url",
-            "b64_json"
-          ],
-          "type": "string"
+          "type": "string",
+          "description": "One of: url, b64_json."
         }
       },
       "required": [

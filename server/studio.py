@@ -16,12 +16,21 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import parse_qs, quote, unquote, urlparse
 
+import httpx
 from agents.exceptions import MaxTurnsExceeded
 from fastapi import APIRouter, File, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
-from agent.studio_agent import StudioNodeReference, run_studio_agent
+from agent.studio_agent import StudioNodeReference
+from agent.studio_agent_next import (
+    StudioAgentContext,
+    StudioAgentOutput,
+    StudioAgentRequest,
+    StudioNode,
+    StudioToolEvent,
+    run_studio_agent as run_studio_agent_runtime,
+)
 from providers.catalog import PROVIDERS, get_provider
 from providers.registry import dispatch, load_committed_schemas
 from server.auth import AuthUser, OptionalAuthUser, current_user_id, current_workspace_id
@@ -213,6 +222,62 @@ def _register_payload_assets(
         )
         registered.append(reference.public())
     return registered
+
+
+_SKIP_ASSET_STATUSES = frozenset({"failed", "error", "queued", "running", "dry_run"})
+_KIND_URL_KEYS = {"image": "image_url", "video": "video_url", "audio": "audio_url"}
+
+
+def _hydrate_tool_event_assets(
+    events: list[Any],
+    *,
+    workspace_id: str,
+    project_id: str,
+    user_id: str,
+    execution_id: str,
+) -> None:
+    seen_sources: set[str] = set()
+    for event in events:
+        existing = list(getattr(event, "assets", None) or [])
+        if existing:
+            continue
+        status = str(getattr(event, "status", "") or "").lower()
+        if status in _SKIP_ASSET_STATUSES:
+            continue
+        payload = getattr(event, "result", None)
+        if not isinstance(payload, dict):
+            continue
+        registered: list[dict[str, Any]] = []
+        for candidate in collect_asset_sources(payload):
+            source = candidate["source"]
+            if source in seen_sources:
+                continue
+            seen_sources.add(source)
+            kind = candidate["kind"]
+            stub = (
+                {_KIND_URL_KEYS[kind]: source}
+                if source.startswith(("http://", "https://", "data:")) and kind in _KIND_URL_KEYS
+                else {"output_path": source}
+            )
+            try:
+                registered.extend(
+                    _register_payload_assets(
+                        payload=stub,
+                        workspace_id=workspace_id,
+                        project_id=project_id,
+                        user_id=user_id,
+                        kind=kind,  # type: ignore[arg-type]
+                        execution_id=execution_id,
+                        tool_call_id=getattr(event, "id", None) or None,
+                    )
+                )
+            except Exception:
+                logger.exception(
+                    "Failed to ingest agent media from %s (%s)",
+                    getattr(event, "name", "tool"),
+                    source[:180],
+                )
+        event.assets = registered
 
 
 def _resolve_asset_handles(value: Any, workspace_id: str) -> Any:
@@ -729,6 +794,135 @@ def _partial_agent_result(execution: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+class StudioAgentRun:
+    def __init__(self, final: StudioAgentOutput, tool_events: list[Any]) -> None:
+        self.final = final
+        self.tool_events = tool_events
+
+
+def _agentcore_dev_url() -> str:
+    return (os.getenv("AGENTCORE_DEV_URL") or "").strip().rstrip("/")
+
+
+def _studio_agent_request(
+    prompt: str,
+    nodes: list[StudioNodeReference] | None,
+    *,
+    job_id: str | None = None,
+    workspace_id: str | None = None,
+    project_id: str | None = None,
+) -> StudioAgentRequest:
+    return StudioAgentRequest(
+        prompt=prompt,
+        nodes=[
+            StudioNode(
+                id=node.id,
+                title=node.title,
+                kind=node.kind,
+                prompt=node.prompt,
+                source=node.source,
+                asset_id=node.asset_id,
+                version_id=node.version_id,
+            )
+            for node in (nodes or [])
+        ],
+        job_id=job_id,
+        workspace_id=workspace_id,
+        project_id=project_id,
+    )
+
+
+def _events_from_payload(raw: list[Any]) -> list[StudioToolEvent]:
+    events: list[StudioToolEvent] = []
+    for item in raw:
+        if isinstance(item, StudioToolEvent):
+            events.append(item)
+            continue
+        if not isinstance(item, dict):
+            continue
+        events.append(
+            StudioToolEvent(
+                id=str(item.get("id") or ""),
+                name=str(item.get("name") or ""),
+                label=str(item.get("label") or item.get("name") or "tool"),
+                status=str(item.get("status") or "unknown"),
+                summary=str(item.get("summary") or ""),
+                provider=item.get("provider") if isinstance(item.get("provider"), str) else None,
+                provider_job_id=(
+                    item.get("provider_job_id")
+                    if isinstance(item.get("provider_job_id"), str)
+                    else None
+                ),
+                assets=list(item.get("assets") or []),
+                result=dict(item.get("result") or {}) if isinstance(item.get("result"), dict) else {},
+            )
+        )
+    return events
+
+
+async def _invoke_agentcore_runtime(url: str, request: StudioAgentRequest) -> StudioAgentRun:
+    timeout = float(os.getenv("TIME_OUT_SECONDS") or 300)
+    async with httpx.AsyncClient(timeout=timeout) as client:
+        try:
+            ping = await client.get(f"{url}/ping")
+        except httpx.RequestError as exc:
+            raise RuntimeError(
+                "Local AgentCore runtime is not running. Start it with: agentcore dev --logs --port 8080"
+            ) from exc
+        if ping.status_code >= 400:
+            raise RuntimeError(f"AgentCore runtime ping failed ({ping.status_code}).")
+        response = await client.post(f"{url}/invocations", json=request.model_dump())
+    try:
+        payload = response.json()
+    except ValueError as exc:
+        raise RuntimeError(
+            f"AgentCore runtime returned a non-JSON response ({response.status_code})."
+        ) from exc
+    if not isinstance(payload, dict):
+        raise RuntimeError("AgentCore runtime returned an unexpected payload.")
+    if response.status_code >= 400 or payload.get("status") == "failed":
+        raise RuntimeError(
+            str(payload.get("error") or f"AgentCore invocation failed ({response.status_code}).")
+        )
+    output = StudioAgentOutput.model_validate(payload.get("result") or payload)
+    return StudioAgentRun(final=output, tool_events=_events_from_payload(payload.get("tool_events") or []))
+
+
+async def run_studio_agent(
+    prompt: str,
+    *,
+    nodes: list[StudioNodeReference] | None = None,
+    asset_registrar: Any = None,
+    source_resolver: Any = None,
+    event_sink: Any = None,
+    job_id: str | None = None,
+    workspace_id: str | None = None,
+    project_id: str | None = None,
+    **_unused: Any,
+) -> StudioAgentRun:
+    request = _studio_agent_request(
+        prompt,
+        nodes,
+        job_id=job_id,
+        workspace_id=workspace_id,
+        project_id=project_id,
+    )
+    runtime_url = _agentcore_dev_url()
+    if runtime_url:
+        return await _invoke_agentcore_runtime(runtime_url, request)
+    studio = StudioAgentContext(
+        nodes=list(request.nodes),
+        asset_registrar=asset_registrar,
+        source_resolver=source_resolver,
+        event_sink=event_sink,
+        job_id=request.job_id,
+        workspace_id=request.workspace_id,
+        project_id=request.project_id,
+    )
+    output = await run_studio_agent_runtime(request, studio=studio)
+    return StudioAgentRun(final=output, tool_events=list(studio.tool_events))
+
+
 async def _run_studio_agent_job(
     job_id: str,
     prompt: str,
@@ -783,7 +977,20 @@ async def _run_studio_agent_job(
             asset_registrar=register_assets,
             source_resolver=resolve_source,
             event_sink=record_event,
+            job_id=job_id,
+            workspace_id=workspace_id,
+            project_id=project_id,
         )
+        await asyncio.to_thread(
+            _hydrate_tool_event_assets,
+            outcome.tool_events,
+            workspace_id=workspace_id,
+            project_id=project_id,
+            user_id=user_id,
+            execution_id=job_id,
+        )
+        for event in outcome.tool_events:
+            record_event(event)
     except asyncio.CancelledError:
         execution = await asyncio.to_thread(repository.get_execution, workspace_id, job_id)
         await asyncio.to_thread(

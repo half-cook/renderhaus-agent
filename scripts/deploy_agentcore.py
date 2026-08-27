@@ -316,7 +316,7 @@ def upsert_runtime(control, *, role_arn: str, image_uri: str, env: dict[str, str
         print(f"Creating AgentCore runtime {RUNTIME_NAME}")
         response = control.create_agent_runtime(
             agentRuntimeName=RUNTIME_NAME,
-            description="Renderhaus LangChain agent + generation MCPs",
+            description="Renderhaus OpenAI Agents SDK canvas manager",
             **common,
         )
         arn = response["agentRuntimeArn"]

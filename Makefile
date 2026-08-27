@@ -32,7 +32,7 @@ check:
 	$(PYTHON) scripts/ci_check.py
 
 lint:
-	$(PYTHON) -m ruff check agent mcps lambdas scripts server providers
+	$(PYTHON) -m ruff check agent lambdas scripts server providers
 
 tools:
 	$(PYTHON) scripts/generate_gateway_schemas.py --list --provider $(PROVIDER)
@@ -51,7 +51,7 @@ invoke-tool:
 
 dry-flags:
 	@$(PYTHON) -c "from server.config import load_local_env; import os; load_local_env();\
-keys=['SEEDANCE_DRY_RUN','SEEDREAM_DRY_RUN','MUREKA_DRY_RUN','FISH_AUDIO_DRY_RUN','AGENTCORE_RUNTIME_ARN','AGENTCORE_GATEWAY_URL'];\
+keys=['SEEDANCE_DRY_RUN','SEEDREAM_DRY_RUN','MUREKA_DRY_RUN','FISH_AUDIO_DRY_RUN','REMOTION_DRY_RUN','AGENTCORE_RUNTIME_ARN','AGENTCORE_GATEWAY_URL'];\
 [print(f'{k}={os.getenv(k)!r}') for k in keys]"
 
 gateway:

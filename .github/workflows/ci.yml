@@ -28,7 +28,7 @@ jobs:
           pip install ruff
 
       - name: Ruff
-        run: ruff check agent mcps lambdas scripts server providers
+        run: ruff check agent lambdas scripts server providers
 
       - name: CI checks
         run: python scripts/ci_check.py
@@ -39,3 +39,4 @@ jobs:
           SEEDREAM_DRY_RUN: "true"
           MUREKA_DRY_RUN: "true"
           FISH_AUDIO_DRY_RUN: "true"
+          REMOTION_DRY_RUN: "true"

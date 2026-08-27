@@ -84,7 +84,7 @@ the core data model.
 | Durable state | `server/studio_state.py` | Workspace-scoped SQLite development adapter, immutable media versions, provenance, and execution ledger. |
 | Authentication | `server/auth.py` | Clerk validation, exact authorized-party checks, and workspace selection. |
 | Studio manager | `agent/studio_agent.py` | OpenAI Agents SDK agent, available tools, polling, redaction, and structured final result. |
-| Provider dispatch | `providers/`, `mcps/`, `configs/mcp*.json` | Provider-specific tool implementation and schemas. |
+| Provider dispatch | `providers/`, `lambdas/`, `configs/gateway/` | Provider implementations, Gateway Lambdas, and tool schemas. |
 | Remotion adapter | `agent/remotion_renderer.py` | Converts a typed timeline document into a private Remotion Lambda render and downloads the MP4. |
 | Remotion deployment | `scripts/deploy_remotion_lambda.py`, `web/scripts/remotion-lambda.mjs` | IAM setup, Remotion function/site deployment, and runtime-config synchronization. |
 

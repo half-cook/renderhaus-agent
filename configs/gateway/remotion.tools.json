@@ -1,0 +1,65 @@
+[
+  {
+    "name": "render_timeline",
+    "description": "Start a Remotion Lambda render and return the render id to poll.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string"
+        },
+        "visuals": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        },
+        "audio_tracks": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        },
+        "aspect_ratio": {
+          "type": "string",
+          "description": "One of: 16:9, 9:16, 1:1."
+        },
+        "fps": {
+          "type": "integer"
+        },
+        "output_filename": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "title",
+        "visuals"
+      ]
+    }
+  },
+  {
+    "name": "get_render_progress",
+    "description": "Read Remotion Lambda progress once. Call again until status is succeeded or failed.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "render_id": {
+          "type": "string"
+        },
+        "bucket_name": {
+          "type": "string"
+        },
+        "output_key": {
+          "type": "string"
+        },
+        "download": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "render_id",
+        "bucket_name"
+      ]
+    }
+  }
+]

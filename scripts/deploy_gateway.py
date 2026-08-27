@@ -58,9 +58,18 @@ def build_lambda_zip() -> bytes:
                 "install",
                 "httpx",
                 "pydantic",
+                "remotion-lambda==4.0.515",
                 "-t",
                 str(package),
                 "--quiet",
+                "--upgrade",
+                "--platform",
+                "manylinux2014_aarch64",
+                "--implementation",
+                "cp",
+                "--python-version",
+                "3.11",
+                "--only-binary=:all:",
             ],
             check=True,
         )
@@ -80,7 +89,7 @@ def build_lambda_zip() -> bytes:
         return buf.getvalue()
 
 
-def _ensure_lambda_role(iam, account: str, region: str, secret_name: str) -> str:
+def _ensure_lambda_role(iam, account: str, region: str, secret_name: str, remotion_bucket: str = "") -> str:
     role_arn = f"arn:aws:iam::{account}:role/{LAMBDA_ROLE_NAME}"
     trust = {
         "Version": "2012-10-17",
@@ -92,6 +101,17 @@ def _ensure_lambda_role(iam, account: str, region: str, secret_name: str) -> str
             }
         ],
     }
+    s3_resources = [
+        "arn:aws:s3:::remotionlambda-*",
+        "arn:aws:s3:::remotionlambda-*/*",
+    ]
+    if remotion_bucket:
+        s3_resources.extend(
+            [
+                f"arn:aws:s3:::{remotion_bucket}",
+                f"arn:aws:s3:::{remotion_bucket}/*",
+            ]
+        )
     policy = {
         "Version": "2012-10-17",
         "Statement": [
@@ -114,6 +134,28 @@ def _ensure_lambda_role(iam, account: str, region: str, secret_name: str) -> str
                     f"arn:aws:secretsmanager:{region}:{account}:secret:{secret_name}-*",
                     f"arn:aws:secretsmanager:{region}:{account}:secret:{secret_name}",
                 ],
+            },
+            {
+                "Effect": "Allow",
+                "Action": ["lambda:InvokeFunction"],
+                "Resource": [
+                    f"arn:aws:lambda:{region}:{account}:function:remotion-*",
+                    f"arn:aws:lambda:{region}:{account}:function:remotion-*:*",
+                ],
+            },
+            {
+                "Effect": "Allow",
+                "Action": [
+                    "s3:GetObject",
+                    "s3:PutObject",
+                    "s3:HeadObject",
+                    "s3:DeleteObject",
+                    "s3:ListBucket",
+                    "s3:GetBucketLocation",
+                    "s3:PutObjectAcl",
+                    "s3:GetObjectAcl",
+                ],
+                "Resource": s3_resources,
             },
         ],
     }
@@ -394,7 +436,13 @@ def main() -> int:
     lam = session.client("lambda")
     control = session.client("bedrock-agentcore-control", region_name=region)
 
-    lambda_role = _ensure_lambda_role(iam, account, region, secret_name)
+    lambda_role = _ensure_lambda_role(
+        iam,
+        account,
+        region,
+        secret_name,
+        remotion_bucket=env.get("REMOTION_APP_BUCKET_NAME") or "",
+    )
     zip_bytes = build_lambda_zip()
     lambda_arns: dict[str, str] = {}
     target_ids: dict[str, str] = {}

@@ -21,20 +21,12 @@
           "type": "string"
         },
         "output_format": {
-          "enum": [
-            "wav",
-            "mp3"
-          ],
-          "type": "string"
+          "type": "string",
+          "description": "One of: wav, mp3."
         },
         "model": {
-          "enum": [
-            "s1",
-            "s2-pro",
-            "s2.1-pro",
-            "s2.1-pro-free"
-          ],
-          "type": "string"
+          "type": "string",
+          "description": "One of: s1, s2-pro, s2.1-pro, s2.1-pro-free."
         }
       },
       "required": [

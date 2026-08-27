@@ -36,14 +36,12 @@ on:
     branches: [main, master]
     paths:
       - "providers/**"
-      - "mcps/**"
       - "lambdas/**"
       - "configs/gateway/**"
       - "configs/mureka_gateway_tools.json"
       - "scripts/deploy_gateway.py"
       - "scripts/deploy_mureka_gateway.py"
       - "agent/**"
-      - "configs/mcp.agentcore.json"
       - "Dockerfile.agentcore"
       - "scripts/deploy_agentcore.py"
       - "pyproject.toml"
@@ -99,7 +97,7 @@ jobs:
             else
               CHANGED=$(git diff --name-only "$BEFORE" "${{ github.sha }}" || true)
               echo "$CHANGED"
-              if echo "$CHANGED" | grep -E '^(providers/|lambdas/|configs/gateway/|configs/mureka_gateway_tools\.json|scripts/deploy_gateway\.py|scripts/deploy_mureka_gateway\.py|mcps/mureka/)' >/dev/null; then
+              if echo "$CHANGED" | grep -E '^(providers/|lambdas/|configs/gateway/|configs/mureka_gateway_tools\.json|scripts/deploy_gateway\.py|scripts/deploy_mureka_gateway\.py)' >/dev/null; then
                 GW=true
                 if echo "$CHANGED" | grep -E '^(lambdas/handler\.py|providers/catalog\.py|providers/registry\.py|scripts/deploy_gateway\.py)' >/dev/null; then
                   PROVIDER=all
@@ -107,9 +105,10 @@ jobs:
                   SELECTED=()
                   echo "$CHANGED" | grep -E '^providers/seedance/|^lambdas/seedance/' >/dev/null && SELECTED+=(seedance)
                   echo "$CHANGED" | grep -E '^providers/seedream/|^lambdas/seedream/' >/dev/null && SELECTED+=(seedream)
-                  echo "$CHANGED" | grep -E '^providers/mureka/|^lambdas/mureka/|^mcps/mureka/|^configs/mureka_gateway_tools\.json|^configs/gateway/mureka\.tools\.json' >/dev/null && SELECTED+=(mureka)
+                  echo "$CHANGED" | grep -E '^providers/mureka/|^lambdas/mureka/|^configs/mureka_gateway_tools\.json|^configs/gateway/mureka\.tools\.json' >/dev/null && SELECTED+=(mureka)
                   echo "$CHANGED" | grep -E '^providers/fish_audio/|^lambdas/fish' >/dev/null && SELECTED+=(fish_audio)
-                  if [ "${#SELECTED[@]}" -eq 0 ] || [ "${#SELECTED[@]}" -eq 4 ]; then
+                  echo "$CHANGED" | grep -E '^providers/remotion/' >/dev/null && SELECTED+=(remotion)
+                  if [ "${#SELECTED[@]}" -eq 0 ] || [ "${#SELECTED[@]}" -ge 4 ]; then
                     PROVIDER=all
                   else
                     IFS=,
@@ -117,7 +116,7 @@ jobs:
                   fi
                 fi
               fi
-              if echo "$CHANGED" | grep -E '^(agent/|mcps/|configs/mcp\.agentcore\.json|Dockerfile\.agentcore|scripts/deploy_agentcore\.py|pyproject\.toml)' >/dev/null; then
+              if echo "$CHANGED" | grep -E '^(agent/|Dockerfile\.agentcore|scripts/deploy_agentcore\.py|pyproject\.toml)' >/dev/null; then
                 RT=true
               fi
             fi
