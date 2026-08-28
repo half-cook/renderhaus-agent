@@ -12,6 +12,7 @@ import {
   createStudioProject,
   fetchOptions,
   fetchStatus,
+  fetchStudioAgentResult,
   fetchStudioCanvas,
   fetchStudioExecutions,
   fetchStudioProjects,
@@ -375,6 +376,34 @@ function createAgentRunCluster(
   };
 }
 
+function replaceAgentRunCluster(
+  nodes: CanvasNode[],
+  currentRunNode: CanvasNode,
+  result: AgentResultData,
+  fieldOptions: FieldOptions,
+): CanvasNode[] {
+  const executionId = result.executionId;
+  const base = {
+    x: currentRunNode.position.x - 480,
+    y: currentRunNode.position.y - 430,
+  };
+  const cluster = createAgentRunCluster(result, base, fieldOptions);
+  const replacementRun = cluster.nodes.find((node) => node.data.kind === "agentRun");
+  if (replacementRun) {
+    replacementRun.id = currentRunNode.id;
+    replacementRun.position = currentRunNode.position;
+    replacementRun.selected = currentRunNode.selected;
+  }
+  return [
+    ...nodes.filter(
+      (node) =>
+        node.id !== currentRunNode.id &&
+        (!executionId || node.data.agentRunId !== executionId),
+    ),
+    ...cluster.nodes,
+  ];
+}
+
 function expandLegacyAgentResults(graph: PersistedGraph): PersistedGraph {
   const legacy = graph.nodes.filter((node) => node.data.kind === "agentResult" && node.data.agentResult);
   if (legacy.length === 0) return graph;
@@ -459,6 +488,7 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
       if (migratedAgentPresentation) {
         window.setTimeout(() => void get().persist(), 0);
       }
+      window.setTimeout(() => void get().refreshExecutions(), 0);
     } catch (error) {
       const project = legacyProjects[0] || { id: "untitled", name: "Untitled" };
       const graph = readGraph(project.id);
@@ -524,7 +554,38 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
 
   refreshExecutions: async () => {
     try {
-      set({ executions: await fetchStudioExecutions(), loadError: null });
+      const executions = await fetchStudioExecutions();
+      const projectId = get().projectId;
+      let nodes = get().nodes;
+      let changed = false;
+      for (const execution of executions) {
+        if (
+          execution.status !== "completed" ||
+          execution.projectId !== projectId ||
+          !execution.primaryAsset
+        ) {
+          continue;
+        }
+        const runNode = nodes.find(
+          (node) => node.data.agentRun?.executionId === execution.jobId,
+        );
+        if (
+          !runNode ||
+          runNode.data.agentRun?.primaryAsset?.versionId === execution.primaryAsset.versionId
+        ) {
+          continue;
+        }
+        const result = await fetchStudioAgentResult(execution.jobId);
+        if (!result) {
+          continue;
+        }
+        nodes = replaceAgentRunCluster(nodes, runNode, result, get().fieldOptions);
+        changed = true;
+      }
+      set({ executions, ...(changed ? { nodes } : {}), loadError: null });
+      if (changed) {
+        await get().persist();
+      }
     } catch (error) {
       set({ loadError: error instanceof Error ? error.message : "Could not load agent jobs." });
     }

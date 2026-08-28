@@ -977,6 +977,14 @@
         "documentation": {}
     },
     {
+        "label": "load_committed_schemas",
+        "importPath": "providers.registry",
+        "description": "providers.registry",
+        "isExtraImport": true,
+        "detail": "providers.registry",
+        "documentation": {}
+    },
+    {
         "label": "dispatch",
         "importPath": "providers.registry",
         "description": "providers.registry",
@@ -1066,6 +1074,30 @@
         "documentation": {}
     },
     {
+        "label": "lru_cache",
+        "importPath": "functools",
+        "description": "functools",
+        "isExtraImport": true,
+        "detail": "functools",
+        "documentation": {}
+    },
+    {
+        "label": "lru_cache",
+        "importPath": "functools",
+        "description": "functools",
+        "isExtraImport": true,
+        "detail": "functools",
+        "documentation": {}
+    },
+    {
+        "label": "lru_cache",
+        "importPath": "functools",
+        "description": "functools",
+        "isExtraImport": true,
+        "detail": "functools",
+        "documentation": {}
+    },
+    {
         "label": "MCPServer",
         "importPath": "agents.mcp",
         "description": "agents.mcp",
@@ -1103,6 +1135,86 @@
         "description": "bedrock_agentcore.runtime",
         "isExtraImport": true,
         "detail": "bedrock_agentcore.runtime",
+        "documentation": {}
+    },
+    {
+        "label": "PROVIDERS",
+        "importPath": "providers.catalog",
+        "description": "providers.catalog",
+        "isExtraImport": true,
+        "detail": "providers.catalog",
+        "documentation": {}
+    },
+    {
+        "label": "PROVIDERS",
+        "importPath": "providers.catalog",
+        "description": "providers.catalog",
+        "isExtraImport": true,
+        "detail": "providers.catalog",
+        "documentation": {}
+    },
+    {
+        "label": "ProviderSpec",
+        "importPath": "providers.catalog",
+        "description": "providers.catalog",
+        "isExtraImport": true,
+        "detail": "providers.catalog",
+        "documentation": {}
+    },
+    {
+        "label": "get_provider",
+        "importPath": "providers.catalog",
+        "description": "providers.catalog",
+        "isExtraImport": true,
+        "detail": "providers.catalog",
+        "documentation": {}
+    },
+    {
+        "label": "ProviderSpec",
+        "importPath": "providers.catalog",
+        "description": "providers.catalog",
+        "isExtraImport": true,
+        "detail": "providers.catalog",
+        "documentation": {}
+    },
+    {
+        "label": "parse_provider_ids",
+        "importPath": "providers.catalog",
+        "description": "providers.catalog",
+        "isExtraImport": true,
+        "detail": "providers.catalog",
+        "documentation": {}
+    },
+    {
+        "label": "parse_provider_ids",
+        "importPath": "providers.catalog",
+        "description": "providers.catalog",
+        "isExtraImport": true,
+        "detail": "providers.catalog",
+        "documentation": {}
+    },
+    {
+        "label": "get_provider",
+        "importPath": "providers.catalog",
+        "description": "providers.catalog",
+        "isExtraImport": true,
+        "detail": "providers.catalog",
+        "documentation": {}
+    },
+    {
+        "label": "PROVIDERS",
+        "importPath": "providers.catalog",
+        "description": "providers.catalog",
+        "isExtraImport": true,
+        "detail": "providers.catalog",
+        "documentation": {}
+    },
+    {
+        "label": "get_provider",
+        "importPath": "providers.catalog",
+        "description": "providers.catalog",
+        "isExtraImport": true,
+        "detail": "providers.catalog",
         "documentation": {}
     },
     {
@@ -1767,78 +1879,6 @@
         "description": "types",
         "isExtraImport": true,
         "detail": "types",
-        "documentation": {}
-    },
-    {
-        "label": "PROVIDERS",
-        "importPath": "providers.catalog",
-        "description": "providers.catalog",
-        "isExtraImport": true,
-        "detail": "providers.catalog",
-        "documentation": {}
-    },
-    {
-        "label": "ProviderSpec",
-        "importPath": "providers.catalog",
-        "description": "providers.catalog",
-        "isExtraImport": true,
-        "detail": "providers.catalog",
-        "documentation": {}
-    },
-    {
-        "label": "get_provider",
-        "importPath": "providers.catalog",
-        "description": "providers.catalog",
-        "isExtraImport": true,
-        "detail": "providers.catalog",
-        "documentation": {}
-    },
-    {
-        "label": "ProviderSpec",
-        "importPath": "providers.catalog",
-        "description": "providers.catalog",
-        "isExtraImport": true,
-        "detail": "providers.catalog",
-        "documentation": {}
-    },
-    {
-        "label": "parse_provider_ids",
-        "importPath": "providers.catalog",
-        "description": "providers.catalog",
-        "isExtraImport": true,
-        "detail": "providers.catalog",
-        "documentation": {}
-    },
-    {
-        "label": "parse_provider_ids",
-        "importPath": "providers.catalog",
-        "description": "providers.catalog",
-        "isExtraImport": true,
-        "detail": "providers.catalog",
-        "documentation": {}
-    },
-    {
-        "label": "get_provider",
-        "importPath": "providers.catalog",
-        "description": "providers.catalog",
-        "isExtraImport": true,
-        "detail": "providers.catalog",
-        "documentation": {}
-    },
-    {
-        "label": "PROVIDERS",
-        "importPath": "providers.catalog",
-        "description": "providers.catalog",
-        "isExtraImport": true,
-        "detail": "providers.catalog",
-        "documentation": {}
-    },
-    {
-        "label": "get_provider",
-        "importPath": "providers.catalog",
-        "description": "providers.catalog",
-        "isExtraImport": true,
-        "detail": "providers.catalog",
         "documentation": {}
     },
     {
@@ -2529,22 +2569,6 @@
         "documentation": {}
     },
     {
-        "label": "lru_cache",
-        "importPath": "functools",
-        "description": "functools",
-        "isExtraImport": true,
-        "detail": "functools",
-        "documentation": {}
-    },
-    {
-        "label": "lru_cache",
-        "importPath": "functools",
-        "description": "functools",
-        "isExtraImport": true,
-        "detail": "functools",
-        "documentation": {}
-    },
-    {
         "label": "AuthenticateRequestOptions",
         "importPath": "clerk_backend_api",
         "description": "clerk_backend_api",
@@ -2762,7 +2786,47 @@
         "documentation": {}
     },
     {
+        "label": "StudioToolEvent",
+        "importPath": "agent.studio_agent_next",
+        "description": "agent.studio_agent_next",
+        "isExtraImport": true,
+        "detail": "agent.studio_agent_next",
+        "documentation": {}
+    },
+    {
+        "label": "_describe_gateway_mcp_tools",
+        "importPath": "agent.studio_agent_next",
+        "description": "agent.studio_agent_next",
+        "isExtraImport": true,
+        "detail": "agent.studio_agent_next",
+        "documentation": {}
+    },
+    {
+        "label": "_finalize_media_run",
+        "importPath": "agent.studio_agent_next",
+        "description": "agent.studio_agent_next",
+        "isExtraImport": true,
+        "detail": "agent.studio_agent_next",
+        "documentation": {}
+    },
+    {
+        "label": "_gateway_tool_catalog",
+        "importPath": "agent.studio_agent_next",
+        "description": "agent.studio_agent_next",
+        "isExtraImport": true,
+        "detail": "agent.studio_agent_next",
+        "documentation": {}
+    },
+    {
         "label": "_record_run_tool_events",
+        "importPath": "agent.studio_agent_next",
+        "description": "agent.studio_agent_next",
+        "isExtraImport": true,
+        "detail": "agent.studio_agent_next",
+        "documentation": {}
+    },
+    {
+        "label": "_unwrap_tool_output",
         "importPath": "agent.studio_agent_next",
         "description": "agent.studio_agent_next",
         "isExtraImport": true,
@@ -3148,6 +3212,15 @@
         "documentation": {}
     },
     {
+        "label": "GatewayMCPServer",
+        "kind": 6,
+        "importPath": "agent.studio_agent_next",
+        "description": "agent.studio_agent_next",
+        "peekOfCode": "class GatewayMCPServer(MCPServerStreamableHttp):\n    \"\"\"AgentCore Gateway MCP client with local tool descriptions restored.\"\"\"\n    async def list_tools(self, run_context: Any = None, agent: Any = None) -> list[Any]:\n        tools = await super().list_tools(run_context, agent)\n        return _describe_gateway_mcp_tools(tools)\ndef _unwrap_tool_output(output: Any) -> dict[str, Any]:\n    current: Any = output\n    for _ in range(8):\n        if current is None:\n            return {}",
+        "detail": "agent.studio_agent_next",
+        "documentation": {}
+    },
+    {
         "label": "normalize_markdown_filename",
         "kind": 2,
         "importPath": "agent.studio_agent_next",
@@ -3161,7 +3234,7 @@
         "kind": 2,
         "importPath": "agent.studio_agent_next",
         "description": "agent.studio_agent_next",
-        "peekOfCode": "def gateway_mcp_server() -> MCPServer:\n    \"\"\"MCP client for the AgentCore Gateway endpoint.\"\"\"\n    load_local_env()\n    params: dict[str, Any] = {\"url\": require_agentcore_gateway_url()}\n    headers = agentcore_gateway_headers()\n    if headers:\n        params[\"headers\"] = headers\n    return MCPServerStreamableHttp(\n        params,\n        cache_tools_list=True,",
+        "peekOfCode": "def gateway_mcp_server() -> MCPServer:\n    \"\"\"MCP client for the AgentCore Gateway endpoint.\"\"\"\n    load_local_env()\n    params: dict[str, Any] = {\"url\": require_agentcore_gateway_url()}\n    headers = agentcore_gateway_headers()\n    if headers:\n        params[\"headers\"] = headers\n    return GatewayMCPServer(\n        params,\n        cache_tools_list=True,",
         "detail": "agent.studio_agent_next",
         "documentation": {}
     },
@@ -3170,7 +3243,7 @@
         "kind": 5,
         "importPath": "agent.studio_agent_next",
         "description": "agent.studio_agent_next",
-        "peekOfCode": "logger = logging.getLogger(\"renderhaus.studio_agent\")\nAssetRegistrar = Callable[..., list[dict[str, Any]]]\nSourceResolver = Callable[[str], str]\nEventSink = Callable[[\"StudioToolEvent\"], None]\n_SESSION_TIMEOUT_SECONDS = 180.0\nSTUDIO_MANAGER_INSTRUCTIONS = \"\"\"\nYou are the Renderhaus canvas manager. Turn the customer's request into one useful, finished,\ndownloadable result. You own the final response and decide whether any tools are necessary.\nImage, video, music, speech, and Remotion tools come from Amazon Bedrock AgentCore Gateway. Use\nthem only when they materially help; they may trigger paid provider or AWS work. Gateway tools keep",
+        "peekOfCode": "logger = logging.getLogger(\"renderhaus.studio_agent\")\nAssetRegistrar = Callable[..., list[dict[str, Any]]]\nSourceResolver = Callable[[str], str]\nEventSink = Callable[[\"StudioToolEvent\"], None]\n_SESSION_TIMEOUT_SECONDS = 180.0\n_FINALIZATION_TIMEOUT_SECONDS = 240.0\n_POLL_INTERVAL_SECONDS = 3.0\n_TERMINAL_TOOL_STATUSES = frozenset(\n    {\"succeeded\", \"completed\", \"failed\", \"error\", \"dry_run\", \"cancelled\", \"canceled\"}\n)",
         "detail": "agent.studio_agent_next",
         "documentation": {}
     },
@@ -3179,7 +3252,7 @@
         "kind": 5,
         "importPath": "agent.studio_agent_next",
         "description": "agent.studio_agent_next",
-        "peekOfCode": "AssetRegistrar = Callable[..., list[dict[str, Any]]]\nSourceResolver = Callable[[str], str]\nEventSink = Callable[[\"StudioToolEvent\"], None]\n_SESSION_TIMEOUT_SECONDS = 180.0\nSTUDIO_MANAGER_INSTRUCTIONS = \"\"\"\nYou are the Renderhaus canvas manager. Turn the customer's request into one useful, finished,\ndownloadable result. You own the final response and decide whether any tools are necessary.\nImage, video, music, speech, and Remotion tools come from Amazon Bedrock AgentCore Gateway. Use\nthem only when they materially help; they may trigger paid provider or AWS work. Gateway tools keep\nprovider argument names such as `image_path_or_url` and Remotion clip `url`. When a referenced",
+        "peekOfCode": "AssetRegistrar = Callable[..., list[dict[str, Any]]]\nSourceResolver = Callable[[str], str]\nEventSink = Callable[[\"StudioToolEvent\"], None]\n_SESSION_TIMEOUT_SECONDS = 180.0\n_FINALIZATION_TIMEOUT_SECONDS = 240.0\n_POLL_INTERVAL_SECONDS = 3.0\n_TERMINAL_TOOL_STATUSES = frozenset(\n    {\"succeeded\", \"completed\", \"failed\", \"error\", \"dry_run\", \"cancelled\", \"canceled\"}\n)\n_VIDEO_REQUEST_PATTERN = re.compile(",
         "detail": "agent.studio_agent_next",
         "documentation": {}
     },
@@ -3188,7 +3261,7 @@
         "kind": 5,
         "importPath": "agent.studio_agent_next",
         "description": "agent.studio_agent_next",
-        "peekOfCode": "SourceResolver = Callable[[str], str]\nEventSink = Callable[[\"StudioToolEvent\"], None]\n_SESSION_TIMEOUT_SECONDS = 180.0\nSTUDIO_MANAGER_INSTRUCTIONS = \"\"\"\nYou are the Renderhaus canvas manager. Turn the customer's request into one useful, finished,\ndownloadable result. You own the final response and decide whether any tools are necessary.\nImage, video, music, speech, and Remotion tools come from Amazon Bedrock AgentCore Gateway. Use\nthem only when they materially help; they may trigger paid provider or AWS work. Gateway tools keep\nprovider argument names such as `image_path_or_url` and Remotion clip `url`. When a referenced\ncanvas node already has `source`, pass that value into those fields. There are no `wait_for_*`",
+        "peekOfCode": "SourceResolver = Callable[[str], str]\nEventSink = Callable[[\"StudioToolEvent\"], None]\n_SESSION_TIMEOUT_SECONDS = 180.0\n_FINALIZATION_TIMEOUT_SECONDS = 240.0\n_POLL_INTERVAL_SECONDS = 3.0\n_TERMINAL_TOOL_STATUSES = frozenset(\n    {\"succeeded\", \"completed\", \"failed\", \"error\", \"dry_run\", \"cancelled\", \"canceled\"}\n)\n_VIDEO_REQUEST_PATTERN = re.compile(\n    r\"\\b(video|ad|advert|commercial|reel|spot|motion graphic|trailer|promo|montage)\\b\",",
         "detail": "agent.studio_agent_next",
         "documentation": {}
     },
@@ -3197,7 +3270,7 @@
         "kind": 5,
         "importPath": "agent.studio_agent_next",
         "description": "agent.studio_agent_next",
-        "peekOfCode": "EventSink = Callable[[\"StudioToolEvent\"], None]\n_SESSION_TIMEOUT_SECONDS = 180.0\nSTUDIO_MANAGER_INSTRUCTIONS = \"\"\"\nYou are the Renderhaus canvas manager. Turn the customer's request into one useful, finished,\ndownloadable result. You own the final response and decide whether any tools are necessary.\nImage, video, music, speech, and Remotion tools come from Amazon Bedrock AgentCore Gateway. Use\nthem only when they materially help; they may trigger paid provider or AWS work. Gateway tools keep\nprovider argument names such as `image_path_or_url` and Remotion clip `url`. When a referenced\ncanvas node already has `source`, pass that value into those fields. There are no `wait_for_*`\ntools: after a queued video, music, or Remotion job, poll `get_video_task`, `query_music_task`, or",
+        "peekOfCode": "EventSink = Callable[[\"StudioToolEvent\"], None]\n_SESSION_TIMEOUT_SECONDS = 180.0\n_FINALIZATION_TIMEOUT_SECONDS = 240.0\n_POLL_INTERVAL_SECONDS = 3.0\n_TERMINAL_TOOL_STATUSES = frozenset(\n    {\"succeeded\", \"completed\", \"failed\", \"error\", \"dry_run\", \"cancelled\", \"canceled\"}\n)\n_VIDEO_REQUEST_PATTERN = re.compile(\n    r\"\\b(video|ad|advert|commercial|reel|spot|motion graphic|trailer|promo|montage)\\b\",\n    re.IGNORECASE,",
         "detail": "agent.studio_agent_next",
         "documentation": {}
     },
@@ -3206,7 +3279,43 @@
         "kind": 5,
         "importPath": "agent.studio_agent_next",
         "description": "agent.studio_agent_next",
-        "peekOfCode": "_SESSION_TIMEOUT_SECONDS = 180.0\nSTUDIO_MANAGER_INSTRUCTIONS = \"\"\"\nYou are the Renderhaus canvas manager. Turn the customer's request into one useful, finished,\ndownloadable result. You own the final response and decide whether any tools are necessary.\nImage, video, music, speech, and Remotion tools come from Amazon Bedrock AgentCore Gateway. Use\nthem only when they materially help; they may trigger paid provider or AWS work. Gateway tools keep\nprovider argument names such as `image_path_or_url` and Remotion clip `url`. When a referenced\ncanvas node already has `source`, pass that value into those fields. There are no `wait_for_*`\ntools: after a queued video, music, or Remotion job, poll `get_video_task`, `query_music_task`, or\n`get_render_progress` until status is complete, succeeded, failed, or dry_run. After a successful",
+        "peekOfCode": "_SESSION_TIMEOUT_SECONDS = 180.0\n_FINALIZATION_TIMEOUT_SECONDS = 240.0\n_POLL_INTERVAL_SECONDS = 3.0\n_TERMINAL_TOOL_STATUSES = frozenset(\n    {\"succeeded\", \"completed\", \"failed\", \"error\", \"dry_run\", \"cancelled\", \"canceled\"}\n)\n_VIDEO_REQUEST_PATTERN = re.compile(\n    r\"\\b(video|ad|advert|commercial|reel|spot|motion graphic|trailer|promo|montage)\\b\",\n    re.IGNORECASE,\n)",
+        "detail": "agent.studio_agent_next",
+        "documentation": {}
+    },
+    {
+        "label": "_FINALIZATION_TIMEOUT_SECONDS",
+        "kind": 5,
+        "importPath": "agent.studio_agent_next",
+        "description": "agent.studio_agent_next",
+        "peekOfCode": "_FINALIZATION_TIMEOUT_SECONDS = 240.0\n_POLL_INTERVAL_SECONDS = 3.0\n_TERMINAL_TOOL_STATUSES = frozenset(\n    {\"succeeded\", \"completed\", \"failed\", \"error\", \"dry_run\", \"cancelled\", \"canceled\"}\n)\n_VIDEO_REQUEST_PATTERN = re.compile(\n    r\"\\b(video|ad|advert|commercial|reel|spot|motion graphic|trailer|promo|montage)\\b\",\n    re.IGNORECASE,\n)\nSTUDIO_MANAGER_INSTRUCTIONS = \"\"\"",
+        "detail": "agent.studio_agent_next",
+        "documentation": {}
+    },
+    {
+        "label": "_POLL_INTERVAL_SECONDS",
+        "kind": 5,
+        "importPath": "agent.studio_agent_next",
+        "description": "agent.studio_agent_next",
+        "peekOfCode": "_POLL_INTERVAL_SECONDS = 3.0\n_TERMINAL_TOOL_STATUSES = frozenset(\n    {\"succeeded\", \"completed\", \"failed\", \"error\", \"dry_run\", \"cancelled\", \"canceled\"}\n)\n_VIDEO_REQUEST_PATTERN = re.compile(\n    r\"\\b(video|ad|advert|commercial|reel|spot|motion graphic|trailer|promo|montage)\\b\",\n    re.IGNORECASE,\n)\nSTUDIO_MANAGER_INSTRUCTIONS = \"\"\"\nYou are the Renderhaus canvas manager. Turn the customer's request into one useful, finished,",
+        "detail": "agent.studio_agent_next",
+        "documentation": {}
+    },
+    {
+        "label": "_TERMINAL_TOOL_STATUSES",
+        "kind": 5,
+        "importPath": "agent.studio_agent_next",
+        "description": "agent.studio_agent_next",
+        "peekOfCode": "_TERMINAL_TOOL_STATUSES = frozenset(\n    {\"succeeded\", \"completed\", \"failed\", \"error\", \"dry_run\", \"cancelled\", \"canceled\"}\n)\n_VIDEO_REQUEST_PATTERN = re.compile(\n    r\"\\b(video|ad|advert|commercial|reel|spot|motion graphic|trailer|promo|montage)\\b\",\n    re.IGNORECASE,\n)\nSTUDIO_MANAGER_INSTRUCTIONS = \"\"\"\nYou are the Renderhaus canvas manager. Turn the customer's request into one useful, finished,\ndownloadable result.",
+        "detail": "agent.studio_agent_next",
+        "documentation": {}
+    },
+    {
+        "label": "_VIDEO_REQUEST_PATTERN",
+        "kind": 5,
+        "importPath": "agent.studio_agent_next",
+        "description": "agent.studio_agent_next",
+        "peekOfCode": "_VIDEO_REQUEST_PATTERN = re.compile(\n    r\"\\b(video|ad|advert|commercial|reel|spot|motion graphic|trailer|promo|montage)\\b\",\n    re.IGNORECASE,\n)\nSTUDIO_MANAGER_INSTRUCTIONS = \"\"\"\nYou are the Renderhaus canvas manager. Turn the customer's request into one useful, finished,\ndownloadable result.\nImage, video, music, speech, and Remotion tools come from Amazon Bedrock AgentCore Gateway. Names\nlook like `Seedream___text_to_image` and `Remotion___render_timeline`. Use generation tools when\nthe request needs new media; they may trigger paid provider or AWS work. Gateway tools keep",
         "detail": "agent.studio_agent_next",
         "documentation": {}
     },
@@ -3215,7 +3324,7 @@
         "kind": 5,
         "importPath": "agent.studio_agent_next",
         "description": "agent.studio_agent_next",
-        "peekOfCode": "STUDIO_MANAGER_INSTRUCTIONS = \"\"\"\nYou are the Renderhaus canvas manager. Turn the customer's request into one useful, finished,\ndownloadable result. You own the final response and decide whether any tools are necessary.\nImage, video, music, speech, and Remotion tools come from Amazon Bedrock AgentCore Gateway. Use\nthem only when they materially help; they may trigger paid provider or AWS work. Gateway tools keep\nprovider argument names such as `image_path_or_url` and Remotion clip `url`. When a referenced\ncanvas node already has `source`, pass that value into those fields. There are no `wait_for_*`\ntools: after a queued video, music, or Remotion job, poll `get_video_task`, `query_music_task`, or\n`get_render_progress` until status is complete, succeeded, failed, or dry_run. After a successful\nRemotion render, stop calling tools and return the final response immediately. If a tool reports",
+        "peekOfCode": "STUDIO_MANAGER_INSTRUCTIONS = \"\"\"\nYou are the Renderhaus canvas manager. Turn the customer's request into one useful, finished,\ndownloadable result.\nImage, video, music, speech, and Remotion tools come from Amazon Bedrock AgentCore Gateway. Names\nlook like `Seedream___text_to_image` and `Remotion___render_timeline`. Use generation tools when\nthe request needs new media; they may trigger paid provider or AWS work. Gateway tools keep\nprovider argument names such as `image_path_or_url` and Remotion clip `url`. When a referenced\ncanvas node already has `source`, pass that value into those fields.\nWhen the customer wants a video, ad, reel, spot, motion graphic, or any edited sequence:\n1. Generate the needed stills, clips, music, and voice first.",
         "detail": "agent.studio_agent_next",
         "documentation": {}
     },
@@ -3233,7 +3342,25 @@
         "kind": 5,
         "importPath": "agent.studio_agent_next",
         "description": "agent.studio_agent_next",
-        "peekOfCode": "_DROP_TOOL_RESULT_KEYS = frozenset(\n    {\"traceback\", \"last_response\", \"create_response\", \"last_payload\", \"raw\"}\n)\ndef _unwrap_tool_output(output: Any) -> dict[str, Any]:\n    current: Any = output\n    for _ in range(4):\n        if current is None:\n            return {}\n        if isinstance(current, str):\n            text = current.strip()",
+        "peekOfCode": "_DROP_TOOL_RESULT_KEYS = frozenset(\n    {\"traceback\", \"last_response\", \"create_response\", \"last_payload\", \"raw\"}\n)\n_TEXT_PART_KEYS = frozenset({\"type\", \"text\"})\n_TOOL_TITLES = {\n    \"render_timeline\": \"Compose final MP4\",\n    \"get_render_progress\": \"Poll Remotion render\",\n    \"text_to_image\": \"Generate image\",\n    \"image_to_image\": \"Edit image\",\n    \"text_to_video\": \"Generate video\",",
+        "detail": "agent.studio_agent_next",
+        "documentation": {}
+    },
+    {
+        "label": "_TEXT_PART_KEYS",
+        "kind": 5,
+        "importPath": "agent.studio_agent_next",
+        "description": "agent.studio_agent_next",
+        "peekOfCode": "_TEXT_PART_KEYS = frozenset({\"type\", \"text\"})\n_TOOL_TITLES = {\n    \"render_timeline\": \"Compose final MP4\",\n    \"get_render_progress\": \"Poll Remotion render\",\n    \"text_to_image\": \"Generate image\",\n    \"image_to_image\": \"Edit image\",\n    \"text_to_video\": \"Generate video\",\n    \"image_to_video\": \"Animate image\",\n    \"get_video_task\": \"Poll video task\",\n}",
+        "detail": "agent.studio_agent_next",
+        "documentation": {}
+    },
+    {
+        "label": "_TOOL_TITLES",
+        "kind": 5,
+        "importPath": "agent.studio_agent_next",
+        "description": "agent.studio_agent_next",
+        "peekOfCode": "_TOOL_TITLES = {\n    \"render_timeline\": \"Compose final MP4\",\n    \"get_render_progress\": \"Poll Remotion render\",\n    \"text_to_image\": \"Generate image\",\n    \"image_to_image\": \"Edit image\",\n    \"text_to_video\": \"Generate video\",\n    \"image_to_video\": \"Animate image\",\n    \"get_video_task\": \"Poll video task\",\n}\ndef _title_for_gateway_tool(target: str, name: str) -> str:",
         "detail": "agent.studio_agent_next",
         "documentation": {}
     },
@@ -3827,7 +3954,7 @@
         "kind": 2,
         "importPath": "providers.remotion.api",
         "description": "providers.remotion.api",
-        "peekOfCode": "def render_timeline(\n    title: str,\n    visuals: list[dict[str, Any]],\n    audio_tracks: list[dict[str, Any]] | None = None,\n    aspect_ratio: Literal[\"16:9\", \"9:16\", \"1:1\"] = \"9:16\",\n    fps: int = 30,\n    output_filename: str = \"renderhaus-video.mp4\",\n) -> dict[str, Any]:\n    \"\"\"Start a Remotion Lambda render and return the render id to poll.\"\"\"\n    if dry_run():",
+        "peekOfCode": "def render_timeline(\n    title: str,\n    visuals: list[dict[str, Any]],\n    audio_tracks: list[dict[str, Any]] | None = None,\n    aspect_ratio: Literal[\"16:9\", \"9:16\", \"1:1\"] = \"9:16\",\n    fps: int = 30,\n    output_filename: str = \"renderhaus-video.mp4\",\n) -> dict[str, Any]:\n    \"\"\"Compose generated image, video, and audio clips into one final MP4, then poll get_render_progress.\"\"\"\n    if dry_run():",
         "detail": "providers.remotion.api",
         "documentation": {}
     },
@@ -3836,7 +3963,7 @@
         "kind": 2,
         "importPath": "providers.remotion.api",
         "description": "providers.remotion.api",
-        "peekOfCode": "def get_render_progress(\n    render_id: str,\n    bucket_name: str,\n    output_key: str | None = None,\n    download: bool = True,\n) -> dict[str, Any]:\n    \"\"\"Read Remotion Lambda progress once. Call again until status is succeeded or failed.\"\"\"\n    if dry_run():\n        return {\n            \"status\": \"dry_run\",",
+        "peekOfCode": "def get_render_progress(\n    render_id: str,\n    bucket_name: str,\n    output_key: str | None = None,\n    download: bool = True,\n) -> dict[str, Any]:\n    \"\"\"Poll a Remotion render once. Repeat until status is succeeded, failed, or dry_run.\"\"\"\n    if dry_run():\n        return {\n            \"status\": \"dry_run\",",
         "detail": "providers.remotion.api",
         "documentation": {}
     },

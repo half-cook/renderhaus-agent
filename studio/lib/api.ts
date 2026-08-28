@@ -295,6 +295,18 @@ function completedAgentResult(payload: AgentJobPayload): AgentComposerResult {
   };
 }
 
+export async function fetchStudioAgentResult(jobId: string): Promise<AgentResultData | null> {
+  const response = await studioFetch(`/api/studio/agent/${encodeURIComponent(jobId)}`, {
+    cache: "no-store",
+  });
+  const payload = (await response.json().catch(() => ({}))) as AgentJobPayload;
+  if (!response.ok || !payload.result) {
+    return null;
+  }
+  const completed = completedAgentResult(payload);
+  return completed.status === "completed" ? completed.result : null;
+}
+
 async function waitForAgentJob(
   jobId: string,
   onProgress?: (message: string) => void,

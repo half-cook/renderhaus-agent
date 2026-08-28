@@ -1,7 +1,7 @@
 [
   {
     "name": "render_timeline",
-    "description": "Start a Remotion Lambda render and return the render id to poll.",
+        "description": "Compose generated image, video, and audio clips into one final MP4, then poll get_render_progress.",
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -39,7 +39,7 @@
   },
   {
     "name": "get_render_progress",
-    "description": "Read Remotion Lambda progress once. Call again until status is succeeded or failed.",
+        "description": "Poll a Remotion render once. Repeat until status is succeeded, failed, or dry_run.",
     "inputSchema": {
       "type": "object",
       "properties": {
