@@ -654,7 +654,7 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
     }
     get().updateNodeData(id, { status: "running", error: undefined });
     try {
-      const patch = await runCreativeNode(node, get().nodes, get().edges);
+      const patch = await runCreativeNode(node, get().nodes, get().edges, get().projectId);
       get().updateNodeData(id, patch);
       if (patch.status === "queued" && patch.jobId) {
         const tick = async () => {

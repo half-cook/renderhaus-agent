@@ -77,13 +77,22 @@ export async function runCreativeNode(
   node: CanvasNode,
   nodes: CanvasNode[],
   edges: CanvasEdge[],
+  projectId: string,
 ): Promise<Partial<CanvasNodeData>> {
   const tool = toolById(node.data.toolId);
   if (!tool) {
     throw new Error("This node has no generation tool.");
   }
   const arguments_ = resolveConfig(node, nodes, edges);
-  const payload = await invokeTool(tool.providerId, tool.toolName, arguments_);
+  // A fresh key per click -- a double-click sends two requests with the SAME
+  // key, so the backend's ON CONFLICT collapses it to one billed call.
+  // Retry/regenerate calls runCreativeNode again, which mints a new key here --
+  // reusing the original would just replay the same cached result forever.
+  const payload = await invokeTool(tool.providerId, tool.toolName, arguments_, {
+    projectId,
+    nodeId: node.id,
+    idempotencyKey: crypto.randomUUID(),
+  });
   const assets = payload.assets;
   const jobId = jobIdFrom(payload.result);
   const providerStatus = statusFrom(payload.result);

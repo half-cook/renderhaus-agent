@@ -117,17 +117,23 @@ export function SchemaForm({ schema, values, options, hiddenFields, onlyFields, 
                 {label}
                 {requiredMark}
               </span>
-              <select
-                value={selected}
-                onChange={(event) => onChange(name, coerceChoice(event.target.value, field, choices))}
-              >
-                <option value="">Choose {label.toLowerCase()}</option>
-                {[...choices, ...extras].map((option) => (
-                  <option key={String(option)} value={String(option)}>
-                    {choiceLabel(name, String(option))}
-                  </option>
-                ))}
-              </select>
+              <div className="field-pill-row" role="radiogroup" aria-label={label}>
+                {[...choices, ...extras].map((option) => {
+                  const optionValue = String(option);
+                  return (
+                    <button
+                      key={optionValue}
+                      type="button"
+                      role="radio"
+                      aria-checked={selected === optionValue}
+                      className={`field-pill${selected === optionValue ? " selected" : ""}`}
+                      onClick={() => onChange(name, coerceChoice(optionValue, field, choices))}
+                    >
+                      {choiceLabel(name, optionValue)}
+                    </button>
+                  );
+                })}
+              </div>
             </label>
           );
         }

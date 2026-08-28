@@ -10,13 +10,18 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import quote
 
-from fastapi import APIRouter, File, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
+from sqlalchemy import func, select, update
+from sqlalchemy.dialects.postgresql import insert as pg_insert
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from providers.catalog import PROVIDERS, get_provider
 from providers.registry import dispatch, load_committed_schemas
 from server.config import ROOT
+from server.db import Transformation, get_session
 from server.studio_options import LIVE_CHOICE_TOOLS, extract_choice_ids, static_field_options
 
 
@@ -38,6 +43,15 @@ class InvokeBody(BaseModel):
     provider: str = Field(min_length=1)
     tool: str = Field(min_length=1)
     arguments: dict[str, Any] = Field(default_factory=dict)
+    # All three optional: poll calls (pollTool, e.g. get_video_task) hit this
+    # same endpoint but must NOT go through the ledger below -- they'd either
+    # collide with the submit call's idempotency key (returning the cached
+    # submit response forever, never actually checking status) or need a
+    # fresh key of their own, which would defeat the one-active-per-node
+    # guard. Only submit calls set idempotency_key; poll calls send none.
+    project_id: str | None = Field(default=None, min_length=1)
+    node_id: uuid.UUID | None = None
+    idempotency_key: str | None = Field(default=None, min_length=1)
 
 
 def media_root() -> Path:
@@ -201,9 +215,7 @@ def _tool_arguments(provider: str, tool: str, arguments: dict[str, Any]) -> dict
     return {key: value for key, value in cleaned.items() if key in allowed}
 
 
-@router.post("/invoke")
-async def invoke_tool(body: InvokeBody) -> dict[str, Any]:
-    cleaned = _tool_arguments(body.provider, body.tool, body.arguments)
+async def _dispatch_and_respond(body: InvokeBody, cleaned: dict[str, Any]) -> dict[str, Any]:
     try:
         result = await asyncio.to_thread(dispatch, body.provider, body.tool, cleaned)
     except ValueError as exc:
@@ -216,6 +228,91 @@ async def invoke_tool(body: InvokeBody) -> dict[str, Any]:
         "result": result,
         "assets": collect_assets(result),
     }
+
+
+@router.post("/invoke")
+async def invoke_tool(
+    body: InvokeBody, session: AsyncSession = Depends(get_session)
+) -> dict[str, Any]:
+    cleaned = _tool_arguments(body.provider, body.tool, body.arguments)
+
+    if body.idempotency_key is None:
+        # Poll call (or any caller not opting into the ledger) -- unchanged
+        # passthrough behaviour, exactly what ran before this endpoint had a
+        # ledger at all.
+        return await _dispatch_and_respond(body, cleaned)
+
+    if body.project_id is None or body.node_id is None:
+        raise HTTPException(
+            status_code=400, detail="project_id and node_id are required with idempotency_key"
+        )
+
+    # Claim the slot. ON CONFLICT (idempotency_key) makes a resend of the same
+    # click a no-op instead of a second billed call; the separate
+    # tx_one_active_per_node partial unique index (not targeted by this ON
+    # CONFLICT, so it still raises) is what stops a *different* click firing a
+    # second generation on a node that already has one in flight.
+    stmt = (
+        pg_insert(Transformation)
+        .values(
+            project_id=body.project_id,
+            node_id=body.node_id,
+            provider=body.provider,
+            tool=body.tool,
+            request={"provider": body.provider, "tool": body.tool, "arguments": cleaned},
+            idempotency_key=body.idempotency_key,
+        )
+        .on_conflict_do_nothing(index_elements=["idempotency_key"])
+        .returning(Transformation)
+    )
+    try:
+        tx = (await session.execute(stmt)).scalar_one_or_none()
+        await session.commit()
+    except IntegrityError as exc:
+        await session.rollback()
+        if "tx_one_active_per_node" in str(exc.orig):
+            raise HTTPException(status_code=409, detail="node_already_generating") from exc
+        raise
+
+    if tx is None:
+        # Idempotent replay: same key seen before. Return the cached result
+        # rather than dispatching again.
+        cached = (
+            await session.execute(
+                select(Transformation).where(
+                    Transformation.idempotency_key == body.idempotency_key
+                )
+            )
+        ).scalar_one()
+        return {
+            "provider": cached.provider,
+            "tool": cached.tool,
+            "result": cached.provider_response,
+            "assets": collect_assets(cached.provider_response),
+        }
+
+    try:
+        response = await _dispatch_and_respond(body, cleaned)
+    except HTTPException as exc:
+        await session.execute(
+            update(Transformation)
+            .where(Transformation.id == tx.id)
+            .values(status="failed", provider_response={"error": exc.detail}, completed_at=func.now())
+        )
+        await session.commit()
+        raise
+
+    # "succeeded" here means the dispatch call itself succeeded -- for async
+    # providers (video/music) the underlying job may still be rendering.
+    # Tracking that to completion is a later increment; what this table
+    # guarantees today is that the SUBMIT step is idempotent and audited.
+    await session.execute(
+        update(Transformation)
+        .where(Transformation.id == tx.id)
+        .values(status="succeeded", provider_response=response["result"], completed_at=func.now())
+    )
+    await session.commit()
+    return response
 
 
 @router.post("/upload")

@@ -26,15 +26,31 @@ export async function fetchOptions(): Promise<FieldOptions> {
   return payload.providers || {};
 }
 
+export type InvokeLedger = { projectId: string; nodeId: string; idempotencyKey: string };
+
 export async function invokeTool(
   provider: string,
   tool: string,
   arguments_: Record<string, unknown>,
+  // Present on a submit call, omitted on a poll call -- see server/studio.py's
+  // InvokeBody docstring for why poll must NOT send an idempotency key.
+  ledger?: InvokeLedger,
 ): Promise<{ result: unknown; assets: StudioAsset[] }> {
   const response = await fetch("/api/studio/invoke", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ provider, tool, arguments: arguments_ }),
+    body: JSON.stringify({
+      provider,
+      tool,
+      arguments: arguments_,
+      ...(ledger
+        ? {
+            project_id: ledger.projectId,
+            node_id: ledger.nodeId,
+            idempotency_key: ledger.idempotencyKey,
+          }
+        : {}),
+    }),
   });
   const payload = await response.json();
   if (!response.ok) {

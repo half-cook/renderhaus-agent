@@ -67,9 +67,11 @@ export function NodeTag({ title, status, selected, badge, onRename }: Props) {
     }
   };
 
+  const showBadge = Boolean(badge) && badge?.trim().toLowerCase() !== title.trim().toLowerCase();
+
   return (
     <div className={`node-tag ${selected ? "selected" : ""}`}>
-      {badge ? <span className="node-tag-badge">{badge}</span> : null}
+      {showBadge ? <span className="node-tag-badge">{badge}</span> : null}
       {editing ? (
         <input
           ref={inputRef}

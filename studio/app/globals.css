@@ -1,17 +1,38 @@
+@import "tailwindcss";
+
+@theme {
+  /* Port colours -- referenced from handle, edge, and node-tag icon; must agree. */
+  --color-port-text: var(--color-neutral-400);
+  --color-port-image: var(--color-indigo-400);
+  --color-port-video: var(--color-teal-400);
+  --color-port-audio: var(--color-pink-400);
+
+  /* Status colours -- referenced from the node-tag status label and status dot. */
+  --color-status-queued: var(--color-neutral-400);
+  --color-status-running: var(--color-indigo-400);
+  --color-status-succeeded: var(--color-emerald-400);
+  --color-status-failed: var(--color-red-400);
+}
+
 :root {
   color-scheme: dark;
-  --bg: #0b0b0d;
-  --chrome: rgba(21, 21, 23, 0.88);
-  --node: #151517;
-  --line: #2a2a2f;
-  --grid: #252529;
-  --text: #f4f4f4;
-  --muted: #9b9b9b;
-  --accent: #5eead4;
-  --danger: #f87171;
-  --ok: #86efac;
-  --warn: #fbbf24;
-  --shadow: 0 12px 32px rgba(11, 11, 13, 0.55);
+  /* Liblib-inspired: flat opaque neutral layers, no blur, no drop shadow.
+     See design/merge-doc.md §11 "Visual reference" for the source values. */
+  --bg: var(--color-neutral-950);
+  --chrome: var(--color-neutral-900);
+  --node: var(--color-neutral-900);
+  --line: var(--color-neutral-800);
+  --grid: var(--color-neutral-800);
+  --text: var(--color-neutral-100);
+  --muted: var(--color-neutral-500);
+  /* Reserved for spend/credit UI only -- not a general interactive accent.
+     Everywhere else "active" is --active (near-white), not a hue. */
+  --accent: var(--color-amber-400);
+  --active: var(--color-neutral-100);
+  --danger: var(--color-red-400);
+  --ok: var(--color-emerald-400);
+  --warn: var(--color-amber-400);
+  --shadow: none;
   --radius: 16px;
   --ease: cubic-bezier(0.32, 0.72, 0, 1);
   --inspector-width: 320px;
@@ -55,7 +76,7 @@ input:focus-visible,
 textarea:focus-visible,
 select:focus-visible,
 a:focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--active);
   outline-offset: 2px;
 }
 
@@ -85,14 +106,16 @@ a:focus-visible {
 .workspace {
   position: relative;
   --strip-height: 64px;
-  --safe-top: 80px;
-  --safe-left: 80px;
-  --safe-right: 16px;
+  --header-height: 56px;
+  --rail-width: 64px;
+  --safe-top: var(--header-height);
+  --safe-left: var(--rail-width);
+  --safe-right: 0px;
   --safe-bottom: 128px;
 }
 
 .workspace.inspector-open {
-  --safe-right: calc(var(--inspector-width) + 32px);
+  --safe-right: var(--inspector-width);
 }
 
 .workspace.composer-open {
@@ -123,21 +146,21 @@ a:focus-visible {
 
 .chrome-header {
   position: absolute;
-  top: 16px;
-  left: var(--safe-left);
-  right: 16px;
+  top: 0;
+  left: 0;
+  right: 0;
   z-index: var(--z-header);
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  min-height: 48px;
-  padding: 8px 12px;
-  background: var(--chrome);
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  box-shadow: var(--shadow);
-  backdrop-filter: blur(16px);
+  height: var(--header-height);
+  padding: 0 16px;
+  background: var(--bg);
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
+  box-shadow: none;
 }
 
 .header-left,
@@ -149,9 +172,10 @@ a:focus-visible {
 }
 
 .wordmark {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.01em;
+  color: var(--muted);
   padding: 0 8px;
 }
 
@@ -195,7 +219,7 @@ a:focus-visible {
 .rail-btn:hover,
 .text-btn:hover,
 .queue-chip:hover {
-  background: #1f1f1f;
+  background: var(--line);
 }
 
 .icon-btn:active,
@@ -216,12 +240,18 @@ a:focus-visible {
 .queue-chip {
   display: flex;
   align-items: center;
-  gap: 8px;
-  height: 32px;
-  padding: 0 12px;
+  gap: 6px;
+  height: 28px;
+  padding: 0 10px;
   border-radius: 999px;
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.text-btn:hover,
+.queue-chip:hover {
+  color: var(--text);
 }
 
 .text-btn.approved {
@@ -269,7 +299,7 @@ a:focus-visible {
 }
 
 .project-switcher:hover {
-  background: #1f1f1f;
+  background: var(--line);
 }
 
 .project-name-display {
@@ -294,7 +324,7 @@ a:focus-visible {
 
 .popover button:hover,
 .popover button.active {
-  background: #1f1f1f;
+  background: var(--line);
 }
 
 .popover button:disabled {
@@ -318,21 +348,22 @@ a:focus-visible {
 
 .tool-rail {
   position: absolute;
-  left: 16px;
-  top: 50%;
-  transform: translateY(-50%);
+  left: 0;
+  top: var(--header-height);
+  bottom: 0;
   z-index: var(--z-rail);
   display: flex;
   flex-direction: column;
   gap: 4px;
-  width: 48px;
-  padding: 8px;
-  background: var(--chrome);
-  border: 1px solid var(--line);
-  border-radius: 20px;
-  box-shadow: var(--shadow);
-  backdrop-filter: blur(16px);
+  width: var(--rail-width);
+  padding: 12px 8px;
+  background: var(--bg);
+  border: 0;
+  border-right: 1px solid var(--line);
+  border-radius: 0;
+  box-shadow: none;
   overflow: hidden;
+  transition: width 160ms var(--ease);
 }
 
 .tool-rail:hover,
@@ -390,33 +421,33 @@ a:focus-visible {
 }
 
 .rail-btn.active {
-  background: #1f1f1f;
-  color: var(--accent);
+  background: var(--active);
+  color: var(--bg);
 }
 
 .inspector {
   position: absolute;
-  top: var(--safe-top);
-  right: 16px;
-  bottom: var(--safe-bottom);
+  top: var(--header-height);
+  right: 0;
+  bottom: 0;
   z-index: var(--z-inspector);
   width: var(--inspector-width);
   max-width: calc(100vw - 120px);
   overflow: auto;
-  padding: 16px;
-  background: var(--chrome);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
-  backdrop-filter: blur(16px);
+  padding: 20px;
+  background: var(--bg);
+  border: 0;
+  border-left: 1px solid var(--line);
+  border-radius: 0;
+  box-shadow: none;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 16px;
 }
 
 .inspector-toggle {
   position: absolute;
-  top: var(--safe-top);
+  top: calc(var(--header-height) + 16px);
   right: 16px;
   z-index: var(--z-inspector);
   width: 40px;
@@ -478,7 +509,6 @@ a:focus-visible {
   border: 1px solid var(--line);
   border-radius: 20px;
   box-shadow: var(--shadow);
-  backdrop-filter: blur(16px);
 }
 
 .composer.collapsed {
@@ -498,7 +528,7 @@ a:focus-visible {
 }
 
 .composer-open-btn:hover {
-  background: #1f1f1f;
+  background: var(--line);
 }
 
 .composer-collapse {
@@ -513,7 +543,7 @@ a:focus-visible {
 }
 
 .composer-collapse:hover {
-  background: #1f1f1f;
+  background: var(--line);
   color: var(--text);
 }
 
@@ -595,7 +625,6 @@ a:focus-visible {
   color: var(--muted);
   font-size: 12px;
   font-variant-numeric: tabular-nums;
-  backdrop-filter: blur(16px);
 }
 
 .zoombar button {
@@ -603,7 +632,7 @@ a:focus-visible {
   width: 28px;
   height: 28px;
   border-radius: 999px;
-  background: #1f1f1f;
+  background: var(--line);
   color: var(--text);
 }
 
@@ -672,7 +701,7 @@ a:focus-visible {
 }
 
 .empty-action:hover {
-  border-color: var(--accent);
+  border-color: var(--active);
 }
 
 .quick-add,
@@ -701,7 +730,7 @@ a:focus-visible {
 }
 
 .quick-add button:hover {
-  background: #1f1f1f;
+  background: var(--line);
 }
 
 .connection-hint {
@@ -725,13 +754,13 @@ a:focus-visible {
 }
 
 .react-flow__edge-path {
-  stroke: #9b9b9b;
+  stroke: var(--muted);
   stroke-width: 1.5;
 }
 
 .react-flow__edge.selected .react-flow__edge-path,
 .react-flow__edge:focus .react-flow__edge-path {
-  stroke: var(--accent);
+  stroke: var(--active);
 }
 
 .flow-node-wrap {
@@ -753,8 +782,7 @@ a:focus-visible {
 
 .flow-node.selected {
   border-width: 2px;
-  border-color: var(--accent);
-  box-shadow: 0 0 0 4px rgba(94, 234, 212, 0.12), var(--shadow);
+  border-color: var(--active);
 }
 
 .scene-card.approved:not(.selected) {
@@ -763,7 +791,7 @@ a:focus-visible {
 
 .scene-stage {
   aspect-ratio: 16 / 9;
-  background: #111113;
+  background: var(--bg);
 }
 
 .scene-stage .media-preview {
@@ -840,7 +868,6 @@ a:focus-visible {
   border: 1px solid var(--line);
   border-radius: 16px;
   box-shadow: var(--shadow);
-  backdrop-filter: blur(16px);
 }
 
 .sequence-strip-head {
@@ -918,14 +945,14 @@ a:focus-visible {
   height: 40px;
   object-fit: cover;
   border-radius: 8px;
-  background: #111113;
+  background: var(--bg);
   border: 1px solid var(--line);
 }
 
 .sequence-strip-list li.selected .sequence-shot img,
 .sequence-strip-list li.selected .sequence-shot video,
 .sequence-strip-list li.selected .sequence-shot-empty {
-  border-color: var(--accent);
+  border-color: var(--active);
 }
 
 .sequence-shot span {
@@ -963,7 +990,7 @@ a:focus-visible {
 }
 
 .node-tag.selected {
-  color: var(--accent);
+  color: var(--active);
 }
 
 .node-tag-badge {
@@ -997,7 +1024,7 @@ a:focus-visible {
   height: 24px;
   margin: 0;
   padding: 0 8px;
-  border: 1px solid var(--accent);
+  border: 1px solid var(--active);
   border-radius: 8px;
   background: var(--node);
   color: var(--text);
@@ -1014,21 +1041,24 @@ a:focus-visible {
   font-variant-numeric: tabular-nums;
 }
 
-.node-status.running,
+.node-status.running {
+  color: var(--color-status-running);
+}
+
 .node-status.queued {
-  color: var(--accent);
+  color: var(--color-status-queued);
 }
 
 .node-status.completed {
-  color: var(--ok);
+  color: var(--color-status-succeeded);
 }
 
 .node-status.failed {
-  color: var(--danger);
+  color: var(--color-status-failed);
 }
 
 .flow-node-stage {
-  background: #111113;
+  background: var(--bg);
 }
 
 .media-preview,
@@ -1101,7 +1131,7 @@ a:focus-visible {
 
 .waveform span {
   flex: 1;
-  background: #313131;
+  background: var(--line);
   border-radius: 2px;
 }
 
@@ -1114,13 +1144,13 @@ a:focus-visible {
 .port {
   width: 10px;
   height: 10px;
-  background: #9b9b9b !important;
+  background: var(--muted) !important;
   border: 2px solid var(--node) !important;
 }
 
 .port:hover,
 .react-flow__handle-connecting {
-  background: var(--accent) !important;
+  background: var(--active) !important;
 }
 
 .node-toolbar {
@@ -1147,7 +1177,7 @@ a:focus-visible {
 
 .node-toolbar button:hover,
 .toolbar-link:hover {
-  background: #1f1f1f;
+  background: var(--line);
 }
 
 .node-toolbar button.approved {
@@ -1157,14 +1187,58 @@ a:focus-visible {
 label.field {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
   font-size: 12px;
   color: var(--muted);
 }
 
+/* The caption only -- input/textarea/select are siblings of this span inside
+   the same label, and text-transform inherits, so it must NOT be set on
+   label.field itself or a typed prompt would render uppercase as you type. */
+label.field > span {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+label.field input,
+label.field textarea,
+label.field select {
+  text-transform: none;
+  letter-spacing: normal;
+}
+
 label.field span .req {
-  color: var(--accent);
+  color: var(--color-port-image);
   margin-left: 4px;
+}
+
+.field-pill-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.field-pill {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  padding: 6px 14px;
+  font-size: 13px;
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.field-pill:hover {
+  border-color: var(--muted);
+  color: var(--text);
+}
+
+.field-pill.selected {
+  background: var(--active);
+  border-color: var(--active);
+  color: var(--bg);
 }
 
 label.field.needs-input input,
@@ -1188,7 +1262,7 @@ input,
 textarea,
 select {
   width: 100%;
-  background: #111113;
+  background: var(--bg);
   color: var(--text);
   border: 1px solid var(--line);
   border-radius: 8px;

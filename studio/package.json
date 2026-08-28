@@ -16,9 +16,11 @@
     "zustand": "^5.0.15"
   },
   "devDependencies": {
+    "@tailwindcss/postcss": "^4.3.3",
     "@types/node": "^22.15.0",
     "@types/react": "^19.1.0",
     "@types/react-dom": "^19.1.0",
+    "tailwindcss": "^4.3.3",
     "typescript": "^5.8.0"
   }
 }
