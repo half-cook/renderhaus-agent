@@ -15,6 +15,7 @@ from agent.studio_agent_next import (
     _describe_gateway_mcp_tools,
     _finalize_media_run,
     _gateway_tool_catalog,
+    _poll_until_terminal,
     _record_run_tool_events,
     _unwrap_tool_output,
     agent_invocation,
@@ -45,6 +46,26 @@ class FakeRunner:
 
 
 class StudioAgentNextEntrypointTests(unittest.IsolatedAsyncioTestCase):
+    async def test_media_poller_stops_on_expired_provider_task(self) -> None:
+        gateway = SimpleNamespace(
+            call_tool=AsyncMock(
+                return_value=SimpleNamespace(
+                    content=[SimpleNamespace(type="text", text='{"status":"expired"}')],
+                    is_error=False,
+                )
+            )
+        )
+
+        result = await _poll_until_terminal(
+            gateway,
+            "Seedance___get_video_task",
+            {"job_id": "video-expired"},
+            deadline=0,
+        )
+
+        self.assertEqual(result["status"], "expired")
+        gateway.call_tool.assert_awaited_once()
+
     def test_normalize_markdown_filename_slugs_unsafe_names(self) -> None:
         self.assertEqual(
             normalize_markdown_filename("Launch outline", "Launch outline"),
@@ -443,6 +464,76 @@ class StudioAgentNextEntrypointTests(unittest.IsolatedAsyncioTestCase):
         # Verify first and last events
         self.assertEqual(events[0].type, "RUN_STARTED")
         self.assertEqual(events[-1].type, "RUN_FINISHED")
+
+        # Verify STATE_SNAPSHOT has hydrated assets and primary asset
+        snapshot_events = [e for e in events if e.type == "STATE_SNAPSHOT"]
+        self.assertEqual(len(snapshot_events), 1)
+        snapshot = snapshot_events[0].snapshot
+        self.assertIn("assets", snapshot)
+        self.assertEqual(len(snapshot["assets"]), 1)
+        self.assertEqual(snapshot["assets"][0]["version_id"], "ver-10")
+        self.assertEqual(snapshot["primary_asset"]["version_id"], "ver-10")
+        self.assertEqual(len(snapshot["tool_events"]), 1)
+
+    async def test_stream_studio_agent_bridges_live_sdk_hooks(self) -> None:
+        class HookRunner:
+            @classmethod
+            async def run(cls, agent, input_value, context=None, hooks=None, **_kwargs):
+                self_context = SimpleNamespace(
+                    context=context,
+                    tool_call_id="sdk-call-1",
+                    tool_name="Seedream___text_to_image",
+                )
+                await hooks.on_llm_start(self_context, agent, None, [])
+                await hooks.on_tool_start(
+                    self_context,
+                    agent,
+                    SimpleNamespace(name="Seedream___text_to_image"),
+                )
+                await hooks.on_tool_end(
+                    self_context,
+                    agent,
+                    SimpleNamespace(name="Seedream___text_to_image"),
+                    {"status": "succeeded", "image_url": "https://cdn.example/live.png"},
+                )
+                await hooks.on_llm_end(self_context, agent, SimpleNamespace())
+                return SimpleNamespace(
+                    final_output=StudioAgentOutput(
+                        title="Live hook result",
+                        summary="The live hook completed.",
+                        markdown="# Live hook result",
+                        filename="live-hook.md",
+                    ),
+                    new_items=[
+                        SimpleNamespace(
+                            type="tool_call_output_item",
+                            call_id="sdk-call-1",
+                            tool_name="Seedream___text_to_image",
+                            output={
+                                "status": "succeeded",
+                                "image_url": "https://cdn.example/live.png",
+                            },
+                        )
+                    ],
+                )
+
+        events = []
+        async for event in stream_studio_agent(
+            StudioAgentRequest(prompt="Exercise live SDK hooks", job_id="job-hooks"),
+            runner=HookRunner,
+            mcp_servers=[],
+        ):
+            events.append(event)
+
+        event_types = [event.type for event in events]
+        tool_start_index = event_types.index("TOOL_CALL_START")
+        snapshot_index = event_types.index("STATE_SNAPSHOT")
+        self.assertLess(tool_start_index, snapshot_index)
+        self.assertIn("TOOL_CALL_RESULT", event_types)
+        self.assertIn("CUSTOM", event_types)
+        snapshot = events[snapshot_index].snapshot
+        self.assertEqual(len(snapshot["tool_events"]), 1)
+        self.assertEqual(snapshot["tool_events"][0]["id"], "sdk-call-1")
 
 
 if __name__ == "__main__":

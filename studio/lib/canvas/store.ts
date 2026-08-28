@@ -118,6 +118,18 @@ type CanvasStore = {
     output?: StudioAsset;
   }) => string;
   addAgentResult: (result: AgentResultData, position: { x: number; y: number }) => string;
+  startAgentRun: (
+    executionId: string,
+    prompt: string,
+    position: { x: number; y: number },
+  ) => string;
+  updateAgentRun: (
+    id: string,
+    patch: Partial<AgentResultData>,
+    status?: JobStatus,
+  ) => void;
+  completeAgentRun: (id: string, result: AgentResultData) => string;
+  failAgentRun: (id: string, message: string) => void;
   toggleAgentRun: (id: string) => void;
   addUploadNode: (file: File, position: { x: number; y: number }) => Promise<void>;
   updateNodeData: (id: string, patch: Partial<CanvasNode["data"]>) => void;
@@ -366,7 +378,7 @@ function createAgentRunCluster(
       executionId: result.executionId || runId,
       artifactNodeIds: artifactNodes.map((node) => node.id),
       ...(primaryNode ? { primaryNodeId: primaryNode.id } : {}),
-      collapsed: true,
+      collapsed: false,
     },
     fieldOptions,
   });
@@ -777,6 +789,103 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
     });
     get().persist();
     return selectedNodeId || "";
+  },
+
+  startAgentRun: (executionId, prompt, position) => {
+    get().pushHistory();
+    const runNode = makeNode({
+      kind: "agentRun",
+      position,
+      title: "Agent run · In progress",
+      agentRun: {
+        executionId,
+        title: "In progress",
+        summary: prompt.length > 180 ? `${prompt.slice(0, 177)}...` : prompt,
+        markdown: "",
+        filename: "agent-result.md",
+        mimeType: "text/markdown;charset=utf-8",
+        toolEvents: [],
+        assets: [],
+        artifactNodeIds: [],
+        collapsed: false,
+        partial: true,
+      },
+      fieldOptions: get().fieldOptions,
+    });
+    runNode.data.status = "running";
+    runNode.selected = true;
+    set({
+      nodes: [...get().nodes.map((item) => ({ ...item, selected: false })), runNode],
+      selectedNodeIds: [runNode.id],
+      inspectorOpen: false,
+    });
+    void get().persist();
+    return runNode.id;
+  },
+
+  updateAgentRun: (id, patch, status = "running") => {
+    set({
+      nodes: get().nodes.map((node) => {
+        if (node.id !== id || !node.data.agentRun) return node;
+        const agentRun = { ...node.data.agentRun, ...patch };
+        return {
+          ...node,
+          data: {
+            ...node.data,
+            title: patch.title ? `Agent run · ${patch.title}` : node.data.title,
+            status,
+            agentRun,
+          },
+        };
+      }),
+    });
+  },
+
+  completeAgentRun: (id, result) => {
+    const currentRunNode = get().nodes.find((node) => node.id === id);
+    if (!currentRunNode?.data.agentRun) {
+      return get().addAgentResult(result, { x: 0, y: 0 });
+    }
+    const nodes = replaceAgentRunCluster(
+      get().nodes,
+      currentRunNode,
+      { ...result, partial: false },
+      get().fieldOptions,
+    );
+    const replacementRun = nodes.find((node) => node.id === id);
+    const selectedNodeId = replacementRun?.data.agentRun?.primaryNodeId || id;
+    set({
+      nodes: nodes.map((node) => ({ ...node, selected: node.id === selectedNodeId })),
+      selectedNodeIds: [selectedNodeId],
+      inspectorOpen: false,
+    });
+    void get().persist();
+    return selectedNodeId;
+  },
+
+  failAgentRun: (id, message) => {
+    const node = get().nodes.find((item) => item.id === id);
+    if (!node?.data.agentRun) return;
+    set({
+      nodes: get().nodes.map((item) =>
+        item.id === id
+          ? {
+              ...item,
+              data: {
+                ...item.data,
+                status: "failed",
+                error: message,
+                agentRun: {
+                  ...item.data.agentRun!,
+                  summary: message,
+                  partial: true,
+                },
+              },
+            }
+          : item,
+      ),
+    });
+    void get().persist();
   },
 
   toggleAgentRun: (id) => {

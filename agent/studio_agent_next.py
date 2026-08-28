@@ -38,7 +38,7 @@ from ag_ui.core import (
     ToolCallStartEvent,
 )
 from ag_ui.encoder import EventEncoder
-from agents import Agent, Runner
+from agents import Agent, RunHooks, Runner
 from agents.mcp import MCPServer, MCPServerManager, MCPServerStreamableHttp
 from bedrock_agentcore.runtime import BedrockAgentCoreApp
 from pydantic import BaseModel, Field, ValidationError
@@ -62,7 +62,20 @@ _SESSION_TIMEOUT_SECONDS = 180.0
 _FINALIZATION_TIMEOUT_SECONDS = 240.0
 _POLL_INTERVAL_SECONDS = 3.0
 _TERMINAL_TOOL_STATUSES = frozenset(
-    {"succeeded", "completed", "failed", "error", "dry_run", "cancelled", "canceled"}
+    {
+        "succeeded",
+        "completed",
+        "failed",
+        "error",
+        "dry_run",
+        "cancelled",
+        "canceled",
+        "deleted",
+        "expired",
+        "timeout",
+        "timed_out",
+        "timeouted",
+    }
 )
 _VIDEO_REQUEST_PATTERN = re.compile(
     r"\b(video|ad|advert|commercial|reel|spot|motion graphic|trailer|promo|montage)\b",
@@ -432,27 +445,93 @@ def _append_harvested_event(
     call_id: str,
     name: str,
     output: Any,
-) -> None:
+) -> StudioToolEvent | None:
+    if call_id and any(event.id == call_id for event in studio.tool_events):
+        return None
     payload = _compact_tool_result(_unwrap_tool_output(output))
     if not payload:
-        return
+        return None
     provider, _tool, label = _gateway_tool_parts(name)
     status = _tool_event_status(payload)
     summary = str(payload.get("note") or payload.get("summary") or f"{label}: {status}.")
-    studio.tool_events.append(
-        StudioToolEvent(
-            id=call_id or f"tool-{len(studio.tool_events) + 1}",
-            name=name,
-            label=label,
-            status=status,
-            summary=summary[:320],
-            provider=provider.lower() if provider else None,
-            provider_job_id=(
-                str(payload["job_id"]) if isinstance(payload.get("job_id"), (str, int)) else None
-            ),
-            result=payload,
-        )
+    event = StudioToolEvent(
+        id=call_id or f"tool-{len(studio.tool_events) + 1}",
+        name=name,
+        label=label,
+        status=status,
+        summary=summary[:320],
+        provider=provider.lower() if provider else None,
+        provider_job_id=(
+            str(payload["job_id"]) if isinstance(payload.get("job_id"), (str, int)) else None
+        ),
+        result=payload,
     )
+    studio.record_event(event)
+    return event
+
+
+class _AGUIRunHooks(RunHooks[StudioAgentContext]):
+    """Bridge live Agents SDK lifecycle callbacks into the AG-UI event queue."""
+
+    def __init__(
+        self,
+        event_queue: asyncio.Queue[BaseEvent | None],
+        started_tool_calls: set[str],
+    ) -> None:
+        self.event_queue = event_queue
+        self.started_tool_calls = started_tool_calls
+        self.llm_turn = 0
+        self.llm_steps: list[str] = []
+
+    async def on_llm_start(
+        self,
+        context: Any,
+        agent: Any,
+        system_prompt: str | None,
+        input_items: list[Any],
+    ) -> None:
+        del context, agent, system_prompt, input_items
+        self.llm_turn += 1
+        step_name = f"Agent reasoning · turn {self.llm_turn}"
+        self.llm_steps.append(step_name)
+        self.event_queue.put_nowait(StepStartedEvent(step_name=step_name))
+
+    async def on_llm_end(self, context: Any, agent: Any, response: Any) -> None:
+        del context, agent, response
+        if self.llm_steps:
+            self.event_queue.put_nowait(StepFinishedEvent(step_name=self.llm_steps.pop()))
+
+    async def on_tool_start(self, context: Any, agent: Any, tool: Any) -> None:
+        del agent
+        call_id = str(getattr(context, "tool_call_id", None) or uuid.uuid4().hex)
+        name = str(
+            getattr(context, "tool_name", None)
+            or getattr(tool, "name", None)
+            or "tool"
+        )
+        self.started_tool_calls.add(call_id)
+        self.event_queue.put_nowait(
+            ToolCallStartEvent(tool_call_id=call_id, tool_call_name=name)
+        )
+
+    async def on_tool_end(
+        self,
+        context: Any,
+        agent: Any,
+        tool: Any,
+        result: object,
+    ) -> None:
+        del agent
+        studio = getattr(context, "context", None)
+        if not isinstance(studio, StudioAgentContext):
+            return
+        call_id = str(getattr(context, "tool_call_id", None) or uuid.uuid4().hex)
+        name = str(
+            getattr(context, "tool_name", None)
+            or getattr(tool, "name", None)
+            or "tool"
+        )
+        _append_harvested_event(studio, call_id=call_id, name=name, output=result)
 
 
 def _record_run_tool_events(run_result: Any, studio: StudioAgentContext) -> None:
@@ -565,7 +644,7 @@ async def _settle_queued_media(
             continue
         name, arguments = spec
         payload = await _poll_until_terminal(server, name, arguments, deadline=deadline)
-        studio.tool_events.append(_gateway_event(name, payload, len(studio.tool_events) + 1))
+        studio.record_event(_gateway_event(name, payload, len(studio.tool_events) + 1))
 
 
 def _media_url(payload: dict[str, Any], kind: str) -> str | None:
@@ -653,7 +732,7 @@ async def _ensure_remotion_output(
             "output_filename": f"{normalize_markdown_filename(output.filename, output.title)[:-3]}.mp4",
         },
     )
-    studio.tool_events.append(
+    studio.record_event(
         _gateway_event("Remotion___render_timeline", started, len(studio.tool_events) + 1)
     )
     spec = _poll_spec(studio.tool_events[-1])
@@ -661,7 +740,7 @@ async def _ensure_remotion_output(
         return
     name, arguments = spec
     finished = await _poll_until_terminal(server, name, arguments, deadline=deadline)
-    studio.tool_events.append(_gateway_event(name, finished, len(studio.tool_events) + 1))
+    studio.record_event(_gateway_event(name, finished, len(studio.tool_events) + 1))
 
 
 async def _finalize_media_run(
@@ -756,12 +835,14 @@ async def _run_with_servers(
     studio: StudioAgentContext,
     runner: type[Runner],
     mcp_servers: list[MCPServer],
+    hooks: Any = None,
 ) -> StudioAgentOutput:
     result = await runner.run(
         _build_agent(mcp_servers),
         _input_for(request.prompt, list(studio.nodes)),
         context=studio,
         max_turns=24,
+        hooks=hooks,
     )
     _record_run_tool_events(result, studio)
     final = result.final_output
@@ -781,6 +862,7 @@ async def run_studio_agent(
     asset_registrar: Any = None,
     source_resolver: Any = None,
     event_sink: Any = None,
+    hooks: Any = None,
 ) -> StudioAgentOutput:
     studio = studio or _context_from_request(
         request,
@@ -789,7 +871,7 @@ async def run_studio_agent(
         event_sink=event_sink,
     )
     if mcp_servers is not None:
-        return await _run_with_servers(request, studio, runner, mcp_servers)
+        return await _run_with_servers(request, studio, runner, mcp_servers, hooks=hooks)
 
     server = gateway_mcp_server()
     async with MCPServerManager(
@@ -799,7 +881,13 @@ async def run_studio_agent(
         strict=True,
         connect_in_parallel=False,
     ) as manager:
-        return await _run_with_servers(request, studio, runner, manager.active_servers)
+        return await _run_with_servers(
+            request,
+            studio,
+            runner,
+            manager.active_servers,
+            hooks=hooks,
+        )
 
 
 async def stream_studio_agent(
@@ -820,6 +908,7 @@ async def stream_studio_agent(
     yield StepStartedEvent(step_name="Planning canvas operations")
 
     event_queue: asyncio.Queue[BaseEvent | None] = asyncio.Queue()
+    started_tool_calls: set[str] = set()
 
     def wrapped_event_sink(tool_event: StudioToolEvent) -> None:
         if event_sink:
@@ -827,12 +916,14 @@ async def stream_studio_agent(
                 event_sink(tool_event)
             except Exception:
                 logger.exception("Error in event_sink callback")
-        event_queue.put_nowait(
-            ToolCallStartEvent(
-                tool_call_id=tool_event.id,
-                tool_call_name=tool_event.name,
+        if tool_event.id not in started_tool_calls:
+            started_tool_calls.add(tool_event.id)
+            event_queue.put_nowait(
+                ToolCallStartEvent(
+                    tool_call_id=tool_event.id,
+                    tool_call_name=tool_event.name,
+                )
             )
-        )
         event_queue.put_nowait(
             ToolCallResultEvent(
                 message_id=run_id,
@@ -879,6 +970,7 @@ async def stream_studio_agent(
             asset_registrar=asset_registrar,
             source_resolver=source_resolver,
             event_sink=studio_ctx.event_sink,
+            hooks=_AGUIRunHooks(event_queue, started_tool_calls),
         )
     )
 
@@ -906,6 +998,20 @@ async def stream_studio_agent(
 
         yield TextMessageEndEvent(message_id=msg_id)
 
+        assets_list: list[dict[str, Any]] = []
+        seen_assets: set[str] = set()
+        for te in studio_ctx.tool_events:
+            for ast in getattr(te, "assets", []):
+                vid = str(ast.get("version_id") or "")
+                if vid and vid not in seen_assets:
+                    seen_assets.add(vid)
+                    assets_list.append(ast)
+        for ast in studio_ctx.working_assets.values():
+            vid = str(ast.get("version_id") or "")
+            if vid and vid not in seen_assets:
+                seen_assets.add(vid)
+                assets_list.append(ast)
+
         yield StateSnapshotEvent(
             snapshot={
                 "title": output.title,
@@ -913,6 +1019,8 @@ async def stream_studio_agent(
                 "filename": output.filename,
                 "markdown": output.markdown,
                 "tool_events": [e.public() for e in studio_ctx.tool_events],
+                "assets": assets_list,
+                "primary_asset": assets_list[-1] if assets_list else None,
             }
         )
         yield StepFinishedEvent(step_name="Finalizing output")

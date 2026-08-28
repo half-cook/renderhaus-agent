@@ -163,6 +163,29 @@ export async function parseAGUIEventStream(
   const reader = response.body.getReader();
   const decoder = new TextDecoder("utf-8");
   let buffer = "";
+  let dataLines: string[] = [];
+
+  const dispatchEvent = () => {
+    if (dataLines.length === 0) return;
+    const payload = dataLines.join("\n");
+    dataLines = [];
+    if (!payload.trim()) return;
+    const parsed = JSON.parse(payload) as AGUIEvent;
+    if (parsed && typeof parsed === "object" && typeof parsed.type === "string") {
+      onEvent(parsed);
+    }
+  };
+
+  const processLine = (line: string) => {
+    if (line === "") {
+      dispatchEvent();
+      return;
+    }
+    if (line.startsWith("data:")) {
+      const content = line.slice(5);
+      dataLines.push(content.startsWith(" ") ? content.slice(1) : content);
+    }
+  };
 
   try {
     while (true) {
@@ -172,37 +195,13 @@ export async function parseAGUIEventStream(
       buffer += decoder.decode(value, { stream: true });
       const lines = buffer.split(/\r?\n/);
       buffer = lines.pop() ?? "";
-
-      let currentData = "";
       for (const line of lines) {
-        if (line.startsWith("data:")) {
-          const content = line.slice(5).trim();
-          if (content) {
-            currentData = currentData ? `${currentData}\n${content}` : content;
-          }
-        } else if (line.trim() === "" && currentData) {
-          try {
-            const parsed = JSON.parse(currentData) as AGUIEvent;
-            if (parsed && typeof parsed === "object" && typeof parsed.type === "string") {
-              onEvent(parsed);
-            }
-          } catch {
-            // Ignore malformed chunks
-          }
-          currentData = "";
-        }
-      }
-      if (currentData) {
-        try {
-          const parsed = JSON.parse(currentData) as AGUIEvent;
-          if (parsed && typeof parsed === "object" && typeof parsed.type === "string") {
-            onEvent(parsed);
-          }
-        } catch {
-          // Incomplete chunk; keep in currentData
-        }
+        processLine(line);
       }
     }
+    buffer += decoder.decode();
+    if (buffer) processLine(buffer.replace(/\r$/, ""));
+    dispatchEvent();
   } finally {
     reader.releaseLock();
   }

@@ -1133,6 +1133,13 @@ async def studio_agent_stream(body: AgentBody, auth: AuthUser) -> StreamingRespo
         return str(repository.version_path(workspace_id, version_id))
 
     def record_event(event: Any) -> None:
+        _hydrate_tool_event_assets(
+            [event],
+            workspace_id=workspace_id,
+            project_id=body.project_id,
+            user_id=user_id,
+            execution_id=job_id,
+        )
         payload = event.public() if hasattr(event, "public") else dict(event)
         if hasattr(event, "result"):
             payload["result"] = event.result
@@ -1168,6 +1175,36 @@ async def studio_agent_stream(body: AgentBody, auth: AuthUser) -> StreamingRespo
             ):
                 if event.type == "STATE_SNAPSHOT":
                     snapshot = getattr(event, "snapshot", {})
+                    tool_events_raw = snapshot.get("tool_events") or []
+                    _hydrate_tool_event_assets(
+                        tool_events_raw,
+                        workspace_id=workspace_id,
+                        project_id=body.project_id,
+                        user_id=user_id,
+                        execution_id=job_id,
+                    )
+                    assets_list: list[dict[str, Any]] = []
+                    seen: set[str] = set()
+                    for te in tool_events_raw:
+                        te_assets = te.assets if hasattr(te, "assets") else te.get("assets", [])
+                        for ast in te_assets:
+                            vid = str(ast.get("version_id") or "")
+                            if vid and vid not in seen:
+                                seen.add(vid)
+                                assets_list.append(ast)
+                    if not assets_list and snapshot.get("assets"):
+                        for ast in snapshot["assets"]:
+                            vid = str(ast.get("version_id") or "")
+                            if vid and vid not in seen:
+                                seen.add(vid)
+                                assets_list.append(ast)
+
+                    snapshot["assets"] = assets_list
+                    snapshot["primary_asset"] = assets_list[-1] if assets_list else None
+                    snapshot["tool_events"] = [
+                        te.public() if hasattr(te, "public") else te for te in tool_events_raw
+                    ]
+
                     await asyncio.to_thread(
                         repository.update_execution,
                         workspace_id,
@@ -1180,6 +1217,8 @@ async def studio_agent_stream(body: AgentBody, auth: AuthUser) -> StreamingRespo
                             "markdown": snapshot.get("markdown", ""),
                             "filename": snapshot.get("filename", "agent-result.md"),
                             "tool_events": snapshot.get("tool_events", []),
+                            "assets": snapshot.get("assets", []),
+                            "primary_asset": snapshot.get("primary_asset"),
                         },
                     )
                 elif event.type == "RUN_ERROR":
@@ -1209,7 +1248,7 @@ async def studio_agent_stream(body: AgentBody, auth: AuthUser) -> StreamingRespo
         event_generator(),
         media_type="text/event-stream",
         headers={
-            "Cache-Control": "no-cache",
+            "Cache-Control": "no-cache, no-transform",
             "Connection": "keep-alive",
             "X-Accel-Buffering": "no",
         },

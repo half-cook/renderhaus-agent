@@ -6,7 +6,29 @@ import type { CanvasNode } from "./connection-validation";
 import { toolById } from "./tool-registry";
 import type { CanvasNodeData, PortDataType } from "./types";
 
-const TERMINAL = new Set(["succeeded", "failed", "cancelled", "canceled", "deleted", "dry_run"]);
+const TERMINAL = new Set([
+  "succeeded",
+  "failed",
+  "cancelled",
+  "canceled",
+  "deleted",
+  "expired",
+  "timeout",
+  "timed_out",
+  "timeouted",
+  "dry_run",
+]);
+
+const FAILED = new Set([
+  "failed",
+  "cancelled",
+  "canceled",
+  "deleted",
+  "expired",
+  "timeout",
+  "timed_out",
+  "timeouted",
+]);
 
 function mergeVariants(existing: StudioAsset[] | undefined, incoming: StudioAsset[]): StudioAsset[] {
   const merged = [...(existing || [])];
@@ -161,7 +183,7 @@ export async function pollCreativeNode(
       error: undefined,
     };
   }
-  if (providerStatus === "failed" || providerStatus === "cancelled" || providerStatus === "canceled") {
+  if (FAILED.has(providerStatus)) {
     return { status: "failed", result: payload.result, error: "Generation failed." };
   }
   if (TERMINAL.has(providerStatus)) {
