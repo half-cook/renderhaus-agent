@@ -3,7 +3,7 @@ PYTHON ?= .venv/bin/python
 REGION ?= us-east-1
 PROVIDER ?= all
 
-.PHONY: help setup check lint tools web studio dry-flags gateway smoke-gateway runtime smoke deploy-all invoke-tool schemas remotion smoke-remotion
+.PHONY: help setup setup-clerk check lint tools web studio dry-flags gateway smoke-gateway runtime smoke deploy-all invoke-tool schemas remotion smoke-remotion
 
 help:
 	@echo "Local development"
@@ -13,6 +13,7 @@ help:
 	@echo "  make tools         List Gateway tools generated from providers/"
 	@echo "  make schemas       Write configs/gateway/*.tools.json from provider APIs"
 	@echo "  make studio        Next.js canvas UI for calling MCP tools locally (needs make web too)"
+	@echo "  make setup-clerk  Link this checkout to the shared Clerk app"
 	@echo "  make dry-flags     Print dry-run flags the process sees"
 	@echo "  make invoke-tool   Local Lambda-shaped invoke (PROVIDER=seedance TOOL=list_seedance_models)"
 	@echo ""
@@ -45,6 +46,10 @@ web:
 
 studio:
 	cd studio && npm run dev
+
+setup-clerk:
+	cd studio && npx -y clerk@latest init --login --no-skills
+	cd studio && npx -y clerk@latest doctor
 
 invoke-tool:
 	$(PYTHON) scripts/invoke_tool.py --provider $(PROVIDER) --tool $(TOOL) --args '$(or $(ARGS),{})'

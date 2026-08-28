@@ -3,7 +3,6 @@ import type { CanvasNodeData, CreativeNodeKind } from "./types";
 
 export const SCENE_CARD_WIDTH = 380;
 export const SCENE_CARD_GAP = 40;
-export const SEQUENCE_STRIP_HEIGHT = 64;
 
 export function isSceneKind(kind: CreativeNodeKind): boolean {
   switch (kind) {

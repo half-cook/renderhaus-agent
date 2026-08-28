@@ -4,28 +4,41 @@ import {
   ClerkProvider,
   OrganizationSwitcher,
   SignInButton,
+  SignUpButton,
   UserButton,
   useAuth,
 } from "@clerk/nextjs";
+import { usePathname } from "next/navigation";
 import { Fragment, type ReactNode, useEffect, useState } from "react";
 import { configureStudioTokenGetter } from "@/lib/authenticated-fetch";
 
 export function StudioAuth({ children }: { children: ReactNode }) {
   const { getToken, isLoaded, isSignedIn, orgId, userId } = useAuth();
+  const pathname = usePathname();
   configureStudioTokenGetter(getToken);
 
   if (!isLoaded) {
     return <div className="workspace-loading">Loading account</div>;
   }
+  if (pathname.startsWith("/sign-in") || pathname.startsWith("/sign-up")) {
+    return children;
+  }
   if (!isSignedIn) {
     return (
       <main className="workspace-loading studio-sign-in">
         <p>Sign in to open your Renderhaus workspace.</p>
-        <SignInButton mode="modal">
-          <button className="send-btn" type="button">
-            Sign in
-          </button>
-        </SignInButton>
+        <div className="studio-auth-actions">
+          <SignInButton>
+            <button className="studio-auth-button primary" type="button">
+              Sign in
+            </button>
+          </SignInButton>
+          <SignUpButton>
+            <button className="studio-auth-button" type="button">
+              Create account
+            </button>
+          </SignUpButton>
+        </div>
       </main>
     );
   }

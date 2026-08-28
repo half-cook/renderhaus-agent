@@ -132,8 +132,21 @@ bash scripts/setup_agent.sh
 
 ### Clerk authentication
 
-The backend uses [Clerk](https://clerk.com) for sign-in, called from `web/`. Add keys from the
-[Clerk API keys](https://dashboard.clerk.com/last-active?path=api-keys) page to `.env.local`:
+Each developer with access to the shared Clerk application can configure the Studio checkout
+without exchanging keys:
+
+```bash
+make setup-clerk
+```
+
+This signs the developer into Clerk, links `studio/` to the application associated with this
+repository, writes frontend credentials to the ignored `studio/.env.local`, and runs Clerk's
+diagnostic check. A Clerk administrator must invite developers who do not yet have application
+access. Never commit either `.env.local` file.
+
+The backend uses the same Clerk application to verify sessions. Add its keys from the
+[Clerk API keys](https://dashboard.clerk.com/last-active?path=api-keys) page to the root
+`.env.local`, or provide them through AWS Secrets Manager:
 
 ```env
 # Either name works for the publishable key
