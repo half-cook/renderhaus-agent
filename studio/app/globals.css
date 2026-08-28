@@ -22,13 +22,18 @@
   --chrome: var(--color-neutral-900);
   --node: var(--color-neutral-900);
   --line: var(--color-neutral-800);
-  --grid: var(--color-neutral-800);
+  /* Dots get their own, lighter tone -- not tied to --line -- so they stay
+     clearly visible against the canvas rather than blending into borders. */
+  --grid: var(--color-neutral-600);
   --text: var(--color-neutral-100);
   --muted: var(--color-neutral-500);
   /* Reserved for spend/credit UI only -- not a general interactive accent.
      Everywhere else "active" is --active (near-white), not a hue. */
   --accent: var(--color-amber-400);
   --active: var(--color-neutral-100);
+  /* Selected node/frame border only -- reuses the same indigo already used
+     for image ports and the "running" status dot, not a new hue. */
+  --selected: var(--color-indigo-400);
   --danger: var(--color-red-400);
   --ok: var(--color-emerald-400);
   --warn: var(--color-amber-400);
@@ -205,10 +210,15 @@ a:focus-visible {
   min-height: 32px;
   display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: center;
   padding: 0 8px;
   border-radius: 12px;
   overflow: hidden;
+}
+
+.tool-rail:hover .rail-btn,
+.tool-rail:focus-within .rail-btn {
+  justify-content: flex-start;
 }
 
 .rail-btn svg {
@@ -418,6 +428,16 @@ a:focus-visible {
   font-size: 12px;
   line-height: 16px;
   white-space: nowrap;
+  max-width: 0;
+  margin-left: 0;
+  overflow: hidden;
+  transition: max-width 160ms var(--ease), margin-left 160ms var(--ease);
+}
+
+.tool-rail:hover .rail-btn-label,
+.tool-rail:focus-within .rail-btn-label {
+  max-width: 120px;
+  margin-left: 10px;
 }
 
 .rail-btn.active {
@@ -450,6 +470,8 @@ a:focus-visible {
   top: calc(var(--header-height) + 16px);
   right: 16px;
   z-index: var(--z-inspector);
+  display: grid;
+  place-items: center;
   width: 40px;
   height: 40px;
   border: 1px solid var(--line);
@@ -565,6 +587,8 @@ a:focus-visible {
 }
 
 .send-btn {
+  display: grid;
+  place-items: center;
   width: 36px;
   height: 36px;
   border-radius: 12px;
@@ -624,9 +648,27 @@ a:focus-visible {
   border: 1px solid var(--line);
   border-radius: var(--radius);
   overflow: hidden;
-  width: 140px !important;
+  /* Matches .zoombar's natural content width so both bottom-right panels
+     share the same left AND right edge, not just the right (they're
+     independently positioned by React Flow, not one flex container). */
+  width: 158px !important;
   height: 96px !important;
-  margin-bottom: 48px;
+  /* React Flow's own .react-flow__panel sets margin: 15px (shorthand) on
+     this same element; without !important that shorthand wins the cascade
+     and this silently no-ops, leaving the minimap sitting at the same
+     15px offset as .zoombar below it -- fully overlapping it. */
+  margin-bottom: 73px !important;
+}
+
+.react-flow__minimap svg {
+  /* React Flow renders this SVG at a fixed 200x150 regardless of the
+     container size above -- without this it just overflows and gets
+     silently cropped by this element's own overflow:hidden, which can
+     crop away the "hole" that shows the current viewport, leaving what
+     looks like a single solid grey block with no visible window in it. */
+  display: block;
+  width: 100%;
+  height: 100%;
 }
 
 .zoombar {
@@ -643,6 +685,9 @@ a:focus-visible {
 }
 
 .zoombar button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   border: 0;
   width: 28px;
   height: 28px;
@@ -796,8 +841,8 @@ a:focus-visible {
 }
 
 .flow-node.selected {
-  border-width: 2px;
-  border-color: var(--active);
+  border-width: 1px;
+  border-color: var(--selected);
 }
 
 .scene-card.approved:not(.selected) {
@@ -805,8 +850,18 @@ a:focus-visible {
 }
 
 .scene-stage {
-  aspect-ratio: 16 / 9;
+  /* width/height set inline per node (lib/canvas/story.ts's nodeFrameSize) --
+     the node's real target resolution scaled to one fixed "canvas zoom", the
+     same way a Figma frame's on-canvas size reflects its real pixel
+     dimensions rather than every ratio being squeezed into one fixed slot.
+     That's what makes 16:9 read as genuinely bigger than 9:16. */
   background: var(--bg);
+  overflow: hidden;
+  /* .node-media's own min-width floor (keeps the footer legible) can be
+     wider than a small/narrow frame's true width -- center the stage in
+     that leftover space instead of leaving it flush left with a bare
+     strip of card background on the right. */
+  margin: 0 auto;
 }
 
 .scene-stage .media-preview {
@@ -817,8 +872,9 @@ a:focus-visible {
 }
 
 .scene-stage .media-placeholder {
-  min-height: 0;
+  width: 100%;
   height: 100%;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -997,7 +1053,18 @@ a:focus-visible {
 }
 
 .node-media {
-  width: 380px;
+  /* Width comes from an inline style (SceneCard applies nodeFrameSize's
+     real-computed-size width here too, not just on .scene-stage) --
+     NOT `width: fit-content`. Free-form text children (the error message,
+     long meta labels) have unbounded max-content width, so letting the
+     card's width be *derived* from its content -- rather than the other
+     way around -- let one long error string blow the whole card out to
+     ~300px regardless of the node's actual target resolution. min-width
+     keeps the footer/label usable for small portrait frames; max-width is
+     a safety ceiling, not the normal case (nodeFrameSize already caps
+     itself). */
+  min-width: 200px;
+  max-width: 90vw;
 }
 
 .node-agent-result {
@@ -1480,6 +1547,10 @@ a:focus-visible {
   padding: 8px 12px 12px;
 }
 
+.node-error {
+  overflow-wrap: anywhere;
+}
+
 .generate,
 .generate-lg {
   width: 100%;
@@ -1669,10 +1740,6 @@ textarea {
 
   .composer {
     width: min(520px, 100%);
-  }
-
-  .node-media {
-    width: 320px;
   }
 
   .node-agent-result {

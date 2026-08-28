@@ -2,7 +2,7 @@
 
 import type { JsonSchema } from "@/lib/types";
 import { fieldLabel, isPromptField } from "@/lib/canvas/field-labels";
-import { choiceLabel } from "@/lib/canvas/model-labels";
+import { choiceLabels } from "@/lib/canvas/model-labels";
 
 const OPAQUE_FIELDS = new Set([
   "filename",
@@ -118,9 +118,10 @@ export function SchemaForm({ schema, values, options, hiddenFields, onlyFields, 
                 {requiredMark}
               </span>
               <div className="field-pill-row" role="radiogroup" aria-label={label}>
-                {[...choices, ...extras].map((option) => {
-                  const optionValue = String(option);
-                  return (
+                {(() => {
+                  const optionValues = [...choices, ...extras].map(String);
+                  const labels = choiceLabels(name, optionValues);
+                  return optionValues.map((optionValue) => (
                     <button
                       key={optionValue}
                       type="button"
@@ -129,10 +130,10 @@ export function SchemaForm({ schema, values, options, hiddenFields, onlyFields, 
                       className={`field-pill${selected === optionValue ? " selected" : ""}`}
                       onClick={() => onChange(name, coerceChoice(optionValue, field, choices))}
                     >
-                      {choiceLabel(name, optionValue)}
+                      {labels.get(optionValue)}
                     </button>
-                  );
-                })}
+                  ));
+                })()}
               </div>
             </label>
           );

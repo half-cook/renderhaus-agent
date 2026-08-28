@@ -1,8 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
+import { useStore } from "@xyflow/react";
 import { statusLabel } from "@/lib/canvas/store";
 import type { JobStatus } from "@/lib/canvas/types";
+
+const selectZoom = (state: { transform: [number, number, number] }) => state.transform[2];
 
 function showStatus(status: JobStatus): boolean {
   switch (status) {
@@ -32,6 +35,7 @@ export function NodeTag({ title, status, selected, badge, onRename }: Props) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(title);
   const inputRef = useRef<HTMLInputElement>(null);
+  const zoom = useStore(selectZoom);
 
   useEffect(() => {
     setDraft(title);
@@ -70,7 +74,10 @@ export function NodeTag({ title, status, selected, badge, onRename }: Props) {
   const showBadge = Boolean(badge) && badge?.trim().toLowerCase() !== title.trim().toLowerCase();
 
   return (
-    <div className={`node-tag ${selected ? "selected" : ""}`}>
+    <div
+      className={`node-tag ${selected ? "selected" : ""}`}
+      style={{ transform: `scale(${1 / zoom})`, transformOrigin: "left bottom" }}
+    >
       {showBadge ? <span className="node-tag-badge">{badge}</span> : null}
       {editing ? (
         <input

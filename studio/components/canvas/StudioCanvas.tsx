@@ -151,7 +151,7 @@ export function StudioCanvas() {
         connectionLineStyle={CONNECTION_LINE_STYLE}
         proOptions={PRO_OPTIONS}
       >
-        <Background id="grid" variant={BackgroundVariant.Dots} gap={24} size={1} color="#252529" />
+        <Background id="grid" variant={BackgroundVariant.Dots} gap={24} size={1.5} color="var(--grid)" />
         <CanvasControls />
       </ReactFlow>
       {nodes.length === 0 ? (

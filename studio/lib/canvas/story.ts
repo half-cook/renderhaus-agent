@@ -88,6 +88,60 @@ export function aspectLabel(data: CanvasNodeData): string {
   return typeof value === "string" ? value : "";
 }
 
+// Video's `resolution` and image's `size` are different fields with
+// different value shapes, but both name a target output's short side --
+// normalize them to one pixel number.
+const RESOLUTION_SHORT_SIDE: Record<string, number> = {
+  "480p": 480,
+  "720p": 720,
+  "1080p": 1080,
+  "1K": 1024,
+  "2K": 2048,
+  "3K": 3072,
+};
+
+const CANVAS_ZOOM = 0.14; // tuned so a 1080p/2K 16:9 frame reads as "large" without dominating
+const MIN_FRAME_PX = 96; // floor so small frames still fit their Generate button/text legibly
+const MAX_FRAME_PX = 420; // ceiling so a high-res wide frame doesn't dominate the canvas
+
+// Figma-style: size the node to its real target pixel dimensions at a fixed
+// canvas zoom, rather than fitting every ratio into one fixed slot. This is
+// what makes 16:9 read as genuinely bigger than 9:16 -- the same reason a
+// 1920x1080 frame looks bigger than a 428x926 one in Figma, at any given
+// zoom level, without needing letterbox padding to fake the comparison.
+export function nodeFrameSize(data: CanvasNodeData): { width: number; height: number } {
+  const ratioValue = data.config.aspect_ratio;
+  const ratio = typeof ratioValue === "string" ? ratioValue.trim() : "";
+  const match = /^(\d+(?:\.\d+)?):(\d+(?:\.\d+)?)$/.exec(ratio);
+  const [rw, rh] = match ? [Number(match[1]), Number(match[2])] : [1, 1];
+
+  const resValue = data.config.resolution ?? data.config.size;
+  const shortSide = (typeof resValue === "string" && RESOLUTION_SHORT_SIDE[resValue]) || 720;
+
+  const isPortrait = rh > rw;
+  const realWidth = isPortrait ? shortSide : (shortSide * rw) / rh;
+  const realHeight = isPortrait ? (shortSide * rh) / rw : shortSide;
+
+  let width = realWidth * CANVAS_ZOOM;
+  let height = realHeight * CANVAS_ZOOM;
+
+  // Scale the WHOLE box uniformly against whichever bound binds -- clamping
+  // each axis independently would distort the ratio instead of preserving it.
+  const longest = Math.max(width, height);
+  const shortest = Math.min(width, height);
+  if (longest > MAX_FRAME_PX) {
+    const factor = MAX_FRAME_PX / longest;
+    width *= factor;
+    height *= factor;
+  } else if (shortest < MIN_FRAME_PX) {
+    const factor = MIN_FRAME_PX / shortest;
+    width *= factor;
+    height *= factor;
+  }
+
+  return { width: Math.round(width), height: Math.round(height) };
+}
+
 export function variantPosition(data: CanvasNodeData): { current: number; total: number } {
   const variants = data.variants || [];
   if (variants.length === 0) {

@@ -4,7 +4,7 @@ import { Handle, Position } from "@xyflow/react";
 import { NodeToolbar } from "../NodeToolbar";
 import { NodeTag } from "./NodeTag";
 import { generateBlockers } from "@/lib/canvas/generate-readiness";
-import { aspectLabel, durationLabel, sceneBadge, variantPosition } from "@/lib/canvas/story";
+import { aspectLabel, durationLabel, nodeFrameSize, sceneBadge, variantPosition } from "@/lib/canvas/story";
 import { schemaFor, type CanvasNodeData } from "@/lib/canvas/types";
 import { useCanvasStore } from "@/lib/canvas/store";
 import { portsForNode } from "@/lib/canvas/tool-registry";
@@ -37,9 +37,10 @@ export function SceneCard({ id, data, selected }: Props) {
   const duration = durationLabel(data);
   const aspect = aspectLabel(data);
   const meta = [duration, aspect].filter(Boolean).join(" · ");
+  const frame = nodeFrameSize(data);
 
   return (
-    <div className="flow-node-wrap node-media">
+    <div className="flow-node-wrap node-media" style={{ width: frame.width }}>
       <NodeTag
         title={data.title}
         status={data.status}
@@ -73,7 +74,7 @@ export function SceneCard({ id, data, selected }: Props) {
             title={port.label}
           />
         ))}
-        <div className="scene-stage">
+        <div className="scene-stage" style={frame}>
           {data.kind === "video" && data.output ? (
             <AssetMedia asset={data.output} className="media-preview" alt={data.title} controls />
           ) : data.output ? (
