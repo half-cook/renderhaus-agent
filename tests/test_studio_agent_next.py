@@ -11,7 +11,12 @@ from agent.studio_agent_next import (
     StudioAgentOutput,
     StudioAgentRequest,
     StudioNode,
+    StudioToolEvent,
+    _describe_gateway_mcp_tools,
+    _finalize_media_run,
+    _gateway_tool_catalog,
     _record_run_tool_events,
+    _unwrap_tool_output,
     agent_invocation,
     normalize_markdown_filename,
     run_studio_agent,
@@ -172,6 +177,155 @@ class StudioAgentNextEntrypointTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(event.provider, "seedream")
         self.assertEqual(event.result["image_url"], "https://cdn.example/hero.png")
         self.assertEqual(event.assets, [])
+
+    def test_unwrap_openai_mcp_text_part_json(self) -> None:
+        payload = _unwrap_tool_output(
+            {
+                "type": "text",
+                "text": json.dumps(
+                    {"status": "succeeded", "image_url": "https://cdn.example/hero.png"}
+                ),
+            }
+        )
+        self.assertEqual(payload["image_url"], "https://cdn.example/hero.png")
+
+    def test_harvest_unwraps_sdk_text_part_output(self) -> None:
+        studio = StudioAgentContext()
+        _record_run_tool_events(
+            SimpleNamespace(
+                new_items=[
+                    SimpleNamespace(
+                        type="tool_call_item",
+                        call_id="call-sdk",
+                        tool_name="Seedream___text_to_image",
+                    ),
+                    SimpleNamespace(
+                        type="tool_call_output_item",
+                        call_id="call-sdk",
+                        output={
+                            "type": "text",
+                            "text": json.dumps(
+                                {
+                                    "status": "succeeded",
+                                    "image_url": "https://cdn.example/from-sdk.png",
+                                }
+                            ),
+                        },
+                    ),
+                ]
+            ),
+            studio,
+        )
+        self.assertEqual(studio.tool_events[0].result["image_url"], "https://cdn.example/from-sdk.png")
+
+    def test_gateway_mcp_descriptions_are_restored(self) -> None:
+        catalog = _gateway_tool_catalog()
+        self.assertIn("Remotion___render_timeline", catalog)
+        self.assertIn("compose", catalog["Remotion___render_timeline"]["description"].lower())
+        described = _describe_gateway_mcp_tools(
+            [
+                {"name": "Remotion___render_timeline", "description": ""},
+                {"name": "Seedream___text_to_image"},
+            ]
+        )
+        self.assertTrue(described[0]["description"])
+        self.assertEqual(described[0]["title"], "Compose final MP4")
+        self.assertIn("image", described[1]["description"].lower())
+
+    async def test_finalizer_polls_media_and_creates_remotion_output(self) -> None:
+        class FakeGateway:
+            def __init__(self) -> None:
+                self.calls: list[tuple[str, dict]] = []
+
+            async def call_tool(self, name, arguments):
+                self.calls.append((name, arguments))
+                if name == "Seedance___get_video_task":
+                    return SimpleNamespace(
+                        content=[
+                            SimpleNamespace(
+                                type="text",
+                                text=json.dumps(
+                                    {
+                                        "status": "succeeded",
+                                        "job_id": "video-1",
+                                        "video_url": "https://cdn.example/clip.mp4",
+                                        "duration_seconds": 4,
+                                    }
+                                ),
+                            )
+                        ],
+                        is_error=False,
+                    )
+                if name == "Remotion___render_timeline":
+                    return SimpleNamespace(
+                        content=[
+                            SimpleNamespace(
+                                type="text",
+                                text=json.dumps(
+                                    {
+                                        "status": "queued",
+                                        "render_id": "render-1",
+                                        "bucket_name": "renders",
+                                        "output_key": "final.mp4",
+                                    }
+                                ),
+                            )
+                        ],
+                        is_error=False,
+                    )
+                return SimpleNamespace(
+                    content=[
+                        SimpleNamespace(
+                            type="text",
+                            text=json.dumps(
+                                {
+                                    "status": "succeeded",
+                                    "render_id": "render-1",
+                                    "url": "https://cdn.example/final.mp4",
+                                }
+                            ),
+                        )
+                    ],
+                    is_error=False,
+                )
+
+        studio = StudioAgentContext(
+            tool_events=[
+                StudioToolEvent(
+                    id="create-video",
+                    name="Seedance___text_to_video",
+                    label="Seedance text to video",
+                    status="queued",
+                    summary="Queued.",
+                    provider_job_id="video-1",
+                    result={"status": "queued", "job_id": "video-1"},
+                )
+            ]
+        )
+        gateway = FakeGateway()
+        await _finalize_media_run(
+            StudioAgentRequest(prompt="Create a short alien video"),
+            StudioAgentOutput(
+                title="Alien video",
+                summary="Ready.",
+                markdown="# Alien video",
+                filename="alien-video.md",
+            ),
+            studio,
+            [gateway],  # type: ignore[list-item]
+        )
+
+        self.assertEqual(
+            [name for name, _arguments in gateway.calls],
+            [
+                "Seedance___get_video_task",
+                "Remotion___render_timeline",
+                "Remotion___get_render_progress",
+            ],
+        )
+        self.assertEqual(studio.tool_events[-1].result["url"], "https://cdn.example/final.mp4")
+        render_arguments = gateway.calls[1][1]
+        self.assertEqual(render_arguments["visuals"][0]["url"], "https://cdn.example/clip.mp4")
 
     def test_harvest_reads_output_on_mcp_call_item(self) -> None:
         studio = StudioAgentContext()

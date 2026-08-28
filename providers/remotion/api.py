@@ -303,7 +303,7 @@ def render_timeline(
     fps: int = 30,
     output_filename: str = "renderhaus-video.mp4",
 ) -> dict[str, Any]:
-    """Start a Remotion Lambda render and return the render id to poll."""
+    """Compose generated image, video, and audio clips into one final MP4, then poll get_render_progress."""
     if dry_run():
         return {
             "status": "dry_run",
@@ -392,7 +392,7 @@ def get_render_progress(
     output_key: str | None = None,
     download: bool = True,
 ) -> dict[str, Any]:
-    """Read Remotion Lambda progress once. Call again until status is succeeded or failed."""
+    """Poll a Remotion render once. Repeat until status is succeeded, failed, or dry_run."""
     if dry_run():
         return {
             "status": "dry_run",
