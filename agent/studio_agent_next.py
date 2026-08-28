@@ -13,11 +13,31 @@ import logging
 import os
 import re
 import time
-from collections.abc import Callable
+from collections.abc import AsyncIterator, Callable
 from dataclasses import dataclass, field
 from functools import lru_cache
 from typing import Any
+import uuid
 
+from ag_ui.core import (
+    BaseEvent,
+    CustomEvent,
+    RunErrorEvent,
+    RunFinishedEvent,
+    RunStartedEvent,
+    StateDeltaEvent,
+    StateSnapshotEvent,
+    StepFinishedEvent,
+    StepStartedEvent,
+    TextMessageContentEvent,
+    TextMessageEndEvent,
+    TextMessageStartEvent,
+    ToolCallArgsEvent,
+    ToolCallEndEvent,
+    ToolCallResultEvent,
+    ToolCallStartEvent,
+)
+from ag_ui.encoder import EventEncoder
 from agents import Agent, Runner
 from agents.mcp import MCPServer, MCPServerManager, MCPServerStreamableHttp
 from bedrock_agentcore.runtime import BedrockAgentCoreApp
@@ -780,6 +800,130 @@ async def run_studio_agent(
         connect_in_parallel=False,
     ) as manager:
         return await _run_with_servers(request, studio, runner, manager.active_servers)
+
+
+async def stream_studio_agent(
+    request: StudioAgentRequest,
+    *,
+    runner: type[Runner] = Runner,
+    studio: StudioAgentContext | None = None,
+    mcp_servers: list[MCPServer] | None = None,
+    asset_registrar: Any = None,
+    source_resolver: Any = None,
+    event_sink: Any = None,
+) -> AsyncIterator[BaseEvent]:
+    """Yield AG-UI protocol events during Studio Agent execution."""
+    run_id = request.job_id or str(uuid.uuid4())
+    thread_id = request.project_id or "default"
+
+    yield RunStartedEvent(thread_id=thread_id, run_id=run_id)
+    yield StepStartedEvent(step_name="Planning canvas operations")
+
+    event_queue: asyncio.Queue[BaseEvent | None] = asyncio.Queue()
+
+    def wrapped_event_sink(tool_event: StudioToolEvent) -> None:
+        if event_sink:
+            try:
+                event_sink(tool_event)
+            except Exception:
+                logger.exception("Error in event_sink callback")
+        event_queue.put_nowait(
+            ToolCallStartEvent(
+                tool_call_id=tool_event.id,
+                tool_call_name=tool_event.name,
+            )
+        )
+        event_queue.put_nowait(
+            ToolCallResultEvent(
+                message_id=run_id,
+                tool_call_id=tool_event.id,
+                content=json.dumps(tool_event.result or {}),
+            )
+        )
+        event_queue.put_nowait(
+            CustomEvent(
+                name="renderhaus_tool_event",
+                value=tool_event.public(),
+            )
+        )
+        for asset in tool_event.assets:
+            event_queue.put_nowait(
+                CustomEvent(
+                    name="renderhaus_asset",
+                    value=asset,
+                )
+            )
+
+    studio_ctx = studio or _context_from_request(
+        request,
+        asset_registrar=asset_registrar,
+        source_resolver=source_resolver,
+        event_sink=wrapped_event_sink,
+    )
+    if studio is not None:
+        original_sink = studio_ctx.event_sink
+
+        def combined_sink(event: StudioToolEvent) -> None:
+            if original_sink:
+                original_sink(event)
+            wrapped_event_sink(event)
+
+        studio_ctx.event_sink = combined_sink
+
+    agent_task = asyncio.create_task(
+        run_studio_agent(
+            request,
+            runner=runner,
+            studio=studio_ctx,
+            mcp_servers=mcp_servers,
+            asset_registrar=asset_registrar,
+            source_resolver=source_resolver,
+            event_sink=studio_ctx.event_sink,
+        )
+    )
+
+    try:
+        while not agent_task.done() or not event_queue.empty():
+            try:
+                event = await asyncio.wait_for(event_queue.get(), timeout=0.1)
+                if event is not None:
+                    yield event
+                    event_queue.task_done()
+            except asyncio.TimeoutError:
+                continue
+
+        output = await agent_task
+        yield StepFinishedEvent(step_name="Planning canvas operations")
+        yield StepStartedEvent(step_name="Finalizing output")
+
+        msg_id = f"msg-{run_id}"
+        yield TextMessageStartEvent(message_id=msg_id, role="assistant")
+
+        chunk_size = 600
+        text = output.markdown
+        for i in range(0, len(text), chunk_size):
+            yield TextMessageContentEvent(message_id=msg_id, delta=text[i : i + chunk_size])
+
+        yield TextMessageEndEvent(message_id=msg_id)
+
+        yield StateSnapshotEvent(
+            snapshot={
+                "title": output.title,
+                "summary": output.summary,
+                "filename": output.filename,
+                "markdown": output.markdown,
+                "tool_events": [e.public() for e in studio_ctx.tool_events],
+            }
+        )
+        yield StepFinishedEvent(step_name="Finalizing output")
+        yield RunFinishedEvent(thread_id=thread_id, run_id=run_id)
+
+    except asyncio.CancelledError:
+        agent_task.cancel()
+        yield RunErrorEvent(message="Run was cancelled.", code="CANCELLED")
+        raise
+    except Exception as exc:
+        yield RunErrorEvent(message=str(exc)[:400], code="AGENT_ERROR")
 
 
 def _invocation_error(exc: BaseException, payload: dict[str, Any] | None, session_id: Any) -> dict[str, Any]:

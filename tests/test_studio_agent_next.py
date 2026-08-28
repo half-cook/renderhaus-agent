@@ -20,6 +20,7 @@ from agent.studio_agent_next import (
     agent_invocation,
     normalize_markdown_filename,
     run_studio_agent,
+    stream_studio_agent,
 )
 
 
@@ -385,6 +386,63 @@ class StudioAgentNextEntrypointTests(unittest.IsolatedAsyncioTestCase):
             )
 
         self.assertEqual(studio.tool_events[0].result["image_url"], "https://cdn.example/hero.png")
+
+    async def test_stream_studio_agent_yields_agui_events(self) -> None:
+        class StreamRunner:
+            @classmethod
+            async def run(cls, agent, input_value, context=None, **_kwargs):
+                if context:
+                    context.record_event(
+                        StudioToolEvent(
+                            id="stream-tool-1",
+                            name="Seedream___text_to_image",
+                            label="Seedream text to image",
+                            status="completed",
+                            summary="Generated hero.",
+                            result={"image_url": "https://cdn.example/hero.png"},
+                            assets=[
+                                {
+                                    "asset_id": "asset-10",
+                                    "version_id": "ver-10",
+                                    "kind": "image",
+                                    "filename": "hero.png",
+                                }
+                            ],
+                        )
+                    )
+                return SimpleNamespace(
+                    final_output=StudioAgentOutput(
+                        title="Streamed Launch",
+                        summary="Launch is ready.",
+                        markdown="# Streamed Launch\n\nAll media prepared.",
+                        filename="launch.md",
+                    ),
+                    new_items=[],
+                )
+
+        events = []
+        async for event in stream_studio_agent(
+            StudioAgentRequest(prompt="Make a streamed launch", job_id="job-stream", project_id="proj-1"),
+            runner=StreamRunner,
+            mcp_servers=[],
+        ):
+            events.append(event)
+
+        event_types = [e.type for e in events]
+        self.assertIn("RUN_STARTED", event_types)
+        self.assertIn("STEP_STARTED", event_types)
+        self.assertIn("TOOL_CALL_START", event_types)
+        self.assertIn("TOOL_CALL_RESULT", event_types)
+        self.assertIn("CUSTOM", event_types)
+        self.assertIn("TEXT_MESSAGE_START", event_types)
+        self.assertIn("TEXT_MESSAGE_CONTENT", event_types)
+        self.assertIn("TEXT_MESSAGE_END", event_types)
+        self.assertIn("STATE_SNAPSHOT", event_types)
+        self.assertIn("RUN_FINISHED", event_types)
+
+        # Verify first and last events
+        self.assertEqual(events[0].type, "RUN_STARTED")
+        self.assertEqual(events[-1].type, "RUN_FINISHED")
 
 
 if __name__ == "__main__":

@@ -61,7 +61,16 @@ export function AgentComposer() {
       };
     });
     try {
-      const result = await submitAgentPrompt(prompt, projectId, ids, contexts, setComposerMessage);
+      const result = await submitAgentPrompt(
+        prompt,
+        projectId,
+        ids,
+        contexts,
+        setComposerMessage,
+        (_delta, fullText) => {
+          setComposerMessage(`Streaming response (${fullText.length} chars)...`);
+        },
+      );
       setComposerMessage(result.message);
       const completedResult = result.result;
       if (completedResult) {

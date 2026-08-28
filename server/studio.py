@@ -19,9 +19,10 @@ from urllib.parse import parse_qs, quote, unquote, urlparse
 import httpx
 from agents.exceptions import MaxTurnsExceeded
 from fastapi import APIRouter, File, HTTPException, UploadFile
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, StreamingResponse
 from pydantic import BaseModel, Field
 
+from ag_ui.encoder import EventEncoder
 from agent.studio_agent import StudioNodeReference
 from agent.studio_agent_next import (
     StudioAgentContext,
@@ -30,6 +31,7 @@ from agent.studio_agent_next import (
     StudioNode,
     StudioToolEvent,
     run_studio_agent as run_studio_agent_runtime,
+    stream_studio_agent,
 )
 from providers.catalog import PROVIDERS, get_provider
 from providers.registry import dispatch, load_committed_schemas
@@ -1087,6 +1089,131 @@ async def studio_agent(body: AgentBody, auth: AuthUser) -> dict[str, Any]:
     _AGENT_TASKS.add(task)
     task.add_done_callback(_AGENT_TASKS.discard)
     return job
+
+
+@router.post("/agent/stream")
+async def studio_agent_stream(body: AgentBody, auth: AuthUser) -> StreamingResponse:
+    if not os.getenv("OPENAI_API_KEY"):
+        raise HTTPException(status_code=503, detail="The OpenAI agent is not configured.")
+    workspace_id = current_workspace_id(auth)
+    user_id = current_user_id(auth)
+    try:
+        await asyncio.to_thread(repository.require_project, workspace_id, body.project_id)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="Project not found.") from exc
+    references = await asyncio.to_thread(_agent_references, body, workspace_id)
+    job = await asyncio.to_thread(
+        repository.create_execution,
+        workspace_id=workspace_id,
+        project_id=body.project_id,
+        user_id=user_id,
+        prompt=body.prompt,
+    )
+    job_id = str(job["job_id"])
+
+    def register_assets(**kwargs: Any) -> list[dict[str, Any]]:
+        return _register_payload_assets(
+            payload=kwargs["result"],
+            workspace_id=workspace_id,
+            project_id=body.project_id,
+            user_id=user_id,
+            kind=kwargs.get("kind"),
+            asset_id=kwargs.get("asset_id"),
+            execution_id=job_id,
+            tool_call_id=kwargs.get("tool_call_id"),
+            source_version_ids=kwargs.get("source_version_ids") or [],
+            relation_type=(
+                "composed_from"
+                if kwargs.get("label") == "Remotion video render"
+                else "derived_from"
+            ),
+        )
+
+    def resolve_source(version_id: str) -> str:
+        return str(repository.version_path(workspace_id, version_id))
+
+    def record_event(event: Any) -> None:
+        payload = event.public() if hasattr(event, "public") else dict(event)
+        if hasattr(event, "result"):
+            payload["result"] = event.result
+        repository.append_tool_call(
+            workspace_id=workspace_id,
+            execution_id=job_id,
+            event=payload,
+        )
+
+    request = _studio_agent_request(
+        body.prompt,
+        references,
+        job_id=job_id,
+        workspace_id=workspace_id,
+        project_id=body.project_id,
+    )
+
+    async def event_generator():
+        encoder = EventEncoder()
+        await asyncio.to_thread(
+            repository.update_execution,
+            workspace_id,
+            job_id,
+            status="running",
+            message="Agent started execution.",
+        )
+        try:
+            async for event in stream_studio_agent(
+                request,
+                asset_registrar=register_assets,
+                source_resolver=resolve_source,
+                event_sink=record_event,
+            ):
+                if event.type == "STATE_SNAPSHOT":
+                    snapshot = getattr(event, "snapshot", {})
+                    await asyncio.to_thread(
+                        repository.update_execution,
+                        workspace_id,
+                        job_id,
+                        status="completed",
+                        message=f"Added {snapshot.get('title', 'result')} to the canvas.",
+                        result={
+                            "title": snapshot.get("title", "Agent result"),
+                            "summary": snapshot.get("summary", ""),
+                            "markdown": snapshot.get("markdown", ""),
+                            "filename": snapshot.get("filename", "agent-result.md"),
+                            "tool_events": snapshot.get("tool_events", []),
+                        },
+                    )
+                elif event.type == "RUN_ERROR":
+                    err_msg = getattr(event, "message", "The agent could not finish this request.")
+                    await asyncio.to_thread(
+                        repository.update_execution,
+                        workspace_id,
+                        job_id,
+                        status="error",
+                        message=err_msg,
+                    )
+                yield encoder.encode(event)
+        except Exception as exc:
+            logger.exception("Error during studio agent stream for job %s", job_id)
+            from ag_ui.core import RunErrorEvent
+            err_event = RunErrorEvent(message=str(exc)[:400], code="STREAM_ERROR")
+            await asyncio.to_thread(
+                repository.update_execution,
+                workspace_id,
+                job_id,
+                status="error",
+                message=str(exc)[:400],
+            )
+            yield encoder.encode(err_event)
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
+    )
 
 
 @router.get("/agent")

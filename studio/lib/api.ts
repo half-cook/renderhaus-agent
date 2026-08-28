@@ -1,5 +1,6 @@
 import type { FieldOptions, ProviderCatalog, StudioAsset, StudioStatus } from "./types";
-import type { AgentResultData, CreativeNodeKind } from "./canvas/types";
+import type { AgentResultData, AgentToolEvent, CreativeNodeKind } from "./canvas/types";
+import { parseAGUIEventStream } from "./ag-ui";
 import { studioFetch } from "./authenticated-fetch";
 
 function studioAsset(value: unknown): StudioAsset | null {
@@ -342,13 +343,164 @@ async function waitForAgentJob(
   };
 }
 
+export type StreamAgentCallbacks = {
+  onProgress?: (message: string) => void;
+  onTextDelta?: (delta: string, fullText: string) => void;
+  onToolEvent?: (event: AgentToolEvent) => void;
+  onAsset?: (asset: StudioAsset) => void;
+  onStateSnapshot?: (snapshot: Record<string, unknown>) => void;
+};
+
+export async function streamAgentPrompt(
+  prompt: string,
+  projectId: string,
+  nodeIds: string[],
+  nodes: AgentNodeContext[],
+  callbacks?: StreamAgentCallbacks,
+): Promise<AgentComposerResult> {
+  const response = await studioFetch("/api/studio/agent/stream", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ prompt, project_id: projectId, node_ids: nodeIds, nodes }),
+  });
+
+  if (!response.ok) {
+    const errorPayload = (await response.json().catch(() => ({}))) as AgentJobPayload;
+    return {
+      status: "error",
+      message: errorPayload.detail || errorPayload.message || `Agent stream request failed (${response.status}).`,
+    };
+  }
+
+  let accumulatedText = "";
+  let finalResult: AgentResultData | null = null;
+  const toolEvents: AgentToolEvent[] = [];
+  const assets: StudioAsset[] = [];
+  let executionId: string | undefined;
+  let title = "Agent result";
+  let summary = "";
+  let filename = "agent-result.md";
+  let errorMessage: string | null = null;
+
+  await parseAGUIEventStream(response, (event) => {
+    switch (event.type) {
+      case "RUN_STARTED":
+        executionId = event.runId;
+        callbacks?.onProgress?.("Agent started run...");
+        break;
+      case "STEP_STARTED":
+        callbacks?.onProgress?.(event.stepName);
+        break;
+      case "STEP_FINISHED":
+        break;
+      case "TEXT_MESSAGE_CONTENT":
+        accumulatedText += event.delta;
+        callbacks?.onTextDelta?.(event.delta, accumulatedText);
+        break;
+      case "TOOL_CALL_START":
+        callbacks?.onProgress?.(`Invoking ${event.toolCallName.replace("___", " ")}...`);
+        break;
+      case "CUSTOM":
+        if (event.name === "renderhaus_tool_event" && event.value && typeof event.value === "object") {
+          const item = event.value as Record<string, unknown>;
+          const toolEv: AgentToolEvent = {
+            id: String(item.id || crypto.randomUUID()),
+            name: String(item.name || "tool"),
+            label: String(item.label || "Tool"),
+            status: String(item.status || "completed"),
+            summary: String(item.summary || ""),
+            provider: typeof item.provider === "string" ? item.provider : undefined,
+            providerJobId: typeof item.provider_job_id === "string" ? item.provider_job_id : undefined,
+            assets: studioAssets(item.assets),
+          };
+          toolEvents.push(toolEv);
+          callbacks?.onToolEvent?.(toolEv);
+          callbacks?.onProgress?.(toolEv.summary || `${toolEv.label} completed`);
+        } else if (event.name === "renderhaus_asset" && event.value && typeof event.value === "object") {
+          const ast = studioAsset(event.value);
+          if (ast) {
+            assets.push(ast);
+            callbacks?.onAsset?.(ast);
+          }
+        }
+        break;
+      case "STATE_SNAPSHOT":
+        if (event.snapshot) {
+          const snap = event.snapshot;
+          title = String(snap.title || title);
+          summary = String(snap.summary || summary);
+          filename = String(snap.filename || filename);
+          if (typeof snap.markdown === "string" && snap.markdown) {
+            accumulatedText = snap.markdown;
+          }
+          callbacks?.onStateSnapshot?.(snap);
+        }
+        break;
+      case "RUN_ERROR":
+        errorMessage = event.message || "Agent execution encountered an error.";
+        break;
+      case "TEXT_MESSAGE_START":
+      case "TEXT_MESSAGE_END":
+      case "TOOL_CALL_ARGS":
+      case "TOOL_CALL_END":
+      case "TOOL_CALL_RESULT":
+      case "STATE_DELTA":
+      case "RUN_FINISHED":
+        break;
+      default: {
+        const _exhaustiveCheck: never = event;
+        void _exhaustiveCheck;
+        break;
+      }
+    }
+  });
+
+  if (errorMessage) {
+    return {
+      status: "error",
+      message: errorMessage,
+    };
+  }
+
+  finalResult = {
+    executionId,
+    title,
+    summary: summary || accumulatedText.slice(0, 200),
+    markdown: accumulatedText,
+    filename,
+    mimeType: "text/markdown;charset=utf-8",
+    toolEvents,
+    assets,
+    primaryAsset: assets.at(-1),
+  };
+
+  return {
+    status: "completed",
+    message: `Completed: ${title}`,
+    result: finalResult,
+  };
+}
+
 export async function submitAgentPrompt(
   prompt: string,
   projectId: string,
   nodeIds: string[],
   nodes: AgentNodeContext[],
   onProgress?: (message: string) => void,
+  onTextDelta?: (delta: string, fullText: string) => void,
 ): Promise<AgentComposerResult> {
+  try {
+    const streamResult = await streamAgentPrompt(prompt, projectId, nodeIds, nodes, {
+      onProgress,
+      onTextDelta,
+    });
+    if (streamResult.status === "completed") {
+      return streamResult;
+    }
+  } catch {
+    // Fallback to polling if stream connection is interrupted or unsupported
+  }
+
   const response = await studioFetch("/api/studio/agent", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
