@@ -17,12 +17,13 @@ from typing import Any
 from urllib.parse import parse_qs, quote, unquote, urlparse
 
 import httpx
+from ag_ui.core import RunErrorEvent
+from ag_ui.encoder import EventEncoder
 from agents.exceptions import MaxTurnsExceeded
 from fastapi import APIRouter, File, HTTPException, UploadFile
 from fastapi.responses import FileResponse, StreamingResponse
 from pydantic import BaseModel, Field
 
-from ag_ui.encoder import EventEncoder
 from agent.studio_agent import StudioNodeReference
 from agent.studio_agent_next import (
     StudioAgentContext,
@@ -1095,6 +1096,11 @@ async def studio_agent(body: AgentBody, auth: AuthUser) -> dict[str, Any]:
 async def studio_agent_stream(body: AgentBody, auth: AuthUser) -> StreamingResponse:
     if not os.getenv("OPENAI_API_KEY"):
         raise HTTPException(status_code=503, detail="The OpenAI agent is not configured.")
+    if _agentcore_dev_url():
+        raise HTTPException(
+            status_code=501,
+            detail="Live streaming is unavailable for the configured AgentCore runtime; use job polling.",
+        )
     workspace_id = current_workspace_id(auth)
     user_id = current_user_id(auth)
     try:
@@ -1132,7 +1138,11 @@ async def studio_agent_stream(body: AgentBody, auth: AuthUser) -> StreamingRespo
     def resolve_source(version_id: str) -> str:
         return str(repository.version_path(workspace_id, version_id))
 
-    def record_event(event: Any) -> None:
+    loop = asyncio.get_running_loop()
+    sink_tasks: set[asyncio.Task[None]] = set()
+    sink_tail: asyncio.Task[None] | None = None
+
+    def persist_event(event: Any) -> None:
         _hydrate_tool_event_assets(
             [event],
             workspace_id=workspace_id,
@@ -1148,6 +1158,38 @@ async def studio_agent_stream(body: AgentBody, auth: AuthUser) -> StreamingRespo
             execution_id=job_id,
             event=payload,
         )
+
+    def record_event(event: Any) -> None:
+        nonlocal sink_tail
+        previous = sink_tail
+
+        async def persist_in_order() -> None:
+            if previous is not None:
+                await previous
+            await asyncio.to_thread(persist_event, event)
+
+        task = loop.create_task(persist_in_order(), name=f"studio-tool-event-{job_id}")
+        sink_tail = task
+        sink_tasks.add(task)
+
+        def finish_sink_task(completed: asyncio.Task[None]) -> None:
+            sink_tasks.discard(completed)
+            if completed.cancelled():
+                return
+            error = completed.exception()
+            if error is not None:
+                logger.error(
+                    "Failed to persist a streamed tool event for job %s",
+                    job_id,
+                    exc_info=(type(error), error, error.__traceback__),
+                )
+
+        task.add_done_callback(finish_sink_task)
+
+    async def flush_event_sink() -> None:
+        pending = sink_tail
+        if pending is not None:
+            await pending
 
     request = _studio_agent_request(
         body.prompt,
@@ -1174,14 +1216,17 @@ async def studio_agent_stream(body: AgentBody, auth: AuthUser) -> StreamingRespo
                 event_sink=record_event,
             ):
                 if event.type == "STATE_SNAPSHOT":
+                    await flush_event_sink()
                     snapshot = getattr(event, "snapshot", {})
-                    tool_events_raw = snapshot.get("tool_events") or []
-                    _hydrate_tool_event_assets(
-                        tool_events_raw,
-                        workspace_id=workspace_id,
-                        project_id=body.project_id,
-                        user_id=user_id,
-                        execution_id=job_id,
+                    persisted = await asyncio.to_thread(
+                        repository.get_execution,
+                        workspace_id,
+                        job_id,
+                    )
+                    tool_events_raw = (
+                        (persisted or {}).get("tool_calls")
+                        or snapshot.get("tool_events")
+                        or []
                     )
                     assets_list: list[dict[str, Any]] = []
                     seen: set[str] = set()
@@ -1222,6 +1267,7 @@ async def studio_agent_stream(body: AgentBody, auth: AuthUser) -> StreamingRespo
                         },
                     )
                 elif event.type == "RUN_ERROR":
+                    await flush_event_sink()
                     err_msg = getattr(event, "message", "The agent could not finish this request.")
                     await asyncio.to_thread(
                         repository.update_execution,
@@ -1233,7 +1279,6 @@ async def studio_agent_stream(body: AgentBody, auth: AuthUser) -> StreamingRespo
                 yield encoder.encode(event)
         except Exception as exc:
             logger.exception("Error during studio agent stream for job %s", job_id)
-            from ag_ui.core import RunErrorEvent
             err_event = RunErrorEvent(message=str(exc)[:400], code="STREAM_ERROR")
             await asyncio.to_thread(
                 repository.update_execution,
@@ -1243,6 +1288,19 @@ async def studio_agent_stream(body: AgentBody, auth: AuthUser) -> StreamingRespo
                 message=str(exc)[:400],
             )
             yield encoder.encode(err_event)
+        finally:
+            execution = await asyncio.to_thread(repository.get_execution, workspace_id, job_id)
+            if execution and execution.get("status") in {"queued", "running"}:
+                await asyncio.to_thread(
+                    repository.update_execution,
+                    workspace_id,
+                    job_id,
+                    status="error",
+                    message="The client disconnected before the agent finished.",
+                    error_type="StreamDisconnected",
+                )
+            if sink_tasks:
+                await asyncio.gather(*list(sink_tasks), return_exceptions=True)
 
     return StreamingResponse(
         event_generator(),

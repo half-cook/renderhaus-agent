@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import json
 import os
 import unittest
@@ -481,19 +482,15 @@ class StudioAgentNextEntrypointTests(unittest.IsolatedAsyncioTestCase):
             async def run(cls, agent, input_value, context=None, hooks=None, **_kwargs):
                 self_context = SimpleNamespace(
                     context=context,
-                    tool_call_id="sdk-call-1",
                     tool_name="Seedream___text_to_image",
                 )
+                tool = SimpleNamespace(name="Seedream___text_to_image")
                 await hooks.on_llm_start(self_context, agent, None, [])
-                await hooks.on_tool_start(
-                    self_context,
-                    agent,
-                    SimpleNamespace(name="Seedream___text_to_image"),
-                )
+                await hooks.on_tool_start(self_context, agent, tool)
                 await hooks.on_tool_end(
                     self_context,
                     agent,
-                    SimpleNamespace(name="Seedream___text_to_image"),
+                    tool,
                     {"status": "succeeded", "image_url": "https://cdn.example/live.png"},
                 )
                 await hooks.on_llm_end(self_context, agent, SimpleNamespace())
@@ -529,11 +526,51 @@ class StudioAgentNextEntrypointTests(unittest.IsolatedAsyncioTestCase):
         tool_start_index = event_types.index("TOOL_CALL_START")
         snapshot_index = event_types.index("STATE_SNAPSHOT")
         self.assertLess(tool_start_index, snapshot_index)
-        self.assertIn("TOOL_CALL_RESULT", event_types)
-        self.assertIn("CUSTOM", event_types)
+        tool_starts = [event for event in events if event.type == "TOOL_CALL_START"]
+        tool_results = [event for event in events if event.type == "TOOL_CALL_RESULT"]
+        tool_custom = [
+            event
+            for event in events
+            if event.type == "CUSTOM" and event.name == "renderhaus_tool_event"
+        ]
+        self.assertEqual(len(tool_starts), 1)
+        self.assertEqual(len(tool_results), 1)
+        self.assertEqual(len(tool_custom), 1)
+        self.assertEqual(tool_results[0].tool_call_id, tool_starts[0].tool_call_id)
+        self.assertEqual(tool_custom[0].value["id"], tool_starts[0].tool_call_id)
         snapshot = events[snapshot_index].snapshot
         self.assertEqual(len(snapshot["tool_events"]), 1)
         self.assertEqual(snapshot["tool_events"][0]["id"], "sdk-call-1")
+
+    async def test_stream_studio_agent_cancels_runner_when_consumer_closes(self) -> None:
+        runner_started = asyncio.Event()
+        runner_cancelled = asyncio.Event()
+
+        class BlockingRunner:
+            @classmethod
+            async def run(cls, agent, input_value, context=None, hooks=None, **_kwargs):
+                self_context = SimpleNamespace(context=context)
+                await hooks.on_llm_start(self_context, agent, None, [])
+                runner_started.set()
+                try:
+                    await asyncio.Event().wait()
+                except asyncio.CancelledError:
+                    runner_cancelled.set()
+                    raise
+
+        events = stream_studio_agent(
+            StudioAgentRequest(prompt="Keep working", job_id="job-cancel"),
+            runner=BlockingRunner,
+            mcp_servers=[],
+        )
+        self.assertEqual((await anext(events)).type, "RUN_STARTED")
+        self.assertEqual((await anext(events)).type, "STEP_STARTED")
+        self.assertEqual((await anext(events)).type, "STEP_STARTED")
+        await asyncio.wait_for(runner_started.wait(), timeout=1)
+
+        await events.aclose()
+
+        await asyncio.wait_for(runner_cancelled.wait(), timeout=1)
 
 
 if __name__ == "__main__":

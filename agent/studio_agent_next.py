@@ -8,6 +8,7 @@ entrypoint and the structured result.
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import json
 import logging
 import os
@@ -477,11 +478,52 @@ class _AGUIRunHooks(RunHooks[StudioAgentContext]):
         self,
         event_queue: asyncio.Queue[BaseEvent | None],
         started_tool_calls: set[str],
+        run_id: str,
     ) -> None:
         self.event_queue = event_queue
         self.started_tool_calls = started_tool_calls
+        self.run_id = run_id
         self.llm_turn = 0
         self.llm_steps: list[str] = []
+        self._active_tool_call_ids: dict[tuple[int, int], list[str]] = {}
+        self._pending_tool_results: list[tuple[str, str, object]] = []
+        self._emitted_tool_results: set[str] = set()
+
+    @staticmethod
+    def _tool_key(context: Any, tool: Any) -> tuple[int, int]:
+        return id(context), id(tool)
+
+    def stream_id_for_harvest(
+        self,
+        name: str,
+        actual_id: str,
+        payload: dict[str, Any],
+    ) -> str:
+        """Match a harvested SDK run item to the ID already shown in the live stream."""
+        for index, (stream_id, pending_name, _result) in enumerate(self._pending_tool_results):
+            if stream_id == actual_id and pending_name == name:
+                self._pending_tool_results.pop(index)
+                return stream_id
+        for index, (stream_id, pending_name, result) in enumerate(self._pending_tool_results):
+            pending_payload = _compact_tool_result(_unwrap_tool_output(result))
+            if pending_name == name and pending_payload == payload:
+                self._pending_tool_results.pop(index)
+                return stream_id
+        for index, (stream_id, pending_name, _result) in enumerate(self._pending_tool_results):
+            if pending_name == name:
+                self._pending_tool_results.pop(index)
+                return stream_id
+        return actual_id
+
+    def result_was_emitted(self, stream_id: str) -> bool:
+        return stream_id in self._emitted_tool_results
+
+    def flush_unharvested(self, studio: StudioAgentContext) -> None:
+        """Persist hook results that an unusual runner omitted from its final run items."""
+        pending = list(self._pending_tool_results)
+        self._pending_tool_results.clear()
+        for call_id, name, result in pending:
+            _append_harvested_event(studio, call_id=call_id, name=name, output=result)
 
     async def on_llm_start(
         self,
@@ -509,6 +551,8 @@ class _AGUIRunHooks(RunHooks[StudioAgentContext]):
             or getattr(tool, "name", None)
             or "tool"
         )
+        key = self._tool_key(context, tool)
+        self._active_tool_call_ids.setdefault(key, []).append(call_id)
         self.started_tool_calls.add(call_id)
         self.event_queue.put_nowait(
             ToolCallStartEvent(tool_call_id=call_id, tool_call_name=name)
@@ -525,13 +569,34 @@ class _AGUIRunHooks(RunHooks[StudioAgentContext]):
         studio = getattr(context, "context", None)
         if not isinstance(studio, StudioAgentContext):
             return
-        call_id = str(getattr(context, "tool_call_id", None) or uuid.uuid4().hex)
+        key = self._tool_key(context, tool)
+        active_ids = self._active_tool_call_ids.get(key) or []
+        context_call_id = getattr(context, "tool_call_id", None)
+        if context_call_id:
+            call_id = str(context_call_id)
+            if call_id in active_ids:
+                active_ids.remove(call_id)
+            elif active_ids:
+                active_ids.pop(0)
+        else:
+            call_id = active_ids.pop(0) if active_ids else uuid.uuid4().hex
+        if not active_ids:
+            self._active_tool_call_ids.pop(key, None)
         name = str(
             getattr(context, "tool_name", None)
             or getattr(tool, "name", None)
             or "tool"
         )
-        _append_harvested_event(studio, call_id=call_id, name=name, output=result)
+        self._pending_tool_results.append((call_id, name, result))
+        payload = _compact_tool_result(_unwrap_tool_output(result))
+        self.event_queue.put_nowait(
+            ToolCallResultEvent(
+                message_id=self.run_id,
+                tool_call_id=call_id,
+                content=json.dumps(payload),
+            )
+        )
+        self._emitted_tool_results.add(call_id)
 
 
 def _record_run_tool_events(run_result: Any, studio: StudioAgentContext) -> None:
@@ -845,6 +910,8 @@ async def _run_with_servers(
         hooks=hooks,
     )
     _record_run_tool_events(result, studio)
+    if isinstance(hooks, _AGUIRunHooks):
+        hooks.flush_unharvested(studio)
     final = result.final_output
     if not isinstance(final, StudioAgentOutput):
         final = StudioAgentOutput.model_validate(final)
@@ -909,6 +976,7 @@ async def stream_studio_agent(
 
     event_queue: asyncio.Queue[BaseEvent | None] = asyncio.Queue()
     started_tool_calls: set[str] = set()
+    run_hooks: _AGUIRunHooks | None = None
 
     def wrapped_event_sink(tool_event: StudioToolEvent) -> None:
         if event_sink:
@@ -916,25 +984,37 @@ async def stream_studio_agent(
                 event_sink(tool_event)
             except Exception:
                 logger.exception("Error in event_sink callback")
-        if tool_event.id not in started_tool_calls:
-            started_tool_calls.add(tool_event.id)
+        stream_id = (
+            run_hooks.stream_id_for_harvest(
+                tool_event.name,
+                tool_event.id,
+                tool_event.result,
+            )
+            if run_hooks is not None
+            else tool_event.id
+        )
+        if stream_id not in started_tool_calls:
+            started_tool_calls.add(stream_id)
             event_queue.put_nowait(
                 ToolCallStartEvent(
-                    tool_call_id=tool_event.id,
+                    tool_call_id=stream_id,
                     tool_call_name=tool_event.name,
                 )
             )
-        event_queue.put_nowait(
-            ToolCallResultEvent(
-                message_id=run_id,
-                tool_call_id=tool_event.id,
-                content=json.dumps(tool_event.result or {}),
+        if run_hooks is None or not run_hooks.result_was_emitted(stream_id):
+            event_queue.put_nowait(
+                ToolCallResultEvent(
+                    message_id=run_id,
+                    tool_call_id=stream_id,
+                    content=json.dumps(tool_event.result or {}),
+                )
             )
-        )
+        public_event = tool_event.public()
+        public_event["id"] = stream_id
         event_queue.put_nowait(
             CustomEvent(
                 name="renderhaus_tool_event",
-                value=tool_event.public(),
+                value=public_event,
             )
         )
         for asset in tool_event.assets:
@@ -961,6 +1041,7 @@ async def stream_studio_agent(
 
         studio_ctx.event_sink = combined_sink
 
+    run_hooks = _AGUIRunHooks(event_queue, started_tool_calls, run_id)
     agent_task = asyncio.create_task(
         run_studio_agent(
             request,
@@ -970,7 +1051,7 @@ async def stream_studio_agent(
             asset_registrar=asset_registrar,
             source_resolver=source_resolver,
             event_sink=studio_ctx.event_sink,
-            hooks=_AGUIRunHooks(event_queue, started_tool_calls),
+            hooks=run_hooks,
         )
     )
 
@@ -1032,6 +1113,11 @@ async def stream_studio_agent(
         raise
     except Exception as exc:
         yield RunErrorEvent(message=str(exc)[:400], code="AGENT_ERROR")
+    finally:
+        if not agent_task.done():
+            agent_task.cancel()
+        with contextlib.suppress(asyncio.CancelledError, Exception):
+            await agent_task
 
 
 def _invocation_error(exc: BaseException, payload: dict[str, Any] | None, session_id: Any) -> dict[str, Any]:

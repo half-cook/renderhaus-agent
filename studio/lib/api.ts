@@ -404,6 +404,7 @@ export async function streamAgentPrompt(
   let summary = "";
   let filename = "agent-result.md";
   let errorMessage: string | null = null;
+  let receivedTerminalEvent = false;
 
   await parseAGUIEventStream(response, (event) => {
     switch (event.type) {
@@ -489,6 +490,7 @@ export async function streamAgentPrompt(
         }
         break;
       case "STATE_SNAPSHOT":
+        receivedTerminalEvent = true;
         if (event.snapshot) {
           const snap = event.snapshot;
           title = String(snap.title || title);
@@ -541,6 +543,7 @@ export async function streamAgentPrompt(
       case "STATE_DELTA":
         break;
       case "RUN_FINISHED":
+        receivedTerminalEvent = true;
         callbacks?.onRunFinished?.(event.runId, event.threadId);
         break;
       default: {
@@ -555,6 +558,17 @@ export async function streamAgentPrompt(
     return {
       status: "error",
       message: errorMessage,
+    };
+  }
+
+  if (!receivedTerminalEvent) {
+    if (executionId) {
+      callbacks?.onProgress?.("Live events ended early; continuing with job status updates...");
+      return waitForAgentJob(executionId, callbacks?.onProgress);
+    }
+    return {
+      status: "error",
+      message: "The agent stream ended before reporting a terminal state.",
     };
   }
 
