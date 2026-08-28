@@ -8,6 +8,7 @@ import type { CreativeNodeKind } from "@/lib/canvas/types";
 import { AgentComposer } from "./AgentComposer";
 import { CanvasHeader } from "./CanvasHeader";
 import { NodeInspector } from "./NodeInspector";
+import { SceneList } from "./SceneList";
 import { StudioCanvas } from "./StudioCanvas";
 import { ToolRail } from "./ToolRail";
 import "@xyflow/react/dist/style.css";
@@ -102,6 +103,7 @@ function Workspace() {
         Skip to canvas
       </a>
       <CanvasHeader />
+      <SceneList />
       <ToolRail
         onPlace={(kind: CreativeNodeKind, toolId?: string) => {
           addCreativeNode({ kind, toolId, position: center() });

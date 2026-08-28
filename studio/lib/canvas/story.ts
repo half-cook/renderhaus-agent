@@ -27,6 +27,16 @@ export function isSceneNode(data: CanvasNodeData): boolean {
   return isSceneKind(data.kind);
 }
 
+// The title a scene gets at creation if none is given -- see store.ts's
+// addCreativeNode. Kept as its own check (rather than inlined) so the one
+// place that needs to know "has this scene ever been renamed" -- the scene
+// list's Untitled-N numbering -- has a single source of truth to import.
+const DEFAULT_SCENE_TITLE = "Scene";
+
+export function isUntitledSceneTitle(title: string): boolean {
+  return title === DEFAULT_SCENE_TITLE;
+}
+
 export function approvedSequence(nodes: CanvasNode[]): CanvasNode[] {
   return nodes
     .filter((node) => node.data.approved && isSceneNode(node.data))

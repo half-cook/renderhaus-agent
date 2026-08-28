@@ -6,6 +6,7 @@ import { queueSize, useCanvasStore } from "@/lib/canvas/store";
 import { approvedSequence } from "@/lib/canvas/story";
 import type { StudioAsset } from "@/lib/types";
 import { AssetDownloadLink } from "./AssetMedia";
+import { ThemeToggle } from "./ThemeToggle";
 
 function executionStatusClass(status: string): string {
   if (["error", "failed", "cancelled", "canceled"].includes(status)) return "failed";
@@ -136,6 +137,7 @@ export function CanvasHeader() {
         </div>
       </div>
       <div className="header-right">
+        <ThemeToggle />
         <button className="icon-btn" type="button" aria-label="Undo" disabled={past.length === 0} onClick={undo}>
           <Undo2 size={16} />
         </button>

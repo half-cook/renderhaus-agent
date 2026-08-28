@@ -120,7 +120,6 @@ export function ToolRail({ onPlace, onUpload }: Props) {
                 key={item.id}
                 type="button"
                 className={activeTool === item.id ? "rail-btn active" : "rail-btn"}
-                title={item.label}
                 aria-label={item.label}
                 aria-pressed={activeTool === item.id}
                 onClick={() => {

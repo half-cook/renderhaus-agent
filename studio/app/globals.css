@@ -50,6 +50,29 @@
   --z-menu: 50;
 }
 
+:root[data-theme="light"] {
+  color-scheme: light;
+  /* Warm off-white, not cool grey -- the Tailwind "stone" scale, not
+     "neutral" -- matching the Claude.ai console's own light palette: a
+     warm ivory page background with brighter white cards/surfaces on top
+     of it, not a flat single white. */
+  --bg: var(--color-stone-100);
+  --chrome: #fff;
+  --node: #fff;
+  --line: var(--color-stone-200);
+  --grid: var(--color-stone-300);
+  --text: var(--color-stone-900);
+  --muted: var(--color-stone-500);
+  --accent: var(--color-amber-500);
+  --active: var(--color-stone-900);
+  /* One shade deeper than the dark-mode indigo-400 -- 400 reads as washed
+     out against a white card border. */
+  --selected: var(--color-indigo-500);
+  --danger: var(--color-red-500);
+  --ok: var(--color-emerald-500);
+  --warn: var(--color-amber-500);
+}
+
 * {
   box-sizing: border-box;
 }
@@ -110,11 +133,13 @@ a:focus-visible {
 .workspace {
   position: relative;
   --header-height: 56px;
-  --rail-width: 64px;
+  --scene-rail-width: 240px;
   --safe-top: var(--header-height);
-  --safe-left: var(--rail-width);
+  --safe-left: var(--scene-rail-width);
   --safe-right: 0px;
-  --safe-bottom: 64px;
+  /* Bottom-docked tool bar (16px + ~52px) + 12px gap + the collapsed
+     composer pill sitting above it + a little breathing room. */
+  --safe-bottom: 140px;
 }
 
 .workspace.inspector-open {
@@ -122,7 +147,7 @@ a:focus-visible {
 }
 
 .workspace.composer-open {
-  --safe-bottom: 200px;
+  --safe-bottom: 264px;
 }
 
 .workspace-loading {
@@ -204,19 +229,13 @@ a:focus-visible {
 }
 
 .rail-btn {
-  width: 100%;
-  min-height: 32px;
+  position: relative;
+  width: 36px;
+  height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0 8px;
-  border-radius: 12px;
-  overflow: hidden;
-}
-
-.tool-rail:hover .rail-btn,
-.tool-rail:focus-within .rail-btn {
-  justify-content: flex-start;
+  border-radius: 10px;
 }
 
 .rail-btn svg {
@@ -355,92 +374,201 @@ a:focus-visible {
 }
 
 .tool-rail {
+  /* Figma-style: icon-only tool bar docked at the bottom-center, not a
+     persistent left rail -- the left rail is now .scene-rail (a list of
+     scenes, mirroring how Figma's left sidebar tracks frames). Details
+     for a tool only show up after you click into it (the node inspector
+     opens), same as before -- this is a reposition, not a new interaction
+     model. */
   position: absolute;
-  left: 0;
-  top: var(--header-height);
-  bottom: 0;
+  left: 50%;
+  bottom: 16px;
+  transform: translateX(-50%);
   z-index: var(--z-rail);
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  align-items: center;
   gap: 4px;
-  width: var(--rail-width);
-  padding: 12px 8px;
-  background: var(--bg);
-  border: 0;
-  border-right: 1px solid var(--line);
-  border-radius: 0;
-  box-shadow: none;
-  overflow: hidden;
-  transition: width 160ms var(--ease);
-}
-
-.tool-rail:hover,
-.tool-rail:focus-within {
-  width: 168px;
+  width: max-content;
+  padding: 8px;
+  background: var(--chrome);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  box-shadow: var(--shadow);
 }
 
 .rail-group {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  align-items: center;
   gap: 4px;
 }
 
 .rail-group + .rail-group {
-  margin-top: 4px;
-  padding-top: 8px;
-  border-top: 1px solid var(--line);
+  margin-left: 4px;
+  padding-left: 8px;
+  border-left: 1px solid var(--line);
 }
 
-.rail-group-label,
+/* Group headings ("Canvas", "Inputs", ...) stay screen-reader-only --
+   there's no room for them in an icon-only horizontal dock, and Figma's
+   own tool bar doesn't show them either. Per-button tooltips (native
+   title attr) carry the label instead. */
+.rail-group-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 .rail-btn-label {
+  /* A proper tooltip, not the native title attr -- shows the tool's name
+     above the button on hover/focus, matching how Figma's own icon-only
+     bottom tool bar labels each button. */
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 8px);
+  z-index: 1;
+  transform: translateX(-50%);
+  padding: 4px 8px;
+  background: var(--chrome);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 11px;
+  line-height: 16px;
+  font-weight: 500;
+  white-space: nowrap;
   opacity: 0;
+  visibility: hidden;
+  transition: opacity 120ms var(--ease);
   pointer-events: none;
 }
 
-.tool-rail:hover .rail-group-label,
-.tool-rail:focus-within .rail-group-label,
-.tool-rail:hover .rail-btn-label,
-.tool-rail:focus-within .rail-btn-label {
+.rail-btn:hover .rail-btn-label,
+.rail-btn:focus-visible .rail-btn-label {
   opacity: 1;
-  pointer-events: auto;
-}
-
-.rail-group-label {
-  margin: 0;
-  max-height: 0;
-  padding: 0 8px;
-  overflow: hidden;
-  color: var(--muted);
-  font-size: 12px;
-  line-height: 16px;
-  letter-spacing: 0.04em;
-  white-space: nowrap;
-}
-
-.tool-rail:hover .rail-group-label,
-.tool-rail:focus-within .rail-group-label {
-  max-height: 16px;
-}
-
-.rail-btn-label {
-  font-size: 12px;
-  line-height: 16px;
-  white-space: nowrap;
-  max-width: 0;
-  margin-left: 0;
-  overflow: hidden;
-  transition: max-width 160ms var(--ease), margin-left 160ms var(--ease);
-}
-
-.tool-rail:hover .rail-btn-label,
-.tool-rail:focus-within .rail-btn-label {
-  max-width: 120px;
-  margin-left: 10px;
+  visibility: visible;
 }
 
 .rail-btn.active {
   background: var(--active);
   color: var(--bg);
+}
+
+.scene-rail {
+  /* Mirrors Figma's left sidebar tracking every frame on the page --
+     here, every scene (image/video/storyboard node) on the canvas. */
+  position: absolute;
+  left: 0;
+  top: var(--header-height);
+  bottom: 0;
+  z-index: var(--z-rail);
+  width: var(--scene-rail-width);
+  padding: 16px 12px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--bg);
+  border-right: 1px solid var(--line);
+}
+
+.scene-rail-head {
+  margin: 0;
+  padding: 0 8px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.scene-rail-empty {
+  margin: 0;
+  padding: 0 8px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.scene-rail-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.scene-rail-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+  transition: background-color 160ms var(--ease);
+}
+
+.scene-rail-item:hover,
+.scene-rail-item.active {
+  background: var(--line);
+}
+
+.scene-rail-dot {
+  flex-shrink: 0;
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--muted);
+}
+
+.scene-rail-dot.status-running {
+  background: var(--color-status-running);
+}
+
+.scene-rail-dot.status-queued {
+  background: var(--color-status-queued);
+}
+
+.scene-rail-dot.status-completed {
+  background: var(--color-status-succeeded);
+}
+
+.scene-rail-dot.status-failed {
+  background: var(--color-status-failed);
+}
+
+.scene-rail-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+}
+
+.scene-rail-name.untitled {
+  color: var(--muted);
+  font-style: italic;
+}
+
+.scene-rail-badge {
+  flex-shrink: 0;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
 }
 
 .inspector {
@@ -519,7 +647,9 @@ a:focus-visible {
   position: absolute;
   left: var(--safe-left);
   right: var(--safe-right);
-  bottom: 16px;
+  /* Stacked above .tool-rail, which now docks at the very bottom
+     (16px + ~52px tall) instead of running down the left edge. */
+  bottom: 80px;
   z-index: var(--z-composer);
   width: min(640px, 100%);
   max-width: 640px;
@@ -591,7 +721,7 @@ a:focus-visible {
   height: 36px;
   border-radius: 12px;
   background: var(--text);
-  color: #0b0b0d;
+  color: var(--bg);
 }
 
 .send-btn:disabled {
@@ -618,7 +748,7 @@ a:focus-visible {
 
 .mention-list button {
   border: 1px solid var(--line);
-  background: #151517;
+  background: var(--chrome);
   color: var(--text);
   border-radius: 999px;
   padding: 4px 12px;
@@ -1016,7 +1146,7 @@ a:focus-visible {
   height: 28px;
   border: 1px solid var(--line);
   border-radius: 9px;
-  background: #1f1f22;
+  background: var(--line);
   color: var(--text);
 }
 
@@ -1094,7 +1224,7 @@ a:focus-visible {
   margin-top: 8px;
   border: 1px solid var(--line);
   border-radius: 10px;
-  background: rgba(11, 11, 13, 0.5);
+  background: var(--bg);
 }
 
 .agent-run-notes summary {
@@ -1113,7 +1243,7 @@ a:focus-visible {
   overflow: auto;
   margin: 0;
   padding: 0 8px 8px;
-  color: #dedee3;
+  color: var(--text);
   font: 11px/16px var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
   white-space: pre-wrap;
 }
@@ -1157,7 +1287,7 @@ a:focus-visible {
   padding: 0 10px;
   border: 1px solid var(--line);
   border-radius: 10px;
-  background: #1f1f22;
+  background: var(--line);
   color: var(--text);
   font-size: 12px;
   font-weight: 600;
@@ -1193,7 +1323,7 @@ a:focus-visible {
   object-fit: cover;
   border: 1px solid var(--line);
   border-radius: 10px;
-  background: #0f0f11;
+  background: var(--bg);
 }
 
 .agent-result-assets audio {
@@ -1204,7 +1334,7 @@ a:focus-visible {
 .media-loading {
   display: block;
   min-height: 72px;
-  background: linear-gradient(110deg, #121215 20%, #202025 42%, #121215 64%);
+  background: linear-gradient(110deg, var(--bg) 20%, var(--line) 42%, var(--bg) 64%);
   background-size: 220% 100%;
   animation: media-loading 1.3s ease-in-out infinite;
 }
@@ -1276,8 +1406,8 @@ a:focus-visible {
   padding: 12px;
   border: 1px solid var(--line);
   border-radius: 12px;
-  background: rgba(11, 11, 13, 0.72);
-  color: #dedee3;
+  background: var(--bg);
+  color: var(--text);
   font: 12px/18px var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
   white-space: pre-wrap;
   word-break: break-word;
@@ -1430,7 +1560,7 @@ a:focus-visible {
   width: 100%;
   border-radius: 12px;
   background: var(--text);
-  color: #0b0b0d;
+  color: var(--bg);
   font-size: 14px;
   font-weight: 600;
   padding: 8px 12px;
@@ -1609,7 +1739,7 @@ textarea {
   }
 
   .workspace {
-    --safe-left: 72px;
+    --scene-rail-width: 200px;
   }
 
   .composer {
