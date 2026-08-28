@@ -1,4 +1,5 @@
 import { invokeTool } from "@/lib/api";
+import { studioAssetHandle } from "@/lib/assets";
 import type { StudioAsset } from "@/lib/types";
 import type { CanvasEdge } from "./connection-validation";
 import type { CanvasNode } from "./connection-validation";
@@ -10,7 +11,7 @@ const TERMINAL = new Set(["succeeded", "failed", "cancelled", "canceled", "delet
 function mergeVariants(existing: StudioAsset[] | undefined, incoming: StudioAsset[]): StudioAsset[] {
   const merged = [...(existing || [])];
   for (const asset of incoming) {
-    if (!merged.some((item) => item.url === asset.url)) {
+    if (!merged.some((item) => item.versionId === asset.versionId)) {
       merged.push(asset);
     }
   }
@@ -20,13 +21,21 @@ function mergeVariants(existing: StudioAsset[] | undefined, incoming: StudioAsse
 export function outputValue(node: CanvasNode, dataType: PortDataType): unknown {
   switch (dataType) {
     case "text": {
-      const prompt = node.data.config.prompt ?? node.data.config.text ?? node.data.config.script;
+      const prompt =
+        node.data.agentResult?.markdown ??
+        node.data.config.prompt ??
+        node.data.config.text ??
+        node.data.config.script;
       return typeof prompt === "string" && prompt.trim() ? prompt : node.data.title;
     }
     case "image":
     case "video":
     case "audio":
-      return node.data.output?.url || node.data.variants?.[0]?.url;
+      return node.data.output
+        ? studioAssetHandle(node.data.output)
+        : node.data.variants?.[0]
+          ? studioAssetHandle(node.data.variants[0])
+          : undefined;
     default: {
       const exhaustive: never = dataType;
       return exhaustive;
@@ -84,14 +93,14 @@ export async function runCreativeNode(
     throw new Error("This node has no generation tool.");
   }
   const arguments_ = resolveConfig(node, nodes, edges);
-  // A fresh key per click -- a double-click sends two requests with the SAME
-  // key, so the backend's ON CONFLICT collapses it to one billed call.
-  // Retry/regenerate calls runCreativeNode again, which mints a new key here --
-  // reusing the original would just replay the same cached result forever.
+  const sourceVersionIds = edges
+    .filter((edge) => edge.target === node.id)
+    .map((edge) => nodes.find((candidate) => candidate.id === edge.source)?.data.output?.versionId)
+    .filter((value): value is string => Boolean(value));
   const payload = await invokeTool(tool.providerId, tool.toolName, arguments_, {
     projectId,
-    nodeId: node.id,
-    idempotencyKey: crypto.randomUUID(),
+    assetId: node.data.output?.assetId,
+    sourceVersionIds,
   });
   const assets = payload.assets;
   const jobId = jobIdFrom(payload.result);
@@ -113,8 +122,6 @@ export async function runCreativeNode(
       result: payload.result,
       jobId,
       error: undefined,
-      output: undefined,
-      variants: [],
     };
   }
   return {
@@ -127,15 +134,23 @@ export async function runCreativeNode(
   };
 }
 
-export async function pollCreativeNode(node: CanvasNode): Promise<Partial<CanvasNodeData> | null> {
+export async function pollCreativeNode(
+  node: CanvasNode,
+  projectId: string,
+): Promise<Partial<CanvasNodeData> | null> {
   const tool = toolById(node.data.toolId);
   if (!tool?.pollTool || !node.data.jobId || !node.data.providerId) {
     return null;
   }
-  const payload = await invokeTool(node.data.providerId, tool.pollTool, {
-    job_id: node.data.jobId,
-    download: true,
-  });
+  const payload = await invokeTool(
+    node.data.providerId,
+    tool.pollTool,
+    {
+      job_id: node.data.jobId,
+      download: true,
+    },
+    { projectId, assetId: node.data.output?.assetId },
+  );
   const providerStatus = statusFrom(payload.result) || "unknown";
   if (payload.assets.length > 0) {
     return {

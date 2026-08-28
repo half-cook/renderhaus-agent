@@ -28,8 +28,13 @@ export type StudioStatus = {
 export type NodeStatus = "idle" | "running" | "ok" | "error";
 
 export type StudioAsset = {
+  assetId: string;
+  versionId: string;
   kind: "image" | "video" | "audio";
-  url: string;
+  filename: string;
+  mimeType: string;
+  sizeBytes?: number;
+  createdAt?: number;
 };
 
 export type ToolNode = {

@@ -1,7 +1,7 @@
 export const FIT_VIEW_PADDING = {
   top: "32px",
-  right: "32px",
-  bottom: "32px",
+  right: "180px",
+  bottom: "128px",
   left: "32px",
 } as const;
 

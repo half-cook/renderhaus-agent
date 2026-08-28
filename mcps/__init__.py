@@ -1,1 +1,0 @@
-"""Local Renderhaus MCP servers."""

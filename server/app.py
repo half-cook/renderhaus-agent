@@ -29,6 +29,7 @@ from server.assets import (
 from server.auth import AuthUser, clerk_enabled, current_user_id, optional_user, publishable_key
 from server.config import ROOT, load_local_env
 from server.studio import router as studio_router
+from server.studio_state import repository as studio_repository
 from server.productions import ProductionStore, public_production
 from server.projects import (
     ProjectStore,
@@ -447,6 +448,7 @@ async def lifespan(app: FastAPI):
     STATE_DIR.mkdir(parents=True, exist_ok=True)
     MEDIA_DIR.mkdir(parents=True, exist_ok=True)
     init_assets_db()
+    studio_repository.init()
     await projects.load()
     await productions.load()
     app.state.generation_tasks = set()

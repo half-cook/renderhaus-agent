@@ -14,6 +14,8 @@ export function isSceneKind(kind: CreativeNodeKind): boolean {
     case "text":
     case "audio":
     case "generator":
+    case "agentResult":
+    case "agentRun":
       return false;
     default: {
       const exhaustive: never = kind;
@@ -91,6 +93,6 @@ export function variantPosition(data: CanvasNodeData): { current: number; total:
   if (variants.length === 0) {
     return { current: 0, total: 0 };
   }
-  const index = variants.findIndex((item) => item.url === data.output?.url);
+  const index = variants.findIndex((item) => item.versionId === data.output?.versionId);
   return { current: (index >= 0 ? index : 0) + 1, total: variants.length };
 }

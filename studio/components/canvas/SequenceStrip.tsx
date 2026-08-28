@@ -4,6 +4,7 @@ import { useReactFlow } from "@xyflow/react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { approvedSequence } from "@/lib/canvas/story";
 import { useCanvasStore } from "@/lib/canvas/store";
+import { AssetMedia } from "./AssetMedia";
 
 export function SequenceStrip() {
   const nodes = useCanvasStore((state) => state.nodes);
@@ -37,10 +38,8 @@ export function SequenceStrip() {
                     void setCenter(node.position.x + 190, node.position.y + 120, { zoom: 0.9, duration: 200 });
                   }}
                 >
-                  {node.data.output?.kind === "video" && node.data.output.url ? (
-                    <video src={node.data.output.url} muted />
-                  ) : node.data.output?.url ? (
-                    <img src={node.data.output.url} alt="" />
+                  {node.data.output ? (
+                    <AssetMedia asset={node.data.output} className="sequence-shot-media" alt="" muted />
                   ) : (
                     <span className="sequence-shot-empty" />
                   )}

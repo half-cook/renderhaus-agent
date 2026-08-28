@@ -27,11 +27,8 @@
           "type": "boolean"
         },
         "service_tier": {
-          "enum": [
-            "default",
-            "flex"
-          ],
-          "type": "string"
+          "type": "string",
+          "description": "One of: default, flex."
         }
       },
       "required": [
@@ -70,11 +67,8 @@
           "type": "boolean"
         },
         "service_tier": {
-          "enum": [
-            "default",
-            "flex"
-          ],
-          "type": "string"
+          "type": "string",
+          "description": "One of: default, flex."
         }
       },
       "required": [

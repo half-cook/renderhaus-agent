@@ -2,6 +2,7 @@
 
 import type { NodeProps } from "@xyflow/react";
 import type { CanvasNodeData } from "@/lib/canvas/types";
+import { AssetMedia } from "../AssetMedia";
 import { BaseNode } from "./BaseNode";
 
 export function GeneratorNode({ id, data, selected }: NodeProps) {
@@ -9,12 +10,12 @@ export function GeneratorNode({ id, data, selected }: NodeProps) {
   const output = nodeData.output;
   return (
     <BaseNode id={id} data={nodeData} selected={selected} widthClass="node-media">
-      {output?.kind === "image" && output.url ? (
-        <img className="media-preview" src={output.url} alt={nodeData.title} />
-      ) : output?.kind === "video" && output.url ? (
-        <video className="media-preview" src={output.url} controls playsInline />
-      ) : output?.kind === "audio" && output.url ? (
-        <audio className="nodrag" src={output.url} controls />
+      {output?.kind === "image" ? (
+        <AssetMedia asset={output} className="media-preview" alt={nodeData.title} />
+      ) : output?.kind === "video" ? (
+        <AssetMedia asset={output} className="media-preview" alt={nodeData.title} controls />
+      ) : output?.kind === "audio" ? (
+        <AssetMedia asset={output} className="nodrag" alt={nodeData.title} controls />
       ) : (
         <div className="media-placeholder">Output</div>
       )}

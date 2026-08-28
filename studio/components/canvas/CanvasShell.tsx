@@ -3,6 +3,7 @@
 import { ReactFlowProvider, useReactFlow } from "@xyflow/react";
 import { useEffect } from "react";
 import { useCanvasStore } from "@/lib/canvas/store";
+import { FIT_VIEW_PADDING } from "@/lib/canvas/safe-area";
 import type { CreativeNodeKind } from "@/lib/canvas/types";
 import { AgentComposer } from "./AgentComposer";
 import { CanvasHeader } from "./CanvasHeader";
@@ -24,8 +25,11 @@ function Workspace() {
   const inspectorVisible = useCanvasStore(
     (state) => state.inspectorOpen && state.selectedNodeIds.length === 1,
   );
+  const selectedNodeId = useCanvasStore((state) =>
+    state.selectedNodeIds.length === 1 ? state.selectedNodeIds[0] : undefined,
+  );
   const composerOpen = useCanvasStore((state) => state.composerOpen);
-  const { screenToFlowPosition } = useReactFlow();
+  const { screenToFlowPosition, fitView } = useReactFlow();
 
   useEffect(() => {
     hydrate();
@@ -56,6 +60,21 @@ function Workspace() {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [redo, setActiveTool, undo]);
+
+  useEffect(() => {
+    if (!selectedNodeId || (!inspectorVisible && !composerOpen)) return;
+    // Only refocus after a selection or panel transition. Camera movement
+    // updates the store too, and must remain under the user's control.
+    const timer = window.setTimeout(() => {
+      void fitView({
+        nodes: [{ id: selectedNodeId }],
+        padding: FIT_VIEW_PADDING,
+        maxZoom: 1,
+        duration: 180,
+      });
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [composerOpen, fitView, inspectorVisible, selectedNodeId]);
 
   const center = () => {
     const pane = document.querySelector(".react-flow");

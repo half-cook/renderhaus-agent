@@ -41,6 +41,10 @@ RUNTIME_BOOTSTRAP_KEYS = [
     "RENDERHAUS_MEDIA_DIR",
     "AGENTCORE_GATEWAY_URL",
     "AGENTCORE_GATEWAY_AUTH_TOKEN",
+    "REMOTION_APP_REGION",
+    "REMOTION_APP_FUNCTION_NAME",
+    "REMOTION_APP_SERVE_URL",
+    "REMOTION_APP_BUCKET_NAME",
 ]
 
 
@@ -176,6 +180,27 @@ def ensure_role(iam, account: str, region: str, bucket: str, secret_name: str) -
                 ],
             },
             {
+                "Sid": "RemotionLambdaInvoke",
+                "Effect": "Allow",
+                "Action": ["lambda:InvokeFunction"],
+                "Resource": [
+                    f"arn:aws:lambda:{region}:{account}:function:remotion-render-*",
+                ],
+            },
+            {
+                "Sid": "RemotionLambdaStorage",
+                "Effect": "Allow",
+                "Action": [
+                    "s3:GetObject",
+                    "s3:PutObject",
+                    "s3:ListBucket",
+                ],
+                "Resource": [
+                    "arn:aws:s3:::remotionlambda-*",
+                    "arn:aws:s3:::remotionlambda-*/*",
+                ],
+            },
+            {
                 "Sid": "RenderhausDynamo",
                 "Effect": "Allow",
                 "Action": [
@@ -291,7 +316,7 @@ def upsert_runtime(control, *, role_arn: str, image_uri: str, env: dict[str, str
         print(f"Creating AgentCore runtime {RUNTIME_NAME}")
         response = control.create_agent_runtime(
             agentRuntimeName=RUNTIME_NAME,
-            description="Renderhaus LangChain agent + generation MCPs",
+            description="Renderhaus OpenAI Agents SDK canvas manager",
             **common,
         )
         arn = response["agentRuntimeArn"]

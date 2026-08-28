@@ -1,1 +1,0 @@
-"""Seedream MCP server."""

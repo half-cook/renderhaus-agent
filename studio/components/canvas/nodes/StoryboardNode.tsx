@@ -4,6 +4,7 @@ import type { NodeProps } from "@xyflow/react";
 import { useCanvasStore } from "@/lib/canvas/store";
 import type { CanvasNodeData } from "@/lib/canvas/types";
 import { BaseNode } from "./BaseNode";
+import { AssetMedia } from "../AssetMedia";
 
 export function StoryboardNode({ id, data, selected }: NodeProps) {
   const nodeData = data as CanvasNodeData;
@@ -20,10 +21,14 @@ export function StoryboardNode({ id, data, selected }: NodeProps) {
           <div className="media-placeholder">Connect shots here</div>
         ) : (
           connected.map((node) =>
-            node.data.output?.kind === "video" && node.data.output.url ? (
-              <video key={node.id} className="storyboard-shot" src={node.data.output.url} muted />
-            ) : node.data.output?.url ? (
-              <img key={node.id} className="storyboard-shot" src={node.data.output.url} alt={node.data.title} />
+            node.data.output ? (
+              <AssetMedia
+                key={node.id}
+                asset={node.data.output}
+                className="storyboard-shot"
+                alt={node.data.title}
+                muted
+              />
             ) : (
               <div key={node.id} className="storyboard-shot empty">
                 {node.data.title}

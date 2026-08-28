@@ -3,7 +3,7 @@ PYTHON ?= .venv/bin/python
 REGION ?= us-east-1
 PROVIDER ?= all
 
-.PHONY: help setup check lint tools web studio dry-flags gateway smoke-gateway runtime smoke deploy-all invoke-tool schemas
+.PHONY: help setup check lint tools web studio dry-flags gateway smoke-gateway runtime smoke deploy-all invoke-tool schemas remotion smoke-remotion
 
 help:
 	@echo "Local development"
@@ -21,6 +21,8 @@ help:
 	@echo "  make smoke-gateway   Build the Lambda zip without uploading"
 	@echo "  make runtime         Build/push/deploy AgentCore Runtime"
 	@echo "  make smoke           Smoke-test AgentCore runtime"
+	@echo "  make remotion        Deploy the Remotion Lambda function and render site"
+	@echo "  make smoke-remotion  Render the first multi-tool artifacts through Lambda"
 	@echo "  make deploy-all      gateway + runtime + smoke"
 
 setup:
@@ -30,7 +32,7 @@ check:
 	$(PYTHON) scripts/ci_check.py
 
 lint:
-	$(PYTHON) -m ruff check agent mcps lambdas scripts server providers
+	$(PYTHON) -m ruff check agent lambdas scripts server providers
 
 tools:
 	$(PYTHON) scripts/generate_gateway_schemas.py --list --provider $(PROVIDER)
@@ -49,7 +51,7 @@ invoke-tool:
 
 dry-flags:
 	@$(PYTHON) -c "from server.config import load_local_env; import os; load_local_env();\
-keys=['SEEDANCE_DRY_RUN','SEEDREAM_DRY_RUN','MUREKA_DRY_RUN','FISH_AUDIO_DRY_RUN','AGENTCORE_RUNTIME_ARN','AGENTCORE_GATEWAY_URL'];\
+keys=['SEEDANCE_DRY_RUN','SEEDREAM_DRY_RUN','MUREKA_DRY_RUN','FISH_AUDIO_DRY_RUN','REMOTION_DRY_RUN','AGENTCORE_RUNTIME_ARN','AGENTCORE_GATEWAY_URL'];\
 [print(f'{k}={os.getenv(k)!r}') for k in keys]"
 
 gateway:
@@ -63,5 +65,11 @@ runtime:
 
 smoke:
 	$(PYTHON) scripts/smoke_agentcore.py
+
+remotion:
+	$(PYTHON) scripts/deploy_remotion_lambda.py --region $(REGION)
+
+smoke-remotion:
+	$(PYTHON) scripts/smoke_remotion_lambda.py
 
 deploy-all: gateway runtime smoke

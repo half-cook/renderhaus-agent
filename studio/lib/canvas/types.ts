@@ -1,6 +1,14 @@
 import type { ProviderCatalog, StudioAsset, ToolSchema } from "@/lib/types";
 
-export type CreativeNodeKind = "text" | "image" | "video" | "audio" | "generator" | "storyboard";
+export type CreativeNodeKind =
+  | "text"
+  | "image"
+  | "video"
+  | "audio"
+  | "generator"
+  | "storyboard"
+  | "agentResult"
+  | "agentRun";
 
 export type PortDataType = "text" | "image" | "video" | "audio";
 
@@ -39,6 +47,39 @@ export type ToolDefinition = {
   pollTool?: string;
 };
 
+export type AgentToolEvent = {
+  id: string;
+  name: string;
+  label: string;
+  status: string;
+  summary: string;
+  provider?: string;
+  providerJobId?: string;
+  assets: StudioAsset[];
+};
+
+export type AgentResultData = {
+  executionId?: string;
+  title: string;
+  summary: string;
+  markdown: string;
+  filename: string;
+  mimeType: string;
+  toolEvents: AgentToolEvent[];
+  assets: StudioAsset[];
+  primaryAsset?: StudioAsset;
+  partial?: boolean;
+};
+
+export type AgentRunData = AgentResultData & {
+  executionId?: string;
+  artifactNodeIds: string[];
+  primaryNodeId?: string;
+  /** Compatibility with run ledgers created before primary results could be non-video. */
+  finalNodeId?: string;
+  collapsed: boolean;
+};
+
 export type CanvasNodeData = {
   kind: CreativeNodeKind;
   title: string;
@@ -54,6 +95,10 @@ export type CanvasNodeData = {
   jobId?: string;
   approved?: boolean;
   storyOrder?: number;
+  agentResult?: AgentResultData;
+  agentRun?: AgentRunData;
+  agentRunId?: string;
+  agentRole?: "artifact" | "primary" | "final";
 };
 
 export type CanvasEdgeData = {

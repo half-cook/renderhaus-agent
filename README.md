@@ -1,7 +1,7 @@
 # Renderhaus
 
 An AI-native video editor: a Next.js timeline editor (`web/`) in front of a Python
-generation/agent backend (`server/`, `agent/`, `mcps/`).
+generation/agent backend (`server/`, `agent/`, `providers/`).
 
 ## Structure
 
@@ -11,16 +11,20 @@ generation/agent backend (`server/`, `agent/`, `mcps/`).
 - **`server/`** — FastAPI backend: Clerk auth, S3/DynamoDB asset storage, project/timeline
   persistence, generation job endpoints. Talked to over HTTP by `web/`, proxied at `/api/*` in dev
   (see `web/next.config.ts`).
-- **`agent/`** — LangChain agent orchestration; runs in-process locally or on Amazon Bedrock
+- **`agent/`** — OpenAI Agents SDK manager; runs in-process locally or on Amazon Bedrock
   AgentCore Runtime.
-- **`mcps/`** — one MCP server per generation provider (Seedance video, Seedream image, Mureka
-  music, Fish Audio TTS).
+- **`providers/`** — Seedance, Seedream, Mureka, Fish Audio, and Remotion implementations.
+  AgentCore Gateway Lambdas call these; the Runtime agent never hosts them locally.
 - **`docs/`** — the long-video production-agent program (below).
 - **`design/`** — planning/status docs for how `web/` and `server/` came to live in one repo:
   [design/MERGE_STATUS.md](design/MERGE_STATUS.md) (start here — current state, what's verified,
   known gaps), [design/MERGE_PLAN.md](design/MERGE_PLAN.md) (git mechanics),
   [design/PRODUCTION_READINESS.md](design/PRODUCTION_READINESS.md) (scale/architecture audit),
   [design/ARCHITECTURE.md](design/ARCHITECTURE.md) (product vision).
+
+The Studio's workspace, canvas, immutable asset-version, provenance, and durable execution model is
+documented in [docs/STUDIO_STATE.md](docs/STUDIO_STATE.md). The end-to-end Studio manager, media
+playback, Remotion, UI, and operations guide is [docs/STUDIO_AGENT.md](docs/STUDIO_AGENT.md).
 
 ## Long-video program
 
@@ -89,7 +93,8 @@ runtime when `AGENTCORE_RUNTIME_ARN` is set.
 ```
 
 With `AGENTCORE_RUNTIME_ARN` set (from Secrets Manager or bootstrap), generation/poll calls go to
-AgentCore. Leave it unset to keep the local in-process agent + stdio MCPs.
+AgentCore. Leave it unset to keep the local in-process agent. Tools still require
+`AGENTCORE_GATEWAY_URL`.
 
 The backend exposes generation and refinement requests through a video-only agent boundary,
 persists local job state under `.renderhaus/web-jobs/`, and serves completed MP4s through
@@ -97,6 +102,25 @@ job-scoped media URLs. `web/` is what drives it now instead of the old bundled U
 
 `SEEDANCE_DRY_RUN=true` keeps the full flow in preview mode without creating a paid video task.
 Set `SEEDANCE_DRY_RUN=false` in `.env.local` only when you intend to run live video generation.
+
+### Remotion Lambda renders
+
+The OpenAI canvas agent exposes `render_remotion_video` for assembling generated images, videos,
+voiceovers, and music into one downloadable MP4. The render site reuses the same typed
+`TimelineComposition` as the editor preview.
+
+```bash
+# Creates/updates the official Remotion IAM role, Lambda renderer, and S3 render site.
+make remotion
+
+# Renders the first successful multi-tool artifact set as an end-to-end smoke test.
+make smoke-remotion
+```
+
+Deployment metadata is stored under `.renderhaus/remotion/deployment.json` for local runs. The
+same non-secret runtime settings are synchronized into the configured `renderhaus/app` Secrets
+Manager secret for AgentCore deployments. Remotion packages are pinned to the same exact version;
+upgrade the NPM and Python packages together before redeploying the function and site.
 
 ## Setup
 
@@ -116,13 +140,15 @@ The backend uses [Clerk](https://clerk.com) for sign-in, called from `web/`. Add
 CLERK_PUBLISHABLE_KEY=pk_test_...
 # NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_...
 CLERK_SECRET_KEY=sk_test_...
-CLERK_AUTHORIZED_PARTIES=http://localhost:3000,http://127.0.0.1:8000,http://localhost:8000
+CLERK_AUTHORIZED_PARTIES=http://localhost:3000,http://127.0.0.1:3000,http://localhost:5174,http://127.0.0.1:5174,http://localhost:8000,http://127.0.0.1:8000
 # Optional: PEM public key for networkless JWT verification (newlines as \n)
 CLERK_JWT_KEY=
 ```
 
-`localhost:3000` is the Next.js dev origin users actually sign in from; the `:8000` entries cover
-hitting the backend directly (docs, scripts, tests).
+`localhost:3000` is the editor origin and `localhost:5174` is the Studio origin; their
+`127.0.0.1` variants cover opening either UI through that hostname. The `:8000` entries cover
+hitting the backend directly (docs, scripts, tests). Clerk compares this allowlist against the
+session token's exact `azp` origin, including the port.
 
 When both a publishable key and `CLERK_SECRET_KEY` are set, generation/upload APIs require a
 signed-in session. Leave them empty to keep the local UI open during setup.
@@ -161,23 +187,22 @@ This only prints `set` or `empty`, never secret values.
 ## List MCP Tools
 
 ```bash
-.venv/bin/python -m agent.main --list-tools
+make tools
 ```
 
-## Mureka via AgentCore Gateway
+## Provider tools via AgentCore Gateway
 
-Full Mureka APIs are implemented in `mcps/mureka/api.py` and exposed both as the local stdio
-MCP and as a single Lambda target behind AgentCore Gateway:
+Seedance, Seedream, Mureka, Fish Audio, and Remotion are Lambda targets behind one Amazon Bedrock
+AgentCore Gateway. The Runtime agent is an MCP client of that URL. There is no local MCP process.
 
 ```bash
-.venv/bin/python scripts/deploy_mureka_gateway.py --region us-east-1
+.venv/bin/python scripts/deploy_gateway.py --region us-east-1
 # Writes .env.agentcore.gateway with AGENTCORE_GATEWAY_URL
 # Sync that URL into Secrets Manager, then:
 .venv/bin/python scripts/deploy_agentcore.py --region us-east-1
 ```
 
-When `AGENTCORE_GATEWAY_URL` is set, the agent loads Mureka tools from the Gateway MCP endpoint
-instead of the local `mcps.mureka.server` process.
+`AGENTCORE_GATEWAY_URL` is required. The agent does not spawn provider MCP servers.
 
 ## Supervisor (Director + Executor)
 
@@ -209,5 +234,5 @@ not an LLM swarm over paid tools.
 
 Generation job records are written under `.renderhaus/jobs/`.
 
-Existing provider MCPs are wired through `configs/mcp.local.json`. Seedance video generation is live
-when `SEEDANCE_DRY_RUN=false`; Fish Audio TTS is live when `FISH_AUDIO_DRY_RUN=false`.
+Seedance video generation is live when `SEEDANCE_DRY_RUN=false`; Fish Audio TTS is live when
+`FISH_AUDIO_DRY_RUN=false`.
