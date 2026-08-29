@@ -316,32 +316,41 @@ async function waitForAgentJob(
   const deadline = Date.now() + AGENT_POLL_TIMEOUT_MS;
   while (Date.now() < deadline) {
     await new Promise((resolve) => window.setTimeout(resolve, AGENT_POLL_INTERVAL_MS));
-    const response = await studioFetch(`/api/studio/agent/${encodeURIComponent(jobId)}`, {
-      cache: "no-store",
-    });
-    const payload = (await response.json().catch(() => ({}))) as AgentJobPayload;
-    if (!response.ok) {
-      return agentError(payload, response);
-    }
-    if (typeof payload.message === "string") {
-      onProgress?.(payload.message);
-    }
-    if (payload.status === "completed") {
-      return completedAgentResult(payload);
-    }
-    if (payload.status === "error") {
-      const partial = payload.result ? completedAgentResult(payload) : null;
-      return {
-        status: "error",
-        message: payload.message || "The agent could not finish this request.",
-        ...(partial?.status === "completed" ? { result: partial.result } : {}),
-      };
-    }
+    const result = await fetchAgentJobStatus(jobId, onProgress);
+    if (result) return result;
   }
   return {
     status: "error",
     message: "The agent is still running. Refresh the canvas and try again shortly.",
   };
+}
+
+async function fetchAgentJobStatus(
+  jobId: string,
+  onProgress?: (message: string) => void,
+): Promise<AgentComposerResult | null> {
+  const response = await studioFetch(`/api/studio/agent/${encodeURIComponent(jobId)}`, {
+    cache: "no-store",
+  });
+  const payload = (await response.json().catch(() => ({}))) as AgentJobPayload;
+  if (!response.ok) {
+    return agentError(payload, response);
+  }
+  if (typeof payload.message === "string") {
+    onProgress?.(payload.message);
+  }
+  if (payload.status === "completed") {
+    return completedAgentResult(payload);
+  }
+  if (payload.status === "error") {
+    const partial = payload.result ? completedAgentResult(payload) : null;
+    return {
+      status: "error",
+      message: payload.message || "The agent could not finish this request.",
+      ...(partial?.status === "completed" ? { result: partial.result } : {}),
+    };
+  }
+  return null;
 }
 
 export type StreamAgentCallbacks = {
@@ -555,6 +564,16 @@ export async function streamAgentPrompt(
   });
 
   if (errorMessage) {
+    if (executionId) {
+      try {
+        const recovered = await fetchAgentJobStatus(executionId, callbacks?.onProgress);
+        if (recovered?.result) {
+          return recovered;
+        }
+      } catch {
+        // Preserve the streamed error when the recovery lookup is unavailable.
+      }
+    }
     return {
       status: "error",
       message: errorMessage,

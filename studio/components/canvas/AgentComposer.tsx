@@ -199,6 +199,9 @@ export function AgentComposer() {
         const newTargetId = liveRunNodeId
           ? completeAgentRun(liveRunNodeId, completedResult)
           : addAgentResult(completedResult, position);
+        if (result.status === "error" && liveRunNodeId) {
+          failAgentRun(liveRunNodeId, result.message);
+        }
         setCompletedNodeId(newTargetId || null);
         setValue("");
       } else if (result.status === "error" && liveRunNodeId) {
@@ -308,7 +311,7 @@ export function AgentComposer() {
                   {streamTools.map((tool) => {
                     const badge = eventStatusBadge(tool.status);
                     return (
-                      <div key={tool.id} className={`composer-tool-chip ${badge}`}>
+                      <div key={tool.id} role="listitem" className={`composer-tool-chip ${badge}`}>
                         {badge === "running" ? (
                           <LoaderCircle size={12} className="spin" />
                         ) : badge === "completed" ? (

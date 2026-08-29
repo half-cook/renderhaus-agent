@@ -1139,10 +1139,10 @@ async def studio_agent_stream(body: AgentBody, auth: AuthUser) -> StreamingRespo
         return str(repository.version_path(workspace_id, version_id))
 
     loop = asyncio.get_running_loop()
-    sink_tasks: set[asyncio.Task[None]] = set()
-    sink_tail: asyncio.Task[None] | None = None
+    sink_tasks: set[asyncio.Task[Any]] = set()
+    sink_tail: asyncio.Task[Any] | None = None
 
-    def persist_event(event: Any) -> None:
+    def persist_event(event: Any) -> Any:
         _hydrate_tool_event_assets(
             [event],
             workspace_id=workspace_id,
@@ -1158,21 +1158,22 @@ async def studio_agent_stream(body: AgentBody, auth: AuthUser) -> StreamingRespo
             execution_id=job_id,
             event=payload,
         )
+        return event
 
-    def record_event(event: Any) -> None:
+    def record_event(event: Any) -> asyncio.Task[Any]:
         nonlocal sink_tail
         previous = sink_tail
 
-        async def persist_in_order() -> None:
+        async def persist_in_order() -> Any:
             if previous is not None:
-                await previous
-            await asyncio.to_thread(persist_event, event)
+                await asyncio.gather(previous, return_exceptions=True)
+            return await asyncio.to_thread(persist_event, event)
 
         task = loop.create_task(persist_in_order(), name=f"studio-tool-event-{job_id}")
         sink_tail = task
         sink_tasks.add(task)
 
-        def finish_sink_task(completed: asyncio.Task[None]) -> None:
+        def finish_sink_task(completed: asyncio.Task[Any]) -> None:
             sink_tasks.discard(completed)
             if completed.cancelled():
                 return
@@ -1185,11 +1186,12 @@ async def studio_agent_stream(body: AgentBody, auth: AuthUser) -> StreamingRespo
                 )
 
         task.add_done_callback(finish_sink_task)
+        return task
 
     async def flush_event_sink() -> None:
         pending = sink_tail
         if pending is not None:
-            await pending
+            await asyncio.gather(pending, return_exceptions=True)
 
     request = _studio_agent_request(
         body.prompt,
@@ -1269,26 +1271,44 @@ async def studio_agent_stream(body: AgentBody, auth: AuthUser) -> StreamingRespo
                 elif event.type == "RUN_ERROR":
                     await flush_event_sink()
                     err_msg = getattr(event, "message", "The agent could not finish this request.")
+                    execution = await asyncio.to_thread(
+                        repository.get_execution,
+                        workspace_id,
+                        job_id,
+                    )
                     await asyncio.to_thread(
                         repository.update_execution,
                         workspace_id,
                         job_id,
                         status="error",
                         message=err_msg,
+                        result=_partial_agent_result(execution or {}),
+                        error_type=getattr(event, "code", None) or "AgentError",
                     )
                 yield encoder.encode(event)
         except Exception as exc:
             logger.exception("Error during studio agent stream for job %s", job_id)
             err_event = RunErrorEvent(message=str(exc)[:400], code="STREAM_ERROR")
+            await flush_event_sink()
+            execution = await asyncio.to_thread(
+                repository.get_execution,
+                workspace_id,
+                job_id,
+            )
             await asyncio.to_thread(
                 repository.update_execution,
                 workspace_id,
                 job_id,
                 status="error",
                 message=str(exc)[:400],
+                result=_partial_agent_result(execution or {}),
+                error_type=type(exc).__name__,
             )
             yield encoder.encode(err_event)
         finally:
+            await flush_event_sink()
+            if sink_tasks:
+                await asyncio.gather(*list(sink_tasks), return_exceptions=True)
             execution = await asyncio.to_thread(repository.get_execution, workspace_id, job_id)
             if execution and execution.get("status") in {"queued", "running"}:
                 await asyncio.to_thread(
@@ -1297,10 +1317,9 @@ async def studio_agent_stream(body: AgentBody, auth: AuthUser) -> StreamingRespo
                     job_id,
                     status="error",
                     message="The client disconnected before the agent finished.",
+                    result=_partial_agent_result(execution),
                     error_type="StreamDisconnected",
                 )
-            if sink_tasks:
-                await asyncio.gather(*list(sink_tasks), return_exceptions=True)
 
     return StreamingResponse(
         event_generator(),

@@ -476,6 +476,69 @@ class StudioAgentNextEntrypointTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(snapshot["primary_asset"]["version_id"], "ver-10")
         self.assertEqual(len(snapshot["tool_events"]), 1)
 
+    async def test_stream_emits_assets_after_async_sink_hydration(self) -> None:
+        asset = {
+            "asset_id": "asset-live",
+            "version_id": "version-live",
+            "kind": "image",
+            "filename": "live.png",
+        }
+
+        class HydratedRunner:
+            @classmethod
+            async def run(cls, agent, input_value, context=None, **_kwargs):
+                del agent, input_value
+                if context:
+                    context.record_event(
+                        StudioToolEvent(
+                            id="tool-live",
+                            name="Seedream___text_to_image",
+                            label="Seedream text to image",
+                            status="completed",
+                            summary="Generated live image.",
+                            result={"image_url": "https://cdn.example/live.png"},
+                        )
+                    )
+                return SimpleNamespace(
+                    final_output=StudioAgentOutput(
+                        title="Live image",
+                        summary="The live image is ready.",
+                        markdown="# Live image",
+                        filename="live-image.md",
+                    ),
+                    new_items=[],
+                )
+
+        def hydrate_event(event):
+            async def hydrate() -> None:
+                await asyncio.sleep(0)
+                event.assets = [asset]
+
+            return asyncio.create_task(hydrate())
+
+        events = []
+        async for event in stream_studio_agent(
+            StudioAgentRequest(prompt="Stream a live image", job_id="job-live"),
+            runner=HydratedRunner,
+            mcp_servers=[],
+            event_sink=hydrate_event,
+        ):
+            events.append(event)
+
+        asset_events = [
+            event
+            for event in events
+            if event.type == "CUSTOM" and event.name == "renderhaus_asset"
+        ]
+        snapshot_index = next(
+            index for index, event in enumerate(events) if event.type == "STATE_SNAPSHOT"
+        )
+        asset_index = events.index(asset_events[0])
+
+        self.assertEqual(asset_events[0].value, asset)
+        self.assertLess(asset_index, snapshot_index)
+        self.assertEqual(events[snapshot_index].snapshot["assets"], [asset])
+
     async def test_stream_studio_agent_bridges_live_sdk_hooks(self) -> None:
         class HookRunner:
             @classmethod

@@ -11,18 +11,14 @@ export type AGUIEventType =
   | "STEP_FINISHED"
   | "TEXT_MESSAGE_START"
   | "TEXT_MESSAGE_CONTENT"
-  | "TEXT_MESSAGE_CHUNK"
   | "TEXT_MESSAGE_END"
   | "TOOL_CALL_START"
   | "TOOL_CALL_ARGS"
-  | "TOOL_CALL_CHUNK"
   | "TOOL_CALL_END"
   | "TOOL_CALL_RESULT"
   | "STATE_SNAPSHOT"
   | "STATE_DELTA"
-  | "MESSAGES_SNAPSHOT"
-  | "CUSTOM"
-  | "RAW";
+  | "CUSTOM";
 
 export type BaseAGUIEvent = {
   type: AGUIEventType;
@@ -202,6 +198,9 @@ export async function parseAGUIEventStream(
     buffer += decoder.decode();
     if (buffer) processLine(buffer.replace(/\r$/, ""));
     dispatchEvent();
+  } catch (error) {
+    await reader.cancel().catch(() => undefined);
+    throw error;
   } finally {
     reader.releaseLock();
   }

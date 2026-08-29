@@ -12,7 +12,7 @@ from types import SimpleNamespace
 from unittest.mock import AsyncMock, patch
 
 from agents import RunContextWrapper
-from ag_ui.core import RunFinishedEvent, RunStartedEvent, StateSnapshotEvent
+from ag_ui.core import RunErrorEvent, RunFinishedEvent, RunStartedEvent, StateSnapshotEvent
 from fastapi import HTTPException
 import server.studio as studio_module
 
@@ -481,6 +481,115 @@ class StudioAgentTests(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(all(thread_id != event_loop_thread for thread_id in worker_threads))
         self.assertEqual(execution["status"], "completed")
         self.assertEqual(execution["result"]["assets"], [asset])
+
+    async def test_stream_persistence_failure_does_not_poison_later_events(self) -> None:
+        async def completed_stream(request, event_sink=None, **_kwargs):
+            for event_id in ("tool-fails", "tool-persists"):
+                event_sink(
+                    StudioToolEvent(
+                        id=event_id,
+                        name="generate_image",
+                        label="Image generation",
+                        status="completed",
+                        summary=f"Processed {event_id}.",
+                        result={"status": "completed"},
+                    )
+                )
+            yield StateSnapshotEvent(
+                snapshot={
+                    "title": "Recovered stream",
+                    "summary": "The second event persisted.",
+                    "markdown": "# Recovered stream",
+                    "filename": "recovered-stream.md",
+                    "tool_events": [],
+                    "assets": [],
+                }
+            )
+            yield RunFinishedEvent(
+                thread_id=request.project_id or "default",
+                run_id=request.job_id or "job",
+            )
+
+        with tempfile.TemporaryDirectory() as directory:
+            test_repository = StudioRepository(
+                Path(directory) / "studio.sqlite3",
+                Path(directory) / "media",
+            )
+            test_repository.create_project("user:local", "local", "Untitled", project_id="untitled")
+            original_append = test_repository.append_tool_call
+            append_attempts = 0
+
+            def flaky_append(**kwargs):
+                nonlocal append_attempts
+                append_attempts += 1
+                if append_attempts == 1:
+                    raise RuntimeError("transient persistence failure")
+                return original_append(**kwargs)
+
+            with (
+                patch.dict(os.environ, {"OPENAI_API_KEY": "test-only"}),
+                patch("server.studio.repository", test_repository),
+                patch("server.studio._agentcore_dev_url", return_value=""),
+                patch.object(test_repository, "append_tool_call", side_effect=flaky_append),
+                patch("server.studio.stream_studio_agent", new=completed_stream),
+            ):
+                response = await studio_agent_stream(AgentBody(prompt="Make the result"), None)
+                async for _chunk in response.body_iterator:
+                    pass
+                execution = test_repository.list_executions("user:local")[0]
+
+        self.assertEqual(append_attempts, 2)
+        self.assertEqual(execution["status"], "completed")
+        self.assertEqual(
+            [event["id"] for event in execution["tool_calls"]],
+            ["tool-persists"],
+        )
+
+    async def test_stream_error_preserves_partial_media_result(self) -> None:
+        asset = {
+            "asset_id": "asset-partial",
+            "version_id": "version-partial",
+            "kind": "image",
+            "filename": "partial.png",
+            "mime_type": "image/png",
+        }
+
+        async def failed_stream(_request, event_sink=None, **_kwargs):
+            event_sink(
+                StudioToolEvent(
+                    id="tool-partial",
+                    name="generate_image",
+                    label="Image generation",
+                    status="completed",
+                    summary="Generated an image before the run failed.",
+                    result={"status": "completed"},
+                    assets=[asset],
+                )
+            )
+            yield RunErrorEvent(message="The manager reached its turn limit.", code="MAX_TURNS")
+
+        with tempfile.TemporaryDirectory() as directory:
+            test_repository = StudioRepository(
+                Path(directory) / "studio.sqlite3",
+                Path(directory) / "media",
+            )
+            test_repository.create_project("user:local", "local", "Untitled", project_id="untitled")
+            with (
+                patch.dict(os.environ, {"OPENAI_API_KEY": "test-only"}),
+                patch("server.studio.repository", test_repository),
+                patch("server.studio._agentcore_dev_url", return_value=""),
+                patch("server.studio.stream_studio_agent", new=failed_stream),
+            ):
+                response = await studio_agent_stream(AgentBody(prompt="Make the result"), None)
+                async for _chunk in response.body_iterator:
+                    pass
+                execution = test_repository.list_executions("user:local")[0]
+
+        self.assertEqual(execution["status"], "error")
+        self.assertEqual(execution["error_type"], "MAX_TURNS")
+        self.assertTrue(execution["result"]["partial"])
+        self.assertEqual(execution["result"]["assets"], [asset])
+        self.assertEqual(execution["result"]["primary_asset"], asset)
 
     def test_asset_versions_are_workspace_scoped_and_immutable(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

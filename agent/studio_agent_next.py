@@ -57,7 +57,7 @@ logger = logging.getLogger("renderhaus.studio_agent")
 
 AssetRegistrar = Callable[..., list[dict[str, Any]]]
 SourceResolver = Callable[[str], str]
-EventSink = Callable[["StudioToolEvent"], None]
+EventSink = Callable[["StudioToolEvent"], Any]
 
 _SESSION_TIMEOUT_SECONDS = 180.0
 _FINALIZATION_TIMEOUT_SECONDS = 240.0
@@ -976,14 +976,11 @@ async def stream_studio_agent(
 
     event_queue: asyncio.Queue[BaseEvent | None] = asyncio.Queue()
     started_tool_calls: set[str] = set()
+    live_sink_tasks: set[asyncio.Task[None]] = set()
     run_hooks: _AGUIRunHooks | None = None
 
-    def wrapped_event_sink(tool_event: StudioToolEvent) -> None:
-        if event_sink:
-            try:
-                event_sink(tool_event)
-            except Exception:
-                logger.exception("Error in event_sink callback")
+    def enqueue_tool_event(tool_event: StudioToolEvent) -> None:
+        studio_ctx.add_assets(tool_event.assets)
         stream_id = (
             run_hooks.stream_id_for_harvest(
                 tool_event.name,
@@ -1025,6 +1022,34 @@ async def stream_studio_agent(
                 )
             )
 
+    def wrapped_event_sink(tool_event: StudioToolEvent) -> None:
+        sink_result: Any = None
+        if event_sink:
+            try:
+                sink_result = event_sink(tool_event)
+            except Exception:
+                logger.exception("Error in event_sink callback")
+
+        if not (asyncio.isfuture(sink_result) or asyncio.iscoroutine(sink_result)):
+            enqueue_tool_event(tool_event)
+            return
+
+        async def emit_after_sink() -> None:
+            try:
+                await asyncio.shield(sink_result)
+            except asyncio.CancelledError:
+                raise
+            except Exception:
+                logger.exception("Error awaiting event_sink callback")
+            enqueue_tool_event(tool_event)
+
+        task = asyncio.create_task(
+            emit_after_sink(),
+            name=f"studio-live-tool-event-{tool_event.id}",
+        )
+        live_sink_tasks.add(task)
+        task.add_done_callback(live_sink_tasks.discard)
+
     studio_ctx = studio or _context_from_request(
         request,
         asset_registrar=asset_registrar,
@@ -1056,7 +1081,7 @@ async def stream_studio_agent(
     )
 
     try:
-        while not agent_task.done() or not event_queue.empty():
+        while not agent_task.done() or live_sink_tasks or not event_queue.empty():
             try:
                 event = await asyncio.wait_for(event_queue.get(), timeout=0.1)
                 if event is not None:
@@ -1114,6 +1139,10 @@ async def stream_studio_agent(
     except Exception as exc:
         yield RunErrorEvent(message=str(exc)[:400], code="AGENT_ERROR")
     finally:
+        for task in live_sink_tasks:
+            task.cancel()
+        if live_sink_tasks:
+            await asyncio.gather(*live_sink_tasks, return_exceptions=True)
         if not agent_task.done():
             agent_task.cancel()
         with contextlib.suppress(asyncio.CancelledError, Exception):

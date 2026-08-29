@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
+import { parseAGUIEventStream } from "./ag-ui";
 import { streamAgentPrompt } from "./api";
 import { runCreativeNode } from "./canvas/graph-execution";
 import type { CanvasNode } from "./canvas/connection-validation";
@@ -92,5 +93,89 @@ test("streamAgentPrompt resumes polling when SSE ends before a terminal event", 
     } else {
       Reflect.deleteProperty(globalThis, "window");
     }
+  }
+});
+
+test("parseAGUIEventStream cancels the response body after a processing error", async () => {
+  let cancelled = false;
+  const response = new Response(
+    new ReadableStream<Uint8Array>({
+      start(controller) {
+        controller.enqueue(new TextEncoder().encode("data: not-json\n\n"));
+      },
+      cancel() {
+        cancelled = true;
+      },
+    }),
+  );
+
+  await assert.rejects(parseAGUIEventStream(response, () => undefined), SyntaxError);
+  assert.equal(cancelled, true);
+});
+
+test("streamAgentPrompt returns persisted partial outputs after RUN_ERROR", async () => {
+  const originalFetch = globalThis.fetch;
+  const requests: string[] = [];
+
+  globalThis.fetch = async (input) => {
+    const url = String(input);
+    requests.push(url);
+    if (url.endsWith("/api/studio/agent/stream")) {
+      return new Response(
+        [
+          'data: {"type":"RUN_STARTED","threadId":"project-1","runId":"job-partial"}',
+          "",
+          'data: {"type":"RUN_ERROR","message":"The manager reached its turn limit.","code":"MAX_TURNS"}',
+          "",
+        ].join("\n"),
+        { status: 200, headers: { "Content-Type": "text/event-stream" } },
+      );
+    }
+    return new Response(
+      JSON.stringify({
+        job_id: "job-partial",
+        status: "error",
+        message: "Completed outputs were preserved.",
+        result: {
+          title: "Recovered agent result",
+          summary: "Recovered an image.",
+          markdown: "# Recovered agent result",
+          filename: "partial.png",
+          partial: true,
+          tool_events: [],
+          assets: [
+            {
+              asset_id: "asset-partial",
+              version_id: "version-partial",
+              kind: "image",
+              filename: "partial.png",
+              mime_type: "image/png",
+            },
+          ],
+          primary_asset: {
+            asset_id: "asset-partial",
+            version_id: "version-partial",
+            kind: "image",
+            filename: "partial.png",
+            mime_type: "image/png",
+          },
+        },
+      }),
+      { status: 200, headers: { "Content-Type": "application/json" } },
+    );
+  };
+
+  try {
+    const result = await streamAgentPrompt("Make a result", "project-1", [], []);
+    assert.equal(result.status, "error");
+    assert.ok(result.result);
+    assert.equal(result.result.partial, true);
+    assert.equal(result.result.primaryAsset?.versionId, "version-partial");
+    assert.deepEqual(requests, [
+      "/api/studio/agent/stream",
+      "/api/studio/agent/job-partial",
+    ]);
+  } finally {
+    globalThis.fetch = originalFetch;
   }
 });

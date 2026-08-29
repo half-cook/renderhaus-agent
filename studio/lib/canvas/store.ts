@@ -382,6 +382,9 @@ function createAgentRunCluster(
     },
     fieldOptions,
   });
+  if (result.partial) {
+    runNode.data.status = "failed";
+  }
   return {
     nodes: [...artifactNodes, ...(primaryNode ? [primaryNode] : []), runNode],
     primaryNodeId: primaryNode?.id,
@@ -849,7 +852,7 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
     const nodes = replaceAgentRunCluster(
       get().nodes,
       currentRunNode,
-      { ...result, partial: false },
+      result,
       get().fieldOptions,
     );
     const replacementRun = nodes.find((node) => node.id === id);
