@@ -37,7 +37,7 @@ for (const providerStatus of ["expired", "timed_out"]) {
   });
 }
 
-test("streamAgentPrompt resumes polling when SSE ends before a terminal event", async () => {
+test("streamAgentPrompt resumes polling when SSE ends after a state snapshot", async () => {
   const originalFetch = globalThis.fetch;
   const originalWindow = Object.getOwnPropertyDescriptor(globalThis, "window");
   const requests: string[] = [];
@@ -56,7 +56,12 @@ test("streamAgentPrompt resumes polling when SSE ends before a terminal event", 
     requests.push(url);
     if (url.endsWith("/api/studio/agent/stream")) {
       return new Response(
-        'data: {"type":"RUN_STARTED","threadId":"project-1","runId":"job-1"}\n\n',
+        [
+          'data: {"type":"RUN_STARTED","threadId":"project-1","runId":"job-1"}',
+          "",
+          'data: {"type":"STATE_SNAPSHOT","snapshot":{"title":"Partial streamed state","summary":"Not terminal.","markdown":"# Partial streamed state","filename":"partial.md","tool_events":[],"assets":[]}}',
+          "",
+        ].join("\n"),
         { status: 200, headers: { "Content-Type": "text/event-stream" } },
       );
     }

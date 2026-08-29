@@ -539,6 +539,111 @@ class StudioAgentNextEntrypointTests(unittest.IsolatedAsyncioTestCase):
         self.assertLess(asset_index, snapshot_index)
         self.assertEqual(events[snapshot_index].snapshot["assets"], [asset])
 
+    async def test_stream_awaits_preconfigured_context_sink(self) -> None:
+        asset = {
+            "asset_id": "asset-context",
+            "version_id": "version-context",
+            "kind": "image",
+            "filename": "context.png",
+        }
+
+        class ContextSinkRunner:
+            @classmethod
+            async def run(cls, agent, input_value, context=None, **_kwargs):
+                del agent, input_value
+                if context:
+                    context.record_event(
+                        StudioToolEvent(
+                            id="tool-context",
+                            name="Seedream___text_to_image",
+                            label="Seedream text to image",
+                            status="completed",
+                            summary="Generated context image.",
+                            result={"image_url": "https://cdn.example/context.png"},
+                        )
+                    )
+                return SimpleNamespace(
+                    final_output=StudioAgentOutput(
+                        title="Context image",
+                        summary="The context image is ready.",
+                        markdown="# Context image",
+                        filename="context-image.md",
+                    ),
+                    new_items=[],
+                )
+
+        async def hydrate_event(event):
+            await asyncio.sleep(0)
+            event.assets = [asset]
+
+        events = []
+        async for event in stream_studio_agent(
+            StudioAgentRequest(prompt="Stream a context image", job_id="job-context"),
+            runner=ContextSinkRunner,
+            studio=StudioAgentContext(event_sink=hydrate_event),
+            mcp_servers=[],
+        ):
+            events.append(event)
+
+        asset_event = next(
+            event
+            for event in events
+            if event.type == "CUSTOM" and event.name == "renderhaus_asset"
+        )
+        snapshot = next(event for event in events if event.type == "STATE_SNAPSHOT")
+        self.assertEqual(asset_event.value, asset)
+        self.assertLess(events.index(asset_event), events.index(snapshot))
+        self.assertEqual(snapshot.snapshot["assets"], [asset])
+
+    async def test_stream_logs_preconfigured_context_sink_failure_and_emits_event(self) -> None:
+        class FailingSinkRunner:
+            @classmethod
+            async def run(cls, agent, input_value, context=None, **_kwargs):
+                del agent, input_value
+                if context:
+                    context.record_event(
+                        StudioToolEvent(
+                            id="tool-failing-sink",
+                            name="test_tool",
+                            label="Test tool",
+                            status="completed",
+                            summary="The tool completed.",
+                        )
+                    )
+                return SimpleNamespace(
+                    final_output=StudioAgentOutput(
+                        title="Sink failure",
+                        summary="The run still completed.",
+                        markdown="# Sink failure",
+                        filename="sink-failure.md",
+                    ),
+                    new_items=[],
+                )
+
+        def failing_sink(_event):
+            raise RuntimeError("sink failed")
+
+        events = []
+        with self.assertLogs("renderhaus.studio_agent", level="ERROR") as logs:
+            async for event in stream_studio_agent(
+                StudioAgentRequest(prompt="Exercise a failing sink", job_id="job-failing-sink"),
+                runner=FailingSinkRunner,
+                studio=StudioAgentContext(event_sink=failing_sink),
+                mcp_servers=[],
+            ):
+                events.append(event)
+
+        self.assertTrue(any("Error in event_sink callback" in message for message in logs.output))
+        self.assertTrue(
+            any(
+                event.type == "CUSTOM"
+                and event.name == "renderhaus_tool_event"
+                and event.value["id"] == "tool-failing-sink"
+                for event in events
+            )
+        )
+        self.assertEqual(events[-1].type, "RUN_FINISHED")
+
     async def test_stream_studio_agent_bridges_live_sdk_hooks(self) -> None:
         class HookRunner:
             @classmethod

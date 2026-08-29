@@ -499,7 +499,6 @@ export async function streamAgentPrompt(
         }
         break;
       case "STATE_SNAPSHOT":
-        receivedTerminalEvent = true;
         if (event.snapshot) {
           const snap = event.snapshot;
           title = String(snap.title || title);

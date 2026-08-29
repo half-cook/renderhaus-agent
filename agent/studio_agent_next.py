@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
+import inspect
 import json
 import logging
 import os
@@ -1022,15 +1023,18 @@ async def stream_studio_agent(
                 )
             )
 
-    def wrapped_event_sink(tool_event: StudioToolEvent) -> None:
+    def wrapped_event_sink(
+        tool_event: StudioToolEvent,
+        sink: EventSink | None = event_sink,
+    ) -> None:
         sink_result: Any = None
-        if event_sink:
+        if sink:
             try:
-                sink_result = event_sink(tool_event)
+                sink_result = sink(tool_event)
             except Exception:
                 logger.exception("Error in event_sink callback")
 
-        if not (asyncio.isfuture(sink_result) or asyncio.iscoroutine(sink_result)):
+        if not inspect.isawaitable(sink_result):
             enqueue_tool_event(tool_event)
             return
 
@@ -1060,9 +1064,7 @@ async def stream_studio_agent(
         original_sink = studio_ctx.event_sink
 
         def combined_sink(event: StudioToolEvent) -> None:
-            if original_sink:
-                original_sink(event)
-            wrapped_event_sink(event)
+            wrapped_event_sink(event, original_sink)
 
         studio_ctx.event_sink = combined_sink
 
