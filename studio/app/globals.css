@@ -137,9 +137,9 @@ a:focus-visible {
   --safe-top: var(--header-height);
   --safe-left: var(--scene-rail-width);
   --safe-right: 0px;
-  /* Bottom-docked tool bar (16px + ~52px) + 12px gap + the collapsed
-     composer pill sitting above it + a little breathing room. */
-  --safe-bottom: 140px;
+  /* Just the collapsed composer pill + breathing room -- the dock only
+     eats into this when it's actually docked at the bottom (below). */
+  --safe-bottom: 72px;
 }
 
 .workspace.inspector-open {
@@ -147,7 +147,22 @@ a:focus-visible {
 }
 
 .workspace.composer-open {
+  --safe-bottom: 200px;
+}
+
+.workspace[data-dock="bottom"] {
+  /* Tool bar (16px + ~52px) + 12px gap + the collapsed composer pill
+     sitting above it + a little breathing room. */
+  --safe-bottom: 140px;
+}
+
+.workspace[data-dock="bottom"].composer-open {
   --safe-bottom: 264px;
+}
+
+.workspace[data-dock="top"] {
+  /* Header + 16px gap + tool bar (~52px) + 12px breathing room. */
+  --safe-top: calc(var(--header-height) + 80px);
 }
 
 .workspace-loading {
@@ -170,6 +185,22 @@ a:focus-visible {
 .flow-host .react-flow {
   width: 100%;
   height: 100%;
+}
+
+/* Same arrow as the Select tool's own icon (lucide mouse-pointer-2),
+   rendered as a cursor -- so picking Select (click or V) actually looks
+   like it, instead of leaving the browser's default arrow. Black fill +
+   white outline reads on both the light and dark canvas background.
+   Hotspot (4 5) lands on the arrow's tip, matching a normal pointer. */
+.flow-host[data-tool="select"] .react-flow {
+  /* Base64, not raw url-encoded SVG -- Chrome will load a url-encoded
+     inline SVG as an <img> fine but silently refuses to use it as an
+     actual CSS cursor and falls back to auto, no warning. Base64 is the
+     reliable form for cursor: specifically. */
+  cursor:
+    url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0Ij48cGF0aCBkPSJNNC4wMzcgNC42ODhhLjQ5NS40OTUgMCAwIDEgLjY1MS0uNjUxbDE2IDYuNWEuNS41IDAgMCAxLS4wNjMuOTQ3bC02LjEyNCAxLjU4YTIgMiAwIDAgMC0xLjQzOCAxLjQzNWwtMS41NzkgNi4xMjZhLjUuNSAwIDAgMS0uOTQ3LjA2M3oiIGZpbGw9ImJsYWNrIiBzdHJva2U9IndoaXRlIiBzdHJva2Utd2lkdGg9IjEuNSIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPjwvc3ZnPg==")
+      4 5,
+    auto;
 }
 
 .chrome-header {
@@ -374,19 +405,14 @@ a:focus-visible {
 }
 
 .tool-rail {
-  /* Figma-style: icon-only tool bar docked at the bottom-center, not a
-     persistent left rail -- the left rail is now .scene-rail (a list of
-     scenes, mirroring how Figma's left sidebar tracks frames). Details
-     for a tool only show up after you click into it (the node inspector
-     opens), same as before -- this is a reposition, not a new interaction
-     model. */
+  /* Figma-style: icon-only tool bar, dockable to any edge -- the left
+     edge is otherwise .scene-rail (a list of scenes, mirroring how
+     Figma's left sidebar tracks frames). Details for a tool only show
+     up after you click into it (the node inspector opens), same as
+     before -- docking is a reposition, not a new interaction model. */
   position: absolute;
-  left: 50%;
-  bottom: 16px;
-  transform: translateX(-50%);
   z-index: var(--z-rail);
   display: flex;
-  flex-direction: row;
   align-items: center;
   gap: 4px;
   width: max-content;
@@ -397,23 +423,94 @@ a:focus-visible {
   box-shadow: var(--shadow);
 }
 
+/* Top/bottom: centered the same way .composer is (left/right/margin-auto
+   within the safe area), not left:50%+translateX against the raw
+   viewport -- the two need to share a reference frame so opening the
+   inspector (which narrows the safe area) shifts them together instead
+   of leaving one dead-center of the viewport and the other not. */
+.tool-rail[data-dock="bottom"],
+.tool-rail[data-dock="top"] {
+  left: var(--safe-left);
+  right: var(--safe-right);
+  margin-inline: auto;
+  flex-direction: row;
+  align-items: center;
+}
+
+.tool-rail[data-dock="bottom"] {
+  bottom: 16px;
+}
+
+.tool-rail[data-dock="top"] {
+  /* Below the header, not var(--safe-top) -- that grows to make room for
+     this dock (see .workspace[data-dock="top"]), so anchoring off it
+     would double-count the offset and push the dock too far down. */
+  top: calc(var(--header-height) + 16px);
+}
+
+/* Left/right: float over the canvas near that edge, vertically centered,
+   rather than reserving dedicated layout width the way .scene-rail and
+   .inspector do -- same "floating control" treatment as the minimap. */
+.tool-rail[data-dock="left"],
+.tool-rail[data-dock="right"] {
+  flex-direction: column;
+  align-items: center;
+}
+
+.tool-rail[data-dock="left"] {
+  left: calc(var(--safe-left) + 16px);
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.tool-rail[data-dock="right"] {
+  right: calc(var(--safe-right) + 16px);
+  /* Not a true vertical center like the left dock -- the minimap +
+     zoom control already float in the bottom-right corner, so center
+     within the region above that stack instead of reaching down into
+     it (top/bottom + margin-block:auto is the vertical analog of the
+     left/right + margin-inline:auto trick used for the top/bottom
+     docks). 256px clears the minimap's own top edge (measured at 241px
+     off the workspace's bottom edge) plus a gap. */
+  top: calc(var(--safe-top) + 16px);
+  bottom: 256px;
+  margin-block: auto;
+}
+
 .rail-group {
   display: flex;
-  flex-direction: row;
   align-items: center;
   gap: 4px;
 }
 
-.rail-group + .rail-group {
+[data-dock="top"] .rail-group,
+[data-dock="bottom"] .rail-group {
+  flex-direction: row;
+}
+
+[data-dock="left"] .rail-group,
+[data-dock="right"] .rail-group {
+  flex-direction: column;
+}
+
+[data-dock="top"] .rail-group + .rail-group,
+[data-dock="bottom"] .rail-group + .rail-group,
+[data-dock="free"] .rail-group + .rail-group {
   margin-left: 4px;
   padding-left: 8px;
   border-left: 1px solid var(--line);
 }
 
+[data-dock="left"] .rail-group + .rail-group,
+[data-dock="right"] .rail-group + .rail-group {
+  margin-top: 4px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+}
+
 /* Group headings ("Canvas", "Inputs", ...) stay screen-reader-only --
-   there's no room for them in an icon-only horizontal dock, and Figma's
-   own tool bar doesn't show them either. Per-button tooltips (native
-   title attr) carry the label instead. */
+   there's no room for them in an icon-only dock, and Figma's own tool
+   bar doesn't show them either. Per-button tooltips carry the label. */
 .rail-group-label {
   position: absolute;
   width: 1px;
@@ -428,13 +525,10 @@ a:focus-visible {
 
 .rail-btn-label {
   /* A proper tooltip, not the native title attr -- shows the tool's name
-     above the button on hover/focus, matching how Figma's own icon-only
-     bottom tool bar labels each button. */
+     next to the button on hover/focus, on whichever side has room given
+     where the dock currently sits (matching Figma's own tooltip). */
   position: absolute;
-  left: 50%;
-  bottom: calc(100% + 8px);
   z-index: 1;
-  transform: translateX(-50%);
   padding: 4px 8px;
   background: var(--chrome);
   border: 1px solid var(--line);
@@ -450,15 +544,130 @@ a:focus-visible {
   pointer-events: none;
 }
 
+.rail-btn-shortcut {
+  margin-left: 6px;
+  padding: 1px 4px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  color: var(--muted);
+  font-size: 10px;
+  font-family: inherit;
+}
+
+[data-dock="bottom"] .rail-btn-label {
+  left: 50%;
+  bottom: calc(100% + 8px);
+  transform: translateX(-50%);
+}
+
+[data-dock="top"] .rail-btn-label {
+  left: 50%;
+  top: calc(100% + 8px);
+  transform: translateX(-50%);
+}
+
+[data-dock="left"] .rail-btn-label {
+  top: 50%;
+  left: calc(100% + 8px);
+  transform: translateY(-50%);
+}
+
+[data-dock="right"] .rail-btn-label {
+  top: 50%;
+  right: calc(100% + 8px);
+  transform: translateY(-50%);
+}
+
+/* Freely dropped mid-canvas (not snapped to an edge) -- tooltip default
+   to above, same as the bottom dock, since there's no edge to key off. */
+[data-dock="free"] .rail-btn-label {
+  left: 50%;
+  bottom: calc(100% + 8px);
+  transform: translateX(-50%);
+}
+
 .rail-btn:hover .rail-btn-label,
 .rail-btn:focus-visible .rail-btn-label {
   opacity: 1;
   visibility: visible;
 }
 
+.dock-picker {
+  position: absolute;
+  z-index: 1;
+  display: flex;
+  gap: 2px;
+  padding: 4px;
+  background: var(--chrome);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+}
+
+[data-dock="bottom"] .dock-picker {
+  right: 0;
+  bottom: calc(100% + 8px);
+  flex-direction: row;
+}
+
+[data-dock="top"] .dock-picker {
+  right: 0;
+  top: calc(100% + 8px);
+  flex-direction: row;
+}
+
+[data-dock="left"] .dock-picker {
+  left: calc(100% + 8px);
+  bottom: 0;
+  flex-direction: column;
+}
+
+[data-dock="right"] .dock-picker {
+  right: calc(100% + 8px);
+  bottom: 0;
+  flex-direction: column;
+}
+
+[data-dock="free"] .dock-picker {
+  left: 0;
+  bottom: calc(100% + 8px);
+  flex-direction: row;
+}
+
+.dock-picker-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+}
+
+.dock-picker-btn:hover {
+  background: var(--line);
+  color: var(--text);
+}
+
+.dock-picker-btn.active {
+  background: var(--active);
+  color: var(--bg);
+}
+
 .rail-btn.active {
   background: var(--active);
   color: var(--bg);
+}
+
+.rail-drag-handle {
+  cursor: grab;
+  touch-action: none;
+}
+
+.rail-drag-handle:active {
+  cursor: grabbing;
 }
 
 .scene-rail {
@@ -523,6 +732,11 @@ a:focus-visible {
 .scene-rail-item:hover,
 .scene-rail-item.active {
   background: var(--line);
+}
+
+.scene-rail-icon {
+  flex-shrink: 0;
+  color: var(--muted);
 }
 
 .scene-rail-dot {
@@ -647,9 +861,7 @@ a:focus-visible {
   position: absolute;
   left: var(--safe-left);
   right: var(--safe-right);
-  /* Stacked above .tool-rail, which now docks at the very bottom
-     (16px + ~52px tall) instead of running down the left edge. */
-  bottom: 80px;
+  bottom: 16px;
   z-index: var(--z-composer);
   width: min(640px, 100%);
   max-width: 640px;
@@ -659,6 +871,13 @@ a:focus-visible {
   border: 1px solid var(--line);
   border-radius: 20px;
   box-shadow: var(--shadow);
+}
+
+.workspace[data-dock="bottom"] .composer {
+  /* Stacked above .tool-rail only when it's actually docked down here
+     (16px + ~52px tall + a 12px gap) -- otherwise nothing's competing
+     for this space. */
+  bottom: 80px;
 }
 
 .composer.collapsed {
@@ -990,6 +1209,11 @@ a:focus-visible {
      that leftover space instead of leaving it flush left with a bare
      strip of card background on the right. */
   margin: 0 auto;
+  /* Lets .scene-stage .generate size itself off this box's own width via
+     cqw, so the button scales with the frame instead of staying a fixed
+     size that overflows a small 9:16 frame and looks lost on a big 16:9
+     one. */
+  container-type: inline-size;
 }
 
 .scene-stage .media-preview {
@@ -1013,7 +1237,9 @@ a:focus-visible {
 
 .scene-stage .generate {
   width: auto;
-  min-width: 120px;
+  min-width: clamp(64px, 42cqw, 170px);
+  padding: clamp(6px, 3cqw, 10px) clamp(10px, 5cqw, 16px);
+  font-size: clamp(11px, 5.5cqw, 15px);
 }
 
 .scene-footer {
@@ -1557,6 +1783,10 @@ a:focus-visible {
 
 .generate,
 .generate-lg {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   width: 100%;
   border-radius: 12px;
   background: var(--text);

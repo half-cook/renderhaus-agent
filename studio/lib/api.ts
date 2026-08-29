@@ -39,6 +39,16 @@ function studioAssets(value: unknown): StudioAsset[] {
   return value.map(studioAsset).filter((asset): asset is StudioAsset => asset !== null);
 }
 
+// A failed request doesn't always come back as JSON (a 500 can just be a
+// plain-text or HTML error page) -- parsing that blindly throws a cryptic
+// "Unexpected token" from inside JSON.parse itself, before the response.ok
+// check below ever runs, so that becomes the error the user sees instead
+// of a real message. Fall back to {} so the existing `payload.detail ||
+// fallback` logic still produces something readable.
+async function readJson(response: Response): Promise<Record<string, unknown>> {
+  return response.json().catch(() => ({}));
+}
+
 export async function fetchStatus(): Promise<StudioStatus> {
   const response = await studioFetch("/api/studio/status");
   if (!response.ok) {
@@ -87,9 +97,9 @@ export async function invokeTool(
       source_version_ids: options.sourceVersionIds || [],
     }),
   });
-  const payload = await response.json();
+  const payload = await readJson(response);
   if (!response.ok) {
-    throw new Error(payload.detail || `invoke ${response.status}`);
+    throw new Error(String(payload.detail || `invoke ${response.status}`));
   }
   return {
     result: payload.result,
@@ -107,9 +117,9 @@ export async function uploadStudioFile(
     `/api/studio/upload?project_id=${encodeURIComponent(projectId)}`,
     { method: "POST", body },
   );
-  const payload = await response.json();
+  const payload = await readJson(response);
   if (!response.ok) {
-    throw new Error(payload.detail || `upload ${response.status}`);
+    throw new Error(String(payload.detail || `upload ${response.status}`));
   }
   const asset = studioAsset(payload);
   if (!asset) {
@@ -130,11 +140,11 @@ export type StudioCanvasDocument = {
 
 export async function fetchStudioProjects(): Promise<StudioProject[]> {
   const response = await studioFetch("/api/studio/projects", { cache: "no-store" });
-  const payload = await response.json();
+  const payload = await readJson(response);
   if (!response.ok) {
-    throw new Error(payload.detail || `projects ${response.status}`);
+    throw new Error(String(payload.detail || `projects ${response.status}`));
   }
-  return Array.isArray(payload.items) ? payload.items : [];
+  return Array.isArray(payload.items) ? (payload.items as StudioProject[]) : [];
 }
 
 export async function createStudioProject(
@@ -146,11 +156,11 @@ export async function createStudioProject(
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ name, project_id: projectId }),
   });
-  const payload = await response.json();
+  const payload = await readJson(response);
   if (!response.ok) {
-    throw new Error(payload.detail || `create project ${response.status}`);
+    throw new Error(String(payload.detail || `create project ${response.status}`));
   }
-  return payload;
+  return payload as unknown as StudioProject;
 }
 
 export type StudioCanvasSnapshot = {
@@ -163,11 +173,11 @@ export async function fetchStudioCanvas(projectId: string): Promise<StudioCanvas
     `/api/studio/projects/${encodeURIComponent(projectId)}/canvas`,
     { cache: "no-store" },
   );
-  const payload = await response.json();
+  const payload = await readJson(response);
   if (!response.ok) {
-    throw new Error(payload.detail || `canvas ${response.status}`);
+    throw new Error(String(payload.detail || `canvas ${response.status}`));
   }
-  return { revision: Number(payload.revision || 1), document: payload.document };
+  return { revision: Number(payload.revision || 1), document: payload.document as StudioCanvasDocument };
 }
 
 export async function saveStudioCanvas(
@@ -183,11 +193,14 @@ export async function saveStudioCanvas(
       body: JSON.stringify({ document, base_revision: baseRevision }),
     },
   );
-  const payload = await response.json();
+  const payload = await readJson(response);
   if (!response.ok) {
-    throw new Error(payload.detail || `save canvas ${response.status}`);
+    throw new Error(String(payload.detail || `save canvas ${response.status}`));
   }
-  return { revision: Number(payload.revision || baseRevision || 1), document: payload.document };
+  return {
+    revision: Number(payload.revision || baseRevision || 1),
+    document: payload.document as StudioCanvasDocument,
+  };
 }
 
 export type StudioExecution = {
@@ -203,9 +216,9 @@ export type StudioExecution = {
 
 export async function fetchStudioExecutions(limit = 20): Promise<StudioExecution[]> {
   const response = await studioFetch(`/api/studio/agent?limit=${limit}`, { cache: "no-store" });
-  const payload = await response.json();
+  const payload = await readJson(response);
   if (!response.ok) {
-    throw new Error(payload.detail || `agent jobs ${response.status}`);
+    throw new Error(String(payload.detail || `agent jobs ${response.status}`));
   }
   return (Array.isArray(payload.items) ? payload.items : []).map((value: unknown) => {
     const item = value as Record<string, unknown>;

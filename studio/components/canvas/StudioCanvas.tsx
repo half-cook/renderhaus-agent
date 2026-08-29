@@ -99,7 +99,7 @@ export function StudioCanvas() {
   };
 
   return (
-    <div className="flow-host">
+    <div className="flow-host" data-tool={activeTool}>
       <ReactFlow
         nodes={nodes}
         edges={edges}

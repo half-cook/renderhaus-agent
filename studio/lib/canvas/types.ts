@@ -26,6 +26,8 @@ export type RailTool =
   | "storyboard"
   | "agent";
 
+export type DockPosition = "top" | "bottom" | "left" | "right" | "free";
+
 export type PortDefinition = {
   id: string;
   label: string;
