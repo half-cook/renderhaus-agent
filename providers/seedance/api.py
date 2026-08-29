@@ -32,7 +32,18 @@ class SeedanceTask(BaseModel):
     note: str
 
 
-TERMINAL_STATUSES = {"succeeded", "failed", "cancelled", "canceled", "deleted"}
+TERMINAL_STATUSES = {
+    "succeeded",
+    "failed",
+    "cancelled",
+    "canceled",
+    "deleted",
+    "expired",
+    "timeout",
+    "timed_out",
+    "timeouted",
+    "dry_run",
+}
 
 # Seedance 1.5 Pro accepts 4-12 second clips; longer requests are rejected by BytePlus.
 MIN_DURATION_SECONDS = 4

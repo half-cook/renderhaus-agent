@@ -1,5 +1,7 @@
+export type { AgentToolEvent } from "./canvas/types";
 import type { FieldOptions, ProviderCatalog, StudioAsset, StudioStatus } from "./types";
-import type { AgentResultData, CreativeNodeKind } from "./canvas/types";
+import type { AgentResultData, AgentToolEvent, CreativeNodeKind } from "./canvas/types";
+import { parseAGUIEventStream } from "./ag-ui";
 import { studioFetch } from "./authenticated-fetch";
 
 function studioAsset(value: unknown): StudioAsset | null {
@@ -314,31 +316,296 @@ async function waitForAgentJob(
   const deadline = Date.now() + AGENT_POLL_TIMEOUT_MS;
   while (Date.now() < deadline) {
     await new Promise((resolve) => window.setTimeout(resolve, AGENT_POLL_INTERVAL_MS));
-    const response = await studioFetch(`/api/studio/agent/${encodeURIComponent(jobId)}`, {
-      cache: "no-store",
-    });
-    const payload = (await response.json().catch(() => ({}))) as AgentJobPayload;
-    if (!response.ok) {
-      return agentError(payload, response);
-    }
-    if (typeof payload.message === "string") {
-      onProgress?.(payload.message);
-    }
-    if (payload.status === "completed") {
-      return completedAgentResult(payload);
-    }
-    if (payload.status === "error") {
-      const partial = payload.result ? completedAgentResult(payload) : null;
-      return {
-        status: "error",
-        message: payload.message || "The agent could not finish this request.",
-        ...(partial?.status === "completed" ? { result: partial.result } : {}),
-      };
-    }
+    const result = await fetchAgentJobStatus(jobId, onProgress);
+    if (result) return result;
   }
   return {
     status: "error",
     message: "The agent is still running. Refresh the canvas and try again shortly.",
+  };
+}
+
+async function fetchAgentJobStatus(
+  jobId: string,
+  onProgress?: (message: string) => void,
+): Promise<AgentComposerResult | null> {
+  const response = await studioFetch(`/api/studio/agent/${encodeURIComponent(jobId)}`, {
+    cache: "no-store",
+  });
+  const payload = (await response.json().catch(() => ({}))) as AgentJobPayload;
+  if (!response.ok) {
+    return agentError(payload, response);
+  }
+  if (typeof payload.message === "string") {
+    onProgress?.(payload.message);
+  }
+  if (payload.status === "completed") {
+    return completedAgentResult(payload);
+  }
+  if (payload.status === "error") {
+    const partial = payload.result ? completedAgentResult(payload) : null;
+    return {
+      status: "error",
+      message: payload.message || "The agent could not finish this request.",
+      ...(partial?.status === "completed" ? { result: partial.result } : {}),
+    };
+  }
+  return null;
+}
+
+export type StreamAgentCallbacks = {
+  onProgress?: (message: string) => void;
+  onTextDelta?: (delta: string, fullText: string) => void;
+  onToolEvent?: (event: AgentToolEvent) => void;
+  onAsset?: (asset: StudioAsset) => void;
+  onStateSnapshot?: (snapshot: Record<string, unknown>) => void;
+  onRunStarted?: (runId: string, threadId: string) => void;
+  onRunFinished?: (runId: string, threadId: string) => void;
+  onRunError?: (message: string) => void;
+};
+
+function readableToolLabel(name: string): string {
+  const label = name.replace("___", " ").replaceAll("_", " ").trim();
+  return label ? label[0].toUpperCase() + label.slice(1) : "Tool";
+}
+
+function upsertToolEvent(events: AgentToolEvent[], next: AgentToolEvent): void {
+  const index = events.findIndex((event) => event.id === next.id);
+  if (index >= 0) {
+    events[index] = next;
+  } else {
+    events.push(next);
+  }
+}
+
+export async function streamAgentPrompt(
+  prompt: string,
+  projectId: string,
+  nodeIds: string[],
+  nodes: AgentNodeContext[],
+  callbacks?: StreamAgentCallbacks,
+): Promise<AgentComposerResult> {
+  const response = await studioFetch("/api/studio/agent/stream", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ prompt, project_id: projectId, node_ids: nodeIds, nodes }),
+  });
+
+  if (!response.ok) {
+    const errorPayload = (await response.json().catch(() => ({}))) as AgentJobPayload;
+    if ([404, 405, 501].includes(response.status)) {
+      throw new Error(
+        errorPayload.detail || errorPayload.message || "The AG-UI endpoint is unavailable.",
+      );
+    }
+    return {
+      status: "error",
+      message: errorPayload.detail || errorPayload.message || `Agent stream request failed (${response.status}).`,
+    };
+  }
+
+  let accumulatedText = "";
+  let finalResult: AgentResultData | null = null;
+  const toolEvents: AgentToolEvent[] = [];
+  const assets: StudioAsset[] = [];
+  let executionId: string | undefined;
+  let title = "Agent result";
+  let summary = "";
+  let filename = "agent-result.md";
+  let errorMessage: string | null = null;
+  let receivedTerminalEvent = false;
+
+  await parseAGUIEventStream(response, (event) => {
+    switch (event.type) {
+      case "RUN_STARTED":
+        executionId = event.runId;
+        callbacks?.onRunStarted?.(event.runId, event.threadId);
+        callbacks?.onProgress?.("Agent started run...");
+        break;
+      case "STEP_STARTED":
+        {
+          const stepEvent: AgentToolEvent = {
+            id: `step:${event.stepName}`,
+            name: event.stepName,
+            label: event.stepName,
+            status: "running",
+            summary: event.stepName,
+            assets: [],
+          };
+          upsertToolEvent(toolEvents, stepEvent);
+          callbacks?.onToolEvent?.(stepEvent);
+        }
+        callbacks?.onProgress?.(event.stepName);
+        break;
+      case "STEP_FINISHED":
+        {
+          const current = toolEvents.find((item) => item.id === `step:${event.stepName}`);
+          const stepEvent: AgentToolEvent = {
+            id: `step:${event.stepName}`,
+            name: event.stepName,
+            label: event.stepName,
+            status: "completed",
+            summary: current?.summary || event.stepName,
+            assets: [],
+          };
+          upsertToolEvent(toolEvents, stepEvent);
+          callbacks?.onToolEvent?.(stepEvent);
+        }
+        break;
+      case "TEXT_MESSAGE_CONTENT":
+        accumulatedText += event.delta;
+        callbacks?.onTextDelta?.(event.delta, accumulatedText);
+        break;
+      case "TOOL_CALL_START":
+        {
+          const current = toolEvents.find((item) => item.id === event.toolCallId);
+          const toolEvent: AgentToolEvent = {
+            id: event.toolCallId,
+            name: event.toolCallName,
+            label: readableToolLabel(event.toolCallName),
+            status: "running",
+            summary: `Invoking ${readableToolLabel(event.toolCallName)}.`,
+            assets: current?.assets || [],
+          };
+          upsertToolEvent(toolEvents, toolEvent);
+          callbacks?.onToolEvent?.(toolEvent);
+        }
+        callbacks?.onProgress?.(`Invoking ${event.toolCallName.replace("___", " ")}...`);
+        break;
+      case "CUSTOM":
+        if (event.name === "renderhaus_tool_event" && event.value && typeof event.value === "object") {
+          const item = event.value as Record<string, unknown>;
+          const toolEv: AgentToolEvent = {
+            id: String(item.id || crypto.randomUUID()),
+            name: String(item.name || "tool"),
+            label: String(item.label || "Tool"),
+            status: String(item.status || "completed"),
+            summary: String(item.summary || ""),
+            provider: typeof item.provider === "string" ? item.provider : undefined,
+            providerJobId: typeof item.provider_job_id === "string" ? item.provider_job_id : undefined,
+            assets: studioAssets(item.assets),
+          };
+          upsertToolEvent(toolEvents, toolEv);
+          callbacks?.onToolEvent?.(toolEv);
+          callbacks?.onProgress?.(toolEv.summary || `${toolEv.label} completed`);
+        } else if (event.name === "renderhaus_asset" && event.value && typeof event.value === "object") {
+          const ast = studioAsset(event.value);
+          if (ast) {
+            if (!assets.some((asset) => asset.versionId === ast.versionId)) {
+              assets.push(ast);
+              callbacks?.onAsset?.(ast);
+            }
+          }
+        }
+        break;
+      case "STATE_SNAPSHOT":
+        if (event.snapshot) {
+          const snap = event.snapshot;
+          title = String(snap.title || title);
+          summary = String(snap.summary || summary);
+          filename = String(snap.filename || filename);
+          if (typeof snap.markdown === "string" && snap.markdown) {
+            accumulatedText = snap.markdown;
+          }
+          if (Array.isArray(snap.assets)) {
+            const parsedAssets = studioAssets(snap.assets);
+            for (const ast of parsedAssets) {
+              if (!assets.some((a) => a.versionId === ast.versionId)) {
+                assets.push(ast);
+                callbacks?.onAsset?.(ast);
+              }
+            }
+          }
+          if (Array.isArray(snap.tool_events)) {
+            const protocolSteps = toolEvents.filter((item) => item.id.startsWith("step:"));
+            toolEvents.length = 0;
+            toolEvents.push(...protocolSteps);
+            for (const item of snap.tool_events) {
+              const rec = item as Record<string, unknown>;
+              const toolEvent: AgentToolEvent = {
+                id: String(rec.id || crypto.randomUUID()),
+                name: String(rec.name || "tool"),
+                label: String(rec.label || "Tool"),
+                status: String(rec.status || "completed"),
+                summary: String(rec.summary || ""),
+                provider: typeof rec.provider === "string" ? rec.provider : undefined,
+                providerJobId: typeof rec.provider_job_id === "string" ? rec.provider_job_id : undefined,
+                assets: studioAssets(rec.assets),
+              };
+              toolEvents.push(toolEvent);
+              callbacks?.onToolEvent?.(toolEvent);
+            }
+          }
+          callbacks?.onStateSnapshot?.(snap);
+        }
+        break;
+      case "RUN_ERROR":
+        errorMessage = event.message || "Agent execution encountered an error.";
+        callbacks?.onRunError?.(errorMessage);
+        break;
+      case "TEXT_MESSAGE_START":
+      case "TEXT_MESSAGE_END":
+      case "TOOL_CALL_ARGS":
+      case "TOOL_CALL_END":
+      case "TOOL_CALL_RESULT":
+      case "STATE_DELTA":
+        break;
+      case "RUN_FINISHED":
+        receivedTerminalEvent = true;
+        callbacks?.onRunFinished?.(event.runId, event.threadId);
+        break;
+      default: {
+        const _exhaustiveCheck: never = event;
+        void _exhaustiveCheck;
+        break;
+      }
+    }
+  });
+
+  if (errorMessage) {
+    if (executionId) {
+      try {
+        const recovered = await fetchAgentJobStatus(executionId, callbacks?.onProgress);
+        if (recovered?.result) {
+          return recovered;
+        }
+      } catch {
+        // Preserve the streamed error when the recovery lookup is unavailable.
+      }
+    }
+    return {
+      status: "error",
+      message: errorMessage,
+    };
+  }
+
+  if (!receivedTerminalEvent) {
+    if (executionId) {
+      callbacks?.onProgress?.("Live events ended early; continuing with job status updates...");
+      return waitForAgentJob(executionId, callbacks?.onProgress);
+    }
+    return {
+      status: "error",
+      message: "The agent stream ended before reporting a terminal state.",
+    };
+  }
+
+  finalResult = {
+    executionId,
+    title,
+    summary: summary || accumulatedText.slice(0, 200),
+    markdown: accumulatedText,
+    filename,
+    mimeType: "text/markdown;charset=utf-8",
+    toolEvents,
+    assets,
+    primaryAsset: assets.at(-1),
+  };
+
+  return {
+    status: "completed",
+    message: `Completed: ${title}`,
+    result: finalResult,
   };
 }
 
@@ -348,7 +615,29 @@ export async function submitAgentPrompt(
   nodeIds: string[],
   nodes: AgentNodeContext[],
   onProgress?: (message: string) => void,
+  onTextDelta?: (delta: string, fullText: string) => void,
+  callbacks?: StreamAgentCallbacks,
 ): Promise<AgentComposerResult> {
+  let streamStarted = false;
+  try {
+    return await streamAgentPrompt(prompt, projectId, nodeIds, nodes, {
+      ...callbacks,
+      onProgress,
+      onTextDelta,
+      onRunStarted: (runId, threadId) => {
+        streamStarted = true;
+        callbacks?.onRunStarted?.(runId, threadId);
+      },
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "The AG-UI stream disconnected.";
+    if (streamStarted) {
+      callbacks?.onRunError?.(message);
+      return { status: "error", message };
+    }
+    onProgress?.("Live events unavailable; continuing with job status updates...");
+  }
+
   const response = await studioFetch("/api/studio/agent", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -364,6 +653,13 @@ export async function submitAgentPrompt(
   if (!payload.job_id) {
     return { status: "error", message: "The agent did not return a job identifier." };
   }
+  callbacks?.onRunStarted?.(payload.job_id, projectId);
   onProgress?.(payload.message || "Agent job queued.");
-  return waitForAgentJob(payload.job_id, onProgress);
+  const result = await waitForAgentJob(payload.job_id, onProgress);
+  if (result.status === "completed") {
+    callbacks?.onRunFinished?.(payload.job_id, projectId);
+  } else {
+    callbacks?.onRunError?.(result.message);
+  }
+  return result;
 }

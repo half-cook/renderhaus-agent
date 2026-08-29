@@ -8,17 +8,39 @@ entrypoint and the structured result.
 from __future__ import annotations
 
 import asyncio
+import contextlib
+import inspect
 import json
 import logging
 import os
 import re
 import time
-from collections.abc import Callable
+from collections.abc import AsyncIterator, Callable
 from dataclasses import dataclass, field
 from functools import lru_cache
 from typing import Any
+import uuid
 
-from agents import Agent, Runner
+from ag_ui.core import (
+    BaseEvent,
+    CustomEvent,
+    RunErrorEvent,
+    RunFinishedEvent,
+    RunStartedEvent,
+    StateDeltaEvent,
+    StateSnapshotEvent,
+    StepFinishedEvent,
+    StepStartedEvent,
+    TextMessageContentEvent,
+    TextMessageEndEvent,
+    TextMessageStartEvent,
+    ToolCallArgsEvent,
+    ToolCallEndEvent,
+    ToolCallResultEvent,
+    ToolCallStartEvent,
+)
+from ag_ui.encoder import EventEncoder
+from agents import Agent, RunHooks, Runner
 from agents.mcp import MCPServer, MCPServerManager, MCPServerStreamableHttp
 from bedrock_agentcore.runtime import BedrockAgentCoreApp
 from pydantic import BaseModel, Field, ValidationError
@@ -36,13 +58,26 @@ logger = logging.getLogger("renderhaus.studio_agent")
 
 AssetRegistrar = Callable[..., list[dict[str, Any]]]
 SourceResolver = Callable[[str], str]
-EventSink = Callable[["StudioToolEvent"], None]
+EventSink = Callable[["StudioToolEvent"], Any]
 
 _SESSION_TIMEOUT_SECONDS = 180.0
 _FINALIZATION_TIMEOUT_SECONDS = 240.0
 _POLL_INTERVAL_SECONDS = 3.0
 _TERMINAL_TOOL_STATUSES = frozenset(
-    {"succeeded", "completed", "failed", "error", "dry_run", "cancelled", "canceled"}
+    {
+        "succeeded",
+        "completed",
+        "failed",
+        "error",
+        "dry_run",
+        "cancelled",
+        "canceled",
+        "deleted",
+        "expired",
+        "timeout",
+        "timed_out",
+        "timeouted",
+    }
 )
 _VIDEO_REQUEST_PATTERN = re.compile(
     r"\b(video|ad|advert|commercial|reel|spot|motion graphic|trailer|promo|montage)\b",
@@ -412,27 +447,157 @@ def _append_harvested_event(
     call_id: str,
     name: str,
     output: Any,
-) -> None:
+) -> StudioToolEvent | None:
+    if call_id and any(event.id == call_id for event in studio.tool_events):
+        return None
     payload = _compact_tool_result(_unwrap_tool_output(output))
     if not payload:
-        return
+        return None
     provider, _tool, label = _gateway_tool_parts(name)
     status = _tool_event_status(payload)
     summary = str(payload.get("note") or payload.get("summary") or f"{label}: {status}.")
-    studio.tool_events.append(
-        StudioToolEvent(
-            id=call_id or f"tool-{len(studio.tool_events) + 1}",
-            name=name,
-            label=label,
-            status=status,
-            summary=summary[:320],
-            provider=provider.lower() if provider else None,
-            provider_job_id=(
-                str(payload["job_id"]) if isinstance(payload.get("job_id"), (str, int)) else None
-            ),
-            result=payload,
-        )
+    event = StudioToolEvent(
+        id=call_id or f"tool-{len(studio.tool_events) + 1}",
+        name=name,
+        label=label,
+        status=status,
+        summary=summary[:320],
+        provider=provider.lower() if provider else None,
+        provider_job_id=(
+            str(payload["job_id"]) if isinstance(payload.get("job_id"), (str, int)) else None
+        ),
+        result=payload,
     )
+    studio.record_event(event)
+    return event
+
+
+class _AGUIRunHooks(RunHooks[StudioAgentContext]):
+    """Bridge live Agents SDK lifecycle callbacks into the AG-UI event queue."""
+
+    def __init__(
+        self,
+        event_queue: asyncio.Queue[BaseEvent | None],
+        started_tool_calls: set[str],
+        run_id: str,
+    ) -> None:
+        self.event_queue = event_queue
+        self.started_tool_calls = started_tool_calls
+        self.run_id = run_id
+        self.llm_turn = 0
+        self.llm_steps: list[str] = []
+        self._active_tool_call_ids: dict[tuple[int, int], list[str]] = {}
+        self._pending_tool_results: list[tuple[str, str, object]] = []
+        self._emitted_tool_results: set[str] = set()
+
+    @staticmethod
+    def _tool_key(context: Any, tool: Any) -> tuple[int, int]:
+        return id(context), id(tool)
+
+    def stream_id_for_harvest(
+        self,
+        name: str,
+        actual_id: str,
+        payload: dict[str, Any],
+    ) -> str:
+        """Match a harvested SDK run item to the ID already shown in the live stream."""
+        for index, (stream_id, pending_name, _result) in enumerate(self._pending_tool_results):
+            if stream_id == actual_id and pending_name == name:
+                self._pending_tool_results.pop(index)
+                return stream_id
+        for index, (stream_id, pending_name, result) in enumerate(self._pending_tool_results):
+            pending_payload = _compact_tool_result(_unwrap_tool_output(result))
+            if pending_name == name and pending_payload == payload:
+                self._pending_tool_results.pop(index)
+                return stream_id
+        for index, (stream_id, pending_name, _result) in enumerate(self._pending_tool_results):
+            if pending_name == name:
+                self._pending_tool_results.pop(index)
+                return stream_id
+        return actual_id
+
+    def result_was_emitted(self, stream_id: str) -> bool:
+        return stream_id in self._emitted_tool_results
+
+    def flush_unharvested(self, studio: StudioAgentContext) -> None:
+        """Persist hook results that an unusual runner omitted from its final run items."""
+        pending = list(self._pending_tool_results)
+        self._pending_tool_results.clear()
+        for call_id, name, result in pending:
+            _append_harvested_event(studio, call_id=call_id, name=name, output=result)
+
+    async def on_llm_start(
+        self,
+        context: Any,
+        agent: Any,
+        system_prompt: str | None,
+        input_items: list[Any],
+    ) -> None:
+        del context, agent, system_prompt, input_items
+        self.llm_turn += 1
+        step_name = f"Agent reasoning · turn {self.llm_turn}"
+        self.llm_steps.append(step_name)
+        self.event_queue.put_nowait(StepStartedEvent(step_name=step_name))
+
+    async def on_llm_end(self, context: Any, agent: Any, response: Any) -> None:
+        del context, agent, response
+        if self.llm_steps:
+            self.event_queue.put_nowait(StepFinishedEvent(step_name=self.llm_steps.pop()))
+
+    async def on_tool_start(self, context: Any, agent: Any, tool: Any) -> None:
+        del agent
+        call_id = str(getattr(context, "tool_call_id", None) or uuid.uuid4().hex)
+        name = str(
+            getattr(context, "tool_name", None)
+            or getattr(tool, "name", None)
+            or "tool"
+        )
+        key = self._tool_key(context, tool)
+        self._active_tool_call_ids.setdefault(key, []).append(call_id)
+        self.started_tool_calls.add(call_id)
+        self.event_queue.put_nowait(
+            ToolCallStartEvent(tool_call_id=call_id, tool_call_name=name)
+        )
+
+    async def on_tool_end(
+        self,
+        context: Any,
+        agent: Any,
+        tool: Any,
+        result: object,
+    ) -> None:
+        del agent
+        studio = getattr(context, "context", None)
+        if not isinstance(studio, StudioAgentContext):
+            return
+        key = self._tool_key(context, tool)
+        active_ids = self._active_tool_call_ids.get(key) or []
+        context_call_id = getattr(context, "tool_call_id", None)
+        if context_call_id:
+            call_id = str(context_call_id)
+            if call_id in active_ids:
+                active_ids.remove(call_id)
+            elif active_ids:
+                active_ids.pop(0)
+        else:
+            call_id = active_ids.pop(0) if active_ids else uuid.uuid4().hex
+        if not active_ids:
+            self._active_tool_call_ids.pop(key, None)
+        name = str(
+            getattr(context, "tool_name", None)
+            or getattr(tool, "name", None)
+            or "tool"
+        )
+        self._pending_tool_results.append((call_id, name, result))
+        payload = _compact_tool_result(_unwrap_tool_output(result))
+        self.event_queue.put_nowait(
+            ToolCallResultEvent(
+                message_id=self.run_id,
+                tool_call_id=call_id,
+                content=json.dumps(payload),
+            )
+        )
+        self._emitted_tool_results.add(call_id)
 
 
 def _record_run_tool_events(run_result: Any, studio: StudioAgentContext) -> None:
@@ -545,7 +710,7 @@ async def _settle_queued_media(
             continue
         name, arguments = spec
         payload = await _poll_until_terminal(server, name, arguments, deadline=deadline)
-        studio.tool_events.append(_gateway_event(name, payload, len(studio.tool_events) + 1))
+        studio.record_event(_gateway_event(name, payload, len(studio.tool_events) + 1))
 
 
 def _media_url(payload: dict[str, Any], kind: str) -> str | None:
@@ -633,7 +798,7 @@ async def _ensure_remotion_output(
             "output_filename": f"{normalize_markdown_filename(output.filename, output.title)[:-3]}.mp4",
         },
     )
-    studio.tool_events.append(
+    studio.record_event(
         _gateway_event("Remotion___render_timeline", started, len(studio.tool_events) + 1)
     )
     spec = _poll_spec(studio.tool_events[-1])
@@ -641,7 +806,7 @@ async def _ensure_remotion_output(
         return
     name, arguments = spec
     finished = await _poll_until_terminal(server, name, arguments, deadline=deadline)
-    studio.tool_events.append(_gateway_event(name, finished, len(studio.tool_events) + 1))
+    studio.record_event(_gateway_event(name, finished, len(studio.tool_events) + 1))
 
 
 async def _finalize_media_run(
@@ -736,14 +901,18 @@ async def _run_with_servers(
     studio: StudioAgentContext,
     runner: type[Runner],
     mcp_servers: list[MCPServer],
+    hooks: Any = None,
 ) -> StudioAgentOutput:
     result = await runner.run(
         _build_agent(mcp_servers),
         _input_for(request.prompt, list(studio.nodes)),
         context=studio,
         max_turns=24,
+        hooks=hooks,
     )
     _record_run_tool_events(result, studio)
+    if isinstance(hooks, _AGUIRunHooks):
+        hooks.flush_unharvested(studio)
     final = result.final_output
     if not isinstance(final, StudioAgentOutput):
         final = StudioAgentOutput.model_validate(final)
@@ -761,6 +930,7 @@ async def run_studio_agent(
     asset_registrar: Any = None,
     source_resolver: Any = None,
     event_sink: Any = None,
+    hooks: Any = None,
 ) -> StudioAgentOutput:
     studio = studio or _context_from_request(
         request,
@@ -769,7 +939,7 @@ async def run_studio_agent(
         event_sink=event_sink,
     )
     if mcp_servers is not None:
-        return await _run_with_servers(request, studio, runner, mcp_servers)
+        return await _run_with_servers(request, studio, runner, mcp_servers, hooks=hooks)
 
     server = gateway_mcp_server()
     async with MCPServerManager(
@@ -779,7 +949,206 @@ async def run_studio_agent(
         strict=True,
         connect_in_parallel=False,
     ) as manager:
-        return await _run_with_servers(request, studio, runner, manager.active_servers)
+        return await _run_with_servers(
+            request,
+            studio,
+            runner,
+            manager.active_servers,
+            hooks=hooks,
+        )
+
+
+async def stream_studio_agent(
+    request: StudioAgentRequest,
+    *,
+    runner: type[Runner] = Runner,
+    studio: StudioAgentContext | None = None,
+    mcp_servers: list[MCPServer] | None = None,
+    asset_registrar: Any = None,
+    source_resolver: Any = None,
+    event_sink: Any = None,
+) -> AsyncIterator[BaseEvent]:
+    """Yield AG-UI protocol events during Studio Agent execution."""
+    run_id = request.job_id or str(uuid.uuid4())
+    thread_id = request.project_id or "default"
+
+    yield RunStartedEvent(thread_id=thread_id, run_id=run_id)
+    yield StepStartedEvent(step_name="Planning canvas operations")
+
+    event_queue: asyncio.Queue[BaseEvent | None] = asyncio.Queue()
+    started_tool_calls: set[str] = set()
+    live_sink_tasks: set[asyncio.Task[None]] = set()
+    run_hooks: _AGUIRunHooks | None = None
+
+    def enqueue_tool_event(tool_event: StudioToolEvent) -> None:
+        studio_ctx.add_assets(tool_event.assets)
+        stream_id = (
+            run_hooks.stream_id_for_harvest(
+                tool_event.name,
+                tool_event.id,
+                tool_event.result,
+            )
+            if run_hooks is not None
+            else tool_event.id
+        )
+        if stream_id not in started_tool_calls:
+            started_tool_calls.add(stream_id)
+            event_queue.put_nowait(
+                ToolCallStartEvent(
+                    tool_call_id=stream_id,
+                    tool_call_name=tool_event.name,
+                )
+            )
+        if run_hooks is None or not run_hooks.result_was_emitted(stream_id):
+            event_queue.put_nowait(
+                ToolCallResultEvent(
+                    message_id=run_id,
+                    tool_call_id=stream_id,
+                    content=json.dumps(tool_event.result or {}),
+                )
+            )
+        public_event = tool_event.public()
+        public_event["id"] = stream_id
+        event_queue.put_nowait(
+            CustomEvent(
+                name="renderhaus_tool_event",
+                value=public_event,
+            )
+        )
+        for asset in tool_event.assets:
+            event_queue.put_nowait(
+                CustomEvent(
+                    name="renderhaus_asset",
+                    value=asset,
+                )
+            )
+
+    def wrapped_event_sink(
+        tool_event: StudioToolEvent,
+        sink: EventSink | None = event_sink,
+    ) -> None:
+        sink_result: Any = None
+        if sink:
+            try:
+                sink_result = sink(tool_event)
+            except Exception:
+                logger.exception("Error in event_sink callback")
+
+        if not inspect.isawaitable(sink_result):
+            enqueue_tool_event(tool_event)
+            return
+
+        async def emit_after_sink() -> None:
+            try:
+                await asyncio.shield(sink_result)
+            except asyncio.CancelledError:
+                raise
+            except Exception:
+                logger.exception("Error awaiting event_sink callback")
+            enqueue_tool_event(tool_event)
+
+        task = asyncio.create_task(
+            emit_after_sink(),
+            name=f"studio-live-tool-event-{tool_event.id}",
+        )
+        live_sink_tasks.add(task)
+        task.add_done_callback(live_sink_tasks.discard)
+
+    studio_ctx = studio or _context_from_request(
+        request,
+        asset_registrar=asset_registrar,
+        source_resolver=source_resolver,
+        event_sink=wrapped_event_sink,
+    )
+    if studio is not None:
+        original_sink = studio_ctx.event_sink
+
+        def combined_sink(event: StudioToolEvent) -> None:
+            wrapped_event_sink(event, original_sink)
+
+        studio_ctx.event_sink = combined_sink
+
+    run_hooks = _AGUIRunHooks(event_queue, started_tool_calls, run_id)
+    agent_task = asyncio.create_task(
+        run_studio_agent(
+            request,
+            runner=runner,
+            studio=studio_ctx,
+            mcp_servers=mcp_servers,
+            asset_registrar=asset_registrar,
+            source_resolver=source_resolver,
+            event_sink=studio_ctx.event_sink,
+            hooks=run_hooks,
+        )
+    )
+
+    try:
+        while not agent_task.done() or live_sink_tasks or not event_queue.empty():
+            try:
+                event = await asyncio.wait_for(event_queue.get(), timeout=0.1)
+                if event is not None:
+                    yield event
+                    event_queue.task_done()
+            except asyncio.TimeoutError:
+                continue
+
+        output = await agent_task
+        yield StepFinishedEvent(step_name="Planning canvas operations")
+        yield StepStartedEvent(step_name="Finalizing output")
+
+        msg_id = f"msg-{run_id}"
+        yield TextMessageStartEvent(message_id=msg_id, role="assistant")
+
+        chunk_size = 600
+        text = output.markdown
+        for i in range(0, len(text), chunk_size):
+            yield TextMessageContentEvent(message_id=msg_id, delta=text[i : i + chunk_size])
+
+        yield TextMessageEndEvent(message_id=msg_id)
+
+        assets_list: list[dict[str, Any]] = []
+        seen_assets: set[str] = set()
+        for te in studio_ctx.tool_events:
+            for ast in getattr(te, "assets", []):
+                vid = str(ast.get("version_id") or "")
+                if vid and vid not in seen_assets:
+                    seen_assets.add(vid)
+                    assets_list.append(ast)
+        for ast in studio_ctx.working_assets.values():
+            vid = str(ast.get("version_id") or "")
+            if vid and vid not in seen_assets:
+                seen_assets.add(vid)
+                assets_list.append(ast)
+
+        yield StateSnapshotEvent(
+            snapshot={
+                "title": output.title,
+                "summary": output.summary,
+                "filename": output.filename,
+                "markdown": output.markdown,
+                "tool_events": [e.public() for e in studio_ctx.tool_events],
+                "assets": assets_list,
+                "primary_asset": assets_list[-1] if assets_list else None,
+            }
+        )
+        yield StepFinishedEvent(step_name="Finalizing output")
+        yield RunFinishedEvent(thread_id=thread_id, run_id=run_id)
+
+    except asyncio.CancelledError:
+        agent_task.cancel()
+        yield RunErrorEvent(message="Run was cancelled.", code="CANCELLED")
+        raise
+    except Exception as exc:
+        yield RunErrorEvent(message=str(exc)[:400], code="AGENT_ERROR")
+    finally:
+        for task in live_sink_tasks:
+            task.cancel()
+        if live_sink_tasks:
+            await asyncio.gather(*live_sink_tasks, return_exceptions=True)
+        if not agent_task.done():
+            agent_task.cancel()
+        with contextlib.suppress(asyncio.CancelledError, Exception):
+            await agent_task
 
 
 def _invocation_error(exc: BaseException, payload: dict[str, Any] | None, session_id: Any) -> dict[str, Any]:

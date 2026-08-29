@@ -17,9 +17,11 @@ from typing import Any
 from urllib.parse import parse_qs, quote, unquote, urlparse
 
 import httpx
+from ag_ui.core import RunErrorEvent
+from ag_ui.encoder import EventEncoder
 from agents.exceptions import MaxTurnsExceeded
 from fastapi import APIRouter, File, HTTPException, UploadFile
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, StreamingResponse
 from pydantic import BaseModel, Field
 
 from agent.studio_agent import StudioNodeReference
@@ -30,6 +32,7 @@ from agent.studio_agent_next import (
     StudioNode,
     StudioToolEvent,
     run_studio_agent as run_studio_agent_runtime,
+    stream_studio_agent,
 )
 from providers.catalog import PROVIDERS, get_provider
 from providers.registry import dispatch, load_committed_schemas
@@ -1087,6 +1090,246 @@ async def studio_agent(body: AgentBody, auth: AuthUser) -> dict[str, Any]:
     _AGENT_TASKS.add(task)
     task.add_done_callback(_AGENT_TASKS.discard)
     return job
+
+
+@router.post("/agent/stream")
+async def studio_agent_stream(body: AgentBody, auth: AuthUser) -> StreamingResponse:
+    if not os.getenv("OPENAI_API_KEY"):
+        raise HTTPException(status_code=503, detail="The OpenAI agent is not configured.")
+    if _agentcore_dev_url():
+        raise HTTPException(
+            status_code=501,
+            detail="Live streaming is unavailable for the configured AgentCore runtime; use job polling.",
+        )
+    workspace_id = current_workspace_id(auth)
+    user_id = current_user_id(auth)
+    try:
+        await asyncio.to_thread(repository.require_project, workspace_id, body.project_id)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="Project not found.") from exc
+    references = await asyncio.to_thread(_agent_references, body, workspace_id)
+    job = await asyncio.to_thread(
+        repository.create_execution,
+        workspace_id=workspace_id,
+        project_id=body.project_id,
+        user_id=user_id,
+        prompt=body.prompt,
+    )
+    job_id = str(job["job_id"])
+
+    def register_assets(**kwargs: Any) -> list[dict[str, Any]]:
+        return _register_payload_assets(
+            payload=kwargs["result"],
+            workspace_id=workspace_id,
+            project_id=body.project_id,
+            user_id=user_id,
+            kind=kwargs.get("kind"),
+            asset_id=kwargs.get("asset_id"),
+            execution_id=job_id,
+            tool_call_id=kwargs.get("tool_call_id"),
+            source_version_ids=kwargs.get("source_version_ids") or [],
+            relation_type=(
+                "composed_from"
+                if kwargs.get("label") == "Remotion video render"
+                else "derived_from"
+            ),
+        )
+
+    def resolve_source(version_id: str) -> str:
+        return str(repository.version_path(workspace_id, version_id))
+
+    loop = asyncio.get_running_loop()
+    sink_tasks: set[asyncio.Task[Any]] = set()
+    sink_tail: asyncio.Task[Any] | None = None
+
+    def persist_event(event: Any) -> Any:
+        _hydrate_tool_event_assets(
+            [event],
+            workspace_id=workspace_id,
+            project_id=body.project_id,
+            user_id=user_id,
+            execution_id=job_id,
+        )
+        payload = event.public() if hasattr(event, "public") else dict(event)
+        if hasattr(event, "result"):
+            payload["result"] = event.result
+        repository.append_tool_call(
+            workspace_id=workspace_id,
+            execution_id=job_id,
+            event=payload,
+        )
+        return event
+
+    def record_event(event: Any) -> asyncio.Task[Any]:
+        nonlocal sink_tail
+        previous = sink_tail
+
+        async def persist_in_order() -> Any:
+            if previous is not None:
+                await asyncio.gather(previous, return_exceptions=True)
+            return await asyncio.to_thread(persist_event, event)
+
+        task = loop.create_task(persist_in_order(), name=f"studio-tool-event-{job_id}")
+        sink_tail = task
+        sink_tasks.add(task)
+
+        def finish_sink_task(completed: asyncio.Task[Any]) -> None:
+            sink_tasks.discard(completed)
+            if completed.cancelled():
+                return
+            error = completed.exception()
+            if error is not None:
+                logger.error(
+                    "Failed to persist a streamed tool event for job %s",
+                    job_id,
+                    exc_info=(type(error), error, error.__traceback__),
+                )
+
+        task.add_done_callback(finish_sink_task)
+        return task
+
+    async def flush_event_sink() -> None:
+        pending = sink_tail
+        if pending is not None:
+            await asyncio.gather(pending, return_exceptions=True)
+
+    request = _studio_agent_request(
+        body.prompt,
+        references,
+        job_id=job_id,
+        workspace_id=workspace_id,
+        project_id=body.project_id,
+    )
+
+    async def event_generator():
+        encoder = EventEncoder()
+        await asyncio.to_thread(
+            repository.update_execution,
+            workspace_id,
+            job_id,
+            status="running",
+            message="Agent started execution.",
+        )
+        try:
+            async for event in stream_studio_agent(
+                request,
+                asset_registrar=register_assets,
+                source_resolver=resolve_source,
+                event_sink=record_event,
+            ):
+                if event.type == "STATE_SNAPSHOT":
+                    await flush_event_sink()
+                    snapshot = getattr(event, "snapshot", {})
+                    persisted = await asyncio.to_thread(
+                        repository.get_execution,
+                        workspace_id,
+                        job_id,
+                    )
+                    tool_events_raw = (
+                        (persisted or {}).get("tool_calls")
+                        or snapshot.get("tool_events")
+                        or []
+                    )
+                    assets_list: list[dict[str, Any]] = []
+                    seen: set[str] = set()
+                    for te in tool_events_raw:
+                        te_assets = te.assets if hasattr(te, "assets") else te.get("assets", [])
+                        for ast in te_assets:
+                            vid = str(ast.get("version_id") or "")
+                            if vid and vid not in seen:
+                                seen.add(vid)
+                                assets_list.append(ast)
+                    if not assets_list and snapshot.get("assets"):
+                        for ast in snapshot["assets"]:
+                            vid = str(ast.get("version_id") or "")
+                            if vid and vid not in seen:
+                                seen.add(vid)
+                                assets_list.append(ast)
+
+                    snapshot["assets"] = assets_list
+                    snapshot["primary_asset"] = assets_list[-1] if assets_list else None
+                    snapshot["tool_events"] = [
+                        te.public() if hasattr(te, "public") else te for te in tool_events_raw
+                    ]
+
+                    await asyncio.to_thread(
+                        repository.update_execution,
+                        workspace_id,
+                        job_id,
+                        status="completed",
+                        message=f"Added {snapshot.get('title', 'result')} to the canvas.",
+                        result={
+                            "title": snapshot.get("title", "Agent result"),
+                            "summary": snapshot.get("summary", ""),
+                            "markdown": snapshot.get("markdown", ""),
+                            "filename": snapshot.get("filename", "agent-result.md"),
+                            "tool_events": snapshot.get("tool_events", []),
+                            "assets": snapshot.get("assets", []),
+                            "primary_asset": snapshot.get("primary_asset"),
+                        },
+                    )
+                elif event.type == "RUN_ERROR":
+                    await flush_event_sink()
+                    err_msg = getattr(event, "message", "The agent could not finish this request.")
+                    execution = await asyncio.to_thread(
+                        repository.get_execution,
+                        workspace_id,
+                        job_id,
+                    )
+                    await asyncio.to_thread(
+                        repository.update_execution,
+                        workspace_id,
+                        job_id,
+                        status="error",
+                        message=err_msg,
+                        result=_partial_agent_result(execution or {}),
+                        error_type=getattr(event, "code", None) or "AgentError",
+                    )
+                yield encoder.encode(event)
+        except Exception as exc:
+            logger.exception("Error during studio agent stream for job %s", job_id)
+            err_event = RunErrorEvent(message=str(exc)[:400], code="STREAM_ERROR")
+            await flush_event_sink()
+            execution = await asyncio.to_thread(
+                repository.get_execution,
+                workspace_id,
+                job_id,
+            )
+            await asyncio.to_thread(
+                repository.update_execution,
+                workspace_id,
+                job_id,
+                status="error",
+                message=str(exc)[:400],
+                result=_partial_agent_result(execution or {}),
+                error_type=type(exc).__name__,
+            )
+            yield encoder.encode(err_event)
+        finally:
+            await flush_event_sink()
+            if sink_tasks:
+                await asyncio.gather(*list(sink_tasks), return_exceptions=True)
+            execution = await asyncio.to_thread(repository.get_execution, workspace_id, job_id)
+            if execution and execution.get("status") in {"queued", "running"}:
+                await asyncio.to_thread(
+                    repository.update_execution,
+                    workspace_id,
+                    job_id,
+                    status="error",
+                    message="The client disconnected before the agent finished.",
+                    result=_partial_agent_result(execution),
+                    error_type="StreamDisconnected",
+                )
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache, no-transform",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
+    )
 
 
 @router.get("/agent")

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import json
 import os
 import unittest
@@ -15,11 +16,13 @@ from agent.studio_agent_next import (
     _describe_gateway_mcp_tools,
     _finalize_media_run,
     _gateway_tool_catalog,
+    _poll_until_terminal,
     _record_run_tool_events,
     _unwrap_tool_output,
     agent_invocation,
     normalize_markdown_filename,
     run_studio_agent,
+    stream_studio_agent,
 )
 
 
@@ -44,6 +47,26 @@ class FakeRunner:
 
 
 class StudioAgentNextEntrypointTests(unittest.IsolatedAsyncioTestCase):
+    async def test_media_poller_stops_on_expired_provider_task(self) -> None:
+        gateway = SimpleNamespace(
+            call_tool=AsyncMock(
+                return_value=SimpleNamespace(
+                    content=[SimpleNamespace(type="text", text='{"status":"expired"}')],
+                    is_error=False,
+                )
+            )
+        )
+
+        result = await _poll_until_terminal(
+            gateway,
+            "Seedance___get_video_task",
+            {"job_id": "video-expired"},
+            deadline=0,
+        )
+
+        self.assertEqual(result["status"], "expired")
+        gateway.call_tool.assert_awaited_once()
+
     def test_normalize_markdown_filename_slugs_unsafe_names(self) -> None:
         self.assertEqual(
             normalize_markdown_filename("Launch outline", "Launch outline"),
@@ -385,6 +408,337 @@ class StudioAgentNextEntrypointTests(unittest.IsolatedAsyncioTestCase):
             )
 
         self.assertEqual(studio.tool_events[0].result["image_url"], "https://cdn.example/hero.png")
+
+    async def test_stream_studio_agent_yields_agui_events(self) -> None:
+        class StreamRunner:
+            @classmethod
+            async def run(cls, agent, input_value, context=None, **_kwargs):
+                if context:
+                    context.record_event(
+                        StudioToolEvent(
+                            id="stream-tool-1",
+                            name="Seedream___text_to_image",
+                            label="Seedream text to image",
+                            status="completed",
+                            summary="Generated hero.",
+                            result={"image_url": "https://cdn.example/hero.png"},
+                            assets=[
+                                {
+                                    "asset_id": "asset-10",
+                                    "version_id": "ver-10",
+                                    "kind": "image",
+                                    "filename": "hero.png",
+                                }
+                            ],
+                        )
+                    )
+                return SimpleNamespace(
+                    final_output=StudioAgentOutput(
+                        title="Streamed Launch",
+                        summary="Launch is ready.",
+                        markdown="# Streamed Launch\n\nAll media prepared.",
+                        filename="launch.md",
+                    ),
+                    new_items=[],
+                )
+
+        events = []
+        async for event in stream_studio_agent(
+            StudioAgentRequest(prompt="Make a streamed launch", job_id="job-stream", project_id="proj-1"),
+            runner=StreamRunner,
+            mcp_servers=[],
+        ):
+            events.append(event)
+
+        event_types = [e.type for e in events]
+        self.assertIn("RUN_STARTED", event_types)
+        self.assertIn("STEP_STARTED", event_types)
+        self.assertIn("TOOL_CALL_START", event_types)
+        self.assertIn("TOOL_CALL_RESULT", event_types)
+        self.assertIn("CUSTOM", event_types)
+        self.assertIn("TEXT_MESSAGE_START", event_types)
+        self.assertIn("TEXT_MESSAGE_CONTENT", event_types)
+        self.assertIn("TEXT_MESSAGE_END", event_types)
+        self.assertIn("STATE_SNAPSHOT", event_types)
+        self.assertIn("RUN_FINISHED", event_types)
+
+        # Verify first and last events
+        self.assertEqual(events[0].type, "RUN_STARTED")
+        self.assertEqual(events[-1].type, "RUN_FINISHED")
+
+        # Verify STATE_SNAPSHOT has hydrated assets and primary asset
+        snapshot_events = [e for e in events if e.type == "STATE_SNAPSHOT"]
+        self.assertEqual(len(snapshot_events), 1)
+        snapshot = snapshot_events[0].snapshot
+        self.assertIn("assets", snapshot)
+        self.assertEqual(len(snapshot["assets"]), 1)
+        self.assertEqual(snapshot["assets"][0]["version_id"], "ver-10")
+        self.assertEqual(snapshot["primary_asset"]["version_id"], "ver-10")
+        self.assertEqual(len(snapshot["tool_events"]), 1)
+
+    async def test_stream_emits_assets_after_async_sink_hydration(self) -> None:
+        asset = {
+            "asset_id": "asset-live",
+            "version_id": "version-live",
+            "kind": "image",
+            "filename": "live.png",
+        }
+
+        class HydratedRunner:
+            @classmethod
+            async def run(cls, agent, input_value, context=None, **_kwargs):
+                del agent, input_value
+                if context:
+                    context.record_event(
+                        StudioToolEvent(
+                            id="tool-live",
+                            name="Seedream___text_to_image",
+                            label="Seedream text to image",
+                            status="completed",
+                            summary="Generated live image.",
+                            result={"image_url": "https://cdn.example/live.png"},
+                        )
+                    )
+                return SimpleNamespace(
+                    final_output=StudioAgentOutput(
+                        title="Live image",
+                        summary="The live image is ready.",
+                        markdown="# Live image",
+                        filename="live-image.md",
+                    ),
+                    new_items=[],
+                )
+
+        def hydrate_event(event):
+            async def hydrate() -> None:
+                await asyncio.sleep(0)
+                event.assets = [asset]
+
+            return asyncio.create_task(hydrate())
+
+        events = []
+        async for event in stream_studio_agent(
+            StudioAgentRequest(prompt="Stream a live image", job_id="job-live"),
+            runner=HydratedRunner,
+            mcp_servers=[],
+            event_sink=hydrate_event,
+        ):
+            events.append(event)
+
+        asset_events = [
+            event
+            for event in events
+            if event.type == "CUSTOM" and event.name == "renderhaus_asset"
+        ]
+        snapshot_index = next(
+            index for index, event in enumerate(events) if event.type == "STATE_SNAPSHOT"
+        )
+        asset_index = events.index(asset_events[0])
+
+        self.assertEqual(asset_events[0].value, asset)
+        self.assertLess(asset_index, snapshot_index)
+        self.assertEqual(events[snapshot_index].snapshot["assets"], [asset])
+
+    async def test_stream_awaits_preconfigured_context_sink(self) -> None:
+        asset = {
+            "asset_id": "asset-context",
+            "version_id": "version-context",
+            "kind": "image",
+            "filename": "context.png",
+        }
+
+        class ContextSinkRunner:
+            @classmethod
+            async def run(cls, agent, input_value, context=None, **_kwargs):
+                del agent, input_value
+                if context:
+                    context.record_event(
+                        StudioToolEvent(
+                            id="tool-context",
+                            name="Seedream___text_to_image",
+                            label="Seedream text to image",
+                            status="completed",
+                            summary="Generated context image.",
+                            result={"image_url": "https://cdn.example/context.png"},
+                        )
+                    )
+                return SimpleNamespace(
+                    final_output=StudioAgentOutput(
+                        title="Context image",
+                        summary="The context image is ready.",
+                        markdown="# Context image",
+                        filename="context-image.md",
+                    ),
+                    new_items=[],
+                )
+
+        async def hydrate_event(event):
+            await asyncio.sleep(0)
+            event.assets = [asset]
+
+        events = []
+        async for event in stream_studio_agent(
+            StudioAgentRequest(prompt="Stream a context image", job_id="job-context"),
+            runner=ContextSinkRunner,
+            studio=StudioAgentContext(event_sink=hydrate_event),
+            mcp_servers=[],
+        ):
+            events.append(event)
+
+        asset_event = next(
+            event
+            for event in events
+            if event.type == "CUSTOM" and event.name == "renderhaus_asset"
+        )
+        snapshot = next(event for event in events if event.type == "STATE_SNAPSHOT")
+        self.assertEqual(asset_event.value, asset)
+        self.assertLess(events.index(asset_event), events.index(snapshot))
+        self.assertEqual(snapshot.snapshot["assets"], [asset])
+
+    async def test_stream_logs_preconfigured_context_sink_failure_and_emits_event(self) -> None:
+        class FailingSinkRunner:
+            @classmethod
+            async def run(cls, agent, input_value, context=None, **_kwargs):
+                del agent, input_value
+                if context:
+                    context.record_event(
+                        StudioToolEvent(
+                            id="tool-failing-sink",
+                            name="test_tool",
+                            label="Test tool",
+                            status="completed",
+                            summary="The tool completed.",
+                        )
+                    )
+                return SimpleNamespace(
+                    final_output=StudioAgentOutput(
+                        title="Sink failure",
+                        summary="The run still completed.",
+                        markdown="# Sink failure",
+                        filename="sink-failure.md",
+                    ),
+                    new_items=[],
+                )
+
+        def failing_sink(_event):
+            raise RuntimeError("sink failed")
+
+        events = []
+        with self.assertLogs("renderhaus.studio_agent", level="ERROR") as logs:
+            async for event in stream_studio_agent(
+                StudioAgentRequest(prompt="Exercise a failing sink", job_id="job-failing-sink"),
+                runner=FailingSinkRunner,
+                studio=StudioAgentContext(event_sink=failing_sink),
+                mcp_servers=[],
+            ):
+                events.append(event)
+
+        self.assertTrue(any("Error in event_sink callback" in message for message in logs.output))
+        self.assertTrue(
+            any(
+                event.type == "CUSTOM"
+                and event.name == "renderhaus_tool_event"
+                and event.value["id"] == "tool-failing-sink"
+                for event in events
+            )
+        )
+        self.assertEqual(events[-1].type, "RUN_FINISHED")
+
+    async def test_stream_studio_agent_bridges_live_sdk_hooks(self) -> None:
+        class HookRunner:
+            @classmethod
+            async def run(cls, agent, input_value, context=None, hooks=None, **_kwargs):
+                self_context = SimpleNamespace(
+                    context=context,
+                    tool_name="Seedream___text_to_image",
+                )
+                tool = SimpleNamespace(name="Seedream___text_to_image")
+                await hooks.on_llm_start(self_context, agent, None, [])
+                await hooks.on_tool_start(self_context, agent, tool)
+                await hooks.on_tool_end(
+                    self_context,
+                    agent,
+                    tool,
+                    {"status": "succeeded", "image_url": "https://cdn.example/live.png"},
+                )
+                await hooks.on_llm_end(self_context, agent, SimpleNamespace())
+                return SimpleNamespace(
+                    final_output=StudioAgentOutput(
+                        title="Live hook result",
+                        summary="The live hook completed.",
+                        markdown="# Live hook result",
+                        filename="live-hook.md",
+                    ),
+                    new_items=[
+                        SimpleNamespace(
+                            type="tool_call_output_item",
+                            call_id="sdk-call-1",
+                            tool_name="Seedream___text_to_image",
+                            output={
+                                "status": "succeeded",
+                                "image_url": "https://cdn.example/live.png",
+                            },
+                        )
+                    ],
+                )
+
+        events = []
+        async for event in stream_studio_agent(
+            StudioAgentRequest(prompt="Exercise live SDK hooks", job_id="job-hooks"),
+            runner=HookRunner,
+            mcp_servers=[],
+        ):
+            events.append(event)
+
+        event_types = [event.type for event in events]
+        tool_start_index = event_types.index("TOOL_CALL_START")
+        snapshot_index = event_types.index("STATE_SNAPSHOT")
+        self.assertLess(tool_start_index, snapshot_index)
+        tool_starts = [event for event in events if event.type == "TOOL_CALL_START"]
+        tool_results = [event for event in events if event.type == "TOOL_CALL_RESULT"]
+        tool_custom = [
+            event
+            for event in events
+            if event.type == "CUSTOM" and event.name == "renderhaus_tool_event"
+        ]
+        self.assertEqual(len(tool_starts), 1)
+        self.assertEqual(len(tool_results), 1)
+        self.assertEqual(len(tool_custom), 1)
+        self.assertEqual(tool_results[0].tool_call_id, tool_starts[0].tool_call_id)
+        self.assertEqual(tool_custom[0].value["id"], tool_starts[0].tool_call_id)
+        snapshot = events[snapshot_index].snapshot
+        self.assertEqual(len(snapshot["tool_events"]), 1)
+        self.assertEqual(snapshot["tool_events"][0]["id"], "sdk-call-1")
+
+    async def test_stream_studio_agent_cancels_runner_when_consumer_closes(self) -> None:
+        runner_started = asyncio.Event()
+        runner_cancelled = asyncio.Event()
+
+        class BlockingRunner:
+            @classmethod
+            async def run(cls, agent, input_value, context=None, hooks=None, **_kwargs):
+                self_context = SimpleNamespace(context=context)
+                await hooks.on_llm_start(self_context, agent, None, [])
+                runner_started.set()
+                try:
+                    await asyncio.Event().wait()
+                except asyncio.CancelledError:
+                    runner_cancelled.set()
+                    raise
+
+        events = stream_studio_agent(
+            StudioAgentRequest(prompt="Keep working", job_id="job-cancel"),
+            runner=BlockingRunner,
+            mcp_servers=[],
+        )
+        self.assertEqual((await anext(events)).type, "RUN_STARTED")
+        self.assertEqual((await anext(events)).type, "STEP_STARTED")
+        self.assertEqual((await anext(events)).type, "STEP_STARTED")
+        await asyncio.wait_for(runner_started.wait(), timeout=1)
+
+        await events.aclose()
+
+        await asyncio.wait_for(runner_cancelled.wait(), timeout=1)
 
 
 if __name__ == "__main__":

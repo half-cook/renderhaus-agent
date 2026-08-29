@@ -465,6 +465,14 @@
         "documentation": {}
     },
     {
+        "label": "AsyncIterator",
+        "importPath": "collections.abc",
+        "description": "collections.abc",
+        "isExtraImport": true,
+        "detail": "collections.abc",
+        "documentation": {}
+    },
+    {
         "label": "Callable",
         "importPath": "collections.abc",
         "description": "collections.abc",
@@ -1095,6 +1103,150 @@
         "description": "functools",
         "isExtraImport": true,
         "detail": "functools",
+        "documentation": {}
+    },
+    {
+        "label": "BaseEvent",
+        "importPath": "ag_ui.core",
+        "description": "ag_ui.core",
+        "isExtraImport": true,
+        "detail": "ag_ui.core",
+        "documentation": {}
+    },
+    {
+        "label": "CustomEvent",
+        "importPath": "ag_ui.core",
+        "description": "ag_ui.core",
+        "isExtraImport": true,
+        "detail": "ag_ui.core",
+        "documentation": {}
+    },
+    {
+        "label": "RunErrorEvent",
+        "importPath": "ag_ui.core",
+        "description": "ag_ui.core",
+        "isExtraImport": true,
+        "detail": "ag_ui.core",
+        "documentation": {}
+    },
+    {
+        "label": "RunFinishedEvent",
+        "importPath": "ag_ui.core",
+        "description": "ag_ui.core",
+        "isExtraImport": true,
+        "detail": "ag_ui.core",
+        "documentation": {}
+    },
+    {
+        "label": "RunStartedEvent",
+        "importPath": "ag_ui.core",
+        "description": "ag_ui.core",
+        "isExtraImport": true,
+        "detail": "ag_ui.core",
+        "documentation": {}
+    },
+    {
+        "label": "StateDeltaEvent",
+        "importPath": "ag_ui.core",
+        "description": "ag_ui.core",
+        "isExtraImport": true,
+        "detail": "ag_ui.core",
+        "documentation": {}
+    },
+    {
+        "label": "StateSnapshotEvent",
+        "importPath": "ag_ui.core",
+        "description": "ag_ui.core",
+        "isExtraImport": true,
+        "detail": "ag_ui.core",
+        "documentation": {}
+    },
+    {
+        "label": "StepFinishedEvent",
+        "importPath": "ag_ui.core",
+        "description": "ag_ui.core",
+        "isExtraImport": true,
+        "detail": "ag_ui.core",
+        "documentation": {}
+    },
+    {
+        "label": "StepStartedEvent",
+        "importPath": "ag_ui.core",
+        "description": "ag_ui.core",
+        "isExtraImport": true,
+        "detail": "ag_ui.core",
+        "documentation": {}
+    },
+    {
+        "label": "TextMessageContentEvent",
+        "importPath": "ag_ui.core",
+        "description": "ag_ui.core",
+        "isExtraImport": true,
+        "detail": "ag_ui.core",
+        "documentation": {}
+    },
+    {
+        "label": "TextMessageEndEvent",
+        "importPath": "ag_ui.core",
+        "description": "ag_ui.core",
+        "isExtraImport": true,
+        "detail": "ag_ui.core",
+        "documentation": {}
+    },
+    {
+        "label": "TextMessageStartEvent",
+        "importPath": "ag_ui.core",
+        "description": "ag_ui.core",
+        "isExtraImport": true,
+        "detail": "ag_ui.core",
+        "documentation": {}
+    },
+    {
+        "label": "ToolCallArgsEvent",
+        "importPath": "ag_ui.core",
+        "description": "ag_ui.core",
+        "isExtraImport": true,
+        "detail": "ag_ui.core",
+        "documentation": {}
+    },
+    {
+        "label": "ToolCallEndEvent",
+        "importPath": "ag_ui.core",
+        "description": "ag_ui.core",
+        "isExtraImport": true,
+        "detail": "ag_ui.core",
+        "documentation": {}
+    },
+    {
+        "label": "ToolCallResultEvent",
+        "importPath": "ag_ui.core",
+        "description": "ag_ui.core",
+        "isExtraImport": true,
+        "detail": "ag_ui.core",
+        "documentation": {}
+    },
+    {
+        "label": "ToolCallStartEvent",
+        "importPath": "ag_ui.core",
+        "description": "ag_ui.core",
+        "isExtraImport": true,
+        "detail": "ag_ui.core",
+        "documentation": {}
+    },
+    {
+        "label": "EventEncoder",
+        "importPath": "ag_ui.encoder",
+        "description": "ag_ui.encoder",
+        "isExtraImport": true,
+        "detail": "ag_ui.encoder",
+        "documentation": {}
+    },
+    {
+        "label": "EventEncoder",
+        "importPath": "ag_ui.encoder",
+        "description": "ag_ui.encoder",
+        "isExtraImport": true,
+        "detail": "ag_ui.encoder",
         "documentation": {}
     },
     {
@@ -2175,6 +2327,14 @@
         "documentation": {}
     },
     {
+        "label": "StreamingResponse",
+        "importPath": "fastapi.responses",
+        "description": "fastapi.responses",
+        "isExtraImport": true,
+        "detail": "fastapi.responses",
+        "documentation": {}
+    },
+    {
         "label": "get_asset",
         "importPath": "server.assets",
         "description": "server.assets",
@@ -2746,6 +2906,14 @@
         "documentation": {}
     },
     {
+        "label": "stream_studio_agent",
+        "importPath": "agent.studio_agent_next",
+        "description": "agent.studio_agent_next",
+        "isExtraImport": true,
+        "detail": "agent.studio_agent_next",
+        "documentation": {}
+    },
+    {
         "label": "gateway_mcp_server",
         "importPath": "agent.studio_agent_next",
         "description": "agent.studio_agent_next",
@@ -2851,6 +3019,14 @@
     },
     {
         "label": "run_studio_agent",
+        "importPath": "agent.studio_agent_next",
+        "description": "agent.studio_agent_next",
+        "isExtraImport": true,
+        "detail": "agent.studio_agent_next",
+        "documentation": {}
+    },
+    {
+        "label": "stream_studio_agent",
         "importPath": "agent.studio_agent_next",
         "description": "agent.studio_agent_next",
         "isExtraImport": true,

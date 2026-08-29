@@ -6,7 +6,29 @@ import type { CanvasNode } from "./connection-validation";
 import { toolById } from "./tool-registry";
 import type { CanvasNodeData, PortDataType } from "./types";
 
-const TERMINAL = new Set(["succeeded", "failed", "cancelled", "canceled", "deleted", "dry_run"]);
+const TERMINAL = new Set([
+  "succeeded",
+  "failed",
+  "cancelled",
+  "canceled",
+  "deleted",
+  "expired",
+  "timeout",
+  "timed_out",
+  "timeouted",
+  "dry_run",
+]);
+
+const FAILED = new Set([
+  "failed",
+  "cancelled",
+  "canceled",
+  "deleted",
+  "expired",
+  "timeout",
+  "timed_out",
+  "timeouted",
+]);
 
 function mergeVariants(existing: StudioAsset[] | undefined, incoming: StudioAsset[]): StudioAsset[] {
   const merged = [...(existing || [])];
@@ -87,6 +109,7 @@ export async function runCreativeNode(
   nodes: CanvasNode[],
   edges: CanvasEdge[],
   projectId: string,
+  invoke: typeof invokeTool = invokeTool,
 ): Promise<Partial<CanvasNodeData>> {
   const tool = toolById(node.data.toolId);
   if (!tool) {
@@ -97,7 +120,7 @@ export async function runCreativeNode(
     .filter((edge) => edge.target === node.id)
     .map((edge) => nodes.find((candidate) => candidate.id === edge.source)?.data.output?.versionId)
     .filter((value): value is string => Boolean(value));
-  const payload = await invokeTool(tool.providerId, tool.toolName, arguments_, {
+  const payload = await invoke(tool.providerId, tool.toolName, arguments_, {
     projectId,
     assetId: node.data.output?.assetId,
     sourceVersionIds,
@@ -116,6 +139,16 @@ export async function runCreativeNode(
       jobId,
     };
   }
+  if (providerStatus && FAILED.has(providerStatus)) {
+    return {
+      status: "failed",
+      result: payload.result,
+      jobId,
+      output: undefined,
+      variants: assets,
+      error: "Generation failed.",
+    };
+  }
   if (jobId && tool.pollTool && providerStatus !== "dry_run") {
     return {
       status: "queued",
@@ -125,12 +158,12 @@ export async function runCreativeNode(
     };
   }
   return {
-    status: providerStatus === "failed" ? "failed" : "completed",
+    status: "completed",
     result: payload.result,
     jobId,
     output: undefined,
     variants: assets,
-    error: providerStatus === "failed" ? "Generation failed." : undefined,
+    error: undefined,
   };
 }
 
@@ -161,7 +194,7 @@ export async function pollCreativeNode(
       error: undefined,
     };
   }
-  if (providerStatus === "failed" || providerStatus === "cancelled" || providerStatus === "canceled") {
+  if (FAILED.has(providerStatus)) {
     return { status: "failed", result: payload.result, error: "Generation failed." };
   }
   if (TERMINAL.has(providerStatus)) {
