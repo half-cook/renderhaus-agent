@@ -27,6 +27,7 @@ from agent.studio_agent_next import (
     StudioAgentContext,
     StudioAgentOutput,
     StudioAgentRequest,
+    StudioConversationTurn,
     StudioNode,
     StudioToolEvent,
     run_studio_agent as run_studio_agent_runtime,
@@ -732,6 +733,39 @@ def _agent_references(body: AgentBody, workspace_id: str) -> list[StudioNodeRefe
     return references
 
 
+def _agent_conversation_history(
+    workspace_id: str,
+    project_id: str,
+    *,
+    limit: int = 8,
+) -> list[StudioConversationTurn]:
+    executions = repository.list_executions(workspace_id, limit=limit, project_id=project_id)
+    candidates = [
+        execution
+        for execution in executions
+        if execution.get("project_id") == project_id
+        and execution.get("status") in {"completed", "error"}
+        and str(execution.get("prompt") or "").strip()
+    ][:limit]
+    turns: list[StudioConversationTurn] = []
+    for execution in reversed(candidates):
+        result = execution.get("result") if isinstance(execution.get("result"), dict) else {}
+        response = str(
+            result.get("markdown")
+            or result.get("summary")
+            or execution.get("message")
+            or "The agent did not return a response."
+        ).strip()
+        turns.append(
+            StudioConversationTurn(
+                user=str(execution["prompt"]).strip()[:4_000],
+                assistant=response[:4_000],
+                title=(str(result.get("title"))[:80] if result.get("title") else None),
+            )
+        )
+    return turns
+
+
 def _agent_result(outcome: Any) -> dict[str, Any]:
     assets: list[dict[str, Any]] = []
     seen: set[str] = set()
@@ -808,6 +842,7 @@ def _studio_agent_request(
     prompt: str,
     nodes: list[StudioNodeReference] | None,
     *,
+    history: list[StudioConversationTurn] | None = None,
     job_id: str | None = None,
     workspace_id: str | None = None,
     project_id: str | None = None,
@@ -826,6 +861,7 @@ def _studio_agent_request(
             )
             for node in (nodes or [])
         ],
+        history=list(history or []),
         job_id=job_id,
         workspace_id=workspace_id,
         project_id=project_id,
@@ -852,6 +888,11 @@ def _events_from_payload(raw: list[Any]) -> list[StudioToolEvent]:
                     item.get("provider_job_id")
                     if isinstance(item.get("provider_job_id"), str)
                     else None
+                ),
+                arguments=(
+                    dict(item.get("arguments") or {})
+                    if isinstance(item.get("arguments"), dict)
+                    else {}
                 ),
                 assets=list(item.get("assets") or []),
                 result=dict(item.get("result") or {}) if isinstance(item.get("result"), dict) else {},
@@ -898,11 +939,13 @@ async def run_studio_agent(
     job_id: str | None = None,
     workspace_id: str | None = None,
     project_id: str | None = None,
+    history: list[StudioConversationTurn] | None = None,
     **_unused: Any,
 ) -> StudioAgentRun:
     request = _studio_agent_request(
         prompt,
         nodes,
+        history=history,
         job_id=job_id,
         workspace_id=workspace_id,
         project_id=project_id,
@@ -927,6 +970,7 @@ async def _run_studio_agent_job(
     job_id: str,
     prompt: str,
     references: list[StudioNodeReference],
+    history: list[StudioConversationTurn],
     *,
     workspace_id: str,
     project_id: str,
@@ -974,6 +1018,7 @@ async def _run_studio_agent_job(
         outcome = await run_studio_agent(
             prompt,
             nodes=references,
+            history=history,
             asset_registrar=register_assets,
             source_resolver=resolve_source,
             event_sink=record_event,
@@ -1049,7 +1094,7 @@ async def _run_studio_agent_job(
         workspace_id,
         job_id,
         status="completed",
-        message=f"Added {outcome.final.title} to the canvas.",
+        message=f"Completed {outcome.final.title}.",
         result=_agent_result(outcome),
     )
 
@@ -1065,6 +1110,11 @@ async def studio_agent(body: AgentBody, auth: AuthUser) -> dict[str, Any]:
     except KeyError as exc:
         raise HTTPException(status_code=404, detail="Project not found.") from exc
     references = await asyncio.to_thread(_agent_references, body, workspace_id)
+    history = await asyncio.to_thread(
+        _agent_conversation_history,
+        workspace_id,
+        body.project_id,
+    )
     job = await asyncio.to_thread(
         repository.create_execution,
         workspace_id=workspace_id,
@@ -1078,6 +1128,7 @@ async def studio_agent(body: AgentBody, auth: AuthUser) -> dict[str, Any]:
             job_id,
             body.prompt,
             references,
+            history,
             workspace_id=workspace_id,
             project_id=body.project_id,
             user_id=user_id,
@@ -1090,11 +1141,16 @@ async def studio_agent(body: AgentBody, auth: AuthUser) -> dict[str, Any]:
 
 
 @router.get("/agent")
-async def studio_agent_jobs(auth: AuthUser, limit: int = 50) -> dict[str, Any]:
+async def studio_agent_jobs(
+    auth: AuthUser,
+    limit: int = 50,
+    project_id: str | None = None,
+) -> dict[str, Any]:
     items = await asyncio.to_thread(
         repository.list_executions,
         current_workspace_id(auth),
         limit=limit,
+        project_id=project_id,
     )
     return {"items": items}
 

@@ -12,7 +12,6 @@ import {
   createStudioProject,
   fetchOptions,
   fetchStatus,
-  fetchStudioAgentResult,
   fetchStudioCanvas,
   fetchStudioExecutions,
   fetchStudioProjects,
@@ -30,25 +29,17 @@ import {
   type CanvasNode,
 } from "./connection-validation";
 import { pollCreativeNode, runCreativeNode } from "./graph-execution";
+import { isSceneKind } from "./story";
+import { defaultToolForRail, toolById, toolForAgentArtifact } from "./tool-registry";
 import {
-  approvedSequence,
-  compactStoryOrders,
-  isSceneKind,
-  nextStoryOrder,
-  SCENE_CARD_GAP,
-  SCENE_CARD_WIDTH,
-} from "./story";
-import { defaultToolForRail, toolById } from "./tool-registry";
-import type {
-  AgentRunData,
-  AgentResultData,
-  AgentToolEvent,
-  CanvasNodeData,
-  CreativeNodeKind,
-  JobStatus,
-  ProjectRecord,
-  RailTool,
-  ToolDefinition,
+  schemaFor,
+  type AgentToolEvent,
+  type CanvasNodeData,
+  type CreativeNodeKind,
+  type JobStatus,
+  type ProjectRecord,
+  type RailTool,
+  type ToolDefinition,
 } from "./types";
 
 const PROJECTS_KEY = "renderhaus.studio.projects";
@@ -82,10 +73,10 @@ type CanvasStore = {
   selectedNodeIds: string[];
   activeTool: RailTool;
   inspectorOpen: boolean;
-  composerOpen: boolean;
+  agentOpen: boolean;
   advancedOpen: boolean;
   connectionHint: string | null;
-  composerMessage: string | null;
+  agentMessage: string | null;
   providers: ProviderCatalog[];
   fieldOptions: FieldOptions;
   status: StudioStatus | null;
@@ -102,7 +93,7 @@ type CanvasStore = {
   createProject: () => Promise<void>;
   setActiveTool: (tool: RailTool) => void;
   setInspectorOpen: (open: boolean) => void;
-  setComposerOpen: (open: boolean) => void;
+  setAgentOpen: (open: boolean) => void;
   toggleAdvanced: () => void;
   setViewport: (viewport: Viewport) => void;
   onNodesChange: (changes: NodeChange<CanvasNode>[]) => void;
@@ -117,8 +108,14 @@ type CanvasStore = {
     config?: Record<string, unknown>;
     output?: StudioAsset;
   }) => string;
-  addAgentResult: (result: AgentResultData, position: { x: number; y: number }) => string;
-  toggleAgentRun: (id: string) => void;
+  placeAgentAsset: (input: {
+    asset: StudioAsset;
+    position: { x: number; y: number };
+    title?: string;
+    executionId?: string;
+    prompt?: string;
+    toolEvent?: AgentToolEvent;
+  }) => string;
   addUploadNode: (file: File, position: { x: number; y: number }) => Promise<void>;
   updateNodeData: (id: string, patch: Partial<CanvasNode["data"]>) => void;
   updateNodeConfig: (id: string, name: string, value: unknown) => void;
@@ -126,18 +123,14 @@ type CanvasStore = {
   deleteSelected: () => void;
   connectImageToVideo: (imageNodeId: string) => void;
   addToStoryboard: (mediaNodeId: string) => void;
-  setApproved: (id: string, approved: boolean) => void;
   cycleVariant: (id: string, direction: 1 | -1) => void;
-  moveInSequence: (id: string, direction: 1 | -1) => void;
-  arrangeSequence: () => void;
-  startSequence: (origin: { x: number; y: number }) => void;
   focusNode: (id: string) => void;
   runNode: (id: string) => Promise<void>;
   undo: () => void;
   redo: () => void;
   pushHistory: () => void;
   persist: () => Promise<void>;
-  setComposerMessage: (message: string | null) => void;
+  setAgentMessage: (message: string | null) => void;
 };
 
 const pollTimers = new Map<string, number>();
@@ -170,6 +163,31 @@ function defaultsFor(tool: ToolDefinition, fieldOptions: FieldOptions): Record<s
     args.model = catalog.model[0];
   }
   return args;
+}
+
+function configForAgentArtifact(
+  tool: ToolDefinition | undefined,
+  event: AgentToolEvent | undefined,
+  fallbackPrompt: string | undefined,
+  providers: ProviderCatalog[],
+): Record<string, unknown> | undefined {
+  if (!tool) return undefined;
+  const schema = schemaFor(providers, tool.providerId, tool.toolName);
+  const allowedFields = new Set(
+    Object.keys(schema?.inputSchema.properties || {}).length
+      ? Object.keys(schema?.inputSchema.properties || {})
+      : tool.primaryFields,
+  );
+  const config = Object.fromEntries(
+    Object.entries(event?.arguments || {}).filter(
+      ([name, value]) => allowedFields.has(name) && value !== undefined && value !== null,
+    ),
+  );
+  const promptField = tool.id === "voice.generate" ? "text" : "prompt";
+  if (!String(config[promptField] || "").trim() && fallbackPrompt?.trim()) {
+    config[promptField] = fallbackPrompt.trim();
+  }
+  return config;
 }
 
 function readProjects(): ProjectRecord[] {
@@ -217,7 +235,7 @@ function graphFromDocument(document: StudioCanvasDocument): PersistedGraph {
     edges: document.edges as CanvasEdge[],
     viewport: document.viewport || { x: 80, y: 80, zoom: 1 },
   };
-  return migrateLegacyAgentPresentation(expandLegacyAgentResults(graph));
+  return migrateAgentPresentationToDock(graph);
 }
 
 function needsAgentPresentationMigration(document: StudioCanvasDocument): boolean {
@@ -225,7 +243,8 @@ function needsAgentPresentationMigration(document: StudioCanvasDocument): boolea
     if (!node || typeof node !== "object") return false;
     const data = (node as { data?: CanvasNodeData }).data;
     if (!data) return false;
-    if (data.kind === "agentResult") return true;
+    if (data.kind === "agentResult" || data.kind === "agentRun") return true;
+    if (data.agentRunId && data.output && !data.toolId) return true;
     const agentOutput = Boolean(data.agentRun || data.agentRunId || data.agentRole);
     return (
       data.agentRole === "final" ||
@@ -235,21 +254,35 @@ function needsAgentPresentationMigration(document: StudioCanvasDocument): boolea
   });
 }
 
-function migrateLegacyAgentPresentation(graph: PersistedGraph): PersistedGraph {
-  let changed = false;
-  const nodes = graph.nodes.map((node) => {
+function migrateAgentPresentationToDock(graph: PersistedGraph): PersistedGraph {
+  const removedIds = new Set(
+    graph.nodes
+      .filter((node) => node.data.kind === "agentResult" || node.data.kind === "agentRun")
+      .map((node) => node.id),
+  );
+  let changed = removedIds.size > 0;
+  const nodes = graph.nodes.filter((node) => !removedIds.has(node.id)).map((node) => {
     const data = node.data;
     const legacyPrimaryNodeId = data.agentRun?.finalNodeId;
     const shouldMigrateRun = Boolean(legacyPrimaryNodeId && !data.agentRun?.primaryNodeId);
     const shouldMigrateRole = data.agentRole === "final";
     const shouldMigrateTitle =
       Boolean(data.agentRun || data.agentRunId || data.agentRole) && data.title.startsWith("Final · ");
-    if (!shouldMigrateRun && !shouldMigrateRole && !shouldMigrateTitle) return node;
+    const shouldNormalizeArtifact = Boolean(data.agentRunId && data.output && !data.toolId);
+    if (
+      !shouldMigrateRun &&
+      !shouldMigrateRole &&
+      !shouldMigrateTitle &&
+      !shouldNormalizeArtifact
+    ) return node;
     changed = true;
     const migratedRun =
       shouldMigrateRun && data.agentRun && legacyPrimaryNodeId
         ? { ...data.agentRun, primaryNodeId: legacyPrimaryNodeId, finalNodeId: undefined }
         : undefined;
+    const artifactTool = shouldNormalizeArtifact && data.output
+      ? toolForAgentArtifact(data.output.kind)
+      : undefined;
     return {
       ...node,
       data: {
@@ -257,10 +290,26 @@ function migrateLegacyAgentPresentation(graph: PersistedGraph): PersistedGraph {
         ...(migratedRun ? { agentRun: migratedRun } : {}),
         ...(shouldMigrateRole ? { agentRole: "primary" as const } : {}),
         ...(shouldMigrateTitle ? { title: `Result · ${data.title.slice("Final · ".length)}` } : {}),
+        ...(artifactTool
+          ? {
+              toolId: artifactTool.id,
+              providerId: artifactTool.providerId,
+              toolName: artifactTool.toolName,
+              config: { ...defaultsFor(artifactTool, {}), ...data.config },
+            }
+          : {}),
       },
     };
   });
-  return changed ? { ...graph, nodes } : graph;
+  return changed
+    ? {
+        ...graph,
+        nodes,
+        edges: graph.edges.filter(
+          (edge) => !removedIds.has(edge.source) && !removedIds.has(edge.target),
+        ),
+      }
+    : graph;
 }
 
 function makeNode(input: {
@@ -270,8 +319,6 @@ function makeNode(input: {
   title?: string;
   config?: Record<string, unknown>;
   output?: StudioAsset;
-  agentResult?: AgentResultData;
-  agentRun?: AgentRunData;
   fieldOptions: FieldOptions;
 }): CanvasNode {
   const tool = toolById(input.toolId);
@@ -287,134 +334,13 @@ function makeNode(input: {
       toolId: tool?.id,
       providerId: tool?.providerId,
       toolName: tool?.toolName,
-      config: input.config || (tool ? defaultsFor(tool, input.fieldOptions) : {}),
+      config: tool
+        ? { ...defaultsFor(tool, input.fieldOptions), ...(input.config || {}) }
+        : input.config || {},
       output: input.output,
       variants: input.output ? [input.output] : [],
-      agentResult: input.agentResult,
-      agentRun: input.agentRun,
-      status: input.output || input.agentResult || input.agentRun ? "completed" : "idle",
-      approved: false,
+      status: input.output ? "completed" : "idle",
     },
-  };
-}
-
-type AgentAsset = { asset: StudioAsset; event?: AgentToolEvent };
-
-function assetsForAgentRun(result: AgentResultData): AgentAsset[] {
-  const assets = new Map<string, AgentAsset>();
-  for (const event of result.toolEvents) {
-    for (const asset of event.assets) {
-      assets.set(asset.versionId, { asset, event });
-    }
-  }
-  for (const asset of result.assets) {
-    if (!assets.has(asset.versionId)) assets.set(asset.versionId, { asset });
-  }
-  return [...assets.values()];
-}
-
-function labelForAgentAsset(asset: StudioAsset, event: AgentToolEvent | undefined, index: number): string {
-  const base = event?.label || `${asset.kind[0]?.toUpperCase() || "A"}${asset.kind.slice(1)}`;
-  return `${base} ${index + 1}`;
-}
-
-function createAgentRunCluster(
-  result: AgentResultData,
-  position: { x: number; y: number },
-  fieldOptions: FieldOptions,
-): { nodes: CanvasNode[]; primaryNodeId?: string } {
-  const runId = result.executionId || uid();
-  const assets = assetsForAgentRun(result);
-  const primaryAsset = result.primaryAsset || assets.at(-1)?.asset;
-  const artifacts = assets.filter((item) => item.asset.versionId !== primaryAsset?.versionId);
-  const artifactNodes = artifacts.map(({ asset, event }, index) => {
-    const node = makeNode({
-      kind: asset.kind,
-      position: {
-        x: position.x + Math.floor(index / 3) * 440,
-        y: position.y + (index % 3) * 260,
-      },
-      title: labelForAgentAsset(asset, event, index),
-      output: asset,
-      fieldOptions,
-    });
-    node.data.agentRunId = runId;
-    node.data.agentRole = "artifact";
-    return node;
-  });
-  const primaryX = position.x + Math.max(1, Math.ceil(artifacts.length / 3)) * 440 + 40;
-  const primaryNode = primaryAsset
-    ? makeNode({
-        kind: primaryAsset.kind,
-        position: { x: primaryX, y: position.y + 120 },
-        title: `Result · ${result.title}`,
-        output: primaryAsset,
-        fieldOptions,
-      })
-    : undefined;
-  if (primaryNode) {
-    primaryNode.data.agentRunId = runId;
-    primaryNode.data.agentRole = "primary";
-    primaryNode.selected = true;
-  }
-  const runNode = makeNode({
-    kind: "agentRun",
-    position: { x: primaryX, y: position.y + 430 },
-    title: `Agent run · ${result.title}`,
-    agentRun: {
-      ...result,
-      executionId: result.executionId || runId,
-      artifactNodeIds: artifactNodes.map((node) => node.id),
-      ...(primaryNode ? { primaryNodeId: primaryNode.id } : {}),
-      collapsed: true,
-    },
-    fieldOptions,
-  });
-  return {
-    nodes: [...artifactNodes, ...(primaryNode ? [primaryNode] : []), runNode],
-    primaryNodeId: primaryNode?.id,
-  };
-}
-
-function replaceAgentRunCluster(
-  nodes: CanvasNode[],
-  currentRunNode: CanvasNode,
-  result: AgentResultData,
-  fieldOptions: FieldOptions,
-): CanvasNode[] {
-  const executionId = result.executionId;
-  const base = {
-    x: currentRunNode.position.x - 480,
-    y: currentRunNode.position.y - 430,
-  };
-  const cluster = createAgentRunCluster(result, base, fieldOptions);
-  const replacementRun = cluster.nodes.find((node) => node.data.kind === "agentRun");
-  if (replacementRun) {
-    replacementRun.id = currentRunNode.id;
-    replacementRun.position = currentRunNode.position;
-    replacementRun.selected = currentRunNode.selected;
-  }
-  return [
-    ...nodes.filter(
-      (node) =>
-        node.id !== currentRunNode.id &&
-        (!executionId || node.data.agentRunId !== executionId),
-    ),
-    ...cluster.nodes,
-  ];
-}
-
-function expandLegacyAgentResults(graph: PersistedGraph): PersistedGraph {
-  const legacy = graph.nodes.filter((node) => node.data.kind === "agentResult" && node.data.agentResult);
-  if (legacy.length === 0) return graph;
-  const legacyIds = new Set(legacy.map((node) => node.id));
-  const created = legacy.flatMap((node) =>
-    createAgentRunCluster(node.data.agentResult as AgentResultData, node.position, {}).nodes,
-  );
-  return {
-    ...graph,
-    nodes: [...graph.nodes.filter((node) => !legacyIds.has(node.id)), ...created],
-    edges: graph.edges.filter((edge) => !legacyIds.has(edge.source) && !legacyIds.has(edge.target)),
   };
 }
 
@@ -432,10 +358,10 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
   selectedNodeIds: [],
   activeTool: "select",
   inspectorOpen: false,
-  composerOpen: false,
+  agentOpen: false,
   advancedOpen: false,
   connectionHint: null,
-  composerMessage: null,
+  agentMessage: null,
   providers: [],
   fieldOptions: {},
   status: null,
@@ -491,7 +417,8 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
       window.setTimeout(() => void get().refreshExecutions(), 0);
     } catch (error) {
       const project = legacyProjects[0] || { id: "untitled", name: "Untitled" };
-      const graph = readGraph(project.id);
+      const localGraph = readGraph(project.id);
+      const graph = localGraph ? migrateAgentPresentationToDock(localGraph) : null;
       set({
         projects: legacyProjects,
         projectId: project.id,
@@ -544,7 +471,7 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
         fetchTools(),
         fetchStatus(),
         fetchOptions().catch(() => ({})),
-        fetchStudioExecutions().catch(() => []),
+        fetchStudioExecutions(get().projectId).catch(() => []),
       ]);
       set({ providers, status, fieldOptions, executions, loadError: null });
     } catch (error) {
@@ -554,38 +481,8 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
 
   refreshExecutions: async () => {
     try {
-      const executions = await fetchStudioExecutions();
-      const projectId = get().projectId;
-      let nodes = get().nodes;
-      let changed = false;
-      for (const execution of executions) {
-        if (
-          execution.status !== "completed" ||
-          execution.projectId !== projectId ||
-          !execution.primaryAsset
-        ) {
-          continue;
-        }
-        const runNode = nodes.find(
-          (node) => node.data.agentRun?.executionId === execution.jobId,
-        );
-        if (
-          !runNode ||
-          runNode.data.agentRun?.primaryAsset?.versionId === execution.primaryAsset.versionId
-        ) {
-          continue;
-        }
-        const result = await fetchStudioAgentResult(execution.jobId);
-        if (!result) {
-          continue;
-        }
-        nodes = replaceAgentRunCluster(nodes, runNode, result, get().fieldOptions);
-        changed = true;
-      }
-      set({ executions, ...(changed ? { nodes } : {}), loadError: null });
-      if (changed) {
-        await get().persist();
-      }
+      const executions = await fetchStudioExecutions(get().projectId);
+      set({ executions, loadError: null });
     } catch (error) {
       set({ loadError: error instanceof Error ? error.message : "Could not load agent jobs." });
     }
@@ -615,6 +512,7 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
         future: [],
         loadError: null,
       });
+      window.setTimeout(() => void get().refreshExecutions(), 0);
       if (migratedAgentPresentation) {
         window.setTimeout(() => void get().persist(), 0);
       }
@@ -640,15 +538,37 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
         future: [],
         loadError: null,
       });
+      window.setTimeout(() => void get().refreshExecutions(), 0);
     } catch (error) {
       set({ loadError: error instanceof Error ? error.message : "Could not create project." });
     }
   },
 
   setActiveTool: (tool) =>
-    set(tool === "agent" ? { activeTool: tool, composerOpen: true } : { activeTool: tool }),
-  setInspectorOpen: (open) => set({ inspectorOpen: open }),
-  setComposerOpen: (open) => set({ composerOpen: open }),
+    set(
+      tool === "agent"
+        ? { activeTool: tool, agentOpen: true, inspectorOpen: false }
+        : { activeTool: tool },
+    ),
+  setInspectorOpen: (open) =>
+    set((state) =>
+      open
+        ? {
+            inspectorOpen: true,
+            agentOpen: false,
+            activeTool: state.activeTool === "agent" ? "select" : state.activeTool,
+          }
+        : { inspectorOpen: false },
+    ),
+  setAgentOpen: (open) =>
+    set((state) =>
+      open
+        ? { agentOpen: true, inspectorOpen: false, activeTool: "agent" }
+        : {
+            agentOpen: false,
+            activeTool: state.activeTool === "agent" ? "select" : state.activeTool,
+          },
+    ),
   toggleAdvanced: () => set({ advancedOpen: !get().advancedOpen }),
   setViewport: (viewport) => {
     const current = get().viewport;
@@ -664,7 +584,7 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
       void get().persist();
     }, 350);
   },
-  setComposerMessage: (message) => set({ composerMessage: message }),
+  setAgentMessage: (message) => set({ agentMessage: message }),
 
   pushHistory: () => {
     const { nodes, edges, past } = get();
@@ -684,7 +604,9 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
     set({
       nodes: next,
       selectedNodeIds: selectionChanged ? nextSelected : prevSelected,
-      ...(selectionChanged ? { inspectorOpen: nextSelected.length === 1 } : {}),
+      ...(selectionChanged
+        ? { inspectorOpen: !get().agentOpen && nextSelected.length === 1 }
+        : {}),
     });
     const structural = changes.some((change) => change.type === "remove" || change.type === "add");
     if (structural) {
@@ -738,7 +660,7 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
     }
     set({
       selectedNodeIds: ids,
-      inspectorOpen: ids.length === 1,
+      inspectorOpen: !get().agentOpen && ids.length === 1,
     });
   },
 
@@ -757,34 +679,38 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
     set({
       nodes: [...get().nodes.map((item) => ({ ...item, selected: false })), node],
       selectedNodeIds: [node.id],
-      inspectorOpen: true,
+      inspectorOpen: !get().agentOpen,
     });
     get().persist();
     return node.id;
   },
 
-  addAgentResult: (result, position) => {
+  placeAgentAsset: ({ asset, position, title, executionId, prompt, toolEvent }) => {
     get().pushHistory();
-    const cluster = createAgentRunCluster(result, position, get().fieldOptions);
-    const selectedNodeId = cluster.primaryNodeId || cluster.nodes[cluster.nodes.length - 1]?.id;
+    const tool = toolForAgentArtifact(asset.kind, toolEvent);
+    const node = makeNode({
+      kind: asset.kind,
+      position,
+      title,
+      toolId: tool?.id,
+      config: configForAgentArtifact(tool, toolEvent, prompt, get().providers),
+      output: asset,
+      fieldOptions: get().fieldOptions,
+    });
+    node.selected = true;
+    if (executionId) {
+      node.data.agentRunId = executionId;
+      node.data.agentRole = "artifact";
+    }
     set({
-      nodes: [
-        ...get().nodes.map((item) => ({ ...item, selected: false })),
-        ...cluster.nodes,
-      ],
-      selectedNodeIds: selectedNodeId ? [selectedNodeId] : [],
-      inspectorOpen: false,
+      nodes: [...get().nodes.map((item) => ({ ...item, selected: false })), node],
+      selectedNodeIds: [node.id],
+      inspectorOpen: true,
+      agentOpen: false,
+      activeTool: "select",
     });
     get().persist();
-    return selectedNodeId || "";
-  },
-
-  toggleAgentRun: (id) => {
-    const node = get().nodes.find((item) => item.id === id);
-    if (!node?.data.agentRun) return;
-    get().updateNodeData(id, {
-      agentRun: { ...node.data.agentRun, collapsed: !node.data.agentRun.collapsed },
-    });
+    return node.id;
   },
 
   addUploadNode: async (file, position) => {
@@ -830,7 +756,7 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
       id: uid(),
       position: { x: node.position.x + 40, y: node.position.y + 40 },
       selected: true,
-      data: { ...structuredClone(node.data), approved: false, storyOrder: undefined },
+      data: structuredClone(node.data),
     }));
     set({
       nodes: [
@@ -849,7 +775,7 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
     }
     get().pushHistory();
     set({
-      nodes: compactStoryOrders(get().nodes.filter((node) => !ids.has(node.id))),
+      nodes: get().nodes.filter((node) => !ids.has(node.id)),
       edges: get().edges.filter((edge) => !ids.has(edge.source) && !ids.has(edge.target)),
       selectedNodeIds: [],
     });
@@ -903,20 +829,6 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
     });
   },
 
-  setApproved: (id, approved) => {
-    const node = get().nodes.find((item) => item.id === id);
-    if (!node || !isSceneKind(node.data.kind)) {
-      return;
-    }
-    get().pushHistory();
-    const storyOrder = approved ? nextStoryOrder(get().nodes) : undefined;
-    const next = get().nodes.map((item) =>
-      item.id === id ? { ...item, data: { ...item.data, approved, storyOrder } } : item,
-    );
-    set({ nodes: compactStoryOrders(next) });
-    get().persist();
-  },
-
   cycleVariant: (id, direction) => {
     const node = get().nodes.find((item) => item.id === id);
     const variants = node?.data.variants || [];
@@ -929,75 +841,6 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
     );
     const next = (current + direction + variants.length) % variants.length;
     get().updateNodeData(id, { output: variants[next] });
-  },
-
-  moveInSequence: (id, direction) => {
-    const sequence = approvedSequence(get().nodes);
-    const index = sequence.findIndex((item) => item.id === id);
-    const swapWith = sequence[index + direction];
-    if (index < 0 || !swapWith) {
-      return;
-    }
-    get().pushHistory();
-    const currentOrder = sequence[index]?.data.storyOrder ?? index + 1;
-    const otherOrder = swapWith.data.storyOrder ?? index + direction + 1;
-    const next = get().nodes.map((node) => {
-      if (node.id === id) {
-        return { ...node, data: { ...node.data, storyOrder: otherOrder } };
-      }
-      if (node.id === swapWith.id) {
-        return { ...node, data: { ...node.data, storyOrder: currentOrder } };
-      }
-      return node;
-    });
-    set({ nodes: compactStoryOrders(next) });
-    get().persist();
-  },
-
-  arrangeSequence: () => {
-    const sequence = approvedSequence(get().nodes);
-    if (sequence.length === 0) {
-      return;
-    }
-    get().pushHistory();
-    const originY = sequence[0]?.position.y ?? 80;
-    const placed = new Map(
-      sequence.map((node, index) => [
-        node.id,
-        { x: 80 + index * (SCENE_CARD_WIDTH + SCENE_CARD_GAP), y: originY },
-      ]),
-    );
-    set({
-      nodes: get().nodes.map((node) => {
-        const position = placed.get(node.id);
-        return position ? { ...node, position } : node;
-      }),
-    });
-    get().persist();
-  },
-
-  startSequence: (origin) => {
-    get().pushHistory();
-    const created = [0, 1, 2].map((index) => {
-      const node = makeNode({
-        kind: "image",
-        position: { x: origin.x + index * (SCENE_CARD_WIDTH + SCENE_CARD_GAP), y: origin.y },
-        toolId: "image.generate",
-        title: `Scene ${index + 1}`,
-        fieldOptions: get().fieldOptions,
-      });
-      return node;
-    });
-    const last = created[created.length - 1];
-    if (last) {
-      last.selected = true;
-    }
-    set({
-      nodes: [...get().nodes.map((node) => ({ ...node, selected: false })), ...created],
-      selectedNodeIds: last ? [last.id] : [],
-      inspectorOpen: Boolean(last),
-    });
-    get().persist();
   },
 
   focusNode: (id) => {

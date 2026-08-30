@@ -2368,6 +2368,14 @@
         "documentation": {}
     },
     {
+        "label": "_agent_conversation_history",
+        "importPath": "server.studio",
+        "description": "server.studio",
+        "isExtraImport": true,
+        "detail": "server.studio",
+        "documentation": {}
+    },
+    {
         "label": "_agent_result",
         "importPath": "server.studio",
         "description": "server.studio",
@@ -2722,6 +2730,14 @@
         "documentation": {}
     },
     {
+        "label": "StudioConversationTurn",
+        "importPath": "agent.studio_agent_next",
+        "description": "agent.studio_agent_next",
+        "isExtraImport": true,
+        "detail": "agent.studio_agent_next",
+        "documentation": {}
+    },
+    {
         "label": "StudioNode",
         "importPath": "agent.studio_agent_next",
         "description": "agent.studio_agent_next",
@@ -2771,6 +2787,14 @@
     },
     {
         "label": "StudioAgentRequest",
+        "importPath": "agent.studio_agent_next",
+        "description": "agent.studio_agent_next",
+        "isExtraImport": true,
+        "detail": "agent.studio_agent_next",
+        "documentation": {}
+    },
+    {
+        "label": "StudioConversationTurn",
         "importPath": "agent.studio_agent_next",
         "description": "agent.studio_agent_next",
         "isExtraImport": true,
@@ -3171,7 +3195,16 @@
         "kind": 6,
         "importPath": "agent.studio_agent_next",
         "description": "agent.studio_agent_next",
-        "peekOfCode": "class StudioNode(BaseModel):\n    \"\"\"A referenced canvas node in the invocation payload.\"\"\"\n    id: str = Field(min_length=1, max_length=120)\n    title: str = Field(min_length=1, max_length=160)\n    kind: str = Field(min_length=1, max_length=40)\n    prompt: str = Field(default=\"\", max_length=4_000)\n    source: str | None = Field(default=None, max_length=12_000)\n    asset_id: str | None = Field(default=None, max_length=120)\n    version_id: str | None = Field(default=None, max_length=120)\nclass StudioAgentRequest(BaseModel):",
+        "peekOfCode": "class StudioNode(BaseModel):\n    \"\"\"A referenced canvas node in the invocation payload.\"\"\"\n    id: str = Field(min_length=1, max_length=120)\n    title: str = Field(min_length=1, max_length=160)\n    kind: str = Field(min_length=1, max_length=40)\n    prompt: str = Field(default=\"\", max_length=4_000)\n    source: str | None = Field(default=None, max_length=12_000)\n    asset_id: str | None = Field(default=None, max_length=120)\n    version_id: str | None = Field(default=None, max_length=120)\nclass StudioConversationTurn(BaseModel):",
+        "detail": "agent.studio_agent_next",
+        "documentation": {}
+    },
+    {
+        "label": "StudioConversationTurn",
+        "kind": 6,
+        "importPath": "agent.studio_agent_next",
+        "description": "agent.studio_agent_next",
+        "peekOfCode": "class StudioConversationTurn(BaseModel):\n    \"\"\"One durable project-conversation turn supplied as context for a follow-up.\"\"\"\n    user: str = Field(min_length=1, max_length=4_000)\n    assistant: str = Field(min_length=1, max_length=4_000)\n    title: str | None = Field(default=None, max_length=80)\nclass StudioAgentRequest(BaseModel):\n    \"\"\"JSON body accepted by AgentCore and by `run_studio_agent`.\"\"\"\n    prompt: str = Field(min_length=1, max_length=8_000)\n    nodes: list[StudioNode] = Field(default_factory=list, max_length=16)\n    history: list[StudioConversationTurn] = Field(default_factory=list, max_length=8)",
         "detail": "agent.studio_agent_next",
         "documentation": {}
     },
@@ -3180,7 +3213,7 @@
         "kind": 6,
         "importPath": "agent.studio_agent_next",
         "description": "agent.studio_agent_next",
-        "peekOfCode": "class StudioAgentRequest(BaseModel):\n    \"\"\"JSON body accepted by AgentCore and by `run_studio_agent`.\"\"\"\n    prompt: str = Field(min_length=1, max_length=8_000)\n    nodes: list[StudioNode] = Field(default_factory=list, max_length=16)\n    job_id: str | None = Field(default=None, max_length=120)\n    workspace_id: str | None = Field(default=None, max_length=160)\n    project_id: str | None = Field(default=None, max_length=120)\nclass StudioAgentOutput(BaseModel):\n    \"\"\"The final downloadable artifact shown on the canvas.\"\"\"\n    title: str = Field(min_length=1, max_length=80)",
+        "peekOfCode": "class StudioAgentRequest(BaseModel):\n    \"\"\"JSON body accepted by AgentCore and by `run_studio_agent`.\"\"\"\n    prompt: str = Field(min_length=1, max_length=8_000)\n    nodes: list[StudioNode] = Field(default_factory=list, max_length=16)\n    history: list[StudioConversationTurn] = Field(default_factory=list, max_length=8)\n    job_id: str | None = Field(default=None, max_length=120)\n    workspace_id: str | None = Field(default=None, max_length=160)\n    project_id: str | None = Field(default=None, max_length=120)\nclass StudioAgentOutput(BaseModel):\n    \"\"\"The final downloadable artifact shown on the canvas.\"\"\"",
         "detail": "agent.studio_agent_next",
         "documentation": {}
     },
@@ -3198,7 +3231,7 @@
         "kind": 6,
         "importPath": "agent.studio_agent_next",
         "description": "agent.studio_agent_next",
-        "peekOfCode": "class StudioToolEvent:\n    id: str\n    name: str\n    label: str\n    status: str\n    summary: str\n    provider: str | None = None\n    provider_job_id: str | None = None\n    assets: list[dict[str, Any]] = field(default_factory=list)\n    result: dict[str, Any] = field(default_factory=dict)",
+        "peekOfCode": "class StudioToolEvent:\n    id: str\n    name: str\n    label: str\n    status: str\n    summary: str\n    provider: str | None = None\n    provider_job_id: str | None = None\n    arguments: dict[str, Any] = field(default_factory=dict)\n    assets: list[dict[str, Any]] = field(default_factory=list)",
         "detail": "agent.studio_agent_next",
         "documentation": {}
     },
@@ -3342,7 +3375,16 @@
         "kind": 5,
         "importPath": "agent.studio_agent_next",
         "description": "agent.studio_agent_next",
-        "peekOfCode": "_DROP_TOOL_RESULT_KEYS = frozenset(\n    {\"traceback\", \"last_response\", \"create_response\", \"last_payload\", \"raw\"}\n)\n_TEXT_PART_KEYS = frozenset({\"type\", \"text\"})\n_TOOL_TITLES = {\n    \"render_timeline\": \"Compose final MP4\",\n    \"get_render_progress\": \"Poll Remotion render\",\n    \"text_to_image\": \"Generate image\",\n    \"image_to_image\": \"Edit image\",\n    \"text_to_video\": \"Generate video\",",
+        "peekOfCode": "_DROP_TOOL_RESULT_KEYS = frozenset(\n    {\"traceback\", \"last_response\", \"create_response\", \"last_payload\", \"raw\"}\n)\n_SECRET_ARGUMENT_PARTS = (\"api_key\", \"authorization\", \"secret\", \"token\")\n_TEXT_PART_KEYS = frozenset({\"type\", \"text\"})\n_TOOL_TITLES = {\n    \"render_timeline\": \"Compose final MP4\",\n    \"get_render_progress\": \"Poll Remotion render\",\n    \"text_to_image\": \"Generate image\",\n    \"image_to_image\": \"Edit image\",",
+        "detail": "agent.studio_agent_next",
+        "documentation": {}
+    },
+    {
+        "label": "_SECRET_ARGUMENT_PARTS",
+        "kind": 5,
+        "importPath": "agent.studio_agent_next",
+        "description": "agent.studio_agent_next",
+        "peekOfCode": "_SECRET_ARGUMENT_PARTS = (\"api_key\", \"authorization\", \"secret\", \"token\")\n_TEXT_PART_KEYS = frozenset({\"type\", \"text\"})\n_TOOL_TITLES = {\n    \"render_timeline\": \"Compose final MP4\",\n    \"get_render_progress\": \"Poll Remotion render\",\n    \"text_to_image\": \"Generate image\",\n    \"image_to_image\": \"Edit image\",\n    \"text_to_video\": \"Generate video\",\n    \"image_to_video\": \"Animate image\",\n    \"get_video_task\": \"Poll video task\",",
         "detail": "agent.studio_agent_next",
         "documentation": {}
     },
@@ -6168,7 +6210,7 @@
         "kind": 6,
         "importPath": "tests.test_studio_agent",
         "description": "tests.test_studio_agent",
-        "peekOfCode": "class StudioAgentTests(unittest.IsolatedAsyncioTestCase):\n    def test_primary_agent_asset_preserves_the_latest_media_kind(self) -> None:\n        audio = {\n            \"asset_id\": \"audio-asset\",\n            \"version_id\": \"audio-version\",\n            \"kind\": \"audio\",\n            \"filename\": \"bed.mp3\",\n            \"mime_type\": \"audio/mpeg\",\n        }\n        image = {",
+        "peekOfCode": "class StudioAgentTests(unittest.IsolatedAsyncioTestCase):\n    def test_project_conversation_history_is_chronological_and_scoped(self) -> None:\n        with tempfile.TemporaryDirectory() as directory:\n            test_repository = StudioRepository(\n                Path(directory) / \"studio.sqlite3\",\n                Path(directory) / \"media\",\n            )\n            test_repository.create_project(\"user:local\", \"local\", \"One\", project_id=\"one\")\n            test_repository.create_project(\"user:local\", \"local\", \"Two\", project_id=\"two\")\n            first = test_repository.create_execution(",
         "detail": "tests.test_studio_agent",
         "documentation": {}
     },

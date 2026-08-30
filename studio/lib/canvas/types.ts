@@ -55,6 +55,7 @@ export type AgentToolEvent = {
   summary: string;
   provider?: string;
   providerJobId?: string;
+  arguments: Record<string, unknown>;
   assets: StudioAsset[];
 };
 

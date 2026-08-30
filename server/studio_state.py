@@ -779,7 +779,14 @@ class StudioRepository:
                     event.get("provider_job_id"),
                     str(event.get("status") or "completed"),
                     str(event.get("summary") or "")[:1000],
-                    json.dumps(event.get("result") or {}, ensure_ascii=False),
+                    json.dumps(
+                        {
+                            "_format": "renderhaus.tool_call.v1",
+                            "arguments": event.get("arguments") or {},
+                            "result": event.get("result") or {},
+                        },
+                        ensure_ascii=False,
+                    ),
                     json.dumps(event.get("assets") or [], ensure_ascii=False),
                     int(event.get("created_at") or now),
                     int(event.get("completed_at") or now),
@@ -797,6 +804,12 @@ class StudioRepository:
         ).fetchall()
         calls: list[dict[str, Any]] = []
         for row in rows:
+            stored = json.loads(row["result_json"] or "{}")
+            wrapped = (
+                isinstance(stored, dict)
+                and stored.get("_format") == "renderhaus.tool_call.v1"
+            )
+            arguments = stored.get("arguments") if wrapped else {}
             calls.append(
                 {
                     "id": row["id"],
@@ -806,6 +819,7 @@ class StudioRepository:
                     "provider_job_id": row["provider_job_id"],
                     "status": row["status"],
                     "summary": row["summary"],
+                    "arguments": arguments if isinstance(arguments, dict) else {},
                     "assets": json.loads(row["output_versions_json"] or "[]"),
                     "created_at": row["created_at"],
                     "completed_at": row["completed_at"],
@@ -826,6 +840,7 @@ class StudioRepository:
         return {
             "job_id": row["id"],
             "project_id": row["project_id"],
+            "prompt": row["prompt"],
             "status": row["status"],
             "message": row["message"],
             "result": result,
@@ -835,12 +850,27 @@ class StudioRepository:
             "updated_at": row["updated_at"],
         }
 
-    def list_executions(self, workspace_id: str, *, limit: int = 50) -> list[dict[str, Any]]:
+    def list_executions(
+        self,
+        workspace_id: str,
+        *,
+        limit: int = 50,
+        project_id: str | None = None,
+    ) -> list[dict[str, Any]]:
         with self._connect() as connection:
-            rows = connection.execute(
-                "SELECT id FROM executions WHERE workspace_id = ? ORDER BY updated_at DESC LIMIT ?",
-                (workspace_id, max(1, min(limit, 100))),
-            ).fetchall()
+            capped_limit = max(1, min(limit, 100))
+            if project_id:
+                rows = connection.execute(
+                    "SELECT id FROM executions WHERE workspace_id = ? AND project_id = ? "
+                    "ORDER BY updated_at DESC, rowid DESC LIMIT ?",
+                    (workspace_id, project_id, capped_limit),
+                ).fetchall()
+            else:
+                rows = connection.execute(
+                    "SELECT id FROM executions WHERE workspace_id = ? "
+                    "ORDER BY updated_at DESC, rowid DESC LIMIT ?",
+                    (workspace_id, capped_limit),
+                ).fetchall()
         return [
             execution
             for row in rows

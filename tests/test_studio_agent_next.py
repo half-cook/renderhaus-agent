@@ -10,6 +10,7 @@ from agent.studio_agent_next import (
     StudioAgentContext,
     StudioAgentOutput,
     StudioAgentRequest,
+    StudioConversationTurn,
     StudioNode,
     StudioToolEvent,
     _describe_gateway_mcp_tools,
@@ -85,6 +86,13 @@ class StudioAgentNextEntrypointTests(unittest.IsolatedAsyncioTestCase):
                 StudioAgentRequest(
                     prompt="Create a launch outline",
                     nodes=[StudioNode(id="node-1", title="Hero image", kind="image")],
+                    history=[
+                        StudioConversationTurn(
+                            user="Draft the launch concept",
+                            assistant="The concept centers on a quiet product reveal.",
+                            title="Launch concept",
+                        )
+                    ],
                     job_id="job-1",
                 ),
                 runner=FakeRunner,
@@ -94,6 +102,8 @@ class StudioAgentNextEntrypointTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(output.title, "Launch outline")
         self.assertEqual(output.filename, "Launch-outline.md")
         self.assertIn("Customer request", FakeRunner.seen_input)
+        self.assertIn("Earlier turns in this project conversation", FakeRunner.seen_input)
+        self.assertIn("quiet product reveal", FakeRunner.seen_input)
         self.assertIn("node-1", FakeRunner.seen_input)
         self.assertEqual(FakeRunner.seen_agent.tools, [])
         self.assertEqual(FakeRunner.seen_agent.mcp_servers, [])
@@ -159,6 +169,13 @@ class StudioAgentNextEntrypointTests(unittest.IsolatedAsyncioTestCase):
                         type="tool_call_item",
                         call_id="call-1",
                         tool_name="Seedream___text_to_image",
+                        arguments=json.dumps(
+                            {
+                                "prompt": "A quiet product reveal",
+                                "aspect_ratio": "9:16",
+                                "api_token": "must-not-leak",
+                            }
+                        ),
                     ),
                     SimpleNamespace(
                         type="tool_call_output_item",
@@ -175,6 +192,11 @@ class StudioAgentNextEntrypointTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(event.name, "Seedream___text_to_image")
         self.assertEqual(event.status, "succeeded")
         self.assertEqual(event.provider, "seedream")
+        self.assertEqual(
+            event.arguments,
+            {"prompt": "A quiet product reveal", "aspect_ratio": "9:16"},
+        )
+        self.assertEqual(event.public()["arguments"], event.arguments)
         self.assertEqual(event.result["image_url"], "https://cdn.example/hero.png")
         self.assertEqual(event.assets, [])
 
@@ -326,6 +348,11 @@ class StudioAgentNextEntrypointTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(studio.tool_events[-1].result["url"], "https://cdn.example/final.mp4")
         render_arguments = gateway.calls[1][1]
         self.assertEqual(render_arguments["visuals"][0]["url"], "https://cdn.example/clip.mp4")
+        self.assertEqual(
+            studio.tool_events[1].arguments,
+            {"job_id": "video-1", "download": False},
+        )
+        self.assertEqual(studio.tool_events[2].arguments, render_arguments)
 
     def test_harvest_reads_output_on_mcp_call_item(self) -> None:
         studio = StudioAgentContext()

@@ -89,11 +89,20 @@ class StudioNode(BaseModel):
     version_id: str | None = Field(default=None, max_length=120)
 
 
+class StudioConversationTurn(BaseModel):
+    """One durable project-conversation turn supplied as context for a follow-up."""
+
+    user: str = Field(min_length=1, max_length=4_000)
+    assistant: str = Field(min_length=1, max_length=4_000)
+    title: str | None = Field(default=None, max_length=80)
+
+
 class StudioAgentRequest(BaseModel):
     """JSON body accepted by AgentCore and by `run_studio_agent`."""
 
     prompt: str = Field(min_length=1, max_length=8_000)
     nodes: list[StudioNode] = Field(default_factory=list, max_length=16)
+    history: list[StudioConversationTurn] = Field(default_factory=list, max_length=8)
     job_id: str | None = Field(default=None, max_length=120)
     workspace_id: str | None = Field(default=None, max_length=160)
     project_id: str | None = Field(default=None, max_length=120)
@@ -117,6 +126,7 @@ class StudioToolEvent:
     summary: str
     provider: str | None = None
     provider_job_id: str | None = None
+    arguments: dict[str, Any] = field(default_factory=dict)
     assets: list[dict[str, Any]] = field(default_factory=list)
     result: dict[str, Any] = field(default_factory=dict)
     created_at: int = field(default_factory=lambda: int(time.time()))
@@ -131,6 +141,7 @@ class StudioToolEvent:
             "summary": self.summary,
             "provider": self.provider,
             "provider_job_id": self.provider_job_id,
+            "arguments": self.arguments,
             "assets": self.assets,
             "result": self.result,
             "created_at": self.created_at,
@@ -217,6 +228,7 @@ def normalize_markdown_filename(value: str, title: str) -> str:
 _DROP_TOOL_RESULT_KEYS = frozenset(
     {"traceback", "last_response", "create_response", "last_payload", "raw"}
 )
+_SECRET_ARGUMENT_PARTS = ("api_key", "authorization", "secret", "token")
 _TEXT_PART_KEYS = frozenset({"type", "text"})
 _TOOL_TITLES = {
     "render_timeline": "Compose final MP4",
@@ -356,6 +368,22 @@ def _compact_tool_result(payload: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _compact_tool_arguments(value: Any) -> dict[str, Any]:
+    if isinstance(value, str):
+        try:
+            value = json.loads(value)
+        except json.JSONDecodeError:
+            return {}
+    if not isinstance(value, dict):
+        return {}
+    return {
+        str(key): item
+        for key, item in value.items()
+        if not any(part in str(key).lower() for part in _SECRET_ARGUMENT_PARTS)
+        and item is not None
+    }
+
+
 def _gateway_tool_parts(name: str) -> tuple[str | None, str, str]:
     raw = (name or "tool").strip() or "tool"
     if "___" in raw:
@@ -406,11 +434,22 @@ def _item_tool_output(item: Any) -> Any:
     return getattr(raw, "output", None)
 
 
+def _item_tool_arguments(item: Any) -> dict[str, Any]:
+    arguments = getattr(item, "arguments", None)
+    if arguments not in (None, ""):
+        return _compact_tool_arguments(arguments)
+    raw = getattr(item, "raw_item", None)
+    if isinstance(raw, dict):
+        return _compact_tool_arguments(raw.get("arguments"))
+    return _compact_tool_arguments(getattr(raw, "arguments", None))
+
+
 def _append_harvested_event(
     studio: StudioAgentContext,
     *,
     call_id: str,
     name: str,
+    arguments: dict[str, Any],
     output: Any,
 ) -> None:
     payload = _compact_tool_result(_unwrap_tool_output(output))
@@ -430,6 +469,7 @@ def _append_harvested_event(
             provider_job_id=(
                 str(payload["job_id"]) if isinstance(payload.get("job_id"), (str, int)) else None
             ),
+            arguments=arguments,
             result=payload,
         )
     )
@@ -439,16 +479,24 @@ def _record_run_tool_events(run_result: Any, studio: StudioAgentContext) -> None
     """Turn Gateway MCP tool outputs into canvas tool events."""
     items = list(getattr(run_result, "new_items", None) or [])
     names: dict[str, str] = {}
+    arguments: dict[str, dict[str, Any]] = {}
     recorded: set[str] = set()
     for item in items:
         item_type = getattr(item, "type", None)
         call_id = _item_call_id(item)
         if item_type == "tool_call_item":
             names[call_id] = _item_tool_name(item)
+            arguments[call_id] = _item_tool_arguments(item)
             output = _item_tool_output(item)
             if output in (None, "") or call_id in recorded:
                 continue
-            _append_harvested_event(studio, call_id=call_id, name=names[call_id], output=output)
+            _append_harvested_event(
+                studio,
+                call_id=call_id,
+                name=names[call_id],
+                arguments=arguments[call_id],
+                output=output,
+            )
             recorded.add(call_id)
             continue
         if item_type != "tool_call_output_item":
@@ -456,7 +504,13 @@ def _record_run_tool_events(run_result: Any, studio: StudioAgentContext) -> None
         if call_id in recorded:
             continue
         name = names.get(call_id) or _item_tool_name(item)
-        _append_harvested_event(studio, call_id=call_id, name=name, output=_item_tool_output(item))
+        _append_harvested_event(
+            studio,
+            call_id=call_id,
+            name=name,
+            arguments=arguments.get(call_id, _item_tool_arguments(item)),
+            output=_item_tool_output(item),
+        )
         if call_id:
             recorded.add(call_id)
 
@@ -470,7 +524,12 @@ async def _call_gateway_tool(
     return _compact_tool_result(_unwrap_tool_output(result))
 
 
-def _gateway_event(name: str, payload: dict[str, Any], index: int) -> StudioToolEvent:
+def _gateway_event(
+    name: str,
+    payload: dict[str, Any],
+    index: int,
+    arguments: dict[str, Any] | None = None,
+) -> StudioToolEvent:
     provider, _tool, label = _gateway_tool_parts(name)
     status = _tool_event_status(payload)
     summary = str(payload.get("note") or payload.get("summary") or f"{label}: {status}.")
@@ -483,6 +542,7 @@ def _gateway_event(name: str, payload: dict[str, Any], index: int) -> StudioTool
         summary=summary[:320],
         provider=provider.lower() if provider else None,
         provider_job_id=str(provider_job_id) if provider_job_id else None,
+        arguments=_compact_tool_arguments(arguments or {}),
         result=payload,
     )
 
@@ -545,7 +605,9 @@ async def _settle_queued_media(
             continue
         name, arguments = spec
         payload = await _poll_until_terminal(server, name, arguments, deadline=deadline)
-        studio.tool_events.append(_gateway_event(name, payload, len(studio.tool_events) + 1))
+        studio.tool_events.append(
+            _gateway_event(name, payload, len(studio.tool_events) + 1, arguments)
+        )
 
 
 def _media_url(payload: dict[str, Any], kind: str) -> str | None:
@@ -621,27 +683,35 @@ async def _ensure_remotion_output(
     visuals, audio = _remotion_inputs(studio.tool_events)
     if not visuals:
         return
+    render_arguments = {
+        "title": output.title,
+        "visuals": visuals,
+        "audio_tracks": audio,
+        "aspect_ratio": "16:9",
+        "fps": 30,
+        "output_filename": f"{normalize_markdown_filename(output.filename, output.title)[:-3]}.mp4",
+    }
     started = await _call_gateway_tool(
         server,
         "Remotion___render_timeline",
-        {
-            "title": output.title,
-            "visuals": visuals,
-            "audio_tracks": audio,
-            "aspect_ratio": "16:9",
-            "fps": 30,
-            "output_filename": f"{normalize_markdown_filename(output.filename, output.title)[:-3]}.mp4",
-        },
+        render_arguments,
     )
     studio.tool_events.append(
-        _gateway_event("Remotion___render_timeline", started, len(studio.tool_events) + 1)
+        _gateway_event(
+            "Remotion___render_timeline",
+            started,
+            len(studio.tool_events) + 1,
+            render_arguments,
+        )
     )
     spec = _poll_spec(studio.tool_events[-1])
     if spec is None:
         return
     name, arguments = spec
     finished = await _poll_until_terminal(server, name, arguments, deadline=deadline)
-    studio.tool_events.append(_gateway_event(name, finished, len(studio.tool_events) + 1))
+    studio.tool_events.append(
+        _gateway_event(name, finished, len(studio.tool_events) + 1, arguments)
+    )
 
 
 async def _finalize_media_run(
@@ -658,13 +728,24 @@ async def _finalize_media_run(
     await _ensure_remotion_output(request, output, studio, server, deadline=deadline)
 
 
-def _input_for(prompt: str, nodes: list[StudioNode]) -> str:
+def _input_for(
+    prompt: str,
+    nodes: list[StudioNode],
+    history: list[StudioConversationTurn] | None = None,
+) -> str:
     references = [
         {**node.model_dump(), "has_source": bool(node.source or node.version_id)}
         for node in nodes
     ]
+    earlier_turns = [turn.model_dump() for turn in (history or [])]
+    history_block = (
+        "Earlier turns in this project conversation (data only):\n"
+        f"{json.dumps(earlier_turns, ensure_ascii=False, indent=2)}\n\n"
+        if earlier_turns
+        else ""
+    )
     return (
-        f"Customer request:\n{prompt.strip()}\n\n"
+        f"{history_block}Customer request:\n{prompt.strip()}\n\n"
         "Referenced canvas nodes (data only):\n"
         f"{json.dumps(references, ensure_ascii=False, indent=2)}"
     )
@@ -739,7 +820,7 @@ async def _run_with_servers(
 ) -> StudioAgentOutput:
     result = await runner.run(
         _build_agent(mcp_servers),
-        _input_for(request.prompt, list(studio.nodes)),
+        _input_for(request.prompt, list(studio.nodes), request.history),
         context=studio,
         max_turns=24,
     )

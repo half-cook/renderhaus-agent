@@ -5,7 +5,7 @@ import { useEffect } from "react";
 import { useCanvasStore } from "@/lib/canvas/store";
 import { FIT_VIEW_PADDING } from "@/lib/canvas/safe-area";
 import type { CreativeNodeKind } from "@/lib/canvas/types";
-import { AgentComposer } from "./AgentComposer";
+import { AgentDock } from "./AgentDock";
 import { CanvasHeader } from "./CanvasHeader";
 import { NodeInspector } from "./NodeInspector";
 import { StudioCanvas } from "./StudioCanvas";
@@ -27,7 +27,8 @@ function Workspace() {
   const selectedNodeId = useCanvasStore((state) =>
     state.selectedNodeIds.length === 1 ? state.selectedNodeIds[0] : undefined,
   );
-  const composerOpen = useCanvasStore((state) => state.composerOpen);
+  const agentOpen = useCanvasStore((state) => state.agentOpen);
+  const setAgentOpen = useCanvasStore((state) => state.setAgentOpen);
   const { screenToFlowPosition, fitView } = useReactFlow();
 
   useEffect(() => {
@@ -46,6 +47,15 @@ function Workspace() {
           undo();
         }
       }
+      if (meta && event.key.toLowerCase() === "j") {
+        event.preventDefault();
+        if (agentOpen) {
+          setAgentOpen(false);
+        } else {
+          setActiveTool("agent");
+        }
+        return;
+      }
       if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) {
         return;
       }
@@ -58,10 +68,10 @@ function Workspace() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [redo, setActiveTool, undo]);
+  }, [agentOpen, redo, setActiveTool, setAgentOpen, undo]);
 
   useEffect(() => {
-    if (!selectedNodeId || (!inspectorVisible && !composerOpen)) return;
+    if (!selectedNodeId || (!inspectorVisible && !agentOpen)) return;
     // Only refocus after a selection or panel transition. Camera movement
     // updates the store too, and must remain under the user's control.
     const timer = window.setTimeout(() => {
@@ -73,7 +83,7 @@ function Workspace() {
       });
     }, 0);
     return () => window.clearTimeout(timer);
-  }, [composerOpen, fitView, inspectorVisible, selectedNodeId]);
+  }, [agentOpen, fitView, inspectorVisible, selectedNodeId]);
 
   const center = () => {
     const pane = document.querySelector(".react-flow");
@@ -93,7 +103,7 @@ function Workspace() {
       className={[
         "workspace",
         inspectorVisible ? "inspector-open" : "",
-        composerOpen ? "composer-open" : "",
+        agentOpen ? "agent-open" : "",
       ]
         .filter(Boolean)
         .join(" ")}
@@ -114,7 +124,7 @@ function Workspace() {
         <StudioCanvas />
       </main>
       <NodeInspector />
-      <AgentComposer />
+      <AgentDock />
     </div>
   );
 }

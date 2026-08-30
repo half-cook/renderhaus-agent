@@ -25,6 +25,7 @@ from agent.studio_agent import (
 )
 from server.studio import (
     AgentBody,
+    _agent_conversation_history,
     _agent_result,
     _hydrate_tool_event_assets,
     _partial_agent_result,
@@ -61,6 +62,93 @@ class FakeRunner:
 
 
 class StudioAgentTests(unittest.IsolatedAsyncioTestCase):
+    def test_project_conversation_history_is_chronological_and_scoped(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            test_repository = StudioRepository(
+                Path(directory) / "studio.sqlite3",
+                Path(directory) / "media",
+            )
+            test_repository.create_project("user:local", "local", "One", project_id="one")
+            test_repository.create_project("user:local", "local", "Two", project_id="two")
+            first = test_repository.create_execution(
+                workspace_id="user:local",
+                project_id="one",
+                user_id="local",
+                prompt="Create the concept",
+            )
+            test_repository.update_execution(
+                "user:local",
+                first["job_id"],
+                status="completed",
+                message="Completed concept.",
+                result={"title": "Concept", "markdown": "A quiet product reveal."},
+            )
+            second = test_repository.create_execution(
+                workspace_id="user:local",
+                project_id="one",
+                user_id="local",
+                prompt="Make it warmer",
+            )
+            test_repository.update_execution(
+                "user:local",
+                second["job_id"],
+                status="completed",
+                message="Completed warmer concept.",
+                result={"title": "Warm concept", "markdown": "Use amber light."},
+            )
+            test_repository.create_execution(
+                workspace_id="user:local",
+                project_id="two",
+                user_id="local",
+                prompt="Keep this out of project one",
+            )
+            with patch.object(studio_module, "repository", test_repository):
+                history = _agent_conversation_history("user:local", "one")
+
+        self.assertEqual([turn.user for turn in history], ["Create the concept", "Make it warmer"])
+        self.assertEqual(history[-1].assistant, "Use amber light.")
+
+    def test_tool_call_arguments_survive_execution_persistence(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            test_repository = StudioRepository(
+                Path(directory) / "studio.sqlite3",
+                Path(directory) / "media",
+            )
+            test_repository.create_project(
+                "user:local",
+                "local",
+                "Project",
+                project_id="project",
+            )
+            execution = test_repository.create_execution(
+                workspace_id="user:local",
+                project_id="project",
+                user_id="local",
+                prompt="Create a portrait",
+            )
+            test_repository.append_tool_call(
+                workspace_id="user:local",
+                execution_id=execution["job_id"],
+                event={
+                    "id": "tool-1",
+                    "name": "Seedream___text_to_image",
+                    "label": "Generate image",
+                    "status": "succeeded",
+                    "arguments": {
+                        "prompt": "A quiet portrait",
+                        "aspect_ratio": "9:16",
+                    },
+                    "result": {"status": "succeeded", "result": "provider value"},
+                },
+            )
+
+            persisted = test_repository.get_execution("user:local", execution["job_id"])
+
+        self.assertIsNotNone(persisted)
+        tool_call = persisted["tool_calls"][0]
+        self.assertEqual(tool_call["arguments"]["prompt"], "A quiet portrait")
+        self.assertEqual(tool_call["arguments"]["aspect_ratio"], "9:16")
+
     def test_primary_agent_asset_preserves_the_latest_media_kind(self) -> None:
         audio = {
             "asset_id": "audio-asset",
@@ -373,6 +461,8 @@ class StudioAgentTests(unittest.IsolatedAsyncioTestCase):
 
         self.assertEqual(queued["status"], "queued")
         self.assertEqual(payload["status"], "completed")
+        self.assertEqual(payload["prompt"], "Make the result")
+        self.assertEqual(payload["message"], "Completed Customer result.")
         self.assertEqual(payload["result"]["filename"], "customer-result.md")
         self.assertEqual(payload["result"]["tool_events"][0]["name"], "generate_image")
 

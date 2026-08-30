@@ -1,5 +1,5 @@
 import type { FieldOptions, ProviderCatalog, StudioAsset, StudioStatus } from "./types";
-import type { AgentResultData, CreativeNodeKind } from "./canvas/types";
+import type { AgentResultData, AgentToolEvent, CreativeNodeKind } from "./canvas/types";
 import { studioFetch } from "./authenticated-fetch";
 
 function studioAsset(value: unknown): StudioAsset | null {
@@ -193,16 +193,57 @@ export async function saveStudioCanvas(
 export type StudioExecution = {
   jobId: string;
   projectId?: string;
+  prompt: string;
   status: string;
   message: string;
   title?: string;
   summary?: string;
   primaryAsset?: StudioAsset;
+  toolEvents: AgentToolEvent[];
+  assets: StudioAsset[];
+  result?: AgentResultData;
+  errorType?: string;
+  createdAt?: number;
   updatedAt?: number;
 };
 
-export async function fetchStudioExecutions(limit = 20): Promise<StudioExecution[]> {
-  const response = await studioFetch(`/api/studio/agent?limit=${limit}`, { cache: "no-store" });
+function agentToolEvents(value: unknown): AgentToolEvent[] {
+  if (!Array.isArray(value)) return [];
+  return value.map((event) => {
+    const item = event as Record<string, unknown>;
+    return {
+      id: String(item.id || crypto.randomUUID()),
+      name: String(item.name || "tool"),
+      label: String(item.label || "Tool"),
+      status: String(item.status || "completed"),
+      summary: String(item.summary || ""),
+      provider: typeof item.provider === "string" ? item.provider : undefined,
+      providerJobId:
+        typeof item.provider_job_id === "string" ? item.provider_job_id : undefined,
+      arguments:
+        item.arguments && typeof item.arguments === "object" && !Array.isArray(item.arguments)
+          ? (item.arguments as Record<string, unknown>)
+          : {},
+      assets: studioAssets(item.assets),
+    };
+  });
+}
+
+function uniqueAssets(...groups: StudioAsset[][]): StudioAsset[] {
+  const assets = new Map<string, StudioAsset>();
+  for (const group of groups) {
+    for (const asset of group) assets.set(asset.versionId, asset);
+  }
+  return [...assets.values()];
+}
+
+export async function fetchStudioExecutions(
+  projectId?: string,
+  limit = 50,
+): Promise<StudioExecution[]> {
+  const query = new URLSearchParams({ limit: String(limit) });
+  if (projectId) query.set("project_id", projectId);
+  const response = await studioFetch(`/api/studio/agent?${query}`, { cache: "no-store" });
   const payload = await response.json();
   if (!response.ok) {
     throw new Error(payload.detail || `agent jobs ${response.status}`);
@@ -210,20 +251,47 @@ export async function fetchStudioExecutions(limit = 20): Promise<StudioExecution
   return (Array.isArray(payload.items) ? payload.items : []).map((value: unknown) => {
     const item = value as Record<string, unknown>;
     const result = (item.result || {}) as Record<string, unknown>;
+    const resultToolEvents = agentToolEvents(result.tool_events);
+    const toolEvents = resultToolEvents.length
+      ? resultToolEvents
+      : agentToolEvents(item.tool_calls);
+    const resultAssets = studioAssets(result.assets);
+    const assets = uniqueAssets(resultAssets, toolEvents.flatMap((event) => event.assets));
+    const primaryAsset = studioAsset(result.primary_asset) || undefined;
+    const agentResult = item.result
+      ? {
+          executionId: String(item.job_id || "") || undefined,
+          title: String(result.title || "Agent result"),
+          summary: String(result.summary || "The agent completed the request."),
+          markdown: String(result.markdown || ""),
+          filename: String(result.filename || "agent-result.md"),
+          mimeType: String(result.mime_type || "text/markdown;charset=utf-8"),
+          toolEvents,
+          assets,
+          primaryAsset,
+          partial: result.partial === true,
+        }
+      : undefined;
     return {
       jobId: String(item.job_id || ""),
       projectId: typeof item.project_id === "string" ? item.project_id : undefined,
+      prompt: String(item.prompt || ""),
       status: String(item.status || "unknown"),
       message: String(item.message || ""),
       title: typeof result.title === "string" ? result.title : undefined,
       summary: typeof result.summary === "string" ? result.summary : undefined,
-      primaryAsset: studioAsset(result.primary_asset) || undefined,
+      primaryAsset,
+      toolEvents,
+      assets,
+      result: agentResult,
+      errorType: typeof item.error_type === "string" ? item.error_type : undefined,
+      createdAt: typeof item.created_at === "number" ? item.created_at : undefined,
       updatedAt: typeof item.updated_at === "number" ? item.updated_at : undefined,
     };
   });
 }
 
-export type AgentComposerResult =
+export type AgentSubmissionResult =
   | { status: "completed"; message: string; result: AgentResultData }
   | { status: "error"; message: string; result?: AgentResultData };
 
@@ -238,16 +306,30 @@ export type AgentNodeContext = {
 
 type AgentJobPayload = {
   job_id?: string;
+  project_id?: string;
+  prompt?: string;
   status?: string;
   message?: string;
   detail?: string;
   result?: Record<string, unknown>;
+  tool_calls?: unknown[];
+  error_type?: string;
+  created_at?: number;
+  updated_at?: number;
+};
+
+export type AgentProgress = {
+  jobId?: string;
+  status: string;
+  message: string;
+  toolEvents: AgentToolEvent[];
+  result?: AgentResultData;
 };
 
 const AGENT_POLL_INTERVAL_MS = 1_000;
 const AGENT_POLL_TIMEOUT_MS = 20 * 60 * 1_000;
 
-function agentError(payload: AgentJobPayload, response: Response): AgentComposerResult {
+function agentError(payload: AgentJobPayload, response: Response): AgentSubmissionResult {
   const message =
     typeof payload.detail === "string"
       ? payload.detail
@@ -257,11 +339,19 @@ function agentError(payload: AgentJobPayload, response: Response): AgentComposer
   return { status: "error", message };
 }
 
-function completedAgentResult(payload: AgentJobPayload): AgentComposerResult {
+function completedAgentResult(payload: AgentJobPayload): AgentSubmissionResult {
   const value = payload.result || {};
+  const resultToolEvents = agentToolEvents(value.tool_events);
+  const toolEvents = resultToolEvents.length
+    ? resultToolEvents
+    : agentToolEvents(payload.tool_calls);
+  const assets = uniqueAssets(
+    studioAssets(value.assets),
+    toolEvents.flatMap((event) => event.assets),
+  );
   return {
     status: "completed",
-    message: typeof payload.message === "string" ? payload.message : "Added the result to the canvas.",
+    message: typeof payload.message === "string" ? payload.message : "The agent completed the request.",
     result: {
       executionId: typeof payload.job_id === "string" ? payload.job_id : undefined,
       title: String(value.title || "Agent result"),
@@ -269,29 +359,29 @@ function completedAgentResult(payload: AgentJobPayload): AgentComposerResult {
       markdown: String(value.markdown || ""),
       filename: String(value.filename || "agent-result.md"),
       mimeType: String(value.mime_type || "text/markdown;charset=utf-8"),
-      toolEvents: Array.isArray(value.tool_events)
-        ? value.tool_events.map((event) => {
-            const item = event as Record<string, unknown>;
-            return {
-              id: String(item.id || crypto.randomUUID()),
-              name: String(item.name || "tool"),
-              label: String(item.label || "Tool"),
-              status: String(item.status || "completed"),
-              summary: String(item.summary || ""),
-              provider: typeof item.provider === "string" ? item.provider : undefined,
-              providerJobId:
-                typeof item.provider_job_id === "string" ? item.provider_job_id : undefined,
-              assets: studioAssets(item.assets),
-            };
-          })
-        : [],
-      assets: studioAssets(value.assets),
+      toolEvents,
+      assets,
       primaryAsset:
         value.primary_asset && typeof value.primary_asset === "object"
           ? studioAsset(value.primary_asset) || undefined
           : undefined,
       partial: value.partial === true,
     },
+  };
+}
+
+function agentProgress(payload: AgentJobPayload): AgentProgress {
+  const completed = payload.result ? completedAgentResult(payload) : undefined;
+  const result = completed?.result;
+  return {
+    jobId: payload.job_id,
+    status: String(payload.status || "running"),
+    message: String(payload.message || "Agent is working."),
+    toolEvents:
+      result?.toolEvents.length
+        ? result.toolEvents
+        : agentToolEvents(payload.tool_calls),
+    ...(result ? { result } : {}),
   };
 }
 
@@ -309,8 +399,8 @@ export async function fetchStudioAgentResult(jobId: string): Promise<AgentResult
 
 async function waitForAgentJob(
   jobId: string,
-  onProgress?: (message: string) => void,
-): Promise<AgentComposerResult> {
+  onProgress?: (progress: AgentProgress) => void,
+): Promise<AgentSubmissionResult> {
   const deadline = Date.now() + AGENT_POLL_TIMEOUT_MS;
   while (Date.now() < deadline) {
     await new Promise((resolve) => window.setTimeout(resolve, AGENT_POLL_INTERVAL_MS));
@@ -321,9 +411,7 @@ async function waitForAgentJob(
     if (!response.ok) {
       return agentError(payload, response);
     }
-    if (typeof payload.message === "string") {
-      onProgress?.(payload.message);
-    }
+    onProgress?.(agentProgress(payload));
     if (payload.status === "completed") {
       return completedAgentResult(payload);
     }
@@ -347,8 +435,8 @@ export async function submitAgentPrompt(
   projectId: string,
   nodeIds: string[],
   nodes: AgentNodeContext[],
-  onProgress?: (message: string) => void,
-): Promise<AgentComposerResult> {
+  onProgress?: (progress: AgentProgress) => void,
+): Promise<AgentSubmissionResult> {
   const response = await studioFetch("/api/studio/agent", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -364,6 +452,6 @@ export async function submitAgentPrompt(
   if (!payload.job_id) {
     return { status: "error", message: "The agent did not return a job identifier." };
   }
-  onProgress?.(payload.message || "Agent job queued.");
+  onProgress?.(agentProgress(payload));
   return waitForAgentJob(payload.job_id, onProgress);
 }
