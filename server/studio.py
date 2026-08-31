@@ -27,7 +27,6 @@ from agent.studio_agent_next import (
     StudioAgentContext,
     StudioAgentOutput,
     StudioAgentRequest,
-    StudioConversationTurn,
     StudioNode,
     StudioToolEvent,
     run_studio_agent as run_studio_agent_runtime,
@@ -671,6 +670,7 @@ async def studio_asset_content(
 class AgentBody(BaseModel):
     prompt: str = Field(min_length=1, max_length=8_000)
     project_id: str = Field(default="untitled", min_length=1, max_length=120)
+    conversation_id: str | None = Field(default=None, max_length=120)
     node_ids: list[str] = Field(default_factory=list, max_length=16)
     nodes: list["AgentNodeBody"] = Field(default_factory=list, max_length=16)
 
@@ -688,6 +688,67 @@ class AgentNodeBody(BaseModel):
 
 
 AgentBody.model_rebuild()
+
+
+class AgentConversationCreateBody(BaseModel):
+    title: str = Field(default="New conversation", max_length=120)
+
+
+class AgentConversationPatchBody(BaseModel):
+    title: str | None = Field(default=None, max_length=120)
+    status: str | None = Field(default=None, pattern="^(active|archived)$")
+
+
+@router.get("/projects/{project_id}/agent-conversations")
+async def studio_agent_conversations(project_id: str, auth: AuthUser) -> dict[str, Any]:
+    try:
+        items = await asyncio.to_thread(
+            repository.list_conversations,
+            current_workspace_id(auth),
+            project_id,
+            current_user_id(auth),
+        )
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="Project not found.") from exc
+    return {"items": items}
+
+
+@router.post("/projects/{project_id}/agent-conversations", status_code=201)
+async def create_studio_agent_conversation(
+    project_id: str,
+    body: AgentConversationCreateBody,
+    auth: AuthUser,
+) -> dict[str, Any]:
+    try:
+        return await asyncio.to_thread(
+            repository.create_conversation,
+            current_workspace_id(auth),
+            project_id,
+            current_user_id(auth),
+            body.title,
+        )
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="Project not found.") from exc
+
+
+@router.patch("/agent-conversations/{conversation_id}")
+async def update_studio_agent_conversation(
+    conversation_id: str,
+    body: AgentConversationPatchBody,
+    auth: AuthUser,
+) -> dict[str, Any]:
+    try:
+        return await asyncio.to_thread(
+            repository.update_conversation,
+            current_workspace_id(auth),
+            conversation_id,
+            title=body.title,
+            status=body.status,
+        )
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="Agent conversation not found.") from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 def _agent_node_source(node: AgentNodeBody) -> str | None:
@@ -731,39 +792,6 @@ def _agent_references(body: AgentBody, workspace_id: str) -> list[StudioNodeRefe
         if node_id not in known_ids
     )
     return references
-
-
-def _agent_conversation_history(
-    workspace_id: str,
-    project_id: str,
-    *,
-    limit: int = 8,
-) -> list[StudioConversationTurn]:
-    executions = repository.list_executions(workspace_id, limit=limit, project_id=project_id)
-    candidates = [
-        execution
-        for execution in executions
-        if execution.get("project_id") == project_id
-        and execution.get("status") in {"completed", "error"}
-        and str(execution.get("prompt") or "").strip()
-    ][:limit]
-    turns: list[StudioConversationTurn] = []
-    for execution in reversed(candidates):
-        result = execution.get("result") if isinstance(execution.get("result"), dict) else {}
-        response = str(
-            result.get("markdown")
-            or result.get("summary")
-            or execution.get("message")
-            or "The agent did not return a response."
-        ).strip()
-        turns.append(
-            StudioConversationTurn(
-                user=str(execution["prompt"]).strip()[:4_000],
-                assistant=response[:4_000],
-                title=(str(result.get("title"))[:80] if result.get("title") else None),
-            )
-        )
-    return turns
 
 
 def _agent_result(outcome: Any) -> dict[str, Any]:
@@ -829,9 +857,15 @@ def _partial_agent_result(execution: dict[str, Any]) -> dict[str, Any]:
 
 
 class StudioAgentRun:
-    def __init__(self, final: StudioAgentOutput, tool_events: list[Any]) -> None:
+    def __init__(
+        self,
+        final: StudioAgentOutput,
+        tool_events: list[Any],
+        session_items: list[dict[str, Any]],
+    ) -> None:
         self.final = final
         self.tool_events = tool_events
+        self.session_items = session_items
 
 
 def _agentcore_dev_url() -> str:
@@ -842,7 +876,8 @@ def _studio_agent_request(
     prompt: str,
     nodes: list[StudioNodeReference] | None,
     *,
-    history: list[StudioConversationTurn] | None = None,
+    conversation_id: str | None = None,
+    session_items: list[dict[str, Any]] | None = None,
     job_id: str | None = None,
     workspace_id: str | None = None,
     project_id: str | None = None,
@@ -861,7 +896,8 @@ def _studio_agent_request(
             )
             for node in (nodes or [])
         ],
-        history=list(history or []),
+        conversation_id=conversation_id,
+        session_items=list(session_items or []),
         job_id=job_id,
         workspace_id=workspace_id,
         project_id=project_id,
@@ -926,7 +962,11 @@ async def _invoke_agentcore_runtime(url: str, request: StudioAgentRequest) -> St
             str(payload.get("error") or f"AgentCore invocation failed ({response.status_code}).")
         )
     output = StudioAgentOutput.model_validate(payload.get("result") or payload)
-    return StudioAgentRun(final=output, tool_events=_events_from_payload(payload.get("tool_events") or []))
+    return StudioAgentRun(
+        final=output,
+        tool_events=_events_from_payload(payload.get("tool_events") or []),
+        session_items=list(payload.get("session_items") or []),
+    )
 
 
 async def run_studio_agent(
@@ -939,13 +979,15 @@ async def run_studio_agent(
     job_id: str | None = None,
     workspace_id: str | None = None,
     project_id: str | None = None,
-    history: list[StudioConversationTurn] | None = None,
+    conversation_id: str | None = None,
+    session_items: list[dict[str, Any]] | None = None,
     **_unused: Any,
 ) -> StudioAgentRun:
     request = _studio_agent_request(
         prompt,
         nodes,
-        history=history,
+        conversation_id=conversation_id,
+        session_items=session_items,
         job_id=job_id,
         workspace_id=workspace_id,
         project_id=project_id,
@@ -961,21 +1003,29 @@ async def run_studio_agent(
         job_id=request.job_id,
         workspace_id=request.workspace_id,
         project_id=request.project_id,
+        session_items=list(request.session_items),
     )
     output = await run_studio_agent_runtime(request, studio=studio)
-    return StudioAgentRun(final=output, tool_events=list(studio.tool_events))
+    return StudioAgentRun(
+        final=output,
+        tool_events=list(studio.tool_events),
+        session_items=list(studio.session_items),
+    )
 
 
 async def _run_studio_agent_job(
     job_id: str,
     prompt: str,
     references: list[StudioNodeReference],
-    history: list[StudioConversationTurn],
+    conversation_id: str,
     *,
     workspace_id: str,
     project_id: str,
     user_id: str,
 ) -> None:
+    session_items = await asyncio.to_thread(
+        repository.get_conversation_items, workspace_id, conversation_id
+    )
     await asyncio.to_thread(
         repository.update_execution,
         workspace_id,
@@ -1018,7 +1068,8 @@ async def _run_studio_agent_job(
         outcome = await run_studio_agent(
             prompt,
             nodes=references,
-            history=history,
+            conversation_id=conversation_id,
+            session_items=session_items,
             asset_registrar=register_assets,
             source_resolver=resolve_source,
             event_sink=record_event,
@@ -1036,6 +1087,12 @@ async def _run_studio_agent_job(
         )
         for event in outcome.tool_events:
             record_event(event)
+        await asyncio.to_thread(
+            repository.replace_conversation_items,
+            workspace_id,
+            conversation_id,
+            getattr(outcome, "session_items", session_items),
+        )
     except asyncio.CancelledError:
         execution = await asyncio.to_thread(repository.get_execution, workspace_id, job_id)
         await asyncio.to_thread(
@@ -1110,25 +1167,41 @@ async def studio_agent(body: AgentBody, auth: AuthUser) -> dict[str, Any]:
     except KeyError as exc:
         raise HTTPException(status_code=404, detail="Project not found.") from exc
     references = await asyncio.to_thread(_agent_references, body, workspace_id)
-    history = await asyncio.to_thread(
-        _agent_conversation_history,
-        workspace_id,
-        body.project_id,
+    conversations = await asyncio.to_thread(
+        repository.list_conversations, workspace_id, body.project_id, user_id
     )
-    job = await asyncio.to_thread(
-        repository.create_execution,
-        workspace_id=workspace_id,
-        project_id=body.project_id,
-        user_id=user_id,
-        prompt=body.prompt,
+    conversation = (
+        await asyncio.to_thread(repository.get_conversation, workspace_id, body.conversation_id)
+        if body.conversation_id
+        else conversations[0]
     )
+    if (
+        conversation is None
+        or conversation["project_id"] != body.project_id
+        or conversation["status"] != "active"
+    ):
+        raise HTTPException(status_code=404, detail="Active agent conversation not found.")
+    conversation_id = str(conversation["id"])
+    try:
+        job = await asyncio.to_thread(
+            repository.create_execution,
+            workspace_id=workspace_id,
+            project_id=body.project_id,
+            user_id=user_id,
+            prompt=body.prompt,
+            conversation_id=conversation_id,
+        )
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="Agent conversation not found.") from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
     job_id = str(job["job_id"])
     task = asyncio.create_task(
         _run_studio_agent_job(
             job_id,
             body.prompt,
             references,
-            history,
+            conversation_id,
             workspace_id=workspace_id,
             project_id=body.project_id,
             user_id=user_id,
@@ -1145,12 +1218,14 @@ async def studio_agent_jobs(
     auth: AuthUser,
     limit: int = 50,
     project_id: str | None = None,
+    conversation_id: str | None = None,
 ) -> dict[str, Any]:
     items = await asyncio.to_thread(
         repository.list_executions,
         current_workspace_id(auth),
         limit=limit,
         project_id=project_id,
+        conversation_id=conversation_id,
     )
     return {"items": items}
 

@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import json
 import os
+import sqlite3
 import tempfile
 import unittest
 from concurrent.futures import ThreadPoolExecutor
@@ -25,7 +26,6 @@ from agent.studio_agent import (
 )
 from server.studio import (
     AgentBody,
-    _agent_conversation_history,
     _agent_result,
     _hydrate_tool_event_assets,
     _partial_agent_result,
@@ -62,7 +62,44 @@ class FakeRunner:
 
 
 class StudioAgentTests(unittest.IsolatedAsyncioTestCase):
-    def test_project_conversation_history_is_chronological_and_scoped(self) -> None:
+    def test_existing_execution_schema_migrates_without_losing_runs(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            database = Path(directory) / "studio.sqlite3"
+            with sqlite3.connect(database) as connection:
+                connection.executescript(
+                    """
+                    CREATE TABLE workspaces (
+                        id TEXT PRIMARY KEY, owner_user_id TEXT NOT NULL, created_at INTEGER NOT NULL
+                    );
+                    CREATE TABLE projects (
+                        id TEXT NOT NULL, workspace_id TEXT NOT NULL, name TEXT NOT NULL,
+                        created_by TEXT NOT NULL, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL,
+                        PRIMARY KEY(workspace_id, id)
+                    );
+                    CREATE TABLE executions (
+                        id TEXT PRIMARY KEY, workspace_id TEXT NOT NULL, project_id TEXT,
+                        created_by TEXT NOT NULL, prompt TEXT NOT NULL, status TEXT NOT NULL,
+                        message TEXT NOT NULL, result_json TEXT, error_type TEXT,
+                        created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL
+                    );
+                    INSERT INTO workspaces VALUES ('user:local', 'local', 1);
+                    INSERT INTO projects VALUES ('one', 'user:local', 'One', 'local', 1, 1);
+                    INSERT INTO executions VALUES (
+                        'legacy-run', 'user:local', 'one', 'local', 'Keep this', 'completed',
+                        'Completed.', '{"markdown":"Preserved result"}', NULL, 1, 2
+                    );
+                    """
+                )
+            repository = StudioRepository(database, Path(directory) / "media")
+            conversation = repository.list_conversations("user:local", "one", "local")[0]
+            run = repository.get_execution("user:local", "legacy-run")
+            items = repository.get_conversation_items("user:local", conversation["id"])
+
+        self.assertEqual(run["conversation_id"], conversation["id"])
+        self.assertEqual(run["turn_index"], 1)
+        self.assertEqual(items[-1]["content"], "Preserved result")
+
+    def test_legacy_runs_backfill_into_a_durable_project_conversation(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             test_repository = StudioRepository(
                 Path(directory) / "studio.sqlite3",
@@ -102,11 +139,51 @@ class StudioAgentTests(unittest.IsolatedAsyncioTestCase):
                 user_id="local",
                 prompt="Keep this out of project one",
             )
-            with patch.object(studio_module, "repository", test_repository):
-                history = _agent_conversation_history("user:local", "one")
+            conversations = test_repository.list_conversations("user:local", "one", "local")
+            conversation_id = conversations[0]["id"]
+            items = test_repository.get_conversation_items("user:local", conversation_id)
+            runs = test_repository.list_executions(
+                "user:local", project_id="one", conversation_id=conversation_id
+            )
+            other = test_repository.list_conversations("user:local", "two", "local")
 
-        self.assertEqual([turn.user for turn in history], ["Create the concept", "Make it warmer"])
-        self.assertEqual(history[-1].assistant, "Use amber light.")
+        self.assertEqual(conversations[0]["title"], "Project conversation")
+        self.assertEqual([item["role"] for item in items], ["user", "assistant"] * 2)
+        self.assertEqual(items[-1]["content"], "Use amber light.")
+        self.assertEqual([run["turn_index"] for run in reversed(runs)], [1, 2])
+        self.assertNotEqual(other[0]["id"], conversation_id)
+
+    def test_conversations_isolate_session_items_and_execution_lists(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            repository = StudioRepository(
+                Path(directory) / "studio.sqlite3",
+                Path(directory) / "media",
+            )
+            repository.create_project("user:local", "local", "One", project_id="one")
+            first = repository.list_conversations("user:local", "one", "local")[0]
+            second = repository.create_conversation("user:local", "one", "local", "Campaign B")
+            repository.replace_conversation_items(
+                "user:local", first["id"], [{"role": "user", "content": "Campaign A"}]
+            )
+            execution = repository.create_execution(
+                workspace_id="user:local",
+                project_id="one",
+                conversation_id=second["id"],
+                user_id="local",
+                prompt="Campaign B",
+            )
+            repository.update_conversation(
+                "user:local", second["id"], title="Renamed", status="archived"
+            )
+            active = repository.list_conversations("user:local", "one", "local")
+            first_items = repository.get_conversation_items("user:local", first["id"])
+
+        self.assertEqual(
+            first_items[0]["content"],
+            "Campaign A",
+        )
+        self.assertEqual(execution["conversation_id"], second["id"])
+        self.assertNotIn(second["id"], {conversation["id"] for conversation in active})
 
     def test_tool_call_arguments_survive_execution_persistence(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -429,7 +506,7 @@ class StudioAgentTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(FakeRunner.seen_agent.model, "gpt-4.1-mini")
 
     async def test_studio_endpoint_runs_in_background_and_returns_canvas_result(self) -> None:
-        outcome = StudioAgentRun(
+        outcome = SimpleNamespace(
             final=StudioAgentOutput(
                 title="Customer result",
                 summary="The result is complete.",
@@ -445,6 +522,10 @@ class StudioAgentTests(unittest.IsolatedAsyncioTestCase):
                     summary="Dry run complete.",
                 )
             ],
+            session_items=[
+                {"role": "user", "content": "Make the result"},
+                {"role": "assistant", "content": "# Customer result"},
+            ],
         )
         with tempfile.TemporaryDirectory() as directory:
             test_repository = StudioRepository(
@@ -458,6 +539,9 @@ class StudioAgentTests(unittest.IsolatedAsyncioTestCase):
                 queued = await studio_agent(AgentBody(prompt="Make the result"), None)
                 await asyncio.sleep(0.05)
                 payload = await studio_agent_job(queued["job_id"], None)
+                saved_items = test_repository.get_conversation_items(
+                    "user:local", queued["conversation_id"]
+                )
 
         self.assertEqual(queued["status"], "queued")
         self.assertEqual(payload["status"], "completed")
@@ -465,6 +549,8 @@ class StudioAgentTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(payload["message"], "Completed Customer result.")
         self.assertEqual(payload["result"]["filename"], "customer-result.md")
         self.assertEqual(payload["result"]["tool_events"][0]["name"], "generate_image")
+        self.assertEqual(payload["conversation_id"], queued["conversation_id"])
+        self.assertEqual(saved_items[-1]["content"], "# Customer result")
 
     def test_asset_versions_are_workspace_scoped_and_immutable(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

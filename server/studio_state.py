@@ -211,6 +211,31 @@ class StudioRepository:
                         UNIQUE(source_version_id, target_version_id, relation_type)
                     );
 
+                    CREATE TABLE IF NOT EXISTS agent_conversations (
+                        id TEXT PRIMARY KEY,
+                        workspace_id TEXT NOT NULL REFERENCES workspaces(id),
+                        project_id TEXT NOT NULL,
+                        title TEXT NOT NULL,
+                        status TEXT NOT NULL DEFAULT 'active'
+                            CHECK(status IN ('active', 'archived')),
+                        created_by TEXT NOT NULL,
+                        created_at INTEGER NOT NULL,
+                        updated_at INTEGER NOT NULL,
+                        FOREIGN KEY(workspace_id, project_id)
+                            REFERENCES projects(workspace_id, id) ON DELETE CASCADE
+                    );
+                    CREATE INDEX IF NOT EXISTS agent_conversations_project_updated
+                        ON agent_conversations(workspace_id, project_id, status, updated_at DESC);
+
+                    CREATE TABLE IF NOT EXISTS agent_session_items (
+                        conversation_id TEXT NOT NULL
+                            REFERENCES agent_conversations(id) ON DELETE CASCADE,
+                        sequence INTEGER NOT NULL,
+                        item_json TEXT NOT NULL,
+                        created_at INTEGER NOT NULL,
+                        PRIMARY KEY(conversation_id, sequence)
+                    );
+
                     CREATE TABLE IF NOT EXISTS executions (
                         id TEXT PRIMARY KEY,
                         workspace_id TEXT NOT NULL REFERENCES workspaces(id),
@@ -245,6 +270,17 @@ class StudioRepository:
                     CREATE INDEX IF NOT EXISTS tool_calls_execution_created
                         ON tool_calls(execution_id, created_at);
                     """
+                )
+                execution_columns = {
+                    str(row[1]) for row in connection.execute("PRAGMA table_info(executions)")
+                }
+                if "conversation_id" not in execution_columns:
+                    connection.execute("ALTER TABLE executions ADD COLUMN conversation_id TEXT")
+                if "turn_index" not in execution_columns:
+                    connection.execute("ALTER TABLE executions ADD COLUMN turn_index INTEGER")
+                connection.execute(
+                    "CREATE INDEX IF NOT EXISTS executions_conversation_turn "
+                    "ON executions(conversation_id, turn_index DESC)"
                 )
                 connection.commit()
             finally:
@@ -325,6 +361,237 @@ class StudioRepository:
         if row is None:
             raise KeyError("Project not found")
         return row
+
+    @staticmethod
+    def _conversation(row: sqlite3.Row) -> dict[str, Any]:
+        return {
+            "id": str(row["id"]),
+            "project_id": str(row["project_id"]),
+            "title": str(row["title"]),
+            "status": str(row["status"]),
+            "created_at": int(row["created_at"]),
+            "updated_at": int(row["updated_at"]),
+        }
+
+    @staticmethod
+    def _legacy_assistant_message(row: sqlite3.Row) -> str:
+        result = json.loads(row["result_json"] or "{}")
+        if not isinstance(result, dict):
+            result = {}
+        return str(
+            result.get("markdown")
+            or result.get("summary")
+            or row["message"]
+            or "The agent did not return a response."
+        ).strip()
+
+    def _ensure_default_conversation(
+        self,
+        connection: sqlite3.Connection,
+        workspace_id: str,
+        project_id: str,
+        user_id: str,
+    ) -> sqlite3.Row:
+        existing = connection.execute(
+            "SELECT * FROM agent_conversations WHERE workspace_id = ? AND project_id = ? "
+            "AND status = 'active' ORDER BY updated_at DESC, rowid DESC LIMIT 1",
+            (workspace_id, project_id),
+        ).fetchone()
+        if existing is not None:
+            conversation_id = str(existing["id"])
+        else:
+            conversation_id = uuid.uuid4().hex
+            now = _now()
+            connection.execute(
+                "INSERT INTO agent_conversations(id, workspace_id, project_id, title, status, "
+                "created_by, created_at, updated_at) VALUES (?, ?, ?, ?, 'active', ?, ?, ?)",
+                (
+                    conversation_id,
+                    workspace_id,
+                    project_id,
+                    "Project conversation",
+                    user_id,
+                    now,
+                    now,
+                ),
+            )
+
+        legacy = connection.execute(
+            "SELECT * FROM executions WHERE workspace_id = ? AND project_id = ? "
+            "AND conversation_id IS NULL ORDER BY created_at, rowid",
+            (workspace_id, project_id),
+        ).fetchall()
+        if legacy:
+            next_turn = int(
+                connection.execute(
+                    "SELECT COALESCE(MAX(turn_index), 0) FROM executions WHERE conversation_id = ?",
+                    (conversation_id,),
+                ).fetchone()[0]
+            )
+            next_sequence = int(
+                connection.execute(
+                    "SELECT COALESCE(MAX(sequence), -1) + 1 FROM agent_session_items "
+                    "WHERE conversation_id = ?",
+                    (conversation_id,),
+                ).fetchone()[0]
+            )
+            for row in legacy:
+                next_turn += 1
+                connection.execute(
+                    "UPDATE executions SET conversation_id = ?, turn_index = ? WHERE id = ?",
+                    (conversation_id, next_turn, row["id"]),
+                )
+                prompt = str(row["prompt"] or "").strip()
+                if row["status"] not in {"completed", "error"} or not prompt:
+                    continue
+                for item in (
+                    {"role": "user", "content": prompt},
+                    {"role": "assistant", "content": self._legacy_assistant_message(row)},
+                ):
+                    connection.execute(
+                        "INSERT INTO agent_session_items(conversation_id, sequence, item_json, "
+                        "created_at) VALUES (?, ?, ?, ?)",
+                        (
+                            conversation_id,
+                            next_sequence,
+                            json.dumps(item, ensure_ascii=False),
+                            int(row["updated_at"]),
+                        ),
+                    )
+                    next_sequence += 1
+            connection.execute(
+                "UPDATE agent_conversations SET updated_at = ? WHERE id = ?",
+                (max(int(row["updated_at"]) for row in legacy), conversation_id),
+            )
+        ensured = connection.execute(
+            "SELECT * FROM agent_conversations WHERE id = ?", (conversation_id,)
+        ).fetchone()
+        if ensured is None:  # pragma: no cover - the insert/select is atomic
+            raise RuntimeError("Conversation creation did not produce a row")
+        return ensured
+
+    def list_conversations(
+        self,
+        workspace_id: str,
+        project_id: str,
+        user_id: str,
+        *,
+        include_archived: bool = False,
+    ) -> list[dict[str, Any]]:
+        self.ensure_workspace(workspace_id, user_id)
+        self.require_project(workspace_id, project_id)
+        with self._connect() as connection:
+            self._ensure_default_conversation(connection, workspace_id, project_id, user_id)
+            query = (
+                "SELECT * FROM agent_conversations WHERE workspace_id = ? AND project_id = ?"
+            )
+            parameters: list[Any] = [workspace_id, project_id]
+            if not include_archived:
+                query += " AND status = 'active'"
+            query += " ORDER BY updated_at DESC, rowid DESC"
+            rows = connection.execute(query, parameters).fetchall()
+        return [self._conversation(row) for row in rows]
+
+    def create_conversation(
+        self,
+        workspace_id: str,
+        project_id: str,
+        user_id: str,
+        title: str = "New conversation",
+    ) -> dict[str, Any]:
+        self.ensure_workspace(workspace_id, user_id)
+        self.require_project(workspace_id, project_id)
+        conversation_id = uuid.uuid4().hex
+        now = _now()
+        with self._connect() as connection:
+            connection.execute(
+                "INSERT INTO agent_conversations(id, workspace_id, project_id, title, status, "
+                "created_by, created_at, updated_at) VALUES (?, ?, ?, ?, 'active', ?, ?, ?)",
+                (conversation_id, workspace_id, project_id, title.strip()[:120] or "New conversation", user_id, now, now),
+            )
+            row = connection.execute(
+                "SELECT * FROM agent_conversations WHERE id = ?", (conversation_id,)
+            ).fetchone()
+        return self._conversation(row)
+
+    def get_conversation(self, workspace_id: str, conversation_id: str) -> dict[str, Any] | None:
+        with self._connect() as connection:
+            row = connection.execute(
+                "SELECT * FROM agent_conversations WHERE id = ? AND workspace_id = ?",
+                (conversation_id, workspace_id),
+            ).fetchone()
+        return self._conversation(row) if row else None
+
+    def update_conversation(
+        self,
+        workspace_id: str,
+        conversation_id: str,
+        *,
+        title: str | None = None,
+        status: str | None = None,
+    ) -> dict[str, Any]:
+        if status is not None and status not in {"active", "archived"}:
+            raise ValueError("Conversation status must be active or archived")
+        updates = ["updated_at = ?"]
+        values: list[Any] = [_now()]
+        if title is not None:
+            updates.append("title = ?")
+            values.append(title.strip()[:120] or "New conversation")
+        if status is not None:
+            updates.append("status = ?")
+            values.append(status)
+        values.extend([conversation_id, workspace_id])
+        with self._connect() as connection:
+            cursor = connection.execute(
+                f"UPDATE agent_conversations SET {', '.join(updates)} "
+                "WHERE id = ? AND workspace_id = ?",
+                values,
+            )
+            if cursor.rowcount == 0:
+                raise KeyError("Conversation not found")
+            row = connection.execute(
+                "SELECT * FROM agent_conversations WHERE id = ?", (conversation_id,)
+            ).fetchone()
+        return self._conversation(row)
+
+    def get_conversation_items(
+        self, workspace_id: str, conversation_id: str
+    ) -> list[dict[str, Any]]:
+        if self.get_conversation(workspace_id, conversation_id) is None:
+            raise KeyError("Conversation not found")
+        with self._connect() as connection:
+            rows = connection.execute(
+                "SELECT item_json FROM agent_session_items WHERE conversation_id = ? "
+                "ORDER BY sequence",
+                (conversation_id,),
+            ).fetchall()
+        return [json.loads(str(row["item_json"])) for row in rows]
+
+    def replace_conversation_items(
+        self,
+        workspace_id: str,
+        conversation_id: str,
+        items: list[dict[str, Any]],
+    ) -> None:
+        if self.get_conversation(workspace_id, conversation_id) is None:
+            raise KeyError("Conversation not found")
+        now = _now()
+        with self._connect() as connection:
+            connection.execute(
+                "DELETE FROM agent_session_items WHERE conversation_id = ?", (conversation_id,)
+            )
+            connection.executemany(
+                "INSERT INTO agent_session_items(conversation_id, sequence, item_json, created_at) "
+                "VALUES (?, ?, ?, ?)",
+                [
+                    (conversation_id, index, json.dumps(item, ensure_ascii=False), now)
+                    for index, item in enumerate(items)
+                ],
+            )
+            connection.execute(
+                "UPDATE agent_conversations SET updated_at = ? WHERE id = ?",
+                (now, conversation_id),
+            )
 
     def get_canvas(self, workspace_id: str, project_id: str) -> dict[str, Any]:
         self.require_project(workspace_id, project_id)
@@ -699,6 +966,7 @@ class StudioRepository:
         project_id: str | None,
         user_id: str,
         prompt: str,
+        conversation_id: str | None = None,
         execution_id: str | None = None,
     ) -> dict[str, Any]:
         self.ensure_workspace(workspace_id, user_id)
@@ -706,14 +974,42 @@ class StudioRepository:
             self.require_project(workspace_id, project_id)
         resolved_id = execution_id or uuid.uuid4().hex
         now = _now()
-        with self._connect() as connection:
+        with self._lock, self._connect() as connection:
+            turn_index: int | None = None
+            if conversation_id:
+                conversation = connection.execute(
+                    "SELECT status, title FROM agent_conversations WHERE id = ? AND workspace_id = ? "
+                    "AND project_id = ?",
+                    (conversation_id, workspace_id, project_id),
+                ).fetchone()
+                if conversation is None:
+                    raise KeyError("Conversation not found")
+                if conversation["status"] != "active":
+                    raise ValueError("Archived conversations cannot accept new messages")
+                active = connection.execute(
+                    "SELECT 1 FROM executions WHERE conversation_id = ? "
+                    "AND status IN ('queued', 'running') LIMIT 1",
+                    (conversation_id,),
+                ).fetchone()
+                if active:
+                    raise ValueError("This conversation already has an active agent run")
+                turn_index = int(
+                    connection.execute(
+                        "SELECT COALESCE(MAX(turn_index), 0) + 1 FROM executions "
+                        "WHERE conversation_id = ?",
+                        (conversation_id,),
+                    ).fetchone()[0]
+                )
             connection.execute(
-                "INSERT INTO executions(id, workspace_id, project_id, created_by, prompt, status, "
-                "message, created_at, updated_at) VALUES (?, ?, ?, ?, ?, 'queued', ?, ?, ?)",
+                "INSERT INTO executions(id, workspace_id, project_id, conversation_id, turn_index, "
+                "created_by, prompt, status, message, created_at, updated_at) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?, 'queued', ?, ?, ?)",
                 (
                     resolved_id,
                     workspace_id,
                     project_id,
+                    conversation_id,
+                    turn_index,
                     user_id,
                     prompt,
                     "Agent job queued.",
@@ -721,6 +1017,21 @@ class StudioRepository:
                     now,
                 ),
             )
+            if conversation_id:
+                title = str(conversation["title"])
+                generated_title = " ".join(prompt.strip().split())[:60]
+                connection.execute(
+                    "UPDATE agent_conversations SET title = ?, updated_at = ? WHERE id = ?",
+                    (
+                        generated_title
+                        if turn_index == 1
+                        and title in {"New conversation", "Project conversation"}
+                        and generated_title
+                        else title,
+                        now,
+                        conversation_id,
+                    ),
+                )
         return self.get_execution(workspace_id, resolved_id)  # type: ignore[return-value]
 
     def update_execution(
@@ -840,6 +1151,8 @@ class StudioRepository:
         return {
             "job_id": row["id"],
             "project_id": row["project_id"],
+            "conversation_id": row["conversation_id"],
+            "turn_index": row["turn_index"],
             "prompt": row["prompt"],
             "status": row["status"],
             "message": row["message"],
@@ -856,10 +1169,17 @@ class StudioRepository:
         *,
         limit: int = 50,
         project_id: str | None = None,
+        conversation_id: str | None = None,
     ) -> list[dict[str, Any]]:
         with self._connect() as connection:
             capped_limit = max(1, min(limit, 100))
-            if project_id:
+            if conversation_id:
+                rows = connection.execute(
+                    "SELECT id FROM executions WHERE workspace_id = ? AND conversation_id = ? "
+                    "ORDER BY turn_index DESC, updated_at DESC, rowid DESC LIMIT ?",
+                    (workspace_id, conversation_id, capped_limit),
+                ).fetchall()
+            elif project_id:
                 rows = connection.execute(
                     "SELECT id FROM executions WHERE workspace_id = ? AND project_id = ? "
                     "ORDER BY updated_at DESC, rowid DESC LIMIT ?",

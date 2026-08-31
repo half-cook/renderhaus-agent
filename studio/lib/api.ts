@@ -193,6 +193,8 @@ export async function saveStudioCanvas(
 export type StudioExecution = {
   jobId: string;
   projectId?: string;
+  conversationId?: string;
+  turnIndex?: number;
   prompt: string;
   status: string;
   message: string;
@@ -239,10 +241,12 @@ function uniqueAssets(...groups: StudioAsset[][]): StudioAsset[] {
 
 export async function fetchStudioExecutions(
   projectId?: string,
+  conversationId?: string,
   limit = 50,
 ): Promise<StudioExecution[]> {
   const query = new URLSearchParams({ limit: String(limit) });
   if (projectId) query.set("project_id", projectId);
+  if (conversationId) query.set("conversation_id", conversationId);
   const response = await studioFetch(`/api/studio/agent?${query}`, { cache: "no-store" });
   const payload = await response.json();
   if (!response.ok) {
@@ -275,6 +279,9 @@ export async function fetchStudioExecutions(
     return {
       jobId: String(item.job_id || ""),
       projectId: typeof item.project_id === "string" ? item.project_id : undefined,
+      conversationId:
+        typeof item.conversation_id === "string" ? item.conversation_id : undefined,
+      turnIndex: typeof item.turn_index === "number" ? item.turn_index : undefined,
       prompt: String(item.prompt || ""),
       status: String(item.status || "unknown"),
       message: String(item.message || ""),
@@ -289,6 +296,75 @@ export async function fetchStudioExecutions(
       updatedAt: typeof item.updated_at === "number" ? item.updated_at : undefined,
     };
   });
+}
+
+export type StudioConversation = {
+  id: string;
+  projectId: string;
+  title: string;
+  status: "active" | "archived";
+  createdAt: number;
+  updatedAt: number;
+};
+
+function studioConversation(value: unknown): StudioConversation {
+  const item = value as Record<string, unknown>;
+  return {
+    id: String(item.id || ""),
+    projectId: String(item.project_id || ""),
+    title: String(item.title || "New conversation"),
+    status: item.status === "archived" ? "archived" : "active",
+    createdAt: Number(item.created_at || 0),
+    updatedAt: Number(item.updated_at || 0),
+  };
+}
+
+export async function fetchStudioConversations(
+  projectId: string,
+): Promise<StudioConversation[]> {
+  const response = await studioFetch(
+    `/api/studio/projects/${encodeURIComponent(projectId)}/agent-conversations`,
+    { cache: "no-store" },
+  );
+  const payload = await response.json();
+  if (!response.ok) {
+    throw new Error(payload.detail || `agent conversations ${response.status}`);
+  }
+  return (Array.isArray(payload.items) ? payload.items : []).map(studioConversation);
+}
+
+export async function createStudioConversation(
+  projectId: string,
+  title = "New conversation",
+): Promise<StudioConversation> {
+  const response = await studioFetch(
+    `/api/studio/projects/${encodeURIComponent(projectId)}/agent-conversations`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title }),
+    },
+  );
+  const payload = await response.json();
+  if (!response.ok) throw new Error(payload.detail || `create conversation ${response.status}`);
+  return studioConversation(payload);
+}
+
+export async function updateStudioConversation(
+  conversationId: string,
+  patch: { title?: string; status?: "active" | "archived" },
+): Promise<StudioConversation> {
+  const response = await studioFetch(
+    `/api/studio/agent-conversations/${encodeURIComponent(conversationId)}`,
+    {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(patch),
+    },
+  );
+  const payload = await response.json();
+  if (!response.ok) throw new Error(payload.detail || `update conversation ${response.status}`);
+  return studioConversation(payload);
 }
 
 export type AgentSubmissionResult =
@@ -307,6 +383,7 @@ export type AgentNodeContext = {
 type AgentJobPayload = {
   job_id?: string;
   project_id?: string;
+  conversation_id?: string;
   prompt?: string;
   status?: string;
   message?: string;
@@ -433,6 +510,7 @@ async function waitForAgentJob(
 export async function submitAgentPrompt(
   prompt: string,
   projectId: string,
+  conversationId: string,
   nodeIds: string[],
   nodes: AgentNodeContext[],
   onProgress?: (progress: AgentProgress) => void,
@@ -440,7 +518,13 @@ export async function submitAgentPrompt(
   const response = await studioFetch("/api/studio/agent", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ prompt, project_id: projectId, node_ids: nodeIds, nodes }),
+    body: JSON.stringify({
+      prompt,
+      project_id: projectId,
+      conversation_id: conversationId,
+      node_ids: nodeIds,
+      nodes,
+    }),
   });
   const payload = (await response.json().catch(() => ({}))) as AgentJobPayload;
   if (!response.ok) {

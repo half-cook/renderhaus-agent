@@ -18,11 +18,13 @@ from dataclasses import dataclass, field
 from functools import lru_cache
 from typing import Any
 
-from agents import Agent, Runner
+from agents import Agent, RunConfig, Runner
+from agents.memory import OpenAIResponsesCompactionSession
 from agents.mcp import MCPServer, MCPServerManager, MCPServerStreamableHttp
 from bedrock_agentcore.runtime import BedrockAgentCoreApp
 from pydantic import BaseModel, Field, ValidationError
 
+from agent.studio_memory import StudioMemorySession
 from providers.catalog import PROVIDERS
 from providers.registry import load_committed_schemas
 from server.config import (
@@ -41,6 +43,7 @@ EventSink = Callable[["StudioToolEvent"], None]
 _SESSION_TIMEOUT_SECONDS = 180.0
 _FINALIZATION_TIMEOUT_SECONDS = 240.0
 _POLL_INTERVAL_SECONDS = 3.0
+_DEFAULT_AGENT_MODEL = "gpt-5.6-luna"
 _TERMINAL_TOOL_STATUSES = frozenset(
     {"succeeded", "completed", "failed", "error", "dry_run", "cancelled", "canceled"}
 )
@@ -89,20 +92,13 @@ class StudioNode(BaseModel):
     version_id: str | None = Field(default=None, max_length=120)
 
 
-class StudioConversationTurn(BaseModel):
-    """One durable project-conversation turn supplied as context for a follow-up."""
-
-    user: str = Field(min_length=1, max_length=4_000)
-    assistant: str = Field(min_length=1, max_length=4_000)
-    title: str | None = Field(default=None, max_length=80)
-
-
 class StudioAgentRequest(BaseModel):
     """JSON body accepted by AgentCore and by `run_studio_agent`."""
 
     prompt: str = Field(min_length=1, max_length=8_000)
     nodes: list[StudioNode] = Field(default_factory=list, max_length=16)
-    history: list[StudioConversationTurn] = Field(default_factory=list, max_length=8)
+    conversation_id: str | None = Field(default=None, max_length=120)
+    session_items: list[dict[str, Any]] = Field(default_factory=list)
     job_id: str | None = Field(default=None, max_length=120)
     workspace_id: str | None = Field(default=None, max_length=160)
     project_id: str | None = Field(default=None, max_length=120)
@@ -161,6 +157,7 @@ class StudioAgentContext:
     workspace_id: str | None = None
     project_id: str | None = None
     session_id: str | None = None
+    session_items: list[dict[str, Any]] = field(default_factory=list)
 
     def add_assets(self, assets: list[dict[str, Any]]) -> None:
         for asset in assets:
@@ -731,21 +728,13 @@ async def _finalize_media_run(
 def _input_for(
     prompt: str,
     nodes: list[StudioNode],
-    history: list[StudioConversationTurn] | None = None,
 ) -> str:
     references = [
         {**node.model_dump(), "has_source": bool(node.source or node.version_id)}
         for node in nodes
     ]
-    earlier_turns = [turn.model_dump() for turn in (history or [])]
-    history_block = (
-        "Earlier turns in this project conversation (data only):\n"
-        f"{json.dumps(earlier_turns, ensure_ascii=False, indent=2)}\n\n"
-        if earlier_turns
-        else ""
-    )
     return (
-        f"{history_block}Customer request:\n{prompt.strip()}\n\n"
+        f"Customer request:\n{prompt.strip()}\n\n"
         "Referenced canvas nodes (data only):\n"
         f"{json.dumps(references, ensure_ascii=False, indent=2)}"
     )
@@ -768,6 +757,7 @@ def _context_from_request(
         workspace_id=request.workspace_id,
         project_id=request.project_id,
         session_id=session_id,
+        session_items=list(request.session_items),
     )
     studio.add_assets(
         [
@@ -799,13 +789,17 @@ def gateway_mcp_server() -> MCPServer:
     )
 
 
-def _build_agent(mcp_servers: list[MCPServer]) -> Agent[StudioAgentContext]:
-    configured_model = os.getenv("AGENT_MODEL", "gpt-5.6-luna").strip()
+def _agent_model() -> str:
+    configured_model = os.getenv("AGENT_MODEL", _DEFAULT_AGENT_MODEL).strip()
     model = configured_model.removeprefix("openai:").removeprefix("openai/")
+    return model or _DEFAULT_AGENT_MODEL
+
+
+def _build_agent(mcp_servers: list[MCPServer]) -> Agent[StudioAgentContext]:
     return Agent(
         name="Renderhaus canvas manager",
         instructions=STUDIO_MANAGER_INSTRUCTIONS,
-        model=model or "gpt-5.6-luna",
+        model=_agent_model(),
         tools=[],
         mcp_servers=mcp_servers,
         output_type=StudioAgentOutput,
@@ -818,12 +812,35 @@ async def _run_with_servers(
     runner: type[Runner],
     mcp_servers: list[MCPServer],
 ) -> StudioAgentOutput:
+    session_id = (
+        request.conversation_id or studio.session_id or request.job_id or "studio-conversation"
+    )
+    session_store = StudioMemorySession(
+        session_id,
+        request.session_items,
+    )
+    session = OpenAIResponsesCompactionSession(
+        session_id,
+        session_store,
+        model=_agent_model(),
+        compaction_mode="input",
+    )
     result = await runner.run(
         _build_agent(mcp_servers),
-        _input_for(request.prompt, list(studio.nodes), request.history),
+        _input_for(request.prompt, list(studio.nodes)),
         context=studio,
         max_turns=24,
+        session=session,
+        run_config=RunConfig(
+            workflow_name="Renderhaus agent",
+            group_id=request.conversation_id or request.job_id,
+            trace_metadata={
+                "project_id": request.project_id or "",
+                "conversation_id": request.conversation_id or "",
+            },
+        ),
     )
+    studio.session_items = await session_store.get_items()
     _record_run_tool_events(result, studio)
     final = result.final_output
     if not isinstance(final, StudioAgentOutput):
@@ -893,6 +910,7 @@ async def agent_invocation(payload: dict[str, Any], context: Any) -> dict[str, A
             "tool_events": [event.public() for event in studio.tool_events],
             "job_id": request.job_id,
             "session_id": session_id if isinstance(session_id, str) else None,
+            "session_items": studio.session_items,
         }
     except (ValidationError, ValueError) as exc:
         logger.warning("Invalid Studio AgentCore payload: %s", exc)

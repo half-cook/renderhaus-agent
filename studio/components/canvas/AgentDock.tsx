@@ -2,6 +2,7 @@
 
 import { useReactFlow } from "@xyflow/react";
 import {
+  Archive,
   AtSign,
   Check,
   ChevronRight,
@@ -10,9 +11,11 @@ import {
   LoaderCircle,
   PanelRightClose,
   Paperclip,
+  Pencil,
   Plus,
   Send,
   Sparkles,
+  X,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -262,17 +265,25 @@ export function AgentDock() {
   const projectName = useCanvasStore((state) => state.projectName);
   const selectedNodeIds = useCanvasStore((state) => state.selectedNodeIds);
   const executions = useCanvasStore((state) => state.executions);
+  const conversations = useCanvasStore((state) => state.conversations);
+  const conversationId = useCanvasStore((state) => state.conversationId);
   const agentMessage = useCanvasStore((state) => state.agentMessage);
   const agentOpen = useCanvasStore((state) => state.agentOpen);
   const setAgentMessage = useCanvasStore((state) => state.setAgentMessage);
   const setAgentOpen = useCanvasStore((state) => state.setAgentOpen);
   const setActiveTool = useCanvasStore((state) => state.setActiveTool);
   const placeAgentAsset = useCanvasStore((state) => state.placeAgentAsset);
-  const refreshExecutions = useCanvasStore((state) => state.refreshExecutions);
+  const refreshConversations = useCanvasStore((state) => state.refreshConversations);
+  const createAgentConversation = useCanvasStore((state) => state.createAgentConversation);
+  const switchAgentConversation = useCanvasStore((state) => state.switchAgentConversation);
+  const renameAgentConversation = useCanvasStore((state) => state.renameAgentConversation);
+  const archiveAgentConversation = useCanvasStore((state) => state.archiveAgentConversation);
   const status = useCanvasStore((state) => state.status);
   const [value, setValue] = useState("");
   const [busy, setBusy] = useState(false);
   const [liveRun, setLiveRun] = useState<LiveRun | null>(null);
+  const [renaming, setRenaming] = useState<string | null>(null);
+  const [archivePending, setArchivePending] = useState(false);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const transcriptRef = useRef<HTMLDivElement>(null);
   const { screenToFlowPosition } = useReactFlow();
@@ -280,12 +291,13 @@ export function AgentDock() {
     () => nodes.filter((node) => value.includes(`@${node.data.title.replaceAll(" ", "")}`)),
     [nodes, value],
   );
-  const projectExecutions = useMemo(
+  const conversationExecutions = useMemo(
     () => executions
-      .filter((execution) => execution.projectId === projectId)
+      .filter((execution) => execution.conversationId === conversationId)
       .sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0)),
-    [executions, projectId],
+    [executions, conversationId],
   );
+  const activeConversation = conversations.find((item) => item.id === conversationId);
   const placedVersionIds = useMemo(
     () => new Set(
       nodes
@@ -300,9 +312,14 @@ export function AgentDock() {
   }, [agentOpen]);
 
   useEffect(() => {
+    setRenaming(null);
+    setArchivePending(false);
+  }, [conversationId]);
+
+  useEffect(() => {
     const transcript = transcriptRef.current;
     if (transcript) transcript.scrollTop = transcript.scrollHeight;
-  }, [agentOpen, liveRun, projectExecutions.length]);
+  }, [agentOpen, liveRun, conversationExecutions.length]);
 
   const placementPosition = () => {
     const selected = nodes.filter((node) => selectedNodeIds.includes(node.id));
@@ -321,9 +338,17 @@ export function AgentDock() {
     return { x: center.x - 180, y: center.y - 120 };
   };
 
+  const commitRename = () => {
+    const title = renaming?.trim();
+    if (title && activeConversation) {
+      void renameAgentConversation(activeConversation.id, title);
+    }
+    setRenaming(null);
+  };
+
   const submit = async () => {
     const prompt = value.trim();
-    if (!prompt || busy) return;
+    if (!prompt || busy || !conversationId) return;
     setBusy(true);
     setAgentMessage(null);
     setLiveRun({
@@ -357,10 +382,17 @@ export function AgentDock() {
     });
 
     try {
-      const result = await submitAgentPrompt(prompt, projectId, ids, contexts, (progress) => {
-        setAgentMessage(progress.message);
-        setLiveRun({ prompt, progress });
-      });
+      const result = await submitAgentPrompt(
+        prompt,
+        projectId,
+        conversationId,
+        ids,
+        contexts,
+        (progress) => {
+          setAgentMessage(progress.message);
+          setLiveRun({ prompt, progress });
+        },
+      );
       setAgentMessage(result.message);
       if (result.result) {
         setLiveRun({
@@ -382,7 +414,7 @@ export function AgentDock() {
         progress: { status: "error", message, toolEvents: [] },
       });
     } finally {
-      await refreshExecutions();
+      await refreshConversations();
       setLiveRun(null);
       setBusy(false);
     }
@@ -403,7 +435,7 @@ export function AgentDock() {
   };
 
   if (!agentOpen) {
-    const activeRuns = projectExecutions.filter(
+    const activeRuns = conversationExecutions.filter(
       (execution) => normalizedStatus(execution.status) === "running",
     ).length;
     return (
@@ -427,9 +459,110 @@ export function AgentDock() {
   return (
     <aside className="agent-dock" id="agent-composer" aria-label="Agent conversation">
       <header className="agent-dock-head">
-        <div>
-          <span className="agent-dock-kicker"><Sparkles size={14} /> Project agent</span>
-          <h2>{projectName}</h2>
+        <div className="agent-dock-title">
+          <span className="agent-dock-kicker"><Sparkles size={14} /> {projectName}</span>
+          <div className="agent-conversation-controls">
+            {renaming !== null ? (
+              <>
+                <input
+                  autoFocus
+                  value={renaming}
+                  aria-label="Conversation name"
+                  onChange={(event) => setRenaming(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") commitRename();
+                    if (event.key === "Escape") setRenaming(null);
+                  }}
+                />
+                <button
+                  className="icon-btn"
+                  type="button"
+                  aria-label="Save conversation name"
+                  title="Save conversation name"
+                  onClick={commitRename}
+                >
+                  <Check size={14} />
+                </button>
+                <button
+                  className="icon-btn"
+                  type="button"
+                  aria-label="Cancel rename"
+                  title="Cancel rename"
+                  onClick={() => setRenaming(null)}
+                >
+                  <X size={14} />
+                </button>
+              </>
+            ) : archivePending ? (
+              <>
+                <span className="agent-conversation-confirm">Archive this conversation?</span>
+                <button
+                  className="agent-conversation-action"
+                  type="button"
+                  onClick={() => setArchivePending(false)}
+                >
+                  Cancel
+                </button>
+                <button
+                  className="agent-conversation-action danger"
+                  type="button"
+                  onClick={() => {
+                    if (activeConversation) {
+                      void archiveAgentConversation(activeConversation.id);
+                    }
+                    setArchivePending(false);
+                  }}
+                >
+                  Archive
+                </button>
+              </>
+            ) : (
+              <>
+                <select
+                  value={conversationId || ""}
+                  disabled={busy || conversations.length === 0}
+                  aria-label="Agent conversation"
+                  onChange={(event) => void switchAgentConversation(event.target.value)}
+                >
+                  {conversations.map((conversation) => (
+                    <option value={conversation.id} key={conversation.id}>
+                      {conversation.title}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  className="icon-btn"
+                  type="button"
+                  disabled={busy}
+                  aria-label="New conversation"
+                  title="New conversation"
+                  onClick={() => void createAgentConversation()}
+                >
+                  <Plus size={15} />
+                </button>
+                <button
+                  className="icon-btn"
+                  type="button"
+                  disabled={busy || !activeConversation}
+                  aria-label="Rename conversation"
+                  title="Rename conversation"
+                  onClick={() => setRenaming(activeConversation?.title || "")}
+                >
+                  <Pencil size={14} />
+                </button>
+                <button
+                  className="icon-btn"
+                  type="button"
+                  disabled={busy || !activeConversation}
+                  aria-label="Archive conversation"
+                  title="Archive conversation"
+                  onClick={() => setArchivePending(true)}
+                >
+                  <Archive size={14} />
+                </button>
+              </>
+            )}
+          </div>
         </div>
         <button
           className="icon-btn"
@@ -443,14 +576,14 @@ export function AgentDock() {
       </header>
 
       <div className="agent-transcript" ref={transcriptRef}>
-        {projectExecutions.length === 0 && !liveRun ? (
+        {conversationExecutions.length === 0 && !liveRun ? (
           <div className="agent-empty">
             <Sparkles size={18} />
             <h3>Work across this project</h3>
             <p>Ask for ideas, edits or generated media. Runs and intermediate steps stay here.</p>
           </div>
         ) : null}
-        {projectExecutions.map((execution) => (
+        {conversationExecutions.map((execution) => (
           <ExecutionTurn
             key={execution.jobId}
             execution={execution}
@@ -515,7 +648,7 @@ export function AgentDock() {
               className="send-btn"
               type="button"
               aria-label={busy ? "Agent is working" : "Send to agent"}
-              disabled={busy || !value.trim() || !status?.agent}
+              disabled={busy || !value.trim() || !status?.agent || !conversationId}
               onClick={() => void submit()}
             >
               {busy ? <LoaderCircle className="spin" size={14} /> : <Send size={14} />}

@@ -9,17 +9,21 @@ import {
 } from "@xyflow/react";
 import { create } from "zustand";
 import {
+  createStudioConversation,
   createStudioProject,
   fetchOptions,
   fetchStatus,
   fetchStudioCanvas,
+  fetchStudioConversations,
   fetchStudioExecutions,
   fetchStudioProjects,
   fetchTools,
   saveStudioCanvas,
+  updateStudioConversation,
   uploadStudioFile,
   type StudioCanvasDocument,
   type StudioExecution,
+  type StudioConversation,
 } from "@/lib/api";
 import type { FieldOptions, ProviderCatalog, StudioAsset, StudioStatus } from "@/lib/types";
 import {
@@ -81,6 +85,8 @@ type CanvasStore = {
   fieldOptions: FieldOptions;
   status: StudioStatus | null;
   executions: StudioExecution[];
+  conversations: StudioConversation[];
+  conversationId: string | null;
   loadError: string | null;
   hydrated: boolean;
   past: Snapshot[];
@@ -88,6 +94,11 @@ type CanvasStore = {
   hydrate: () => Promise<void>;
   loadCatalog: () => Promise<void>;
   refreshExecutions: () => Promise<void>;
+  refreshConversations: () => Promise<void>;
+  createAgentConversation: () => Promise<void>;
+  switchAgentConversation: (id: string) => Promise<void>;
+  renameAgentConversation: (id: string, title: string) => Promise<void>;
+  archiveAgentConversation: (id: string) => Promise<void>;
   setProjectName: (name: string) => void;
   switchProject: (id: string) => Promise<void>;
   createProject: () => Promise<void>;
@@ -366,6 +377,8 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
   fieldOptions: {},
   status: null,
   executions: [],
+  conversations: [],
+  conversationId: null,
   loadError: null,
   hydrated: false,
   past: [],
@@ -414,7 +427,7 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
       if (migratedAgentPresentation) {
         window.setTimeout(() => void get().persist(), 0);
       }
-      window.setTimeout(() => void get().refreshExecutions(), 0);
+      window.setTimeout(() => void get().refreshConversations(), 0);
     } catch (error) {
       const project = legacyProjects[0] || { id: "untitled", name: "Untitled" };
       const localGraph = readGraph(project.id);
@@ -467,13 +480,12 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
 
   loadCatalog: async () => {
     try {
-      const [providers, status, fieldOptions, executions] = await Promise.all([
+      const [providers, status, fieldOptions] = await Promise.all([
         fetchTools(),
         fetchStatus(),
         fetchOptions().catch(() => ({})),
-        fetchStudioExecutions(get().projectId).catch(() => []),
       ]);
-      set({ providers, status, fieldOptions, executions, loadError: null });
+      set({ providers, status, fieldOptions, loadError: null });
     } catch (error) {
       set({ loadError: error instanceof Error ? error.message : "Could not load tools." });
     }
@@ -481,10 +493,75 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
 
   refreshExecutions: async () => {
     try {
-      const executions = await fetchStudioExecutions(get().projectId);
+      const { projectId, conversationId } = get();
+      const executions = conversationId
+        ? await fetchStudioExecutions(projectId, conversationId)
+        : [];
+      if (get().projectId !== projectId || get().conversationId !== conversationId) return;
       set({ executions, loadError: null });
     } catch (error) {
       set({ loadError: error instanceof Error ? error.message : "Could not load agent jobs." });
+    }
+  },
+
+  refreshConversations: async () => {
+    try {
+      const projectId = get().projectId;
+      const conversations = await fetchStudioConversations(projectId);
+      const current = conversations.find((item) => item.id === get().conversationId);
+      const conversationId = current?.id || conversations[0]?.id || null;
+      const executions = conversationId
+        ? await fetchStudioExecutions(projectId, conversationId)
+        : [];
+      if (get().projectId !== projectId) return;
+      set({ conversations, conversationId, executions, loadError: null });
+    } catch (error) {
+      set({
+        loadError: error instanceof Error ? error.message : "Could not load agent conversations.",
+      });
+    }
+  },
+
+  createAgentConversation: async () => {
+    try {
+      const conversation = await createStudioConversation(get().projectId);
+      set({
+        conversations: [conversation, ...get().conversations],
+        conversationId: conversation.id,
+        executions: [],
+        agentMessage: null,
+      });
+    } catch (error) {
+      set({ loadError: error instanceof Error ? error.message : "Could not create conversation." });
+    }
+  },
+
+  switchAgentConversation: async (id) => {
+    if (id === get().conversationId) return;
+    set({ conversationId: id, executions: [], agentMessage: null });
+    await get().refreshExecutions();
+  },
+
+  renameAgentConversation: async (id, title) => {
+    try {
+      const conversation = await updateStudioConversation(id, { title });
+      set({
+        conversations: get().conversations.map((item) =>
+          item.id === id ? conversation : item,
+        ),
+      });
+    } catch (error) {
+      set({ loadError: error instanceof Error ? error.message : "Could not rename conversation." });
+    }
+  },
+
+  archiveAgentConversation: async (id) => {
+    try {
+      await updateStudioConversation(id, { status: "archived" });
+      set({ conversations: get().conversations.filter((item) => item.id !== id) });
+      await get().refreshConversations();
+    } catch (error) {
+      set({ loadError: error instanceof Error ? error.message : "Could not archive conversation." });
     }
   },
 
@@ -508,11 +585,14 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
         edges: graph.edges,
         viewport: graph.viewport,
         selectedNodeIds: [],
+        conversations: [],
+        conversationId: null,
+        executions: [],
         past: [],
         future: [],
         loadError: null,
       });
-      window.setTimeout(() => void get().refreshExecutions(), 0);
+      window.setTimeout(() => void get().refreshConversations(), 0);
       if (migratedAgentPresentation) {
         window.setTimeout(() => void get().persist(), 0);
       }
@@ -534,11 +614,14 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
         edges: [],
         viewport: { x: 80, y: 80, zoom: 1 },
         selectedNodeIds: [],
+        conversations: [],
+        conversationId: null,
+        executions: [],
         past: [],
         future: [],
         loadError: null,
       });
-      window.setTimeout(() => void get().refreshExecutions(), 0);
+      window.setTimeout(() => void get().refreshConversations(), 0);
     } catch (error) {
       set({ loadError: error instanceof Error ? error.message : "Could not create project." });
     }

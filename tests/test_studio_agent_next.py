@@ -6,13 +6,15 @@ import unittest
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, patch
 
+from agents.memory import OpenAIResponsesCompactionSession
+
 from agent.studio_agent_next import (
     StudioAgentContext,
     StudioAgentOutput,
     StudioAgentRequest,
-    StudioConversationTurn,
     StudioNode,
     StudioToolEvent,
+    _build_agent,
     _describe_gateway_mcp_tools,
     _finalize_media_run,
     _gateway_tool_catalog,
@@ -27,11 +29,21 @@ from agent.studio_agent_next import (
 class FakeRunner:
     seen_agent = None
     seen_input = ""
+    seen_session = None
+    seen_run_config = None
 
     @classmethod
-    async def run(cls, agent, input_value, **_kwargs):
+    async def run(cls, agent, input_value, **kwargs):
         cls.seen_agent = agent
         cls.seen_input = input_value
+        cls.seen_session = kwargs["session"]
+        cls.seen_run_config = kwargs["run_config"]
+        await cls.seen_session.add_items(
+            [
+                {"role": "user", "content": "Create a launch outline"},
+                {"role": "assistant", "content": "The outline is ready."},
+            ]
+        )
 
         class Result:
             final_output = StudioAgentOutput(
@@ -86,12 +98,13 @@ class StudioAgentNextEntrypointTests(unittest.IsolatedAsyncioTestCase):
                 StudioAgentRequest(
                     prompt="Create a launch outline",
                     nodes=[StudioNode(id="node-1", title="Hero image", kind="image")],
-                    history=[
-                        StudioConversationTurn(
-                            user="Draft the launch concept",
-                            assistant="The concept centers on a quiet product reveal.",
-                            title="Launch concept",
-                        )
+                    conversation_id="conversation-1",
+                    session_items=[
+                        {"role": "user", "content": "Draft the launch concept"},
+                        {
+                            "role": "assistant",
+                            "content": "The concept centers on a quiet product reveal.",
+                        },
                     ],
                     job_id="job-1",
                 ),
@@ -102,12 +115,26 @@ class StudioAgentNextEntrypointTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(output.title, "Launch outline")
         self.assertEqual(output.filename, "Launch-outline.md")
         self.assertIn("Customer request", FakeRunner.seen_input)
-        self.assertIn("Earlier turns in this project conversation", FakeRunner.seen_input)
-        self.assertIn("quiet product reveal", FakeRunner.seen_input)
+        self.assertNotIn("Earlier turns in this project conversation", FakeRunner.seen_input)
+        self.assertNotIn("quiet product reveal", FakeRunner.seen_input)
         self.assertIn("node-1", FakeRunner.seen_input)
+        session_items = await FakeRunner.seen_session.get_items()
+        self.assertEqual(session_items[1]["role"], "assistant")
+        self.assertIn("quiet product reveal", session_items[1]["content"])
+        self.assertEqual(FakeRunner.seen_run_config.group_id, "conversation-1")
+        self.assertEqual(FakeRunner.seen_run_config.workflow_name, "Renderhaus agent")
+        self.assertIsInstance(FakeRunner.seen_session, OpenAIResponsesCompactionSession)
+        self.assertEqual(FakeRunner.seen_session.compaction_mode, "input")
+        self.assertEqual(FakeRunner.seen_session.model, "gpt-4.1-mini")
         self.assertEqual(FakeRunner.seen_agent.tools, [])
         self.assertEqual(FakeRunner.seen_agent.mcp_servers, [])
         self.assertEqual(FakeRunner.seen_agent.model, "gpt-4.1-mini")
+
+    def test_agent_defaults_to_gpt_5_6_luna(self) -> None:
+        with patch.dict(os.environ, {"AGENT_MODEL": ""}):
+            agent = _build_agent([])
+
+        self.assertEqual(agent.model, "gpt-5.6-luna")
 
     async def test_agent_invocation_returns_structured_agentcore_result(self) -> None:
         output = StudioAgentOutput(
@@ -121,7 +148,12 @@ class StudioAgentNextEntrypointTests(unittest.IsolatedAsyncioTestCase):
             new=AsyncMock(return_value=output),
         ) as runner:
             payload = await agent_invocation(
-                {"prompt": "Make the result", "job_id": "job-9"},
+                {
+                    "prompt": "Make the result",
+                    "job_id": "job-9",
+                    "conversation_id": "conversation-9",
+                    "session_items": [{"role": "user", "content": "Earlier request"}],
+                },
                 SimpleNamespace(session_id="session-9"),
             )
 
@@ -130,6 +162,7 @@ class StudioAgentNextEntrypointTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(payload["job_id"], "job-9")
         self.assertEqual(payload["session_id"], "session-9")
         self.assertEqual(payload["tool_events"], [])
+        self.assertEqual(payload["session_items"][0]["content"], "Earlier request")
         runner.assert_awaited_once()
         request = runner.await_args.args[0]
         self.assertEqual(request.prompt, "Make the result")
