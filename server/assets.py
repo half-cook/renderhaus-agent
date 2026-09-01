@@ -5,6 +5,7 @@ import hmac
 import logging
 import mimetypes
 import os
+import re
 import time
 import uuid
 from dataclasses import dataclass
@@ -24,6 +25,7 @@ logger = logging.getLogger(__name__)
 
 CACHE_DIR = ROOT / ".renderhaus" / "cache"
 CONTENT_URL_TTL_SECONDS = 15 * 60
+PROVIDER_INPUT_URL_TTL_SECONDS = 6 * 60 * 60
 DEFAULT_ASSETS_TABLE = "renderhaus-assets"
 
 
@@ -57,6 +59,16 @@ def aws_region() -> str:
 
 def s3_bucket() -> str:
     return (os.getenv("AWS_S3_BUCKET") or "").strip()
+
+
+def provider_input_bucket() -> str:
+    """Private bucket used to make local Studio versions reachable by media providers."""
+    return (
+        os.getenv("PROVIDER_INPUT_BUCKET")
+        or os.getenv("AWS_S3_BUCKET")
+        or os.getenv("REMOTION_APP_BUCKET_NAME")
+        or ""
+    ).strip()
 
 
 def dynamodb_table_name() -> str:
@@ -413,6 +425,63 @@ def presigned_content_url(asset: Asset, *, ttl_seconds: int = CONTENT_URL_TTL_SE
             "ResponseContentDisposition": f'inline; filename="{asset.filename}"',
         },
         ExpiresIn=ttl_seconds,
+    )
+
+
+def publish_provider_input_url(
+    *,
+    source_path: str | Path,
+    workspace_id: str,
+    version_id: str,
+    filename: str,
+    mime_type: str | None = None,
+    ttl_seconds: int = PROVIDER_INPUT_URL_TTL_SECONDS,
+) -> str:
+    """Publish an immutable Studio version and return a provider-reachable HTTPS URL.
+
+    Provider APIs cannot fetch localhost playback routes and transient generation URLs can expire.
+    The object remains private; only the time-limited signed GET is sent to the provider.
+    """
+    source = Path(source_path).expanduser().resolve()
+    if not source.is_file() or source.stat().st_size <= 0:
+        raise FileNotFoundError(f"Provider input file is unavailable: {source}")
+    bucket = provider_input_bucket()
+    if not bucket:
+        raise RuntimeError(
+            "Set PROVIDER_INPUT_BUCKET, AWS_S3_BUCKET, or REMOTION_APP_BUCKET_NAME "
+            "so external media providers can fetch referenced Studio assets."
+        )
+    ttl = max(60, min(int(ttl_seconds), 7 * 24 * 60 * 60))
+    safe_name = re.sub(r"[^A-Za-z0-9._-]+", "-", Path(filename).name).strip("-._")
+    safe_name = safe_name[:180] or f"{version_id}{source.suffix}"
+    workspace_scope = hashlib.sha256(workspace_id.encode("utf-8")).hexdigest()[:20]
+    storage_key = f"renderhaus-provider-inputs/{workspace_scope}/{version_id}/{safe_name}"
+    content_type = mime_type or mimetypes.guess_type(safe_name)[0] or "application/octet-stream"
+    client = _s3()
+    should_upload = True
+    try:
+        remote = client.head_object(Bucket=bucket, Key=storage_key)
+        should_upload = int(remote.get("ContentLength") or -1) != source.stat().st_size
+    except ClientError as exc:
+        code = str(exc.response.get("Error", {}).get("Code") or "")
+        if code not in {"404", "NoSuchKey", "NotFound"}:
+            raise
+    if should_upload:
+        client.upload_file(
+            Filename=str(source),
+            Bucket=bucket,
+            Key=storage_key,
+            ExtraArgs={"ContentType": content_type},
+        )
+    return client.generate_presigned_url(
+        "get_object",
+        Params={
+            "Bucket": bucket,
+            "Key": storage_key,
+            "ResponseContentType": content_type,
+            "ResponseContentDisposition": f'inline; filename="{safe_name}"',
+        },
+        ExpiresIn=ttl,
     )
 
 

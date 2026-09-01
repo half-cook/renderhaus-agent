@@ -1,4 +1,4 @@
-import type { CreativeNodeKind, PortDataType, ToolDefinition } from "./types";
+import type { AgentToolEvent, CreativeNodeKind, PortDataType, ToolDefinition } from "./types";
 
 export const CREATIVE_TOOLS: ToolDefinition[] = [
   {
@@ -106,6 +106,23 @@ export function defaultToolForRail(
       return exhaustive;
     }
   }
+}
+
+export function toolForAgentArtifact(
+  kind: "image" | "video" | "audio",
+  event?: Pick<AgentToolEvent, "name" | "provider">,
+): ToolDefinition | undefined {
+  // Agent artifacts become self-contained text-to-media nodes. Even when the
+  // agent used an input asset or a composition tool, placing the result must
+  // not create an invisible dependency on another artifact in the run.
+  if (kind === "image") return toolById("image.generate");
+  if (kind === "video") return toolById("video.generate");
+  const source = `${event?.provider || ""} ${event?.name || ""}`.toLowerCase();
+  return toolById(
+    source.includes("fish_audio") || source.includes("speech") || source.includes("voice")
+      ? "voice.generate"
+      : "music.generate",
+  );
 }
 
 export function portsForNode(toolId: string | undefined, kind: CreativeNodeKind): {

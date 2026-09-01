@@ -50,7 +50,13 @@ export function CanvasHeader() {
   const [exported, setExported] = useState(false);
   const fileRef = useRef<HTMLAnchorElement>(null);
   const headerRef = useRef<HTMLElement>(null);
-  const queued = queueSize(nodes);
+  const queued =
+    queueSize(nodes) +
+    executions.filter(
+      (execution) =>
+        execution.projectId === projectId &&
+        ["queued", "running", "pending"].includes(execution.status.toLowerCase()),
+    ).length;
   const hasSelection = selectedNodeIds.length > 0;
   const hasSequence = approvedSequence(nodes).length > 0;
 

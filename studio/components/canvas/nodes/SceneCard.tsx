@@ -5,7 +5,14 @@ import { Loader2 } from "lucide-react";
 import { NodeToolbar } from "../NodeToolbar";
 import { NodeTag } from "./NodeTag";
 import { generateBlockers } from "@/lib/canvas/generate-readiness";
-import { aspectLabel, durationLabel, nodeFrameSize, sceneBadge, variantPosition } from "@/lib/canvas/story";
+import {
+  aspectLabel,
+  aspectRatioFromDimensions,
+  durationLabel,
+  nodeFrameSize,
+  sceneBadge,
+  variantPosition,
+} from "@/lib/canvas/story";
 import { schemaFor, type CanvasNodeData } from "@/lib/canvas/types";
 import { useCanvasStore } from "@/lib/canvas/store";
 import { portsForNode } from "@/lib/canvas/tool-registry";
@@ -21,7 +28,6 @@ export function SceneCard({ id, data, selected }: Props) {
   const runNode = useCanvasStore((state) => state.runNode);
   const updateNodeData = useCanvasStore((state) => state.updateNodeData);
   const setInspectorOpen = useCanvasStore((state) => state.setInspectorOpen);
-  const setApproved = useCanvasStore((state) => state.setApproved);
   const cycleVariant = useCanvasStore((state) => state.cycleVariant);
   const providers = useCanvasStore((state) => state.providers);
   const edges = useCanvasStore((state) => state.edges);
@@ -51,7 +57,7 @@ export function SceneCard({ id, data, selected }: Props) {
       />
       {selected ? <NodeToolbar id={id} data={data} /> : null}
       <article
-        className={`flow-node scene-card ${selected ? "selected" : ""} ${data.approved ? "approved" : ""} status-${data.status}`}
+        className={`flow-node scene-card ${selected ? "selected" : ""} status-${data.status}`}
       >
         {ports.inputs.map((port, index) => (
           <Handle
@@ -77,9 +83,46 @@ export function SceneCard({ id, data, selected }: Props) {
         ))}
         <div className="scene-stage" style={frame}>
           {data.kind === "video" && data.output ? (
-            <AssetMedia asset={data.output} className="media-preview" alt={data.title} controls />
+            <AssetMedia
+              asset={data.output}
+              className="media-preview"
+              alt={data.title}
+              controls
+              onMetadata={({ width, height, durationSeconds }) => {
+                const aspectRatio = width && height
+                  ? aspectRatioFromDimensions(width, height)
+                  : undefined;
+                const duration = durationSeconds && Number.isFinite(durationSeconds)
+                  ? Math.max(1, Math.round(durationSeconds))
+                  : undefined;
+                const aspectChanged = Boolean(
+                  aspectRatio && data.config.aspect_ratio !== aspectRatio,
+                );
+                const durationChanged = Boolean(
+                  duration && data.config.duration_seconds !== duration,
+                );
+                if (!aspectChanged && !durationChanged) return;
+                updateNodeData(id, {
+                  config: {
+                    ...data.config,
+                    ...(aspectChanged ? { aspect_ratio: aspectRatio } : {}),
+                    ...(durationChanged ? { duration_seconds: duration } : {}),
+                  },
+                });
+              }}
+            />
           ) : data.output ? (
-            <AssetMedia asset={data.output} className="media-preview" alt={data.title} />
+            <AssetMedia
+              asset={data.output}
+              className="media-preview"
+              alt={data.title}
+              onMetadata={({ width, height }) => {
+                if (!width || !height) return;
+                const aspectRatio = aspectRatioFromDimensions(width, height);
+                if (!aspectRatio || data.config.aspect_ratio === aspectRatio) return;
+                updateNodeData(id, { config: { ...data.config, aspect_ratio: aspectRatio } });
+              }}
+            />
           ) : (
             <div className="media-placeholder">
               <span>{data.kind === "video" ? "No clip yet" : "No still yet"}</span>
@@ -127,13 +170,6 @@ export function SceneCard({ id, data, selected }: Props) {
                 {variants.current} of {variants.total}
               </button>
             ) : null}
-            <button
-              className={`text-btn nodrag ${data.approved ? "approved" : ""}`}
-              type="button"
-              onClick={() => setApproved(id, !data.approved)}
-            >
-              {data.approved ? "Approved" : "Approve"}
-            </button>
           </div>
         </footer>
         {data.error ? <p className="node-error">{data.error}</p> : null}

@@ -1,7 +1,7 @@
 [
   {
     "name": "render_timeline",
-        "description": "Compose generated image, video, and audio clips into one final MP4, then poll get_render_progress.",
+    "description": "Use after all source assets exist to execute a concrete edit decision list and make one assembled MP4. The caller must choose timing, B-roll layers, crop/motion, transitions, speed, titles, and audio fades, then poll get_render_progress.",
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -11,21 +11,186 @@
         "visuals": {
           "type": "array",
           "items": {
-            "type": "object"
-          }
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "description": "Allowed values: image, video."
+              },
+              "url": {
+                "type": "string",
+                "description": "HTTPS media URL or renderhaus-asset:// version handle."
+              },
+              "duration_seconds": {
+                "type": "number",
+                "description": "Must be greater than 0."
+              },
+              "start_seconds": {
+                "type": "number",
+                "description": "Must be at least 0."
+              },
+              "source_in_seconds": {
+                "type": "number",
+                "description": "Must be at least 0."
+              },
+              "track": {
+                "type": "integer",
+                "description": "Allowed range: 0 to 8."
+              },
+              "transition": {
+                "type": "string",
+                "description": "Allowed values: cut, fade, dip_to_black."
+              },
+              "fit": {
+                "type": "string",
+                "description": "Allowed values: cover, contain."
+              },
+              "position_x": {
+                "type": "number",
+                "description": "Allowed range: 0 to 1."
+              },
+              "position_y": {
+                "type": "number",
+                "description": "Allowed range: 0 to 1."
+              },
+              "scale": {
+                "type": "number",
+                "description": "Allowed range: 0.1 to 4."
+              },
+              "opacity": {
+                "type": "number",
+                "description": "Allowed range: 0 to 1."
+              },
+              "rotation_degrees": {
+                "type": "number",
+                "description": "Allowed range: -360 to 360."
+              },
+              "playback_rate": {
+                "type": "number",
+                "description": "Allowed range: 0.25 to 4."
+              },
+              "fade_in_seconds": {
+                "type": "number",
+                "description": "Must be at least 0."
+              },
+              "fade_out_seconds": {
+                "type": "number",
+                "description": "Must be at least 0."
+              },
+              "motion": {
+                "type": "string",
+                "description": "Allowed values: none, zoom_in, zoom_out, pan_left, pan_right."
+              }
+            },
+            "required": [
+              "kind",
+              "url",
+              "duration_seconds"
+            ]
+          },
+          "description": "Ordered visual clips in the final timeline."
         },
         "audio_tracks": {
           "type": "array",
           "items": {
-            "type": "object"
-          }
+            "type": "object",
+            "properties": {
+              "url": {
+                "type": "string",
+                "description": "HTTPS media URL or renderhaus-asset:// version handle."
+              },
+              "duration_seconds": {
+                "type": "number",
+                "description": "Must be greater than 0."
+              },
+              "start_seconds": {
+                "type": "number",
+                "description": "Must be at least 0."
+              },
+              "source_in_seconds": {
+                "type": "number",
+                "description": "Must be at least 0."
+              },
+              "volume": {
+                "type": "number",
+                "description": "Allowed range: 0 to 1."
+              },
+              "fade_in_seconds": {
+                "type": "number",
+                "description": "Must be at least 0."
+              },
+              "fade_out_seconds": {
+                "type": "number",
+                "description": "Must be at least 0."
+              }
+            },
+            "required": [
+              "url",
+              "duration_seconds"
+            ]
+          },
+          "description": "Optional music, ambience, and voice tracks."
+        },
+        "text_overlays": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "text": {
+                "type": "string"
+              },
+              "start_seconds": {
+                "type": "number",
+                "description": "Must be at least 0."
+              },
+              "duration_seconds": {
+                "type": "number",
+                "description": "Must be greater than 0."
+              },
+              "position": {
+                "type": "string",
+                "description": "Allowed values: top, center, bottom."
+              },
+              "font_size": {
+                "type": "integer",
+                "description": "Allowed range: 16 to 180."
+              },
+              "font_weight": {
+                "type": "integer",
+                "description": "Allowed range: 100 to 900."
+              },
+              "color": {
+                "type": "string",
+                "description": "CSS color."
+              },
+              "background_color": {
+                "type": "string",
+                "description": "CSS color or transparent."
+              },
+              "fade_in_seconds": {
+                "type": "number",
+                "description": "Must be at least 0."
+              },
+              "fade_out_seconds": {
+                "type": "number",
+                "description": "Must be at least 0."
+              }
+            },
+            "required": [
+              "text",
+              "start_seconds",
+              "duration_seconds"
+            ]
+          },
+          "description": "Optional titles and captions."
         },
         "aspect_ratio": {
           "type": "string",
-          "description": "One of: 16:9, 9:16, 1:1."
+          "description": "One of: 16:9, 9:16, 1:1. Allowed values: 16:9, 9:16, 1:1."
         },
         "fps": {
-          "type": "integer"
+          "type": "integer",
+          "description": "Allowed range: 12 to 60."
         },
         "output_filename": {
           "type": "string"
@@ -39,7 +204,7 @@
   },
   {
     "name": "get_render_progress",
-        "description": "Poll a Remotion render once. Repeat until status is succeeded, failed, or dry_run.",
+    "description": "Use only after render_timeline returned a render id and bucket name. Poll once per call until succeeded, failed, cancelled, or dry_run; it does not start a new render.",
     "inputSchema": {
       "type": "object",
       "properties": {

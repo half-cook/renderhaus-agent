@@ -11,12 +11,158 @@ from types import UnionType
 from typing import Any, Literal, Union, get_args, get_origin, get_type_hints
 
 from providers.catalog import PROVIDERS, ProviderSpec, get_provider
+from providers.contracts import enrich_tool_schema, validate_tool_arguments
 
 
 ROOT = Path(__file__).resolve().parents[1]
 GATEWAY_SCHEMA_DIR = ROOT / "configs" / "gateway"
 LEGACY_MUREKA_SCHEMA_PATH = ROOT / "configs" / "mureka_gateway_tools.json"
 FORBIDDEN_TOOL_RE = re.compile(r"^(wait_for_.*|.*_and_wait)$")
+
+
+TOOL_GUIDANCE: dict[str, dict[str, str]] = {
+    "seedream": {
+        "text_to_image": (
+            "Use when the user needs a new still image from a text description. Do not use for "
+            "editing an existing image; use image_to_image instead. Returns a generated image."
+        ),
+        "image_to_image": (
+            "Use when the user supplied or referenced an existing image and wants it edited, "
+            "restyled, or varied while preserving visual context. Returns a new image."
+        ),
+        "list_seedream_models": (
+            "Use only when model selection or model availability is relevant; it does not generate "
+            "media. Prefer the configured default for ordinary image requests."
+        ),
+    },
+    "seedance": {
+        "text_to_video": (
+            "Use when the user needs a new video clip from text and no source image must be "
+            "preserved. Returns a queued task id; follow with get_video_task until terminal."
+        ),
+        "image_to_video": (
+            "Use when the user wants an existing image animated into a video clip. Requires an "
+            "image URL and returns a queued task id; follow with get_video_task until terminal."
+        ),
+        "get_video_task": (
+            "Use only after text_to_video or image_to_video returned a task id. Poll once per call "
+            "until succeeded, failed, cancelled, or dry_run; it does not create a new video."
+        ),
+        "list_seedance_models": (
+            "Use only when model selection or availability is relevant; it does not generate media. "
+            "Prefer the configured default for ordinary video requests."
+        ),
+    },
+    "remotion": {
+        "render_timeline": (
+            "Use after all source assets exist to execute a concrete edit decision list and make "
+            "one assembled MP4. The caller must choose timing, B-roll layers, crop/motion, "
+            "transitions, speed, titles, and audio fades, then poll get_render_progress."
+        ),
+        "get_render_progress": (
+            "Use only after render_timeline returned a render id and bucket name. Poll once per call "
+            "until succeeded, failed, cancelled, or dry_run; it does not start a new render."
+        ),
+    },
+    "mureka": {
+        "text_to_music": (
+            "Use for a simple new music request when the user does not need a specialized Mureka "
+            "workflow. Creates a song when lyrics are supplied, otherwise an instrumental."
+        ),
+        "create_instrumental": (
+            "Use when the user needs original background music without vocals. Returns a queued "
+            "task id; follow with query_music_task until terminal."
+        ),
+        "create_song": (
+            "Use when the user already has lyrics and wants a fully produced vocal song. Returns a "
+            "queued task id; follow with query_music_task until terminal."
+        ),
+        "create_song_from_prompt": (
+            "Use when the user wants a complete vocal song from a concept but has no finished "
+            "lyrics. Returns a queued task id; follow with query_music_task until terminal."
+        ),
+        "generate_lyrics": (
+            "Use when the deliverable is song lyrics or when lyrics are needed before create_song. "
+            "It produces text, not audio."
+        ),
+        "extend_lyrics": (
+            "Use when existing lyrics need another verse, chorus, bridge, or continuation. It "
+            "produces revised text, not audio."
+        ),
+        "query_music_task": (
+            "Use only after a Mureka creation or editing tool returned a task id. Poll once per call "
+            "until succeeded, failed, cancelled, or dry_run; request download on the final poll."
+        ),
+        "get_music_task": (
+            "Alias for query_music_task. Use only to check an existing Mureka task id; it does not "
+            "start new music generation."
+        ),
+        "extend_song": (
+            "Use when an existing song or uploaded audio should continue beyond a specified time. "
+            "Requires lyrics for the extension and a song or upload id."
+        ),
+        "region_edit_song": (
+            "Use when only a specific time range of an existing song should be replaced. Requires "
+            "start/end times plus a song or upload id."
+        ),
+        "remix_song": (
+            "Use when an existing song or uploaded audio should be reinterpreted with a new style "
+            "or production prompt while keeping it as the source."
+        ),
+        "stem_song": (
+            "Use when the user needs an existing song separated into stems such as vocals and "
+            "instrumental parts. Requires a song or upload id."
+        ),
+        "recognize_song": (
+            "Use to identify or analyze what song is present in uploaded audio or an audio URL. It "
+            "does not generate or edit music."
+        ),
+        "describe_song": (
+            "Use to obtain a musical description of an existing Mureka song or uploaded audio for "
+            "planning, tagging, or a later remix."
+        ),
+        "transcribe_song": (
+            "Use to extract sung words or lyrics from an existing Mureka song or uploaded audio. It "
+            "does not create new audio."
+        ),
+        "vocal_clone": (
+            "Use only when the user explicitly wants a reusable vocal model made from an uploaded "
+            "voice sample. Requires an upload id."
+        ),
+        "generate_track": (
+            "Use to add or regenerate a specific musical track for an existing song, such as drums "
+            "or bass. Requires a track type and a song or upload id."
+        ),
+        "generate_soundtrack": (
+            "Use when the user needs music synchronized to an uploaded media file or a specified "
+            "time range. Use create_instrumental for standalone background music."
+        ),
+        "generate_lyrics_video": (
+            "Use when the user wants a lyric video from an existing Mureka song or uploaded audio. "
+            "It is not the general multi-clip video editor."
+        ),
+        "upload_file": (
+            "Use only when another Mureka operation requires an upload id and the source bytes are "
+            "available as base64. It does not analyze or generate media by itself."
+        ),
+        "create_speech": (
+            "Use when the user needs spoken narration or voiceover from text. Use song tools for "
+            "singing and music tools for instrumental audio."
+        ),
+        "create_podcast": (
+            "Use when the user wants a spoken podcast-style audio program from a script. Use "
+            "create_speech for a single narration passage."
+        ),
+        "query_billing": (
+            "Use only when the user explicitly asks about Mureka account billing or quota. It does "
+            "not estimate Renderhaus-wide generation cost."
+        ),
+        "list_mureka_models": (
+            "Use only when Mureka model selection or availability is relevant; it does not generate "
+            "audio. Prefer the configured default for ordinary requests."
+        ),
+    },
+}
 
 
 def is_forbidden_gateway_tool(name: str) -> bool:
@@ -65,9 +211,13 @@ def _json_schema_for_hint(hint: Any) -> dict[str, Any]:
         values = list(args)
         if values and all(isinstance(value, bool) for value in values):
             json_type = "boolean"
-        elif values and all(isinstance(value, int) and not isinstance(value, bool) for value in values):
+        elif values and all(
+            isinstance(value, int) and not isinstance(value, bool) for value in values
+        ):
             json_type = "integer"
-        elif values and all(isinstance(value, (int, float)) and not isinstance(value, bool) for value in values):
+        elif values and all(
+            isinstance(value, (int, float)) and not isinstance(value, bool) for value in values
+        ):
             json_type = "number"
         else:
             json_type = "string"
@@ -180,10 +330,19 @@ def gateway_tools(spec: ProviderSpec) -> tuple[str, ...]:
 
 
 def generate_schemas(spec: ProviderSpec) -> list[dict[str, Any]]:
-    module = __import__(spec.module_path, fromlist=["GATEWAY_SCHEMAS", "TOOL_HANDLERS", "GATEWAY_TOOLS"])
+    module = __import__(
+        spec.module_path, fromlist=["GATEWAY_SCHEMAS", "TOOL_HANDLERS", "GATEWAY_TOOLS"]
+    )
     explicit = getattr(module, "GATEWAY_SCHEMAS", None)
     if explicit is not None:
-        return [sanitize_gateway_json_schema(tool) for tool in explicit]
+        tools = [
+            enrich_tool_schema(spec.id, sanitize_gateway_json_schema(tool)) for tool in explicit
+        ]
+        for tool in tools:
+            guidance = TOOL_GUIDANCE.get(spec.id, {}).get(str(tool.get("name") or ""))
+            if guidance:
+                tool["description"] = guidance
+        return tools
     handlers = getattr(module, "TOOL_HANDLERS")
     tools = []
     for name in gateway_tools(spec):
@@ -195,7 +354,14 @@ def generate_schemas(spec: ProviderSpec) -> list[dict[str, Any]]:
         handler = handlers.get(name)
         if handler is None:
             raise ValueError(f"{spec.id} GATEWAY_TOOLS lists {name!r} but TOOL_HANDLERS does not.")
-        tools.append(sanitize_gateway_json_schema(schema_from_callable(name, handler)))
+        tool = enrich_tool_schema(
+            spec.id,
+            sanitize_gateway_json_schema(schema_from_callable(name, handler)),
+        )
+        guidance = TOOL_GUIDANCE.get(spec.id, {}).get(name)
+        if guidance:
+            tool["description"] = guidance
+        tools.append(tool)
     return tools
 
 
@@ -216,25 +382,35 @@ def load_committed_schemas(spec: ProviderSpec) -> list[dict[str, Any]]:
     tools = json.loads(path.read_text())
     if not isinstance(tools, list) or not tools:
         raise ValueError(f"{path} must be a non-empty list of tool schemas")
-    return [sanitize_gateway_json_schema(tool) for tool in tools]
+    return [enrich_tool_schema(spec.id, sanitize_gateway_json_schema(tool)) for tool in tools]
 
 
-def dispatch(provider_id: str, tool_name: str, arguments: dict[str, Any] | None = None) -> dict[str, Any]:
+def dispatch(
+    provider_id: str, tool_name: str, arguments: dict[str, Any] | None = None
+) -> dict[str, Any]:
     if is_forbidden_gateway_tool(tool_name):
         raise ValueError(
             f"{tool_name} is not a Gateway tool. Blocking wait helpers stay off Lambda; poll get_* instead."
         )
     spec = get_provider(provider_id)
-    module = __import__(spec.module_path, fromlist=["TOOL_HANDLERS", "dispatch_tool", "GATEWAY_TOOLS"])
+    module = __import__(
+        spec.module_path, fromlist=["TOOL_HANDLERS", "dispatch_tool", "GATEWAY_TOOLS"]
+    )
     allowed = set(gateway_tools(spec))
     if tool_name not in allowed:
         raise ValueError(f"Unknown {provider_id} Gateway tool: {tool_name}")
+    schema = next(tool for tool in generate_schemas(spec) if tool.get("name") == tool_name)
+    cleaned = validate_tool_arguments(
+        provider_id,
+        tool_name,
+        arguments,
+        schema.get("inputSchema") or {},
+    )
     dispatch_tool = getattr(module, "dispatch_tool", None)
     if callable(dispatch_tool):
-        result = dispatch_tool(tool_name, arguments)
+        result = dispatch_tool(tool_name, cleaned)
     else:
         handler = getattr(module, "TOOL_HANDLERS")[tool_name]
-        cleaned = {key: value for key, value in (arguments or {}).items() if value is not None}
         result = handler(**cleaned)
     if not isinstance(result, dict):
         return {"result": result}
@@ -244,21 +420,52 @@ def dispatch(provider_id: str, tool_name: str, arguments: dict[str, Any] | None 
 def dummy_arguments(schema: dict[str, Any]) -> dict[str, Any]:
     props = (schema.get("inputSchema") or {}).get("properties") or {}
     required = (schema.get("inputSchema") or {}).get("required") or []
+
+    def dummy_value(field_schema: dict[str, Any]) -> Any:
+        description = str(field_schema.get("description") or "")
+        allowed = re.search(r"Allowed values: ([^.]+)\.", description)
+        json_type = field_schema.get("type", "string")
+        if allowed:
+            first = allowed.group(1).split(",", 1)[0].strip()
+            if json_type == "integer":
+                return int(first)
+            if json_type == "number":
+                return float(first)
+            return first
+        if json_type == "integer":
+            return 1
+        if json_type == "number":
+            return 1.0
+        if json_type == "boolean":
+            return False
+        if json_type == "array":
+            item_schema = field_schema.get("items") or {"type": "object"}
+            return [dummy_value(item_schema)]
+        if json_type == "object":
+            child_props = field_schema.get("properties") or {}
+            child_required = field_schema.get("required") or []
+            return {name: dummy_value(child_props[name]) for name in child_required}
+        return "ci-smoke"
+
     args: dict[str, Any] = {}
     for name in required:
-        json_type = (props.get(name) or {}).get("type", "string")
-        if json_type == "integer":
-            args[name] = 1
-        elif json_type == "number":
-            args[name] = 1.0
-        elif json_type == "boolean":
-            args[name] = False
-        elif json_type == "array":
-            args[name] = []
-        elif json_type == "object":
-            args[name] = {}
-        else:
-            args[name] = "ci-smoke"
+        args[name] = dummy_value(props.get(name) or {"type": "string"})
+    source_fields = {
+        "extend_song": "song_id",
+        "region_edit_song": "song_id",
+        "remix_song": "song_id",
+        "stem_song": "song_id",
+        "recognize_song": "upload_audio_id",
+        "describe_song": "song_id",
+        "transcribe_song": "song_id",
+        "generate_track": "song_id",
+        "generate_lyrics_video": "song_id",
+    }
+    source_field = source_fields.get(str(schema.get("name") or ""))
+    if source_field and source_field in props:
+        args[source_field] = "ci-smoke"
+    if schema.get("name") == "region_edit_song":
+        args["edit_end_ms"] = 2
     return args
 
 

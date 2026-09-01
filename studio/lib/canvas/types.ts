@@ -58,7 +58,19 @@ export type AgentToolEvent = {
   summary: string;
   provider?: string;
   providerJobId?: string;
+  arguments: Record<string, unknown>;
   assets: StudioAsset[];
+};
+
+export type AgentProgressEvent = {
+  id: string;
+  type: string;
+  title: string;
+  message: string;
+  status: string;
+  toolCallId?: string;
+  toolCallName?: string;
+  createdAt?: number;
 };
 
 export type AgentResultData = {
