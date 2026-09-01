@@ -1229,6 +1229,7 @@ async def _invoke_agentcore_runtime(
             str(payload.get("run_state") or ""),
             approvals,
             list(payload.get("session_items") or []),
+            _events_from_payload(payload.get("tool_events") or []),
         )
     output = StudioAgentOutput.model_validate(payload.get("result") or payload)
     return StudioAgentRun(
@@ -1435,6 +1436,17 @@ async def _run_studio_agent_job(
             getattr(outcome, "session_items", session_items),
         )
     except StudioAgentApprovalRequired as exc:
+        if exc.tool_events:
+            await asyncio.to_thread(
+                _hydrate_tool_event_assets,
+                exc.tool_events,
+                workspace_id=workspace_id,
+                project_id=project_id,
+                user_id=user_id,
+                execution_id=job_id,
+            )
+            for event in exc.tool_events:
+                record_event(event)
         if exc.session_items:
             await asyncio.to_thread(
                 repository.replace_conversation_items,

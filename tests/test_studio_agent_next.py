@@ -322,6 +322,18 @@ class StudioAgentNextEntrypointTests(unittest.IsolatedAsyncioTestCase):
                                 "prompt": "A quiet product reveal",
                                 "aspect_ratio": "9:16",
                                 "api_token": "must-not-leak",
+                                "config": {
+                                    "api_key": "nested-secret",
+                                    "options": [
+                                        {
+                                            "authorization": "Bearer nested",
+                                            "x-api-key": "nested-key",
+                                            "quality": "high",
+                                        },
+                                        None,
+                                    ],
+                                    "optional": None,
+                                },
                             }
                         ),
                     ),
@@ -342,7 +354,11 @@ class StudioAgentNextEntrypointTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(event.provider, "seedream")
         self.assertEqual(
             event.arguments,
-            {"prompt": "A quiet product reveal", "aspect_ratio": "9:16"},
+            {
+                "prompt": "A quiet product reveal",
+                "aspect_ratio": "9:16",
+                "config": {"options": [{"quality": "high"}]},
+            },
         )
         self.assertEqual(event.public()["arguments"], event.arguments)
         self.assertEqual(event.result["image_url"], "https://cdn.example/hero.png")
@@ -565,8 +581,15 @@ class StudioAgentNextEntrypointTests(unittest.IsolatedAsyncioTestCase):
             ]
         )
 
-        with self.assertRaisesRegex(RuntimeError, "no successful Remotion MP4"):
-            _validate_video_delivery(request, studio)
+        final = StudioAgentOutput(
+            title="Alien video",
+            summary="The result is ready.",
+            markdown="# Alien video",
+            filename="alien-video.md",
+        )
+        self.assertFalse(_validate_video_delivery(request, studio, final))
+        self.assertIn("Video export incomplete", final.markdown)
+        self.assertEqual(studio.progress_events[-1].status, "failed")
 
         studio.tool_events.append(
             StudioToolEvent(
@@ -579,9 +602,9 @@ class StudioAgentNextEntrypointTests(unittest.IsolatedAsyncioTestCase):
                 result={"status": "succeeded", "url": "https://cdn/final.mp4"},
             )
         )
-        _validate_video_delivery(request, studio)
+        self.assertTrue(_validate_video_delivery(request, studio))
 
-    def test_video_delivery_guard_follows_retry_context_without_leaking_to_new_image_work(
+    def test_video_delivery_guard_ignores_video_context_without_a_video_deliverable(
         self,
     ) -> None:
         studio = StudioAgentContext(
@@ -598,15 +621,75 @@ class StudioAgentNextEntrypointTests(unittest.IsolatedAsyncioTestCase):
         )
         prior = [{"role": "user", "content": "Create a 60 second product video"}]
 
-        with self.assertRaisesRegex(RuntimeError, "no successful Remotion MP4"):
+        self.assertTrue(
             _validate_video_delivery(
                 StudioAgentRequest(prompt="Retry it", session_items=prior),
                 studio,
             )
-        _validate_video_delivery(
-            StudioAgentRequest(prompt="Create a new hero image", session_items=prior),
-            studio,
         )
+        self.assertTrue(
+            _validate_video_delivery(
+                StudioAgentRequest(prompt="Describe this video", session_items=prior),
+                studio,
+            )
+        )
+        self.assertTrue(
+            _validate_video_delivery(
+                StudioAgentRequest(prompt="Create a video thumbnail", session_items=prior),
+                studio,
+            )
+        )
+        self.assertFalse(
+            _validate_video_delivery(
+                StudioAgentRequest(prompt="Render these videos into one MP4", session_items=prior),
+                studio,
+            )
+        )
+
+    def test_post_stream_harvest_does_not_register_the_same_asset_twice(self) -> None:
+        registrations: list[str] = []
+
+        def register_assets(**_kwargs):
+            registrations.append("registered")
+            return [
+                {
+                    "asset_id": "asset-1",
+                    "version_id": "version-1",
+                    "kind": "image",
+                }
+            ]
+
+        studio = StudioAgentContext(asset_registrar=register_assets)
+        names: dict[str, str] = {}
+        arguments: dict[str, dict] = {}
+        call = SimpleNamespace(
+            type="tool_call_item",
+            call_id="streamed-image",
+            tool_name="Seedream___text_to_image",
+            arguments={"prompt": "A portrait"},
+        )
+        output = SimpleNamespace(
+            type="tool_call_output_item",
+            call_id="streamed-image",
+            output={"status": "succeeded", "image_url": "https://cdn.example/portrait.png"},
+        )
+        _record_stream_event(
+            SimpleNamespace(type="run_item_stream_event", name="tool_called", item=call),
+            studio,
+            names,
+            arguments,
+        )
+        _record_stream_event(
+            SimpleNamespace(type="run_item_stream_event", name="tool_output", item=output),
+            studio,
+            names,
+            arguments,
+        )
+        _record_run_tool_events(SimpleNamespace(new_items=[call, output]), studio)
+
+        self.assertEqual(registrations, ["registered"])
+        self.assertEqual(len(studio.tool_events), 1)
+        self.assertEqual(studio.tool_events[0].assets[0]["version_id"], "version-1")
 
     def test_harvest_reads_output_on_mcp_call_item(self) -> None:
         studio = StudioAgentContext()

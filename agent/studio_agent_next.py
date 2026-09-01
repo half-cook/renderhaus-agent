@@ -50,12 +50,16 @@ _SESSION_TIMEOUT_SECONDS = 180.0
 _DEFAULT_AGENT_MODEL = "gpt-5.6-luna"
 MAX_AGENT_PROMPT_CHARS = 64_000
 _GATEWAY_SEARCH_TOOL = "x_amz_bedrock_agentcore_search"
-_VIDEO_REQUEST_PATTERN = re.compile(
-    r"\b(video|ad|advert|commercial|reel|spot|motion graphic|trailer|promo|montage)\b",
+_VIDEO_DELIVERABLE_PATTERN = re.compile(
+    r"\b(create|make|generate|produce|render|assemble|combine|merge|stitch|edit|export|"
+    r"deliver|cut|compose|retry|finish|complete|resume|turn|convert)\b"
+    r"(?:\W+\w+){0,12}?\W+"
+    r"\b(video|videos|ad|advert|commercial|reel|spot|motion graphic|trailer|promo|montage|mp4)\b",
     re.IGNORECASE,
 )
-_CONTEXTUAL_FOLLOW_UP_PATTERN = re.compile(
-    r"\b(retry|again|continue|finish|resume|same|that|those|them|it)\b",
+_NON_VIDEO_DELIVERABLE_PATTERN = re.compile(
+    r"\b(thumbnail|poster|cover|storyboard|keyframe|still|transcript|transcription|summary|"
+    r"caption|captions|description|describe|analyze|analyse)\b",
     re.IGNORECASE,
 )
 
@@ -358,11 +362,13 @@ class StudioAgentApprovalRequired(Exception):
         state: str,
         approvals: list[StudioApprovalRequest],
         session_items: list[dict[str, Any]] | None = None,
+        tool_events: list[StudioToolEvent] | None = None,
     ) -> None:
         super().__init__("Tool approval is required to continue this agent run.")
         self.state = state
         self.approvals = approvals
         self.session_items = list(session_items or [])
+        self.tool_events = list(tool_events or [])
 
 
 @function_tool
@@ -415,7 +421,18 @@ def normalize_markdown_filename(value: str, title: str) -> str:
 _DROP_TOOL_RESULT_KEYS = frozenset(
     {"traceback", "last_response", "create_response", "last_payload", "raw"}
 )
-_SECRET_ARGUMENT_PARTS = ("api_key", "authorization", "secret", "token")
+_SECRET_ARGUMENT_PARTS = (
+    "api_key",
+    "api-key",
+    "apikey",
+    "authorization",
+    "secret",
+    "token",
+    "password",
+    "credential",
+    "access_key",
+    "access-key",
+)
 _TEXT_PART_KEYS = frozenset({"type", "text"})
 _TOOL_TITLES = {
     "render_timeline": "Compose final MP4",
@@ -745,6 +762,19 @@ def _compact_tool_result(payload: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _redact_arguments(value: Any) -> Any:
+    if isinstance(value, dict):
+        return {
+            str(key): _redact_arguments(item)
+            for key, item in value.items()
+            if item is not None
+            and not any(part in str(key).lower() for part in _SECRET_ARGUMENT_PARTS)
+        }
+    if isinstance(value, (list, tuple)):
+        return [_redact_arguments(item) for item in value if item is not None]
+    return value
+
+
 def _compact_tool_arguments(value: Any) -> dict[str, Any]:
     if isinstance(value, str):
         try:
@@ -753,11 +783,7 @@ def _compact_tool_arguments(value: Any) -> dict[str, Any]:
             return {}
     if not isinstance(value, dict):
         return {}
-    return {
-        str(key): item
-        for key, item in value.items()
-        if not any(part in str(key).lower() for part in _SECRET_ARGUMENT_PARTS) and item is not None
-    }
+    return _redact_arguments(value)
 
 
 def _gateway_tool_parts(name: str) -> tuple[str | None, str, str]:
@@ -1073,7 +1099,15 @@ def _record_run_tool_events(run_result: Any, studio: StudioAgentContext) -> None
     items = list(getattr(run_result, "new_items", None) or [])
     names: dict[str, str] = {}
     arguments: dict[str, dict[str, Any]] = {}
-    recorded: set[str] = set()
+    # Streamed output events harvest assets as soon as they arrive. Do not run the
+    # registrar again when the same calls appear in ``result.new_items`` after the
+    # stream closes. Running/approval events remain eligible because their output
+    # may only be present in the final result snapshot.
+    recorded: set[str] = {
+        event.id
+        for event in studio.tool_events
+        if event.id and event.status.lower() not in {"running", "awaiting_approval"}
+    }
     for item in items:
         item_type = getattr(item, "type", None)
         call_id = _item_call_id(item)
@@ -1301,37 +1335,24 @@ def _record_approval_requests(
         )
 
 
-def _contains_video_request(value: Any) -> bool:
-    if isinstance(value, str):
-        return bool(_VIDEO_REQUEST_PATTERN.search(value))
-    if isinstance(value, list):
-        return any(_contains_video_request(item) for item in value)
-    if isinstance(value, dict):
-        return any(_contains_video_request(item) for item in value.values())
+def _requests_video_deliverable(prompt: str) -> bool:
+    """Identify an explicit request for a video file, not merely video-related work."""
+    for match in _VIDEO_DELIVERABLE_PATTERN.finditer(prompt):
+        surrounding = prompt[match.start() : match.end() + 24]
+        if not _NON_VIDEO_DELIVERABLE_PATTERN.search(surrounding):
+            return True
     return False
 
 
-def _validate_video_delivery(request: StudioAgentRequest, studio: StudioAgentContext) -> None:
-    prior_user_items = [
-        item
-        for item in request.session_items
-        if isinstance(item, dict) and item.get("role") == "user"
-    ]
-    prior_request = prior_user_items[-1] if prior_user_items else None
-    wants_video = _contains_video_request(request.prompt) or bool(
-        _CONTEXTUAL_FOLLOW_UP_PATTERN.search(request.prompt)
-        and _contains_video_request(prior_request)
-    )
-    media_work_started = any(
-        event.name != _GATEWAY_SEARCH_TOOL
-        and (
-            event.provider in {"seedance", "mureka", "seedream"}
-            or event.name.startswith(("Seedance___", "Mureka___", "Seedream___"))
-        )
-        for event in studio.tool_events
-    ) or any(node.kind in {"video", "image", "audio"} for node in studio.nodes)
-    if not wants_video or not media_work_started:
-        return
+def _validate_video_delivery(
+    request: StudioAgentRequest,
+    studio: StudioAgentContext,
+    final: StudioAgentOutput | None = None,
+) -> bool:
+    render_started = any(event.name.endswith("render_timeline") for event in studio.tool_events)
+    wants_video = _requests_video_deliverable(request.prompt) or render_started
+    if not wants_video:
+        return True
     rendered = any(
         event.name.endswith("get_render_progress")
         and event.status.lower() in {"succeeded", "success", "completed"}
@@ -1339,10 +1360,24 @@ def _validate_video_delivery(request: StudioAgentRequest, studio: StudioAgentCon
         in {"succeeded", "success", "completed"}
         for event in studio.tool_events
     )
-    if not rendered:
-        raise RuntimeError(
-            "The requested video is not complete because no successful Remotion MP4 was produced."
-        )
+    if rendered:
+        return True
+
+    message = "The requested video is incomplete because no successful Remotion MP4 was produced."
+    _progress(
+        studio,
+        event_id="video-delivery",
+        event_type="RUN_ERROR",
+        title="Video export incomplete",
+        message=message,
+        status="failed",
+    )
+    if final is not None:
+        final.summary = message[:320]
+        notice = f"## Video export incomplete\n\n{message}"
+        if notice not in final.markdown:
+            final.markdown = f"{final.markdown.rstrip()}\n\n{notice}"[:30_000]
+    return False
 
 
 def _build_agent(mcp_servers: list[MCPServer]) -> Agent[StudioAgentContext]:
@@ -1473,7 +1508,10 @@ async def _run_with_servers(
     if not isinstance(final, StudioAgentOutput):
         final = StudioAgentOutput.model_validate(final)
     final.filename = normalize_markdown_filename(final.filename, final.title)
-    _validate_video_delivery(request, studio)
+    # Preserve the completed turn even when delivery validation needs to annotate
+    # an incomplete export. The final remains visible instead of being discarded.
+    studio.session_items = await session_store.get_items()
+    _validate_video_delivery(request, studio, final)
     # Compaction is maintenance, not part of the customer's requested work. Run
     # it once between completed turns and preserve the un-compacted history if the
     # remote compaction request itself fails.

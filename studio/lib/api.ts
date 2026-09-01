@@ -476,6 +476,10 @@ export const AGENT_PROMPT_MAX_CHARS = 64_000;
 const AGENT_POLL_INTERVAL_MS = 1_000;
 const AGENT_POLL_TIMEOUT_MS = 20 * 60 * 1_000;
 
+function isAgentFailureStatus(status: unknown): boolean {
+  return ["error", "failed"].includes(String(status));
+}
+
 function agentError(payload: AgentJobPayload, response: Response): AgentSubmissionResult {
   const message =
     typeof payload.detail === "string"
@@ -572,7 +576,7 @@ async function waitForAgentJob(
         jobId,
       };
     }
-    if (payload.status === "error") {
+    if (isAgentFailureStatus(payload.status)) {
       const partial = payload.result ? completedAgentResult(payload) : null;
       return {
         status: "error",
@@ -591,12 +595,15 @@ async function streamAgentJob(
   jobId: string,
   onProgress?: (progress: AgentProgress) => void,
 ): Promise<AgentSubmissionResult> {
+  const controller = new AbortController();
+  const timeoutId = window.setTimeout(() => controller.abort(), AGENT_POLL_TIMEOUT_MS);
   try {
     const response = await studioFetch(
       `/api/studio/agent/${encodeURIComponent(jobId)}/events`,
       {
         cache: "no-store",
         headers: { Accept: "text/event-stream" },
+        signal: controller.signal,
       },
     );
     if (!response.ok) {
@@ -608,48 +615,59 @@ async function streamAgentJob(
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
     let buffer = "";
-    const deadline = Date.now() + AGENT_POLL_TIMEOUT_MS;
-
-    while (Date.now() < deadline) {
-      const { value, done } = await reader.read();
-      buffer += decoder.decode(value || new Uint8Array(), { stream: !done });
-      const frames = buffer.split(/\r?\n\r?\n/);
-      buffer = frames.pop() || "";
-      for (const frame of frames) {
-        const data = frame
-          .split(/\r?\n/)
-          .filter((line) => line.startsWith("data:"))
-          .map((line) => line.slice(5).trimStart())
-          .join("\n");
-        if (!data) continue;
-        let payload: AgentJobPayload;
-        try {
-          payload = JSON.parse(data) as AgentJobPayload;
-        } catch {
-          continue;
+    try {
+      while (true) {
+        const { value, done } = await reader.read();
+        buffer += decoder.decode(value || new Uint8Array(), { stream: !done });
+        const frames = buffer.split(/\r?\n\r?\n/);
+        buffer = frames.pop() || "";
+        for (const frame of frames) {
+          const data = frame
+            .split(/\r?\n/)
+            .filter((line) => line.startsWith("data:"))
+            .map((line) => line.slice(5).trimStart())
+            .join("\n");
+          if (!data) continue;
+          let payload: AgentJobPayload;
+          try {
+            payload = JSON.parse(data) as AgentJobPayload;
+          } catch {
+            continue;
+          }
+          onProgress?.(agentProgress(payload));
+          if (payload.status === "completed") return completedAgentResult(payload);
+          if (payload.status === "awaiting_approval") {
+            return {
+              status: "awaiting_approval",
+              message: payload.message || "Waiting for tool approval.",
+              jobId,
+            };
+          }
+          if (isAgentFailureStatus(payload.status)) {
+            const partial = payload.result ? completedAgentResult(payload) : null;
+            return {
+              status: "error",
+              message: payload.message || "The agent could not finish this request.",
+              ...(partial?.status === "completed" ? { result: partial.result } : {}),
+            };
+          }
         }
-        onProgress?.(agentProgress(payload));
-        if (payload.status === "completed") return completedAgentResult(payload);
-        if (payload.status === "awaiting_approval") {
-          return {
-            status: "awaiting_approval",
-            message: payload.message || "Waiting for tool approval.",
-            jobId,
-          };
-        }
-        if (["error", "failed"].includes(String(payload.status))) {
-          const partial = payload.result ? completedAgentResult(payload) : null;
-          return {
-            status: "error",
-            message: payload.message || "The agent could not finish this request.",
-            ...(partial?.status === "completed" ? { result: partial.result } : {}),
-          };
-        }
+        if (done) break;
       }
-      if (done) break;
+    } finally {
+      await reader.cancel().catch(() => undefined);
+      reader.releaseLock();
     }
   } catch {
+    if (controller.signal.aborted) {
+      return {
+        status: "error",
+        message: "The agent stream timed out. Refresh the canvas to check the saved run.",
+      };
+    }
     // Fall back to polling for older deployments and interrupted proxy streams.
+  } finally {
+    window.clearTimeout(timeoutId);
   }
   return waitForAgentJob(jobId, onProgress);
 }

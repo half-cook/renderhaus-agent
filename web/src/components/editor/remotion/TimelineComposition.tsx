@@ -183,8 +183,10 @@ export function TimelineComposition({ document, onClipStatusChange }: TimelineCo
 
   return (
     <AbsoluteFill style={{ backgroundColor: "black" }}>
-      {document.tracks
-        .filter((track) => track.kind === "video" || track.kind === "overlay")
+      {[
+        ...document.tracks.filter((track) => track.kind === "video"),
+        ...document.tracks.filter((track) => track.kind === "overlay"),
+      ]
         .flatMap((track) => track.items)
         .filter((item): item is Clip => item.type === "clip")
         .map((clip) => {

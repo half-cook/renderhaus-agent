@@ -1123,6 +1123,7 @@ audio.agent-artifact-media {
 
 .agent-autonomy-toggle {
   display: inline-flex;
+  position: relative;
   min-height: 28px;
   align-items: center;
   gap: 5px;
@@ -1154,6 +1155,11 @@ audio.agent-artifact-media {
   height: 1px;
   opacity: 0;
   pointer-events: none;
+}
+
+.agent-autonomy-toggle:has(input:focus-visible) {
+  outline: 2px solid var(--selected);
+  outline-offset: 2px;
 }
 
 .send-btn {

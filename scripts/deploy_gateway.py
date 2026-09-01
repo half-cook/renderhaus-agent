@@ -345,14 +345,20 @@ def _upsert_gateway(control, *, role_arn: str) -> tuple[str, str]:
         )
         print(f"Updating gateway {gateway_id} while preserving its search configuration")
         # AgentCore rejects protocolConfiguration.searchType updates after the first target exists,
-        # even when the requested value is unchanged. Search mode is selected at Gateway creation;
-        # subsequent deploys update mutable metadata and each target's schema independently.
+        # even when the requested value is unchanged. Send only the mutable instructions inside
+        # the MCP configuration so existing gateways receive prompt updates without resetting
+        # their creation-time semantic-search mode.
         control.update_gateway(
             gatewayIdentifier=gateway_id,
             name=create_kwargs["name"],
             roleArn=create_kwargs["roleArn"],
             authorizerType=create_kwargs["authorizerType"],
             description=create_kwargs["description"],
+            protocolConfiguration={
+                "mcp": {
+                    "instructions": GATEWAY_INSTRUCTIONS,
+                }
+            },
         )
     else:
         print(f"Creating gateway {GATEWAY_NAME}")

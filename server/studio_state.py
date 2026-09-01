@@ -510,7 +510,7 @@ class StudioRepository:
     ) -> list[dict[str, Any]]:
         self.ensure_workspace(workspace_id, user_id)
         self.require_project(workspace_id, project_id)
-        with self._connect() as connection:
+        with self._lock, self._connect() as connection:
             self._ensure_default_conversation(connection, workspace_id, project_id, user_id)
             query = "SELECT * FROM agent_conversations WHERE workspace_id = ? AND project_id = ?"
             parameters: list[Any] = [workspace_id, project_id]

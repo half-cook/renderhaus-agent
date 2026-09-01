@@ -1,9 +1,13 @@
 from __future__ import annotations
 
 import os
+import sys
 import unittest
+from pathlib import Path
 from typing import Literal
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from agents.mcp import MCPServerStreamableHttp
 
@@ -16,6 +20,7 @@ from providers.registry import (
     sanitize_gateway_json_schema,
 )
 from server.config import GATEWAY_MCP_SERVER_NAME, require_agentcore_gateway_url
+from scripts.deploy_gateway import GATEWAY_INSTRUCTIONS, _upsert_gateway
 
 
 class AgentCoreGatewayConfigTests(unittest.TestCase):
@@ -39,6 +44,30 @@ class AgentCoreGatewayConfigTests(unittest.TestCase):
             server = gateway_mcp_server()
         self.assertIsInstance(server, MCPServerStreamableHttp)
         self.assertEqual(server.name, GATEWAY_MCP_SERVER_NAME)
+
+    def test_existing_gateway_receives_updated_instructions_without_resetting_search(self) -> None:
+        control = MagicMock()
+        with (
+            patch(
+                "scripts.deploy_gateway._find_gateway",
+                return_value={"gatewayId": "gateway-1", "name": "renderhaus-mureka-gateway"},
+            ),
+            patch(
+                "scripts.deploy_gateway._wait_gateway_ready",
+                return_value={"gatewayId": "gateway-1", "gatewayUrl": "https://gateway.example/mcp"},
+            ),
+        ):
+            gateway_id, url = _upsert_gateway(control, role_arn="arn:aws:iam::123:role/gateway")
+
+        self.assertEqual(gateway_id, "gateway-1")
+        self.assertEqual(url, "https://gateway.example/mcp")
+        kwargs = control.update_gateway.call_args.kwargs
+        self.assertEqual(
+            kwargs["protocolConfiguration"],
+            {"mcp": {"instructions": GATEWAY_INSTRUCTIONS}},
+        )
+        self.assertNotIn("protocolType", kwargs)
+        self.assertNotIn("searchType", kwargs["protocolConfiguration"]["mcp"])
 
 
 class GatewayToolSchemaTests(unittest.TestCase):

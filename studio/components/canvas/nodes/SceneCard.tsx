@@ -91,8 +91,8 @@ export function SceneCard({ id, data, selected }: Props) {
                 const aspectRatio = width && height
                   ? aspectRatioFromDimensions(width, height)
                   : undefined;
-                const duration = durationSeconds
-                  ? Math.round(durationSeconds * 10) / 10
+                const duration = durationSeconds && Number.isFinite(durationSeconds)
+                  ? Math.max(1, Math.round(durationSeconds))
                   : undefined;
                 const aspectChanged = Boolean(
                   aspectRatio && data.config.aspect_ratio !== aspectRatio,

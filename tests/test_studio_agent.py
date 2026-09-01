@@ -5,6 +5,8 @@ import json
 import os
 import sqlite3
 import tempfile
+import threading
+import time
 import unittest
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
@@ -26,7 +28,11 @@ from agent.studio_agent import (
     normalize_markdown_filename,
     run_studio_agent,
 )
-from agent.studio_agent_next import StudioAgentApprovalRequired, StudioApprovalRequest
+from agent.studio_agent_next import (
+    StudioAgentApprovalRequired,
+    StudioApprovalRequest,
+    StudioToolEvent as NextStudioToolEvent,
+)
 from server.studio import (
     AgentApprovalBody,
     AgentBody,
@@ -326,6 +332,46 @@ class StudioAgentTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(items[-1]["content"], "Use amber light.")
         self.assertEqual([run["turn_index"] for run in reversed(runs)], [1, 2])
         self.assertNotEqual(other[0]["id"], conversation_id)
+
+    def test_conversation_backfill_is_serialized_under_concurrent_listing(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            repository = StudioRepository(
+                Path(directory) / "studio.sqlite3",
+                Path(directory) / "media",
+            )
+            repository.create_project("user:local", "local", "One", project_id="one")
+            original = repository._ensure_default_conversation
+            counter_lock = threading.Lock()
+            active = 0
+            max_active = 0
+
+            def observed_backfill(*args):
+                nonlocal active, max_active
+                with counter_lock:
+                    active += 1
+                    max_active = max(max_active, active)
+                try:
+                    time.sleep(0.02)
+                    return original(*args)
+                finally:
+                    with counter_lock:
+                        active -= 1
+
+            with (
+                patch.object(repository, "_ensure_default_conversation", observed_backfill),
+                ThreadPoolExecutor(max_workers=2) as pool,
+            ):
+                results = list(
+                    pool.map(
+                        lambda _index: repository.list_conversations(
+                            "user:local", "one", "local"
+                        ),
+                        range(2),
+                    )
+                )
+
+        self.assertEqual(max_active, 1)
+        self.assertTrue(all(items[0]["project_id"] == "one" for items in results))
 
     def test_conversations_isolate_session_items_and_execution_lists(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -855,12 +901,31 @@ class StudioAgentTests(unittest.IsolatedAsyncioTestCase):
             session_items=[{"role": "assistant", "content": "# Approved result"}],
             progress_events=[],
         )
+        completed_before_pause = NextStudioToolEvent(
+            id="completed-before-pause",
+            name="Seedream___text_to_image",
+            label="Generate image",
+            status="succeeded",
+            summary="First image completed before the next approval.",
+            provider="seedream",
+            result={"status": "succeeded", "image_url": "https://cdn.example/first.png"},
+            assets=[
+                {
+                    "asset_id": "asset-first",
+                    "version_id": "version-first",
+                    "kind": "image",
+                    "filename": "first.png",
+                    "mime_type": "image/png",
+                }
+            ],
+        )
         runner = AsyncMock(
             side_effect=[
                 StudioAgentApprovalRequired(
                     "serialized-state",
                     [approval],
                     [{"role": "user", "content": "Make an image"}],
+                    [completed_before_pause],
                 ),
                 completed,
             ]
@@ -893,6 +958,8 @@ class StudioAgentTests(unittest.IsolatedAsyncioTestCase):
 
         self.assertEqual(paused["status"], "awaiting_approval")
         self.assertEqual(paused["approvals"][0]["arguments"]["prompt"], "A quiet portrait")
+        self.assertEqual(paused["tool_calls"][0]["id"], "completed-before-pause")
+        self.assertEqual(paused["tool_calls"][0]["assets"][0]["version_id"], "version-first")
         self.assertEqual(resumed["job_id"], queued["job_id"])
         self.assertEqual(resumed["status"], "completed")
         self.assertEqual(runner.await_count, 2)
