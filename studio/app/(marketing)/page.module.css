@@ -1,0 +1,128 @@
+/* The marketing page is a deliberate, scoped exception to the app's flat/
+   no-blur/no-shadow canvas system (see the :root comment above) -- it's a
+   sales surface, not the tool, and stays light regardless of the visitor's
+   dark/light preference so it always presents one polished look. Its
+   tokens are local to `.landing` and never leak into the app. Accent hues
+   are drawn from the ports already defined in @theme (image/video/audio)
+   rather than a new brand color, so "start creating" visually previews
+   what generation on the canvas actually looks like. */
+
+/* Editorial monochrome pass -- flat black/white, sharp corners, huge
+   uppercase type carrying the page instead of color or glow. No hue
+   anywhere on this page; hierarchy comes from size, weight, and case. */
+
+.landing {
+  --l-ink: #0a0a0a;
+  --l-muted: #6b6b6b;
+  --l-line: #e2e2e2;
+  --l-surface: #fff;
+  --l-bg: #fff;
+  position: relative;
+  min-height: 100dvh;
+  background: var(--l-bg);
+  color: var(--l-ink);
+  color-scheme: light;
+  display: flex;
+  flex-direction: column;
+}
+
+.landing-header {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 32px;
+  border-bottom: 1px solid var(--l-line);
+}
+
+.landing-mark {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-geist), sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--l-ink);
+}
+
+.landing-header :global(.text-btn) {
+  color: var(--l-ink);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  border-radius: 0;
+}
+
+.landing-header :global(.text-btn):hover {
+  color: var(--l-ink);
+  background: var(--l-line);
+}
+
+.landing-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 46px;
+  padding: 0 24px;
+  border-radius: 0;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  text-decoration: none;
+  transition: background-color 160ms var(--ease), color 160ms var(--ease), opacity 160ms var(--ease);
+}
+
+.landing-cta-primary {
+  background: var(--l-ink);
+  color: #fff;
+}
+
+.landing-cta-primary:hover {
+  opacity: 0.75;
+}
+
+.landing-cta-primary:active {
+  opacity: 0.6;
+}
+
+/* Eyebrow row -- a small headline + subhead paired with the primary CTA,
+   sitting between the nav and the demo panel. Still the light page
+   chrome (.landing's own --l-* tokens), same family as the nav. */
+
+.landing-eyebrow {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 32px;
+  flex-wrap: wrap;
+}
+
+.landing-eyebrow h1 {
+  margin: 0 0 6px;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  text-transform: none;
+}
+
+.landing-eyebrow p {
+  margin: 0;
+  max-width: 440px;
+  color: var(--l-muted);
+  font-size: 14px;
+  line-height: 20px;
+}
+
+@media (max-width: 720px) {
+  .landing-eyebrow {
+    align-items: flex-start;
+  }
+}

@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  Binary,
   Hand,
   Image as ImageIcon,
   LayoutGrid,
@@ -85,6 +86,11 @@ const GROUPS: Array<{ id: string; label: string; items: RailItem[] }> = [
       { id: "agent", label: "Agent", icon: Sparkles },
     ],
   },
+  {
+    id: "utilities",
+    label: "Utilities",
+    items: [{ id: "ascii", label: "ASCII", icon: Binary }],
+  },
 ];
 
 function handleRailAction(
@@ -95,6 +101,7 @@ function handleRailAction(
   switch (id) {
     case "select":
     case "hand":
+    case "ascii":
       return;
     case "upload":
       fileRef.current?.click();

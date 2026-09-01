@@ -83,6 +83,7 @@ type CanvasStore = {
   activeTool: RailTool;
   inspectorOpen: boolean;
   composerOpen: boolean;
+  asciiPanelOpen: boolean;
   advancedOpen: boolean;
   connectionHint: string | null;
   composerMessage: string | null;
@@ -103,6 +104,7 @@ type CanvasStore = {
   setActiveTool: (tool: RailTool) => void;
   setInspectorOpen: (open: boolean) => void;
   setComposerOpen: (open: boolean) => void;
+  setAsciiPanelOpen: (open: boolean) => void;
   toggleAdvanced: () => void;
   setViewport: (viewport: Viewport) => void;
   onNodesChange: (changes: NodeChange<CanvasNode>[]) => void;
@@ -433,6 +435,7 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
   activeTool: "select",
   inspectorOpen: false,
   composerOpen: false,
+  asciiPanelOpen: false,
   advancedOpen: false,
   connectionHint: null,
   composerMessage: null,
@@ -467,8 +470,17 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
         window.localStorage.setItem(MIGRATED_KEY, "true");
         projects = await fetchStudioProjects();
       }
+      // The dashboard links to a specific project via ?project=<id> (e.g.
+      // opening a card, or right after creating a new one) -- honor that
+      // over the legacy-migration guess below when it matches a real project.
+      const requestedId =
+        typeof window !== "undefined"
+          ? new URLSearchParams(window.location.search).get("project")
+          : null;
       const project =
-        projects.find((candidate) => candidate.id === legacyProjects[0]?.id) || projects[0];
+        (requestedId && projects.find((candidate) => candidate.id === requestedId)) ||
+        projects.find((candidate) => candidate.id === legacyProjects[0]?.id) ||
+        projects[0];
       const snapshot = await fetchStudioCanvas(project.id);
       persistedRevision = snapshot.revision;
       const graph = graphFromDocument(snapshot.document);
@@ -646,9 +658,16 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
   },
 
   setActiveTool: (tool) =>
-    set(tool === "agent" ? { activeTool: tool, composerOpen: true } : { activeTool: tool }),
+    set(
+      tool === "agent"
+        ? { activeTool: tool, composerOpen: true }
+        : tool === "ascii"
+          ? { activeTool: tool, asciiPanelOpen: true }
+          : { activeTool: tool },
+    ),
   setInspectorOpen: (open) => set({ inspectorOpen: open }),
   setComposerOpen: (open) => set({ composerOpen: open }),
+  setAsciiPanelOpen: (open) => set({ asciiPanelOpen: open }),
   toggleAdvanced: () => set({ advancedOpen: !get().advancedOpen }),
   setViewport: (viewport) => {
     const current = get().viewport;

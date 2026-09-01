@@ -2,9 +2,11 @@
 
 import { ChevronDown, Ellipsis, Redo2, Share2, Undo2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { LogoMark } from "@/components/Logo";
 import { queueSize, useCanvasStore } from "@/lib/canvas/store";
 import { approvedSequence } from "@/lib/canvas/story";
 import type { StudioAsset } from "@/lib/types";
+import { AccountBalance } from "./AccountBalance";
 import { AssetDownloadLink } from "./AssetMedia";
 import { ThemeToggle } from "./ThemeToggle";
 
@@ -87,7 +89,10 @@ export function CanvasHeader() {
   return (
     <header className="chrome-header" ref={headerRef}>
       <div className="header-left">
-        <div className="wordmark">Renderhaus</div>
+        <div className="wordmark">
+          <LogoMark size={16} />
+          Renderhaus
+        </div>
         <div className="header-menu-wrap">
           <button
             className="project-switcher"
@@ -137,6 +142,7 @@ export function CanvasHeader() {
         </div>
       </div>
       <div className="header-right">
+        <AccountBalance refreshKey={queued} />
         <ThemeToggle />
         <button className="icon-btn" type="button" aria-label="Undo" disabled={past.length === 0} onClick={undo}>
           <Undo2 size={16} />

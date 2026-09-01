@@ -34,6 +34,7 @@ from agent.studio_agent_next import (
 from providers.catalog import PROVIDERS, get_provider
 from providers.registry import dispatch, load_committed_schemas
 from server.auth import AuthUser, OptionalAuthUser, current_user_id, current_workspace_id
+from server.billing_rates import cost_for
 from server.config import ROOT
 from server.studio_state import CanvasConflictError, StudioAssetKind, repository
 from server.studio_options import LIVE_CHOICE_TOOLS, extract_choice_ids, static_field_options
@@ -418,6 +419,14 @@ def _normalize_canvas_document(
     return normalized
 
 
+@router.get("/account")
+async def studio_account(auth: AuthUser) -> dict[str, Any]:
+    user_id = current_user_id(auth)
+    balance = await asyncio.to_thread(repository.get_balance, user_id)
+    ledger = await asyncio.to_thread(repository.list_ledger, user_id, limit=20)
+    return {"balance_cents": balance, "recent_ledger": ledger}
+
+
 @router.get("/projects")
 async def studio_projects(auth: AuthUser) -> dict[str, Any]:
     workspace_id = current_workspace_id(auth)
@@ -559,6 +568,16 @@ async def invoke_tool(body: InvokeBody, auth: AuthUser) -> dict[str, Any]:
         raise HTTPException(status_code=404, detail="Project not found.") from exc
     cleaned = _tool_arguments(body.provider, body.tool, body.arguments)
     cleaned = _resolve_asset_handles(cleaned, workspace_id)
+    cost = cost_for(body.provider, body.tool, cleaned)
+    balance = await asyncio.to_thread(repository.get_balance, user_id)
+    if balance < cost.total_cents:
+        raise HTTPException(
+            status_code=402,
+            detail=(
+                f"Not enough balance: this generation costs ${cost.total_cents / 100:.2f}, "
+                f"you have ${balance / 100:.2f}."
+            ),
+        )
     try:
         result = await asyncio.to_thread(dispatch, body.provider, body.tool, cleaned)
     except ValueError as exc:
@@ -578,11 +597,29 @@ async def invoke_tool(body: InvokeBody, auth: AuthUser) -> dict[str, Any]:
     except Exception as exc:  # noqa: BLE001 - provider output must become durable or fail visibly
         logger.exception("Could not ingest provider output for %s.%s", body.provider, body.tool)
         raise HTTPException(status_code=502, detail="Provider output could not be saved.") from exc
+    # Charge only after the generation and asset registration both succeed.
+    # Best-effort: the asset already exists and is being returned to the
+    # user either way, so a billing hiccup here shouldn't turn into a
+    # failed response for work that already happened.
+    try:
+        reference_id = assets[0]["version_id"] if assets else None
+        await asyncio.to_thread(
+            repository.adjust_balance,
+            user_id,
+            -cost.total_cents,
+            "generation",
+            reference_id=reference_id,
+        )
+    except Exception:  # noqa: BLE001 - never fail delivery over a billing edge case
+        logger.exception(
+            "Could not charge $%.2f to %s for %s.%s", cost.total_cents / 100, user_id, body.provider, body.tool
+        )
     return {
         "provider": body.provider,
         "tool": body.tool,
         "result": result,
         "assets": assets,
+        "cost": cost.public(),
     }
 
 

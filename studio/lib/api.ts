@@ -1,4 +1,11 @@
-import type { FieldOptions, ProviderCatalog, StudioAsset, StudioStatus } from "./types";
+import type {
+  FieldOptions,
+  ProviderCatalog,
+  StudioAccount,
+  StudioAsset,
+  StudioStatus,
+  TopUpPack,
+} from "./types";
 import type { AgentResultData, CreativeNodeKind } from "./canvas/types";
 import { studioFetch } from "./authenticated-fetch";
 
@@ -55,6 +62,36 @@ export async function fetchStatus(): Promise<StudioStatus> {
     throw new Error(`status ${response.status}`);
   }
   return response.json();
+}
+
+export async function fetchAccount(): Promise<StudioAccount> {
+  const response = await studioFetch("/api/studio/account");
+  if (!response.ok) {
+    throw new Error(`account ${response.status}`);
+  }
+  return response.json();
+}
+
+export async function fetchTopUpPacks(): Promise<TopUpPack[]> {
+  const response = await studioFetch("/api/studio/billing/packs");
+  if (!response.ok) {
+    throw new Error(`packs ${response.status}`);
+  }
+  const payload = await response.json();
+  return Array.isArray(payload.items) ? payload.items : [];
+}
+
+export async function createCheckoutSession(packId: string): Promise<string> {
+  const response = await studioFetch("/api/studio/billing/checkout", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ pack_id: packId }),
+  });
+  const payload = await readJson(response);
+  if (!response.ok) {
+    throw new Error(String(payload.detail || `checkout ${response.status}`));
+  }
+  return String(payload.url || "");
 }
 
 export async function fetchTools(): Promise<ProviderCatalog[]> {
@@ -128,7 +165,12 @@ export async function uploadStudioFile(
   return asset;
 }
 
-export type StudioProject = { id: string; name: string };
+export type StudioProject = {
+  id: string;
+  name: string;
+  created_at?: number;
+  updated_at?: number;
+};
 
 export type StudioCanvasDocument = {
   schemaVersion?: number;

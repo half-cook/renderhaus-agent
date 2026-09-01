@@ -38,7 +38,14 @@
   --ok: var(--color-emerald-400);
   --warn: var(--color-amber-400);
   --shadow: none;
-  --radius: 16px;
+  /* Sharp corners everywhere (SSENSE-style editorial minimalism) -- this
+     one token drives every node/panel/popover that references
+     var(--radius); the ~35 buttons, chips, and rails with their own
+     hardcoded border-radius were zeroed alongside it directly. Status
+     dots and other genuinely circular indicators were left round on
+     purpose -- that's shape-as-meaning (a dot), not decorative rounding,
+     and stays functional whether or not the rest of the chrome is sharp. */
+  --radius: 0;
   --ease: cubic-bezier(0.32, 0.72, 0, 1);
   --inspector-width: 320px;
   --z-flow: 1;
@@ -59,8 +66,8 @@
   --bg: var(--color-stone-100);
   --chrome: #fff;
   --node: #fff;
-  --line: var(--color-stone-200);
-  --grid: var(--color-stone-300);
+  --line: var(--color-stone-300);
+  --grid: var(--color-stone-400);
   --text: var(--color-stone-900);
   --muted: var(--color-stone-500);
   --accent: var(--color-amber-500);
@@ -115,7 +122,7 @@ a:focus-visible {
   background: var(--node);
   color: var(--text);
   padding: 8px 12px;
-  border-radius: 8px;
+  border-radius: 0;
 }
 
 .skip-link:focus {
@@ -192,6 +199,7 @@ a:focus-visible {
    like it, instead of leaving the browser's default arrow. Black fill +
    white outline reads on both the light and dark canvas background.
    Hotspot (4 5) lands on the arrow's tip, matching a normal pointer. */
+
 .flow-host[data-tool="select"] .react-flow {
   /* Base64, not raw url-encoded SVG -- Chrome will load a url-encoded
      inline SVG as an <img> fine but silently refuses to use it as an
@@ -231,9 +239,13 @@ a:focus-visible {
 }
 
 .wordmark {
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: -0.01em;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-pixel), var(--font-geist), sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  letter-spacing: 0.02em;
   color: var(--muted);
   padding: 0 8px;
 }
@@ -256,7 +268,7 @@ a:focus-visible {
   height: 32px;
   display: grid;
   place-items: center;
-  border-radius: 12px;
+  border-radius: 0;
 }
 
 .rail-btn {
@@ -266,7 +278,7 @@ a:focus-visible {
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 10px;
+  border-radius: 0;
 }
 
 .rail-btn svg {
@@ -301,7 +313,7 @@ a:focus-visible {
   gap: 6px;
   height: 28px;
   padding: 0 10px;
-  border-radius: 999px;
+  border-radius: 0;
   font-size: 13px;
   font-weight: 500;
   color: var(--muted);
@@ -351,7 +363,7 @@ a:focus-visible {
   height: 32px;
   padding: 0 8px 0 12px;
   border: 0;
-  border-radius: 999px;
+  border-radius: 0;
   background: transparent;
   color: var(--text);
 }
@@ -376,7 +388,7 @@ a:focus-visible {
   background: transparent;
   color: var(--text);
   padding: 8px;
-  border-radius: 8px;
+  border-radius: 0;
   font-size: 14px;
 }
 
@@ -419,7 +431,7 @@ a:focus-visible {
   padding: 8px;
   background: var(--chrome);
   border: 1px solid var(--line);
-  border-radius: 999px;
+  border-radius: 0;
   box-shadow: var(--shadow);
 }
 
@@ -428,6 +440,7 @@ a:focus-visible {
    viewport -- the two need to share a reference frame so opening the
    inspector (which narrows the safe area) shifts them together instead
    of leaving one dead-center of the viewport and the other not. */
+
 .tool-rail[data-dock="bottom"],
 .tool-rail[data-dock="top"] {
   left: var(--safe-left);
@@ -451,6 +464,7 @@ a:focus-visible {
 /* Left/right: float over the canvas near that edge, vertically centered,
    rather than reserving dedicated layout width the way .scene-rail and
    .inspector do -- same "floating control" treatment as the minimap. */
+
 .tool-rail[data-dock="left"],
 .tool-rail[data-dock="right"] {
   flex-direction: column;
@@ -511,6 +525,7 @@ a:focus-visible {
 /* Group headings ("Canvas", "Inputs", ...) stay screen-reader-only --
    there's no room for them in an icon-only dock, and Figma's own tool
    bar doesn't show them either. Per-button tooltips carry the label. */
+
 .rail-group-label {
   position: absolute;
   width: 1px;
@@ -532,7 +547,7 @@ a:focus-visible {
   padding: 4px 8px;
   background: var(--chrome);
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 0;
   color: var(--text);
   font-size: 11px;
   line-height: 16px;
@@ -548,7 +563,7 @@ a:focus-visible {
   margin-left: 6px;
   padding: 1px 4px;
   border: 1px solid var(--line);
-  border-radius: 4px;
+  border-radius: 0;
   color: var(--muted);
   font-size: 10px;
   font-family: inherit;
@@ -580,6 +595,7 @@ a:focus-visible {
 
 /* Freely dropped mid-canvas (not snapped to an edge) -- tooltip default
    to above, same as the bottom dock, since there's no edge to key off. */
+
 [data-dock="free"] .rail-btn-label {
   left: 50%;
   bottom: calc(100% + 8px);
@@ -600,7 +616,7 @@ a:focus-visible {
   padding: 4px;
   background: var(--chrome);
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: 0;
   box-shadow: var(--shadow);
 }
 
@@ -641,7 +657,7 @@ a:focus-visible {
   width: 32px;
   height: 32px;
   border: 0;
-  border-radius: 8px;
+  border-radius: 0;
   background: transparent;
   color: var(--muted);
 }
@@ -722,7 +738,7 @@ a:focus-visible {
   gap: 8px;
   padding: 8px;
   border: 0;
-  border-radius: 10px;
+  border-radius: 0;
   background: transparent;
   color: var(--text);
   text-align: left;
@@ -815,7 +831,7 @@ a:focus-visible {
   width: 40px;
   height: 40px;
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: 0;
   background: var(--chrome);
   color: var(--text);
 }
@@ -869,7 +885,7 @@ a:focus-visible {
   padding: 8px;
   background: var(--chrome);
   border: 1px solid var(--line);
-  border-radius: 20px;
+  border-radius: 0;
   box-shadow: var(--shadow);
 }
 
@@ -889,7 +905,7 @@ a:focus-visible {
   height: 32px;
   padding: 0 16px;
   border: 0;
-  border-radius: 999px;
+  border-radius: 0;
   background: transparent;
   color: var(--text);
   font-size: 14px;
@@ -908,7 +924,7 @@ a:focus-visible {
   place-items: center;
   width: 24px;
   height: 24px;
-  border-radius: 8px;
+  border-radius: 0;
 }
 
 .composer-collapse:hover {
@@ -938,7 +954,7 @@ a:focus-visible {
   place-items: center;
   width: 36px;
   height: 36px;
-  border-radius: 12px;
+  border-radius: 0;
   background: var(--text);
   color: var(--bg);
 }
@@ -969,7 +985,7 @@ a:focus-visible {
   border: 1px solid var(--line);
   background: var(--chrome);
   color: var(--text);
-  border-radius: 999px;
+  border-radius: 0;
   padding: 4px 12px;
   font-size: 12px;
 }
@@ -1025,7 +1041,7 @@ a:focus-visible {
   padding: 8px 12px;
   background: var(--chrome);
   border: 1px solid var(--line);
-  border-radius: 999px;
+  border-radius: 0;
   color: var(--muted);
   font-size: 12px;
   font-variant-numeric: tabular-nums;
@@ -1038,7 +1054,7 @@ a:focus-visible {
   border: 0;
   width: 28px;
   height: 28px;
-  border-radius: 999px;
+  border-radius: 0;
   background: var(--line);
   color: var(--text);
 }
@@ -1090,7 +1106,7 @@ a:focus-visible {
   min-height: 72px;
   padding: 12px;
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: 0;
   background: var(--node);
   color: var(--text);
   box-shadow: var(--shadow);
@@ -1133,7 +1149,7 @@ a:focus-visible {
   background: transparent;
   color: var(--text);
   padding: 8px;
-  border-radius: 8px;
+  border-radius: 0;
 }
 
 .quick-add button:hover {
@@ -1371,7 +1387,7 @@ a:focus-visible {
   width: 28px;
   height: 28px;
   border: 1px solid var(--line);
-  border-radius: 9px;
+  border-radius: 0;
   background: var(--line);
   color: var(--text);
 }
@@ -1392,7 +1408,7 @@ a:focus-visible {
 .agent-run-trace {
   overflow: hidden;
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: 0;
 }
 
 .agent-run-trace-head,
@@ -1449,7 +1465,7 @@ a:focus-visible {
 .agent-run-notes {
   margin-top: 8px;
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: 0;
   background: var(--bg);
 }
 
@@ -1512,7 +1528,7 @@ a:focus-visible {
   min-height: 30px;
   padding: 0 10px;
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: 0;
   background: var(--line);
   color: var(--text);
   font-size: 12px;
@@ -1548,7 +1564,7 @@ a:focus-visible {
   max-height: 180px;
   object-fit: cover;
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: 0;
   background: var(--bg);
 }
 
@@ -1631,7 +1647,7 @@ a:focus-visible {
   margin: 12px;
   padding: 12px;
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: 0;
   background: var(--bg);
   color: var(--text);
   font: 12px/18px var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
@@ -1696,7 +1712,7 @@ a:focus-visible {
   margin: 0;
   padding: 0 8px;
   border: 1px solid var(--active);
-  border-radius: 8px;
+  border-radius: 0;
   background: var(--node);
   color: var(--text);
   font-size: 12px;
@@ -1788,7 +1804,7 @@ a:focus-visible {
   justify-content: center;
   gap: 6px;
   width: 100%;
-  border-radius: 12px;
+  border-radius: 0;
   background: var(--text);
   color: var(--bg);
   font-size: 14px;
@@ -1838,7 +1854,7 @@ a:focus-visible {
   padding: 4px;
   background: var(--chrome);
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: 0;
   box-shadow: var(--shadow);
 }
 
@@ -1849,7 +1865,7 @@ a:focus-visible {
   display: grid;
   place-items: center;
   border: 0;
-  border-radius: 8px;
+  border-radius: 0;
   background: transparent;
   color: var(--text);
 }
@@ -1874,6 +1890,7 @@ label.field {
 /* The caption only -- input/textarea/select are siblings of this span inside
    the same label, and text-transform inherits, so it must NOT be set on
    label.field itself or a typed prompt would render uppercase as you type. */
+
 label.field > span {
   font-size: 11px;
   text-transform: uppercase;
@@ -1900,7 +1917,7 @@ label.field span .req {
 
 .field-pill {
   border: 1px solid var(--line);
-  border-radius: 999px;
+  border-radius: 0;
   background: transparent;
   color: var(--muted);
   padding: 6px 14px;
@@ -1944,13 +1961,20 @@ select {
   background: var(--bg);
   color: var(--text);
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 0;
   padding: 8px 10px;
 }
 
 textarea {
   min-height: 72px;
   resize: vertical;
+}
+
+input[type="range"] {
+  padding: 0;
+  border: none;
+  background: transparent;
+  accent-color: var(--active);
 }
 
 .check {
@@ -1984,54 +2008,6 @@ textarea {
     width: 320px;
   }
 }
-/* Clerk account controls sit in the shared top chrome without entering canvas state. */
-.studio-account-controls {
-  align-items: center;
-  display: flex;
-  gap: 8px;
-  left: 50%;
-  position: fixed;
-  top: 28px;
-  transform: translateX(-50%);
-  z-index: 80;
-}
-
-.studio-sign-in {
-  flex-direction: column;
-  gap: 16px;
-}
-
-.studio-auth-actions {
-  display: flex;
-  gap: 8px;
-}
-
-.studio-auth-button {
-  min-height: 40px;
-  padding: 8px 16px;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  background: transparent;
-  color: var(--text);
-  font-size: 14px;
-  font-weight: 600;
-  transition: background-color 200ms var(--ease), border-color 200ms var(--ease), transform 200ms var(--ease);
-}
-
-.studio-auth-button:hover {
-  border-color: var(--muted);
-  background: var(--chrome);
-}
-
-.studio-auth-button:active {
-  transform: scale(0.98);
-}
-
-.studio-auth-button.primary {
-  border-color: var(--active);
-  background: var(--active);
-  color: var(--bg);
-}
 
 .execution-list {
   border-top: 1px solid var(--line);
@@ -2061,4 +2037,195 @@ textarea {
 .execution-item a {
   color: var(--accent);
   font-size: 12px;
+}
+
+/* ASCII converter -- a real, entirely client-side image/video -> character
+   render (no provider call, no cost), opened from the rail as a modal
+   rather than docked, since it needs more width than the side panels
+   allow for controls + a live preview side by side. */
+
+.ascii-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-menu);
+  background: color-mix(in oklab, var(--bg) 70%, transparent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.ascii-modal {
+  width: min(880px, 100%);
+  max-height: min(720px, 90vh);
+  display: flex;
+  flex-direction: column;
+  background: var(--chrome);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.ascii-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--line);
+}
+
+.ascii-modal-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.ascii-modal-body {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  gap: 20px;
+  padding: 16px;
+  overflow: auto;
+}
+
+.ascii-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.ascii-dropzone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 96px;
+  border: 1px dashed var(--line);
+  border-radius: 0;
+  padding: 16px;
+  color: var(--muted);
+  font-size: 12px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 160ms var(--ease), color 160ms var(--ease);
+}
+
+.ascii-dropzone:hover,
+.ascii-dropzone.drag {
+  border-color: var(--active);
+  color: var(--text);
+}
+
+.ascii-file-meta {
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted);
+  word-break: break-all;
+}
+
+.ascii-actions-row {
+  display: flex;
+  gap: 8px;
+}
+
+.ascii-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
+.ascii-preview-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+
+.ascii-preview-dims {
+  font-variant-numeric: tabular-nums;
+}
+
+.ascii-canvas-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 240px;
+  border: 1px solid var(--line);
+  border-radius: 0;
+  background: var(--bg);
+  overflow: hidden;
+}
+
+.ascii-canvas-wrap canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.ascii-canvas-wrap .inspector-note {
+  padding: 24px;
+  text-align: center;
+}
+
+.ascii-scrubber {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 11px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.ascii-scrubber input[type="range"] {
+  flex: 1;
+}
+
+.ascii-export-row {
+  display: flex;
+  gap: 8px;
+}
+
+.ascii-export-row .field-pill:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+@media (max-width: 640px) {
+  .ascii-modal-body {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Interactive hero demo -- a genuinely playable miniature of the product:
+   drag the two nodes, edit the prompt, hit Generate. Never calls the real
+   (billed) provider APIs for anonymous visitors -- "generating" is a
+   client-side simulation that swaps in a hand-built gradient placeholder
+   keyed to the chosen preset, not a real model call. */
+
+/* .demo-node's own class stays a plain global selector (not modularized
+   like the rest of the landing demo) because LandingDemo.tsx looks it up
+   at runtime via currentTarget.closest(".demo-node") during drags -- a
+   CSS Modules hash would silently break that lookup. Its visual styling
+   still lives here as a deliberate, narrow exception, documented so it
+   isn't "accidentally" left behind by a future cleanup. */
+
+.demo-node {
+  position: absolute;
+  width: 260px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--node);
+  box-shadow: var(--shadow);
+  color: var(--text);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }

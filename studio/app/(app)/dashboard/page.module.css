@@ -1,0 +1,192 @@
+/* Post-sign-in landing spot -- credits + project list. Styled after
+   SSENSE's own listing pages (ssense.com/en-ca/men): no boxes, no
+   shadows, no rounded corners anywhere -- just black-on-white
+   typographic hierarchy (wide-tracked micro-label, then the thing
+   itself, then its price/meta) separated by hairline rules and real
+   whitespace instead of card chrome. */
+
+.dashboard {
+  /* --header-height only exists scoped to .workspace (the canvas shell) --
+     without redeclaring it here, .chrome-header's height and this page's
+     own padding-top both silently fall back to invalid/auto, collapsing
+     the header and crowding everything up against the top edge. */
+  --header-height: 56px;
+  position: relative;
+  min-height: 100dvh;
+  background: var(--bg);
+  color: var(--text);
+}
+
+/* .chrome-header is position:absolute, which is correct on the canvas
+   page (that shell never scrolls) but wrong here -- this is a normal
+   scrolling document, so an absolute header scrolls away with the rest
+   of the page while the account pill from StudioAppGate (position:fixed,
+   pinned to the viewport) stays put and ends up overlapping whatever
+   card has scrolled up underneath it. Sticky keeps the two aligned. */
+
+.dashboard-header {
+  position: sticky;
+  top: 0;
+  background: var(--bg);
+  border-bottom: 1px solid var(--line);
+}
+
+.dashboard-header :global(.wordmark) {
+  padding-left: 0;
+}
+
+/* A plain tracked-out text link, not a button -- the nav-item look
+   (LOGIN / WISHLIST) rather than a bordered/filled control. */
+
+.dashboard-link-btn {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  color: var(--text);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+}
+
+.dashboard-link-btn:hover:not(:disabled) {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.dashboard-link-btn:disabled {
+  color: var(--muted);
+  cursor: default;
+}
+
+.dashboard-body {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 56px 32px 96px;
+  display: grid;
+  grid-template-columns: minmax(220px, 280px) 1fr;
+  align-items: start;
+  gap: 64px;
+}
+
+@media (max-width: 720px) {
+  .dashboard-body {
+    grid-template-columns: 1fr;
+    gap: 48px;
+  }
+}
+
+.dashboard-card-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 24px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.dashboard-card-header h2 {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--text);
+}
+
+.credit-balance-big {
+  margin: 0 0 20px;
+  font-size: 40px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+}
+
+.ledger-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.ledger-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 10px 0;
+  border-top: 1px solid var(--line);
+  font-size: 12px;
+}
+
+.ledger-row:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.ledger-reason {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-transform: capitalize;
+}
+
+.ledger-delta {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.ledger-delta.negative {
+  color: var(--muted);
+}
+
+.ledger-delta.positive {
+  color: var(--ok);
+}
+
+.ledger-time {
+  flex: none;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.project-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 32px 24px;
+}
+
+.project-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  padding: 0;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.project-card:hover .project-card-name {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.project-card-name {
+  overflow: hidden;
+  font-size: 13px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.project-card-meta {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}

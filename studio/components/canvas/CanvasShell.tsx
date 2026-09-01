@@ -6,6 +6,7 @@ import { useCanvasStore } from "@/lib/canvas/store";
 import { FIT_VIEW_PADDING } from "@/lib/canvas/safe-area";
 import type { CreativeNodeKind, DockPosition } from "@/lib/canvas/types";
 import { AgentComposer } from "./AgentComposer";
+import { AsciiPanel } from "./AsciiPanel";
 import { CanvasHeader } from "./CanvasHeader";
 import { NodeInspector } from "./NodeInspector";
 import { SceneList } from "./SceneList";
@@ -152,6 +153,7 @@ function Workspace() {
       </main>
       <NodeInspector />
       <AgentComposer />
+      <AsciiPanel />
     </div>
   );
 }

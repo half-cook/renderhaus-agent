@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Silkscreen } from "next/font/google";
 import { StudioClerkBootstrap } from "@/components/StudioAuth";
 import "./globals.css";
 
@@ -12,6 +12,15 @@ const geist = Geist({
 const geistMono = Geist_Mono({
   subsets: ["latin"],
   variable: "--font-geist-mono",
+});
+
+// The wordmark's typeface only -- a bitmap/pixel face so "Renderhaus" reads
+// as a rendered grid of cells, echoing the ASCII tool's own output without
+// setting body text in it (illegible at paragraph sizes).
+const pixel = Silkscreen({
+  subsets: ["latin"],
+  weight: ["400", "700"],
+  variable: "--font-pixel",
 });
 
 export const metadata: Metadata = {
@@ -31,7 +40,11 @@ try {
 export default function RootLayout({ children }: { children: ReactNode }) {
   const publishableKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
   return (
-    <html lang="en" className={`${geist.variable} ${geistMono.variable}`}>
+    <html
+      lang="en"
+      className={`${geist.variable} ${geistMono.variable} ${pixel.variable}`}
+      suppressHydrationWarning
+    >
       <head>
         {/* Runs before paint so a saved light-mode preference doesn't
             flash dark-then-light on load. */}

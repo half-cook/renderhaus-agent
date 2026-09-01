@@ -1,0 +1,11 @@
+.logo-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  background: #0a0a0a;
+}
+
+.logo-chip img {
+  display: block;
+}

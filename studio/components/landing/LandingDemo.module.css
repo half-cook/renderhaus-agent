@@ -1,0 +1,439 @@
+/* The demo panel -- a padded, rounded, shadowed frame sitting on the
+   light page (unlike the rest of the page, which stays flat/sharp), so
+   it visually reads as "a window onto the real product" rather than more
+   marketing chrome. Deliberately does NOT redeclare --bg/--node/--line/
+   --text/--radius: those already resolve to the studio's own default
+   dark theme from :root (the light .landing tokens are all separately
+   named --l-*, so they never shadow the real ones) -- so what's inside
+   this frame is an honest match for the actual dark canvas a visitor
+   lands in after signing up, not a reskinned mockup. */
+
+.landing-demo {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  margin: 0 32px 32px;
+  border-radius: 20px;
+  border: 1px solid var(--l-line);
+  box-shadow: 0 40px 80px -40px rgba(10, 10, 10, 0.35);
+  overflow: hidden;
+  color-scheme: dark;
+}
+
+.landing-demo-chrome {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 14px 20px;
+  background: var(--chrome);
+  border-bottom: 1px solid var(--line);
+}
+
+.demo-chrome-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--line);
+}
+
+.landing-demo-chrome-label {
+  margin-left: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+.demo-canvas {
+  position: relative;
+  flex: 1;
+  min-height: 640px;
+  background-image: radial-gradient(var(--grid) 1.5px, transparent 1.5px);
+  background-size: 24px 24px;
+  background-color: var(--bg);
+  overflow: hidden;
+}
+
+.demo-connector {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.demo-connector line {
+  stroke: var(--muted);
+  stroke-width: 1.5;
+  stroke-dasharray: 4 5;
+}
+
+.demo-node-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--line);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.demo-node-header:active {
+  cursor: grabbing;
+}
+
+.demo-node-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--active);
+  flex: none;
+}
+
+.demo-node-remove {
+  margin-left: auto;
+  width: 18px;
+  height: 18px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.demo-node-remove:hover {
+  background: var(--line);
+  color: var(--text);
+}
+
+.demo-generator-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 28px 16px;
+  color: var(--muted);
+  text-align: center;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.demo-prompt-input {
+  margin: 10px 12px 0;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 12px;
+  line-height: 1.5;
+  /* The textarea's `rows` attribute sizes it from the UA's own font
+     metrics, not this line-height, so its intrinsic height (~90px) beats
+     a min-height set any lower -- last line ends up pressed against the
+     bottom border with none of this padding actually visible. Set high
+     enough to clear that intrinsic height and leave real breathing room
+     below a full 4 lines (4 * 18px line-height + top/bottom padding). */
+  min-height: 104px;
+  /* Not resize: vertical -- the native resize grip renders a visible
+     diagonal notch in the bottom-right corner that reads as the box
+     clipping its own content. A fixed generous min-height avoids needing
+     it at all for prompts this length. */
+  resize: none;
+}
+
+.demo-prompt-input:focus-visible {
+  /* Not an outline (positive offset gets clipped by the parent
+     .demo-node's overflow:hidden) or an inset box-shadow (Chrome paints a
+     <textarea>'s own scrollable text layer over the bottom sliver of an
+     inset shadow, so that edge of the ring goes missing). Swapping the
+     border color itself is a normal part of the box model on every side
+     and can't be clipped or painted over either way. */
+  outline: none;
+  border-color: var(--active);
+}
+
+.demo-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 10px 12px 0;
+}
+
+.demo-chip {
+  padding: 5px 9px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+}
+
+.demo-chip:hover {
+  border-color: var(--active);
+  color: var(--text);
+}
+
+.demo-chip.selected {
+  background: var(--active);
+  border-color: var(--active);
+  color: var(--bg);
+}
+
+.demo-generate-btn {
+  margin: 10px 12px 12px;
+  padding: 9px 0;
+  border: none;
+  border-radius: 8px;
+  background: var(--active);
+  color: var(--bg);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  transition: opacity 160ms var(--ease);
+}
+
+.demo-generate-btn:hover:not(:disabled) {
+  opacity: 0.75;
+}
+
+.demo-generate-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.demo-result-frame {
+  margin: 12px;
+  height: 160px;
+  border: 1px dashed var(--line);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.demo-result-empty {
+  margin: 0;
+  padding: 0 16px;
+  text-align: center;
+  font-size: 11px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.demo-result-loading {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.demo-loading-bar {
+  width: 60%;
+  height: 2px;
+  background: var(--line);
+  position: relative;
+  overflow: hidden;
+  display: block;
+}
+
+.demo-loading-bar::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  width: 40%;
+  background: var(--active);
+  animation: demo-loading-sweep 0.9s ease-in-out infinite;
+}
+
+@keyframes demo-loading-sweep {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(250%);
+  }
+}
+
+.demo-result-card {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: flex-end;
+  padding: 10px;
+  border-radius: 8px;
+  animation: demo-result-in 320ms var(--ease);
+}
+
+@keyframes demo-result-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.demo-result-caption {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* The Image -> Video node's "result" -- same gradient placeholder as the
+   image result, but slowly panned/zoomed and given a play badge so it
+   reads as a looping clip rather than a still. */
+
+.demo-video-card {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: 8px;
+  overflow: hidden;
+  animation: demo-result-in 320ms var(--ease);
+}
+
+.demo-video-card-fill {
+  position: absolute;
+  inset: -10%;
+  animation: demo-video-pan 6s ease-in-out infinite alternate;
+}
+
+@keyframes demo-video-pan {
+  from {
+    transform: scale(1) translate(0, 0);
+  }
+  to {
+    transform: scale(1.08) translate(-2%, -2%);
+  }
+}
+
+.demo-video-play {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.demo-video-play span {
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.45);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.demo-video-caption {
+  position: absolute;
+  left: 10px;
+  bottom: 10px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* Mirrors the real app's floating .tool-rail pill exactly (same
+   background/border/radius/shadow tokens) so the bottom dock in this
+   demo reads as the same control, not a lookalike. Only Image/Video
+   actually place a node -- the rest are present for completeness but
+   inert, same as Select/Hand in the real rail before a tool has an
+   effect. */
+
+.demo-tool-rail {
+  position: absolute;
+  z-index: 2;
+  left: 50%;
+  bottom: 20px;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px;
+  background: var(--chrome);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  box-shadow: var(--shadow);
+}
+
+.demo-rail-btn {
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  transition: background-color 160ms var(--ease), color 160ms var(--ease);
+}
+
+.demo-rail-btn:hover {
+  background: var(--line);
+}
+
+.demo-rail-btn.active {
+  background: var(--active);
+  color: var(--bg);
+}
+
+@media (max-width: 720px) {
+  .demo-node {
+    width: 220px;
+  }
+
+  .demo-canvas {
+    min-height: 560px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .demo-loading-bar::after {
+    animation: none;
+    transform: translateX(30%);
+  }
+
+  .demo-result-card {
+    animation: none;
+  }
+
+  .demo-video-card {
+    animation: none;
+  }
+
+  .demo-video-card-fill {
+    animation: none;
+  }
+}

@@ -1,0 +1,52 @@
+.account-balance {
+  display: flex;
+  align-items: center;
+  height: 28px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: 0;
+  background: transparent;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  transition: background-color 160ms var(--ease);
+}
+
+.account-balance:hover {
+  background: var(--line);
+}
+
+.balance-popover {
+  min-width: 220px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.top-up-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.top-up-row:hover:not(:disabled) {
+  background: var(--line);
+}
+
+.top-up-row:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.top-up-label {
+  flex: 1;
+  font-weight: 600;
+}
+
+.top-up-price {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}

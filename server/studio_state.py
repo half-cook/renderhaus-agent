@@ -244,6 +244,25 @@ class StudioRepository:
                     );
                     CREATE INDEX IF NOT EXISTS tool_calls_execution_created
                         ON tool_calls(execution_id, created_at);
+
+                    CREATE TABLE IF NOT EXISTS accounts (
+                        user_id TEXT PRIMARY KEY,
+                        balance_cents INTEGER NOT NULL DEFAULT 0,
+                        stripe_customer_id TEXT,
+                        created_at INTEGER NOT NULL,
+                        updated_at INTEGER NOT NULL
+                    );
+
+                    CREATE TABLE IF NOT EXISTS credit_ledger (
+                        id TEXT PRIMARY KEY,
+                        user_id TEXT NOT NULL REFERENCES accounts(user_id),
+                        delta INTEGER NOT NULL,
+                        reason TEXT NOT NULL,
+                        reference_id TEXT,
+                        created_at INTEGER NOT NULL
+                    );
+                    CREATE INDEX IF NOT EXISTS credit_ledger_user_created
+                        ON credit_ledger(user_id, created_at DESC);
                     """
                 )
                 connection.commit()
@@ -846,6 +865,89 @@ class StudioRepository:
             for row in rows
             if (execution := self.get_execution(workspace_id, str(row["id"]))) is not None
         ]
+
+    # -- Credits ----------------------------------------------------------
+    # Scoped to user_id, not workspace_id: workspace_id can be an org (see
+    # current_workspace_id in server/auth.py), and shared org billing is a
+    # separate feature this doesn't build. Whoever clicks Generate spends
+    # from their own personal balance, in any workspace.
+
+    def ensure_account(self, user_id: str) -> None:
+        now = _now()
+        with self._connect() as connection:
+            connection.execute(
+                "INSERT OR IGNORE INTO accounts(user_id, balance_cents, created_at, updated_at) "
+                "VALUES (?, 0, ?, ?)",
+                (user_id, now, now),
+            )
+
+    def get_balance(self, user_id: str) -> int:
+        self.ensure_account(user_id)
+        with self._connect() as connection:
+            row = connection.execute(
+                "SELECT balance_cents FROM accounts WHERE user_id = ?", (user_id,)
+            ).fetchone()
+        return int(row["balance_cents"]) if row else 0
+
+    def adjust_balance(
+        self,
+        user_id: str,
+        delta: int,
+        reason: str,
+        *,
+        reference_id: str | None = None,
+    ) -> int:
+        """Apply `delta` (positive = grant/purchase, negative = spend) and
+        log it to the ledger. Raises ValueError instead of ever letting a
+        spend take the balance negative. The UPDATE's WHERE clause makes
+        the check-and-apply atomic against concurrent requests -- no
+        separate read-then-write that a race could slip between.
+        """
+        self.ensure_account(user_id)
+        now = _now()
+        with self._connect() as connection:
+            cursor = connection.execute(
+                "UPDATE accounts SET balance_cents = balance_cents + ?, updated_at = ? "
+                "WHERE user_id = ? AND balance_cents + ? >= 0",
+                (delta, now, user_id, delta),
+            )
+            if cursor.rowcount == 0:
+                raise ValueError("Insufficient balance.")
+            connection.execute(
+                "INSERT INTO credit_ledger(id, user_id, delta, reason, reference_id, created_at) "
+                "VALUES (?, ?, ?, ?, ?, ?)",
+                (uuid.uuid4().hex, user_id, delta, reason, reference_id, now),
+            )
+            row = connection.execute(
+                "SELECT balance_cents FROM accounts WHERE user_id = ?", (user_id,)
+            ).fetchone()
+        return int(row["balance_cents"])
+
+    def list_ledger(self, user_id: str, *, limit: int = 20) -> list[dict[str, Any]]:
+        with self._connect() as connection:
+            rows = connection.execute(
+                "SELECT id, delta, reason, reference_id, created_at FROM credit_ledger "
+                "WHERE user_id = ? ORDER BY created_at DESC LIMIT ?",
+                (user_id, max(1, min(limit, 100))),
+            ).fetchall()
+        return [
+            {
+                "id": row["id"],
+                "delta": row["delta"],
+                "reason": row["reason"],
+                "reference_id": row["reference_id"],
+                "created_at": row["created_at"],
+            }
+            for row in rows
+        ]
+
+    def set_stripe_customer(self, user_id: str, stripe_customer_id: str) -> None:
+        self.ensure_account(user_id)
+        with self._connect() as connection:
+            connection.execute(
+                "UPDATE accounts SET stripe_customer_id = ?, updated_at = ? WHERE user_id = ?",
+                (stripe_customer_id, _now(), user_id),
+            )
 
 
 repository = StudioRepository()

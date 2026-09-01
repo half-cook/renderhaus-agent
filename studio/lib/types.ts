@@ -25,6 +25,25 @@ export type StudioStatus = {
   dry_run: Record<string, boolean>;
 };
 
+export type CreditLedgerEntry = {
+  id: string;
+  delta: number;
+  reason: string;
+  reference_id: string | null;
+  created_at: number;
+};
+
+export type StudioAccount = {
+  balance_cents: number;
+  recent_ledger: CreditLedgerEntry[];
+};
+
+export type TopUpPack = {
+  id: string;
+  label: string;
+  price_usd_cents: number;
+};
+
 export type NodeStatus = "idle" | "running" | "ok" | "error";
 
 export type StudioAsset = {
