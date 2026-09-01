@@ -32,6 +32,17 @@ export interface Clip extends TrackItemBase {
   sourceOut: number;
   /** Linear audio gain. Omitted means full volume. */
   volume?: number;
+  fit?: "cover" | "contain";
+  positionX?: number;
+  positionY?: number;
+  scale?: number;
+  opacity?: number;
+  rotation?: number;
+  playbackRate?: number;
+  fadeIn?: number;
+  fadeOut?: number;
+  motion?: "none" | "zoom_in" | "zoom_out" | "pan_left" | "pan_right";
+  transition?: "cut" | "fade" | "dip_to_black";
 }
 
 export interface Gap extends TrackItemBase {
@@ -43,7 +54,19 @@ export interface Transition extends TrackItemBase {
   kind: "cut" | "fade" | "dipToBlack";
 }
 
-export type TrackItem = Clip | Gap | Transition;
+export interface TextOverlay extends TrackItemBase {
+  type: "text";
+  text: string;
+  position: "top" | "center" | "bottom";
+  fontSize?: number;
+  color?: string;
+  backgroundColor?: string;
+  fontWeight?: number;
+  fadeIn?: number;
+  fadeOut?: number;
+}
+
+export type TrackItem = Clip | Gap | Transition | TextOverlay;
 
 export interface Track {
   id: string;

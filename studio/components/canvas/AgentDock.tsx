@@ -14,17 +14,21 @@ import {
   Pencil,
   Plus,
   Send,
+  ShieldCheck,
   Sparkles,
   X,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
+  AGENT_PROMPT_MAX_CHARS,
+  decideAgentApproval,
   submitAgentPrompt,
+  type AgentApprovalRequest,
   type AgentProgress,
   type StudioExecution,
 } from "@/lib/api";
 import { useCanvasStore } from "@/lib/canvas/store";
-import type { AgentToolEvent } from "@/lib/canvas/types";
+import type { AgentProgressEvent, AgentToolEvent } from "@/lib/canvas/types";
 import type { StudioAsset } from "@/lib/types";
 import { AssetDownloadLink, AssetMedia } from "./AssetMedia";
 
@@ -36,7 +40,7 @@ type LiveRun = {
 function normalizedStatus(status: string): "running" | "completed" | "failed" {
   const value = status.toLowerCase();
   if (["failed", "error", "cancelled", "canceled"].includes(value)) return "failed";
-  if (["queued", "running", "pending"].includes(value)) return "running";
+  if (["queued", "running", "pending", "awaiting_approval"].includes(value)) return "running";
   return "completed";
 }
 
@@ -97,24 +101,67 @@ function StepIcon({ status }: { status: string }) {
 
 function IntermediateSteps({
   events,
+  progressEvents,
   status,
   message,
   duration,
 }: {
   events: AgentToolEvent[];
+  progressEvents: AgentProgressEvent[];
   status: string;
   message: string;
   duration?: string | null;
 }) {
   const state = normalizedStatus(status);
+  const progressToolIds = new Set(
+    progressEvents.map((event) => event.toolCallId).filter(Boolean),
+  );
+  const steps = [
+    ...progressEvents
+      .filter((event) => !["RUN_STARTED", "RUN_FINISHED", "RUN_ERROR"].includes(event.type))
+      .map((event) => ({
+        id: event.id,
+        title: event.title,
+        message: event.message,
+        status:
+          state === "failed" && normalizedStatus(event.status) === "running"
+            ? "failed"
+            : event.status,
+        kind:
+          event.type === "REASONING_MESSAGE_CONTENT"
+            ? "Reasoning"
+            : event.type === "MODEL_UPDATE"
+              ? "Update"
+              : event.type === "TOOL_APPROVAL_REQUIRED"
+                ? "Approval"
+            : event.type.startsWith("TOOL_CALL")
+              ? "Tool"
+              : event.type === "TEXT_MESSAGE_CONTENT"
+                ? "Response"
+                : "Step",
+      })),
+    ...events
+      .filter((event) => !progressToolIds.has(event.id))
+      .map((event) => ({
+        id: `tool-event-${event.id}`,
+        title: event.label,
+        message: event.summary,
+        status:
+          state === "failed" && normalizedStatus(event.status) === "running"
+            ? "failed"
+            : event.status,
+        kind: "Tool",
+      })),
+  ];
   const label =
-    state === "running"
-      ? message || "Working on the request"
+    status === "awaiting_approval"
+      ? "Waiting for approval"
+      : state === "running"
+      ? progressEvents.filter((event) => event.type === "MODEL_UPDATE").at(-1)?.message
+        || (steps.length ? "In progress" : message || "Queued")
       : state === "failed"
-        ? `Stopped${events.length ? ` after ${events.length} ${events.length === 1 ? "step" : "steps"}` : ""}`
-        : events.length
-          ? `Worked through ${events.length} ${events.length === 1 ? "step" : "steps"}${duration ? ` in ${duration}` : ""}`
-          : `Completed${duration ? ` in ${duration}` : ""}`;
+        ? "Stopped"
+        : `Completed${duration ? ` in ${duration}` : ""}`;
 
   return (
     <details className={`agent-progress-group ${state}`} open={state === "running"}>
@@ -123,22 +170,74 @@ function IntermediateSteps({
           <StepIcon status={status} />
           <span>{label}</span>
         </span>
-        {events.length ? <ChevronRight className="agent-progress-chevron" size={14} /> : null}
+        {steps.length ? <ChevronRight className="agent-progress-chevron" size={14} /> : null}
       </summary>
-      {events.length ? (
+      {steps.length ? (
         <ol className="agent-step-list">
-          {events.map((event) => (
-            <li className={normalizedStatus(event.status)} key={event.id}>
-              <span className="agent-step-icon"><StepIcon status={event.status} /></span>
+          {steps.map((step) => (
+            <li className={normalizedStatus(step.status)} key={step.id}>
+              <span className="agent-step-icon"><StepIcon status={step.status} /></span>
               <span>
-                <strong>{event.label}</strong>
-                {event.summary ? <small>{event.summary}</small> : null}
+                <em>{step.kind}</em>
+                <strong>{step.title}</strong>
+                {step.message ? <small>{step.message}</small> : null}
               </span>
             </li>
           ))}
         </ol>
       ) : null}
     </details>
+  );
+}
+
+function ApprovalCards({
+  approvals,
+  onDecision,
+  busyCallId,
+}: {
+  approvals: AgentApprovalRequest[];
+  onDecision: (approval: AgentApprovalRequest, decision: "approve" | "reject") => void;
+  busyCallId: string | null;
+}) {
+  if (!approvals.length) return null;
+  return (
+    <div className="agent-approvals" aria-label="Tool approvals">
+      {approvals.map((approval) => (
+        <article className="agent-approval" key={approval.callId}>
+          <header>
+            <span><ShieldCheck size={14} /> Tool approval</span>
+            {approval.provider ? <em>{approval.provider}</em> : null}
+          </header>
+          <strong>{approval.label}</strong>
+          <pre>{JSON.stringify(approval.arguments, null, 2)}</pre>
+          {approval.decision ? (
+            <p className={`agent-approval-decision ${approval.decision}`}>
+              {approval.decision === "approve" ? "Approved" : "Rejected"}
+            </p>
+          ) : (
+            <footer>
+              <button
+                type="button"
+                className="agent-approval-reject"
+                disabled={busyCallId !== null}
+                onClick={() => onDecision(approval, "reject")}
+              >
+                Reject
+              </button>
+              <button
+                type="button"
+                className="agent-approval-approve"
+                disabled={busyCallId !== null}
+                onClick={() => onDecision(approval, "approve")}
+              >
+                {busyCallId === approval.callId ? <LoaderCircle className="spin" size={13} /> : null}
+                Approve once
+              </button>
+            </footer>
+          )}
+        </article>
+      ))}
+    </div>
   );
 }
 
@@ -189,10 +288,18 @@ function ExecutionTurn({
   execution,
   placedVersionIds,
   onPlace,
+  onApproval,
+  busyApproval,
 }: {
   execution: StudioExecution;
   placedVersionIds: Set<string>;
   onPlace: (asset: StudioAsset, execution: StudioExecution, event?: AgentToolEvent) => void;
+  onApproval: (
+    execution: StudioExecution,
+    approval: AgentApprovalRequest,
+    decision: "approve" | "reject",
+  ) => void;
+  busyApproval: string | null;
 }) {
   const state = normalizedStatus(execution.status);
   const assets = execution.assets;
@@ -202,9 +309,15 @@ function ExecutionTurn({
       <div className="agent-response">
         <IntermediateSteps
           events={execution.toolEvents}
+          progressEvents={execution.progressEvents}
           status={execution.status}
           message={execution.message}
           duration={runDuration(execution)}
+        />
+        <ApprovalCards
+          approvals={execution.approvals}
+          busyCallId={busyApproval}
+          onDecision={(approval, decision) => onApproval(execution, approval, decision)}
         />
         {execution.summary ? <p className="agent-response-summary">{execution.summary}</p> : null}
         {state === "failed" ? (
@@ -248,6 +361,7 @@ function LiveExecutionTurn({ run }: { run: LiveRun }) {
       <div className="agent-response">
         <IntermediateSteps
           events={run.progress.toolEvents}
+          progressEvents={run.progress.progressEvents}
           status={run.progress.status}
           message={run.progress.message}
         />
@@ -274,6 +388,7 @@ export function AgentDock() {
   const setActiveTool = useCanvasStore((state) => state.setActiveTool);
   const placeAgentAsset = useCanvasStore((state) => state.placeAgentAsset);
   const refreshConversations = useCanvasStore((state) => state.refreshConversations);
+  const refreshExecutions = useCanvasStore((state) => state.refreshExecutions);
   const createAgentConversation = useCanvasStore((state) => state.createAgentConversation);
   const switchAgentConversation = useCanvasStore((state) => state.switchAgentConversation);
   const renameAgentConversation = useCanvasStore((state) => state.renameAgentConversation);
@@ -284,6 +399,8 @@ export function AgentDock() {
   const [liveRun, setLiveRun] = useState<LiveRun | null>(null);
   const [renaming, setRenaming] = useState<string | null>(null);
   const [archivePending, setArchivePending] = useState(false);
+  const [autonomous, setAutonomous] = useState(false);
+  const [busyApproval, setBusyApproval] = useState<string | null>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const transcriptRef = useRef<HTMLDivElement>(null);
   const { screenToFlowPosition } = useReactFlow();
@@ -298,6 +415,10 @@ export function AgentDock() {
     [executions, conversationId],
   );
   const activeConversation = conversations.find((item) => item.id === conversationId);
+  const activeExecution = conversationExecutions.find(
+    (execution) => normalizedStatus(execution.status) === "running",
+  );
+  const runInFlight = busy || Boolean(activeExecution);
   const placedVersionIds = useMemo(
     () => new Set(
       nodes
@@ -312,6 +433,10 @@ export function AgentDock() {
   }, [agentOpen]);
 
   useEffect(() => {
+    setAutonomous(window.localStorage.getItem("renderhaus.agent.autonomous") === "true");
+  }, []);
+
+  useEffect(() => {
     setRenaming(null);
     setArchivePending(false);
   }, [conversationId]);
@@ -320,6 +445,12 @@ export function AgentDock() {
     const transcript = transcriptRef.current;
     if (transcript) transcript.scrollTop = transcript.scrollHeight;
   }, [agentOpen, liveRun, conversationExecutions.length]);
+
+  useEffect(() => {
+    if (!activeExecution || liveRun) return;
+    const timer = window.setInterval(() => void refreshExecutions(), 1_000);
+    return () => window.clearInterval(timer);
+  }, [activeExecution?.jobId, liveRun, refreshExecutions]);
 
   const placementPosition = () => {
     const selected = nodes.filter((node) => selectedNodeIds.includes(node.id));
@@ -348,15 +479,18 @@ export function AgentDock() {
 
   const submit = async () => {
     const prompt = value.trim();
-    if (!prompt || busy || !conversationId) return;
+    if (!prompt || runInFlight || !conversationId) return;
     setBusy(true);
     setAgentMessage(null);
     setLiveRun({
       prompt,
       progress: {
         status: "queued",
-        message: "Starting the agent",
+        message: "Queued",
         toolEvents: [],
+        progressEvents: [],
+        autonomous,
+        approvals: [],
       },
     });
     setValue("");
@@ -388,13 +522,14 @@ export function AgentDock() {
         conversationId,
         ids,
         contexts,
+        autonomous,
         (progress) => {
           setAgentMessage(progress.message);
           setLiveRun({ prompt, progress });
         },
       );
       setAgentMessage(result.message);
-      if (result.result) {
+      if ("result" in result && result.result) {
         setLiveRun({
           prompt,
           progress: {
@@ -402,7 +537,10 @@ export function AgentDock() {
             status: result.status,
             message: result.message,
             toolEvents: result.result.toolEvents,
+            progressEvents: liveRun?.progress.progressEvents || [],
             result: result.result,
+            autonomous,
+            approvals: [],
           },
         });
       }
@@ -411,12 +549,36 @@ export function AgentDock() {
       setAgentMessage(message);
       setLiveRun({
         prompt,
-        progress: { status: "error", message, toolEvents: [] },
+        progress: {
+          status: "error",
+          message,
+          toolEvents: [],
+          progressEvents: [],
+          autonomous,
+          approvals: [],
+        },
       });
     } finally {
       await refreshConversations();
       setLiveRun(null);
       setBusy(false);
+    }
+  };
+
+  const onApproval = async (
+    execution: StudioExecution,
+    approval: AgentApprovalRequest,
+    decision: "approve" | "reject",
+  ) => {
+    setBusyApproval(approval.callId);
+    try {
+      const progress = await decideAgentApproval(execution.jobId, approval.callId, decision);
+      setAgentMessage(progress.message);
+      await refreshExecutions();
+    } catch (error) {
+      setAgentMessage(error instanceof Error ? error.message : "The approval could not be saved.");
+    } finally {
+      setBusyApproval(null);
     }
   };
 
@@ -589,6 +751,8 @@ export function AgentDock() {
             execution={execution}
             placedVersionIds={placedVersionIds}
             onPlace={onPlace}
+            onApproval={onApproval}
+            busyApproval={busyApproval}
           />
         ))}
         {liveRun ? <LiveExecutionTurn run={liveRun} /> : null}
@@ -612,6 +776,7 @@ export function AgentDock() {
           <textarea
             ref={inputRef}
             value={value}
+            maxLength={AGENT_PROMPT_MAX_CHARS}
             placeholder="Ask the project agent"
             rows={3}
             onFocus={() => setActiveTool("agent")}
@@ -643,21 +808,42 @@ export function AgentDock() {
               >
                 <AtSign size={15} />
               </button>
+              {value.length >= 4_000 ? (
+                <span className="agent-prompt-size" aria-live="polite">
+                  {value.length.toLocaleString()} / {AGENT_PROMPT_MAX_CHARS.toLocaleString()}
+                </span>
+              ) : null}
+              <label className={`agent-autonomy-toggle ${autonomous ? "active" : ""}`}>
+                <input
+                  type="checkbox"
+                  checked={autonomous}
+                  disabled={runInFlight}
+                  onChange={(event) => {
+                    const enabled = event.target.checked;
+                    setAutonomous(enabled);
+                    window.localStorage.setItem("renderhaus.agent.autonomous", String(enabled));
+                  }}
+                />
+                <ShieldCheck size={14} />
+                <span>{autonomous ? "Autonomous" : "Ask before tools"}</span>
+              </label>
             </div>
             <button
               className="send-btn"
               type="button"
-              aria-label={busy ? "Agent is working" : "Send to agent"}
-              disabled={busy || !value.trim() || !status?.agent || !conversationId}
+              aria-label={runInFlight ? "Agent is working" : "Send to agent"}
+              disabled={runInFlight || !value.trim() || !status?.agent || !conversationId}
               onClick={() => void submit()}
             >
-              {busy ? <LoaderCircle className="spin" size={14} /> : <Send size={14} />}
+              {runInFlight ? <LoaderCircle className="spin" size={14} /> : <Send size={14} />}
             </button>
           </div>
         </div>
         <div className="agent-composer-meta">
           <span>{selectedNodeIds.length ? `${selectedNodeIds.length} selected` : "Project context"}</span>
-          <span>{agentMessage || (status?.agent ? "Agent ready" : "Agent unavailable")}</span>
+          <span>
+            {agentMessage || activeExecution?.message || (status?.agent ? "Agent ready" : "Agent unavailable")}
+          </span>
         </div>
       </div>
     </aside>

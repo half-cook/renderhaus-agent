@@ -15,11 +15,20 @@ from agent.studio_agent_next import (
     StudioNode,
     StudioToolEvent,
     _build_agent,
+    _compaction_is_safe,
+    _TurnCompactionPolicy,
+    _committed_gateway_tools,
     _describe_gateway_mcp_tools,
-    _finalize_media_run,
     _gateway_tool_catalog,
+    _gateway_requires_approval,
+    _input_for,
     _record_run_tool_events,
+    _record_stream_event,
+    _tool_names_from_search_result,
+    _tools_from_search_result,
     _unwrap_tool_output,
+    _validate_video_delivery,
+    _visible_gateway_tools,
     agent_invocation,
     normalize_markdown_filename,
     run_studio_agent,
@@ -88,9 +97,47 @@ class StudioAgentNextEntrypointTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(request.nodes[0].id, "node-1")
         self.assertEqual(request.nodes[0].version_id, "version-1")
 
+    def test_versioned_nodes_expose_opaque_handles_not_expired_sources(self) -> None:
+        rendered = _input_for(
+            "Animate it",
+            [
+                StudioNode(
+                    id="node-1",
+                    title="Hero",
+                    kind="image",
+                    source="https://expired.example/frame.png",
+                    version_id="version-1",
+                )
+            ],
+        )
+        self.assertIn("renderhaus-asset://version-1", rendered)
+        self.assertNotIn("expired.example", rendered)
+
+    def test_gateway_arguments_resolve_nested_asset_handles_at_call_time(self) -> None:
+        published: list[str] = []
+
+        def publish(version_id: str) -> str:
+            published.append(version_id)
+            return f"https://signed.example/{version_id}"
+
+        studio = StudioAgentContext(source_publisher=publish)
+        resolved = studio.prepare_gateway_arguments(
+            "Remotion___render_timeline",
+            {"visuals": [{"kind": "image", "url": "renderhaus-asset://version-1"}]},
+        )
+        self.assertEqual(resolved["visuals"][0]["url"], "https://signed.example/version-1")
+        self.assertEqual(published, ["version-1"])
+
     def test_request_model_rejects_empty_prompt(self) -> None:
         with self.assertRaises(Exception):
             StudioAgentRequest.model_validate({"prompt": ""})
+
+    def test_request_accepts_a_prompt_larger_than_four_thousand_tokens(self) -> None:
+        prompt = "cinematic product detail " * 1_000
+
+        request = StudioAgentRequest.model_validate({"prompt": prompt})
+
+        self.assertGreater(len(request.prompt), 8_000)
 
     async def test_run_studio_agent_builds_input_and_sanitizes_filename(self) -> None:
         with patch.dict(os.environ, {"AGENT_MODEL": "openai:gpt-4.1-mini"}):
@@ -126,7 +173,7 @@ class StudioAgentNextEntrypointTests(unittest.IsolatedAsyncioTestCase):
         self.assertIsInstance(FakeRunner.seen_session, OpenAIResponsesCompactionSession)
         self.assertEqual(FakeRunner.seen_session.compaction_mode, "input")
         self.assertEqual(FakeRunner.seen_session.model, "gpt-4.1-mini")
-        self.assertEqual(FakeRunner.seen_agent.tools, [])
+        self.assertEqual([tool.name for tool in FakeRunner.seen_agent.tools], ["report_progress"])
         self.assertEqual(FakeRunner.seen_agent.mcp_servers, [])
         self.assertEqual(FakeRunner.seen_agent.model, "gpt-4.1-mini")
 
@@ -135,6 +182,67 @@ class StudioAgentNextEntrypointTests(unittest.IsolatedAsyncioTestCase):
             agent = _build_agent([])
 
         self.assertEqual(agent.model, "gpt-5.6-luna")
+        self.assertIsNone(agent.model_settings.reasoning)
+        self.assertEqual(agent.model_settings.verbosity, "low")
+
+    def test_gateway_calls_require_approval_unless_autonomous(self) -> None:
+        manual = SimpleNamespace(context=StudioAgentContext(autonomous=False))
+        autonomous = SimpleNamespace(context=StudioAgentContext(autonomous=True))
+
+        self.assertTrue(_gateway_requires_approval(manual, None, None))
+        self.assertFalse(_gateway_requires_approval(autonomous, None, None))
+
+    def test_compaction_waits_for_all_pending_tool_outputs(self) -> None:
+        history = [
+            {"type": "message", "role": "assistant", "content": f"turn {index}"}
+            for index in range(10)
+        ]
+        context = {
+            "session_items": history,
+            "compaction_candidate_items": history,
+        }
+        self.assertTrue(_compaction_is_safe(context))
+
+        pending = {"type": "function_call", "call_id": "call-1", "name": "tool"}
+        context["session_items"] = [*history, pending]
+        context["compaction_candidate_items"] = [*history, pending]
+        self.assertFalse(_compaction_is_safe(context))
+
+        context["session_items"] = [
+            *history,
+            pending,
+            {"type": "function_call_output", "call_id": "call-1", "output": "done"},
+        ]
+        self.assertTrue(_compaction_is_safe(context))
+
+        # Streamed runs can expose the next tool call in the candidate list before
+        # it appears in the full session snapshot.
+        context["session_items"] = history
+        context["compaction_candidate_items"] = [*history, pending]
+        self.assertFalse(_compaction_is_safe(context))
+
+    def test_compaction_policy_only_runs_between_completed_agent_turns(self) -> None:
+        history = [
+            {"type": "message", "role": "assistant", "content": f"turn {index}"}
+            for index in range(10)
+        ]
+        context = {
+            "session_items": history,
+            "compaction_candidate_items": history,
+        }
+        policy = _TurnCompactionPolicy()
+
+        self.assertFalse(policy(context))
+        policy.enabled = True
+        self.assertTrue(policy(context))
+
+    def test_agent_omits_gpt_5_only_settings_for_gpt_4(self) -> None:
+        with patch.dict(os.environ, {"AGENT_MODEL": "openai:gpt-4.1-mini"}):
+            agent = _build_agent([])
+
+        self.assertEqual(agent.model, "gpt-4.1-mini")
+        self.assertIsNone(agent.model_settings.reasoning)
+        self.assertIsNone(agent.model_settings.verbosity)
 
     async def test_agent_invocation_returns_structured_agentcore_result(self) -> None:
         output = StudioAgentOutput(
@@ -147,15 +255,19 @@ class StudioAgentNextEntrypointTests(unittest.IsolatedAsyncioTestCase):
             "agent.studio_agent_next.run_studio_agent",
             new=AsyncMock(return_value=output),
         ) as runner:
-            payload = await agent_invocation(
-                {
-                    "prompt": "Make the result",
-                    "job_id": "job-9",
-                    "conversation_id": "conversation-9",
-                    "session_items": [{"role": "user", "content": "Earlier request"}],
-                },
-                SimpleNamespace(session_id="session-9"),
-            )
+            chunks = [
+                chunk
+                async for chunk in agent_invocation(
+                    {
+                        "prompt": "Make the result",
+                        "job_id": "job-9",
+                        "conversation_id": "conversation-9",
+                        "session_items": [{"role": "user", "content": "Earlier request"}],
+                    },
+                    SimpleNamespace(session_id="session-9"),
+                )
+            ]
+            payload = chunks[-1]["payload"]
 
         self.assertEqual(payload["status"], "completed")
         self.assertEqual(payload["result"]["title"], "Customer result")
@@ -169,7 +281,10 @@ class StudioAgentNextEntrypointTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(request.job_id, "job-9")
 
     async def test_agent_invocation_returns_json_error_instead_of_raising(self) -> None:
-        payload = await agent_invocation({}, SimpleNamespace(session_id="session-err"))
+        chunks = [
+            chunk async for chunk in agent_invocation({}, SimpleNamespace(session_id="session-err"))
+        ]
+        payload = chunks[-1]["payload"]
         self.assertEqual(payload["status"], "failed")
         self.assertEqual(payload["error_type"], "ValidationError")
         self.assertIsNone(payload["result"])
@@ -271,12 +386,17 @@ class StudioAgentNextEntrypointTests(unittest.IsolatedAsyncioTestCase):
             ),
             studio,
         )
-        self.assertEqual(studio.tool_events[0].result["image_url"], "https://cdn.example/from-sdk.png")
+        self.assertEqual(
+            studio.tool_events[0].result["image_url"], "https://cdn.example/from-sdk.png"
+        )
 
     def test_gateway_mcp_descriptions_are_restored(self) -> None:
         catalog = _gateway_tool_catalog()
         self.assertIn("Remotion___render_timeline", catalog)
-        self.assertIn("compose", catalog["Remotion___render_timeline"]["description"].lower())
+        self.assertIn(
+            "edit decision list",
+            catalog["Remotion___render_timeline"]["description"].lower(),
+        )
         described = _describe_gateway_mcp_tools(
             [
                 {"name": "Remotion___render_timeline", "description": ""},
@@ -287,105 +407,206 @@ class StudioAgentNextEntrypointTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(described[0]["title"], "Compose final MP4")
         self.assertIn("image", described[1]["description"].lower())
 
-    async def test_finalizer_polls_media_and_creates_remotion_output(self) -> None:
-        class FakeGateway:
-            def __init__(self) -> None:
-                self.calls: list[tuple[str, dict]] = []
+    def test_gateway_search_reveals_only_discovered_tools(self) -> None:
+        tools = [
+            {"name": "x_amz_bedrock_agentcore_search"},
+            {"name": "Seedream___text_to_image"},
+            {"name": "Mureka___generate_music"},
+        ]
+        self.assertEqual(
+            [item["name"] for item in _visible_gateway_tools(tools, set())],
+            ["x_amz_bedrock_agentcore_search"],
+        )
+        discovered = _tool_names_from_search_result(
+            SimpleNamespace(
+                structuredContent={
+                    "tools": [
+                        {
+                            "name": "Seedream___text_to_image",
+                            "description": "Generate a still image.",
+                            "inputSchema": {
+                                "type": "object",
+                                "properties": {"prompt": {"type": "string"}},
+                                "required": ["prompt"],
+                            },
+                        }
+                    ]
+                }
+            )
+        )
+        self.assertEqual(discovered, {"Seedream___text_to_image"})
+        self.assertEqual(
+            [item["name"] for item in _visible_gateway_tools(tools, discovered)],
+            ["x_amz_bedrock_agentcore_search", "Seedream___text_to_image"],
+        )
+        definitions = _tools_from_search_result(
+            {
+                "structuredContent": {
+                    "tools": [
+                        {
+                            "name": "Seedream___text_to_image",
+                            "description": "Generate a still image.",
+                            "inputSchema": {"type": "object", "properties": {}},
+                        }
+                    ]
+                }
+            }
+        )
+        self.assertEqual(definitions[0].name, "Seedream___text_to_image")
 
-            async def call_tool(self, name, arguments):
-                self.calls.append((name, arguments))
-                if name == "Seedance___get_video_task":
-                    return SimpleNamespace(
-                        content=[
-                            SimpleNamespace(
-                                type="text",
-                                text=json.dumps(
-                                    {
-                                        "status": "succeeded",
-                                        "job_id": "video-1",
-                                        "video_url": "https://cdn.example/clip.mp4",
-                                        "duration_seconds": 4,
-                                    }
-                                ),
-                            )
-                        ],
-                        is_error=False,
-                    )
-                if name == "Remotion___render_timeline":
-                    return SimpleNamespace(
-                        content=[
-                            SimpleNamespace(
-                                type="text",
-                                text=json.dumps(
-                                    {
-                                        "status": "queued",
-                                        "render_id": "render-1",
-                                        "bucket_name": "renders",
-                                        "output_key": "final.mp4",
-                                    }
-                                ),
-                            )
-                        ],
-                        is_error=False,
-                    )
-                return SimpleNamespace(
-                    content=[
-                        SimpleNamespace(
-                            type="text",
-                            text=json.dumps(
-                                {
-                                    "status": "succeeded",
-                                    "render_id": "render-1",
-                                    "url": "https://cdn.example/final.mp4",
-                                }
-                            ),
-                        )
-                    ],
-                    is_error=False,
-                )
+    def test_paused_gateway_tool_definition_can_be_restored(self) -> None:
+        tools = _committed_gateway_tools({"Remotion___render_timeline"})
 
+        self.assertEqual([tool.name for tool in tools], ["Remotion___render_timeline"])
+        self.assertIn("visuals", tools[0].input_schema["properties"])
+
+    def test_stream_events_expose_safe_reasoning_and_tool_progress(self) -> None:
+        studio = StudioAgentContext()
+        names: dict[str, str] = {}
+        arguments: dict[str, dict] = {}
+        _record_stream_event(
+            SimpleNamespace(
+                type="run_item_stream_event",
+                name="reasoning_item_created",
+                item=SimpleNamespace(
+                    raw_item=SimpleNamespace(
+                        summary=[SimpleNamespace(text="Checking which image tool fits.")],
+                        content=[SimpleNamespace(text="private chain of thought")],
+                    )
+                ),
+            ),
+            studio,
+            names,
+            arguments,
+        )
+        _record_stream_event(
+            SimpleNamespace(
+                type="run_item_stream_event",
+                name="tool_called",
+                item=SimpleNamespace(
+                    call_id="call-1",
+                    tool_name="Seedream___text_to_image",
+                    arguments={"prompt": "A quiet portrait"},
+                ),
+            ),
+            studio,
+            names,
+            arguments,
+        )
+        _record_stream_event(
+            SimpleNamespace(
+                type="run_item_stream_event",
+                name="tool_output",
+                item=SimpleNamespace(
+                    call_id="call-1",
+                    output={"status": "succeeded", "image_url": "https://cdn.example/image.png"},
+                ),
+            ),
+            studio,
+            names,
+            arguments,
+        )
+
+        self.assertEqual(studio.progress_events[0].message, "Checking which image tool fits.")
+        self.assertNotIn("private chain", studio.progress_events[0].message)
+        self.assertEqual(studio.progress_events[-1].type, "TOOL_CALL_RESULT")
+        self.assertEqual(studio.tool_events[0].status, "succeeded")
+
+    def test_report_progress_tool_wrapper_does_not_leak_as_generic_tool(self) -> None:
+        studio = StudioAgentContext()
+        names: dict[str, str] = {}
+        arguments: dict[str, dict] = {}
+
+        _record_stream_event(
+            SimpleNamespace(
+                type="run_item_stream_event",
+                name="tool_called",
+                item=SimpleNamespace(
+                    call_id="progress-1",
+                    tool_name="report_progress",
+                    arguments={"message": "I am checking the model catalog."},
+                ),
+            ),
+            studio,
+            names,
+            arguments,
+        )
+        _record_stream_event(
+            SimpleNamespace(
+                type="run_item_stream_event",
+                name="tool_output",
+                item=SimpleNamespace(
+                    call_id="progress-1",
+                    output="Update shown to the customer.",
+                ),
+            ),
+            studio,
+            names,
+            arguments,
+        )
+
+        self.assertEqual(names, {"progress-1": "report_progress"})
+        self.assertEqual(studio.tool_events, [])
+        self.assertEqual(studio.progress_events, [])
+
+    def test_video_delivery_requires_a_model_planned_successful_remotion_render(self) -> None:
+        request = StudioAgentRequest(prompt="Create a short alien video")
         studio = StudioAgentContext(
             tool_events=[
                 StudioToolEvent(
                     id="create-video",
                     name="Seedance___text_to_video",
-                    label="Seedance text to video",
-                    status="queued",
-                    summary="Queued.",
-                    provider_job_id="video-1",
-                    result={"status": "queued", "job_id": "video-1"},
+                    label="Generate video",
+                    status="succeeded",
+                    summary="Clip ready.",
+                    provider="seedance",
+                    result={"status": "succeeded", "video_url": "https://cdn/clip.mp4"},
                 )
             ]
         )
-        gateway = FakeGateway()
-        await _finalize_media_run(
-            StudioAgentRequest(prompt="Create a short alien video"),
-            StudioAgentOutput(
-                title="Alien video",
-                summary="Ready.",
-                markdown="# Alien video",
-                filename="alien-video.md",
-            ),
-            studio,
-            [gateway],  # type: ignore[list-item]
-        )
 
-        self.assertEqual(
-            [name for name, _arguments in gateway.calls],
-            [
-                "Seedance___get_video_task",
-                "Remotion___render_timeline",
-                "Remotion___get_render_progress",
-            ],
+        with self.assertRaisesRegex(RuntimeError, "no successful Remotion MP4"):
+            _validate_video_delivery(request, studio)
+
+        studio.tool_events.append(
+            StudioToolEvent(
+                id="render-progress",
+                name="Remotion___get_render_progress",
+                label="Poll Remotion render",
+                status="succeeded",
+                summary="Final MP4 ready.",
+                provider="remotion",
+                result={"status": "succeeded", "url": "https://cdn/final.mp4"},
+            )
         )
-        self.assertEqual(studio.tool_events[-1].result["url"], "https://cdn.example/final.mp4")
-        render_arguments = gateway.calls[1][1]
-        self.assertEqual(render_arguments["visuals"][0]["url"], "https://cdn.example/clip.mp4")
-        self.assertEqual(
-            studio.tool_events[1].arguments,
-            {"job_id": "video-1", "download": False},
+        _validate_video_delivery(request, studio)
+
+    def test_video_delivery_guard_follows_retry_context_without_leaking_to_new_image_work(
+        self,
+    ) -> None:
+        studio = StudioAgentContext(
+            tool_events=[
+                StudioToolEvent(
+                    id="create-image",
+                    name="Seedream___text_to_image",
+                    label="Generate image",
+                    status="succeeded",
+                    summary="Image ready.",
+                    provider="seedream",
+                )
+            ]
         )
-        self.assertEqual(studio.tool_events[2].arguments, render_arguments)
+        prior = [{"role": "user", "content": "Create a 60 second product video"}]
+
+        with self.assertRaisesRegex(RuntimeError, "no successful Remotion MP4"):
+            _validate_video_delivery(
+                StudioAgentRequest(prompt="Retry it", session_items=prior),
+                studio,
+            )
+        _validate_video_delivery(
+            StudioAgentRequest(prompt="Create a new hero image", session_items=prior),
+            studio,
+        )
 
     def test_harvest_reads_output_on_mcp_call_item(self) -> None:
         studio = StudioAgentContext()
@@ -398,7 +619,10 @@ class StudioAgentNextEntrypointTests(unittest.IsolatedAsyncioTestCase):
                         tool_name="Mureka___generate_music",
                         raw_item=SimpleNamespace(
                             name="Mureka___generate_music",
-                            output={"status": "succeeded", "audio_url": "https://cdn.example/bed.mp3"},
+                            output={
+                                "status": "succeeded",
+                                "audio_url": "https://cdn.example/bed.mp3",
+                            },
                         ),
                     )
                 ]
@@ -445,6 +669,64 @@ class StudioAgentNextEntrypointTests(unittest.IsolatedAsyncioTestCase):
             )
 
         self.assertEqual(studio.tool_events[0].result["image_url"], "https://cdn.example/hero.png")
+
+    async def test_gateway_connection_does_not_emit_scripted_progress(self) -> None:
+        class FakeManager:
+            def __init__(self, *_args, **_kwargs) -> None:
+                self.active_servers = []
+
+            async def __aenter__(self):
+                return self
+
+            async def __aexit__(self, *_args):
+                return False
+
+        studio = StudioAgentContext()
+        with (
+            patch.dict(os.environ, {"AGENT_MODEL": "openai:gpt-4.1-mini"}),
+            patch("agent.studio_agent_next.gateway_mcp_server", return_value=object()),
+            patch("agent.studio_agent_next.MCPServerManager", FakeManager),
+        ):
+            await run_studio_agent(
+                StudioAgentRequest(prompt="Make a launch outline", job_id="job-gateway"),
+                runner=FakeRunner,
+                studio=studio,
+            )
+
+        self.assertFalse(any(event.id == "gateway-connect" for event in studio.progress_events))
+        self.assertFalse(any("Choosing" in event.message for event in studio.progress_events))
+
+    async def test_model_failure_emits_only_the_real_run_error(self) -> None:
+        class FakeManager:
+            def __init__(self, *_args, **_kwargs) -> None:
+                self.active_servers = []
+
+            async def __aenter__(self):
+                return self
+
+            async def __aexit__(self, *_args):
+                return False
+
+        class FailingRunner:
+            @classmethod
+            async def run(cls, *_args, **_kwargs):
+                raise RuntimeError("model failed")
+
+        studio = StudioAgentContext()
+        with (
+            patch.dict(os.environ, {"AGENT_MODEL": "gpt-5.6-luna"}),
+            patch("agent.studio_agent_next.gateway_mcp_server", return_value=object()),
+            patch("agent.studio_agent_next.MCPServerManager", FakeManager),
+        ):
+            with self.assertRaises(RuntimeError):
+                await run_studio_agent(
+                    StudioAgentRequest(prompt="Make a launch outline", job_id="job-failure"),
+                    runner=FailingRunner,
+                    studio=studio,
+                )
+
+        self.assertFalse(any(event.id == "gateway-connect" for event in studio.progress_events))
+        self.assertEqual(studio.progress_events[-1].type, "RUN_ERROR")
 
 
 if __name__ == "__main__":

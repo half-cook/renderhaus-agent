@@ -25,7 +25,7 @@ DEFAULT_ENV = {
     "MUREKA_API_URL": "https://api.mureka.ai",
     "MUREKA_MODEL": "auto",
     "MUREKA_DRY_RUN": "true",
-    "REMOTION_DRY_RUN": "true",
+    "REMOTION_DRY_RUN": "false",
     "TIME_OUT_SECONDS": "300",
     "RENDERHAUS_MEDIA_DIR": ".renderhaus/media",
 }

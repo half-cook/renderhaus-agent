@@ -1,7 +1,7 @@
 [
   {
     "name": "text_to_image",
-    "description": "Generate an image with Seedream and save it locally when live.",
+    "description": "Use when the user needs a new still image from a text description. Do not use for editing an existing image; use image_to_image instead. Returns a generated image.",
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -9,10 +9,12 @@
           "type": "string"
         },
         "aspect_ratio": {
-          "type": "string"
+          "type": "string",
+          "description": "Allowed values: 1:1, 16:9, 9:16."
         },
         "size": {
-          "type": "string"
+          "type": "string",
+          "description": "Allowed values: 1K, 2K, 3K. Or use explicit WIDTHxHEIGHT dimensions."
         },
         "model": {
           "type": "string"
@@ -22,7 +24,7 @@
         },
         "response_format": {
           "type": "string",
-          "description": "One of: url, b64_json."
+          "description": "One of: url, b64_json. Allowed values: url, b64_json."
         }
       },
       "required": [
@@ -32,7 +34,7 @@
   },
   {
     "name": "image_to_image",
-    "description": "Edit or restyle an image with Seedream and save it locally when live.",
+    "description": "Use when the user supplied or referenced an existing image and wants it edited, restyled, or varied while preserving visual context. Returns a new image.",
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -43,10 +45,12 @@
           "type": "string"
         },
         "aspect_ratio": {
-          "type": "string"
+          "type": "string",
+          "description": "Allowed values: 1:1, 16:9, 9:16."
         },
         "size": {
-          "type": "string"
+          "type": "string",
+          "description": "Allowed values: 1K, 2K, 3K. Or use explicit WIDTHxHEIGHT dimensions."
         },
         "model": {
           "type": "string"
@@ -56,7 +60,7 @@
         },
         "response_format": {
           "type": "string",
-          "description": "One of: url, b64_json."
+          "description": "One of: url, b64_json. Allowed values: url, b64_json."
         }
       },
       "required": [
@@ -67,7 +71,7 @@
   },
   {
     "name": "list_seedream_models",
-    "description": "List image generation models visible from this BytePlus API key.",
+    "description": "Use only when model selection or model availability is relevant; it does not generate media. Prefer the configured default for ordinary image requests.",
     "inputSchema": {
       "type": "object",
       "properties": {},

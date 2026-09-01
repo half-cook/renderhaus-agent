@@ -43,6 +43,14 @@ LAMBDA_ROLE_NAME = "RenderhausGatewayLambdaRole"
 GATEWAY_ROLE_NAME = "RenderhausMurekaGatewayRole"
 GATEWAY_NAME = "renderhaus-mureka-gateway"
 DEFAULT_SECRET_NAME = "renderhaus/app"
+GATEWAY_INSTRUCTIONS = (
+    "Renderhaus creates and edits media for a visual canvas. Use semantic tool search before "
+    "selecting provider tools. Search with the user's concrete intent, the input media already "
+    "available, and the required output type. Seedream creates or edits still images; Seedance "
+    "creates video clips; Mureka creates or edits music, songs, lyrics, and speech; Remotion "
+    "assembles finished assets into an MP4. Creation tools can start paid work. Poll tools only "
+    "after their matching creation tool returns a task or render id."
+)
 
 
 def build_lambda_zip() -> bytes:
@@ -89,7 +97,9 @@ def build_lambda_zip() -> bytes:
         return buf.getvalue()
 
 
-def _ensure_lambda_role(iam, account: str, region: str, secret_name: str, remotion_bucket: str = "") -> str:
+def _ensure_lambda_role(
+    iam, account: str, region: str, secret_name: str, remotion_bucket: str = ""
+) -> str:
     role_arn = f"arn:aws:iam::{account}:role/{LAMBDA_ROLE_NAME}"
     trust = {
         "Version": "2012-10-17",
@@ -189,9 +199,7 @@ def _ensure_gateway_role(iam, account: str, region: str) -> str:
                 "Action": "sts:AssumeRole",
                 "Condition": {
                     "StringEquals": {"aws:SourceAccount": account},
-                    "ArnLike": {
-                        "aws:SourceArn": f"arn:aws:bedrock-agentcore:{region}:{account}:*"
-                    },
+                    "ArnLike": {"aws:SourceArn": f"arn:aws:bedrock-agentcore:{region}:{account}:*"},
                 },
             }
         ],
@@ -298,6 +306,24 @@ def _find_gateway(control, name: str) -> dict | None:
             return None
 
 
+def _wait_gateway_ready(control, gateway_id: str, *, timeout_seconds: int = 90) -> dict:
+    deadline = time.monotonic() + timeout_seconds
+    last_status = "UNKNOWN"
+    while time.monotonic() < deadline:
+        detail = control.get_gateway(gatewayIdentifier=gateway_id)
+        gateway = detail.get("gateway") or detail
+        last_status = str(gateway.get("status") or "UNKNOWN").upper()
+        if last_status == "READY":
+            return detail
+        if last_status in {"FAILED", "DELETING", "DELETE_FAILED"}:
+            raise RuntimeError(f"Gateway {gateway_id} entered {last_status} status.")
+        time.sleep(2)
+    raise TimeoutError(
+        f"Gateway {gateway_id} did not become READY within {timeout_seconds}s "
+        f"(last status: {last_status})."
+    )
+
+
 def _upsert_gateway(control, *, role_arn: str) -> tuple[str, str]:
     existing = _find_gateway(control, GATEWAY_NAME)
     create_kwargs = {
@@ -305,23 +331,32 @@ def _upsert_gateway(control, *, role_arn: str) -> tuple[str, str]:
         "roleArn": role_arn,
         "protocolType": "MCP",
         "authorizerType": "NONE",
-        "description": "Renderhaus provider tools via Lambda",
+        "description": "Context-aware Renderhaus media tools via Lambda",
+        "protocolConfiguration": {
+            "mcp": {
+                "searchType": "SEMANTIC",
+                "instructions": GATEWAY_INSTRUCTIONS,
+            }
+        },
     }
     if existing:
-        gateway_id = existing.get("gatewayId") or existing.get("gatewayIdentifier") or existing.get("id")
-        print(f"Gateway exists: {gateway_id}")
+        gateway_id = (
+            existing.get("gatewayId") or existing.get("gatewayIdentifier") or existing.get("id")
+        )
+        print(f"Updating gateway {gateway_id} while preserving its search configuration")
+        # AgentCore rejects protocolConfiguration.searchType updates after the first target exists,
+        # even when the requested value is unchanged. Search mode is selected at Gateway creation;
+        # subsequent deploys update mutable metadata and each target's schema independently.
+        control.update_gateway(
+            gatewayIdentifier=gateway_id,
+            name=create_kwargs["name"],
+            roleArn=create_kwargs["roleArn"],
+            authorizerType=create_kwargs["authorizerType"],
+            description=create_kwargs["description"],
+        )
     else:
         print(f"Creating gateway {GATEWAY_NAME}")
-        try:
-            resp = control.create_gateway(**create_kwargs)
-        except ClientError:
-            create_kwargs.pop("authorizerType", None)
-            resp = control.create_gateway(
-                name=GATEWAY_NAME,
-                roleArn=role_arn,
-                protocolType="MCP",
-                description="Renderhaus provider tools via Lambda",
-            )
+        resp = control.create_gateway(**create_kwargs)
         gateway_id = (
             resp.get("gatewayId")
             or resp.get("gatewayIdentifier")
@@ -331,7 +366,7 @@ def _upsert_gateway(control, *, role_arn: str) -> tuple[str, str]:
             raise RuntimeError(f"create_gateway returned no id: {resp}")
         time.sleep(5)
 
-    detail = control.get_gateway(gatewayIdentifier=gateway_id)
+    detail = _wait_gateway_ready(control, gateway_id)
     gateway = detail.get("gateway") or detail
     url = (
         gateway.get("gatewayUrl")
@@ -480,7 +515,9 @@ def main() -> int:
     out.write_text("\n".join(lines) + "\n")
     print(f"Wrote {out}")
     print(f"Gateway URL: {gateway_url}")
-    print("Next: set AGENTCORE_GATEWAY_URL in Secrets Manager / runtime env, then redeploy AgentCore runtime.")
+    print(
+        "Next: set AGENTCORE_GATEWAY_URL in Secrets Manager / runtime env, then redeploy AgentCore runtime."
+    )
     return 0
 
 

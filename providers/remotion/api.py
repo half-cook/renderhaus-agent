@@ -29,6 +29,7 @@ DEPLOYMENT_PATH = ROOT / ".renderhaus" / "remotion" / "deployment.json"
 OUTPUT_DIR = ROOT / ".renderhaus" / "media" / "remotion"
 COMPOSITION_ID = "RenderhausTimeline"
 ASPECT_SIZES = {"16:9": (1920, 1080), "9:16": (1080, 1920), "1:1": (1080, 1080)}
+DEFAULT_FRAMES_PER_LAMBDA = 100
 
 
 @dataclass(frozen=True, slots=True)
@@ -40,7 +41,7 @@ class RemotionSettings:
 
 
 def dry_run() -> bool:
-    return os.getenv("REMOTION_DRY_RUN", "true").lower() != "false"
+    return os.getenv("REMOTION_DRY_RUN", "false").lower() != "false"
 
 
 def _on_lambda() -> bool:
@@ -151,6 +152,7 @@ def build_timeline_props(
     title: str,
     visuals: list[dict[str, Any]],
     audio_tracks: list[dict[str, Any]] | None = None,
+    text_overlays: list[dict[str, Any]] | None = None,
     aspect_ratio: str = "9:16",
     fps: int = 30,
 ) -> dict[str, Any]:
@@ -160,7 +162,8 @@ def build_timeline_props(
         raise ValueError("At least one visual clip is required for a Remotion render.")
     width, height = ASPECT_SIZES[aspect_ratio]
     assets: list[dict[str, Any]] = []
-    visual_items: list[dict[str, Any]] = []
+    visual_tracks: dict[int, list[dict[str, Any]]] = {}
+    track_ends: dict[int, float] = {}
     for index, clip in enumerate(visuals):
         kind = str(clip.get("kind") or "image")
         if kind not in {"image", "video"}:
@@ -171,8 +174,30 @@ def build_timeline_props(
         duration = float(clip.get("duration_seconds") or 0)
         if duration <= 0:
             raise ValueError("Each visual clip needs duration_seconds greater than 0.")
-        start = float(clip.get("start_seconds") or 0)
+        track = max(0, min(int(clip.get("track") or 0), 8))
+        start = (
+            float(clip["start_seconds"])
+            if clip.get("start_seconds") is not None
+            else track_ends.get(track, 0.0)
+        )
+        if start < 0:
+            raise ValueError("Each visual clip start_seconds must be at least 0.")
         source_in = float(clip.get("source_in_seconds") or 0)
+        transition = str(clip.get("transition") or "cut")
+        if transition not in {"cut", "fade", "dip_to_black"}:
+            raise ValueError("Visual transition must be cut, fade, or dip_to_black.")
+        fit = str(clip.get("fit") or "cover")
+        if fit not in {"cover", "contain"}:
+            raise ValueError("Visual fit must be cover or contain.")
+        motion = str(clip.get("motion") or "none")
+        if motion not in {"none", "zoom_in", "zoom_out", "pan_left", "pan_right"}:
+            raise ValueError(
+                "Visual motion must be none, zoom_in, zoom_out, pan_left, or pan_right."
+            )
+        opacity = max(0.0, min(float(clip.get("opacity", 1)), 1.0))
+        scale = max(0.1, min(float(clip.get("scale", 1)), 4.0))
+        playback_rate = max(0.25, min(float(clip.get("playback_rate", 1)), 4.0))
+        default_fade = min(0.35, duration / 3) if transition != "cut" else 0.0
         asset_id = f"visual-{index + 1}"
         assets.append(
             {
@@ -183,7 +208,7 @@ def build_timeline_props(
                 "durationSec": duration,
             }
         )
-        visual_items.append(
+        visual_tracks.setdefault(track, []).append(
             {
                 "id": f"visual-clip-{index + 1}",
                 "type": "clip",
@@ -191,11 +216,31 @@ def build_timeline_props(
                 "start": start,
                 "duration": duration,
                 "sourceIn": source_in,
-                "sourceOut": source_in + duration,
+                "sourceOut": source_in + duration * playback_rate,
+                "fit": fit,
+                "positionX": max(0.0, min(float(clip.get("position_x", 0.5)), 1.0)),
+                "positionY": max(0.0, min(float(clip.get("position_y", 0.5)), 1.0)),
+                "scale": scale,
+                "opacity": opacity,
+                "rotation": max(-360.0, min(float(clip.get("rotation_degrees", 0)), 360.0)),
+                "playbackRate": playback_rate,
+                "fadeIn": max(0.0, min(float(clip.get("fade_in_seconds", default_fade)), duration)),
+                "fadeOut": max(
+                    0.0, min(float(clip.get("fade_out_seconds", default_fade)), duration)
+                ),
+                "motion": motion,
+                "transition": transition,
             }
         )
+        track_ends[track] = max(track_ends.get(track, 0.0), start + duration)
     tracks: list[dict[str, Any]] = [
-        {"id": "video-1", "kind": "video", "name": "Video", "items": visual_items}
+        {
+            "id": f"video-{track + 1}",
+            "kind": "video" if track == 0 else "overlay",
+            "name": "Main video" if track == 0 else f"B-roll {track}",
+            "items": items,
+        }
+        for track, items in sorted(visual_tracks.items())
     ]
     for index, clip in enumerate(audio_tracks or []):
         url = str(clip.get("url") or "").strip()
@@ -232,9 +277,48 @@ def build_timeline_props(
                         "sourceIn": source_in,
                         "sourceOut": source_in + duration,
                         "volume": volume,
+                        "fadeIn": max(
+                            0.0,
+                            min(float(clip.get("fade_in_seconds") or 0), duration),
+                        ),
+                        "fadeOut": max(
+                            0.0,
+                            min(float(clip.get("fade_out_seconds") or 0), duration),
+                        ),
                     }
                 ],
             }
+        )
+    overlay_items: list[dict[str, Any]] = []
+    for index, overlay in enumerate(text_overlays or []):
+        text = str(overlay.get("text") or "").strip()
+        if not text:
+            raise ValueError("Each text overlay needs non-empty text.")
+        duration = float(overlay.get("duration_seconds") or 0)
+        if duration <= 0:
+            raise ValueError("Each text overlay needs duration_seconds greater than 0.")
+        position = str(overlay.get("position") or "center")
+        if position not in {"top", "center", "bottom"}:
+            raise ValueError("Text overlay position must be top, center, or bottom.")
+        overlay_items.append(
+            {
+                "id": f"text-{index + 1}",
+                "type": "text",
+                "text": text[:500],
+                "start": max(0.0, float(overlay.get("start_seconds") or 0)),
+                "duration": duration,
+                "position": position,
+                "fontSize": max(16, min(int(overlay.get("font_size") or 64), 180)),
+                "color": str(overlay.get("color") or "#ffffff")[:32],
+                "backgroundColor": str(overlay.get("background_color") or "transparent")[:32],
+                "fontWeight": max(100, min(int(overlay.get("font_weight") or 700), 900)),
+                "fadeIn": max(0.0, min(float(overlay.get("fade_in_seconds") or 0.2), duration)),
+                "fadeOut": max(0.0, min(float(overlay.get("fade_out_seconds") or 0.2), duration)),
+            }
+        )
+    if overlay_items:
+        tracks.append(
+            {"id": "titles-1", "kind": "caption", "name": "Titles", "items": overlay_items}
         )
     return {
         "document": {
@@ -277,7 +361,7 @@ def _start_lambda_render(
             out_name=output_key,
             frames_per_lambda=max(
                 20,
-                int(os.getenv("REMOTION_FRAMES_PER_LAMBDA", "400")),
+                int(os.getenv("REMOTION_FRAMES_PER_LAMBDA", str(DEFAULT_FRAMES_PER_LAMBDA))),
             ),
             max_retries=1,
             x264_preset="veryfast",
@@ -299,6 +383,7 @@ def render_timeline(
     title: str,
     visuals: list[dict[str, Any]],
     audio_tracks: list[dict[str, Any]] | None = None,
+    text_overlays: list[dict[str, Any]] | None = None,
     aspect_ratio: Literal["16:9", "9:16", "1:1"] = "9:16",
     fps: int = 30,
     output_filename: str = "renderhaus-video.mp4",
@@ -318,6 +403,7 @@ def render_timeline(
         title,
         visuals,
         audio_tracks=audio_tracks,
+        text_overlays=text_overlays,
         aspect_ratio=str(aspect_ratio),
         fps=int(fps),
     )
@@ -338,9 +424,13 @@ def _progress_payload(
     s3 = session.client("s3")
     done = completed_from_s3 or bool(progress and progress.done)
     failed = bool(progress and progress.fatalErrorEncountered)
-    overall = float(getattr(progress, "overallProgress", 0) or 0) if progress else (1.0 if done else 0.0)
+    overall = (
+        float(getattr(progress, "overallProgress", 0) or 0) if progress else (1.0 if done else 0.0)
+    )
     if failed:
-        messages = [str(item.get("message") or item) for item in (progress.errors[:3] if progress else [])]
+        messages = [
+            str(item.get("message") or item) for item in (progress.errors[:3] if progress else [])
+        ]
         return {
             "status": "failed",
             "render_id": render_id,

@@ -1,5 +1,10 @@
 import type { FieldOptions, ProviderCatalog, StudioAsset, StudioStatus } from "./types";
-import type { AgentResultData, AgentToolEvent, CreativeNodeKind } from "./canvas/types";
+import type {
+  AgentProgressEvent,
+  AgentResultData,
+  AgentToolEvent,
+  CreativeNodeKind,
+} from "./canvas/types";
 import { studioFetch } from "./authenticated-fetch";
 
 function studioAsset(value: unknown): StudioAsset | null {
@@ -202,12 +207,47 @@ export type StudioExecution = {
   summary?: string;
   primaryAsset?: StudioAsset;
   toolEvents: AgentToolEvent[];
+  progressEvents: AgentProgressEvent[];
   assets: StudioAsset[];
   result?: AgentResultData;
   errorType?: string;
   createdAt?: number;
   updatedAt?: number;
+  autonomous: boolean;
+  approvals: AgentApprovalRequest[];
 };
+
+export type AgentApprovalRequest = {
+  callId: string;
+  toolName: string;
+  label: string;
+  provider?: string;
+  arguments: Record<string, unknown>;
+  decision?: "approve" | "reject";
+  message?: string;
+};
+
+function agentApprovals(value: unknown): AgentApprovalRequest[] {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((approval) => {
+    const item = approval as Record<string, unknown>;
+    const callId = item.call_id;
+    if (typeof callId !== "string" || !callId) return [];
+    return [{
+      callId,
+      toolName: String(item.tool_name || "tool"),
+      label: String(item.label || item.tool_name || "Tool"),
+      provider: typeof item.provider === "string" ? item.provider : undefined,
+      arguments:
+        item.arguments && typeof item.arguments === "object" && !Array.isArray(item.arguments)
+          ? (item.arguments as Record<string, unknown>)
+          : {},
+      decision:
+        item.decision === "approve" || item.decision === "reject" ? item.decision : undefined,
+      message: typeof item.message === "string" ? item.message : undefined,
+    }];
+  });
+}
 
 function agentToolEvents(value: unknown): AgentToolEvent[] {
   if (!Array.isArray(value)) return [];
@@ -227,6 +267,25 @@ function agentToolEvents(value: unknown): AgentToolEvent[] {
           ? (item.arguments as Record<string, unknown>)
           : {},
       assets: studioAssets(item.assets),
+    };
+  });
+}
+
+function agentProgressEvents(value: unknown): AgentProgressEvent[] {
+  if (!Array.isArray(value)) return [];
+  return value.map((event) => {
+    const item = event as Record<string, unknown>;
+    return {
+      id: String(item.id || crypto.randomUUID()),
+      type: String(item.type || "STEP_STARTED"),
+      title: String(item.title || "Agent update"),
+      message: String(item.message || ""),
+      status: String(item.status || "running"),
+      toolCallId:
+        typeof item.tool_call_id === "string" ? item.tool_call_id : undefined,
+      toolCallName:
+        typeof item.tool_call_name === "string" ? item.tool_call_name : undefined,
+      createdAt: typeof item.created_at === "number" ? item.created_at : undefined,
     };
   });
 }
@@ -289,11 +348,14 @@ export async function fetchStudioExecutions(
       summary: typeof result.summary === "string" ? result.summary : undefined,
       primaryAsset,
       toolEvents,
+      progressEvents: agentProgressEvents(item.events),
       assets,
       result: agentResult,
       errorType: typeof item.error_type === "string" ? item.error_type : undefined,
       createdAt: typeof item.created_at === "number" ? item.created_at : undefined,
       updatedAt: typeof item.updated_at === "number" ? item.updated_at : undefined,
+      autonomous: item.autonomous === true,
+      approvals: agentApprovals(item.approvals),
     };
   });
 }
@@ -369,6 +431,7 @@ export async function updateStudioConversation(
 
 export type AgentSubmissionResult =
   | { status: "completed"; message: string; result: AgentResultData }
+  | { status: "awaiting_approval"; message: string; jobId: string }
   | { status: "error"; message: string; result?: AgentResultData };
 
 export type AgentNodeContext = {
@@ -390,9 +453,12 @@ type AgentJobPayload = {
   detail?: string;
   result?: Record<string, unknown>;
   tool_calls?: unknown[];
+  events?: unknown[];
   error_type?: string;
   created_at?: number;
   updated_at?: number;
+  autonomous?: boolean;
+  approvals?: unknown[];
 };
 
 export type AgentProgress = {
@@ -400,9 +466,13 @@ export type AgentProgress = {
   status: string;
   message: string;
   toolEvents: AgentToolEvent[];
+  progressEvents: AgentProgressEvent[];
   result?: AgentResultData;
+  autonomous: boolean;
+  approvals: AgentApprovalRequest[];
 };
 
+export const AGENT_PROMPT_MAX_CHARS = 64_000;
 const AGENT_POLL_INTERVAL_MS = 1_000;
 const AGENT_POLL_TIMEOUT_MS = 20 * 60 * 1_000;
 
@@ -449,7 +519,7 @@ function completedAgentResult(payload: AgentJobPayload): AgentSubmissionResult {
 
 function agentProgress(payload: AgentJobPayload): AgentProgress {
   const completed = payload.result ? completedAgentResult(payload) : undefined;
-  const result = completed?.result;
+  const result = completed && "result" in completed ? completed.result : undefined;
   return {
     jobId: payload.job_id,
     status: String(payload.status || "running"),
@@ -458,7 +528,10 @@ function agentProgress(payload: AgentJobPayload): AgentProgress {
       result?.toolEvents.length
         ? result.toolEvents
         : agentToolEvents(payload.tool_calls),
+    progressEvents: agentProgressEvents(payload.events),
     ...(result ? { result } : {}),
+    autonomous: payload.autonomous === true,
+    approvals: agentApprovals(payload.approvals),
   };
 }
 
@@ -492,6 +565,13 @@ async function waitForAgentJob(
     if (payload.status === "completed") {
       return completedAgentResult(payload);
     }
+    if (payload.status === "awaiting_approval") {
+      return {
+        status: "awaiting_approval",
+        message: payload.message || "Waiting for tool approval.",
+        jobId,
+      };
+    }
     if (payload.status === "error") {
       const partial = payload.result ? completedAgentResult(payload) : null;
       return {
@@ -507,12 +587,80 @@ async function waitForAgentJob(
   };
 }
 
+async function streamAgentJob(
+  jobId: string,
+  onProgress?: (progress: AgentProgress) => void,
+): Promise<AgentSubmissionResult> {
+  try {
+    const response = await studioFetch(
+      `/api/studio/agent/${encodeURIComponent(jobId)}/events`,
+      {
+        cache: "no-store",
+        headers: { Accept: "text/event-stream" },
+      },
+    );
+    if (!response.ok) {
+      const payload = (await response.json().catch(() => ({}))) as AgentJobPayload;
+      return agentError(payload, response);
+    }
+    if (!response.body) return waitForAgentJob(jobId, onProgress);
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+    const deadline = Date.now() + AGENT_POLL_TIMEOUT_MS;
+
+    while (Date.now() < deadline) {
+      const { value, done } = await reader.read();
+      buffer += decoder.decode(value || new Uint8Array(), { stream: !done });
+      const frames = buffer.split(/\r?\n\r?\n/);
+      buffer = frames.pop() || "";
+      for (const frame of frames) {
+        const data = frame
+          .split(/\r?\n/)
+          .filter((line) => line.startsWith("data:"))
+          .map((line) => line.slice(5).trimStart())
+          .join("\n");
+        if (!data) continue;
+        let payload: AgentJobPayload;
+        try {
+          payload = JSON.parse(data) as AgentJobPayload;
+        } catch {
+          continue;
+        }
+        onProgress?.(agentProgress(payload));
+        if (payload.status === "completed") return completedAgentResult(payload);
+        if (payload.status === "awaiting_approval") {
+          return {
+            status: "awaiting_approval",
+            message: payload.message || "Waiting for tool approval.",
+            jobId,
+          };
+        }
+        if (["error", "failed"].includes(String(payload.status))) {
+          const partial = payload.result ? completedAgentResult(payload) : null;
+          return {
+            status: "error",
+            message: payload.message || "The agent could not finish this request.",
+            ...(partial?.status === "completed" ? { result: partial.result } : {}),
+          };
+        }
+      }
+      if (done) break;
+    }
+  } catch {
+    // Fall back to polling for older deployments and interrupted proxy streams.
+  }
+  return waitForAgentJob(jobId, onProgress);
+}
+
 export async function submitAgentPrompt(
   prompt: string,
   projectId: string,
   conversationId: string,
   nodeIds: string[],
   nodes: AgentNodeContext[],
+  autonomous: boolean,
   onProgress?: (progress: AgentProgress) => void,
 ): Promise<AgentSubmissionResult> {
   const response = await studioFetch("/api/studio/agent", {
@@ -524,6 +672,7 @@ export async function submitAgentPrompt(
       conversation_id: conversationId,
       node_ids: nodeIds,
       nodes,
+      autonomous,
     }),
   });
   const payload = (await response.json().catch(() => ({}))) as AgentJobPayload;
@@ -537,5 +686,25 @@ export async function submitAgentPrompt(
     return { status: "error", message: "The agent did not return a job identifier." };
   }
   onProgress?.(agentProgress(payload));
-  return waitForAgentJob(payload.job_id, onProgress);
+  return streamAgentJob(payload.job_id, onProgress);
+}
+
+export async function decideAgentApproval(
+  jobId: string,
+  callId: string,
+  decision: "approve" | "reject",
+): Promise<AgentProgress> {
+  const response = await studioFetch(
+    `/api/studio/agent/${encodeURIComponent(jobId)}/approvals/${encodeURIComponent(callId)}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ decision }),
+    },
+  );
+  const payload = (await response.json().catch(() => ({}))) as AgentJobPayload;
+  if (!response.ok) {
+    throw new Error(payload.detail || payload.message || `approval ${response.status}`);
+  }
+  return agentProgress(payload);
 }

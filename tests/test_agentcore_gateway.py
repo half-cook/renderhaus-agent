@@ -8,7 +8,13 @@ from unittest.mock import patch
 from agents.mcp import MCPServerStreamableHttp
 
 from agent.studio_agent_next import gateway_mcp_server
-from providers.registry import _json_schema_for_hint, sanitize_gateway_json_schema
+from providers.catalog import get_provider
+from providers.registry import (
+    _json_schema_for_hint,
+    dispatch,
+    generate_schemas,
+    sanitize_gateway_json_schema,
+)
 from server.config import GATEWAY_MCP_SERVER_NAME, require_agentcore_gateway_url
 
 
@@ -63,6 +69,56 @@ class GatewayToolSchemaTests(unittest.TestCase):
         self.assertNotIn("enum", properties["service_tier"])
         self.assertIn("default", properties["service_tier"]["description"])
         self.assertEqual(cleaned["inputSchema"]["required"], ["prompt"])
+
+    def test_contracts_are_visible_in_gateway_schemas(self) -> None:
+        seedance = {tool["name"]: tool for tool in generate_schemas(get_provider("seedance"))}
+        resolution = seedance["image_to_video"]["inputSchema"]["properties"]["resolution"]
+        self.assertIn("480p, 720p, 1080p", resolution["description"])
+
+        remotion = {tool["name"]: tool for tool in generate_schemas(get_provider("remotion"))}
+        visual = remotion["render_timeline"]["inputSchema"]["properties"]["visuals"]["items"]
+        self.assertEqual(visual["required"], ["kind", "url", "duration_seconds"])
+        self.assertIn("kind", visual["properties"])
+
+    def test_dispatch_rejects_unsupported_seedance_arguments_before_provider_call(self) -> None:
+        with patch.dict(os.environ, {"SEEDANCE_DRY_RUN": "true"}):
+            with self.assertRaisesRegex(ValueError, "480p, 720p, 1080p"):
+                dispatch("seedance", "text_to_video", {"prompt": "Launch", "resolution": "2K"})
+            with self.assertRaisesRegex(ValueError, "adaptive, 16:9"):
+                dispatch(
+                    "seedance",
+                    "image_to_video",
+                    {
+                        "image_path_or_url": "https://example.test/frame.png",
+                        "prompt": "Move slowly",
+                        "aspect_ratio": "2.39:1",
+                    },
+                )
+            accepted = dispatch(
+                "seedance",
+                "text_to_video",
+                {"prompt": "Launch", "resolution": "720p", "aspect_ratio": "adaptive"},
+            )
+        self.assertEqual(accepted["status"], "dry_run")
+
+    def test_dispatch_enforces_cross_field_contracts(self) -> None:
+        with self.assertRaisesRegex(ValueError, "requires one of"):
+            dispatch(
+                "mureka",
+                "region_edit_song",
+                {"lyrics": "Verse", "edit_start_ms": 1, "edit_end_ms": 2},
+            )
+        with self.assertRaisesRegex(ValueError, "greater than"):
+            dispatch(
+                "mureka",
+                "region_edit_song",
+                {
+                    "lyrics": "Verse",
+                    "edit_start_ms": 20,
+                    "edit_end_ms": 10,
+                    "song_id": "song-1",
+                },
+            )
 
 
 if __name__ == "__main__":

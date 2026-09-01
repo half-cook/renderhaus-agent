@@ -1,7 +1,7 @@
 [
   {
     "name": "text_to_music",
-    "description": "Backward-compatible entry used by the existing music agent.",
+    "description": "Use for a simple new music request when the user does not need a specialized Mureka workflow. Creates a song when lyrics are supplied, otherwise an instrumental.",
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -22,7 +22,7 @@
   },
   {
     "name": "create_instrumental",
-    "description": "create_instrumental provider tool.",
+    "description": "Use when the user needs original background music without vocals. Returns a queued task id; follow with query_music_task until terminal.",
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -33,7 +33,8 @@
           "type": "string"
         },
         "n": {
-          "type": "integer"
+          "type": "integer",
+          "description": "Allowed range: 1 to 3."
         },
         "instrumental_id": {
           "type": "string"
@@ -49,7 +50,7 @@
   },
   {
     "name": "create_song",
-    "description": "create_song provider tool.",
+    "description": "Use when the user already has lyrics and wants a fully produced vocal song. Returns a queued task id; follow with query_music_task until terminal.",
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -63,10 +64,12 @@
           "type": "string"
         },
         "n": {
-          "type": "integer"
+          "type": "integer",
+          "description": "Allowed range: 1 to 3."
         },
         "gender": {
-          "type": "string"
+          "type": "string",
+          "description": "Allowed values: male, female."
         },
         "reference_id": {
           "type": "string"
@@ -91,7 +94,7 @@
   },
   {
     "name": "create_song_from_prompt",
-    "description": "create_song_from_prompt provider tool.",
+    "description": "Use when the user wants a complete vocal song from a concept but has no finished lyrics. Returns a queued task id; follow with query_music_task until terminal.",
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -102,10 +105,12 @@
           "type": "string"
         },
         "n": {
-          "type": "integer"
+          "type": "integer",
+          "description": "Allowed range: 1 to 3."
         },
         "gender": {
-          "type": "string"
+          "type": "string",
+          "description": "Allowed values: male, female."
         }
       },
       "required": [
@@ -115,7 +120,7 @@
   },
   {
     "name": "generate_lyrics",
-    "description": "generate_lyrics provider tool.",
+    "description": "Use when the deliverable is song lyrics or when lyrics are needed before create_song. It produces text, not audio.",
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -130,7 +135,7 @@
   },
   {
     "name": "extend_lyrics",
-    "description": "extend_lyrics provider tool.",
+    "description": "Use when existing lyrics need another verse, chorus, bridge, or continuation. It produces revised text, not audio.",
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -148,7 +153,7 @@
   },
   {
     "name": "query_music_task",
-    "description": "query_music_task provider tool.",
+    "description": "Use only after a Mureka creation or editing tool returned a task id. Poll once per call until succeeded, failed, cancelled, or dry_run; request download on the final poll.",
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -166,7 +171,7 @@
   },
   {
     "name": "get_music_task",
-    "description": "get_music_task provider tool.",
+    "description": "Alias for query_music_task. Use only to check an existing Mureka task id; it does not start new music generation.",
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -184,7 +189,7 @@
   },
   {
     "name": "extend_song",
-    "description": "extend_song provider tool.",
+    "description": "Use when an existing song or uploaded audio should continue beyond a specified time. Requires lyrics for the extension and a song or upload id.",
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -192,7 +197,8 @@
           "type": "string"
         },
         "extend_at_ms": {
-          "type": "integer"
+          "type": "integer",
+          "description": "Must be at least 0."
         },
         "song_id": {
           "type": "string"
@@ -209,7 +215,7 @@
   },
   {
     "name": "region_edit_song",
-    "description": "region_edit_song provider tool.",
+    "description": "Use when only a specific time range of an existing song should be replaced. Requires start/end times plus a song or upload id.",
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -217,10 +223,12 @@
           "type": "string"
         },
         "edit_start_ms": {
-          "type": "integer"
+          "type": "integer",
+          "description": "Must be at least 0."
         },
         "edit_end_ms": {
-          "type": "integer"
+          "type": "integer",
+          "description": "Must be at least 0."
         },
         "song_id": {
           "type": "string"
@@ -238,7 +246,7 @@
   },
   {
     "name": "remix_song",
-    "description": "remix_song provider tool.",
+    "description": "Use when an existing song or uploaded audio should be reinterpreted with a new style or production prompt while keeping it as the source.",
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -252,7 +260,8 @@
           "type": "string"
         },
         "n": {
-          "type": "integer"
+          "type": "integer",
+          "description": "Allowed range: 1 to 3."
         }
       },
       "required": []
@@ -260,7 +269,7 @@
   },
   {
     "name": "stem_song",
-    "description": "stem_song provider tool.",
+    "description": "Use when the user needs an existing song separated into stems such as vocals and instrumental parts. Requires a song or upload id.",
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -279,7 +288,7 @@
   },
   {
     "name": "recognize_song",
-    "description": "recognize_song provider tool.",
+    "description": "Use to identify or analyze what song is present in uploaded audio or an audio URL. It does not generate or edit music.",
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -295,7 +304,7 @@
   },
   {
     "name": "describe_song",
-    "description": "describe_song provider tool.",
+    "description": "Use to obtain a musical description of an existing Mureka song or uploaded audio for planning, tagging, or a later remix.",
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -311,7 +320,7 @@
   },
   {
     "name": "transcribe_song",
-    "description": "transcribe_song provider tool.",
+    "description": "Use to extract sung words or lyrics from an existing Mureka song or uploaded audio. It does not create new audio.",
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -327,7 +336,7 @@
   },
   {
     "name": "vocal_clone",
-    "description": "vocal_clone provider tool.",
+    "description": "Use only when the user explicitly wants a reusable vocal model made from an uploaded voice sample. Requires an upload id.",
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -345,12 +354,13 @@
   },
   {
     "name": "generate_track",
-    "description": "generate_track provider tool.",
+    "description": "Use to add or regenerate a specific musical track for an existing song, such as drums or bass. Requires a track type and a song or upload id.",
     "inputSchema": {
       "type": "object",
       "properties": {
         "track_type": {
-          "type": "string"
+          "type": "string",
+          "description": "Allowed values: vocals, accompaniment, instrument."
         },
         "song_id": {
           "type": "string"
@@ -369,7 +379,7 @@
   },
   {
     "name": "generate_soundtrack",
-    "description": "generate_soundtrack provider tool.",
+    "description": "Use when the user needs music synchronized to an uploaded media file or a specified time range. Use create_instrumental for standalone background music.",
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -380,10 +390,12 @@
           "type": "string"
         },
         "audio_start": {
-          "type": "number"
+          "type": "number",
+          "description": "Must be at least 0."
         },
         "audio_end": {
-          "type": "number"
+          "type": "number",
+          "description": "Must be at least 0."
         },
         "model": {
           "type": "string"
@@ -394,7 +406,7 @@
   },
   {
     "name": "generate_lyrics_video",
-    "description": "generate_lyrics_video provider tool.",
+    "description": "Use when the user wants a lyric video from an existing Mureka song or uploaded audio. It is not the general multi-clip video editor.",
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -405,7 +417,8 @@
           "type": "string"
         },
         "aspect_ratio": {
-          "type": "string"
+          "type": "string",
+          "description": "Allowed values: 16:9, 9:16, 1:1, 4:3, 3:4."
         },
         "layout": {
           "type": "string"
@@ -416,12 +429,13 @@
   },
   {
     "name": "upload_file",
-    "description": "upload_file provider tool.",
+    "description": "Use only when another Mureka operation requires an upload id and the source bytes are available as base64. It does not analyze or generate media by itself.",
     "inputSchema": {
       "type": "object",
       "properties": {
         "purpose": {
-          "type": "string"
+          "type": "string",
+          "description": "Allowed values: reference, melody, instrumental, voice, audio, remix, soundtrack, lyrics-video."
         },
         "filename": {
           "type": "string"
@@ -439,7 +453,7 @@
   },
   {
     "name": "create_speech",
-    "description": "create_speech provider tool.",
+    "description": "Use when the user needs spoken narration or voiceover from text. Use song tools for singing and music tools for instrumental audio.",
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -457,7 +471,7 @@
   },
   {
     "name": "create_podcast",
-    "description": "create_podcast provider tool.",
+    "description": "Use when the user wants a spoken podcast-style audio program from a script. Use create_speech for a single narration passage.",
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -475,7 +489,7 @@
   },
   {
     "name": "query_billing",
-    "description": "query_billing provider tool.",
+    "description": "Use only when the user explicitly asks about Mureka account billing or quota. It does not estimate Renderhaus-wide generation cost.",
     "inputSchema": {
       "type": "object",
       "properties": {},
@@ -484,7 +498,7 @@
   },
   {
     "name": "list_mureka_models",
-    "description": "list_mureka_models provider tool.",
+    "description": "Use only when Mureka model selection or availability is relevant; it does not generate audio. Prefer the configured default for ordinary requests.",
     "inputSchema": {
       "type": "object",
       "properties": {},

@@ -1,7 +1,7 @@
 [
   {
     "name": "text_to_video",
-    "description": "Create a Seedance text-to-video task and return the task id.",
+    "description": "Use when the user needs a new video clip from text and no source image must be preserved. Returns a queued task id; follow with get_video_task until terminal.",
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -9,13 +9,16 @@
           "type": "string"
         },
         "duration_seconds": {
-          "type": "integer"
+          "type": "integer",
+          "description": "Allowed range: 4 to 12."
         },
         "aspect_ratio": {
-          "type": "string"
+          "type": "string",
+          "description": "Allowed values: adaptive, 16:9, 9:16, 1:1, 4:3, 3:4, 21:9."
         },
         "resolution": {
-          "type": "string"
+          "type": "string",
+          "description": "Allowed values: 480p, 720p, 1080p."
         },
         "model": {
           "type": "string"
@@ -28,7 +31,7 @@
         },
         "service_tier": {
           "type": "string",
-          "description": "One of: default, flex."
+          "description": "One of: default, flex. Allowed values: default, flex."
         }
       },
       "required": [
@@ -38,7 +41,7 @@
   },
   {
     "name": "image_to_video",
-    "description": "Create a Seedance image-to-video task and return the task id.",
+    "description": "Use when the user wants an existing image animated into a video clip. Requires an image URL and returns a queued task id; follow with get_video_task until terminal.",
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -49,13 +52,16 @@
           "type": "string"
         },
         "duration_seconds": {
-          "type": "integer"
+          "type": "integer",
+          "description": "Allowed range: 4 to 12."
         },
         "aspect_ratio": {
-          "type": "string"
+          "type": "string",
+          "description": "Allowed values: adaptive, 16:9, 9:16, 1:1, 4:3, 3:4, 21:9."
         },
         "resolution": {
-          "type": "string"
+          "type": "string",
+          "description": "Allowed values: 480p, 720p, 1080p."
         },
         "model": {
           "type": "string"
@@ -68,7 +74,7 @@
         },
         "service_tier": {
           "type": "string",
-          "description": "One of: default, flex."
+          "description": "One of: default, flex. Allowed values: default, flex."
         }
       },
       "required": [
@@ -79,7 +85,7 @@
   },
   {
     "name": "get_video_task",
-    "description": "Retrieve a Seedance task status and optionally download the finished MP4.",
+    "description": "Use only after text_to_video or image_to_video returned a task id. Poll once per call until succeeded, failed, cancelled, or dry_run; it does not create a new video.",
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -97,7 +103,7 @@
   },
   {
     "name": "list_seedance_models",
-    "description": "List Seedance/video generation models visible from this BytePlus API key.",
+    "description": "Use only when model selection or availability is relevant; it does not generate media. Prefer the configured default for ordinary video requests.",
     "inputSchema": {
       "type": "object",
       "properties": {},

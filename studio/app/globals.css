@@ -829,6 +829,120 @@ a:focus-visible {
   display: block;
 }
 
+.agent-approvals {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.agent-approval {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 11px;
+  border: 1px solid color-mix(in srgb, var(--selected) 45%, var(--line));
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--selected) 7%, var(--chrome));
+}
+
+.agent-approval > header,
+.agent-response .agent-approval > footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.agent-approval > header span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--selected);
+  font-size: 10px;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.agent-approval > header em {
+  color: var(--muted);
+  font-size: 10px;
+  font-style: normal;
+}
+
+.agent-approval > strong {
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.agent-approval > pre {
+  max-height: 150px;
+  overflow: auto;
+  margin: 0;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--bg) 72%, transparent);
+  color: var(--muted);
+  font: 10px/15px var(--font-geist-mono), ui-monospace, monospace;
+  white-space: pre-wrap;
+}
+
+.agent-approval button {
+  display: inline-flex;
+  min-height: 30px;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 0 10px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.agent-approval-reject {
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--muted);
+}
+
+.agent-approval-approve {
+  border: 1px solid var(--text);
+  background: var(--text);
+  color: var(--bg);
+}
+
+.agent-approval button:disabled {
+  opacity: 0.5;
+}
+
+.agent-approval-decision {
+  margin: 0;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.agent-approval-decision.approve {
+  color: var(--ok);
+}
+
+.agent-approval-decision.reject {
+  color: var(--danger);
+}
+
+.agent-step-list em {
+  display: block;
+  margin-bottom: 1px;
+  color: var(--muted);
+  font-size: 9px;
+  font-style: normal;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  line-height: 12px;
+  text-transform: uppercase;
+}
+
 .agent-step-list strong {
   color: var(--text);
   font-size: 12px;
@@ -995,7 +1109,51 @@ audio.agent-artifact-media {
 
 .agent-composer-actions > div {
   display: flex;
+  align-items: center;
   gap: 2px;
+}
+
+.agent-prompt-size {
+  margin-left: 5px;
+  color: var(--muted);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  line-height: 14px;
+}
+
+.agent-autonomy-toggle {
+  display: inline-flex;
+  min-height: 28px;
+  align-items: center;
+  gap: 5px;
+  margin-left: 4px;
+  padding: 0 8px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.agent-autonomy-toggle.active {
+  border-color: color-mix(in srgb, var(--selected) 55%, var(--line));
+  background: color-mix(in srgb, var(--selected) 9%, transparent);
+  color: var(--selected);
+}
+
+.agent-autonomy-toggle:has(input:disabled) {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.agent-autonomy-toggle input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
 }
 
 .send-btn {

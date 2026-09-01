@@ -36,7 +36,9 @@ export function toRenderClips(document: TimelineDocument): {
       const label =
         item.type === "clip"
           ? (document.assets.find((a) => a.id === item.assetId)?.name ?? item.assetId)
-          : item.kind;
+          : item.type === "text"
+            ? item.text
+            : item.kind;
 
       clips.push({
         id: item.id,

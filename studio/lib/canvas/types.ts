@@ -59,6 +59,17 @@ export type AgentToolEvent = {
   assets: StudioAsset[];
 };
 
+export type AgentProgressEvent = {
+  id: string;
+  type: string;
+  title: string;
+  message: string;
+  status: string;
+  toolCallId?: string;
+  toolCallName?: string;
+  createdAt?: number;
+};
+
 export type AgentResultData = {
   executionId?: string;
   title: string;

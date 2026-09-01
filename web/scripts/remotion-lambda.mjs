@@ -12,6 +12,14 @@ const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const webRoot = path.resolve(scriptDir, "..");
 const command = process.argv[2];
 const region = process.env.REMOTION_APP_REGION || process.env.AWS_REGION || "us-east-1";
+const requestedLambdaTimeout = Number.parseInt(
+  process.env.REMOTION_LAMBDA_TIMEOUT_SECONDS || "600",
+  10,
+);
+const lambdaTimeoutInSeconds = Math.min(
+  900,
+  Math.max(60, Number.isFinite(requestedLambdaTimeout) ? requestedLambdaTimeout : 600),
+);
 
 if (command === "policies") {
   process.stdout.write(
@@ -24,7 +32,7 @@ if (command === "policies") {
   const { bucketName } = await getOrCreateBucket({ region });
   const functionResult = await deployFunction({
     region,
-    timeoutInSeconds: 240,
+    timeoutInSeconds: lambdaTimeoutInSeconds,
     memorySizeInMb: 2048,
     diskSizeInMb: 2048,
     createCloudWatchLogGroup: true,
