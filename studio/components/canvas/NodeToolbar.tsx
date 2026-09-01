@@ -1,7 +1,7 @@
 "use client";
 
 import { NodeToolbar as FlowToolbar, Position } from "@xyflow/react";
-import { Check, Copy, Download, LayoutGrid, Pencil, RefreshCw, Trash2, Video } from "lucide-react";
+import { Copy, Download, LayoutGrid, Pencil, RefreshCw, Trash2, Video } from "lucide-react";
 import { agentResultDownloadUrl } from "@/lib/canvas/download";
 import type { CanvasNodeData } from "@/lib/canvas/types";
 import { useCanvasStore } from "@/lib/canvas/store";
@@ -19,10 +19,8 @@ export function NodeToolbar({ id, data }: Props) {
   const deleteSelected = useCanvasStore((state) => state.deleteSelected);
   const connectImageToVideo = useCanvasStore((state) => state.connectImageToVideo);
   const addToStoryboard = useCanvasStore((state) => state.addToStoryboard);
-  const setApproved = useCanvasStore((state) => state.setApproved);
   const canVideo = data.kind === "image" && Boolean(data.output);
   const canStoryboard = Boolean(data.output) && (data.kind === "image" || data.kind === "video");
-  const canApprove = data.kind === "image" || data.kind === "video" || data.kind === "storyboard";
 
   return (
     <FlowToolbar isVisible position={Position.Top} align="end" offset={8} className="node-toolbar">
@@ -40,17 +38,6 @@ export function NodeToolbar({ id, data }: Props) {
           }}
         >
           <RefreshCw size={14} />
-        </button>
-      ) : null}
-      {canApprove ? (
-        <button
-          type="button"
-          className={data.approved ? "approved" : ""}
-          aria-label={data.approved ? "Remove from sequence" : "Approve"}
-          title={data.approved ? "Remove from sequence" : "Approve"}
-          onClick={() => setApproved(id, !data.approved)}
-        >
-          <Check size={14} />
         </button>
       ) : null}
       {canVideo ? (

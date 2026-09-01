@@ -14,7 +14,7 @@ GATEWAY_MCP_SERVER_NAME = "agentcore-gateway"
 
 
 DEFAULT_ENV = {
-    "AGENT_MODEL": "gpt-4.1-mini",
+    "AGENT_MODEL": "gpt-5.6-luna",
     "BYTEPLUS_BASE_URL": "https://ark.ap-southeast.bytepluses.com/api/v3",
     "SEEDANCE_MODEL": "seedance-1-5-pro-251215",
     "SEEDANCE_DRY_RUN": "true",
@@ -25,7 +25,7 @@ DEFAULT_ENV = {
     "MUREKA_API_URL": "https://api.mureka.ai",
     "MUREKA_MODEL": "auto",
     "MUREKA_DRY_RUN": "true",
-    "REMOTION_DRY_RUN": "true",
+    "REMOTION_DRY_RUN": "false",
     "TIME_OUT_SECONDS": "300",
     "RENDERHAUS_MEDIA_DIR": ".renderhaus/media",
 }

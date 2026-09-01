@@ -364,6 +364,22 @@
         "documentation": {}
     },
     {
+        "label": "annotations",
+        "importPath": "__future__",
+        "description": "__future__",
+        "isExtraImport": true,
+        "detail": "__future__",
+        "documentation": {}
+    },
+    {
+        "label": "annotations",
+        "importPath": "__future__",
+        "description": "__future__",
+        "isExtraImport": true,
+        "detail": "__future__",
+        "documentation": {}
+    },
+    {
         "label": "RemotionSettings",
         "importPath": "providers.remotion.api",
         "description": "providers.remotion.api",
@@ -389,6 +405,14 @@
     },
     {
         "label": "build_timeline_props",
+        "importPath": "providers.remotion.api",
+        "description": "providers.remotion.api",
+        "isExtraImport": true,
+        "detail": "providers.remotion.api",
+        "documentation": {}
+    },
+    {
+        "label": "dry_run",
         "importPath": "providers.remotion.api",
         "description": "providers.remotion.api",
         "isExtraImport": true,
@@ -465,14 +489,6 @@
         "documentation": {}
     },
     {
-        "label": "AsyncIterator",
-        "importPath": "collections.abc",
-        "description": "collections.abc",
-        "isExtraImport": true,
-        "detail": "collections.abc",
-        "documentation": {}
-    },
-    {
         "label": "Callable",
         "importPath": "collections.abc",
         "description": "collections.abc",
@@ -561,35 +577,11 @@
         "documentation": {}
     },
     {
-        "label": "Any",
-        "importPath": "typing",
-        "description": "typing",
+        "label": "dataclass",
+        "importPath": "dataclasses",
+        "description": "dataclasses",
         "isExtraImport": true,
-        "detail": "typing",
-        "documentation": {}
-    },
-    {
-        "label": "Literal",
-        "importPath": "typing",
-        "description": "typing",
-        "isExtraImport": true,
-        "detail": "typing",
-        "documentation": {}
-    },
-    {
-        "label": "Any",
-        "importPath": "typing",
-        "description": "typing",
-        "isExtraImport": true,
-        "detail": "typing",
-        "documentation": {}
-    },
-    {
-        "label": "Any",
-        "importPath": "typing",
-        "description": "typing",
-        "isExtraImport": true,
-        "detail": "typing",
+        "detail": "dataclasses",
         "documentation": {}
     },
     {
@@ -625,7 +617,31 @@
         "documentation": {}
     },
     {
+        "label": "Any",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Any",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
         "label": "Literal",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Any",
         "importPath": "typing",
         "description": "typing",
         "isExtraImport": true,
@@ -658,6 +674,30 @@
     },
     {
         "label": "Literal",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Any",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Literal",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Any",
         "importPath": "typing",
         "description": "typing",
         "isExtraImport": true,
@@ -857,7 +897,39 @@
         "documentation": {}
     },
     {
+        "label": "ModelSettings",
+        "importPath": "agents",
+        "description": "agents",
+        "isExtraImport": true,
+        "detail": "agents",
+        "documentation": {}
+    },
+    {
+        "label": "RunConfig",
+        "importPath": "agents",
+        "description": "agents",
+        "isExtraImport": true,
+        "detail": "agents",
+        "documentation": {}
+    },
+    {
+        "label": "RunContextWrapper",
+        "importPath": "agents",
+        "description": "agents",
+        "isExtraImport": true,
+        "detail": "agents",
+        "documentation": {}
+    },
+    {
         "label": "Runner",
+        "importPath": "agents",
+        "description": "agents",
+        "isExtraImport": true,
+        "detail": "agents",
+        "documentation": {}
+    },
+    {
+        "label": "function_tool",
         "importPath": "agents",
         "description": "agents",
         "isExtraImport": true,
@@ -1065,11 +1137,36 @@
         "documentation": {}
     },
     {
+        "label": "dispatch",
+        "importPath": "providers.registry",
+        "description": "providers.registry",
+        "isExtraImport": true,
+        "detail": "providers.registry",
+        "documentation": {}
+    },
+    {
+        "label": "generate_schemas",
+        "importPath": "providers.registry",
+        "description": "providers.registry",
+        "isExtraImport": true,
+        "detail": "providers.registry",
+        "documentation": {}
+    },
+    {
         "label": "sanitize_gateway_json_schema",
         "importPath": "providers.registry",
         "description": "providers.registry",
         "isExtraImport": true,
         "detail": "providers.registry",
+        "documentation": {}
+    },
+    {
+        "label": "hashlib",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "hashlib",
+        "description": "hashlib",
+        "detail": "hashlib",
         "documentation": {}
     },
     {
@@ -1106,147 +1203,19 @@
         "documentation": {}
     },
     {
-        "label": "BaseEvent",
-        "importPath": "ag_ui.core",
-        "description": "ag_ui.core",
+        "label": "OpenAIResponsesCompactionSession",
+        "importPath": "agents.memory",
+        "description": "agents.memory",
         "isExtraImport": true,
-        "detail": "ag_ui.core",
+        "detail": "agents.memory",
         "documentation": {}
     },
     {
-        "label": "CustomEvent",
-        "importPath": "ag_ui.core",
-        "description": "ag_ui.core",
+        "label": "OpenAIResponsesCompactionSession",
+        "importPath": "agents.memory",
+        "description": "agents.memory",
         "isExtraImport": true,
-        "detail": "ag_ui.core",
-        "documentation": {}
-    },
-    {
-        "label": "RunErrorEvent",
-        "importPath": "ag_ui.core",
-        "description": "ag_ui.core",
-        "isExtraImport": true,
-        "detail": "ag_ui.core",
-        "documentation": {}
-    },
-    {
-        "label": "RunFinishedEvent",
-        "importPath": "ag_ui.core",
-        "description": "ag_ui.core",
-        "isExtraImport": true,
-        "detail": "ag_ui.core",
-        "documentation": {}
-    },
-    {
-        "label": "RunStartedEvent",
-        "importPath": "ag_ui.core",
-        "description": "ag_ui.core",
-        "isExtraImport": true,
-        "detail": "ag_ui.core",
-        "documentation": {}
-    },
-    {
-        "label": "StateDeltaEvent",
-        "importPath": "ag_ui.core",
-        "description": "ag_ui.core",
-        "isExtraImport": true,
-        "detail": "ag_ui.core",
-        "documentation": {}
-    },
-    {
-        "label": "StateSnapshotEvent",
-        "importPath": "ag_ui.core",
-        "description": "ag_ui.core",
-        "isExtraImport": true,
-        "detail": "ag_ui.core",
-        "documentation": {}
-    },
-    {
-        "label": "StepFinishedEvent",
-        "importPath": "ag_ui.core",
-        "description": "ag_ui.core",
-        "isExtraImport": true,
-        "detail": "ag_ui.core",
-        "documentation": {}
-    },
-    {
-        "label": "StepStartedEvent",
-        "importPath": "ag_ui.core",
-        "description": "ag_ui.core",
-        "isExtraImport": true,
-        "detail": "ag_ui.core",
-        "documentation": {}
-    },
-    {
-        "label": "TextMessageContentEvent",
-        "importPath": "ag_ui.core",
-        "description": "ag_ui.core",
-        "isExtraImport": true,
-        "detail": "ag_ui.core",
-        "documentation": {}
-    },
-    {
-        "label": "TextMessageEndEvent",
-        "importPath": "ag_ui.core",
-        "description": "ag_ui.core",
-        "isExtraImport": true,
-        "detail": "ag_ui.core",
-        "documentation": {}
-    },
-    {
-        "label": "TextMessageStartEvent",
-        "importPath": "ag_ui.core",
-        "description": "ag_ui.core",
-        "isExtraImport": true,
-        "detail": "ag_ui.core",
-        "documentation": {}
-    },
-    {
-        "label": "ToolCallArgsEvent",
-        "importPath": "ag_ui.core",
-        "description": "ag_ui.core",
-        "isExtraImport": true,
-        "detail": "ag_ui.core",
-        "documentation": {}
-    },
-    {
-        "label": "ToolCallEndEvent",
-        "importPath": "ag_ui.core",
-        "description": "ag_ui.core",
-        "isExtraImport": true,
-        "detail": "ag_ui.core",
-        "documentation": {}
-    },
-    {
-        "label": "ToolCallResultEvent",
-        "importPath": "ag_ui.core",
-        "description": "ag_ui.core",
-        "isExtraImport": true,
-        "detail": "ag_ui.core",
-        "documentation": {}
-    },
-    {
-        "label": "ToolCallStartEvent",
-        "importPath": "ag_ui.core",
-        "description": "ag_ui.core",
-        "isExtraImport": true,
-        "detail": "ag_ui.core",
-        "documentation": {}
-    },
-    {
-        "label": "EventEncoder",
-        "importPath": "ag_ui.encoder",
-        "description": "ag_ui.encoder",
-        "isExtraImport": true,
-        "detail": "ag_ui.encoder",
-        "documentation": {}
-    },
-    {
-        "label": "EventEncoder",
-        "importPath": "ag_ui.encoder",
-        "description": "ag_ui.encoder",
-        "isExtraImport": true,
-        "detail": "ag_ui.encoder",
+        "detail": "agents.memory",
         "documentation": {}
     },
     {
@@ -1282,6 +1251,14 @@
         "documentation": {}
     },
     {
+        "label": "RunState",
+        "importPath": "agents.run_state",
+        "description": "agents.run_state",
+        "isExtraImport": true,
+        "detail": "agents.run_state",
+        "documentation": {}
+    },
+    {
         "label": "BedrockAgentCoreApp",
         "importPath": "bedrock_agentcore.runtime",
         "description": "bedrock_agentcore.runtime",
@@ -1290,6 +1267,22 @@
         "documentation": {}
     },
     {
+        "label": "Tool",
+        "importPath": "mcp",
+        "description": "mcp",
+        "isExtraImport": true,
+        "detail": "mcp",
+        "documentation": {}
+    },
+    {
+        "label": "StudioMemorySession",
+        "importPath": "agent.studio_memory",
+        "description": "agent.studio_memory",
+        "isExtraImport": true,
+        "detail": "agent.studio_memory",
+        "documentation": {}
+    },
+    {
         "label": "PROVIDERS",
         "importPath": "providers.catalog",
         "description": "providers.catalog",
@@ -1355,6 +1348,14 @@
     },
     {
         "label": "PROVIDERS",
+        "importPath": "providers.catalog",
+        "description": "providers.catalog",
+        "isExtraImport": true,
+        "detail": "providers.catalog",
+        "documentation": {}
+    },
+    {
+        "label": "get_provider",
         "importPath": "providers.catalog",
         "description": "providers.catalog",
         "isExtraImport": true,
@@ -1503,6 +1504,39 @@
         "description": "server.config",
         "isExtraImport": true,
         "detail": "server.config",
+        "documentation": {}
+    },
+    {
+        "label": "copy",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "copy",
+        "description": "copy",
+        "detail": "copy",
+        "documentation": {}
+    },
+    {
+        "label": "deepcopy",
+        "importPath": "copy",
+        "description": "copy",
+        "isExtraImport": true,
+        "detail": "copy",
+        "documentation": {}
+    },
+    {
+        "label": "deepcopy",
+        "importPath": "copy",
+        "description": "copy",
+        "isExtraImport": true,
+        "detail": "copy",
+        "documentation": {}
+    },
+    {
+        "label": "deepcopy",
+        "importPath": "copy",
+        "description": "copy",
+        "isExtraImport": true,
+        "detail": "copy",
         "documentation": {}
     },
     {
@@ -1837,32 +1871,6 @@
         "documentation": {}
     },
     {
-        "label": "copy",
-        "kind": 6,
-        "isExtraImport": true,
-        "importPath": "copy",
-        "description": "copy",
-        "detail": "copy",
-        "documentation": {}
-    },
-    {
-        "label": "deepcopy",
-        "importPath": "copy",
-        "description": "copy",
-        "isExtraImport": true,
-        "detail": "copy",
-        "documentation": {}
-    },
-    {
-        "label": "hashlib",
-        "kind": 6,
-        "isExtraImport": true,
-        "importPath": "hashlib",
-        "description": "hashlib",
-        "detail": "hashlib",
-        "documentation": {}
-    },
-    {
         "label": "mimetypes",
         "kind": 6,
         "isExtraImport": true,
@@ -1878,6 +1886,14 @@
         "importPath": "boto3",
         "description": "boto3",
         "detail": "boto3",
+        "documentation": {}
+    },
+    {
+        "label": "ClientError",
+        "importPath": "botocore.exceptions",
+        "description": "botocore.exceptions",
+        "isExtraImport": true,
+        "detail": "botocore.exceptions",
         "documentation": {}
     },
     {
@@ -2031,6 +2047,22 @@
         "description": "types",
         "isExtraImport": true,
         "detail": "types",
+        "documentation": {}
+    },
+    {
+        "label": "enrich_tool_schema",
+        "importPath": "providers.contracts",
+        "description": "providers.contracts",
+        "isExtraImport": true,
+        "detail": "providers.contracts",
+        "documentation": {}
+    },
+    {
+        "label": "validate_tool_arguments",
+        "importPath": "providers.contracts",
+        "description": "providers.contracts",
+        "isExtraImport": true,
+        "detail": "providers.contracts",
         "documentation": {}
     },
     {
@@ -2279,6 +2311,14 @@
         "documentation": {}
     },
     {
+        "label": "Request",
+        "importPath": "fastapi",
+        "description": "fastapi",
+        "isExtraImport": true,
+        "detail": "fastapi",
+        "documentation": {}
+    },
+    {
         "label": "UploadFile",
         "importPath": "fastapi",
         "description": "fastapi",
@@ -2415,6 +2455,22 @@
         "documentation": {}
     },
     {
+        "label": "publish_provider_input_url",
+        "importPath": "server.assets",
+        "description": "server.assets",
+        "isExtraImport": true,
+        "detail": "server.assets",
+        "documentation": {}
+    },
+    {
+        "label": "publish_provider_input_url",
+        "importPath": "server.assets",
+        "description": "server.assets",
+        "isExtraImport": true,
+        "detail": "server.assets",
+        "documentation": {}
+    },
+    {
         "label": "AuthUser",
         "importPath": "server.auth",
         "description": "server.auth",
@@ -2520,6 +2576,14 @@
         "documentation": {}
     },
     {
+        "label": "AgentApprovalBody",
+        "importPath": "server.studio",
+        "description": "server.studio",
+        "isExtraImport": true,
+        "detail": "server.studio",
+        "documentation": {}
+    },
+    {
         "label": "AgentBody",
         "importPath": "server.studio",
         "description": "server.studio",
@@ -2545,6 +2609,22 @@
     },
     {
         "label": "_partial_agent_result",
+        "importPath": "server.studio",
+        "description": "server.studio",
+        "isExtraImport": true,
+        "detail": "server.studio",
+        "documentation": {}
+    },
+    {
+        "label": "_media_generation_failed",
+        "importPath": "server.studio",
+        "description": "server.studio",
+        "isExtraImport": true,
+        "detail": "server.studio",
+        "documentation": {}
+    },
+    {
+        "label": "_recent_conversation_media_references",
         "importPath": "server.studio",
         "description": "server.studio",
         "isExtraImport": true,
@@ -2585,6 +2665,14 @@
     },
     {
         "label": "studio_agent_job",
+        "importPath": "server.studio",
+        "description": "server.studio",
+        "isExtraImport": true,
+        "detail": "server.studio",
+        "documentation": {}
+    },
+    {
+        "label": "decide_studio_agent_tool",
         "importPath": "server.studio",
         "description": "server.studio",
         "isExtraImport": true,
@@ -2858,6 +2946,22 @@
         "documentation": {}
     },
     {
+        "label": "MAX_AGENT_PROMPT_CHARS",
+        "importPath": "agent.studio_agent_next",
+        "description": "agent.studio_agent_next",
+        "isExtraImport": true,
+        "detail": "agent.studio_agent_next",
+        "documentation": {}
+    },
+    {
+        "label": "StudioAgentApprovalRequired",
+        "importPath": "agent.studio_agent_next",
+        "description": "agent.studio_agent_next",
+        "isExtraImport": true,
+        "detail": "agent.studio_agent_next",
+        "documentation": {}
+    },
+    {
         "label": "StudioAgentContext",
         "importPath": "agent.studio_agent_next",
         "description": "agent.studio_agent_next",
@@ -2882,7 +2986,31 @@
         "documentation": {}
     },
     {
+        "label": "StudioApprovalDecision",
+        "importPath": "agent.studio_agent_next",
+        "description": "agent.studio_agent_next",
+        "isExtraImport": true,
+        "detail": "agent.studio_agent_next",
+        "documentation": {}
+    },
+    {
+        "label": "StudioApprovalRequest",
+        "importPath": "agent.studio_agent_next",
+        "description": "agent.studio_agent_next",
+        "isExtraImport": true,
+        "detail": "agent.studio_agent_next",
+        "documentation": {}
+    },
+    {
         "label": "StudioNode",
+        "importPath": "agent.studio_agent_next",
+        "description": "agent.studio_agent_next",
+        "isExtraImport": true,
+        "detail": "agent.studio_agent_next",
+        "documentation": {}
+    },
+    {
+        "label": "StudioProgressEvent",
         "importPath": "agent.studio_agent_next",
         "description": "agent.studio_agent_next",
         "isExtraImport": true,
@@ -2906,7 +3034,7 @@
         "documentation": {}
     },
     {
-        "label": "stream_studio_agent",
+        "label": "gateway_mcp_server",
         "importPath": "agent.studio_agent_next",
         "description": "agent.studio_agent_next",
         "isExtraImport": true,
@@ -2914,7 +3042,15 @@
         "documentation": {}
     },
     {
-        "label": "gateway_mcp_server",
+        "label": "StudioAgentApprovalRequired",
+        "importPath": "agent.studio_agent_next",
+        "description": "agent.studio_agent_next",
+        "isExtraImport": true,
+        "detail": "agent.studio_agent_next",
+        "documentation": {}
+    },
+    {
+        "label": "StudioApprovalRequest",
         "importPath": "agent.studio_agent_next",
         "description": "agent.studio_agent_next",
         "isExtraImport": true,
@@ -2962,7 +3098,7 @@
         "documentation": {}
     },
     {
-        "label": "_describe_gateway_mcp_tools",
+        "label": "_build_agent",
         "importPath": "agent.studio_agent_next",
         "description": "agent.studio_agent_next",
         "isExtraImport": true,
@@ -2970,7 +3106,31 @@
         "documentation": {}
     },
     {
-        "label": "_finalize_media_run",
+        "label": "_compaction_is_safe",
+        "importPath": "agent.studio_agent_next",
+        "description": "agent.studio_agent_next",
+        "isExtraImport": true,
+        "detail": "agent.studio_agent_next",
+        "documentation": {}
+    },
+    {
+        "label": "_TurnCompactionPolicy",
+        "importPath": "agent.studio_agent_next",
+        "description": "agent.studio_agent_next",
+        "isExtraImport": true,
+        "detail": "agent.studio_agent_next",
+        "documentation": {}
+    },
+    {
+        "label": "_committed_gateway_tools",
+        "importPath": "agent.studio_agent_next",
+        "description": "agent.studio_agent_next",
+        "isExtraImport": true,
+        "detail": "agent.studio_agent_next",
+        "documentation": {}
+    },
+    {
+        "label": "_describe_gateway_mcp_tools",
         "importPath": "agent.studio_agent_next",
         "description": "agent.studio_agent_next",
         "isExtraImport": true,
@@ -2986,6 +3146,22 @@
         "documentation": {}
     },
     {
+        "label": "_gateway_requires_approval",
+        "importPath": "agent.studio_agent_next",
+        "description": "agent.studio_agent_next",
+        "isExtraImport": true,
+        "detail": "agent.studio_agent_next",
+        "documentation": {}
+    },
+    {
+        "label": "_input_for",
+        "importPath": "agent.studio_agent_next",
+        "description": "agent.studio_agent_next",
+        "isExtraImport": true,
+        "detail": "agent.studio_agent_next",
+        "documentation": {}
+    },
+    {
         "label": "_record_run_tool_events",
         "importPath": "agent.studio_agent_next",
         "description": "agent.studio_agent_next",
@@ -2994,7 +3170,47 @@
         "documentation": {}
     },
     {
+        "label": "_record_stream_event",
+        "importPath": "agent.studio_agent_next",
+        "description": "agent.studio_agent_next",
+        "isExtraImport": true,
+        "detail": "agent.studio_agent_next",
+        "documentation": {}
+    },
+    {
+        "label": "_tool_names_from_search_result",
+        "importPath": "agent.studio_agent_next",
+        "description": "agent.studio_agent_next",
+        "isExtraImport": true,
+        "detail": "agent.studio_agent_next",
+        "documentation": {}
+    },
+    {
+        "label": "_tools_from_search_result",
+        "importPath": "agent.studio_agent_next",
+        "description": "agent.studio_agent_next",
+        "isExtraImport": true,
+        "detail": "agent.studio_agent_next",
+        "documentation": {}
+    },
+    {
         "label": "_unwrap_tool_output",
+        "importPath": "agent.studio_agent_next",
+        "description": "agent.studio_agent_next",
+        "isExtraImport": true,
+        "detail": "agent.studio_agent_next",
+        "documentation": {}
+    },
+    {
+        "label": "_validate_video_delivery",
+        "importPath": "agent.studio_agent_next",
+        "description": "agent.studio_agent_next",
+        "isExtraImport": true,
+        "detail": "agent.studio_agent_next",
+        "documentation": {}
+    },
+    {
+        "label": "_visible_gateway_tools",
         "importPath": "agent.studio_agent_next",
         "description": "agent.studio_agent_next",
         "isExtraImport": true,
@@ -3019,14 +3235,6 @@
     },
     {
         "label": "run_studio_agent",
-        "importPath": "agent.studio_agent_next",
-        "description": "agent.studio_agent_next",
-        "isExtraImport": true,
-        "detail": "agent.studio_agent_next",
-        "documentation": {}
-    },
-    {
-        "label": "stream_studio_agent",
         "importPath": "agent.studio_agent_next",
         "description": "agent.studio_agent_next",
         "isExtraImport": true,
@@ -3142,6 +3350,14 @@
     },
     {
         "label": "AsyncMock",
+        "importPath": "unittest.mock",
+        "description": "unittest.mock",
+        "isExtraImport": true,
+        "detail": "unittest.mock",
+        "documentation": {}
+    },
+    {
+        "label": "MagicMock",
         "importPath": "unittest.mock",
         "description": "unittest.mock",
         "isExtraImport": true,
@@ -3356,7 +3572,25 @@
         "kind": 6,
         "importPath": "agent.studio_agent_next",
         "description": "agent.studio_agent_next",
-        "peekOfCode": "class StudioAgentRequest(BaseModel):\n    \"\"\"JSON body accepted by AgentCore and by `run_studio_agent`.\"\"\"\n    prompt: str = Field(min_length=1, max_length=8_000)\n    nodes: list[StudioNode] = Field(default_factory=list, max_length=16)\n    job_id: str | None = Field(default=None, max_length=120)\n    workspace_id: str | None = Field(default=None, max_length=160)\n    project_id: str | None = Field(default=None, max_length=120)\nclass StudioAgentOutput(BaseModel):\n    \"\"\"The final downloadable artifact shown on the canvas.\"\"\"\n    title: str = Field(min_length=1, max_length=80)",
+        "peekOfCode": "class StudioAgentRequest(BaseModel):\n    \"\"\"JSON body accepted by AgentCore and by `run_studio_agent`.\"\"\"\n    prompt: str = Field(min_length=1, max_length=MAX_AGENT_PROMPT_CHARS)\n    nodes: list[StudioNode] = Field(default_factory=list, max_length=16)\n    conversation_id: str | None = Field(default=None, max_length=120)\n    session_items: list[dict[str, Any]] = Field(default_factory=list)\n    job_id: str | None = Field(default=None, max_length=120)\n    workspace_id: str | None = Field(default=None, max_length=160)\n    project_id: str | None = Field(default=None, max_length=120)\n    autonomous: bool = False",
+        "detail": "agent.studio_agent_next",
+        "documentation": {}
+    },
+    {
+        "label": "StudioApprovalDecision",
+        "kind": 6,
+        "importPath": "agent.studio_agent_next",
+        "description": "agent.studio_agent_next",
+        "peekOfCode": "class StudioApprovalDecision(BaseModel):\n    call_id: str = Field(min_length=1, max_length=200)\n    decision: str = Field(pattern=\"^(approve|reject)$\")\n    message: str | None = Field(default=None, max_length=1_000)\nclass StudioApprovalRequest(BaseModel):\n    call_id: str = Field(min_length=1, max_length=200)\n    tool_name: str = Field(min_length=1, max_length=240)\n    label: str = Field(min_length=1, max_length=240)\n    arguments: dict[str, Any] = Field(default_factory=dict)\n    provider: str | None = None",
+        "detail": "agent.studio_agent_next",
+        "documentation": {}
+    },
+    {
+        "label": "StudioApprovalRequest",
+        "kind": 6,
+        "importPath": "agent.studio_agent_next",
+        "description": "agent.studio_agent_next",
+        "peekOfCode": "class StudioApprovalRequest(BaseModel):\n    call_id: str = Field(min_length=1, max_length=200)\n    tool_name: str = Field(min_length=1, max_length=240)\n    label: str = Field(min_length=1, max_length=240)\n    arguments: dict[str, Any] = Field(default_factory=dict)\n    provider: str | None = None\nStudioAgentRequest.model_rebuild()\nclass StudioAgentOutput(BaseModel):\n    \"\"\"The final downloadable artifact shown on the canvas.\"\"\"\n    title: str = Field(min_length=1, max_length=80)",
         "detail": "agent.studio_agent_next",
         "documentation": {}
     },
@@ -3374,7 +3608,16 @@
         "kind": 6,
         "importPath": "agent.studio_agent_next",
         "description": "agent.studio_agent_next",
-        "peekOfCode": "class StudioToolEvent:\n    id: str\n    name: str\n    label: str\n    status: str\n    summary: str\n    provider: str | None = None\n    provider_job_id: str | None = None\n    assets: list[dict[str, Any]] = field(default_factory=list)\n    result: dict[str, Any] = field(default_factory=dict)",
+        "peekOfCode": "class StudioToolEvent:\n    id: str\n    name: str\n    label: str\n    status: str\n    summary: str\n    provider: str | None = None\n    provider_job_id: str | None = None\n    arguments: dict[str, Any] = field(default_factory=dict)\n    assets: list[dict[str, Any]] = field(default_factory=list)",
+        "detail": "agent.studio_agent_next",
+        "documentation": {}
+    },
+    {
+        "label": "StudioProgressEvent",
+        "kind": 6,
+        "importPath": "agent.studio_agent_next",
+        "description": "agent.studio_agent_next",
+        "peekOfCode": "class StudioProgressEvent:\n    \"\"\"A safe, user-facing AG-UI-style update emitted during an agent run.\"\"\"\n    id: str\n    type: str\n    title: str\n    message: str\n    status: str = \"running\"\n    tool_call_id: str | None = None\n    tool_call_name: str | None = None\n    created_at: int = field(default_factory=lambda: int(time.time()))",
         "detail": "agent.studio_agent_next",
         "documentation": {}
     },
@@ -3383,7 +3626,16 @@
         "kind": 6,
         "importPath": "agent.studio_agent_next",
         "description": "agent.studio_agent_next",
-        "peekOfCode": "class StudioAgentContext:\n    nodes: list[Any] = field(default_factory=list)\n    tool_events: list[StudioToolEvent] = field(default_factory=list)\n    working_assets: dict[str, dict[str, Any]] = field(default_factory=dict)\n    asset_registrar: AssetRegistrar | None = None\n    source_resolver: SourceResolver | None = None\n    event_sink: EventSink | None = None\n    job_id: str | None = None\n    workspace_id: str | None = None\n    project_id: str | None = None",
+        "peekOfCode": "class StudioAgentContext:\n    nodes: list[Any] = field(default_factory=list)\n    tool_events: list[StudioToolEvent] = field(default_factory=list)\n    working_assets: dict[str, dict[str, Any]] = field(default_factory=dict)\n    source_versions: dict[str, str] = field(default_factory=dict)\n    asset_registrar: AssetRegistrar | None = None\n    source_resolver: SourceResolver | None = None\n    source_publisher: SourcePublisher | None = None\n    event_sink: EventSink | None = None\n    progress_sink: ProgressSink | None = None",
+        "detail": "agent.studio_agent_next",
+        "documentation": {}
+    },
+    {
+        "label": "StudioAgentApprovalRequired",
+        "kind": 6,
+        "importPath": "agent.studio_agent_next",
+        "description": "agent.studio_agent_next",
+        "peekOfCode": "class StudioAgentApprovalRequired(Exception):\n    \"\"\"A resumable Agents SDK checkpoint awaiting one or more tool decisions.\"\"\"\n    def __init__(\n        self,\n        state: str,\n        approvals: list[StudioApprovalRequest],\n        session_items: list[dict[str, Any]] | None = None,\n    ) -> None:\n        super().__init__(\"Tool approval is required to continue this agent run.\")\n        self.state = state",
         "detail": "agent.studio_agent_next",
         "documentation": {}
     },
@@ -3392,7 +3644,16 @@
         "kind": 6,
         "importPath": "agent.studio_agent_next",
         "description": "agent.studio_agent_next",
-        "peekOfCode": "class GatewayMCPServer(MCPServerStreamableHttp):\n    \"\"\"AgentCore Gateway MCP client with local tool descriptions restored.\"\"\"\n    async def list_tools(self, run_context: Any = None, agent: Any = None) -> list[Any]:\n        tools = await super().list_tools(run_context, agent)\n        return _describe_gateway_mcp_tools(tools)\ndef _unwrap_tool_output(output: Any) -> dict[str, Any]:\n    current: Any = output\n    for _ in range(8):\n        if current is None:\n            return {}",
+        "peekOfCode": "class GatewayMCPServer(MCPServerStreamableHttp):\n    \"\"\"AgentCore Gateway client that progressively reveals semantically discovered tools.\"\"\"\n    def __init__(\n        self,\n        *args: Any,\n        argument_transformer: GatewayArgumentTransformer | None = None,\n        **kwargs: Any,\n    ) -> None:\n        super().__init__(*args, **kwargs)\n        self._discovered_tool_names: set[str] = set()",
+        "detail": "agent.studio_agent_next",
+        "documentation": {}
+    },
+    {
+        "label": "_TurnCompactionPolicy",
+        "kind": 6,
+        "importPath": "agent.studio_agent_next",
+        "description": "agent.studio_agent_next",
+        "peekOfCode": "class _TurnCompactionPolicy:\n    \"\"\"Allow compaction only after a whole agent run reaches a safe boundary.\n    The Agents SDK defers compaction after local tool outputs and can force it on\n    the following model response. That response may already contain the next tool\n    call, whose output does not exist yet. Keeping automatic compaction disabled\n    inside the tool loop and enabling it once at run completion prevents invalid\n    function-call history while retaining durable conversation compaction.\n    \"\"\"\n    enabled: bool = False\n    def __call__(self, context: dict[str, Any]) -> bool:",
         "detail": "agent.studio_agent_next",
         "documentation": {}
     },
@@ -3410,7 +3671,7 @@
         "kind": 2,
         "importPath": "agent.studio_agent_next",
         "description": "agent.studio_agent_next",
-        "peekOfCode": "def gateway_mcp_server() -> MCPServer:\n    \"\"\"MCP client for the AgentCore Gateway endpoint.\"\"\"\n    load_local_env()\n    params: dict[str, Any] = {\"url\": require_agentcore_gateway_url()}\n    headers = agentcore_gateway_headers()\n    if headers:\n        params[\"headers\"] = headers\n    return GatewayMCPServer(\n        params,\n        cache_tools_list=True,",
+        "peekOfCode": "def gateway_mcp_server(\n    *,\n    argument_transformer: GatewayArgumentTransformer | None = None,\n) -> MCPServer:\n    \"\"\"MCP client for the AgentCore Gateway endpoint.\"\"\"\n    load_local_env()\n    params: dict[str, Any] = {\"url\": require_agentcore_gateway_url()}\n    headers = agentcore_gateway_headers()\n    if headers:\n        params[\"headers\"] = headers",
         "detail": "agent.studio_agent_next",
         "documentation": {}
     },
@@ -3419,7 +3680,7 @@
         "kind": 5,
         "importPath": "agent.studio_agent_next",
         "description": "agent.studio_agent_next",
-        "peekOfCode": "logger = logging.getLogger(\"renderhaus.studio_agent\")\nAssetRegistrar = Callable[..., list[dict[str, Any]]]\nSourceResolver = Callable[[str], str]\nEventSink = Callable[[\"StudioToolEvent\"], None]\n_SESSION_TIMEOUT_SECONDS = 180.0\n_FINALIZATION_TIMEOUT_SECONDS = 240.0\n_POLL_INTERVAL_SECONDS = 3.0\n_TERMINAL_TOOL_STATUSES = frozenset(\n    {\"succeeded\", \"completed\", \"failed\", \"error\", \"dry_run\", \"cancelled\", \"canceled\"}\n)",
+        "peekOfCode": "logger = logging.getLogger(\"renderhaus.studio_agent\")\nAssetRegistrar = Callable[..., list[dict[str, Any]]]\nSourceResolver = Callable[[str], str]\nSourcePublisher = Callable[[str], str]\nGatewayArgumentTransformer = Callable[[str, dict[str, Any]], dict[str, Any]]\nEventSink = Callable[[\"StudioToolEvent\"], None]\nProgressSink = Callable[[\"StudioProgressEvent\"], None]\n_SESSION_TIMEOUT_SECONDS = 180.0\n_DEFAULT_AGENT_MODEL = \"gpt-5.6-luna\"\nMAX_AGENT_PROMPT_CHARS = 64_000",
         "detail": "agent.studio_agent_next",
         "documentation": {}
     },
@@ -3428,7 +3689,7 @@
         "kind": 5,
         "importPath": "agent.studio_agent_next",
         "description": "agent.studio_agent_next",
-        "peekOfCode": "AssetRegistrar = Callable[..., list[dict[str, Any]]]\nSourceResolver = Callable[[str], str]\nEventSink = Callable[[\"StudioToolEvent\"], None]\n_SESSION_TIMEOUT_SECONDS = 180.0\n_FINALIZATION_TIMEOUT_SECONDS = 240.0\n_POLL_INTERVAL_SECONDS = 3.0\n_TERMINAL_TOOL_STATUSES = frozenset(\n    {\"succeeded\", \"completed\", \"failed\", \"error\", \"dry_run\", \"cancelled\", \"canceled\"}\n)\n_VIDEO_REQUEST_PATTERN = re.compile(",
+        "peekOfCode": "AssetRegistrar = Callable[..., list[dict[str, Any]]]\nSourceResolver = Callable[[str], str]\nSourcePublisher = Callable[[str], str]\nGatewayArgumentTransformer = Callable[[str, dict[str, Any]], dict[str, Any]]\nEventSink = Callable[[\"StudioToolEvent\"], None]\nProgressSink = Callable[[\"StudioProgressEvent\"], None]\n_SESSION_TIMEOUT_SECONDS = 180.0\n_DEFAULT_AGENT_MODEL = \"gpt-5.6-luna\"\nMAX_AGENT_PROMPT_CHARS = 64_000\n_GATEWAY_SEARCH_TOOL = \"x_amz_bedrock_agentcore_search\"",
         "detail": "agent.studio_agent_next",
         "documentation": {}
     },
@@ -3437,7 +3698,25 @@
         "kind": 5,
         "importPath": "agent.studio_agent_next",
         "description": "agent.studio_agent_next",
-        "peekOfCode": "SourceResolver = Callable[[str], str]\nEventSink = Callable[[\"StudioToolEvent\"], None]\n_SESSION_TIMEOUT_SECONDS = 180.0\n_FINALIZATION_TIMEOUT_SECONDS = 240.0\n_POLL_INTERVAL_SECONDS = 3.0\n_TERMINAL_TOOL_STATUSES = frozenset(\n    {\"succeeded\", \"completed\", \"failed\", \"error\", \"dry_run\", \"cancelled\", \"canceled\"}\n)\n_VIDEO_REQUEST_PATTERN = re.compile(\n    r\"\\b(video|ad|advert|commercial|reel|spot|motion graphic|trailer|promo|montage)\\b\",",
+        "peekOfCode": "SourceResolver = Callable[[str], str]\nSourcePublisher = Callable[[str], str]\nGatewayArgumentTransformer = Callable[[str, dict[str, Any]], dict[str, Any]]\nEventSink = Callable[[\"StudioToolEvent\"], None]\nProgressSink = Callable[[\"StudioProgressEvent\"], None]\n_SESSION_TIMEOUT_SECONDS = 180.0\n_DEFAULT_AGENT_MODEL = \"gpt-5.6-luna\"\nMAX_AGENT_PROMPT_CHARS = 64_000\n_GATEWAY_SEARCH_TOOL = \"x_amz_bedrock_agentcore_search\"\n_VIDEO_REQUEST_PATTERN = re.compile(",
+        "detail": "agent.studio_agent_next",
+        "documentation": {}
+    },
+    {
+        "label": "SourcePublisher",
+        "kind": 5,
+        "importPath": "agent.studio_agent_next",
+        "description": "agent.studio_agent_next",
+        "peekOfCode": "SourcePublisher = Callable[[str], str]\nGatewayArgumentTransformer = Callable[[str, dict[str, Any]], dict[str, Any]]\nEventSink = Callable[[\"StudioToolEvent\"], None]\nProgressSink = Callable[[\"StudioProgressEvent\"], None]\n_SESSION_TIMEOUT_SECONDS = 180.0\n_DEFAULT_AGENT_MODEL = \"gpt-5.6-luna\"\nMAX_AGENT_PROMPT_CHARS = 64_000\n_GATEWAY_SEARCH_TOOL = \"x_amz_bedrock_agentcore_search\"\n_VIDEO_REQUEST_PATTERN = re.compile(\n    r\"\\b(video|ad|advert|commercial|reel|spot|motion graphic|trailer|promo|montage)\\b\",",
+        "detail": "agent.studio_agent_next",
+        "documentation": {}
+    },
+    {
+        "label": "GatewayArgumentTransformer",
+        "kind": 5,
+        "importPath": "agent.studio_agent_next",
+        "description": "agent.studio_agent_next",
+        "peekOfCode": "GatewayArgumentTransformer = Callable[[str, dict[str, Any]], dict[str, Any]]\nEventSink = Callable[[\"StudioToolEvent\"], None]\nProgressSink = Callable[[\"StudioProgressEvent\"], None]\n_SESSION_TIMEOUT_SECONDS = 180.0\n_DEFAULT_AGENT_MODEL = \"gpt-5.6-luna\"\nMAX_AGENT_PROMPT_CHARS = 64_000\n_GATEWAY_SEARCH_TOOL = \"x_amz_bedrock_agentcore_search\"\n_VIDEO_REQUEST_PATTERN = re.compile(\n    r\"\\b(video|ad|advert|commercial|reel|spot|motion graphic|trailer|promo|montage)\\b\",\n    re.IGNORECASE,",
         "detail": "agent.studio_agent_next",
         "documentation": {}
     },
@@ -3446,7 +3725,16 @@
         "kind": 5,
         "importPath": "agent.studio_agent_next",
         "description": "agent.studio_agent_next",
-        "peekOfCode": "EventSink = Callable[[\"StudioToolEvent\"], None]\n_SESSION_TIMEOUT_SECONDS = 180.0\n_FINALIZATION_TIMEOUT_SECONDS = 240.0\n_POLL_INTERVAL_SECONDS = 3.0\n_TERMINAL_TOOL_STATUSES = frozenset(\n    {\"succeeded\", \"completed\", \"failed\", \"error\", \"dry_run\", \"cancelled\", \"canceled\"}\n)\n_VIDEO_REQUEST_PATTERN = re.compile(\n    r\"\\b(video|ad|advert|commercial|reel|spot|motion graphic|trailer|promo|montage)\\b\",\n    re.IGNORECASE,",
+        "peekOfCode": "EventSink = Callable[[\"StudioToolEvent\"], None]\nProgressSink = Callable[[\"StudioProgressEvent\"], None]\n_SESSION_TIMEOUT_SECONDS = 180.0\n_DEFAULT_AGENT_MODEL = \"gpt-5.6-luna\"\nMAX_AGENT_PROMPT_CHARS = 64_000\n_GATEWAY_SEARCH_TOOL = \"x_amz_bedrock_agentcore_search\"\n_VIDEO_REQUEST_PATTERN = re.compile(\n    r\"\\b(video|ad|advert|commercial|reel|spot|motion graphic|trailer|promo|montage)\\b\",\n    re.IGNORECASE,\n)",
+        "detail": "agent.studio_agent_next",
+        "documentation": {}
+    },
+    {
+        "label": "ProgressSink",
+        "kind": 5,
+        "importPath": "agent.studio_agent_next",
+        "description": "agent.studio_agent_next",
+        "peekOfCode": "ProgressSink = Callable[[\"StudioProgressEvent\"], None]\n_SESSION_TIMEOUT_SECONDS = 180.0\n_DEFAULT_AGENT_MODEL = \"gpt-5.6-luna\"\nMAX_AGENT_PROMPT_CHARS = 64_000\n_GATEWAY_SEARCH_TOOL = \"x_amz_bedrock_agentcore_search\"\n_VIDEO_REQUEST_PATTERN = re.compile(\n    r\"\\b(video|ad|advert|commercial|reel|spot|motion graphic|trailer|promo|montage)\\b\",\n    re.IGNORECASE,\n)\n_CONTEXTUAL_FOLLOW_UP_PATTERN = re.compile(",
         "detail": "agent.studio_agent_next",
         "documentation": {}
     },
@@ -3455,34 +3743,34 @@
         "kind": 5,
         "importPath": "agent.studio_agent_next",
         "description": "agent.studio_agent_next",
-        "peekOfCode": "_SESSION_TIMEOUT_SECONDS = 180.0\n_FINALIZATION_TIMEOUT_SECONDS = 240.0\n_POLL_INTERVAL_SECONDS = 3.0\n_TERMINAL_TOOL_STATUSES = frozenset(\n    {\"succeeded\", \"completed\", \"failed\", \"error\", \"dry_run\", \"cancelled\", \"canceled\"}\n)\n_VIDEO_REQUEST_PATTERN = re.compile(\n    r\"\\b(video|ad|advert|commercial|reel|spot|motion graphic|trailer|promo|montage)\\b\",\n    re.IGNORECASE,\n)",
+        "peekOfCode": "_SESSION_TIMEOUT_SECONDS = 180.0\n_DEFAULT_AGENT_MODEL = \"gpt-5.6-luna\"\nMAX_AGENT_PROMPT_CHARS = 64_000\n_GATEWAY_SEARCH_TOOL = \"x_amz_bedrock_agentcore_search\"\n_VIDEO_REQUEST_PATTERN = re.compile(\n    r\"\\b(video|ad|advert|commercial|reel|spot|motion graphic|trailer|promo|montage)\\b\",\n    re.IGNORECASE,\n)\n_CONTEXTUAL_FOLLOW_UP_PATTERN = re.compile(\n    r\"\\b(retry|again|continue|finish|resume|same|that|those|them|it)\\b\",",
         "detail": "agent.studio_agent_next",
         "documentation": {}
     },
     {
-        "label": "_FINALIZATION_TIMEOUT_SECONDS",
+        "label": "_DEFAULT_AGENT_MODEL",
         "kind": 5,
         "importPath": "agent.studio_agent_next",
         "description": "agent.studio_agent_next",
-        "peekOfCode": "_FINALIZATION_TIMEOUT_SECONDS = 240.0\n_POLL_INTERVAL_SECONDS = 3.0\n_TERMINAL_TOOL_STATUSES = frozenset(\n    {\"succeeded\", \"completed\", \"failed\", \"error\", \"dry_run\", \"cancelled\", \"canceled\"}\n)\n_VIDEO_REQUEST_PATTERN = re.compile(\n    r\"\\b(video|ad|advert|commercial|reel|spot|motion graphic|trailer|promo|montage)\\b\",\n    re.IGNORECASE,\n)\nSTUDIO_MANAGER_INSTRUCTIONS = \"\"\"",
+        "peekOfCode": "_DEFAULT_AGENT_MODEL = \"gpt-5.6-luna\"\nMAX_AGENT_PROMPT_CHARS = 64_000\n_GATEWAY_SEARCH_TOOL = \"x_amz_bedrock_agentcore_search\"\n_VIDEO_REQUEST_PATTERN = re.compile(\n    r\"\\b(video|ad|advert|commercial|reel|spot|motion graphic|trailer|promo|montage)\\b\",\n    re.IGNORECASE,\n)\n_CONTEXTUAL_FOLLOW_UP_PATTERN = re.compile(\n    r\"\\b(retry|again|continue|finish|resume|same|that|those|them|it)\\b\",\n    re.IGNORECASE,",
         "detail": "agent.studio_agent_next",
         "documentation": {}
     },
     {
-        "label": "_POLL_INTERVAL_SECONDS",
+        "label": "MAX_AGENT_PROMPT_CHARS",
         "kind": 5,
         "importPath": "agent.studio_agent_next",
         "description": "agent.studio_agent_next",
-        "peekOfCode": "_POLL_INTERVAL_SECONDS = 3.0\n_TERMINAL_TOOL_STATUSES = frozenset(\n    {\"succeeded\", \"completed\", \"failed\", \"error\", \"dry_run\", \"cancelled\", \"canceled\"}\n)\n_VIDEO_REQUEST_PATTERN = re.compile(\n    r\"\\b(video|ad|advert|commercial|reel|spot|motion graphic|trailer|promo|montage)\\b\",\n    re.IGNORECASE,\n)\nSTUDIO_MANAGER_INSTRUCTIONS = \"\"\"\nYou are the Renderhaus canvas manager. Turn the customer's request into one useful, finished,",
+        "peekOfCode": "MAX_AGENT_PROMPT_CHARS = 64_000\n_GATEWAY_SEARCH_TOOL = \"x_amz_bedrock_agentcore_search\"\n_VIDEO_REQUEST_PATTERN = re.compile(\n    r\"\\b(video|ad|advert|commercial|reel|spot|motion graphic|trailer|promo|montage)\\b\",\n    re.IGNORECASE,\n)\n_CONTEXTUAL_FOLLOW_UP_PATTERN = re.compile(\n    r\"\\b(retry|again|continue|finish|resume|same|that|those|them|it)\\b\",\n    re.IGNORECASE,\n)",
         "detail": "agent.studio_agent_next",
         "documentation": {}
     },
     {
-        "label": "_TERMINAL_TOOL_STATUSES",
+        "label": "_GATEWAY_SEARCH_TOOL",
         "kind": 5,
         "importPath": "agent.studio_agent_next",
         "description": "agent.studio_agent_next",
-        "peekOfCode": "_TERMINAL_TOOL_STATUSES = frozenset(\n    {\"succeeded\", \"completed\", \"failed\", \"error\", \"dry_run\", \"cancelled\", \"canceled\"}\n)\n_VIDEO_REQUEST_PATTERN = re.compile(\n    r\"\\b(video|ad|advert|commercial|reel|spot|motion graphic|trailer|promo|montage)\\b\",\n    re.IGNORECASE,\n)\nSTUDIO_MANAGER_INSTRUCTIONS = \"\"\"\nYou are the Renderhaus canvas manager. Turn the customer's request into one useful, finished,\ndownloadable result.",
+        "peekOfCode": "_GATEWAY_SEARCH_TOOL = \"x_amz_bedrock_agentcore_search\"\n_VIDEO_REQUEST_PATTERN = re.compile(\n    r\"\\b(video|ad|advert|commercial|reel|spot|motion graphic|trailer|promo|montage)\\b\",\n    re.IGNORECASE,\n)\n_CONTEXTUAL_FOLLOW_UP_PATTERN = re.compile(\n    r\"\\b(retry|again|continue|finish|resume|same|that|those|them|it)\\b\",\n    re.IGNORECASE,\n)\nSTUDIO_MANAGER_INSTRUCTIONS = \"\"\"",
         "detail": "agent.studio_agent_next",
         "documentation": {}
     },
@@ -3491,7 +3779,16 @@
         "kind": 5,
         "importPath": "agent.studio_agent_next",
         "description": "agent.studio_agent_next",
-        "peekOfCode": "_VIDEO_REQUEST_PATTERN = re.compile(\n    r\"\\b(video|ad|advert|commercial|reel|spot|motion graphic|trailer|promo|montage)\\b\",\n    re.IGNORECASE,\n)\nSTUDIO_MANAGER_INSTRUCTIONS = \"\"\"\nYou are the Renderhaus canvas manager. Turn the customer's request into one useful, finished,\ndownloadable result.\nImage, video, music, speech, and Remotion tools come from Amazon Bedrock AgentCore Gateway. Names\nlook like `Seedream___text_to_image` and `Remotion___render_timeline`. Use generation tools when\nthe request needs new media; they may trigger paid provider or AWS work. Gateway tools keep",
+        "peekOfCode": "_VIDEO_REQUEST_PATTERN = re.compile(\n    r\"\\b(video|ad|advert|commercial|reel|spot|motion graphic|trailer|promo|montage)\\b\",\n    re.IGNORECASE,\n)\n_CONTEXTUAL_FOLLOW_UP_PATTERN = re.compile(\n    r\"\\b(retry|again|continue|finish|resume|same|that|those|them|it)\\b\",\n    re.IGNORECASE,\n)\nSTUDIO_MANAGER_INSTRUCTIONS = \"\"\"\nYou are the Renderhaus canvas manager. Turn the customer's request into one useful, finished,",
+        "detail": "agent.studio_agent_next",
+        "documentation": {}
+    },
+    {
+        "label": "_CONTEXTUAL_FOLLOW_UP_PATTERN",
+        "kind": 5,
+        "importPath": "agent.studio_agent_next",
+        "description": "agent.studio_agent_next",
+        "peekOfCode": "_CONTEXTUAL_FOLLOW_UP_PATTERN = re.compile(\n    r\"\\b(retry|again|continue|finish|resume|same|that|those|them|it)\\b\",\n    re.IGNORECASE,\n)\nSTUDIO_MANAGER_INSTRUCTIONS = \"\"\"\nYou are the Renderhaus canvas manager. Turn the customer's request into one useful, finished,\ndownloadable result.\nKeep the customer informed like a strong coding agent. Before every Gateway search or external\ntool call, call `report_progress` with a brief, specific update that says what you learned and what\nyou are doing next. Write the update yourself from the actual run context. Never use generic filler",
         "detail": "agent.studio_agent_next",
         "documentation": {}
     },
@@ -3500,7 +3797,7 @@
         "kind": 5,
         "importPath": "agent.studio_agent_next",
         "description": "agent.studio_agent_next",
-        "peekOfCode": "STUDIO_MANAGER_INSTRUCTIONS = \"\"\"\nYou are the Renderhaus canvas manager. Turn the customer's request into one useful, finished,\ndownloadable result.\nImage, video, music, speech, and Remotion tools come from Amazon Bedrock AgentCore Gateway. Names\nlook like `Seedream___text_to_image` and `Remotion___render_timeline`. Use generation tools when\nthe request needs new media; they may trigger paid provider or AWS work. Gateway tools keep\nprovider argument names such as `image_path_or_url` and Remotion clip `url`. When a referenced\ncanvas node already has `source`, pass that value into those fields.\nWhen the customer wants a video, ad, reel, spot, motion graphic, or any edited sequence:\n1. Generate the needed stills, clips, music, and voice first.",
+        "peekOfCode": "STUDIO_MANAGER_INSTRUCTIONS = \"\"\"\nYou are the Renderhaus canvas manager. Turn the customer's request into one useful, finished,\ndownloadable result.\nKeep the customer informed like a strong coding agent. Before every Gateway search or external\ntool call, call `report_progress` with a brief, specific update that says what you learned and what\nyou are doing next. Write the update yourself from the actual run context. Never use generic filler\nsuch as \"working on it\", \"choosing tools\", \"processing\", or numbered step labels. Do not expose\nprivate chain-of-thought; report only concise plans, observations, and results that help the\ncustomer follow the work.\nImage, video, music, speech, and assembly tools come from Amazon Bedrock AgentCore Gateway. The",
         "detail": "agent.studio_agent_next",
         "documentation": {}
     },
@@ -3518,7 +3815,16 @@
         "kind": 5,
         "importPath": "agent.studio_agent_next",
         "description": "agent.studio_agent_next",
-        "peekOfCode": "_DROP_TOOL_RESULT_KEYS = frozenset(\n    {\"traceback\", \"last_response\", \"create_response\", \"last_payload\", \"raw\"}\n)\n_TEXT_PART_KEYS = frozenset({\"type\", \"text\"})\n_TOOL_TITLES = {\n    \"render_timeline\": \"Compose final MP4\",\n    \"get_render_progress\": \"Poll Remotion render\",\n    \"text_to_image\": \"Generate image\",\n    \"image_to_image\": \"Edit image\",\n    \"text_to_video\": \"Generate video\",",
+        "peekOfCode": "_DROP_TOOL_RESULT_KEYS = frozenset(\n    {\"traceback\", \"last_response\", \"create_response\", \"last_payload\", \"raw\"}\n)\n_SECRET_ARGUMENT_PARTS = (\"api_key\", \"authorization\", \"secret\", \"token\")\n_TEXT_PART_KEYS = frozenset({\"type\", \"text\"})\n_TOOL_TITLES = {\n    \"render_timeline\": \"Compose final MP4\",\n    \"get_render_progress\": \"Poll Remotion render\",\n    \"text_to_image\": \"Generate image\",\n    \"image_to_image\": \"Edit image\",",
+        "detail": "agent.studio_agent_next",
+        "documentation": {}
+    },
+    {
+        "label": "_SECRET_ARGUMENT_PARTS",
+        "kind": 5,
+        "importPath": "agent.studio_agent_next",
+        "description": "agent.studio_agent_next",
+        "peekOfCode": "_SECRET_ARGUMENT_PARTS = (\"api_key\", \"authorization\", \"secret\", \"token\")\n_TEXT_PART_KEYS = frozenset({\"type\", \"text\"})\n_TOOL_TITLES = {\n    \"render_timeline\": \"Compose final MP4\",\n    \"get_render_progress\": \"Poll Remotion render\",\n    \"text_to_image\": \"Generate image\",\n    \"image_to_image\": \"Edit image\",\n    \"text_to_video\": \"Generate video\",\n    \"image_to_video\": \"Animate image\",\n    \"get_video_task\": \"Poll video task\",",
         "detail": "agent.studio_agent_next",
         "documentation": {}
     },
@@ -3538,6 +3844,15 @@
         "description": "agent.studio_agent_next",
         "peekOfCode": "_TOOL_TITLES = {\n    \"render_timeline\": \"Compose final MP4\",\n    \"get_render_progress\": \"Poll Remotion render\",\n    \"text_to_image\": \"Generate image\",\n    \"image_to_image\": \"Edit image\",\n    \"text_to_video\": \"Generate video\",\n    \"image_to_video\": \"Animate image\",\n    \"get_video_task\": \"Poll video task\",\n}\ndef _title_for_gateway_tool(target: str, name: str) -> str:",
         "detail": "agent.studio_agent_next",
+        "documentation": {}
+    },
+    {
+        "label": "StudioMemorySession",
+        "kind": 6,
+        "importPath": "agent.studio_memory",
+        "description": "agent.studio_memory",
+        "peekOfCode": "class StudioMemorySession:\n    \"\"\"An SDK-compatible session whose snapshot can cross runtime boundaries.\"\"\"\n    session_settings = None\n    def __init__(self, session_id: str, items: list[dict[str, Any]] | None = None) -> None:\n        self.session_id = session_id\n        self._items: list[Any] = deepcopy(items or [])\n    async def get_items(self, limit: int | None = None) -> list[Any]:\n        items = self._items if limit is None else self._items[-max(0, limit) :]\n        return deepcopy(items)\n    async def add_items(self, items: list[Any]) -> None:",
+        "detail": "agent.studio_memory",
         "documentation": {}
     },
     {
@@ -4094,7 +4409,7 @@
         "kind": 6,
         "importPath": "providers.remotion.api",
         "description": "providers.remotion.api",
-        "peekOfCode": "class RemotionSettings:\n    region: str\n    function_name: str\n    serve_url: str\n    bucket_name: str\ndef dry_run() -> bool:\n    return os.getenv(\"REMOTION_DRY_RUN\", \"true\").lower() != \"false\"\ndef _on_lambda() -> bool:\n    return bool(os.getenv(\"AWS_LAMBDA_FUNCTION_NAME\"))\ndef load_remotion_settings() -> RemotionSettings:",
+        "peekOfCode": "class RemotionSettings:\n    region: str\n    function_name: str\n    serve_url: str\n    bucket_name: str\ndef dry_run() -> bool:\n    return os.getenv(\"REMOTION_DRY_RUN\", \"false\").lower() != \"false\"\ndef _on_lambda() -> bool:\n    return bool(os.getenv(\"AWS_LAMBDA_FUNCTION_NAME\"))\ndef load_remotion_settings() -> RemotionSettings:",
         "detail": "providers.remotion.api",
         "documentation": {}
     },
@@ -4103,7 +4418,7 @@
         "kind": 2,
         "importPath": "providers.remotion.api",
         "description": "providers.remotion.api",
-        "peekOfCode": "def dry_run() -> bool:\n    return os.getenv(\"REMOTION_DRY_RUN\", \"true\").lower() != \"false\"\ndef _on_lambda() -> bool:\n    return bool(os.getenv(\"AWS_LAMBDA_FUNCTION_NAME\"))\ndef load_remotion_settings() -> RemotionSettings:\n    stored: dict[str, Any] = {}\n    if DEPLOYMENT_PATH.is_file():\n        value = json.loads(DEPLOYMENT_PATH.read_text())\n        if isinstance(value, dict):\n            stored = value",
+        "peekOfCode": "def dry_run() -> bool:\n    return os.getenv(\"REMOTION_DRY_RUN\", \"false\").lower() != \"false\"\ndef _on_lambda() -> bool:\n    return bool(os.getenv(\"AWS_LAMBDA_FUNCTION_NAME\"))\ndef load_remotion_settings() -> RemotionSettings:\n    stored: dict[str, Any] = {}\n    if DEPLOYMENT_PATH.is_file():\n        value = json.loads(DEPLOYMENT_PATH.read_text())\n        if isinstance(value, dict):\n            stored = value",
         "detail": "providers.remotion.api",
         "documentation": {}
     },
@@ -4121,7 +4436,7 @@
         "kind": 2,
         "importPath": "providers.remotion.api",
         "description": "providers.remotion.api",
-        "peekOfCode": "def build_timeline_props(\n    title: str,\n    visuals: list[dict[str, Any]],\n    audio_tracks: list[dict[str, Any]] | None = None,\n    aspect_ratio: str = \"9:16\",\n    fps: int = 30,\n) -> dict[str, Any]:\n    if aspect_ratio not in ASPECT_SIZES:\n        raise ValueError(f\"aspect_ratio must be one of {', '.join(ASPECT_SIZES)}.\")\n    if not visuals:",
+        "peekOfCode": "def build_timeline_props(\n    title: str,\n    visuals: list[dict[str, Any]],\n    audio_tracks: list[dict[str, Any]] | None = None,\n    text_overlays: list[dict[str, Any]] | None = None,\n    aspect_ratio: str = \"9:16\",\n    fps: int = 30,\n) -> dict[str, Any]:\n    if aspect_ratio not in ASPECT_SIZES:\n        raise ValueError(f\"aspect_ratio must be one of {', '.join(ASPECT_SIZES)}.\")",
         "detail": "providers.remotion.api",
         "documentation": {}
     },
@@ -4130,7 +4445,7 @@
         "kind": 2,
         "importPath": "providers.remotion.api",
         "description": "providers.remotion.api",
-        "peekOfCode": "def render_timeline(\n    title: str,\n    visuals: list[dict[str, Any]],\n    audio_tracks: list[dict[str, Any]] | None = None,\n    aspect_ratio: Literal[\"16:9\", \"9:16\", \"1:1\"] = \"9:16\",\n    fps: int = 30,\n    output_filename: str = \"renderhaus-video.mp4\",\n) -> dict[str, Any]:\n    \"\"\"Compose generated image, video, and audio clips into one final MP4, then poll get_render_progress.\"\"\"\n    if dry_run():",
+        "peekOfCode": "def render_timeline(\n    title: str,\n    visuals: list[dict[str, Any]],\n    audio_tracks: list[dict[str, Any]] | None = None,\n    text_overlays: list[dict[str, Any]] | None = None,\n    aspect_ratio: Literal[\"16:9\", \"9:16\", \"1:1\"] = \"9:16\",\n    fps: int = 30,\n    output_filename: str = \"renderhaus-video.mp4\",\n) -> dict[str, Any]:\n    \"\"\"Compose generated image, video, and audio clips into one final MP4, then poll get_render_progress.\"\"\"",
         "detail": "providers.remotion.api",
         "documentation": {}
     },
@@ -4157,7 +4472,7 @@
         "kind": 5,
         "importPath": "providers.remotion.api",
         "description": "providers.remotion.api",
-        "peekOfCode": "ROOT = Path(__file__).resolve().parents[2]\nDEPLOYMENT_PATH = ROOT / \".renderhaus\" / \"remotion\" / \"deployment.json\"\nOUTPUT_DIR = ROOT / \".renderhaus\" / \"media\" / \"remotion\"\nCOMPOSITION_ID = \"RenderhausTimeline\"\nASPECT_SIZES = {\"16:9\": (1920, 1080), \"9:16\": (1080, 1920), \"1:1\": (1080, 1080)}\n@dataclass(frozen=True, slots=True)\nclass RemotionSettings:\n    region: str\n    function_name: str\n    serve_url: str",
+        "peekOfCode": "ROOT = Path(__file__).resolve().parents[2]\nDEPLOYMENT_PATH = ROOT / \".renderhaus\" / \"remotion\" / \"deployment.json\"\nOUTPUT_DIR = ROOT / \".renderhaus\" / \"media\" / \"remotion\"\nCOMPOSITION_ID = \"RenderhausTimeline\"\nASPECT_SIZES = {\"16:9\": (1920, 1080), \"9:16\": (1080, 1920), \"1:1\": (1080, 1080)}\nDEFAULT_FRAMES_PER_LAMBDA = 100\n@dataclass(frozen=True, slots=True)\nclass RemotionSettings:\n    region: str\n    function_name: str",
         "detail": "providers.remotion.api",
         "documentation": {}
     },
@@ -4166,7 +4481,7 @@
         "kind": 5,
         "importPath": "providers.remotion.api",
         "description": "providers.remotion.api",
-        "peekOfCode": "DEPLOYMENT_PATH = ROOT / \".renderhaus\" / \"remotion\" / \"deployment.json\"\nOUTPUT_DIR = ROOT / \".renderhaus\" / \"media\" / \"remotion\"\nCOMPOSITION_ID = \"RenderhausTimeline\"\nASPECT_SIZES = {\"16:9\": (1920, 1080), \"9:16\": (1080, 1920), \"1:1\": (1080, 1080)}\n@dataclass(frozen=True, slots=True)\nclass RemotionSettings:\n    region: str\n    function_name: str\n    serve_url: str\n    bucket_name: str",
+        "peekOfCode": "DEPLOYMENT_PATH = ROOT / \".renderhaus\" / \"remotion\" / \"deployment.json\"\nOUTPUT_DIR = ROOT / \".renderhaus\" / \"media\" / \"remotion\"\nCOMPOSITION_ID = \"RenderhausTimeline\"\nASPECT_SIZES = {\"16:9\": (1920, 1080), \"9:16\": (1080, 1920), \"1:1\": (1080, 1080)}\nDEFAULT_FRAMES_PER_LAMBDA = 100\n@dataclass(frozen=True, slots=True)\nclass RemotionSettings:\n    region: str\n    function_name: str\n    serve_url: str",
         "detail": "providers.remotion.api",
         "documentation": {}
     },
@@ -4175,7 +4490,7 @@
         "kind": 5,
         "importPath": "providers.remotion.api",
         "description": "providers.remotion.api",
-        "peekOfCode": "OUTPUT_DIR = ROOT / \".renderhaus\" / \"media\" / \"remotion\"\nCOMPOSITION_ID = \"RenderhausTimeline\"\nASPECT_SIZES = {\"16:9\": (1920, 1080), \"9:16\": (1080, 1920), \"1:1\": (1080, 1080)}\n@dataclass(frozen=True, slots=True)\nclass RemotionSettings:\n    region: str\n    function_name: str\n    serve_url: str\n    bucket_name: str\ndef dry_run() -> bool:",
+        "peekOfCode": "OUTPUT_DIR = ROOT / \".renderhaus\" / \"media\" / \"remotion\"\nCOMPOSITION_ID = \"RenderhausTimeline\"\nASPECT_SIZES = {\"16:9\": (1920, 1080), \"9:16\": (1080, 1920), \"1:1\": (1080, 1080)}\nDEFAULT_FRAMES_PER_LAMBDA = 100\n@dataclass(frozen=True, slots=True)\nclass RemotionSettings:\n    region: str\n    function_name: str\n    serve_url: str\n    bucket_name: str",
         "detail": "providers.remotion.api",
         "documentation": {}
     },
@@ -4184,7 +4499,7 @@
         "kind": 5,
         "importPath": "providers.remotion.api",
         "description": "providers.remotion.api",
-        "peekOfCode": "COMPOSITION_ID = \"RenderhausTimeline\"\nASPECT_SIZES = {\"16:9\": (1920, 1080), \"9:16\": (1080, 1920), \"1:1\": (1080, 1080)}\n@dataclass(frozen=True, slots=True)\nclass RemotionSettings:\n    region: str\n    function_name: str\n    serve_url: str\n    bucket_name: str\ndef dry_run() -> bool:\n    return os.getenv(\"REMOTION_DRY_RUN\", \"true\").lower() != \"false\"",
+        "peekOfCode": "COMPOSITION_ID = \"RenderhausTimeline\"\nASPECT_SIZES = {\"16:9\": (1920, 1080), \"9:16\": (1080, 1920), \"1:1\": (1080, 1080)}\nDEFAULT_FRAMES_PER_LAMBDA = 100\n@dataclass(frozen=True, slots=True)\nclass RemotionSettings:\n    region: str\n    function_name: str\n    serve_url: str\n    bucket_name: str\ndef dry_run() -> bool:",
         "detail": "providers.remotion.api",
         "documentation": {}
     },
@@ -4193,7 +4508,16 @@
         "kind": 5,
         "importPath": "providers.remotion.api",
         "description": "providers.remotion.api",
-        "peekOfCode": "ASPECT_SIZES = {\"16:9\": (1920, 1080), \"9:16\": (1080, 1920), \"1:1\": (1080, 1080)}\n@dataclass(frozen=True, slots=True)\nclass RemotionSettings:\n    region: str\n    function_name: str\n    serve_url: str\n    bucket_name: str\ndef dry_run() -> bool:\n    return os.getenv(\"REMOTION_DRY_RUN\", \"true\").lower() != \"false\"\ndef _on_lambda() -> bool:",
+        "peekOfCode": "ASPECT_SIZES = {\"16:9\": (1920, 1080), \"9:16\": (1080, 1920), \"1:1\": (1080, 1080)}\nDEFAULT_FRAMES_PER_LAMBDA = 100\n@dataclass(frozen=True, slots=True)\nclass RemotionSettings:\n    region: str\n    function_name: str\n    serve_url: str\n    bucket_name: str\ndef dry_run() -> bool:\n    return os.getenv(\"REMOTION_DRY_RUN\", \"false\").lower() != \"false\"",
+        "detail": "providers.remotion.api",
+        "documentation": {}
+    },
+    {
+        "label": "DEFAULT_FRAMES_PER_LAMBDA",
+        "kind": 5,
+        "importPath": "providers.remotion.api",
+        "description": "providers.remotion.api",
+        "peekOfCode": "DEFAULT_FRAMES_PER_LAMBDA = 100\n@dataclass(frozen=True, slots=True)\nclass RemotionSettings:\n    region: str\n    function_name: str\n    serve_url: str\n    bucket_name: str\ndef dry_run() -> bool:\n    return os.getenv(\"REMOTION_DRY_RUN\", \"false\").lower() != \"false\"\ndef _on_lambda() -> bool:",
         "detail": "providers.remotion.api",
         "documentation": {}
     },
@@ -4414,6 +4738,105 @@
         "documentation": {}
     },
     {
+        "label": "ArgumentRule",
+        "kind": 6,
+        "importPath": "providers.contracts",
+        "description": "providers.contracts",
+        "peekOfCode": "class ArgumentRule:\n    choices: tuple[Any, ...] = ()\n    minimum: float | None = None\n    maximum: float | None = None\n    pattern: str | None = None\n    pattern_hint: str | None = None\n    def description(self) -> str:\n        parts: list[str] = []\n        if self.choices:\n            parts.append(\"Allowed values: \" + \", \".join(str(value) for value in self.choices) + \".\")",
+        "detail": "providers.contracts",
+        "documentation": {}
+    },
+    {
+        "label": "enrich_tool_schema",
+        "kind": 2,
+        "importPath": "providers.contracts",
+        "description": "providers.contracts",
+        "peekOfCode": "def enrich_tool_schema(provider_id: str, tool: dict[str, Any]) -> dict[str, Any]:\n    \"\"\"Add provider choices and nested contracts without unsupported schema keywords.\"\"\"\n    enriched = deepcopy(tool)\n    tool_name = str(enriched.get(\"name\") or \"\")\n    properties = (enriched.get(\"inputSchema\") or {}).get(\"properties\") or {}\n    for field, rule in TOOL_ARGUMENT_RULES.get(provider_id, {}).get(tool_name, {}).items():\n        schema = properties.get(field)\n        if not isinstance(schema, dict):\n            continue\n        note = rule.description()",
+        "detail": "providers.contracts",
+        "documentation": {}
+    },
+    {
+        "label": "validate_tool_arguments",
+        "kind": 2,
+        "importPath": "providers.contracts",
+        "description": "providers.contracts",
+        "peekOfCode": "def validate_tool_arguments(\n    provider_id: str,\n    tool_name: str,\n    arguments: dict[str, Any] | None,\n    input_schema: dict[str, Any],\n) -> dict[str, Any]:\n    \"\"\"Validate every Gateway call at the last boundary before provider I/O.\"\"\"\n    cleaned = {key: value for key, value in (arguments or {}).items() if value is not None}\n    _validate_schema(cleaned, input_schema, \"arguments\")\n    for field, rule in TOOL_ARGUMENT_RULES.get(provider_id, {}).get(tool_name, {}).items():",
+        "detail": "providers.contracts",
+        "documentation": {}
+    },
+    {
+        "label": "SEEDANCE_RATIOS",
+        "kind": 5,
+        "importPath": "providers.contracts",
+        "description": "providers.contracts",
+        "peekOfCode": "SEEDANCE_RATIOS = (\"adaptive\", \"16:9\", \"9:16\", \"1:1\", \"4:3\", \"3:4\", \"21:9\")\nSEEDANCE_RESOLUTIONS = (\"480p\", \"720p\", \"1080p\")\nSEEDREAM_RATIOS = (\"1:1\", \"16:9\", \"9:16\")\nSEEDREAM_SIZES = (\"1K\", \"2K\", \"3K\")\nMUREKA_PURPOSES = (\n    \"reference\",\n    \"melody\",\n    \"instrumental\",\n    \"voice\",\n    \"audio\",",
+        "detail": "providers.contracts",
+        "documentation": {}
+    },
+    {
+        "label": "SEEDANCE_RESOLUTIONS",
+        "kind": 5,
+        "importPath": "providers.contracts",
+        "description": "providers.contracts",
+        "peekOfCode": "SEEDANCE_RESOLUTIONS = (\"480p\", \"720p\", \"1080p\")\nSEEDREAM_RATIOS = (\"1:1\", \"16:9\", \"9:16\")\nSEEDREAM_SIZES = (\"1K\", \"2K\", \"3K\")\nMUREKA_PURPOSES = (\n    \"reference\",\n    \"melody\",\n    \"instrumental\",\n    \"voice\",\n    \"audio\",\n    \"remix\",",
+        "detail": "providers.contracts",
+        "documentation": {}
+    },
+    {
+        "label": "SEEDREAM_RATIOS",
+        "kind": 5,
+        "importPath": "providers.contracts",
+        "description": "providers.contracts",
+        "peekOfCode": "SEEDREAM_RATIOS = (\"1:1\", \"16:9\", \"9:16\")\nSEEDREAM_SIZES = (\"1K\", \"2K\", \"3K\")\nMUREKA_PURPOSES = (\n    \"reference\",\n    \"melody\",\n    \"instrumental\",\n    \"voice\",\n    \"audio\",\n    \"remix\",\n    \"soundtrack\",",
+        "detail": "providers.contracts",
+        "documentation": {}
+    },
+    {
+        "label": "SEEDREAM_SIZES",
+        "kind": 5,
+        "importPath": "providers.contracts",
+        "description": "providers.contracts",
+        "peekOfCode": "SEEDREAM_SIZES = (\"1K\", \"2K\", \"3K\")\nMUREKA_PURPOSES = (\n    \"reference\",\n    \"melody\",\n    \"instrumental\",\n    \"voice\",\n    \"audio\",\n    \"remix\",\n    \"soundtrack\",\n    \"lyrics-video\",",
+        "detail": "providers.contracts",
+        "documentation": {}
+    },
+    {
+        "label": "MUREKA_PURPOSES",
+        "kind": 5,
+        "importPath": "providers.contracts",
+        "description": "providers.contracts",
+        "peekOfCode": "MUREKA_PURPOSES = (\n    \"reference\",\n    \"melody\",\n    \"instrumental\",\n    \"voice\",\n    \"audio\",\n    \"remix\",\n    \"soundtrack\",\n    \"lyrics-video\",\n)",
+        "detail": "providers.contracts",
+        "documentation": {}
+    },
+    {
+        "label": "_VISUAL_ITEM_SCHEMA",
+        "kind": 5,
+        "importPath": "providers.contracts",
+        "description": "providers.contracts",
+        "peekOfCode": "_VISUAL_ITEM_SCHEMA = {\n    \"type\": \"object\",\n    \"properties\": {\n        \"kind\": {\"type\": \"string\", \"description\": \"Allowed values: image, video.\"},\n        \"url\": {\n            \"type\": \"string\",\n            \"description\": \"HTTPS media URL or renderhaus-asset:// version handle.\",\n        },\n        \"duration_seconds\": {\"type\": \"number\", \"description\": \"Must be greater than 0.\"},\n        \"start_seconds\": {\"type\": \"number\", \"description\": \"Must be at least 0.\"},",
+        "detail": "providers.contracts",
+        "documentation": {}
+    },
+    {
+        "label": "_AUDIO_ITEM_SCHEMA",
+        "kind": 5,
+        "importPath": "providers.contracts",
+        "description": "providers.contracts",
+        "peekOfCode": "_AUDIO_ITEM_SCHEMA = {\n    \"type\": \"object\",\n    \"properties\": {\n        \"url\": {\n            \"type\": \"string\",\n            \"description\": \"HTTPS media URL or renderhaus-asset:// version handle.\",\n        },\n        \"duration_seconds\": {\"type\": \"number\", \"description\": \"Must be greater than 0.\"},\n        \"start_seconds\": {\"type\": \"number\", \"description\": \"Must be at least 0.\"},\n        \"source_in_seconds\": {\"type\": \"number\", \"description\": \"Must be at least 0.\"},",
+        "detail": "providers.contracts",
+        "documentation": {}
+    },
+    {
+        "label": "_TEXT_OVERLAY_SCHEMA",
+        "kind": 5,
+        "importPath": "providers.contracts",
+        "description": "providers.contracts",
+        "peekOfCode": "_TEXT_OVERLAY_SCHEMA = {\n    \"type\": \"object\",\n    \"properties\": {\n        \"text\": {\"type\": \"string\"},\n        \"start_seconds\": {\"type\": \"number\", \"description\": \"Must be at least 0.\"},\n        \"duration_seconds\": {\"type\": \"number\", \"description\": \"Must be greater than 0.\"},\n        \"position\": {\n            \"type\": \"string\",\n            \"description\": \"Allowed values: top, center, bottom.\",\n        },",
+        "detail": "providers.contracts",
+        "documentation": {}
+    },
+    {
         "label": "is_forbidden_gateway_tool",
         "kind": 2,
         "importPath": "providers.registry",
@@ -4454,7 +4877,7 @@
         "kind": 2,
         "importPath": "providers.registry",
         "description": "providers.registry",
-        "peekOfCode": "def gateway_tools(spec: ProviderSpec) -> tuple[str, ...]:\n    module = __import__(spec.module_path, fromlist=[\"GATEWAY_TOOLS\", \"TOOL_HANDLERS\"])\n    names = getattr(module, \"GATEWAY_TOOLS\", None)\n    if names is None:\n        names = tuple(getattr(module, \"TOOL_HANDLERS\", {}))\n    return tuple(names)\ndef generate_schemas(spec: ProviderSpec) -> list[dict[str, Any]]:\n    module = __import__(spec.module_path, fromlist=[\"GATEWAY_SCHEMAS\", \"TOOL_HANDLERS\", \"GATEWAY_TOOLS\"])\n    explicit = getattr(module, \"GATEWAY_SCHEMAS\", None)\n    if explicit is not None:",
+        "peekOfCode": "def gateway_tools(spec: ProviderSpec) -> tuple[str, ...]:\n    module = __import__(spec.module_path, fromlist=[\"GATEWAY_TOOLS\", \"TOOL_HANDLERS\"])\n    names = getattr(module, \"GATEWAY_TOOLS\", None)\n    if names is None:\n        names = tuple(getattr(module, \"TOOL_HANDLERS\", {}))\n    return tuple(names)\ndef generate_schemas(spec: ProviderSpec) -> list[dict[str, Any]]:\n    module = __import__(\n        spec.module_path, fromlist=[\"GATEWAY_SCHEMAS\", \"TOOL_HANDLERS\", \"GATEWAY_TOOLS\"]\n    )",
         "detail": "providers.registry",
         "documentation": {}
     },
@@ -4463,7 +4886,7 @@
         "kind": 2,
         "importPath": "providers.registry",
         "description": "providers.registry",
-        "peekOfCode": "def generate_schemas(spec: ProviderSpec) -> list[dict[str, Any]]:\n    module = __import__(spec.module_path, fromlist=[\"GATEWAY_SCHEMAS\", \"TOOL_HANDLERS\", \"GATEWAY_TOOLS\"])\n    explicit = getattr(module, \"GATEWAY_SCHEMAS\", None)\n    if explicit is not None:\n        return [sanitize_gateway_json_schema(tool) for tool in explicit]\n    handlers = getattr(module, \"TOOL_HANDLERS\")\n    tools = []\n    for name in gateway_tools(spec):\n        if is_forbidden_gateway_tool(name):\n            raise ValueError(",
+        "peekOfCode": "def generate_schemas(spec: ProviderSpec) -> list[dict[str, Any]]:\n    module = __import__(\n        spec.module_path, fromlist=[\"GATEWAY_SCHEMAS\", \"TOOL_HANDLERS\", \"GATEWAY_TOOLS\"]\n    )\n    explicit = getattr(module, \"GATEWAY_SCHEMAS\", None)\n    if explicit is not None:\n        tools = [\n            enrich_tool_schema(spec.id, sanitize_gateway_json_schema(tool)) for tool in explicit\n        ]\n        for tool in tools:",
         "detail": "providers.registry",
         "documentation": {}
     },
@@ -4481,7 +4904,7 @@
         "kind": 2,
         "importPath": "providers.registry",
         "description": "providers.registry",
-        "peekOfCode": "def load_committed_schemas(spec: ProviderSpec) -> list[dict[str, Any]]:\n    path = schema_path(spec)\n    if not path.exists():\n        raise FileNotFoundError(f\"Missing committed Gateway schema: {path}\")\n    tools = json.loads(path.read_text())\n    if not isinstance(tools, list) or not tools:\n        raise ValueError(f\"{path} must be a non-empty list of tool schemas\")\n    return [sanitize_gateway_json_schema(tool) for tool in tools]\ndef dispatch(provider_id: str, tool_name: str, arguments: dict[str, Any] | None = None) -> dict[str, Any]:\n    if is_forbidden_gateway_tool(tool_name):",
+        "peekOfCode": "def load_committed_schemas(spec: ProviderSpec) -> list[dict[str, Any]]:\n    path = schema_path(spec)\n    if not path.exists():\n        raise FileNotFoundError(f\"Missing committed Gateway schema: {path}\")\n    tools = json.loads(path.read_text())\n    if not isinstance(tools, list) or not tools:\n        raise ValueError(f\"{path} must be a non-empty list of tool schemas\")\n    return [enrich_tool_schema(spec.id, sanitize_gateway_json_schema(tool)) for tool in tools]\ndef dispatch(\n    provider_id: str, tool_name: str, arguments: dict[str, Any] | None = None",
         "detail": "providers.registry",
         "documentation": {}
     },
@@ -4490,7 +4913,7 @@
         "kind": 2,
         "importPath": "providers.registry",
         "description": "providers.registry",
-        "peekOfCode": "def dispatch(provider_id: str, tool_name: str, arguments: dict[str, Any] | None = None) -> dict[str, Any]:\n    if is_forbidden_gateway_tool(tool_name):\n        raise ValueError(\n            f\"{tool_name} is not a Gateway tool. Blocking wait helpers stay off Lambda; poll get_* instead.\"\n        )\n    spec = get_provider(provider_id)\n    module = __import__(spec.module_path, fromlist=[\"TOOL_HANDLERS\", \"dispatch_tool\", \"GATEWAY_TOOLS\"])\n    allowed = set(gateway_tools(spec))\n    if tool_name not in allowed:\n        raise ValueError(f\"Unknown {provider_id} Gateway tool: {tool_name}\")",
+        "peekOfCode": "def dispatch(\n    provider_id: str, tool_name: str, arguments: dict[str, Any] | None = None\n) -> dict[str, Any]:\n    if is_forbidden_gateway_tool(tool_name):\n        raise ValueError(\n            f\"{tool_name} is not a Gateway tool. Blocking wait helpers stay off Lambda; poll get_* instead.\"\n        )\n    spec = get_provider(provider_id)\n    module = __import__(\n        spec.module_path, fromlist=[\"TOOL_HANDLERS\", \"dispatch_tool\", \"GATEWAY_TOOLS\"]",
         "detail": "providers.registry",
         "documentation": {}
     },
@@ -4499,7 +4922,7 @@
         "kind": 2,
         "importPath": "providers.registry",
         "description": "providers.registry",
-        "peekOfCode": "def dummy_arguments(schema: dict[str, Any]) -> dict[str, Any]:\n    props = (schema.get(\"inputSchema\") or {}).get(\"properties\") or {}\n    required = (schema.get(\"inputSchema\") or {}).get(\"required\") or []\n    args: dict[str, Any] = {}\n    for name in required:\n        json_type = (props.get(name) or {}).get(\"type\", \"string\")\n        if json_type == \"integer\":\n            args[name] = 1\n        elif json_type == \"number\":\n            args[name] = 1.0",
+        "peekOfCode": "def dummy_arguments(schema: dict[str, Any]) -> dict[str, Any]:\n    props = (schema.get(\"inputSchema\") or {}).get(\"properties\") or {}\n    required = (schema.get(\"inputSchema\") or {}).get(\"required\") or []\n    def dummy_value(field_schema: dict[str, Any]) -> Any:\n        description = str(field_schema.get(\"description\") or \"\")\n        allowed = re.search(r\"Allowed values: ([^.]+)\\.\", description)\n        json_type = field_schema.get(\"type\", \"string\")\n        if allowed:\n            first = allowed.group(1).split(\",\", 1)[0].strip()\n            if json_type == \"integer\":",
         "detail": "providers.registry",
         "documentation": {}
     },
@@ -4517,7 +4940,7 @@
         "kind": 5,
         "importPath": "providers.registry",
         "description": "providers.registry",
-        "peekOfCode": "ROOT = Path(__file__).resolve().parents[1]\nGATEWAY_SCHEMA_DIR = ROOT / \"configs\" / \"gateway\"\nLEGACY_MUREKA_SCHEMA_PATH = ROOT / \"configs\" / \"mureka_gateway_tools.json\"\nFORBIDDEN_TOOL_RE = re.compile(r\"^(wait_for_.*|.*_and_wait)$\")\ndef is_forbidden_gateway_tool(name: str) -> bool:\n    return bool(FORBIDDEN_TOOL_RE.match(name))\ndef schema_path(spec: ProviderSpec) -> Path:\n    return GATEWAY_SCHEMA_DIR / f\"{spec.id}.tools.json\"\n_STRING_TYPE_MAP = {\n    \"str\": str,",
+        "peekOfCode": "ROOT = Path(__file__).resolve().parents[1]\nGATEWAY_SCHEMA_DIR = ROOT / \"configs\" / \"gateway\"\nLEGACY_MUREKA_SCHEMA_PATH = ROOT / \"configs\" / \"mureka_gateway_tools.json\"\nFORBIDDEN_TOOL_RE = re.compile(r\"^(wait_for_.*|.*_and_wait)$\")\nTOOL_GUIDANCE: dict[str, dict[str, str]] = {\n    \"seedream\": {\n        \"text_to_image\": (\n            \"Use when the user needs a new still image from a text description. Do not use for \"\n            \"editing an existing image; use image_to_image instead. Returns a generated image.\"\n        ),",
         "detail": "providers.registry",
         "documentation": {}
     },
@@ -4526,7 +4949,7 @@
         "kind": 5,
         "importPath": "providers.registry",
         "description": "providers.registry",
-        "peekOfCode": "GATEWAY_SCHEMA_DIR = ROOT / \"configs\" / \"gateway\"\nLEGACY_MUREKA_SCHEMA_PATH = ROOT / \"configs\" / \"mureka_gateway_tools.json\"\nFORBIDDEN_TOOL_RE = re.compile(r\"^(wait_for_.*|.*_and_wait)$\")\ndef is_forbidden_gateway_tool(name: str) -> bool:\n    return bool(FORBIDDEN_TOOL_RE.match(name))\ndef schema_path(spec: ProviderSpec) -> Path:\n    return GATEWAY_SCHEMA_DIR / f\"{spec.id}.tools.json\"\n_STRING_TYPE_MAP = {\n    \"str\": str,\n    \"int\": int,",
+        "peekOfCode": "GATEWAY_SCHEMA_DIR = ROOT / \"configs\" / \"gateway\"\nLEGACY_MUREKA_SCHEMA_PATH = ROOT / \"configs\" / \"mureka_gateway_tools.json\"\nFORBIDDEN_TOOL_RE = re.compile(r\"^(wait_for_.*|.*_and_wait)$\")\nTOOL_GUIDANCE: dict[str, dict[str, str]] = {\n    \"seedream\": {\n        \"text_to_image\": (\n            \"Use when the user needs a new still image from a text description. Do not use for \"\n            \"editing an existing image; use image_to_image instead. Returns a generated image.\"\n        ),\n        \"image_to_image\": (",
         "detail": "providers.registry",
         "documentation": {}
     },
@@ -4535,7 +4958,7 @@
         "kind": 5,
         "importPath": "providers.registry",
         "description": "providers.registry",
-        "peekOfCode": "LEGACY_MUREKA_SCHEMA_PATH = ROOT / \"configs\" / \"mureka_gateway_tools.json\"\nFORBIDDEN_TOOL_RE = re.compile(r\"^(wait_for_.*|.*_and_wait)$\")\ndef is_forbidden_gateway_tool(name: str) -> bool:\n    return bool(FORBIDDEN_TOOL_RE.match(name))\ndef schema_path(spec: ProviderSpec) -> Path:\n    return GATEWAY_SCHEMA_DIR / f\"{spec.id}.tools.json\"\n_STRING_TYPE_MAP = {\n    \"str\": str,\n    \"int\": int,\n    \"float\": float,",
+        "peekOfCode": "LEGACY_MUREKA_SCHEMA_PATH = ROOT / \"configs\" / \"mureka_gateway_tools.json\"\nFORBIDDEN_TOOL_RE = re.compile(r\"^(wait_for_.*|.*_and_wait)$\")\nTOOL_GUIDANCE: dict[str, dict[str, str]] = {\n    \"seedream\": {\n        \"text_to_image\": (\n            \"Use when the user needs a new still image from a text description. Do not use for \"\n            \"editing an existing image; use image_to_image instead. Returns a generated image.\"\n        ),\n        \"image_to_image\": (\n            \"Use when the user supplied or referenced an existing image and wants it edited, \"",
         "detail": "providers.registry",
         "documentation": {}
     },
@@ -4544,7 +4967,7 @@
         "kind": 5,
         "importPath": "providers.registry",
         "description": "providers.registry",
-        "peekOfCode": "FORBIDDEN_TOOL_RE = re.compile(r\"^(wait_for_.*|.*_and_wait)$\")\ndef is_forbidden_gateway_tool(name: str) -> bool:\n    return bool(FORBIDDEN_TOOL_RE.match(name))\ndef schema_path(spec: ProviderSpec) -> Path:\n    return GATEWAY_SCHEMA_DIR / f\"{spec.id}.tools.json\"\n_STRING_TYPE_MAP = {\n    \"str\": str,\n    \"int\": int,\n    \"float\": float,\n    \"bool\": bool,",
+        "peekOfCode": "FORBIDDEN_TOOL_RE = re.compile(r\"^(wait_for_.*|.*_and_wait)$\")\nTOOL_GUIDANCE: dict[str, dict[str, str]] = {\n    \"seedream\": {\n        \"text_to_image\": (\n            \"Use when the user needs a new still image from a text description. Do not use for \"\n            \"editing an existing image; use image_to_image instead. Returns a generated image.\"\n        ),\n        \"image_to_image\": (\n            \"Use when the user supplied or referenced an existing image and wants it edited, \"\n            \"restyled, or varied while preserving visual context. Returns a new image.\"",
         "detail": "providers.registry",
         "documentation": {}
     },
@@ -4769,7 +5192,7 @@
         "kind": 5,
         "importPath": "scripts.deploy_gateway",
         "description": "scripts.deploy_gateway",
-        "peekOfCode": "HANDLER_PATH = ROOT / \"lambdas\" / \"handler.py\"\nPROVIDERS_DIR = ROOT / \"providers\"\nLAMBDA_ROLE_NAME = \"RenderhausGatewayLambdaRole\"\nGATEWAY_ROLE_NAME = \"RenderhausMurekaGatewayRole\"\nGATEWAY_NAME = \"renderhaus-mureka-gateway\"\nDEFAULT_SECRET_NAME = \"renderhaus/app\"\ndef build_lambda_zip() -> bytes:\n    with tempfile.TemporaryDirectory() as tmp:\n        tmp_path = Path(tmp)\n        package = tmp_path / \"package\"",
+        "peekOfCode": "HANDLER_PATH = ROOT / \"lambdas\" / \"handler.py\"\nPROVIDERS_DIR = ROOT / \"providers\"\nLAMBDA_ROLE_NAME = \"RenderhausGatewayLambdaRole\"\nGATEWAY_ROLE_NAME = \"RenderhausMurekaGatewayRole\"\nGATEWAY_NAME = \"renderhaus-mureka-gateway\"\nDEFAULT_SECRET_NAME = \"renderhaus/app\"\nGATEWAY_INSTRUCTIONS = (\n    \"Renderhaus creates and edits media for a visual canvas. Use semantic tool search before \"\n    \"selecting provider tools. Search with the user's concrete intent, the input media already \"\n    \"available, and the required output type. Seedream creates or edits still images; Seedance \"",
         "detail": "scripts.deploy_gateway",
         "documentation": {}
     },
@@ -4778,7 +5201,7 @@
         "kind": 5,
         "importPath": "scripts.deploy_gateway",
         "description": "scripts.deploy_gateway",
-        "peekOfCode": "PROVIDERS_DIR = ROOT / \"providers\"\nLAMBDA_ROLE_NAME = \"RenderhausGatewayLambdaRole\"\nGATEWAY_ROLE_NAME = \"RenderhausMurekaGatewayRole\"\nGATEWAY_NAME = \"renderhaus-mureka-gateway\"\nDEFAULT_SECRET_NAME = \"renderhaus/app\"\ndef build_lambda_zip() -> bytes:\n    with tempfile.TemporaryDirectory() as tmp:\n        tmp_path = Path(tmp)\n        package = tmp_path / \"package\"\n        package.mkdir()",
+        "peekOfCode": "PROVIDERS_DIR = ROOT / \"providers\"\nLAMBDA_ROLE_NAME = \"RenderhausGatewayLambdaRole\"\nGATEWAY_ROLE_NAME = \"RenderhausMurekaGatewayRole\"\nGATEWAY_NAME = \"renderhaus-mureka-gateway\"\nDEFAULT_SECRET_NAME = \"renderhaus/app\"\nGATEWAY_INSTRUCTIONS = (\n    \"Renderhaus creates and edits media for a visual canvas. Use semantic tool search before \"\n    \"selecting provider tools. Search with the user's concrete intent, the input media already \"\n    \"available, and the required output type. Seedream creates or edits still images; Seedance \"\n    \"creates video clips; Mureka creates or edits music, songs, lyrics, and speech; Remotion \"",
         "detail": "scripts.deploy_gateway",
         "documentation": {}
     },
@@ -4787,7 +5210,7 @@
         "kind": 5,
         "importPath": "scripts.deploy_gateway",
         "description": "scripts.deploy_gateway",
-        "peekOfCode": "LAMBDA_ROLE_NAME = \"RenderhausGatewayLambdaRole\"\nGATEWAY_ROLE_NAME = \"RenderhausMurekaGatewayRole\"\nGATEWAY_NAME = \"renderhaus-mureka-gateway\"\nDEFAULT_SECRET_NAME = \"renderhaus/app\"\ndef build_lambda_zip() -> bytes:\n    with tempfile.TemporaryDirectory() as tmp:\n        tmp_path = Path(tmp)\n        package = tmp_path / \"package\"\n        package.mkdir()\n        subprocess.run(",
+        "peekOfCode": "LAMBDA_ROLE_NAME = \"RenderhausGatewayLambdaRole\"\nGATEWAY_ROLE_NAME = \"RenderhausMurekaGatewayRole\"\nGATEWAY_NAME = \"renderhaus-mureka-gateway\"\nDEFAULT_SECRET_NAME = \"renderhaus/app\"\nGATEWAY_INSTRUCTIONS = (\n    \"Renderhaus creates and edits media for a visual canvas. Use semantic tool search before \"\n    \"selecting provider tools. Search with the user's concrete intent, the input media already \"\n    \"available, and the required output type. Seedream creates or edits still images; Seedance \"\n    \"creates video clips; Mureka creates or edits music, songs, lyrics, and speech; Remotion \"\n    \"assembles finished assets into an MP4. Creation tools can start paid work. Poll tools only \"",
         "detail": "scripts.deploy_gateway",
         "documentation": {}
     },
@@ -4796,7 +5219,7 @@
         "kind": 5,
         "importPath": "scripts.deploy_gateway",
         "description": "scripts.deploy_gateway",
-        "peekOfCode": "GATEWAY_ROLE_NAME = \"RenderhausMurekaGatewayRole\"\nGATEWAY_NAME = \"renderhaus-mureka-gateway\"\nDEFAULT_SECRET_NAME = \"renderhaus/app\"\ndef build_lambda_zip() -> bytes:\n    with tempfile.TemporaryDirectory() as tmp:\n        tmp_path = Path(tmp)\n        package = tmp_path / \"package\"\n        package.mkdir()\n        subprocess.run(\n            [",
+        "peekOfCode": "GATEWAY_ROLE_NAME = \"RenderhausMurekaGatewayRole\"\nGATEWAY_NAME = \"renderhaus-mureka-gateway\"\nDEFAULT_SECRET_NAME = \"renderhaus/app\"\nGATEWAY_INSTRUCTIONS = (\n    \"Renderhaus creates and edits media for a visual canvas. Use semantic tool search before \"\n    \"selecting provider tools. Search with the user's concrete intent, the input media already \"\n    \"available, and the required output type. Seedream creates or edits still images; Seedance \"\n    \"creates video clips; Mureka creates or edits music, songs, lyrics, and speech; Remotion \"\n    \"assembles finished assets into an MP4. Creation tools can start paid work. Poll tools only \"\n    \"after their matching creation tool returns a task or render id.\"",
         "detail": "scripts.deploy_gateway",
         "documentation": {}
     },
@@ -4805,7 +5228,7 @@
         "kind": 5,
         "importPath": "scripts.deploy_gateway",
         "description": "scripts.deploy_gateway",
-        "peekOfCode": "GATEWAY_NAME = \"renderhaus-mureka-gateway\"\nDEFAULT_SECRET_NAME = \"renderhaus/app\"\ndef build_lambda_zip() -> bytes:\n    with tempfile.TemporaryDirectory() as tmp:\n        tmp_path = Path(tmp)\n        package = tmp_path / \"package\"\n        package.mkdir()\n        subprocess.run(\n            [\n                sys.executable,",
+        "peekOfCode": "GATEWAY_NAME = \"renderhaus-mureka-gateway\"\nDEFAULT_SECRET_NAME = \"renderhaus/app\"\nGATEWAY_INSTRUCTIONS = (\n    \"Renderhaus creates and edits media for a visual canvas. Use semantic tool search before \"\n    \"selecting provider tools. Search with the user's concrete intent, the input media already \"\n    \"available, and the required output type. Seedream creates or edits still images; Seedance \"\n    \"creates video clips; Mureka creates or edits music, songs, lyrics, and speech; Remotion \"\n    \"assembles finished assets into an MP4. Creation tools can start paid work. Poll tools only \"\n    \"after their matching creation tool returns a task or render id.\"\n)",
         "detail": "scripts.deploy_gateway",
         "documentation": {}
     },
@@ -4814,7 +5237,16 @@
         "kind": 5,
         "importPath": "scripts.deploy_gateway",
         "description": "scripts.deploy_gateway",
-        "peekOfCode": "DEFAULT_SECRET_NAME = \"renderhaus/app\"\ndef build_lambda_zip() -> bytes:\n    with tempfile.TemporaryDirectory() as tmp:\n        tmp_path = Path(tmp)\n        package = tmp_path / \"package\"\n        package.mkdir()\n        subprocess.run(\n            [\n                sys.executable,\n                \"-m\",",
+        "peekOfCode": "DEFAULT_SECRET_NAME = \"renderhaus/app\"\nGATEWAY_INSTRUCTIONS = (\n    \"Renderhaus creates and edits media for a visual canvas. Use semantic tool search before \"\n    \"selecting provider tools. Search with the user's concrete intent, the input media already \"\n    \"available, and the required output type. Seedream creates or edits still images; Seedance \"\n    \"creates video clips; Mureka creates or edits music, songs, lyrics, and speech; Remotion \"\n    \"assembles finished assets into an MP4. Creation tools can start paid work. Poll tools only \"\n    \"after their matching creation tool returns a task or render id.\"\n)\ndef build_lambda_zip() -> bytes:",
+        "detail": "scripts.deploy_gateway",
+        "documentation": {}
+    },
+    {
+        "label": "GATEWAY_INSTRUCTIONS",
+        "kind": 5,
+        "importPath": "scripts.deploy_gateway",
+        "description": "scripts.deploy_gateway",
+        "peekOfCode": "GATEWAY_INSTRUCTIONS = (\n    \"Renderhaus creates and edits media for a visual canvas. Use semantic tool search before \"\n    \"selecting provider tools. Search with the user's concrete intent, the input media already \"\n    \"available, and the required output type. Seedream creates or edits still images; Seedance \"\n    \"creates video clips; Mureka creates or edits music, songs, lyrics, and speech; Remotion \"\n    \"assembles finished assets into an MP4. Creation tools can start paid work. Poll tools only \"\n    \"after their matching creation tool returns a task or render id.\"\n)\ndef build_lambda_zip() -> bytes:\n    with tempfile.TemporaryDirectory() as tmp:",
         "detail": "scripts.deploy_gateway",
         "documentation": {}
     },
@@ -5381,7 +5813,7 @@
         "kind": 2,
         "importPath": "server.assets",
         "description": "server.assets",
-        "peekOfCode": "def aws_region() -> str:\n    return os.getenv(\"AWS_REGION\") or os.getenv(\"AWS_DEFAULT_REGION\") or \"us-east-1\"\ndef s3_bucket() -> str:\n    return (os.getenv(\"AWS_S3_BUCKET\") or \"\").strip()\ndef dynamodb_table_name() -> str:\n    return (\n        os.getenv(\"AWS_DYNAMODB_ASSETS_TABLE\")\n        or os.getenv(\"AWS_DYNAMODB_TABLE\")\n        or DEFAULT_ASSETS_TABLE\n    ).strip()",
+        "peekOfCode": "def aws_region() -> str:\n    return os.getenv(\"AWS_REGION\") or os.getenv(\"AWS_DEFAULT_REGION\") or \"us-east-1\"\ndef s3_bucket() -> str:\n    return (os.getenv(\"AWS_S3_BUCKET\") or \"\").strip()\ndef provider_input_bucket() -> str:\n    \"\"\"Private bucket used to make local Studio versions reachable by media providers.\"\"\"\n    return (\n        os.getenv(\"PROVIDER_INPUT_BUCKET\")\n        or os.getenv(\"AWS_S3_BUCKET\")\n        or os.getenv(\"REMOTION_APP_BUCKET_NAME\")",
         "detail": "server.assets",
         "documentation": {}
     },
@@ -5390,7 +5822,16 @@
         "kind": 2,
         "importPath": "server.assets",
         "description": "server.assets",
-        "peekOfCode": "def s3_bucket() -> str:\n    return (os.getenv(\"AWS_S3_BUCKET\") or \"\").strip()\ndef dynamodb_table_name() -> str:\n    return (\n        os.getenv(\"AWS_DYNAMODB_ASSETS_TABLE\")\n        or os.getenv(\"AWS_DYNAMODB_TABLE\")\n        or DEFAULT_ASSETS_TABLE\n    ).strip()\ndef aws_configured() -> bool:\n    return bool(",
+        "peekOfCode": "def s3_bucket() -> str:\n    return (os.getenv(\"AWS_S3_BUCKET\") or \"\").strip()\ndef provider_input_bucket() -> str:\n    \"\"\"Private bucket used to make local Studio versions reachable by media providers.\"\"\"\n    return (\n        os.getenv(\"PROVIDER_INPUT_BUCKET\")\n        or os.getenv(\"AWS_S3_BUCKET\")\n        or os.getenv(\"REMOTION_APP_BUCKET_NAME\")\n        or \"\"\n    ).strip()",
+        "detail": "server.assets",
+        "documentation": {}
+    },
+    {
+        "label": "provider_input_bucket",
+        "kind": 2,
+        "importPath": "server.assets",
+        "description": "server.assets",
+        "peekOfCode": "def provider_input_bucket() -> str:\n    \"\"\"Private bucket used to make local Studio versions reachable by media providers.\"\"\"\n    return (\n        os.getenv(\"PROVIDER_INPUT_BUCKET\")\n        or os.getenv(\"AWS_S3_BUCKET\")\n        or os.getenv(\"REMOTION_APP_BUCKET_NAME\")\n        or \"\"\n    ).strip()\ndef dynamodb_table_name() -> str:\n    return (",
         "detail": "server.assets",
         "documentation": {}
     },
@@ -5494,6 +5935,15 @@
         "documentation": {}
     },
     {
+        "label": "publish_provider_input_url",
+        "kind": 2,
+        "importPath": "server.assets",
+        "description": "server.assets",
+        "peekOfCode": "def publish_provider_input_url(\n    *,\n    source_path: str | Path,\n    workspace_id: str,\n    version_id: str,\n    filename: str,\n    mime_type: str | None = None,\n    ttl_seconds: int = PROVIDER_INPUT_URL_TTL_SECONDS,\n) -> str:\n    \"\"\"Publish an immutable Studio version and return a provider-reachable HTTPS URL.",
+        "detail": "server.assets",
+        "documentation": {}
+    },
+    {
         "label": "iter_asset_bytes",
         "kind": 2,
         "importPath": "server.assets",
@@ -5534,7 +5984,7 @@
         "kind": 5,
         "importPath": "server.assets",
         "description": "server.assets",
-        "peekOfCode": "AssetKind = Literal[\"upload\", \"video\", \"image\", \"music\"]\nlogger = logging.getLogger(__name__)\nCACHE_DIR = ROOT / \".renderhaus\" / \"cache\"\nCONTENT_URL_TTL_SECONDS = 15 * 60\nDEFAULT_ASSETS_TABLE = \"renderhaus-assets\"\n@dataclass(frozen=True)\nclass Asset:\n    id: str\n    user_id: str\n    kind: str",
+        "peekOfCode": "AssetKind = Literal[\"upload\", \"video\", \"image\", \"music\"]\nlogger = logging.getLogger(__name__)\nCACHE_DIR = ROOT / \".renderhaus\" / \"cache\"\nCONTENT_URL_TTL_SECONDS = 15 * 60\nPROVIDER_INPUT_URL_TTL_SECONDS = 6 * 60 * 60\nDEFAULT_ASSETS_TABLE = \"renderhaus-assets\"\n@dataclass(frozen=True)\nclass Asset:\n    id: str\n    user_id: str",
         "detail": "server.assets",
         "documentation": {}
     },
@@ -5543,7 +5993,7 @@
         "kind": 5,
         "importPath": "server.assets",
         "description": "server.assets",
-        "peekOfCode": "logger = logging.getLogger(__name__)\nCACHE_DIR = ROOT / \".renderhaus\" / \"cache\"\nCONTENT_URL_TTL_SECONDS = 15 * 60\nDEFAULT_ASSETS_TABLE = \"renderhaus-assets\"\n@dataclass(frozen=True)\nclass Asset:\n    id: str\n    user_id: str\n    kind: str\n    mime_type: str",
+        "peekOfCode": "logger = logging.getLogger(__name__)\nCACHE_DIR = ROOT / \".renderhaus\" / \"cache\"\nCONTENT_URL_TTL_SECONDS = 15 * 60\nPROVIDER_INPUT_URL_TTL_SECONDS = 6 * 60 * 60\nDEFAULT_ASSETS_TABLE = \"renderhaus-assets\"\n@dataclass(frozen=True)\nclass Asset:\n    id: str\n    user_id: str\n    kind: str",
         "detail": "server.assets",
         "documentation": {}
     },
@@ -5552,7 +6002,7 @@
         "kind": 5,
         "importPath": "server.assets",
         "description": "server.assets",
-        "peekOfCode": "CACHE_DIR = ROOT / \".renderhaus\" / \"cache\"\nCONTENT_URL_TTL_SECONDS = 15 * 60\nDEFAULT_ASSETS_TABLE = \"renderhaus-assets\"\n@dataclass(frozen=True)\nclass Asset:\n    id: str\n    user_id: str\n    kind: str\n    mime_type: str\n    size_bytes: int",
+        "peekOfCode": "CACHE_DIR = ROOT / \".renderhaus\" / \"cache\"\nCONTENT_URL_TTL_SECONDS = 15 * 60\nPROVIDER_INPUT_URL_TTL_SECONDS = 6 * 60 * 60\nDEFAULT_ASSETS_TABLE = \"renderhaus-assets\"\n@dataclass(frozen=True)\nclass Asset:\n    id: str\n    user_id: str\n    kind: str\n    mime_type: str",
         "detail": "server.assets",
         "documentation": {}
     },
@@ -5561,7 +6011,16 @@
         "kind": 5,
         "importPath": "server.assets",
         "description": "server.assets",
-        "peekOfCode": "CONTENT_URL_TTL_SECONDS = 15 * 60\nDEFAULT_ASSETS_TABLE = \"renderhaus-assets\"\n@dataclass(frozen=True)\nclass Asset:\n    id: str\n    user_id: str\n    kind: str\n    mime_type: str\n    size_bytes: int\n    checksum: str",
+        "peekOfCode": "CONTENT_URL_TTL_SECONDS = 15 * 60\nPROVIDER_INPUT_URL_TTL_SECONDS = 6 * 60 * 60\nDEFAULT_ASSETS_TABLE = \"renderhaus-assets\"\n@dataclass(frozen=True)\nclass Asset:\n    id: str\n    user_id: str\n    kind: str\n    mime_type: str\n    size_bytes: int",
+        "detail": "server.assets",
+        "documentation": {}
+    },
+    {
+        "label": "PROVIDER_INPUT_URL_TTL_SECONDS",
+        "kind": 5,
+        "importPath": "server.assets",
+        "description": "server.assets",
+        "peekOfCode": "PROVIDER_INPUT_URL_TTL_SECONDS = 6 * 60 * 60\nDEFAULT_ASSETS_TABLE = \"renderhaus-assets\"\n@dataclass(frozen=True)\nclass Asset:\n    id: str\n    user_id: str\n    kind: str\n    mime_type: str\n    size_bytes: int\n    checksum: str",
         "detail": "server.assets",
         "documentation": {}
     },
@@ -5714,7 +6173,7 @@
         "kind": 5,
         "importPath": "server.config",
         "description": "server.config",
-        "peekOfCode": "ROOT = Path(__file__).resolve().parents[1]\nENV_FILE = ROOT / \".env.local\"\nGATEWAY_MCP_SERVER_NAME = \"agentcore-gateway\"\nDEFAULT_ENV = {\n    \"AGENT_MODEL\": \"gpt-4.1-mini\",\n    \"BYTEPLUS_BASE_URL\": \"https://ark.ap-southeast.bytepluses.com/api/v3\",\n    \"SEEDANCE_MODEL\": \"seedance-1-5-pro-251215\",\n    \"SEEDANCE_DRY_RUN\": \"true\",\n    \"SEEDREAM_MODEL\": \"seedream-5-0-lite-260128\",\n    \"SEEDREAM_DRY_RUN\": \"true\",",
+        "peekOfCode": "ROOT = Path(__file__).resolve().parents[1]\nENV_FILE = ROOT / \".env.local\"\nGATEWAY_MCP_SERVER_NAME = \"agentcore-gateway\"\nDEFAULT_ENV = {\n    \"AGENT_MODEL\": \"gpt-5.6-luna\",\n    \"BYTEPLUS_BASE_URL\": \"https://ark.ap-southeast.bytepluses.com/api/v3\",\n    \"SEEDANCE_MODEL\": \"seedance-1-5-pro-251215\",\n    \"SEEDANCE_DRY_RUN\": \"true\",\n    \"SEEDREAM_MODEL\": \"seedream-5-0-lite-260128\",\n    \"SEEDREAM_DRY_RUN\": \"true\",",
         "detail": "server.config",
         "documentation": {}
     },
@@ -5723,7 +6182,7 @@
         "kind": 5,
         "importPath": "server.config",
         "description": "server.config",
-        "peekOfCode": "ENV_FILE = ROOT / \".env.local\"\nGATEWAY_MCP_SERVER_NAME = \"agentcore-gateway\"\nDEFAULT_ENV = {\n    \"AGENT_MODEL\": \"gpt-4.1-mini\",\n    \"BYTEPLUS_BASE_URL\": \"https://ark.ap-southeast.bytepluses.com/api/v3\",\n    \"SEEDANCE_MODEL\": \"seedance-1-5-pro-251215\",\n    \"SEEDANCE_DRY_RUN\": \"true\",\n    \"SEEDREAM_MODEL\": \"seedream-5-0-lite-260128\",\n    \"SEEDREAM_DRY_RUN\": \"true\",\n    \"FISH_AUDIO_DRY_RUN\": \"true\",",
+        "peekOfCode": "ENV_FILE = ROOT / \".env.local\"\nGATEWAY_MCP_SERVER_NAME = \"agentcore-gateway\"\nDEFAULT_ENV = {\n    \"AGENT_MODEL\": \"gpt-5.6-luna\",\n    \"BYTEPLUS_BASE_URL\": \"https://ark.ap-southeast.bytepluses.com/api/v3\",\n    \"SEEDANCE_MODEL\": \"seedance-1-5-pro-251215\",\n    \"SEEDANCE_DRY_RUN\": \"true\",\n    \"SEEDREAM_MODEL\": \"seedream-5-0-lite-260128\",\n    \"SEEDREAM_DRY_RUN\": \"true\",\n    \"FISH_AUDIO_DRY_RUN\": \"true\",",
         "detail": "server.config",
         "documentation": {}
     },
@@ -5732,7 +6191,7 @@
         "kind": 5,
         "importPath": "server.config",
         "description": "server.config",
-        "peekOfCode": "GATEWAY_MCP_SERVER_NAME = \"agentcore-gateway\"\nDEFAULT_ENV = {\n    \"AGENT_MODEL\": \"gpt-4.1-mini\",\n    \"BYTEPLUS_BASE_URL\": \"https://ark.ap-southeast.bytepluses.com/api/v3\",\n    \"SEEDANCE_MODEL\": \"seedance-1-5-pro-251215\",\n    \"SEEDANCE_DRY_RUN\": \"true\",\n    \"SEEDREAM_MODEL\": \"seedream-5-0-lite-260128\",\n    \"SEEDREAM_DRY_RUN\": \"true\",\n    \"FISH_AUDIO_DRY_RUN\": \"true\",\n    \"FISH_AUDIO_MODEL\": \"s2.1-pro-free\",",
+        "peekOfCode": "GATEWAY_MCP_SERVER_NAME = \"agentcore-gateway\"\nDEFAULT_ENV = {\n    \"AGENT_MODEL\": \"gpt-5.6-luna\",\n    \"BYTEPLUS_BASE_URL\": \"https://ark.ap-southeast.bytepluses.com/api/v3\",\n    \"SEEDANCE_MODEL\": \"seedance-1-5-pro-251215\",\n    \"SEEDANCE_DRY_RUN\": \"true\",\n    \"SEEDREAM_MODEL\": \"seedream-5-0-lite-260128\",\n    \"SEEDREAM_DRY_RUN\": \"true\",\n    \"FISH_AUDIO_DRY_RUN\": \"true\",\n    \"FISH_AUDIO_MODEL\": \"s2.1-pro-free\",",
         "detail": "server.config",
         "documentation": {}
     },
@@ -5741,7 +6200,7 @@
         "kind": 5,
         "importPath": "server.config",
         "description": "server.config",
-        "peekOfCode": "DEFAULT_ENV = {\n    \"AGENT_MODEL\": \"gpt-4.1-mini\",\n    \"BYTEPLUS_BASE_URL\": \"https://ark.ap-southeast.bytepluses.com/api/v3\",\n    \"SEEDANCE_MODEL\": \"seedance-1-5-pro-251215\",\n    \"SEEDANCE_DRY_RUN\": \"true\",\n    \"SEEDREAM_MODEL\": \"seedream-5-0-lite-260128\",\n    \"SEEDREAM_DRY_RUN\": \"true\",\n    \"FISH_AUDIO_DRY_RUN\": \"true\",\n    \"FISH_AUDIO_MODEL\": \"s2.1-pro-free\",\n    \"MUREKA_API_URL\": \"https://api.mureka.ai\",",
+        "peekOfCode": "DEFAULT_ENV = {\n    \"AGENT_MODEL\": \"gpt-5.6-luna\",\n    \"BYTEPLUS_BASE_URL\": \"https://ark.ap-southeast.bytepluses.com/api/v3\",\n    \"SEEDANCE_MODEL\": \"seedance-1-5-pro-251215\",\n    \"SEEDANCE_DRY_RUN\": \"true\",\n    \"SEEDREAM_MODEL\": \"seedream-5-0-lite-260128\",\n    \"SEEDREAM_DRY_RUN\": \"true\",\n    \"FISH_AUDIO_DRY_RUN\": \"true\",\n    \"FISH_AUDIO_MODEL\": \"s2.1-pro-free\",\n    \"MUREKA_API_URL\": \"https://api.mureka.ai\",",
         "detail": "server.config",
         "documentation": {}
     },
@@ -6038,7 +6497,16 @@
         "kind": 6,
         "importPath": "server.studio",
         "description": "server.studio",
-        "peekOfCode": "class AgentBody(BaseModel):\n    prompt: str = Field(min_length=1, max_length=8_000)\n    project_id: str = Field(default=\"untitled\", min_length=1, max_length=120)\n    node_ids: list[str] = Field(default_factory=list, max_length=16)\n    nodes: list[\"AgentNodeBody\"] = Field(default_factory=list, max_length=16)\nclass AgentNodeBody(BaseModel):\n    id: str = Field(min_length=1, max_length=120)\n    title: str = Field(min_length=1, max_length=160)\n    kind: str = Field(min_length=1, max_length=40)\n    prompt: str = Field(default=\"\", max_length=4_000)",
+        "peekOfCode": "class AgentBody(BaseModel):\n    prompt: str = Field(min_length=1, max_length=MAX_AGENT_PROMPT_CHARS)\n    project_id: str = Field(default=\"untitled\", min_length=1, max_length=120)\n    conversation_id: str | None = Field(default=None, max_length=120)\n    node_ids: list[str] = Field(default_factory=list, max_length=16)\n    nodes: list[\"AgentNodeBody\"] = Field(default_factory=list, max_length=16)\n    autonomous: bool = False\nclass AgentApprovalBody(BaseModel):\n    decision: str = Field(pattern=\"^(approve|reject)$\")\n    message: str | None = Field(default=None, max_length=1_000)",
+        "detail": "server.studio",
+        "documentation": {}
+    },
+    {
+        "label": "AgentApprovalBody",
+        "kind": 6,
+        "importPath": "server.studio",
+        "description": "server.studio",
+        "peekOfCode": "class AgentApprovalBody(BaseModel):\n    decision: str = Field(pattern=\"^(approve|reject)$\")\n    message: str | None = Field(default=None, max_length=1_000)\nclass AgentNodeBody(BaseModel):\n    id: str = Field(min_length=1, max_length=120)\n    title: str = Field(min_length=1, max_length=160)\n    kind: str = Field(min_length=1, max_length=40)\n    prompt: str = Field(default=\"\", max_length=4_000)\n    asset_id: str | None = Field(default=None, max_length=120)\n    version_id: str | None = Field(default=None, max_length=120)",
         "detail": "server.studio",
         "documentation": {}
     },
@@ -6052,11 +6520,29 @@
         "documentation": {}
     },
     {
+        "label": "AgentConversationCreateBody",
+        "kind": 6,
+        "importPath": "server.studio",
+        "description": "server.studio",
+        "peekOfCode": "class AgentConversationCreateBody(BaseModel):\n    title: str = Field(default=\"New conversation\", max_length=120)\nclass AgentConversationPatchBody(BaseModel):\n    title: str | None = Field(default=None, max_length=120)\n    status: str | None = Field(default=None, pattern=\"^(active|archived)$\")\n@router.get(\"/projects/{project_id}/agent-conversations\")\nasync def studio_agent_conversations(project_id: str, auth: AuthUser) -> dict[str, Any]:\n    try:\n        items = await asyncio.to_thread(\n            repository.list_conversations,",
+        "detail": "server.studio",
+        "documentation": {}
+    },
+    {
+        "label": "AgentConversationPatchBody",
+        "kind": 6,
+        "importPath": "server.studio",
+        "description": "server.studio",
+        "peekOfCode": "class AgentConversationPatchBody(BaseModel):\n    title: str | None = Field(default=None, max_length=120)\n    status: str | None = Field(default=None, pattern=\"^(active|archived)$\")\n@router.get(\"/projects/{project_id}/agent-conversations\")\nasync def studio_agent_conversations(project_id: str, auth: AuthUser) -> dict[str, Any]:\n    try:\n        items = await asyncio.to_thread(\n            repository.list_conversations,\n            current_workspace_id(auth),\n            project_id,",
+        "detail": "server.studio",
+        "documentation": {}
+    },
+    {
         "label": "StudioAgentRun",
         "kind": 6,
         "importPath": "server.studio",
         "description": "server.studio",
-        "peekOfCode": "class StudioAgentRun:\n    def __init__(self, final: StudioAgentOutput, tool_events: list[Any]) -> None:\n        self.final = final\n        self.tool_events = tool_events\ndef _agentcore_dev_url() -> str:\n    return (os.getenv(\"AGENTCORE_DEV_URL\") or \"\").strip().rstrip(\"/\")\ndef _studio_agent_request(\n    prompt: str,\n    nodes: list[StudioNodeReference] | None,\n    *,",
+        "peekOfCode": "class StudioAgentRun:\n    def __init__(\n        self,\n        final: StudioAgentOutput,\n        tool_events: list[Any],\n        session_items: list[dict[str, Any]],\n        progress_events: list[StudioProgressEvent] | None = None,\n    ) -> None:\n        self.final = final\n        self.tool_events = tool_events",
         "detail": "server.studio",
         "documentation": {}
     },
@@ -6137,7 +6623,7 @@
         "kind": 5,
         "importPath": "server.studio",
         "description": "server.studio",
-        "peekOfCode": "_PLAYBACK_TICKET_SECRET = secrets.token_bytes(32)\n_PLAYBACK_TICKET_TTL_SECONDS = 15 * 60\nclass InvokeBody(BaseModel):\n    provider: str = Field(min_length=1)\n    tool: str = Field(min_length=1)\n    arguments: dict[str, Any] = Field(default_factory=dict)\n    project_id: str = Field(default=\"untitled\", min_length=1, max_length=120)\n    asset_id: str | None = Field(default=None, max_length=120)\n    source_version_ids: list[str] = Field(default_factory=list, max_length=32)\ndef media_root() -> Path:",
+        "peekOfCode": "_PLAYBACK_TICKET_SECRET = secrets.token_bytes(32)\n_PLAYBACK_TICKET_TTL_SECONDS = 15 * 60\n_RECENT_VIDEO_CONTEXT_PATTERN = re.compile(\n    r\"(?:\\b(?:combine|merge|stitch|assemble|render|edit|join)\\b.{0,80}\"\n    r\"\\b(?:videos?|clips?|shots?)\\b)|\"\n    r\"(?:\\b(?:these|those|all|generated|previous|prior|existing)\\b.{0,32}\"\n    r\"\\b(?:videos?|clips?|shots?)\\b)\",\n    re.IGNORECASE,\n)\nclass InvokeBody(BaseModel):",
         "detail": "server.studio",
         "documentation": {}
     },
@@ -6146,7 +6632,16 @@
         "kind": 5,
         "importPath": "server.studio",
         "description": "server.studio",
-        "peekOfCode": "_PLAYBACK_TICKET_TTL_SECONDS = 15 * 60\nclass InvokeBody(BaseModel):\n    provider: str = Field(min_length=1)\n    tool: str = Field(min_length=1)\n    arguments: dict[str, Any] = Field(default_factory=dict)\n    project_id: str = Field(default=\"untitled\", min_length=1, max_length=120)\n    asset_id: str | None = Field(default=None, max_length=120)\n    source_version_ids: list[str] = Field(default_factory=list, max_length=32)\ndef media_root() -> Path:\n    raw = Path(os.getenv(\"RENDERHAUS_MEDIA_DIR\", \".renderhaus/media\")).expanduser()",
+        "peekOfCode": "_PLAYBACK_TICKET_TTL_SECONDS = 15 * 60\n_RECENT_VIDEO_CONTEXT_PATTERN = re.compile(\n    r\"(?:\\b(?:combine|merge|stitch|assemble|render|edit|join)\\b.{0,80}\"\n    r\"\\b(?:videos?|clips?|shots?)\\b)|\"\n    r\"(?:\\b(?:these|those|all|generated|previous|prior|existing)\\b.{0,32}\"\n    r\"\\b(?:videos?|clips?|shots?)\\b)\",\n    re.IGNORECASE,\n)\nclass InvokeBody(BaseModel):\n    provider: str = Field(min_length=1)",
+        "detail": "server.studio",
+        "documentation": {}
+    },
+    {
+        "label": "_RECENT_VIDEO_CONTEXT_PATTERN",
+        "kind": 5,
+        "importPath": "server.studio",
+        "description": "server.studio",
+        "peekOfCode": "_RECENT_VIDEO_CONTEXT_PATTERN = re.compile(\n    r\"(?:\\b(?:combine|merge|stitch|assemble|render|edit|join)\\b.{0,80}\"\n    r\"\\b(?:videos?|clips?|shots?)\\b)|\"\n    r\"(?:\\b(?:these|those|all|generated|previous|prior|existing)\\b.{0,32}\"\n    r\"\\b(?:videos?|clips?|shots?)\\b)\",\n    re.IGNORECASE,\n)\nclass InvokeBody(BaseModel):\n    provider: str = Field(min_length=1)\n    tool: str = Field(min_length=1)",
         "detail": "server.studio",
         "documentation": {}
     },
@@ -6165,6 +6660,24 @@
         "importPath": "server.studio",
         "description": "server.studio",
         "peekOfCode": "_KIND_URL_KEYS = {\"image\": \"image_url\", \"video\": \"video_url\", \"audio\": \"audio_url\"}\ndef _hydrate_tool_event_assets(\n    events: list[Any],\n    *,\n    workspace_id: str,\n    project_id: str,\n    user_id: str,\n    execution_id: str,\n) -> None:\n    seen_sources: set[str] = set()",
+        "detail": "server.studio",
+        "documentation": {}
+    },
+    {
+        "label": "_MEDIA_CREATION_TOOLS",
+        "kind": 5,
+        "importPath": "server.studio",
+        "description": "server.studio",
+        "peekOfCode": "_MEDIA_CREATION_TOOLS = frozenset(\n    {\n        \"text_to_image\",\n        \"image_to_image\",\n        \"text_to_video\",\n        \"image_to_video\",\n        \"render_timeline\",\n        \"text_to_music\",\n        \"create_instrumental\",\n        \"create_song\",",
+        "detail": "server.studio",
+        "documentation": {}
+    },
+    {
+        "label": "_FAILED_MEDIA_STATUSES",
+        "kind": 5,
+        "importPath": "server.studio",
+        "description": "server.studio",
+        "peekOfCode": "_FAILED_MEDIA_STATUSES = frozenset({\"failed\", \"error\", \"cancelled\", \"canceled\", \"dry_run\"})\ndef _media_generation_failed(outcome: Any, result: dict[str, Any]) -> bool:\n    \"\"\"Do not label an all-failed paid media attempt as a completed agent run.\"\"\"\n    if result.get(\"assets\"):\n        return False\n    for event in getattr(outcome, \"tool_events\", []) or []:\n        tool_name = str(getattr(event, \"name\", \"\") or \"\").rsplit(\"___\", 1)[-1]\n        status = str(getattr(event, \"status\", \"\") or \"\").lower()\n        if tool_name in _MEDIA_CREATION_TOOLS and status in _FAILED_MEDIA_STATUSES:\n            return True",
         "detail": "server.studio",
         "documentation": {}
     },
@@ -6326,7 +6839,7 @@
         "kind": 6,
         "importPath": "tests.test_remotion_provider",
         "description": "tests.test_remotion_provider",
-        "peekOfCode": "class RemotionProviderTests(unittest.TestCase):\n    def test_build_timeline_props_maps_clips_to_document(self) -> None:\n        props = build_timeline_props(\n            \"Launch cut\",\n            visuals=[\n                {\n                    \"kind\": \"image\",\n                    \"url\": \"https://example/hero.png\",\n                    \"start_seconds\": 0,\n                    \"duration_seconds\": 2,",
+        "peekOfCode": "class RemotionProviderTests(unittest.TestCase):\n    def test_live_rendering_is_the_default(self) -> None:\n        with patch.dict(os.environ):\n            os.environ.pop(\"REMOTION_DRY_RUN\", None)\n            self.assertFalse(dry_run())\n    def test_build_timeline_props_maps_clips_to_document(self) -> None:\n        props = build_timeline_props(\n            \"Launch cut\",\n            visuals=[\n                {",
         "detail": "tests.test_remotion_provider",
         "documentation": {}
     },
@@ -6344,7 +6857,7 @@
         "kind": 6,
         "importPath": "tests.test_studio_agent",
         "description": "tests.test_studio_agent",
-        "peekOfCode": "class StudioAgentTests(unittest.IsolatedAsyncioTestCase):\n    def test_primary_agent_asset_preserves_the_latest_media_kind(self) -> None:\n        audio = {\n            \"asset_id\": \"audio-asset\",\n            \"version_id\": \"audio-version\",\n            \"kind\": \"audio\",\n            \"filename\": \"bed.mp3\",\n            \"mime_type\": \"audio/mpeg\",\n        }\n        image = {",
+        "peekOfCode": "class StudioAgentTests(unittest.IsolatedAsyncioTestCase):\n    def test_deictic_video_edit_recovers_latest_durable_sequence_in_story_order(self) -> None:\n        explicit = [\n            StudioNodeReference(\n                id=\"selected-image\",\n                title=\"Selected image\",\n                kind=\"image\",\n                asset_id=\"image-asset\",\n                version_id=\"image-version\",\n            )",
         "detail": "tests.test_studio_agent",
         "documentation": {}
     },
@@ -6353,7 +6866,7 @@
         "kind": 6,
         "importPath": "tests.test_studio_agent_next",
         "description": "tests.test_studio_agent_next",
-        "peekOfCode": "class FakeRunner:\n    seen_agent = None\n    seen_input = \"\"\n    @classmethod\n    async def run(cls, agent, input_value, **_kwargs):\n        cls.seen_agent = agent\n        cls.seen_input = input_value\n        class Result:\n            final_output = StudioAgentOutput(\n                title=\"Launch outline\",",
+        "peekOfCode": "class FakeRunner:\n    seen_agent = None\n    seen_input = \"\"\n    seen_session = None\n    seen_run_config = None\n    @classmethod\n    async def run(cls, agent, input_value, **kwargs):\n        cls.seen_agent = agent\n        cls.seen_input = input_value\n        cls.seen_session = kwargs[\"session\"]",
         "detail": "tests.test_studio_agent_next",
         "documentation": {}
     },

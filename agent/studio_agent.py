@@ -754,7 +754,7 @@ filesystem paths.
 
 
 def _build_agent() -> Agent[StudioAgentContext]:
-    configured_model = os.getenv("AGENT_MODEL", "gpt-4.1-mini").strip()
+    configured_model = os.getenv("AGENT_MODEL", "gpt-5.6-luna").strip()
     model = configured_model.removeprefix("openai:").removeprefix("openai/")
     return Agent(
         name="Renderhaus canvas manager",

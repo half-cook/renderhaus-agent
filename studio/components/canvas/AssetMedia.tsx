@@ -10,21 +10,71 @@ type Props = {
   className?: string;
   controls?: boolean;
   muted?: boolean;
+  onMetadata?: (metadata: {
+    width?: number;
+    height?: number;
+    durationSeconds?: number;
+  }) => void;
 };
 
-export function AssetMedia({ asset, alt, className, controls = false, muted = false }: Props) {
+export function AssetMedia({
+  asset,
+  alt,
+  className,
+  controls = false,
+  muted = false,
+  onMetadata,
+}: Props) {
   const source = useStudioAssetPlaybackUrl(asset);
   if (!asset) return null;
   if (!source) {
     return <div className={`${className || ""} media-loading`} aria-label={`Loading ${alt}`} />;
   }
   if (asset.kind === "image") {
-    return <img className={className} src={source} alt={alt} />;
+    return (
+      <img
+        className={className}
+        src={source}
+        alt={alt}
+        onLoad={(event) => {
+          const image = event.currentTarget;
+          onMetadata?.({ width: image.naturalWidth, height: image.naturalHeight });
+        }}
+      />
+    );
   }
   if (asset.kind === "video") {
-    return <video className={className} src={source} controls={controls} muted={muted} playsInline />;
+    return (
+      <video
+        className={className}
+        src={source}
+        controls={controls}
+        muted={muted}
+        playsInline
+        onLoadedMetadata={(event) => {
+          const video = event.currentTarget;
+          onMetadata?.({
+            width: video.videoWidth,
+            height: video.videoHeight,
+            durationSeconds: Number.isFinite(video.duration) ? video.duration : undefined,
+          });
+        }}
+      />
+    );
   }
-  return <audio className={className} src={source} controls={controls} />;
+  return (
+    <audio
+      className={className}
+      src={source}
+      controls={controls}
+      onLoadedMetadata={(event) => {
+        const audio = event.currentTarget;
+        onMetadata?.({
+          durationSeconds: Number.isFinite(audio.duration) ? audio.duration : undefined,
+        });
+      }}
+    />
+  );
 }
 
 export function AssetDownloadLink({

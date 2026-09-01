@@ -440,7 +440,7 @@ Secrets Manager JSON secret. Do not commit secrets.
 | `STUDIO_AGENT_POLL_INTERVAL_SECONDS` | Manager provider-poll interval; default 5. |
 | `SEEDREAM_DRY_RUN`, `SEEDANCE_DRY_RUN`, `MUREKA_DRY_RUN`, `FISH_AUDIO_DRY_RUN` | Keep individual providers from creating paid media when true. |
 | `REMOTION_APP_*` | Four required Remotion deployment settings listed above. |
-| `REMOTION_RENDER_TIMEOUT_SECONDS`, `REMOTION_POLL_INTERVAL_SECONDS`, `REMOTION_FRAMES_PER_LAMBDA` | Remotion runtime tuning. |
+| `REMOTION_RENDER_TIMEOUT_SECONDS`, `REMOTION_POLL_INTERVAL_SECONDS`, `REMOTION_FRAMES_PER_LAMBDA`, `REMOTION_LAMBDA_TIMEOUT_SECONDS` | Remotion runtime and deployed-function tuning. Long source-video timelines default to 100 frames per renderer chunk and a 600-second Lambda timeout. |
 
 ### Useful checks
 

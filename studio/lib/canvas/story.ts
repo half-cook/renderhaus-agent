@@ -1,8 +1,4 @@
-import type { CanvasNode } from "./connection-validation";
 import type { CanvasNodeData, CreativeNodeKind } from "./types";
-
-export const SCENE_CARD_WIDTH = 380;
-export const SCENE_CARD_GAP = 40;
 
 export function isSceneKind(kind: CreativeNodeKind): boolean {
   switch (kind) {
@@ -27,46 +23,9 @@ export function isSceneNode(data: CanvasNodeData): boolean {
   return isSceneKind(data.kind);
 }
 
-export function approvedSequence(nodes: CanvasNode[]): CanvasNode[] {
-  return nodes
-    .filter((node) => node.data.approved && isSceneNode(node.data))
-    .sort((a, b) => (a.data.storyOrder ?? 0) - (b.data.storyOrder ?? 0));
-}
-
-export function nextStoryOrder(nodes: CanvasNode[]): number {
-  const sequence = approvedSequence(nodes);
-  if (sequence.length === 0) {
-    return 1;
-  }
-  return Math.max(...sequence.map((node) => node.data.storyOrder ?? 0)) + 1;
-}
-
-export function compactStoryOrders(nodes: CanvasNode[]): CanvasNode[] {
-  const order = new Map(approvedSequence(nodes).map((node, index) => [node.id, index + 1]));
-  return nodes.map((node) => {
-    const storyOrder = order.get(node.id);
-    if (storyOrder === undefined) {
-      if (!node.data.approved && node.data.storyOrder === undefined) {
-        return node;
-      }
-      if (!node.data.approved) {
-        return { ...node, data: { ...node.data, storyOrder: undefined } };
-      }
-      return node;
-    }
-    if (node.data.storyOrder === storyOrder) {
-      return node;
-    }
-    return { ...node, data: { ...node.data, storyOrder } };
-  });
-}
-
 export function sceneBadge(data: CanvasNodeData): string | undefined {
   if (!isSceneNode(data)) {
     return undefined;
-  }
-  if (data.approved && data.storyOrder) {
-    return `Sc ${String(data.storyOrder).padStart(2, "0")}`;
   }
   return "Scene";
 }
@@ -102,6 +61,32 @@ const RESOLUTION_SHORT_SIDE: Record<string, number> = {
 const CANVAS_ZOOM = 0.14; // tuned so a 1080p/2K 16:9 frame reads as "large" without dominating
 const MIN_FRAME_PX = 96; // floor so small frames still fit their Generate button/text legibly
 const MAX_FRAME_PX = 420; // ceiling so a high-res wide frame doesn't dominate the canvas
+
+export function aspectRatioFromDimensions(width: number, height: number): string | undefined {
+  const roundedWidth = Math.round(width);
+  const roundedHeight = Math.round(height);
+  if (roundedWidth <= 0 || roundedHeight <= 0) return undefined;
+  const ratio = roundedWidth / roundedHeight;
+  const commonRatios: Array<[number, number]> = [
+    [1, 1],
+    [16, 9],
+    [9, 16],
+    [4, 3],
+    [3, 4],
+    [3, 2],
+    [2, 3],
+    [21, 9],
+  ];
+  const nearest = commonRatios.find(
+    ([ratioWidth, ratioHeight]) =>
+      Math.abs(ratio - ratioWidth / ratioHeight) / (ratioWidth / ratioHeight) < 0.015,
+  );
+  if (nearest) return `${nearest[0]}:${nearest[1]}`;
+  const divisor = (left: number, right: number): number =>
+    right === 0 ? left : divisor(right, left % right);
+  const common = divisor(roundedWidth, roundedHeight);
+  return `${Math.round(roundedWidth / common)}:${Math.round(roundedHeight / common)}`;
+}
 
 // Figma-style: size the node to its real target pixel dimensions at a fixed
 // canvas zoom, rather than fitting every ratio into one fixed slot. This is

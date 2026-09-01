@@ -8,43 +8,26 @@ entrypoint and the structured result.
 from __future__ import annotations
 
 import asyncio
-import contextlib
-import inspect
+import hashlib
 import json
 import logging
 import os
 import re
 import time
-from collections.abc import AsyncIterator, Callable
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from functools import lru_cache
 from typing import Any
-import uuid
 
-from ag_ui.core import (
-    BaseEvent,
-    CustomEvent,
-    RunErrorEvent,
-    RunFinishedEvent,
-    RunStartedEvent,
-    StateDeltaEvent,
-    StateSnapshotEvent,
-    StepFinishedEvent,
-    StepStartedEvent,
-    TextMessageContentEvent,
-    TextMessageEndEvent,
-    TextMessageStartEvent,
-    ToolCallArgsEvent,
-    ToolCallEndEvent,
-    ToolCallResultEvent,
-    ToolCallStartEvent,
-)
-from ag_ui.encoder import EventEncoder
-from agents import Agent, RunHooks, Runner
+from agents import Agent, ModelSettings, RunConfig, RunContextWrapper, Runner, function_tool
+from agents.memory import OpenAIResponsesCompactionSession
 from agents.mcp import MCPServer, MCPServerManager, MCPServerStreamableHttp
+from agents.run_state import RunState
 from bedrock_agentcore.runtime import BedrockAgentCoreApp
+from mcp import Tool as MCPTool
 from pydantic import BaseModel, Field, ValidationError
 
+from agent.studio_memory import StudioMemorySession
 from providers.catalog import PROVIDERS
 from providers.registry import load_committed_schemas
 from server.config import (
@@ -58,29 +41,25 @@ logger = logging.getLogger("renderhaus.studio_agent")
 
 AssetRegistrar = Callable[..., list[dict[str, Any]]]
 SourceResolver = Callable[[str], str]
-EventSink = Callable[["StudioToolEvent"], Any]
+SourcePublisher = Callable[[str], str]
+GatewayArgumentTransformer = Callable[[str, dict[str, Any]], dict[str, Any]]
+EventSink = Callable[["StudioToolEvent"], None]
+ProgressSink = Callable[["StudioProgressEvent"], None]
 
 _SESSION_TIMEOUT_SECONDS = 180.0
-_FINALIZATION_TIMEOUT_SECONDS = 240.0
-_POLL_INTERVAL_SECONDS = 3.0
-_TERMINAL_TOOL_STATUSES = frozenset(
-    {
-        "succeeded",
-        "completed",
-        "failed",
-        "error",
-        "dry_run",
-        "cancelled",
-        "canceled",
-        "deleted",
-        "expired",
-        "timeout",
-        "timed_out",
-        "timeouted",
-    }
+_DEFAULT_AGENT_MODEL = "gpt-5.6-luna"
+MAX_AGENT_PROMPT_CHARS = 64_000
+_GATEWAY_SEARCH_TOOL = "x_amz_bedrock_agentcore_search"
+_VIDEO_DELIVERABLE_PATTERN = re.compile(
+    r"\b(create|make|generate|produce|render|assemble|combine|merge|stitch|edit|export|"
+    r"deliver|cut|compose|retry|finish|complete|resume|turn|convert)\b"
+    r"(?:\W+\w+){0,12}?\W+"
+    r"\b(video|videos|ad|advert|commercial|reel|spot|motion graphic|trailer|promo|montage|mp4)\b",
+    re.IGNORECASE,
 )
-_VIDEO_REQUEST_PATTERN = re.compile(
-    r"\b(video|ad|advert|commercial|reel|spot|motion graphic|trailer|promo|montage)\b",
+_NON_VIDEO_DELIVERABLE_PATTERN = re.compile(
+    r"\b(thumbnail|poster|cover|storyboard|keyframe|still|transcript|transcription|summary|"
+    r"caption|captions|description|describe|analyze|analyse)\b",
     re.IGNORECASE,
 )
 
@@ -88,20 +67,39 @@ STUDIO_MANAGER_INSTRUCTIONS = """
 You are the Renderhaus canvas manager. Turn the customer's request into one useful, finished,
 downloadable result.
 
-Image, video, music, speech, and Remotion tools come from Amazon Bedrock AgentCore Gateway. Names
-look like `Seedream___text_to_image` and `Remotion___render_timeline`. Use generation tools when
-the request needs new media; they may trigger paid provider or AWS work. Gateway tools keep
-provider argument names such as `image_path_or_url` and Remotion clip `url`. When a referenced
-canvas node already has `source`, pass that value into those fields.
+Keep the customer informed like a strong coding agent. Before every Gateway search or external
+tool call, call `report_progress` with a brief, specific update that says what you learned and what
+you are doing next. Write the update yourself from the actual run context. Never use generic filler
+such as "working on it", "choosing tools", "processing", or numbered step labels. Do not expose
+private chain-of-thought; report only concise plans, observations, and results that help the
+customer follow the work.
+
+Image, video, music, speech, and assembly tools come from Amazon Bedrock AgentCore Gateway. The
+Gateway initially exposes semantic tool search instead of its whole catalog. When the request needs
+a capability, search with the concrete user intent, the input media already available, and the
+required output type. The returned tools become available on the next step. Search again if the
+task changes. Never guess a tool name or enumerate the whole catalog unless the customer explicitly
+asks for an inventory.
+
+Use generation tools only when the request needs new media; they may trigger paid provider or AWS
+work. Gateway tools keep provider argument names such as `image_path_or_url` and Remotion clip
+`url`. Referenced canvas media has a `source_ref`; pass that opaque value into the corresponding
+provider URL field. Renderhaus resolves it to a durable provider-reachable URL after the tool call
+is chosen. Do not copy a legacy `source` when a `source_ref` is present. Existing video or audio
+references are already complete, durable media. Use their `source_ref` directly in Remotion; do
+not poll an old provider job, download them again, or regenerate them.
 
 When the customer wants a video, ad, reel, spot, motion graphic, or any edited sequence:
 1. Generate the needed stills, clips, music, and voice first.
-2. Call `Remotion___render_timeline` to assemble those clips into one MP4. Pass each clip's public
-   URL in `visuals[].url` and `audio_tracks[].url` (use `image_url`, `video_url`, `audio_url`, or
-   `url` from earlier tool results). Each visual needs `kind` (`image` or `video`) and
-   `duration_seconds`.
+2. Make the editorial decisions yourself: clip order and timing, source in-points, main footage
+   versus B-roll layers, cuts or fades, crop/fit, motion, playback speed, titles, music/voice
+   levels, and fades. Then call `Remotion___render_timeline` with that concrete edit plan. Pass each
+   clip's durable public URL in `visuals[].url` and `audio_tracks[].url` (use `image_url`,
+   `video_url`, `audio_url`, or `url` from earlier tool results). Never ask Remotion to invent the
+   edit; it only executes your plan.
 3. Poll `Remotion___get_render_progress` with the returned `render_id` and `bucket_name` until
-   status is succeeded, failed, or dry_run. Then stop calling tools.
+   status is succeeded, failed, or cancelled. Do not produce the final response until the assembled
+   MP4 succeeds. If rendering fails, explain the failure instead of claiming completion.
 
 There are no `wait_for_*` tools: after a queued Seedance or Mureka job, poll `get_video_task` or
 `query_music_task` the same way. If a tool reports dry_run, queued, or failed, say so accurately.
@@ -127,11 +125,34 @@ class StudioNode(BaseModel):
 class StudioAgentRequest(BaseModel):
     """JSON body accepted by AgentCore and by `run_studio_agent`."""
 
-    prompt: str = Field(min_length=1, max_length=8_000)
+    prompt: str = Field(min_length=1, max_length=MAX_AGENT_PROMPT_CHARS)
     nodes: list[StudioNode] = Field(default_factory=list, max_length=16)
+    conversation_id: str | None = Field(default=None, max_length=120)
+    session_items: list[dict[str, Any]] = Field(default_factory=list)
     job_id: str | None = Field(default=None, max_length=120)
     workspace_id: str | None = Field(default=None, max_length=160)
     project_id: str | None = Field(default=None, max_length=120)
+    autonomous: bool = False
+    resume_state: str | None = None
+    approval_decisions: list["StudioApprovalDecision"] = Field(default_factory=list, max_length=32)
+    resume_tool_names: list[str] = Field(default_factory=list, max_length=64)
+
+
+class StudioApprovalDecision(BaseModel):
+    call_id: str = Field(min_length=1, max_length=200)
+    decision: str = Field(pattern="^(approve|reject)$")
+    message: str | None = Field(default=None, max_length=1_000)
+
+
+class StudioApprovalRequest(BaseModel):
+    call_id: str = Field(min_length=1, max_length=200)
+    tool_name: str = Field(min_length=1, max_length=240)
+    label: str = Field(min_length=1, max_length=240)
+    arguments: dict[str, Any] = Field(default_factory=dict)
+    provider: str | None = None
+
+
+StudioAgentRequest.model_rebuild()
 
 
 class StudioAgentOutput(BaseModel):
@@ -152,6 +173,7 @@ class StudioToolEvent:
     summary: str
     provider: str | None = None
     provider_job_id: str | None = None
+    arguments: dict[str, Any] = field(default_factory=dict)
     assets: list[dict[str, Any]] = field(default_factory=list)
     result: dict[str, Any] = field(default_factory=dict)
     created_at: int = field(default_factory=lambda: int(time.time()))
@@ -166,6 +188,7 @@ class StudioToolEvent:
             "summary": self.summary,
             "provider": self.provider,
             "provider_job_id": self.provider_job_id,
+            "arguments": self.arguments,
             "assets": self.assets,
             "result": self.result,
             "created_at": self.created_at,
@@ -174,17 +197,49 @@ class StudioToolEvent:
 
 
 @dataclass(slots=True)
+class StudioProgressEvent:
+    """A safe, user-facing AG-UI-style update emitted during an agent run."""
+
+    id: str
+    type: str
+    title: str
+    message: str
+    status: str = "running"
+    tool_call_id: str | None = None
+    tool_call_name: str | None = None
+    created_at: int = field(default_factory=lambda: int(time.time()))
+
+    def public(self) -> dict[str, Any]:
+        return {
+            "id": self.id,
+            "type": self.type,
+            "title": self.title,
+            "message": self.message,
+            "status": self.status,
+            "tool_call_id": self.tool_call_id,
+            "tool_call_name": self.tool_call_name,
+            "created_at": self.created_at,
+        }
+
+
+@dataclass(slots=True)
 class StudioAgentContext:
     nodes: list[Any] = field(default_factory=list)
     tool_events: list[StudioToolEvent] = field(default_factory=list)
     working_assets: dict[str, dict[str, Any]] = field(default_factory=dict)
+    source_versions: dict[str, str] = field(default_factory=dict)
     asset_registrar: AssetRegistrar | None = None
     source_resolver: SourceResolver | None = None
+    source_publisher: SourcePublisher | None = None
     event_sink: EventSink | None = None
+    progress_sink: ProgressSink | None = None
     job_id: str | None = None
     workspace_id: str | None = None
     project_id: str | None = None
     session_id: str | None = None
+    session_items: list[dict[str, Any]] = field(default_factory=list)
+    progress_events: list[StudioProgressEvent] = field(default_factory=list)
+    autonomous: bool = False
 
     def add_assets(self, assets: list[dict[str, Any]]) -> None:
         for asset in assets:
@@ -192,11 +247,36 @@ class StudioAgentContext:
             if isinstance(version_id, str) and version_id:
                 self.working_assets[version_id] = asset
 
+    def restore_events(self, events: list[StudioToolEvent]) -> None:
+        """Restore durable tool context before resuming a serialized SDK run."""
+        self.tool_events = list(events)
+        for event in events:
+            self.add_assets(event.assets)
+            _remember_source_versions(self, event.result, event.assets)
+
     def record_event(self, event: StudioToolEvent) -> None:
-        self.tool_events.append(event)
+        existing = next(
+            (index for index, item in enumerate(self.tool_events) if item.id == event.id), None
+        )
+        if existing is None:
+            self.tool_events.append(event)
+        else:
+            self.tool_events[existing] = event
         self.add_assets(event.assets)
         if self.event_sink:
             self.event_sink(event)
+
+    def record_progress(self, event: StudioProgressEvent) -> None:
+        existing = next(
+            (index for index, item in enumerate(self.progress_events) if item.id == event.id),
+            None,
+        )
+        if existing is None:
+            self.progress_events.append(event)
+        else:
+            self.progress_events[existing] = event
+        if self.progress_sink:
+            self.progress_sink(event)
 
     def asset_for(self, reference: str, expected_kind: str) -> dict[str, Any]:
         asset = self.working_assets.get(reference)
@@ -235,6 +315,95 @@ class StudioAgentContext:
             raise ValueError("This agent run has no asset source resolver.")
         return self.source_resolver(str(asset["version_id"]))
 
+    def prepare_gateway_arguments(
+        self,
+        _tool_name: str,
+        arguments: dict[str, Any],
+    ) -> dict[str, Any]:
+        """Resolve opaque Studio asset handles only at the provider boundary."""
+        prefix = "renderhaus-asset://"
+
+        def resolve(value: Any) -> Any:
+            if isinstance(value, str) and value in self.source_versions:
+                version_id = self.source_versions[value]
+                if self.source_publisher:
+                    return self.source_publisher(version_id)
+            if isinstance(value, str) and value.startswith(prefix):
+                version_id = value[len(prefix) :].strip()
+                if not version_id:
+                    raise ValueError("Referenced Studio asset is missing a version id.")
+                if self.source_publisher:
+                    return self.source_publisher(version_id)
+                node = next(
+                    (item for item in self.nodes if item.version_id == version_id),
+                    None,
+                )
+                if (
+                    node is not None
+                    and isinstance(node.source, str)
+                    and node.source.startswith(("http://", "https://", "data:"))
+                ):
+                    return node.source
+                raise RuntimeError("This agent run has no provider input publisher.")
+            if isinstance(value, list):
+                return [resolve(item) for item in value]
+            if isinstance(value, dict):
+                return {key: resolve(item) for key, item in value.items()}
+            return value
+
+        return resolve(dict(arguments))
+
+
+class StudioAgentApprovalRequired(Exception):
+    """A resumable Agents SDK checkpoint awaiting one or more tool decisions."""
+
+    def __init__(
+        self,
+        state: str,
+        approvals: list[StudioApprovalRequest],
+        session_items: list[dict[str, Any]] | None = None,
+        tool_events: list[StudioToolEvent] | None = None,
+    ) -> None:
+        super().__init__("Tool approval is required to continue this agent run.")
+        self.state = state
+        self.approvals = approvals
+        self.session_items = list(session_items or [])
+        self.tool_events = list(tool_events or [])
+
+
+@function_tool
+async def report_progress(
+    ctx: RunContextWrapper[StudioAgentContext],
+    message: str,
+) -> str:
+    """Send one concise, model-authored progress update to the customer.
+
+    Args:
+        message: A specific update grounded in the current request and run state. Say what was
+            learned and what will happen next; never use generic filler or private chain-of-thought.
+    """
+    cleaned = " ".join(message.strip().split())[:1_000]
+    if not cleaned:
+        return "No update was sent."
+    _progress(
+        ctx.context,
+        event_id=f"model-update-{len(ctx.context.progress_events) + 1}",
+        event_type="MODEL_UPDATE",
+        title="Agent update",
+        message=cleaned,
+        status="completed",
+    )
+    return "Update shown to the customer."
+
+
+def _gateway_requires_approval(
+    run_context: RunContextWrapper[StudioAgentContext],
+    _agent: Any,
+    _tool: Any,
+) -> bool:
+    """Require a decision for every external Gateway call unless this run is autonomous."""
+    return not run_context.context.autonomous
+
 
 app = BedrockAgentCoreApp()
 
@@ -251,6 +420,18 @@ def normalize_markdown_filename(value: str, title: str) -> str:
 
 _DROP_TOOL_RESULT_KEYS = frozenset(
     {"traceback", "last_response", "create_response", "last_payload", "raw"}
+)
+_SECRET_ARGUMENT_PARTS = (
+    "api_key",
+    "api-key",
+    "apikey",
+    "authorization",
+    "secret",
+    "token",
+    "password",
+    "credential",
+    "access_key",
+    "access-key",
 )
 _TEXT_PART_KEYS = frozenset({"type", "text"})
 _TOOL_TITLES = {
@@ -297,6 +478,15 @@ def _describe_gateway_mcp_tools(tools: list[Any]) -> list[Any]:
         if not name and isinstance(tool, dict):
             name = str(tool.get("name") or "")
         info = catalog.get(name)
+        if name == _GATEWAY_SEARCH_TOOL:
+            info = {
+                "title": "Search available tools",
+                "description": (
+                    "Search the AgentCore Gateway for the small set of tools relevant to the "
+                    "current task. Query with the desired operation, available input media, and "
+                    "required output type. Call again when the task's capability needs change."
+                ),
+            }
         if info is None and "___" in name:
             info = catalog.get(name.split("___", 1)[1])
         if not info:
@@ -311,12 +501,191 @@ def _describe_gateway_mcp_tools(tools: list[Any]) -> list[Any]:
     return described
 
 
+def _gateway_tool_name(tool: Any) -> str:
+    if isinstance(tool, dict):
+        return str(tool.get("name") or "")
+    return str(getattr(tool, "name", None) or "")
+
+
+def _tool_names_from_search_result(value: Any) -> set[str]:
+    """Extract tool names from AgentCore's structured or text MCP search result."""
+    names: set[str] = set()
+    seen: set[int] = set()
+
+    def visit(item: Any) -> None:
+        if item is None or isinstance(item, (bool, int, float)):
+            return
+        if isinstance(item, str):
+            text = item.strip()
+            if text.startswith(("{", "[")):
+                try:
+                    visit(json.loads(text))
+                except json.JSONDecodeError:
+                    pass
+            return
+        marker = id(item)
+        if marker in seen:
+            return
+        seen.add(marker)
+        if isinstance(item, list):
+            for child in item:
+                visit(child)
+            return
+        if not isinstance(item, dict):
+            dumper = getattr(item, "model_dump", None)
+            if callable(dumper):
+                visit(dumper(exclude_none=True, by_alias=True))
+                return
+            visit(getattr(item, "structuredContent", None))
+            visit(getattr(item, "structured_content", None))
+            visit(getattr(item, "content", None))
+            return
+        name = item.get("name") or item.get("toolName") or item.get("tool_name")
+        if isinstance(name, str) and name.strip():
+            names.add(name.strip())
+        for child in item.values():
+            visit(child)
+
+    visit(value)
+    return names
+
+
+def _tools_from_search_result(value: Any) -> list[MCPTool]:
+    """Build MCP tool definitions returned by AgentCore semantic search."""
+    discovered: dict[str, MCPTool] = {}
+    seen: set[int] = set()
+
+    def visit(item: Any) -> None:
+        if item is None or isinstance(item, (bool, int, float)):
+            return
+        if isinstance(item, str):
+            text = item.strip()
+            if text.startswith(("{", "[")):
+                try:
+                    visit(json.loads(text))
+                except json.JSONDecodeError:
+                    pass
+            return
+        marker = id(item)
+        if marker in seen:
+            return
+        seen.add(marker)
+        if isinstance(item, list):
+            for child in item:
+                visit(child)
+            return
+        if not isinstance(item, dict):
+            dumper = getattr(item, "model_dump", None)
+            if callable(dumper):
+                visit(dumper(exclude_none=True, by_alias=True))
+                return
+            visit(getattr(item, "structuredContent", None))
+            visit(getattr(item, "structured_content", None))
+            visit(getattr(item, "content", None))
+            return
+        name = item.get("name") or item.get("toolName") or item.get("tool_name")
+        input_schema = item.get("inputSchema") or item.get("input_schema")
+        if isinstance(name, str) and isinstance(input_schema, dict):
+            try:
+                tool = MCPTool.model_validate(
+                    {
+                        "name": name,
+                        "description": str(item.get("description") or ""),
+                        "inputSchema": input_schema,
+                    }
+                )
+                discovered[tool.name] = tool
+            except ValidationError:
+                pass
+        for child in item.values():
+            visit(child)
+
+    visit(value)
+    return list(discovered.values())
+
+
+def _visible_gateway_tools(tools: list[Any], discovered: set[str]) -> list[Any]:
+    names = {_gateway_tool_name(tool) for tool in tools}
+    if _GATEWAY_SEARCH_TOOL not in names:
+        return tools
+    visible = discovered | {_GATEWAY_SEARCH_TOOL}
+    return [tool for tool in tools if _gateway_tool_name(tool) in visible]
+
+
+def _committed_gateway_tools(names: set[str]) -> list[MCPTool]:
+    """Rebuild previously discovered tool definitions when a paused run reconnects."""
+    restored: list[MCPTool] = []
+    for spec in PROVIDERS:
+        for item in load_committed_schemas(spec):
+            raw_name = str(item.get("name") or "")
+            gateway_name = f"{spec.target_name}___{raw_name}"
+            if gateway_name not in names and raw_name not in names:
+                continue
+            try:
+                restored.append(
+                    MCPTool.model_validate(
+                        {
+                            "name": gateway_name if gateway_name in names else raw_name,
+                            "description": str(item.get("description") or ""),
+                            "inputSchema": item.get("inputSchema") or {"type": "object"},
+                        }
+                    )
+                )
+            except ValidationError:
+                logger.warning("Could not restore Gateway tool definition for %s", gateway_name)
+    return restored
+
+
 class GatewayMCPServer(MCPServerStreamableHttp):
-    """AgentCore Gateway MCP client with local tool descriptions restored."""
+    """AgentCore Gateway client that progressively reveals semantically discovered tools."""
+
+    def __init__(
+        self,
+        *args: Any,
+        argument_transformer: GatewayArgumentTransformer | None = None,
+        **kwargs: Any,
+    ) -> None:
+        super().__init__(*args, **kwargs)
+        self._discovered_tool_names: set[str] = set()
+        self._argument_transformer = argument_transformer
 
     async def list_tools(self, run_context: Any = None, agent: Any = None) -> list[Any]:
         tools = await super().list_tools(run_context, agent)
-        return _describe_gateway_mcp_tools(tools)
+        known = {_gateway_tool_name(tool) for tool in tools}
+        for tool in _committed_gateway_tools(self._discovered_tool_names):
+            if tool.name not in known:
+                tools.append(tool)
+                known.add(tool.name)
+        self._tools_list = list(tools)
+        described = _describe_gateway_mcp_tools(tools)
+        return _visible_gateway_tools(described, self._discovered_tool_names)
+
+    async def call_tool(
+        self,
+        tool_name: str,
+        arguments: dict[str, Any] | None,
+        meta: dict[str, Any] | None = None,
+    ) -> Any:
+        resolved_arguments = dict(arguments or {})
+        if self._argument_transformer and tool_name != _GATEWAY_SEARCH_TOOL:
+            resolved_arguments = await asyncio.to_thread(
+                self._argument_transformer,
+                tool_name,
+                resolved_arguments,
+            )
+        result = await super().call_tool(tool_name, resolved_arguments, meta=meta)
+        if tool_name == _GATEWAY_SEARCH_TOOL:
+            cached = list(self._tools_list or [])
+            cached_names = {_gateway_tool_name(tool) for tool in cached}
+            for tool in _tools_from_search_result(result):
+                if tool.name not in cached_names:
+                    cached.append(tool)
+                    cached_names.add(tool.name)
+            self._tools_list = cached
+            self._discovered_tool_names.update(
+                name for name in _tool_names_from_search_result(result) if name in cached_names
+            )
+        return result
 
 
 def _unwrap_tool_output(output: Any) -> dict[str, Any]:
@@ -376,7 +745,9 @@ def _unwrap_tool_output(output: Any) -> dict[str, Any]:
                     }
                     for part in content
                 ],
-                "isError": bool(getattr(current, "isError", False) or getattr(current, "is_error", False)),
+                "isError": bool(
+                    getattr(current, "isError", False) or getattr(current, "is_error", False)
+                ),
             }
             continue
         return {"result": str(current)[:2_000]}
@@ -389,6 +760,30 @@ def _compact_tool_result(payload: dict[str, Any]) -> dict[str, Any]:
         for key, value in payload.items()
         if key not in _DROP_TOOL_RESULT_KEYS and value is not None
     }
+
+
+def _redact_arguments(value: Any) -> Any:
+    if isinstance(value, dict):
+        return {
+            str(key): _redact_arguments(item)
+            for key, item in value.items()
+            if item is not None
+            and not any(part in str(key).lower() for part in _SECRET_ARGUMENT_PARTS)
+        }
+    if isinstance(value, (list, tuple)):
+        return [_redact_arguments(item) for item in value if item is not None]
+    return value
+
+
+def _compact_tool_arguments(value: Any) -> dict[str, Any]:
+    if isinstance(value, str):
+        try:
+            value = json.loads(value)
+        except json.JSONDecodeError:
+            return {}
+    if not isinstance(value, dict):
+        return {}
+    return _redact_arguments(value)
 
 
 def _gateway_tool_parts(name: str) -> tuple[str | None, str, str]:
@@ -441,179 +836,297 @@ def _item_tool_output(item: Any) -> Any:
     return getattr(raw, "output", None)
 
 
+def _item_tool_arguments(item: Any) -> dict[str, Any]:
+    arguments = getattr(item, "arguments", None)
+    if arguments not in (None, ""):
+        return _compact_tool_arguments(arguments)
+    raw = getattr(item, "raw_item", None)
+    if isinstance(raw, dict):
+        return _compact_tool_arguments(raw.get("arguments"))
+    return _compact_tool_arguments(getattr(raw, "arguments", None))
+
+
+def _reasoning_summary(item: Any) -> str:
+    """Read the model-provided reasoning summary without exposing hidden reasoning content."""
+    raw = getattr(item, "raw_item", None)
+    if raw is None:
+        return ""
+    summary = raw.get("summary") if isinstance(raw, dict) else getattr(raw, "summary", None)
+    if not isinstance(summary, list):
+        return ""
+    parts: list[str] = []
+    for part in summary:
+        text = part.get("text") if isinstance(part, dict) else getattr(part, "text", None)
+        if isinstance(text, str) and text.strip():
+            parts.append(text.strip())
+    return " ".join(parts)[:600]
+
+
+def _progress(
+    studio: StudioAgentContext,
+    *,
+    event_id: str,
+    event_type: str,
+    title: str,
+    message: str,
+    status: str = "running",
+    tool_call_id: str | None = None,
+    tool_call_name: str | None = None,
+) -> None:
+    studio.record_progress(
+        StudioProgressEvent(
+            id=event_id,
+            type=event_type,
+            title=title,
+            message=message[:1_000],
+            status=status,
+            tool_call_id=tool_call_id,
+            tool_call_name=tool_call_name,
+        )
+    )
+
+
+def _tool_start_message(name: str, arguments: dict[str, Any]) -> tuple[str, str]:
+    if name == _GATEWAY_SEARCH_TOOL:
+        query = str(arguments.get("query") or arguments.get("searchQuery") or "").strip()
+        return "Searching available tools", query or "Finding the right capability for this step."
+    _provider, _tool, label = _gateway_tool_parts(name)
+    return label, f"Calling {label.lower()}."
+
+
+def _record_stream_event(
+    event: Any,
+    studio: StudioAgentContext,
+    tool_names: dict[str, str],
+    tool_arguments: dict[str, dict[str, Any]],
+) -> None:
+    """Translate real SDK tool/reasoning events without inventing progress copy."""
+    event_type = getattr(event, "type", None)
+    if event_type != "run_item_stream_event":
+        return
+
+    name = str(getattr(event, "name", None) or "")
+    item = getattr(event, "item", None)
+    call_id = _item_call_id(item)
+    if name in {"tool_called", "tool_search_called"}:
+        tool_name = _item_tool_name(item)
+        if tool_name == "report_progress":
+            # Keep the call id mapped so the SDK's later ToolCallOutputItem, which
+            # intentionally carries no tool name of its own, is ignored as well.
+            tool_names[call_id] = tool_name
+            return
+        arguments = _item_tool_arguments(item)
+        tool_names[call_id] = tool_name
+        tool_arguments[call_id] = arguments
+        title, message = _tool_start_message(tool_name, arguments)
+        provider, _tool, label = _gateway_tool_parts(tool_name)
+        studio.record_event(
+            StudioToolEvent(
+                id=call_id or f"tool-{len(studio.tool_events) + 1}",
+                name=tool_name,
+                label="Search available tools" if tool_name == _GATEWAY_SEARCH_TOOL else label,
+                status="running",
+                summary=message[:320],
+                provider=provider.lower() if provider else None,
+                arguments=arguments,
+                result={"status": "running"},
+            )
+        )
+        _progress(
+            studio,
+            event_id=f"tool-{call_id or len(studio.tool_events)}",
+            event_type="TOOL_CALL_START",
+            title=title,
+            message=message,
+            tool_call_id=call_id or None,
+            tool_call_name=tool_name,
+        )
+        return
+    if name in {"tool_output", "tool_search_output_created"}:
+        tool_name = tool_names.get(call_id) or _item_tool_name(item)
+        if tool_name == "report_progress":
+            return
+        arguments = tool_arguments.get(call_id, _item_tool_arguments(item))
+        _append_harvested_event(
+            studio,
+            call_id=call_id,
+            name=tool_name,
+            arguments=arguments,
+            output=_item_tool_output(item),
+        )
+        completed = next(
+            (tool_event for tool_event in studio.tool_events if tool_event.id == call_id),
+            studio.tool_events[-1],
+        )
+        _progress(
+            studio,
+            event_id=f"tool-{call_id or len(studio.tool_events)}",
+            event_type="TOOL_CALL_RESULT",
+            title=completed.label,
+            message=completed.summary,
+            status=completed.status,
+            tool_call_id=call_id or None,
+            tool_call_name=tool_name,
+        )
+        return
+    if name == "reasoning_item_created":
+        summary = _reasoning_summary(item)
+        if not summary:
+            return
+        _progress(
+            studio,
+            event_id=f"reasoning-{len(studio.progress_events) + 1}",
+            event_type="REASONING_MESSAGE_CONTENT",
+            title="Reasoning",
+            message=summary,
+            status="completed",
+        )
+
+
 def _append_harvested_event(
     studio: StudioAgentContext,
     *,
     call_id: str,
     name: str,
+    arguments: dict[str, Any],
     output: Any,
-) -> StudioToolEvent | None:
-    if call_id and any(event.id == call_id for event in studio.tool_events):
-        return None
+) -> None:
     payload = _compact_tool_result(_unwrap_tool_output(output))
     if not payload:
-        return None
+        payload = {"status": "completed"}
     provider, _tool, label = _gateway_tool_parts(name)
     status = _tool_event_status(payload)
-    summary = str(payload.get("note") or payload.get("summary") or f"{label}: {status}.")
-    event = StudioToolEvent(
-        id=call_id or f"tool-{len(studio.tool_events) + 1}",
-        name=name,
-        label=label,
-        status=status,
-        summary=summary[:320],
-        provider=provider.lower() if provider else None,
-        provider_job_id=(
-            str(payload["job_id"]) if isinstance(payload.get("job_id"), (str, int)) else None
-        ),
-        result=payload,
-    )
-    studio.record_event(event)
-    return event
-
-
-class _AGUIRunHooks(RunHooks[StudioAgentContext]):
-    """Bridge live Agents SDK lifecycle callbacks into the AG-UI event queue."""
-
-    def __init__(
-        self,
-        event_queue: asyncio.Queue[BaseEvent | None],
-        started_tool_calls: set[str],
-        run_id: str,
-    ) -> None:
-        self.event_queue = event_queue
-        self.started_tool_calls = started_tool_calls
-        self.run_id = run_id
-        self.llm_turn = 0
-        self.llm_steps: list[str] = []
-        self._active_tool_call_ids: dict[tuple[int, int], list[str]] = {}
-        self._pending_tool_results: list[tuple[str, str, object]] = []
-        self._emitted_tool_results: set[str] = set()
-
-    @staticmethod
-    def _tool_key(context: Any, tool: Any) -> tuple[int, int]:
-        return id(context), id(tool)
-
-    def stream_id_for_harvest(
-        self,
-        name: str,
-        actual_id: str,
-        payload: dict[str, Any],
-    ) -> str:
-        """Match a harvested SDK run item to the ID already shown in the live stream."""
-        for index, (stream_id, pending_name, _result) in enumerate(self._pending_tool_results):
-            if stream_id == actual_id and pending_name == name:
-                self._pending_tool_results.pop(index)
-                return stream_id
-        for index, (stream_id, pending_name, result) in enumerate(self._pending_tool_results):
-            pending_payload = _compact_tool_result(_unwrap_tool_output(result))
-            if pending_name == name and pending_payload == payload:
-                self._pending_tool_results.pop(index)
-                return stream_id
-        for index, (stream_id, pending_name, _result) in enumerate(self._pending_tool_results):
-            if pending_name == name:
-                self._pending_tool_results.pop(index)
-                return stream_id
-        return actual_id
-
-    def result_was_emitted(self, stream_id: str) -> bool:
-        return stream_id in self._emitted_tool_results
-
-    def flush_unharvested(self, studio: StudioAgentContext) -> None:
-        """Persist hook results that an unusual runner omitted from its final run items."""
-        pending = list(self._pending_tool_results)
-        self._pending_tool_results.clear()
-        for call_id, name, result in pending:
-            _append_harvested_event(studio, call_id=call_id, name=name, output=result)
-
-    async def on_llm_start(
-        self,
-        context: Any,
-        agent: Any,
-        system_prompt: str | None,
-        input_items: list[Any],
-    ) -> None:
-        del context, agent, system_prompt, input_items
-        self.llm_turn += 1
-        step_name = f"Agent reasoning · turn {self.llm_turn}"
-        self.llm_steps.append(step_name)
-        self.event_queue.put_nowait(StepStartedEvent(step_name=step_name))
-
-    async def on_llm_end(self, context: Any, agent: Any, response: Any) -> None:
-        del context, agent, response
-        if self.llm_steps:
-            self.event_queue.put_nowait(StepFinishedEvent(step_name=self.llm_steps.pop()))
-
-    async def on_tool_start(self, context: Any, agent: Any, tool: Any) -> None:
-        del agent
-        call_id = str(getattr(context, "tool_call_id", None) or uuid.uuid4().hex)
-        name = str(
-            getattr(context, "tool_name", None)
-            or getattr(tool, "name", None)
-            or "tool"
+    if name == _GATEWAY_SEARCH_TOOL:
+        discovered = sorted(_tool_names_from_search_result(output))
+        payload = {"status": status, "tools": discovered}
+        label = "Search available tools"
+        summary = (
+            f"Found {len(discovered)} relevant {('tool' if len(discovered) == 1 else 'tools')}."
         )
-        key = self._tool_key(context, tool)
-        self._active_tool_call_ids.setdefault(key, []).append(call_id)
-        self.started_tool_calls.add(call_id)
-        self.event_queue.put_nowait(
-            ToolCallStartEvent(tool_call_id=call_id, tool_call_name=name)
-        )
-
-    async def on_tool_end(
-        self,
-        context: Any,
-        agent: Any,
-        tool: Any,
-        result: object,
-    ) -> None:
-        del agent
-        studio = getattr(context, "context", None)
-        if not isinstance(studio, StudioAgentContext):
-            return
-        key = self._tool_key(context, tool)
-        active_ids = self._active_tool_call_ids.get(key) or []
-        context_call_id = getattr(context, "tool_call_id", None)
-        if context_call_id:
-            call_id = str(context_call_id)
-            if call_id in active_ids:
-                active_ids.remove(call_id)
-            elif active_ids:
-                active_ids.pop(0)
-        else:
-            call_id = active_ids.pop(0) if active_ids else uuid.uuid4().hex
-        if not active_ids:
-            self._active_tool_call_ids.pop(key, None)
-        name = str(
-            getattr(context, "tool_name", None)
-            or getattr(tool, "name", None)
-            or "tool"
-        )
-        self._pending_tool_results.append((call_id, name, result))
-        payload = _compact_tool_result(_unwrap_tool_output(result))
-        self.event_queue.put_nowait(
-            ToolCallResultEvent(
-                message_id=self.run_id,
-                tool_call_id=call_id,
-                content=json.dumps(payload),
+    else:
+        summary = str(payload.get("note") or payload.get("summary") or f"{label}: {status}.")
+    assets: list[dict[str, Any]] = []
+    if studio.asset_registrar and status in {"succeeded", "success", "completed"}:
+        try:
+            assets = studio.asset_registrar(
+                result=payload,
+                label=label,
+                tool_call_id=call_id or None,
+                source_version_ids=_asset_version_ids(arguments),
             )
+        except Exception:  # noqa: BLE001 - keep the provider result visible for recovery
+            logger.exception("Could not durably register output from %s", name)
+    _remember_source_versions(studio, payload, assets)
+    studio.record_event(
+        StudioToolEvent(
+            id=call_id or f"tool-{len(studio.tool_events) + 1}",
+            name=name,
+            label=label,
+            status=status,
+            summary=summary[:320],
+            provider=provider.lower() if provider else None,
+            provider_job_id=(
+                str(payload["job_id"]) if isinstance(payload.get("job_id"), (str, int)) else None
+            ),
+            arguments=arguments,
+            assets=assets,
+            result=payload,
         )
-        self._emitted_tool_results.add(call_id)
+    )
+
+
+def _asset_version_ids(value: Any) -> list[str]:
+    prefix = "renderhaus-asset://"
+    found: list[str] = []
+
+    def visit(item: Any) -> None:
+        if isinstance(item, str) and item.startswith(prefix):
+            version_id = item[len(prefix) :].strip()
+            if version_id and version_id not in found:
+                found.append(version_id)
+        elif isinstance(item, list):
+            for child in item:
+                visit(child)
+        elif isinstance(item, dict):
+            for child in item.values():
+                visit(child)
+
+    visit(value)
+    return found
+
+
+def _remember_source_versions(
+    studio: StudioAgentContext,
+    payload: dict[str, Any],
+    assets: list[dict[str, Any]],
+) -> None:
+    sources: dict[str, list[str]] = {"image": [], "video": [], "audio": []}
+    key_kinds = {
+        "image_url": "image",
+        "video_url": "video",
+        "audio_url": "audio",
+        "mp3_url": "audio",
+        "wav_url": "audio",
+        "url": "video",
+    }
+
+    def visit(item: Any) -> None:
+        if isinstance(item, list):
+            for child in item:
+                visit(child)
+        elif isinstance(item, dict):
+            for key, child in item.items():
+                kind = key_kinds.get(key)
+                if kind and isinstance(child, str) and child.startswith(("http://", "https://")):
+                    if child not in sources[kind]:
+                        sources[kind].append(child)
+                else:
+                    visit(child)
+
+    visit(payload)
+    offsets = {"image": 0, "video": 0, "audio": 0}
+    for asset in assets:
+        kind = str(asset.get("kind") or "")
+        version_id = str(asset.get("version_id") or "")
+        index = offsets.get(kind, 0)
+        if version_id and kind in sources and index < len(sources[kind]):
+            studio.source_versions[sources[kind][index]] = version_id
+            offsets[kind] = index + 1
 
 
 def _record_run_tool_events(run_result: Any, studio: StudioAgentContext) -> None:
     """Turn Gateway MCP tool outputs into canvas tool events."""
     items = list(getattr(run_result, "new_items", None) or [])
     names: dict[str, str] = {}
-    recorded: set[str] = set()
+    arguments: dict[str, dict[str, Any]] = {}
+    # Streamed output events harvest assets as soon as they arrive. Do not run the
+    # registrar again when the same calls appear in ``result.new_items`` after the
+    # stream closes. Running/approval events remain eligible because their output
+    # may only be present in the final result snapshot.
+    recorded: set[str] = {
+        event.id
+        for event in studio.tool_events
+        if event.id and event.status.lower() not in {"running", "awaiting_approval"}
+    }
     for item in items:
         item_type = getattr(item, "type", None)
         call_id = _item_call_id(item)
         if item_type == "tool_call_item":
             names[call_id] = _item_tool_name(item)
+            if names[call_id] == "report_progress":
+                recorded.add(call_id)
+                continue
+            arguments[call_id] = _item_tool_arguments(item)
             output = _item_tool_output(item)
             if output in (None, "") or call_id in recorded:
                 continue
-            _append_harvested_event(studio, call_id=call_id, name=names[call_id], output=output)
+            _append_harvested_event(
+                studio,
+                call_id=call_id,
+                name=names[call_id],
+                arguments=arguments[call_id],
+                output=output,
+            )
             recorded.add(call_id)
             continue
         if item_type != "tool_call_output_item":
@@ -621,216 +1134,35 @@ def _record_run_tool_events(run_result: Any, studio: StudioAgentContext) -> None
         if call_id in recorded:
             continue
         name = names.get(call_id) or _item_tool_name(item)
-        _append_harvested_event(studio, call_id=call_id, name=name, output=_item_tool_output(item))
+        if name == "report_progress":
+            continue
+        _append_harvested_event(
+            studio,
+            call_id=call_id,
+            name=name,
+            arguments=arguments.get(call_id, _item_tool_arguments(item)),
+            output=_item_tool_output(item),
+        )
         if call_id:
             recorded.add(call_id)
 
 
-async def _call_gateway_tool(
-    server: MCPServer,
-    name: str,
-    arguments: dict[str, Any],
-) -> dict[str, Any]:
-    result = await server.call_tool(name, arguments)
-    return _compact_tool_result(_unwrap_tool_output(result))
-
-
-def _gateway_event(name: str, payload: dict[str, Any], index: int) -> StudioToolEvent:
-    provider, _tool, label = _gateway_tool_parts(name)
-    status = _tool_event_status(payload)
-    summary = str(payload.get("note") or payload.get("summary") or f"{label}: {status}.")
-    provider_job_id = payload.get("job_id") or payload.get("render_id")
-    return StudioToolEvent(
-        id=f"finalize-{index}-{int(time.time() * 1000)}",
-        name=name,
-        label=label,
-        status=status,
-        summary=summary[:320],
-        provider=provider.lower() if provider else None,
-        provider_job_id=str(provider_job_id) if provider_job_id else None,
-        result=payload,
-    )
-
-
-def _poll_spec(event: StudioToolEvent) -> tuple[str, dict[str, Any]] | None:
-    status = event.status.lower()
-    if status in _TERMINAL_TOOL_STATUSES:
-        return None
-    job_id = event.result.get("job_id") or event.provider_job_id
-    if event.name.startswith("Seedance___") and job_id:
-        return "Seedance___get_video_task", {"job_id": str(job_id), "download": False}
-    if event.name.startswith("Mureka___") and job_id:
-        return "Mureka___query_music_task", {"job_id": str(job_id), "download": False}
-    render_id = event.result.get("render_id")
-    bucket_name = event.result.get("bucket_name")
-    if event.name == "Remotion___render_timeline" and render_id and bucket_name:
-        return (
-            "Remotion___get_render_progress",
-            {
-                "render_id": str(render_id),
-                "bucket_name": str(bucket_name),
-                "output_key": event.result.get("output_key"),
-                "download": False,
-            },
-        )
-    return None
-
-
-async def _poll_until_terminal(
-    server: MCPServer,
-    name: str,
-    arguments: dict[str, Any],
-    *,
-    deadline: float,
-) -> dict[str, Any]:
-    while True:
-        payload = await _call_gateway_tool(server, name, arguments)
-        status = _tool_event_status(payload)
-        if status in _TERMINAL_TOOL_STATUSES:
-            return payload
-        if time.monotonic() >= deadline:
-            return {
-                **payload,
-                "status": "failed",
-                "error": f"Timed out waiting for {name}.",
-            }
-        await asyncio.sleep(_POLL_INTERVAL_SECONDS)
-
-
-async def _settle_queued_media(
-    studio: StudioAgentContext,
-    server: MCPServer,
-    *,
-    deadline: float,
-) -> None:
-    pending = list(studio.tool_events)
-    for event in pending:
-        spec = _poll_spec(event)
-        if spec is None:
-            continue
-        name, arguments = spec
-        payload = await _poll_until_terminal(server, name, arguments, deadline=deadline)
-        studio.record_event(_gateway_event(name, payload, len(studio.tool_events) + 1))
-
-
-def _media_url(payload: dict[str, Any], kind: str) -> str | None:
-    keys = {
-        "image": ("image_url",),
-        "video": ("video_url", "url"),
-        "audio": ("audio_url", "mp3_url", "wav_url"),
-    }[kind]
-    for key in keys:
-        value = payload.get(key)
-        if isinstance(value, str) and value.startswith(("http://", "https://", "data:")):
-            return value
-    return None
-
-
-def _remotion_inputs(events: list[StudioToolEvent]) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
-    visuals: list[dict[str, Any]] = []
-    audio: list[dict[str, Any]] = []
-    seen: set[str] = set()
-    visual_start = 0.0
-    for event in events:
-        if event.status.lower() not in {"succeeded", "completed"}:
-            continue
-        payload = event.result
-        visual_kind = "video" if event.name.startswith("Seedance___") else "image"
-        visual_url = _media_url(payload, visual_kind)
-        if visual_url and visual_url not in seen:
-            seen.add(visual_url)
-            duration = float(payload.get("duration_seconds") or 4)
-            visuals.append(
-                {
-                    "kind": visual_kind,
-                    "url": visual_url,
-                    "start_seconds": visual_start,
-                    "duration_seconds": duration,
-                    "source_in_seconds": 0,
-                }
-            )
-            visual_start += duration
-        audio_url = _media_url(payload, "audio")
-        if audio_url and audio_url not in seen:
-            seen.add(audio_url)
-            duration = float(payload.get("duration_seconds") or 0)
-            if duration <= 0 and isinstance(payload.get("duration_ms"), (int, float)):
-                duration = float(payload["duration_ms"]) / 1000
-            audio.append(
-                {
-                    "url": audio_url,
-                    "start_seconds": 0,
-                    "duration_seconds": duration or visual_start or 4,
-                    "source_in_seconds": 0,
-                    "volume": 0.7,
-                }
-            )
-    return visuals, audio
-
-
-async def _ensure_remotion_output(
-    request: StudioAgentRequest,
-    output: StudioAgentOutput,
-    studio: StudioAgentContext,
-    server: MCPServer,
-    *,
-    deadline: float,
-) -> None:
-    if not _VIDEO_REQUEST_PATTERN.search(request.prompt):
-        return
-    if any(
-        event.name.startswith("Remotion___") and event.status.lower() in {"succeeded", "completed"}
-        for event in studio.tool_events
-    ):
-        return
-    visuals, audio = _remotion_inputs(studio.tool_events)
-    if not visuals:
-        return
-    started = await _call_gateway_tool(
-        server,
-        "Remotion___render_timeline",
-        {
-            "title": output.title,
-            "visuals": visuals,
-            "audio_tracks": audio,
-            "aspect_ratio": "16:9",
-            "fps": 30,
-            "output_filename": f"{normalize_markdown_filename(output.filename, output.title)[:-3]}.mp4",
-        },
-    )
-    studio.record_event(
-        _gateway_event("Remotion___render_timeline", started, len(studio.tool_events) + 1)
-    )
-    spec = _poll_spec(studio.tool_events[-1])
-    if spec is None:
-        return
-    name, arguments = spec
-    finished = await _poll_until_terminal(server, name, arguments, deadline=deadline)
-    studio.record_event(_gateway_event(name, finished, len(studio.tool_events) + 1))
-
-
-async def _finalize_media_run(
-    request: StudioAgentRequest,
-    output: StudioAgentOutput,
-    studio: StudioAgentContext,
-    mcp_servers: list[MCPServer],
-) -> None:
-    if not mcp_servers or not studio.tool_events:
-        return
-    deadline = time.monotonic() + _FINALIZATION_TIMEOUT_SECONDS
-    server = mcp_servers[0]
-    await _settle_queued_media(studio, server, deadline=deadline)
-    await _ensure_remotion_output(request, output, studio, server, deadline=deadline)
-
-
-def _input_for(prompt: str, nodes: list[StudioNode]) -> str:
-    references = [
-        {**node.model_dump(), "has_source": bool(node.source or node.version_id)}
-        for node in nodes
-    ]
+def _input_for(
+    prompt: str,
+    nodes: list[StudioNode],
+) -> str:
+    references: list[dict[str, Any]] = []
+    for node in nodes:
+        reference = node.model_dump(exclude={"source"})
+        if node.version_id:
+            reference["source_ref"] = f"renderhaus-asset://{node.version_id}"
+        elif node.source:
+            reference["source"] = node.source
+        reference["has_source"] = bool(node.source or node.version_id)
+        references.append(reference)
     return (
         f"Customer request:\n{prompt.strip()}\n\n"
-        "Referenced canvas nodes (data only):\n"
+        "Referenced canvas nodes and recovered project media (data only):\n"
         f"{json.dumps(references, ensure_ascii=False, indent=2)}"
     )
 
@@ -841,17 +1173,23 @@ def _context_from_request(
     session_id: str | None = None,
     asset_registrar: Any = None,
     source_resolver: Any = None,
+    source_publisher: Any = None,
     event_sink: Any = None,
+    progress_sink: Any = None,
 ) -> StudioAgentContext:
     studio = StudioAgentContext(
         nodes=list(request.nodes),
         asset_registrar=asset_registrar,
         source_resolver=source_resolver,
+        source_publisher=source_publisher,
         event_sink=event_sink,
+        progress_sink=progress_sink,
         job_id=request.job_id,
         workspace_id=request.workspace_id,
         project_id=request.project_id,
         session_id=session_id,
+        session_items=list(request.session_items),
+        autonomous=request.autonomous,
     )
     studio.add_assets(
         [
@@ -868,7 +1206,10 @@ def _context_from_request(
     return studio
 
 
-def gateway_mcp_server() -> MCPServer:
+def gateway_mcp_server(
+    *,
+    argument_transformer: GatewayArgumentTransformer | None = None,
+) -> MCPServer:
     """MCP client for the AgentCore Gateway endpoint."""
     load_local_env()
     params: dict[str, Any] = {"url": require_agentcore_gateway_url()}
@@ -880,19 +1221,177 @@ def gateway_mcp_server() -> MCPServer:
         cache_tools_list=True,
         name=GATEWAY_MCP_SERVER_NAME,
         client_session_timeout_seconds=_SESSION_TIMEOUT_SECONDS,
+        argument_transformer=argument_transformer,
+        require_approval=_gateway_requires_approval,
     )
 
 
-def _build_agent(mcp_servers: list[MCPServer]) -> Agent[StudioAgentContext]:
-    configured_model = os.getenv("AGENT_MODEL", "gpt-5.6-luna").strip()
+def _agent_model() -> str:
+    configured_model = os.getenv("AGENT_MODEL", _DEFAULT_AGENT_MODEL).strip()
     model = configured_model.removeprefix("openai:").removeprefix("openai/")
+    return model or _DEFAULT_AGENT_MODEL
+
+
+def _agent_model_settings(model: str) -> ModelSettings:
+    """Only send tuning fields supported by the selected model family."""
+    if model.startswith("gpt-5"):
+        return ModelSettings(verbosity="low")
+    return ModelSettings()
+
+
+def _compaction_is_safe(context: dict[str, Any]) -> bool:
+    """Compact only complete turns whose function calls all have outputs.
+
+    Human-in-the-loop interruptions deliberately persist function calls before their
+    outputs exist. Sending that history to ``responses.compact`` produces a 400, so
+    compaction must wait until the approval resume writes an output for every call.
+    """
+    # During streamed tool loops, the compaction candidates can be one persistence
+    # step ahead of the full session snapshot. Inspect both collections so a newly
+    # emitted function call cannot be compacted before its output is committed.
+    items = [
+        *(context.get("session_items") or []),
+        *(context.get("compaction_candidate_items") or []),
+    ]
+    call_ids = {
+        str(item.get("call_id") or item.get("id") or "")
+        for item in items
+        if isinstance(item, dict) and item.get("type") == "function_call"
+    }
+    output_ids = {
+        str(item.get("call_id") or "")
+        for item in items
+        if isinstance(item, dict) and item.get("type") == "function_call_output"
+    }
+    if any(call_id and call_id not in output_ids for call_id in call_ids):
+        return False
+    # Preserve the Agents SDK default threshold while adding the safe-turn gate.
+    return len(context.get("compaction_candidate_items") or []) >= 10
+
+
+@dataclass(slots=True)
+class _TurnCompactionPolicy:
+    """Allow compaction only after a whole agent run reaches a safe boundary.
+
+    The Agents SDK defers compaction after local tool outputs and can force it on
+    the following model response. That response may already contain the next tool
+    call, whose output does not exist yet. Keeping automatic compaction disabled
+    inside the tool loop and enabling it once at run completion prevents invalid
+    function-call history while retaining durable conversation compaction.
+    """
+
+    enabled: bool = False
+
+    def __call__(self, context: dict[str, Any]) -> bool:
+        return self.enabled and _compaction_is_safe(context)
+
+
+def _approval_request(item: Any) -> StudioApprovalRequest:
+    name = str(getattr(item, "qualified_name", None) or getattr(item, "name", None) or "tool")
+    call_id = str(getattr(item, "call_id", None) or "")
+    arguments = _compact_tool_arguments(getattr(item, "arguments", None))
+    provider, _tool, label = _gateway_tool_parts(name)
+    fallback = hashlib.sha256(
+        f"{name}:{json.dumps(arguments, sort_keys=True)}".encode("utf-8")
+    ).hexdigest()[:24]
+    return StudioApprovalRequest(
+        call_id=call_id or f"approval-{fallback}",
+        tool_name=name,
+        label=label,
+        arguments=arguments,
+        provider=provider.lower() if provider else None,
+    )
+
+
+def _record_approval_requests(
+    studio: StudioAgentContext, approvals: list[StudioApprovalRequest]
+) -> None:
+    for approval in approvals:
+        existing = next(
+            (event for event in studio.tool_events if event.id == approval.call_id),
+            None,
+        )
+        event = StudioToolEvent(
+            id=approval.call_id,
+            name=approval.tool_name,
+            label=approval.label,
+            status="awaiting_approval",
+            summary=f"Approval required before calling {approval.label}.",
+            provider=approval.provider,
+            arguments=approval.arguments,
+            result={"status": "awaiting_approval"},
+            created_at=existing.created_at if existing else int(time.time()),
+        )
+        studio.record_event(event)
+        _progress(
+            studio,
+            event_id=f"approval-{approval.call_id}",
+            event_type="TOOL_APPROVAL_REQUIRED",
+            title=approval.label,
+            message=f"Review the arguments before {approval.label} runs.",
+            status="awaiting_approval",
+            tool_call_id=approval.call_id,
+            tool_call_name=approval.tool_name,
+        )
+
+
+def _requests_video_deliverable(prompt: str) -> bool:
+    """Identify an explicit request for a video file, not merely video-related work."""
+    for match in _VIDEO_DELIVERABLE_PATTERN.finditer(prompt):
+        surrounding = prompt[match.start() : match.end() + 24]
+        if not _NON_VIDEO_DELIVERABLE_PATTERN.search(surrounding):
+            return True
+    return False
+
+
+def _validate_video_delivery(
+    request: StudioAgentRequest,
+    studio: StudioAgentContext,
+    final: StudioAgentOutput | None = None,
+) -> bool:
+    render_started = any(event.name.endswith("render_timeline") for event in studio.tool_events)
+    wants_video = _requests_video_deliverable(request.prompt) or render_started
+    if not wants_video:
+        return True
+    rendered = any(
+        event.name.endswith("get_render_progress")
+        and event.status.lower() in {"succeeded", "success", "completed"}
+        and str(event.result.get("status") or event.status).lower()
+        in {"succeeded", "success", "completed"}
+        for event in studio.tool_events
+    )
+    if rendered:
+        return True
+
+    message = "The requested video is incomplete because no successful Remotion MP4 was produced."
+    _progress(
+        studio,
+        event_id="video-delivery",
+        event_type="RUN_ERROR",
+        title="Video export incomplete",
+        message=message,
+        status="failed",
+    )
+    if final is not None:
+        final.summary = message[:320]
+        notice = f"## Video export incomplete\n\n{message}"
+        if notice not in final.markdown:
+            final.markdown = f"{final.markdown.rstrip()}\n\n{notice}"[:30_000]
+    return False
+
+
+def _build_agent(mcp_servers: list[MCPServer]) -> Agent[StudioAgentContext]:
+    model = _agent_model()
     return Agent(
         name="Renderhaus canvas manager",
         instructions=STUDIO_MANAGER_INSTRUCTIONS,
-        model=model or "gpt-5.6-luna",
-        tools=[],
+        model=model,
+        tools=[report_progress],
         mcp_servers=mcp_servers,
         output_type=StudioAgentOutput,
+        # Let the SDK apply compatible reasoning defaults, and avoid sending
+        # GPT-5-only verbosity values to older/non-reasoning model families.
+        model_settings=_agent_model_settings(model),
     )
 
 
@@ -901,23 +1400,135 @@ async def _run_with_servers(
     studio: StudioAgentContext,
     runner: type[Runner],
     mcp_servers: list[MCPServer],
-    hooks: Any = None,
 ) -> StudioAgentOutput:
-    result = await runner.run(
-        _build_agent(mcp_servers),
-        _input_for(request.prompt, list(studio.nodes)),
-        context=studio,
-        max_turns=24,
-        hooks=hooks,
+    session_id = (
+        request.conversation_id or studio.session_id or request.job_id or "studio-conversation"
     )
+    session_store = StudioMemorySession(
+        session_id,
+        request.session_items,
+    )
+    compaction_policy = _TurnCompactionPolicy()
+    session = OpenAIResponsesCompactionSession(
+        session_id,
+        session_store,
+        model=_agent_model(),
+        compaction_mode="input",
+        should_trigger_compaction=compaction_policy,
+    )
+    run_kwargs = {
+        "context": studio,
+        "max_turns": 40,
+        "session": session,
+        "run_config": RunConfig(
+            workflow_name="Renderhaus agent",
+            group_id=request.conversation_id or request.job_id,
+            trace_metadata={
+                "project_id": request.project_id or "",
+                "conversation_id": request.conversation_id or "",
+            },
+        ),
+    }
+    agent = _build_agent(mcp_servers)
+    runner_input: str | RunState[StudioAgentContext]
+    if request.resume_state:
+        for server in mcp_servers:
+            if isinstance(server, GatewayMCPServer):
+                server._discovered_tool_names.update(request.resume_tool_names)
+        state = await RunState.from_string(
+            agent,
+            request.resume_state,
+            context_override=studio,
+        )
+        decisions = {decision.call_id: decision for decision in request.approval_decisions}
+        pending = state.get_interruptions()
+        pending_approvals = [(item, _approval_request(item)) for item in pending]
+        missing = [
+            approval for _item, approval in pending_approvals if approval.call_id not in decisions
+        ]
+        if missing:
+            approvals = missing
+            _record_approval_requests(studio, approvals)
+            raise StudioAgentApprovalRequired(request.resume_state, approvals, studio.session_items)
+        for item, approval in pending_approvals:
+            decision = decisions[approval.call_id]
+            if decision.decision == "approve":
+                state.approve(item)
+            else:
+                state.reject(
+                    item,
+                    rejection_message=decision.message or "The customer rejected this tool call.",
+                )
+        runner_input = state
+    else:
+        runner_input = _input_for(request.prompt, list(studio.nodes))
+    try:
+        stream = getattr(runner, "run_streamed", None)
+        if callable(stream):
+            result = stream(
+                agent,
+                runner_input,
+                **run_kwargs,
+            )
+            tool_names: dict[str, str] = {}
+            tool_arguments: dict[str, dict[str, Any]] = {}
+            async for event in result.stream_events():
+                _record_stream_event(event, studio, tool_names, tool_arguments)
+        else:
+            result = await runner.run(
+                agent,
+                runner_input,
+                **run_kwargs,
+            )
+    except StudioAgentApprovalRequired:
+        raise
+    except Exception as exc:
+        _progress(
+            studio,
+            event_id="run",
+            event_type="RUN_ERROR",
+            title="Agent stopped",
+            message=f"The run stopped ({type(exc).__name__}).",
+            status="failed",
+        )
+        raise
     _record_run_tool_events(result, studio)
-    if isinstance(hooks, _AGUIRunHooks):
-        hooks.flush_unharvested(studio)
+    interruptions = list(getattr(result, "interruptions", []) or [])
+    if interruptions:
+        studio.session_items = await session_store.get_items()
+        approvals = [_approval_request(item) for item in interruptions]
+        _record_approval_requests(studio, approvals)
+        state = result.to_state()
+        raise StudioAgentApprovalRequired(
+            state.to_string(context_serializer=lambda _context: {}),
+            approvals,
+            studio.session_items,
+        )
     final = result.final_output
     if not isinstance(final, StudioAgentOutput):
         final = StudioAgentOutput.model_validate(final)
     final.filename = normalize_markdown_filename(final.filename, final.title)
-    await _finalize_media_run(request, final, studio, mcp_servers)
+    # Preserve the completed turn even when delivery validation needs to annotate
+    # an incomplete export. The final remains visible instead of being discarded.
+    studio.session_items = await session_store.get_items()
+    _validate_video_delivery(request, studio, final)
+    # Compaction is maintenance, not part of the customer's requested work. Run
+    # it once between completed turns and preserve the un-compacted history if the
+    # remote compaction request itself fails.
+    compaction_policy.enabled = True
+    try:
+        await session.run_compaction()
+    except Exception:  # noqa: BLE001 - a completed artifact must not become a failed run
+        logger.exception("Conversation compaction failed after a completed agent turn")
+    studio.session_items = await session_store.get_items()
+    _progress(
+        studio,
+        event_id="run",
+        event_type="RUN_FINISHED",
+        title="Agent finished",
+        message=f"Completed {final.title}.",
+        status="completed",
+    )
     return final
 
 
@@ -929,243 +1540,55 @@ async def run_studio_agent(
     mcp_servers: list[MCPServer] | None = None,
     asset_registrar: Any = None,
     source_resolver: Any = None,
+    source_publisher: Any = None,
     event_sink: Any = None,
-    hooks: Any = None,
+    progress_sink: Any = None,
 ) -> StudioAgentOutput:
     studio = studio or _context_from_request(
         request,
         asset_registrar=asset_registrar,
         source_resolver=source_resolver,
+        source_publisher=source_publisher,
         event_sink=event_sink,
+        progress_sink=progress_sink,
     )
     if mcp_servers is not None:
-        return await _run_with_servers(request, studio, runner, mcp_servers, hooks=hooks)
+        return await _run_with_servers(request, studio, runner, mcp_servers)
 
-    server = gateway_mcp_server()
-    async with MCPServerManager(
-        [server],
-        connect_timeout_seconds=30,
-        drop_failed_servers=False,
-        strict=True,
-        connect_in_parallel=False,
-    ) as manager:
-        return await _run_with_servers(
-            request,
-            studio,
-            runner,
-            manager.active_servers,
-            hooks=hooks,
-        )
-
-
-async def stream_studio_agent(
-    request: StudioAgentRequest,
-    *,
-    runner: type[Runner] = Runner,
-    studio: StudioAgentContext | None = None,
-    mcp_servers: list[MCPServer] | None = None,
-    asset_registrar: Any = None,
-    source_resolver: Any = None,
-    event_sink: Any = None,
-) -> AsyncIterator[BaseEvent]:
-    """Yield AG-UI protocol events during Studio Agent execution."""
-    run_id = request.job_id or str(uuid.uuid4())
-    thread_id = request.project_id or "default"
-
-    yield RunStartedEvent(thread_id=thread_id, run_id=run_id)
-    yield StepStartedEvent(step_name="Planning canvas operations")
-
-    event_queue: asyncio.Queue[BaseEvent | None] = asyncio.Queue()
-    started_tool_calls: set[str] = set()
-    live_sink_tasks: set[asyncio.Task[None]] = set()
-    run_hooks: _AGUIRunHooks | None = None
-
-    def enqueue_tool_event(tool_event: StudioToolEvent) -> None:
-        studio_ctx.add_assets(tool_event.assets)
-        stream_id = (
-            run_hooks.stream_id_for_harvest(
-                tool_event.name,
-                tool_event.id,
-                tool_event.result,
-            )
-            if run_hooks is not None
-            else tool_event.id
-        )
-        if stream_id not in started_tool_calls:
-            started_tool_calls.add(stream_id)
-            event_queue.put_nowait(
-                ToolCallStartEvent(
-                    tool_call_id=stream_id,
-                    tool_call_name=tool_event.name,
-                )
-            )
-        if run_hooks is None or not run_hooks.result_was_emitted(stream_id):
-            event_queue.put_nowait(
-                ToolCallResultEvent(
-                    message_id=run_id,
-                    tool_call_id=stream_id,
-                    content=json.dumps(tool_event.result or {}),
-                )
-            )
-        public_event = tool_event.public()
-        public_event["id"] = stream_id
-        event_queue.put_nowait(
-            CustomEvent(
-                name="renderhaus_tool_event",
-                value=public_event,
-            )
-        )
-        for asset in tool_event.assets:
-            event_queue.put_nowait(
-                CustomEvent(
-                    name="renderhaus_asset",
-                    value=asset,
-                )
-            )
-
-    def wrapped_event_sink(
-        tool_event: StudioToolEvent,
-        sink: EventSink | None = event_sink,
-    ) -> None:
-        sink_result: Any = None
-        if sink:
-            try:
-                sink_result = sink(tool_event)
-            except Exception:
-                logger.exception("Error in event_sink callback")
-
-        if not inspect.isawaitable(sink_result):
-            enqueue_tool_event(tool_event)
-            return
-
-        async def emit_after_sink() -> None:
-            try:
-                await asyncio.shield(sink_result)
-            except asyncio.CancelledError:
-                raise
-            except Exception:
-                logger.exception("Error awaiting event_sink callback")
-            enqueue_tool_event(tool_event)
-
-        task = asyncio.create_task(
-            emit_after_sink(),
-            name=f"studio-live-tool-event-{tool_event.id}",
-        )
-        live_sink_tasks.add(task)
-        task.add_done_callback(live_sink_tasks.discard)
-
-    studio_ctx = studio or _context_from_request(
-        request,
-        asset_registrar=asset_registrar,
-        source_resolver=source_resolver,
-        event_sink=wrapped_event_sink,
-    )
-    if studio is not None:
-        original_sink = studio_ctx.event_sink
-
-        def combined_sink(event: StudioToolEvent) -> None:
-            wrapped_event_sink(event, original_sink)
-
-        studio_ctx.event_sink = combined_sink
-
-    run_hooks = _AGUIRunHooks(event_queue, started_tool_calls, run_id)
-    agent_task = asyncio.create_task(
-        run_studio_agent(
-            request,
-            runner=runner,
-            studio=studio_ctx,
-            mcp_servers=mcp_servers,
-            asset_registrar=asset_registrar,
-            source_resolver=source_resolver,
-            event_sink=studio_ctx.event_sink,
-            hooks=run_hooks,
-        )
-    )
-
+    server = gateway_mcp_server(argument_transformer=studio.prepare_gateway_arguments)
     try:
-        while not agent_task.done() or live_sink_tasks or not event_queue.empty():
-            try:
-                event = await asyncio.wait_for(event_queue.get(), timeout=0.1)
-                if event is not None:
-                    yield event
-                    event_queue.task_done()
-            except asyncio.TimeoutError:
-                continue
-
-        output = await agent_task
-        yield StepFinishedEvent(step_name="Planning canvas operations")
-        yield StepStartedEvent(step_name="Finalizing output")
-
-        msg_id = f"msg-{run_id}"
-        yield TextMessageStartEvent(message_id=msg_id, role="assistant")
-
-        chunk_size = 600
-        text = output.markdown
-        for i in range(0, len(text), chunk_size):
-            yield TextMessageContentEvent(message_id=msg_id, delta=text[i : i + chunk_size])
-
-        yield TextMessageEndEvent(message_id=msg_id)
-
-        assets_list: list[dict[str, Any]] = []
-        seen_assets: set[str] = set()
-        for te in studio_ctx.tool_events:
-            for ast in getattr(te, "assets", []):
-                vid = str(ast.get("version_id") or "")
-                if vid and vid not in seen_assets:
-                    seen_assets.add(vid)
-                    assets_list.append(ast)
-        for ast in studio_ctx.working_assets.values():
-            vid = str(ast.get("version_id") or "")
-            if vid and vid not in seen_assets:
-                seen_assets.add(vid)
-                assets_list.append(ast)
-
-        yield StateSnapshotEvent(
-            snapshot={
-                "title": output.title,
-                "summary": output.summary,
-                "filename": output.filename,
-                "markdown": output.markdown,
-                "tool_events": [e.public() for e in studio_ctx.tool_events],
-                "assets": assets_list,
-                "primary_asset": assets_list[-1] if assets_list else None,
-            }
-        )
-        yield StepFinishedEvent(step_name="Finalizing output")
-        yield RunFinishedEvent(thread_id=thread_id, run_id=run_id)
-
-    except asyncio.CancelledError:
-        agent_task.cancel()
-        yield RunErrorEvent(message="Run was cancelled.", code="CANCELLED")
+        async with MCPServerManager(
+            [server],
+            connect_timeout_seconds=30,
+            drop_failed_servers=False,
+            strict=True,
+            connect_in_parallel=False,
+        ) as manager:
+            return await _run_with_servers(request, studio, runner, manager.active_servers)
+    except Exception:
         raise
-    except Exception as exc:
-        yield RunErrorEvent(message=str(exc)[:400], code="AGENT_ERROR")
-    finally:
-        for task in live_sink_tasks:
-            task.cancel()
-        if live_sink_tasks:
-            await asyncio.gather(*live_sink_tasks, return_exceptions=True)
-        if not agent_task.done():
-            agent_task.cancel()
-        with contextlib.suppress(asyncio.CancelledError, Exception):
-            await agent_task
 
 
-def _invocation_error(exc: BaseException, payload: dict[str, Any] | None, session_id: Any) -> dict[str, Any]:
+def _invocation_error(
+    exc: BaseException, payload: dict[str, Any] | None, session_id: Any
+) -> dict[str, Any]:
     return {
         "status": "failed",
         "error": str(exc)[:400],
         "error_type": type(exc).__name__,
         "result": None,
         "tool_events": [],
+        "progress_events": [],
         "job_id": (payload or {}).get("job_id") if isinstance(payload, dict) else None,
         "session_id": session_id if isinstance(session_id, str) else None,
     }
 
 
-@app.entrypoint
-async def agent_invocation(payload: dict[str, Any], context: Any) -> dict[str, Any]:
-    """AgentCore Runtime handler for `POST /invocations`."""
+async def _agent_invocation_result(
+    payload: dict[str, Any],
+    context: Any,
+    progress_sink: ProgressSink | None = None,
+) -> dict[str, Any]:
     session_id = getattr(context, "session_id", None)
     logger.debug("Received AgentCore payload for session %s", session_id)
     try:
@@ -1173,14 +1596,29 @@ async def agent_invocation(payload: dict[str, Any], context: Any) -> dict[str, A
         studio = _context_from_request(
             request,
             session_id=session_id if isinstance(session_id, str) else None,
+            progress_sink=progress_sink,
         )
         output = await run_studio_agent(request, studio=studio)
         return {
             "status": "completed",
             "result": output.model_dump(),
             "tool_events": [event.public() for event in studio.tool_events],
+            "progress_events": [event.public() for event in studio.progress_events],
             "job_id": request.job_id,
             "session_id": session_id if isinstance(session_id, str) else None,
+            "session_items": studio.session_items,
+        }
+    except StudioAgentApprovalRequired as exc:
+        return {
+            "status": "awaiting_approval",
+            "result": None,
+            "tool_events": [event.public() for event in studio.tool_events],
+            "progress_events": [event.public() for event in studio.progress_events],
+            "approvals": [approval.model_dump() for approval in exc.approvals],
+            "run_state": exc.state,
+            "job_id": request.job_id,
+            "session_id": session_id if isinstance(session_id, str) else None,
+            "session_items": studio.session_items,
         }
     except (ValidationError, ValueError) as exc:
         logger.warning("Invalid Studio AgentCore payload: %s", exc)
@@ -1188,6 +1626,26 @@ async def agent_invocation(payload: dict[str, Any], context: Any) -> dict[str, A
     except Exception as exc:  # noqa: BLE001 - runtime must return a JSON error, not crash
         logger.exception("Studio AgentCore invocation failed")
         return _invocation_error(exc, payload, session_id)
+
+
+@app.entrypoint
+async def agent_invocation(payload: dict[str, Any], context: Any):
+    """Stream progress and the final result from AgentCore Runtime over SSE."""
+    progress_queue: asyncio.Queue[StudioProgressEvent] = asyncio.Queue()
+
+    def enqueue(event: StudioProgressEvent) -> None:
+        progress_queue.put_nowait(event)
+
+    task = asyncio.create_task(_agent_invocation_result(payload, context, enqueue))
+    while not task.done():
+        try:
+            event = await asyncio.wait_for(progress_queue.get(), timeout=0.1)
+        except TimeoutError:
+            continue
+        yield {"kind": "progress", "event": event.public()}
+    while not progress_queue.empty():
+        yield {"kind": "progress", "event": progress_queue.get_nowait().public()}
+    yield {"kind": "result", "payload": await task}
 
 
 if __name__ == "__main__":
