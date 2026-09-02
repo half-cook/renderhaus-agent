@@ -1,6 +1,7 @@
 "use client";
 
 import { Handle, Position } from "@xyflow/react";
+import { Loader2 } from "lucide-react";
 import { NodeToolbar } from "../NodeToolbar";
 import { NodeTag } from "./NodeTag";
 import { generateBlockers } from "@/lib/canvas/generate-readiness";
@@ -135,7 +136,14 @@ export function SceneCard({ id, data, selected }: Props) {
                     void runNode(id);
                   }}
                 >
-                  {busy ? "Generating" : "Generate"}
+                  {busy ? (
+                    <>
+                      <Loader2 className="spin" size={14} />
+                      Generating
+                    </>
+                  ) : (
+                    "Generate"
+                  )}
                 </button>
               ) : null}
               {blockers.length > 0 ? <p className="generate-hint">{blockers[0]}</p> : null}

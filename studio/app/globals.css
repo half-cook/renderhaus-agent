@@ -38,7 +38,14 @@
   --ok: var(--color-emerald-400);
   --warn: var(--color-amber-400);
   --shadow: none;
-  --radius: 16px;
+  /* Sharp corners everywhere (SSENSE-style editorial minimalism) -- this
+     one token drives every node/panel/popover that references
+     var(--radius); the ~35 buttons, chips, and rails with their own
+     hardcoded border-radius were zeroed alongside it directly. Status
+     dots and other genuinely circular indicators were left round on
+     purpose -- that's shape-as-meaning (a dot), not decorative rounding,
+     and stays functional whether or not the rest of the chrome is sharp. */
+  --radius: 0;
   --ease: cubic-bezier(0.32, 0.72, 0, 1);
   --inspector-width: 320px;
   --agent-width: min(408px, calc(100vw - 96px));
@@ -49,6 +56,29 @@
   --z-rail: 30;
   --z-header: 40;
   --z-menu: 50;
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+  /* Warm off-white, not cool grey -- the Tailwind "stone" scale, not
+     "neutral" -- matching the Claude.ai console's own light palette: a
+     warm ivory page background with brighter white cards/surfaces on top
+     of it, not a flat single white. */
+  --bg: var(--color-stone-100);
+  --chrome: #fff;
+  --node: #fff;
+  --line: var(--color-stone-300);
+  --grid: var(--color-stone-400);
+  --text: var(--color-stone-900);
+  --muted: var(--color-stone-500);
+  --accent: var(--color-amber-500);
+  --active: var(--color-stone-900);
+  /* One shade deeper than the dark-mode indigo-400 -- 400 reads as washed
+     out against a white card border. */
+  --selected: var(--color-indigo-500);
+  --danger: var(--color-red-500);
+  --ok: var(--color-emerald-500);
+  --warn: var(--color-amber-500);
 }
 
 * {
@@ -93,7 +123,7 @@ a:focus-visible {
   background: var(--node);
   color: var(--text);
   padding: 8px 12px;
-  border-radius: 8px;
+  border-radius: 0;
 }
 
 .skip-link:focus {
@@ -111,11 +141,13 @@ a:focus-visible {
 .workspace {
   position: relative;
   --header-height: 56px;
-  --rail-width: 64px;
+  --scene-rail-width: 240px;
   --safe-top: var(--header-height);
-  --safe-left: var(--rail-width);
+  --safe-left: var(--scene-rail-width);
   --safe-right: 0px;
-  --safe-bottom: 64px;
+  /* Just the collapsed composer pill + breathing room -- the dock only
+     eats into this when it's actually docked at the bottom (below). */
+  --safe-bottom: 72px;
 }
 
 .workspace.inspector-open {
@@ -124,6 +156,17 @@ a:focus-visible {
 
 .workspace.agent-open {
   --safe-right: var(--agent-width);
+}
+
+.workspace[data-dock="bottom"] {
+  /* Tool bar (16px + ~52px) + 12px gap + the collapsed composer pill
+     sitting above it + a little breathing room. */
+  --safe-bottom: 140px;
+}
+
+.workspace[data-dock="top"] {
+  /* Header + 16px gap + tool bar (~52px) + 12px breathing room. */
+  --safe-top: calc(var(--header-height) + 80px);
 }
 
 .workspace-loading {
@@ -146,6 +189,23 @@ a:focus-visible {
 .flow-host .react-flow {
   width: 100%;
   height: 100%;
+}
+
+/* Same arrow as the Select tool's own icon (lucide mouse-pointer-2),
+   rendered as a cursor -- so picking Select (click or V) actually looks
+   like it, instead of leaving the browser's default arrow. Black fill +
+   white outline reads on both the light and dark canvas background.
+   Hotspot (4 5) lands on the arrow's tip, matching a normal pointer. */
+
+.flow-host[data-tool="select"] .react-flow {
+  /* Base64, not raw url-encoded SVG -- Chrome will load a url-encoded
+     inline SVG as an <img> fine but silently refuses to use it as an
+     actual CSS cursor and falls back to auto, no warning. Base64 is the
+     reliable form for cursor: specifically. */
+  cursor:
+    url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0Ij48cGF0aCBkPSJNNC4wMzcgNC42ODhhLjQ5NS40OTUgMCAwIDEgLjY1MS0uNjUxbDE2IDYuNWEuNS41IDAgMCAxLS4wNjMuOTQ3bC02LjEyNCAxLjU4YTIgMiAwIDAgMC0xLjQzOCAxLjQzNWwtMS41NzkgNi4xMjZhLjUuNSAwIDAgMS0uOTQ3LjA2M3oiIGZpbGw9ImJsYWNrIiBzdHJva2U9IndoaXRlIiBzdHJva2Utd2lkdGg9IjEuNSIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPjwvc3ZnPg==")
+      4 5,
+    auto;
 }
 
 .chrome-header {
@@ -176,9 +236,13 @@ a:focus-visible {
 }
 
 .wordmark {
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: -0.01em;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-pixel), var(--font-geist), sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  letter-spacing: 0.02em;
   color: var(--muted);
   padding: 0 8px;
 }
@@ -201,23 +265,17 @@ a:focus-visible {
   height: 32px;
   display: grid;
   place-items: center;
-  border-radius: 12px;
+  border-radius: 0;
 }
 
 .rail-btn {
-  width: 100%;
-  min-height: 32px;
+  position: relative;
+  width: 36px;
+  height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0 8px;
-  border-radius: 12px;
-  overflow: hidden;
-}
-
-.tool-rail:hover .rail-btn,
-.tool-rail:focus-within .rail-btn {
-  justify-content: flex-start;
+  border-radius: 0;
 }
 
 .rail-btn svg {
@@ -252,7 +310,7 @@ a:focus-visible {
   gap: 6px;
   height: 28px;
   padding: 0 10px;
-  border-radius: 999px;
+  border-radius: 0;
   font-size: 13px;
   font-weight: 500;
   color: var(--muted);
@@ -298,7 +356,7 @@ a:focus-visible {
   height: 32px;
   padding: 0 8px 0 12px;
   border: 0;
-  border-radius: 999px;
+  border-radius: 0;
   background: transparent;
   color: var(--text);
 }
@@ -323,7 +381,7 @@ a:focus-visible {
   background: transparent;
   color: var(--text);
   padding: 8px;
-  border-radius: 8px;
+  border-radius: 0;
   font-size: 14px;
 }
 
@@ -352,92 +410,388 @@ a:focus-visible {
 }
 
 .tool-rail {
+  /* Figma-style: icon-only tool bar, dockable to any edge -- the left
+     edge is otherwise .scene-rail (a list of scenes, mirroring how
+     Figma's left sidebar tracks frames). Details for a tool only show
+     up after you click into it (the node inspector opens), same as
+     before -- docking is a reposition, not a new interaction model. */
   position: absolute;
-  left: 0;
-  top: var(--header-height);
-  bottom: 0;
   z-index: var(--z-rail);
   display: flex;
-  flex-direction: column;
+  align-items: center;
   gap: 4px;
-  width: var(--rail-width);
-  padding: 12px 8px;
-  background: var(--bg);
-  border: 0;
-  border-right: 1px solid var(--line);
+  width: max-content;
+  padding: 8px;
+  background: var(--chrome);
+  border: 1px solid var(--line);
   border-radius: 0;
-  box-shadow: none;
-  overflow: hidden;
-  transition: width 160ms var(--ease);
+  box-shadow: var(--shadow);
 }
 
-.tool-rail:hover,
-.tool-rail:focus-within {
-  width: 168px;
+/* Top/bottom: centered via left/right/margin-auto within the safe area,
+   not left:50%+translateX against the raw viewport -- panels that share
+   this reference frame all shift together when the inspector opens
+   (narrowing the safe area) instead of some staying dead-center of the
+   viewport while others move. */
+
+.tool-rail[data-dock="bottom"],
+.tool-rail[data-dock="top"] {
+  left: var(--safe-left);
+  right: var(--safe-right);
+  margin-inline: auto;
+  flex-direction: row;
+  align-items: center;
+}
+
+.tool-rail[data-dock="bottom"] {
+  bottom: 16px;
+}
+
+.tool-rail[data-dock="top"] {
+  /* Below the header, not var(--safe-top) -- that grows to make room for
+     this dock (see .workspace[data-dock="top"]), so anchoring off it
+     would double-count the offset and push the dock too far down. */
+  top: calc(var(--header-height) + 16px);
+}
+
+/* Left/right: float over the canvas near that edge, vertically centered,
+   rather than reserving dedicated layout width the way .scene-rail and
+   .inspector do -- same "floating control" treatment as the minimap. */
+
+.tool-rail[data-dock="left"],
+.tool-rail[data-dock="right"] {
+  flex-direction: column;
+  align-items: center;
+}
+
+.tool-rail[data-dock="left"] {
+  left: calc(var(--safe-left) + 16px);
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.tool-rail[data-dock="right"] {
+  right: calc(var(--safe-right) + 16px);
+  /* Not a true vertical center like the left dock -- the minimap +
+     zoom control already float in the bottom-right corner, so center
+     within the region above that stack instead of reaching down into
+     it (top/bottom + margin-block:auto is the vertical analog of the
+     left/right + margin-inline:auto trick used for the top/bottom
+     docks). 256px clears the minimap's own top edge (measured at 241px
+     off the workspace's bottom edge) plus a gap. */
+  top: calc(var(--safe-top) + 16px);
+  bottom: 256px;
+  margin-block: auto;
 }
 
 .rail-group {
   display: flex;
-  flex-direction: column;
+  align-items: center;
   gap: 4px;
 }
 
-.rail-group + .rail-group {
+[data-dock="top"] .rail-group,
+[data-dock="bottom"] .rail-group {
+  flex-direction: row;
+}
+
+[data-dock="left"] .rail-group,
+[data-dock="right"] .rail-group {
+  flex-direction: column;
+}
+
+[data-dock="top"] .rail-group + .rail-group,
+[data-dock="bottom"] .rail-group + .rail-group,
+[data-dock="free"] .rail-group + .rail-group {
+  margin-left: 4px;
+  padding-left: 8px;
+  border-left: 1px solid var(--line);
+}
+
+[data-dock="left"] .rail-group + .rail-group,
+[data-dock="right"] .rail-group + .rail-group {
   margin-top: 4px;
   padding-top: 8px;
   border-top: 1px solid var(--line);
 }
 
-.rail-group-label,
+/* Group headings ("Canvas", "Inputs", ...) stay screen-reader-only --
+   there's no room for them in an icon-only dock, and Figma's own tool
+   bar doesn't show them either. Per-button tooltips carry the label. */
+
+.rail-group-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
 .rail-btn-label {
+  /* A proper tooltip, not the native title attr -- shows the tool's name
+     next to the button on hover/focus, on whichever side has room given
+     where the dock currently sits (matching Figma's own tooltip). */
+  position: absolute;
+  z-index: 1;
+  padding: 4px 8px;
+  background: var(--chrome);
+  border: 1px solid var(--line);
+  border-radius: 0;
+  color: var(--text);
+  font-size: 11px;
+  line-height: 16px;
+  font-weight: 500;
+  white-space: nowrap;
   opacity: 0;
+  visibility: hidden;
+  transition: opacity 120ms var(--ease);
   pointer-events: none;
 }
 
-.tool-rail:hover .rail-group-label,
-.tool-rail:focus-within .rail-group-label,
-.tool-rail:hover .rail-btn-label,
-.tool-rail:focus-within .rail-btn-label {
-  opacity: 1;
-  pointer-events: auto;
-}
-
-.rail-group-label {
-  margin: 0;
-  max-height: 0;
-  padding: 0 8px;
-  overflow: hidden;
+.rail-btn-shortcut {
+  margin-left: 6px;
+  padding: 1px 4px;
+  border: 1px solid var(--line);
+  border-radius: 0;
   color: var(--muted);
-  font-size: 12px;
-  line-height: 16px;
-  letter-spacing: 0.04em;
-  white-space: nowrap;
+  font-size: 10px;
+  font-family: inherit;
 }
 
-.tool-rail:hover .rail-group-label,
-.tool-rail:focus-within .rail-group-label {
-  max-height: 16px;
+[data-dock="bottom"] .rail-btn-label {
+  left: 50%;
+  bottom: calc(100% + 8px);
+  transform: translateX(-50%);
 }
 
-.rail-btn-label {
-  font-size: 12px;
-  line-height: 16px;
-  white-space: nowrap;
-  max-width: 0;
-  margin-left: 0;
-  overflow: hidden;
-  transition: max-width 160ms var(--ease), margin-left 160ms var(--ease);
+[data-dock="top"] .rail-btn-label {
+  left: 50%;
+  top: calc(100% + 8px);
+  transform: translateX(-50%);
 }
 
-.tool-rail:hover .rail-btn-label,
-.tool-rail:focus-within .rail-btn-label {
-  max-width: 120px;
-  margin-left: 10px;
+[data-dock="left"] .rail-btn-label {
+  top: 50%;
+  left: calc(100% + 8px);
+  transform: translateY(-50%);
+}
+
+[data-dock="right"] .rail-btn-label {
+  top: 50%;
+  right: calc(100% + 8px);
+  transform: translateY(-50%);
+}
+
+/* Freely dropped mid-canvas (not snapped to an edge) -- tooltip default
+   to above, same as the bottom dock, since there's no edge to key off. */
+
+[data-dock="free"] .rail-btn-label {
+  left: 50%;
+  bottom: calc(100% + 8px);
+  transform: translateX(-50%);
+}
+
+.rail-btn:hover .rail-btn-label,
+.rail-btn:focus-visible .rail-btn-label {
+  opacity: 1;
+  visibility: visible;
+}
+
+.dock-picker {
+  position: absolute;
+  z-index: 1;
+  display: flex;
+  gap: 2px;
+  padding: 4px;
+  background: var(--chrome);
+  border: 1px solid var(--line);
+  border-radius: 0;
+  box-shadow: var(--shadow);
+}
+
+[data-dock="bottom"] .dock-picker {
+  right: 0;
+  bottom: calc(100% + 8px);
+  flex-direction: row;
+}
+
+[data-dock="top"] .dock-picker {
+  right: 0;
+  top: calc(100% + 8px);
+  flex-direction: row;
+}
+
+[data-dock="left"] .dock-picker {
+  left: calc(100% + 8px);
+  bottom: 0;
+  flex-direction: column;
+}
+
+[data-dock="right"] .dock-picker {
+  right: calc(100% + 8px);
+  bottom: 0;
+  flex-direction: column;
+}
+
+[data-dock="free"] .dock-picker {
+  left: 0;
+  bottom: calc(100% + 8px);
+  flex-direction: row;
+}
+
+.dock-picker-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--muted);
+}
+
+.dock-picker-btn:hover {
+  background: var(--line);
+  color: var(--text);
+}
+
+.dock-picker-btn.active {
+  background: var(--active);
+  color: var(--bg);
 }
 
 .rail-btn.active {
   background: var(--active);
   color: var(--bg);
+}
+
+.rail-drag-handle {
+  cursor: grab;
+  touch-action: none;
+}
+
+.rail-drag-handle:active {
+  cursor: grabbing;
+}
+
+.scene-rail {
+  /* Mirrors Figma's left sidebar tracking every frame on the page --
+     here, every scene (image/video/storyboard node) on the canvas. */
+  position: absolute;
+  left: 0;
+  top: var(--header-height);
+  bottom: 0;
+  z-index: var(--z-rail);
+  width: var(--scene-rail-width);
+  padding: 16px 12px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--bg);
+  border-right: 1px solid var(--line);
+}
+
+.scene-rail-head {
+  margin: 0;
+  padding: 0 8px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.scene-rail-empty {
+  margin: 0;
+  padding: 0 8px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.scene-rail-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.scene-rail-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+  transition: background-color 160ms var(--ease);
+}
+
+.scene-rail-item:hover,
+.scene-rail-item.active {
+  background: var(--line);
+}
+
+.scene-rail-icon {
+  flex-shrink: 0;
+  color: var(--muted);
+}
+
+.scene-rail-dot {
+  flex-shrink: 0;
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--muted);
+}
+
+.scene-rail-dot.status-running {
+  background: var(--color-status-running);
+}
+
+.scene-rail-dot.status-queued {
+  background: var(--color-status-queued);
+}
+
+.scene-rail-dot.status-completed {
+  background: var(--color-status-succeeded);
+}
+
+.scene-rail-dot.status-failed {
+  background: var(--color-status-failed);
+}
+
+.scene-rail-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+}
+
+.scene-rail-name.untitled {
+  color: var(--muted);
+  font-style: italic;
+}
+
+.scene-rail-badge {
+  flex-shrink: 0;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
 }
 
 .inspector {
@@ -470,7 +824,7 @@ a:focus-visible {
   width: 40px;
   height: 40px;
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: 0;
   background: var(--chrome);
   color: var(--text);
 }
@@ -537,7 +891,10 @@ a:focus-visible {
   min-height: 38px;
   padding: 0 12px;
   border: 1px solid var(--line);
-  border-radius: 12px;
+  /* Sharp corners app-wide (see the --radius comment in :root) --
+     overridden here since this whole block came from origin/main, which
+     predates that decision. */
+  border-radius: 0;
   background: var(--chrome);
   color: var(--text);
   font-size: 13px;
@@ -597,7 +954,7 @@ a:focus-visible {
   height: 30px;
   overflow: hidden;
   border: 1px solid transparent;
-  border-radius: 8px;
+  border-radius: 0;
   background: transparent;
   color: var(--text);
   font-size: 14px;
@@ -630,7 +987,7 @@ a:focus-visible {
   height: 28px;
   padding: 0 7px;
   border: 1px solid var(--line);
-  border-radius: 7px;
+  border-radius: 0;
   background: var(--chrome);
   color: var(--text);
   font-size: 10px;
@@ -707,7 +1064,7 @@ a:focus-visible {
   margin: 0;
   padding: 9px 12px;
   border: 1px solid var(--line);
-  border-radius: 16px 16px 4px 16px;
+  border-radius: 0;
   background: var(--chrome);
   color: var(--text);
   font-size: 13px;
@@ -841,7 +1198,7 @@ a:focus-visible {
   gap: 8px;
   padding: 11px;
   border: 1px solid color-mix(in srgb, var(--selected) 45%, var(--line));
-  border-radius: 12px;
+  border-radius: 0;
   background: color-mix(in srgb, var(--selected) 7%, var(--chrome));
 }
 
@@ -882,7 +1239,7 @@ a:focus-visible {
   margin: 0;
   padding: 8px;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 0;
   background: color-mix(in srgb, var(--bg) 72%, transparent);
   color: var(--muted);
   font: 10px/15px var(--font-geist-mono), ui-monospace, monospace;
@@ -896,7 +1253,7 @@ a:focus-visible {
   justify-content: center;
   gap: 6px;
   padding: 0 10px;
-  border-radius: 8px;
+  border-radius: 0;
   font-size: 11px;
   font-weight: 600;
 }
@@ -905,6 +1262,11 @@ a:focus-visible {
   border: 1px solid var(--line);
   background: transparent;
   color: var(--muted);
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 0;
 }
 
 .agent-approval-approve {
@@ -967,7 +1329,7 @@ a:focus-visible {
   min-width: 0;
   overflow: hidden;
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: 0;
   background: var(--chrome);
 }
 
@@ -1016,7 +1378,7 @@ audio.agent-artifact-media {
   justify-content: center;
   gap: 5px;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 0;
   background: transparent;
   color: var(--text);
   font-size: 11px;
@@ -1058,7 +1420,7 @@ audio.agent-artifact-media {
   margin: 8px 0 0;
   padding: 10px;
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: 0;
   background: var(--chrome);
   color: var(--text);
   font: 11px/17px var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
@@ -1076,7 +1438,7 @@ audio.agent-artifact-media {
 .agent-composer-input {
   overflow: hidden;
   border: 1px solid var(--color-neutral-700);
-  border-radius: 14px;
+  border-radius: 0;
   background: var(--chrome);
 }
 
@@ -1167,9 +1529,9 @@ audio.agent-artifact-media {
   place-items: center;
   width: 36px;
   height: 36px;
-  border-radius: 12px;
+  border-radius: 0;
   background: var(--text);
-  color: #0b0b0d;
+  color: var(--bg);
 }
 
 .send-btn:disabled {
@@ -1196,9 +1558,9 @@ audio.agent-artifact-media {
 
 .mention-list button {
   border: 1px solid var(--line);
-  background: #151517;
+  background: var(--chrome);
   color: var(--text);
-  border-radius: 999px;
+  border-radius: 0;
   padding: 4px 12px;
   font-size: 12px;
 }
@@ -1254,7 +1616,7 @@ audio.agent-artifact-media {
   padding: 8px 12px;
   background: var(--chrome);
   border: 1px solid var(--line);
-  border-radius: 999px;
+  border-radius: 0;
   color: var(--muted);
   font-size: 12px;
   font-variant-numeric: tabular-nums;
@@ -1267,7 +1629,7 @@ audio.agent-artifact-media {
   border: 0;
   width: 28px;
   height: 28px;
-  border-radius: 999px;
+  border-radius: 0;
   background: var(--line);
   color: var(--text);
 }
@@ -1319,7 +1681,7 @@ audio.agent-artifact-media {
   min-height: 72px;
   padding: 12px;
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: 0;
   background: var(--node);
   color: var(--text);
   box-shadow: var(--shadow);
@@ -1362,7 +1724,7 @@ audio.agent-artifact-media {
   background: transparent;
   color: var(--text);
   padding: 8px;
-  border-radius: 8px;
+  border-radius: 0;
 }
 
 .quick-add button:hover {
@@ -1434,6 +1796,11 @@ audio.agent-artifact-media {
      that leftover space instead of leaving it flush left with a bare
      strip of card background on the right. */
   margin: 0 auto;
+  /* Lets .scene-stage .generate size itself off this box's own width via
+     cqw, so the button scales with the frame instead of staying a fixed
+     size that overflows a small 9:16 frame and looks lost on a big 16:9
+     one. */
+  container-type: inline-size;
 }
 
 .scene-stage .media-preview {
@@ -1457,7 +1824,9 @@ audio.agent-artifact-media {
 
 .scene-stage .generate {
   width: auto;
-  min-width: 120px;
+  min-width: clamp(64px, 42cqw, 170px);
+  padding: clamp(6px, 3cqw, 10px) clamp(10px, 5cqw, 16px);
+  font-size: clamp(11px, 5.5cqw, 15px);
 }
 
 .scene-footer {
@@ -1512,7 +1881,7 @@ audio.agent-artifact-media {
 .media-loading {
   display: block;
   min-height: 72px;
-  background: linear-gradient(110deg, #121215 20%, #202025 42%, #121215 64%);
+  background: linear-gradient(110deg, var(--bg) 20%, var(--line) 42%, var(--bg) 64%);
   background-size: 220% 100%;
   animation: media-loading 1.3s ease-in-out infinite;
 }
@@ -1526,6 +1895,22 @@ audio.agent-artifact-media {
 @keyframes media-loading {
   from { background-position: 100% 0; }
   to { background-position: -120% 0; }
+}
+
+.agent-tool-status {
+  width: 7px;
+  height: 7px;
+  margin-top: 4px;
+  border-radius: 999px;
+  background: var(--ok);
+}
+
+.agent-tool-status.running {
+  background: #60a5fa;
+}
+
+.agent-tool-status.failed {
+  background: var(--danger);
 }
 
 .node-tag {
@@ -1578,7 +1963,7 @@ audio.agent-artifact-media {
   margin: 0;
   padding: 0 8px;
   border: 1px solid var(--active);
-  border-radius: 8px;
+  border-radius: 0;
   background: var(--node);
   color: var(--text);
   font-size: 12px;
@@ -1665,10 +2050,14 @@ audio.agent-artifact-media {
 
 .generate,
 .generate-lg {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   width: 100%;
-  border-radius: 12px;
+  border-radius: 0;
   background: var(--text);
-  color: #0b0b0d;
+  color: var(--bg);
   font-size: 14px;
   font-weight: 600;
   padding: 8px 12px;
@@ -1716,7 +2105,7 @@ audio.agent-artifact-media {
   padding: 4px;
   background: var(--chrome);
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: 0;
   box-shadow: var(--shadow);
 }
 
@@ -1727,7 +2116,7 @@ audio.agent-artifact-media {
   display: grid;
   place-items: center;
   border: 0;
-  border-radius: 8px;
+  border-radius: 0;
   background: transparent;
   color: var(--text);
 }
@@ -1748,6 +2137,7 @@ label.field {
 /* The caption only -- input/textarea/select are siblings of this span inside
    the same label, and text-transform inherits, so it must NOT be set on
    label.field itself or a typed prompt would render uppercase as you type. */
+
 label.field > span {
   font-size: 11px;
   text-transform: uppercase;
@@ -1774,7 +2164,7 @@ label.field span .req {
 
 .field-pill {
   border: 1px solid var(--line);
-  border-radius: 999px;
+  border-radius: 0;
   background: transparent;
   color: var(--muted);
   padding: 6px 14px;
@@ -1818,13 +2208,20 @@ select {
   background: var(--bg);
   color: var(--text);
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 0;
   padding: 8px 10px;
 }
 
 textarea {
   min-height: 72px;
   resize: vertical;
+}
+
+input[type="range"] {
+  padding: 0;
+  border: none;
+  background: transparent;
+  accent-color: var(--active);
 }
 
 .check {
@@ -1844,55 +2241,239 @@ textarea {
   }
 
   .workspace {
-    --safe-left: 72px;
+    --scene-rail-width: 200px;
   }
 
 }
-/* Clerk account controls sit in the shared top chrome without entering canvas state. */
-.studio-account-controls {
-  align-items: center;
-  display: flex;
+
+.execution-list {
+  border-top: 1px solid var(--line);
+  display: grid;
   gap: 8px;
-  left: 50%;
+  margin-top: 8px;
+  padding-top: 10px;
+}
+
+.execution-item {
+  align-items: start;
+  display: grid;
+  gap: 8px;
+  grid-template-columns: 8px minmax(0, 1fr) auto;
+}
+
+.execution-item span:nth-child(2) {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.execution-item small {
+  color: var(--muted);
+}
+
+.execution-item a {
+  color: var(--accent);
+  font-size: 12px;
+}
+
+/* ASCII converter -- a real, entirely client-side image/video -> character
+   render (no provider call, no cost), opened from the rail as a modal
+   rather than docked, since it needs more width than the side panels
+   allow for controls + a live preview side by side. */
+
+.ascii-backdrop {
   position: fixed;
-  top: 28px;
-  transform: translateX(-50%);
-  z-index: 80;
+  inset: 0;
+  z-index: var(--z-menu);
+  background: color-mix(in oklab, var(--bg) 70%, transparent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
 }
 
-.studio-sign-in {
+.ascii-modal {
+  width: min(880px, 100%);
+  max-height: min(720px, 90vh);
+  display: flex;
   flex-direction: column;
-  gap: 16px;
+  background: var(--chrome);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
 }
 
-.studio-auth-actions {
+.ascii-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--line);
+}
+
+.ascii-modal-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.ascii-modal-body {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  gap: 20px;
+  padding: 16px;
+  overflow: auto;
+}
+
+.ascii-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.ascii-dropzone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 96px;
+  border: 1px dashed var(--line);
+  border-radius: 0;
+  padding: 16px;
+  color: var(--muted);
+  font-size: 12px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 160ms var(--ease), color 160ms var(--ease);
+}
+
+.ascii-dropzone:hover,
+.ascii-dropzone.drag {
+  border-color: var(--active);
+  color: var(--text);
+}
+
+.ascii-file-meta {
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted);
+  word-break: break-all;
+}
+
+.ascii-actions-row {
   display: flex;
   gap: 8px;
 }
 
-.studio-auth-button {
-  min-height: 40px;
-  padding: 8px 16px;
+.ascii-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
+.ascii-preview-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+
+.ascii-preview-dims {
+  font-variant-numeric: tabular-nums;
+}
+
+.ascii-canvas-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 240px;
   border: 1px solid var(--line);
-  border-radius: 12px;
-  background: transparent;
+  border-radius: 0;
+  background: var(--bg);
+  overflow: hidden;
+}
+
+.ascii-canvas-wrap canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.ascii-canvas-wrap .inspector-note {
+  padding: 24px;
+  text-align: center;
+}
+
+.ascii-scrubber {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 11px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.ascii-scrubber input[type="range"] {
+  flex: 1;
+}
+
+.ascii-export-row {
+  display: flex;
+  gap: 8px;
+}
+
+.ascii-export-row .field-pill:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+@media (max-width: 640px) {
+  .ascii-modal-body {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Interactive hero demo -- a genuinely playable miniature of the product:
+   drag the two nodes, edit the prompt, hit Generate. Never calls the real
+   (billed) provider APIs for anonymous visitors -- "generating" is a
+   client-side simulation that swaps in a hand-built gradient placeholder
+   keyed to the chosen preset, not a real model call. */
+
+/* .demo-node's own class stays a plain global selector (not modularized
+   like the rest of the landing demo) because LandingDemo.tsx looks it up
+   at runtime via currentTarget.closest(".demo-node") during drags -- a
+   CSS Modules hash would silently break that lookup. Its visual styling
+   still lives here as a deliberate, narrow exception, documented so it
+   isn't "accidentally" left behind by a future cleanup. */
+
+.demo-node {
+  position: absolute;
+  width: 260px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--node);
+  box-shadow: var(--shadow);
   color: var(--text);
-  font-size: 14px;
-  font-weight: 600;
-  transition: background-color 200ms var(--ease), border-color 200ms var(--ease), transform 200ms var(--ease);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
-.studio-auth-button:hover {
-  border-color: var(--muted);
-  background: var(--chrome);
-}
-
-.studio-auth-button:active {
-  transform: scale(0.98);
-}
-
-.studio-auth-button.primary {
-  border-color: var(--active);
-  background: var(--active);
-  color: var(--bg);
+/* Narrow-viewport override for the plain-global .demo-node above -- kept
+   here rather than in LandingDemo.module.css because a CSS Modules rule
+   that's 100% :global() with no local class is rejected outright by this
+   project's css-loader config ("pure selectors must contain at least one
+   local class or id"). */
+@media (max-width: 720px) {
+  .demo-node {
+    width: 220px;
+  }
 }

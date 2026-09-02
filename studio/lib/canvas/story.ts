@@ -1,4 +1,8 @@
+import type { CanvasNode } from "./connection-validation";
 import type { CanvasNodeData, CreativeNodeKind } from "./types";
+
+export const SCENE_CARD_WIDTH = 380;
+export const SCENE_CARD_GAP = 40;
 
 export function isSceneKind(kind: CreativeNodeKind): boolean {
   switch (kind) {
@@ -21,6 +25,50 @@ export function isSceneKind(kind: CreativeNodeKind): boolean {
 
 export function isSceneNode(data: CanvasNodeData): boolean {
   return isSceneKind(data.kind);
+}
+
+// The title a scene gets at creation if none is given -- see store.ts's
+// addCreativeNode. Kept as its own check (rather than inlined) so the one
+// place that needs to know "has this scene ever been renamed" -- the scene
+// list's Untitled-N numbering -- has a single source of truth to import.
+const DEFAULT_SCENE_TITLE = "Scene";
+
+export function isUntitledSceneTitle(title: string): boolean {
+  return title === DEFAULT_SCENE_TITLE;
+}
+
+export function approvedSequence(nodes: CanvasNode[]): CanvasNode[] {
+  return nodes
+    .filter((node) => node.data.approved && isSceneNode(node.data))
+    .sort((a, b) => (a.data.storyOrder ?? 0) - (b.data.storyOrder ?? 0));
+}
+
+export function nextStoryOrder(nodes: CanvasNode[]): number {
+  const sequence = approvedSequence(nodes);
+  if (sequence.length === 0) {
+    return 1;
+  }
+  return Math.max(...sequence.map((node) => node.data.storyOrder ?? 0)) + 1;
+}
+
+export function compactStoryOrders(nodes: CanvasNode[]): CanvasNode[] {
+  const order = new Map(approvedSequence(nodes).map((node, index) => [node.id, index + 1]));
+  return nodes.map((node) => {
+    const storyOrder = order.get(node.id);
+    if (storyOrder === undefined) {
+      if (!node.data.approved && node.data.storyOrder === undefined) {
+        return node;
+      }
+      if (!node.data.approved) {
+        return { ...node, data: { ...node.data, storyOrder: undefined } };
+      }
+      return node;
+    }
+    if (node.data.storyOrder === storyOrder) {
+      return node;
+    }
+    return { ...node, data: { ...node.data, storyOrder } };
+  });
 }
 
 export function sceneBadge(data: CanvasNodeData): string | undefined {

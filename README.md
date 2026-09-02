@@ -1,22 +1,21 @@
 # Renderhaus
 
-An AI-native video editor: a Next.js timeline editor (`web/`) in front of a Python
+An AI-native video production canvas: a Next.js node-canvas app (`studio/`) in front of a Python
 generation/agent backend (`server/`, `agent/`, `providers/`).
 
 ## Structure
 
-- **`web/`** — Next.js editor frontend. Multi-track timeline, Remotion/WebCodecs preview, the
-  manual-editing engine, and (as of the merge) the generation/library/production panels that used
-  to live in a separate app. Product plan and architecture: [design/ARCHITECTURE.md](design/ARCHITECTURE.md).
-- **`server/`** — FastAPI backend: Clerk auth, S3/DynamoDB asset storage, project/timeline
-  persistence, generation job endpoints. Talked to over HTTP by `web/`, proxied at `/api/*` in dev
-  (see `web/next.config.ts`).
+- **`studio/`** — Next.js canvas frontend. Node-based scene graph, generation/inspector UI,
+  Clerk-authenticated. The only frontend in this repo.
+- **`server/`** — FastAPI backend: Clerk auth, canvas/asset persistence (`server/studio_state.py`),
+  generation job endpoints. Talked to over HTTP by `studio/`, proxied at `/api/*` in dev
+  (see `studio/next.config.ts`).
 - **`agent/`** — OpenAI Agents SDK manager; runs in-process locally or on Amazon Bedrock
   AgentCore Runtime.
 - **`providers/`** — Seedance, Seedream, Mureka, Fish Audio, and Remotion implementations.
   AgentCore Gateway Lambdas call these; the Runtime agent never hosts them locally.
 - **`docs/`** — the long-video production-agent program (below).
-- **`design/`** — planning/status docs for how `web/` and `server/` came to live in one repo:
+- **`design/`** — planning/status docs for how `studio/` and `server/` came to live in one repo:
   [design/MERGE_STATUS.md](design/MERGE_STATUS.md) (start here — current state, what's verified,
   known gaps), [design/MERGE_PLAN.md](design/MERGE_PLAN.md) (git mechanics),
   [design/PRODUCTION_READINESS.md](design/PRODUCTION_READINESS.md) (scale/architecture audit),
@@ -39,7 +38,7 @@ Day-to-day local + CI/CD map: [docs/development.md](docs/development.md).
 ```bash
 make setup    # once
 make check    # before push
-make web      # backend API only (see "Run the app" below for the full two-process setup)
+make backend  # backend API only (see "Run the app" below for the full two-process setup)
 make gateway  # deploy Mureka Lambda + Gateway
 make runtime  # deploy AgentCore Runtime
 ```
@@ -55,15 +54,15 @@ bash scripts/setup_agent.sh
 ```
 
 ```bash
-# frontend — installs and starts the Next.js dev server on :3000,
+# frontend — installs and starts the Next.js dev server on :5174,
 # proxying /api/* to the backend above
-cd web
+cd studio
 npm install
 npm run dev
 ```
 
-Then open [http://localhost:3000](http://localhost:3000). The backend alone (`:8000`) now serves
-JSON only — there's no bundled UI there anymore, `web/` is the UI.
+Then open [http://localhost:5174](http://localhost:5174). The backend alone (`:8000`) serves JSON
+only — `studio/` is the UI.
 
 ### Secrets (AWS Secrets Manager)
 
@@ -98,7 +97,7 @@ AgentCore. Leave it unset to keep the local in-process agent. Tools still requir
 
 The backend exposes generation and refinement requests through a video-only agent boundary,
 persists local job state under `.renderhaus/web-jobs/`, and serves completed MP4s through
-job-scoped media URLs. `web/` is what drives it now instead of the old bundled UI.
+job-scoped media URLs.
 
 `SEEDANCE_DRY_RUN=true` keeps the full flow in preview mode without creating a paid video task.
 Set `SEEDANCE_DRY_RUN=false` in `.env.local` only when you intend to run live video generation.
@@ -106,21 +105,17 @@ Set `SEEDANCE_DRY_RUN=false` in `.env.local` only when you intend to run live vi
 ### Remotion Lambda renders
 
 The OpenAI canvas agent exposes `render_remotion_video` for assembling generated images, videos,
-voiceovers, and music into one downloadable MP4. The render site reuses the same typed
-`TimelineComposition` as the editor preview.
+voiceovers, and music into one downloadable MP4, rendered through an already-deployed Remotion
+Lambda + S3 site (`REMOTION_APP_SERVE_URL`).
 
 ```bash
-# Creates/updates the official Remotion IAM role, Lambda renderer, and S3 render site.
-make remotion
-
 # Renders the first successful multi-tool artifact set as an end-to-end smoke test.
 make smoke-remotion
 ```
 
-Deployment metadata is stored under `.renderhaus/remotion/deployment.json` for local runs. The
-same non-secret runtime settings are synchronized into the configured `renderhaus/app` Secrets
-Manager secret for AgentCore deployments. Remotion packages are pinned to the same exact version;
-upgrade the NPM and Python packages together before redeploying the function and site.
+The Remotion composition source and Lambda deploy tooling lived in `web/`, removed when that
+frontend was retired in favor of `studio/`. The deployed site keeps working as-is; redeploying or
+updating the composition requires recovering that tooling from git history first.
 
 ## Setup
 
@@ -158,10 +153,9 @@ CLERK_AUTHORIZED_PARTIES=http://localhost:3000,http://127.0.0.1:3000,http://loca
 CLERK_JWT_KEY=
 ```
 
-`localhost:3000` is the editor origin and `localhost:5174` is the Studio origin; their
-`127.0.0.1` variants cover opening either UI through that hostname. The `:8000` entries cover
-hitting the backend directly (docs, scripts, tests). Clerk compares this allowlist against the
-session token's exact `azp` origin, including the port.
+`localhost:5174` is the Studio origin; its `127.0.0.1` variant covers opening it through that
+hostname instead. The `:8000` entries cover hitting the backend directly (docs, scripts, tests).
+Clerk compares this allowlist against the session token's exact `azp` origin, including the port.
 
 When both a publishable key and `CLERK_SECRET_KEY` are set, generation/upload APIs require a
 signed-in session. Leave them empty to keep the local UI open during setup.
@@ -226,7 +220,6 @@ make supervise ARGS='30s product teaser with calm piano BGM'
 make supervise ARGS='30s product teaser with calm piano BGM' EXECUTE=1
 ```
 
-In the web UI, use the **Production** tab: brief → plan → **Approve & run**.
 API: `POST /api/productions`, `POST /api/productions/{id}/commands/approve-plan`.
 
 The Director emits a typed plan only; the Executor deterministically calls modality workers. This is

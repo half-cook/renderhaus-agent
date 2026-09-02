@@ -1,18 +1,29 @@
 "use client";
 
 import { ReactFlowProvider, useReactFlow } from "@xyflow/react";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useCanvasStore } from "@/lib/canvas/store";
 import { FIT_VIEW_PADDING } from "@/lib/canvas/safe-area";
-import type { CreativeNodeKind } from "@/lib/canvas/types";
+import type { CreativeNodeKind, DockPosition } from "@/lib/canvas/types";
 import { AgentDock } from "./AgentDock";
+import { AsciiPanel } from "./AsciiPanel";
 import { CanvasHeader } from "./CanvasHeader";
 import { NodeInspector } from "./NodeInspector";
+import { SceneList } from "./SceneList";
 import { StudioCanvas } from "./StudioCanvas";
 import { ToolRail } from "./ToolRail";
 import "@xyflow/react/dist/style.css";
 
+const DOCK_STORAGE_KEY = "renderhaus.studio.dock.v2";
+
+type DockState = { dock: DockPosition; x: number; y: number };
+
+function isDockPosition(value: unknown): value is DockPosition {
+  return value === "top" || value === "bottom" || value === "left" || value === "right" || value === "free";
+}
+
 function Workspace() {
+  const [dockState, setDockState] = useState<DockState>({ dock: "bottom", x: 0, y: 0 });
   const hydrate = useCanvasStore((state) => state.hydrate);
   const loadCatalog = useCanvasStore((state) => state.loadCatalog);
   const hydrated = useCanvasStore((state) => state.hydrated);
@@ -35,6 +46,54 @@ function Workspace() {
     hydrate();
     void loadCatalog();
   }, [hydrate, loadCatalog]);
+
+  useEffect(() => {
+    // Wait for `hydrated`: until then Workspace renders the loading div in
+    // place of the real layout, so .workspace/.flow-host/.tool-rail don't
+    // exist yet and the clamp below would silently no-op on a fresh load.
+    if (!hydrated) {
+      return;
+    }
+    const raw = localStorage.getItem(DOCK_STORAGE_KEY);
+    if (!raw) {
+      return;
+    }
+    try {
+      const parsed = JSON.parse(raw);
+      if (isDockPosition(parsed?.dock) && typeof parsed?.x === "number" && typeof parsed?.y === "number") {
+        if (parsed.dock === "free") {
+          // A free position saved on a larger window (or before the safe
+          // area narrowed, e.g. the inspector opening) can land outside
+          // the current viewport -- the dock picker to drag it back lives
+          // on the rail itself, so an off-screen rail would be
+          // unreachable without clearing localStorage. Clamp against the
+          // same safe area ToolRail's own drag already confines it to.
+          const workspaceEl = document.querySelector(".workspace");
+          const flowHostEl = workspaceEl?.querySelector(".flow-host");
+          const railEl = workspaceEl?.querySelector(".tool-rail");
+          if (workspaceEl && flowHostEl && railEl) {
+            const workspaceRect = workspaceEl.getBoundingClientRect();
+            const flowRect = flowHostEl.getBoundingClientRect();
+            const railRect = railEl.getBoundingClientRect();
+            const minX = flowRect.left - workspaceRect.left;
+            const minY = flowRect.top - workspaceRect.top;
+            const maxX = Math.max(flowRect.right - workspaceRect.left - railRect.width, minX);
+            const maxY = Math.max(workspaceRect.height - railRect.height, minY);
+            parsed.x = Math.min(Math.max(parsed.x, minX), maxX);
+            parsed.y = Math.min(Math.max(parsed.y, minY), maxY);
+          }
+        }
+        setDockState(parsed);
+      }
+    } catch {
+      // Ignore a corrupt/old-format value and fall back to the default.
+    }
+  }, [hydrated]);
+
+  const changeDock = (next: DockState) => {
+    setDockState(next);
+    localStorage.setItem(DOCK_STORAGE_KEY, JSON.stringify(next));
+  };
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -107,12 +166,19 @@ function Workspace() {
       ]
         .filter(Boolean)
         .join(" ")}
+      data-dock={dockState.dock}
     >
       <a className="skip-link" href="#canvas">
         Skip to canvas
       </a>
       <CanvasHeader />
+      <SceneList />
       <ToolRail
+        dock={dockState.dock}
+        freeX={dockState.x}
+        freeY={dockState.y}
+        onDockChange={(next) => changeDock({ ...dockState, dock: next })}
+        onFreeMove={(x, y) => changeDock({ dock: "free", x, y })}
         onPlace={(kind: CreativeNodeKind, toolId?: string) => {
           addCreativeNode({ kind, toolId, position: center() });
         }}
@@ -125,6 +191,7 @@ function Workspace() {
       </main>
       <NodeInspector />
       <AgentDock />
+      <AsciiPanel />
     </div>
   );
 }

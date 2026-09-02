@@ -1,0 +1,53 @@
+/* Clerk account controls sit in the shared top chrome without entering canvas state. */
+
+.studio-account-controls {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+  left: 50%;
+  position: fixed;
+  /* Centers a 32px UserButton avatar within the 56px header band. The
+     old 28px pushed the avatar's bottom edge 4px past the header's own
+     bottom border, so it visually crossed the divider into the canvas
+     grid below instead of sitting inside the header with breathing room. */
+  top: 12px;
+  transform: translateX(-50%);
+  z-index: 80;
+}
+
+.studio-sign-in {
+  flex-direction: column;
+  gap: 16px;
+}
+
+.studio-auth-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.studio-auth-button {
+  min-height: 40px;
+  padding: 8px 16px;
+  border: 1px solid var(--line);
+  border-radius: 0;
+  background: transparent;
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
+  transition: background-color 200ms var(--ease), border-color 200ms var(--ease), transform 200ms var(--ease);
+}
+
+.studio-auth-button:hover {
+  border-color: var(--muted);
+  background: var(--chrome);
+}
+
+.studio-auth-button:active {
+  transform: scale(0.98);
+}
+
+.studio-auth-button.primary {
+  border-color: var(--active);
+  background: var(--active);
+  color: var(--bg);
+}

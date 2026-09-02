@@ -3,7 +3,7 @@ PYTHON ?= .venv/bin/python
 REGION ?= us-east-1
 PROVIDER ?= all
 
-.PHONY: help setup setup-clerk check lint tools web studio dry-flags gateway smoke-gateway runtime smoke deploy-all invoke-tool schemas remotion smoke-remotion
+.PHONY: help setup setup-clerk check lint tools backend studio dry-flags gateway smoke-gateway runtime smoke deploy-all invoke-tool schemas smoke-remotion
 
 help:
 	@echo "Local development"
@@ -12,7 +12,8 @@ help:
 	@echo "  make lint          Ruff check"
 	@echo "  make tools         List Gateway tools generated from providers/"
 	@echo "  make schemas       Write configs/gateway/*.tools.json from provider APIs"
-	@echo "  make studio        Next.js canvas UI for calling MCP tools locally (needs make web too)"
+	@echo "  make studio        Next.js canvas UI (the app) -- needs make backend too"
+	@echo "  make backend       FastAPI backend API on :8000"
 	@echo "  make setup-clerk  Link this checkout to the shared Clerk app"
 	@echo "  make dry-flags     Print dry-run flags the process sees"
 	@echo "  make invoke-tool   Local Lambda-shaped invoke (PROVIDER=seedance TOOL=list_seedance_models)"
@@ -22,8 +23,7 @@ help:
 	@echo "  make smoke-gateway   Build the Lambda zip without uploading"
 	@echo "  make runtime         Build/push/deploy AgentCore Runtime"
 	@echo "  make smoke           Smoke-test AgentCore runtime"
-	@echo "  make remotion        Deploy the Remotion Lambda function and render site"
-	@echo "  make smoke-remotion  Render the first multi-tool artifacts through Lambda"
+	@echo "  make smoke-remotion  Render the first multi-tool artifacts through the deployed Remotion Lambda"
 	@echo "  make deploy-all      gateway + runtime + smoke"
 
 setup:
@@ -41,7 +41,7 @@ tools:
 schemas:
 	$(PYTHON) scripts/generate_gateway_schemas.py --provider $(PROVIDER)
 
-web:
+backend:
 	$(PYTHON) -m server.app
 
 studio:
@@ -70,9 +70,6 @@ runtime:
 
 smoke:
 	$(PYTHON) scripts/smoke_agentcore.py
-
-remotion:
-	$(PYTHON) scripts/deploy_remotion_lambda.py --region $(REGION)
 
 smoke-remotion:
 	$(PYTHON) scripts/smoke_remotion_lambda.py

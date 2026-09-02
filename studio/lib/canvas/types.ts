@@ -24,7 +24,10 @@ export type RailTool =
   | "audio"
   | "voice"
   | "storyboard"
-  | "agent";
+  | "agent"
+  | "ascii";
+
+export type DockPosition = "top" | "bottom" | "left" | "right" | "free";
 
 export type PortDefinition = {
   id: string;

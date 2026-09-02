@@ -1,36 +1,57 @@
 "use client";
 
 import {
+  Binary,
   Hand,
   Image as ImageIcon,
   LayoutGrid,
   Mic,
   MousePointer2,
+  Move,
   Music,
+  PanelBottom,
+  PanelLeft,
+  PanelRight,
+  PanelTop,
   Sparkles,
   Type,
   Upload,
   Video,
 } from "lucide-react";
-import { useRef, type RefObject } from "react";
+import { useEffect, useRef, useState, type RefObject } from "react";
 import { defaultToolForRail } from "@/lib/canvas/tool-registry";
-import type { CreativeNodeKind, RailTool } from "@/lib/canvas/types";
+import type { CreativeNodeKind, DockPosition, RailTool } from "@/lib/canvas/types";
 import { useCanvasStore } from "@/lib/canvas/store";
 
 type Props = {
+  dock: DockPosition;
+  freeX: number;
+  freeY: number;
+  onDockChange: (dock: DockPosition) => void;
+  onFreeMove: (x: number, y: number) => void;
   onPlace: (kind: CreativeNodeKind, toolId?: string) => void;
   onUpload: (file: File) => void;
 };
 
-type RailItem = { id: RailTool; label: string; icon: typeof Upload };
+const DRAG_THRESHOLD_PX = 4;
+const EDGE_SNAP_PX = 48;
+
+const DOCK_OPTIONS: Array<{ id: DockPosition; label: string; icon: typeof PanelTop }> = [
+  { id: "top", label: "Dock to top", icon: PanelTop },
+  { id: "bottom", label: "Dock to bottom", icon: PanelBottom },
+  { id: "left", label: "Dock to left", icon: PanelLeft },
+  { id: "right", label: "Dock to right", icon: PanelRight },
+];
+
+type RailItem = { id: RailTool; label: string; icon: typeof Upload; shortcut?: string };
 
 const GROUPS: Array<{ id: string; label: string; items: RailItem[] }> = [
   {
     id: "canvas",
     label: "Canvas",
     items: [
-      { id: "select", label: "Select", icon: MousePointer2 },
-      { id: "hand", label: "Pan", icon: Hand },
+      { id: "select", label: "Select", icon: MousePointer2, shortcut: "V" },
+      { id: "hand", label: "Pan", icon: Hand, shortcut: "H" },
     ],
   },
   {
@@ -65,6 +86,11 @@ const GROUPS: Array<{ id: string; label: string; items: RailItem[] }> = [
       { id: "agent", label: "Agent", icon: Sparkles },
     ],
   },
+  {
+    id: "utilities",
+    label: "Utilities",
+    items: [{ id: "ascii", label: "ASCII", icon: Binary }],
+  },
 ];
 
 function handleRailAction(
@@ -75,6 +101,7 @@ function handleRailAction(
   switch (id) {
     case "select":
     case "hand":
+    case "ascii":
       return;
     case "upload":
       fileRef.current?.click();
@@ -103,13 +130,128 @@ function handleRailAction(
   }
 }
 
-export function ToolRail({ onPlace, onUpload }: Props) {
+export function ToolRail({ dock, freeX, freeY, onDockChange, onFreeMove, onPlace, onUpload }: Props) {
   const activeTool = useCanvasStore((state) => state.activeTool);
   const setActiveTool = useCanvasStore((state) => state.setActiveTool);
   const fileRef = useRef<HTMLInputElement>(null);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const railRef = useRef<HTMLElement>(null);
+  const [dragPos, setDragPos] = useState<{ x: number; y: number } | null>(null);
+  // A completed drag still fires a native `click` afterward (pointerdown
+  // and pointerup both land on the same button) -- suppress that one so
+  // it doesn't also toggle the picker right after a drag-to-reposition.
+  const suppressClickRef = useRef(false);
+
+  useEffect(() => {
+    if (!pickerOpen) {
+      return;
+    }
+    const onPointerDown = (event: PointerEvent) => {
+      if (wrapRef.current && !wrapRef.current.contains(event.target as Node)) {
+        setPickerOpen(false);
+      }
+    };
+    window.addEventListener("pointerdown", onPointerDown);
+    return () => window.removeEventListener("pointerdown", onPointerDown);
+  }, [pickerOpen]);
+
+  const startDrag = (downEvent: React.PointerEvent<HTMLButtonElement>) => {
+    const rail = railRef.current;
+    const workspaceEl = rail?.closest(".workspace");
+    if (!rail || !workspaceEl) {
+      return;
+    }
+    const railStart = rail.getBoundingClientRect();
+    const workspaceStart = workspaceEl.getBoundingClientRect();
+    const originLeft = railStart.left - workspaceStart.left;
+    const originTop = railStart.top - workspaceStart.top;
+    const startX = downEvent.clientX;
+    const startY = downEvent.clientY;
+    // Keep free placement confined to the actual canvas -- not draggable
+    // on top of .scene-rail, .inspector, or under the header. Measuring
+    // .flow-host's own rendered rect (it's already inset by the --safe-*
+    // custom properties via `inset: var(--safe-top) ...`) instead of
+    // reading those custom properties directly: unregistered custom
+    // properties never get calc()/min() resolved by getComputedStyle (the
+    // top-dock case is `calc(var(--header-height) + 80px)`, and
+    // agent-open's --safe-right nests a min()), so parseFloat on those
+    // returns NaN -> the `|| 0` fallback silently zeroed the clamp. A
+    // standard layout property like .flow-host's own `top`/`right` is
+    // always fully resolved, calc() or not.
+    const flowHostRect = workspaceEl.querySelector(".flow-host")?.getBoundingClientRect();
+    const minLeft = flowHostRect ? flowHostRect.left - workspaceStart.left : 0;
+    const minTop = flowHostRect ? flowHostRect.top - workspaceStart.top : 0;
+    const maxLeft = flowHostRect
+      ? Math.max(flowHostRect.right - workspaceStart.left - railStart.width, minLeft)
+      : Math.max(workspaceStart.width - railStart.width, 0);
+    const maxTop = Math.max(workspaceStart.height - railStart.height, minTop);
+    let dragging = false;
+    // Plain closure vars, not React state -- read synchronously in onUp
+    // with no risk of a stale-state or DOM-remeasurement race.
+    let liveLeft = originLeft;
+    let liveTop = originTop;
+
+    const onMove = (moveEvent: PointerEvent) => {
+      const dx = moveEvent.clientX - startX;
+      const dy = moveEvent.clientY - startY;
+      if (!dragging) {
+        if (Math.hypot(dx, dy) < DRAG_THRESHOLD_PX) {
+          return;
+        }
+        dragging = true;
+        setPickerOpen(false);
+      }
+      liveLeft = Math.min(Math.max(originLeft + dx, minLeft), maxLeft);
+      liveTop = Math.min(Math.max(originTop + dy, minTop), maxTop);
+      setDragPos({ x: liveLeft, y: liveTop });
+    };
+
+    const onUp = () => {
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+      if (!dragging) {
+        // A plain click, not a drag -- let the native `click` event this
+        // same pointerdown/up pair is about to fire toggle the popover via
+        // onClick below, so mouse and keyboard activation share one path.
+        return;
+      }
+      suppressClickRef.current = true;
+      setDragPos(null);
+      // Measured from the clamped bounds, not the raw workspace edges --
+      // liveLeft/liveTop can never actually reach 0 once clamped away
+      // from the sidebars, so "distance to the edge" has to mean
+      // "distance to as far as it's allowed to go" for the snap to ever
+      // trigger from a drag.
+      const distances: Array<[DockPosition, number]> = [
+        ["left", liveLeft - minLeft],
+        ["right", maxLeft - liveLeft],
+        ["top", liveTop - minTop],
+        ["bottom", maxTop - liveTop],
+      ];
+      const [closest, closestDistance] = distances.reduce((min, next) => (next[1] < min[1] ? next : min));
+      if (closestDistance < EDGE_SNAP_PX) {
+        onDockChange(closest);
+      } else {
+        onFreeMove(liveLeft, liveTop);
+      }
+    };
+
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+  };
+
+  // Neutralize whichever positioning properties the current [data-dock]
+  // CSS rule set (right/bottom/margin/transform) so a literal left/top
+  // wins outright, whether that's a live drag position (any starting
+  // dock) or the committed "free" resting position.
+  const pos = dragPos ?? (dock === "free" ? { x: freeX, y: freeY } : null);
+  const freeStyle = pos
+    ? { left: pos.x, top: pos.y, right: "auto", bottom: "auto", margin: 0, transform: "none" }
+    : undefined;
 
   return (
-    <nav className="tool-rail" aria-label="Creation tools">
+    <nav className="tool-rail" data-dock={dock} style={freeStyle} ref={railRef} aria-label="Creation tools">
       {GROUPS.map((group) => (
         <div className="rail-group" key={group.id} role="group" aria-label={group.label}>
           <p className="rail-group-label">{group.label}</p>
@@ -120,7 +262,6 @@ export function ToolRail({ onPlace, onUpload }: Props) {
                 key={item.id}
                 type="button"
                 className={activeTool === item.id ? "rail-btn active" : "rail-btn"}
-                title={item.label}
                 aria-label={item.label}
                 aria-pressed={activeTool === item.id}
                 onClick={() => {
@@ -129,12 +270,57 @@ export function ToolRail({ onPlace, onUpload }: Props) {
                 }}
               >
                 <Icon size={18} />
-                <span className="rail-btn-label">{item.label}</span>
+                <span className="rail-btn-label">
+                  {item.label}
+                  {item.shortcut ? <kbd className="rail-btn-shortcut">{item.shortcut}</kbd> : null}
+                </span>
               </button>
             );
           })}
         </div>
       ))}
+      <div className="rail-group" ref={wrapRef}>
+        <button
+          type="button"
+          className="rail-btn rail-drag-handle"
+          aria-label="Move tool bar"
+          aria-expanded={pickerOpen}
+          onPointerDown={startDrag}
+          onClick={() => {
+            if (suppressClickRef.current) {
+              suppressClickRef.current = false;
+              return;
+            }
+            setPickerOpen((open) => !open);
+          }}
+        >
+          <Move size={18} />
+          <span className="rail-btn-label">Drag to move, click for options</span>
+        </button>
+        {pickerOpen ? (
+          <div className="dock-picker" role="menu" aria-label="Tool bar position">
+            {DOCK_OPTIONS.map((option) => {
+              const Icon = option.icon;
+              return (
+                <button
+                  key={option.id}
+                  type="button"
+                  role="menuitemradio"
+                  aria-checked={dock === option.id}
+                  className={dock === option.id ? "dock-picker-btn active" : "dock-picker-btn"}
+                  title={option.label}
+                  onClick={() => {
+                    onDockChange(option.id);
+                    setPickerOpen(false);
+                  }}
+                >
+                  <Icon size={16} />
+                </button>
+              );
+            })}
+          </div>
+        ) : null}
+      </div>
       <input
         ref={fileRef}
         type="file"

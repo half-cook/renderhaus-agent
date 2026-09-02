@@ -33,7 +33,7 @@ import {
   type CanvasNode,
 } from "./connection-validation";
 import { pollCreativeNode, runCreativeNode } from "./graph-execution";
-import { isSceneKind } from "./story";
+import { approvedSequence, isSceneKind, SCENE_CARD_GAP, SCENE_CARD_WIDTH } from "./story";
 import { defaultToolForRail, toolById, toolForAgentArtifact } from "./tool-registry";
 import {
   schemaFor,
@@ -77,6 +77,7 @@ type CanvasStore = {
   selectedNodeIds: string[];
   activeTool: RailTool;
   inspectorOpen: boolean;
+  asciiPanelOpen: boolean;
   agentOpen: boolean;
   advancedOpen: boolean;
   connectionHint: string | null;
@@ -104,7 +105,9 @@ type CanvasStore = {
   createProject: () => Promise<void>;
   setActiveTool: (tool: RailTool) => void;
   setInspectorOpen: (open: boolean) => void;
+  setAsciiPanelOpen: (open: boolean) => void;
   setAgentOpen: (open: boolean) => void;
+  arrangeSequence: () => void;
   toggleAdvanced: () => void;
   setViewport: (viewport: Viewport) => void;
   onNodesChange: (changes: NodeChange<CanvasNode>[]) => void;
@@ -369,6 +372,7 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
   selectedNodeIds: [],
   activeTool: "select",
   inspectorOpen: false,
+  asciiPanelOpen: false,
   agentOpen: false,
   advancedOpen: false,
   connectionHint: null,
@@ -406,8 +410,17 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
         window.localStorage.setItem(MIGRATED_KEY, "true");
         projects = await fetchStudioProjects();
       }
+      // The dashboard links to a specific project via ?project=<id> (e.g.
+      // opening a card, or right after creating a new one) -- honor that
+      // over the legacy-migration guess below when it matches a real project.
+      const requestedId =
+        typeof window !== "undefined"
+          ? new URLSearchParams(window.location.search).get("project")
+          : null;
       const project =
-        projects.find((candidate) => candidate.id === legacyProjects[0]?.id) || projects[0];
+        (requestedId && projects.find((candidate) => candidate.id === requestedId)) ||
+        projects.find((candidate) => candidate.id === legacyProjects[0]?.id) ||
+        projects[0];
       const snapshot = await fetchStudioCanvas(project.id);
       persistedRevision = snapshot.revision;
       const graph = graphFromDocument(snapshot.document);
@@ -631,7 +644,9 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
     set(
       tool === "agent"
         ? { activeTool: tool, agentOpen: true, inspectorOpen: false }
-        : { activeTool: tool },
+        : tool === "ascii"
+          ? { activeTool: tool, asciiPanelOpen: true }
+          : { activeTool: tool },
     ),
   setInspectorOpen: (open) =>
     set((state) =>
@@ -643,6 +658,7 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
           }
         : { inspectorOpen: false },
     ),
+  setAsciiPanelOpen: (open) => set({ asciiPanelOpen: open }),
   setAgentOpen: (open) =>
     set((state) =>
       open
@@ -652,6 +668,27 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
             activeTool: state.activeTool === "agent" ? "select" : state.activeTool,
           },
     ),
+  arrangeSequence: () => {
+    const sequence = approvedSequence(get().nodes);
+    if (sequence.length === 0) {
+      return;
+    }
+    get().pushHistory();
+    const originY = sequence[0]?.position.y ?? 80;
+    const placed = new Map(
+      sequence.map((node, index) => [
+        node.id,
+        { x: 80 + index * (SCENE_CARD_WIDTH + SCENE_CARD_GAP), y: originY },
+      ]),
+    );
+    set({
+      nodes: get().nodes.map((node) => {
+        const position = placed.get(node.id);
+        return position ? { ...node, position } : node;
+      }),
+    });
+    get().persist();
+  },
   toggleAdvanced: () => set({ advancedOpen: !get().advancedOpen }),
   setViewport: (viewport) => {
     const current = get().viewport;

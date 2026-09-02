@@ -107,6 +107,34 @@ export function SchemaForm({ schema, values, options, hiddenFields, onlyFields, 
           );
         }
 
+        if (choices.length > 0 && name === "model") {
+          const selected = value === undefined || value === null ? "" : String(value);
+          const extras =
+            selected && !choices.some((choice) => String(choice) === selected) ? [value as string | number] : [];
+          const optionValues = [...choices, ...extras].map(String);
+          const labels = choiceLabels(name, optionValues);
+          return (
+            <label className={`field ${needsInput ? "needs-input" : ""}`} key={name}>
+              <span>
+                {label}
+                {requiredMark}
+              </span>
+              <select
+                value={selected}
+                aria-label={label}
+                onChange={(event) => onChange(name, coerceChoice(event.target.value, field, choices))}
+              >
+                {selected === "" ? <option value="">Select a model</option> : null}
+                {optionValues.map((optionValue) => (
+                  <option key={optionValue} value={optionValue}>
+                    {labels.get(optionValue)}
+                  </option>
+                ))}
+              </select>
+            </label>
+          );
+        }
+
         if (choices.length > 0) {
           const selected = value === undefined || value === null ? "" : String(value);
           const extras =

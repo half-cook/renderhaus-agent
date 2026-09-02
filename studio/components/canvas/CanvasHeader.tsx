@@ -2,7 +2,28 @@
 
 import { ChevronDown, Ellipsis, Redo2, Share2, Undo2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { LogoMark } from "@/components/Logo";
 import { queueSize, useCanvasStore } from "@/lib/canvas/store";
+import { approvedSequence } from "@/lib/canvas/story";
+import type { StudioAsset } from "@/lib/types";
+import { AccountBalance } from "./AccountBalance";
+import { AssetDownloadLink } from "./AssetMedia";
+import { ThemeToggle } from "./ThemeToggle";
+
+function executionStatusClass(status: string): string {
+  if (["error", "failed", "cancelled", "canceled"].includes(status)) return "failed";
+  if (["queued", "running", "pending"].includes(status)) return "running";
+  return "completed";
+}
+
+function ExecutionDownload({ asset }: { asset?: StudioAsset }) {
+  if (!asset) return null;
+  return (
+    <AssetDownloadLink asset={asset} ariaLabel={`Download ${asset.filename}`}>
+      Result
+    </AssetDownloadLink>
+  );
+}
 
 export function CanvasHeader() {
   const projectName = useCanvasStore((state) => state.projectName);
@@ -12,6 +33,7 @@ export function CanvasHeader() {
   const loadError = useCanvasStore((state) => state.loadError);
   const nodes = useCanvasStore((state) => state.nodes);
   const executions = useCanvasStore((state) => state.executions);
+  const refreshExecutions = useCanvasStore((state) => state.refreshExecutions);
   const selectedNodeIds = useCanvasStore((state) => state.selectedNodeIds);
   const past = useCanvasStore((state) => state.past);
   const future = useCanvasStore((state) => state.future);
@@ -23,16 +45,20 @@ export function CanvasHeader() {
   const persist = useCanvasStore((state) => state.persist);
   const duplicateSelected = useCanvasStore((state) => state.duplicateSelected);
   const deleteSelected = useCanvasStore((state) => state.deleteSelected);
+  const arrangeSequence = useCanvasStore((state) => state.arrangeSequence);
   const [menu, setMenu] = useState<"project" | "status" | "share" | "more" | null>(null);
   const [exported, setExported] = useState(false);
   const fileRef = useRef<HTMLAnchorElement>(null);
   const headerRef = useRef<HTMLElement>(null);
-  const queued = queueSize(nodes) + executions.filter(
-    (execution) =>
-      execution.projectId === projectId &&
-      ["queued", "running", "pending"].includes(execution.status.toLowerCase()),
-  ).length;
+  const queued =
+    queueSize(nodes) +
+    executions.filter(
+      (execution) =>
+        execution.projectId === projectId &&
+        ["queued", "running", "pending"].includes(execution.status.toLowerCase()),
+    ).length;
   const hasSelection = selectedNodeIds.length > 0;
+  const hasSequence = approvedSequence(nodes).length > 0;
 
   useEffect(() => {
     if (!menu) {
@@ -69,7 +95,10 @@ export function CanvasHeader() {
   return (
     <header className="chrome-header" ref={headerRef}>
       <div className="header-left">
-        <div className="wordmark">Renderhaus</div>
+        <div className="wordmark">
+          <LogoMark size={16} />
+          Renderhaus
+        </div>
         <div className="header-menu-wrap">
           <button
             className="project-switcher"
@@ -119,6 +148,8 @@ export function CanvasHeader() {
         </div>
       </div>
       <div className="header-right">
+        <AccountBalance refreshKey={queued} />
+        <ThemeToggle />
         <button className="icon-btn" type="button" aria-label="Undo" disabled={past.length === 0} onClick={undo}>
           <Undo2 size={16} />
         </button>
@@ -130,7 +161,13 @@ export function CanvasHeader() {
             className="queue-chip"
             type="button"
             aria-expanded={menu === "status"}
-            onClick={() => setMenu(menu === "status" ? null : "status")}
+            onClick={() => {
+              const opening = menu !== "status";
+              setMenu(opening ? "status" : null);
+              if (opening) {
+                void refreshExecutions();
+              }
+            }}
           >
             {queued > 0 ? `${queued} running` : "Queue idle"}
           </button>
@@ -144,6 +181,24 @@ export function CanvasHeader() {
                     </p>
                   ))
                 : null}
+              {executions.length > 0 ? (
+                <div className="execution-list" aria-label="Recent agent jobs">
+                  <strong>Recent agent jobs</strong>
+                  {executions.slice(0, 5).map((execution) => (
+                    <div className="execution-item" key={execution.jobId}>
+                      <span
+                        className={`agent-tool-status ${executionStatusClass(execution.status)}`}
+                        aria-hidden="true"
+                      />
+                      <span>
+                        <b>{execution.title || execution.status}</b>
+                        <small>{execution.message}</small>
+                      </span>
+                      <ExecutionDownload asset={execution.primaryAsset} />
+                    </div>
+                  ))}
+                </div>
+              ) : null}
             </div>
           ) : null}
         </div>
@@ -178,6 +233,17 @@ export function CanvasHeader() {
           </button>
           {menu === "more" ? (
             <div className="popover">
+              <button
+                type="button"
+                disabled={!hasSequence}
+                title={hasSequence ? "Arrange approved scenes left to right" : "Approve a scene to arrange the sequence"}
+                onClick={() => {
+                  arrangeSequence();
+                  setMenu(null);
+                }}
+              >
+                Arrange sequence
+              </button>
               <button
                 type="button"
                 disabled={!hasSelection}
