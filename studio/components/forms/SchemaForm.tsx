@@ -124,6 +124,7 @@ export function SchemaForm({ schema, values, options, hiddenFields, onlyFields, 
                 aria-label={label}
                 onChange={(event) => onChange(name, coerceChoice(event.target.value, field, choices))}
               >
+                {selected === "" ? <option value="">Select a model</option> : null}
                 {optionValues.map((optionValue) => (
                   <option key={optionValue} value={optionValue}>
                     {labels.get(optionValue)}

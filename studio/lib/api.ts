@@ -362,7 +362,7 @@ export async function fetchStudioExecutions(
   if (projectId) query.set("project_id", projectId);
   if (conversationId) query.set("conversation_id", conversationId);
   const response = await studioFetch(`/api/studio/agent?${query}`, { cache: "no-store" });
-  const payload = await response.json();
+  const payload = await readJson(response);
   if (!response.ok) {
     throw new Error(String(payload.detail || `agent jobs ${response.status}`));
   }

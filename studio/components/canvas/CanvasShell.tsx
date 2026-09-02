@@ -48,6 +48,12 @@ function Workspace() {
   }, [hydrate, loadCatalog]);
 
   useEffect(() => {
+    // Wait for `hydrated`: until then Workspace renders the loading div in
+    // place of the real layout, so .workspace/.flow-host/.tool-rail don't
+    // exist yet and the clamp below would silently no-op on a fresh load.
+    if (!hydrated) {
+      return;
+    }
     const raw = localStorage.getItem(DOCK_STORAGE_KEY);
     if (!raw) {
       return;
@@ -55,12 +61,34 @@ function Workspace() {
     try {
       const parsed = JSON.parse(raw);
       if (isDockPosition(parsed?.dock) && typeof parsed?.x === "number" && typeof parsed?.y === "number") {
+        if (parsed.dock === "free") {
+          // A free position saved on a larger window (or before the safe
+          // area narrowed, e.g. the inspector opening) can land outside
+          // the current viewport -- the dock picker to drag it back lives
+          // on the rail itself, so an off-screen rail would be
+          // unreachable without clearing localStorage. Clamp against the
+          // same safe area ToolRail's own drag already confines it to.
+          const workspaceEl = document.querySelector(".workspace");
+          const flowHostEl = workspaceEl?.querySelector(".flow-host");
+          const railEl = workspaceEl?.querySelector(".tool-rail");
+          if (workspaceEl && flowHostEl && railEl) {
+            const workspaceRect = workspaceEl.getBoundingClientRect();
+            const flowRect = flowHostEl.getBoundingClientRect();
+            const railRect = railEl.getBoundingClientRect();
+            const minX = flowRect.left - workspaceRect.left;
+            const minY = flowRect.top - workspaceRect.top;
+            const maxX = Math.max(flowRect.right - workspaceRect.left - railRect.width, minX);
+            const maxY = Math.max(workspaceRect.height - railRect.height, minY);
+            parsed.x = Math.min(Math.max(parsed.x, minX), maxX);
+            parsed.y = Math.min(Math.max(parsed.y, minY), maxY);
+          }
+        }
         setDockState(parsed);
       }
     } catch {
       // Ignore a corrupt/old-format value and fall back to the default.
     }
-  }, []);
+  }, [hydrated]);
 
   const changeDock = (next: DockState) => {
     setDockState(next);

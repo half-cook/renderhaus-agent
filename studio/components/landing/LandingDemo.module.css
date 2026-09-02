@@ -409,11 +409,12 @@
   color: var(--bg);
 }
 
+/* .demo-node's own narrow-viewport width override lives with its base
+   rule in globals.css, not here -- a CSS Modules rule that's 100%
+   :global() with no local class is rejected by this project's css-loader
+   config ("pure selectors must contain at least one local class or id"),
+   so it can't just be wrapped in :global() in place. */
 @media (max-width: 720px) {
-  .demo-node {
-    width: 220px;
-  }
-
   .demo-canvas {
     min-height: 560px;
   }

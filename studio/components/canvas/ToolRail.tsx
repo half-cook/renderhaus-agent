@@ -138,6 +138,10 @@ export function ToolRail({ dock, freeX, freeY, onDockChange, onFreeMove, onPlace
   const wrapRef = useRef<HTMLDivElement>(null);
   const railRef = useRef<HTMLElement>(null);
   const [dragPos, setDragPos] = useState<{ x: number; y: number } | null>(null);
+  // A completed drag still fires a native `click` afterward (pointerdown
+  // and pointerup both land on the same button) -- suppress that one so
+  // it doesn't also toggle the picker right after a drag-to-reposition.
+  const suppressClickRef = useRef(false);
 
   useEffect(() => {
     if (!pickerOpen) {
@@ -165,16 +169,22 @@ export function ToolRail({ dock, freeX, freeY, onDockChange, onFreeMove, onPlace
     const startX = downEvent.clientX;
     const startY = downEvent.clientY;
     // Keep free placement confined to the actual canvas -- not draggable
-    // on top of .scene-rail, .inspector, or under the header -- by
-    // clamping to the same --safe-* values the canvas itself is inset by,
-    // rather than the raw 0..workspace-width/height bounds.
-    const workspaceStyle = getComputedStyle(workspaceEl);
-    const safeLeft = Number.parseFloat(workspaceStyle.getPropertyValue("--safe-left")) || 0;
-    const safeRight = Number.parseFloat(workspaceStyle.getPropertyValue("--safe-right")) || 0;
-    const safeTop = Number.parseFloat(workspaceStyle.getPropertyValue("--safe-top")) || 0;
-    const minLeft = safeLeft;
-    const minTop = safeTop;
-    const maxLeft = Math.max(workspaceStart.width - safeRight - railStart.width, minLeft);
+    // on top of .scene-rail, .inspector, or under the header. Measuring
+    // .flow-host's own rendered rect (it's already inset by the --safe-*
+    // custom properties via `inset: var(--safe-top) ...`) instead of
+    // reading those custom properties directly: unregistered custom
+    // properties never get calc()/min() resolved by getComputedStyle (the
+    // top-dock case is `calc(var(--header-height) + 80px)`, and
+    // agent-open's --safe-right nests a min()), so parseFloat on those
+    // returns NaN -> the `|| 0` fallback silently zeroed the clamp. A
+    // standard layout property like .flow-host's own `top`/`right` is
+    // always fully resolved, calc() or not.
+    const flowHostRect = workspaceEl.querySelector(".flow-host")?.getBoundingClientRect();
+    const minLeft = flowHostRect ? flowHostRect.left - workspaceStart.left : 0;
+    const minTop = flowHostRect ? flowHostRect.top - workspaceStart.top : 0;
+    const maxLeft = flowHostRect
+      ? Math.max(flowHostRect.right - workspaceStart.left - railStart.width, minLeft)
+      : Math.max(workspaceStart.width - railStart.width, 0);
     const maxTop = Math.max(workspaceStart.height - railStart.height, minTop);
     let dragging = false;
     // Plain closure vars, not React state -- read synchronously in onUp
@@ -201,10 +211,12 @@ export function ToolRail({ dock, freeX, freeY, onDockChange, onFreeMove, onPlace
       window.removeEventListener("pointermove", onMove);
       window.removeEventListener("pointerup", onUp);
       if (!dragging) {
-        // A plain click, not a drag -- toggle the dock-position popover.
-        setPickerOpen((open) => !open);
+        // A plain click, not a drag -- let the native `click` event this
+        // same pointerdown/up pair is about to fire toggle the popover via
+        // onClick below, so mouse and keyboard activation share one path.
         return;
       }
+      suppressClickRef.current = true;
       setDragPos(null);
       // Measured from the clamped bounds, not the raw workspace edges --
       // liveLeft/liveTop can never actually reach 0 once clamped away
@@ -274,6 +286,13 @@ export function ToolRail({ dock, freeX, freeY, onDockChange, onFreeMove, onPlace
           aria-label="Move tool bar"
           aria-expanded={pickerOpen}
           onPointerDown={startDrag}
+          onClick={() => {
+            if (suppressClickRef.current) {
+              suppressClickRef.current = false;
+              return;
+            }
+            setPickerOpen((open) => !open);
+          }}
         >
           <Move size={18} />
           <span className="rail-btn-label">Drag to move, click for options</span>

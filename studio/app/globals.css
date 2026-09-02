@@ -2466,3 +2466,14 @@ input[type="range"] {
   flex-direction: column;
   overflow: hidden;
 }
+
+/* Narrow-viewport override for the plain-global .demo-node above -- kept
+   here rather than in LandingDemo.module.css because a CSS Modules rule
+   that's 100% :global() with no local class is rejected outright by this
+   project's css-loader config ("pure selectors must contain at least one
+   local class or id"). */
+@media (max-width: 720px) {
+  .demo-node {
+    width: 220px;
+  }
+}
