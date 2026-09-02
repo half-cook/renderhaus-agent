@@ -155,6 +155,13 @@ def _fish_audio_cost(arguments: dict[str, Any]) -> GenerationCost:
 # to cite. Flat placeholder pending real Lambda billing data.
 REMOTION_COST_CENTS = 8
 
+# Status/download polls, not generations -- the canvas calls these
+# immediately after dispatch and then every ~2.5s until the underlying job
+# reaches a terminal state. Pricing them like a fresh call would charge one
+# job repeatedly (and could exhaust the balance mid-poll, returning 402 for
+# a job that was already paid for and completed on the provider's side).
+POLLING_TOOLS = {"get_video_task", "query_music_task", "get_music_task", "get_render_progress"}
+
 
 def cost_for(provider: str, tool: str, arguments: dict[str, Any]) -> GenerationCost:
     """Real cost (provider + disclosed fee) for one call to `provider`/`tool`.
@@ -162,7 +169,8 @@ def cost_for(provider: str, tool: str, arguments: dict[str, Any]) -> GenerationC
     (to charge the same amount), so it must be a pure function of the
     request, not of anything the provider returns.
     """
-    del tool  # cost doesn't currently vary by tool name within a provider
+    if tool in POLLING_TOOLS:
+        return GenerationCost(provider_cents=0, fee_cents=0)
     if provider == "seedance":
         return _seedance_cost(arguments)
     if provider == "seedream":

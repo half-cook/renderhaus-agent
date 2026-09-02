@@ -30,14 +30,23 @@ from pydantic import BaseModel, Field, ValidationError
 from agent.studio_memory import StudioMemorySession
 from providers.catalog import PROVIDERS
 from providers.registry import load_committed_schemas
+from server.billing import stripe_enabled
+from server.billing_rates import cost_for
 from server.config import (
     GATEWAY_MCP_SERVER_NAME,
     agentcore_gateway_headers,
     load_local_env,
     require_agentcore_gateway_url,
 )
+from server.studio_state import repository
 
 logger = logging.getLogger("renderhaus.studio_agent")
+
+# Gateway tool names are namespaced "{target_name}___{tool}" (e.g.
+# "Seedance___generate_video"); billing_rates.cost_for keys off the
+# lowercase provider id used everywhere else (server/studio.py's manual
+# /invoke path, PROVIDERS_BY_ID), not the Gateway's own target_name casing.
+_PROVIDER_ID_BY_TARGET_NAME = {spec.target_name: spec.id for spec in PROVIDERS}
 
 AssetRegistrar = Callable[..., list[dict[str, Any]]]
 SourceResolver = Callable[[str], str]
@@ -132,6 +141,7 @@ class StudioAgentRequest(BaseModel):
     job_id: str | None = Field(default=None, max_length=120)
     workspace_id: str | None = Field(default=None, max_length=160)
     project_id: str | None = Field(default=None, max_length=120)
+    user_id: str | None = Field(default=None, max_length=160)
     autonomous: bool = False
     resume_state: str | None = None
     approval_decisions: list["StudioApprovalDecision"] = Field(default_factory=list, max_length=32)
@@ -236,6 +246,7 @@ class StudioAgentContext:
     job_id: str | None = None
     workspace_id: str | None = None
     project_id: str | None = None
+    user_id: str | None = None
     session_id: str | None = None
     session_items: list[dict[str, Any]] = field(default_factory=list)
     progress_events: list[StudioProgressEvent] = field(default_factory=list)
@@ -643,11 +654,13 @@ class GatewayMCPServer(MCPServerStreamableHttp):
         self,
         *args: Any,
         argument_transformer: GatewayArgumentTransformer | None = None,
+        user_id: str | None = None,
         **kwargs: Any,
     ) -> None:
         super().__init__(*args, **kwargs)
         self._discovered_tool_names: set[str] = set()
         self._argument_transformer = argument_transformer
+        self._user_id = user_id
 
     async def list_tools(self, run_context: Any = None, agent: Any = None) -> list[Any]:
         tools = await super().list_tools(run_context, agent)
@@ -659,6 +672,25 @@ class GatewayMCPServer(MCPServerStreamableHttp):
         self._tools_list = list(tools)
         described = _describe_gateway_mcp_tools(tools)
         return _visible_gateway_tools(described, self._discovered_tool_names)
+
+    def _billed_cost(self, tool_name: str, arguments: dict[str, Any]) -> Any | None:
+        """Cost to charge for this call, or None to skip billing entirely.
+
+        Mirrors server/studio.py's invoke_tool (the manual /invoke path) so
+        the agent can't be used to generate for free while manual nodes are
+        charged. Fails open (returns None, i.e. don't charge) whenever the
+        provider can't be identified with confidence -- mis-parsing a tool
+        name into the wrong provider would silently mis-bill, which is worse
+        than this one call going unbilled.
+        """
+        if not self._user_id or not stripe_enabled() or "___" not in tool_name:
+            return None
+        target_name, raw_tool = tool_name.split("___", 1)
+        provider_id = _PROVIDER_ID_BY_TARGET_NAME.get(target_name)
+        if provider_id is None:
+            return None
+        cost = cost_for(provider_id, raw_tool, arguments)
+        return cost if cost.total_cents > 0 else None
 
     async def call_tool(
         self,
@@ -673,7 +705,35 @@ class GatewayMCPServer(MCPServerStreamableHttp):
                 tool_name,
                 resolved_arguments,
             )
-        result = await super().call_tool(tool_name, resolved_arguments, meta=meta)
+        cost = self._billed_cost(tool_name, resolved_arguments)
+        if cost is not None:
+            try:
+                await asyncio.to_thread(
+                    repository.adjust_balance, self._user_id, -cost.total_cents, "generation"
+                )
+            except ValueError as exc:
+                raise RuntimeError(
+                    f"Not enough balance: this generation costs ${cost.total_cents / 100:.2f}."
+                ) from exc
+        try:
+            result = await super().call_tool(tool_name, resolved_arguments, meta=meta)
+        except Exception:
+            if cost is not None:
+                try:
+                    await asyncio.to_thread(
+                        repository.adjust_balance,
+                        self._user_id,
+                        cost.total_cents,
+                        f"refund: agent call to {tool_name} failed",
+                    )
+                except Exception:  # noqa: BLE001 - refund is best-effort
+                    logger.exception(
+                        "Could not refund $%.2f to %s after failed %s",
+                        cost.total_cents / 100,
+                        self._user_id,
+                        tool_name,
+                    )
+            raise
         if tool_name == _GATEWAY_SEARCH_TOOL:
             cached = list(self._tools_list or [])
             cached_names = {_gateway_tool_name(tool) for tool in cached}
@@ -1187,6 +1247,7 @@ def _context_from_request(
         job_id=request.job_id,
         workspace_id=request.workspace_id,
         project_id=request.project_id,
+        user_id=request.user_id,
         session_id=session_id,
         session_items=list(request.session_items),
         autonomous=request.autonomous,
@@ -1209,6 +1270,7 @@ def _context_from_request(
 def gateway_mcp_server(
     *,
     argument_transformer: GatewayArgumentTransformer | None = None,
+    user_id: str | None = None,
 ) -> MCPServer:
     """MCP client for the AgentCore Gateway endpoint."""
     load_local_env()
@@ -1223,6 +1285,7 @@ def gateway_mcp_server(
         client_session_timeout_seconds=_SESSION_TIMEOUT_SECONDS,
         argument_transformer=argument_transformer,
         require_approval=_gateway_requires_approval,
+        user_id=user_id,
     )
 
 
@@ -1555,7 +1618,9 @@ async def run_studio_agent(
     if mcp_servers is not None:
         return await _run_with_servers(request, studio, runner, mcp_servers)
 
-    server = gateway_mcp_server(argument_transformer=studio.prepare_gateway_arguments)
+    server = gateway_mcp_server(
+        argument_transformer=studio.prepare_gateway_arguments, user_id=studio.user_id
+    )
     try:
         async with MCPServerManager(
             [server],

@@ -41,6 +41,7 @@ from providers.catalog import PROVIDERS, get_provider
 from providers.registry import dispatch, load_committed_schemas
 from server.assets import publish_provider_input_url
 from server.auth import AuthUser, OptionalAuthUser, current_user_id, current_workspace_id
+from server.billing import stripe_enabled
 from server.billing_rates import cost_for
 from server.config import ROOT
 from server.studio_state import CanvasConflictError, StudioAssetKind, repository
@@ -609,20 +610,52 @@ async def invoke_tool(body: InvokeBody, auth: AuthUser) -> dict[str, Any]:
     cleaned = _tool_arguments(body.provider, body.tool, body.arguments)
     cleaned = _resolve_asset_handles(cleaned, workspace_id)
     cost = cost_for(body.provider, body.tool, cleaned)
-    balance = await asyncio.to_thread(repository.get_balance, user_id)
-    if balance < cost.total_cents:
-        raise HTTPException(
-            status_code=402,
-            detail=(
-                f"Not enough balance: this generation costs ${cost.total_cents / 100:.2f}, "
-                f"you have ${balance / 100:.2f}."
-            ),
-        )
+    # No billing enforcement at all when Stripe isn't configured (local/dry-run
+    # dev, per the README) -- every account starts at $0 with no way to top up
+    # in that mode, so charging here would 402 every single generation.
+    billed = stripe_enabled() and cost.total_cents > 0
+    if billed:
+        # Debit *before* dispatch, not after: adjust_balance's UPDATE is a
+        # single atomic statement, so two concurrent requests reading the
+        # same balance can no longer both pass a check and both spend real
+        # provider money -- whichever debits first wins, the other sees the
+        # reduced balance and correctly 402s before anything is dispatched.
+        try:
+            await asyncio.to_thread(
+                repository.adjust_balance, user_id, -cost.total_cents, "generation"
+            )
+        except ValueError:
+            balance = await asyncio.to_thread(repository.get_balance, user_id)
+            raise HTTPException(
+                status_code=402,
+                detail=(
+                    f"Not enough balance: this generation costs ${cost.total_cents / 100:.2f}, "
+                    f"you have ${balance / 100:.2f}."
+                ),
+            ) from None
+
+    async def refund(why: str) -> None:
+        # reference_id stays None here (not why -- that's a fixed, repeated
+        # string, and once credit_ledger.reference_id is unique to make
+        # Stripe webhook credits idempotent, a second failure of the same
+        # kind would collide on it). NULLs never conflict under that
+        # constraint, so this can run any number of times safely.
+        try:
+            await asyncio.to_thread(
+                repository.adjust_balance, user_id, cost.total_cents, f"refund: {why}"
+            )
+        except Exception:  # noqa: BLE001 - refund is best-effort; the original charge log still shows the debit
+            logger.exception("Could not refund $%.2f to %s after %s", cost.total_cents / 100, user_id, why)
+
     try:
         result = await asyncio.to_thread(dispatch, body.provider, body.tool, cleaned)
     except ValueError as exc:
+        if billed:
+            await refund("dispatch failed (bad request)")
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except Exception as exc:  # noqa: BLE001 - surface provider errors in the node
+        if billed:
+            await refund("dispatch failed")
         raise HTTPException(status_code=500, detail=str(exc)) from exc
     try:
         assets = await asyncio.to_thread(
@@ -636,24 +669,9 @@ async def invoke_tool(body: InvokeBody, auth: AuthUser) -> dict[str, Any]:
         )
     except Exception as exc:  # noqa: BLE001 - provider output must become durable or fail visibly
         logger.exception("Could not ingest provider output for %s.%s", body.provider, body.tool)
+        if billed:
+            await refund("asset registration failed")
         raise HTTPException(status_code=502, detail="Provider output could not be saved.") from exc
-    # Charge only after the generation and asset registration both succeed.
-    # Best-effort: the asset already exists and is being returned to the
-    # user either way, so a billing hiccup here shouldn't turn into a
-    # failed response for work that already happened.
-    try:
-        reference_id = assets[0]["version_id"] if assets else None
-        await asyncio.to_thread(
-            repository.adjust_balance,
-            user_id,
-            -cost.total_cents,
-            "generation",
-            reference_id=reference_id,
-        )
-    except Exception:  # noqa: BLE001 - never fail delivery over a billing edge case
-        logger.exception(
-            "Could not charge $%.2f to %s for %s.%s", cost.total_cents / 100, user_id, body.provider, body.tool
-        )
     return {
         "provider": body.provider,
         "tool": body.tool,
@@ -1111,6 +1129,7 @@ def _studio_agent_request(
     job_id: str | None = None,
     workspace_id: str | None = None,
     project_id: str | None = None,
+    user_id: str | None = None,
     autonomous: bool = False,
     resume_state: str | None = None,
     approval_decisions: list[StudioApprovalDecision] | None = None,
@@ -1135,6 +1154,7 @@ def _studio_agent_request(
         job_id=job_id,
         workspace_id=workspace_id,
         project_id=project_id,
+        user_id=user_id,
         autonomous=autonomous,
         resume_state=resume_state,
         approval_decisions=list(approval_decisions or []),
@@ -1289,6 +1309,7 @@ async def run_studio_agent(
     job_id: str | None = None,
     workspace_id: str | None = None,
     project_id: str | None = None,
+    user_id: str | None = None,
     conversation_id: str | None = None,
     session_items: list[dict[str, Any]] | None = None,
     autonomous: bool = False,
@@ -1306,6 +1327,7 @@ async def run_studio_agent(
         job_id=job_id,
         workspace_id=workspace_id,
         project_id=project_id,
+        user_id=user_id,
         autonomous=autonomous,
         resume_state=resume_state,
         approval_decisions=approval_decisions,
@@ -1448,6 +1470,7 @@ async def _run_studio_agent_job(
             job_id=job_id,
             workspace_id=workspace_id,
             project_id=project_id,
+            user_id=user_id,
             autonomous=autonomous,
             resume_state=resume_state,
             approval_decisions=approval_decisions,
@@ -1665,6 +1688,7 @@ async def studio_agent(body: AgentBody, auth: AuthUser) -> dict[str, Any]:
         conversation_id=conversation_id,
         workspace_id=workspace_id,
         project_id=body.project_id,
+        user_id=user_id,
         autonomous=body.autonomous,
     )
     try:

@@ -122,10 +122,17 @@ async def stripe_webhook(request: Request) -> dict[str, bool]:
     except (ValueError, stripe.SignatureVerificationError) as exc:
         raise HTTPException(status_code=400, detail="Invalid webhook signature.") from exc
 
-    if event["type"] == "checkout.session.completed":
+    if event["type"] in ("checkout.session.completed", "checkout.session.async_payment_succeeded"):
         # StripeObject isn't a plain dict (no .get()) -- convert once so the
         # rest of this reads like ordinary JSON.
         session = event["data"]["object"].to_dict()
+        # Delayed payment methods (e.g. ACH) fire checkout.session.completed
+        # with payment_status "unpaid" -- the funds aren't confirmed yet.
+        # Wait for checkout.session.async_payment_succeeded (or a later
+        # completed delivery once Stripe reflects "paid") instead of
+        # crediting a payment that hasn't actually landed.
+        if session.get("payment_status") != "paid":
+            return {"received": True}
         metadata = session.get("metadata") or {}
         user_id = metadata.get("user_id") or session.get("client_reference_id")
         amount_cents = metadata.get("amount_cents")
@@ -135,15 +142,25 @@ async def stripe_webhook(request: Request) -> dict[str, bool]:
                     str(user_id),
                     int(amount_cents),
                     "purchase",
-                    reference_id=str(event["id"]),
+                    # The Checkout Session id, not the event id: completed
+                    # and async_payment_succeeded are two different events
+                    # for the *same* payment, and both must collapse to one
+                    # credit -- keying on the session ties them together
+                    # instead of letting each event id count as distinct.
+                    reference_id=str(session.get("id") or event["id"]),
                 )
-            except Exception:
+            except Exception as exc:
                 logger.exception(
-                    "Could not credit %s after checkout.session.completed", user_id
+                    "Could not credit %s after %s", user_id, event["type"]
                 )
+                # Non-2xx so Stripe retries delivery -- returning 200 here
+                # would mark the event delivered while the customer paid
+                # without receiving the balance they bought.
+                raise HTTPException(status_code=500, detail="Could not record credit.") from exc
         else:
             logger.warning(
-                "checkout.session.completed missing user_id/amount_cents metadata: %s",
+                "%s missing user_id/amount_cents metadata: %s",
+                event["type"],
                 session.get("id"),
             )
     return {"received": True}
