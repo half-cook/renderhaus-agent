@@ -1,8 +1,15 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { createCheckoutSession, fetchAccount, fetchTopUpPacks } from "@/lib/api";
-import type { TopUpPack } from "@/lib/types";
+import {
+  createCheckoutSession,
+  createSubscriptionCheckout,
+  fetchAccount,
+  fetchSubscriptionPlans,
+  fetchTopUpPacks,
+  openBillingPortalRedirect,
+} from "@/lib/api";
+import type { SubscriptionPlan, SubscriptionState, TopUpPack } from "@/lib/types";
 import styles from "./AccountBalance.module.css";
 
 function formatUsd(cents: number): string {
@@ -11,8 +18,10 @@ function formatUsd(cents: number): string {
 
 export function AccountBalance({ refreshKey }: { refreshKey?: number | string }) {
   const [balanceCents, setBalanceCents] = useState<number | null>(null);
+  const [subscription, setSubscription] = useState<SubscriptionState | null>(null);
   const [open, setOpen] = useState(false);
   const [packs, setPacks] = useState<TopUpPack[] | null>(null);
+  const [plans, setPlans] = useState<SubscriptionPlan[] | null>(null);
   const [pending, setPending] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -21,7 +30,9 @@ export function AccountBalance({ refreshKey }: { refreshKey?: number | string })
     let cancelled = false;
     void fetchAccount()
       .then((account) => {
-        if (!cancelled) setBalanceCents(account.balance_cents);
+        if (cancelled) return;
+        setBalanceCents(account.balance_cents);
+        setSubscription(account.subscription ?? null);
       })
       .catch(() => {
         // Clerk off, or the request failed -- no balance to show rather
@@ -43,6 +54,15 @@ export function AccountBalance({ refreshKey }: { refreshKey?: number | string })
   }, [open, packs]);
 
   useEffect(() => {
+    if (!open || plans || subscription) {
+      return;
+    }
+    void fetchSubscriptionPlans()
+      .then(setPlans)
+      .catch(() => setPlans([]));
+  }, [open, plans, subscription]);
+
+  useEffect(() => {
     if (!open) {
       return;
     }
@@ -59,11 +79,11 @@ export function AccountBalance({ refreshKey }: { refreshKey?: number | string })
     return null;
   }
 
-  const buy = async (packId: string) => {
-    setPending(packId);
+  const checkout = async (kind: "topup" | "subscription", id: string) => {
+    setPending(id);
     setError(null);
     try {
-      const url = await createCheckoutSession(packId);
+      const url = kind === "topup" ? await createCheckoutSession(id) : await createSubscriptionCheckout(id);
       if (url) {
         window.location.href = url;
       } else {
@@ -71,6 +91,21 @@ export function AccountBalance({ refreshKey }: { refreshKey?: number | string })
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Checkout failed.");
+    } finally {
+      setPending(null);
+    }
+  };
+
+  const manage = async () => {
+    setPending("manage");
+    setError(null);
+    try {
+      const opened = await openBillingPortalRedirect();
+      if (!opened) {
+        setError("Billing portal is not available yet.");
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not open billing portal.");
     } finally {
       setPending(null);
     }
@@ -87,7 +122,57 @@ export function AccountBalance({ refreshKey }: { refreshKey?: number | string })
         {formatUsd(balanceCents)}
       </button>
       {open ? (
-        <div className={`popover ${styles["balance-popover"]}`} role="menu" aria-label="Add funds">
+        <div className={`popover ${styles["balance-popover"]}`} role="menu" aria-label="Billing">
+          {subscription ? (
+            <>
+              <p className={styles["section-label"]}>Plan</p>
+              <div className={styles["plan-status"]}>
+                <span className={styles["plan-status-row"]}>
+                  <span>{subscription.plan_id}</span>
+                  {subscription.status === "past_due" ? <span className="generate-hint">Past due</span> : null}
+                </span>
+                <span className={styles["plan-status-remaining"]}>
+                  {formatUsd(subscription.daily_allowance_remaining_cents)} left today of{" "}
+                  {formatUsd(subscription.daily_allowance_cents)}
+                </span>
+                <button
+                  type="button"
+                  className={styles["manage-link"]}
+                  disabled={pending !== null}
+                  onClick={() => void manage()}
+                >
+                  {pending === "manage" ? "…" : "Manage subscription"}
+                </button>
+              </div>
+              <hr className={styles.divider} />
+            </>
+          ) : (
+            <>
+              <p className={styles["section-label"]}>Subscribe</p>
+              {plans === null ? (
+                <p className="inspector-note">Loading plans…</p>
+              ) : plans.length === 0 ? (
+                <p className="inspector-note">Subscriptions aren&apos;t set up yet.</p>
+              ) : (
+                plans.map((plan) => (
+                  <button
+                    key={plan.id}
+                    type="button"
+                    className={styles["top-up-row"]}
+                    disabled={pending !== null}
+                    onClick={() => void checkout("subscription", plan.id)}
+                  >
+                    <span className={styles["top-up-label"]}>{plan.label}</span>
+                    <span className={styles["top-up-price"]}>
+                      {pending === plan.id ? "…" : `${formatUsd(plan.price_usd_cents)}/mo`}
+                    </span>
+                  </button>
+                ))
+              )}
+              <hr className={styles.divider} />
+            </>
+          )}
+          <p className={styles["section-label"]}>Top up</p>
           {packs === null ? (
             <p className="inspector-note">Loading top-ups…</p>
           ) : packs.length === 0 ? (
@@ -99,7 +184,7 @@ export function AccountBalance({ refreshKey }: { refreshKey?: number | string })
                 type="button"
                 className={styles["top-up-row"]}
                 disabled={pending !== null}
-                onClick={() => void buy(pack.id)}
+                onClick={() => void checkout("topup", pack.id)}
               >
                 <span className={styles["top-up-label"]}>{pack.label}</span>
                 <span className={styles["top-up-price"]}>

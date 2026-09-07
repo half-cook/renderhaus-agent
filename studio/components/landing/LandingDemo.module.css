@@ -66,11 +66,9 @@
   pointer-events: none;
 }
 
-.demo-connector line {
-  stroke: var(--muted);
-  stroke-width: 1.5;
-  stroke-dasharray: 4 5;
-}
+/* Line styling itself lives in the global .connector-path class (see
+   app/globals.css and studio/design/DESIGN_SYSTEM.md) so it stays in sync
+   with the real canvas's edge styling instead of drifting locally. */
 
 .demo-node-header {
   display: flex;
@@ -133,6 +131,13 @@
 }
 
 .demo-prompt-input {
+  /* Explicit width, not a bare flex-stretch: a <textarea> is a form
+     control, and some browsers size those from their own intrinsic
+     (cols-attribute) width instead of stretching to the flex parent like
+     a plain <div> would, letting the box run past .demo-node's right
+     edge. calc() against the same 12px side margin as the other demo-*
+     rows below keeps it flush with them either way. */
+  width: calc(100% - 24px);
   margin: 10px 12px 0;
   padding: 8px 10px;
   border: 1px solid var(--line);

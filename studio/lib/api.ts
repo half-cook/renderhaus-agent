@@ -4,6 +4,7 @@ import type {
   StudioAccount,
   StudioAsset,
   StudioStatus,
+  SubscriptionPlan,
   TopUpPack,
 } from "./types";
 import type {
@@ -97,6 +98,50 @@ export async function createCheckoutSession(packId: string): Promise<string> {
     throw new Error(String(payload.detail || `checkout ${response.status}`));
   }
   return String(payload.url || "");
+}
+
+export async function fetchSubscriptionPlans(): Promise<SubscriptionPlan[]> {
+  const response = await studioFetch("/api/studio/billing/plans");
+  if (!response.ok) {
+    throw new Error(`plans ${response.status}`);
+  }
+  const payload = await response.json();
+  return Array.isArray(payload.items) ? payload.items : [];
+}
+
+export async function createSubscriptionCheckout(planId: string): Promise<string> {
+  const response = await studioFetch("/api/studio/billing/subscribe", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ plan_id: planId }),
+  });
+  const payload = await readJson(response);
+  if (!response.ok) {
+    throw new Error(String(payload.detail || `subscribe ${response.status}`));
+  }
+  return String(payload.url || "");
+}
+
+export async function openBillingPortal(): Promise<string> {
+  const response = await studioFetch("/api/studio/billing/portal", { method: "POST" });
+  const payload = await readJson(response);
+  if (!response.ok) {
+    throw new Error(String(payload.detail || `portal ${response.status}`));
+  }
+  return String(payload.url || "");
+}
+
+// Shared by every "Manage subscription" entry point (AccountBalance's
+// popover, the home page's plan card): fetch the portal URL and navigate
+// there. Returns false instead of throwing when Stripe just hasn't
+// returned a URL, since callers already disagree on whether that's worth
+// surfacing as an error -- a thrown network/API error still propagates
+// normally either way.
+export async function openBillingPortalRedirect(): Promise<boolean> {
+  const url = await openBillingPortal();
+  if (!url) return false;
+  window.location.href = url;
+  return true;
 }
 
 export async function fetchTools(): Promise<ProviderCatalog[]> {

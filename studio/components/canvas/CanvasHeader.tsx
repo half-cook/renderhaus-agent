@@ -1,8 +1,11 @@
 "use client";
 
+import { SignOutButton } from "@clerk/nextjs";
 import { ChevronDown, Ellipsis, Redo2, Share2, Undo2 } from "lucide-react";
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { LogoMark } from "@/components/Logo";
+import { useClerkConfigured } from "@/components/StudioAuth";
 import { queueSize, useCanvasStore } from "@/lib/canvas/store";
 import { approvedSequence } from "@/lib/canvas/story";
 import type { StudioAsset } from "@/lib/types";
@@ -26,6 +29,7 @@ function ExecutionDownload({ asset }: { asset?: StudioAsset }) {
 }
 
 export function CanvasHeader() {
+  const clerkConfigured = useClerkConfigured();
   const projectName = useCanvasStore((state) => state.projectName);
   const projects = useCanvasStore((state) => state.projects);
   const projectId = useCanvasStore((state) => state.projectId);
@@ -95,10 +99,10 @@ export function CanvasHeader() {
   return (
     <header className="chrome-header" ref={headerRef}>
       <div className="header-left">
-        <div className="wordmark">
+        <Link href="/home" className="wordmark">
           <LogoMark size={16} />
           Renderhaus
-        </div>
+        </Link>
         <div className="header-menu-wrap">
           <button
             className="project-switcher"
@@ -269,6 +273,13 @@ export function CanvasHeader() {
             </div>
           ) : null}
         </div>
+        {clerkConfigured ? (
+          <SignOutButton redirectUrl="/">
+            <button className="text-btn" type="button">
+              Sign out
+            </button>
+          </SignOutButton>
+        ) : null}
       </div>
       <a ref={fileRef} hidden />
     </header>

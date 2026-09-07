@@ -62,34 +62,6 @@
   background: var(--l-line);
 }
 
-.landing-cta {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 46px;
-  padding: 0 24px;
-  border-radius: 0;
-  font-size: 12px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  text-decoration: none;
-  transition: background-color 160ms var(--ease), color 160ms var(--ease), opacity 160ms var(--ease);
-}
-
-.landing-cta-primary {
-  background: var(--l-ink);
-  color: #fff;
-}
-
-.landing-cta-primary:hover {
-  opacity: 0.75;
-}
-
-.landing-cta-primary:active {
-  opacity: 0.6;
-}
-
 /* Eyebrow row -- a small headline + subhead paired with the primary CTA,
    sitting between the nav and the demo panel. Still the light page
    chrome (.landing's own --l-* tokens), same family as the nav. */

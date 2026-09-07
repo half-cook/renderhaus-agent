@@ -138,6 +138,17 @@ a:focus-visible {
   color: var(--text);
 }
 
+/* The canvas's own dot-grid texture (matches the real canvas's
+   <Background variant={BackgroundVariant.Dots} gap={24} size={1.5}
+   color="var(--grid)" /> in StudioCanvas.tsx, and the landing page demo's
+   .demo-canvas) -- reused wherever a page should read as part of the
+   canvas app rather than a flat, generic background. */
+.canvas-texture-bg {
+  background-color: var(--bg);
+  background-image: radial-gradient(var(--grid) 1.5px, transparent 1.5px);
+  background-size: 24px 24px;
+}
+
 .workspace {
   position: relative;
   --header-height: 56px;
@@ -1759,6 +1770,18 @@ audio.agent-artifact-media {
 .react-flow__edge.selected .react-flow__edge-path,
 .react-flow__edge:focus .react-flow__edge-path {
   stroke: var(--active);
+}
+
+/* Connector line style for freeform (non-react-flow) diagrams -- e.g. the
+   landing page's playable demo. Kept numerically identical to
+   .react-flow__edge-path above by hand, since react-flow requires that
+   exact class name and won't let this rule cover it. See
+   studio/design/DESIGN_SYSTEM.md for the shared rule this encodes. */
+.connector-path {
+  fill: none;
+  stroke: var(--muted);
+  stroke-width: 1.5;
+  stroke-linecap: round;
 }
 
 .flow-node-wrap {

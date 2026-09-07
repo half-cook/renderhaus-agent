@@ -34,6 +34,29 @@ class CanvasConflictError(RuntimeError):
     pass
 
 
+class InsufficientBalanceError(ValueError):
+    """Raised by charge_usage/adjust_balance when neither bucket can cover
+    the cost. Subclasses ValueError so existing `except ValueError` call
+    sites keep working; daily_remaining_cents/wallet_cents let a caller
+    build a richer message when it wants to."""
+
+    def __init__(self, message: str, *, daily_remaining_cents: int = 0, wallet_cents: int = 0) -> None:
+        super().__init__(message)
+        self.daily_remaining_cents = daily_remaining_cents
+        self.wallet_cents = wallet_cents
+
+
+@dataclass(frozen=True, slots=True)
+class UsageCharge:
+    daily_cents: int
+    wallet_cents: int
+    charge_date: str  # UTC 'YYYY-MM-DD' the daily_cents portion was deducted against
+
+    @property
+    def total_cents(self) -> int:
+        return self.daily_cents + self.wallet_cents
+
+
 @dataclass(frozen=True, slots=True)
 class StudioAssetRef:
     asset_id: str
@@ -83,6 +106,10 @@ def _default_media_root() -> Path:
 
 def _now() -> int:
     return int(time.time())
+
+
+def _today_utc() -> str:
+    return time.strftime("%Y-%m-%d", time.gmtime())
 
 
 def _safe_filename(value: str, fallback: str) -> str:
@@ -316,6 +343,43 @@ class StudioRepository:
                     );
                     CREATE INDEX IF NOT EXISTS agent_events_execution_created
                         ON agent_events(execution_id, created_at);
+
+                    -- One row per user with an active or past subscription.
+                    -- Kept separate from `accounts` so every wallet-only code
+                    -- path above (ensure_account, adjust_balance, the top-up
+                    -- webhook) stays unaware subscriptions exist at all.
+                    CREATE TABLE IF NOT EXISTS subscriptions (
+                        user_id TEXT PRIMARY KEY REFERENCES accounts(user_id),
+                        stripe_subscription_id TEXT,
+                        plan_id TEXT NOT NULL,
+                        status TEXT NOT NULL DEFAULT 'none'
+                            CHECK(status IN ('active','past_due','canceled','none')),
+                        monthly_budget_cents INTEGER NOT NULL DEFAULT 0,
+                        daily_allowance_cents INTEGER NOT NULL DEFAULT 0,
+                        daily_allowance_used_cents INTEGER NOT NULL DEFAULT 0,
+                        daily_allowance_reset_date TEXT NOT NULL DEFAULT '',
+                        current_period_end INTEGER,
+                        created_at INTEGER NOT NULL,
+                        updated_at INTEGER NOT NULL
+                    );
+                    CREATE UNIQUE INDEX IF NOT EXISTS subscriptions_stripe_subscription_unique
+                        ON subscriptions(stripe_subscription_id) WHERE stripe_subscription_id IS NOT NULL;
+
+                    -- Append-only log of subscription-covered spend. Kept
+                    -- separate from credit_ledger: credit_ledger.delta always
+                    -- mirrors an actual balance_cents change (that invariant
+                    -- backs its Stripe-idempotency unique index), and daily
+                    -- allowance spend never touches balance_cents.
+                    CREATE TABLE IF NOT EXISTS usage_events (
+                        id TEXT PRIMARY KEY,
+                        user_id TEXT NOT NULL REFERENCES accounts(user_id),
+                        daily_cents INTEGER NOT NULL,
+                        wallet_cents INTEGER NOT NULL,
+                        reason TEXT NOT NULL,
+                        created_at INTEGER NOT NULL
+                    );
+                    CREATE INDEX IF NOT EXISTS usage_events_user_created
+                        ON usage_events(user_id, created_at DESC);
                     """
                 )
                 execution_columns = {
@@ -1482,6 +1546,19 @@ class StudioRepository:
             ).fetchone()
         return int(row["balance_cents"]) if row else 0
 
+    def _apply_balance_delta(self, connection: sqlite3.Connection, user_id: str, delta: int, now: int) -> None:
+        """The atomic check-and-apply at the heart of adjust_balance and
+        charge_usage's wallet leg. The UPDATE's WHERE clause makes it
+        atomic against concurrent requests -- no separate read-then-write
+        that a race could slip between."""
+        cursor = connection.execute(
+            "UPDATE accounts SET balance_cents = balance_cents + ?, updated_at = ? "
+            "WHERE user_id = ? AND balance_cents + ? >= 0",
+            (delta, now, user_id, delta),
+        )
+        if cursor.rowcount == 0:
+            raise ValueError("Insufficient balance.")
+
     def adjust_balance(
         self,
         user_id: str,
@@ -1492,9 +1569,7 @@ class StudioRepository:
     ) -> int:
         """Apply `delta` (positive = grant/purchase, negative = spend) and
         log it to the ledger. Raises ValueError instead of ever letting a
-        spend take the balance negative. The UPDATE's WHERE clause makes
-        the check-and-apply atomic against concurrent requests -- no
-        separate read-then-write that a race could slip between.
+        spend take the balance negative.
 
         When `reference_id` has already been recorded (e.g. a Stripe webhook
         redelivering the same event id), the ledger INSERT below raises
@@ -1507,13 +1582,7 @@ class StudioRepository:
         now = _now()
         try:
             with self._connect() as connection:
-                cursor = connection.execute(
-                    "UPDATE accounts SET balance_cents = balance_cents + ?, updated_at = ? "
-                    "WHERE user_id = ? AND balance_cents + ? >= 0",
-                    (delta, now, user_id, delta),
-                )
-                if cursor.rowcount == 0:
-                    raise ValueError("Insufficient balance.")
+                self._apply_balance_delta(connection, user_id, delta, now)
                 connection.execute(
                     "INSERT INTO credit_ledger(id, user_id, delta, reason, reference_id, created_at) "
                     "VALUES (?, ?, ?, ?, ?, ?)",
@@ -1525,6 +1594,198 @@ class StudioRepository:
             return int(row["balance_cents"])
         except sqlite3.IntegrityError:
             return self.get_balance(user_id)
+
+    def charge_usage(self, user_id: str, cost_cents: int, reason: str) -> UsageCharge:
+        """Debit `cost_cents`, drawing first from today's subscription daily
+        allowance (if any active subscription), then covering any remainder
+        from the top-up wallet. Raises InsufficientBalanceError if neither
+        bucket can fully cover the cost -- nothing is written in that case.
+        With no active subscription this degenerates to exactly
+        adjust_balance(-cost_cents)'s existing behavior (same ValueError,
+        same ledger row) -- the compatibility guarantee for every current
+        top-up-only user.
+
+        The daily-allowance leg uses optimistic compare-and-swap rather than
+        a lock: this database is shared by two separate OS processes (the
+        FastAPI server and the AgentCore agent runtime), so only a CAS retry
+        against the stored row -- the same pattern save_canvas already uses
+        for its `revision` column -- protects the read-compute-write
+        sequence below from a concurrent charge on the same subscription.
+        """
+        self.ensure_account(user_id)
+        today = _today_utc()
+        with self._connect() as connection:
+            sub = connection.execute(
+                "SELECT status FROM subscriptions WHERE user_id = ?", (user_id,)
+            ).fetchone()
+        if not sub or sub["status"] != "active":
+            self.adjust_balance(user_id, -cost_cents, reason)
+            now = _now()
+            with self._connect() as connection:
+                connection.execute(
+                    "INSERT INTO usage_events(id, user_id, daily_cents, wallet_cents, reason, created_at) "
+                    "VALUES (?, ?, 0, ?, ?, ?)",
+                    (uuid.uuid4().hex, user_id, -cost_cents, reason, now),
+                )
+            return UsageCharge(daily_cents=0, wallet_cents=cost_cents, charge_date=today)
+
+        for _ in range(5):
+            with self._connect() as connection:
+                row = connection.execute(
+                    "SELECT daily_allowance_cents, daily_allowance_used_cents, daily_allowance_reset_date "
+                    "FROM subscriptions WHERE user_id = ?",
+                    (user_id,),
+                ).fetchone()
+                used_today = row["daily_allowance_used_cents"] if row["daily_allowance_reset_date"] == today else 0
+                daily_remaining = max(0, row["daily_allowance_cents"] - used_today)
+                daily_portion = min(cost_cents, daily_remaining)
+                wallet_portion = cost_cents - daily_portion
+
+                account = connection.execute(
+                    "SELECT balance_cents FROM accounts WHERE user_id = ?", (user_id,)
+                ).fetchone()
+                wallet_balance = int(account["balance_cents"]) if account else 0
+                if wallet_portion > wallet_balance:
+                    raise InsufficientBalanceError(
+                        f"Not enough balance: this generation costs ${cost_cents / 100:.2f}, "
+                        f"you have ${daily_remaining / 100:.2f} left in today's plan allowance "
+                        f"and ${wallet_balance / 100:.2f} in your wallet.",
+                        daily_remaining_cents=daily_remaining,
+                        wallet_cents=wallet_balance,
+                    )
+
+                now = _now()
+                cursor = connection.execute(
+                    "UPDATE subscriptions SET daily_allowance_used_cents = ?, daily_allowance_reset_date = ?, "
+                    "updated_at = ? WHERE user_id = ? AND daily_allowance_used_cents = ? AND daily_allowance_reset_date = ?",
+                    (
+                        used_today + daily_portion,
+                        today,
+                        now,
+                        user_id,
+                        row["daily_allowance_used_cents"],
+                        row["daily_allowance_reset_date"],
+                    ),
+                )
+                if cursor.rowcount == 0:
+                    # Lost a race with a concurrent charge on this same
+                    # subscription (possibly from the other process) --
+                    # retry with freshly-read state rather than fail the
+                    # generation over a benign race.
+                    continue
+                if wallet_portion > 0:
+                    self._apply_balance_delta(connection, user_id, -wallet_portion, now)
+                    connection.execute(
+                        "INSERT INTO credit_ledger(id, user_id, delta, reason, reference_id, created_at) "
+                        "VALUES (?, ?, ?, ?, NULL, ?)",
+                        (uuid.uuid4().hex, user_id, -wallet_portion, reason, now),
+                    )
+                connection.execute(
+                    "INSERT INTO usage_events(id, user_id, daily_cents, wallet_cents, reason, created_at) "
+                    "VALUES (?, ?, ?, ?, ?, ?)",
+                    (uuid.uuid4().hex, user_id, daily_portion, wallet_portion, reason, now),
+                )
+            return UsageCharge(daily_cents=daily_portion, wallet_cents=wallet_portion, charge_date=today)
+        raise RuntimeError("charge_usage: too much contention on this account's daily allowance.")
+
+    def refund_usage(self, user_id: str, charge: UsageCharge, reason: str) -> None:
+        """Reverse a charge_usage() result. The daily-side reversal only
+        applies while `daily_allowance_reset_date` still matches
+        charge.charge_date -- if the day has since rolled over, that day's
+        bucket was already reset to zero, and crediting into today's fresh
+        bucket would incorrectly inflate it. That case is a deliberate
+        silent no-op: the user isn't harmed, they already got a full fresh
+        allowance for the new day.
+        """
+        if charge.wallet_cents > 0:
+            self.adjust_balance(user_id, charge.wallet_cents, reason)
+        if charge.daily_cents > 0:
+            now = _now()
+            with self._connect() as connection:
+                cursor = connection.execute(
+                    "UPDATE subscriptions SET "
+                    "daily_allowance_used_cents = MAX(0, daily_allowance_used_cents - ?), updated_at = ? "
+                    "WHERE user_id = ? AND daily_allowance_reset_date = ?",
+                    (charge.daily_cents, now, user_id, charge.charge_date),
+                )
+                if cursor.rowcount:
+                    connection.execute(
+                        "INSERT INTO usage_events(id, user_id, daily_cents, wallet_cents, reason, created_at) "
+                        "VALUES (?, ?, ?, 0, ?, ?)",
+                        (uuid.uuid4().hex, user_id, -charge.daily_cents, reason, now),
+                    )
+
+    def sync_subscription(
+        self,
+        user_id: str,
+        *,
+        stripe_subscription_id: str | None,
+        plan_id: str,
+        status: str,
+        monthly_budget_cents: int,
+        current_period_end: int | None,
+    ) -> None:
+        """Upsert subscription state from a Stripe webhook event. Does not
+        touch daily_allowance_used_cents/daily_allowance_reset_date on an
+        existing row -- a plan change updates the budget going forward
+        only, with no attempt to prorate the current day's already-spent
+        allowance."""
+        self.ensure_account(user_id)
+        now = _now()
+        daily_allowance_cents = monthly_budget_cents // 30 if status == "active" else 0
+        with self._connect() as connection:
+            connection.execute(
+                "INSERT INTO subscriptions(user_id, stripe_subscription_id, plan_id, status, "
+                "monthly_budget_cents, daily_allowance_cents, daily_allowance_used_cents, "
+                "daily_allowance_reset_date, current_period_end, created_at, updated_at) "
+                "VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?) "
+                "ON CONFLICT(user_id) DO UPDATE SET "
+                "  stripe_subscription_id = excluded.stripe_subscription_id, "
+                "  plan_id = excluded.plan_id, "
+                "  status = excluded.status, "
+                "  monthly_budget_cents = excluded.monthly_budget_cents, "
+                "  daily_allowance_cents = excluded.daily_allowance_cents, "
+                "  current_period_end = excluded.current_period_end, "
+                "  updated_at = excluded.updated_at",
+                (
+                    user_id,
+                    stripe_subscription_id,
+                    plan_id,
+                    status,
+                    monthly_budget_cents,
+                    daily_allowance_cents,
+                    _today_utc(),
+                    current_period_end,
+                    now,
+                    now,
+                ),
+            )
+
+    def get_subscription_state(self, user_id: str) -> dict[str, Any] | None:
+        """Read-only peek at subscription state, applying the same lazy
+        daily reset charge_usage does but without writing -- so a dashboard
+        read after a day boundary shows the correct remaining allowance
+        even before the next real charge persists a reset."""
+        with self._connect() as connection:
+            row = connection.execute(
+                "SELECT plan_id, status, monthly_budget_cents, daily_allowance_cents, "
+                "daily_allowance_used_cents, daily_allowance_reset_date, current_period_end "
+                "FROM subscriptions WHERE user_id = ?",
+                (user_id,),
+            ).fetchone()
+        if not row or row["status"] not in ("active", "past_due"):
+            return None
+        today = _today_utc()
+        used_today = row["daily_allowance_used_cents"] if row["daily_allowance_reset_date"] == today else 0
+        remaining = max(0, row["daily_allowance_cents"] - used_today)
+        return {
+            "plan_id": row["plan_id"],
+            "status": row["status"],
+            "monthly_budget_cents": row["monthly_budget_cents"],
+            "daily_allowance_cents": row["daily_allowance_cents"],
+            "daily_allowance_remaining_cents": remaining,
+            "current_period_end": row["current_period_end"],
+        }
 
     def list_ledger(self, user_id: str, *, limit: int = 20) -> list[dict[str, Any]]:
         with self._connect() as connection:
@@ -1551,6 +1812,13 @@ class StudioRepository:
                 "UPDATE accounts SET stripe_customer_id = ?, updated_at = ? WHERE user_id = ?",
                 (stripe_customer_id, _now(), user_id),
             )
+
+    def get_stripe_customer(self, user_id: str) -> str | None:
+        with self._connect() as connection:
+            row = connection.execute(
+                "SELECT stripe_customer_id FROM accounts WHERE user_id = ?", (user_id,)
+            ).fetchone()
+        return row["stripe_customer_id"] if row else None
 
 
 repository = StudioRepository()

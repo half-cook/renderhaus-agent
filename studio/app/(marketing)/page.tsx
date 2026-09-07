@@ -15,7 +15,7 @@ function SignedInRedirect() {
 
   useEffect(() => {
     if (isLoaded && isSignedIn) {
-      router.replace("/dashboard");
+      router.replace("/home");
     }
   }, [isLoaded, isSignedIn, router]);
 
@@ -24,7 +24,6 @@ function SignedInRedirect() {
 
 export default function MarketingPage() {
   const clerkConfigured = useClerkConfigured();
-  const primaryHref = clerkConfigured ? "/sign-up" : "/dashboard";
 
   return (
     <main className={styles["landing"]}>
@@ -43,11 +42,8 @@ export default function MarketingPage() {
       <div className={styles["landing-eyebrow"]}>
         <div>
           <h1>Build on one canvas</h1>
-          <p>Wire up image, video, voice, and music, and watch it come together — try it below.</p>
+          <p>Wire up image, video, voice, and music, and watch it come together. Try it below.</p>
         </div>
-        <Link href={primaryHref} className={`${styles["landing-cta"]} ${styles["landing-cta-primary"]}`}>
-          Start creating
-        </Link>
       </div>
       <LandingDemo />
     </main>

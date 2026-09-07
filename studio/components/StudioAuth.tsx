@@ -1,9 +1,15 @@
 "use client";
 
-import { ClerkProvider, SignInButton, SignUpButton, UserButton, useAuth } from "@clerk/nextjs";
+import { ClerkProvider, SignInButton, SignUpButton, UserButton, useAuth, useUser } from "@clerk/nextjs";
 import { createContext, Fragment, useContext, type ReactNode, useEffect, useState } from "react";
 import { configureStudioTokenGetter } from "@/lib/authenticated-fetch";
 import styles from "./StudioAuth.module.css";
+
+// Single source of truth for the UserButton avatar's size -- pinned
+// explicitly below (elements.userButtonAvatarBox) rather than left to
+// Clerk's own default, since UserAvatarButton's default-avatar overlay
+// has to match it exactly and can't read it back out of Clerk itself.
+const USER_AVATAR_SIZE = 32;
 
 // Clerk's own default theme is a self-contained light/indigo UI that
 // ignores the host page's CSS -- left alone, the sign-in/sign-up screens
@@ -77,6 +83,7 @@ const CLERK_APPEARANCE = {
     },
     userButtonPopoverActionButtonText: { color: "var(--text)" },
     userButtonPopoverFooter: { display: "none" },
+    userButtonAvatarBox: { width: USER_AVATAR_SIZE, height: USER_AVATAR_SIZE },
   },
 } as const;
 
@@ -88,6 +95,39 @@ const ClerkConfiguredContext = createContext(false);
 
 export function useClerkConfigured(): boolean {
   return useContext(ClerkConfiguredContext);
+}
+
+// Clerk has no appearance hook for the fallback image a UserButton shows
+// when the account has no photo (no upload, no OAuth picture) -- it's
+// baked into the trigger's own rendering, not a swappable slot. Overlaying
+// our own image on top (pointer-events: none, so clicks fall through to
+// Clerk's real button underneath) gets the same visual result without
+// reimplementing the popover's manage-account/sign-out menu ourselves.
+function UserAvatarButton() {
+  const { user } = useUser();
+  const showDefaultAvatar = Boolean(user) && !user!.hasImage;
+  return (
+    <span
+      style={{ position: "relative", display: "inline-flex", width: USER_AVATAR_SIZE, height: USER_AVATAR_SIZE }}
+    >
+      <UserButton />
+      {showDefaultAvatar ? (
+        <img
+          src="/default-avatar.png"
+          alt=""
+          aria-hidden="true"
+          style={{
+            position: "absolute",
+            inset: 0,
+            width: USER_AVATAR_SIZE,
+            height: USER_AVATAR_SIZE,
+            borderRadius: "50%",
+            pointerEvents: "none",
+          }}
+        />
+      ) : null}
+    </span>
+  );
 }
 
 // The blocking "sign in to continue" gate + account controls. Used only by
@@ -108,12 +148,12 @@ export function StudioAppGate({ children }: { children: ReactNode }) {
           {/* mode="modal" keeps this in-app (styled by CLERK_APPEARANCE
               below) instead of the default behavior of bouncing out to
               Clerk's own hosted, unthemed Account Portal domain. */}
-          <SignInButton mode="modal" fallbackRedirectUrl="/dashboard">
+          <SignInButton mode="modal" fallbackRedirectUrl="/home">
             <button className={`${styles["studio-auth-button"]} ${styles.primary}`} type="button">
               Sign in
             </button>
           </SignInButton>
-          <SignUpButton mode="modal" fallbackRedirectUrl="/dashboard">
+          <SignUpButton mode="modal" fallbackRedirectUrl="/home">
             <button className={styles["studio-auth-button"]} type="button">
               Create account
             </button>
@@ -126,7 +166,7 @@ export function StudioAppGate({ children }: { children: ReactNode }) {
     <Fragment key={userId || "personal"}>
       {children}
       <div className={styles["studio-account-controls"]} aria-label="Account">
-        <UserButton />
+        <UserAvatarButton />
       </div>
     </Fragment>
   );

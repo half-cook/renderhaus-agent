@@ -44,7 +44,7 @@ from server.auth import AuthUser, OptionalAuthUser, current_user_id, current_wor
 from server.billing import stripe_enabled
 from server.billing_rates import cost_for
 from server.config import ROOT
-from server.studio_state import CanvasConflictError, StudioAssetKind, repository
+from server.studio_state import CanvasConflictError, InsufficientBalanceError, StudioAssetKind, repository
 from server.studio_options import LIVE_CHOICE_TOOLS, extract_choice_ids, static_field_options
 
 
@@ -457,9 +457,12 @@ def _normalize_canvas_document(
 @router.get("/account")
 async def studio_account(auth: AuthUser) -> dict[str, Any]:
     user_id = current_user_id(auth)
-    balance = await asyncio.to_thread(repository.get_balance, user_id)
-    ledger = await asyncio.to_thread(repository.list_ledger, user_id, limit=20)
-    return {"balance_cents": balance, "recent_ledger": ledger}
+    balance, ledger, subscription = await asyncio.gather(
+        asyncio.to_thread(repository.get_balance, user_id),
+        asyncio.to_thread(repository.list_ledger, user_id, limit=20),
+        asyncio.to_thread(repository.get_subscription_state, user_id),
+    )
+    return {"balance_cents": balance, "recent_ledger": ledger, "subscription": subscription}
 
 
 @router.get("/projects")
@@ -614,16 +617,20 @@ async def invoke_tool(body: InvokeBody, auth: AuthUser) -> dict[str, Any]:
     # dev, per the README) -- every account starts at $0 with no way to top up
     # in that mode, so charging here would 402 every single generation.
     billed = stripe_enabled() and cost.total_cents > 0
+    charge = None
     if billed:
-        # Debit *before* dispatch, not after: adjust_balance's UPDATE is a
-        # single atomic statement, so two concurrent requests reading the
-        # same balance can no longer both pass a check and both spend real
-        # provider money -- whichever debits first wins, the other sees the
-        # reduced balance and correctly 402s before anything is dispatched.
+        # Debit *before* dispatch, not after: charge_usage's daily-allowance
+        # CAS and wallet UPDATE are both atomic, so two concurrent requests
+        # reading the same allowance/balance can no longer both pass a
+        # check and both spend real provider money -- whichever debits
+        # first wins, the other sees the reduced amounts and correctly
+        # 402s before anything is dispatched.
         try:
-            await asyncio.to_thread(
-                repository.adjust_balance, user_id, -cost.total_cents, "generation"
+            charge = await asyncio.to_thread(
+                repository.charge_usage, user_id, cost.total_cents, "generation"
             )
+        except InsufficientBalanceError as exc:
+            raise HTTPException(status_code=402, detail=str(exc)) from None
         except ValueError:
             balance = await asyncio.to_thread(repository.get_balance, user_id)
             raise HTTPException(
@@ -640,10 +647,10 @@ async def invoke_tool(body: InvokeBody, auth: AuthUser) -> dict[str, Any]:
         # Stripe webhook credits idempotent, a second failure of the same
         # kind would collide on it). NULLs never conflict under that
         # constraint, so this can run any number of times safely.
+        if charge is None:
+            return
         try:
-            await asyncio.to_thread(
-                repository.adjust_balance, user_id, cost.total_cents, f"refund: {why}"
-            )
+            await asyncio.to_thread(repository.refund_usage, user_id, charge, f"refund: {why}")
         except Exception:  # noqa: BLE001 - refund is best-effort; the original charge log still shows the debit
             logger.exception("Could not refund $%.2f to %s after %s", cost.total_cents / 100, user_id, why)
 

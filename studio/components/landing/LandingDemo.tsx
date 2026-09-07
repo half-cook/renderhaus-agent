@@ -22,6 +22,13 @@ import {
   X,
 } from "lucide-react";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import {
+  bezierConnectorPath,
+  floatingEdgeConnector,
+  type Connector,
+  type Point,
+  type Rect,
+} from "@/lib/canvas/connector-path";
 import styles from "./LandingDemo.module.css";
 
 type Preset = {
@@ -56,7 +63,6 @@ const PRESETS: Preset[] = [
   },
 ];
 
-type Point = { x: number; y: number };
 type Status = "idle" | "generating" | "done";
 type GeneratorKind = "image" | "video";
 
@@ -94,8 +100,12 @@ export function LandingDemo() {
   const [videoStatus, setVideoStatus] = useState<Status>("idle");
   const [generators, setGenerators] = useState<GeneratorNode[]>([]);
   const [activeTool, setActiveTool] = useState("select");
-  const [connector, setConnector] = useState({ x1: 0, y1: 0, x2: 0, y2: 0 });
-  const [videoConnector, setVideoConnector] = useState({ x1: 0, y1: 0, x2: 0, y2: 0 });
+  const [connector, setConnector] = useState<Connector>({ from: { x: 0, y: 0 }, to: { x: 0, y: 0 }, axis: "x" });
+  const [videoConnector, setVideoConnector] = useState<Connector>({
+    from: { x: 0, y: 0 },
+    to: { x: 0, y: 0 },
+    axis: "x",
+  });
   const canvasRef = useRef<HTMLDivElement>(null);
   const promptNodeRef = useRef<HTMLDivElement>(null);
   const resultNodeRef = useRef<HTMLDivElement>(null);
@@ -118,21 +128,17 @@ export function LandingDemo() {
       const videoNode = videoNodeRef.current;
       if (!canvas || !promptNode || !resultNode || !videoNode) return;
       const canvasRect = canvas.getBoundingClientRect();
-      const promptRect = promptNode.getBoundingClientRect();
-      const resultRect = resultNode.getBoundingClientRect();
-      const videoRect = videoNode.getBoundingClientRect();
-      setConnector({
-        x1: promptRect.right - canvasRect.left,
-        y1: promptRect.top + 20 - canvasRect.top,
-        x2: resultRect.left - canvasRect.left,
-        y2: resultRect.top + 20 - canvasRect.top,
+      const toCanvasRect = (rect: DOMRect): Rect => ({
+        left: rect.left - canvasRect.left,
+        top: rect.top - canvasRect.top,
+        right: rect.right - canvasRect.left,
+        bottom: rect.bottom - canvasRect.top,
       });
-      setVideoConnector({
-        x1: resultRect.left + 24 - canvasRect.left,
-        y1: resultRect.bottom - canvasRect.top,
-        x2: videoRect.left + 24 - canvasRect.left,
-        y2: videoRect.top - canvasRect.top,
-      });
+      const promptRect = toCanvasRect(promptNode.getBoundingClientRect());
+      const resultRect = toCanvasRect(resultNode.getBoundingClientRect());
+      const videoRect = toCanvasRect(videoNode.getBoundingClientRect());
+      setConnector(floatingEdgeConnector(promptRect, resultRect));
+      setVideoConnector(floatingEdgeConnector(resultRect, videoRect));
     };
     updateConnectors();
     window.addEventListener("resize", updateConnectors);
@@ -240,18 +246,13 @@ export function LandingDemo() {
         <span className={styles["demo-chrome-dot"]} />
         <span className={styles["demo-chrome-dot"]} />
         <span className={styles["landing-demo-chrome-label"]}>
-          Try it — drag nodes, edit the prompt, add Image/Video
+          Try it: drag nodes, edit the prompt, add Image/Video
         </span>
       </div>
       <div className={styles["demo-canvas"]} ref={canvasRef}>
         <svg className={styles["demo-connector"]} aria-hidden="true">
-          <line x1={connector.x1} y1={connector.y1} x2={connector.x2} y2={connector.y2} />
-          <line
-            x1={videoConnector.x1}
-            y1={videoConnector.y1}
-            x2={videoConnector.x2}
-            y2={videoConnector.y2}
-          />
+          <path className="connector-path" d={bezierConnectorPath(connector)} />
+          <path className="connector-path" d={bezierConnectorPath(videoConnector)} />
         </svg>
 
         <div
@@ -315,7 +316,7 @@ export function LandingDemo() {
                 <span className={styles["demo-result-caption"]}>{resultPreset.label}</span>
               </div>
             ) : (
-              <p className={styles["demo-result-empty"]}>Nothing yet — hit Generate</p>
+              <p className={styles["demo-result-empty"]}>Nothing yet. Hit Generate.</p>
             )}
           </div>
         </div>
@@ -343,12 +344,12 @@ export function LandingDemo() {
                   </span>
                 </div>
                 <span className={styles["demo-video-caption"]} style={{ color: resultPreset.ink }}>
-                  {resultPreset.label} — 4s loop
+                  {resultPreset.label} · 4s loop
                 </span>
               </div>
             ) : (
               <p className={styles["demo-result-empty"]}>
-                {resultPreset ? "Ready — hit Animate" : "Generate an image first"}
+                {resultPreset ? "Ready. Hit Animate." : "Generate an image first"}
               </p>
             )}
           </div>
