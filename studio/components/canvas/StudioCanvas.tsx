@@ -30,7 +30,11 @@ const QUICK_ADD: Array<{ label: string; kind: CreativeNodeKind; toolId?: string 
 ];
 
 const FIT_VIEW_OPTIONS = { padding: FIT_VIEW_PADDING };
-const DEFAULT_EDGE_OPTIONS = { type: "smoothstep" as const };
+// Bezier ("default") to match the landing page's smooth S-curve connectors
+// and the in-progress connection line below (react-flow's own drag preview
+// is already a bezier by default) -- smoothstep's right-angle routing was
+// the odd one out, only visible once a connection actually committed.
+const DEFAULT_EDGE_OPTIONS = { type: "default" as const };
 const CONNECTION_LINE_STYLE = { stroke: "#5eead4", strokeWidth: 1.5 };
 const PAN_ON_DRAG_SELECT: number[] = [1, 2];
 const PRO_OPTIONS = { hideAttribution: true };

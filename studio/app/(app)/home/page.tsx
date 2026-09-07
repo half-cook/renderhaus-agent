@@ -6,7 +6,13 @@ import { useEffect, useState } from "react";
 import { LogoMark } from "@/components/Logo";
 import { useClerkConfigured } from "@/components/StudioAuth";
 import { ThemeToggle } from "@/components/canvas/ThemeToggle";
-import { createStudioProject, fetchAccount, fetchStudioProjects, type StudioProject } from "@/lib/api";
+import {
+  createStudioProject,
+  fetchAccount,
+  fetchStudioProjects,
+  openBillingPortalRedirect,
+  type StudioProject,
+} from "@/lib/api";
 import type { StudioAccount } from "@/lib/types";
 import styles from "./page.module.css";
 
@@ -32,6 +38,7 @@ export default function DashboardPage() {
   const [projects, setProjects] = useState<StudioProject[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
+  const [managingPlan, setManagingPlan] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -59,14 +66,29 @@ export default function DashboardPage() {
     };
   }, []);
 
-  const openProject = (id: string) => router.push(`/app?project=${encodeURIComponent(id)}`);
+  const openProject = (id: string) => router.push(`/canvas?project=${encodeURIComponent(id)}`);
+
+  const managePlan = async () => {
+    setManagingPlan(true);
+    setError(null);
+    try {
+      const opened = await openBillingPortalRedirect();
+      if (!opened) {
+        setError("Billing portal is not available yet.");
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not open billing portal.");
+    } finally {
+      setManagingPlan(false);
+    }
+  };
 
   const newProject = async () => {
     setCreating(true);
     setError(null);
     try {
       const project = await createStudioProject("Untitled");
-      router.push(`/app?project=${encodeURIComponent(project.id)}`);
+      router.push(`/canvas?project=${encodeURIComponent(project.id)}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not create project.");
       setCreating(false);
@@ -106,6 +128,26 @@ export default function DashboardPage() {
           ) : (
             <>
               <p className={styles["credit-balance-big"]}>{formatUsd(account.balance_cents)}</p>
+              {account.subscription ? (
+                <div className={styles["daily-allowance"]}>
+                  <span className={styles["daily-allowance-label"]}>
+                    {account.subscription.plan_id} plan
+                    {account.subscription.status === "past_due" ? " — past due" : ""}
+                  </span>
+                  <span className={styles["daily-allowance-value"]}>
+                    {formatUsd(account.subscription.daily_allowance_remaining_cents)} left today of{" "}
+                    {formatUsd(account.subscription.daily_allowance_cents)}
+                  </span>
+                  <button
+                    type="button"
+                    className={styles["manage-plan-link"]}
+                    onClick={() => void managePlan()}
+                    disabled={managingPlan}
+                  >
+                    {managingPlan ? "…" : "Manage"}
+                  </button>
+                </div>
+              ) : null}
               {account.recent_ledger.length === 0 ? (
                 <p className="inspector-note">No activity yet.</p>
               ) : (

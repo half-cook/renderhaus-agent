@@ -33,12 +33,30 @@ export type CreditLedgerEntry = {
   created_at: number;
 };
 
+export type SubscriptionState = {
+  plan_id: string;
+  status: "active" | "past_due";
+  monthly_budget_cents: number;
+  daily_allowance_cents: number;
+  daily_allowance_remaining_cents: number;
+  current_period_end: number | null;
+};
+
 export type StudioAccount = {
   balance_cents: number;
   recent_ledger: CreditLedgerEntry[];
+  // Nullable/optional: deploy-skew safety against an older backend that
+  // doesn't send this field yet.
+  subscription?: SubscriptionState | null;
 };
 
 export type TopUpPack = {
+  id: string;
+  label: string;
+  price_usd_cents: number;
+};
+
+export type SubscriptionPlan = {
   id: string;
   label: string;
   price_usd_cents: number;

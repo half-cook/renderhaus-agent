@@ -50,3 +50,62 @@
   color: var(--muted);
   font-variant-numeric: tabular-nums;
 }
+
+.section-label {
+  margin: 6px 0 2px;
+  padding: 0 2px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+.section-label:first-child {
+  margin-top: 0;
+}
+
+.plan-status {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 4px 2px 6px;
+}
+
+.plan-status-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  font-weight: 600;
+}
+
+.plan-status-remaining {
+  color: var(--muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.manage-link {
+  align-self: flex-start;
+  padding: 0;
+  margin-top: 2px;
+  border: 0;
+  background: transparent;
+  color: var(--active);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+}
+
+.manage-link:hover {
+  text-decoration: underline;
+}
+
+.divider {
+  height: 1px;
+  margin: 6px 0;
+  background: var(--line);
+  border: 0;
+}

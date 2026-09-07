@@ -38,7 +38,7 @@ from server.config import (
     load_local_env,
     require_agentcore_gateway_url,
 )
-from server.studio_state import repository
+from server.studio_state import InsufficientBalanceError, repository
 
 logger = logging.getLogger("renderhaus.studio_agent")
 
@@ -706,11 +706,14 @@ class GatewayMCPServer(MCPServerStreamableHttp):
                 resolved_arguments,
             )
         cost = self._billed_cost(tool_name, resolved_arguments)
+        charge = None
         if cost is not None:
             try:
-                await asyncio.to_thread(
-                    repository.adjust_balance, self._user_id, -cost.total_cents, "generation"
+                charge = await asyncio.to_thread(
+                    repository.charge_usage, self._user_id, cost.total_cents, "generation"
                 )
+            except InsufficientBalanceError as exc:
+                raise RuntimeError(str(exc)) from exc
             except ValueError as exc:
                 raise RuntimeError(
                     f"Not enough balance: this generation costs ${cost.total_cents / 100:.2f}."
@@ -718,12 +721,12 @@ class GatewayMCPServer(MCPServerStreamableHttp):
         try:
             result = await super().call_tool(tool_name, resolved_arguments, meta=meta)
         except Exception:
-            if cost is not None:
+            if charge is not None:
                 try:
                     await asyncio.to_thread(
-                        repository.adjust_balance,
+                        repository.refund_usage,
                         self._user_id,
-                        cost.total_cents,
+                        charge,
                         f"refund: agent call to {tool_name} failed",
                     )
                 except Exception:  # noqa: BLE001 - refund is best-effort
