@@ -158,6 +158,22 @@ async def create_subscription_checkout(body: SubscribeBody, auth: AuthUser) -> d
     if not plan:
         raise HTTPException(status_code=404, detail="Unknown subscription plan.")
     user_id = current_user_id(auth)
+    # Two independent guards against ending up with more than one paid
+    # subscription for the same user: an already-active/past_due
+    # subscription blocks a new checkout outright (the billing portal is
+    # the way to change plans), and claim_pending_subscription_checkout
+    # closes the narrower window where two requests race each other before
+    # either one's webhook has landed (double-click, two tabs).
+    if repository.get_subscription_state(user_id) is not None:
+        raise HTTPException(
+            status_code=409,
+            detail="You already have an active subscription. Manage it from the billing portal.",
+        )
+    if not repository.claim_pending_subscription_checkout(user_id):
+        raise HTTPException(
+            status_code=409,
+            detail="A subscription checkout is already in progress. Finish or cancel it before starting another.",
+        )
     frontend_url = _frontend_url()
     stripe.api_key = _secret_key()
     existing_customer = _existing_stripe_customer(user_id)
@@ -167,6 +183,10 @@ async def create_subscription_checkout(body: SubscribeBody, auth: AuthUser) -> d
         # Metadata lives on subscription_data, not just this session, so
         # the created Subscription object itself carries user_id/plan_id --
         # every later webhook event for it is then self-contained.
+        # price_usd_cents is snapshotted here too, not re-derived from
+        # SUBSCRIPTION_PLANS at webhook time -- if a plan is ever repriced
+        # or removed, existing subscribers keep the allowance they actually
+        # pay for instead of silently shifting to today's code value.
         session = stripe.checkout.Session.create(
             mode="subscription",
             client_reference_id=user_id,
@@ -184,7 +204,13 @@ async def create_subscription_checkout(body: SubscribeBody, auth: AuthUser) -> d
                     },
                 }
             ],
-            subscription_data={"metadata": {"user_id": user_id, "plan_id": plan.id}},
+            subscription_data={
+                "metadata": {
+                    "user_id": user_id,
+                    "plan_id": plan.id,
+                    "price_usd_cents": str(plan.price_usd_cents),
+                }
+            },
             success_url=f"{frontend_url}/canvas?checkout=success",
             cancel_url=f"{frontend_url}/canvas?checkout=cancelled",
         )
@@ -276,7 +302,23 @@ async def stripe_webhook(request: Request) -> dict[str, bool]:
                 session.get("id"),
             )
     elif event["type"] in ("customer.subscription.created", "customer.subscription.updated", "customer.subscription.deleted"):
-        subscription = event["data"]["object"].to_dict()
+        event_subscription = event["data"]["object"].to_dict()
+        subscription_id = str(event_subscription.get("id") or "")
+        # Stripe doesn't guarantee webhook delivery order, and doesn't want
+        # you inferring order from timestamps either -- re-fetching the
+        # subscription live gives its true current state regardless of
+        # which historical event triggered this delivery, so two events for
+        # the *same* subscription arriving out of order both converge on
+        # the same (correct) result. Falls back to the event's own payload
+        # only if the live fetch itself fails (e.g. transient network
+        # error), rather than dropping the event entirely.
+        subscription = event_subscription
+        if subscription_id:
+            stripe.api_key = _secret_key()
+            try:
+                subscription = stripe.Subscription.retrieve(subscription_id).to_dict()
+            except stripe.StripeError:
+                logger.exception("Could not re-fetch subscription %s; using event payload", subscription_id)
         metadata = subscription.get("metadata") or {}
         user_id = metadata.get("user_id")
         plan_id = metadata.get("plan_id")
@@ -286,8 +328,19 @@ async def stripe_webhook(request: Request) -> dict[str, bool]:
             return {"received": True}
         if customer_id:
             repository.set_stripe_customer(str(user_id), str(customer_id))
-        plan = PLANS_BY_ID.get(str(plan_id))
-        monthly_budget_cents = plan.price_usd_cents if plan else 0
+        # price_usd_cents is snapshotted onto the subscription's own
+        # metadata at checkout time (see create_subscription_checkout) --
+        # read it back instead of re-deriving from the current
+        # SUBSCRIPTION_PLANS, so a later reprice or removal of this plan_id
+        # can't silently change what an existing subscriber is charged for.
+        # Falls back to today's plan price only for subscriptions created
+        # before this snapshot existed.
+        snapshotted_price = metadata.get("price_usd_cents")
+        if snapshotted_price is not None:
+            monthly_budget_cents = int(snapshotted_price)
+        else:
+            plan = PLANS_BY_ID.get(str(plan_id))
+            monthly_budget_cents = plan.price_usd_cents if plan else 0
         # Stripe's own subscription statuses collapse onto the three this
         # app actually branches on: trialing/active both grant the daily
         # allowance, anything terminal or unpaid does not.

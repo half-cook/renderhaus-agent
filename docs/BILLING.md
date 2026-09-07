@@ -48,6 +48,12 @@ there is no separate "credits" unit to reconcile against real cost.
   daily/wallet split. Kept separate from `credit_ledger` because `credit_ledger.delta` is defined as "an
   actual `balance_cents` change" (that invariant backs its uniqueness index), and daily-allowance spend
   never touches `balance_cents`.
+- **`pending_refunds`** — a refund obligation recorded *before* it's applied (see `refund_usage` below),
+  so a failure partway through leaves a row `flush_pending_refunds` can find and finish later instead of
+  the debit being silently lost.
+- **`pending_subscription_checkouts`** — one in-flight claim per user, so two concurrent `/subscribe`
+  calls can't both create a Stripe subscription before either one's webhook lands (see "Stripe
+  integration" below).
 
 ## `charge_usage` / `refund_usage`
 
@@ -80,10 +86,16 @@ If the day has since rolled over, that bucket was already reset to zero; crediti
 allowance would inflate it, so a stale refund is a deliberate silent no-op — the user already has a full
 new day's allowance and isn't harmed by not also getting yesterday's leftover credited back.
 
-Both `server/studio.py::invoke_tool` (the manual `/invoke` path) and
+**Refunds are durable, not best-effort.** `refund_usage` first calls `record_pending_refund` (a plain
+`pending_refunds` insert) *before* attempting the actual reversal (`_apply_refund`). If `_apply_refund`
+raises, the obligation stays in `pending_refunds` unresolved rather than being lost after a logged
+exception. `flush_pending_refunds(user_id)` retries every unresolved obligation for that user and is
+called opportunistically from both `get_balance` and `charge_usage`, so a refund that failed to apply
+immediately gets a real chance to complete on the user's very next balance read or charge — no separate
+reconciliation job needed. Both `server/studio.py::invoke_tool` (the manual `/invoke` path) and
 `agent/studio_agent_next.py::GatewayMCPServer.call_tool` (the agent-dispatched path) debit *before*
-dispatching to the provider and refund on any dispatch/registration failure, so a user is never charged
-for a generation that didn't actually happen.
+dispatching to the provider and call `refund_usage` on any dispatch/registration failure; neither needed
+to change to get this durability, since it lives inside `refund_usage` itself.
 
 ## Stripe integration (`server/billing.py`)
 
@@ -100,9 +112,22 @@ Stripe dashboard objects — a Checkout Session is created with inline `price_da
 | `POST /api/studio/billing/portal` | Create a Stripe Billing Portal session (self-serve cancel / payment method) |
 | `POST /api/studio/billing/webhook` | Stripe webhook receiver |
 
-Subscription metadata (`user_id`, `plan_id`) is set on `subscription_data.metadata` at checkout time, not
-just the Checkout Session — so the `Subscription` object itself carries it, and every later webhook event
-for that subscription is self-contained without a session lookup.
+Subscription metadata (`user_id`, `plan_id`, **`price_usd_cents`**) is set on `subscription_data.metadata`
+at checkout time, not just the Checkout Session — so the `Subscription` object itself carries it, and
+every later webhook event for that subscription is self-contained without a session lookup.
+`price_usd_cents` is the actual snapshot backing `monthly_budget_cents`'s "stored redundantly" guarantee
+above: the webhook reads the budget from this metadata, not by re-looking-up `plan_id` in the current
+`SUBSCRIPTION_PLANS`, so repricing or removing a plan later can't retroactively change what an existing
+subscriber's allowance is (a fallback to today's `SUBSCRIPTION_PLANS` value only covers subscriptions
+created before this field existed).
+
+**Duplicate-checkout guards.** `POST /subscribe` refuses to create a second subscription for a user who
+already has one: `get_subscription_state(user_id)` blocks it outright if a subscription is already
+active/past_due (409 — the Billing Portal is the way to change plans), and
+`claim_pending_subscription_checkout(user_id)` closes the narrower race where two requests (double-click,
+two tabs) both reach this endpoint before either one's webhook has landed (409, "checkout already in
+progress"). The claim is released once a definitive webhook event lands for that user (inside
+`sync_subscription`) or after 24h (a Checkout Session's own expiry), whichever comes first.
 
 The webhook handles:
 
@@ -110,12 +135,18 @@ The webhook handles:
   subscription-mode sessions carry no `amount_cents` and are skipped here) — credits the wallet once
   `payment_status == "paid"`, keyed on the Checkout Session id so both events for one payment collapse
   to a single credit.
-- `customer.subscription.created` / `.updated` — upserts the `subscriptions` row via
-  `repository.sync_subscription`, recomputing `daily_allowance_cents` from the plan's price. A plan
-  change takes effect for future days only; there is no proration of the current day's already-spent
-  allowance (an explicit v1 simplification).
-- `customer.subscription.deleted` — marks the subscription `canceled` and zeroes `daily_allowance_cents`;
-  `charge_usage` then falls back to wallet-only billing on the next call, with no special-casing needed.
+- `customer.subscription.created` / `.updated` / `.deleted` — re-fetches the subscription live from
+  Stripe (`stripe.Subscription.retrieve`) rather than trusting the event's own embedded payload, since
+  Stripe does not guarantee webhook delivery order (and explicitly warns against inferring order from
+  event timestamps); fetching live means two events for the *same* subscription arriving out of order
+  both converge on Stripe's actual current state. `repository.sync_subscription` additionally refuses to
+  apply an update whose subscription id doesn't match the user's current, still-live one — protecting
+  against a delayed event for an already-superseded subscription (e.g. an old subscription's late
+  `.deleted` arriving after a new one's `.created` already went active) from clobbering it. A plan change
+  takes effect for future days only; there is no proration of the current day's already-spent allowance
+  (an explicit v1 simplification). `.deleted` specifically marks the subscription `canceled` and zeroes
+  `daily_allowance_cents`; `charge_usage` then falls back to wallet-only billing on the next call, with
+  no special-casing needed.
 
 All three flows populate `accounts.stripe_customer_id` opportunistically (from whichever event's
 `customer` field arrives first), so top-ups and a subscription consolidate onto one Stripe Customer —

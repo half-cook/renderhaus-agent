@@ -143,8 +143,8 @@ node cards already do.
 
 ## Backgrounds
 
-A flat `var(--bg)` fill reads as a generic, empty page — anywhere a full
-page background is needed, prefer the canvas's own dot-grid texture instead
+A flat `var(--bg)` fill reads as a generic, empty page — anywhere a
+full-page background is needed, prefer the canvas's own dot-grid texture instead
 so the surface reads as part of the product rather than a blank form. One
 shared rule, `.canvas-texture-bg` (`app/globals.css`): `background-color:
 var(--bg)` plus a `radial-gradient(var(--grid) 1.5px, transparent 1.5px)`

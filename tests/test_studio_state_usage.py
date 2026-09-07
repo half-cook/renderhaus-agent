@@ -175,6 +175,103 @@ class ChargeUsageTests(unittest.TestCase):
                 # own 30-cent charge, not credited an extra 60.
                 self.assertEqual(state["daily_allowance_remaining_cents"], 70)
 
+    def test_refund_left_pending_when_apply_fails_is_flushed_by_a_later_charge(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            repository = self._repository(directory)
+            repository.adjust_balance("user:1", 1000, "purchase")
+            charge = repository.charge_usage("user:1", 300, "generation")
+            self.assertEqual(repository.get_balance("user:1"), 700)
+
+            with patch.object(repository, "_apply_refund", side_effect=RuntimeError("db is busy")):
+                repository.refund_usage("user:1", charge, "refund: dispatch failed")
+                # The apply failed, but the obligation was recorded first --
+                # the balance doesn't reflect the refund yet (and this
+                # get_balance's own opportunistic flush can't resolve it
+                # either, since _apply_refund is still mocked to fail here),
+                # rather than the refund being silently lost.
+                self.assertEqual(repository.get_balance("user:1"), 700)
+
+            # Outside the patch, _apply_refund works again -- the next call
+            # that flushes (get_balance here) completes the still-pending
+            # refund with no separate reconciliation job needed.
+            self.assertEqual(repository.get_balance("user:1"), 1000)
+
+    def test_sync_subscription_ignores_stale_event_for_superseded_subscription(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            repository = self._repository(directory)
+            repository.sync_subscription(
+                "user:1",
+                stripe_subscription_id="sub_new",
+                plan_id="basic",
+                status="active",
+                monthly_budget_cents=3000,
+                current_period_end=None,
+            )
+
+            # A delayed event for the *old*, already-superseded subscription
+            # arrives after the new one is already active -- must not
+            # clobber it.
+            applied = repository.sync_subscription(
+                "user:1",
+                stripe_subscription_id="sub_old",
+                plan_id="basic",
+                status="canceled",
+                monthly_budget_cents=0,
+                current_period_end=None,
+            )
+
+            self.assertFalse(applied)
+            state = repository.get_subscription_state("user:1")
+            assert state is not None
+            self.assertEqual(state["status"], "active")
+
+    def test_sync_subscription_allows_new_subscription_after_cancellation(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            repository = self._repository(directory)
+            repository.sync_subscription(
+                "user:1",
+                stripe_subscription_id="sub_old",
+                plan_id="basic",
+                status="canceled",
+                monthly_budget_cents=0,
+                current_period_end=None,
+            )
+
+            applied = repository.sync_subscription(
+                "user:1",
+                stripe_subscription_id="sub_new",
+                plan_id="pro",
+                status="active",
+                monthly_budget_cents=5000,
+                current_period_end=None,
+            )
+
+            self.assertTrue(applied)
+            state = repository.get_subscription_state("user:1")
+            assert state is not None
+            self.assertEqual(state["status"], "active")
+            self.assertEqual(state["plan_id"], "pro")
+
+    def test_claim_pending_subscription_checkout_blocks_concurrent_second_claim(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            repository = self._repository(directory)
+
+            self.assertTrue(repository.claim_pending_subscription_checkout("user:1"))
+            self.assertFalse(repository.claim_pending_subscription_checkout("user:1"))
+
+    def test_claim_pending_subscription_checkout_stealable_after_ttl(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            repository = self._repository(directory)
+
+            self.assertTrue(repository.claim_pending_subscription_checkout("user:1"))
+            # A negative ttl treats the existing claim as already expired --
+            # standing in for real wall-clock time passing (this repository
+            # only has 1-second timestamp resolution, so a ttl_seconds=0
+            # claim made in the same second wouldn't reliably read as
+            # stale). A genuinely abandoned checkout can be reclaimed
+            # rather than blocking the user forever.
+            self.assertTrue(repository.claim_pending_subscription_checkout("user:1", ttl_seconds=-1))
+
     def test_concurrent_charges_never_overspend_the_daily_allowance(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             repository = self._repository(directory)

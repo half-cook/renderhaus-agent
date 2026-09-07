@@ -72,7 +72,10 @@ export default function DashboardPage() {
     setManagingPlan(true);
     setError(null);
     try {
-      await openBillingPortalRedirect();
+      const opened = await openBillingPortalRedirect();
+      if (!opened) {
+        setError("Billing portal is not available yet.");
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not open billing portal.");
     } finally {

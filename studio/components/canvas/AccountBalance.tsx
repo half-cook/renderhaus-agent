@@ -21,7 +21,9 @@ export function AccountBalance({ refreshKey }: { refreshKey?: number | string })
   const [subscription, setSubscription] = useState<SubscriptionState | null>(null);
   const [open, setOpen] = useState(false);
   const [packs, setPacks] = useState<TopUpPack[] | null>(null);
+  const [packsError, setPacksError] = useState(false);
   const [plans, setPlans] = useState<SubscriptionPlan[] | null>(null);
+  const [plansError, setPlansError] = useState(false);
   const [pending, setPending] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -44,22 +46,29 @@ export function AccountBalance({ refreshKey }: { refreshKey?: number | string })
     };
   }, [refreshKey]);
 
+  // A fetch failure leaves packs/plans at null (not `[]`) so it stays
+  // distinguishable from a genuinely empty catalog and this effect retries
+  // on the next popover open -- setting `[]` on error would cache the
+  // failure as "loaded, nothing here" with no way to retry short of a page
+  // reload.
   useEffect(() => {
     if (!open || packs) {
       return;
     }
+    setPacksError(false);
     void fetchTopUpPacks()
       .then(setPacks)
-      .catch(() => setPacks([]));
+      .catch(() => setPacksError(true));
   }, [open, packs]);
 
   useEffect(() => {
     if (!open || plans || subscription) {
       return;
     }
+    setPlansError(false);
     void fetchSubscriptionPlans()
       .then(setPlans)
-      .catch(() => setPlans([]));
+      .catch(() => setPlansError(true));
   }, [open, plans, subscription]);
 
   useEffect(() => {
@@ -150,7 +159,11 @@ export function AccountBalance({ refreshKey }: { refreshKey?: number | string })
             <>
               <p className={styles["section-label"]}>Subscribe</p>
               {plans === null ? (
-                <p className="inspector-note">Loading plans…</p>
+                plansError ? (
+                  <p className="inspector-note">Could not load plans. Reopen to retry.</p>
+                ) : (
+                  <p className="inspector-note">Loading plans…</p>
+                )
               ) : plans.length === 0 ? (
                 <p className="inspector-note">Subscriptions aren&apos;t set up yet.</p>
               ) : (
@@ -174,7 +187,11 @@ export function AccountBalance({ refreshKey }: { refreshKey?: number | string })
           )}
           <p className={styles["section-label"]}>Top up</p>
           {packs === null ? (
-            <p className="inspector-note">Loading top-ups…</p>
+            packsError ? (
+              <p className="inspector-note">Could not load top-ups. Reopen to retry.</p>
+            ) : (
+              <p className="inspector-note">Loading top-ups…</p>
+            )
           ) : packs.length === 0 ? (
             <p className="inspector-note">Billing isn&apos;t set up yet.</p>
           ) : (

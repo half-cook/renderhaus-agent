@@ -10,6 +10,7 @@ from __future__ import annotations
 import base64
 import hashlib
 import json
+import logging
 import mimetypes
 import os
 import shutil
@@ -24,6 +25,8 @@ from typing import Any, Literal
 import httpx
 
 from server.config import ROOT
+
+logger = logging.getLogger(__name__)
 
 
 StudioAssetKind = Literal["image", "video", "audio"]
@@ -380,6 +383,35 @@ class StudioRepository:
                     );
                     CREATE INDEX IF NOT EXISTS usage_events_user_created
                         ON usage_events(user_id, created_at DESC);
+
+                    -- A refund obligation recorded *before* it's applied, so
+                    -- a failure partway through refund_usage (a transient
+                    -- DB/contention issue, not a design case) leaves a row
+                    -- flush_pending_refunds can find and finish later,
+                    -- instead of the debit being silently lost the way a
+                    -- pure best-effort call-and-log would lose it.
+                    CREATE TABLE IF NOT EXISTS pending_refunds (
+                        id TEXT PRIMARY KEY,
+                        user_id TEXT NOT NULL REFERENCES accounts(user_id),
+                        daily_cents INTEGER NOT NULL,
+                        wallet_cents INTEGER NOT NULL,
+                        charge_date TEXT NOT NULL,
+                        reason TEXT NOT NULL,
+                        created_at INTEGER NOT NULL,
+                        resolved_at INTEGER
+                    );
+                    CREATE INDEX IF NOT EXISTS pending_refunds_unresolved
+                        ON pending_refunds(user_id) WHERE resolved_at IS NULL;
+
+                    -- One in-flight subscription-checkout claim per user, so
+                    -- two concurrent /subscribe calls (double-click, two
+                    -- tabs) can't both create a Stripe subscription before
+                    -- either webhook lands. created_at is a claim timestamp,
+                    -- not a Stripe session id -- see claim_pending_subscription_checkout.
+                    CREATE TABLE IF NOT EXISTS pending_subscription_checkouts (
+                        user_id TEXT PRIMARY KEY REFERENCES accounts(user_id),
+                        created_at INTEGER NOT NULL
+                    );
                     """
                 )
                 execution_columns = {
@@ -1540,6 +1572,7 @@ class StudioRepository:
 
     def get_balance(self, user_id: str) -> int:
         self.ensure_account(user_id)
+        self.flush_pending_refunds(user_id)
         with self._connect() as connection:
             row = connection.execute(
                 "SELECT balance_cents FROM accounts WHERE user_id = ?", (user_id,)
@@ -1613,6 +1646,7 @@ class StudioRepository:
         sequence below from a concurrent charge on the same subscription.
         """
         self.ensure_account(user_id)
+        self.flush_pending_refunds(user_id)
         today = _today_utc()
         with self._connect() as connection:
             sub = connection.execute(
@@ -1688,14 +1722,18 @@ class StudioRepository:
             return UsageCharge(daily_cents=daily_portion, wallet_cents=wallet_portion, charge_date=today)
         raise RuntimeError("charge_usage: too much contention on this account's daily allowance.")
 
-    def refund_usage(self, user_id: str, charge: UsageCharge, reason: str) -> None:
-        """Reverse a charge_usage() result. The daily-side reversal only
-        applies while `daily_allowance_reset_date` still matches
-        charge.charge_date -- if the day has since rolled over, that day's
-        bucket was already reset to zero, and crediting into today's fresh
-        bucket would incorrectly inflate it. That case is a deliberate
-        silent no-op: the user isn't harmed, they already got a full fresh
-        allowance for the new day.
+    def _apply_refund(self, user_id: str, charge: UsageCharge, reason: str) -> None:
+        """The actual reversal of a charge_usage() result -- the part that
+        can fail (a write against a busy/locked db). Split out of
+        refund_usage() so that method can record the obligation durably
+        before attempting this.
+
+        The daily-side reversal only applies while `daily_allowance_reset_date`
+        still matches charge.charge_date -- if the day has since rolled
+        over, that day's bucket was already reset to zero, and crediting
+        into today's fresh bucket would incorrectly inflate it. That case
+        is a deliberate silent no-op: the user isn't harmed, they already
+        got a full fresh allowance for the new day.
         """
         if charge.wallet_cents > 0:
             self.adjust_balance(user_id, charge.wallet_cents, reason)
@@ -1715,6 +1753,93 @@ class StudioRepository:
                         (uuid.uuid4().hex, user_id, -charge.daily_cents, reason, now),
                     )
 
+    def record_pending_refund(self, user_id: str, charge: UsageCharge, reason: str) -> str:
+        """Durably records a refund obligation before attempting to apply
+        it. Returns the new pending_refunds row id."""
+        refund_id = uuid.uuid4().hex
+        with self._connect() as connection:
+            connection.execute(
+                "INSERT INTO pending_refunds"
+                "(id, user_id, daily_cents, wallet_cents, charge_date, reason, created_at) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?)",
+                (refund_id, user_id, charge.daily_cents, charge.wallet_cents, charge.charge_date, reason, _now()),
+            )
+        return refund_id
+
+    def resolve_pending_refund(self, refund_id: str) -> None:
+        with self._connect() as connection:
+            connection.execute(
+                "UPDATE pending_refunds SET resolved_at = ? WHERE id = ?", (_now(), refund_id)
+            )
+
+    def flush_pending_refunds(self, user_id: str) -> None:
+        """Best-effort: applies any refund obligations for this user that
+        were recorded but never successfully applied. Called opportunistically
+        from get_balance and charge_usage, so a refund that failed at
+        refund_usage() time (a transient DB/contention issue) gets a real
+        chance to complete on the user's very next balance read or charge,
+        instead of staying lost until someone happens to notice."""
+        with self._connect() as connection:
+            rows = connection.execute(
+                "SELECT id, daily_cents, wallet_cents, charge_date, reason FROM pending_refunds "
+                "WHERE user_id = ? AND resolved_at IS NULL",
+                (user_id,),
+            ).fetchall()
+        for row in rows:
+            charge = UsageCharge(
+                daily_cents=row["daily_cents"], wallet_cents=row["wallet_cents"], charge_date=row["charge_date"]
+            )
+            try:
+                self._apply_refund(user_id, charge, row["reason"])
+                self.resolve_pending_refund(row["id"])
+            except Exception:
+                logger.exception("Still could not apply pending refund %s for %s", row["id"], user_id)
+
+    def refund_usage(self, user_id: str, charge: UsageCharge, reason: str) -> None:
+        """Reverse a charge_usage() result durably: the obligation is
+        recorded (record_pending_refund) before it's applied, so if applying
+        it fails right here, the obligation isn't lost -- flush_pending_refunds
+        (wired into get_balance/charge_usage) finishes it on the user's next
+        interaction instead. Only raises if even recording the obligation
+        fails; a failure to apply it is caught and left pending."""
+        refund_id = self.record_pending_refund(user_id, charge, reason)
+        try:
+            self._apply_refund(user_id, charge, reason)
+            self.resolve_pending_refund(refund_id)
+        except Exception:
+            logger.exception(
+                "Could not immediately apply refund %s for %s; left pending for later flush", refund_id, user_id
+            )
+
+    def claim_pending_subscription_checkout(self, user_id: str, *, ttl_seconds: int = 24 * 3600) -> bool:
+        """Atomically claims the one pending-checkout slot for this user, so
+        two concurrent /subscribe calls (double-click, two tabs) can't both
+        create a Stripe subscription before either webhook lands. Returns
+        False if a still-fresh claim already exists; the caller should tell
+        the user a checkout is already in progress rather than starting a
+        second one. A claim older than ttl_seconds (Stripe Checkout Sessions
+        themselves expire after 24h) is treated as abandoned and can be
+        stolen by a fresh attempt.
+        """
+        self.ensure_account(user_id)
+        now = _now()
+        with self._connect() as connection:
+            cursor = connection.execute(
+                "UPDATE pending_subscription_checkouts SET created_at = ? "
+                "WHERE user_id = ? AND created_at < ?",
+                (now, user_id, now - ttl_seconds),
+            )
+            if cursor.rowcount:
+                return True
+            try:
+                connection.execute(
+                    "INSERT INTO pending_subscription_checkouts(user_id, created_at) VALUES (?, ?)",
+                    (user_id, now),
+                )
+                return True
+            except sqlite3.IntegrityError:
+                return False
+
     def sync_subscription(
         self,
         user_id: str,
@@ -1724,16 +1849,46 @@ class StudioRepository:
         status: str,
         monthly_budget_cents: int,
         current_period_end: int | None,
-    ) -> None:
+    ) -> bool:
         """Upsert subscription state from a Stripe webhook event. Does not
         touch daily_allowance_used_cents/daily_allowance_reset_date on an
         existing row -- a plan change updates the budget going forward
         only, with no attempt to prorate the current day's already-spent
-        allowance."""
+        allowance.
+
+        Returns False (a no-op) instead of applying the update when the
+        user already has a *different*, still-live subscription on file.
+        Stripe does not guarantee webhook delivery order, so a delayed
+        event for a subscription that's since been superseded (canceled and
+        replaced by a new one) must not be allowed to clobber the live one
+        -- e.g. a late `customer.subscription.deleted` for the old
+        subscription arriving after the new one's `created` event has
+        already been applied. The caller (server/billing.py) additionally
+        re-fetches the authoritative subscription object from Stripe before
+        calling this, which handles the same-subscription-id ordering case
+        (two events for the *same* id arriving out of order).
+        """
         self.ensure_account(user_id)
         now = _now()
         daily_allowance_cents = monthly_budget_cents // 30 if status == "active" else 0
         with self._connect() as connection:
+            existing = connection.execute(
+                "SELECT stripe_subscription_id, status FROM subscriptions WHERE user_id = ?", (user_id,)
+            ).fetchone()
+            if (
+                existing
+                and existing["stripe_subscription_id"] is not None
+                and existing["stripe_subscription_id"] != stripe_subscription_id
+                and existing["status"] in ("active", "past_due")
+            ):
+                logger.warning(
+                    "Ignoring stale subscription event for %s: event subscription %s "
+                    "does not match live subscription %s",
+                    user_id,
+                    stripe_subscription_id,
+                    existing["stripe_subscription_id"],
+                )
+                return False
             connection.execute(
                 "INSERT INTO subscriptions(user_id, stripe_subscription_id, plan_id, status, "
                 "monthly_budget_cents, daily_allowance_cents, daily_allowance_used_cents, "
@@ -1760,6 +1915,11 @@ class StudioRepository:
                     now,
                 ),
             )
+            # A definitive subscription event has now landed for this user
+            # (successfully or as a cancellation) -- any earlier in-flight
+            # checkout claim is resolved either way.
+            connection.execute("DELETE FROM pending_subscription_checkouts WHERE user_id = ?", (user_id,))
+        return True
 
     def get_subscription_state(self, user_id: str) -> dict[str, Any] | None:
         """Read-only peek at subscription state, applying the same lazy
