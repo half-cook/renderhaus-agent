@@ -93,6 +93,22 @@ def _existing_stripe_customer(user_id: str) -> str | None:
     return repository.get_stripe_customer(user_id)
 
 
+def _monthly_budget_cents(metadata: dict[str, object], plan: SubscriptionPlan | None) -> int:
+    """price_usd_cents is snapshotted onto a subscription's own metadata at
+    checkout time (see create_subscription_checkout) -- read it back
+    instead of re-deriving from the current SUBSCRIPTION_PLANS, so a later
+    reprice or removal of a plan_id can't retroactively change what an
+    existing subscriber is charged for. Falls back to the plan's current
+    price if the snapshot is missing (subscriptions created before this
+    field existed) or malformed (defensive -- Stripe metadata is a plain
+    string map, not schema-validated) rather than letting a bad value 500
+    the whole webhook delivery."""
+    try:
+        return int(metadata["price_usd_cents"])
+    except (KeyError, TypeError, ValueError):
+        return plan.price_usd_cents if plan else 0
+
+
 def _serialize_price_options(options: tuple[TopUpPack, ...] | tuple[SubscriptionPlan, ...]) -> dict[str, object]:
     return {
         "items": [
@@ -216,6 +232,10 @@ async def create_subscription_checkout(body: SubscribeBody, auth: AuthUser) -> d
         )
     except stripe.StripeError as exc:
         logger.exception("Stripe subscription checkout session creation failed")
+        # The checkout attempt never reached Stripe successfully -- release
+        # the claim rather than leaving the user locked out of retrying for
+        # up to 24h over an error that left no actual pending checkout.
+        repository.release_pending_subscription_checkout(user_id)
         raise HTTPException(status_code=502, detail=str(exc)) from exc
     return {"url": session.url or ""}
 
@@ -328,19 +348,8 @@ async def stripe_webhook(request: Request) -> dict[str, bool]:
             return {"received": True}
         if customer_id:
             repository.set_stripe_customer(str(user_id), str(customer_id))
-        # price_usd_cents is snapshotted onto the subscription's own
-        # metadata at checkout time (see create_subscription_checkout) --
-        # read it back instead of re-deriving from the current
-        # SUBSCRIPTION_PLANS, so a later reprice or removal of this plan_id
-        # can't silently change what an existing subscriber is charged for.
-        # Falls back to today's plan price only for subscriptions created
-        # before this snapshot existed.
-        snapshotted_price = metadata.get("price_usd_cents")
-        if snapshotted_price is not None:
-            monthly_budget_cents = int(snapshotted_price)
-        else:
-            plan = PLANS_BY_ID.get(str(plan_id))
-            monthly_budget_cents = plan.price_usd_cents if plan else 0
+        plan = PLANS_BY_ID.get(str(plan_id))
+        monthly_budget_cents = _monthly_budget_cents(metadata, plan)
         # Stripe's own subscription statuses collapse onto the three this
         # app actually branches on: trialing/active both grant the daily
         # allowance, anything terminal or unpaid does not.

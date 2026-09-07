@@ -196,6 +196,26 @@ class ChargeUsageTests(unittest.TestCase):
             # refund with no separate reconciliation job needed.
             self.assertEqual(repository.get_balance("user:1"), 1000)
 
+    def test_concurrent_flush_applies_one_pending_refund_at_most_once(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            repository = self._repository(directory)
+            repository.adjust_balance("user:1", 1000, "purchase")
+            charge = repository.charge_usage("user:1", 300, "generation")
+            with patch.object(repository, "_apply_refund", side_effect=RuntimeError("db is busy")):
+                repository.refund_usage("user:1", charge, "refund: dispatch failed")
+            # Exactly one unresolved pending_refunds row exists for user:1 now.
+
+            # This app runs as two separate OS processes (the FastAPI server
+            # and the AgentCore agent) sharing one SQLite file, so two
+            # flushes for the same user can genuinely race -- without the
+            # atomic claim in _claim_and_apply_pending_refund, each of these
+            # would independently apply the same $3.00 refund.
+            with ThreadPoolExecutor(max_workers=8) as pool:
+                list(pool.map(lambda _: repository.flush_pending_refunds("user:1"), range(8)))
+
+            # 700 + one 300-cent refund = 1000, not 700 + 8*300.
+            self.assertEqual(repository.get_balance("user:1"), 1000)
+
     def test_sync_subscription_ignores_stale_event_for_superseded_subscription(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             repository = self._repository(directory)
@@ -271,6 +291,20 @@ class ChargeUsageTests(unittest.TestCase):
             # stale). A genuinely abandoned checkout can be reclaimed
             # rather than blocking the user forever.
             self.assertTrue(repository.claim_pending_subscription_checkout("user:1", ttl_seconds=-1))
+
+    def test_release_pending_subscription_checkout_unblocks_a_fresh_claim(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            repository = self._repository(directory)
+            self.assertTrue(repository.claim_pending_subscription_checkout("user:1"))
+
+            # Simulates the checkout attempt itself failing (e.g. Stripe's
+            # Session.create call raised) after the claim was already
+            # taken -- releasing it should let an immediate retry through,
+            # rather than locking the user out for the full TTL over an
+            # error that left no actual pending checkout.
+            repository.release_pending_subscription_checkout("user:1")
+
+            self.assertTrue(repository.claim_pending_subscription_checkout("user:1"))
 
     def test_concurrent_charges_never_overspend_the_daily_allowance(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

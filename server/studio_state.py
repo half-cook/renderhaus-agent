@@ -1766,11 +1766,32 @@ class StudioRepository:
             )
         return refund_id
 
-    def resolve_pending_refund(self, refund_id: str) -> None:
+    def _claim_and_apply_pending_refund(
+        self, user_id: str, refund_id: str, charge: UsageCharge, reason: str
+    ) -> None:
+        """Atomically claims one pending_refunds row before applying it, so
+        refund_usage's own immediate attempt and a concurrently-triggered
+        flush_pending_refunds (this app runs as two separate OS processes --
+        the FastAPI server and the AgentCore agent -- sharing one SQLite
+        file, so this isn't just an in-process race) can't both apply the
+        same refund. The UPDATE's `WHERE resolved_at IS NULL` is the CAS:
+        only the caller that flips it from NULL wins the right to apply.
+        A failed apply reverts the claim (back to NULL) rather than leaving
+        the row stuck "resolved" without ever actually crediting it.
+        """
         with self._connect() as connection:
-            connection.execute(
-                "UPDATE pending_refunds SET resolved_at = ? WHERE id = ?", (_now(), refund_id)
+            cursor = connection.execute(
+                "UPDATE pending_refunds SET resolved_at = ? WHERE id = ? AND resolved_at IS NULL",
+                (_now(), refund_id),
             )
+            if cursor.rowcount == 0:
+                return  # already claimed (and applied, or being applied) elsewhere
+        try:
+            self._apply_refund(user_id, charge, reason)
+        except Exception:
+            logger.exception("Could not apply pending refund %s for %s; left pending for later flush", refund_id, user_id)
+            with self._connect() as connection:
+                connection.execute("UPDATE pending_refunds SET resolved_at = NULL WHERE id = ?", (refund_id,))
 
     def flush_pending_refunds(self, user_id: str) -> None:
         """Best-effort: applies any refund obligations for this user that
@@ -1789,11 +1810,7 @@ class StudioRepository:
             charge = UsageCharge(
                 daily_cents=row["daily_cents"], wallet_cents=row["wallet_cents"], charge_date=row["charge_date"]
             )
-            try:
-                self._apply_refund(user_id, charge, row["reason"])
-                self.resolve_pending_refund(row["id"])
-            except Exception:
-                logger.exception("Still could not apply pending refund %s for %s", row["id"], user_id)
+            self._claim_and_apply_pending_refund(user_id, row["id"], charge, row["reason"])
 
     def refund_usage(self, user_id: str, charge: UsageCharge, reason: str) -> None:
         """Reverse a charge_usage() result durably: the obligation is
@@ -1803,13 +1820,7 @@ class StudioRepository:
         interaction instead. Only raises if even recording the obligation
         fails; a failure to apply it is caught and left pending."""
         refund_id = self.record_pending_refund(user_id, charge, reason)
-        try:
-            self._apply_refund(user_id, charge, reason)
-            self.resolve_pending_refund(refund_id)
-        except Exception:
-            logger.exception(
-                "Could not immediately apply refund %s for %s; left pending for later flush", refund_id, user_id
-            )
+        self._claim_and_apply_pending_refund(user_id, refund_id, charge, reason)
 
     def claim_pending_subscription_checkout(self, user_id: str, *, ttl_seconds: int = 24 * 3600) -> bool:
         """Atomically claims the one pending-checkout slot for this user, so
@@ -1839,6 +1850,15 @@ class StudioRepository:
                 return True
             except sqlite3.IntegrityError:
                 return False
+
+    def release_pending_subscription_checkout(self, user_id: str) -> None:
+        """Releases a claim taken by claim_pending_subscription_checkout
+        without waiting for its TTL -- for when the checkout attempt itself
+        never made it to Stripe (e.g. the Session.create call failed), so
+        the user isn't locked out of retrying for up to 24h over an error
+        that left no actual pending checkout behind."""
+        with self._connect() as connection:
+            connection.execute("DELETE FROM pending_subscription_checkouts WHERE user_id = ?", (user_id,))
 
     def sync_subscription(
         self,
