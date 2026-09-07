@@ -216,6 +216,52 @@ class ChargeUsageTests(unittest.TestCase):
             # 700 + one 300-cent refund = 1000, not 700 + 8*300.
             self.assertEqual(repository.get_balance("user:1"), 1000)
 
+    def test_pending_refund_apply_is_all_or_nothing_across_both_legs(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            repository = self._repository(directory)
+            repository.adjust_balance("user:1", 1000, "purchase")
+            repository.sync_subscription(
+                "user:1",
+                stripe_subscription_id="sub_1",
+                plan_id="basic",
+                status="active",
+                monthly_budget_cents=1500,  # -> 50 cents/day
+                current_period_end=None,
+            )
+            # A mixed charge: 50 cents from the daily allowance, 30 from
+            # the wallet.
+            charge = repository.charge_usage("user:1", 80, "generation")
+            self.assertEqual((charge.daily_cents, charge.wallet_cents), (50, 30))
+            self.assertEqual(repository.get_balance("user:1"), 970)
+
+            def wallet_write_then_fail(connection, user_id, charge, reason, now):
+                # Simulates the wallet leg succeeding and *then* the daily
+                # leg raising, writing through the exact connection
+                # _claim_and_apply_pending_refund opened -- if the two legs
+                # weren't in one transaction, this wallet write would
+                # survive the subsequent exception.
+                connection.execute(
+                    "UPDATE accounts SET balance_cents = balance_cents + ? WHERE user_id = ?",
+                    (charge.wallet_cents, user_id),
+                )
+                raise RuntimeError("simulated failure on the daily leg")
+
+            with patch.object(repository, "_apply_refund", side_effect=wallet_write_then_fail):
+                repository.refund_usage("user:1", charge, "refund: dispatch failed")
+                # Still inside the patch so this get_balance's own
+                # opportunistic flush can't cleanly resolve it either --
+                # the wallet write from the failed attempt must not have
+                # survived the rollback (970, not 1000).
+                self.assertEqual(repository.get_balance("user:1"), 970)
+
+            # A clean retry (no simulated failure) applies both legs
+            # together, exactly once.
+            repository.charge_usage("user:1", 0, "generation")
+            self.assertEqual(repository.get_balance("user:1"), 1000)
+            state = repository.get_subscription_state("user:1")
+            assert state is not None
+            self.assertEqual(state["daily_allowance_remaining_cents"], 50)
+
     def test_sync_subscription_ignores_stale_event_for_superseded_subscription(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             repository = self._repository(directory)

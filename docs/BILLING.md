@@ -87,15 +87,23 @@ allowance would inflate it, so a stale refund is a deliberate silent no-op — t
 new day's allowance and isn't harmed by not also getting yesterday's leftover credited back.
 
 **Refunds are durable, not best-effort.** `refund_usage` first calls `record_pending_refund` (a plain
-`pending_refunds` insert) *before* attempting the actual reversal (`_apply_refund`). If `_apply_refund`
-raises, the obligation stays in `pending_refunds` unresolved rather than being lost after a logged
-exception. `flush_pending_refunds(user_id)` retries every unresolved obligation for that user and is
-called opportunistically from both `get_balance` and `charge_usage`, so a refund that failed to apply
-immediately gets a real chance to complete on the user's very next balance read or charge — no separate
-reconciliation job needed. Both `server/studio.py::invoke_tool` (the manual `/invoke` path) and
+`pending_refunds` insert, its own committed transaction) *before* attempting the actual reversal via
+`_claim_and_apply_pending_refund`. That method claims the row (`UPDATE pending_refunds SET resolved_at = ?
+WHERE id = ? AND resolved_at IS NULL`) and calls `_apply_refund` — the wallet credit, the daily-allowance
+credit, and their ledger/`usage_events` rows — **all on the same connection, one transaction**: either
+everything commits together or an exception rolls back the claim along with both reversal legs, so a
+crash or error partway through can never leave the claim resolved with only one leg applied, and a retry
+of a genuinely-failed attempt can never double-credit a leg that already landed. `flush_pending_refunds
+(user_id)` retries every still-unresolved obligation for that user and is called opportunistically from
+both `get_balance` and `charge_usage`, so a refund that failed to apply immediately gets a real chance to
+complete on the user's very next balance read or charge — no separate reconciliation job needed. The same
+claim also protects against two processes flushing the same user concurrently (this app runs as two
+separate OS processes — the FastAPI server and the AgentCore agent — sharing one SQLite file): only
+whichever caller flips `resolved_at` from `NULL` first gets to apply that refund. Both
+`server/studio.py::invoke_tool` (the manual `/invoke` path) and
 `agent/studio_agent_next.py::GatewayMCPServer.call_tool` (the agent-dispatched path) debit *before*
 dispatching to the provider and call `refund_usage` on any dispatch/registration failure; neither needed
-to change to get this durability, since it lives inside `refund_usage` itself.
+to change to get any of this, since it all lives inside `refund_usage` itself.
 
 ## Stripe integration (`server/billing.py`)
 

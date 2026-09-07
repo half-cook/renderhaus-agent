@@ -1722,11 +1722,17 @@ class StudioRepository:
             return UsageCharge(daily_cents=daily_portion, wallet_cents=wallet_portion, charge_date=today)
         raise RuntimeError("charge_usage: too much contention on this account's daily allowance.")
 
-    def _apply_refund(self, user_id: str, charge: UsageCharge, reason: str) -> None:
-        """The actual reversal of a charge_usage() result -- the part that
-        can fail (a write against a busy/locked db). Split out of
-        refund_usage() so that method can record the obligation durably
-        before attempting this.
+    def _apply_refund(
+        self, connection: sqlite3.Connection, user_id: str, charge: UsageCharge, reason: str, now: int
+    ) -> None:
+        """The actual reversal of a charge_usage() result, run against the
+        same connection/transaction as the pending_refunds claim that gates
+        it (see _claim_and_apply_pending_refund) -- so the claim, both
+        reversal legs, and their ledger/usage_events rows either all commit
+        together or none of them do. Splitting the wallet and daily legs
+        across separate connections (an earlier version of this method did)
+        left a window where a crash between them could double-credit the
+        wallet on retry, or lose the daily-side credit entirely.
 
         The daily-side reversal only applies while `daily_allowance_reset_date`
         still matches charge.charge_date -- if the day has since rolled
@@ -1736,22 +1742,25 @@ class StudioRepository:
         got a full fresh allowance for the new day.
         """
         if charge.wallet_cents > 0:
-            self.adjust_balance(user_id, charge.wallet_cents, reason)
+            self._apply_balance_delta(connection, user_id, charge.wallet_cents, now)
+            connection.execute(
+                "INSERT INTO credit_ledger(id, user_id, delta, reason, reference_id, created_at) "
+                "VALUES (?, ?, ?, ?, NULL, ?)",
+                (uuid.uuid4().hex, user_id, charge.wallet_cents, reason, now),
+            )
         if charge.daily_cents > 0:
-            now = _now()
-            with self._connect() as connection:
-                cursor = connection.execute(
-                    "UPDATE subscriptions SET "
-                    "daily_allowance_used_cents = MAX(0, daily_allowance_used_cents - ?), updated_at = ? "
-                    "WHERE user_id = ? AND daily_allowance_reset_date = ?",
-                    (charge.daily_cents, now, user_id, charge.charge_date),
+            cursor = connection.execute(
+                "UPDATE subscriptions SET "
+                "daily_allowance_used_cents = MAX(0, daily_allowance_used_cents - ?), updated_at = ? "
+                "WHERE user_id = ? AND daily_allowance_reset_date = ?",
+                (charge.daily_cents, now, user_id, charge.charge_date),
+            )
+            if cursor.rowcount:
+                connection.execute(
+                    "INSERT INTO usage_events(id, user_id, daily_cents, wallet_cents, reason, created_at) "
+                    "VALUES (?, ?, ?, 0, ?, ?)",
+                    (uuid.uuid4().hex, user_id, -charge.daily_cents, reason, now),
                 )
-                if cursor.rowcount:
-                    connection.execute(
-                        "INSERT INTO usage_events(id, user_id, daily_cents, wallet_cents, reason, created_at) "
-                        "VALUES (?, ?, ?, 0, ?, ?)",
-                        (uuid.uuid4().hex, user_id, -charge.daily_cents, reason, now),
-                    )
 
     def record_pending_refund(self, user_id: str, charge: UsageCharge, reason: str) -> str:
         """Durably records a refund obligation before attempting to apply
@@ -1769,29 +1778,32 @@ class StudioRepository:
     def _claim_and_apply_pending_refund(
         self, user_id: str, refund_id: str, charge: UsageCharge, reason: str
     ) -> None:
-        """Atomically claims one pending_refunds row before applying it, so
-        refund_usage's own immediate attempt and a concurrently-triggered
-        flush_pending_refunds (this app runs as two separate OS processes --
-        the FastAPI server and the AgentCore agent -- sharing one SQLite
-        file, so this isn't just an in-process race) can't both apply the
-        same refund. The UPDATE's `WHERE resolved_at IS NULL` is the CAS:
-        only the caller that flips it from NULL wins the right to apply.
-        A failed apply reverts the claim (back to NULL) rather than leaving
-        the row stuck "resolved" without ever actually crediting it.
+        """Atomically claims one pending_refunds row and applies it in the
+        same transaction, so refund_usage's own immediate attempt and a
+        concurrently-triggered flush_pending_refunds (this app runs as two
+        separate OS processes -- the FastAPI server and the AgentCore agent
+        -- sharing one SQLite file, so this isn't just an in-process race)
+        can't both apply the same refund, and a crash or exception partway
+        through can't leave the claim resolved with only half the refund
+        applied (or applied with no claim recorded). The UPDATE's `WHERE
+        resolved_at IS NULL` is the CAS: only the caller that flips it from
+        NULL wins the right to apply. sqlite3's own rollback-on-exception
+        (see _connect's context-manager use throughout this file) undoes
+        the claim along with everything else if `_apply_refund` raises --
+        no separate manual revert needed.
         """
-        with self._connect() as connection:
-            cursor = connection.execute(
-                "UPDATE pending_refunds SET resolved_at = ? WHERE id = ? AND resolved_at IS NULL",
-                (_now(), refund_id),
-            )
-            if cursor.rowcount == 0:
-                return  # already claimed (and applied, or being applied) elsewhere
         try:
-            self._apply_refund(user_id, charge, reason)
+            with self._connect() as connection:
+                now = _now()
+                cursor = connection.execute(
+                    "UPDATE pending_refunds SET resolved_at = ? WHERE id = ? AND resolved_at IS NULL",
+                    (now, refund_id),
+                )
+                if cursor.rowcount == 0:
+                    return  # already claimed (and applied, or being applied) elsewhere
+                self._apply_refund(connection, user_id, charge, reason, now)
         except Exception:
             logger.exception("Could not apply pending refund %s for %s; left pending for later flush", refund_id, user_id)
-            with self._connect() as connection:
-                connection.execute("UPDATE pending_refunds SET resolved_at = NULL WHERE id = ?", (refund_id,))
 
     def flush_pending_refunds(self, user_id: str) -> None:
         """Best-effort: applies any refund obligations for this user that
