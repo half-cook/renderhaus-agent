@@ -211,6 +211,40 @@ AgentCore Gateway. The Runtime agent is an MCP client of that URL. There is no l
 
 `AGENTCORE_GATEWAY_URL` is required. The agent does not spawn provider MCP servers.
 
+### fal MCP
+
+The Studio agent (`agent/studio_agent_next.py`) can also connect directly to fal's hosted
+[Run MCP server](https://fal.ai/docs/documentation/setting-up/mcp) at `https://mcp.fal.ai/mcp`.
+No local fal process or extra package is needed. This connection belongs to Renderhaus and is
+independent of any fal plugin installed in your editor.
+
+Add `FAL_KEY` to the existing Renderhaus AWS Secrets Manager JSON secret (`renderhaus/app` by
+default), or to the ignored root `.env.local` for local development. The existing configuration
+loader supplies it to the MCP Authorization header. Keep the key out of frontend environment files
+and source control. Secrets Manager values override local values when both are configured.
+
+The connection enables automatically when the key is present. `FAL_MCP_ENABLED=false` disables it;
+`FAL_MCP_ENABLED=true` requires a key and reports a configuration error when it is missing.
+Restart the backend/local AgentCore runtime after changing credentials. For the cloud runtime,
+deploy the updated code with `make runtime` and restart/recreate active sessions after key changes.
+
+```bash
+make smoke-fal
+```
+
+This checks the MCP handshake, lists tools, and performs a live model search without generating
+media. The agent sees `Fal___search_models`, `Fal___get_model_schema`, `Fal___get_pricing`, and
+the other fal tools alongside the Gateway. Its existing approval/autonomous mode applies to fal
+calls. Referenced canvas media is resolved inside model inputs, and completed image, video, and
+audio results are ingested through the normal asset pipeline. Long jobs use `submit_job`,
+`check_job`, and `get_job_result`.
+
+Fal generation is billed to the owner of `FAL_KEY`; it is not yet part of Renderhaus's customer
+balance accounting. When Stripe billing is enabled, `run_model` and `submit_job` are withheld and
+blocked at dispatch. Set `FAL_MCP_ALLOW_UNBILLED_GENERATION=true` only to explicitly fund these
+runs yourself. Discovery, schemas, pricing, and existing-job retrieval remain available. When
+Stripe is disabled, generation is available under the same operator-funded model.
+
 ## Supervisor (Director + Executor)
 
 Multi-shot flow: Director plans → you approve → Executor runs modality workers.

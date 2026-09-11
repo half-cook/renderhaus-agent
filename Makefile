@@ -3,7 +3,7 @@ PYTHON ?= .venv/bin/python
 REGION ?= us-east-1
 PROVIDER ?= all
 
-.PHONY: help setup setup-clerk check lint tools backend studio dry-flags gateway smoke-gateway runtime smoke deploy-all invoke-tool schemas smoke-remotion
+.PHONY: help setup setup-clerk check lint tools backend studio dry-flags gateway smoke-gateway runtime smoke deploy-all invoke-tool schemas smoke-remotion smoke-fal
 
 help:
 	@echo "Local development"
@@ -11,6 +11,7 @@ help:
 	@echo "  make check         Fast CI checks (no paid APIs)"
 	@echo "  make lint          Ruff check"
 	@echo "  make tools         List Gateway tools generated from providers/"
+	@echo "  make smoke-fal     Verify fal MCP and search models (no paid generation)"
 	@echo "  make schemas       Write configs/gateway/*.tools.json from provider APIs"
 	@echo "  make studio        Next.js canvas UI (the app) -- needs make backend too"
 	@echo "  make backend       FastAPI backend API on :8000"
@@ -73,5 +74,8 @@ smoke:
 
 smoke-remotion:
 	$(PYTHON) scripts/smoke_remotion_lambda.py
+
+smoke-fal:
+	$(PYTHON) scripts/smoke_fal.py
 
 deploy-all: gateway runtime smoke

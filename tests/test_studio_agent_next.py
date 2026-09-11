@@ -768,6 +768,7 @@ class StudioAgentNextEntrypointTests(unittest.IsolatedAsyncioTestCase):
         with (
             patch.dict(os.environ, {"AGENT_MODEL": "openai:gpt-4.1-mini"}),
             patch("agent.studio_agent_next.gateway_mcp_server", return_value=object()),
+            patch("agent.studio_agent_next.fal_mcp_server", return_value=None),
             patch("agent.studio_agent_next.MCPServerManager", FakeManager),
         ):
             await run_studio_agent(
@@ -799,6 +800,7 @@ class StudioAgentNextEntrypointTests(unittest.IsolatedAsyncioTestCase):
         with (
             patch.dict(os.environ, {"AGENT_MODEL": "gpt-5.6-luna"}),
             patch("agent.studio_agent_next.gateway_mcp_server", return_value=object()),
+            patch("agent.studio_agent_next.fal_mcp_server", return_value=None),
             patch("agent.studio_agent_next.MCPServerManager", FakeManager),
         ):
             with self.assertRaises(RuntimeError):

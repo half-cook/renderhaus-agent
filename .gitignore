@@ -19,5 +19,8 @@ coverage/
 .external/
 .renderhaus/
 
+# Generated VS Code Python import completion cache
+.vscode/PythonImportHelper-v2-Completion.json
+
 .DS_Store
 *.log

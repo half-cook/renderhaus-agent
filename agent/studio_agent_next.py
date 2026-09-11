@@ -1,8 +1,8 @@
 """Renderhaus Studio manager on Bedrock AgentCore Runtime.
 
-Generation and Remotion tools come only from Amazon Bedrock AgentCore Gateway
-(one MCP URL, Lambda targets per provider). This file owns the Runtime
-entrypoint and the structured result.
+Generation and Remotion tools come from Amazon Bedrock AgentCore Gateway and
+the optional fal hosted MCP server. This file owns the Runtime entrypoint and
+the structured result.
 """
 
 from __future__ import annotations
@@ -27,6 +27,13 @@ from bedrock_agentcore.runtime import BedrockAgentCoreApp
 from mcp import Tool as MCPTool
 from pydantic import BaseModel, Field, ValidationError
 
+from agent.fal_mcp import (
+    FAL_RESULT_TOOLS,
+    FAL_TOOL_PREFIX,
+    fal_mcp_server,
+    mcp_result_is_error,
+    normalize_fal_result,
+)
 from agent.studio_memory import StudioMemorySession
 from providers.catalog import PROVIDERS
 from providers.registry import load_committed_schemas
@@ -89,6 +96,14 @@ a capability, search with the concrete user intent, the input media already avai
 required output type. The returned tools become available on the next step. Search again if the
 task changes. Never guess a tool name or enumerate the whole catalog unless the customer explicitly
 asks for an inventory.
+
+When configured, fal tools are available with the `Fal___` prefix. Use `search_models` or
+`recommend_model` to discover an endpoint, then `get_model_schema` before supplying its `input`.
+Check `get_pricing` before generating media. Use `submit_job` for video or other long jobs,
+then `check_job` and `get_job_result`; a queued or processing response is not a finished asset.
+Use returned media URLs for subsequent edits and Remotion composition. Canvas `source_ref`
+handles also work inside fal's nested `input` fields. If fal generation tools are unavailable,
+use the available Gateway providers instead. Cancel a fal job only when the customer asks.
 
 Use generation tools only when the request needs new media; they may trigger paid provider or AWS
 work. Gateway tools keep provider argument names such as `image_path_or_url` and Remotion clip
@@ -1058,6 +1073,11 @@ def _append_harvested_event(
     if not payload:
         payload = {"status": "completed"}
     provider, _tool, label = _gateway_tool_parts(name)
+    is_fal = name.startswith(FAL_TOOL_PREFIX)
+    if is_fal:
+        payload = normalize_fal_result(payload)
+        if mcp_result_is_error(output):
+            payload["isError"] = True
     status = _tool_event_status(payload)
     if name == _GATEWAY_SEARCH_TOOL:
         discovered = sorted(_tool_names_from_search_result(output))
@@ -1069,7 +1089,12 @@ def _append_harvested_event(
     else:
         summary = str(payload.get("note") or payload.get("summary") or f"{label}: {status}.")
     assets: list[dict[str, Any]] = []
-    if studio.asset_registrar and status in {"succeeded", "success", "completed"}:
+    has_media_result = not is_fal or _tool in FAL_RESULT_TOOLS
+    if (
+        studio.asset_registrar
+        and has_media_result
+        and status in {"succeeded", "success", "completed"}
+    ):
         try:
             assets = studio.asset_registrar(
                 result=payload,
@@ -1089,7 +1114,9 @@ def _append_harvested_event(
             summary=summary[:320],
             provider=provider.lower() if provider else None,
             provider_job_id=(
-                str(payload["job_id"]) if isinstance(payload.get("job_id"), (str, int)) else None
+                str(payload.get("job_id") or payload.get("request_id"))
+                if isinstance(payload.get("job_id") or payload.get("request_id"), (str, int))
+                else None
             ),
             arguments=arguments,
             assets=assets,
@@ -1140,6 +1167,10 @@ def _remember_source_versions(
         elif isinstance(item, dict):
             for key, child in item.items():
                 kind = key_kinds.get(key)
+                if key == "url" and any(
+                    item.get(f"{media_kind}_url") == child for media_kind in sources
+                ):
+                    continue
                 if kind and isinstance(child, str) and child.startswith(("http://", "https://")):
                     if child not in sources[kind]:
                         sources[kind].append(child)
@@ -1624,9 +1655,16 @@ async def run_studio_agent(
     server = gateway_mcp_server(
         argument_transformer=studio.prepare_gateway_arguments, user_id=studio.user_id
     )
+    servers = [server]
+    fal = fal_mcp_server(
+        argument_transformer=studio.prepare_gateway_arguments,
+        require_approval=_gateway_requires_approval,
+    )
+    if fal is not None:
+        servers.append(fal)
     try:
         async with MCPServerManager(
-            [server],
+            servers,
             connect_timeout_seconds=30,
             drop_failed_servers=False,
             strict=True,

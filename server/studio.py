@@ -23,6 +23,7 @@ from fastapi import APIRouter, File, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse, StreamingResponse
 from pydantic import BaseModel, Field
 
+from agent.fal_mcp import FAL_RESULT_TOOLS, FAL_TOOL_PREFIX
 from agent.studio_agent import StudioNodeReference
 from agent.studio_agent_next import (
     MAX_AGENT_PROMPT_CHARS,
@@ -260,6 +261,12 @@ def _hydrate_tool_event_assets(
 ) -> None:
     seen_sources: set[str] = set()
     for event in events:
+        name = str(getattr(event, "name", ""))
+        if name.startswith(FAL_TOOL_PREFIX):
+            if name.removeprefix(FAL_TOOL_PREFIX) not in FAL_RESULT_TOOLS:
+                continue
+            if str(getattr(event, "status", "")).lower() not in {"succeeded", "success", "completed"}:
+                continue
         existing = list(getattr(event, "assets", None) or [])
         if existing:
             continue

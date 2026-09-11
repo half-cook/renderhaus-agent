@@ -30,7 +30,7 @@ class AgentCoreGatewayConfigTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 require_agentcore_gateway_url()
 
-    def test_gateway_mcp_server_is_the_only_client(self) -> None:
+    def test_gateway_mcp_server_uses_streamable_http(self) -> None:
         with (
             patch("agent.studio_agent_next.load_local_env"),
             patch.dict(
