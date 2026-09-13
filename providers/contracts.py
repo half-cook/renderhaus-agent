@@ -86,7 +86,7 @@ TOOL_ARGUMENT_RULES: dict[str, dict[str, dict[str, ArgumentRule]]] = {
     },
     "remotion": {
         "render_timeline": {
-            "aspect_ratio": ArgumentRule(choices=("16:9", "9:16", "1:1")),
+            "aspect_ratio": ArgumentRule(choices=("16:9", "9:16", "1:1", "2.39:1")),
             "fps": ArgumentRule(minimum=12, maximum=60),
         }
     },
@@ -110,6 +110,7 @@ TOOL_ARGUMENT_RULES: dict[str, dict[str, dict[str, ArgumentRule]]] = {
             "track_type": ArgumentRule(choices=("vocals", "accompaniment", "instrument"))
         },
         "generate_soundtrack": {
+            "n": ArgumentRule(minimum=1, maximum=3),
             "audio_start": ArgumentRule(minimum=0),
             "audio_end": ArgumentRule(minimum=0),
         },
@@ -147,6 +148,7 @@ _VISUAL_ITEM_SCHEMA = {
             "description": "Allowed range: -360 to 360.",
         },
         "playback_rate": {"type": "number", "description": "Allowed range: 0.25 to 4."},
+        "volume": {"type": "number", "description": "Source video audio volume. Allowed range: 0 to 1. Use 0 when replacing the soundtrack."},
         "fade_in_seconds": {"type": "number", "description": "Must be at least 0."},
         "fade_out_seconds": {"type": "number", "description": "Must be at least 0."},
         "motion": {
@@ -164,8 +166,8 @@ _AUDIO_ITEM_SCHEMA = {
             "description": "HTTPS media URL or renderhaus-asset:// version handle.",
         },
         "duration_seconds": {"type": "number", "description": "Must be greater than 0."},
-        "start_seconds": {"type": "number", "description": "Must be at least 0."},
-        "source_in_seconds": {"type": "number", "description": "Must be at least 0."},
+        "start_seconds": {"type": "number", "description": "Position in the final video where this audio begins (0 starts immediately). Must be at least 0."},
+        "source_in_seconds": {"type": "number", "description": "Seconds to skip inside the source music, independent of its position in the video. Must be at least 0."},
         "volume": {"type": "number", "description": "Allowed range: 0 to 1."},
         "fade_in_seconds": {"type": "number", "description": "Must be at least 0."},
         "fade_out_seconds": {"type": "number", "description": "Must be at least 0."},
@@ -262,14 +264,15 @@ def _validate_schema(value: Any, schema: dict[str, Any], path: str) -> None:
 
 
 def _validate_rule(path: str, value: Any, rule: ArgumentRule) -> None:
-    if rule.choices and value not in rule.choices:
-        pattern_match = bool(
-            rule.pattern and isinstance(value, str) and re.fullmatch(rule.pattern, value)
-        )
-        if not pattern_match:
-            choices = ", ".join(str(choice) for choice in rule.choices)
-            suffix = f" or {rule.pattern_hint.lower()}" if rule.pattern_hint else ""
-            raise ValueError(f"{path} must be one of {choices}{suffix}.")
+    if rule.choices:
+        if value not in rule.choices:
+            pattern_match = bool(
+                rule.pattern and isinstance(value, str) and re.fullmatch(rule.pattern, value)
+            )
+            if not pattern_match:
+                choices = ", ".join(str(choice) for choice in rule.choices)
+                suffix = f"; {rule.pattern_hint}" if rule.pattern_hint else ""
+                raise ValueError(f"{path} must be one of {choices}{suffix}.")
     elif rule.pattern and isinstance(value, str) and not re.fullmatch(rule.pattern, value):
         raise ValueError(f"{path} must match {rule.pattern_hint or rule.pattern}.")
     if rule.minimum is not None and float(value) < rule.minimum:
@@ -316,6 +319,7 @@ def _validate_cross_fields(provider_id: str, tool_name: str, arguments: dict[str
                 "opacity": (0, 1),
                 "rotation_degrees": (-360, 360),
                 "playback_rate": (0.25, 4),
+                "volume": (0, 1),
             }
             for field, (minimum, maximum) in ranges.items():
                 if field in clip and not minimum <= float(clip[field]) <= maximum:
@@ -374,10 +378,12 @@ def _validate_cross_fields(provider_id: str, tool_name: str, arguments: dict[str
     if tool_name == "region_edit_song" and arguments["edit_end_ms"] <= arguments["edit_start_ms"]:
         raise ValueError("region_edit_song edit_end_ms must be greater than edit_start_ms.")
     if tool_name == "generate_soundtrack":
+        if bool(arguments.get("image_id")) == bool(arguments.get("video_id")):
+            raise ValueError("generate_soundtrack requires exactly one image_id or video_id.")
         start = arguments.get("audio_start")
         end = arguments.get("audio_end")
-        if start is not None and end is not None and end <= start:
-            raise ValueError("generate_soundtrack audio_end must be greater than audio_start.")
+        if end is not None and end - (start or 0) < 3000:
+            raise ValueError("generate_soundtrack start/end are milliseconds; the segment must be at least 3000 ms.")
 
 
 def validate_tool_arguments(

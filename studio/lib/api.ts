@@ -311,6 +311,7 @@ export type StudioExecution = {
   assets: StudioAsset[];
   result?: AgentResultData;
   errorType?: string;
+  checkpointAt?: number;
   createdAt?: number;
   updatedAt?: number;
   autonomous: boolean;
@@ -451,6 +452,7 @@ export async function fetchStudioExecutions(
       progressEvents: agentProgressEvents(item.events),
       assets,
       result: agentResult,
+      checkpointAt: typeof item.checkpoint_at === "number" ? item.checkpoint_at : undefined,
       errorType: typeof item.error_type === "string" ? item.error_type : undefined,
       createdAt: typeof item.created_at === "number" ? item.created_at : undefined,
       updatedAt: typeof item.updated_at === "number" ? item.updated_at : undefined,
@@ -825,4 +827,17 @@ export async function decideAgentApproval(
     throw new Error(payload.detail || payload.message || `approval ${response.status}`);
   }
   return agentProgress(payload);
+}
+
+export async function resumeAgentRun(jobId: string) {
+  const response = await studioFetch(`/api/studio/agent/${encodeURIComponent(jobId)}/resume`, {method: "POST"});
+  const payload = await readJson(response);
+  if (!response.ok) throw new Error(String(payload.detail || "Could not resume this run."));
+  return payload;
+}
+export async function stopAgentRun(jobId: string) {
+  const response = await studioFetch(`/api/studio/agent/${encodeURIComponent(jobId)}/stop`, {method: "POST"});
+  const payload = await readJson(response);
+  if (!response.ok) throw new Error(String(payload.detail || "Could not stop this run."));
+  return payload;
 }

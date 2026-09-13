@@ -1,0 +1,29 @@
+{
+  "description": "Require real browser verification after Renderhaus app changes.",
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$(git rev-parse --show-toplevel)/scripts/browser_e2e_hook.py\"",
+            "timeout": 15,
+            "statusMessage": "Preparing browser validation"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$(git rev-parse --show-toplevel)/scripts/browser_e2e_hook.py\"",
+            "timeout": 15,
+            "statusMessage": "Checking browser validation evidence"
+          }
+        ]
+      }
+    ]
+  }
+}

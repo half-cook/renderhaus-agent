@@ -3,6 +3,10 @@
 import { useReactFlow } from "@xyflow/react";
 import {
   Archive,
+  BookmarkCheck,
+  Clock3,
+  RotateCcw,
+  Square,
   AtSign,
   Check,
   ChevronRight,
@@ -18,10 +22,14 @@ import {
   Sparkles,
   X,
 } from "lucide-react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   AGENT_PROMPT_MAX_CHARS,
   decideAgentApproval,
+  resumeAgentRun,
+  stopAgentRun,
   submitAgentPrompt,
   type AgentApprovalRequest,
   type AgentProgress,
@@ -37,8 +45,9 @@ type LiveRun = {
   progress: AgentProgress;
 };
 
-function normalizedStatus(status: string): "running" | "completed" | "failed" {
+function normalizedStatus(status: string): "running" | "completed" | "failed" | "incomplete" {
   const value = status.toLowerCase();
+  if (["incomplete", "not_run", "rejected"].includes(value)) return "incomplete";
   if (["failed", "error", "cancelled", "canceled"].includes(value)) return "failed";
   if (["queued", "running", "pending", "awaiting_approval"].includes(value)) return "running";
   return "completed";
@@ -96,6 +105,7 @@ function StepIcon({ status }: { status: string }) {
   const state = normalizedStatus(status);
   if (state === "running") return <LoaderCircle className="spin" size={14} />;
   if (state === "failed") return <CircleAlert size={14} />;
+  if (state === "incomplete") return <Clock3 size={14} />;
   return <Check size={14} />;
 }
 
@@ -113,62 +123,31 @@ function IntermediateSteps({
   duration?: string | null;
 }) {
   const state = normalizedStatus(status);
-  const progressToolIds = new Set(
-    progressEvents.map((event) => event.toolCallId).filter(Boolean),
+  const visible = progressEvents.filter((event) =>
+    ["MODEL_UPDATE", "CONTEXT_COMPACTION"].includes(event.type),
   );
   const steps = [
-    ...progressEvents
-      .filter((event) => !["RUN_STARTED", "RUN_FINISHED", "RUN_ERROR"].includes(event.type))
-      .map((event) => ({
-        id: event.id,
-        title: event.title,
-        message: event.message,
-        status:
-          state === "failed" && normalizedStatus(event.status) === "running"
-            ? "failed"
-            : event.status,
-        kind:
-          event.type === "REASONING_MESSAGE_CONTENT"
-            ? "Reasoning"
-            : event.type === "MODEL_UPDATE"
-              ? "Update"
-              : event.type === "TOOL_APPROVAL_REQUIRED"
-                ? "Approval"
-            : event.type.startsWith("TOOL_CALL")
-              ? "Tool"
-              : event.type === "TEXT_MESSAGE_CONTENT"
-                ? "Response"
-                : "Step",
-      })),
-    ...events
-      .filter((event) => !progressToolIds.has(event.id))
-      .map((event) => ({
-        id: `tool-event-${event.id}`,
-        title: event.label,
-        message: event.summary,
-        status:
-          state === "failed" && normalizedStatus(event.status) === "running"
-            ? "failed"
-            : event.status,
-        kind: "Tool",
-      })),
+    ...visible.map((event) => ({id: event.id, title: event.title, message: event.message,
+      status: event.status, kind: "Update"})),
+    ...events.map((event) => ({id: event.id, title: event.label, message: event.summary,
+      status: state !== "running" && normalizedStatus(event.status) === "running" ? "incomplete" : event.status,
+      kind: event.status === "awaiting_approval" ? "Approval" : "Tool"})),
   ];
-  const label =
-    status === "awaiting_approval"
-      ? "Waiting for approval"
-      : state === "running"
-      ? progressEvents.filter((event) => event.type === "MODEL_UPDATE").at(-1)?.message
-        || (steps.length ? "In progress" : message || "Queued")
-      : state === "failed"
-        ? "Stopped"
-        : `Completed${duration ? ` in ${duration}` : ""}`;
+  const currentWait = progressEvents.filter((event) => event.type === "MEDIA_WAIT" && event.status === "running").at(-1);
+  const currentUpdate = progressEvents.filter((event) => event.type === "MODEL_UPDATE").at(-1);
+  const label = status === "awaiting_approval" ? "Your approval is needed"
+    : state === "running" ? currentWait?.message || currentUpdate?.message || message || "Starting…"
+    : state === "incomplete" ? "Export incomplete · progress saved"
+    : state === "failed" ? "Stopped · progress saved"
+    : `Completed${duration ? ` in ${duration}` : ""}`;
 
   return (
-    <details className={`agent-progress-group ${state}`} open={state === "running"}>
+    <div className={`agent-progress-group ${state}`}>
+      <div className="agent-run-status" role="status"><StepIcon status={status} /><span>{label}</span></div>
+    <details>
       <summary>
         <span className="agent-progress-leading">
-          <StepIcon status={status} />
-          <span>{label}</span>
+          <span>{events.length} tool {events.length === 1 ? "step" : "steps"} · Updates & history</span>
         </span>
         {steps.length ? <ChevronRight className="agent-progress-chevron" size={14} /> : null}
       </summary>
@@ -187,6 +166,7 @@ function IntermediateSteps({
         </ol>
       ) : null}
     </details>
+    </div>
   );
 }
 
@@ -194,27 +174,30 @@ function ApprovalCards({
   approvals,
   onDecision,
   busyCallId,
+  active,
 }: {
   approvals: AgentApprovalRequest[];
   onDecision: (approval: AgentApprovalRequest, decision: "approve" | "reject") => void;
   busyCallId: string | null;
+  active: boolean;
 }) {
   if (!approvals.length) return null;
   return (
     <div className="agent-approvals" aria-label="Tool approvals">
       {approvals.map((approval) => (
+        approval.decision || !active ? <details className="agent-approval-record" key={approval.callId}>
+          <summary>{approval.decision === "approve" ? "Approved" : approval.decision === "reject" ? "Rejected" : "Not run · closed"} · {approval.label}</summary>
+          <ApprovalSummary approval={approval}/>
+          <div className="agent-approval-details"><pre>{JSON.stringify(approval.arguments, null, 2)}</pre></div>
+        </details> :
         <article className="agent-approval" key={approval.callId}>
           <header>
             <span><ShieldCheck size={14} /> Tool approval</span>
             {approval.provider ? <em>{approval.provider}</em> : null}
           </header>
           <strong>{approval.label}</strong>
-          <pre>{JSON.stringify(approval.arguments, null, 2)}</pre>
-          {approval.decision ? (
-            <p className={`agent-approval-decision ${approval.decision}`}>
-              {approval.decision === "approve" ? "Approved" : "Rejected"}
-            </p>
-          ) : (
+          <ApprovalSummary approval={approval}/>
+          <details className="agent-approval-details"><summary>Review parameters</summary><pre>{JSON.stringify(approval.arguments, null, 2)}</pre></details>
             <footer>
               <button
                 type="button"
@@ -234,11 +217,28 @@ function ApprovalCards({
                 Approve once
               </button>
             </footer>
-          )}
         </article>
       ))}
     </div>
   );
+}
+
+function ApprovalSummary({approval}: {approval: AgentApprovalRequest}) {
+  const args = approval.arguments;
+  if (Array.isArray(args.visuals)) {
+    const ends = new Map<number, number>();
+    for (const clip of args.visuals as Array<Record<string, unknown>>) {
+      const track = Number(clip.track || 0);
+      ends.set(track, Math.max(ends.get(track) || 0, Number(clip.start_seconds ?? ends.get(track) ?? 0) + Number(clip.duration_seconds || 0)));
+    }
+    const duration = Math.max(...ends.values());
+    const audio = Array.isArray(args.audio_tracks) ? args.audio_tracks as Array<Record<string, unknown>> : [];
+    return <p className="agent-approval-summary">Export {duration}s · {String(args.aspect_ratio || "9:16")} · {String(args.fps || 30)} fps<br/>{args.visuals.length} visual {args.visuals.length === 1 ? "clip" : "clips"}{audio.length ? ` · ${audio.length} audio ${audio.length === 1 ? "track" : "tracks"}` : ""}
+      {audio.map((clip, index) => <span className="agent-audio-timing" key={index}>Audio {index + 1}: plays at {Number(clip.start_seconds || 0)}–{Math.min(duration, Number(clip.start_seconds || 0) + Number(clip.duration_seconds || 0))}s · source starts at {Number(clip.source_in_seconds || 0)}s</span>)}
+    </p>;
+  }
+  if (args.job_id || args.render_id) return <p className="agent-approval-summary">Check the existing job and wait for its result. This does not start another generation.</p>;
+  return typeof args.prompt === "string" ? <p className="agent-approval-summary">{args.prompt.slice(0,220)}{args.prompt.length > 220 ? "…" : ""}</p> : null;
 }
 
 function ArtifactCard({
@@ -248,16 +248,16 @@ function ArtifactCard({
 }: {
   asset: StudioAsset;
   placed: boolean;
-  onPlace: () => void;
+  onPlace?: () => void;
 }) {
   return (
-    <article className="agent-artifact">
+    <article className={`agent-artifact ${asset.kind === "video" ? "agent-artifact-video" : ""}`}>
       <AssetMedia
         asset={asset}
         alt={asset.filename}
         className="agent-artifact-media"
         controls={asset.kind !== "image"}
-        muted={asset.kind === "video"}
+        muted={false}
       />
       <div className="agent-artifact-meta">
         <span title={asset.filename}>{asset.filename}</span>
@@ -269,7 +269,7 @@ function ArtifactCard({
           >
             <Download size={13} />
           </AssetDownloadLink>
-          <button
+          {onPlace ? <button
             className="agent-artifact-place"
             type="button"
             disabled={placed}
@@ -277,7 +277,7 @@ function ArtifactCard({
           >
             {placed ? <Check size={13} /> : <Plus size={13} />}
             {placed ? "On canvas" : "Place & edit"}
-          </button>
+          </button> : null}
         </div>
       </div>
     </article>
@@ -290,6 +290,9 @@ function ExecutionTurn({
   onPlace,
   onApproval,
   busyApproval,
+  onResume,
+  canResume,
+  recovering,
 }: {
   execution: StudioExecution;
   placedVersionIds: Set<string>;
@@ -300,25 +303,32 @@ function ExecutionTurn({
     decision: "approve" | "reject",
   ) => void;
   busyApproval: string | null;
+  onResume: () => void;
+  canResume: boolean;
+  recovering: boolean;
 }) {
-  const state = normalizedStatus(execution.status);
+  const displayStatus = execution.progressEvents.some((event) => event.id === "video-delivery" && event.status === "failed")
+    || execution.errorType === "VideoExportIncomplete" ? "incomplete" : execution.status;
+  const state = normalizedStatus(displayStatus);
   const assets = execution.assets;
   return (
     <section className="agent-turn" aria-label={`Agent run ${execution.title || execution.status}`}>
-      {execution.prompt ? <p className="agent-user-message">{execution.prompt}</p> : null}
+      {execution.prompt ? <UserMessage text={execution.prompt} /> : null}
       <div className="agent-response">
         <IntermediateSteps
           events={execution.toolEvents}
           progressEvents={execution.progressEvents}
-          status={execution.status}
+          status={displayStatus}
           message={execution.message}
           duration={runDuration(execution)}
         />
         <ApprovalCards
           approvals={execution.approvals}
+          active={execution.status === "awaiting_approval"}
           busyCallId={busyApproval}
           onDecision={(approval, decision) => onApproval(execution, approval, decision)}
         />
+        {execution.title ? <h3 className="agent-result-title">{execution.title}</h3> : null}
         {execution.summary ? <p className="agent-response-summary">{execution.summary}</p> : null}
         {state === "failed" ? (
           <p className="agent-response-error">{execution.message}</p>
@@ -342,11 +352,15 @@ function ExecutionTurn({
         {execution.result?.markdown ? (
           <details className="agent-response-notes">
             <summary>View full response</summary>
-            <pre>{execution.result.markdown}</pre>
+            <div className="agent-markdown"><ReactMarkdown remarkPlugins={[remarkGfm]}>{execution.result.markdown}</ReactMarkdown></div>
           </details>
         ) : null}
+        {canResume && ["failed", "incomplete"].includes(state) ? <button className="agent-resume" type="button" disabled={recovering} onClick={onResume}>
+          {recovering ? <LoaderCircle size={14} className="spin" /> : <RotateCcw size={14} />} Resume saved progress
+        </button> : null}
         <footer>
           <span>{runTime(execution.createdAt)}</span>
+          {execution.checkpointAt ? <span className="agent-checkpoint"><BookmarkCheck size={12}/> Checkpoint saved</span> : null}
           {execution.result?.partial ? <span>Partial result</span> : null}
         </footer>
       </div>
@@ -355,9 +369,10 @@ function ExecutionTurn({
 }
 
 function LiveExecutionTurn({ run }: { run: LiveRun }) {
+  const assets = [...new Map(run.progress.toolEvents.flatMap((event) => event.assets).map((asset) => [asset.versionId, asset])).values()];
   return (
     <section className="agent-turn agent-turn-live" aria-live="polite">
-      <p className="agent-user-message">{run.prompt}</p>
+      <UserMessage text={run.prompt} />
       <div className="agent-response">
         <IntermediateSteps
           events={run.progress.toolEvents}
@@ -365,12 +380,21 @@ function LiveExecutionTurn({ run }: { run: LiveRun }) {
           status={run.progress.status}
           message={run.progress.message}
         />
+        {assets.length ? <div className="agent-artifacts" aria-label="Completed assets while working">{assets.map((asset) => <ArtifactCard key={asset.versionId} asset={asset} placed={false}/>)}</div> : null}
         {run.progress.result?.summary ? (
           <p className="agent-response-summary">{run.progress.result.summary}</p>
         ) : null}
       </div>
     </section>
   );
+}
+
+function UserMessage({text}: {text: string}) {
+  const [expanded, setExpanded] = useState(false);
+  return <div className="agent-user-message">
+    <p className={!expanded && text.length > 400 ? "agent-prompt-collapsed" : ""}>{text}</p>
+    {text.length > 400 ? <button type="button" onClick={() => setExpanded(!expanded)}>{expanded ? "Collapse brief" : "Read full brief"}</button> : null}
+  </div>;
 }
 
 export function AgentDock() {
@@ -400,6 +424,8 @@ export function AgentDock() {
   const [renaming, setRenaming] = useState<string | null>(null);
   const [archivePending, setArchivePending] = useState(false);
   const [autonomous, setAutonomous] = useState(false);
+  const [recovering, setRecovering] = useState(false);
+  const stickToBottom = useRef(true);
   const [busyApproval, setBusyApproval] = useState<string | null>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const transcriptRef = useRef<HTMLDivElement>(null);
@@ -439,12 +465,14 @@ export function AgentDock() {
   useEffect(() => {
     setRenaming(null);
     setArchivePending(false);
-  }, [conversationId]);
+    stickToBottom.current = true;
+    setAgentMessage(null);
+  }, [conversationId, setAgentMessage]);
 
   useEffect(() => {
     const transcript = transcriptRef.current;
-    if (transcript) transcript.scrollTop = transcript.scrollHeight;
-  }, [agentOpen, liveRun, conversationExecutions.length]);
+    if (transcript && stickToBottom.current) transcript.scrollTop = transcript.scrollHeight;
+  }, [agentOpen, liveRun, conversationExecutions]);
 
   useEffect(() => {
     if (!activeExecution || liveRun) return;
@@ -481,6 +509,7 @@ export function AgentDock() {
     const prompt = value.trim();
     if (!prompt || runInFlight || !conversationId) return;
     setBusy(true);
+    stickToBottom.current = true;
     setAgentMessage(null);
     setLiveRun({
       prompt,
@@ -737,7 +766,11 @@ export function AgentDock() {
         </button>
       </header>
 
-      <div className="agent-transcript" ref={transcriptRef}>
+      <div className="agent-memory-bar"><BookmarkCheck size={13}/><span>Conversation saved · {conversationExecutions.length} {conversationExecutions.length === 1 ? "run" : "runs"}</span></div>
+      <div className="agent-transcript" ref={transcriptRef} onScroll={(event) => {
+        const el = event.currentTarget;
+        stickToBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < 100;
+      }}>
         {conversationExecutions.length === 0 && !liveRun ? (
           <div className="agent-empty">
             <Sparkles size={18} />
@@ -745,7 +778,7 @@ export function AgentDock() {
             <p>Ask for ideas, edits or generated media. Runs and intermediate steps stay here.</p>
           </div>
         ) : null}
-        {conversationExecutions.map((execution) => (
+        {conversationExecutions.filter((execution) => execution.jobId !== liveRun?.progress.jobId).map((execution) => (
           <ExecutionTurn
             key={execution.jobId}
             execution={execution}
@@ -753,12 +786,21 @@ export function AgentDock() {
             onPlace={onPlace}
             onApproval={onApproval}
             busyApproval={busyApproval}
+            canResume={!runInFlight && execution.jobId === conversationExecutions.at(-1)?.jobId}
+            recovering={recovering}
+            onResume={() => {
+              setRecovering(true);
+              void resumeAgentRun(execution.jobId).then(() => refreshExecutions()).catch((error) => setAgentMessage(String(error))).finally(() => setRecovering(false));
+            }}
           />
         ))}
         {liveRun ? <LiveExecutionTurn run={liveRun} /> : null}
       </div>
 
       <div className="agent-composer">
+        {activeExecution || liveRun?.progress.jobId ? <button className="agent-stop" type="button" onClick={() => {
+          void stopAgentRun(activeExecution?.jobId || liveRun!.progress.jobId!).then(() => refreshExecutions()).catch((error) => setAgentMessage(String(error)));
+        }}><Square size={12}/> Stop & save progress</button> : null}
         {nodes.length > 0 && value.includes("@") ? (
           <div className="mention-list">
             {nodes.slice(0, 6).map((node) => (
@@ -774,6 +816,7 @@ export function AgentDock() {
         ) : null}
         <div className="agent-composer-input">
           <textarea
+            aria-label="Ask the project agent"
             ref={inputRef}
             value={value}
             maxLength={AGENT_PROMPT_MAX_CHARS}
@@ -842,7 +885,7 @@ export function AgentDock() {
         <div className="agent-composer-meta">
           <span>{selectedNodeIds.length ? `${selectedNodeIds.length} selected` : "Project context"}</span>
           <span>
-            {agentMessage || activeExecution?.message || (status?.agent ? "Agent ready" : "Agent unavailable")}
+            {activeExecution ? "Progress saves automatically" : agentMessage?.startsWith("Error") ? agentMessage : status?.agent ? "Ready for your next idea" : "Agent unavailable"}
           </span>
         </div>
       </div>

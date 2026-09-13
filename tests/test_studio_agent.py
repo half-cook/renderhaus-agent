@@ -15,7 +15,6 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 from botocore.exceptions import ClientError
 
-from agents import RunContextWrapper
 import server.studio as studio_module
 
 from agent.studio_agent import (
@@ -24,7 +23,6 @@ from agent.studio_agent import (
     StudioAgentRun,
     StudioNodeReference,
     StudioToolEvent,
-    _invoke_provider,
     normalize_markdown_filename,
     run_studio_agent,
 )
@@ -51,28 +49,6 @@ from server.studio import (
 from server.assets import publish_provider_input_url
 from server.studio_state import CanvasConflictError, StudioRepository
 from server.auth import _authorized_parties, current_workspace_id
-
-
-class FakeRunner:
-    seen_agent = None
-    seen_input = ""
-    seen_context = None
-
-    @classmethod
-    async def run(cls, agent, input_value, *, context, **_kwargs):
-        cls.seen_agent = agent
-        cls.seen_input = input_value
-        cls.seen_context = context
-
-        class Result:
-            final_output = StudioAgentOutput(
-                title="Launch outline",
-                summary="A concise launch outline is ready.",
-                markdown="# Launch outline\n\n- Open with the product.",
-                filename="Launch outline",
-            )
-
-        return Result()
 
 
 class StudioAgentTests(unittest.IsolatedAsyncioTestCase):
@@ -729,109 +705,6 @@ class StudioAgentTests(unittest.IsolatedAsyncioTestCase):
             normalize_markdown_filename("../Campaign Brief.md", "Ignored"), "Campaign-Brief.md"
         )
         self.assertEqual(normalize_markdown_filename("", "Agent result"), "agent-result.md")
-
-    async def test_provider_tool_records_a_redacted_event(self) -> None:
-        def fake_dispatch(_provider, _tool, _arguments):
-            return {
-                "status": "dry_run",
-                "job_id": "job-123",
-                "api_key": "must-not-reach-the-model",
-                "message": "authorization: Bearer-secret-value",
-            }
-
-        context = StudioAgentContext(dispatcher=fake_dispatch)
-        payload = await _invoke_provider(
-            RunContextWrapper(context=context),
-            name="generate_image",
-            label="Image generation",
-            provider="seedream",
-            tool_name="text_to_image",
-            arguments={"prompt": "A clean product still"},
-        )
-
-        decoded = json.loads(payload)
-        self.assertEqual(decoded["status"], "dry_run")
-        self.assertNotIn("api_key", decoded["result"])
-        self.assertNotIn("Bearer-secret-value", decoded["result"]["message"])
-        self.assertEqual(context.tool_events[0].name, "generate_image")
-        self.assertEqual(context.tool_events[0].status, "dry_run")
-
-    async def test_provider_tool_polls_queued_media_to_completion(self) -> None:
-        calls: list[str] = []
-
-        def fake_dispatch(_provider, tool, _arguments):
-            calls.append(tool)
-            if tool == "text_to_video":
-                return {"status": "queued", "job_id": "video-123"}
-            return {
-                "status": "succeeded",
-                "job_id": "video-123",
-                "output_path": ".renderhaus/media/video/video-123.mp4",
-            }
-
-        context = StudioAgentContext(dispatcher=fake_dispatch)
-        with patch.dict(os.environ, {"STUDIO_AGENT_POLL_INTERVAL_SECONDS": "0"}):
-            payload = await _invoke_provider(
-                RunContextWrapper(context=context),
-                name="generate_video",
-                label="Video generation",
-                provider="seedance",
-                tool_name="text_to_video",
-                arguments={"prompt": "A product reveal"},
-                poll_tool_name="get_video_task",
-            )
-
-        self.assertEqual(json.loads(payload)["status"], "succeeded")
-        self.assertEqual(calls, ["text_to_video", "get_video_task"])
-        self.assertEqual(context.tool_events[0].status, "succeeded")
-
-    async def test_generated_asset_handle_can_feed_a_later_tool(self) -> None:
-        def fake_dispatch(_provider, _tool, _arguments):
-            return {"status": "succeeded", "image_url": "https://example.test/hero.png"}
-
-        def fake_registrar(**_kwargs):
-            return [
-                {
-                    "asset_id": "asset-1",
-                    "version_id": "version-1",
-                    "kind": "image",
-                    "filename": "hero.png",
-                    "mime_type": "image/png",
-                }
-            ]
-
-        context = StudioAgentContext(
-            dispatcher=fake_dispatch,
-            asset_registrar=fake_registrar,
-            source_resolver=lambda version_id: f"/managed/{version_id}.png",
-        )
-        payload = await _invoke_provider(
-            RunContextWrapper(context=context),
-            name="generate_image",
-            label="Image generation",
-            provider="seedream",
-            tool_name="text_to_image",
-            arguments={"prompt": "A product hero"},
-            output_kind="image",
-        )
-
-        self.assertEqual(json.loads(payload)["assets"][0]["version_id"], "version-1")
-        self.assertEqual(context.source_for("version-1", "image"), "/managed/version-1.png")
-
-    async def test_single_manager_returns_structured_artifact(self) -> None:
-        with patch.dict(os.environ, {"AGENT_MODEL": "openai:gpt-4.1-mini"}):
-            outcome = await run_studio_agent(
-                "Create a launch outline",
-                nodes=[StudioNodeReference(id="node-1", title="Hero image", kind="image")],
-                runner=FakeRunner,
-            )
-
-        self.assertEqual(outcome.final.title, "Launch outline")
-        self.assertEqual(outcome.final.filename, "Launch-outline.md")
-        self.assertIn("Customer request", FakeRunner.seen_input)
-        self.assertEqual(FakeRunner.seen_context.nodes[0].id, "node-1")
-        self.assertEqual(len(FakeRunner.seen_agent.tools), 7)
-        self.assertEqual(FakeRunner.seen_agent.model, "gpt-4.1-mini")
 
     async def test_studio_endpoint_runs_in_background_and_returns_canvas_result(self) -> None:
         outcome = SimpleNamespace(

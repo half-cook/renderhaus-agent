@@ -71,7 +71,7 @@ TOOL_GUIDANCE: dict[str, dict[str, str]] = {
         ),
         "create_instrumental": (
             "Use when the user needs original background music without vocals. Returns a queued "
-            "task id; follow with query_music_task until terminal."
+            "task id; follow with query_music_task until terminal. No exact source-duration control; trim to video length in Remotion. Default n=1."
         ),
         "create_song": (
             "Use when the user already has lyrics and wants a fully produced vocal song. Returns a "
@@ -91,7 +91,7 @@ TOOL_GUIDANCE: dict[str, dict[str, str]] = {
         ),
         "query_music_task": (
             "Use only after a Mureka creation or editing tool returned a task id. Poll once per call "
-            "until succeeded, failed, cancelled, or dry_run; request download on the final poll."
+            "until succeeded, failed, cancelled, or dry_run; request download on the final poll. Pass kind=song for vocal songs or image/video soundtracks, kind=instrumental for instrumentals."
         ),
         "get_music_task": (
             "Alias for query_music_task. Use only to check an existing Mureka task id; it does not "
@@ -135,7 +135,7 @@ TOOL_GUIDANCE: dict[str, dict[str, str]] = {
         ),
         "generate_soundtrack": (
             "Use when the user needs music synchronized to an uploaded media file or a specified "
-            "time range. Use create_instrumental for standalone background music."
+            "time range. Requires image_id or video_id uploaded with purpose=soundtrack. audio_start/audio_end are milliseconds, minimum 3000 ms; n defaults to 1. Poll query_music_task with kind=song."
         ),
         "generate_lyrics_video": (
             "Use when the user wants a lyric video from an existing Mureka song or uploaded audio. "
@@ -459,6 +459,7 @@ def dummy_arguments(schema: dict[str, Any]) -> dict[str, Any]:
         "describe_song": "song_id",
         "transcribe_song": "song_id",
         "generate_track": "song_id",
+        "generate_soundtrack": "image_id",
         "generate_lyrics_video": "song_id",
     }
     source_field = source_fields.get(str(schema.get("name") or ""))

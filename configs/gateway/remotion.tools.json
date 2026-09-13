@@ -69,6 +69,10 @@
                 "type": "number",
                 "description": "Allowed range: 0.25 to 4."
               },
+              "volume": {
+                "type": "number",
+                "description": "Source video audio volume. Allowed range: 0 to 1. Use 0 when replacing the soundtrack."
+              },
               "fade_in_seconds": {
                 "type": "number",
                 "description": "Must be at least 0."
@@ -105,11 +109,11 @@
               },
               "start_seconds": {
                 "type": "number",
-                "description": "Must be at least 0."
+                "description": "Position in the final video where this audio begins (0 starts immediately). Must be at least 0."
               },
               "source_in_seconds": {
                 "type": "number",
-                "description": "Must be at least 0."
+                "description": "Seconds to skip inside the source music, independent of its position in the video. Must be at least 0."
               },
               "volume": {
                 "type": "number",
@@ -186,7 +190,7 @@
         },
         "aspect_ratio": {
           "type": "string",
-          "description": "One of: 16:9, 9:16, 1:1. Allowed values: 16:9, 9:16, 1:1."
+          "description": "One of: 16:9, 9:16, 1:1, 2.39:1. Allowed values: 16:9, 9:16, 1:1, 2.39:1."
         },
         "fps": {
           "type": "integer",

@@ -15,7 +15,9 @@ COPY providers ./providers
 COPY configs ./configs
 COPY server ./server
 
-RUN pip install --no-cache-dir -e .
+# openai-codex installs the pinned native Codex runtime for linux/arm64.
+RUN pip install --no-cache-dir -e . \
+    && python -c "import subprocess; from codex_cli_bin import bundled_codex_path; subprocess.run([str(bundled_codex_path()), '--version'], check=True)"
 
 EXPOSE 8080
 

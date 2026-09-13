@@ -175,7 +175,7 @@ def create_instrumental(
     *,
     prompt: str,
     model: str | None = None,
-    n: int | None = None,
+    n: int | None = 1,
     instrumental_id: str | None = None,
     stream: bool | None = None,
 ) -> dict[str, Any]:
@@ -202,7 +202,7 @@ def create_instrumental(
         "mode": "text_to_instrumental",
         "prompt": prompt,
         "model": selected,
-        "note": "Live instrumental task created. Poll with query_music_task.",
+        "note": "Live instrumental task created. Poll with query_music_task. Mureka controls source length; trim audio to the video duration in Remotion.",
         "raw": payload,
     }
 
@@ -212,7 +212,7 @@ def create_song(
     lyrics: str,
     prompt: str = "",
     model: str | None = None,
-    n: int | None = None,
+    n: int | None = 1,
     gender: str | None = None,
     reference_id: str | None = None,
     vocal_id: str | None = None,
@@ -266,7 +266,7 @@ def create_song_from_prompt(
     *,
     prompt: str,
     model: str | None = None,
-    n: int | None = None,
+    n: int | None = 1,
     gender: str | None = None,
 ) -> dict[str, Any]:
     selected = default_model(model)
@@ -338,7 +338,7 @@ def extend_lyrics(*, lyrics: str, prompt: str = "") -> dict[str, Any]:
     }
 
 
-def query_task(*, job_id: str, download: bool = False) -> dict[str, Any]:
+def query_task(*, job_id: str, download: bool = False, kind: str | None = None) -> dict[str, Any]:
     if dry_run() or job_id.startswith("mureka_"):
         meta = read_task_meta(job_id)
         if meta.get("status") == "dry_run" or dry_run():
@@ -350,9 +350,9 @@ def query_task(*, job_id: str, download: bool = False) -> dict[str, Any]:
             }
 
     metadata = read_task_meta(job_id)
-    kind = metadata.get("kind") or "instrumental"
+    kind = kind or metadata.get("kind") or "instrumental"
     if kind not in {"instrumental", "song"}:
-        kind = "instrumental"
+        raise ValueError("kind must be instrumental or song.")
     payload = _request("GET", f"/v1/{kind}/query/{job_id}")
     status = str(payload.get("status") or "unknown").lower()
     audio_url = extract_audio_url(payload)
@@ -463,7 +463,7 @@ def remix_song(
     prompt: str = "",
     song_id: str | None = None,
     upload_audio_id: str | None = None,
-    n: int | None = None,
+    n: int | None = 1,
 ) -> dict[str, Any]:
     if dry_run():
         return _dry_async("remix_song", prompt=prompt, song_id=song_id)
@@ -575,19 +575,29 @@ def generate_track(
 def generate_soundtrack(
     *,
     prompt: str = "",
-    upload_file_id: str | None = None,
-    audio_start: float | None = None,
-    audio_end: float | None = None,
+    image_id: str | None = None,
+    video_id: str | None = None,
+    audio_start: int | None = None,
+    audio_end: int | None = None,
     model: str | None = None,
+    n: int = 1,
 ) -> dict[str, Any]:
+    """Score an uploaded image/video. Time bounds are milliseconds, minimum 3 seconds."""
+    if bool(image_id) == bool(video_id):
+        raise ValueError("Provide exactly one soundtrack image_id or video_id from upload_file.")
+    start = audio_start or 0
+    if start < 0 or (audio_end is not None and audio_end - start < 3000):
+        raise ValueError("Soundtrack start/end are milliseconds and must span at least 3000 ms.")
     selected = default_model(model)
     if dry_run():
         return _dry_async("generate_soundtrack", prompt=prompt, model=selected)
-    body: dict[str, Any] = {"model": selected}
+    body: dict[str, Any] = {"model": selected, "n": n}
     if prompt:
         body["prompt"] = prompt
-    if upload_file_id:
-        body["file_id"] = upload_file_id
+    if image_id:
+        body["image_id"] = image_id
+    if video_id:
+        body["video_id"] = video_id
     if audio_start is not None:
         body["audio_start"] = audio_start
     if audio_end is not None:
@@ -601,6 +611,8 @@ def generate_soundtrack(
         "status": payload.get("status") or "queued",
         "provider": "mureka",
         "mode": "generate_soundtrack",
+        "kind": "song",
+        "note": "Poll query_music_task with kind='song'. Soundtrack time bounds are milliseconds.",
         "raw": payload,
     }
 
@@ -683,6 +695,7 @@ def list_models() -> dict[str, Any]:
             "mureka-7.6",
             "mureka-8",
             "mureka-9",
+            "mureka-9.5",
             "mureka-o1",
             "mureka-o2",
         ],

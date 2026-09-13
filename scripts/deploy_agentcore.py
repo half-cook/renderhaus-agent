@@ -25,6 +25,7 @@ DEFAULT_SECRET_NAME = "renderhaus/app"
 # Non-secret runtime bootstrap only. Application secrets come from Secrets Manager.
 RUNTIME_BOOTSTRAP_KEYS = [
     "AGENT_MODEL",
+    "CODEX_RUN_TIMEOUT_SECONDS",
     "BYTEPLUS_BASE_URL",
     "SEEDANCE_MODEL",
     "SEEDANCE_DRY_RUN",

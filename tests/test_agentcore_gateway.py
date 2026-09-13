@@ -9,7 +9,7 @@ from unittest.mock import MagicMock, patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from agents.mcp import MCPServerStreamableHttp
+from agent.gateway_client import GatewayClient
 
 from agent.studio_agent_next import gateway_mcp_server
 from providers.catalog import get_provider
@@ -42,7 +42,7 @@ class AgentCoreGatewayConfigTests(unittest.TestCase):
             ),
         ):
             server = gateway_mcp_server()
-        self.assertIsInstance(server, MCPServerStreamableHttp)
+        self.assertIsInstance(server, GatewayClient)
         self.assertEqual(server.name, GATEWAY_MCP_SERVER_NAME)
 
     def test_existing_gateway_receives_updated_instructions_without_resetting_search(self) -> None:
@@ -148,6 +148,27 @@ class GatewayToolSchemaTests(unittest.TestCase):
                     "song_id": "song-1",
                 },
             )
+
+    def test_seedream_accepts_size_presets_or_explicit_dimensions(self) -> None:
+        from providers.contracts import validate_tool_arguments
+
+        schemas = {tool["name"]: tool for tool in generate_schemas(get_provider("seedream"))}
+        for tool_name in ("text_to_image", "image_to_image"):
+            schema = schemas[tool_name]["inputSchema"]
+            arguments = {"prompt": "Test image"}
+            if tool_name == "image_to_image":
+                arguments["image_path_or_url"] = "https://example.test/image.png"
+            for size in ("1K", "2K", "3K", "2560x1440"):
+                with self.subTest(tool=tool_name, size=size):
+                    validated = validate_tool_arguments(
+                        "seedream", tool_name, {**arguments, "size": size}, schema
+                    )
+                    self.assertEqual(validated["size"], size)
+            for size in ("4K", "invalid", "0x1440"):
+                with self.subTest(tool=tool_name, size=size), self.assertRaises(ValueError):
+                    validate_tool_arguments(
+                        "seedream", tool_name, {**arguments, "size": size}, schema
+                    )
 
 
 if __name__ == "__main__":

@@ -18,12 +18,12 @@ from typing import Any
 from urllib.parse import parse_qs, quote, unquote, urlparse
 
 import httpx
-from agents.exceptions import MaxTurnsExceeded
+from agent.codex_harness import CodexRunLimitExceeded
 from fastapi import APIRouter, File, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse, StreamingResponse
 from pydantic import BaseModel, Field
 
-from agent.studio_agent import StudioNodeReference
+from agent.studio_agent_next import StudioNode as StudioNodeReference
 from agent.studio_agent_next import (
     MAX_AGENT_PROMPT_CHARS,
     StudioAgentApprovalRequired,
@@ -35,6 +35,7 @@ from agent.studio_agent_next import (
     StudioNode,
     StudioProgressEvent,
     StudioToolEvent,
+    _requests_video_deliverable,
     run_studio_agent as run_studio_agent_runtime,
 )
 from providers.catalog import PROVIDERS, get_provider
@@ -1340,6 +1341,7 @@ async def run_studio_agent(
         approval_decisions=approval_decisions,
         resume_tool_names=resume_tool_names,
     )
+    request.prior_tool_events = [event.public() for event in prior_tool_events or []]
     runtime_url = _agentcore_dev_url()
     if runtime_url:
         if source_publisher:
@@ -1361,10 +1363,15 @@ async def run_studio_agent(
         job_id=request.job_id,
         workspace_id=request.workspace_id,
         project_id=request.project_id,
+        user_id=request.user_id,
         session_items=list(request.session_items),
         autonomous=request.autonomous,
     )
     studio.restore_events(list(prior_tool_events or []))
+    if request.workspace_id and request.conversation_id and request.job_id:
+        studio.session_sink = lambda items: repository.save_agent_checkpoint(
+            request.workspace_id, request.conversation_id, request.job_id, items
+        )
     output = await run_studio_agent_runtime(request, studio=studio)
     return StudioAgentRun(
         final=output,
@@ -1392,6 +1399,29 @@ async def _run_studio_agent_job(
     session_items = await asyncio.to_thread(
         repository.get_conversation_items, workspace_id, conversation_id
     )
+    # Recover provider identifiers and durable URL mappings even from older
+    # checkpoints. The ledger is scoped by conversation/workspace, never client data.
+    previous_runs = await asyncio.to_thread(repository.list_executions, workspace_id,
+                                           conversation_id=conversation_id, limit=12)
+    for snapshot in session_items:
+        if snapshot.get("type") != "renderhaus_codex_session":
+            continue
+        jobs = snapshot.setdefault("render_jobs", {})
+        sources = snapshot.setdefault("source_versions", {})
+        for run in reversed(previous_runs):
+            for call in run.get("tool_calls", []):
+                result = call.get("result") or {}
+                if call["name"].endswith("render_timeline") and result.get("render_id"):
+                    jobs.setdefault(result["render_id"], result)
+                if call["name"].endswith("get_render_progress") and result.get("status") == "succeeded":
+                    render_id = result.get("render_id") or (call.get("arguments") or {}).get("render_id")
+                    if render_id in jobs:
+                        jobs[render_id].update(result)
+                assets = call.get("assets") or []
+                if len(assets) == 1:
+                    for key in ("url", "image_url", "video_url", "audio_url", "output_path"):
+                        if isinstance(result.get(key), str):
+                            sources[result[key]] = assets[0]["version_id"]
     await asyncio.to_thread(
         repository.update_execution,
         workspace_id,
@@ -1550,7 +1580,7 @@ async def _run_studio_agent_job(
             error_type="CancelledError",
         )
         raise
-    except MaxTurnsExceeded as exc:
+    except CodexRunLimitExceeded as exc:
         logger.exception("Studio agent job %s reached its turn limit", job_id)
         execution = await asyncio.to_thread(repository.get_execution, workspace_id, job_id) or {}
         partial = _partial_agent_result(execution)
@@ -1614,8 +1644,12 @@ async def _run_studio_agent_job(
         return
 
     result = _agent_result(outcome)
-    if _media_generation_failed(outcome, result):
-        message = "Media generation failed; no image, audio, video, or render was produced."
+    incomplete_video = any(event.id == "video-delivery" and event.status == "failed"
+                           for event in getattr(outcome, "progress_events", []))
+    if incomplete_video or _media_generation_failed(outcome, result):
+        message = ("Video export is incomplete. Your assets and conversation are saved; resume to finish the MP4."
+                   if incomplete_video else "Media generation failed; no image, audio, video, or render was produced.")
+        result["partial"] = True
         record_progress(
             StudioProgressEvent(
                 id="run",
@@ -1632,7 +1666,7 @@ async def _run_studio_agent_job(
             status="error",
             message=message,
             result=result,
-            error_type="MediaGenerationFailed",
+            error_type="VideoExportIncomplete" if incomplete_video else "MediaGenerationFailed",
         )
         return
 
@@ -1808,6 +1842,70 @@ async def decide_studio_agent_tool(
     _AGENT_TASKS.add(task)
     task.add_done_callback(_AGENT_TASKS.discard)
     return execution
+
+
+@router.post("/agent/{job_id}/resume", status_code=202)
+async def resume_studio_agent_job(job_id: str, auth: AuthUser) -> dict[str, Any]:
+    """Continue in the same conversation; never replay a paid creation call."""
+    workspace_id = current_workspace_id(auth)
+    execution = await asyncio.to_thread(repository.get_execution, workspace_id, job_id)
+    if execution is None:
+        raise HTTPException(status_code=404, detail="Agent job not found.")
+    if execution["status"] in {"queued", "running", "awaiting_approval"}:
+        raise HTTPException(status_code=409, detail="This run is still active.")
+    history = await asyncio.to_thread(repository.list_executions, workspace_id,
+                                     conversation_id=execution["conversation_id"], limit=12)
+    if history and history[0]["job_id"] != job_id:
+        raise HTTPException(status_code=409, detail="Continue from the latest run in this conversation.")
+    ledger = []
+    nodes = []
+    seen = set()
+    for call in [call for run in reversed(history) for call in run.get("tool_calls", [])]:
+        result = call.get("result") or {}
+        ledger.append({"tool": call["name"], "status": call["status"],
+                       "job_id": result.get("job_id") or call.get("provider_job_id"),
+                       "render_id": result.get("render_id"), "bucket_name": result.get("bucket_name"),
+                       "output_key": result.get("output_key")})
+        for asset in call.get("assets", []):
+            if asset["version_id"] not in seen:
+                seen.add(asset["version_id"])
+                nodes.append(AgentNodeBody(id=asset["version_id"], title=asset["filename"][:160],
+                                          kind=asset["kind"], asset_id=asset["asset_id"], version_id=asset["version_id"]))
+    prompt = ("Resume the unfinished request in this conversation from its saved progress. "
+              "Reuse completed assets and poll the existing provider job ids below. "
+              "Do not regenerate completed work. Finish the original deliverable. "
+              "Previous stopped or rejected approvals are closed. Make a fresh tool call for any "
+              "needed status check; the host will request approval. Do not merely say approval is pending.\n"
+              "Saved tool ledger (reference data):\n" + json.dumps(ledger[-60:]))
+    if _requests_video_deliverable(execution.get("prompt", "")) or execution.get("error_type") == "VideoExportIncomplete" or any(
+        event.get("id") == "video-delivery" and event.get("status") == "failed"
+        for event in execution.get("progress_events", [])
+    ):
+        prompt = "Finish the requested video export. " + prompt
+    resumed = await studio_agent(AgentBody(prompt=prompt, project_id=execution["project_id"],
+                                       conversation_id=execution["conversation_id"],
+                                       nodes=nodes[-16:], autonomous=execution["autonomous"]), auth)
+    await asyncio.to_thread(repository.set_execution_display_prompt, workspace_id, resumed["job_id"], "Resume saved progress")
+    resumed["prompt"] = "Resume saved progress"
+    return resumed
+
+
+@router.post("/agent/{job_id}/stop")
+async def stop_studio_agent_job(job_id: str, auth: AuthUser) -> dict[str, Any]:
+    workspace_id = current_workspace_id(auth)
+    execution = await asyncio.to_thread(repository.get_execution, workspace_id, job_id)
+    if execution is None:
+        raise HTTPException(status_code=404, detail="Agent job not found.")
+    for task in list(_AGENT_TASKS):
+        if task.get_name() in {f"studio-agent-{job_id}", f"studio-agent-resume-{job_id}"}:
+            task.cancel()
+            await asyncio.gather(task, return_exceptions=True)
+    if execution["status"] in {"running", "queued", "awaiting_approval"}:
+        latest = await asyncio.to_thread(repository.get_execution, workspace_id, job_id)
+        await asyncio.to_thread(repository.update_execution, workspace_id, job_id,
+                               status="error", message="Stopped. Completed assets and conversation are saved. Provider jobs already started may still finish.",
+                               result=_partial_agent_result(latest), error_type="UserStopped")
+    return await asyncio.to_thread(repository.get_execution, workspace_id, job_id)
 
 
 @router.get("/agent")

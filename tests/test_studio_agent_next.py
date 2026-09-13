@@ -6,7 +6,6 @@ import unittest
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, patch
 
-from agents.memory import OpenAIResponsesCompactionSession
 
 from agent.studio_agent_next import (
     StudioAgentContext,
@@ -14,13 +13,9 @@ from agent.studio_agent_next import (
     StudioAgentRequest,
     StudioNode,
     StudioToolEvent,
-    _build_agent,
-    _compaction_is_safe,
-    _TurnCompactionPolicy,
     _committed_gateway_tools,
     _describe_gateway_mcp_tools,
     _gateway_tool_catalog,
-    _gateway_requires_approval,
     _input_for,
     _record_run_tool_events,
     _record_stream_event,
@@ -33,36 +28,6 @@ from agent.studio_agent_next import (
     normalize_markdown_filename,
     run_studio_agent,
 )
-
-
-class FakeRunner:
-    seen_agent = None
-    seen_input = ""
-    seen_session = None
-    seen_run_config = None
-
-    @classmethod
-    async def run(cls, agent, input_value, **kwargs):
-        cls.seen_agent = agent
-        cls.seen_input = input_value
-        cls.seen_session = kwargs["session"]
-        cls.seen_run_config = kwargs["run_config"]
-        await cls.seen_session.add_items(
-            [
-                {"role": "user", "content": "Create a launch outline"},
-                {"role": "assistant", "content": "The outline is ready."},
-            ]
-        )
-
-        class Result:
-            final_output = StudioAgentOutput(
-                title="Launch outline",
-                summary="A concise launch outline is ready.",
-                markdown="# Launch outline\n\n- Open with the product.",
-                filename="Launch outline",
-            )
-
-        return Result()
 
 
 class StudioAgentNextEntrypointTests(unittest.IsolatedAsyncioTestCase):
@@ -138,111 +103,6 @@ class StudioAgentNextEntrypointTests(unittest.IsolatedAsyncioTestCase):
         request = StudioAgentRequest.model_validate({"prompt": prompt})
 
         self.assertGreater(len(request.prompt), 8_000)
-
-    async def test_run_studio_agent_builds_input_and_sanitizes_filename(self) -> None:
-        with patch.dict(os.environ, {"AGENT_MODEL": "openai:gpt-4.1-mini"}):
-            output = await run_studio_agent(
-                StudioAgentRequest(
-                    prompt="Create a launch outline",
-                    nodes=[StudioNode(id="node-1", title="Hero image", kind="image")],
-                    conversation_id="conversation-1",
-                    session_items=[
-                        {"role": "user", "content": "Draft the launch concept"},
-                        {
-                            "role": "assistant",
-                            "content": "The concept centers on a quiet product reveal.",
-                        },
-                    ],
-                    job_id="job-1",
-                ),
-                runner=FakeRunner,
-                mcp_servers=[],
-            )
-
-        self.assertEqual(output.title, "Launch outline")
-        self.assertEqual(output.filename, "Launch-outline.md")
-        self.assertIn("Customer request", FakeRunner.seen_input)
-        self.assertNotIn("Earlier turns in this project conversation", FakeRunner.seen_input)
-        self.assertNotIn("quiet product reveal", FakeRunner.seen_input)
-        self.assertIn("node-1", FakeRunner.seen_input)
-        session_items = await FakeRunner.seen_session.get_items()
-        self.assertEqual(session_items[1]["role"], "assistant")
-        self.assertIn("quiet product reveal", session_items[1]["content"])
-        self.assertEqual(FakeRunner.seen_run_config.group_id, "conversation-1")
-        self.assertEqual(FakeRunner.seen_run_config.workflow_name, "Renderhaus agent")
-        self.assertIsInstance(FakeRunner.seen_session, OpenAIResponsesCompactionSession)
-        self.assertEqual(FakeRunner.seen_session.compaction_mode, "input")
-        self.assertEqual(FakeRunner.seen_session.model, "gpt-4.1-mini")
-        self.assertEqual([tool.name for tool in FakeRunner.seen_agent.tools], ["report_progress"])
-        self.assertEqual(FakeRunner.seen_agent.mcp_servers, [])
-        self.assertEqual(FakeRunner.seen_agent.model, "gpt-4.1-mini")
-
-    def test_agent_defaults_to_gpt_5_6_luna(self) -> None:
-        with patch.dict(os.environ, {"AGENT_MODEL": ""}):
-            agent = _build_agent([])
-
-        self.assertEqual(agent.model, "gpt-5.6-luna")
-        self.assertIsNone(agent.model_settings.reasoning)
-        self.assertEqual(agent.model_settings.verbosity, "low")
-
-    def test_gateway_calls_require_approval_unless_autonomous(self) -> None:
-        manual = SimpleNamespace(context=StudioAgentContext(autonomous=False))
-        autonomous = SimpleNamespace(context=StudioAgentContext(autonomous=True))
-
-        self.assertTrue(_gateway_requires_approval(manual, None, None))
-        self.assertFalse(_gateway_requires_approval(autonomous, None, None))
-
-    def test_compaction_waits_for_all_pending_tool_outputs(self) -> None:
-        history = [
-            {"type": "message", "role": "assistant", "content": f"turn {index}"}
-            for index in range(10)
-        ]
-        context = {
-            "session_items": history,
-            "compaction_candidate_items": history,
-        }
-        self.assertTrue(_compaction_is_safe(context))
-
-        pending = {"type": "function_call", "call_id": "call-1", "name": "tool"}
-        context["session_items"] = [*history, pending]
-        context["compaction_candidate_items"] = [*history, pending]
-        self.assertFalse(_compaction_is_safe(context))
-
-        context["session_items"] = [
-            *history,
-            pending,
-            {"type": "function_call_output", "call_id": "call-1", "output": "done"},
-        ]
-        self.assertTrue(_compaction_is_safe(context))
-
-        # Streamed runs can expose the next tool call in the candidate list before
-        # it appears in the full session snapshot.
-        context["session_items"] = history
-        context["compaction_candidate_items"] = [*history, pending]
-        self.assertFalse(_compaction_is_safe(context))
-
-    def test_compaction_policy_only_runs_between_completed_agent_turns(self) -> None:
-        history = [
-            {"type": "message", "role": "assistant", "content": f"turn {index}"}
-            for index in range(10)
-        ]
-        context = {
-            "session_items": history,
-            "compaction_candidate_items": history,
-        }
-        policy = _TurnCompactionPolicy()
-
-        self.assertFalse(policy(context))
-        policy.enabled = True
-        self.assertTrue(policy(context))
-
-    def test_agent_omits_gpt_5_only_settings_for_gpt_4(self) -> None:
-        with patch.dict(os.environ, {"AGENT_MODEL": "openai:gpt-4.1-mini"}):
-            agent = _build_agent([])
-
-        self.assertEqual(agent.model, "gpt-4.1-mini")
-        self.assertIsNone(agent.model_settings.reasoning)
-        self.assertIsNone(agent.model_settings.verbosity)
 
     async def test_agent_invocation_returns_structured_agentcore_result(self) -> None:
         output = StudioAgentOutput(
@@ -714,102 +574,6 @@ class StudioAgentNextEntrypointTests(unittest.IsolatedAsyncioTestCase):
         )
         self.assertEqual(studio.tool_events[0].result["audio_url"], "https://cdn.example/bed.mp3")
 
-    async def test_run_studio_agent_returns_harvested_tool_events_on_context(self) -> None:
-        class HarvestRunner:
-            @classmethod
-            async def run(cls, agent, input_value, **_kwargs):
-                return SimpleNamespace(
-                    final_output=StudioAgentOutput(
-                        title="Hero",
-                        summary="Image ready.",
-                        markdown="# Hero",
-                        filename="hero.md",
-                    ),
-                    new_items=[
-                        SimpleNamespace(
-                            type="tool_call_item",
-                            call_id="call-img",
-                            tool_name="Seedream___text_to_image",
-                        ),
-                        SimpleNamespace(
-                            type="tool_call_output_item",
-                            call_id="call-img",
-                            output={
-                                "status": "succeeded",
-                                "image_url": "https://cdn.example/hero.png",
-                            },
-                        ),
-                    ],
-                )
-
-        studio = StudioAgentContext()
-        with patch.dict(os.environ, {"AGENT_MODEL": "openai:gpt-4.1-mini"}):
-            await run_studio_agent(
-                StudioAgentRequest(prompt="Make a hero image", job_id="job-img"),
-                runner=HarvestRunner,
-                studio=studio,
-                mcp_servers=[],
-            )
-
-        self.assertEqual(studio.tool_events[0].result["image_url"], "https://cdn.example/hero.png")
-
-    async def test_gateway_connection_does_not_emit_scripted_progress(self) -> None:
-        class FakeManager:
-            def __init__(self, *_args, **_kwargs) -> None:
-                self.active_servers = []
-
-            async def __aenter__(self):
-                return self
-
-            async def __aexit__(self, *_args):
-                return False
-
-        studio = StudioAgentContext()
-        with (
-            patch.dict(os.environ, {"AGENT_MODEL": "openai:gpt-4.1-mini"}),
-            patch("agent.studio_agent_next.gateway_mcp_server", return_value=object()),
-            patch("agent.studio_agent_next.MCPServerManager", FakeManager),
-        ):
-            await run_studio_agent(
-                StudioAgentRequest(prompt="Make a launch outline", job_id="job-gateway"),
-                runner=FakeRunner,
-                studio=studio,
-            )
-
-        self.assertFalse(any(event.id == "gateway-connect" for event in studio.progress_events))
-        self.assertFalse(any("Choosing" in event.message for event in studio.progress_events))
-
-    async def test_model_failure_emits_only_the_real_run_error(self) -> None:
-        class FakeManager:
-            def __init__(self, *_args, **_kwargs) -> None:
-                self.active_servers = []
-
-            async def __aenter__(self):
-                return self
-
-            async def __aexit__(self, *_args):
-                return False
-
-        class FailingRunner:
-            @classmethod
-            async def run(cls, *_args, **_kwargs):
-                raise RuntimeError("model failed")
-
-        studio = StudioAgentContext()
-        with (
-            patch.dict(os.environ, {"AGENT_MODEL": "gpt-5.6-luna"}),
-            patch("agent.studio_agent_next.gateway_mcp_server", return_value=object()),
-            patch("agent.studio_agent_next.MCPServerManager", FakeManager),
-        ):
-            with self.assertRaises(RuntimeError):
-                await run_studio_agent(
-                    StudioAgentRequest(prompt="Make a launch outline", job_id="job-failure"),
-                    runner=FailingRunner,
-                    studio=studio,
-                )
-
-        self.assertFalse(any(event.id == "gateway-connect" for event in studio.progress_events))
-        self.assertEqual(studio.progress_events[-1].type, "RUN_ERROR")
 
 
 if __name__ == "__main__":

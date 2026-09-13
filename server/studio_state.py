@@ -266,6 +266,14 @@ class StudioRepository:
                         PRIMARY KEY(conversation_id, sequence)
                     );
 
+                    CREATE TABLE IF NOT EXISTS agent_checkpoints (
+                        execution_id TEXT PRIMARY KEY REFERENCES executions(id) ON DELETE CASCADE,
+                        workspace_id TEXT NOT NULL,
+                        conversation_id TEXT NOT NULL,
+                        items_json TEXT NOT NULL,
+                        updated_at INTEGER NOT NULL
+                    );
+
                     CREATE TABLE IF NOT EXISTS executions (
                         id TEXT PRIMARY KEY,
                         workspace_id TEXT NOT NULL REFERENCES workspaces(id),
@@ -752,6 +760,37 @@ class StudioRepository:
                 (now, conversation_id),
             )
 
+    def save_agent_checkpoint(self, workspace_id, conversation_id, execution_id, items):
+        """Keep the native conversation and its latest per-run recovery point together."""
+        if not items:
+            return
+        with self._lock, self._connect() as connection:
+            owned = connection.execute(
+                "SELECT 1 FROM executions WHERE id=? AND workspace_id=? AND conversation_id=?",
+                (execution_id, workspace_id, conversation_id),
+            ).fetchone()
+            if not owned:
+                raise KeyError("Agent execution not found")
+            now = _now()
+            connection.execute(
+                "INSERT INTO agent_checkpoints VALUES (?, ?, ?, ?, ?) "
+                "ON CONFLICT(execution_id) DO UPDATE SET items_json=excluded.items_json, updated_at=excluded.updated_at",
+                (execution_id, workspace_id, conversation_id, json.dumps(items), now),
+            )
+            connection.execute("DELETE FROM agent_session_items WHERE conversation_id=?", (conversation_id,))
+            connection.executemany(
+                "INSERT INTO agent_session_items VALUES (?, ?, ?, ?)",
+                [(conversation_id, index, json.dumps(item), now) for index, item in enumerate(items)],
+            )
+
+    def get_agent_checkpoint(self, workspace_id, execution_id):
+        with self._connect() as connection:
+            row = connection.execute(
+                "SELECT items_json FROM agent_checkpoints WHERE execution_id=? AND workspace_id=?",
+                (execution_id, workspace_id),
+            ).fetchone()
+        return json.loads(row[0]) if row else []
+
     def get_canvas(self, workspace_id: str, project_id: str) -> dict[str, Any]:
         self.require_project(workspace_id, project_id)
         with self._connect() as connection:
@@ -1217,6 +1256,11 @@ class StudioRepository:
                 )
         return self.get_execution(workspace_id, resolved_id)  # type: ignore[return-value]
 
+    def set_execution_display_prompt(self, workspace_id, execution_id, prompt):
+        with self._connect() as connection:
+            connection.execute("UPDATE executions SET prompt=? WHERE id=? AND workspace_id=?",
+                               (prompt, execution_id, workspace_id))
+
     def update_execution(
         self,
         workspace_id: str,
@@ -1501,6 +1545,9 @@ class StudioRepository:
                 return None
             calls = self._tool_calls(connection, execution_id)
             events = self._agent_events(connection, execution_id)
+            checkpoint = connection.execute(
+                "SELECT updated_at FROM agent_checkpoints WHERE execution_id=?", (execution_id,)
+            ).fetchone()
         result = json.loads(row["result_json"]) if row["result_json"] else None
         approvals = json.loads(row["approvals_json"] or "[]")
         return {
@@ -1519,6 +1566,7 @@ class StudioRepository:
             "error_type": row["error_type"],
             "created_at": row["created_at"],
             "updated_at": row["updated_at"],
+            "checkpoint_at": checkpoint[0] if checkpoint else None,
         }
 
     def list_executions(

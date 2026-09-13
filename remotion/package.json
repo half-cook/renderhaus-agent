@@ -1,0 +1,6 @@
+{
+  "name": "renderhaus-renderer", "private": true, "version": "1.0.0", "type": "module",
+  "scripts": {"typecheck": "tsc --noEmit", "bundle": "remotion bundle src/index.ts", "deploy": "node scripts/deploy.mjs"},
+  "dependencies": {"remotion": "4.0.515", "@remotion/cli": "4.0.515", "@remotion/lambda": "4.0.515", "react": "19.1.0", "react-dom": "19.1.0"},
+  "devDependencies": {"typescript": "^5.8.0", "@types/react": "^19.1.0", "@types/node": "^22.15.0"}
+}

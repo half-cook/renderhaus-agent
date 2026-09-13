@@ -1,5 +1,9 @@
 # Renderhaus Studio agent: architecture and operation
 
+> The active manager now uses Codex app-server. See [CODEX_HARNESS.md](CODEX_HARNESS.md)
+> for the current runtime, tool boundary, conversation persistence, and approval protocol.
+> Agents SDK implementation details below describe the previous manager.
+
 This is the end-to-end reference for the **Studio** experience: the canvas at
 `localhost:5174`, its FastAPI API at `localhost:8000`, the OpenAI Agents SDK manager,
 the generation providers, and the Remotion Lambda renderer.
