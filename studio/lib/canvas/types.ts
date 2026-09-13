@@ -29,7 +29,7 @@ export type RailTool =
 
 export type DockPosition = "top" | "bottom" | "left" | "right" | "free";
 
-export type PortDefinition = {
+type PortDefinition = {
   id: string;
   label: string;
   dataType: PortDataType;
@@ -86,7 +86,7 @@ export type AgentResultData = {
   partial?: boolean;
 };
 
-export type AgentRunData = AgentResultData & {
+type AgentRunData = AgentResultData & {
   executionId?: string;
   artifactNodeIds: string[];
   primaryNodeId?: string;

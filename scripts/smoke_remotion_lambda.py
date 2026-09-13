@@ -4,9 +4,8 @@
 from __future__ import annotations
 
 import json
-from pathlib import Path
 
-from agent.remotion_renderer import render_timeline_and_wait
+from providers.remotion.api import render_timeline_and_wait
 from server.config import ROOT, load_local_env
 
 

@@ -10,7 +10,7 @@ from pathlib import Path
 from types import UnionType
 from typing import Any, Literal, Union, get_args, get_origin, get_type_hints
 
-from providers.catalog import PROVIDERS, ProviderSpec, get_provider
+from providers.catalog import ProviderSpec, get_provider
 from providers.contracts import enrich_tool_schema, validate_tool_arguments
 
 
@@ -468,7 +468,3 @@ def dummy_arguments(schema: dict[str, Any]) -> dict[str, Any]:
     if schema.get("name") == "region_edit_song":
         args["edit_end_ms"] = 2
     return args
-
-
-def iter_providers() -> tuple[ProviderSpec, ...]:
-    return PROVIDERS

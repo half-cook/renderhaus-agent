@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-import os
 import unittest
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, patch
@@ -26,7 +25,6 @@ from agent.studio_agent_next import (
     _visible_gateway_tools,
     agent_invocation,
     normalize_markdown_filename,
-    run_studio_agent,
 )
 
 

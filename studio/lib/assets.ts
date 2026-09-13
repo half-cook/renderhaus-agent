@@ -7,7 +7,7 @@ type PlaybackTicket = { url: string; expiresAt: number };
 const playbackTickets = new Map<string, PlaybackTicket>();
 const playbackRequests = new Map<string, Promise<PlaybackTicket>>();
 
-export async function studioAssetPlaybackUrl(asset: StudioAsset): Promise<string> {
+async function studioAssetPlaybackUrl(asset: StudioAsset): Promise<string> {
   const cached = playbackTickets.get(asset.versionId);
   if (cached && cached.expiresAt > Date.now() + 30_000) {
     return cached.url;
@@ -71,8 +71,4 @@ export function useStudioAssetPlaybackUrl(asset?: StudioAsset): string | undefin
 
 export function studioAssetHandle(asset: StudioAsset): string {
   return `renderhaus-asset://${asset.versionId}`;
-}
-
-export function sameStudioAsset(left: StudioAsset, right: StudioAsset): boolean {
-  return left.versionId === right.versionId;
 }

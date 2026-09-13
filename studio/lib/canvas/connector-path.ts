@@ -8,7 +8,7 @@
 
 export type Point = { x: number; y: number };
 export type Rect = { left: number; top: number; right: number; bottom: number };
-export type Axis = "x" | "y";
+type Axis = "x" | "y";
 export type Connector = { from: Point; to: Point; axis: Axis };
 
 // Below this many px, a curve's control-point offset would be small

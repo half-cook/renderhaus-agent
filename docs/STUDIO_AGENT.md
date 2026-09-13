@@ -87,10 +87,10 @@ the core data model.
 | Studio HTTP API | `server/studio.py` | Project/canvas, upload, provider invocation, agent job, and playback routes. |
 | Durable state | `server/studio_state.py` | Workspace-scoped SQLite development adapter, immutable media versions, provenance, and execution ledger. |
 | Authentication | `server/auth.py` | Clerk validation, exact authorized-party checks, and workspace selection. |
-| Studio manager | `agent/studio_agent.py` | OpenAI Agents SDK agent, available tools, polling, redaction, and structured final result. |
+| Studio manager | `agent/studio_agent_next.py`, `agent/studio_codex_runner.py` | Codex harness, Gateway tool policy, polling, redaction, and structured final result. |
 | Provider dispatch | `providers/`, `lambdas/`, `configs/gateway/` | Provider implementations, Gateway Lambdas, and tool schemas. |
-| Remotion adapter | `agent/remotion_renderer.py` | Converts a typed timeline document into a private Remotion Lambda render and downloads the MP4. |
-| Remotion deployment | `scripts/deploy_remotion_lambda.py`, `web/scripts/remotion-lambda.mjs` | IAM setup, Remotion function/site deployment, and runtime-config synchronization. |
+| Remotion adapter | `providers/remotion/api.py` | Converts a typed timeline document into a private Remotion Lambda render and downloads the MP4. |
+| Remotion deployment | `scripts/deploy_media_updates.py`, `remotion/scripts/deploy.mjs` | Remotion function/site deployment and runtime-config synchronization. |
 
 ## Durable project and asset model
 
@@ -186,7 +186,8 @@ header's execution list comes from `GET /api/studio/agent` and therefore survive
 
 ### Manager behavior
 
-`agent/studio_agent.py` builds one OpenAI Agents SDK `Agent` with a structured
+`agent/studio_agent_next.py` defines the manager contract and AgentCore entry point.
+`agent/studio_codex_runner.py` runs it through the Codex harness with a structured
 `StudioAgentOutput` final response:
 
 ```text

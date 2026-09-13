@@ -855,7 +855,6 @@ a:focus-visible {
   text-wrap: balance;
 }
 
-.inspector-empty,
 .inspector-note,
 .agent-composer-meta,
 .node-meta,
@@ -1288,20 +1287,6 @@ a:focus-visible {
 
 .agent-approval button:disabled {
   opacity: 0.5;
-}
-
-.agent-approval-decision {
-  margin: 0;
-  color: var(--muted);
-  font-size: 11px;
-}
-
-.agent-approval-decision.approve {
-  color: var(--ok);
-}
-
-.agent-approval-decision.reject {
-  color: var(--danger);
 }
 
 .agent-step-list em {

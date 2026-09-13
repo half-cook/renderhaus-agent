@@ -4,7 +4,6 @@ import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import patch
-from types import SimpleNamespace
 
 from providers.mureka import api as mureka
 from providers.remotion.api import build_timeline_props

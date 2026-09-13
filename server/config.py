@@ -59,7 +59,3 @@ def require_agentcore_gateway_url() -> str:
             "AGENTCORE_GATEWAY_URL is required. Studio tools are only available through AgentCore Gateway."
         )
     return url
-
-
-def mask_secret_status(name: str) -> str:
-    return "set" if os.getenv(name) else "empty"

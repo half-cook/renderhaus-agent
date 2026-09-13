@@ -79,17 +79,6 @@ def dynamodb_table_name() -> str:
     ).strip()
 
 
-def aws_configured() -> bool:
-    return bool(
-        s3_bucket()
-        and (
-            os.getenv("AWS_ACCESS_KEY_ID")
-            or os.getenv("AWS_PROFILE")
-            or os.getenv("AWS_CONTAINER_CREDENTIALS_RELATIVE_URI")
-        )
-    )
-
-
 @lru_cache(maxsize=1)
 def _session() -> boto3.session.Session:
     return boto3.session.Session(
@@ -367,31 +356,6 @@ def register_output_file(
     )
 
 
-def register_existing_s3_object(
-    *,
-    user_id: str,
-    storage_key: str,
-    kind: AssetKind,
-    mime_type: str,
-    size_bytes: int,
-    checksum: str,
-    filename: str,
-    asset_id: str | None = None,
-) -> Asset:
-    """Register an object already uploaded (e.g. by AgentCore) into the assets table."""
-    resolved_id = asset_id or uuid.uuid4().hex
-    return _put_asset_record(
-        asset_id=resolved_id,
-        user_id=user_id,
-        kind=kind,
-        mime_type=mime_type,
-        size_bytes=size_bytes,
-        checksum=checksum,
-        storage_key=storage_key,
-        filename=filename,
-    )
-
-
 def materialize_asset_path(asset: Asset) -> Path:
     """Download an S3 asset into a local cache for agent/tool use."""
     if asset.storage_backend not in {"s3", "local"}:
@@ -408,11 +372,6 @@ def materialize_asset_path(asset: Asset) -> Path:
     )
     temporary.replace(destination)
     return destination
-
-
-def local_path_for_asset(asset: Asset) -> Path:
-    """Compatibility alias used by the web app for reference materialization."""
-    return materialize_asset_path(asset)
 
 
 def presigned_content_url(asset: Asset, *, ttl_seconds: int = CONTENT_URL_TTL_SECONDS) -> str:
@@ -523,18 +482,3 @@ def verify_content_signature(asset_id: str, exp: str | int | None, sig: str | No
     message = f"{asset_id}:{expires}".encode("utf-8")
     expected = hmac.new(_signing_secret(), message, hashlib.sha256).hexdigest()
     return hmac.compare_digest(expected, sig)
-
-
-def asset_public_dict(asset: Asset, *, include_url: bool = True) -> dict[str, Any]:
-    payload: dict[str, Any] = {
-        "id": asset.id,
-        "kind": asset.kind,
-        "mime_type": asset.mime_type,
-        "size_bytes": asset.size_bytes,
-        "filename": asset.filename,
-        "created_at": asset.created_at,
-        "storage_backend": asset.storage_backend,
-    }
-    if include_url:
-        payload["content_url"] = sign_content_url(asset.id)
-    return payload

@@ -16,10 +16,8 @@ from mcp.types import CallToolResult, TextContent
 
 from agent.codex_harness import (
     AppServer,
-    CodexHarness,
     CodexProtocolError,
     SESSION_TYPE,
-    ToolApprovalPending,
 )
 from agent.gateway_client import GatewayClient
 from agent.studio_agent_next import (

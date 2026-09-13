@@ -7,7 +7,6 @@ import json
 import asyncio
 import os
 import time
-from typing import Any
 from types import SimpleNamespace
 
 from jsonschema import validate, ValidationError as SchemaValidationError
@@ -17,7 +16,6 @@ from agent.codex_harness import CodexHarness, SESSION_TYPE, ToolApprovalPending
 from agent.studio_agent_next import (
     STUDIO_MANAGER_INSTRUCTIONS,
     StudioAgentApprovalRequired,
-    StudioAgentContext,
     StudioAgentOutput,
     StudioAgentRequest,
     _GATEWAY_SEARCH_TOOL,

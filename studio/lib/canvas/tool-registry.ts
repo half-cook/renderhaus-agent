@@ -1,6 +1,6 @@
 import type { AgentToolEvent, CreativeNodeKind, PortDataType, ToolDefinition } from "./types";
 
-export const CREATIVE_TOOLS: ToolDefinition[] = [
+const CREATIVE_TOOLS: ToolDefinition[] = [
   {
     id: "image.generate",
     displayName: "Image",
@@ -83,10 +83,6 @@ export function toolById(id: string | undefined): ToolDefinition | undefined {
     return undefined;
   }
   return CREATIVE_TOOLS.find((tool) => tool.id === id);
-}
-
-export function toolsForKind(kind: CreativeNodeKind): ToolDefinition[] {
-  return CREATIVE_TOOLS.filter((tool) => tool.category === kind);
 }
 
 export function defaultToolForRail(

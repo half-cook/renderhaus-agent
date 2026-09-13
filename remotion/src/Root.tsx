@@ -48,7 +48,7 @@ function Layer({item, asset}: {item: Item; asset?: Asset}) {
   </AbsoluteFill>;
 }
 
-export function Timeline({document}: Props) {
+function Timeline({document}: Props) {
   const {fps, durationInFrames} = useVideoConfig();
   return <AbsoluteFill style={{background: 'black'}}>{document.tracks.flatMap((track) => track.items.map((item) => {
     const from = Math.round(item.start * fps);
@@ -60,7 +60,7 @@ export function Timeline({document}: Props) {
   }))}</AbsoluteFill>;
 }
 
-export const metadata = ({document, renderConfig}: Props) => {
+const metadata = ({document, renderConfig}: Props) => {
   const fps = renderConfig?.fps ?? 30;
   const end = Math.max(0, ...document.tracks.filter((track) => ['video', 'overlay'].includes(track.kind)).flatMap((track) => track.items.map((item) => item.start + item.duration)));
   if (!Number.isFinite(end) || end <= 0) throw new Error('A render needs a non-empty visual sequence.');

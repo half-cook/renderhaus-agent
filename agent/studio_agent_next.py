@@ -300,43 +300,6 @@ class StudioAgentContext:
         if self.progress_sink:
             self.progress_sink(event)
 
-    def asset_for(self, reference: str, expected_kind: str) -> dict[str, Any]:
-        asset = self.working_assets.get(reference)
-        if asset is None:
-            asset = next(
-                (
-                    item
-                    for item in self.working_assets.values()
-                    if item.get("asset_id") == reference
-                ),
-                None,
-            )
-        if asset is None:
-            raise ValueError(f"Asset version {reference!r} is not available in this agent run.")
-        if asset.get("kind") != expected_kind:
-            raise ValueError(
-                f"Asset version {reference!r} is {asset.get('kind')}, not {expected_kind}."
-            )
-        return asset
-
-    def source_for(self, reference: str, expected_kind: str) -> str:
-        node = next((item for item in self.nodes if item.id == reference), None)
-        if node is not None:
-            if node.kind != expected_kind:
-                raise ValueError(f"{node.title} is a {node.kind} node, not a {expected_kind} node.")
-            if node.version_id and self.source_resolver:
-                return self.source_resolver(node.version_id)
-            if node.source:
-                return node.source
-            raise ValueError(f"{node.title} does not have a generated or uploaded source yet.")
-        asset = self.asset_for(reference, expected_kind)
-        if not self.source_resolver:
-            source = asset.get("source")
-            if isinstance(source, str) and source:
-                return source
-            raise ValueError("This agent run has no asset source resolver.")
-        return self.source_resolver(str(asset["version_id"]))
-
     def prepare_gateway_arguments(
         self,
         _tool_name: str,

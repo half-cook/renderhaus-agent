@@ -122,7 +122,7 @@ export async function createSubscriptionCheckout(planId: string): Promise<string
   return String(payload.url || "");
 }
 
-export async function openBillingPortal(): Promise<string> {
+async function openBillingPortal(): Promise<string> {
   const response = await studioFetch("/api/studio/billing/portal", { method: "POST" });
   const payload = await readJson(response);
   if (!response.ok) {
@@ -639,18 +639,6 @@ function agentProgress(payload: AgentJobPayload): AgentProgress {
     autonomous: payload.autonomous === true,
     approvals: agentApprovals(payload.approvals),
   };
-}
-
-export async function fetchStudioAgentResult(jobId: string): Promise<AgentResultData | null> {
-  const response = await studioFetch(`/api/studio/agent/${encodeURIComponent(jobId)}`, {
-    cache: "no-store",
-  });
-  const payload = (await response.json().catch(() => ({}))) as AgentJobPayload;
-  if (!response.ok || !payload.result) {
-    return null;
-  }
-  const completed = completedAgentResult(payload);
-  return completed.status === "completed" ? completed.result : null;
 }
 
 async function waitForAgentJob(

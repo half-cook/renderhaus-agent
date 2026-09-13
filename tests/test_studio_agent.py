@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import asyncio
-import json
 import os
 import sqlite3
 import tempfile
@@ -17,21 +16,16 @@ from botocore.exceptions import ClientError
 
 import server.studio as studio_module
 
-from agent.studio_agent import (
-    StudioAgentContext,
-    StudioAgentOutput,
-    StudioAgentRun,
-    StudioNodeReference,
-    StudioToolEvent,
-    normalize_markdown_filename,
-    run_studio_agent,
-)
 from agent.studio_agent_next import (
+    StudioAgentOutput,
     StudioAgentApprovalRequired,
     StudioApprovalRequest,
-    StudioToolEvent as NextStudioToolEvent,
+    StudioNode as StudioNodeReference,
+    StudioToolEvent,
+    normalize_markdown_filename,
 )
 from server.studio import (
+    StudioAgentRun,
     AgentApprovalBody,
     AgentBody,
     _agent_result,
@@ -545,6 +539,7 @@ class StudioAgentTests(unittest.IsolatedAsyncioTestCase):
             filename="campaign-assets.md",
         )
         outcome = StudioAgentRun(
+            session_items=[],
             final=final,
             tool_events=[
                 StudioToolEvent(
@@ -615,6 +610,7 @@ class StudioAgentTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(
             _agent_result(
                 StudioAgentRun(
+                    session_items=[],
                     final=StudioAgentOutput(
                         title="Hero",
                         summary="Ready.",
@@ -774,7 +770,7 @@ class StudioAgentTests(unittest.IsolatedAsyncioTestCase):
             session_items=[{"role": "assistant", "content": "# Approved result"}],
             progress_events=[],
         )
-        completed_before_pause = NextStudioToolEvent(
+        completed_before_pause = StudioToolEvent(
             id="completed-before-pause",
             name="Seedream___text_to_image",
             label="Generate image",

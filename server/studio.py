@@ -114,13 +114,6 @@ def _resolved_media_file(path: Path) -> Path | None:
     return resolved
 
 
-def _local_media_url(path: Path) -> str | None:
-    resolved = _resolved_media_file(path)
-    if resolved is None:
-        return None
-    return f"/api/studio/media?path={quote(str(resolved))}"
-
-
 def _playback_secret() -> bytes:
     """Use a dedicated secret when configured, with a safe local fallback."""
     value = os.getenv("STUDIO_MEDIA_TICKET_SECRET") or os.getenv("CLERK_SECRET_KEY")
