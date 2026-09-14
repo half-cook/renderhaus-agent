@@ -23,7 +23,7 @@ export function isSceneKind(kind: CreativeNodeKind): boolean {
   }
 }
 
-export function isSceneNode(data: CanvasNodeData): boolean {
+function isSceneNode(data: CanvasNodeData): boolean {
   return isSceneKind(data.kind);
 }
 
@@ -41,34 +41,6 @@ export function approvedSequence(nodes: CanvasNode[]): CanvasNode[] {
   return nodes
     .filter((node) => node.data.approved && isSceneNode(node.data))
     .sort((a, b) => (a.data.storyOrder ?? 0) - (b.data.storyOrder ?? 0));
-}
-
-export function nextStoryOrder(nodes: CanvasNode[]): number {
-  const sequence = approvedSequence(nodes);
-  if (sequence.length === 0) {
-    return 1;
-  }
-  return Math.max(...sequence.map((node) => node.data.storyOrder ?? 0)) + 1;
-}
-
-export function compactStoryOrders(nodes: CanvasNode[]): CanvasNode[] {
-  const order = new Map(approvedSequence(nodes).map((node, index) => [node.id, index + 1]));
-  return nodes.map((node) => {
-    const storyOrder = order.get(node.id);
-    if (storyOrder === undefined) {
-      if (!node.data.approved && node.data.storyOrder === undefined) {
-        return node;
-      }
-      if (!node.data.approved) {
-        return { ...node, data: { ...node.data, storyOrder: undefined } };
-      }
-      return node;
-    }
-    if (node.data.storyOrder === storyOrder) {
-      return node;
-    }
-    return { ...node, data: { ...node.data, storyOrder } };
-  });
 }
 
 export function sceneBadge(data: CanvasNodeData): string | undefined {

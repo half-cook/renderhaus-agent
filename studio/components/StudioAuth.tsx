@@ -172,7 +172,7 @@ export function StudioAppGate({ children }: { children: ReactNode }) {
   );
 }
 
-export function LocalStudioAuth({ children }: { children: ReactNode }) {
+function LocalStudioAuth({ children }: { children: ReactNode }) {
   configureStudioTokenGetter(async () => null);
   return children;
 }

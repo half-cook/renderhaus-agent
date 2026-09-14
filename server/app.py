@@ -53,7 +53,7 @@ MIN_VIDEO_SECONDS = 4
 MAX_VIDEO_SECONDS = 12
 TERMINAL_STATES = {"complete", "planned", "failed"}
 AGENT_HARNESS_UNAVAILABLE = (
-    "The LangChain agent harness was removed. Generation returns after the OpenAI Agents SDK rewrite."
+    "This legacy generation route is retired. Use the Studio agent at /api/studio/agent."
 )
 PUBLIC_JOB_FIELDS = {
     "id",

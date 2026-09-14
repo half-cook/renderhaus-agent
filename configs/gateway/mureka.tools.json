@@ -22,7 +22,7 @@
   },
   {
     "name": "create_instrumental",
-    "description": "Use when the user needs original background music without vocals. Returns a queued task id; follow with query_music_task until terminal.",
+    "description": "Use when the user needs original background music without vocals. Returns a queued task id; follow with query_music_task until terminal. No exact source-duration control; trim to video length in Remotion. Default n=1.",
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -153,7 +153,7 @@
   },
   {
     "name": "query_music_task",
-    "description": "Use only after a Mureka creation or editing tool returned a task id. Poll once per call until succeeded, failed, cancelled, or dry_run; request download on the final poll.",
+    "description": "Use only after a Mureka creation or editing tool returned a task id. Poll once per call until succeeded, failed, cancelled, or dry_run; request download on the final poll. Pass kind=song for vocal songs or image/video soundtracks, kind=instrumental for instrumentals.",
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -162,6 +162,9 @@
         },
         "download": {
           "type": "boolean"
+        },
+        "kind": {
+          "type": "string"
         }
       },
       "required": [
@@ -180,6 +183,9 @@
         },
         "download": {
           "type": "boolean"
+        },
+        "kind": {
+          "type": "string"
         }
       },
       "required": [
@@ -379,26 +385,33 @@
   },
   {
     "name": "generate_soundtrack",
-    "description": "Use when the user needs music synchronized to an uploaded media file or a specified time range. Use create_instrumental for standalone background music.",
+    "description": "Use when the user needs music synchronized to an uploaded media file or a specified time range. Requires image_id or video_id uploaded with purpose=soundtrack. audio_start/audio_end are milliseconds, minimum 3000 ms; n defaults to 1. Poll query_music_task with kind=song.",
     "inputSchema": {
       "type": "object",
       "properties": {
         "prompt": {
           "type": "string"
         },
-        "upload_file_id": {
+        "image_id": {
+          "type": "string"
+        },
+        "video_id": {
           "type": "string"
         },
         "audio_start": {
-          "type": "number",
+          "type": "integer",
           "description": "Must be at least 0."
         },
         "audio_end": {
-          "type": "number",
+          "type": "integer",
           "description": "Must be at least 0."
         },
         "model": {
           "type": "string"
+        },
+        "n": {
+          "type": "integer",
+          "description": "Allowed range: 1 to 3."
         }
       },
       "required": []

@@ -36,7 +36,7 @@ export const PRIMARY_FIELD_ORDER = [
   "seed",
 ];
 
-export const PROMPT_FIELDS = new Set(["prompt", "text", "lyrics", "script", "style_prompt"]);
+const PROMPT_FIELDS = new Set(["prompt", "text", "lyrics", "script", "style_prompt"]);
 
 export function fieldLabel(name: string): string {
   return LABELS[name] || name.replaceAll("_", " ");

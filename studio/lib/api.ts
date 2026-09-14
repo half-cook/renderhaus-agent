@@ -122,7 +122,7 @@ export async function createSubscriptionCheckout(planId: string): Promise<string
   return String(payload.url || "");
 }
 
-export async function openBillingPortal(): Promise<string> {
+async function openBillingPortal(): Promise<string> {
   const response = await studioFetch("/api/studio/billing/portal", { method: "POST" });
   const payload = await readJson(response);
   if (!response.ok) {
@@ -311,6 +311,9 @@ export type StudioExecution = {
   assets: StudioAsset[];
   result?: AgentResultData;
   errorType?: string;
+  checkpointAt?: number;
+  recoveryAvailable: boolean;
+  canResume: boolean;
   createdAt?: number;
   updatedAt?: number;
   autonomous: boolean;
@@ -451,6 +454,9 @@ export async function fetchStudioExecutions(
       progressEvents: agentProgressEvents(item.events),
       assets,
       result: agentResult,
+      checkpointAt: typeof item.checkpoint_at === "number" ? item.checkpoint_at : undefined,
+      recoveryAvailable: item.recovery_available === true,
+      canResume: item.can_resume === true,
       errorType: typeof item.error_type === "string" ? item.error_type : undefined,
       createdAt: typeof item.created_at === "number" ? item.created_at : undefined,
       updatedAt: typeof item.updated_at === "number" ? item.updated_at : undefined,
@@ -639,18 +645,6 @@ function agentProgress(payload: AgentJobPayload): AgentProgress {
   };
 }
 
-export async function fetchStudioAgentResult(jobId: string): Promise<AgentResultData | null> {
-  const response = await studioFetch(`/api/studio/agent/${encodeURIComponent(jobId)}`, {
-    cache: "no-store",
-  });
-  const payload = (await response.json().catch(() => ({}))) as AgentJobPayload;
-  if (!response.ok || !payload.result) {
-    return null;
-  }
-  const completed = completedAgentResult(payload);
-  return completed.status === "completed" ? completed.result : null;
-}
-
 async function waitForAgentJob(
   jobId: string,
   onProgress?: (progress: AgentProgress) => void,
@@ -825,4 +819,17 @@ export async function decideAgentApproval(
     throw new Error(payload.detail || payload.message || `approval ${response.status}`);
   }
   return agentProgress(payload);
+}
+
+export async function resumeAgentRun(jobId: string) {
+  const response = await studioFetch(`/api/studio/agent/${encodeURIComponent(jobId)}/resume`, {method: "POST"});
+  const payload = await readJson(response);
+  if (!response.ok) throw new Error(String(payload.detail || "Could not resume this run."));
+  return payload;
+}
+export async function stopAgentRun(jobId: string) {
+  const response = await studioFetch(`/api/studio/agent/${encodeURIComponent(jobId)}/stop`, {method: "POST"});
+  const payload = await readJson(response);
+  if (!response.ok) throw new Error(String(payload.detail || "Could not stop this run."));
+  return payload;
 }

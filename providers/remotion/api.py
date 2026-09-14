@@ -8,6 +8,7 @@ from __future__ import annotations
 import copy
 import hashlib
 import json
+import math
 import mimetypes
 import os
 import re
@@ -28,7 +29,7 @@ ROOT = Path(__file__).resolve().parents[2]
 DEPLOYMENT_PATH = ROOT / ".renderhaus" / "remotion" / "deployment.json"
 OUTPUT_DIR = ROOT / ".renderhaus" / "media" / "remotion"
 COMPOSITION_ID = "RenderhausTimeline"
-ASPECT_SIZES = {"16:9": (1920, 1080), "9:16": (1080, 1920), "1:1": (1080, 1080)}
+ASPECT_SIZES = {"16:9": (1920, 1080), "9:16": (1080, 1920), "1:1": (1080, 1080), "2.39:1": (1920, 804)}
 DEFAULT_FRAMES_PER_LAMBDA = 100
 
 
@@ -172,7 +173,7 @@ def build_timeline_props(
         if not url:
             raise ValueError("Each visual clip needs a url (canvas node source or https URL).")
         duration = float(clip.get("duration_seconds") or 0)
-        if duration <= 0:
+        if not math.isfinite(duration) or duration <= 0:
             raise ValueError("Each visual clip needs duration_seconds greater than 0.")
         track = max(0, min(int(clip.get("track") or 0), 8))
         start = (
@@ -224,6 +225,7 @@ def build_timeline_props(
                 "opacity": opacity,
                 "rotation": max(-360.0, min(float(clip.get("rotation_degrees", 0)), 360.0)),
                 "playbackRate": playback_rate,
+                "volume": max(0.0, min(float(clip.get("volume", 1)), 1.0)),
                 "fadeIn": max(0.0, min(float(clip.get("fade_in_seconds", default_fade)), duration)),
                 "fadeOut": max(
                     0.0, min(float(clip.get("fade_out_seconds", default_fade)), duration)
@@ -242,14 +244,19 @@ def build_timeline_props(
         }
         for track, items in sorted(visual_tracks.items())
     ]
+    visual_duration = max(track_ends.values())
     for index, clip in enumerate(audio_tracks or []):
         url = str(clip.get("url") or "").strip()
         if not url:
             raise ValueError("Each audio clip needs a url (canvas node source or https URL).")
         duration = float(clip.get("duration_seconds") or 0)
-        if duration <= 0:
+        if not math.isfinite(duration) or duration <= 0:
             raise ValueError("Each audio clip needs duration_seconds greater than 0.")
         start = float(clip.get("start_seconds") or 0)
+        if start >= visual_duration:
+            raise ValueError("Audio must start before the end of the visual sequence.")
+        # Source duration must not extend the video into black frames.
+        duration = min(duration, visual_duration - start)
         source_in = float(clip.get("source_in_seconds") or 0)
         volume = float(clip.get("volume") if clip.get("volume") is not None else 1)
         asset_id = f"audio-{index + 1}"
@@ -283,7 +290,7 @@ def build_timeline_props(
                         ),
                         "fadeOut": max(
                             0.0,
-                            min(float(clip.get("fade_out_seconds") or 0), duration),
+                            min(float(clip.get("fade_out_seconds", 0.75)), duration),
                         ),
                     }
                 ],
@@ -295,7 +302,7 @@ def build_timeline_props(
         if not text:
             raise ValueError("Each text overlay needs non-empty text.")
         duration = float(overlay.get("duration_seconds") or 0)
-        if duration <= 0:
+        if not math.isfinite(duration) or duration <= 0:
             raise ValueError("Each text overlay needs duration_seconds greater than 0.")
         position = str(overlay.get("position") or "center")
         if position not in {"top", "center", "bottom"}:
@@ -331,6 +338,7 @@ def build_timeline_props(
             "fps": max(12, min(int(fps), 60)),
             "width": width,
             "height": height,
+            "durationInFrames": max(1, math.ceil(visual_duration * fps)),
         },
     }
 
@@ -373,7 +381,7 @@ def _start_lambda_render(
         "status": "queued",
         "render_id": response.render_id,
         "bucket_name": response.bucket_name,
-        "output_key": output_key,
+        "output_key": f"renders/{response.render_id}/{output_key}",
         "filename": safe_name,
         "progress": 0.0,
     }
@@ -384,7 +392,7 @@ def render_timeline(
     visuals: list[dict[str, Any]],
     audio_tracks: list[dict[str, Any]] | None = None,
     text_overlays: list[dict[str, Any]] | None = None,
-    aspect_ratio: Literal["16:9", "9:16", "1:1"] = "9:16",
+    aspect_ratio: Literal["16:9", "9:16", "1:1", "2.39:1"] = "9:16",
     fps: int = 30,
     output_filename: str = "renderhaus-video.mp4",
 ) -> dict[str, Any]:

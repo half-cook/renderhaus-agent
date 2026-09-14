@@ -855,7 +855,6 @@ a:focus-visible {
   text-wrap: balance;
 }
 
-.inspector-empty,
 .inspector-note,
 .agent-composer-meta,
 .node-meta,
@@ -1288,20 +1287,6 @@ a:focus-visible {
 
 .agent-approval button:disabled {
   opacity: 0.5;
-}
-
-.agent-approval-decision {
-  margin: 0;
-  color: var(--muted);
-  font-size: 11px;
-}
-
-.agent-approval-decision.approve {
-  color: var(--ok);
-}
-
-.agent-approval-decision.reject {
-  color: var(--danger);
 }
 
 .agent-step-list em {
@@ -2500,3 +2485,51 @@ input[type="range"] {
     width: 220px;
   }
 }
+
+/* Agent production workspace: persistent context, compact progress, readable deliverables. */
+.agent-memory-bar { display:flex; align-items:center; gap:7px; padding:9px 16px; border-bottom:1px solid var(--line); font-size:10px; color:var(--muted); }
+.agent-memory-bar svg, .agent-checkpoint svg { color:var(--ok); flex-shrink:0; }
+.agent-user-message { max-width:94%; border-radius:10px 10px 2px 10px; padding:12px 14px; }
+.agent-user-message p { margin:0; }
+.agent-prompt-collapsed { display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:4; overflow:hidden; }
+.agent-user-message button { border:0; background:none; padding:8px 0 0; color:var(--muted); font:inherit; font-size:11px; cursor:pointer; }
+.agent-run-status { display:flex; align-items:flex-start; gap:9px; padding:12px; border:1px solid var(--line); border-radius:8px; color:var(--text); font-size:12px; line-height:18px; margin-bottom:8px; }
+.agent-run-status svg { flex-shrink:0; margin-top:2px; color:var(--ok); }
+.agent-progress-group.running .agent-run-status { background:color-mix(in srgb, var(--selected) 7%, transparent); }
+.agent-progress-group.running .agent-run-status svg { color:var(--selected); }
+.agent-progress-group.failed .agent-run-status svg { color:var(--danger); }
+.agent-progress-group.incomplete .agent-run-status svg, .agent-step-list li.incomplete .agent-step-icon { color:#c69b60; }
+.agent-progress-group summary { padding:2px 4px; font-size:11px; }
+.agent-progress-group details[open] .agent-progress-chevron { transform:rotate(90deg); }
+.agent-step-list { gap:14px; max-height:340px; overflow-y:auto; padding-right:6px; }
+.agent-step-list em { display:none; }
+.agent-result-title { font-size:16px; font-weight:550; letter-spacing:-0.3px; line-height:22px; margin:5px 0 0; }
+.agent-artifact { border-radius:8px; }
+.agent-artifact-video { grid-column:1 / -1; }
+.agent-artifact-video .agent-artifact-media { height:auto; max-height:320px; min-height:170px; object-fit:contain; }
+.agent-checkpoint { display:inline-flex; align-items:center; gap:5px; }
+.agent-resume, .agent-stop { display:flex; justify-content:center; align-items:center; gap:7px; font:inherit; font-size:12px; min-height:36px; border:1px solid var(--line); border-radius:6px; color:var(--text); background:var(--chrome); cursor:pointer; }
+.agent-resume:hover, .agent-stop:hover { border-color:var(--muted); }
+.agent-resume:disabled { opacity:.5; cursor:wait; }
+.agent-stop { align-self:flex-end; padding:0 10px; min-height:28px; margin-bottom:8px; font-size:11px; }
+.agent-markdown { font-size:12px; line-height:1.65; overflow-wrap:anywhere; color:var(--text); }
+.agent-markdown h1 { font-size:19px; }
+.agent-markdown h2 { font-size:15px; }
+.agent-markdown h3 { font-size:13px; }
+.agent-markdown :is(h1,h2,h3) { margin:18px 0 7px; font-weight:600; }
+.agent-markdown :is(ul,ol) { padding-left:20px; }
+.agent-markdown a { color:var(--text); text-decoration:underline; }
+.agent-markdown pre { overflow:auto; white-space:pre-wrap; padding:10px; background:var(--chrome); }
+.agent-markdown table { display:block; overflow-x:auto; border-collapse:collapse; }
+.agent-markdown :is(th,td) { padding:6px; border:1px solid var(--line); }
+.agent-composer-meta { white-space:nowrap; overflow:hidden; gap:8px; }
+.agent-composer-meta span:last-child { overflow:hidden; text-overflow:ellipsis; }
+
+.agent-approval-summary { margin:8px 0; font-size:12px; line-height:19px; color:var(--text); }
+.agent-approval-details { margin:10px 0; color:var(--muted); font-size:11px; }
+.agent-approval-details summary { cursor:pointer; }
+.agent-approval-details pre { max-height:220px; overflow:auto; white-space:pre-wrap; overflow-wrap:anywhere; font:10px/16px var(--font-geist-mono), monospace; padding:8px; background:var(--chrome); }
+.agent-audio-timing { display: block; margin-top: 8px; font-size: 11px; opacity: 0.8; }
+.agent-conversation-controls select { padding:0 4px; line-height:28px; }
+.agent-approval-record { border:1px solid var(--line); border-radius:7px; padding:10px; font-size:11px; color:var(--muted); }
+.agent-approval-record summary { cursor:pointer; line-height:17px; }

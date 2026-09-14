@@ -10,7 +10,7 @@ generation/agent backend (`server/`, `agent/`, `providers/`).
 - **`server/`** — FastAPI backend: Clerk auth, canvas/asset persistence (`server/studio_state.py`),
   generation job endpoints. Talked to over HTTP by `studio/`, proxied at `/api/*` in dev
   (see `studio/next.config.ts`).
-- **`agent/`** — OpenAI Agents SDK manager; runs in-process locally or on Amazon Bedrock
+- **`agent/`** — Codex app-server manager; runs in-process locally or on Amazon Bedrock
   AgentCore Runtime.
 - **`providers/`** — Seedance, Seedream, Mureka, Fish Audio, and Remotion implementations.
   AgentCore Gateway Lambdas call these; the Runtime agent never hosts them locally.
@@ -24,6 +24,9 @@ generation/agent backend (`server/`, `agent/`, `providers/`).
 The Studio's workspace, canvas, immutable asset-version, provenance, and durable execution model is
 documented in [docs/STUDIO_STATE.md](docs/STUDIO_STATE.md). The end-to-end Studio manager, media
 playback, Remotion, UI, and operations guide is [docs/STUDIO_AGENT.md](docs/STUDIO_AGENT.md).
+
+The Codex integration pattern, persistence, approval flow, and verification are documented in
+[docs/CODEX_HARNESS.md](docs/CODEX_HARNESS.md).
 
 ## Long-video program
 
@@ -79,8 +82,8 @@ via its execution role.
 
 ### AgentCore (cloud agent + MCPs)
 
-The LangChain agent and generation MCPs (Seedance, Seedream, Mureka, Fish Audio) can run on
-Amazon Bedrock AgentCore Runtime. The backend stays local (or on its own host) and calls the
+The Codex harness runs inside Amazon Bedrock AgentCore Runtime. Generation tools
+(Seedance, Seedream, Mureka, Fish Audio, and Remotion) remain behind AgentCore Gateway. The backend stays local (or on its own host) and calls the
 runtime when `AGENTCORE_RUNTIME_ARN` is set.
 
 ```bash
@@ -104,18 +107,28 @@ Set `SEEDANCE_DRY_RUN=false` in `.env.local` only when you intend to run live vi
 
 ### Remotion Lambda renders
 
-The OpenAI canvas agent exposes `render_remotion_video` for assembling generated images, videos,
-voiceovers, and music into one downloadable MP4, rendered through an already-deployed Remotion
-Lambda + S3 site (`REMOTION_APP_SERVE_URL`).
+The Codex canvas agent calls Gateway's `Remotion___render_timeline` and
+`Remotion___get_render_progress` to assemble images, videos, captions, voiceovers, and music
+into one downloadable MP4. The source is in `remotion/`; it renders through Remotion Lambda
+and an S3 site (`REMOTION_APP_SERVE_URL`).
 
 ```bash
 # Renders the first successful multi-tool artifact set as an end-to-end smoke test.
 make smoke-remotion
 ```
 
-The Remotion composition source and Lambda deploy tooling lived in `web/`, removed when that
-frontend was retired in favor of `studio/`. The deployed site keeps working as-is; redeploying or
-updating the composition requires recovering that tooling from git history first.
+The composition and Lambda SDK use the same pinned Remotion version. Visual tracks determine
+the export length; long music is trimmed to the edit with configurable source offsets and fades.
+
+```bash
+npm ci --prefix remotion
+npm run typecheck --prefix remotion
+# Deploy a versioned site and update the existing Remotion/Mureka Lambda targets and schemas.
+.venv/bin/python scripts/deploy_media_updates.py
+```
+
+The deployment script preserves existing credentials and records the previous site URL under
+ignored `.renderhaus/remotion/`. See [media timing and recovery](docs/MEDIA_RENDERING.md).
 
 ## Setup
 
@@ -210,6 +223,11 @@ AgentCore Gateway. The Runtime agent is an MCP client of that URL. There is no l
 ```
 
 `AGENTCORE_GATEWAY_URL` is required. The agent does not spawn provider MCP servers.
+The URL must use HTTPS; redirects and embedded URL credentials are rejected. For a local
+MCP development server only, set `AGENTCORE_GATEWAY_ALLOW_LOOPBACK_HTTP=true` to allow HTTP
+on `localhost`, `127.0.0.1`, or `[::1]`. That mode requires an unset
+`AGENTCORE_GATEWAY_AUTH_TOKEN` and a URL without query parameters.
+Loopback development connections ignore environment proxy settings.
 
 ## Supervisor (Director + Executor)
 

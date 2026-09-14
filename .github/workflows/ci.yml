@@ -30,6 +30,16 @@ jobs:
       - name: Ruff
         run: ruff check agent lambdas scripts server providers
 
+      - name: Unit and Codex protocol tests
+        run: python -m unittest discover -s tests -q
+        env:
+          RENDERHAUS_SECRETS_NAME: ""
+          SEEDANCE_DRY_RUN: "true"
+          SEEDREAM_DRY_RUN: "true"
+          MUREKA_DRY_RUN: "true"
+          FISH_AUDIO_DRY_RUN: "true"
+          REMOTION_DRY_RUN: "true"
+
       - name: CI checks
         run: python scripts/ci_check.py
         env:

@@ -1,12 +1,14 @@
 # Renderhaus Studio agent: architecture and operation
 
+> The manager uses Codex app-server. See [CODEX_HARNESS.md](CODEX_HARNESS.md)
+> for native conversation persistence and the dynamic-tool approval protocol.
+
 This is the end-to-end reference for the **Studio** experience: the canvas at
-`localhost:5174`, its FastAPI API at `localhost:8000`, the OpenAI Agents SDK manager,
+`localhost:5174`, its FastAPI API at `localhost:8000`, the Codex app-server manager,
 the generation providers, and the Remotion Lambda renderer.
 
-It describes what is implemented today. The established `web/` timeline editor remains a
-separate detailed-editing surface; Studio is the media-first planning, generation, and
-assembly canvas. See [STUDIO_STATE.md](STUDIO_STATE.md) for the database and asset-identity
+It describes what is implemented today. Studio is the planning, generation, and assembly canvas.
+The standalone `remotion/` composition renders typed timelines in Lambda. See [STUDIO_STATE.md](STUDIO_STATE.md) for the database and asset-identity
 contract in more detail.
 
 ## What the user experiences
@@ -52,41 +54,40 @@ the core data model.
 ## System map
 
 ```text
-                         Browser: Studio Next.js (:5174)
-                                      |
-              bearer-authenticated JSON requests | native image/video/audio requests
-                                      v
-                              FastAPI Studio router (:8000)
-                              /             |              \
-                             /              |               \
-                projects/canvas       agent jobs          playback tickets
-                      |                   |                     |
-                      v                   v                     v
-            StudioRepository      OpenAI Agents SDK        FileResponse bytes
-              SQLite + files        manager + tools          (ticket or bearer)
-                  |                     |
-      assets / versions /             |------ Seedream image generation/editing
-      relations / executions           |------ Seedance text/image-to-video
-      tool calls                       |------ Mureka music generation
-                                      |------ Fish Audio voiceover
-                                      `------ Remotion Lambda final MP4
-                                                   |
-                                                   v
-                                          S3 render input/output
+Studio Next.js (:5174), Clerk session
+             |
+FastAPI Studio router (:8000)
+  |          |                         |
+canvas       agent execution           playback tickets
+  |          |                         |
+SQLite       Codex app-server          managed asset bytes
+ledger       (native model loop)
+             |
+Python dynamic-tool callbacks
+(discovery, schema validation, approvals, billing, asset handles)
+             |
+Gateway MCP client -- HTTPS --> AgentCore Gateway
+                                | Seedream image generation/editing
+                                | Seedance text/image-to-video
+                                | Mureka music
+                                | Fish Audio speech
+                                ` Remotion Lambda --> S3 MP4
 ```
 
 ### Main implementation boundaries
 
 | Area | Primary code | Responsibility |
 | --- | --- | --- |
-| Studio app | `studio/` | React Flow canvas, Zustand state, Clerk client integration, previews, and downloads. |
+| Studio app | `studio/` | Storyboard canvas, Zustand state, Clerk client integration, previews, and downloads. |
 | Studio HTTP API | `server/studio.py` | Project/canvas, upload, provider invocation, agent job, and playback routes. |
 | Durable state | `server/studio_state.py` | Workspace-scoped SQLite development adapter, immutable media versions, provenance, and execution ledger. |
 | Authentication | `server/auth.py` | Clerk validation, exact authorized-party checks, and workspace selection. |
-| Studio manager | `agent/studio_agent.py` | OpenAI Agents SDK agent, available tools, polling, redaction, and structured final result. |
+| Studio manager | `agent/studio_agent_next.py`, `agent/studio_codex_runner.py` | Manager contract, Gateway tool policy, polling, redaction, and structured final result. |
+| Native runtime | `agent/codex_harness.py` | Private Codex app-server process, dynamic-tool callbacks, native rollout snapshots, and turn limits. |
+| MCP transport | `agent/gateway_client.py` | HTTPS Gateway connection, tool discovery, and MCP session lifecycle. |
 | Provider dispatch | `providers/`, `lambdas/`, `configs/gateway/` | Provider implementations, Gateway Lambdas, and tool schemas. |
-| Remotion adapter | `agent/remotion_renderer.py` | Converts a typed timeline document into a private Remotion Lambda render and downloads the MP4. |
-| Remotion deployment | `scripts/deploy_remotion_lambda.py`, `web/scripts/remotion-lambda.mjs` | IAM setup, Remotion function/site deployment, and runtime-config synchronization. |
+| Remotion adapter | `providers/remotion/api.py` | Converts a typed timeline document into a private Remotion Lambda render and downloads the MP4. |
+| Remotion deployment | `scripts/deploy_media_updates.py`, `remotion/scripts/deploy.mjs` | Remotion function/site deployment and runtime-config synchronization. |
 
 ## Durable project and asset model
 
@@ -177,12 +178,14 @@ selected nodes' reference metadata. The route:
 3. Creates a durable `executions` record in `queued` state.
 4. Starts the local background agent task and returns HTTP 202 plus `job_id`.
 
-The Studio client polls `GET /api/studio/agent/{job_id}` every second for up to 20 minutes. The
-header's execution list comes from `GET /api/studio/agent` and therefore survives page reloads.
+Studio streams persisted execution snapshots from `GET /api/studio/agent/{job_id}/events`,
+with polling as a fallback for interrupted streams or older deployments. The execution list
+comes from `GET /api/studio/agent` and survives page reloads.
 
 ### Manager behavior
 
-`agent/studio_agent.py` builds one OpenAI Agents SDK `Agent` with a structured
+`agent/studio_agent_next.py` defines the manager contract and AgentCore entry point.
+`agent/studio_codex_runner.py` runs it through the Codex harness with a structured
 `StudioAgentOutput` final response:
 
 ```text
@@ -206,38 +209,53 @@ Every tool produces a `StudioToolEvent`, even if it fails. The event is redacted
 before it is retained or shown to the model/UI: API keys, authorization strings, tokens, secrets,
 large base64 payloads, and deeply nested provider output are excluded.
 
-### Available tools
+### Dynamic tools and the Gateway boundary
 
-| Manager tool | Provider action | Output | Notes |
-| --- | --- | --- | --- |
-| `generate_image` | Seedream `text_to_image` | image version | Generates a still. |
-| `edit_image` | Seedream `image_to_image` | new image version | Requires `source_asset_version_id` or `source_node_id`; preserves logical asset identity when available. |
-| `generate_video` | Seedance `text_to_video` | video version | Polls `get_video_task` until terminal. |
-| `animate_image` | Seedance `image_to_video` | video version | Requires a source image handle; records derivation. |
-| `generate_music` | Mureka `create_song_from_prompt` | audio version | Polls `query_music_task`. |
-| `generate_voiceover` | Fish Audio `generate_speech` | audio version | Creates a speech track. |
-| `render_remotion_video` | Remotion Lambda | video version | Composes image/video visuals and one or more audio tracks into a downloadable MP4. |
+Codex sees `report_progress`, Gateway semantic search, and `call_gateway_tool` through its
+native Code Mode host. Search returns actual Gateway tool names and schemas. Python accepts
+only discovered tools and validates each call against that schema before dispatch.
 
-The agent clamps user-facing video duration to 1–30 seconds and accepts 16:9, 9:16, or 1:1
-formats for image/video/remotion tools. The exact provider schemas/options are served from the
-provider registry and Studio's `/tools` and `/options` routes.
+| Gateway capability | Examples of discovered tools | Output |
+| --- | --- | --- |
+| Seedream | `Seedream___text_to_image`, `Seedream___image_to_image` | Immutable image versions |
+| Seedance | `Seedance___text_to_video`, `Seedance___image_to_video`, `Seedance___get_video_task` | Provider job, then video versions |
+| Mureka | Music creation tools and `Mureka___query_music_task` | Provider job, then audio versions |
+| Fish Audio | Speech generation tools | Audio versions |
+| Remotion | `Remotion___render_timeline`, `Remotion___get_render_progress` | Render identifiers, then a completed MP4 |
+
+Names and input options come from the deployed Gateway schemas. The old manager's fixed
+`generate_image`, `generate_music`, and `render_remotion_video` wrappers are not the current
+model interface. Canvas tool forms also obtain provider schemas from `/tools` and `/options`.
+
+Python resolves opaque asset/node handles, enforces tool approval and billing, and registers
+outputs. A non-autonomous external call pauses before dispatch and resumes the exact saved
+call only after its approval decision. Rejected calls are recorded without provider dispatch.
 
 ### Provider polling and persistence
 
-For a provider that returns a non-terminal job ID, the manager polls using
-`STUDIO_AGENT_POLL_INTERVAL_SECONDS` (default: 5 seconds) until a terminal result or
-`STUDIO_AGENT_MEDIA_TIMEOUT_SECONDS` (default: 600 seconds). On a successful non-dry-run media
-result, the server registers the returned bytes immediately and associates them with the execution
-and tool call. The event is appended to `tool_calls` as it happens.
+An approved music/video/render status call polls the same provider job in Python for up to
+`STUDIO_MEDIA_WAIT_SECONDS` (default 600), normally eight seconds between checks. Studio
+receives elapsed-time and available render-progress events. A timeout retains the existing
+job identifiers; it does not count as a completed export or create a replacement job.
 
-If the manager exhausts its turn limit, crashes, or is cancelled, completed media is retained. The
-server synthesizes a partial result from the durable tool-call ledger. A completed Remotion render
-is promoted to a completed recovered result even if the manager failed before sending its final
-structured response.
+Successful real media is registered as an immutable asset version and associated with its
+execution/tool event. Tool results and native Codex checkpoints are saved during the run.
+The server builds partial results from that durable ledger after an error or interruption.
+A successful `Remotion___get_render_progress` event with a registered video preserves a
+completed result when Codex subsequently reaches its tool-call limit.
 
-**Current runtime limitation:** jobs are launched as local `asyncio` tasks. The execution ledger
-survives a server restart, but an in-flight task does not resume automatically after that restart.
-A production worker/queue is the right next step for resumable long-running work.
+**Stop** cancels local work and conditionally changes an active execution to `UserStopped`.
+A completion that wins the race retains its status and result. Already-submitted provider
+jobs may still finish. **Resume** is available only for the latest unfinished recoverable
+run in an active conversation; completed and active runs cannot be resumed by this route.
+
+The backend exposes `recovery_available` and `can_resume`, without exposing native history.
+Recovery can use conversation session items, a persisted checkpoint, or recent tool history
+with managed assets/provider identifiers. Studio only says “progress saved” when durable
+recovery data exists. A failed run without it displays neutral failure text and disabled resume.
+
+Jobs currently run as local `asyncio` tasks. The ledger survives a server restart, but in-flight
+work does not automatically restart. A durable worker/queue remains a production requirement.
 
 ## Remotion final-video pipeline
 
@@ -249,45 +267,39 @@ audio clips:  audio, start, duration, source-in, volume
 render config: aspect ratio -> width/height, FPS
 ```
 
-The manager resolves each clip's version ID/node ID to a managed source, converts the clips into
-the shared timeline document consumed by `web/`'s `TimelineComposition`, then calls
-`render_timeline_and_wait`.
+Python resolves clip asset handles to managed sources before forwarding the typed timeline
+to `Remotion___render_timeline`. The provider builds the shared timeline document and starts
+a private Lambda render using the deployed `remotion/src/Root.tsx` composition, registered
+by `remotion/src/index.ts`.
 
 ```text
-managed local media
-       |
-       v
-upload/deduplicate permitted input bytes to Remotion S3 bucket
-       |
-       v
-Remotion Lambda render (private H.264 MP4)
-       |
-       v
-poll render progress, download final MP4 to .renderhaus/media/remotion/
-       |
-       v
-register immutable Studio video version + composed_from provenance
+managed input assets --> permitted source URLs / uploaded S3 inputs
+                                  |
+                         Remotion Lambda render
+                                  |
+                         render_id + bucket_name
+                                  |
+                     Remotion___get_render_progress
+                                  |
+                         completed private H.264 MP4
+                                  |
+                  immutable Studio video version + provenance
 ```
 
-Remotion inputs may be existing HTTP(S)/data URLs or valid local files under `.renderhaus/`.
-Local input files are content-hashed before they are uploaded so repeated renders can reuse the
-same input object. The renderer uses a private output, H.264 codec, JPEG intermediate image format,
-and configurable frames per Lambda.
+The separate progress call carries the final asset. An accepted render or running job is
+not delivery. The host preserves canonical render identifiers and verifies successful
+video delivery before presenting a finished export.
 
 ### Deploying Remotion
 
-This is an AWS-mutating operation and can incur cost:
+Deployment mutates AWS and can incur cost. `scripts/deploy_media_updates.py` updates an
+existing Mureka/Remotion deployment while preserving roles and authentication. It paginates
+and validates required Gateway targets, reads their configurations/schemas, and packages
+Lambda code before any mutation. It then uploads a versioned composition site and updates
+Lambda code, Remotion runtime settings, and Gateway schemas. This preflight avoids missing-
+target failures after deployment starts; it is not a transactional rollback mechanism.
 
-```bash
-make remotion
-```
-
-The deployment script creates/updates the Remotion IAM role, asks the Node helper to deploy the
-render function and site, stores non-secret deployment metadata in
-`.renderhaus/remotion/deployment.json`, and copies the required runtime settings into the configured
-Secrets Manager JSON secret.
-
-The renderer needs all of these values, either in environment variables or the deployment file:
+The renderer requires these settings in its provider environment:
 
 ```text
 REMOTION_APP_REGION
@@ -296,14 +308,10 @@ REMOTION_APP_SERVE_URL
 REMOTION_APP_BUCKET_NAME
 ```
 
-Use the existing first multi-tool artifacts as an integration smoke test:
-
-```bash
-make smoke-remotion
-```
-
-`scripts/smoke_remotion_lambda.py` intentionally fails if those expected artifacts are absent; it
-does not generate substitutes.
+`make smoke-remotion` renders the named existing smoke-test artifacts through the deployed
+renderer and incurs AWS work. It fails if those inputs are absent; it does not generate
+substitutes. For browser verification, follow [BROWSER_E2E.md](BROWSER_E2E.md), including
+spending authorization and opening/playing the actual output.
 
 ## Canvas rendering and playback
 
@@ -401,7 +409,11 @@ when Clerk is enabled.
 | `GET /assets/{version_id}/content?ticket=…` | ticket or auth | Streams the managed media bytes. |
 | `POST /agent` | auth | Creates an agent execution and returns its queued job record. |
 | `GET /agent` | auth | Lists durable executions for the active workspace. |
-| `GET /agent/{job_id}` | auth | Returns one execution, including result and recorded tool calls. |
+| `GET /agent/{job_id}` | auth | Returns one execution, recorded tool calls, and recovery capability. |
+| `GET /agent/{job_id}/events` | auth | Streams persisted execution snapshots. |
+| `POST /agent/{job_id}/stop` | auth | Stops local active work while preserving completion and durable outputs. |
+| `POST /agent/{job_id}/resume` | auth | Continues eligible unfinished work in the same conversation. |
+| `POST /agent/{job_id}/approvals/{call_id}` | auth | Approves/rejects a saved Gateway call. |
 
 The API normalizes legacy URL/path outputs to managed asset versions when it saves a canvas. A
 caller cannot use this mechanism to attach another workspace's version: every version lookup is
@@ -436,8 +448,10 @@ Secrets Manager JSON secret. Do not commit secrets.
 | `RENDERHAUS_STUDIO_DATABASE` | Optional SQLite database location. |
 | `RENDERHAUS_MEDIA_DIR` | Optional managed-media root. |
 | `STUDIO_MEDIA_TICKET_SECRET` | Optional dedicated HMAC key for playback URLs. |
-| `STUDIO_AGENT_MEDIA_TIMEOUT_SECONDS` | Manager provider-poll timeout; default 600. |
-| `STUDIO_AGENT_POLL_INTERVAL_SECONDS` | Manager provider-poll interval; default 5. |
+| `STUDIO_MEDIA_WAIT_SECONDS` | Host polling budget per approved status call; default 600. |
+| `CODEX_RUN_TIMEOUT_SECONDS` | Native turn timeout; default 1800, with a 160-tool-call cap. |
+| `AGENTCORE_GATEWAY_URL`, `AGENTCORE_GATEWAY_AUTH_TOKEN` | HTTPS Gateway endpoint and optional bearer token. |
+| `AGENTCORE_GATEWAY_ALLOW_LOOPBACK_HTTP` | Explicit credential-free local MCP development only; see README. |
 | `SEEDREAM_DRY_RUN`, `SEEDANCE_DRY_RUN`, `MUREKA_DRY_RUN`, `FISH_AUDIO_DRY_RUN` | Keep individual providers from creating paid media when true. |
 | `REMOTION_APP_*` | Four required Remotion deployment settings listed above. |
 | `REMOTION_RENDER_TIMEOUT_SECONDS`, `REMOTION_POLL_INTERVAL_SECONDS`, `REMOTION_FRAMES_PER_LAMBDA`, `REMOTION_LAMBDA_TIMEOUT_SECONDS` | Remotion runtime and deployed-function tuning. Long source-video timelines default to 100 frames per renderer chunk and a 600-second Lambda timeout. |
@@ -445,12 +459,6 @@ Secrets Manager JSON secret. Do not commit secrets.
 ### Useful checks
 
 ```bash
-# Confirms presence, never values, of the agent configuration.
-.venv/bin/python -m agent.main --check-env
-
-# Lists available provider/MCP tools.
-.venv/bin/python -m agent.main --list-tools
-
 # Repository checks.
 make check
 
@@ -465,12 +473,12 @@ cd studio && npx tsc --noEmit && npm run build
 
 | Symptom | Likely cause | What to check |
 | --- | --- | --- |
-| “The OpenAI agent is not configured.” | `OPENAI_API_KEY` is missing from the API process. | Run the environment check, then restart the FastAPI process after setting the secret. |
+| “The OpenAI agent is not configured.” | `OPENAI_API_KEY` is missing from the API process. | Configure the existing backend secret source and restart FastAPI. |
 | `TOKEN_INVALID_AUTHORIZED_PARTIES` or 401 on JSON endpoints | The Clerk `azp` origin is not allowed. | Put the exact current Studio origin—especially `localhost` vs `127.0.0.1` and port 5174—in `CLERK_AUTHORIZED_PARTIES`; restart the API. |
 | Blank image/video/audio previews with 401s on `/content` | An old API process is still serving the pre-ticket route, or media components bypass the ticket helper. | Restart FastAPI and confirm the browser first posts to `/assets/{versionId}/playback`; new components must use `AssetMedia` / `AssetDownloadLink`. |
 | A run has media but no polished manager response | The manager hit a turn/runtime failure after a tool completed. | Open the Agent run trace. The server returns a partial result synthesized from durable tool calls and retains usable output nodes. |
 | A provider remains queued | Provider polling has not reached a terminal state within the configured timeout. | Inspect the durable `tool_calls` record, provider job ID, and provider-specific polling endpoint/configuration. |
-| Remotion reports it is not configured | Deployment metadata or `REMOTION_APP_*` values are absent. | Run `make remotion`, or restore the deployment file/settings from the configured secrets source. |
+| Remotion reports it is not configured | Deployment metadata or `REMOTION_APP_*` values are absent. | Restore the provider settings from the configured secret source; deploy only with authorization. |
 | Remotion smoke test says an artifact is missing | The smoke script intentionally requires its named first-run files. | Run it only after those artifacts exist, or construct a separate explicit smoke input—do not fake the test's expected files. |
 | Canvas save returns 409 | Another client saved a newer canvas revision. | Reload the project, reconcile the change, and save against the new revision. |
 | Existing giant Agent Result card is still visible | The client has not loaded/saved the migration yet, or the old app bundle is still open. | Refresh Studio with the new build; the legacy node becomes ordinary artifact nodes, a primary image/audio/video result node, and an Agent run ledger. |
@@ -494,8 +502,10 @@ When adding capabilities, preserve these contracts:
    downstream tools.
 7. **Keep the default canvas media-first.** Use the Agent run ledger or a Workflow drill-down for
    operational detail instead of recreating a large result card or permanent dense wiring.
-8. **Do not start paid generation as a UI test.** Use dry-run flags, existing managed assets, or
-   deterministic fixtures unless the requester explicitly authorizes the cost.
+8. **Honor spending authorization during verification.** Existing assets can verify playback;
+   unit fixtures can verify branches. Neither proves a new live render. Follow the real Comet
+   workflow in `BROWSER_E2E.md` and record blocked validation when a required paid action
+   lacks authorization.
 
 ## Current and next production concerns
 

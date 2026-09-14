@@ -1,1 +1,1 @@
-"""OpenAI Agents SDK harness. Intentionally empty until the rewrite lands."""
+"""Renderhaus Studio integration with the Codex app-server harness."""

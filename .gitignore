@@ -21,3 +21,5 @@ coverage/
 
 .DS_Store
 *.log
+# Generated Python Import Helper files
+**/.vscode/PythonImportHelper*.json

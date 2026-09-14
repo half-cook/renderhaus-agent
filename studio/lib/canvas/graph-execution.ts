@@ -40,7 +40,7 @@ function mergeVariants(existing: StudioAsset[] | undefined, incoming: StudioAsse
   return merged;
 }
 
-export function outputValue(node: CanvasNode, dataType: PortDataType): unknown {
+function outputValue(node: CanvasNode, dataType: PortDataType): unknown {
   switch (dataType) {
     case "text": {
       const prompt =
@@ -65,7 +65,7 @@ export function outputValue(node: CanvasNode, dataType: PortDataType): unknown {
   }
 }
 
-export function resolveConfig(node: CanvasNode, nodes: CanvasNode[], edges: CanvasEdge[]): Record<string, unknown> {
+function resolveConfig(node: CanvasNode, nodes: CanvasNode[], edges: CanvasEdge[]): Record<string, unknown> {
   const next = { ...node.data.config };
   for (const edge of edges) {
     if (edge.target !== node.id) {

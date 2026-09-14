@@ -25,7 +25,7 @@ export type StudioStatus = {
   dry_run: Record<string, boolean>;
 };
 
-export type CreditLedgerEntry = {
+type CreditLedgerEntry = {
   id: string;
   delta: number;
   reason: string;
@@ -62,8 +62,6 @@ export type SubscriptionPlan = {
   price_usd_cents: number;
 };
 
-export type NodeStatus = "idle" | "running" | "ok" | "error";
-
 export type StudioAsset = {
   assetId: string;
   versionId: string;
@@ -74,24 +72,4 @@ export type StudioAsset = {
   createdAt?: number;
 };
 
-export type ToolNode = {
-  id: string;
-  providerId: string;
-  providerName: string;
-  tool: ToolSchema;
-  x: number;
-  y: number;
-  args: Record<string, unknown>;
-  status: NodeStatus;
-  result: unknown;
-  assets: StudioAsset[];
-  error: string | null;
-};
-
 export type FieldOptions = Record<string, Record<string, Array<string | number>>>;
-
-export type Viewport = {
-  x: number;
-  y: number;
-  zoom: number;
-};
