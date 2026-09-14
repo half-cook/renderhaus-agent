@@ -31,6 +31,8 @@ logger = logging.getLogger(__name__)
 
 StudioAssetKind = Literal["image", "video", "audio"]
 MAX_REMOTE_ASSET_BYTES = 250 * 1024 * 1024
+ACTIVE_EXECUTION_STATUSES = frozenset({"queued", "running", "awaiting_approval"})
+RECOVERABLE_EXECUTION_STATUSES = frozenset({"error", "failed", "stopped", "cancelled", "canceled", "incomplete"})
 
 
 class CanvasConflictError(RuntimeError):
@@ -791,6 +793,26 @@ class StudioRepository:
             ).fetchone()
         return json.loads(row[0]) if row else []
 
+    def _recovery_items(self, connection, workspace_id, conversation_id):
+        items = connection.execute(
+            "SELECT item_json FROM agent_session_items WHERE conversation_id=? ORDER BY sequence",
+            (conversation_id,),
+        ).fetchall()
+        if items:
+            return [json.loads(row[0]) for row in items]
+        checkpoints = connection.execute(
+            "SELECT c.items_json FROM agent_checkpoints c JOIN executions e ON e.id=c.execution_id "
+            "WHERE c.workspace_id=? AND c.conversation_id=? ORDER BY e.turn_index DESC, c.updated_at DESC",
+            (workspace_id, conversation_id),
+        )
+        return next((items for row in checkpoints if (items := json.loads(row[0]))), [])
+
+    def get_conversation_recovery_items(self, workspace_id, conversation_id):
+        if self.get_conversation(workspace_id, conversation_id) is None:
+            raise KeyError("Conversation not found")
+        with self._connect() as connection:
+            return self._recovery_items(connection, workspace_id, conversation_id)
+
     def get_canvas(self, workspace_id: str, project_id: str) -> dict[str, Any]:
         self.require_project(workspace_id, project_id)
         with self._connect() as connection:
@@ -1270,11 +1292,13 @@ class StudioRepository:
         message: str,
         result: dict[str, Any] | None = None,
         error_type: str | None = None,
-    ) -> None:
+        only_if_active: bool = False,
+    ) -> bool:
+        condition = " AND status IN ('queued', 'running', 'awaiting_approval')" if only_if_active else ""
         with self._connect() as connection:
             cursor = connection.execute(
                 "UPDATE executions SET status = ?, message = ?, result_json = COALESCE(?, result_json), "
-                "error_type = ?, updated_at = ? WHERE id = ? AND workspace_id = ?",
+                "error_type = ?, updated_at = ? WHERE id = ? AND workspace_id = ?" + condition,
                 (
                     status,
                     message,
@@ -1285,8 +1309,9 @@ class StudioRepository:
                     workspace_id,
                 ),
             )
-        if cursor.rowcount == 0:
+        if cursor.rowcount == 0 and not only_if_active:
             raise KeyError("Execution not found")
+        return cursor.rowcount > 0
 
     def pause_execution(
         self,
@@ -1548,6 +1573,38 @@ class StudioRepository:
             checkpoint = connection.execute(
                 "SELECT updated_at FROM agent_checkpoints WHERE execution_id=?", (execution_id,)
             ).fetchone()
+            recovery_available = False
+            can_resume = False
+            if row["conversation_id"]:
+                conversation = connection.execute(
+                    "SELECT status FROM agent_conversations WHERE id=? AND workspace_id=?",
+                    (row["conversation_id"], workspace_id),
+                ).fetchone()
+                if conversation:
+                    # The public list needs a capability, not the potentially large native rollout.
+                    recovery_available = connection.execute(
+                        "SELECT 1 FROM agent_session_items WHERE conversation_id=? UNION ALL "
+                        "SELECT 1 FROM agent_checkpoints WHERE workspace_id=? AND conversation_id=? "
+                        "AND json_array_length(items_json)>0 LIMIT 1",
+                        (row["conversation_id"], workspace_id, row["conversation_id"]),
+                    ).fetchone() is not None
+                    history = connection.execute(
+                        "SELECT id FROM executions WHERE workspace_id=? AND conversation_id=? "
+                        "ORDER BY turn_index DESC, updated_at DESC, rowid DESC LIMIT 12",
+                        (workspace_id, row["conversation_id"]),
+                    ).fetchall()
+                    if not recovery_available:
+                        recovery_available = any(
+                            call["assets"] or call["provider_job_id"]
+                            or any(call[part].get(key) for part in ("result", "arguments")
+                                   for key in ("job_id", "render_id"))
+                            for run in history for call in self._tool_calls(connection, run["id"])
+                        )
+                    can_resume = bool(
+                        recovery_available and conversation["status"] == "active"
+                        and row["status"] in RECOVERABLE_EXECUTION_STATUSES
+                        and history and history[0]["id"] == execution_id
+                    )
         result = json.loads(row["result_json"]) if row["result_json"] else None
         approvals = json.loads(row["approvals_json"] or "[]")
         return {
@@ -1567,6 +1624,8 @@ class StudioRepository:
             "created_at": row["created_at"],
             "updated_at": row["updated_at"],
             "checkpoint_at": checkpoint[0] if checkpoint else None,
+            "recovery_available": recovery_available,
+            "can_resume": can_resume,
         }
 
     def list_executions(

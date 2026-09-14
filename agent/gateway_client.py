@@ -4,10 +4,12 @@ from __future__ import annotations
 
 from contextlib import AsyncExitStack
 from typing import Any
+from urllib.parse import urlsplit
 
+import httpx2
 from mcp import ClientSession, types
 from mcp.client.streamable_http import streamable_http_client
-from mcp.shared._httpx_utils import create_mcp_http_client
+from mcp.shared._httpx_utils import MCP_DEFAULT_SSE_READ_TIMEOUT, MCP_DEFAULT_TIMEOUT, create_mcp_http_client
 
 
 class GatewayClient:
@@ -28,13 +30,34 @@ class GatewayClient:
         self._stack: AsyncExitStack | None = None
 
     async def __aenter__(self):
+        url = self.params["url"]
+        headers = dict(self.params.get("headers") or {})
+        if not isinstance(url, str) or any(ord(char) <= 32 or ord(char) == 127 or char == "\\" for char in url):
+            raise ValueError("Gateway URL must be an absolute HTTPS URL.")
+        parsed = urlsplit(url)
+        if not parsed.hostname or parsed.username is not None or parsed.password is not None or parsed.fragment:
+            raise ValueError("Gateway URL must have a host and no embedded credentials or fragment.")
+        # Accessing port rejects malformed/out-of-range ports before creating a client.
+        _ = parsed.port
+        if parsed.scheme != "https":
+            if not (
+                parsed.scheme == "http"
+                and self.params.get("allow_loopback_http") is True
+                and parsed.hostname in {"localhost", "127.0.0.1", "::1"}
+                and not headers and not parsed.query
+            ):
+                raise ValueError("Gateway requires HTTPS; HTTP is only allowed for explicit credential-free loopback development.")
         stack = AsyncExitStack()
         try:
-            client = await stack.enter_async_context(
-                create_mcp_http_client(headers=self.params.get("headers"))
+            client = (
+                httpx2.AsyncClient(trust_env=False, timeout=httpx2.Timeout(MCP_DEFAULT_TIMEOUT, read=MCP_DEFAULT_SSE_READ_TIMEOUT))
+                if parsed.scheme == "http" else create_mcp_http_client(headers=headers)
             )
+            # MCP defaults to following redirects, which could downgrade or escape loopback.
+            client.follow_redirects = False
+            await stack.enter_async_context(client)
             read, write = await stack.enter_async_context(
-                streamable_http_client(self.params["url"], http_client=client)
+                streamable_http_client(url, http_client=client)
             )
             self._session = await stack.enter_async_context(
                 ClientSession(read, write, read_timeout_seconds=self.timeout)

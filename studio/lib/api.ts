@@ -312,6 +312,8 @@ export type StudioExecution = {
   result?: AgentResultData;
   errorType?: string;
   checkpointAt?: number;
+  recoveryAvailable: boolean;
+  canResume: boolean;
   createdAt?: number;
   updatedAt?: number;
   autonomous: boolean;
@@ -453,6 +455,8 @@ export async function fetchStudioExecutions(
       assets,
       result: agentResult,
       checkpointAt: typeof item.checkpoint_at === "number" ? item.checkpoint_at : undefined,
+      recoveryAvailable: item.recovery_available === true,
+      canResume: item.can_resume === true,
       errorType: typeof item.error_type === "string" ? item.error_type : undefined,
       createdAt: typeof item.created_at === "number" ? item.created_at : undefined,
       updatedAt: typeof item.updated_at === "number" ? item.updated_at : undefined,

@@ -423,7 +423,7 @@ class NativeProtocolTests(unittest.IsolatedAsyncioTestCase):
     async def test_real_mcp_transport_initializes_paginates_and_calls(self):
         async with self.mcp_fixture() as (url, calls):
             async with GatewayClient(
-                {"url": url}, name="fixture"
+                {"url": url, "allow_loopback_http": True}, name="fixture"
             ) as gateway:
                 tools = await gateway.list_tools()
                 self.assertEqual([tool.name for tool in tools], [IMAGE_TOOL.name, SEARCH_TOOL.name])
@@ -433,9 +433,18 @@ class NativeProtocolTests(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(sum(call["method"] == "tools/list" for call in calls), 2)
             self.assertEqual(calls[-1]["params"]["arguments"], {"prompt": "test"})
 
+    async def test_loopback_transport_ignores_environment_proxies_and_their_credentials(self):
+        async with self.mcp_fixture() as (url, calls), self.mcp_fixture() as (proxy, proxy_calls):
+            proxy = proxy.replace("http://", "http://test-user:test-password@")
+            with patch.dict(os.environ, {"HTTP_PROXY": proxy, "ALL_PROXY": proxy, "NO_PROXY": "", "no_proxy": ""}):
+                async with GatewayClient({"url": url, "allow_loopback_http": True}, name="direct-local"):
+                    pass
+            self.assertTrue(calls)
+            self.assertEqual(proxy_calls, [])
+
     async def test_real_mcp_transport_preserves_approval_pause(self):
         async with self.mcp_fixture() as (url, calls):
-            gateway = GatewayMCPServer({"url": url}, name="fixture")
+            gateway = GatewayMCPServer({"url": url, "allow_loopback_http": True}, name="fixture")
             tool_call = {
                 "callId": "search-1",
                 "tool": _GATEWAY_SEARCH_TOOL,

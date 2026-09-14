@@ -57,13 +57,14 @@ depending on the experimental cloud-only `thread/resume.history` field.
 The local Studio checkpoints complete native JSONL records after tool replies and completed
 items, then saves the fully flushed rollout even when a run errors. `agent_checkpoints` stores
 the execution snapshot, while conversation storage holds the latest continuation. Raw native
-history is never returned by the public execution endpoint; the UI receives `checkpoint_at`.
+history is never returned by the public execution endpoint; the UI receives `checkpoint_at`, `recovery_available`, and `can_resume`.
 Durable asset mappings and provider render identifiers travel with the snapshot. Native
 context compaction continues automatically, with a brief memory update in the Studio.
 
 **Stop & save progress** interrupts local work, closes the current approval, and retains
 completed assets. Provider jobs already submitted may still finish. **Resume saved progress**
-creates a new execution in the same conversation, supplies the recent tool ledger, and checks
+is available only for the latest unfinished run with durable recovery data. It creates a new
+execution in the same conversation, supplies the original requests and recent tool ledger, and checks
 existing jobs before allowing replacement renders. It is continuation, not rollback of media
 or billing. Earlier conversation turns remain visible after reload.
 

@@ -223,6 +223,11 @@ AgentCore Gateway. The Runtime agent is an MCP client of that URL. There is no l
 ```
 
 `AGENTCORE_GATEWAY_URL` is required. The agent does not spawn provider MCP servers.
+The URL must use HTTPS; redirects and embedded URL credentials are rejected. For a local
+MCP development server only, set `AGENTCORE_GATEWAY_ALLOW_LOOPBACK_HTTP=true` to allow HTTP
+on `localhost`, `127.0.0.1`, or `[::1]`. That mode requires an unset
+`AGENTCORE_GATEWAY_AUTH_TOKEN` and a URL without query parameters.
+Loopback development connections ignore environment proxy settings.
 
 ## Supervisor (Director + Executor)
 

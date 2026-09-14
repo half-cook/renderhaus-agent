@@ -1273,6 +1273,8 @@ def gateway_mcp_server(
     """MCP client for the AgentCore Gateway endpoint."""
     load_local_env()
     params: dict[str, Any] = {"url": require_agentcore_gateway_url()}
+    if os.getenv("AGENTCORE_GATEWAY_ALLOW_LOOPBACK_HTTP", "").lower() == "true":
+        params["allow_loopback_http"] = True
     headers = agentcore_gateway_headers()
     if headers:
         params["headers"] = headers

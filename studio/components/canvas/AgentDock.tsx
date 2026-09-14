@@ -115,12 +115,14 @@ function IntermediateSteps({
   status,
   message,
   duration,
+  recoveryAvailable = false,
 }: {
   events: AgentToolEvent[];
   progressEvents: AgentProgressEvent[];
   status: string;
   message: string;
   duration?: string | null;
+  recoveryAvailable?: boolean;
 }) {
   const state = normalizedStatus(status);
   const visible = progressEvents.filter((event) =>
@@ -137,8 +139,8 @@ function IntermediateSteps({
   const currentUpdate = progressEvents.filter((event) => event.type === "MODEL_UPDATE").at(-1);
   const label = status === "awaiting_approval" ? "Your approval is needed"
     : state === "running" ? currentWait?.message || currentUpdate?.message || message || "Starting…"
-    : state === "incomplete" ? "Export incomplete · progress saved"
-    : state === "failed" ? "Stopped · progress saved"
+    : state === "incomplete" ? `Export incomplete${recoveryAvailable ? " · progress saved" : ""}`
+    : state === "failed" ? (recoveryAvailable ? "Stopped · progress saved" : "Run failed")
     : `Completed${duration ? ` in ${duration}` : ""}`;
 
   return (
@@ -321,6 +323,7 @@ function ExecutionTurn({
           status={displayStatus}
           message={execution.message}
           duration={runDuration(execution)}
+          recoveryAvailable={execution.recoveryAvailable}
         />
         <ApprovalCards
           approvals={execution.approvals}
@@ -355,8 +358,9 @@ function ExecutionTurn({
             <div className="agent-markdown"><ReactMarkdown remarkPlugins={[remarkGfm]}>{execution.result.markdown}</ReactMarkdown></div>
           </details>
         ) : null}
-        {canResume && ["failed", "incomplete"].includes(state) ? <button className="agent-resume" type="button" disabled={recovering} onClick={onResume}>
-          {recovering ? <LoaderCircle size={14} className="spin" /> : <RotateCcw size={14} />} Resume saved progress
+        {canResume && ["failed", "incomplete"].includes(state) ? <button className="agent-resume" type="button" disabled={recovering || !execution.canResume} onClick={onResume}
+          title={execution.canResume ? undefined : "No durable recovery data is available for this run."}>
+          {recovering ? <LoaderCircle size={14} className="spin" /> : <RotateCcw size={14} />} {execution.canResume ? "Resume saved progress" : "Resume unavailable"}
         </button> : null}
         <footer>
           <span>{runTime(execution.createdAt)}</span>

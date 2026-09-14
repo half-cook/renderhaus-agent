@@ -27,9 +27,32 @@ def main():
     if not gateway:
         raise RuntimeError("Existing Gateway is required.")
     gateway_id = gateway.get("gatewayId") or gateway.get("gatewayIdentifier") or gateway.get("id")
-    targets = control.list_gateway_targets(gatewayIdentifier=gateway_id)["items"]
+    provider_names = ("mureka", "remotion")
+    targets_by_name = {}
+    page_args = {"gatewayIdentifier": gateway_id}
+    while True:
+        page = control.list_gateway_targets(**page_args)
+        targets_by_name.update((target["name"], target) for target in page["items"])
+        if not page.get("nextToken"):
+            break
+        page_args["nextToken"] = page["nextToken"]
+    missing = [get_provider(name).target_name for name in provider_names
+               if get_provider(name).target_name not in targets_by_name]
+    if missing:
+        raise RuntimeError(f"Existing Gateway is missing targets: {', '.join(missing)}")
+    # Read target details and schemas before uploading the site or changing Lambda code.
+    target_updates = {}
+    for name in provider_names:
+        spec = get_provider(name)
+        target = targets_by_name[spec.target_name]
+        detail = control.get_gateway_target(gatewayIdentifier=gateway_id, targetId=target["targetId"])
+        configuration = detail["targetConfiguration"]
+        configuration["mcp"]["lambda"]["toolSchema"] = {"inlinePayload": load_committed_schemas(spec)}
+        target_updates[name] = dict(gatewayIdentifier=gateway_id, targetId=target["targetId"],
+                                    name=spec.target_name, targetConfiguration=configuration,
+                                    credentialProviderConfigurations=detail["credentialProviderConfigurations"])
     configs = {name: lam.get_function_configuration(FunctionName=get_provider(name).function_name)
-               for name in ("mureka", "remotion")}
+               for name in provider_names}
     env = configs["remotion"]["Environment"]["Variables"]
     child_env = {**os.environ, "REMOTION_APP_REGION": env["REMOTION_APP_REGION"],
                  "REMOTION_APP_BUCKET_NAME": env["REMOTION_APP_BUCKET_NAME"]}
@@ -50,13 +73,7 @@ def main():
             lam.update_function_configuration(FunctionName=spec.function_name,
                                               Environment={"Variables": updated_env}, RevisionId=live["RevisionId"])
             lam.get_waiter("function_updated_v2").wait(FunctionName=spec.function_name)
-        target = next(item for item in targets if item["name"] == spec.target_name)
-        detail = control.get_gateway_target(gatewayIdentifier=gateway_id, targetId=target["targetId"])
-        configuration = detail["targetConfiguration"]
-        configuration["mcp"]["lambda"]["toolSchema"] = {"inlinePayload": load_committed_schemas(spec)}
-        control.update_gateway_target(gatewayIdentifier=gateway_id, targetId=target["targetId"],
-                                      name=spec.target_name, targetConfiguration=configuration,
-                                      credentialProviderConfigurations=detail["credentialProviderConfigurations"])
+        control.update_gateway_target(**target_updates[name])
         print(f"Updated existing {name} Lambda and Gateway schema.", flush=True)
     output = ROOT / ".renderhaus/remotion/media-update.json"
     output.parent.mkdir(parents=True, exist_ok=True)
