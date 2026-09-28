@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { useCanvasStore } from "@/lib/canvas/store";
 import { FIT_VIEW_PADDING } from "@/lib/canvas/safe-area";
 import type { CreativeNodeKind, DockPosition } from "@/lib/canvas/types";
-import { AgentDock } from "./AgentDock";
+import { AgentWorkspace } from "./AgentWorkspace";
 import { AsciiPanel } from "./AsciiPanel";
 import { CanvasHeader } from "./CanvasHeader";
 import { NodeInspector } from "./NodeInspector";
@@ -23,6 +23,8 @@ function isDockPosition(value: unknown): value is DockPosition {
 }
 
 function Workspace() {
+  const [agentBusy, setAgentBusy] = useState(false);
+  const [mountReady, setMountReady] = useState(false);
   const [dockState, setDockState] = useState<DockState>({ dock: "bottom", x: 0, y: 0 });
   const hydrate = useCanvasStore((state) => state.hydrate);
   const loadCatalog = useCanvasStore((state) => state.loadCatalog);
@@ -39,19 +41,34 @@ function Workspace() {
     state.selectedNodeIds.length === 1 ? state.selectedNodeIds[0] : undefined,
   );
   const agentOpen = useCanvasStore((state) => state.agentOpen);
+  const projectId = useCanvasStore((state) => state.projectId);
+  const conversationId = useCanvasStore((state) => state.conversationId);
   const setAgentOpen = useCanvasStore((state) => state.setAgentOpen);
   const { screenToFlowPosition, fitView } = useReactFlow();
 
   useEffect(() => {
-    hydrate();
+    let cancelled = false;
+    setAgentOpen(new URLSearchParams(window.location.search).get("workspace") === "agent");
+    void hydrate().finally(() => { if (!cancelled) setMountReady(true); });
     void loadCatalog();
-  }, [hydrate, loadCatalog]);
+    return () => { cancelled = true; };
+  }, [hydrate, loadCatalog, setAgentOpen]);
+
+  useEffect(() => {
+    if (!hydrated || !mountReady) return;
+    const url = new URL(window.location.href);
+    if (url.searchParams.get("project") !== projectId) url.searchParams.delete("task");
+    url.searchParams.set("project", projectId);
+    url.searchParams.set("workspace", agentOpen ? "agent" : "canvas");
+    if (conversationId) url.searchParams.set("task", conversationId);
+    window.history.replaceState(null, "", url);
+  }, [agentOpen, projectId, conversationId, hydrated, mountReady]);
 
   useEffect(() => {
     // Wait for `hydrated`: until then Workspace renders the loading div in
     // place of the real layout, so .workspace/.flow-host/.tool-rail don't
     // exist yet and the clamp below would silently no-op on a fresh load.
-    if (!hydrated) {
+    if (!hydrated || !mountReady) {
       return;
     }
     const raw = localStorage.getItem(DOCK_STORAGE_KEY);
@@ -88,7 +105,7 @@ function Workspace() {
     } catch {
       // Ignore a corrupt/old-format value and fall back to the default.
     }
-  }, [hydrated]);
+  }, [hydrated, mountReady]);
 
   const changeDock = (next: DockState) => {
     setDockState(next);
@@ -99,6 +116,8 @@ function Workspace() {
     const onKey = (event: KeyboardEvent) => {
       const meta = event.metaKey || event.ctrlKey;
       if (meta && event.key.toLowerCase() === "z") {
+        if (agentOpen) return;
+        if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement || (event.target instanceof HTMLElement && event.target.isContentEditable)) return;
         event.preventDefault();
         if (event.shiftKey) {
           redo();
@@ -118,6 +137,7 @@ function Workspace() {
       if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) {
         return;
       }
+      if (agentOpen) return;
       if (event.key.toLowerCase() === "v") {
         setActiveTool("select");
       }
@@ -130,7 +150,7 @@ function Workspace() {
   }, [agentOpen, redo, setActiveTool, setAgentOpen, undo]);
 
   useEffect(() => {
-    if (!selectedNodeId || (!inspectorVisible && !agentOpen)) return;
+    if (agentOpen || !selectedNodeId || !inspectorVisible) return;
     // Only refocus after a selection or panel transition. Camera movement
     // updates the store too, and must remain under the user's control.
     const timer = window.setTimeout(() => {
@@ -153,7 +173,7 @@ function Workspace() {
     });
   };
 
-  if (!hydrated) {
+  if (!hydrated || !mountReady) {
     return <div className="workspace-loading">Loading canvas</div>;
   }
 
@@ -168,10 +188,11 @@ function Workspace() {
         .join(" ")}
       data-dock={dockState.dock}
     >
-      <a className="skip-link" href="#canvas">
-        Skip to canvas
+      <a className="skip-link" href={agentOpen ? "#agent-composer" : "#canvas"}>
+        Skip to {agentOpen ? "agent" : "canvas"}
       </a>
-      <CanvasHeader />
+      <CanvasHeader navigationBusy={agentBusy} onBusyChange={setAgentBusy} />
+      <div className="canvas-surface" hidden={agentOpen}>
       <SceneList />
       <ToolRail
         dock={dockState.dock}
@@ -190,8 +211,9 @@ function Workspace() {
         <StudioCanvas />
       </main>
       <NodeInspector />
-      <AgentDock />
       <AsciiPanel />
+      </div>
+      <AgentWorkspace busy={agentBusy} onBusyChange={setAgentBusy} />
     </div>
   );
 }

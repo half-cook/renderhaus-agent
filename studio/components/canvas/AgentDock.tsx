@@ -13,7 +13,6 @@ import {
   CircleAlert,
   Download,
   LoaderCircle,
-  PanelRightClose,
   Paperclip,
   Pencil,
   Plus,
@@ -177,11 +176,13 @@ function ApprovalCards({
   onDecision,
   busyCallId,
   active,
+  disabled,
 }: {
   approvals: AgentApprovalRequest[];
   onDecision: (approval: AgentApprovalRequest, decision: "approve" | "reject") => void;
   busyCallId: string | null;
   active: boolean;
+  disabled: boolean;
 }) {
   if (!approvals.length) return null;
   return (
@@ -204,7 +205,7 @@ function ApprovalCards({
               <button
                 type="button"
                 className="agent-approval-reject"
-                disabled={busyCallId !== null}
+                disabled={disabled || busyCallId !== null}
                 onClick={() => onDecision(approval, "reject")}
               >
                 Reject
@@ -212,7 +213,7 @@ function ApprovalCards({
               <button
                 type="button"
                 className="agent-approval-approve"
-                disabled={busyCallId !== null}
+                disabled={disabled || busyCallId !== null}
                 onClick={() => onDecision(approval, "approve")}
               >
                 {busyCallId === approval.callId ? <LoaderCircle className="spin" size={13} /> : null}
@@ -247,10 +248,12 @@ function ArtifactCard({
   asset,
   placed,
   onPlace,
+  disabled = false,
 }: {
   asset: StudioAsset;
   placed: boolean;
   onPlace?: () => void;
+  disabled?: boolean;
 }) {
   return (
     <article className={`agent-artifact ${asset.kind === "video" ? "agent-artifact-video" : ""}`}>
@@ -274,7 +277,7 @@ function ArtifactCard({
           {onPlace ? <button
             className="agent-artifact-place"
             type="button"
-            disabled={placed}
+            disabled={placed || disabled}
             onClick={onPlace}
           >
             {placed ? <Check size={13} /> : <Plus size={13} />}
@@ -295,6 +298,7 @@ function ExecutionTurn({
   onResume,
   canResume,
   recovering,
+  actionsDisabled,
 }: {
   execution: StudioExecution;
   placedVersionIds: Set<string>;
@@ -308,6 +312,7 @@ function ExecutionTurn({
   onResume: () => void;
   canResume: boolean;
   recovering: boolean;
+  actionsDisabled: boolean;
 }) {
   const displayStatus = execution.progressEvents.some((event) => event.id === "video-delivery" && event.status === "failed")
     || execution.errorType === "VideoExportIncomplete" ? "incomplete" : execution.status;
@@ -329,6 +334,7 @@ function ExecutionTurn({
           approvals={execution.approvals}
           active={execution.status === "awaiting_approval"}
           busyCallId={busyApproval}
+          disabled={actionsDisabled}
           onDecision={(approval, decision) => onApproval(execution, approval, decision)}
         />
         {execution.title ? <h3 className="agent-result-title">{execution.title}</h3> : null}
@@ -343,6 +349,7 @@ function ExecutionTurn({
                 key={asset.versionId}
                 asset={asset}
                 placed={placedVersionIds.has(asset.versionId)}
+                disabled={actionsDisabled}
                 onPlace={() => onPlace(
                   asset,
                   execution,
@@ -358,7 +365,7 @@ function ExecutionTurn({
             <div className="agent-markdown"><ReactMarkdown remarkPlugins={[remarkGfm]}>{execution.result.markdown}</ReactMarkdown></div>
           </details>
         ) : null}
-        {canResume && ["failed", "incomplete"].includes(state) ? <button className="agent-resume" type="button" disabled={recovering || !execution.canResume} onClick={onResume}
+        {canResume && ["failed", "incomplete"].includes(state) ? <button className="agent-resume" type="button" disabled={actionsDisabled || recovering || !execution.canResume} onClick={onResume}
           title={execution.canResume ? undefined : "No durable recovery data is available for this run."}>
           {recovering ? <LoaderCircle size={14} className="spin" /> : <RotateCcw size={14} />} {execution.canResume ? "Resume saved progress" : "Resume unavailable"}
         </button> : null}
@@ -401,7 +408,13 @@ function UserMessage({text}: {text: string}) {
   </div>;
 }
 
-export function AgentDock() {
+export function AgentDock({ navigationBusy: externalBusy, onBusyChange, suggestion, onSuggestionUsed, onAttach }: {
+  navigationBusy: boolean;
+  onBusyChange: (busy: boolean) => void;
+  suggestion: string | null;
+  onSuggestionUsed: () => void;
+  onAttach: () => void;
+}) {
   const nodes = useCanvasStore((state) => state.nodes);
   const projectId = useCanvasStore((state) => state.projectId);
   const projectName = useCanvasStore((state) => state.projectName);
@@ -412,23 +425,27 @@ export function AgentDock() {
   const agentMessage = useCanvasStore((state) => state.agentMessage);
   const agentOpen = useCanvasStore((state) => state.agentOpen);
   const setAgentMessage = useCanvasStore((state) => state.setAgentMessage);
-  const setAgentOpen = useCanvasStore((state) => state.setAgentOpen);
   const setActiveTool = useCanvasStore((state) => state.setActiveTool);
   const placeAgentAsset = useCanvasStore((state) => state.placeAgentAsset);
   const refreshConversations = useCanvasStore((state) => state.refreshConversations);
   const refreshExecutions = useCanvasStore((state) => state.refreshExecutions);
   const createAgentConversation = useCanvasStore((state) => state.createAgentConversation);
-  const switchAgentConversation = useCanvasStore((state) => state.switchAgentConversation);
   const renameAgentConversation = useCanvasStore((state) => state.renameAgentConversation);
   const archiveAgentConversation = useCanvasStore((state) => state.archiveAgentConversation);
   const status = useCanvasStore((state) => state.status);
-  const [value, setValue] = useState("");
+  const [drafts, setDrafts] = useState<Record<string, string>>({});
+  const draftKey = `${projectId}:${conversationId || "new"}`;
+  const value = drafts[draftKey] || "";
+  const setValue = (next: string | ((current: string) => string)) => setDrafts((current) => ({
+    ...current, [draftKey]: typeof next === "function" ? next(current[draftKey] || "") : next,
+  }));
   const [busy, setBusy] = useState(false);
   const [liveRun, setLiveRun] = useState<LiveRun | null>(null);
   const [renaming, setRenaming] = useState<string | null>(null);
   const [archivePending, setArchivePending] = useState(false);
   const [autonomous, setAutonomous] = useState(false);
   const [recovering, setRecovering] = useState(false);
+  const [changingTask, setChangingTask] = useState(false);
   const stickToBottom = useRef(true);
   const [busyApproval, setBusyApproval] = useState<string | null>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -449,6 +466,18 @@ export function AgentDock() {
     (execution) => normalizedStatus(execution.status) === "running",
   );
   const runInFlight = busy || Boolean(activeExecution);
+  const navigationBusy = busy || recovering || busyApproval !== null || changingTask;
+  useEffect(() => {
+    onBusyChange(navigationBusy);
+    return () => onBusyChange(false);
+  }, [navigationBusy, onBusyChange]);
+
+  useEffect(() => {
+    if (!suggestion) return;
+    setDrafts((current) => ({ ...current, [draftKey]: current[draftKey] ? `${current[draftKey]}\n\n${suggestion}` : suggestion }));
+    onSuggestionUsed();
+    inputRef.current?.focus();
+  }, [suggestion, draftKey, onSuggestionUsed]);
   const placedVersionIds = useMemo(
     () => new Set(
       nodes
@@ -504,14 +533,22 @@ export function AgentDock() {
   const commitRename = () => {
     const title = renaming?.trim();
     if (title && activeConversation) {
-      void renameAgentConversation(activeConversation.id, title);
+      void changeTask(() => renameAgentConversation(activeConversation.id, title));
     }
     setRenaming(null);
   };
 
+  const changeTask = async (action: () => Promise<void>) => {
+    if (externalBusy || navigationBusy) return;
+    setChangingTask(true);
+    onBusyChange(true);
+    try { await action(); }
+    finally { setChangingTask(false); onBusyChange(false); }
+  };
+
   const submit = async () => {
     const prompt = value.trim();
-    if (!prompt || runInFlight || !conversationId) return;
+    if (!prompt || runInFlight || externalBusy || !conversationId) return;
     setBusy(true);
     stickToBottom.current = true;
     setAgentMessage(null);
@@ -603,6 +640,7 @@ export function AgentDock() {
     approval: AgentApprovalRequest,
     decision: "approve" | "reject",
   ) => {
+    if (externalBusy || navigationBusy) return;
     setBusyApproval(approval.callId);
     try {
       const progress = await decideAgentApproval(execution.jobId, approval.callId, decision);
@@ -620,6 +658,7 @@ export function AgentDock() {
     execution: StudioExecution,
     toolEvent?: AgentToolEvent,
   ) => {
+    if (externalBusy || navigationBusy) return;
     placeAgentAsset({
       asset,
       executionId: execution.jobId,
@@ -629,30 +668,8 @@ export function AgentDock() {
     });
   };
 
-  if (!agentOpen) {
-    const activeRuns = conversationExecutions.filter(
-      (execution) => normalizedStatus(execution.status) === "running",
-    ).length;
-    return (
-      <button
-        className="agent-dock-toggle"
-        id="agent-composer"
-        type="button"
-        aria-label="Open agent"
-        onClick={() => {
-          setAgentOpen(true);
-          setActiveTool("agent");
-        }}
-      >
-        <Sparkles size={16} />
-        <span>Agent</span>
-        {activeRuns ? <i>{activeRuns}</i> : null}
-      </button>
-    );
-  }
-
   return (
-    <aside className="agent-dock" id="agent-composer" aria-label="Agent conversation">
+    <section className="agent-dock" id="agent-composer" aria-label="Agent conversation">
       <header className="agent-dock-head">
         <div className="agent-dock-title">
           <span className="agent-dock-kicker"><Sparkles size={14} /> {projectName}</span>
@@ -703,7 +720,7 @@ export function AgentDock() {
                   type="button"
                   onClick={() => {
                     if (activeConversation) {
-                      void archiveAgentConversation(activeConversation.id);
+                      void changeTask(() => archiveAgentConversation(activeConversation.id));
                     }
                     setArchivePending(false);
                   }}
@@ -713,32 +730,21 @@ export function AgentDock() {
               </>
             ) : (
               <>
-                <select
-                  value={conversationId || ""}
-                  disabled={busy || conversations.length === 0}
-                  aria-label="Agent conversation"
-                  onChange={(event) => void switchAgentConversation(event.target.value)}
-                >
-                  {conversations.map((conversation) => (
-                    <option value={conversation.id} key={conversation.id}>
-                      {conversation.title}
-                    </option>
-                  ))}
-                </select>
+                <h2 className="agent-task-title">{activeConversation?.title || "New task"}</h2>
                 <button
                   className="icon-btn"
                   type="button"
-                  disabled={busy}
-                  aria-label="New conversation"
-                  title="New conversation"
-                  onClick={() => void createAgentConversation()}
+                  disabled={navigationBusy || externalBusy}
+                  aria-label="New task"
+                  title="New task"
+                  onClick={() => void changeTask(createAgentConversation)}
                 >
                   <Plus size={15} />
                 </button>
                 <button
                   className="icon-btn"
                   type="button"
-                  disabled={busy || !activeConversation}
+                  disabled={navigationBusy || externalBusy || !activeConversation}
                   aria-label="Rename conversation"
                   title="Rename conversation"
                   onClick={() => setRenaming(activeConversation?.title || "")}
@@ -748,7 +754,7 @@ export function AgentDock() {
                 <button
                   className="icon-btn"
                   type="button"
-                  disabled={busy || !activeConversation}
+                  disabled={runInFlight || navigationBusy || externalBusy || !activeConversation}
                   aria-label="Archive conversation"
                   title="Archive conversation"
                   onClick={() => setArchivePending(true)}
@@ -759,15 +765,6 @@ export function AgentDock() {
             )}
           </div>
         </div>
-        <button
-          className="icon-btn"
-          type="button"
-          aria-label="Close agent"
-          title="Close agent"
-          onClick={() => setAgentOpen(false)}
-        >
-          <PanelRightClose size={16} />
-        </button>
       </header>
 
       <div className="agent-memory-bar"><BookmarkCheck size={13}/><span>Conversation saved · {conversationExecutions.length} {conversationExecutions.length === 1 ? "run" : "runs"}</span></div>
@@ -778,8 +775,9 @@ export function AgentDock() {
         {conversationExecutions.length === 0 && !liveRun ? (
           <div className="agent-empty">
             <Sparkles size={18} />
-            <h3>Work across this project</h3>
-            <p>Ask for ideas, edits or generated media. Runs and intermediate steps stay here.</p>
+            <h3>What are we making?</h3>
+            <p>From the first idea to the final cut.<br />Plan, create and refine with your project agent.</p>
+            {!conversationId ? <button type="button" className="agent-conversation-action" disabled={externalBusy || navigationBusy} onClick={() => void changeTask(createAgentConversation)}>Start a task</button> : null}
           </div>
         ) : null}
         {conversationExecutions.filter((execution) => execution.jobId !== liveRun?.progress.jobId).map((execution) => (
@@ -790,9 +788,11 @@ export function AgentDock() {
             onPlace={onPlace}
             onApproval={onApproval}
             busyApproval={busyApproval}
+            actionsDisabled={externalBusy || navigationBusy}
             canResume={!runInFlight && execution.jobId === conversationExecutions.at(-1)?.jobId}
             recovering={recovering}
             onResume={() => {
+              if (externalBusy || navigationBusy) return;
               setRecovering(true);
               void resumeAgentRun(execution.jobId).then(() => refreshExecutions()).catch((error) => setAgentMessage(String(error))).finally(() => setRecovering(false));
             }}
@@ -840,9 +840,10 @@ export function AgentDock() {
               <button
                 className="icon-btn"
                 type="button"
-                disabled
-                aria-label="Attachments are not connected yet"
-                title="Attachments are not connected yet"
+                disabled={externalBusy || runInFlight}
+                aria-label="Upload media to project"
+                title="Upload media to project"
+                onClick={onAttach}
               >
                 <Paperclip size={15} />
               </button>
@@ -879,7 +880,7 @@ export function AgentDock() {
               className="send-btn"
               type="button"
               aria-label={runInFlight ? "Agent is working" : "Send to agent"}
-              disabled={runInFlight || !value.trim() || !status?.agent || !conversationId}
+              disabled={runInFlight || externalBusy || !value.trim() || !status?.agent || !conversationId}
               onClick={() => void submit()}
             >
               {runInFlight ? <LoaderCircle className="spin" size={14} /> : <Send size={14} />}
@@ -893,6 +894,6 @@ export function AgentDock() {
           </span>
         </div>
       </div>
-    </aside>
+    </section>
   );
 }

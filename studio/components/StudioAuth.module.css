@@ -15,6 +15,12 @@
   z-index: 80;
 }
 
+:global(body:has(.workspace)) .studio-account-controls {
+  left: auto;
+  right: 16px;
+  transform: none;
+}
+
 .studio-sign-in {
   flex-direction: column;
   gap: 16px;
