@@ -390,6 +390,10 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
 
   hydrate: async () => {
     const legacyProjects = readProjects();
+    const requestedId =
+      typeof window !== "undefined"
+        ? new URLSearchParams(window.location.search).get("project")
+        : null;
     try {
       let projects = await fetchStudioProjects();
       const migrated =
@@ -413,10 +417,6 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
       // The dashboard links to a specific project via ?project=<id> (e.g.
       // opening a card, or right after creating a new one) -- honor that
       // over the legacy-migration guess below when it matches a real project.
-      const requestedId =
-        typeof window !== "undefined"
-          ? new URLSearchParams(window.location.search).get("project")
-          : null;
       const project =
         (requestedId && projects.find((candidate) => candidate.id === requestedId)) ||
         projects.find((candidate) => candidate.id === legacyProjects[0]?.id) ||
@@ -432,6 +432,10 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
         nodes: graph.nodes,
         edges: graph.edges,
         viewport: graph.viewport,
+        selectedNodeIds: [],
+        conversations: [],
+        conversationId: null,
+        executions: [],
         hydrated: true,
         loadError: null,
         past: [],
@@ -440,7 +444,7 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
       if (migratedAgentPresentation) {
         window.setTimeout(() => void get().persist(), 0);
       }
-      window.setTimeout(() => void get().refreshConversations(), 0);
+      await get().refreshConversations();
     } catch (error) {
       const project = legacyProjects[0] || { id: "untitled", name: "Untitled" };
       const localGraph = readGraph(project.id);
@@ -452,6 +456,10 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
         nodes: graph?.nodes || [],
         edges: graph?.edges || [],
         viewport: graph?.viewport || { x: 80, y: 80, zoom: 1 },
+        selectedNodeIds: [],
+        conversations: [],
+        conversationId: null,
+        executions: [],
         hydrated: true,
         loadError:
           error instanceof Error ? error.message : "Could not load the server canvas.",
@@ -520,13 +528,15 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
   refreshConversations: async () => {
     try {
       const projectId = get().projectId;
+      const selectedConversation = get().conversationId;
       const conversations = await fetchStudioConversations(projectId);
-      const current = conversations.find((item) => item.id === get().conversationId);
+      const requested = new URLSearchParams(window.location.search).get("task");
+      const current = conversations.find((item) => item.id === (selectedConversation || requested));
       const conversationId = current?.id || conversations[0]?.id || null;
       const executions = conversationId
         ? await fetchStudioExecutions(projectId, conversationId)
         : [];
-      if (get().projectId !== projectId) return;
+      if (get().projectId !== projectId || get().conversationId !== selectedConversation) return;
       set({ conversations, conversationId, executions, loadError: null });
     } catch (error) {
       set({
@@ -537,7 +547,9 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
 
   createAgentConversation: async () => {
     try {
-      const conversation = await createStudioConversation(get().projectId);
+      const projectId = get().projectId;
+      const conversation = await createStudioConversation(projectId);
+      if (get().projectId !== projectId) return;
       set({
         conversations: [conversation, ...get().conversations],
         conversationId: conversation.id,
@@ -584,6 +596,7 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
   },
 
   switchProject: async (id) => {
+    if (id === get().projectId) return;
     await get().persist();
     try {
       const snapshot = await fetchStudioCanvas(id);
@@ -605,7 +618,7 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
         future: [],
         loadError: null,
       });
-      window.setTimeout(() => void get().refreshConversations(), 0);
+      await get().refreshConversations();
       if (migratedAgentPresentation) {
         window.setTimeout(() => void get().persist(), 0);
       }
@@ -634,7 +647,7 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
         future: [],
         loadError: null,
       });
-      window.setTimeout(() => void get().refreshConversations(), 0);
+      await get().refreshConversations();
     } catch (error) {
       set({ loadError: error instanceof Error ? error.message : "Could not create project." });
     }

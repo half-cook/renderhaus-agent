@@ -48,11 +48,9 @@
   --radius: 0;
   --ease: cubic-bezier(0.32, 0.72, 0, 1);
   --inspector-width: 320px;
-  --agent-width: min(408px, calc(100vw - 96px));
   --z-flow: 1;
   --z-controls: 5;
   --z-inspector: 25;
-  --z-agent: 25;
   --z-rail: 30;
   --z-header: 40;
   --z-menu: 50;
@@ -156,23 +154,15 @@ a:focus-visible {
   --safe-top: var(--header-height);
   --safe-left: var(--scene-rail-width);
   --safe-right: 0px;
-  /* Just the collapsed composer pill + breathing room -- the dock only
-     eats into this when it's actually docked at the bottom (below). */
-  --safe-bottom: 72px;
+  --safe-bottom: 32px;
 }
 
 .workspace.inspector-open {
   --safe-right: var(--inspector-width);
 }
 
-.workspace.agent-open {
-  --safe-right: var(--agent-width);
-}
-
 .workspace[data-dock="bottom"] {
-  /* Tool bar (16px + ~52px) + 12px gap + the collapsed composer pill
-     sitting above it + a little breathing room. */
-  --safe-bottom: 140px;
+  --safe-bottom: 84px;
 }
 
 .workspace[data-dock="top"] {
@@ -236,6 +226,48 @@ a:focus-visible {
   border-bottom: 1px solid var(--line);
   border-radius: 0;
   box-shadow: none;
+}
+
+.canvas-surface { display: contents; }
+.canvas-surface[hidden] { display: none; }
+.workspace .chrome-header { padding-right: 64px; }
+.workspace-tabs { display: flex; flex: 0 0 auto; gap: 3px; padding: 3px; border: 1px solid var(--line); border-radius: 999px; background: var(--chrome); }
+.workspace-tabs { position: absolute; left: 50%; transform: translateX(-50%); }
+.workspace-tabs button { padding: 7px 22px; color: var(--muted); background: transparent; border: 0; border-radius: 999px; font-size: 12px; cursor: pointer; }
+.workspace-tabs button[aria-pressed="true"] { color: var(--text); background: color-mix(in srgb, var(--text) 9%, var(--chrome)); }
+.workspace-tabs button:focus-visible { outline: 2px solid var(--selected); outline-offset: 2px; }
+.workspace.agent-open .header-right > .icon-btn,
+.workspace.agent-open .header-right > .text-btn,
+.workspace.agent-open .header-right > .header-menu-wrap:has(.text-btn),
+.workspace.agent-open .header-right > .header-menu-wrap:has([aria-label="More"]) { display: none; }
+.workspace.agent-open .header-left { flex: 1; }
+.workspace.agent-open .header-right { flex: 1; justify-content: flex-end; }
+
+/* The conversation lives in the Agent workspace; it never covers canvas media. */
+.workspace .agent-dock-head { min-height: 72px; padding: 20px 28px; align-items: center; }
+.agent-task-title { font-size: 14px; font-weight: 500; margin: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.workspace .agent-conversation-controls { width: 100%; }
+.workspace .agent-transcript { padding: 24px max(24px, calc((100% - 760px) / 2)); }
+.workspace .agent-empty { min-height: 260px; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
+.workspace .agent-empty h3 { font-size: clamp(22px, 2vw, 30px); font-weight: 450; letter-spacing: -.7px; margin: 20px 0 10px; }
+.workspace .agent-empty p { line-height: 1.8; font-size: 13px; }
+.workspace .agent-composer { padding: 16px max(20px, calc((100% - 780px) / 2)); }
+.workspace .agent-composer-input { border-radius: 14px; background: var(--chrome); }
+.workspace .agent-composer-input textarea { min-height: 80px; font-size: 14px; padding: 16px; }
+.workspace .agent-memory-bar { padding-left: 28px; }
+@media (max-width: 1360px) {
+  .chrome-header .header-right > .header-menu-wrap:has(.text-btn),
+  .chrome-header .header-right > .text-btn:last-child { display: none; }
+}
+@media (max-width: 800px) {
+  .chrome-header { gap: 8px; padding: 0 10px; }
+  .chrome-header .project-switcher { max-width: 100px; }
+  .chrome-header .header-left { max-width: calc(50% - 72px); }
+  .workspace-tabs { left: 52%; }
+  .workspace-tabs button { padding: 7px 12px; }
+  .chrome-header .header-right > :not(:first-child) { display: none; }
+  .chrome-header .wordmark { font-size: 0; gap: 0; }
+  .workspace .agent-dock-head { padding: 16px; }
 }
 
 .header-left,
@@ -877,55 +909,14 @@ a:focus-visible {
 }
 
 .agent-dock {
-  position: absolute;
-  top: var(--header-height);
-  right: 0;
-  bottom: 0;
-  z-index: var(--z-agent);
+  position: relative;
   display: flex;
-  width: var(--agent-width);
+  width: 100%;
+  min-width: 0;
+  flex: 1;
   flex-direction: column;
   overflow: hidden;
   background: var(--bg);
-  border-left: 1px solid var(--line);
-}
-
-.agent-dock-toggle {
-  position: absolute;
-  top: calc(var(--header-height) + 68px);
-  right: 16px;
-  z-index: var(--z-agent);
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 38px;
-  padding: 0 12px;
-  border: 1px solid var(--line);
-  /* Sharp corners app-wide (see the --radius comment in :root) --
-     overridden here since this whole block came from origin/main, which
-     predates that decision. */
-  border-radius: 0;
-  background: var(--chrome);
-  color: var(--text);
-  font-size: 13px;
-  font-weight: 600;
-}
-
-.agent-dock-toggle:hover {
-  border-color: var(--color-neutral-600);
-  background: var(--node);
-}
-
-.agent-dock-toggle i {
-  display: grid;
-  min-width: 18px;
-  height: 18px;
-  place-items: center;
-  border-radius: 999px;
-  background: var(--active);
-  color: var(--bg);
-  font-size: 10px;
-  font-style: normal;
 }
 
 .agent-dock-head {
@@ -2245,7 +2236,6 @@ input[type="range"] {
 @media (max-width: 1280px) {
   :root {
     --inspector-width: 280px;
-    --agent-width: min(372px, calc(100vw - 88px));
   }
 
   .workspace {

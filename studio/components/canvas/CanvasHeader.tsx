@@ -28,7 +28,12 @@ function ExecutionDownload({ asset }: { asset?: StudioAsset }) {
   );
 }
 
-export function CanvasHeader() {
+export function CanvasHeader({ navigationBusy, onBusyChange }: {
+  navigationBusy: boolean;
+  onBusyChange: (busy: boolean) => void;
+}) {
+  const agentOpen = useCanvasStore((state) => state.agentOpen);
+  const setAgentOpen = useCanvasStore((state) => state.setAgentOpen);
   const clerkConfigured = useClerkConfigured();
   const projectName = useCanvasStore((state) => state.projectName);
   const projects = useCanvasStore((state) => state.projects);
@@ -54,6 +59,7 @@ export function CanvasHeader() {
   const [exported, setExported] = useState(false);
   const fileRef = useRef<HTMLAnchorElement>(null);
   const headerRef = useRef<HTMLElement>(null);
+  const navigating = useRef(false);
   const queued =
     queueSize(nodes) +
     executions.filter(
@@ -63,6 +69,15 @@ export function CanvasHeader() {
     ).length;
   const hasSelection = selectedNodeIds.length > 0;
   const hasSequence = approvedSequence(nodes).length > 0;
+
+  const navigate = async (action: () => Promise<void>) => {
+    if (navigationBusy || navigating.current) return;
+    navigating.current = true;
+    onBusyChange(true);
+    setMenu(null);
+    try { await action(); }
+    finally { navigating.current = false; onBusyChange(false); }
+  };
 
   useEffect(() => {
     if (!menu) {
@@ -108,6 +123,7 @@ export function CanvasHeader() {
             className="project-switcher"
             type="button"
             aria-haspopup="listbox"
+            disabled={navigationBusy}
             aria-expanded={menu === "project"}
             onClick={() => setMenu(menu === "project" ? null : "project")}
           >
@@ -121,6 +137,7 @@ export function CanvasHeader() {
                 <input
                   value={projectName}
                   aria-label="Project name"
+                  disabled={navigationBusy}
                   onChange={(event) => setProjectName(event.target.value)}
                   onClick={(event) => event.stopPropagation()}
                 />
@@ -129,21 +146,17 @@ export function CanvasHeader() {
                 <button
                   key={project.id}
                   type="button"
+                  disabled={navigationBusy}
                   className={project.id === projectId ? "active" : ""}
-                  onClick={() => {
-                    switchProject(project.id);
-                    setMenu(null);
-                  }}
+                  onClick={() => void navigate(() => switchProject(project.id))}
                 >
                   {project.name}
                 </button>
               ))}
               <button
                 type="button"
-                onClick={() => {
-                  createProject();
-                  setMenu(null);
-                }}
+                disabled={navigationBusy}
+                onClick={() => void navigate(createProject)}
               >
                 New project
               </button>
@@ -151,6 +164,10 @@ export function CanvasHeader() {
           ) : null}
         </div>
       </div>
+      <nav className="workspace-tabs" aria-label="Workspace">
+        <button type="button" aria-pressed={!agentOpen} onClick={() => setAgentOpen(false)}>Canvas</button>
+        <button type="button" aria-pressed={agentOpen} onClick={() => setAgentOpen(true)}>Agent</button>
+      </nav>
       <div className="header-right">
         <AccountBalance refreshKey={queued} />
         <ThemeToggle />

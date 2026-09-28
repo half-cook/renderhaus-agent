@@ -54,6 +54,7 @@ const EMPTY_ACTIONS: Array<{
 ];
 
 export function StudioCanvas() {
+  const agentOpen = useCanvasStore((state) => state.agentOpen);
   const nodes = useCanvasStore((state) => state.nodes);
   const edges = useCanvasStore((state) => state.edges);
   const activeTool = useCanvasStore((state) => state.activeTool);
@@ -143,7 +144,7 @@ export function StudioCanvas() {
         selectionOnDrag={activeTool === "select"}
         panOnDrag={activeTool === "hand" ? true : PAN_ON_DRAG_SELECT}
         selectionMode={SelectionMode.Partial}
-        deleteKeyCode={DELETE_KEY_CODE}
+        deleteKeyCode={agentOpen ? null : DELETE_KEY_CODE}
         multiSelectionKeyCode={MULTI_SELECTION_KEY_CODE}
         panOnScroll
         minZoom={0.2}
