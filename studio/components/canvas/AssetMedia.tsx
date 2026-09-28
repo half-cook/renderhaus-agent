@@ -10,6 +10,8 @@ type Props = {
   className?: string;
   controls?: boolean;
   muted?: boolean;
+  startTime?: number;
+  preload?: "none" | "metadata" | "auto";
   onMetadata?: (metadata: {
     width?: number;
     height?: number;
@@ -23,6 +25,8 @@ export function AssetMedia({
   className,
   controls = false,
   muted = false,
+  startTime,
+  preload,
   onMetadata,
 }: Props) {
   const source = useStudioAssetPlaybackUrl(asset);
@@ -50,9 +54,14 @@ export function AssetMedia({
         src={source}
         controls={controls}
         muted={muted}
+        preload={preload}
+        aria-label={alt}
         playsInline
         onLoadedMetadata={(event) => {
           const video = event.currentTarget;
+          if (startTime !== undefined && Number.isFinite(startTime) && startTime >= 0) {
+            video.currentTime = Math.min(startTime, Number.isFinite(video.duration) ? video.duration : startTime);
+          }
           onMetadata?.({
             width: video.videoWidth,
             height: video.videoHeight,
@@ -67,8 +76,13 @@ export function AssetMedia({
       className={className}
       src={source}
       controls={controls}
+      preload={preload}
+      aria-label={alt}
       onLoadedMetadata={(event) => {
         const audio = event.currentTarget;
+        if (startTime !== undefined && Number.isFinite(startTime) && startTime >= 0) {
+          audio.currentTime = Math.min(startTime, Number.isFinite(audio.duration) ? audio.duration : startTime);
+        }
         onMetadata?.({
           durationSeconds: Number.isFinite(audio.duration) ? audio.duration : undefined,
         });
