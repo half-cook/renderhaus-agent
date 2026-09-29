@@ -36,7 +36,7 @@ jobs:
           RENDERHAUS_SECRETS_NAME: ""
           SEEDANCE_DRY_RUN: "true"
           SEEDREAM_DRY_RUN: "true"
-          MUREKA_DRY_RUN: "true"
+          ELEVENLABS_DRY_RUN: "true"
           FISH_AUDIO_DRY_RUN: "true"
           REMOTION_DRY_RUN: "true"
 
@@ -47,6 +47,6 @@ jobs:
           RENDERHAUS_SECRETS_NAME: ""
           SEEDANCE_DRY_RUN: "true"
           SEEDREAM_DRY_RUN: "true"
-          MUREKA_DRY_RUN: "true"
+          ELEVENLABS_DRY_RUN: "true"
           FISH_AUDIO_DRY_RUN: "true"
           REMOTION_DRY_RUN: "true"

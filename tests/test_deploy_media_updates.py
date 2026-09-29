@@ -7,8 +7,8 @@ from scripts import deploy_media_updates as deploy
 
 class MediaDeploymentPreflightTests(unittest.TestCase):
     def test_missing_target_on_any_page_fails_before_all_mutations(self):
-        for missing in ("mureka", "remotion"):
-            present = "remotion" if missing == "mureka" else "mureka"
+        for missing in ("elevenlabs", "remotion"):
+            present = "remotion" if missing == "elevenlabs" else "elevenlabs"
             control, lam = MagicMock(), MagicMock()
             control.list_gateway_targets.side_effect = [
                 {"items": [], "nextToken": "page-2"},
@@ -30,7 +30,7 @@ class MediaDeploymentPreflightTests(unittest.TestCase):
     def test_all_target_details_and_schemas_are_read_before_upload(self):
         control, lam = MagicMock(), MagicMock()
         control.list_gateway_targets.side_effect = [
-            {"items": [{"name": get_provider("mureka").target_name, "targetId": "m"}], "nextToken": "page-2"},
+            {"items": [{"name": get_provider("elevenlabs").target_name, "targetId": "m"}], "nextToken": "page-2"},
             {"items": [{"name": get_provider("remotion").target_name, "targetId": "r"}]},
         ]
         control.get_gateway_target.side_effect = [

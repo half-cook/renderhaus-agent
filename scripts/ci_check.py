@@ -17,7 +17,7 @@ if str(ROOT) not in sys.path:
 def _force_dry_run() -> None:
     os.environ["SEEDANCE_DRY_RUN"] = "true"
     os.environ["SEEDREAM_DRY_RUN"] = "true"
-    os.environ["MUREKA_DRY_RUN"] = "true"
+    os.environ["ELEVENLABS_DRY_RUN"] = "true"
     os.environ["FISH_AUDIO_DRY_RUN"] = "true"
     os.environ["REMOTION_DRY_RUN"] = "true"
 
@@ -72,6 +72,11 @@ def check_dry_run_dispatch() -> None:
     from providers.registry import dispatch, dummy_arguments, load_committed_schemas
 
     for spec in PROVIDERS:
+        if spec.id == "elevenlabs":
+            # Upstream constraints need meaningful inputs, covered by test_elevenlabs.py.
+            result = dispatch(spec.id, "music_compose", {"prompt": "Warm piano", "music_length_ms": 3000})
+            assert result["status"] == "dry_run"
+            continue
         for schema in load_committed_schemas(spec):
             name = schema["name"]
             result = dispatch(spec.id, name, dummy_arguments(schema))
@@ -83,13 +88,11 @@ def check_dry_run_dispatch() -> None:
 
 def check_imports() -> None:
     from lambdas import handler as generic_handler
-    from lambdas.mureka import handler as mureka_handler
-    from providers.mureka import api as mureka_api
+    from providers.elevenlabs import api as elevenlabs_api
     from server import app, config  # noqa: F401
 
     assert callable(generic_handler.handler)
-    assert callable(mureka_handler.handler)
-    assert isinstance(mureka_api.dry_run(), bool)
+    assert isinstance(elevenlabs_api.dry_run(), bool)
     print("ok python imports")
 
 

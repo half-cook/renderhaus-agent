@@ -49,8 +49,6 @@ def main() -> int:
             continue
         path = write_schemas(spec, generated)
         print(f"wrote {path.relative_to(ROOT)} ({len(generated)} tools)")
-        if spec.id == "mureka":
-            print(f"wrote configs/mureka_gateway_tools.json ({len(generated)} tools)")
     if failed:
         return 1
     return 0

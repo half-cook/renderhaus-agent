@@ -5,7 +5,7 @@ Creates/updates:
   - Shared IAM role for provider Lambdas (Secrets Manager + logs)
   - IAM role for the Gateway (lambda:InvokeFunction on renderhaus-*-tools)
   - One Lambda per provider: renderhaus-{id}-tools
-  - AgentCore Gateway renderhaus-mureka-gateway (existing name, reused)
+  - IAM-protected AgentCore Gateway renderhaus-media-gateway
   - One Gateway target per provider with the generated tool schema
 
 Writes .env.agentcore.gateway with AGENTCORE_GATEWAY_URL / ids.
@@ -24,6 +24,7 @@ import tempfile
 import time
 import zipfile
 from pathlib import Path
+from urllib.parse import urlsplit
 
 import boto3
 from botocore.exceptions import ClientError
@@ -41,13 +42,19 @@ PROVIDERS_DIR = ROOT / "providers"
 
 LAMBDA_ROLE_NAME = "RenderhausGatewayLambdaRole"
 GATEWAY_ROLE_NAME = "RenderhausMurekaGatewayRole"
-GATEWAY_NAME = "renderhaus-mureka-gateway"
+GATEWAY_NAME = "renderhaus-media-gateway"
+LEGACY_GATEWAY_NAME = "renderhaus-mureka-gateway"
 DEFAULT_SECRET_NAME = "renderhaus/app"
 GATEWAY_INSTRUCTIONS = (
     "Renderhaus creates and edits media for a visual canvas. Use semantic tool search before "
     "selecting provider tools. Search with the user's concrete intent, the input media already "
     "available, and the required output type. Seedream creates or edits still images; Seedance "
-    "creates video clips; Mureka creates or edits music, songs, lyrics, and speech; Remotion "
+    "creates video clips; ElevenLabs provides music composition, video soundtracks, speech/voiceover, "
+    "multi-speaker dialogue, sound effects/Foley, voice conversion, noise isolation, transcription, "
+    "forced alignment, dubbing/translation, voice discovery/design/cloning, and pronunciation rules. "
+    "ElevenLabs also exposes account/workspace, conversational-agent, Studio project, Flows and "
+    "production-order APIs: use those only for explicit requests in their domain, never incidentally "
+    "while creating media. Read each tool's required inputs, output and side-effect guidance. Remotion "
     "assembles finished assets into an MP4. Creation tools can start paid work. Poll tools only "
     "after their matching creation tool returns a task or render id."
 )
@@ -66,6 +73,7 @@ def build_lambda_zip() -> bytes:
                 "install",
                 "httpx",
                 "pydantic",
+                "jsonschema",
                 "remotion-lambda==4.0.515",
                 "-t",
                 str(package),
@@ -98,7 +106,7 @@ def build_lambda_zip() -> bytes:
 
 
 def _ensure_lambda_role(
-    iam, account: str, region: str, secret_name: str, remotion_bucket: str = ""
+    iam, account: str, region: str, secret_name: str, remotion_bucket: str = "", media_bucket: str = ""
 ) -> str:
     role_arn = f"arn:aws:iam::{account}:role/{LAMBDA_ROLE_NAME}"
     trust = {
@@ -122,6 +130,8 @@ def _ensure_lambda_role(
                 f"arn:aws:s3:::{remotion_bucket}/*",
             ]
         )
+    if media_bucket:
+        s3_resources.extend([f"arn:aws:s3:::{media_bucket}", f"arn:aws:s3:::{media_bucket}/*"])
     policy = {
         "Version": "2012-10-17",
         "Statement": [
@@ -261,7 +271,7 @@ def _upsert_lambda(
         "Runtime": "python3.11",
         "Role": role_arn,
         "Handler": "handler.handler",
-        "Timeout": 120,
+        "Timeout": 240 if spec.id == "elevenlabs" else 120,
         "MemorySize": 512,
         "Architectures": ["arm64"],
         "Environment": {"Variables": runtime_env},
@@ -330,7 +340,7 @@ def _upsert_gateway(control, *, role_arn: str) -> tuple[str, str]:
         "name": GATEWAY_NAME,
         "roleArn": role_arn,
         "protocolType": "MCP",
-        "authorizerType": "NONE",
+        "authorizerType": "AWS_IAM",
         "description": "Context-aware Renderhaus media tools via Lambda",
         "protocolConfiguration": {
             "mcp": {
@@ -344,6 +354,13 @@ def _upsert_gateway(control, *, role_arn: str) -> tuple[str, str]:
             existing.get("gatewayId") or existing.get("gatewayIdentifier") or existing.get("id")
         )
         print(f"Updating gateway {gateway_id} while preserving its search configuration")
+        live = control.get_gateway(gatewayIdentifier=gateway_id)
+        auth = live.get("authorizerType", "NONE")
+        if auth == "NONE":
+            raise RuntimeError("An existing unauthenticated gateway cannot change authorizer type; use a new gateway name.")
+        auth_kwargs = {"authorizerType": auth}
+        if live.get("authorizerConfiguration"):
+            auth_kwargs["authorizerConfiguration"] = live["authorizerConfiguration"]
         # AgentCore rejects protocolConfiguration.searchType updates after the first target exists,
         # even when the requested value is unchanged. Send only the mutable instructions inside
         # the MCP configuration so existing gateways receive prompt updates without resetting
@@ -352,7 +369,7 @@ def _upsert_gateway(control, *, role_arn: str) -> tuple[str, str]:
             gatewayIdentifier=gateway_id,
             name=create_kwargs["name"],
             roleArn=create_kwargs["roleArn"],
-            authorizerType=create_kwargs["authorizerType"],
+            **auth_kwargs,
             description=create_kwargs["description"],
             protocolConfiguration={
                 "mcp": {
@@ -379,6 +396,8 @@ def _upsert_gateway(control, *, role_arn: str) -> tuple[str, str]:
         or gateway.get("url")
         or f"https://{gateway_id}.gateway.bedrock-agentcore.{control.meta.region_name}.amazonaws.com/mcp"
     )
+    if not urlsplit(url).path.strip("/"):
+        url = url.rstrip("/") + "/mcp"
     return gateway_id, url
 
 
@@ -432,6 +451,57 @@ def _bootstrap_env(secret_name: str, specs: tuple[ProviderSpec, ...]) -> dict[st
     return {key: os.getenv(key, "") for key in sorted(keys) if os.getenv(key)}
 
 
+def _retire_mureka_target(control, *, gateway_id: str, replacement_id: str) -> None:
+    """Remove the retired catalog only after its replacement is ready."""
+    deadline = time.monotonic() + 120
+    while time.monotonic() < deadline:
+        detail = control.get_gateway_target(gatewayIdentifier=gateway_id, targetId=replacement_id)
+        status = detail.get("status")
+        if status == "READY":
+            break
+        if status in {"FAILED", "CREATE_FAILED", "UPDATE_FAILED"}:
+            raise RuntimeError(f"ElevenLabs target failed: {detail.get('statusReasons', [])}")
+        time.sleep(3)
+    else:
+        raise TimeoutError("ElevenLabs target is not ready; Mureka was retained.")
+    legacy = _find_gateway(control, LEGACY_GATEWAY_NAME)
+    gateway_ids = {gateway_id, legacy["gatewayId"]} if legacy else {gateway_id}
+    for old_id in gateway_ids:
+        page_args = {"gatewayIdentifier": old_id}
+        while True:
+            page = control.list_gateway_targets(**page_args)
+            for target in page.get("items", []):
+                if target.get("name") == "Mureka":
+                    control.delete_gateway_target(gatewayIdentifier=old_id, targetId=target["targetId"])
+                    print("Removed retired Mureka Gateway target.")
+            if not page.get("nextToken"):
+                break
+            page_args["nextToken"] = page["nextToken"]
+
+
+def _copy_legacy_targets(control, *, gateway_id: str) -> str | None:
+    """Carry existing media targets across the immutable Gateway auth boundary."""
+    legacy = _find_gateway(control, LEGACY_GATEWAY_NAME)
+    if not legacy:
+        return None
+    old_id = legacy["gatewayId"]
+    existing = {t["name"] for t in control.list_gateway_targets(gatewayIdentifier=gateway_id).get("items", [])}
+    page_args = {"gatewayIdentifier": old_id}
+    while True:
+        page = control.list_gateway_targets(**page_args)
+        for target in page.get("items", []):
+            if target["name"] not in {"Seedance", "Seedream", "Remotion"} or target["name"] in existing:
+                continue
+            detail = control.get_gateway_target(gatewayIdentifier=old_id, targetId=target["targetId"])
+            control.create_gateway_target(gatewayIdentifier=gateway_id, name=target["name"],
+                                          targetConfiguration=detail["targetConfiguration"],
+                                          credentialProviderConfigurations=detail["credentialProviderConfigurations"])
+            print(f"Copied existing {target['name']} target to the authenticated gateway.")
+        if not page.get("nextToken"):
+            return old_id
+        page_args["nextToken"] = page["nextToken"]
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--region", default=os.getenv("AWS_REGION") or "us-east-1")
@@ -483,6 +553,7 @@ def main() -> int:
         region,
         secret_name,
         remotion_bucket=env.get("REMOTION_APP_BUCKET_NAME") or "",
+        media_bucket=env.get("AWS_S3_BUCKET") or "",
     )
     zip_bytes = build_lambda_zip()
     lambda_arns: dict[str, str] = {}
@@ -499,6 +570,7 @@ def main() -> int:
         )
     gateway_role = _ensure_gateway_role(iam, account, region)
     gateway_id, gateway_url = _upsert_gateway(control, role_arn=gateway_role)
+    _copy_legacy_targets(control, gateway_id=gateway_id)
     for spec in specs:
         target_ids[spec.id] = _upsert_target(
             control,
@@ -506,6 +578,8 @@ def main() -> int:
             gateway_id=gateway_id,
             lambda_arn=lambda_arns[spec.id],
         )
+    if "elevenlabs" in target_ids:
+        _retire_mureka_target(control, gateway_id=gateway_id, replacement_id=target_ids["elevenlabs"])
 
     lines = [
         f"AGENTCORE_GATEWAY_URL={gateway_url}",

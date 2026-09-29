@@ -1,13 +1,9 @@
 import json
-import os
 import tempfile
 import unittest
 from pathlib import Path
-from unittest.mock import patch
 
-from providers.mureka import api as mureka
 from providers.remotion.api import build_timeline_props
-from providers.registry import dispatch
 from server.studio_state import StudioRepository
 
 
@@ -34,28 +30,6 @@ class MusicTimingTests(unittest.TestCase):
         clip = props['document']['tracks'][0]['items'][0]
         self.assertEqual((clip['volume'], clip['sourceIn'], clip['sourceOut']), (0, 5, 35))
 
-    def test_soundtrack_uses_documented_ids_milliseconds_and_single_variant(self):
-        with patch.dict(os.environ, {'MUREKA_DRY_RUN': 'false'}), patch.object(mureka, '_remember_task'), patch.object(mureka, '_request', return_value={'id': 'job', 'status': 'queued'}) as request:
-            result = mureka.generate_soundtrack(image_id='uploaded-image', audio_start=0, audio_end=30000)
-        self.assertEqual(request.call_args.kwargs['json_body'], {'model': 'auto', 'n': 1, 'image_id': 'uploaded-image', 'audio_start': 0, 'audio_end': 30000})
-        self.assertEqual(result['kind'], 'song')
-
-    def test_seconds_are_not_silently_accepted_as_milliseconds(self):
-        with self.assertRaisesRegex(ValueError, '3000'):
-            dispatch('mureka', 'generate_soundtrack', {'image_id': 'uploaded', 'audio_start': 0, 'audio_end': 30})
-        with self.assertRaisesRegex(ValueError, 'exactly one'):
-            dispatch('mureka', 'generate_soundtrack', {'image_id': 'one', 'video_id': 'two'})
-
-    def test_instrumental_does_not_invent_duration_and_requests_one_track(self):
-        with patch.dict(os.environ, {'MUREKA_DRY_RUN': 'false'}), patch.object(mureka, '_remember_task'), patch.object(mureka, '_request', return_value={'id': 'job'}) as request:
-            mureka.create_instrumental(prompt='30 second warm piano')
-        self.assertEqual(request.call_args.kwargs['json_body']['n'], 1)
-        self.assertNotIn('duration', request.call_args.kwargs['json_body'])
-
-    def test_song_poll_survives_missing_lambda_local_metadata(self):
-        with patch.dict(os.environ, {'MUREKA_DRY_RUN': 'false'}), patch.object(mureka, 'read_task_meta', return_value={}), patch.object(mureka, 'write_task_meta'), patch.object(mureka, '_request', return_value={'status': 'running'}) as request:
-            mureka.query_task(job_id='song-job', kind='song')
-        self.assertEqual(request.call_args.args, ('GET', '/v1/song/query/song-job'))
 
 
 class CheckpointTests(unittest.TestCase):

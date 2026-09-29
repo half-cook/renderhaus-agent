@@ -16,7 +16,6 @@ from providers.contracts import enrich_tool_schema, validate_tool_arguments
 
 ROOT = Path(__file__).resolve().parents[1]
 GATEWAY_SCHEMA_DIR = ROOT / "configs" / "gateway"
-LEGACY_MUREKA_SCHEMA_PATH = ROOT / "configs" / "mureka_gateway_tools.json"
 FORBIDDEN_TOOL_RE = re.compile(r"^(wait_for_.*|.*_and_wait)$")
 
 
@@ -62,104 +61,6 @@ TOOL_GUIDANCE: dict[str, dict[str, str]] = {
         "get_render_progress": (
             "Use only after render_timeline returned a render id and bucket name. Poll once per call "
             "until succeeded, failed, cancelled, or dry_run; it does not start a new render."
-        ),
-    },
-    "mureka": {
-        "text_to_music": (
-            "Use for a simple new music request when the user does not need a specialized Mureka "
-            "workflow. Creates a song when lyrics are supplied, otherwise an instrumental."
-        ),
-        "create_instrumental": (
-            "Use when the user needs original background music without vocals. Returns a queued "
-            "task id; follow with query_music_task until terminal. No exact source-duration control; trim to video length in Remotion. Default n=1."
-        ),
-        "create_song": (
-            "Use when the user already has lyrics and wants a fully produced vocal song. Returns a "
-            "queued task id; follow with query_music_task until terminal."
-        ),
-        "create_song_from_prompt": (
-            "Use when the user wants a complete vocal song from a concept but has no finished "
-            "lyrics. Returns a queued task id; follow with query_music_task until terminal."
-        ),
-        "generate_lyrics": (
-            "Use when the deliverable is song lyrics or when lyrics are needed before create_song. "
-            "It produces text, not audio."
-        ),
-        "extend_lyrics": (
-            "Use when existing lyrics need another verse, chorus, bridge, or continuation. It "
-            "produces revised text, not audio."
-        ),
-        "query_music_task": (
-            "Use only after a Mureka creation or editing tool returned a task id. Poll once per call "
-            "until succeeded, failed, cancelled, or dry_run; request download on the final poll. Pass kind=song for vocal songs or image/video soundtracks, kind=instrumental for instrumentals."
-        ),
-        "get_music_task": (
-            "Alias for query_music_task. Use only to check an existing Mureka task id; it does not "
-            "start new music generation."
-        ),
-        "extend_song": (
-            "Use when an existing song or uploaded audio should continue beyond a specified time. "
-            "Requires lyrics for the extension and a song or upload id."
-        ),
-        "region_edit_song": (
-            "Use when only a specific time range of an existing song should be replaced. Requires "
-            "start/end times plus a song or upload id."
-        ),
-        "remix_song": (
-            "Use when an existing song or uploaded audio should be reinterpreted with a new style "
-            "or production prompt while keeping it as the source."
-        ),
-        "stem_song": (
-            "Use when the user needs an existing song separated into stems such as vocals and "
-            "instrumental parts. Requires a song or upload id."
-        ),
-        "recognize_song": (
-            "Use to identify or analyze what song is present in uploaded audio or an audio URL. It "
-            "does not generate or edit music."
-        ),
-        "describe_song": (
-            "Use to obtain a musical description of an existing Mureka song or uploaded audio for "
-            "planning, tagging, or a later remix."
-        ),
-        "transcribe_song": (
-            "Use to extract sung words or lyrics from an existing Mureka song or uploaded audio. It "
-            "does not create new audio."
-        ),
-        "vocal_clone": (
-            "Use only when the user explicitly wants a reusable vocal model made from an uploaded "
-            "voice sample. Requires an upload id."
-        ),
-        "generate_track": (
-            "Use to add or regenerate a specific musical track for an existing song, such as drums "
-            "or bass. Requires a track type and a song or upload id."
-        ),
-        "generate_soundtrack": (
-            "Use when the user needs music synchronized to an uploaded media file or a specified "
-            "time range. Requires image_id or video_id uploaded with purpose=soundtrack. audio_start/audio_end are milliseconds, minimum 3000 ms; n defaults to 1. Poll query_music_task with kind=song."
-        ),
-        "generate_lyrics_video": (
-            "Use when the user wants a lyric video from an existing Mureka song or uploaded audio. "
-            "It is not the general multi-clip video editor."
-        ),
-        "upload_file": (
-            "Use only when another Mureka operation requires an upload id and the source bytes are "
-            "available as base64. It does not analyze or generate media by itself."
-        ),
-        "create_speech": (
-            "Use when the user needs spoken narration or voiceover from text. Use song tools for "
-            "singing and music tools for instrumental audio."
-        ),
-        "create_podcast": (
-            "Use when the user wants a spoken podcast-style audio program from a script. Use "
-            "create_speech for a single narration passage."
-        ),
-        "query_billing": (
-            "Use only when the user explicitly asks about Mureka account billing or quota. It does "
-            "not estimate Renderhaus-wide generation cost."
-        ),
-        "list_mureka_models": (
-            "Use only when Mureka model selection or availability is relevant; it does not generate "
-            "audio. Prefer the configured default for ordinary requests."
         ),
     },
 }
@@ -370,8 +271,6 @@ def write_schemas(spec: ProviderSpec, tools: list[dict[str, Any]] | None = None)
     payload = tools if tools is not None else generate_schemas(spec)
     path = schema_path(spec)
     path.write_text(json.dumps(payload, indent=2) + "\n")
-    if spec.id == "mureka":
-        LEGACY_MUREKA_SCHEMA_PATH.write_text(path.read_text())
     return path
 
 

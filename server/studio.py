@@ -299,7 +299,18 @@ def _hydrate_tool_event_assets(
 def _resolve_asset_handles(value: Any, workspace_id: str) -> Any:
     """Resolve durable Studio handles to provider-reachable signed URLs."""
     if isinstance(value, dict):
-        return {key: _resolve_asset_handles(item, workspace_id) for key, item in value.items()}
+        resolved = {}
+        for key, item in value.items():
+            if key.endswith("_json") and isinstance(item, str):
+                try:
+                    parsed = json.loads(item)
+                except ValueError:
+                    pass  # Provider validation reports malformed JSON without dispatching it.
+                else:
+                    resolved[key] = json.dumps(_resolve_asset_handles(parsed, workspace_id))
+                    continue
+            resolved[key] = _resolve_asset_handles(item, workspace_id)
+        return resolved
     if isinstance(value, list):
         return [_resolve_asset_handles(item, workspace_id) for item in value]
     if isinstance(value, str) and value.startswith("renderhaus-asset://"):
@@ -333,7 +344,7 @@ async def studio_status() -> dict[str, Any]:
             "seedance": os.getenv("SEEDANCE_DRY_RUN", "true").lower() != "false",
             "seedream": os.getenv("SEEDREAM_DRY_RUN", os.getenv("SEEDANCE_DRY_RUN", "true")).lower()
             != "false",
-            "mureka": os.getenv("MUREKA_DRY_RUN", "true").lower() != "false",
+            "elevenlabs": os.getenv("ELEVENLABS_DRY_RUN", "false").lower() == "true",
             "fish_audio": os.getenv("FISH_AUDIO_DRY_RUN", "true").lower() != "false",
         },
     }
@@ -539,12 +550,13 @@ async def studio_options() -> dict[str, Any]:
             return
         ids = extract_choice_ids(result)
         if ids:
-            previous = [str(value) for value in options[provider_id].get(field, [])]
+            provider_options = options.setdefault(provider_id, {})
+            previous = [str(value) for value in provider_options.get(field, [])]
             merged = list(ids)
             for value in previous:
                 if value not in merged:
                     merged.append(value)
-            options[provider_id][field] = merged
+            provider_options[field] = merged
 
     try:
         await asyncio.wait_for(
@@ -606,7 +618,10 @@ async def invoke_tool(body: InvokeBody, auth: AuthUser) -> dict[str, Any]:
         raise HTTPException(status_code=404, detail="Project not found.") from exc
     cleaned = _tool_arguments(body.provider, body.tool, body.arguments)
     cleaned = _resolve_asset_handles(cleaned, workspace_id)
-    cost = cost_for(body.provider, body.tool, cleaned)
+    try:
+        cost = cost_for(body.provider, body.tool, cleaned)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     # No billing enforcement at all when Stripe isn't configured (local/dry-run
     # dev, per the README) -- every account starts at $0 with no way to top up
     # in that mode, so charging here would 402 every single generation.

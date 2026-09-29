@@ -497,14 +497,14 @@ async def config() -> dict[str, Any]:
         "live_image_generation": (
             os.getenv("SEEDREAM_DRY_RUN", os.getenv("SEEDANCE_DRY_RUN", "true")).lower() == "false"
         ),
-        "live_music_generation": os.getenv("MUREKA_DRY_RUN", "true").lower() == "false",
+        "live_music_generation": os.getenv("ELEVENLABS_DRY_RUN", "false").lower() != "true",
         "agent_ready": False,
         "langfuse_ready": False,
         "clerk_enabled": clerk_enabled(),
         "clerk_publishable_key": publishable_key(),
         "video_model": os.getenv("SEEDANCE_MODEL", "seedance-1-5-pro-251215"),
         "image_model": os.getenv("SEEDREAM_MODEL", "seedream-5-0-lite-260128"),
-        "music_model": os.getenv("MUREKA_MODEL", "auto"),
+        "music_model": "music_v2_5",
         "max_upload_mb": MAX_UPLOAD_BYTES // (1024 * 1024),
     }
 

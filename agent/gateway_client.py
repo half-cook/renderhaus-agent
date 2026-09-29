@@ -3,13 +3,36 @@
 from __future__ import annotations
 
 from contextlib import AsyncExitStack
+import re
 from typing import Any
 from urllib.parse import urlsplit
 
 import httpx2
+import boto3
+from botocore.auth import SigV4Auth
+from botocore.awsrequest import AWSRequest
 from mcp import ClientSession, types
 from mcp.client.streamable_http import streamable_http_client
 from mcp.shared._httpx_utils import MCP_DEFAULT_SSE_READ_TIMEOUT, MCP_DEFAULT_TIMEOUT, create_mcp_http_client
+
+
+class GatewayIAMAuth(httpx2.Auth):
+    """Sign each request with refreshable AWS credentials, as in smoke_gateway.py."""
+    requires_request_body = True
+
+    def __init__(self, region: str):
+        self.region = region
+        self.session = boto3.Session(region_name=region)
+
+    def auth_flow(self, request):
+        credentials = self.session.get_credentials()
+        if credentials is None:
+            raise RuntimeError("AWS credentials are required to invoke the AgentCore Gateway.")
+        signed = AWSRequest(method=request.method, url=str(request.url),
+                            data=request.content, headers=dict(request.headers))
+        SigV4Auth(credentials.get_frozen_credentials(), "bedrock-agentcore", self.region).add_auth(signed)
+        request.headers.update(dict(signed.headers))
+        yield request
 
 
 class GatewayClient:
@@ -55,6 +78,9 @@ class GatewayClient:
             )
             # MCP defaults to following redirects, which could downgrade or escape loopback.
             client.follow_redirects = False
+            aws_host = re.fullmatch(r"[a-z0-9-]+\.gateway\.bedrock-agentcore\.([a-z0-9-]+)\.amazonaws\.com", parsed.hostname)
+            if aws_host and not any(key.lower() == "authorization" for key in headers):
+                client.auth = GatewayIAMAuth(aws_host.group(1))
             await stack.enter_async_context(client)
             read, write = await stack.enter_async_context(
                 streamable_http_client(url, http_client=client)

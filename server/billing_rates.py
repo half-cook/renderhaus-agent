@@ -13,13 +13,15 @@ per-character rate) as of 2026-08. These are list prices, not your
 negotiated/actual invoiced rates -- swap in real numbers from your
 provider dashboards or contracts when you have them. Nothing here was
 fabricated to look precise; where a provider's real rate is genuinely
-account-dependent (Mureka doesn't publish a flat per-song API rate), the
-comment says so.
+account-dependent, the comment says so. ElevenLabs write quotes must be configured
+explicitly before enabling Stripe billing.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass
+import json
+import os
 from typing import Any
 
 # Flat percentage added on top of the provider's own cost. A tunable
@@ -116,20 +118,6 @@ def _seedream_cost(arguments: dict[str, Any]) -> GenerationCost:
     return _with_fee(provider_cents)
 
 
-# -- Mureka (music) -------------------------------------------------------
-# Mureka doesn't publish a flat per-song API rate (their own pricing is
-# subscription-quota based); this is the low end of what third-party
-# aggregators charge per song as a placeholder, scaled by the number of
-# variants (`n`) requested. Needs a real number from your Mureka account.
-MUREKA_COST_CENTS_PER_SONG = 3
-
-
-def _mureka_cost(arguments: dict[str, Any]) -> GenerationCost:
-    variants = arguments.get("n")
-    count = int(variants) if isinstance(variants, (int, float)) and variants else 1
-    return _with_fee(MUREKA_COST_CENTS_PER_SONG * max(1, count))
-
-
 # -- Fish Audio (voice) ---------------------------------------------------
 # $15 per 1,000,000 UTF-8 bytes, from Fish Audio's own pricing docs --
 # applies to the standard paid models. Our configured default,
@@ -175,8 +163,20 @@ def cost_for(provider: str, tool: str, arguments: dict[str, Any]) -> GenerationC
         return _seedance_cost(arguments)
     if provider == "seedream":
         return _seedream_cost(arguments)
-    if provider == "mureka":
-        return _mureka_cost(arguments)
+    if provider == "elevenlabs":
+        from providers.elevenlabs.catalog import CATALOG
+        entry = CATALOG.get(tool)
+        if entry is None:
+            raise ValueError("Unknown ElevenLabs tool.")
+        if entry["effect"] == "read" or not os.getenv("STRIPE_SECRET_KEY"):
+            return GenerationCost(0, 0)
+        # ponytail: per-call operator quotes until usage-based invoice reconciliation exists.
+        # Never reuse Mureka's placeholder price for unrelated ElevenLabs operations.
+        quotes = json.loads(os.getenv("ELEVENLABS_TOOL_COST_CENTS_JSON", "{}"))
+        quote = quotes.get(tool)
+        if not isinstance(quote, int) or isinstance(quote, bool) or quote < 0:
+            raise ValueError("Configure an ElevenLabs tool quote in ELEVENLABS_TOOL_COST_CENTS_JSON before enabling billed calls.")
+        return _with_fee(quote)
     if provider == "fish_audio":
         return _fish_audio_cost(arguments)
     if provider == "remotion":
