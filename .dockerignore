@@ -1,0 +1,15 @@
+# AgentCore's Dockerfile only needs these source inputs; exclude credentials and local media.
+**
+!Dockerfile.agentcore
+!pyproject.toml
+!README.md
+!agent/
+!agent/**
+!providers/
+!providers/**
+!configs/
+!configs/**
+!server/
+!server/**
+**/__pycache__
+**/*.pyc

@@ -40,16 +40,6 @@ SEEDANCE_RATIOS = ("adaptive", "16:9", "9:16", "1:1", "4:3", "3:4", "21:9")
 SEEDANCE_RESOLUTIONS = ("480p", "720p", "1080p")
 SEEDREAM_RATIOS = ("1:1", "16:9", "9:16")
 SEEDREAM_SIZES = ("1K", "2K", "3K")
-MUREKA_PURPOSES = (
-    "reference",
-    "melody",
-    "instrumental",
-    "voice",
-    "audio",
-    "remix",
-    "soundtrack",
-    "lyrics-video",
-)
 
 
 def _rules_for_fields(
@@ -89,35 +79,6 @@ TOOL_ARGUMENT_RULES: dict[str, dict[str, dict[str, ArgumentRule]]] = {
             "aspect_ratio": ArgumentRule(choices=("16:9", "9:16", "1:1", "2.39:1")),
             "fps": ArgumentRule(minimum=12, maximum=60),
         }
-    },
-    "mureka": {
-        "create_instrumental": {"n": ArgumentRule(minimum=1, maximum=3)},
-        "create_song": {
-            "n": ArgumentRule(minimum=1, maximum=3),
-            "gender": ArgumentRule(choices=("male", "female")),
-        },
-        "create_song_from_prompt": {
-            "n": ArgumentRule(minimum=1, maximum=3),
-            "gender": ArgumentRule(choices=("male", "female")),
-        },
-        "extend_song": {"extend_at_ms": ArgumentRule(minimum=0)},
-        "region_edit_song": {
-            "edit_start_ms": ArgumentRule(minimum=0),
-            "edit_end_ms": ArgumentRule(minimum=0),
-        },
-        "remix_song": {"n": ArgumentRule(minimum=1, maximum=3)},
-        "generate_track": {
-            "track_type": ArgumentRule(choices=("vocals", "accompaniment", "instrument"))
-        },
-        "generate_soundtrack": {
-            "n": ArgumentRule(minimum=1, maximum=3),
-            "audio_start": ArgumentRule(minimum=0),
-            "audio_end": ArgumentRule(minimum=0),
-        },
-        "generate_lyrics_video": {
-            "aspect_ratio": ArgumentRule(choices=("16:9", "9:16", "1:1", "4:3", "3:4"))
-        },
-        "upload_file": {"purpose": ArgumentRule(choices=MUREKA_PURPOSES)},
     },
 }
 
@@ -281,11 +242,6 @@ def _validate_rule(path: str, value: Any, rule: ArgumentRule) -> None:
         raise ValueError(f"{path} must be at most {rule.maximum:g}.")
 
 
-def _require_any(arguments: dict[str, Any], fields: tuple[str, ...], tool_name: str) -> None:
-    if not any(arguments.get(field) not in (None, "") for field in fields):
-        raise ValueError(f"{tool_name} requires one of: {', '.join(fields)}.")
-
-
 def _validate_cross_fields(provider_id: str, tool_name: str, arguments: dict[str, Any]) -> None:
     if provider_id == "remotion" and tool_name == "render_timeline":
         if not arguments.get("visuals"):
@@ -360,30 +316,6 @@ def _validate_cross_fields(provider_id: str, tool_name: str, arguments: dict[str
                 raise ValueError(
                     f"arguments.text_overlays[{index}].position must be top, center, or bottom."
                 )
-    if provider_id != "mureka":
-        return
-    source_fields: dict[str, tuple[str, ...]] = {
-        "extend_song": ("song_id", "upload_audio_id"),
-        "region_edit_song": ("song_id", "upload_audio_id"),
-        "remix_song": ("song_id", "upload_audio_id"),
-        "stem_song": ("song_id", "upload_audio_id"),
-        "recognize_song": ("upload_audio_id", "audio_url"),
-        "describe_song": ("song_id", "upload_audio_id"),
-        "transcribe_song": ("song_id", "upload_audio_id"),
-        "generate_track": ("song_id", "upload_audio_id"),
-        "generate_lyrics_video": ("song_id", "upload_audio_id"),
-    }
-    if tool_name in source_fields:
-        _require_any(arguments, source_fields[tool_name], tool_name)
-    if tool_name == "region_edit_song" and arguments["edit_end_ms"] <= arguments["edit_start_ms"]:
-        raise ValueError("region_edit_song edit_end_ms must be greater than edit_start_ms.")
-    if tool_name == "generate_soundtrack":
-        if bool(arguments.get("image_id")) == bool(arguments.get("video_id")):
-            raise ValueError("generate_soundtrack requires exactly one image_id or video_id.")
-        start = arguments.get("audio_start")
-        end = arguments.get("audio_end")
-        if end is not None and end - (start or 0) < 3000:
-            raise ValueError("generate_soundtrack start/end are milliseconds; the segment must be at least 3000 ms.")
 
 
 def validate_tool_arguments(

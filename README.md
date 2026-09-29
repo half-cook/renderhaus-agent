@@ -12,7 +12,7 @@ generation/agent backend (`server/`, `agent/`, `providers/`).
   (see `studio/next.config.ts`).
 - **`agent/`** — Codex app-server manager; runs in-process locally or on Amazon Bedrock
   AgentCore Runtime.
-- **`providers/`** — Seedance, Seedream, Mureka, Fish Audio, and Remotion implementations.
+- **`providers/`** — Seedance, Seedream, ElevenLabs, and Remotion implementations.
   AgentCore Gateway Lambdas call these; the Runtime agent never hosts them locally.
 - **`docs/`** — the long-video production-agent program (below).
 - **`design/`** — planning/status docs for how `studio/` and `server/` came to live in one repo:
@@ -42,7 +42,7 @@ Day-to-day local + CI/CD map: [docs/development.md](docs/development.md).
 make setup    # once
 make check    # before push
 make backend  # backend API only (see "Run the app" below for the full two-process setup)
-make gateway  # deploy Mureka Lambda + Gateway
+make gateway  # deploy provider Lambdas + Gateway
 make runtime  # deploy AgentCore Runtime
 ```
 
@@ -83,7 +83,7 @@ via its execution role.
 ### AgentCore (cloud agent + MCPs)
 
 The Codex harness runs inside Amazon Bedrock AgentCore Runtime. Generation tools
-(Seedance, Seedream, Mureka, Fish Audio, and Remotion) remain behind AgentCore Gateway. The backend stays local (or on its own host) and calls the
+(Seedance, Seedream, ElevenLabs, and Remotion) remain behind AgentCore Gateway. The backend stays local (or on its own host) and calls the
 runtime when `AGENTCORE_RUNTIME_ARN` is set.
 
 ```bash
@@ -123,7 +123,7 @@ the export length; long music is trimmed to the edit with configurable source of
 ```bash
 npm ci --prefix remotion
 npm run typecheck --prefix remotion
-# Deploy a versioned site and update the existing Remotion/Mureka Lambda targets and schemas.
+# Deploy a versioned site and update the existing Remotion/ElevenLabs Lambda targets and schemas.
 .venv/bin/python scripts/deploy_media_updates.py
 ```
 
@@ -212,7 +212,7 @@ make tools
 
 ## Provider tools via AgentCore Gateway
 
-Seedance, Seedream, Mureka, Fish Audio, and Remotion are Lambda targets behind one Amazon Bedrock
+Seedance, Seedream, ElevenLabs, and Remotion are Lambda targets behind one Amazon Bedrock
 AgentCore Gateway. The Runtime agent is an MCP client of that URL. There is no local MCP process.
 
 ```bash
@@ -260,3 +260,8 @@ Generation job records are written under `.renderhaus/jobs/`.
 
 Seedance video generation is live when `SEEDANCE_DRY_RUN=false`; Fish Audio TTS is live when
 `FISH_AUDIO_DRY_RUN=false`.
+
+### ElevenLabs setup
+
+All 396 published HTTP operations are searchable through AgentCore Gateway. See
+[ElevenLabs configuration, API key location, routing and limits](docs/ELEVENLABS.md).

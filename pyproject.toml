@@ -36,3 +36,6 @@ include = ["agent*", "server*", "lambdas*", "providers*"]
 
 [tool.setuptools]
 include-package-data = true
+
+[tool.setuptools.package-data]
+"providers.elevenlabs" = ["openapi.json"]

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Update the existing Mureka/Remotion Lambda code and schemas, preserving roles/auth.
+"""Update the existing ElevenLabs/Remotion Lambda code and schemas, preserving roles/auth.
 
 Uploads a versioned renderer site. Does not create infrastructure or change IAM.
 """
@@ -27,7 +27,7 @@ def main():
     if not gateway:
         raise RuntimeError("Existing Gateway is required.")
     gateway_id = gateway.get("gatewayId") or gateway.get("gatewayIdentifier") or gateway.get("id")
-    provider_names = ("mureka", "remotion")
+    provider_names = ("elevenlabs", "remotion")
     targets_by_name = {}
     page_args = {"gatewayIdentifier": gateway_id}
     while True:

@@ -48,6 +48,7 @@ class AppServer:
         self._stderr_task = None
 
     async def __aenter__(self):
+        
         # Do not pass AWS, provider credentials, or the developer's Codex config
         # to the harness. The API key is sent using account/login/start below.
         env = {

@@ -31,9 +31,7 @@ RUNTIME_BOOTSTRAP_KEYS = [
     "SEEDANCE_DRY_RUN",
     "SEEDREAM_MODEL",
     "SEEDREAM_DRY_RUN",
-    "MUREKA_API_URL",
-    "MUREKA_MODEL",
-    "MUREKA_DRY_RUN",
+    "ELEVENLABS_DRY_RUN",
     "FISH_AUDIO_MODEL",
     "FISH_AUDIO_DRY_RUN",
     "AWS_S3_BUCKET",
@@ -66,7 +64,7 @@ def load_bootstrap_env(*, secret_name: str) -> dict[str, str]:
             env[key] = value.strip()
     env.setdefault("SEEDANCE_DRY_RUN", "true")
     env.setdefault("SEEDREAM_DRY_RUN", "true")
-    env.setdefault("MUREKA_DRY_RUN", "true")
+    env.setdefault("ELEVENLABS_DRY_RUN", "false")
     return env
 
 
@@ -226,6 +224,12 @@ def ensure_role(iam, account: str, region: str, bucket: str, secret_name: str) -
                     f"arn:aws:secretsmanager:{region}:{account}:secret:{secret_name}-*",
                     f"arn:aws:secretsmanager:{region}:{account}:secret:{secret_name}",
                 ],
+            },
+            {
+                "Sid": "RenderhausGateway",
+                "Effect": "Allow",
+                "Action": ["bedrock-agentcore:InvokeGateway"],
+                "Resource": [f"arn:aws:bedrock-agentcore:{region}:{account}:gateway/renderhaus-*"],
             },
         ],
     }

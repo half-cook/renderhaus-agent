@@ -117,6 +117,19 @@ class FakeGateway:
 
 
 class StudioCodexTests(unittest.IsolatedAsyncioTestCase):
+    async def test_elevenlabs_admin_pauses_even_when_autonomous(self):
+        tool = Tool(name="ElevenLabs___workspace_groups_list", description="List workspace groups",
+                    inputSchema={"type": "object", "properties": {}})
+        gateway = FakeGateway()
+        gateway.list_tools = AsyncMock(return_value=[tool])
+        call = {"callId": "admin-check", "tool": "call_gateway_tool", "arguments": {
+            "tool_name": tool.name, "arguments_json": "{}"}}
+        studio = StudioAgentContext(autonomous=True)
+        with self.assertRaises(StudioAgentApprovalRequired):
+            await run_studio_agent(StudioAgentRequest(prompt="List workspace groups", autonomous=True),
+                                   studio=studio, harness=FakeHarness([call]), mcp_servers=[gateway])
+        self.assertEqual(gateway.calls, [])
+
     async def test_structured_artifact_history_and_model_configuration(self):
         harness = FakeHarness()
         studio = StudioAgentContext()

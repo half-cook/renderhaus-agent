@@ -47,6 +47,7 @@ class AgentCoreGatewayConfigTests(unittest.TestCase):
 
     def test_existing_gateway_receives_updated_instructions_without_resetting_search(self) -> None:
         control = MagicMock()
+        control.get_gateway.return_value = {"authorizerType": "AWS_IAM"}
         with (
             patch(
                 "scripts.deploy_gateway._find_gateway",
@@ -129,25 +130,6 @@ class GatewayToolSchemaTests(unittest.TestCase):
                 {"prompt": "Launch", "resolution": "720p", "aspect_ratio": "adaptive"},
             )
         self.assertEqual(accepted["status"], "dry_run")
-
-    def test_dispatch_enforces_cross_field_contracts(self) -> None:
-        with self.assertRaisesRegex(ValueError, "requires one of"):
-            dispatch(
-                "mureka",
-                "region_edit_song",
-                {"lyrics": "Verse", "edit_start_ms": 1, "edit_end_ms": 2},
-            )
-        with self.assertRaisesRegex(ValueError, "greater than"):
-            dispatch(
-                "mureka",
-                "region_edit_song",
-                {
-                    "lyrics": "Verse",
-                    "edit_start_ms": 20,
-                    "edit_end_ms": 10,
-                    "song_id": "song-1",
-                },
-            )
 
     def test_seedream_accepts_size_presets_or_explicit_dimensions(self) -> None:
         from providers.contracts import validate_tool_arguments

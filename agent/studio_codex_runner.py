@@ -216,7 +216,8 @@ async def run_with_servers(request, studio, harness: CodexHarness, servers):
                 "error": "Arguments do not match the discovered tool schema.",
                 "path": list(exc.absolute_path),
             }
-        if not studio.autonomous and not approved and rejection is None:
+        from providers.elevenlabs.catalog import requires_approval
+        if (not studio.autonomous or requires_approval(name)) and not approved and rejection is None:
             raise ToolApprovalPending(call)
         if rejection is not None:
             output = {"status": "rejected", "message": rejection}
@@ -500,5 +501,5 @@ def completed_label(name: str) -> str:
     if name.endswith("get_render_progress"):
         return "Remotion is assembling the MP4"
     if name.endswith(("query_music_task", "get_music_task")):
-        return "Mureka is preparing the soundtrack"
+        return "The audio provider is preparing the soundtrack"
     return "The video provider is processing the clip"

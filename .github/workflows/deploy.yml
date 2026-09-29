@@ -21,8 +21,8 @@ on:
           - all
           - seedance
           - seedream
-          - mureka
-          - fish_audio
+          - elevenlabs
+          - remotion
         default: all
       region:
         description: AWS region
@@ -38,9 +38,7 @@ on:
       - "providers/**"
       - "lambdas/**"
       - "configs/gateway/**"
-      - "configs/mureka_gateway_tools.json"
       - "scripts/deploy_gateway.py"
-      - "scripts/deploy_mureka_gateway.py"
       - "agent/**"
       - "Dockerfile.agentcore"
       - "scripts/deploy_agentcore.py"
@@ -97,7 +95,7 @@ jobs:
             else
               CHANGED=$(git diff --name-only "$BEFORE" "${{ github.sha }}" || true)
               echo "$CHANGED"
-              if echo "$CHANGED" | grep -E '^(providers/|lambdas/|configs/gateway/|configs/mureka_gateway_tools\.json|scripts/deploy_gateway\.py|scripts/deploy_mureka_gateway\.py)' >/dev/null; then
+              if echo "$CHANGED" | grep -E '^(providers/|lambdas/|configs/gateway/|scripts/deploy_gateway\.py)' >/dev/null; then
                 GW=true
                 if echo "$CHANGED" | grep -E '^(lambdas/handler\.py|providers/catalog\.py|providers/registry\.py|scripts/deploy_gateway\.py)' >/dev/null; then
                   PROVIDER=all
@@ -105,8 +103,7 @@ jobs:
                   SELECTED=()
                   echo "$CHANGED" | grep -E '^providers/seedance/|^lambdas/seedance/' >/dev/null && SELECTED+=(seedance)
                   echo "$CHANGED" | grep -E '^providers/seedream/|^lambdas/seedream/' >/dev/null && SELECTED+=(seedream)
-                  echo "$CHANGED" | grep -E '^providers/mureka/|^lambdas/mureka/|^configs/mureka_gateway_tools\.json|^configs/gateway/mureka\.tools\.json' >/dev/null && SELECTED+=(mureka)
-                  echo "$CHANGED" | grep -E '^providers/fish_audio/|^lambdas/fish' >/dev/null && SELECTED+=(fish_audio)
+                  echo "$CHANGED" | grep -E '^providers/elevenlabs/|^configs/gateway/elevenlabs\.tools\.json' >/dev/null && SELECTED+=(elevenlabs)
                   echo "$CHANGED" | grep -E '^providers/remotion/' >/dev/null && SELECTED+=(remotion)
                   if [ "${#SELECTED[@]}" -eq 0 ] || [ "${#SELECTED[@]}" -ge 4 ]; then
                     PROVIDER=all
