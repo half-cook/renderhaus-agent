@@ -263,5 +263,5 @@ Seedance video generation is live when `SEEDANCE_DRY_RUN=false`; Fish Audio TTS 
 
 ### ElevenLabs setup
 
-All 396 published HTTP operations are searchable through AgentCore Gateway. See
+Only 41 media feature and supporting lookup/retrieval operations are exposed through AgentCore Gateway; management APIs are excluded. See
 [ElevenLabs configuration, API key location, routing and limits](docs/ELEVENLABS.md).

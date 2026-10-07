@@ -1,4 +1,4 @@
-"""One authenticated HTTP dispatcher for every pinned ElevenLabs operation."""
+"""One authenticated HTTP dispatcher for the allowed ElevenLabs media features."""
 from __future__ import annotations
 
 import base64

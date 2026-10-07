@@ -15,6 +15,27 @@ from typing import Any
 SOURCE_URL = "https://api.elevenlabs.io/openapi.json"
 SPEC = json.loads(Path(__file__).with_name("openapi.json").read_text())
 
+# Explicit names keep OpenAPI refreshes from exposing new management operations.
+# Include the lookups and output retrieval needed to finish each creative workflow.
+FEATURE_TOOLS = frozenset({
+    "text_to_speech_convert", "text_to_speech_convert_with_timestamps",
+    "text_to_speech_stream", "text_to_speech_stream_with_timestamps",
+    "text_to_dialogue_convert", "text_to_dialogue_convert_with_timestamps",
+    "text_to_dialogue_stream", "text_to_dialogue_stream_with_timestamps",
+    "text_to_sound_effects_convert", "audio_isolation_convert", "speech_to_speech_convert",
+    "speech_to_text_convert", "speech_to_text_transcripts_get", "forced_alignment_create",
+    "music_compose", "music_compose_detailed", "music_composition_plan_create",
+    "music_video_to_music", "music_separate_stems", "music_upload",
+    "voices_search", "voices_get", "models_list",
+    "text_to_voice_design", "text_to_voice_remix", "text_to_voice_create", "voices_ivc_create",
+    "history_list", "history_get", "history_get_audio",
+    "dubbing_create", "dubbing_get", "dubbing_audio_get", "dubbing_transcripts_get",
+    "dubbing_project_create", "dubbing_project_get",
+    "dubbing_project_language_create", "dubbing_project_language_get",
+    "pronunciation_dictionaries_create_from_rules",
+    "pronunciation_dictionaries_list", "pronunciation_dictionaries_get",
+})
+
 FAMILY_GUIDANCE = {
     "music": "Create background scores, instrumental beds, songs with vocals, video soundtracks, composition plans or stems for an edit.",
     "text_to_speech": "Turn a written script into single-speaker narration, voiceover or spoken dialogue. Choose a voice_id from voices_search first.",
@@ -25,24 +46,11 @@ FAMILY_GUIDANCE = {
     "speech_to_text": "Transcribe existing audio/video into text, speaker labels and word timestamps for captions, subtitles or a transcript.",
     "forced_alignment": "Align a supplied transcript with existing audio to obtain word timing; use speech_to_text when the transcript is unknown.",
     "text_to_voice": "Design or remix a synthetic voice from a description and preview it before saving a reusable voice.",
-    "voices": "Find, inspect or manage reusable voices and voice settings for narration, dialogue and dubbing. Cloning needs authorized voice samples.",
-    "samples": "Inspect or manage the recorded samples attached to an existing voice; this does not generate a soundtrack.",
-    "dubbing": "Translate and revoice existing audio/video into another language, edit speakers or segments, and retrieve dubbed audio and subtitles.",
-    "studio": "Manage ElevenLabs long-form audio projects, chapters, podcasts and rendered snapshots. These are ElevenLabs projects, separate from the Renderhaus canvas.",
+    "voices": "Find or inspect reusable voices for narration, dialogue and dubbing, or create an instant voice clone from authorized samples.",
+    "dubbing": "Translate and revoice existing audio/video into another language, check generation status, and retrieve dubbed audio and subtitles.",
     "pronunciation_dictionaries": "Control how names, brands, abbreviations and unusual words are spoken using reusable pronunciation rules.",
     "history": "Find or retrieve previously generated speech to reuse audio without generating again; music and sound effects are not in speech history.",
     "models": "Discover available speech model IDs and capabilities before selecting a model; this is a read-only lookup.",
-    "user": "Inspect the connected ElevenLabs account, subscription or remaining usage; does not create media.",
-    "usage": "Inspect ElevenLabs usage and consumption for reporting or budget checks; does not create media.",
-    "audio_native": "Manage an embedded audio player and narrated website content; use text_to_speech for ordinary Renderhaus voiceovers.",
-    "speech_engine": "Manage reusable speech-generation configurations for consistent output across requests.",
-    "conversational_ai": "Manage ElevenLabs conversational voice agents, knowledge bases, conversations, tests, phone integrations and analytics. Use only for an explicit voice-agent task, not ordinary media creation.",
-    "workspace": "Administer the connected ElevenLabs workspace, members, groups, access and resources. Use only for an explicit account-administration request.",
-    "service_accounts": "Manage service accounts and API-key access for the connected ElevenLabs workspace. Use only for an explicit credential-administration request.",
-    "productions": "Manage human production orders and deliverables. Submitting an order may commission paid external work; use only when explicitly requested.",
-    "flows": "Run or inspect ElevenLabs image, video, speech generations and reusable workflow templates; poll the matching generation or run ID before retrieving output.",
-    "assets": "Upload, find or manage media stored in ElevenLabs for Flows workflows; these are separate from Renderhaus's owned assets.",
-    "tokens": "Create a short-lived client token for an explicitly requested realtime ElevenLabs integration; ordinary Gateway generation uses the server-side key.",
 }
 
 INTENT = {
@@ -131,6 +139,8 @@ def build_catalog() -> dict[str, dict]:
             name = re.sub(r"[^a-zA-Z0-9_]+", "_", "_".join([*groups, action])).lower()
             if len(name) > 64:
                 name = name[:53] + "_" + hashlib.sha256(name.encode()).hexdigest()[:10]
+            if name not in FEATURE_TOOLS:
+                continue
             if name in tools:
                 raise ValueError(f"Duplicate ElevenLabs tool name: {name}")
             props, required, bindings = {}, [], {}
@@ -188,6 +198,8 @@ def build_catalog() -> dict[str, dict]:
                            "path": path, "method": method.upper(), "bindings": bindings,
                            "body_schema": body_schema, "content_type": content_type, "effect": effect,
                            "operation_id": operation.get("operationId")}
+    if missing := FEATURE_TOOLS - tools.keys():
+        raise ValueError(f"Missing ElevenLabs feature operations: {', '.join(sorted(missing))}")
     return tools
 
 
@@ -196,4 +208,5 @@ CATALOG = build_catalog()
 
 def requires_approval(tool_name: str) -> bool:
     target, _, name = tool_name.partition("___")
-    return target == "ElevenLabs" and CATALOG.get(name, {}).get("effect") == "administration"
+    # A stale remote catalog must not make removed operations auto-approved.
+    return target == "ElevenLabs" and CATALOG.get(name, {}).get("effect", "administration") == "administration"

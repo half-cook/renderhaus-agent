@@ -52,9 +52,9 @@ GATEWAY_INSTRUCTIONS = (
     "creates video clips; ElevenLabs provides music composition, video soundtracks, speech/voiceover, "
     "multi-speaker dialogue, sound effects/Foley, voice conversion, noise isolation, transcription, "
     "forced alignment, dubbing/translation, voice discovery/design/cloning, and pronunciation rules. "
-    "ElevenLabs also exposes account/workspace, conversational-agent, Studio project, Flows and "
-    "production-order APIs: use those only for explicit requests in their domain, never incidentally "
-    "while creating media. Read each tool's required inputs, output and side-effect guidance. Remotion "
+    "Only ElevenLabs media features and their required lookup/retrieval APIs are exposed; "
+    "account/workspace, credential, conversational-agent and other management APIs are unavailable. "
+    "Read each tool's required inputs, output and side-effect guidance. Remotion "
     "assembles finished assets into an MP4. Creation tools can start paid work. Poll tools only "
     "after their matching creation tool returns a task or render id."
 )

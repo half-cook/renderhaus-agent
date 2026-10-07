@@ -1,10 +1,21 @@
 # ElevenLabs through AgentCore Gateway
 
-Renderhaus exposes every HTTP operation in the pinned official
-[ElevenLabs OpenAPI document](https://api.elevenlabs.io/openapi.json): **396 tools** as of
-September 29, 2026. The catalog includes audio creation/editing, music, speech, transcription,
-dubbing, voices, Studio, pronunciation dictionaries, Flows, assets, conversational agents,
-workspace and service-account administration. The upstream documentation endpoint is included.
+Renderhaus exposes **41 media feature and supporting lookup/retrieval tools** from the pinned
+[ElevenLabs OpenAPI document](https://api.elevenlabs.io/openapi.json), selected explicitly in
+`providers/elevenlabs/catalog.py`. The same allowlist controls discovery, schemas and dispatch;
+an OpenAPI refresh cannot add tools implicitly.
+
+The catalog covers speech and v4 dialogue (including timestamps/HTTP streams), music composition,
+video soundtracks and stems, sound effects, voice conversion/isolation, transcription/alignment,
+dubbing generation/status/output, voice discovery/design/instant cloning, pronunciation rules,
+and speech history retrieval. Voice creation and pronunciation-rule creation remain because
+their IDs are inputs to speech generation. Dubbing project/language creation and retrieval
+remain because they are the generation and output APIs for current dubbing models.
+
+Account, subscription, usage, workspace, API-key/service-account, conversational-agent, phone,
+production-order, ElevenLabs Studio/Flows/assets management and resource edit/delete APIs are
+excluded. Image/video generation stays with Seedream/Seedance. The full upstream specification
+is retained only for validation and review; it is not the exposed tool catalog.
 Existing Mureka media remains in project history; Mureka is no longer a selectable provider.
 
 ## Key location
@@ -38,8 +49,8 @@ The manager instructions contain the same routing rules. Official
 [ElevenLabs skills](https://github.com/elevenlabs/skills) informed this guidance. Installing a
 global skill alone would not reach Renderhaus: its Codex harness disables host skill discovery.
 Music and voiceover canvas nodes use ElevenLabs; normal image/video creation retains Seedream
-and Seedance. Account administration, phone/voice-agent work and human production orders need
-an explicit task and an approval even when autonomous mode is enabled.
+and Seedance. Account administration, phone/voice-agent work and human production orders are
+unavailable through Renderhaus, including in autonomous mode.
 
 ## Wire format and boundaries
 
@@ -67,7 +78,7 @@ an explicit task and an approval even when autonomous mode is enabled.
 Music uses exactly one of `prompt` or `composition_plan_json`. With a prompt, set
 `music_length_ms` (3000–600000) and `force_instrumental=true` for an instrumental. A normal
 composition returns completed audio; it is not a Mureka-style asynchronous job to poll.
-Dubbing and Flows have their own returned IDs and status/retrieval operations.
+Dubbing has its own returned IDs and status/retrieval operations.
 
 With Stripe disabled, provider charges go directly to the configured ElevenLabs account.
 When Stripe billing is enabled, write operations require explicit per-tool integer-cent quotes
@@ -84,7 +95,8 @@ not invoice reconciliation; set them for the allowed workload before enabling cu
 .venv/bin/python scripts/deploy_gateway.py --provider elevenlabs
 ```
 
-Review the schema diff before deployment. The deploy script waits until ElevenLabs is ready
+Review the feature allowlist and schema diff before deployment. Missing selected operations
+fail generation; new upstream operations remain excluded. The deploy script waits until ElevenLabs is ready
 before removing the Mureka target. Gateway's native OpenAPI import was considered but does not
 support binary media responses, so this uses the existing Lambda-target architecture.
 See [AWS OpenAPI limitations](https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/gateway-schema-openapi.html).

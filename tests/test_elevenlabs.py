@@ -16,7 +16,7 @@ from agent.gateway_client import GatewayIAMAuth
 from agent.studio_agent_next import StudioAgentContext
 from providers.catalog import PROVIDERS, get_provider
 from providers.elevenlabs import api
-from providers.elevenlabs.catalog import CATALOG, SPEC, requires_approval
+from providers.elevenlabs.catalog import CATALOG, FEATURE_TOOLS, SPEC, build_catalog, requires_approval
 from providers.registry import dispatch, generate_schemas, load_committed_schemas
 
 
@@ -28,13 +28,31 @@ class ElevenLabsTests(unittest.TestCase):
             result = asyncio.run(studio_options())
         self.assertEqual(result["providers"]["elevenlabs"]["voice_id"], ["voice-1"])
 
-    def test_every_upstream_operation_has_a_searchable_tool(self):
-        count = sum(m in {"get", "post", "put", "patch", "delete", "head", "options"}
-                    for methods in SPEC["paths"].values() for m in methods)
-        self.assertEqual(len(CATALOG), count)
+    def test_only_media_features_are_discoverable_and_executable(self):
+        self.assertEqual(set(CATALOG), FEATURE_TOOLS)
+        self.assertEqual(len(CATALOG), 41)
+        self.assertTrue({"text_to_dialogue_convert", "music_compose", "dubbing_get", "voices_search"} <= CATALOG.keys())
+        for name in ("voices_delete", "voices_update", "workspace_groups_list",
+                     "service_accounts_api_keys_create", "user_get", "music_finetunes_create"):
+            with self.subTest(name=name), patch.object(api, "api_key") as key:
+                self.assertNotIn(name, CATALOG)
+                with self.assertRaisesRegex(ValueError, "Unknown elevenlabs Gateway tool"):
+                    dispatch("elevenlabs", name, {})
+                with self.assertRaises(KeyError):
+                    api.dispatch_tool(name, {})
+                key.assert_not_called()
+        # An upstream addition stays unavailable until explicitly selected.
+        with patch.dict(SPEC["paths"], {"/v1/music/admin": {"post": {
+            "x-fern-sdk-group-name": "music", "x-fern-sdk-method-name": "admin",
+        }}}):
+            self.assertEqual(set(build_catalog()), FEATURE_TOOLS)
+        with patch.dict(SPEC, {"paths": {}}), self.assertRaisesRegex(ValueError, "Missing ElevenLabs feature"):
+            build_catalog()
         self.assertNotIn("mureka", [p.id for p in PROVIDERS])
         self.assertEqual(load_committed_schemas(get_provider("elevenlabs")), generate_schemas(get_provider("elevenlabs")))
         for entry in CATALOG.values():
+            self.assertNotEqual(entry["effect"], "administration")
+            self.assertNotIn(entry["method"], {"DELETE", "PATCH", "PUT"})
             tool = entry["tool"]
             self.assertIn("Required inputs:", tool["description"])
             self.assertIn("Returns:", tool["description"])
