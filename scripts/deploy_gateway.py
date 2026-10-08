@@ -75,6 +75,7 @@ def build_lambda_zip() -> bytes:
                 "pydantic",
                 "jsonschema",
                 "remotion-lambda==4.0.515",
+                "opentimelineio==0.18.1",
                 "-t",
                 str(package),
                 "--quiet",
