@@ -1,13 +1,16 @@
 from __future__ import annotations
 
+import asyncio
 import json
 import os
+import tempfile
 import unittest
+from pathlib import Path
 from unittest.mock import AsyncMock, patch
 
 from langchain_core.language_models.chat_models import BaseChatModel
-from langchain_core.messages import AIMessage
-from langchain_core.outputs import ChatGeneration, ChatResult
+from langchain_core.messages import AIMessage, AIMessageChunk
+from langchain_core.outputs import ChatGeneration, ChatGenerationChunk, ChatResult
 from mcp import Tool
 from pydantic import PrivateAttr
 
@@ -52,6 +55,30 @@ class ScriptedModel(BaseChatModel):
         return ChatResult(generations=[ChatGeneration(message=step)])
 
 
+class StreamingModel(ScriptedModel):
+    _partial_received: asyncio.Event | None = PrivateAttr(default=None)
+
+    async def _astream(self, messages, stop=None, run_manager=None, **kwargs):
+        message = self._generate(messages, stop=stop, **kwargs).generations[0].message
+        if message.text:
+            midpoint = len(message.text) // 2
+            yield ChatGenerationChunk(message=AIMessageChunk(
+                content=message.text[:midpoint], id=message.id,
+            ))
+            if self._partial_received is not None:
+                await asyncio.wait_for(self._partial_received.wait(), timeout=1)
+            yield ChatGenerationChunk(message=AIMessageChunk(
+                content=message.text[midpoint:], id=message.id,
+            ))
+        yield ChatGenerationChunk(message=AIMessageChunk(
+            content="", id=message.id, tool_call_chunks=[
+                {"name": tool["name"], "args": json.dumps(tool["args"]),
+                 "id": tool["id"], "index": index}
+                for index, tool in enumerate(message.tool_calls)
+            ],
+        ))
+
+
 def call(name, args, call_id):
     return AIMessage(content="", tool_calls=[{"name": name, "args": args, "id": call_id}])
 
@@ -92,6 +119,48 @@ class DeepAgentTests(unittest.IsolatedAsyncioTestCase):
         self.assertFalse(model._steps)
         return result, studio, model
 
+    async def test_todos_persist_across_fresh_workers(self):
+        from agent.deep_agent.checkpoints import StudioCheckpointer
+
+        todos = [{"content": "Preview the first shot", "status": "in_progress"},
+                 {"content": "Assemble the approved shots", "status": "pending"}]
+
+        def plan(messages, tools):
+            self.assertIn("write_todos", tools)
+            return call("write_todos", {"todos": todos}, "plan")
+
+        _, studio, _ = await self.run_graph(self.request(), [plan, final()])
+        _, restored, _ = await self.run_graph(
+            self.request(session_items=json.loads(json.dumps(studio.session_items))), [final()],
+        )
+        session = restored.session_items[0]
+        saver = StudioCheckpointer(session["thread_id"], session["checkpoint"])
+        state = saver.get_tuple({"configurable": {"thread_id": session["thread_id"]}})
+        self.assertEqual(state.checkpoint["channel_values"]["todos"], todos)
+
+    async def test_planner_todos_do_not_replace_manager_plan(self):
+        from agent.deep_agent.checkpoints import StudioCheckpointer
+
+        todos = [{"content": "Deliver the edit", "status": "pending"}]
+
+        def planner(messages, tools):
+            self.assertIn("write_todos", tools)
+            self.assertNotIn("call_media_tool", tools)
+            return call("write_todos", {"todos": [
+                {"content": "Plan shot durations", "status": "completed"},
+            ]}, "child-plan")
+
+        _, studio, _ = await self.run_graph(self.request(), [
+            call("write_todos", {"todos": todos}, "manager-plan"),
+            call("task", {"subagent_type": "planner", "description": "Plan two shots"}, "planner"),
+            planner, AIMessage(content="Two shots planned."), final(),
+        ])
+        session = studio.session_items[0]
+        state = StudioCheckpointer(session["thread_id"], session["checkpoint"]).get_tuple(
+            {"configurable": {"thread_id": session["thread_id"]}},
+        )
+        self.assertEqual(state.checkpoint["channel_values"]["todos"], todos)
+
     async def test_skills_disclose_tools_only_after_relevant_read(self):
         def before(messages, tools):
             self.assertNotIn("call_media_tool", tools)
@@ -115,6 +184,33 @@ class DeepAgentTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(studio.tool_events[0].status, "succeeded")
         self.assertEqual(studio.session_items[0]["type"], SESSION_TYPE)
         self.assertEqual(studio.progress_events[-1].type, "RUN_FINISHED")
+
+    async def test_new_turn_reloads_changed_skill_metadata_and_tools(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            skill = root / "product-images" / "SKILL.md"
+            skill.parent.mkdir()
+            skill.write_text("---\nname: product-images\ndescription: Old image workflow\n"
+                             "metadata:\n  include_tools: call_media_tool\n---\nCreate an image.\n")
+            with patch("agent.deep_agent.runner.SKILLS_ROOT", root):
+                _, studio, _ = await self.run_graph(self.request(), [final()])
+                skill.write_text("---\nname: product-images\ndescription: Updated assembly workflow\n"
+                                 "metadata:\n  include_tools: call_editor_tool\n---\nAssemble an edit.\n")
+
+                def updated_index(messages, tools):
+                    self.assertIn("Updated assembly workflow", messages[0].text)
+                    self.assertNotIn("Old image workflow", messages[0].text)
+                    self.assertNotIn("call_editor_tool", tools)
+                    return read_skill()
+
+                def updated_tools(messages, tools):
+                    self.assertIn("call_editor_tool", tools)
+                    self.assertNotIn("call_media_tool", tools)
+                    self.assertIn("Assemble an edit.", messages[-1].text)
+                    return final()
+
+                await self.run_graph(self.request(session_items=studio.session_items),
+                                     [updated_index, updated_tools])
 
     async def test_approval_restores_in_fresh_worker_and_uses_exact_call(self):
         request = self.request()
@@ -183,6 +279,36 @@ class DeepAgentTests(unittest.IsolatedAsyncioTestCase):
         ])
         self.assertEqual(result.title, FINAL["title"])
 
+    async def test_parallel_subagents_preserve_edits_and_independent_files(self):
+        def verify_brief(messages, tools):
+            self.assertIn("Updated brief", messages[-1].text)
+            return call("read_file", {"file_path": "/audio.md"}, "read-audio")
+
+        def verify_audio(messages, tools):
+            self.assertIn("Quiet soundtrack", messages[-1].text)
+            return final()
+
+        tasks = AIMessage(content="", tool_calls=[
+            call("task", {"subagent_type": "planner", "description": "Update the brief"}, "planner").tool_calls[0],
+            call("task", {"subagent_type": "audio", "description": "Write the audio plan"}, "audio").tool_calls[0],
+        ])
+
+        def write_plan(messages, tools):
+            if "Renderhaus planner" in messages[0].text:
+                return call("edit_file", {"file_path": "/brief.md", "old_string": "Old brief",
+                                          "new_string": "Updated brief"}, "edit-brief")
+            self.assertIn("Renderhaus audio", messages[0].text)
+            return call("write_file", {"file_path": "/audio.md", "content": "Quiet soundtrack"}, "audio-plan")
+
+        _, studio, _ = await self.run_graph(self.request(), [
+            call("write_file", {"file_path": "/brief.md", "content": "Old brief"}, "brief"),
+            tasks, write_plan, write_plan, AIMessage(content="Plan ready."), AIMessage(content="Audio ready."),
+            call("read_file", {"file_path": "/brief.md"}, "read-brief"), verify_brief, verify_audio,
+        ])
+        await self.run_graph(self.request(session_items=json.loads(json.dumps(studio.session_items))), [
+            call("read_file", {"file_path": "/brief.md"}, "restored-brief"), verify_brief, verify_audio,
+        ])
+
     async def test_interrupt_inside_subagent_resumes_nested_task(self):
         request = self.request()
         studio = _context_from_request(request)
@@ -204,6 +330,26 @@ class DeepAgentTests(unittest.IsolatedAsyncioTestCase):
         _, studio, _ = await self.run_graph(self.request(autonomous=True), [read_skill(), bad, final()], gateway)
         gateway.call_tool.assert_not_awaited()
         self.assertFalse(any(e.status == "succeeded" for e in studio.tool_events))
+
+    async def test_malformed_dispatch_wrappers_return_tool_errors_without_dispatch(self):
+        invalid = [
+            {"arguments": {"prompt": "Hero"}},
+            {"tool_name": 42, "arguments": {"prompt": "Hero"}},
+            {"tool_name": IMAGE.name},
+            {"tool_name": IMAGE.name, "arguments": "not an object"},
+        ]
+
+        def recover(messages, tools):
+            self.assertEqual(messages[-1].status, "error")
+            return final()
+
+        for arguments in invalid:
+            with self.subTest(arguments=arguments):
+                gateway = Gateway()
+                await self.run_graph(self.request(), [
+                    read_skill(), call("call_media_tool", arguments, "bad-wrapper"), recover,
+                ], gateway)
+                gateway.call_tool.assert_not_awaited()
 
     async def test_project_files_cannot_write_into_shipped_skills(self):
         def check(messages, tools):
@@ -305,6 +451,78 @@ class DeepAgentTests(unittest.IsolatedAsyncioTestCase):
             call(search.name, {"query": "product image"}, "search"), read_skill(), image(), final(),
         ], gateway)
         self.assertEqual([item.args[0] for item in gateway.call_tool.await_args_list], [search.name, IMAGE.name])
+
+    async def test_model_text_streams_before_the_response_finishes(self):
+        request = self.request()
+        studio = _context_from_request(request)
+        received = []
+        partial = asyncio.Event()
+        text = "Planning the product shot."
+
+        def progress(event):
+            received.append(event)
+            if event.type == "MODEL_UPDATE" and event.message == text[:len(text) // 2]:
+                partial.set()
+
+        studio.progress_sink = progress
+        model = StreamingModel([
+            AIMessage(content=text, id="plan", tool_calls=read_skill().tool_calls), final(),
+        ])
+        model._partial_received = partial
+        await run_with_servers(request, studio, [Gateway()], model=model)
+        self.assertTrue(partial.is_set())
+        updates = [event for event in received if event.type == "MODEL_UPDATE"]
+        self.assertEqual(updates[0].status, "running")
+        self.assertEqual(updates[-1].message, text)
+        self.assertEqual(updates[-1].status, "completed")
+        self.assertEqual(len({event.id for event in updates}), 1)
+        self.assertEqual(len([event for event in studio.progress_events if event.type == "MODEL_UPDATE"]), 1)
+        self.assertFalse(model._steps)
+
+    async def test_nested_model_streams_keep_namespace_and_hide_tool_arguments(self):
+        request = self.request()
+        studio = _context_from_request(request)
+        received = []
+        studio.progress_sink = received.append
+        secret = "ARGUMENTS_MUST_NOT_BE_PROGRESS"
+        child_text = "The audio plan is ready."
+        model = StreamingModel([
+            AIMessage(content="Delegating the audio plan.", id="same", tool_calls=call("task", {
+                "subagent_type": "audio", "description": secret,
+            }, "delegate").tool_calls),
+            AIMessage(content=child_text, id="same"), final(),
+        ])
+        await run_with_servers(request, studio, [Gateway()], model=model)
+        updates = [event for event in received if event.type == "MODEL_UPDATE"]
+        self.assertTrue(any(event.status == "running" and event.message == child_text[:len(child_text) // 2]
+                            for event in updates))
+        completed = [event for event in updates if event.status == "completed"]
+        self.assertEqual({event.message for event in completed},
+                         {"Delegating the audio plan.", "The audio plan is ready."})
+        self.assertEqual(len({event.id for event in completed}), 2)
+        self.assertNotIn(secret, "\n".join(event.message for event in updates))
+
+    async def test_internal_summaries_are_not_customer_progress(self):
+        from deepagents import create_deep_agent
+        from deepagents.middleware.summarization import SummarizationMiddleware
+
+        _, previous, _ = await self.run_graph(self.request(), [final()])
+        request = self.request(session_items=previous.session_items)
+        studio = _context_from_request(request)
+        received = []
+        studio.progress_sink = received.append
+        summary = ScriptedModel([AIMessage(content="INTERNAL SUMMARY MUST STAY PRIVATE")])
+
+        def compact(**kwargs):
+            kwargs["middleware"].append(SummarizationMiddleware(
+                model=summary, backend=kwargs["backend"], trigger=("messages", 2), keep=("messages", 1),
+            ))
+            return create_deep_agent(**kwargs)
+
+        with patch("agent.deep_agent.runner.create_deep_agent", side_effect=compact):
+            await self.run_graph(request, [final()], studio=studio)
+        self.assertFalse(summary._steps)
+        self.assertNotIn("INTERNAL SUMMARY", "\n".join(event.message for event in received))
 
     async def test_existing_render_survives_fresh_worker_and_poll_uses_canonical_ids(self):
         render = Tool(name="Remotion___render_timeline", description="Start render",

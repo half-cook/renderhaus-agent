@@ -74,6 +74,24 @@ only packages existing project media, so it is exempt from approval (`APPROVAL_E
 `general-purpose` subagent also has no provider dispatch. All roles share project files and
 read-only Studio context. They inherit native approval policy and have no shell tool.
 
+The manager and each role explicitly install `TodoListMiddleware`. The installed 0.7.23
+graph does not add it automatically. Multi-shot and multi-step requests can track `write_todos`
+state across turns, while child todo lists remain separate from the manager plan. Subagent
+task results merge only changed files, preventing unchanged sibling snapshots from replacing
+another role's edits. Concurrent intentional edits to the same file still need task ownership.
+
+Packaged skill metadata reloads on each ordinary turn, so skill descriptions and
+`metadata.include_tools` updates reach existing conversations. Approval resumes retain their
+checkpointed state. Dispatch wrapper validation runs before the approval predicate; malformed
+calls produce normal tool validation feedback, and valid calls keep the same approval policy.
+
+Model text streams into the existing Studio `MODEL_UPDATE` progress events before each
+response finishes. Updates accumulate up to the existing 1,000-character limit and complete
+under the same event ID. Child namespaces separate progress IDs. Tool arguments, reasoning
+blocks, and middleware-internal summary calls do not become customer progress.
+
+See [the 0.7.23 audit](DEEP_AGENT_AUDIT.md) for feature coverage, fixes, and deferred work.
+
 ## Memory and durable threads
 
 The `CompositeBackend` routes `/skills/` to a virtual, protected filesystem rooted at the

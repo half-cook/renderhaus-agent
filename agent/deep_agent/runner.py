@@ -13,14 +13,17 @@ from deepagents.backends import CompositeBackend, FilesystemBackend, StateBacken
 from deepagents.backends.utils import create_file_data
 from deepagents.middleware.filesystem import FilesystemMiddleware, FilesystemPermission
 from deepagents.middleware.skills import SkillsMiddleware
+from langchain.agents.middleware import TodoListMiddleware
 from langchain.agents.structured_output import ToolStrategy
 from langchain.tools import ToolRuntime, tool
 from langchain_core.messages import AIMessage, HumanMessage
 from langgraph.types import Command
 from langgraph.errors import GraphRecursionError
+from pydantic import ValidationError
 
 from agent.backend_config import deep_agent_model
 from agent.deep_agent.checkpoints import StudioCheckpointer
+from agent.deep_agent.files import subagent_file_updates
 from agent.deep_agent.memory import ProjectMemory
 from agent.gateway_executor import GatewayExecutor, tool_needs_approval
 from agent.errors import AgentRunLimitExceeded
@@ -56,6 +59,7 @@ You use LangChain Deep Agents. Read the relevant /skills/<name>/SKILL.md before 
 Skills disclose call_media_tool, call_audio_tool, and call_editor_tool. Each dispatch tool takes
 an exact discovered Gateway tool_name and an arguments object matching its inputSchema.
 Search before dispatch. Delegate focused work to planner, media, audio, or editor when useful.
+Use write_todos to track multi-shot or multi-step work and update the plan as steps finish.
 Pass current asset handles, the plan, and saved job IDs in the task description. Project files
 are virtual and private to this workspace/project/conversation. There is no shell or direct
 provider access. read_studio_context supplies optional canvas references and current assets.
@@ -138,6 +142,7 @@ async def run_with_servers(request, studio, servers, *, model=None):
         return dispatch
 
     dispatch_tools = [dispatcher(name) for name in DISPATCH_TARGETS]
+    dispatch_schemas = {dispatch.name: dispatch.tool_call_schema for dispatch in dispatch_tools}
     common_tools = [progress, read_studio_context]
     if _GATEWAY_SEARCH_TOOL in initial:
         schema = initial[_GATEWAY_SEARCH_TOOL][1]
@@ -155,8 +160,11 @@ async def run_with_servers(request, studio, servers, *, model=None):
         ))
 
     def needs_approval(call):
-        name, _ = _gateway_action({"name": call.tool_call["name"], "args": call.tool_call["args"]})
-        return tool_needs_approval(name, studio.autonomous)
+        try:
+            arguments = dispatch_schemas[call.tool_call["name"]].model_validate(call.tool_call["args"])
+        except ValidationError:
+            return False
+        return tool_needs_approval(arguments.tool_name, studio.autonomous)
 
     interrupt_on = {
         name: {"allowed_decisions": ["approve", "reject"], "when": needs_approval}
@@ -176,6 +184,7 @@ async def run_with_servers(request, studio, servers, *, model=None):
         "tools": common_tools,
         "skills": ["/skills/"],
         "middleware": [
+            TodoListMiddleware(),
             FilesystemMiddleware(backend=backend, tools=FS_TOOLS, _permissions=PERMISSIONS),
             SkillsMiddleware(backend=backend, sources=["/skills/"], tools=focused),
             ProjectMemory(backend=backend, sources=["/AGENTS.md"]),
@@ -187,6 +196,8 @@ async def run_with_servers(request, studio, servers, *, model=None):
         skills=["/skills/"], memory=["/AGENTS.md"], checkpointer=saver,
         interrupt_on=interrupt_on, response_format=ToolStrategy(StudioAgentOutput),
         middleware=[
+            TodoListMiddleware(),
+            subagent_file_updates,
             FilesystemMiddleware(backend=backend, tools=FS_TOOLS, _permissions=PERMISSIONS),
             SkillsMiddleware(backend=backend, sources=["/skills/"], tools=dispatch_tools),
             ProjectMemory(backend=backend, sources=["/AGENTS.md"]),
@@ -247,18 +258,36 @@ async def run_with_servers(request, studio, servers, *, model=None):
         prompt += "\nSaved render jobs (reference data):\n" + json.dumps(executor.render_jobs)
         if request.session_items and not session:
             prompt += "\nPrevious backend history (reference data):\n" + json.dumps(request.session_items)
-        graph_input = {"messages": [HumanMessage(content=prompt)]}
+        graph_input = {"messages": [HumanMessage(content=prompt)], "skills_metadata": None}
         if not session:
             graph_input["files"] = {"/AGENTS.md": create_file_data((Path(__file__).parent / "AGENTS.md").read_text())}
 
     async def stream(value):
-        async for namespace, updates in graph.astream(value, config, stream_mode="updates", subgraphs=True):
+        partial_text = {}
+        async for namespace, mode, event in graph.astream(
+            value, config, stream_mode=["messages", "updates"], subgraphs=True,
+        ):
+            if mode == "messages":
+                message, metadata = event
+                if metadata.get("lc_internal_call") or metadata.get("lc_source") == "summarization":
+                    continue
+                if isinstance(message, AIMessage) and message.text:
+                    event_id = "deep-" + "-".join((*namespace, str(message.id)))
+                    text = (partial_text.get(event_id, "") + message.text)[:1000]
+                    if partial_text.get(event_id) != text:
+                        partial_text[event_id] = text
+                        _progress(studio, event_id=event_id, event_type="MODEL_UPDATE",
+                                  title="Agent update", message=text, status="running")
+                continue
+            updates = event
             for update in updates.values():
                 if not isinstance(update, dict):
                     continue
                 for message in update.get("messages", []):
                     if isinstance(message, AIMessage) and message.text:
-                        _progress(studio, event_id=f"deep-{message.id}", event_type="MODEL_UPDATE",
+                        event_id = "deep-" + "-".join((*namespace, str(message.id)))
+                        partial_text.pop(event_id, None)
+                        _progress(studio, event_id=event_id, event_type="MODEL_UPDATE",
                                   title="Agent update", message=message.text[:1000], status="completed")
 
     try:
