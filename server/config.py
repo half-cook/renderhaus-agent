@@ -20,6 +20,7 @@ DEFAULT_ENV = {
     "SEEDANCE_DRY_RUN": "true",
     "SEEDREAM_MODEL": "seedream-5-0-lite-260128",
     "SEEDREAM_DRY_RUN": "true",
+    "FAL_DRY_RUN": "true",
     "FISH_AUDIO_DRY_RUN": "true",
     "FISH_AUDIO_MODEL": "s2.1-pro-free",
     "ELEVENLABS_DRY_RUN": "false",

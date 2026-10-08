@@ -341,6 +341,7 @@ async def studio_status() -> dict[str, Any]:
         "mode": "local",
         "agent": bool(os.getenv("OPENAI_API_KEY")),
         "dry_run": {
+            "fal": os.getenv("FAL_DRY_RUN", "true").lower() != "false",
             "seedance": os.getenv("SEEDANCE_DRY_RUN", "true").lower() != "false",
             "seedream": os.getenv("SEEDREAM_DRY_RUN", os.getenv("SEEDANCE_DRY_RUN", "true")).lower()
             != "false",
@@ -1046,6 +1047,8 @@ _MEDIA_CREATION_TOOLS = frozenset(
         "image_to_image",
         "text_to_video",
         "image_to_video",
+        "reference_to_video",
+        "video_to_video",
         "render_timeline",
         "text_to_music",
         "create_instrumental",

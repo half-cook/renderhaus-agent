@@ -52,6 +52,7 @@ const MIGRATED_KEY = "renderhaus.studio.server-migration.v2";
 const HISTORY_LIMIT = 50;
 
 const PREFERRED: Record<string, Record<string, string | number>> = {
+  fal: { num_frames: 81, frames_per_second: 16, aspect_ratio: "16:9", resolution: "720p" },
   seedance: { duration_seconds: 5, aspect_ratio: "16:9", resolution: "720p" },
   seedream: { aspect_ratio: "1:1", size: "2K", response_format: "url" },
   fish_audio: { voice: "Energetic Male", output_format: "mp3", model: "s2.1-pro-free" },

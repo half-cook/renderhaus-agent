@@ -151,6 +151,30 @@ REMOTION_COST_CENTS = 8
 POLLING_TOOLS = {"get_video_task", "query_music_task", "get_music_task", "get_render_progress"}
 
 
+# fal published per-video-second rates checked 2026-10-08, using num_frames / 16:
+# https://fal.ai/models/fal-ai/wan-vace-14b (480p $0.04, 580p $0.06, 720p $0.08)
+# https://fal.ai/models/fal-ai/wan-22-vace-fun-a14b/depth
+# (480p $0.05, 580p $0.075, 720p $0.10; same for inpainting/outpainting/reframe).
+# TODO: Confirm Wan 2.2 freeform and pose pricing, and auto/240p/360p rates.
+def _fal_cost(tool: str, arguments: dict[str, Any]) -> GenerationCost:
+    from providers.fal import api, queue, wan
+
+    if tool == "list_fal_models":
+        return GenerationCost(0, 0)
+    if tool not in wan.GENERATING_TOOLS:
+        raise ValueError("Unknown fal generation tool.")
+    from providers.registry import schema_from_callable
+    from providers.contracts import validate_tool_arguments
+
+    schema = schema_from_callable(tool, api.TOOL_HANDLERS[tool])["inputSchema"]
+    cleaned = validate_tool_arguments("fal", tool, arguments, schema)
+    if queue.dry_run():
+        return GenerationCost(0, 0)
+    endpoint = wan.endpoint_for(tool, cleaned)
+    cents = wan.price_cents(endpoint, cleaned.get("resolution", "720p"), cleaned.get("num_frames", 81))
+    return _with_fee(round(cents))
+
+
 def cost_for(provider: str, tool: str, arguments: dict[str, Any]) -> GenerationCost:
     """Real cost (provider + disclosed fee) for one call to `provider`/`tool`.
     Called both before dispatch (to check affordability) and after success
@@ -159,6 +183,8 @@ def cost_for(provider: str, tool: str, arguments: dict[str, Any]) -> GenerationC
     """
     if tool in POLLING_TOOLS:
         return GenerationCost(provider_cents=0, fee_cents=0)
+    if provider == "fal":
+        return _fal_cost(tool, arguments)
     if provider == "seedance":
         return _seedance_cost(arguments)
     if provider == "seedream":

@@ -2,6 +2,18 @@ import type { AgentToolEvent, CreativeNodeKind, PortDataType, ToolDefinition } f
 
 const CREATIVE_TOOLS: ToolDefinition[] = [
   {
+    id: "video.falGenerate",
+    displayName: "Wan VACE video",
+    description: "Generate a Wan VACE clip from a prompt",
+    category: "video",
+    providerId: "fal",
+    toolName: "text_to_video",
+    inputPorts: [{ id: "prompt", label: "Prompt", dataType: "text", targetField: "prompt", required: true }],
+    outputPorts: [{ id: "video", label: "Video", dataType: "video" }],
+    primaryFields: ["prompt", "model", "aspect_ratio", "num_frames", "frames_per_second", "resolution"],
+    pollTool: "get_video_task",
+  },
+  {
     id: "image.generate",
     displayName: "Image",
     description: "Generate a still from a prompt",
@@ -111,7 +123,10 @@ export function toolForAgentArtifact(
   // agent used an input asset or a composition tool, placing the result must
   // not create an invisible dependency on another artifact in the run.
   if (kind === "image") return toolById("image.generate");
-  if (kind === "video") return toolById("video.generate");
+  if (kind === "video") {
+    const provider = `${event?.provider || ""} ${event?.name || ""}`.toLowerCase();
+    return toolById(provider.includes("fal") ? "video.falGenerate" : "video.generate");
+  }
   const source = `${event?.provider || ""} ${event?.name || ""}`.toLowerCase();
   return toolById(
     source.includes("fish_audio") || source.includes("speech") || source.includes("voice")
