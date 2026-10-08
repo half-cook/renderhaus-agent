@@ -49,18 +49,25 @@ this conversion when they support the project's MCP version.
 
 ## Skills and delegation
 
-Six packaged `SKILL.md` files live under `agent/deep_agent/skills/`.
+Fourteen packaged `SKILL.md` files live under `agent/deep_agent/skills/`.
 Deep Agents reads their metadata first. Full instructions enter context only when a relevant
 skill is read. `metadata.include_tools` discloses the corresponding dispatch tools.
 
 | Skill | Workflow |
 | --- | --- |
-| `video-short` | Brief, inexpensive still preview, short Seedance clips, audio if needed, Remotion export. |
+| `video-short` | Brief, inexpensive still preview, short Wan clips, explicit Seedance overrides, audio if needed, Remotion export. |
 | `product-images` | Seedream generation or reference-based editing, one still before additional variants. |
-| `storyboard-shots` | Shot plan, consistent Seedream keyframes, approved stills into Seedance image-to-video. |
+| `storyboard-shots` | Shot plan, consistent Seedream keyframes, approved stills into Wan image-to-video with explicit provider overrides. |
 | `audio` | ElevenLabs voiceover/music/SFX or Fish Audio speech if that target is available. |
 | `final-assembly` | Existing asset handles into a typed Remotion timeline, saved identifiers, poll the final MP4. |
 | `refinement` | Edit the referenced version and reuse unaffected media; prefer timeline edits for timing changes. |
+
+Eight additional intent skills are `t2v`, `i2v`, `edit-v2v`, `still-then-video`, `audio-bed`,
+`motion-graphics`, `continuity-qc`, and `resolve-handoff`. The six original names remain.
+Their wrapper and exact Gateway tool mappings are listed in [Skills and routing](SKILLS.md).
+The deterministic policy router proposes the selected skill and tool in the graph input and
+Studio context. Unsupported providers and local Resolve workflows remain explicit pending
+routes, with all 55 workbook cases retained in offline tests, 20 active and 35 skipped.
 
 Fish Audio is not in the current active provider catalog. Its speech tool is usable only when
 Gateway discovers an available Fish Audio target. Skills explicitly report unavailable tools.
@@ -73,6 +80,16 @@ only packages existing project media, so it is exempt from approval (`APPROVAL_E
 `agent/gateway_executor.py`); every paid tool still follows the native approval policy. The overridden
 `general-purpose` subagent also has no provider dispatch. All roles share project files and
 read-only Studio context. They inherit native approval policy and have no shell tool.
+
+Provider/model licence and region gates live in `routing_policy.json` and are enforced in the
+shared executor even after approval. MiniMax H3 and Hunyuan are disabled by default and never
+train QC. Only completed Apache Wan provenance can enter the continuity training hook.
+The optional `RENDERHAUS_AUTONOMOUS_RUN_CAP_CENTS` caps estimated paid spend for one autonomous
+job. It is off when unset and requires a stable job ID when enabled. Reservations persist
+before submission, share one executor across subagents, and stop unknown-priced or excessive
+paid dispatch while allowing job recovery polls. See [Skills and routing](SKILLS.md) for the
+policy schema, cached/lazy SigLIP and DINOv2 QC, unconfigured face interface, DINOv3 gating,
+and all pending-provider drafts.
 
 ## Memory and durable threads
 
@@ -108,8 +125,13 @@ large, long-lived conversations need retention limits or a durable saver.
 ## Approval and recovery behavior
 
 Native `interrupt_on` uses a `when` predicate. Non-autonomous provider dispatch pauses;
-autonomous media runs proceed under the existing spending authorization. ElevenLabs
-administrative tools still interrupt in autonomous mode. Only approve/reject decisions are
+autonomous standard media runs proceed under the existing spending authorization.
+Kling and Runway premium video calls now interrupt autonomous runs by default. The shared
+policy adds an estimate from `server.billing_rates.cost_for` to approval descriptions and
+visible labels; unconfirmed prices remain unknown. `RENDERHAUS_PREMIUM_VIDEO_APPROVAL=false`
+disables the additional autonomous video pause. ElevenLabs administrative tools still interrupt
+in autonomous mode. Existing non-autonomous approval rules remain intact, including free-tool
+behavior, and free NLE packaging remains exempt. Only approve/reject decisions are
 allowed. Nested and batched interrupts become existing Studio approval cards with exact
 provider names, arguments, and stable call IDs.
 
@@ -129,7 +151,7 @@ reconciliation. Neither backend supplies an exactly-once distributed execution g
 ## AgentCore and verification
 
 `Dockerfile.agentcore` defaults to Deep Agents and retains Codex for explicit fallback.
-It installs pinned dependencies and verifies the Deep Agents version and all six packaged
+It installs pinned dependencies and verifies the Deep Agents version and all fourteen packaged
 skills during the build. The entrypoint remains `python -m agent.studio_agent_next`.
 No Studio UI or database schema change is required.
 
@@ -143,6 +165,7 @@ live model judgment, live provider credentials, generated media playback, or bro
 export RENDERHAUS_SECRETS_NAME=''
 export SEEDANCE_DRY_RUN=true SEEDREAM_DRY_RUN=true ELEVENLABS_DRY_RUN=true
 export FISH_AUDIO_DRY_RUN=true REMOTION_DRY_RUN=true
+export KLING_DRY_RUN=true RUNWAY_DRY_RUN=true FAL_DRY_RUN=true
 .venv/bin/python -m unittest discover -s tests -q
 .venv/bin/ruff check agent lambdas scripts server providers
 .venv/bin/python scripts/ci_check.py
