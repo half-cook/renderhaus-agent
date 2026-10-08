@@ -15,6 +15,18 @@ _RATES = {
 }
 
 
+def _seconds(value: Any, field: str, *, positive: bool = False) -> Fraction:
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise ValueError(f"{field} must be a finite number of seconds.")
+    try:
+        seconds = Fraction(str(value))
+    except (ValueError, ZeroDivisionError) as exc:
+        raise ValueError(f"{field} must be a finite number of seconds.") from exc
+    if seconds < 0 or (positive and seconds == 0):
+        raise ValueError(f"{field} must be {'greater than' if positive else 'at least'} zero.")
+    return seconds
+
+
 @dataclass(frozen=True, slots=True)
 class FrameRate:
     value: Fraction
@@ -50,18 +62,20 @@ class FrameRate:
         return self.nominal * 86400 - self.dropped * (1440 - 144)
 
     def seconds_to_frames(self, value: Any, field: str, *, positive: bool = False) -> int:
-        if isinstance(value, bool) or not isinstance(value, (int, float)):
-            raise ValueError(f"{field} must be a finite number of seconds.")
-        try:
-            seconds = Fraction(str(value))
-        except (ValueError, ZeroDivisionError) as exc:
-            raise ValueError(f"{field} must be a finite number of seconds.") from exc
-        if seconds < 0 or (positive and seconds == 0):
-            raise ValueError(f"{field} must be {'greater than' if positive else 'at least'} zero.")
+        seconds = _seconds(value, field, positive=positive)
         frames = int(seconds * self.value + Fraction(1, 2))
         if positive and frames == 0:
             raise ValueError(f"{field} must cover at least one frame.")
         return frames
+
+    def clip_range(self, start: Any, duration: Any) -> tuple[int, int]:
+        start_seconds = _seconds(start, "clip.start")
+        end_seconds = start_seconds + _seconds(duration, "clip.duration", positive=True)
+        start_frame = int(start_seconds * self.value + Fraction(1, 2))
+        duration_frames = int(end_seconds * self.value + Fraction(1, 2)) - start_frame
+        if duration_frames <= 0:
+            raise ValueError("clip.duration must cover at least one frame at its timeline position.")
+        return start_frame, duration_frames
 
     def parse_timecode(self, value: str) -> int:
         match = _TIMECODE.fullmatch(value)

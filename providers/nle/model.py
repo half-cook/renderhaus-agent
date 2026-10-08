@@ -140,8 +140,7 @@ def _clip(raw: Any, track_id: str, assets: dict[str, Asset], rate: FrameRate) ->
             raise ValueError(f"Clip {clip_id} has unsupported {field}; bake it before export.")
     if item.get("effects") or item.get("enabled", True) is not True:
         raise ValueError(f"Clip {clip_id} has effects or disabled state; bake it before export.")
-    start = rate.seconds_to_frames(item.get("start", 0), "clip.start")
-    duration = rate.seconds_to_frames(item.get("duration"), "clip.duration", positive=True)
+    start, duration = rate.clip_range(item.get("start", 0), item.get("duration"))
     source_in = rate.seconds_to_frames(item.get("sourceIn", 0), "clip.sourceIn")
     if "sourceOut" in item:
         source_out = rate.seconds_to_frames(item["sourceOut"], "clip.sourceOut")

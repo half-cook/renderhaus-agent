@@ -152,18 +152,21 @@ def fcpxml_text(timeline: Timeline, paths: dict[str, str]) -> str:
             "offset": timeline.rate.xml_time(offset),
             "start": timeline.rate.xml_time(asset.source_start + clip.source_in),
             "duration": timeline.rate.xml_time(clip.duration),
-            "srcEnable": "audio" if track.kind == "audio" else ("all" if asset.has_audio else "video"),
+            "srcEnable": "audio" if track.kind == "audio" else (
+                "all" if asset.has_audio and clip.volume else "video"),
             "audioRole": "dialogue" if asset.has_audio else "",
         }
         if not asset.has_audio:
             attributes.pop("audioRole")
         if lane is not None:
             attributes["lane"] = str(lane)
+        if track.kind == "audio" and clip.volume == 0:
+            attributes["enabled"] = "0"
         element = ET.SubElement(parent, "asset-clip", attributes)
         if track.kind != "audio":
             ET.SubElement(element, "adjust-conform", {"type": "fit" if clip.fit == "contain" else "fill"})
-        if asset.has_audio and clip.volume != 1:
-            gain = f"{20 * math.log10(clip.volume):.6f}dB" if clip.volume else "-96dB"
+        if asset.has_audio and 0 < clip.volume < 1:
+            gain = f"{20 * math.log10(clip.volume):.6f}dB"
             ET.SubElement(element, "adjust-volume", {"amount": gain})
         return element
 
