@@ -111,6 +111,10 @@ class SkillContracts(unittest.TestCase):
             route_intent("generate with Veo 3.1 native audio dialogue").status, "pending"
         )
         self.assertIsNone(route_intent("generate with Veo 3.1 native audio dialogue").tool)
+        for provider in ["MiniMax H3", "Hunyuan"]:
+            route = route_intent(f"generate a video with {provider}")
+            self.assertEqual(route.status, "blocked")
+            self.assertIsNone(route.tool)
 
     def test_explicit_runway_modality_is_preserved(self):
         from agent.deep_agent.routing import route_intent
@@ -128,6 +132,9 @@ class SkillContracts(unittest.TestCase):
             if entry["status"] == "pending":
                 self.assertIsNone(entry["gateway_tool"])
                 self.assertIn("provider pending", entry["reason"])
+            elif entry["status"] == "blocked":
+                self.assertIsNone(entry["gateway_tool"])
+                self.assertIn("blocked", entry["reason"])
             else:
                 self.assertTrue(entry["gateway_tool"] in known)
         self.assertEqual(

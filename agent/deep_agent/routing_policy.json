@@ -428,9 +428,29 @@
       "gateway_tool": "Runway___image_to_video",
       "skill": "i2v",
       "status": "ready"
+    },
+    "minimax_h3_t2v": {
+      "gateway_tool": null,
+      "status": "blocked",
+      "reason": "Provider MiniMax H3 is blocked by default in routing_policy.json."
+    },
+    "hunyuan_t2v": {
+      "gateway_tool": null,
+      "status": "blocked",
+      "reason": "Provider Hunyuan is blocked by default in routing_policy.json."
     }
   },
   "rules": [
+    {
+      "pattern": "\\bhunyuan\\b",
+      "skill": "t2v",
+      "abstract_tool": "hunyuan_t2v"
+    },
+    {
+      "pattern": "mini.?max(?:\\s*h3)?",
+      "skill": "t2v",
+      "abstract_tool": "minimax_h3_t2v"
+    },
     {
       "pattern": "still.*approval.*animat|still.*then.*animat",
       "skill": "still-then-video",

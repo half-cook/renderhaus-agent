@@ -49,7 +49,11 @@ def route_intent(prompt: str, *, region: str | None = None) -> Route:
         entry = TOOL_MAP[abstract]
         pending = POLICY["pending_skills"].get(skill) or entry.get("reason")
         if pending:
-            return Route(skill=skill, status="pending", reason=pending)
+            return Route(
+                skill=skill,
+                status=entry["status"] if entry["status"] != "ready" else "pending",
+                reason=pending,
+            )
         tool = entry["gateway_tool"]
         if tool:
             blocker = policy_blocker(tool, {}, region=region)
@@ -128,6 +132,8 @@ def policy_blocker(name: str, arguments: dict, *, region: str | None = None) -> 
     if policy["allowed_regions"] and region not in policy["allowed_regions"]:
         return f"Provider {provider} needs an allowed customer region before dispatch."
     model = effective_model(provider, tool, arguments)
+    if model is not None and not isinstance(model, str):
+        return f"Model for {provider} must be a string."
     if policy.get("models") and model not in policy["models"]:
         return f"Model {model} is not allowed for {provider}."
     model_policy = policy.get("model_policies", {}).get(model, {})
@@ -147,6 +153,8 @@ def policy_blocker(name: str, arguments: dict, *, region: str | None = None) -> 
 def training_eligible(asset: dict) -> bool:
     provider = str(asset.get("provider", "")).lower()
     policy = POLICY["providers"].get(provider, {})
+    if not isinstance(asset.get("model"), str):
+        return False
     model_policy = policy.get("model_policies", {}).get(asset.get("model"), {})
     return bool(
         policy.get("enabled")

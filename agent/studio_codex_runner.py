@@ -38,7 +38,7 @@ async def run_with_servers(request, studio, harness: CodexHarness, servers):
             "This Codex conversation belongs to a different workspace or conversation."
         )
     legacy = [] if session else request.session_items
-    executor = GatewayExecutor(studio, servers, session)
+    executor = GatewayExecutor(studio, servers, session, run_scope=_scope(request))
     render_jobs = executor.render_jobs
     execute = executor.execute
     pending_call = None
@@ -64,6 +64,7 @@ async def run_with_servers(request, studio, harness: CodexHarness, servers):
 
     initial = await available()
     def save_checkpoint(snapshot):
+        snapshot["spending"] = executor.snapshot()["spending"]
         snapshot["scope"] = _conversation_scope(request)
         snapshot["source_versions"] = studio.source_versions
         snapshot["working_assets"] = studio.working_assets

@@ -22,6 +22,7 @@ from langgraph.errors import GraphRecursionError
 from agent.backend_config import deep_agent_model
 from agent.deep_agent.checkpoints import StudioCheckpointer
 from agent.deep_agent.memory import ProjectMemory
+from agent.deep_agent.routing import route_intent, estimate_cost
 from agent.gateway_executor import GatewayExecutor, tool_needs_approval
 from agent.errors import AgentRunLimitExceeded
 from agent.studio_agent_next import (
@@ -81,7 +82,7 @@ async def run_with_servers(request, studio, servers, *, model=None):
     thread_id = _conversation_scope(request)
     if session and (session.get("version") != 1 or session.get("scope") != thread_id):
         raise ValueError("This Deep Agents conversation belongs to a different workspace or conversation.")
-    executor = GatewayExecutor(studio, servers, session)
+    executor = GatewayExecutor(studio, servers, session, run_scope=_scope(request))
     await executor.connect_tools(session)
     initial = await executor.available()
     aliases = defaultdict(deque)
@@ -109,6 +110,7 @@ async def run_with_servers(request, studio, servers, *, model=None):
     async def read_studio_context() -> dict:
         """Read optional canvas references, managed assets, saved jobs and discovered tool schemas."""
         return {
+            "intent_route": route_intent(request.prompt).public(),
             "references": _input_for("", list(studio.nodes)),
             "assets": list(studio.working_assets.values()),
             "render_jobs": executor.render_jobs,
@@ -158,8 +160,13 @@ async def run_with_servers(request, studio, servers, *, model=None):
         name, _ = _gateway_action({"name": call.tool_call["name"], "args": call.tool_call["args"]})
         return tool_needs_approval(name, studio.autonomous)
 
+    def approval_description(tool_call, state, runtime):
+        name, arguments = _gateway_action({"name": tool_call["name"], "args": tool_call["args"]})
+        return f"Approve {name}. {estimate_cost(name, arguments).description}"
+
     interrupt_on = {
-        name: {"allowed_decisions": ["approve", "reject"], "when": needs_approval}
+        name: {"allowed_decisions": ["approve", "reject"], "when": needs_approval,
+               "description": approval_description}
         for name in DISPATCH_TARGETS
     }
     roles = [
@@ -244,6 +251,7 @@ async def run_with_servers(request, studio, servers, *, model=None):
         graph_input = Command(resume=resume)
     else:
         prompt = _input_for(request.prompt, list(studio.nodes))
+        prompt += "\nIntent route proposal (policy data):\n" + json.dumps(route_intent(request.prompt).public())
         prompt += "\nSaved render jobs (reference data):\n" + json.dumps(executor.render_jobs)
         if request.session_items and not session:
             prompt += "\nPrevious backend history (reference data):\n" + json.dumps(request.session_items)
