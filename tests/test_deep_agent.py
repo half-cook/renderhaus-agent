@@ -341,3 +341,21 @@ class DeepAgentTests(unittest.IsolatedAsyncioTestCase):
         with patch.dict(os.environ, {"RENDERHAUS_AGENT_BACKEND": "invalid"}):
             with self.assertRaises(ValueError):
                 agent_backend()
+
+    async def test_kling_and_runway_dispatch_through_media_role_with_approval(self):
+        for name in ("Kling___text_to_video", "Runway___video_to_video"):
+            with self.subTest(tool=name):
+                tool = Tool(name=name, description="Paid video", inputSchema=IMAGE.input_schema)
+                request = self.request()
+                studio = _context_from_request(request)
+                gateway = Gateway(tools=[tool], result={"status": "queued", "job_id": "job-1"})
+                media = call("call_media_tool", {"tool_name": name, "arguments": {"prompt": "Hero"}}, "paid")
+                with self.assertRaises(StudioAgentApprovalRequired) as paused:
+                    await run_with_servers(request, studio, [gateway], model=ScriptedModel([read_skill(), media]))
+                self.assertEqual(paused.exception.approvals[0].tool_name, name)
+                gateway.call_tool.assert_not_awaited()
+                approval = paused.exception.approvals[0]
+                resumed = self.request(session_items=studio.session_items, resume_state=paused.exception.state,
+                                       approval_decisions=[StudioApprovalDecision(call_id=approval.call_id, decision="approve")])
+                await self.run_graph(resumed, [final()], gateway)
+                gateway.call_tool.assert_awaited_once_with(name, {"prompt": "Hero"})

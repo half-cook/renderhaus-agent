@@ -142,7 +142,7 @@ class RunwayAgentPollingTests(unittest.IsolatedAsyncioTestCase):
         gateway.call_tool = AsyncMock(side_effect=[{"status": "queued", "job_id": "job"}, {"status": "succeeded", "job_id": "job", "image_url": "https://cdn.example.test/still.png"}])
         harness = FakeHarness([{"callId": "runway-poll", "tool": "call_gateway_tool", "arguments": {"tool_name": tool.name, "arguments_json": '{"job_id":"job"}'}}])
         studio = StudioAgentContext(autonomous=True)
-        with patch("agent.studio_codex_runner.asyncio.sleep", new=AsyncMock()) as sleep:
+        with patch("agent.gateway_executor.asyncio.sleep", new=AsyncMock()) as sleep:
             await run_studio_agent(StudioAgentRequest(prompt="Check the image", autonomous=True), studio=studio, harness=harness, mcp_servers=[gateway])
         self.assertEqual(gateway.call_tool.await_count, 2)
         self.assertGreaterEqual(sleep.await_args.args[0], 5)
