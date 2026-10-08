@@ -2,6 +2,85 @@ import type { AgentToolEvent, CreativeNodeKind, PortDataType, ToolDefinition } f
 
 const CREATIVE_TOOLS: ToolDefinition[] = [
   {
+    id: "runway.video.generate",
+    displayName: "Runway video",
+    category: "video",
+    providerId: "runway",
+    toolName: "text_to_video",
+    inputPorts: [
+      { id: "prompt", label: "Prompt", dataType: "text", targetField: "prompt", required: true },
+    ],
+    outputPorts: [{ id: "video", label: "Video", dataType: "video" }],
+    primaryFields: ["prompt", "model", "ratio", "duration_seconds"],
+    pollTool: "get_runway_task",
+    pollIntervalMs: 5000,
+    defaults: {"model": "gen4.5", "ratio": "1280:720", "duration_seconds": 5},
+  },
+  {
+    id: "runway.video.fromImage",
+    displayName: "Runway image to video",
+    category: "video",
+    providerId: "runway",
+    toolName: "image_to_video",
+    inputPorts: [
+      { id: "image", label: "Image", dataType: "image", targetField: "image_path_or_url", required: true },
+      { id: "prompt", label: "Prompt", dataType: "text", targetField: "prompt", required: true },
+    ],
+    outputPorts: [{ id: "video", label: "Video", dataType: "video" }],
+    primaryFields: ["prompt", "model", "ratio", "duration_seconds", "image_path_or_url"],
+    pollTool: "get_runway_task",
+    pollIntervalMs: 5000,
+    defaults: {"model": "gen4.5", "ratio": "1280:720", "duration_seconds": 5},
+  },
+  {
+    id: "runway.video.edit",
+    displayName: "Runway Aleph edit",
+    category: "video",
+    providerId: "runway",
+    toolName: "video_to_video",
+    inputPorts: [
+      { id: "video", label: "Video", dataType: "video", targetField: "video_path_or_url", required: true },
+      { id: "prompt", label: "Prompt", dataType: "text", targetField: "prompt", required: true },
+      { id: "reference", label: "Guidance image", dataType: "image", targetField: "reference_image_path_or_url" },
+    ],
+    outputPorts: [{ id: "video", label: "Video", dataType: "video" }],
+    primaryFields: ["prompt", "model", "video_path_or_url", "video_duration_seconds", "reference_image_path_or_url", "reference_seconds"],
+    pollTool: "get_runway_task",
+    pollIntervalMs: 5000,
+    defaults: {"model": "aleph2"},
+  },
+  {
+    id: "runway.image.generate",
+    displayName: "Runway image",
+    category: "image",
+    providerId: "runway",
+    toolName: "text_to_image",
+    inputPorts: [
+      { id: "prompt", label: "Prompt", dataType: "text", targetField: "prompt", required: true },
+    ],
+    outputPorts: [{ id: "image", label: "Image", dataType: "image" }],
+    primaryFields: ["prompt", "model", "ratio"],
+    pollTool: "get_runway_task",
+    pollIntervalMs: 5000,
+    defaults: {"model": "gen4_image", "ratio": "1280:720"},
+  },
+  {
+    id: "runway.image.edit",
+    displayName: "Runway reference image",
+    category: "image",
+    providerId: "runway",
+    toolName: "image_to_image",
+    inputPorts: [
+      { id: "image", label: "Image", dataType: "image", targetField: "image_path_or_url", required: true },
+      { id: "prompt", label: "Prompt", dataType: "text", targetField: "prompt", required: true },
+    ],
+    outputPorts: [{ id: "image", label: "Image", dataType: "image" }],
+    primaryFields: ["prompt", "model", "ratio", "image_path_or_url"],
+    pollTool: "get_runway_task",
+    pollIntervalMs: 5000,
+    defaults: {"model": "gen4_image", "ratio": "1280:720"},
+  },
+  {
     id: "image.generate",
     displayName: "Image",
     description: "Generate a still from a prompt",
@@ -110,8 +189,9 @@ export function toolForAgentArtifact(
   // Agent artifacts become self-contained text-to-media nodes. Even when the
   // agent used an input asset or a composition tool, placing the result must
   // not create an invisible dependency on another artifact in the run.
-  if (kind === "image") return toolById("image.generate");
-  if (kind === "video") return toolById("video.generate");
+  const runway = `${event?.provider || ""} ${event?.name || ""}`.toLowerCase().includes("runway");
+  if (kind === "image") return toolById(runway ? "runway.image.generate" : "image.generate");
+  if (kind === "video") return toolById(runway ? "runway.video.generate" : "video.generate");
   const source = `${event?.provider || ""} ${event?.name || ""}`.toLowerCase();
   return toolById(
     source.includes("fish_audio") || source.includes("speech") || source.includes("voice")

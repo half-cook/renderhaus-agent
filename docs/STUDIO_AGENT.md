@@ -69,6 +69,7 @@ Python dynamic-tool callbacks
 Gateway MCP client -- HTTPS --> AgentCore Gateway
                                 | Seedream image generation/editing
                                 | Seedance text/image-to-video
+                                | Runway Gen-4.5, Aleph 2.0, and Gen-4 images
                                 | ElevenLabs audio
                                 | Fish Audio speech
                                 ` Remotion Lambda --> S3 MP4
@@ -219,6 +220,7 @@ only discovered tools and validates each call against that schema before dispatc
 | --- | --- | --- |
 | Seedream | `Seedream___text_to_image`, `Seedream___image_to_image` | Immutable image versions |
 | Seedance | `Seedance___text_to_video`, `Seedance___image_to_video`, `Seedance___get_video_task` | Provider job, then video versions |
+| Runway | `Runway___text_to_video`, `Runway___image_to_video`, `Runway___video_to_video`, `Runway___text_to_image`, `Runway___image_to_image`, `Runway___get_runway_task`, `Runway___list_runway_models` | Provider job, then immutable image/video versions |
 | ElevenLabs | Full HTTP catalog with semantic descriptions | Audio/files or provider-specific jobs |
 | Fish Audio | Speech generation tools | Audio versions |
 | Remotion | `Remotion___render_timeline`, `Remotion___get_render_progress` | Render identifiers, then a completed MP4 |
@@ -523,3 +525,12 @@ multi-user deployment. Before treating it as production-complete, prioritize:
 
 Those additions build on the current model; they do not require returning to URL-based assets or a
 monolithic Agent Result card.
+
+## Runway generation and editing
+
+See [Runway provider reference](RUNWAY.md) for official API sources, tool arguments,
+input limits, prices, output storage, and configuration. Runway defaults to dry-run.
+All generation tools submit asynchronous jobs. Canvas Runway nodes and Gateway
+agent tools poll `get_runway_task` and register finished bytes through the existing
+asset path. No new agent backend is introduced. The intended future Deep Agents
+routing guidance lives in [the Runway skill draft](skills-drafts/runway.md).

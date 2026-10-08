@@ -5,6 +5,10 @@ const MODEL_LABELS: Record<string, string> = {
   "s2.1-pro": "Fish S2.1 Pro",
   "s2-pro": "Fish S2 Pro",
   s1: "Fish S1",
+  "gen4.5": "Runway Gen-4.5",
+  aleph2: "Runway Aleph 2.0",
+  gen4_image: "Runway Gen-4 Image",
+  gen4_image_turbo: "Runway Gen-4 Image Turbo",
   auto: "Auto",
 };
 

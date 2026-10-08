@@ -19,6 +19,12 @@ const LABELS: Record<string, string> = {
   n: "Variations",
   image_path_or_url: "Reference",
   seed: "Seed",
+  ratio: "Output dimensions",
+  video_path_or_url: "Source clip",
+  video_duration_seconds: "Source duration in seconds",
+  reference_image_path_or_url: "Guidance image",
+  reference_seconds: "Guidance timestamp in seconds",
+  reference_images: "Additional image references",
 };
 
 export const PRIMARY_FIELD_ORDER = [
