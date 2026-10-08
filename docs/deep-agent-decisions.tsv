@@ -1,3 +1,5 @@
 ts	phase	decision	why	evidence	result
 2026-10-08T00:00:00Z	frame	Retain Studio contracts and share Gateway policy	Avoid duplicating billing and provider recovery rules	docs/DEEP_AGENT_PLAN.md	Design chosen
 2026-10-08T00:00:00Z	baseline	Use supplied Python 3.11 venv	System Python lacks dependencies and python is absent	tests/	138 tests passed before changes; reported main error not reproduced
+2026-10-08T17:57:04Z	graph	Add portable graph checkpoints and refresh project memory each invocation	Fresh-worker and multi-turn tests must prove actual state recovery	tests/test_deep_agent.py	15 graph tests passed; 22 Codex tests passed after policy extraction
+2026-10-08T17:57:04Z	delivery	Preserve logical commits in ignored local Git metadata	Linked worktree metadata is read-only under the sandbox	.renderhaus/git-commits/repo.git	Original branch ref cannot be updated; bundle will retain commits

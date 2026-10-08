@@ -311,4 +311,3 @@ async def run_with_servers(request, studio, harness: CodexHarness, servers):
         status="completed" if delivered else "failed",
     )
     return final
-
