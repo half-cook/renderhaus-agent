@@ -157,7 +157,7 @@ def cost_for(provider: str, tool: str, arguments: dict[str, Any]) -> GenerationC
     (to charge the same amount), so it must be a pure function of the
     request, not of anything the provider returns.
     """
-    if tool in POLLING_TOOLS:
+    if tool in POLLING_TOOLS or (provider == "remotion" and tool == "export_nle_timeline"):
         return GenerationCost(provider_cents=0, fee_cents=0)
     if provider == "seedance":
         return _seedance_cost(arguments)

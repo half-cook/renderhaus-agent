@@ -119,6 +119,11 @@ def check_lambda_zip() -> None:
         "lambda zip is missing a Linux pydantic_core native module; "
         "pip-install with --platform manylinux2014_aarch64 --python-version 3.11"
     )
+    otio_native = [
+        name for name in names
+        if name.startswith("opentimelineio/") and name.endswith(".so") and "aarch64" in name
+    ]
+    assert otio_native, "lambda zip is missing the Linux aarch64 OpenTimelineIO native module"
     print(f"ok lambda zip ({len(zip_bytes)} bytes)")
 
 
