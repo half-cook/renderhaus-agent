@@ -6,6 +6,7 @@ from copy import deepcopy
 from typing import Any
 
 from providers.fish_audio.api import MODELS, VOICES
+from providers.luma.catalog import ASPECT_RATIOS, DURATIONS, EDIT_STRENGTHS, MODEL_IDS, RESOLUTIONS
 from providers.seedance.api import MAX_DURATION_SECONDS, MIN_DURATION_SECONDS
 
 
@@ -14,6 +15,15 @@ SEEDREAM_RATIOS = ("1:1", "16:9", "9:16")
 SEEDANCE_RESOLUTIONS = ("480p", "720p", "1080p")
 SEEDREAM_SIZES = ("1K", "2K", "3K")
 STATIC_FIELD_OPTIONS: dict[str, dict[str, list[str | int]]] = {
+    "luma": {
+        "model": list(MODEL_IDS),
+        "aspect_ratio": list(ASPECT_RATIOS),
+        "resolution": list(RESOLUTIONS),
+        "duration_seconds": list(DURATIONS),
+        "source_duration_seconds": list(DURATIONS),
+        "direction": ["forward", "backward"],
+        "strength": list(EDIT_STRENGTHS),
+    },
     "seedance": {
         "aspect_ratio": list(SEEDANCE_RATIOS),
         "resolution": list(SEEDANCE_RESOLUTIONS),
@@ -35,6 +45,7 @@ STATIC_FIELD_OPTIONS: dict[str, dict[str, list[str | int]]] = {
 }
 
 LIVE_CHOICE_TOOLS: tuple[tuple[str, str, str], ...] = (
+    ("luma", "list_luma_models", "model"),
     ("seedance", "list_seedance_models", "model"),
     ("seedream", "list_seedream_models", "model"),
     ("elevenlabs", "voices_search", "voice_id"),

@@ -52,6 +52,7 @@ const MIGRATED_KEY = "renderhaus.studio.server-migration.v2";
 const HISTORY_LIMIT = 50;
 
 const PREFERRED: Record<string, Record<string, string | number>> = {
+  luma: { model: "ray-3.2", resolution: "720p" },
   seedance: { duration_seconds: 5, aspect_ratio: "16:9", resolution: "720p" },
   seedream: { aspect_ratio: "1:1", size: "2K", response_format: "url" },
   fish_audio: { voice: "Energetic Male", output_format: "mp3", model: "s2.1-pro-free" },
@@ -176,6 +177,10 @@ function defaultsFor(tool: ToolDefinition, fieldOptions: FieldOptions): Record<s
     args.model = catalog.model[0];
   }
   if (tool.id === "music.generate") args.model_id = "music_v2_5";
+  if (tool.providerId === "luma" && ["text_to_video", "image_to_video"].includes(tool.toolName)) {
+    args.duration_seconds = 5;
+    args.aspect_ratio = "16:9";
+  }
   return args;
 }
 

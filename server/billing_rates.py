@@ -150,6 +150,49 @@ REMOTION_COST_CENTS = 8
 # a job that was already paid for and completed on the provider's side).
 POLLING_TOOLS = {"get_video_task", "query_music_task", "get_music_task", "get_render_progress"}
 
+# SDR Ray 3.2 list prices, verified 2026-10-08 against the official API pricing reference.
+# https://docs.agents.lumalabs.ai/guides/pricing/
+# The marketing table at https://lumalabs.ai/api disagrees on some edit rates.
+# This table follows the detailed API reference; confirm against invoices before rollout.
+LUMA_GENERATION_CENTS = {
+    "360p": {5: 6, 10: 18},
+    "540p": {5: 15, 10: 45},
+    "720p": {5: 30, 10: 90},
+    "1080p": {5: 120, 10: 360},
+}
+LUMA_EDIT_CENTS = {
+    "360p": {5: 54, 10: 108},
+    "540p": {5: 72, 10: 144},
+    "720p": {5: 108, 10: 216},
+    "1080p": {5: 216, 10: 432},
+}
+LUMA_EXTEND_CENTS = {"540p": 15, "720p": 30, "1080p": 120}
+
+
+def _luma_cost(tool: str, arguments: dict[str, Any]) -> GenerationCost:
+    if tool == "list_luma_models":
+        return GenerationCost(0, 0)
+    if tool not in {"text_to_video", "image_to_video", "extend_video", "modify_video"}:
+        raise ValueError("Unknown Luma tool.")
+    if arguments.get("model", "ray-3.2") not in {None, "ray-3.2"}:
+        raise ValueError("Luma video model must be ray-3.2.")
+    resolution = arguments.get("resolution") or "720p"
+    duration = arguments.get("source_duration_seconds") if tool == "modify_video" else arguments.get("duration_seconds", 5)
+    if tool == "extend_video":
+        cents = LUMA_EXTEND_CENTS.get(resolution)
+    else:
+        # TODO: official API pricing does not specify edits of arbitrary source lengths <=18s.
+        # Accept only the published 5s/10s tiers, verified from the MP4 before submission.
+        rates = LUMA_EDIT_CENTS if tool == "modify_video" else LUMA_GENERATION_CENTS
+        cents = rates.get(resolution, {}).get(duration) if type(duration) is int else None
+        if tool == "image_to_video" and duration != 5:
+            cents = None
+    if cents is None:
+        raise ValueError("Luma request has no documented price for these settings.")
+    if os.getenv("LUMA_DRY_RUN", "true").lower() != "false":
+        return GenerationCost(0, 0)
+    return _with_fee(cents)
+
 
 def cost_for(provider: str, tool: str, arguments: dict[str, Any]) -> GenerationCost:
     """Real cost (provider + disclosed fee) for one call to `provider`/`tool`.
@@ -159,6 +202,8 @@ def cost_for(provider: str, tool: str, arguments: dict[str, Any]) -> GenerationC
     """
     if tool in POLLING_TOOLS:
         return GenerationCost(provider_cents=0, fee_cents=0)
+    if provider == "luma":
+        return _luma_cost(tool, arguments)
     if provider == "seedance":
         return _seedance_cost(arguments)
     if provider == "seedream":

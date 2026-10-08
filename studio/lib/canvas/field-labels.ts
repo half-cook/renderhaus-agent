@@ -18,6 +18,13 @@ const LABELS: Record<string, string> = {
   gender: "Vocal",
   n: "Variations",
   image_path_or_url: "Reference",
+  last_frame_path_or_url: "End image",
+  video_path_or_url: "Source video",
+  source_generation_id: "Source generation",
+  source_duration_seconds: "Source duration",
+  generation_id: "Generation",
+  direction: "Extend direction",
+  strength: "Edit strength",
   seed: "Seed",
 };
 

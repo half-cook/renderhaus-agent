@@ -20,6 +20,14 @@ FORBIDDEN_TOOL_RE = re.compile(r"^(wait_for_.*|.*_and_wait)$")
 
 
 TOOL_GUIDANCE: dict[str, dict[str, str]] = {
+    "luma": {
+        "text_to_video": "Generate a Ray 3.2 clip from text. Returns a queued job_id; poll get_video_task until terminal. Outputs are not training eligible.",
+        "image_to_video": "Animate a start image, end image, or both with Ray 3.2. Anchor clips are 5 seconds. Returns job_id; poll get_video_task. Outputs are not training eligible.",
+        "extend_video": "Continue or prepend a completed Luma generation using its generation UUID. Returns job_id; poll get_video_task. Extend bills one 5-second block. Outputs are not training eligible.",
+        "modify_video": "Restyle or edit an existing MP4 video with Ray 3.2. Supply exactly one video source and its measured 5s or 10s duration for pricing. Returns job_id; poll get_video_task. Outputs are not training eligible.",
+        "get_video_task": "Poll a Luma generation UUID. Call with download=true to persist the completed MP4. Polling is free; processing maps to running, completed to succeeded. Do not resubmit while a job is pending.",
+        "list_luma_models": "List documented Luma video models and their supported settings. This is an offline capability catalog, not an account access check. Ray 3.2 has no separate Flash identifier.",
+    },
     "seedream": {
         "text_to_image": (
             "Use when the user needs a new still image from a text description. Do not use for "
@@ -349,6 +357,13 @@ def dummy_arguments(schema: dict[str, Any]) -> dict[str, Any]:
     args: dict[str, Any] = {}
     for name in required:
         args[name] = dummy_value(props.get(name) or {"type": "string"})
+    for name, field_schema in props.items():
+        if name in args and "UUID" in str(field_schema.get("description") or ""):
+            args[name] = "d290f1ee-6c54-4b01-90e6-d701748f0851"
+    if schema.get("name") == "image_to_video" and "last_frame_path_or_url" in props:
+        args["image_path_or_url"] = "ci-smoke"
+    if schema.get("name") == "modify_video":
+        args["video_path_or_url"] = "ci-smoke"
     source_fields = {
         "extend_song": "song_id",
         "region_edit_song": "song_id",

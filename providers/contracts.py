@@ -12,6 +12,15 @@ from copy import deepcopy
 from dataclasses import dataclass
 from typing import Any
 
+from providers.luma.catalog import (
+    ASPECT_RATIOS as LUMA_RATIOS,
+    DURATIONS as LUMA_DURATIONS,
+    EDIT_STRENGTHS as LUMA_EDIT_STRENGTHS,
+    EXTEND_RESOLUTIONS as LUMA_EXTEND_RESOLUTIONS,
+    MODEL_IDS as LUMA_MODELS,
+    RESOLUTIONS as LUMA_RESOLUTIONS,
+)
+
 
 @dataclass(frozen=True, slots=True)
 class ArgumentRule:
@@ -48,7 +57,45 @@ def _rules_for_fields(
     return {tool_name: dict(rules) for tool_name in tool_names}
 
 
+LUMA_VIDEO_ARGUMENT_RULES = {
+    "model": ArgumentRule(choices=LUMA_MODELS),
+    "aspect_ratio": ArgumentRule(choices=LUMA_RATIOS),
+    "resolution": ArgumentRule(choices=LUMA_RESOLUTIONS),
+    "prompt": ArgumentRule(
+        pattern=r"[\s\S]{1,6000}", pattern_hint="Must contain 1 to 6000 characters"
+    ),
+}
+
+
 TOOL_ARGUMENT_RULES: dict[str, dict[str, dict[str, ArgumentRule]]] = {
+    "luma": {
+        "text_to_video": {
+            **LUMA_VIDEO_ARGUMENT_RULES,
+            "duration_seconds": ArgumentRule(choices=LUMA_DURATIONS),
+        },
+        "image_to_video": {
+            **LUMA_VIDEO_ARGUMENT_RULES,
+            "duration_seconds": ArgumentRule(choices=(5,)),
+        },
+        "extend_video": {
+            "model": ArgumentRule(choices=LUMA_MODELS),
+            "resolution": ArgumentRule(choices=LUMA_EXTEND_RESOLUTIONS),
+            "direction": ArgumentRule(choices=("forward", "backward")),
+            "generation_id": ArgumentRule(pattern=r"[a-fA-F0-9]{8}(?:-[a-fA-F0-9]{4}){3}-[a-fA-F0-9]{12}", pattern_hint="Must be a generation UUID"),
+            "prompt": ArgumentRule(pattern=r"[\s\S]{1,6000}", pattern_hint="Must contain 1 to 6000 characters"),
+        },
+        "modify_video": {
+            "model": ArgumentRule(choices=LUMA_MODELS),
+            "resolution": ArgumentRule(choices=LUMA_RESOLUTIONS),
+            "source_duration_seconds": ArgumentRule(choices=LUMA_DURATIONS),
+            "strength": ArgumentRule(choices=LUMA_EDIT_STRENGTHS),
+            "source_generation_id": ArgumentRule(pattern=r"[a-fA-F0-9]{8}(?:-[a-fA-F0-9]{4}){3}-[a-fA-F0-9]{12}", pattern_hint="Must be a generation UUID"),
+            "prompt": ArgumentRule(pattern=r"[\s\S]{1,6000}", pattern_hint="Must contain 1 to 6000 characters"),
+        },
+        "get_video_task": {
+            "job_id": ArgumentRule(pattern=r"[a-fA-F0-9]{8}(?:-[a-fA-F0-9]{4}){3}-[a-fA-F0-9]{12}", pattern_hint="Must be a generation UUID"),
+        },
+    },
     "seedance": {
         **_rules_for_fields(
             ("text_to_video", "image_to_video"),
@@ -243,6 +290,12 @@ def _validate_rule(path: str, value: Any, rule: ArgumentRule) -> None:
 
 
 def _validate_cross_fields(provider_id: str, tool_name: str, arguments: dict[str, Any]) -> None:
+    if provider_id == "luma" and tool_name in {
+        "text_to_video", "image_to_video", "extend_video", "modify_video"
+    }:
+        from providers.luma.api import validate_generation_arguments
+
+        validate_generation_arguments(tool_name, arguments)
     if provider_id == "remotion" and tool_name == "render_timeline":
         if not arguments.get("visuals"):
             raise ValueError("render_timeline requires at least one visual clip.")

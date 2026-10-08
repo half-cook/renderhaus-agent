@@ -1,4 +1,5 @@
 const MODEL_LABELS: Record<string, string> = {
+  "ray-3.2": "Luma Ray 3.2",
   "seedream-5-0-lite-260128": "Seedream 5 Lite",
   "seedance-1-5-pro-251215": "Seedance 1.5 Pro",
   "s2.1-pro-free": "Fish S2.1 Pro free",

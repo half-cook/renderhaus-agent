@@ -2,6 +2,58 @@ import type { AgentToolEvent, CreativeNodeKind, PortDataType, ToolDefinition } f
 
 const CREATIVE_TOOLS: ToolDefinition[] = [
   {
+    id: "video.luma.generate",
+    displayName: "Luma video",
+    description: "Generate a Ray 3.2 clip from a prompt",
+    category: "video",
+    providerId: "luma",
+    toolName: "text_to_video",
+    inputPorts: [{ id: "prompt", label: "Prompt", dataType: "text", targetField: "prompt", required: true }],
+    outputPorts: [{ id: "video", label: "Video", dataType: "video" }],
+    primaryFields: ["prompt", "model", "aspect_ratio", "duration_seconds", "resolution"],
+    pollTool: "get_video_task",
+  },
+  {
+    id: "video.luma.fromImage",
+    displayName: "Luma image to video",
+    category: "video",
+    providerId: "luma",
+    toolName: "image_to_video",
+    inputPorts: [
+      { id: "image", label: "Start image", dataType: "image", targetField: "image_path_or_url" },
+      { id: "endImage", label: "End image", dataType: "image", targetField: "last_frame_path_or_url" },
+      { id: "prompt", label: "Prompt", dataType: "text", targetField: "prompt", required: true },
+    ],
+    outputPorts: [{ id: "video", label: "Video", dataType: "video" }],
+    primaryFields: ["prompt", "model", "aspect_ratio", "resolution", "image_path_or_url", "last_frame_path_or_url"],
+    pollTool: "get_video_task",
+  },
+  {
+    id: "video.luma.modify",
+    displayName: "Modify Luma video",
+    category: "video",
+    providerId: "luma",
+    toolName: "modify_video",
+    inputPorts: [
+      { id: "video", label: "Source video", dataType: "video", targetField: "video_path_or_url" },
+      { id: "prompt", label: "Prompt", dataType: "text", targetField: "prompt", required: true },
+    ],
+    outputPorts: [{ id: "video", label: "Video", dataType: "video" }],
+    primaryFields: ["prompt", "model", "video_path_or_url", "source_generation_id", "source_duration_seconds", "resolution", "strength"],
+    pollTool: "get_video_task",
+  },
+  {
+    id: "video.luma.extend",
+    displayName: "Extend Luma video",
+    category: "video",
+    providerId: "luma",
+    toolName: "extend_video",
+    inputPorts: [{ id: "prompt", label: "Prompt", dataType: "text", targetField: "prompt", required: true }],
+    outputPorts: [{ id: "video", label: "Video", dataType: "video" }],
+    primaryFields: ["prompt", "model", "generation_id", "direction", "resolution"],
+    pollTool: "get_video_task",
+  },
+  {
     id: "image.generate",
     displayName: "Image",
     description: "Generate a still from a prompt",
@@ -111,7 +163,10 @@ export function toolForAgentArtifact(
   // agent used an input asset or a composition tool, placing the result must
   // not create an invisible dependency on another artifact in the run.
   if (kind === "image") return toolById("image.generate");
-  if (kind === "video") return toolById("video.generate");
+  if (kind === "video") {
+    const source = `${event?.provider || ""} ${event?.name || ""}`.toLowerCase();
+    return toolById(source.includes("luma") ? "video.luma.generate" : "video.generate");
+  }
   const source = `${event?.provider || ""} ${event?.name || ""}`.toLowerCase();
   return toolById(
     source.includes("fish_audio") || source.includes("speech") || source.includes("voice")

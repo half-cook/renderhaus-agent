@@ -35,6 +35,7 @@ jobs:
         env:
           RENDERHAUS_SECRETS_NAME: ""
           SEEDANCE_DRY_RUN: "true"
+          LUMA_DRY_RUN: "true"
           SEEDREAM_DRY_RUN: "true"
           ELEVENLABS_DRY_RUN: "true"
           FISH_AUDIO_DRY_RUN: "true"
@@ -46,6 +47,7 @@ jobs:
           # Keep CI free of Secrets Manager / paid providers.
           RENDERHAUS_SECRETS_NAME: ""
           SEEDANCE_DRY_RUN: "true"
+          LUMA_DRY_RUN: "true"
           SEEDREAM_DRY_RUN: "true"
           ELEVENLABS_DRY_RUN: "true"
           FISH_AUDIO_DRY_RUN: "true"

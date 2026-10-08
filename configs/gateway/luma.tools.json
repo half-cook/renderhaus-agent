@@ -1,0 +1,173 @@
+[
+  {
+    "name": "text_to_video",
+    "description": "Generate a Ray 3.2 clip from text. Returns a queued job_id; poll get_video_task until terminal. Outputs are not training eligible.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "prompt": {
+          "type": "string",
+          "description": "Must contain 1 to 6000 characters."
+        },
+        "duration_seconds": {
+          "type": "integer",
+          "description": "Allowed values: 5, 10."
+        },
+        "aspect_ratio": {
+          "type": "string",
+          "description": "Allowed values: 9:16, 3:4, 1:1, 4:3, 16:9, 21:9."
+        },
+        "resolution": {
+          "type": "string",
+          "description": "Allowed values: 360p, 540p, 720p, 1080p."
+        },
+        "model": {
+          "type": "string",
+          "description": "Allowed values: ray-3.2."
+        }
+      },
+      "required": [
+        "prompt"
+      ]
+    }
+  },
+  {
+    "name": "image_to_video",
+    "description": "Animate a start image, end image, or both with Ray 3.2. Anchor clips are 5 seconds. Returns job_id; poll get_video_task. Outputs are not training eligible.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "prompt": {
+          "type": "string",
+          "description": "Must contain 1 to 6000 characters."
+        },
+        "image_path_or_url": {
+          "type": "string"
+        },
+        "last_frame_path_or_url": {
+          "type": "string"
+        },
+        "duration_seconds": {
+          "type": "integer",
+          "description": "Allowed values: 5."
+        },
+        "aspect_ratio": {
+          "type": "string",
+          "description": "Allowed values: 9:16, 3:4, 1:1, 4:3, 16:9, 21:9."
+        },
+        "resolution": {
+          "type": "string",
+          "description": "Allowed values: 360p, 540p, 720p, 1080p."
+        },
+        "model": {
+          "type": "string",
+          "description": "Allowed values: ray-3.2."
+        }
+      },
+      "required": [
+        "prompt"
+      ]
+    }
+  },
+  {
+    "name": "extend_video",
+    "description": "Continue or prepend a completed Luma generation using its generation UUID. Returns job_id; poll get_video_task. Extend bills one 5-second block. Outputs are not training eligible.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "prompt": {
+          "type": "string",
+          "description": "Must contain 1 to 6000 characters."
+        },
+        "generation_id": {
+          "type": "string",
+          "description": "Must be a generation UUID."
+        },
+        "direction": {
+          "type": "string",
+          "description": "One of: forward, backward. Allowed values: forward, backward."
+        },
+        "resolution": {
+          "type": "string",
+          "description": "Allowed values: 540p, 720p, 1080p."
+        },
+        "model": {
+          "type": "string",
+          "description": "Allowed values: ray-3.2."
+        }
+      },
+      "required": [
+        "prompt",
+        "generation_id"
+      ]
+    }
+  },
+  {
+    "name": "modify_video",
+    "description": "Restyle or edit an existing MP4 video with Ray 3.2. Supply exactly one video source and its measured 5s or 10s duration for pricing. Returns job_id; poll get_video_task. Outputs are not training eligible.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "prompt": {
+          "type": "string",
+          "description": "Must contain 1 to 6000 characters."
+        },
+        "source_duration_seconds": {
+          "type": "integer",
+          "description": "Allowed values: 5, 10."
+        },
+        "video_path_or_url": {
+          "type": "string"
+        },
+        "source_generation_id": {
+          "type": "string",
+          "description": "Must be a generation UUID."
+        },
+        "resolution": {
+          "type": "string",
+          "description": "Allowed values: 360p, 540p, 720p, 1080p."
+        },
+        "strength": {
+          "type": "string",
+          "description": "Allowed values: adhere_1, adhere_2, adhere_3, flex_1, flex_2, flex_3, reimagine_1, reimagine_2, reimagine_3."
+        },
+        "model": {
+          "type": "string",
+          "description": "Allowed values: ray-3.2."
+        }
+      },
+      "required": [
+        "prompt",
+        "source_duration_seconds"
+      ]
+    }
+  },
+  {
+    "name": "get_video_task",
+    "description": "Poll a Luma generation UUID. Call with download=true to persist the completed MP4. Polling is free; processing maps to running, completed to succeeded. Do not resubmit while a job is pending.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "job_id": {
+          "type": "string",
+          "description": "Must be a generation UUID."
+        },
+        "download": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "job_id"
+      ]
+    }
+  },
+  {
+    "name": "list_luma_models",
+    "description": "List documented Luma video models and their supported settings. This is an offline capability catalog, not an account access check. Ray 3.2 has no separate Flash identifier.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": []
+    }
+  }
+]

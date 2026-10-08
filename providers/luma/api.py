@@ -6,6 +6,10 @@ https://docs.agents.lumalabs.ai/guides/videos/generation/
 https://docs.agents.lumalabs.ai/guides/videos/editing/
 https://docs.agents.lumalabs.ai/guides/videos/migration/
 https://docs.agents.lumalabs.ai/api/resources/generations/methods/get/
+https://docs.agents.lumalabs.ai/api/resources/generations/methods/create/
+
+https://lumalabs.ai/legal/api-terms-of-use prohibits training, fine-tuning,
+and evaluation datasets built from API outputs. Every result is non-training-eligible.
 """
 
 from __future__ import annotations
