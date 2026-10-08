@@ -343,7 +343,7 @@ class DeepAgentTests(unittest.IsolatedAsyncioTestCase):
                 agent_backend()
 
     async def test_new_paid_providers_dispatch_through_media_role_with_approval(self):
-        for name in ("Kling___text_to_video", "Runway___video_to_video", "Fal___text_to_video"):
+        for name in ("Kling___text_to_video", "Runway___video_to_video", "Fal___text_to_video", "Luma___modify_video"):
             with self.subTest(tool=name):
                 tool = Tool(name=name, description="Paid video", inputSchema=IMAGE.input_schema)
                 request = self.request()
