@@ -17,6 +17,24 @@ class ProviderSpec:
 
 PROVIDERS: tuple[ProviderSpec, ...] = (
     ProviderSpec(
+        id="kling",
+        target_name="Kling",
+        function_name="renderhaus-kling-tools",
+        module_path="providers.kling.api",
+        env_keys=(
+            "KLING_BASE_URL",
+            "KLING_MODEL",
+            "KLING_API_STYLE",
+            "KLING_DRY_RUN",
+        ),
+        default_env={
+            "KLING_DRY_RUN": "true",
+            "KLING_MODEL": "kling-3.0",
+            "KLING_API_STYLE": "current",
+            "KLING_BASE_URL": "https://api-singapore.klingai.com",
+        },
+    ),
+    ProviderSpec(
         id="seedance",
         target_name="Seedance",
         function_name="renderhaus-seedance-tools",

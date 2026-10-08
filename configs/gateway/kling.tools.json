@@ -1,0 +1,266 @@
+[
+  {
+    "name": "text_to_video",
+    "description": "Use for a new Kling video from text, including native audio and multi-shot prompts. Returns a queued job_id; follow with get_video_task until terminal.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "prompt": {
+          "type": "string",
+          "description": "Nonempty prompt. Maximum 3072 characters on current API, 2500 on legacy API or Turbo image-to-video. Current Omni uses @image_1 and @<id> element aliases; legacy uses ordinal <<<image_1>>> and <<<element_1>>> references."
+        },
+        "duration_seconds": {
+          "type": "integer",
+          "description": "Allowed range: 3 to 15."
+        },
+        "aspect_ratio": {
+          "type": "string",
+          "description": "Allowed values: 16:9, 9:16, 1:1."
+        },
+        "resolution": {
+          "type": "string",
+          "description": "Allowed values: 720p, 1080p, 4k."
+        },
+        "model": {
+          "type": "string",
+          "description": "Allowed values: kling-3.0, kling-3.0-turbo."
+        },
+        "generate_audio": {
+          "type": "boolean"
+        },
+        "multi_shot": {
+          "type": "boolean"
+        },
+        "shots": {
+          "type": "array",
+          "description": "1 to 6 shots. Requires multi_shot=true. Each prompt has at most 512 characters; each duration is at least 1 second, and durations sum to duration_seconds. Converted to the official prompt syntax or legacy multi_prompt.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "prompt": {
+                "type": "string"
+              },
+              "duration_seconds": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "prompt",
+              "duration_seconds"
+            ]
+          }
+        }
+      },
+      "required": [
+        "prompt"
+      ]
+    }
+  },
+  {
+    "name": "image_to_video",
+    "description": "Use to animate an existing first frame, optionally with a last frame or elements. Returns a queued job_id; follow with get_video_task until terminal.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "image_path_or_url": {
+          "type": "string",
+          "description": "HTTPS URL or existing local JPEG/PNG first-frame image. At least 300px per side and aspect ratio 0.4 to 2.5. Limit 50MB current, 10MB legacy. Remote image properties are checked by Kling."
+        },
+        "prompt": {
+          "type": "string",
+          "description": "Nonempty prompt. Maximum 3072 characters on current API, 2500 on legacy API or Turbo image-to-video. Current Omni uses @image_1 and @<id> element aliases; legacy uses ordinal <<<image_1>>> and <<<element_1>>> references."
+        },
+        "duration_seconds": {
+          "type": "integer",
+          "description": "Allowed range: 3 to 15."
+        },
+        "resolution": {
+          "type": "string",
+          "description": "Allowed values: 720p, 1080p, 4k."
+        },
+        "model": {
+          "type": "string",
+          "description": "Allowed values: kling-3.0, kling-3.0-turbo."
+        },
+        "end_image_path_or_url": {
+          "type": "string",
+          "description": "Optional last-frame image with the same requirements as the first frame. Requires a first frame and is unavailable for Turbo."
+        },
+        "generate_audio": {
+          "type": "boolean"
+        },
+        "multi_shot": {
+          "type": "boolean"
+        },
+        "shots": {
+          "type": "array",
+          "description": "1 to 6 shots. Requires multi_shot=true. Each prompt has at most 512 characters; each duration is at least 1 second, and durations sum to duration_seconds. Converted to the official prompt syntax or legacy multi_prompt.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "prompt": {
+                "type": "string"
+              },
+              "duration_seconds": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "prompt",
+              "duration_seconds"
+            ]
+          }
+        },
+        "elements": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "element_id": {
+                "type": "string",
+                "description": "Existing provider element library ID. Legacy requires a decimal integer string."
+              },
+              "id": {
+                "type": "string",
+                "description": "Unique current-API prompt alias without @. This tool references an existing element and does not create one."
+              },
+              "element_type": {
+                "type": "string",
+                "description": "multi_image_elements or video_character_elements. Required for enforcing reference limits; not sent to Kling."
+              }
+            },
+            "required": [
+              "element_id",
+              "id",
+              "element_type"
+            ]
+          }
+        }
+      },
+      "required": [
+        "image_path_or_url",
+        "prompt"
+      ]
+    }
+  },
+  {
+    "name": "omni_video",
+    "description": "Use for Kling Omni video with multiple reference images or elements. Returns a queued job_id; follow with get_video_task until terminal.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "prompt": {
+          "type": "string",
+          "description": "Nonempty prompt. Maximum 3072 characters on current API, 2500 on legacy API or Turbo image-to-video. Current Omni uses @image_1 and @<id> element aliases; legacy uses ordinal <<<image_1>>> and <<<element_1>>> references."
+        },
+        "reference_images": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "HTTPS URLs or local JPEG/PNG images. Current prompt aliases are @image_1, @image_2, etc. Images and multi-image elements share a total limit of 7, or 4 when video-character elements are present."
+        },
+        "elements": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "element_id": {
+                "type": "string",
+                "description": "Existing provider element library ID. Legacy requires a decimal integer string."
+              },
+              "id": {
+                "type": "string",
+                "description": "Unique current-API prompt alias without @. This tool references an existing element and does not create one."
+              },
+              "element_type": {
+                "type": "string",
+                "description": "multi_image_elements or video_character_elements. Required for enforcing reference limits; not sent to Kling."
+              }
+            },
+            "required": [
+              "element_id",
+              "id",
+              "element_type"
+            ]
+          }
+        },
+        "image_path_or_url": {
+          "type": "string",
+          "description": "HTTPS URL or existing local JPEG/PNG first-frame image. At least 300px per side and aspect ratio 0.4 to 2.5. Limit 50MB current, 10MB legacy. Remote image properties are checked by Kling."
+        },
+        "end_image_path_or_url": {
+          "type": "string",
+          "description": "Optional last-frame image with the same requirements as the first frame. Requires a first frame and is unavailable for Turbo."
+        },
+        "duration_seconds": {
+          "type": "integer",
+          "description": "Allowed range: 3 to 15."
+        },
+        "aspect_ratio": {
+          "type": "string",
+          "description": "Allowed values: 16:9, 9:16, 1:1."
+        },
+        "resolution": {
+          "type": "string",
+          "description": "Allowed values: 720p, 1080p, 4k."
+        },
+        "generate_audio": {
+          "type": "boolean"
+        },
+        "multi_shot": {
+          "type": "boolean"
+        },
+        "shots": {
+          "type": "array",
+          "description": "1 to 6 shots. Requires multi_shot=true. Each prompt has at most 512 characters; each duration is at least 1 second, and durations sum to duration_seconds. Converted to the official prompt syntax or legacy multi_prompt.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "prompt": {
+                "type": "string"
+              },
+              "duration_seconds": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "prompt",
+              "duration_seconds"
+            ]
+          }
+        }
+      },
+      "required": [
+        "prompt"
+      ]
+    }
+  },
+  {
+    "name": "get_video_task",
+    "description": "Use only with the exact job_id returned by a Kling generation tool. Poll once per call until succeeded, failed, or dry_run; download saves completed video. It does not create a new video.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "job_id": {
+          "type": "string"
+        },
+        "download": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "job_id"
+      ]
+    }
+  },
+  {
+    "name": "list_kling_models",
+    "description": "List documented Kling video models and capabilities without creating media. Use when model selection matters; prefer the configured default otherwise.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": []
+    }
+  }
+]

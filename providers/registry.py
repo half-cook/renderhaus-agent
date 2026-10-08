@@ -20,6 +20,29 @@ FORBIDDEN_TOOL_RE = re.compile(r"^(wait_for_.*|.*_and_wait)$")
 
 
 TOOL_GUIDANCE: dict[str, dict[str, str]] = {
+    "kling": {
+        "text_to_video": (
+            "Use for a new Kling video from text, including native audio and multi-shot prompts. "
+            "Returns a queued job_id; follow with get_video_task until terminal."
+        ),
+        "image_to_video": (
+            "Use to animate an existing first frame, optionally with a last frame or elements. "
+            "Returns a queued job_id; follow with get_video_task until terminal."
+        ),
+        "omni_video": (
+            "Use for Kling Omni video with multiple reference images or elements. "
+            "Returns a queued job_id; follow with get_video_task until terminal."
+        ),
+        "get_video_task": (
+            "Use only with the exact job_id returned by a Kling generation tool. "
+            "Poll once per call until succeeded, failed, or dry_run; download saves completed video. "
+            "It does not create a new video."
+        ),
+        "list_kling_models": (
+            "List documented Kling video models and capabilities without creating media. "
+            "Use when model selection matters; prefer the configured default otherwise."
+        ),
+    },
     "seedream": {
         "text_to_image": (
             "Use when the user needs a new still image from a text description. Do not use for "

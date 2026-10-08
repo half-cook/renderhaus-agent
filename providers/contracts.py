@@ -49,6 +49,22 @@ def _rules_for_fields(
 
 
 TOOL_ARGUMENT_RULES: dict[str, dict[str, dict[str, ArgumentRule]]] = {
+    "kling": {
+        **_rules_for_fields(
+            ("text_to_video", "image_to_video"),
+            {
+                "duration_seconds": ArgumentRule(minimum=3, maximum=15),
+                "aspect_ratio": ArgumentRule(choices=("16:9", "9:16", "1:1")),
+                "resolution": ArgumentRule(choices=("720p", "1080p", "4k")),
+                "model": ArgumentRule(choices=("kling-3.0", "kling-3.0-turbo")),
+            },
+        ),
+        "omni_video": {
+            "duration_seconds": ArgumentRule(minimum=3, maximum=15),
+            "aspect_ratio": ArgumentRule(choices=("16:9", "9:16", "1:1")),
+            "resolution": ArgumentRule(choices=("720p", "1080p", "4k")),
+        },
+    },
     "seedance": {
         **_rules_for_fields(
             ("text_to_video", "image_to_video"),
