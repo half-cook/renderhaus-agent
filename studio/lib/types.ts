@@ -70,6 +70,7 @@ export type StudioAsset = {
   mimeType: string;
   sizeBytes?: number;
   createdAt?: number;
+  trainingEligible?: boolean | null;
 };
 
 export type FieldOptions = Record<string, Record<string, Array<string | number>>>;

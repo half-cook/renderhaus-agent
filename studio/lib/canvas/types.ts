@@ -108,6 +108,7 @@ export type CanvasNodeData = {
   status: JobStatus;
   error?: string;
   jobId?: string;
+  sourceVersionIds?: string[];
   approved?: boolean;
   storyOrder?: number;
   agentResult?: AgentResultData;

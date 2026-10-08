@@ -154,6 +154,7 @@ export async function runCreativeNode(
       status: "queued",
       result: payload.result,
       jobId,
+      sourceVersionIds,
       error: undefined,
     };
   }
@@ -182,7 +183,7 @@ export async function pollCreativeNode(
       job_id: node.data.jobId,
       download: true,
     },
-    { projectId, assetId: node.data.output?.assetId },
+    { projectId, assetId: node.data.output?.assetId, sourceVersionIds: node.data.sourceVersionIds },
   );
   const providerStatus = statusFrom(payload.result) || "unknown";
   if (payload.assets.length > 0) {

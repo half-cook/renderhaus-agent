@@ -42,6 +42,9 @@ function studioAsset(value: unknown): StudioAsset | null {
     ...(typeof (record.created_at ?? record.createdAt) === "number"
       ? { createdAt: Number(record.created_at ?? record.createdAt) }
       : {}),
+    ...(typeof (record.training_eligible ?? record.trainingEligible) === "boolean"
+      ? { trainingEligible: (record.training_eligible ?? record.trainingEligible) === true }
+      : {}),
   };
 }
 
