@@ -17,6 +17,14 @@ class ProviderSpec:
 
 PROVIDERS: tuple[ProviderSpec, ...] = (
     ProviderSpec(
+        id="fal",
+        target_name="Fal",
+        function_name="renderhaus-fal-tools",
+        module_path="providers.fal.api",
+        env_keys=("FAL_KEY", "FAL_DRY_RUN"),
+        default_env={"FAL_DRY_RUN": "true"},
+    ),
+    ProviderSpec(
         id="seedance",
         target_name="Seedance",
         function_name="renderhaus-seedance-tools",

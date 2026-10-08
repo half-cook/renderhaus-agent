@@ -161,7 +161,7 @@ def enrich_tool_schema(provider_id: str, tool: dict[str, Any]) -> dict[str, Any]
     enriched = deepcopy(tool)
     tool_name = str(enriched.get("name") or "")
     properties = (enriched.get("inputSchema") or {}).get("properties") or {}
-    for field, rule in TOOL_ARGUMENT_RULES.get(provider_id, {}).get(tool_name, {}).items():
+    for field, rule in argument_rules(provider_id, tool_name).items():
         schema = properties.get(field)
         if not isinstance(schema, dict):
             continue
@@ -243,6 +243,10 @@ def _validate_rule(path: str, value: Any, rule: ArgumentRule) -> None:
 
 
 def _validate_cross_fields(provider_id: str, tool_name: str, arguments: dict[str, Any]) -> None:
+    if provider_id == "fal":
+        from providers.fal.wan import validate_arguments
+
+        validate_arguments(tool_name, arguments)
     if provider_id == "remotion" and tool_name == "render_timeline":
         if not arguments.get("visuals"):
             raise ValueError("render_timeline requires at least one visual clip.")
@@ -327,8 +331,16 @@ def validate_tool_arguments(
     """Validate every Gateway call at the last boundary before provider I/O."""
     cleaned = {key: value for key, value in (arguments or {}).items() if value is not None}
     _validate_schema(cleaned, input_schema, "arguments")
-    for field, rule in TOOL_ARGUMENT_RULES.get(provider_id, {}).get(tool_name, {}).items():
+    for field, rule in argument_rules(provider_id, tool_name).items():
         if field in cleaned:
             _validate_rule(f"arguments.{field}", cleaned[field], rule)
     _validate_cross_fields(provider_id, tool_name, cleaned)
     return cleaned
+
+
+def argument_rules(provider_id: str, tool_name: str) -> dict[str, ArgumentRule]:
+    if provider_id == "fal":
+        from providers.fal.wan import ARGUMENT_RULES
+
+        return ARGUMENT_RULES.get(tool_name, {})
+    return TOOL_ARGUMENT_RULES.get(provider_id, {}).get(tool_name, {})

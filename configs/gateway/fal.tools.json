@@ -1,0 +1,267 @@
+[
+  {
+    "name": "text_to_video",
+    "description": "Generate a Wan VACE clip from text. Returns job_id; poll get_video_task with download=true until terminal.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "prompt": {
+          "type": "string"
+        },
+        "model": {
+          "type": "string",
+          "description": "Allowed values: fal-ai/wan-vace-14b, fal-ai/wan-22-vace-fun-a14b."
+        },
+        "num_frames": {
+          "type": "integer",
+          "description": "Allowed range: 81 to 241."
+        },
+        "frames_per_second": {
+          "type": "integer",
+          "description": "Allowed range: 5 to 30."
+        },
+        "resolution": {
+          "type": "string",
+          "description": "Allowed values: auto, 240p, 360p, 480p, 580p, 720p."
+        },
+        "aspect_ratio": {
+          "type": "string",
+          "description": "Allowed values: auto, 16:9, 1:1, 9:16."
+        },
+        "negative_prompt": {
+          "type": "string"
+        },
+        "seed": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "prompt"
+      ]
+    }
+  },
+  {
+    "name": "image_to_video",
+    "description": "Animate first_frame_url using Wan VACE. Returns job_id; poll get_video_task with download=true until terminal.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "first_frame_url": {
+          "type": "string"
+        },
+        "prompt": {
+          "type": "string"
+        },
+        "model": {
+          "type": "string",
+          "description": "Allowed values: fal-ai/wan-vace-14b, fal-ai/wan-22-vace-fun-a14b."
+        },
+        "num_frames": {
+          "type": "integer",
+          "description": "Allowed range: 81 to 241."
+        },
+        "frames_per_second": {
+          "type": "integer",
+          "description": "Allowed range: 5 to 30."
+        },
+        "resolution": {
+          "type": "string",
+          "description": "Allowed values: auto, 240p, 360p, 480p, 580p, 720p."
+        },
+        "aspect_ratio": {
+          "type": "string",
+          "description": "Allowed values: auto, 16:9, 1:1, 9:16."
+        },
+        "last_frame_url": {
+          "type": "string"
+        },
+        "negative_prompt": {
+          "type": "string"
+        },
+        "seed": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "first_frame_url",
+        "prompt"
+      ]
+    }
+  },
+  {
+    "name": "reference_to_video",
+    "description": "Generate a Wan VACE clip guided by ref_image_urls for subject consistency. Returns job_id; poll get_video_task with download=true until terminal.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "ref_image_urls": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "prompt": {
+          "type": "string"
+        },
+        "model": {
+          "type": "string",
+          "description": "Allowed values: fal-ai/wan-vace-14b, fal-ai/wan-22-vace-fun-a14b."
+        },
+        "num_frames": {
+          "type": "integer",
+          "description": "Allowed range: 81 to 241."
+        },
+        "frames_per_second": {
+          "type": "integer",
+          "description": "Allowed range: 5 to 30."
+        },
+        "resolution": {
+          "type": "string",
+          "description": "Allowed values: auto, 240p, 360p, 480p, 580p, 720p."
+        },
+        "aspect_ratio": {
+          "type": "string",
+          "description": "Allowed values: auto, 16:9, 1:1, 9:16."
+        },
+        "first_frame_url": {
+          "type": "string"
+        },
+        "last_frame_url": {
+          "type": "string"
+        },
+        "negative_prompt": {
+          "type": "string"
+        },
+        "seed": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "ref_image_urls",
+        "prompt"
+      ]
+    }
+  },
+  {
+    "name": "video_to_video",
+    "description": "Edit video_url with Wan VACE. Choose freeform, inpainting, outpainting, reframe, depth, or pose. Inpainting needs one mask; outpainting needs expansion sides. Returns job_id; poll get_video_task with download=true until terminal.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "video_url": {
+          "type": "string"
+        },
+        "prompt": {
+          "type": "string"
+        },
+        "edit_mode": {
+          "type": "string",
+          "description": "Allowed values: freeform, inpainting, outpainting, reframe, depth, pose."
+        },
+        "task": {
+          "type": "string",
+          "description": "Allowed values: inpainting, outpainting, reframe, depth, pose."
+        },
+        "model": {
+          "type": "string",
+          "description": "Allowed values: fal-ai/wan-vace-14b, fal-ai/wan-22-vace-fun-a14b."
+        },
+        "num_frames": {
+          "type": "integer",
+          "description": "Allowed range: 81 to 241."
+        },
+        "frames_per_second": {
+          "type": "integer",
+          "description": "Allowed range: 5 to 30."
+        },
+        "resolution": {
+          "type": "string",
+          "description": "Allowed values: auto, 240p, 360p, 480p, 580p, 720p."
+        },
+        "aspect_ratio": {
+          "type": "string",
+          "description": "Allowed values: auto, 16:9, 1:1, 9:16."
+        },
+        "mask_video_url": {
+          "type": "string"
+        },
+        "mask_image_url": {
+          "type": "string"
+        },
+        "ref_image_urls": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "first_frame_url": {
+          "type": "string"
+        },
+        "last_frame_url": {
+          "type": "string"
+        },
+        "preprocess": {
+          "type": "boolean"
+        },
+        "expand_left": {
+          "type": "boolean"
+        },
+        "expand_right": {
+          "type": "boolean"
+        },
+        "expand_top": {
+          "type": "boolean"
+        },
+        "expand_bottom": {
+          "type": "boolean"
+        },
+        "expand_ratio": {
+          "type": "number",
+          "description": "Allowed range: 0 to 1."
+        },
+        "zoom_factor": {
+          "type": "number"
+        },
+        "trim_borders": {
+          "type": "boolean"
+        },
+        "negative_prompt": {
+          "type": "string"
+        },
+        "seed": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "video_url"
+      ]
+    }
+  },
+  {
+    "name": "get_video_task",
+    "description": "Poll an existing fal job_id once. Fetch completed results and optionally download the MP4. Never submits another generation.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "job_id": {
+          "type": "string"
+        },
+        "download": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "job_id"
+      ]
+    }
+  },
+  {
+    "name": "list_fal_models",
+    "description": "List documented Wan VACE models, endpoints, licences, and published pricing. Static catalog; no network or generation.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": []
+    }
+  }
+]
