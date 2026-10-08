@@ -1,0 +1,640 @@
+{
+  "premium_video_approval": true,
+  "default_video_tool": "wan_t2v",
+  "premium_targets": [
+    "Kling",
+    "Runway",
+    "Veo"
+  ],
+  "premium_video_tools": [
+    "text_to_video",
+    "image_to_video",
+    "video_to_video",
+    "omni_video",
+    "extend_video"
+  ],
+  "free_tools": [
+    "get_video_task",
+    "get_runway_task",
+    "get_render_progress",
+    "query_music_task",
+    "get_music_task",
+    "list_kling_models",
+    "list_runway_models",
+    "list_fal_models",
+    "list_seedance_models",
+    "list_seedream_models",
+    "list_voices",
+    "estimate_tts_cost",
+    "export_nle_timeline"
+  ],
+  "providers": {
+    "kling": {
+      "enabled": true,
+      "license": "service-terms",
+      "allowed_regions": [],
+      "training_eligible": false,
+      "models": [
+        "kling-3.0",
+        "kling-3.0-turbo",
+        "kling-3.0-omni"
+      ],
+      "default_models": {
+        "text_to_video": "kling-3.0",
+        "image_to_video": "kling-3.0",
+        "omni_video": "kling-3.0-omni"
+      },
+      "model_env": "KLING_MODEL",
+      "model_policies": {
+        "kling-3.0": {
+          "license": "service-terms",
+          "training_eligible": false,
+          "allowed_regions": []
+        },
+        "kling-3.0-turbo": {
+          "license": "service-terms",
+          "training_eligible": false,
+          "allowed_regions": []
+        },
+        "kling-3.0-omni": {
+          "license": "service-terms",
+          "training_eligible": false,
+          "allowed_regions": []
+        }
+      }
+    },
+    "runway": {
+      "enabled": true,
+      "license": "service-terms",
+      "allowed_regions": [],
+      "training_eligible": false,
+      "models": [
+        "gen4.5",
+        "aleph2",
+        "gen4_image",
+        "gen4_image_turbo"
+      ],
+      "default_models": {
+        "text_to_video": "gen4.5",
+        "image_to_video": "gen4.5",
+        "video_to_video": "aleph2",
+        "text_to_image": "gen4_image",
+        "image_to_image": "gen4_image"
+      },
+      "model_policies": {
+        "gen4.5": {
+          "license": "service-terms",
+          "training_eligible": false,
+          "allowed_regions": []
+        },
+        "aleph2": {
+          "license": "service-terms",
+          "training_eligible": false,
+          "allowed_regions": []
+        },
+        "gen4_image": {
+          "license": "service-terms",
+          "training_eligible": false,
+          "allowed_regions": []
+        },
+        "gen4_image_turbo": {
+          "license": "service-terms",
+          "training_eligible": false,
+          "allowed_regions": []
+        }
+      }
+    },
+    "seedance": {
+      "enabled": true,
+      "license": "service-terms",
+      "allowed_regions": [],
+      "training_eligible": false,
+      "models": [
+        "seedance-1-5-pro-251215"
+      ],
+      "default_model": "seedance-1-5-pro-251215",
+      "model_env": "SEEDANCE_MODEL",
+      "model_policies": {
+        "seedance-1-5-pro-251215": {
+          "license": "service-terms",
+          "training_eligible": false,
+          "allowed_regions": []
+        }
+      }
+    },
+    "seedream": {
+      "enabled": true,
+      "license": "service-terms",
+      "allowed_regions": [],
+      "training_eligible": false,
+      "models": [
+        "seedream-5-0-lite-260128"
+      ],
+      "default_model": "seedream-5-0-lite-260128",
+      "model_env": "SEEDREAM_MODEL",
+      "model_policies": {
+        "seedream-5-0-lite-260128": {
+          "license": "service-terms",
+          "training_eligible": false,
+          "allowed_regions": []
+        }
+      }
+    },
+    "elevenlabs": {
+      "enabled": true,
+      "license": "service-terms",
+      "allowed_regions": [],
+      "training_eligible": false
+    },
+    "fish_audio": {
+      "enabled": true,
+      "license": "service-terms",
+      "allowed_regions": [],
+      "training_eligible": false,
+      "models": [
+        "s1",
+        "s2-pro",
+        "s2.1-pro",
+        "s2.1-pro-free"
+      ],
+      "default_model": "s2.1-pro-free",
+      "model_env": "FISH_AUDIO_MODEL",
+      "model_policies": {
+        "s1": {
+          "license": "service-terms",
+          "training_eligible": false,
+          "allowed_regions": []
+        },
+        "s2-pro": {
+          "license": "service-terms",
+          "training_eligible": false,
+          "allowed_regions": []
+        },
+        "s2.1-pro": {
+          "license": "service-terms",
+          "training_eligible": false,
+          "allowed_regions": []
+        },
+        "s2.1-pro-free": {
+          "license": "service-terms",
+          "training_eligible": false,
+          "allowed_regions": []
+        }
+      }
+    },
+    "remotion": {
+      "enabled": true,
+      "license": "service-terms",
+      "allowed_regions": [],
+      "training_eligible": false
+    },
+    "fal": {
+      "enabled": true,
+      "license": "Apache-2.0",
+      "allowed_regions": [],
+      "training_eligible": true,
+      "models": [
+        "fal-ai/wan-vace-14b",
+        "fal-ai/wan-22-vace-fun-a14b"
+      ],
+      "default_model": "fal-ai/wan-vace-14b",
+      "model_policies": {
+        "fal-ai/wan-vace-14b": {
+          "license": "Apache-2.0",
+          "training_eligible": true,
+          "allowed_regions": []
+        },
+        "fal-ai/wan-22-vace-fun-a14b": {
+          "license": "Apache-2.0",
+          "training_eligible": true,
+          "allowed_regions": []
+        }
+      }
+    },
+    "minimax_h3": {
+      "enabled": false,
+      "license": "review-required",
+      "allowed_regions": [],
+      "blocked_regions": [
+        "US"
+      ],
+      "training_eligible": false
+    },
+    "hunyuan": {
+      "enabled": false,
+      "license": "review-required",
+      "allowed_regions": [],
+      "blocked_regions": [
+        "US"
+      ],
+      "training_eligible": false
+    },
+    "luma": {
+      "enabled": false,
+      "license": "review-required",
+      "allowed_regions": [],
+      "blocked_regions": [
+        "US"
+      ],
+      "training_eligible": false
+    },
+    "veo": {
+      "enabled": false,
+      "license": "review-required",
+      "allowed_regions": [],
+      "blocked_regions": [
+        "US"
+      ],
+      "training_eligible": false
+    }
+  },
+  "tools": {
+    "kling_t2v": {
+      "gateway_tool": "Kling___text_to_video",
+      "skill": "t2v",
+      "status": "ready"
+    },
+    "kling_i2v": {
+      "gateway_tool": "Kling___image_to_video",
+      "skill": "i2v",
+      "status": "ready"
+    },
+    "runway_gen45_t2v": {
+      "gateway_tool": "Runway___text_to_video",
+      "skill": "t2v",
+      "status": "ready"
+    },
+    "runway_aleph_edit": {
+      "gateway_tool": "Runway___video_to_video",
+      "skill": "edit-v2v",
+      "status": "ready"
+    },
+    "wan_t2v": {
+      "gateway_tool": "Fal___text_to_video",
+      "skill": "t2v",
+      "status": "ready"
+    },
+    "wan_i2v": {
+      "gateway_tool": "Fal___image_to_video",
+      "skill": "i2v",
+      "status": "ready"
+    },
+    "wan_vace_edit": {
+      "gateway_tool": "Fal___video_to_video",
+      "skill": "edit-v2v",
+      "status": "ready"
+    },
+    "seedance_t2v": {
+      "gateway_tool": "Seedance___text_to_video",
+      "skill": "t2v",
+      "status": "ready"
+    },
+    "seedance_i2v": {
+      "gateway_tool": "Seedance___image_to_video",
+      "skill": "i2v",
+      "status": "ready"
+    },
+    "seedream_t2i": {
+      "gateway_tool": "Seedream___text_to_image",
+      "skill": "still-then-video",
+      "status": "ready"
+    },
+    "elevenlabs_tts": {
+      "gateway_tool": "ElevenLabs___text_to_speech_convert",
+      "skill": "audio-bed",
+      "status": "ready"
+    },
+    "fish_audio_tts": {
+      "gateway_tool": "FishAudio___generate_speech",
+      "skill": "audio-bed",
+      "status": "ready"
+    },
+    "remotion_render": {
+      "gateway_tool": "Remotion___render_timeline",
+      "skill": "motion-graphics",
+      "status": "ready"
+    },
+    "otio_export": {
+      "gateway_tool": "Remotion___export_nle_timeline",
+      "skill": "resolve-handoff",
+      "status": "ready"
+    },
+    "fcpxml_export": {
+      "gateway_tool": "Remotion___export_nle_timeline",
+      "skill": "resolve-handoff",
+      "status": "ready"
+    },
+    "edl_export": {
+      "gateway_tool": "Remotion___export_nle_timeline",
+      "skill": "resolve-handoff",
+      "status": "ready"
+    },
+    "media_package": {
+      "gateway_tool": "Remotion___export_nle_timeline",
+      "skill": "resolve-handoff",
+      "status": "ready"
+    },
+    "local_qc": {
+      "gateway_tool": null,
+      "skill": "continuity-qc",
+      "status": "ready"
+    },
+    "runway_act_two": {
+      "gateway_tool": null,
+      "status": "pending",
+      "reason": "provider pending: Runway Act-Two"
+    },
+    "luma_ray3_t2v": {
+      "gateway_tool": null,
+      "status": "pending",
+      "reason": "provider pending: Luma"
+    },
+    "luma_ray3_modify": {
+      "gateway_tool": null,
+      "status": "pending",
+      "reason": "provider pending: Luma"
+    },
+    "hedra_character3": {
+      "gateway_tool": null,
+      "status": "pending",
+      "reason": "provider pending: Hedra"
+    },
+    "liveportrait_lipsync": {
+      "gateway_tool": null,
+      "status": "pending",
+      "reason": "provider pending: LivePortrait"
+    },
+    "infinitetalk_lipsync": {
+      "gateway_tool": null,
+      "status": "pending",
+      "reason": "provider pending: InfiniteTalk"
+    },
+    "seedvr2_upscale": {
+      "gateway_tool": null,
+      "status": "pending",
+      "reason": "provider pending: SeedVR2"
+    },
+    "rife_interpolate": {
+      "gateway_tool": null,
+      "status": "pending",
+      "reason": "provider pending: RIFE"
+    },
+    "topaz_upscale": {
+      "gateway_tool": null,
+      "status": "pending",
+      "reason": "provider pending: Topaz"
+    },
+    "mmaudio_sfx": {
+      "gateway_tool": null,
+      "status": "pending",
+      "reason": "provider pending: MMAudio"
+    },
+    "ace_step_music": {
+      "gateway_tool": null,
+      "status": "pending",
+      "reason": "provider pending: ACE-Step"
+    },
+    "veo_t2v": {
+      "gateway_tool": null,
+      "status": "pending",
+      "reason": "provider pending: Veo"
+    },
+    "veo_i2v": {
+      "gateway_tool": null,
+      "status": "pending",
+      "reason": "provider pending: Veo"
+    },
+    "veo_extend": {
+      "gateway_tool": null,
+      "status": "pending",
+      "reason": "provider pending: Veo"
+    },
+    "ideogram_t2i": {
+      "gateway_tool": null,
+      "status": "pending",
+      "reason": "provider pending: Ideogram"
+    },
+    "recraft_t2i": {
+      "gateway_tool": null,
+      "status": "pending",
+      "reason": "provider pending: Recraft"
+    },
+    "runway_gen4_t2i": {
+      "gateway_tool": "Runway___text_to_image",
+      "skill": "product-images",
+      "status": "ready"
+    },
+    "runway_i2v": {
+      "gateway_tool": "Runway___image_to_video",
+      "skill": "i2v",
+      "status": "ready"
+    }
+  },
+  "rules": [
+    {
+      "pattern": "still.*approval.*animat|still.*then.*animat",
+      "skill": "still-then-video",
+      "abstract_tool": "seedream_t2i"
+    },
+    {
+      "pattern": "runway.*(image to video|i2v)|(image to video|i2v).*runway",
+      "skill": "i2v",
+      "abstract_tool": "runway_i2v"
+    },
+    {
+      "pattern": "(runway|gen.?4).*image",
+      "skill": "product-images",
+      "abstract_tool": "runway_gen4_t2i"
+    },
+    {
+      "pattern": "seedream|generate.*(still|image)|product still",
+      "skill": "product-images",
+      "abstract_tool": "seedream_t2i"
+    },
+    {
+      "pattern": "reject.*training|training.*reject",
+      "skill": "continuity-qc",
+      "abstract_tool": "wan_t2v"
+    },
+    {
+      "pattern": "\\bqc\\b|consistency|continuity|face drift",
+      "skill": "continuity-qc",
+      "abstract_tool": "local_qc"
+    },
+    {
+      "pattern": "act.two|performance capture|acting take",
+      "skill": "act-two",
+      "abstract_tool": "runway_act_two"
+    },
+    {
+      "pattern": "lipsync|lip.sync|talking head|talking avatar|spokesperson|avatar.*(say|script)|elevenlabs then.*infinitetalk",
+      "skill": "lipsync",
+      "abstract_tool": "infinitetalk_lipsync"
+    },
+    {
+      "pattern": "upscale|interpolate frames",
+      "skill": "upscale",
+      "abstract_tool": "seedvr2_upscale"
+    },
+    {
+      "pattern": "\\bveo\\b|highest quality.*audio",
+      "skill": "veo-t2v",
+      "abstract_tool": "veo_t2v"
+    },
+    {
+      "pattern": "(remotion|lower thirds?|kinetic titles)",
+      "skill": "motion-graphics",
+      "abstract_tool": "remotion_render"
+    },
+    {
+      "pattern": "ideogram",
+      "skill": "motion-graphics",
+      "abstract_tool": "ideogram_t2i"
+    },
+    {
+      "pattern": "recraft|vector brand",
+      "skill": "motion-graphics",
+      "abstract_tool": "recraft_t2i"
+    },
+    {
+      "pattern": "text in image",
+      "skill": "still-then-video",
+      "abstract_tool": "ideogram_t2i"
+    },
+    {
+      "pattern": "rough cut",
+      "skill": "resolve-rough-cut",
+      "abstract_tool": "edl_export"
+    },
+    {
+      "pattern": "remove silences",
+      "skill": "resolve-silence-cut",
+      "abstract_tool": "edl_export"
+    },
+    {
+      "pattern": "auto captions",
+      "skill": "resolve-auto-subs",
+      "abstract_tool": "fcpxml_export"
+    },
+    {
+      "pattern": "import editor|roundtrip",
+      "skill": "resolve-roundtrip",
+      "abstract_tool": "fcpxml_export"
+    },
+    {
+      "pattern": "without touching grade",
+      "skill": "resolve-new-track-safety",
+      "abstract_tool": "otio_export"
+    },
+    {
+      "pattern": "free resolve|fcpxml",
+      "skill": "resolve-handoff",
+      "abstract_tool": "fcpxml_export"
+    },
+    {
+      "pattern": "\\bedl\\b",
+      "skill": "resolve-handoff",
+      "abstract_tool": "edl_export"
+    },
+    {
+      "pattern": "zip media|conform|package media",
+      "skill": "resolve-handoff",
+      "abstract_tool": "media_package"
+    },
+    {
+      "pattern": "export.*(resolve|project|timeline)|\\botio\\b|handoff",
+      "skill": "resolve-handoff",
+      "abstract_tool": "otio_export"
+    },
+    {
+      "pattern": "mmaudio|foley|video to audio|synchronized sfx",
+      "skill": "audio-bed",
+      "abstract_tool": "mmaudio_sfx"
+    },
+    {
+      "pattern": "ace.step|music bed",
+      "skill": "audio-bed",
+      "abstract_tool": "ace_step_music"
+    },
+    {
+      "pattern": "elevenlabs|narrat",
+      "skill": "audio-bed",
+      "abstract_tool": "elevenlabs_tts"
+    },
+    {
+      "pattern": "fish audio",
+      "skill": "audio-bed",
+      "abstract_tool": "fish_audio_tts"
+    },
+    {
+      "pattern": "luma",
+      "skill": "edit-v2v",
+      "abstract_tool": "luma_ray3_modify"
+    },
+    {
+      "pattern": "aleph|restyle.*footage",
+      "skill": "edit-v2v",
+      "abstract_tool": "runway_aleph_edit"
+    },
+    {
+      "pattern": "masked|vace|edit.*(video|footage)|swap.*product",
+      "skill": "edit-v2v",
+      "abstract_tool": "wan_vace_edit"
+    },
+    {
+      "pattern": "lock character.*i2v",
+      "skill": "still-then-video",
+      "abstract_tool": "kling_i2v"
+    },
+    {
+      "pattern": "seedance.*(image|i2v)|(image|i2v).*seedance",
+      "skill": "i2v",
+      "abstract_tool": "seedance_i2v"
+    },
+    {
+      "pattern": "wan.*(frame|i2v)",
+      "skill": "i2v",
+      "abstract_tool": "wan_i2v"
+    },
+    {
+      "pattern": "kling.*(image|i2v)|(image|i2v).*kling|animate.*product photo",
+      "skill": "i2v",
+      "abstract_tool": "kling_i2v"
+    },
+    {
+      "pattern": "animat|image to video|\\bi2v\\b|first.*last frame",
+      "skill": "i2v",
+      "abstract_tool": "wan_i2v"
+    },
+    {
+      "pattern": "runway.*(video|gen.?4)|gen.?4.?5",
+      "skill": "t2v",
+      "abstract_tool": "runway_gen45_t2v"
+    },
+    {
+      "pattern": "seedance",
+      "skill": "t2v",
+      "abstract_tool": "seedance_t2v"
+    },
+    {
+      "pattern": "kling|cinematic drone",
+      "skill": "t2v",
+      "abstract_tool": "kling_t2v"
+    },
+    {
+      "pattern": "video|\\bt2v\\b|generate.*clip",
+      "skill": "t2v",
+      "abstract_tool": "wan_t2v"
+    }
+  ],
+  "pending_skills": {
+    "resolve-rough-cut": "provider pending: local Resolve bridge/integration",
+    "resolve-silence-cut": "provider pending: local Resolve bridge/integration",
+    "resolve-auto-subs": "provider pending: local Resolve bridge/integration",
+    "resolve-roundtrip": "provider pending: local Resolve bridge/integration",
+    "resolve-new-track-safety": "provider pending: local Resolve bridge/integration"
+  },
+  "continuity_qc": {
+    "dinov3_enabled": false
+  }
+}

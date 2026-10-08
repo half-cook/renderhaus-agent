@@ -1,7 +1,9 @@
 # Runway skill guidance draft
 
-This draft describes routing through the existing Gateway. It is not installed as
-an agent skill and does not change the current agent backend.
+Status: provider built. Guidance is incorporated in the live t2v, i2v, edit-v2v, and product-images skills.
+The live skills and `agent/deep_agent/routing_policy.json` define current routing.
+
+This provider reference informs the installed intent skills. Those skills own live routing.
 
 ## Choose Runway for the requested media operation
 

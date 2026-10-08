@@ -1,12 +1,8 @@
----
-name: resolve-handoff
-description: Export a Renderhaus assembly for an editor when the user says "send to Resolve", "give my editor a timeline", or "export XML/EDL".
-metadata:
-  include_tools:
-    - export_nle_timeline
----
+# Resolve handoff reference
 
-# Resolve handoff
+Status: provider built. Installed as `agent/deep_agent/skills/resolve-handoff/SKILL.md`.
+
+The live skill owns dispatch disclosure and routing. This reference retains the export contract.
 
 Use `export_nle_timeline`, exposed as `Remotion___export_nle_timeline` on Gateway, for an
 export-first editor handoff. Read [NLE export](../NLE_EXPORT.md) for the snapshot contract.
