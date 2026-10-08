@@ -22,6 +22,7 @@ from langgraph.errors import GraphRecursionError
 
 from agent.backend_config import deep_agent_model
 from agent.deep_agent.checkpoints import StudioCheckpointer
+from agent.deep_agent.files import subagent_file_updates
 from agent.deep_agent.memory import ProjectMemory
 from agent.gateway_executor import GatewayExecutor, tool_needs_approval
 from agent.errors import AgentRunLimitExceeded
@@ -191,6 +192,7 @@ async def run_with_servers(request, studio, servers, *, model=None):
         interrupt_on=interrupt_on, response_format=ToolStrategy(StudioAgentOutput),
         middleware=[
             TodoListMiddleware(),
+            subagent_file_updates,
             FilesystemMiddleware(backend=backend, tools=FS_TOOLS, _permissions=PERMISSIONS),
             SkillsMiddleware(backend=backend, sources=["/skills/"], tools=dispatch_tools),
             ProjectMemory(backend=backend, sources=["/AGENTS.md"]),

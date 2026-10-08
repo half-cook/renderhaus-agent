@@ -254,6 +254,36 @@ class DeepAgentTests(unittest.IsolatedAsyncioTestCase):
         ])
         self.assertEqual(result.title, FINAL["title"])
 
+    async def test_parallel_subagents_preserve_edits_and_independent_files(self):
+        def verify_brief(messages, tools):
+            self.assertIn("Updated brief", messages[-1].text)
+            return call("read_file", {"file_path": "/audio.md"}, "read-audio")
+
+        def verify_audio(messages, tools):
+            self.assertIn("Quiet soundtrack", messages[-1].text)
+            return final()
+
+        tasks = AIMessage(content="", tool_calls=[
+            call("task", {"subagent_type": "planner", "description": "Update the brief"}, "planner").tool_calls[0],
+            call("task", {"subagent_type": "audio", "description": "Write the audio plan"}, "audio").tool_calls[0],
+        ])
+
+        def write_plan(messages, tools):
+            if "Renderhaus planner" in messages[0].text:
+                return call("edit_file", {"file_path": "/brief.md", "old_string": "Old brief",
+                                          "new_string": "Updated brief"}, "edit-brief")
+            self.assertIn("Renderhaus audio", messages[0].text)
+            return call("write_file", {"file_path": "/audio.md", "content": "Quiet soundtrack"}, "audio-plan")
+
+        _, studio, _ = await self.run_graph(self.request(), [
+            call("write_file", {"file_path": "/brief.md", "content": "Old brief"}, "brief"),
+            tasks, write_plan, write_plan, AIMessage(content="Plan ready."), AIMessage(content="Audio ready."),
+            call("read_file", {"file_path": "/brief.md"}, "read-brief"), verify_brief, verify_audio,
+        ])
+        await self.run_graph(self.request(session_items=json.loads(json.dumps(studio.session_items))), [
+            call("read_file", {"file_path": "/brief.md"}, "restored-brief"), verify_brief, verify_audio,
+        ])
+
     async def test_interrupt_inside_subagent_resumes_nested_task(self):
         request = self.request()
         studio = _context_from_request(request)
