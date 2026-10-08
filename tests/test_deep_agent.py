@@ -92,6 +92,48 @@ class DeepAgentTests(unittest.IsolatedAsyncioTestCase):
         self.assertFalse(model._steps)
         return result, studio, model
 
+    async def test_todos_persist_across_fresh_workers(self):
+        from agent.deep_agent.checkpoints import StudioCheckpointer
+
+        todos = [{"content": "Preview the first shot", "status": "in_progress"},
+                 {"content": "Assemble the approved shots", "status": "pending"}]
+
+        def plan(messages, tools):
+            self.assertIn("write_todos", tools)
+            return call("write_todos", {"todos": todos}, "plan")
+
+        _, studio, _ = await self.run_graph(self.request(), [plan, final()])
+        _, restored, _ = await self.run_graph(
+            self.request(session_items=json.loads(json.dumps(studio.session_items))), [final()],
+        )
+        session = restored.session_items[0]
+        saver = StudioCheckpointer(session["thread_id"], session["checkpoint"])
+        state = saver.get_tuple({"configurable": {"thread_id": session["thread_id"]}})
+        self.assertEqual(state.checkpoint["channel_values"]["todos"], todos)
+
+    async def test_planner_todos_do_not_replace_manager_plan(self):
+        from agent.deep_agent.checkpoints import StudioCheckpointer
+
+        todos = [{"content": "Deliver the edit", "status": "pending"}]
+
+        def planner(messages, tools):
+            self.assertIn("write_todos", tools)
+            self.assertNotIn("call_media_tool", tools)
+            return call("write_todos", {"todos": [
+                {"content": "Plan shot durations", "status": "completed"},
+            ]}, "child-plan")
+
+        _, studio, _ = await self.run_graph(self.request(), [
+            call("write_todos", {"todos": todos}, "manager-plan"),
+            call("task", {"subagent_type": "planner", "description": "Plan two shots"}, "planner"),
+            planner, AIMessage(content="Two shots planned."), final(),
+        ])
+        session = studio.session_items[0]
+        state = StudioCheckpointer(session["thread_id"], session["checkpoint"]).get_tuple(
+            {"configurable": {"thread_id": session["thread_id"]}},
+        )
+        self.assertEqual(state.checkpoint["channel_values"]["todos"], todos)
+
     async def test_skills_disclose_tools_only_after_relevant_read(self):
         def before(messages, tools):
             self.assertNotIn("call_media_tool", tools)

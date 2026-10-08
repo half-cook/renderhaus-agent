@@ -13,6 +13,7 @@ from deepagents.backends import CompositeBackend, FilesystemBackend, StateBacken
 from deepagents.backends.utils import create_file_data
 from deepagents.middleware.filesystem import FilesystemMiddleware, FilesystemPermission
 from deepagents.middleware.skills import SkillsMiddleware
+from langchain.agents.middleware import TodoListMiddleware
 from langchain.agents.structured_output import ToolStrategy
 from langchain.tools import ToolRuntime, tool
 from langchain_core.messages import AIMessage, HumanMessage
@@ -56,6 +57,7 @@ You use LangChain Deep Agents. Read the relevant /skills/<name>/SKILL.md before 
 Skills disclose call_media_tool, call_audio_tool, and call_editor_tool. Each dispatch tool takes
 an exact discovered Gateway tool_name and an arguments object matching its inputSchema.
 Search before dispatch. Delegate focused work to planner, media, audio, or editor when useful.
+Use write_todos to track multi-shot or multi-step work and update the plan as steps finish.
 Pass current asset handles, the plan, and saved job IDs in the task description. Project files
 are virtual and private to this workspace/project/conversation. There is no shell or direct
 provider access. read_studio_context supplies optional canvas references and current assets.
@@ -176,6 +178,7 @@ async def run_with_servers(request, studio, servers, *, model=None):
         "tools": common_tools,
         "skills": ["/skills/"],
         "middleware": [
+            TodoListMiddleware(),
             FilesystemMiddleware(backend=backend, tools=FS_TOOLS, _permissions=PERMISSIONS),
             SkillsMiddleware(backend=backend, sources=["/skills/"], tools=focused),
             ProjectMemory(backend=backend, sources=["/AGENTS.md"]),
@@ -187,6 +190,7 @@ async def run_with_servers(request, studio, servers, *, model=None):
         skills=["/skills/"], memory=["/AGENTS.md"], checkpointer=saver,
         interrupt_on=interrupt_on, response_format=ToolStrategy(StudioAgentOutput),
         middleware=[
+            TodoListMiddleware(),
             FilesystemMiddleware(backend=backend, tools=FS_TOOLS, _permissions=PERMISSIONS),
             SkillsMiddleware(backend=backend, sources=["/skills/"], tools=dispatch_tools),
             ProjectMemory(backend=backend, sources=["/AGENTS.md"]),
