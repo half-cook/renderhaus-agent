@@ -22,6 +22,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from decimal import Decimal
 import json
+import math
 import os
 from typing import Any
 
@@ -119,6 +120,53 @@ def _seedream_cost(arguments: dict[str, Any]) -> GenerationCost:
     return _with_fee(provider_cents)
 
 
+# Runway developer pricing verified 2026-10-08.
+# https://docs.dev.runwayml.com/guides/pricing/
+# One credit is $0.01. Default MP4 only; no professional-format surcharge.
+RUNWAY_CENTS_PER_SECOND = {"gen4.5": 12, "aleph2": 28}
+RUNWAY_IMAGE_CENTS = {"gen4_image": {"720p": 5, "1080p": 8}, "gen4_image_turbo": 2}
+
+
+def _runway_cost(tool: str, arguments: dict[str, Any]) -> GenerationCost:
+    from providers.runway.api import dry_run
+    from providers.runway.contracts import IMAGE_720_RATIOS, IMAGE_1080_RATIOS
+
+    if tool in {"get_runway_task", "list_runway_models"}:
+        return GenerationCost(0, 0)
+    if tool in {"text_to_video", "image_to_video", "video_to_video"}:
+        edit = tool == "video_to_video"
+        model = arguments.get("model") or ("aleph2" if edit else "gen4.5")
+        if model != ("aleph2" if edit else "gen4.5"):
+            raise ValueError("Unsupported Runway model for this video tool.")
+        duration = arguments.get("video_duration_seconds") if edit else arguments.get("duration_seconds", 5)
+        if (
+            isinstance(duration, bool)
+            or not isinstance(duration, (int, float))
+            or not math.isfinite(duration)
+            or not 2 <= duration <= (30 if edit else 10)
+            or (not edit and not isinstance(duration, int))
+        ):
+            raise ValueError("Supply a valid Runway duration before quoting cost.")
+        # Aleph preserves input duration. This quote uses the caller's measured duration.
+        # TODO: reconcile fractional-second charging against a real task cost/invoice.
+        cents = math.ceil(duration * RUNWAY_CENTS_PER_SECOND[model])
+    elif tool in {"text_to_image", "image_to_image"}:
+        model = arguments.get("model") or "gen4_image"
+        ratio = arguments.get("ratio") or "1280:720"
+        if ratio not in IMAGE_720_RATIOS + IMAGE_1080_RATIOS:
+            # TODO: official pricing does not map legacy dimensions to resolution tiers.
+            raise ValueError("Runway pricing is unconfirmed for these image dimensions.")
+        if model == "gen4_image":
+            cents = RUNWAY_IMAGE_CENTS[model]["720p" if ratio in IMAGE_720_RATIOS else "1080p"]
+        elif model == "gen4_image_turbo" and tool == "image_to_image":
+            cents = RUNWAY_IMAGE_CENTS[model]
+        else:
+            raise ValueError("Unsupported Runway model for this image tool.")
+    else:
+        raise ValueError("Unknown Runway tool. No fallback price is available.")
+    return GenerationCost(0, 0) if dry_run() else _with_fee(cents)
+
+
 # -- Fish Audio (voice) ---------------------------------------------------
 # $15 per 1,000,000 UTF-8 bytes, from Fish Audio's own pricing docs --
 # applies to the standard paid models. Our configured default,
@@ -212,6 +260,8 @@ def cost_for(provider: str, tool: str, arguments: dict[str, Any]) -> GenerationC
         return _kling_cost(tool, arguments)
     if tool in POLLING_TOOLS:
         return GenerationCost(provider_cents=0, fee_cents=0)
+    if provider == "runway":
+        return _runway_cost(tool, arguments)
     if provider == "seedance":
         return _seedance_cost(arguments)
     if provider == "seedream":

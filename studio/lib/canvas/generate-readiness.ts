@@ -47,5 +47,13 @@ export function generateBlockers(
     }
   }
 
+  for (const key of ["video_path_or_url", "video_duration_seconds"]) {
+    if (required.has(key) && !connectedFields.includes(key)) {
+      const value = data.config[key];
+      if (value === undefined || value === null || value === "") {
+        blockers.push(`Add the ${fieldLabel(key).toLowerCase()} first.`);
+      }
+    }
+  }
   return [...new Set(blockers)];
 }

@@ -22,6 +22,7 @@ DEFAULT_ENV = {
     "BYTEPLUS_BASE_URL": "https://ark.ap-southeast.bytepluses.com/api/v3",
     "SEEDANCE_MODEL": "seedance-1-5-pro-251215",
     "SEEDANCE_DRY_RUN": "true",
+    "RUNWAY_DRY_RUN": "true",
     "SEEDREAM_MODEL": "seedream-5-0-lite-260128",
     "SEEDREAM_DRY_RUN": "true",
     "FISH_AUDIO_DRY_RUN": "true",

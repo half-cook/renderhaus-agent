@@ -48,6 +48,8 @@ export type ToolDefinition = {
   outputPorts: PortDefinition[];
   primaryFields: string[];
   pollTool?: string;
+  pollIntervalMs?: number;
+  defaults?: Record<string, string | number>;
 };
 
 export type AgentToolEvent = {
@@ -108,6 +110,7 @@ export type CanvasNodeData = {
   status: JobStatus;
   error?: string;
   jobId?: string;
+  sourceVersionIds?: string[];
   approved?: boolean;
   storyOrder?: number;
   agentResult?: AgentResultData;

@@ -16,6 +16,7 @@ if str(ROOT) not in sys.path:
 
 def _force_dry_run() -> None:
     os.environ["KLING_DRY_RUN"] = "true"
+    os.environ["RUNWAY_DRY_RUN"] = "true"
     os.environ["SEEDANCE_DRY_RUN"] = "true"
     os.environ["SEEDREAM_DRY_RUN"] = "true"
     os.environ["ELEVENLABS_DRY_RUN"] = "true"
@@ -86,6 +87,14 @@ def check_dry_run_dispatch() -> None:
                     arguments["image_path_or_url"] = "https://example.test/frame.png"
                 elif name == "get_video_task":
                     arguments["job_id"] = "current:text_to_video:ci-smoke"
+            if spec.id == "runway":
+                for field in ("image_path_or_url", "video_path_or_url"):
+                    if field in arguments:
+                        arguments[field] = "https://example.com/source.mp4" if field.startswith("video") else "https://example.com/source.png"
+                if "video_duration_seconds" in arguments:
+                    arguments["video_duration_seconds"] = 2.0
+                if name == "get_runway_task":
+                    arguments["job_id"] = "00000000-0000-4000-8000-000000000000"
             result = dispatch(spec.id, name, arguments)
             assert isinstance(result, dict), f"{spec.id}.{name} did not return a dict"
             if "error" in result and result.get("error_type"):

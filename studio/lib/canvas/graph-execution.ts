@@ -152,6 +152,7 @@ export async function runCreativeNode(
   if (jobId && tool.pollTool && providerStatus !== "dry_run") {
     return {
       status: "queued",
+      sourceVersionIds,
       result: payload.result,
       jobId,
       error: undefined,
@@ -182,7 +183,7 @@ export async function pollCreativeNode(
       job_id: node.data.jobId,
       download: true,
     },
-    { projectId, assetId: node.data.output?.assetId },
+    { projectId, assetId: node.data.output?.assetId, sourceVersionIds: node.data.sourceVersionIds },
   );
   const providerStatus = statusFrom(payload.result) || "unknown";
   if (payload.assets.length > 0) {

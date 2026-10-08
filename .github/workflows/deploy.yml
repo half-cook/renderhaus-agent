@@ -19,6 +19,7 @@ on:
         type: choice
         options:
           - all
+          - runway
           - seedance
           - kling
           - seedream
@@ -103,11 +104,12 @@ jobs:
                 else
                   SELECTED=()
                   echo "$CHANGED" | grep -E '^providers/kling/|^configs/gateway/kling\.tools\.json' >/dev/null && SELECTED+=(kling)
+                  echo "$CHANGED" | grep -E '^providers/runway/|^configs/gateway/runway\.tools\.json' >/dev/null && SELECTED+=(runway)
                   echo "$CHANGED" | grep -E '^providers/seedance/|^lambdas/seedance/' >/dev/null && SELECTED+=(seedance)
                   echo "$CHANGED" | grep -E '^providers/seedream/|^lambdas/seedream/' >/dev/null && SELECTED+=(seedream)
                   echo "$CHANGED" | grep -E '^providers/elevenlabs/|^configs/gateway/elevenlabs\.tools\.json' >/dev/null && SELECTED+=(elevenlabs)
                   echo "$CHANGED" | grep -E '^providers/remotion/' >/dev/null && SELECTED+=(remotion)
-                  if [ "${#SELECTED[@]}" -eq 0 ] || [ "${#SELECTED[@]}" -ge 5 ]; then
+                  if [ "${#SELECTED[@]}" -eq 0 ] || [ "${#SELECTED[@]}" -ge 6 ]; then
                     PROVIDER=all
                   else
                     IFS=,

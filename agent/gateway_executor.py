@@ -137,7 +137,8 @@ class GatewayExecutor:
             try:
                 output = await server.call_tool(name, arguments)
                 if name.rsplit("___", 1)[-1] in {
-                    "query_music_task", "get_music_task", "get_video_task", "get_render_progress"
+                    "query_music_task", "get_music_task", "get_video_task", "get_runway_task",
+                    "get_render_progress",
                 }:
                     started = time.monotonic()
                     deadline = started + float(os.getenv("STUDIO_MEDIA_WAIT_SECONDS", "600"))

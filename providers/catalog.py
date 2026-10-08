@@ -35,6 +35,14 @@ PROVIDERS: tuple[ProviderSpec, ...] = (
         },
     ),
     ProviderSpec(
+        id="runway",
+        target_name="Runway",
+        function_name="renderhaus-runway-tools",
+        module_path="providers.runway.api",
+        env_keys=("RUNWAYML_API_SECRET", "RUNWAY_DRY_RUN"),
+        default_env={"RUNWAY_DRY_RUN": "true"},
+    ),
+    ProviderSpec(
         id="seedance",
         target_name="Seedance",
         function_name="renderhaus-seedance-tools",

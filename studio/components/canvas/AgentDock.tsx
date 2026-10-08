@@ -71,6 +71,7 @@ function isFollowUpToolEvent(event: AgentToolEvent): boolean {
   const name = event.name.toLowerCase();
   return (
     name.includes("get_video_task") ||
+    name.includes("get_runway_task") ||
     name.includes("query_music_task") ||
     name.includes("get_render_progress") ||
     name.includes("poll")

@@ -66,7 +66,7 @@ Fish Audio is not in the current active provider catalog. Its speech tool is usa
 Gateway discovers an available Fish Audio target. Skills explicitly report unavailable tools.
 The model cannot invent a target or call a provider directly.
 
-The `planner` subagent has no provider dispatch. `media` can dispatch only Seedance/Seedream/Kling;
+The `planner` subagent has no provider dispatch. `media` can dispatch only Seedance/Seedream/Kling/Runway;
 `audio` can dispatch only audio providers; `editor` can dispatch only Remotion. The overridden
 `general-purpose` subagent also has no provider dispatch. All roles share project files and
 read-only Studio context. They inherit native approval policy and have no shell tool.

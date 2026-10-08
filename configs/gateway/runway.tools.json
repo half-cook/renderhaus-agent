@@ -1,0 +1,212 @@
+[
+  {
+    "name": "text_to_video",
+    "description": "Create a Gen-4.5 video from text. Starts paid work unless dry-run. Poll get_runway_task with the returned job_id at least five seconds apart.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "prompt": {
+          "type": "string"
+        },
+        "duration_seconds": {
+          "type": "integer",
+          "description": "Allowed range: 2 to 10."
+        },
+        "ratio": {
+          "type": "string",
+          "description": "Allowed values: 1280:720, 720:1280."
+        },
+        "model": {
+          "type": "string",
+          "description": "Allowed values: gen4.5."
+        },
+        "seed": {
+          "type": "integer",
+          "description": "Allowed range: 0 to 4.29497e+09."
+        }
+      },
+      "required": [
+        "prompt"
+      ]
+    }
+  },
+  {
+    "name": "image_to_video",
+    "description": "Animate a supplied image with Gen-4.5. Starts paid work unless dry-run. Poll get_runway_task with the returned job_id at least five seconds apart.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "image_path_or_url": {
+          "type": "string"
+        },
+        "prompt": {
+          "type": "string"
+        },
+        "duration_seconds": {
+          "type": "integer",
+          "description": "Allowed range: 2 to 10."
+        },
+        "ratio": {
+          "type": "string",
+          "description": "Allowed values: 1280:720, 720:1280, 1104:832, 960:960, 832:1104, 1584:672."
+        },
+        "model": {
+          "type": "string",
+          "description": "Allowed values: gen4.5."
+        },
+        "seed": {
+          "type": "integer",
+          "description": "Allowed range: 0 to 4.29497e+09."
+        }
+      },
+      "required": [
+        "image_path_or_url",
+        "prompt"
+      ]
+    }
+  },
+  {
+    "name": "video_to_video",
+    "description": "Edit an existing 2-30 second clip with Aleph 2.0 and a text instruction, optionally guided by a timed reference image. Supply the actual source duration for the cost estimate. Poll get_runway_task.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "video_path_or_url": {
+          "type": "string"
+        },
+        "prompt": {
+          "type": "string"
+        },
+        "video_duration_seconds": {
+          "type": "number",
+          "description": "Allowed range: 2 to 30."
+        },
+        "reference_image_path_or_url": {
+          "type": "string"
+        },
+        "reference_seconds": {
+          "type": "number",
+          "description": "Allowed range: 0 to 30."
+        },
+        "model": {
+          "type": "string",
+          "description": "Allowed values: aleph2."
+        },
+        "seed": {
+          "type": "integer",
+          "description": "Allowed range: 0 to 4.29497e+09."
+        }
+      },
+      "required": [
+        "video_path_or_url",
+        "prompt",
+        "video_duration_seconds"
+      ]
+    }
+  },
+  {
+    "name": "text_to_image",
+    "description": "Create a Gen-4 image from text. Returns a queued task, not a finished image. Poll get_runway_task at least five seconds apart and save its completed image.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "prompt": {
+          "type": "string"
+        },
+        "ratio": {
+          "type": "string",
+          "description": "Allowed values: 1280:720, 720:1280, 720:720, 960:720, 720:960, 1680:720, 1920:1080, 1080:1920, 1080:1080, 1440:1080, 1080:1440."
+        },
+        "model": {
+          "type": "string",
+          "description": "Allowed values: gen4_image."
+        },
+        "seed": {
+          "type": "integer",
+          "description": "Allowed range: 0 to 4.29497e+09."
+        }
+      },
+      "required": [
+        "prompt"
+      ]
+    }
+  },
+  {
+    "name": "image_to_image",
+    "description": "Generate a Gen-4 reference image using a source image and text instruction, optionally additional references. Returns a queued task. Poll get_runway_task and save its completed image.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "image_path_or_url": {
+          "type": "string"
+        },
+        "prompt": {
+          "type": "string"
+        },
+        "ratio": {
+          "type": "string",
+          "description": "Allowed values: 1280:720, 720:1280, 720:720, 960:720, 720:960, 1680:720, 1920:1080, 1080:1920, 1080:1080, 1440:1080, 1080:1440."
+        },
+        "model": {
+          "type": "string",
+          "description": "Allowed values: gen4_image, gen4_image_turbo."
+        },
+        "reference_images": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "uri": {
+                "type": "string",
+                "description": "HTTPS domain URL, runway upload URI, or base64 image data URI up to 5 MB."
+              },
+              "tag": {
+                "type": "string",
+                "description": "Optional reference name, 3-16 lowercase letters, digits, or underscores, starting with a letter."
+              }
+            },
+            "required": [
+              "uri"
+            ]
+          },
+          "description": "Up to two additional references, for at most three images including image_path_or_url."
+        },
+        "seed": {
+          "type": "integer",
+          "description": "Allowed range: 0 to 4.29497e+09."
+        }
+      },
+      "required": [
+        "image_path_or_url",
+        "prompt"
+      ]
+    }
+  },
+  {
+    "name": "get_runway_task",
+    "description": "Poll an existing Runway job_id once. Never submit another generation to check status. Wait at least five seconds between calls. Completed media URLs expire and must be saved.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "job_id": {
+          "type": "string"
+        },
+        "download": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "job_id"
+      ]
+    }
+  },
+  {
+    "name": "list_runway_models",
+    "description": "List locally documented supported Runway models and limits. Free, no API request. This catalog does not verify account access or live model availability.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": []
+    }
+  }
+]

@@ -43,6 +43,15 @@ TOOL_GUIDANCE: dict[str, dict[str, str]] = {
             "Use when model selection matters; prefer the configured default otherwise."
         ),
     },
+    "runway": {
+        "text_to_video": "Create a Gen-4.5 video from text. Starts paid work unless dry-run. Poll get_runway_task with the returned job_id at least five seconds apart.",
+        "image_to_video": "Animate a supplied image with Gen-4.5. Starts paid work unless dry-run. Poll get_runway_task with the returned job_id at least five seconds apart.",
+        "video_to_video": "Edit an existing 2-30 second clip with Aleph 2.0 and a text instruction, optionally guided by a timed reference image. Supply the actual source duration for the cost estimate. Poll get_runway_task.",
+        "text_to_image": "Create a Gen-4 image from text. Returns a queued task, not a finished image. Poll get_runway_task at least five seconds apart and save its completed image.",
+        "image_to_image": "Generate a Gen-4 reference image using a source image and text instruction, optionally additional references. Returns a queued task. Poll get_runway_task and save its completed image.",
+        "get_runway_task": "Poll an existing Runway job_id once. Never submit another generation to check status. Wait at least five seconds between calls. Completed media URLs expire and must be saved.",
+        "list_runway_models": "List locally documented supported Runway models and limits. Free, no API request. This catalog does not verify account access or live model availability.",
+    },
     "seedream": {
         "text_to_image": (
             "Use when the user needs a new still image from a text description. Do not use for "

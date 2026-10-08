@@ -176,7 +176,7 @@ function defaultsFor(tool: ToolDefinition, fieldOptions: FieldOptions): Record<s
     args.model = catalog.model[0];
   }
   if (tool.id === "music.generate") args.model_id = "music_v2_5";
-  return args;
+  return { ...args, ...tool.defaults };
 }
 
 function configForAgentArtifact(
@@ -197,6 +197,15 @@ function configForAgentArtifact(
       ([name, value]) => allowedFields.has(name) && value !== undefined && value !== null,
     ),
   );
+  if (tool.providerId === "runway") {
+    for (const [name, value] of Object.entries(config)) {
+      const description = schema?.inputSchema.properties?.[name]?.description || "";
+      const declared = /Allowed values: (.+?)\.(?:\s|$)/.exec(description);
+      if (declared && !declared[1].split(",").some((choice) => choice.trim() === String(value))) {
+        delete config[name];
+      }
+    }
+  }
   const promptField = tool.id === "voice.generate" ? "text" : "prompt";
   if (!String(config[promptField] || "").trim() && fallbackPrompt?.trim()) {
     config[promptField] = fallbackPrompt.trim();
@@ -1011,7 +1020,7 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
             if (next.status === "running" || next.status === "queued") {
               const timer = window.setTimeout(() => {
                 void tick();
-              }, 2500);
+              }, toolById(current.data.toolId)?.pollIntervalMs ?? 2500);
               pollTimers.set(id, timer);
             } else {
               pollTimers.delete(id);
@@ -1024,7 +1033,12 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
             pollTimers.delete(id);
           }
         };
-        void tick();
+        const delay = toolById(node.data.toolId)?.pollIntervalMs;
+        if (delay) {
+          pollTimers.set(id, window.setTimeout(() => void tick(), delay));
+        } else {
+          void tick();
+        }
       }
     } catch (error) {
       get().updateNodeData(id, {

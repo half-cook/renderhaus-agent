@@ -43,6 +43,13 @@ function choicesFor(
   if (isPromptField(name) || isOpaqueField(name)) {
     return [];
   }
+  const declared = /Allowed values: (.+?)\.(?:\s|$)/.exec(field.description || "");
+  if (declared) {
+    return declared[1].split(",").map((value) => {
+      const trimmed = value.trim();
+      return field.type === "number" || field.type === "integer" ? Number(trimmed) : trimmed;
+    });
+  }
   const catalog = options?.[name];
   if (catalog && catalog.length > 0) {
     return catalog;

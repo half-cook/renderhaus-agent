@@ -34,6 +34,7 @@ jobs:
         run: python -m unittest discover -s tests -q
         env:
           RENDERHAUS_SECRETS_NAME: ""
+          RUNWAY_DRY_RUN: "true"
           SEEDANCE_DRY_RUN: "true"
           SEEDREAM_DRY_RUN: "true"
           ELEVENLABS_DRY_RUN: "true"
@@ -46,6 +47,7 @@ jobs:
         env:
           # Keep CI free of Secrets Manager / paid providers.
           RENDERHAUS_SECRETS_NAME: ""
+          RUNWAY_DRY_RUN: "true"
           SEEDANCE_DRY_RUN: "true"
           SEEDREAM_DRY_RUN: "true"
           ELEVENLABS_DRY_RUN: "true"
