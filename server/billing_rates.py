@@ -20,6 +20,7 @@ explicitly before enabling Stripe billing.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from decimal import Decimal
 import json
 import os
 from typing import Any
@@ -143,6 +144,56 @@ def _fish_audio_cost(arguments: dict[str, Any]) -> GenerationCost:
 # to cite. Flat placeholder pending real Lambda billing data.
 REMOTION_COST_CENTS = 8
 
+# Official API list prices, USD/second, checked 2026-10-08.
+# https://kling.ai/document-api/pricing/base/video
+# Native audio prices exclude voice control; Omni prices exclude reference videos.
+# TODO: Turbo lists only native-audio prices, but its current request schema has no
+# audio control. Its default audio semantics remain unconfirmed, so do not quote it.
+KLING_RATES_USD_PER_SECOND = {
+    ("kling-3.0", False): {"720p": "0.084", "1080p": "0.112", "4k": "0.42"},
+    ("kling-3.0", True): {"720p": "0.126", "1080p": "0.168", "4k": "0.42"},
+    ("kling-3.0-omni", False): {"720p": "0.084", "1080p": "0.112", "4k": "0.42"},
+    ("kling-3.0-omni", True): {"720p": "0.112", "1080p": "0.14", "4k": "0.42"},
+}
+KLING_GENERATION_TOOLS = frozenset({"text_to_video", "image_to_video", "omni_video"})
+KLING_READ_TOOLS = frozenset({"get_video_task", "list_kling_models"})
+
+
+def _kling_cost(tool: str, arguments: dict[str, Any]) -> GenerationCost:
+    if tool in KLING_READ_TOOLS:
+        return GenerationCost(0, 0)
+    if tool not in KLING_GENERATION_TOOLS:
+        raise ValueError("Unknown Kling tool.")
+    model = arguments.get("model")
+    if tool == "omni_video":
+        model = "kling-3.0-omni"
+    elif model is None or model == "":
+        model = os.getenv("KLING_MODEL") or "kling-3.0"
+    allowed_models = (
+        {"kling-3.0-omni"} if tool == "omni_video" else {"kling-3.0", "kling-3.0-turbo"}
+    )
+    if not isinstance(model, str) or model not in allowed_models:
+        raise ValueError("Unsupported Kling model for this tool.")
+    resolution = arguments.get("resolution", "720p")
+    audio = arguments.get("generate_audio", False)
+    duration = arguments.get("duration_seconds", 5)
+    if (
+        not isinstance(resolution, str)
+        or resolution not in {"720p", "1080p", "4k"}
+        or not isinstance(audio, bool)
+    ):
+        raise ValueError("Invalid Kling resolution or generate_audio.")
+    if not isinstance(duration, int) or isinstance(duration, bool) or not 3 <= duration <= 15:
+        raise ValueError("Kling duration_seconds must be an integer from 3 to 15.")
+    if os.getenv("KLING_DRY_RUN", "true").lower() != "false":
+        return GenerationCost(0, 0)
+    rates = KLING_RATES_USD_PER_SECOND.get((model, audio))
+    if rates is None:
+        raise ValueError("Kling Turbo pricing is unconfirmed for the documented API audio behavior.")
+    provider_cents = round(Decimal(rates[resolution]) * duration * 100)
+    return _with_fee(provider_cents)
+
+
 # Status/download polls, not generations -- the canvas calls these
 # immediately after dispatch and then every ~2.5s until the underlying job
 # reaches a terminal state. Pricing them like a fresh call would charge one
@@ -157,6 +208,8 @@ def cost_for(provider: str, tool: str, arguments: dict[str, Any]) -> GenerationC
     (to charge the same amount), so it must be a pure function of the
     request, not of anything the provider returns.
     """
+    if provider == "kling":
+        return _kling_cost(tool, arguments)
     if tool in POLLING_TOOLS:
         return GenerationCost(provider_cents=0, fee_cents=0)
     if provider == "seedance":
