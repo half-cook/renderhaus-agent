@@ -205,7 +205,6 @@ def estimate_cost(name: str, arguments: dict) -> CostEstimate:
     try:
         if provider not in POLICY["providers"] or provider in {
             "veo",
-            "luma",
             "minimax_h3",
             "hunyuan",
         }:

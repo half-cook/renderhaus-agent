@@ -60,7 +60,7 @@
     "expected_skill": "edit-v2v",
     "expected_tool": "luma_ray3_modify",
     "suite": "edit-v2v",
-    "skip_reason": "provider pending: Luma"
+    "skip_reason": ""
   },
   {
     "prompt": "generate a still for approval then animate",

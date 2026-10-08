@@ -1,9 +1,9 @@
 ---
 name: i2v
-description: Animate an approved still with Wan by default or an explicitly requested Kling, Seedance, or Runway model.
+description: Animate an approved still with Wan by default or an explicitly requested Kling, Seedance, Runway, or Luma model.
 metadata:
   include_tools: call_media_tool
-  gateway_tools: Fal___image_to_video Fal___reference_to_video Fal___get_video_task Kling___image_to_video Kling___get_video_task Seedance___image_to_video Seedance___get_video_task Runway___image_to_video Runway___get_runway_task Seedream___text_to_image Seedream___image_to_image
+  gateway_tools: Fal___image_to_video Fal___reference_to_video Fal___get_video_task Kling___image_to_video Kling___get_video_task Seedance___image_to_video Seedance___get_video_task Runway___image_to_video Runway___get_runway_task Seedream___text_to_image Seedream___image_to_image Luma___image_to_video Luma___get_video_task Luma___list_luma_models
 ---
 
 # Image to video
@@ -34,8 +34,14 @@ Submit once and poll the saved ID with `Fal___get_video_task`, `Kling___get_vide
 Space Runway polls at least five seconds apart. Reuse finished shots and preserve failed
 job IDs. Read [continuity QC](../continuity-qc/SKILL.md) for shot comparisons.
 
+Use `Luma___image_to_video` (`luma_ray3_i2v`, model `ray-3.2`) for an explicit Luma request with a
+start image, an end image, or both (`image_path_or_url`, `last_frame_path_or_url`). Luma anchor
+clips are exactly 5 seconds. Poll `Luma___get_video_task` with the saved UUID and `download=true`.
+Luma output rights follow its API terms (no training or evaluation datasets, restricted
+redistribution), so Luma outputs are never training-eligible.
+
 Apply `agent/deep_agent/routing_policy.json` for provider, model, region, and licence gates.
-Fal Wan VACE is the default video tier. Before a premium video submission to Kling or Runway,
+Fal Wan VACE is the default video tier. Before a premium video submission to Kling, Runway or Luma,
 show the estimate from `server.billing_rates.cost_for`, including its platform fee.
 Treat unconfirmed pricing as unknown. Submit through the dispatch wrapper so the shared
 approval policy can pause even an autonomous run. Never fabricate approval or bypass its gate.

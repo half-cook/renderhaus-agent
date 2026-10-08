@@ -32,7 +32,7 @@ provider request. Preserve each job ID and poll the corresponding `Fal___get_vid
 Check the actual clip against the approved still and reuse accepted shots.
 
 Apply `agent/deep_agent/routing_policy.json` for provider, model, region, and licence gates.
-Fal Wan VACE is the default video tier. Before a premium video submission to Kling or Runway,
+Fal Wan VACE is the default video tier. Before a premium video submission to Kling, Runway or Luma,
 show the estimate from `server.billing_rates.cost_for`, including its platform fee.
 Treat unconfirmed pricing as unknown. Submit through the dispatch wrapper so the shared
 approval policy can pause even an autonomous run. Never fabricate approval or bypass its gate.

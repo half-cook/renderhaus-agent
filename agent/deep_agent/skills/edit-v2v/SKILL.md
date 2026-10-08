@@ -1,9 +1,9 @@
 ---
 name: edit-v2v
-description: Edit existing footage with Wan VACE masks and controls or an explicitly requested Runway Aleph edit.
+description: Edit existing footage with Wan VACE masks and controls, or an explicitly requested Luma Modify or Runway Aleph edit.
 metadata:
   include_tools: call_media_tool
-  gateway_tools: Fal___video_to_video Fal___get_video_task Fal___list_fal_models Runway___video_to_video Runway___get_runway_task Runway___list_runway_models
+  gateway_tools: Fal___video_to_video Fal___get_video_task Fal___list_fal_models Runway___video_to_video Runway___get_runway_task Runway___list_runway_models Luma___modify_video Luma___get_video_task Luma___list_luma_models
 ---
 
 # Edit existing video
@@ -31,15 +31,20 @@ a supported HTTPS source, or a supported data URI instead.
 Optional guidance uses `reference_image_path_or_url` and `reference_seconds`.
 Do not send an output duration or deprecated ratio to Aleph. Consult
 `Runway___list_runway_models` for supported limits and retain required Runway attribution.
-Luma Modify is provider-pending and cannot be dispatched on this branch.
+`luma_ray3_modify` maps to `Luma___modify_video` (model `ray-3.2`) for an explicit Luma request or a
+look change that keeps the performance. Supply exactly one source, `video_path_or_url` (MP4) or
+`source_generation_id`, plus its measured `source_duration_seconds` of 5 or 10; other lengths have
+no published price and are refused. Optional `strength` must be a documented value.
+Luma output rights follow its API terms (no training or evaluation datasets, restricted
+redistribution), so Luma outputs are never training-eligible.
 
-Submit once. Poll `Fal___get_video_task` or `Runway___get_runway_task` with the saved
+Submit once. Poll `Fal___get_video_task`, `Luma___get_video_task` or `Runway___get_runway_task` with the saved
 `job_id` and `download=true`. Space Runway polls at least five seconds apart.
 Keep successful unaffected clips. A poll failure never authorizes a replacement paid job.
 Inspect the actual artifact and compare the changed region before accepting the edit.
 
 Apply `agent/deep_agent/routing_policy.json` for provider, model, region, and licence gates.
-Fal Wan VACE is the default video tier. Before a premium video submission to Kling or Runway,
+Fal Wan VACE is the default video tier. Before a premium video submission to Kling, Runway or Luma,
 show the estimate from `server.billing_rates.cost_for`, including its platform fee.
 Treat unconfirmed pricing as unknown. Submit through the dispatch wrapper so the shared
 approval policy can pause even an autonomous run. Never fabricate approval or bypass its gate.

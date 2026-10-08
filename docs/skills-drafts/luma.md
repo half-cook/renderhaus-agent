@@ -5,7 +5,8 @@ description: Generate, animate, extend, or modify video with the direct Luma Ray
 
 # Luma video
 
-This is a draft for a future Deep Agents skill. It is not installed in the current agent runtime.
+Status: merged. This guidance now lives in the live `t2v`, `i2v` and `edit-v2v` skills and
+`agent/deep_agent/routing_policy.json`; this file is kept as the provider reference draft.
 Use the provider's Gateway tools. Do not call Luma HTTP endpoints from an agent skill.
 
 ## Choose the operation

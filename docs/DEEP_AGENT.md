@@ -67,7 +67,7 @@ Eight additional intent skills are `t2v`, `i2v`, `edit-v2v`, `still-then-video`,
 Their wrapper and exact Gateway tool mappings are listed in [Skills and routing](SKILLS.md).
 The deterministic policy router proposes the selected skill and tool in the graph input and
 Studio context. Unsupported providers and local Resolve workflows remain explicit pending
-routes, with all 55 workbook cases retained in offline tests, 20 active and 35 skipped.
+routes, with all 55 workbook cases retained in offline tests, 21 active and 34 skipped (the Luma case was enabled on staging).
 
 Fish Audio is not in the current active provider catalog. Its speech tool is usable only when
 Gateway discovers an available Fish Audio target. Skills explicitly report unavailable tools.

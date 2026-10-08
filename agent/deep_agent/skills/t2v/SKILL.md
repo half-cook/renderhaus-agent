@@ -1,9 +1,9 @@
 ---
 name: t2v
-description: Generate a short clip from text with Wan by default or an explicitly requested built video provider.
+description: Generate a short clip from text with Wan by default or an explicitly requested built video provider (Kling, Runway, Seedance or Luma).
 metadata:
   include_tools: call_media_tool
-  gateway_tools: Fal___text_to_video Fal___get_video_task Fal___list_fal_models Kling___text_to_video Kling___omni_video Kling___get_video_task Kling___list_kling_models Runway___text_to_video Runway___get_runway_task Runway___list_runway_models Seedance___text_to_video Seedance___get_video_task Seedance___list_seedance_models
+  gateway_tools: Fal___text_to_video Fal___get_video_task Fal___list_fal_models Kling___text_to_video Kling___omni_video Kling___get_video_task Kling___list_kling_models Runway___text_to_video Runway___get_runway_task Runway___list_runway_models Seedance___text_to_video Seedance___get_video_task Seedance___list_seedance_models Luma___text_to_video Luma___extend_video Luma___get_video_task Luma___list_luma_models
 ---
 
 # Text to video
@@ -33,10 +33,18 @@ Its integer duration is 2 through 10 seconds and its field is `ratio`, not `aspe
 Use the free `Runway___list_runway_models` for supported constraints. Retain required
 Runway attribution in applicable delivery interfaces. The catalog does not prove account access.
 Use `Seedance___text_to_video` for an explicit Seedance request and discover its model with
-`Seedance___list_seedance_models` when needed. Veo and Luma are provider-pending drafts.
+`Seedance___list_seedance_models` when needed. Veo is a provider-pending draft.
+Use `Luma___text_to_video` (`luma_ray3_t2v`, wire model `ray-3.2`) for an explicit Luma or Ray 3.2
+request. Its `duration_seconds` is 5 or 10 and `resolution` is 360p, 540p, 720p or 1080p; 360p is
+the cheap draft tier. `Luma___extend_video` (`luma_ray3_extend`) continues a completed Luma
+generation by its UUID with `direction` forward or backward; extend has no confirmed 360p price.
+Consult the free `Luma___list_luma_models` for limits. Luma output rights follow its API terms (no training or evaluation datasets, restricted
+redistribution), so Luma outputs are never training-eligible.
+
 
 Submit once and preserve the entire returned `job_id`. Poll `Fal___get_video_task`,
-`Kling___get_video_task`, `Runway___get_runway_task`, or `Seedance___get_video_task` for the
+`Kling___get_video_task`, `Runway___get_runway_task`, `Seedance___get_video_task`, or
+`Luma___get_video_task` for the
 selected provider with the saved ID and `download=true`. Space Runway polls at least five
 seconds apart. Never submit again after a polling error or uncertain generation response.
 A dry-run is terminal and produces no generated media. Verify the persisted clip opens and
@@ -44,7 +52,7 @@ plays before claiming usable footage. Read [final assembly](../final-assembly/SK
 when a final assembled MP4 is requested.
 
 Apply `agent/deep_agent/routing_policy.json` for provider, model, region, and licence gates.
-Fal Wan VACE is the default video tier. Before a premium video submission to Kling or Runway,
+Fal Wan VACE is the default video tier. Before a premium video submission to Kling, Runway or Luma,
 show the estimate from `server.billing_rates.cost_for`, including its platform fee.
 Treat unconfirmed pricing as unknown. Submit through the dispatch wrapper so the shared
 approval policy can pause even an autonomous run. Never fabricate approval or bypass its gate.

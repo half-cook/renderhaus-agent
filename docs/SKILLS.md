@@ -69,8 +69,6 @@ a manifest, and media together; an alias does not imply a separate Gateway tool.
 | `media_package` | `Remotion___export_nle_timeline` |
 | `local_qc` | Local `continuity_qc.ContinuityQC`, no Gateway dispatch |
 | `runway_act_two` | provider pending: Runway Act-Two |
-| `luma_ray3_t2v` | provider pending: Luma |
-| `luma_ray3_modify` | provider pending: Luma |
 | `hedra_character3` | provider pending: Hedra |
 | `liveportrait_lipsync` | provider pending: LivePortrait |
 | `infinitetalk_lipsync` | provider pending: InfiniteTalk |
@@ -90,7 +88,7 @@ a manifest, and media together; an alias does not imply a separate Gateway tool.
 ## Offline routing verification
 
 `tests/fixtures/skill_routing.json` retains all 55 rows exported from the workbook.
-There are **20 active** cases and **35 skipped** cases. Each skip is a generated unittest
+There are **21 active** cases and **34 skipped** cases. Each skip is a generated unittest
 with its concrete pending-provider or integration reason, not a dropped fixture row.
 An active case asserts the selected skill and proposed exact Gateway name through the same
 router used by the runner. Five Resolve suites need a local bridge or transcription/import
@@ -123,7 +121,7 @@ built models. Policy resolves `KLING_MODEL`, `SEEDANCE_MODEL`, `SEEDREAM_MODEL`,
 precedence. Omni uses its fixed model rather than the Kling default environment setting.
 
 MiniMax H3 and Hunyuan are disabled by default and declare a US region block for any future
-activation. Neither is training-eligible in any region. Luma and Veo remain disabled/pending.
+activation. Neither is training-eligible in any region. Veo remains disabled/pending. Luma (`ray-3.2`) is enabled under service terms, routed through `t2v`, `i2v` and `edit-v2v`, premium (cost estimate + approval, also in autonomous runs) and never training-eligible.
 Only successful, non-dry-run Fal assets with an allowed Wan model, `training_eligible=true`,
 and `weights_license="Apache-2.0"` may enter the training hook. Both provider and model policy
 must permit Apache training. Queued/failed results and missing provenance fail. Kling,
@@ -214,7 +212,7 @@ Live skills never disclose unbuilt provider tools. Drafts under `docs/skills-dra
 - `veo-t2v` requires Google Veo; `act-two` requires the separate Runway character-performance adapter.
 - `lipsync` requires LivePortrait, InfiniteTalk, or Hedra. ElevenLabs speech alone cannot unlock it.
 - `upscale` requires SeedVR2, Topaz, or RIFE.
-- `mmaudio`, `ace-step`, `ideogram`, `recraft`, and `luma` require their own adapters and reviewed contracts/licences.
+- `mmaudio`, `ace-step`, `ideogram`, and `recraft` require their own adapters and reviewed contracts/licences.
 - `resolve-rough-cut`, `resolve-silence-cut`, `resolve-auto-subs`, `resolve-roundtrip`, and
   `resolve-new-track-safety` require local Resolve/transcription/import integrations.
 
@@ -237,3 +235,19 @@ do not prove live model judgment, legal review, provider/account access, model-w
 generated playback, or an editor import. Comet cannot be controlled here, and the task forbids
 live/paid provider calls and downloads. Studio browser E2E is blocked and remains pending,
 recorded under ignored `.renderhaus/e2e/` with `scripts/browser_e2e_hook.py`.
+
+## Luma routing (added on staging)
+
+Luma landed on staging after this branch was cut, so it was wired in during the staging merge:
+
+| Seed alias | Gateway tool | Skill |
+| --- | --- | --- |
+| `luma_ray3_t2v` | `Luma___text_to_video` | `t2v` |
+| `luma_ray3_extend` | `Luma___extend_video` | `t2v` |
+| `luma_ray3_i2v` | `Luma___image_to_video` | `i2v` |
+| `luma_ray3_modify` | `Luma___modify_video` | `edit-v2v` |
+
+- Policy: `providers.luma` is enabled, licence `service-terms`, model `ray-3.2` only, no region gate, `training_eligible: false`.
+- `Luma` is a premium target (`text_to_video`, `image_to_video`, `extend_video`, `modify_video`), so its paid calls pause for approval with the `cost_for` estimate even in autonomous runs; `list_luma_models` and `get_video_task` are free.
+- Estimates come from the official Ray 3.2 table in `server/billing_rates.py`; settings without a published price (e.g. 360p extend, non-5/10 s modify sources) show as unknown.
+- The routing fixture's Luma case is active: 21 active and 34 skipped routing cases.

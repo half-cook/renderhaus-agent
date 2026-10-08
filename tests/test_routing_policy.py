@@ -178,3 +178,44 @@ class PolicyTests(unittest.TestCase):
                 self.assertIsNone(
                     estimate_cost("ElevenLabs___text_to_speech_convert", {}).total_cents
                 )
+
+
+class LumaPolicyTests(unittest.TestCase):
+    def test_luma_routes_to_real_gateway_tools(self):
+        from agent.deep_agent.routing import route_intent
+
+        modify = route_intent("change look keep performance Luma")
+        self.assertEqual((modify.skill, modify.tool, modify.status), ("edit-v2v", "Luma___modify_video", "ready"))
+        t2v = route_intent("Luma Ray text to video of a beach at dawn")
+        self.assertEqual((t2v.skill, t2v.tool, t2v.status), ("t2v", "Luma___text_to_video", "ready"))
+        i2v = route_intent("luma image to video from this start frame")
+        self.assertEqual((i2v.skill, i2v.tool), ("i2v", "Luma___image_to_video"))
+
+    def test_luma_is_enabled_premium_and_never_training_eligible(self):
+        from agent.deep_agent.routing import is_free_tool, policy_blocker, premium_video, training_eligible
+
+        for tool in ("text_to_video", "image_to_video", "extend_video", "modify_video"):
+            name = f"Luma___{tool}"
+            self.assertIsNone(policy_blocker(name, {}))
+            self.assertTrue(premium_video(name))
+            self.assertTrue(tool_needs_approval(name, autonomous=True))
+            self.assertTrue(tool_needs_approval(name, autonomous=False))
+        self.assertTrue(is_free_tool("Luma___list_luma_models"))
+        self.assertTrue(is_free_tool("Luma___get_video_task"))
+        self.assertFalse(tool_needs_approval("Luma___list_luma_models", autonomous=True))
+        self.assertFalse(training_eligible({
+            "provider": "luma", "model": "ray-3.2", "weights_license": "Apache-2.0",
+            "training_eligible": True, "status": "succeeded",
+        }))
+        self.assertIsNotNone(policy_blocker("Luma___text_to_video", {"model": "ray-9"}))
+
+    def test_luma_cost_estimate_uses_billing_rates_or_unknown(self):
+        from agent.deep_agent.routing import estimate_cost
+
+        with patch.dict(os.environ, {"LUMA_DRY_RUN": "false"}):
+            quote = estimate_cost("Luma___modify_video", {"source_duration_seconds": 5, "resolution": "720p"})
+            self.assertEqual(quote.total_cents, 108 + 32)
+            self.assertIn("$1.40", quote.description)
+            unknown = estimate_cost("Luma___extend_video", {"resolution": "360p", "generation_id": "x"})
+            self.assertIsNone(unknown.total_cents)
+            self.assertIn("unknown", unknown.description)

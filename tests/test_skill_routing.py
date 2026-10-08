@@ -94,8 +94,8 @@ class SkillContracts(unittest.TestCase):
 
     def test_fixture_retains_all_rows_and_explicit_skips(self):
         self.assertEqual(len(CASES), 55)
-        self.assertEqual(sum(not c["skip_reason"] for c in CASES), 20)
-        self.assertEqual(sum(bool(c["skip_reason"]) for c in CASES), 35)
+        self.assertEqual(sum(not c["skip_reason"] for c in CASES), 21)
+        self.assertEqual(sum(bool(c["skip_reason"]) for c in CASES), 34)
 
     def test_wan_is_default_and_unknown_requests_do_not_invent_tools(self):
         from agent.deep_agent.routing import route_intent

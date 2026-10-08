@@ -4,6 +4,7 @@
   "premium_targets": [
     "Kling",
     "Runway",
+    "Luma",
     "Veo"
   ],
   "premium_video_tools": [
@@ -11,7 +12,8 @@
     "image_to_video",
     "video_to_video",
     "omni_video",
-    "extend_video"
+    "extend_video",
+    "modify_video"
   ],
   "free_tools": [
     "get_video_task",
@@ -22,6 +24,7 @@
     "list_kling_models",
     "list_runway_models",
     "list_fal_models",
+    "list_luma_models",
     "list_seedance_models",
     "list_seedream_models",
     "list_voices",
@@ -230,13 +233,21 @@
       "training_eligible": false
     },
     "luma": {
-      "enabled": false,
-      "license": "review-required",
+      "enabled": true,
+      "license": "service-terms",
       "allowed_regions": [],
-      "blocked_regions": [
-        "US"
+      "training_eligible": false,
+      "models": [
+        "ray-3.2"
       ],
-      "training_eligible": false
+      "default_model": "ray-3.2",
+      "model_policies": {
+        "ray-3.2": {
+          "license": "service-terms",
+          "training_eligible": false,
+          "allowed_regions": []
+        }
+      }
     },
     "veo": {
       "enabled": false,
@@ -345,14 +356,14 @@
       "reason": "provider pending: Runway Act-Two"
     },
     "luma_ray3_t2v": {
-      "gateway_tool": null,
-      "status": "pending",
-      "reason": "provider pending: Luma"
+      "gateway_tool": "Luma___text_to_video",
+      "skill": "t2v",
+      "status": "ready"
     },
     "luma_ray3_modify": {
-      "gateway_tool": null,
-      "status": "pending",
-      "reason": "provider pending: Luma"
+      "gateway_tool": "Luma___modify_video",
+      "skill": "edit-v2v",
+      "status": "ready"
     },
     "hedra_character3": {
       "gateway_tool": null,
@@ -438,6 +449,16 @@
       "gateway_tool": null,
       "status": "blocked",
       "reason": "Provider Hunyuan is blocked by default in routing_policy.json."
+    },
+    "luma_ray3_i2v": {
+      "gateway_tool": "Luma___image_to_video",
+      "skill": "i2v",
+      "status": "ready"
+    },
+    "luma_ray3_extend": {
+      "gateway_tool": "Luma___extend_video",
+      "skill": "t2v",
+      "status": "ready"
     }
   },
   "rules": [
@@ -585,6 +606,21 @@
       "pattern": "fish audio",
       "skill": "audio-bed",
       "abstract_tool": "fish_audio_tts"
+    },
+    {
+      "pattern": "luma.*(image to video|\\bi2v\\b|start frame|end frame|keyframe)|(image to video|\\bi2v\\b).*luma",
+      "skill": "i2v",
+      "abstract_tool": "luma_ray3_i2v"
+    },
+    {
+      "pattern": "luma.*(extend|continue)|(extend|continue).*luma",
+      "skill": "t2v",
+      "abstract_tool": "luma_ray3_extend"
+    },
+    {
+      "pattern": "luma.*(text to video|\\bt2v\\b|new clip|generate)|(text to video|\\bt2v\\b).*luma",
+      "skill": "t2v",
+      "abstract_tool": "luma_ray3_t2v"
     },
     {
       "pattern": "luma",
