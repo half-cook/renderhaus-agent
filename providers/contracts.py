@@ -12,6 +12,8 @@ from copy import deepcopy
 from dataclasses import dataclass
 from typing import Any
 
+from providers.runway.contracts import I2V_RATIOS, IMAGE_RATIOS, T2V_RATIOS
+
 
 @dataclass(frozen=True, slots=True)
 class ArgumentRule:
@@ -49,6 +51,36 @@ def _rules_for_fields(
 
 
 TOOL_ARGUMENT_RULES: dict[str, dict[str, dict[str, ArgumentRule]]] = {
+    "runway": {
+        "text_to_video": {
+            "model": ArgumentRule(choices=("gen4.5",)),
+            "duration_seconds": ArgumentRule(minimum=2, maximum=10),
+            "ratio": ArgumentRule(choices=T2V_RATIOS),
+            "seed": ArgumentRule(minimum=0, maximum=4294967295),
+        },
+        "image_to_video": {
+            "model": ArgumentRule(choices=("gen4.5",)),
+            "duration_seconds": ArgumentRule(minimum=2, maximum=10),
+            "ratio": ArgumentRule(choices=I2V_RATIOS),
+            "seed": ArgumentRule(minimum=0, maximum=4294967295),
+        },
+        "video_to_video": {
+            "model": ArgumentRule(choices=("aleph2",)),
+            "video_duration_seconds": ArgumentRule(minimum=2, maximum=30),
+            "reference_seconds": ArgumentRule(minimum=0, maximum=30),
+            "seed": ArgumentRule(minimum=0, maximum=4294967295),
+        },
+        "text_to_image": {
+            "model": ArgumentRule(choices=("gen4_image",)),
+            "ratio": ArgumentRule(choices=IMAGE_RATIOS),
+            "seed": ArgumentRule(minimum=0, maximum=4294967295),
+        },
+        "image_to_image": {
+            "model": ArgumentRule(choices=("gen4_image", "gen4_image_turbo")),
+            "ratio": ArgumentRule(choices=IMAGE_RATIOS),
+            "seed": ArgumentRule(minimum=0, maximum=4294967295),
+        },
+    },
     "seedance": {
         **_rules_for_fields(
             ("text_to_video", "image_to_video"),
@@ -169,6 +201,16 @@ def enrich_tool_schema(provider_id: str, tool: dict[str, Any]) -> dict[str, Any]
         existing = str(schema.get("description") or "").strip()
         if note and note not in existing:
             schema["description"] = f"{existing} {note}".strip()
+    if provider_id == "runway" and "reference_images" in properties:
+        properties["reference_images"]["items"] = {
+            "type": "object",
+            "properties": {
+                "uri": {"type": "string", "description": "HTTPS domain URL, runway upload URI, or base64 image data URI up to 5 MB."},
+                "tag": {"type": "string", "description": "Optional reference name, 3-16 lowercase letters, digits, or underscores, starting with a letter."},
+            },
+            "required": ["uri"],
+        }
+        properties["reference_images"]["description"] = "Up to two additional references, for at most three images including image_path_or_url."
     if provider_id == "remotion" and tool_name == "render_timeline":
         if isinstance(properties.get("visuals"), dict):
             properties["visuals"]["items"] = deepcopy(_VISUAL_ITEM_SCHEMA)
@@ -243,6 +285,10 @@ def _validate_rule(path: str, value: Any, rule: ArgumentRule) -> None:
 
 
 def _validate_cross_fields(provider_id: str, tool_name: str, arguments: dict[str, Any]) -> None:
+    if provider_id == "runway":
+        from providers.runway.contracts import validate_runway_arguments
+
+        validate_runway_arguments(tool_name, arguments)
     if provider_id == "remotion" and tool_name == "render_timeline":
         if not arguments.get("visuals"):
             raise ValueError("render_timeline requires at least one visual clip.")

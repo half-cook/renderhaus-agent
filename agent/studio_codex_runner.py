@@ -240,7 +240,7 @@ async def run_with_servers(request, studio, harness: CodexHarness, servers):
                 # Waiting belongs to the host, not a model loop that can give up
                 # after several immediate polls (or require approval for each one).
                 if name.rsplit("___", 1)[-1] in {
-                    "query_music_task", "get_music_task", "get_video_task", "get_render_progress"
+                    "query_music_task", "get_music_task", "get_video_task", "get_runway_task", "get_render_progress"
                 }:
                     started = time.monotonic()
                     deadline = started + float(os.getenv("STUDIO_MEDIA_WAIT_SECONDS", "600"))

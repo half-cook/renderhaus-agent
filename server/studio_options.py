@@ -6,6 +6,7 @@ from copy import deepcopy
 from typing import Any
 
 from providers.fish_audio.api import MODELS, VOICES
+from providers.runway.contracts import I2V_RATIOS, IMAGE_RATIOS
 from providers.seedance.api import MAX_DURATION_SECONDS, MIN_DURATION_SECONDS
 
 
@@ -14,6 +15,11 @@ SEEDREAM_RATIOS = ("1:1", "16:9", "9:16")
 SEEDANCE_RESOLUTIONS = ("480p", "720p", "1080p")
 SEEDREAM_SIZES = ("1K", "2K", "3K")
 STATIC_FIELD_OPTIONS: dict[str, dict[str, list[str | int]]] = {
+    "runway": {
+        "model": ["gen4.5", "aleph2", "gen4_image", "gen4_image_turbo"],
+        "ratio": list(dict.fromkeys(I2V_RATIOS + IMAGE_RATIOS)),
+        "duration_seconds": list(range(2, 11)),
+    },
     "seedance": {
         "aspect_ratio": list(SEEDANCE_RATIOS),
         "resolution": list(SEEDANCE_RESOLUTIONS),

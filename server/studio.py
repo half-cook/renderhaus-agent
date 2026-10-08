@@ -341,6 +341,7 @@ async def studio_status() -> dict[str, Any]:
         "mode": "local",
         "agent": bool(os.getenv("OPENAI_API_KEY")),
         "dry_run": {
+            "runway": os.getenv("RUNWAY_DRY_RUN", "true").lower() != "false",
             "seedance": os.getenv("SEEDANCE_DRY_RUN", "true").lower() != "false",
             "seedream": os.getenv("SEEDREAM_DRY_RUN", os.getenv("SEEDANCE_DRY_RUN", "true")).lower()
             != "false",
@@ -617,7 +618,19 @@ async def invoke_tool(body: InvokeBody, auth: AuthUser) -> dict[str, Any]:
     except KeyError as exc:
         raise HTTPException(status_code=404, detail="Project not found.") from exc
     cleaned = _tool_arguments(body.provider, body.tool, body.arguments)
-    cleaned = _resolve_asset_handles(cleaned, workspace_id)
+    if body.provider == "runway":
+        from server.runway_inputs import prepare_runway_arguments
+
+        try:
+            cleaned = await asyncio.to_thread(
+                prepare_runway_arguments, body.tool, cleaned,
+                source_resolver=lambda version_id: str(repository.version_path(workspace_id, version_id)),
+                workspace_id=workspace_id,
+            )
+        except (ValueError, KeyError, FileNotFoundError) as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+    else:
+        cleaned = _resolve_asset_handles(cleaned, workspace_id)
     try:
         cost = cost_for(body.provider, body.tool, cleaned)
     except ValueError as exc:
@@ -673,6 +686,8 @@ async def invoke_tool(body: InvokeBody, auth: AuthUser) -> dict[str, Any]:
         if billed:
             await refund("dispatch failed")
         raise HTTPException(status_code=500, detail=str(exc)) from exc
+    if body.provider == "runway" and body.tool != "get_runway_task" and result.get("job_id"):
+        await asyncio.to_thread(repository.record_provider_task, workspace_id, body.project_id, "runway", result["job_id"])
     try:
         assets = await asyncio.to_thread(
             _register_payload_assets,
@@ -1046,6 +1061,7 @@ _MEDIA_CREATION_TOOLS = frozenset(
         "image_to_image",
         "text_to_video",
         "image_to_video",
+        "video_to_video",
         "render_timeline",
         "text_to_music",
         "create_instrumental",
@@ -1486,6 +1502,8 @@ async def _run_studio_agent_job(
     def record_event(event: Any) -> None:
         payload = event.public()
         payload["result"] = event.result
+        if event.name.startswith("Runway___") and not event.name.endswith("get_runway_task") and event.result.get("job_id"):
+            repository.record_provider_task(workspace_id, project_id, "runway", event.result["job_id"])
         repository.append_tool_call(
             workspace_id=workspace_id,
             execution_id=job_id,

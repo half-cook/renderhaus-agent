@@ -15,6 +15,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 def _force_dry_run() -> None:
+    os.environ["RUNWAY_DRY_RUN"] = "true"
     os.environ["SEEDANCE_DRY_RUN"] = "true"
     os.environ["SEEDREAM_DRY_RUN"] = "true"
     os.environ["ELEVENLABS_DRY_RUN"] = "true"
@@ -79,7 +80,16 @@ def check_dry_run_dispatch() -> None:
             continue
         for schema in load_committed_schemas(spec):
             name = schema["name"]
-            result = dispatch(spec.id, name, dummy_arguments(schema))
+            arguments = dummy_arguments(schema)
+            if spec.id == "runway":
+                for field in ("image_path_or_url", "video_path_or_url"):
+                    if field in arguments:
+                        arguments[field] = "https://example.com/source.mp4" if field.startswith("video") else "https://example.com/source.png"
+                if "video_duration_seconds" in arguments:
+                    arguments["video_duration_seconds"] = 2.0
+                if name == "get_runway_task":
+                    arguments["job_id"] = "00000000-0000-4000-8000-000000000000"
+            result = dispatch(spec.id, name, arguments)
             assert isinstance(result, dict), f"{spec.id}.{name} did not return a dict"
             if "error" in result and result.get("error_type"):
                 raise AssertionError(f"{spec.id}.{name} dispatch error: {result}")

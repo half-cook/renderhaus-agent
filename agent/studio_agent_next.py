@@ -327,6 +327,14 @@ class StudioAgentContext:
         arguments: dict[str, Any],
     ) -> dict[str, Any]:
         """Resolve opaque Studio asset handles only at the provider boundary."""
+        if _tool_name.startswith("Runway___"):
+            from server.runway_inputs import prepare_runway_arguments
+
+            return prepare_runway_arguments(
+                _tool_name.split("___", 1)[1], arguments,
+                source_resolver=self.source_resolver, source_versions=self.source_versions,
+                workspace_id=self.workspace_id,
+            )
         prefix = "renderhaus-asset://"
 
         def resolve(value: Any) -> Any:

@@ -186,6 +186,16 @@ class StudioRepository:
                     CREATE INDEX IF NOT EXISTS projects_workspace_updated
                         ON projects(workspace_id, updated_at DESC);
 
+                    CREATE TABLE IF NOT EXISTS provider_tasks (
+                        provider TEXT NOT NULL,
+                        job_id TEXT NOT NULL,
+                        workspace_id TEXT NOT NULL REFERENCES workspaces(id),
+                        project_id TEXT NOT NULL,
+                        PRIMARY KEY(provider, job_id),
+                        FOREIGN KEY(workspace_id, project_id)
+                            REFERENCES projects(workspace_id, id) ON DELETE CASCADE
+                    );
+
                     CREATE TABLE IF NOT EXISTS canvas_documents (
                         project_id TEXT NOT NULL,
                         workspace_id TEXT NOT NULL REFERENCES workspaces(id),
@@ -1118,6 +1128,24 @@ class StudioRepository:
             source_version_ids=source_version_ids,
             relation_type=relation_type,
         )
+
+    def record_provider_task(self, workspace_id: str, project_id: str, provider: str, job_id: str) -> None:
+        with self._connect() as connection:
+            connection.execute(
+                "INSERT INTO provider_tasks(provider, job_id, workspace_id, project_id) VALUES (?, ?, ?, ?) "
+                "ON CONFLICT(provider, job_id) DO NOTHING",
+                (provider, job_id, workspace_id, project_id),
+            )
+        self.require_provider_task(workspace_id, provider, job_id)
+
+    def require_provider_task(self, workspace_id: str, provider: str, job_id: str) -> None:
+        with self._connect() as connection:
+            row = connection.execute(
+                "SELECT 1 FROM provider_tasks WHERE provider = ? AND job_id = ? AND workspace_id = ?",
+                (provider, job_id, workspace_id),
+            ).fetchone()
+        if row is None:
+            raise ValueError("Provider task is not owned by this workspace.")
 
     def register_source(
         self,
