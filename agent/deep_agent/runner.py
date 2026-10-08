@@ -263,13 +263,31 @@ async def run_with_servers(request, studio, servers, *, model=None):
             graph_input["files"] = {"/AGENTS.md": create_file_data((Path(__file__).parent / "AGENTS.md").read_text())}
 
     async def stream(value):
-        async for namespace, updates in graph.astream(value, config, stream_mode="updates", subgraphs=True):
+        partial_text = {}
+        async for namespace, mode, event in graph.astream(
+            value, config, stream_mode=["messages", "updates"], subgraphs=True,
+        ):
+            if mode == "messages":
+                message, metadata = event
+                if metadata.get("lc_internal_call") or metadata.get("lc_source") == "summarization":
+                    continue
+                if isinstance(message, AIMessage) and message.text:
+                    event_id = "deep-" + "-".join((*namespace, str(message.id)))
+                    text = (partial_text.get(event_id, "") + message.text)[:1000]
+                    if partial_text.get(event_id) != text:
+                        partial_text[event_id] = text
+                        _progress(studio, event_id=event_id, event_type="MODEL_UPDATE",
+                                  title="Agent update", message=text, status="running")
+                continue
+            updates = event
             for update in updates.values():
                 if not isinstance(update, dict):
                     continue
                 for message in update.get("messages", []):
                     if isinstance(message, AIMessage) and message.text:
-                        _progress(studio, event_id=f"deep-{message.id}", event_type="MODEL_UPDATE",
+                        event_id = "deep-" + "-".join((*namespace, str(message.id)))
+                        partial_text.pop(event_id, None)
+                        _progress(studio, event_id=event_id, event_type="MODEL_UPDATE",
                                   title="Agent update", message=message.text[:1000], status="completed")
 
     try:
