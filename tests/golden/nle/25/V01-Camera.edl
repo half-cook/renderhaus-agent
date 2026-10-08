@@ -1,0 +1,12 @@
+TITLE: Editor handoff - Camera
+FCM: NON-DROP FRAME
+* FRAME RATE: 25
+* TRACK: V1
+* GENERATED TRACK: NO
+
+001  RADCDB57 V    C        00:01:00:00 00:01:01:00 01:00:00:00 01:00:01:00
+* FROM CLIP NAME: Camera
+* SOURCE FILE: media/version-camera-1/camera-e312e17d56711f5a.mp4
+* ORIGINAL REEL: CAMERA_A_LONG_REEL
+* VERSION ID: version-camera-1
+
