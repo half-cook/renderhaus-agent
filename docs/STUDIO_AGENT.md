@@ -69,12 +69,20 @@ Python dynamic-tool callbacks
 Gateway MCP client -- HTTPS --> AgentCore Gateway
                                 | Seedream image generation/editing
                                 | Seedance text/image-to-video
+                                | fal Wan VACE generation/editing
                                 | ElevenLabs audio
                                 | Fish Audio speech
                                 ` Remotion Lambda --> S3 MP4
 ```
 
 ### Main implementation boundaries
+
+The `Fal` Gateway target adds Wan VACE text, image, reference, and video editing
+tools with async submit/poll behavior. See [the provider contracts and pricing](FAL_WAN_VACE.md)
+and [the future Deep Agents skill draft](skills-drafts/fal-wan-vace.md).
+`FAL_DRY_RUN` defaults to true; `FAL_KEY` stays in the server-side secret path.
+Wan results carry explicit Apache-2.0 weight licensing and training eligibility.
+The current manager's final-video check still requires a Remotion export.
 
 | Area | Primary code | Responsibility |
 | --- | --- | --- |
