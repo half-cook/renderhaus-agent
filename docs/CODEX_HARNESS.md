@@ -1,6 +1,7 @@
 # Studio Codex harness
 
-Renderhaus now runs its manager through **Codex app-server**. Codex owns the model loop,
+Codex app-server remains available with `RENDERHAUS_AGENT_BACKEND=codex`.
+The default manager uses [Deep Agents](DEEP_AGENT.md). Codex owns the model loop,
 reasoning, tool turns, structured output, and context compaction. The Python application
 owns Gateway access, customer approvals, billing, asset registration, and Studio events.
 The `openai-agents` dependency and its `Runner`, `RunState`, and compaction session are removed.

@@ -36,8 +36,26 @@ calls were made. Browser verification is blocked, not passed.
 
 ## Throughput checkpoint
 
-Four units produce three implementation commits after the policy extraction. Each unit ends
+Four units produce four logical commits, including the policy extraction and final documentation. Each unit ends
 with focused tests before the next begins. Checks use `.venv/bin/python`, because `python` is
 absent and system `python3` has no project dependencies. The supplied venv baseline ran 138
 tests with no failures or errors. Local `main` and the starting branch have the same commit.
 The reported single error on main was not reproduced in this environment.
+
+## Final gate
+
+The baseline at local main `7d6c9fe` passed 138 tests. The final suite passed 163 tests,
+including 25 new graph and contract tests, with zero failures, errors, or skips. Ruff and
+`ci_check.py` passed. A built wheel contains all six skills and project memory. Runtime stream
+disconnect recovery is exercised through the actual SSE parser with a local mock transport.
+The Comet check is recorded as blocked and pending under `.renderhaus/e2e/`.
+
+The sandbox makes the original worktree Git metadata read-only. Logical commits are retained
+in `.renderhaus/git-commits/deep-agents-backend.bundle`; the original branch still points to
+`7d6c9fe`. Nothing was pushed or deployed. Native design and review lanes were used; external
+provider lanes and a cross-provider trail review were unavailable under the task constraints.
+
+The independent review found a blank-model fallback issue and a runtime disconnect recovery
+gap. Both were corrected and verified. Eighteen narrative comment/docstring lines were removed;
+public tool descriptions and protocol constraints were retained. No encoding approval was needed.
+Snapshot retention for long conversations remains a documented follow-up.
