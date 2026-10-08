@@ -17,6 +17,7 @@ if str(ROOT) not in sys.path:
 def _force_dry_run() -> None:
     os.environ["KLING_DRY_RUN"] = "true"
     os.environ["RUNWAY_DRY_RUN"] = "true"
+    os.environ["LUMA_DRY_RUN"] = "true"
     os.environ["SEEDANCE_DRY_RUN"] = "true"
     os.environ["SEEDREAM_DRY_RUN"] = "true"
     os.environ["ELEVENLABS_DRY_RUN"] = "true"

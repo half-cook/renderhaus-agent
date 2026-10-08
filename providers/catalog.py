@@ -51,6 +51,14 @@ PROVIDERS: tuple[ProviderSpec, ...] = (
         default_env={"FAL_DRY_RUN": "true"},
     ),
     ProviderSpec(
+        id="luma",
+        target_name="Luma",
+        function_name="renderhaus-luma-tools",
+        module_path="providers.luma.api",
+        env_keys=("LUMA_API_KEY", "LUMA_DRY_RUN"),
+        default_env={"LUMA_DRY_RUN": "true"},
+    ),
+    ProviderSpec(
         id="seedance",
         target_name="Seedance",
         function_name="renderhaus-seedance-tools",

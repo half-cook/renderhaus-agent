@@ -40,6 +40,14 @@ export function NodeInspector() {
 
   const tool = toolById(node.data.toolId);
   const schema = schemaFor(providers, node.data.providerId, node.data.toolName);
+  const options = node.data.providerId ? fieldOptions[node.data.providerId] : undefined;
+  const toolOptions = node.data.providerId === "luma"
+    ? {
+        ...options,
+        ...(node.data.toolName === "image_to_video" ? { duration_seconds: [5] } : {}),
+        ...(node.data.toolName === "extend_video" ? { resolution: ["540p", "720p", "1080p"] } : {}),
+      }
+    : options;
   const connectedFields = edges
     .filter((edge) => edge.target === node.id)
     .map((edge) => edge.data?.targetField)
@@ -92,7 +100,7 @@ export function NodeInspector() {
           <SchemaForm
             schema={schema.inputSchema}
             values={node.data.config}
-            options={node.data.providerId ? fieldOptions[node.data.providerId] : undefined}
+            options={toolOptions}
             onlyFields={primary}
             hiddenFields={connectedFields}
             onChange={(name, value) => updateNodeConfig(node.id, name, value)}
@@ -107,7 +115,7 @@ export function NodeInspector() {
                 <SchemaForm
                   schema={schema.inputSchema}
                   values={node.data.config}
-                  options={node.data.providerId ? fieldOptions[node.data.providerId] : undefined}
+                  options={toolOptions}
                   onlyFields={advanced}
                   hiddenFields={connectedFields}
                   onChange={(name, value) => updateNodeConfig(node.id, name, value)}

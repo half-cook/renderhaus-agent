@@ -221,6 +221,7 @@ def _register_payload_assets(
     relation_type: str = "derived_from",
 ) -> list[dict[str, Any]]:
     registered: list[dict[str, Any]] = []
+    training_eligible = _payload_training_eligibility(payload)
     for candidate in collect_asset_sources(payload):
         candidate_kind = candidate["kind"]
         if kind and candidate_kind != kind:
@@ -237,9 +238,22 @@ def _register_payload_assets(
             tool_call_id=tool_call_id,
             source_version_ids=source_version_ids,
             relation_type=relation_type,
+            training_eligible=training_eligible,
         )
         registered.append(reference.public())
     return registered
+
+
+def _payload_training_eligibility(payload: Any) -> bool | None:
+    if isinstance(payload, dict):
+        if payload.get("training_eligible") is False or payload.get("provider") == "luma":
+            return False
+        if any(_payload_training_eligibility(value) is False for value in payload.values()):
+            return False
+    elif isinstance(payload, list):
+        if any(_payload_training_eligibility(value) is False for value in payload):
+            return False
+    return None
 
 
 _SKIP_ASSET_STATUSES = frozenset({"failed", "error", "queued", "running", "dry_run"})
@@ -284,6 +298,8 @@ def _hydrate_tool_event_assets(
                 if source.startswith(("http://", "https://", "data:")) and kind in _KIND_URL_KEYS
                 else {"output_path": source}
             )
+            if _payload_training_eligibility(payload) is False:
+                stub["training_eligible"] = False
             try:
                 registered.extend(
                     _register_payload_assets(
@@ -344,6 +360,16 @@ def _resolve_asset_handles(value: Any, workspace_id: str) -> Any:
     return value
 
 
+def _source_version_ids(value: Any) -> list[str]:
+    if isinstance(value, str) and value.startswith("renderhaus-asset://"):
+        return [value.removeprefix("renderhaus-asset://")]
+    if isinstance(value, dict):
+        return list(dict.fromkeys(version_id for child in value.values() for version_id in _source_version_ids(child)))
+    if isinstance(value, list):
+        return list(dict.fromkeys(version_id for child in value for version_id in _source_version_ids(child)))
+    return []
+
+
 @router.get("/status")
 async def studio_status() -> dict[str, Any]:
     return {
@@ -353,6 +379,7 @@ async def studio_status() -> dict[str, Any]:
             "kling": os.getenv("KLING_DRY_RUN", "true").lower() != "false",
             "runway": os.getenv("RUNWAY_DRY_RUN", "true").lower() != "false",
             "fal": os.getenv("FAL_DRY_RUN", "true").lower() != "false",
+            "luma": os.getenv("LUMA_DRY_RUN", "true").lower() != "false",
             "seedance": os.getenv("SEEDANCE_DRY_RUN", "true").lower() != "false",
             "seedream": os.getenv("SEEDREAM_DRY_RUN", os.getenv("SEEDANCE_DRY_RUN", "true")).lower()
             != "false",
@@ -629,6 +656,7 @@ async def invoke_tool(body: InvokeBody, auth: AuthUser) -> dict[str, Any]:
     except KeyError as exc:
         raise HTTPException(status_code=404, detail="Project not found.") from exc
     cleaned = _tool_arguments(body.provider, body.tool, body.arguments)
+    source_version_ids = list(dict.fromkeys([*body.source_version_ids, *_source_version_ids(cleaned)]))
     if body.provider == "runway":
         from server.runway_inputs import prepare_runway_arguments
 
@@ -707,7 +735,7 @@ async def invoke_tool(body: InvokeBody, auth: AuthUser) -> dict[str, Any]:
             project_id=body.project_id,
             user_id=user_id,
             asset_id=body.asset_id,
-            source_version_ids=body.source_version_ids,
+            source_version_ids=source_version_ids,
         )
     except Exception as exc:  # noqa: BLE001 - provider output must become durable or fail visibly
         logger.exception("Could not ingest provider output for %s.%s", body.provider, body.tool)

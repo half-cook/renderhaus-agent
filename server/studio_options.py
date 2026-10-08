@@ -8,6 +8,13 @@ from typing import Any
 from providers.fish_audio.api import MODELS, VOICES
 from providers.runway.contracts import I2V_RATIOS, IMAGE_RATIOS
 from providers.fal.wan import ASPECT_RATIOS, EDIT_MODES, MODELS as FAL_MODELS, RESOLUTIONS
+from providers.luma.catalog import (
+    ASPECT_RATIOS as LUMA_ASPECT_RATIOS,
+    DURATIONS as LUMA_DURATIONS,
+    EDIT_STRENGTHS as LUMA_EDIT_STRENGTHS,
+    MODEL_IDS as LUMA_MODEL_IDS,
+    RESOLUTIONS as LUMA_RESOLUTIONS,
+)
 from providers.seedance.api import MAX_DURATION_SECONDS, MIN_DURATION_SECONDS
 
 
@@ -34,6 +41,15 @@ STATIC_FIELD_OPTIONS: dict[str, dict[str, list[str | int]]] = {
         "edit_mode": list(EDIT_MODES),
         "task": list(EDIT_MODES[1:]),
     },
+    "luma": {
+        "model": list(LUMA_MODEL_IDS),
+        "aspect_ratio": list(LUMA_ASPECT_RATIOS),
+        "resolution": list(LUMA_RESOLUTIONS),
+        "duration_seconds": list(LUMA_DURATIONS),
+        "source_duration_seconds": list(LUMA_DURATIONS),
+        "direction": ["forward", "backward"],
+        "strength": list(LUMA_EDIT_STRENGTHS),
+    },
     "seedance": {
         "aspect_ratio": list(SEEDANCE_RATIOS),
         "resolution": list(SEEDANCE_RESOLUTIONS),
@@ -57,6 +73,7 @@ STATIC_FIELD_OPTIONS: dict[str, dict[str, list[str | int]]] = {
 LIVE_CHOICE_TOOLS: tuple[tuple[str, str, str], ...] = (
     ("kling", "list_kling_models", "model"),
     ("fal", "list_fal_models", "model"),
+    ("luma", "list_luma_models", "model"),
     ("seedance", "list_seedance_models", "model"),
     ("seedream", "list_seedream_models", "model"),
     ("elevenlabs", "voices_search", "voice_id"),

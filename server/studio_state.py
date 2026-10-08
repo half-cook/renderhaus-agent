@@ -71,6 +71,7 @@ class StudioAssetRef:
     mime_type: str
     size_bytes: int
     created_at: int
+    training_eligible: bool | None = None
 
     def public(self) -> dict[str, Any]:
         return {
@@ -81,6 +82,7 @@ class StudioAssetRef:
             "mime_type": self.mime_type,
             "size_bytes": self.size_bytes,
             "created_at": self.created_at,
+            "training_eligible": self.training_eligible,
         }
 
     def canvas(self) -> dict[str, Any]:
@@ -93,6 +95,7 @@ class StudioAssetRef:
             "mimeType": self.mime_type,
             "sizeBytes": self.size_bytes,
             "createdAt": self.created_at,
+            "trainingEligible": self.training_eligible,
         }
 
 
@@ -437,6 +440,14 @@ class StudioRepository:
                 execution_columns = {
                     str(row[1]) for row in connection.execute("PRAGMA table_info(executions)")
                 }
+                version_columns = {
+                    str(row[1]) for row in connection.execute("PRAGMA table_info(asset_versions)")
+                }
+                if "training_eligible" not in version_columns:
+                    connection.execute(
+                        "ALTER TABLE asset_versions ADD COLUMN training_eligible INTEGER "
+                        "CHECK(training_eligible IN (0, 1))"
+                    )
                 if "conversation_id" not in execution_columns:
                     connection.execute("ALTER TABLE executions ADD COLUMN conversation_id TEXT")
                 if "turn_index" not in execution_columns:
@@ -888,12 +899,13 @@ class StudioRepository:
             mime_type=str(row["mime_type"]),
             size_bytes=int(row["size_bytes"]),
             created_at=int(row["created_at"]),
+            training_eligible=bool(row["training_eligible"]) if row["training_eligible"] is not None else None,
         )
 
     def get_version(self, workspace_id: str, version_id: str) -> StudioAssetRef | None:
         with self._connect() as connection:
             row = connection.execute(
-                "SELECT id, asset_id, kind, filename, mime_type, size_bytes, created_at "
+                "SELECT id, asset_id, kind, filename, mime_type, size_bytes, created_at, training_eligible "
                 "FROM asset_versions WHERE id = ? AND workspace_id = ?",
                 (version_id, workspace_id),
             ).fetchone()
@@ -930,6 +942,7 @@ class StudioRepository:
         tool_call_id: str | None = None,
         source_version_ids: list[str] | None = None,
         relation_type: str = "derived_from",
+        training_eligible: bool | None = None,
     ) -> StudioAssetRef:
         source = source_path.resolve()
         if not source.is_file() or source.stat().st_size <= 0:
@@ -963,6 +976,13 @@ class StudioRepository:
             while chunk := handle.read(1024 * 1024):
                 checksum.update(chunk)
         with self._connect() as connection:
+            for source_version_id in dict.fromkeys(source_version_ids or []):
+                source_version = connection.execute(
+                    "SELECT training_eligible FROM asset_versions WHERE id = ? AND workspace_id = ?",
+                    (source_version_id, workspace_id),
+                ).fetchone()
+                if source_version is not None and source_version["training_eligible"] == 0:
+                    training_eligible = False
             existing = connection.execute(
                 "SELECT kind FROM assets WHERE id = ? AND workspace_id = ?",
                 (resolved_asset_id, workspace_id),
@@ -997,7 +1017,7 @@ class StudioRepository:
             connection.execute(
                 "INSERT INTO asset_versions(id, asset_id, workspace_id, kind, mime_type, size_bytes, "
                 "checksum, storage_backend, storage_key, filename, created_by, execution_id, "
-                "tool_call_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, 'local', ?, ?, ?, ?, ?, ?)",
+                "tool_call_id, created_at, training_eligible) VALUES (?, ?, ?, ?, ?, ?, ?, 'local', ?, ?, ?, ?, ?, ?, ?)",
                 (
                     resolved_version_id,
                     resolved_asset_id,
@@ -1012,6 +1032,7 @@ class StudioRepository:
                     execution_id,
                     tool_call_id,
                     now,
+                    training_eligible,
                 ),
             )
             connection.execute(
@@ -1045,6 +1066,7 @@ class StudioRepository:
             mime_type=mime_type,
             size_bytes=destination.stat().st_size,
             created_at=now,
+            training_eligible=training_eligible,
         )
 
     def register_bytes(
@@ -1062,6 +1084,7 @@ class StudioRepository:
         tool_call_id: str | None = None,
         source_version_ids: list[str] | None = None,
         relation_type: str = "derived_from",
+        training_eligible: bool | None = None,
     ) -> StudioAssetRef:
         if not content:
             raise ValueError("Asset content was empty")
@@ -1089,6 +1112,7 @@ class StudioRepository:
                 tool_call_id=tool_call_id,
                 source_version_ids=source_version_ids,
                 relation_type=relation_type,
+                training_eligible=training_eligible,
             )
         finally:
             temporary.unlink(missing_ok=True)
@@ -1107,6 +1131,7 @@ class StudioRepository:
         tool_call_id: str | None = None,
         source_version_ids: list[str] | None = None,
         relation_type: str = "derived_from",
+        training_eligible: bool | None = None,
     ) -> StudioAssetRef:
         source = Path(path).expanduser().resolve()
         resolved_name = filename or source.name
@@ -1127,6 +1152,7 @@ class StudioRepository:
             tool_call_id=tool_call_id,
             source_version_ids=source_version_ids,
             relation_type=relation_type,
+            training_eligible=training_eligible,
         )
 
     def record_provider_task(self, workspace_id: str, project_id: str, provider: str, job_id: str) -> None:
@@ -1161,6 +1187,7 @@ class StudioRepository:
         tool_call_id: str | None = None,
         source_version_ids: list[str] | None = None,
         relation_type: str = "derived_from",
+        training_eligible: bool | None = None,
     ) -> StudioAssetRef:
         if source.startswith("data:"):
             header, encoded = source.split(",", 1)
@@ -1183,6 +1210,7 @@ class StudioRepository:
                 tool_call_id=tool_call_id,
                 source_version_ids=source_version_ids,
                 relation_type=relation_type,
+                training_eligible=training_eligible,
             )
         if source.startswith(("http://", "https://")):
             with httpx.stream("GET", source, follow_redirects=True, timeout=90) as response:
@@ -1212,6 +1240,7 @@ class StudioRepository:
                 tool_call_id=tool_call_id,
                 source_version_ids=source_version_ids,
                 relation_type=relation_type,
+                training_eligible=training_eligible,
             )
         return self.register_file(
             workspace_id=workspace_id,
@@ -1225,6 +1254,7 @@ class StudioRepository:
             tool_call_id=tool_call_id,
             source_version_ids=source_version_ids,
             relation_type=relation_type,
+            training_eligible=training_eligible,
         )
 
     def create_execution(

@@ -55,5 +55,23 @@ export function generateBlockers(
       }
     }
   }
+  if (data.providerId === "luma") {
+    const hasSource = (field: string) => connectedFields.includes(field) || Boolean(data.config[field]);
+    if (data.toolName === "image_to_video" && !hasSource("image_path_or_url") && !hasSource("last_frame_path_or_url")) {
+      blockers.push("Connect or add a start or end image first.");
+    }
+    if (data.toolName === "modify_video") {
+      if (Number(hasSource("video_path_or_url")) + Number(hasSource("source_generation_id")) !== 1) {
+        blockers.push("Choose one source video or Luma generation.");
+      }
+      if (![5, 10].includes(Number(data.config.source_duration_seconds))) {
+        blockers.push("Enter the measured source duration of 5 or 10 seconds.");
+      }
+    }
+    if (data.toolName === "extend_video" && !hasSource("generation_id")) {
+      blockers.push("Add the completed Luma generation ID first.");
+    }
+  }
+
   return [...new Set(blockers)];
 }
