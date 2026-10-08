@@ -10,7 +10,7 @@ generation/agent backend (`server/`, `agent/`, `providers/`).
 - **`server/`** — FastAPI backend: Clerk auth, canvas/asset persistence (`server/studio_state.py`),
   generation job endpoints. Talked to over HTTP by `studio/`, proxied at `/api/*` in dev
   (see `studio/next.config.ts`).
-- **`agent/`** — Codex app-server manager; runs in-process locally or on Amazon Bedrock
+- **`agent/`** — Deep Agents manager with skills, subagents, and durable approvals; runs locally or on Amazon Bedrock
   AgentCore Runtime.
 - **`providers/`** — Seedance, Seedream, ElevenLabs, and Remotion implementations.
   AgentCore Gateway Lambdas call these; the Runtime agent never hosts them locally.
@@ -25,7 +25,8 @@ The Studio's workspace, canvas, immutable asset-version, provenance, and durable
 documented in [docs/STUDIO_STATE.md](docs/STUDIO_STATE.md). The end-to-end Studio manager, media
 playback, Remotion, UI, and operations guide is [docs/STUDIO_AGENT.md](docs/STUDIO_AGENT.md).
 
-The Codex integration pattern, persistence, approval flow, and verification are documented in
+The default backend, skills, persistence, approvals, and verification are documented in
+[docs/DEEP_AGENT.md](docs/DEEP_AGENT.md). The selectable Codex fallback is documented in
 [docs/CODEX_HARNESS.md](docs/CODEX_HARNESS.md).
 
 ## Long-video program
@@ -82,7 +83,7 @@ via its execution role.
 
 ### AgentCore (cloud agent + MCPs)
 
-The Codex harness runs inside Amazon Bedrock AgentCore Runtime. Generation tools
+The Deep Agents backend runs inside Amazon Bedrock AgentCore Runtime. Generation tools
 (Seedance, Seedream, ElevenLabs, and Remotion) remain behind AgentCore Gateway. The backend stays local (or on its own host) and calls the
 runtime when `AGENTCORE_RUNTIME_ARN` is set.
 

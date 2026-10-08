@@ -18,7 +18,8 @@ from typing import Any
 from urllib.parse import parse_qs, quote, unquote, urlparse
 
 import httpx
-from agent.codex_harness import CodexRunLimitExceeded
+from agent.errors import AgentRunLimitExceeded
+from agent.backend_config import agent_configured
 from fastapi import APIRouter, File, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse, StreamingResponse
 from pydantic import BaseModel, Field
@@ -30,6 +31,7 @@ from agent.studio_agent_next import (
     StudioAgentContext,
     StudioAgentOutput,
     StudioAgentRequest,
+    StudioAgentRunFailed,
     StudioApprovalDecision,
     StudioApprovalRequest,
     StudioNode,
@@ -252,8 +254,15 @@ def _hydrate_tool_event_assets(
     user_id: str,
     execution_id: str,
 ) -> None:
+    execution = repository.get_execution(workspace_id, execution_id) if execution_id else None
+    saved_assets = {
+        call["id"]: call.get("assets") or []
+        for call in (execution or {}).get("tool_calls", [])
+    }
     seen_sources: set[str] = set()
     for event in events:
+        if not getattr(event, "assets", None) and saved_assets.get(event.id):
+            event.assets = list(saved_assets[event.id])
         existing = list(getattr(event, "assets", None) or [])
         if existing:
             continue
@@ -339,7 +348,7 @@ def _resolve_asset_handles(value: Any, workspace_id: str) -> Any:
 async def studio_status() -> dict[str, Any]:
     return {
         "mode": "local",
-        "agent": bool(os.getenv("OPENAI_API_KEY")),
+        "agent": agent_configured(),
         "dry_run": {
             "seedance": os.getenv("SEEDANCE_DRY_RUN", "true").lower() != "false",
             "seedream": os.getenv("SEEDREAM_DRY_RUN", os.getenv("SEEDANCE_DRY_RUN", "true")).lower()
@@ -1246,6 +1255,7 @@ async def _invoke_agentcore_runtime(
     url: str,
     request: StudioAgentRequest,
     progress_sink: Any = None,
+    checkpoint_sink: Any = None,
 ) -> StudioAgentRun:
     timeout = float(os.getenv("TIME_OUT_SECONDS") or 300)
     async with httpx.AsyncClient(timeout=timeout) as client:
@@ -1277,6 +1287,10 @@ async def _invoke_agentcore_runtime(
                         if progress_sink and events:
                             progress_sink(events[0])
                         continue
+                    if isinstance(chunk, dict) and chunk.get("kind") == "checkpoint":
+                        if checkpoint_sink:
+                            await checkpoint_sink(chunk.get("payload") or {})
+                        continue
                     if isinstance(chunk, dict) and chunk.get("kind") == "result":
                         payload = chunk.get("payload")
                     elif isinstance(chunk, dict) and chunk.get("error"):
@@ -1291,8 +1305,10 @@ async def _invoke_agentcore_runtime(
     if not isinstance(payload, dict):
         raise RuntimeError("AgentCore runtime returned an unexpected payload.")
     if response.status_code >= 400 or payload.get("status") == "failed":
-        raise RuntimeError(
-            str(payload.get("error") or f"AgentCore invocation failed ({response.status_code}).")
+        raise StudioAgentRunFailed(
+            str(payload.get("error") or f"AgentCore invocation failed ({response.status_code})."),
+            list(payload.get("session_items") or []),
+            _events_from_payload(payload.get("tool_events") or []),
         )
     if payload.get("status") == "awaiting_approval":
         approvals = [
@@ -1360,7 +1376,23 @@ async def run_studio_agent(
                     published_source = await asyncio.to_thread(source_publisher, node.version_id)
                 published_nodes.append(node.model_copy(update={"source": published_source}))
             request = request.model_copy(update={"nodes": published_nodes})
-        return await _invoke_agentcore_runtime(runtime_url, request, progress_sink)
+        async def save_runtime_checkpoint(payload):
+            items = list(payload.get("session_items") or [])
+            if items and workspace_id and conversation_id and job_id:
+                await asyncio.to_thread(
+                    repository.save_agent_checkpoint, workspace_id, conversation_id, job_id, items,
+                )
+            events = _events_from_payload(payload.get("tool_events") or [])
+            if events and workspace_id and project_id and user_id:
+                await asyncio.to_thread(
+                    _hydrate_tool_event_assets, events, workspace_id=workspace_id,
+                    project_id=project_id, user_id=user_id, execution_id=job_id,
+                )
+                for event in events:
+                    if event_sink:
+                        event_sink(event)
+
+        return await _invoke_agentcore_runtime(runtime_url, request, progress_sink, save_runtime_checkpoint)
     studio = StudioAgentContext(
         nodes=list(request.nodes),
         asset_registrar=asset_registrar,
@@ -1417,7 +1449,7 @@ async def _run_studio_agent_job(
             for call in run.get("tool_calls", [])
         ])
     for snapshot in session_items:
-        if snapshot.get("type") != "renderhaus_codex_session":
+        if snapshot.get("type") not in {"renderhaus_codex_session", "renderhaus_deepagents_session"}:
             continue
         jobs = snapshot.setdefault("render_jobs", {})
         sources = snapshot.setdefault("source_versions", {})
@@ -1601,7 +1633,7 @@ async def _run_studio_agent_job(
                 )
             )
         raise
-    except CodexRunLimitExceeded as exc:
+    except AgentRunLimitExceeded as exc:
         logger.exception("Studio agent job %s reached its turn limit", job_id)
         execution = await asyncio.to_thread(repository.get_execution, workspace_id, job_id) or {}
         partial = _partial_agent_result(execution)
@@ -1639,6 +1671,18 @@ async def _run_studio_agent_job(
         )
         return
     except Exception as exc:  # noqa: BLE001 - the full failure belongs in server logs
+        if isinstance(exc, StudioAgentRunFailed):
+            await asyncio.to_thread(
+                _hydrate_tool_event_assets, exc.tool_events, workspace_id=workspace_id,
+                project_id=project_id, user_id=user_id, execution_id=job_id,
+            )
+            for event in exc.tool_events:
+                record_event(event)
+            if exc.session_items:
+                await asyncio.to_thread(
+                    repository.save_agent_checkpoint,
+                    workspace_id, conversation_id, job_id, exc.session_items,
+                )
         logger.exception("Studio agent job %s failed", job_id)
         record_progress(
             StudioProgressEvent(
@@ -1656,7 +1700,7 @@ async def _run_studio_agent_job(
             job_id,
             status="error",
             message=(
-                f"The OpenAI agent could not finish this request ({type(exc).__name__}); "
+                f"The agent could not finish this request ({type(exc).__name__}); "
                 "completed tool outputs were preserved."
             ),
             result=_partial_agent_result(execution),
@@ -1713,8 +1757,8 @@ async def _run_studio_agent_job(
 
 @router.post("/agent", status_code=202)
 async def studio_agent(body: AgentBody, auth: AuthUser) -> dict[str, Any]:
-    if not os.getenv("OPENAI_API_KEY"):
-        raise HTTPException(status_code=503, detail="The OpenAI agent is not configured.")
+    if not agent_configured():
+        raise HTTPException(status_code=503, detail="The selected agent model provider is not configured.")
     workspace_id = current_workspace_id(auth)
     user_id = current_user_id(auth)
     try:

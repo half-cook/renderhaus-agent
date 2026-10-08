@@ -1,10 +1,11 @@
 # Renderhaus Studio agent: architecture and operation
 
-> The manager uses Codex app-server. See [CODEX_HARNESS.md](CODEX_HARNESS.md)
-> for native conversation persistence and the dynamic-tool approval protocol.
+> The manager uses LangChain Deep Agents by default. See [DEEP_AGENT.md](DEEP_AGENT.md)
+> for skills, subagents, conversation persistence, and native approval interrupts.
+> [Codex app-server](CODEX_HARNESS.md) remains selectable by configuration.
 
 This is the end-to-end reference for the **Studio** experience: the canvas at
-`localhost:5174`, its FastAPI API at `localhost:8000`, the Codex app-server manager,
+`localhost:5174`, its FastAPI API at `localhost:8000`, the Deep Agents manager,
 the generation providers, and the Remotion Lambda renderer.
 
 It describes what is implemented today. Studio is the planning, generation, and assembly canvas.
@@ -23,7 +24,7 @@ Media outputs are not hidden inside a giant result card:
 customer request
        |
        v
-OpenAI Studio manager --------------------------> durable execution / tool-call ledger
+Renderhaus Studio manager --------------------------> durable execution / tool-call ledger
        |                                                       |
        | chooses one or more tools                             |
        v                                                       v
@@ -60,10 +61,10 @@ FastAPI Studio router (:8000)
   |          |                         |
 canvas       agent execution           playback tickets
   |          |                         |
-SQLite       Codex app-server          managed asset bytes
-ledger       (native model loop)
+SQLite       Deep Agents graph          managed asset bytes
+ledger       (checkpointed model loop)
              |
-Python dynamic-tool callbacks
+Python Gateway execution policy
 (discovery, schema validation, approvals, billing, asset handles)
              |
 Gateway MCP client -- HTTPS --> AgentCore Gateway
@@ -82,8 +83,8 @@ Gateway MCP client -- HTTPS --> AgentCore Gateway
 | Studio HTTP API | `server/studio.py` | Project/canvas, upload, provider invocation, agent job, and playback routes. |
 | Durable state | `server/studio_state.py` | Workspace-scoped SQLite development adapter, immutable media versions, provenance, and execution ledger. |
 | Authentication | `server/auth.py` | Clerk validation, exact authorized-party checks, and workspace selection. |
-| Studio manager | `agent/studio_agent_next.py`, `agent/studio_codex_runner.py` | Manager contract, Gateway tool policy, polling, redaction, and structured final result. |
-| Native runtime | `agent/codex_harness.py` | Private Codex app-server process, dynamic-tool callbacks, native rollout snapshots, and turn limits. |
+| Studio manager | `agent/studio_agent_next.py`, `agent/gateway_executor.py` | Manager contract, Gateway tool policy, polling, redaction, and structured final result. |
+| Reasoning backends | `agent/deep_agent/`, `agent/studio_codex_runner.py` | Deep Agents skills, delegation, memory, checkpoints, and HITL; retained Codex fallback. |
 | MCP transport | `agent/gateway_client.py` | HTTPS Gateway connection, tool discovery, and MCP session lifecycle. |
 | Provider dispatch | `providers/`, `lambdas/`, `configs/gateway/` | Provider implementations, Gateway Lambdas, and tool schemas. |
 | Remotion adapter | `providers/remotion/api.py` | Converts a typed timeline document into a private Remotion Lambda render and downloads the MP4. |
@@ -185,8 +186,8 @@ comes from `GET /api/studio/agent` and survives page reloads.
 ### Manager behavior
 
 `agent/studio_agent_next.py` defines the manager contract and AgentCore entry point.
-`agent/studio_codex_runner.py` runs it through the Codex harness with a structured
-`StudioAgentOutput` final response:
+`agent/deep_agent/runner.py` runs the default Deep Agents graph with a structured
+`StudioAgentOutput` final response. The Codex runner remains selectable by configuration:
 
 ```text
 title       short result title
@@ -211,16 +212,17 @@ large base64 payloads, and deeply nested provider output are excluded.
 
 ### Dynamic tools and the Gateway boundary
 
-Codex sees `report_progress`, Gateway semantic search, and `call_gateway_tool` through its
-native Code Mode host. Search returns actual Gateway tool names and schemas. Python accepts
-only discovered tools and validates each call against that schema before dispatch.
+Deep Agents sees `report_progress`, `read_studio_context`, and Gateway semantic search.
+Reading the relevant skill discloses media, audio, or editor dispatch tools. Search returns actual
+Gateway tool names and schemas. Python accepts only discovered tools and validates each call
+against that schema before dispatch. The Codex fallback retains its Code Mode interface.
 
 | Gateway capability | Examples of discovered tools | Output |
 | --- | --- | --- |
 | Seedream | `Seedream___text_to_image`, `Seedream___image_to_image` | Immutable image versions |
 | Seedance | `Seedance___text_to_video`, `Seedance___image_to_video`, `Seedance___get_video_task` | Provider job, then video versions |
 | ElevenLabs | Full HTTP catalog with semantic descriptions | Audio/files or provider-specific jobs |
-| Fish Audio | Speech generation tools | Audio versions |
+| Fish Audio, when deployed | Discovered speech generation tools | Audio versions |
 | Remotion | `Remotion___render_timeline`, `Remotion___get_render_progress` | Render identifiers, then a completed MP4 |
 
 Names and input options come from the deployed Gateway schemas. The old manager's fixed
@@ -239,10 +241,10 @@ receives elapsed-time and available render-progress events. A timeout retains th
 job identifiers; it does not count as a completed export or create a replacement job.
 
 Successful real media is registered as an immutable asset version and associated with its
-execution/tool event. Tool results and native Codex checkpoints are saved during the run.
+execution/tool event. Tool results and conversation checkpoints are saved during the run.
 The server builds partial results from that durable ledger after an error or interruption.
 A successful `Remotion___get_render_progress` event with a registered video preserves a
-completed result when Codex subsequently reaches its tool-call limit.
+completed result when the manager subsequently reaches its execution limit.
 
 **Stop** cancels local work and conditionally changes an active execution to `UserStopped`.
 A completion that wins the race retains its status and result. Already-submitted provider
@@ -396,7 +398,7 @@ when Clerk is enabled.
 
 | Method and path | Auth | Purpose |
 | --- | --- | --- |
-| `GET /status` | no | Reports local mode, whether the OpenAI key is configured, and dry-run flags. |
+| `GET /status` | no | Reports local mode, selected model-provider readiness, and dry-run flags. |
 | `GET /tools` | no | Returns provider schemas for the canvas. |
 | `GET /options` | no | Returns static/live provider option lists. |
 | `GET /projects` | auth | Lists projects for the active workspace; creates the personal/workspace default project if needed. |
@@ -440,7 +442,10 @@ Secrets Manager JSON secret. Do not commit secrets.
 
 | Variable | Purpose |
 | --- | --- |
-| `OPENAI_API_KEY` | Required for `POST /agent`; without it the route returns HTTP 503. |
+| `RENDERHAUS_AGENT_BACKEND` | `deepagents` by default; `codex` retains the app-server backend. |
+| `RENDERHAUS_AGENT_MODEL` | LangChain `provider:model`; `AGENT_MODEL` is the fallback. |
+| `OPENAI_API_KEY`, `ANTHROPIC_API_KEY` | Credential for the selected provider. Bedrock uses IAM. Missing configured-provider credentials produce HTTP 503. |
+| `RENDERHAUS_AGENT_TIMEOUT_SECONDS` | Deep Agents deadline, default 1800 seconds; graph recursion limit is 180. |
 | `CLERK_PUBLISHABLE_KEY` or `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | Enables Clerk in Studio. |
 | `CLERK_SECRET_KEY` | Enables server-side Clerk validation; fallback HMAC key for playback tickets. |
 | `CLERK_AUTHORIZED_PARTIES` | Comma-separated exact origins allowed by Clerk. |
@@ -473,7 +478,7 @@ cd studio && npx tsc --noEmit && npm run build
 
 | Symptom | Likely cause | What to check |
 | --- | --- | --- |
-| “The OpenAI agent is not configured.” | `OPENAI_API_KEY` is missing from the API process. | Configure the existing backend secret source and restart FastAPI. |
+| "The selected agent model provider is not configured." | The selected provider credential is missing from the API process. | Configure the existing backend secret source and restart FastAPI. |
 | `TOKEN_INVALID_AUTHORIZED_PARTIES` or 401 on JSON endpoints | The Clerk `azp` origin is not allowed. | Put the exact current Studio origin—especially `localhost` vs `127.0.0.1` and port 5174—in `CLERK_AUTHORIZED_PARTIES`; restart the API. |
 | Blank image/video/audio previews with 401s on `/content` | An old API process is still serving the pre-ticket route, or media components bypass the ticket helper. | Restart FastAPI and confirm the browser first posts to `/assets/{versionId}/playback`; new components must use `AssetMedia` / `AssetDownloadLink`. |
 | A run has media but no polished manager response | The manager hit a turn/runtime failure after a tool completed. | Open the Agent run trace. The server returns a partial result synthesized from durable tool calls and retains usable output nodes. |

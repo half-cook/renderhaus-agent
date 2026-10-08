@@ -159,7 +159,7 @@ class StudioCodexTests(unittest.IsolatedAsyncioTestCase):
         harness = FakeHarness([{"callId": "poll-1", "tool": "call_gateway_tool", "arguments": {
             "tool_name": tool.name, "arguments_json": '{"job_id":"music-1"}'}}])
         studio = StudioAgentContext(autonomous=True)
-        with patch("agent.studio_codex_runner.asyncio.sleep", new=AsyncMock()):
+        with patch("agent.gateway_executor.asyncio.sleep", new=AsyncMock()):
             await run_studio_agent(StudioAgentRequest(prompt="Check music", autonomous=True), studio=studio,
                                    harness=harness, mcp_servers=[gateway])
         self.assertEqual(gateway.call_tool.await_count, 2)
@@ -561,6 +561,7 @@ class NativeProtocolTests(unittest.IsolatedAsyncioTestCase):
                     os.environ,
                     {
                         "OPENAI_API_KEY": "local-test-placeholder",
+                        "RENDERHAUS_AGENT_BACKEND": "codex",
                         "CODEX_RUN_TIMEOUT_SECONDS": "15",
                     },
                 ),
