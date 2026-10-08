@@ -130,8 +130,6 @@ def fcpxml_text(timeline: Timeline, paths: dict[str, str]) -> str:
         }
         if asset.kind != "audio":
             attributes["format"] = "r1"
-        if asset.has_audio:
-            attributes.update(audioSources="1", audioChannels="2", audioRate="48000")
         element = ET.SubElement(resources, "asset", attributes)
         ET.SubElement(element, "media-rep", {"kind": "original-media", "src": paths[asset.id]})
         _metadata(element, asset.metadata())

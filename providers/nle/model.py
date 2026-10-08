@@ -45,7 +45,7 @@ def _safe_provenance(value: Any) -> Any:
         def strip_url(match: re.Match[str]) -> str:
             parsed = urlsplit(match.group(0))
             return urlunsplit((parsed.scheme, parsed.hostname or "", parsed.path, "", ""))
-        return re.sub(r"https?://[^\s\"<>]+", strip_url, value)
+        return re.sub(r"https?://[^\s\"<>]+", strip_url, value, flags=re.I)
     return value
 
 
@@ -184,6 +184,8 @@ def parse_snapshot(snapshot: dict[str, Any]) -> Timeline:
         if asset_id in assets:
             raise ValueError("Asset IDs must be unique.")
         version = _text(raw.get("versionId"), "asset.versionId")
+        if "://" in version:
+            raise ValueError("asset.versionId must be a plain immutable identifier, not a media URL.")
         checksum = _text(raw.get("checksum"), "asset.checksum").removeprefix("sha256:").lower()
         if not re.fullmatch(r"[a-f0-9]{64}", checksum):
             raise ValueError("asset.checksum must be a SHA-256 checksum.")
@@ -204,9 +206,13 @@ def parse_snapshot(snapshot: dict[str, Any]) -> Timeline:
         generated = raw.get("generated")
         if not isinstance(generated, bool):
             raise ValueError("asset.generated must explicitly classify the immutable version.")
+        if kind == "video" and "hasAudio" not in raw:
+            raise ValueError("Video assets require explicit hasAudio source metadata.")
         has_audio = raw.get("hasAudio", kind == "audio")
         if not isinstance(has_audio, bool):
             raise ValueError("asset.hasAudio must be a boolean.")
+        if kind == "image" and has_audio:
+            raise ValueError("Still image assets cannot carry audio.")
         source_duration = rate.seconds_to_frames(raw.get("durationSec"), "asset.durationSec",
                                                 positive=True)
         reel_name = _text(raw.get("reelName"), "asset.reelName")
@@ -276,6 +282,8 @@ def parse_snapshot(snapshot: dict[str, Any]) -> Timeline:
         raise ValueError("A handoff needs at least one media clip.")
     ordered = tuple(track for kind in ("video", "audio")
                     for group in (tracks, generated_tracks) for track in group if track.kind == kind)
+    if len({track.id for track in ordered}) != len(ordered):
+        raise ValueError("Generated track IDs conflict with an existing track ID.")
     warnings.append("CMX3600 uses one EDL per track. Import each at its recorded track number.")
     return Timeline(timeline_id, name, rate, start_timecode, start_frame, width, height, duration,
                     tuple(asset for asset_id, asset in assets.items() if asset_id in used_assets),
