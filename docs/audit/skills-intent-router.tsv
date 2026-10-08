@@ -1,0 +1,4 @@
+ts	phase	decision	why	evidence	result
+2026-10-08T00:00:00Z	frame	Learned dispatch wrappers and shared executor before implementation	Preserve role disclosure and both backend approval paths	agent/deep_agent/runner.py; agent/gateway_executor.py	grounded
+2026-10-08T00:01:00Z	tests	Retained 55 seed routing cases with 35 explicit skips	TTS alone cannot implement lipsync and NLE export alone cannot implement a local Resolve bridge	tests/fixtures/skill_routing.json	20 active; 35 pending
+2026-10-08T00:02:00Z	design	Selected policy registry and synchronous executor spend reservations	One shared boundary covers both backends and concurrent subagents	.renderhaus/work/plan.md	implementation pending
