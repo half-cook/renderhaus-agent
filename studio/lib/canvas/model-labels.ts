@@ -1,4 +1,7 @@
 const MODEL_LABELS: Record<string, string> = {
+  "kling-3.0": "Kling 3.0",
+  "kling-3.0-turbo": "Kling 3.0 Turbo",
+  "kling-3.0-omni": "Kling 3.0 Omni",
   "seedream-5-0-lite-260128": "Seedream 5 Lite",
   "seedance-1-5-pro-251215": "Seedance 1.5 Pro",
   "s2.1-pro-free": "Fish S2.1 Pro free",

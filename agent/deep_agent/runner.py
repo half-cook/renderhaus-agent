@@ -42,7 +42,7 @@ from agent.session_scope import conversation_scope as _conversation_scope, execu
 SESSION_TYPE = "renderhaus_deepagents_session"
 SKILLS_ROOT = Path(__file__).parent / "skills"
 DISPATCH_TARGETS = {
-    "call_media_tool": {"Seedance", "Seedream"},
+    "call_media_tool": {"Seedance", "Seedream", "Kling"},
     "call_audio_tool": {"ElevenLabs", "FishAudio", "FishAudioProvider", "Fish_Audio", "Mureka"},
     "call_editor_tool": {"Remotion"},
 }
@@ -165,7 +165,7 @@ async def run_with_servers(request, studio, servers, *, model=None):
     }
     roles = [
         ("planner", "Plan a brief and still-first storyboard without calling paid media tools.", []),
-        ("media", "Generate or refine stills and video shots with Seedream and Seedance.", [dispatch_tools[0]]),
+        ("media", "Generate or refine stills and video shots with Seedream, Seedance and Kling.", [dispatch_tools[0]]),
         ("audio", "Produce voiceover, music and sound effects using audio providers.", [dispatch_tools[1]]),
         ("editor", "Assemble approved assets into a final Remotion MP4 and poll it to completion.", [dispatch_tools[2]]),
         ("general-purpose", "Plan or research the current project without provider dispatch.", []),

@@ -15,6 +15,10 @@ GATEWAY_MCP_SERVER_NAME = "agentcore-gateway"
 
 DEFAULT_ENV = {
     "AGENT_MODEL": "gpt-5.6-luna",
+    "KLING_BASE_URL": "https://api-singapore.klingai.com",
+    "KLING_MODEL": "kling-3.0",
+    "KLING_API_STYLE": "current",
+    "KLING_DRY_RUN": "true",
     "BYTEPLUS_BASE_URL": "https://ark.ap-southeast.bytepluses.com/api/v3",
     "SEEDANCE_MODEL": "seedance-1-5-pro-251215",
     "SEEDANCE_DRY_RUN": "true",

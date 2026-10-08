@@ -350,6 +350,7 @@ async def studio_status() -> dict[str, Any]:
         "mode": "local",
         "agent": agent_configured(),
         "dry_run": {
+            "kling": os.getenv("KLING_DRY_RUN", "true").lower() != "false",
             "seedance": os.getenv("SEEDANCE_DRY_RUN", "true").lower() != "false",
             "seedream": os.getenv("SEEDREAM_DRY_RUN", os.getenv("SEEDANCE_DRY_RUN", "true")).lower()
             != "false",
