@@ -79,6 +79,8 @@ PROVIDERS: tuple[ProviderSpec, ...] = (
             "REMOTION_APP_BUCKET_NAME",
             "REMOTION_DRY_RUN",
             "REMOTION_FRAMES_PER_LAMBDA",
+            "PROVIDER_INPUT_BUCKET",
+            "AWS_S3_BUCKET",
         ),
         default_env={
             "REMOTION_DRY_RUN": "true",

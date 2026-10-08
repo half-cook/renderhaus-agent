@@ -62,6 +62,13 @@ TOOL_GUIDANCE: dict[str, dict[str, str]] = {
             "Use only after render_timeline returned a render id and bucket name. Poll once per call "
             "until succeeded, failed, cancelled, or dry_run; it does not start a new render."
         ),
+        "export_nle_timeline": (
+            "Use for send to Resolve, give my editor a timeline, or export XML/EDL. Accepts a "
+            "pinned Remotion document/renderConfig JSON snapshot with immutable asset version IDs, "
+            "SHA-256 checksums, source timecodes, reel names, provenance, and generation flags. "
+            "Returns an OTIO, FCPXML, per-track EDL and referenced-media ZIP. Generated clips "
+            "occupy new tracks. Never calls Resolve or exports AAF."
+        ),
     },
 }
 

@@ -12,6 +12,7 @@ import math
 import mimetypes
 import os
 import re
+import tempfile
 import time
 import uuid
 from dataclasses import dataclass
@@ -577,12 +578,76 @@ def render_timeline_and_wait(
     raise TimeoutError(f"Remotion render {started['render_id']} did not finish in time.")
 
 
+def _nle_storage() -> tuple[str, str, tuple[str, ...]]:
+    stored: dict[str, Any] = {}
+    if DEPLOYMENT_PATH.is_file():
+        value = json.loads(DEPLOYMENT_PATH.read_text())
+        if isinstance(value, dict):
+            stored = value
+    region = str(os.getenv("REMOTION_APP_REGION") or stored.get("region")
+                 or os.getenv("AWS_REGION") or "us-east-1")
+    bucket = str(os.getenv("REMOTION_APP_BUCKET_NAME") or stored.get("bucketName") or "")
+    buckets = {bucket, os.getenv("PROVIDER_INPUT_BUCKET", ""), os.getenv("AWS_S3_BUCKET", "")}
+    hosts = tuple(sorted({host for name in buckets if name for host in (
+        f"{name}.s3.amazonaws.com", f"{name}.s3.{region}.amazonaws.com",
+        f"{name}.s3-{region}.amazonaws.com",
+    )}))
+    return region, bucket, hosts
+
+
+def export_nle_timeline(
+    timeline_json: str,
+    output_filename: str = "renderhaus-handoff.zip",
+) -> dict[str, Any]:
+    """Export a pinned Remotion snapshot as an OTIO, FCPXML, per-track EDL, and media ZIP."""
+    safe_name = re.sub(r"[^A-Za-z0-9._-]+", "-", Path(output_filename).name).strip("._-")
+    safe_name = safe_name.removesuffix(".zip")[:90] or "renderhaus-handoff"
+    safe_name += ".zip"
+    if dry_run():
+        return {
+            "status": "dry_run", "filename": safe_name,
+            "formats": ["otio", "fcpxml", "edl"],
+            "note": "Dry run is enabled; no NLE archive or media copy was produced.",
+        }
+    if len(timeline_json.encode("utf-8")) > 2 * 1024 * 1024:
+        raise ValueError("The pinned NLE snapshot exceeds the 2 MiB input limit.")
+    try:
+        snapshot = json.loads(timeline_json)
+    except json.JSONDecodeError as exc:
+        raise ValueError("timeline_json must be a Remotion document/renderConfig JSON envelope.") from exc
+    from providers.nle import build_handoff
+
+    region, bucket, hosts = _nle_storage()
+    if not _on_lambda():
+        destination = ROOT / ".renderhaus" / "media" / "nle" / uuid.uuid4().hex / safe_name
+        return build_handoff(snapshot, destination, media_roots=_allowed_local_roots(),
+                             source_root=ROOT, allowed_media_hosts=hosts)
+    if not bucket:
+        raise RuntimeError("REMOTION_APP_BUCKET_NAME is required to deliver a Lambda NLE export.")
+    with tempfile.TemporaryDirectory(prefix="renderhaus-nle-") as temporary:
+        destination = Path(temporary) / safe_name
+        result = build_handoff(snapshot, destination, media_roots=_allowed_local_roots(),
+                               source_root=ROOT, allowed_media_hosts=hosts)
+        s3 = boto3.Session(region_name=region).client("s3")
+        key = f"renderhaus-outputs/nle/{uuid.uuid4().hex}/{safe_name}"
+        s3.upload_file(str(destination), bucket, key, ExtraArgs={"ContentType": "application/zip"})
+        result.pop("output_path")
+        result.update({
+            "bucket_name": bucket, "output_key": key,
+            "url": s3.generate_presigned_url("get_object", Params={"Bucket": bucket, "Key": key},
+                                              ExpiresIn=6 * 60 * 60),
+        })
+        return result
+
+
 TOOL_HANDLERS = {
     "render_timeline": render_timeline,
     "get_render_progress": get_render_progress,
+    "export_nle_timeline": export_nle_timeline,
 }
 
 GATEWAY_TOOLS = (
     "render_timeline",
     "get_render_progress",
+    "export_nle_timeline",
 )

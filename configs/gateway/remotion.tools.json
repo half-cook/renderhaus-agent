@@ -230,5 +230,25 @@
         "bucket_name"
       ]
     }
+  },
+  {
+    "name": "export_nle_timeline",
+    "description": "Use for send to Resolve, give my editor a timeline, or export XML/EDL. Accepts a pinned Remotion document/renderConfig JSON snapshot with immutable asset version IDs, SHA-256 checksums, source timecodes, reel names, provenance, and generation flags. Returns an OTIO, FCPXML, per-track EDL and referenced-media ZIP. Generated clips occupy new tracks. Never calls Resolve or exports AAF.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "timeline_json": {
+          "type": "string",
+          "description": "JSON Remotion envelope with document {id, name, assets, tracks} and renderConfig {fps, width, height, durationInFrames, timecode, dropFrame}. Every referenced asset requires id, kind, url, versionId, checksum (SHA-256), durationSec (whole source), sourceTimecode, reelName, non-empty provenance object, and generated boolean. Tracks use the existing Remotion items with assetId, start, duration, sourceIn. Use exact rational fps 30000/1001 for 29.97 and dropFrame=true for DF timecodes. Export supports cuts and gaps; bake titles, effects, fades, and retimes first. Source media must be under Renderhaus media roots or on a configured S3 bucket host."
+        },
+        "output_filename": {
+          "type": "string",
+          "description": "ZIP download filename; directory components are removed."
+        }
+      },
+      "required": [
+        "timeline_json"
+      ]
+    }
   }
 ]

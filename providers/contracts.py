@@ -181,6 +181,18 @@ def enrich_tool_schema(provider_id: str, tool: dict[str, Any]) -> dict[str, Any]
         if isinstance(properties.get("text_overlays"), dict):
             properties["text_overlays"]["items"] = deepcopy(_TEXT_OVERLAY_SCHEMA)
             properties["text_overlays"]["description"] = "Optional titles and captions."
+    if provider_id == "remotion" and tool_name == "export_nle_timeline":
+        properties["timeline_json"]["description"] = (
+            "JSON Remotion envelope with document {id, name, assets, tracks} and renderConfig "
+            "{fps, width, height, durationInFrames, timecode, dropFrame}. Every referenced asset "
+            "requires id, kind, url, versionId, checksum (SHA-256), durationSec (whole source), "
+            "sourceTimecode, reelName, non-empty provenance object, and generated boolean. "
+            "Tracks use the existing Remotion items with assetId, start, duration, sourceIn. "
+            "Use exact rational fps 30000/1001 for 29.97 and dropFrame=true for DF timecodes. "
+            "Export supports cuts and gaps; bake titles, effects, fades, and retimes first. "
+            "Source media must be under Renderhaus media roots or on a configured S3 bucket host."
+        )
+        properties["output_filename"]["description"] = "ZIP download filename; directory components are removed."
     return enriched
 
 
