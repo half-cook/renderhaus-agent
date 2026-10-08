@@ -1,12 +1,13 @@
 # Kling generation guidance draft
 
-This is guidance for a future Deep Agents skill. It is not installed as a skill
-and does not change the current agent harness.
+Status: provider built. Guidance is incorporated in the live t2v and i2v skills.
+The live skills and `agent/deep_agent/routing_policy.json` define current routing.
+
+This provider reference informs the installed intent skills. Those skills own live routing.
 
 Route to Kling when the user asks for Kling, synchronized native audio, controlled
 start/end frames, multi-shot video, or multiple image and element references.
-Use the configured default for an ordinary video request unless its capabilities
-require another model. Do not treat Kling as a replacement for still-image
+Use Wan for an ordinary video request unless the brief requires Kling capabilities. Do not treat Kling as a replacement for still-image
 editing or video assembly. Use existing assembly tools after source media exists.
 
 Discover the actual Gateway tools and schemas. Use `Kling___list_kling_models`

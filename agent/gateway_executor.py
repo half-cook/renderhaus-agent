@@ -9,6 +9,8 @@ from types import SimpleNamespace
 from jsonschema import validate, ValidationError as SchemaValidationError
 from mcp import Tool
 
+from agent.deep_agent.routing import is_free_tool, premium_video, policy_blocker, estimate_cost
+
 from agent.codex_harness import ToolApprovalPending
 from agent.studio_agent_next import (
     _GATEWAY_SEARCH_TOOL,
@@ -23,6 +25,7 @@ from agent.studio_agent_next import (
 # Free, non-generative tools that only package existing project media. They
 # create no paid provider work, so they never pause for customer approval.
 APPROVAL_EXEMPT_TOOLS = frozenset({"Remotion___export_nle_timeline"})
+SPENDING_SESSION_TYPE = "renderhaus_run_spending"
 
 
 def tool_needs_approval(name: str, autonomous: bool) -> bool:
@@ -30,13 +33,25 @@ def tool_needs_approval(name: str, autonomous: bool) -> bool:
 
     if name in APPROVAL_EXEMPT_TOOLS:
         return False
-    return not autonomous or requires_approval(name)
+    return not autonomous or requires_approval(name) or premium_video(name)
 
 
 class GatewayExecutor:
-    def __init__(self, studio, servers, session=None):
+    def __init__(self, studio, servers, session=None, *, run_scope=None):
         self.studio = studio
         self.servers = servers
+        self.run_scope = run_scope or studio.job_id
+        raw_cap = os.getenv("RENDERHAUS_AUTONOMOUS_RUN_CAP_CENTS", "").strip()
+        self.cap_cents = int(raw_cap) if raw_cap and studio.autonomous else None
+        if self.cap_cents is not None and self.cap_cents < 0:
+            raise ValueError("RENDERHAUS_AUTONOMOUS_RUN_CAP_CENTS must be nonnegative.")
+        if self.cap_cents is not None and not studio.job_id:
+            raise ValueError("An autonomous spending cap requires a stable job_id for this run.")
+        budget = next((item["spending"] for item in reversed(studio.session_items)
+            if item.get("type") == SPENDING_SESSION_TYPE and
+            item["spending"].get("scope") == self.run_scope), None) or (session or {}).get("spending") or {}
+        self.reservations = dict(budget.get("reservations") or {}) if budget.get("scope") == self.run_scope else {}
+        self.cap_stopped = budget.get("stopped", False) if budget.get("scope") == self.run_scope else False
         self.render_jobs = dict((session or {}).get("render_jobs") or {})
         for event in studio.tool_events:
             if event.name.endswith("render_timeline") and event.result.get("render_id"):
@@ -48,6 +63,15 @@ class GatewayExecutor:
         if session:
             studio.source_versions.update(session.get("source_versions") or {})
             studio.add_assets(list((session.get("working_assets") or {}).values()))
+
+    def publish_spending(self):
+        spending = self.snapshot()["spending"]
+        self.studio.session_items = [item for item in self.studio.session_items
+                                     if item.get("type") != SPENDING_SESSION_TYPE] + [
+            {"type": SPENDING_SESSION_TYPE, "spending": spending},
+        ]
+        if self.studio.session_sink:
+            self.studio.session_sink(self.studio.session_items)
 
     async def connect_tools(self, session=None):
         for server in self.servers:
@@ -68,6 +92,8 @@ class GatewayExecutor:
 
     def snapshot(self):
         return {
+            "spending": {"scope": self.run_scope, "reservations": dict(self.reservations),
+                         "stopped": self.cap_stopped},
             "source_versions": self.studio.source_versions,
             "working_assets": self.studio.working_assets,
             "render_jobs": self.render_jobs,
@@ -129,11 +155,30 @@ class GatewayExecutor:
                 "error": "Arguments do not match the discovered tool schema.",
                 "path": list(exc.absolute_path),
             }
+        blocker = policy_blocker(name, arguments)
+        if blocker and rejection is None:
+            return {"status": "not_run", "reason": blocker}
         if tool_needs_approval(name, studio.autonomous) and not approved and rejection is None:
             raise ToolApprovalPending(call)
         if rejection is not None:
             output = {"status": "rejected", "message": rejection}
         else:
+            if self.cap_cents is not None and not is_free_tool(name):
+                quote = estimate_cost(name, arguments)
+                spent = sum(self.reservations.values())
+                if self.cap_stopped or quote.total_cents is None or spent + quote.total_cents > self.cap_cents:
+                    already_stopped = self.cap_stopped
+                    self.cap_stopped = True
+                    self.publish_spending()
+                    return {"status": "not_run", "reason": "Autonomous spending cap stopped paid dispatch. "
+                            + ("Paid dispatch was already stopped in this run." if already_stopped else
+                               quote.description if quote.total_cents is None else
+                               f"Estimated spend {spent + quote.total_cents} cents exceeds cap {self.cap_cents} cents."),
+                            "spent_cents": spent, "cap_cents": self.cap_cents}
+                if call_id in self.reservations:
+                    return {"status": "not_run", "reason": "This paid call was already reserved; reconcile its saved job before retrying."}
+                self.reservations[call_id] = quote.total_cents
+                self.publish_spending()
             _record_stream_event(
                 SimpleNamespace(
                     type="run_item_stream_event",

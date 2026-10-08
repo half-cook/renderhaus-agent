@@ -192,6 +192,8 @@ class StudioApprovalRequest(BaseModel):
     label: str = Field(min_length=1, max_length=240)
     arguments: dict[str, Any] = Field(default_factory=dict)
     provider: str | None = None
+    estimated_cost: dict[str, Any] | None = None
+    description: str | None = None
 
 
 StudioAgentRequest.model_rebuild()
@@ -1345,19 +1347,25 @@ def _agent_model() -> str:
 
 
 def _approval_request(item: Any) -> StudioApprovalRequest:
+    from agent.deep_agent.routing import estimate_cost
+
     name = str(getattr(item, "qualified_name", None) or getattr(item, "name", None) or "tool")
     call_id = str(getattr(item, "call_id", None) or "")
     arguments = _compact_tool_arguments(getattr(item, "arguments", None))
     provider, _tool, label = _gateway_tool_parts(name)
+    quote = estimate_cost(name, arguments)
     fallback = hashlib.sha256(
         f"{name}:{json.dumps(arguments, sort_keys=True)}".encode("utf-8")
     ).hexdigest()[:24]
     return StudioApprovalRequest(
         call_id=call_id or f"approval-{fallback}",
         tool_name=name,
-        label=label,
+        label=f"{label} · " + ("Estimated cost unknown" if quote.total_cents is None else
+                              f"Estimated cost ${quote.total_cents / 100:.2f} USD"),
         arguments=arguments,
         provider=provider.lower() if provider else None,
+        estimated_cost=quote.public(),
+        description=quote.description,
     )
 
 

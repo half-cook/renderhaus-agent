@@ -1,14 +1,16 @@
 # Route generation and editing to fal Wan VACE
 
-This is intended guidance for a future Deep Agents skill. It does not change
-the current agent harness. The authoritative tool and pricing reference is
+Status: provider built. Guidance is incorporated in the live t2v, i2v, edit-v2v, and continuity-qc skills.
+The live skills and `agent/deep_agent/routing_policy.json` define current routing.
+
+This provider reference informs the installed intent skills. Those skills own live routing.
+The authoritative tool and pricing reference is
 [FAL_WAN_VACE.md](../FAL_WAN_VACE.md).
 
 Use this provider for Wan VACE text clips, animation from a first frame,
 reference-guided subject consistency, and edits that need masks, expansion,
 reframing, depth, or pose control. Choose it when the user requests Wan VACE or
-needs those edit controls. Keep the current default provider for ordinary
-generation when those controls are irrelevant.
+needs those edit controls. Wan is the default tier for ordinary video generation as well as these controls.
 
 ## Tool order
 

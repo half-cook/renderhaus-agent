@@ -1,0 +1,387 @@
+[
+  {
+    "prompt": "make a 5 second cinematic drone shot",
+    "expected_skill": "t2v",
+    "expected_tool": "kling_t2v",
+    "suite": "t2v",
+    "skip_reason": ""
+  },
+  {
+    "prompt": "cheapest text to video preview",
+    "expected_skill": "t2v",
+    "expected_tool": "wan_t2v",
+    "suite": "t2v",
+    "skip_reason": ""
+  },
+  {
+    "prompt": "highest quality prompt adherence with audio",
+    "expected_skill": "t2v",
+    "expected_tool": "veo_t2v",
+    "suite": "t2v",
+    "skip_reason": "provider pending: Veo"
+  },
+  {
+    "prompt": "animate this product photo",
+    "expected_skill": "i2v",
+    "expected_tool": "kling_i2v",
+    "suite": "i2v",
+    "skip_reason": ""
+  },
+  {
+    "prompt": "image to video Seedance",
+    "expected_skill": "i2v",
+    "expected_tool": "seedance_i2v",
+    "suite": "i2v",
+    "skip_reason": ""
+  },
+  {
+    "prompt": "Wan first last frame morph",
+    "expected_skill": "i2v",
+    "expected_tool": "wan_i2v",
+    "suite": "i2v",
+    "skip_reason": ""
+  },
+  {
+    "prompt": "restyle this footage keep motion Aleph",
+    "expected_skill": "edit-v2v",
+    "expected_tool": "runway_aleph_edit",
+    "suite": "edit-v2v",
+    "skip_reason": ""
+  },
+  {
+    "prompt": "swap the product in the masked region cheaply",
+    "expected_skill": "edit-v2v",
+    "expected_tool": "wan_vace_edit",
+    "suite": "edit-v2v",
+    "skip_reason": ""
+  },
+  {
+    "prompt": "change look keep performance Luma",
+    "expected_skill": "edit-v2v",
+    "expected_tool": "luma_ray3_modify",
+    "suite": "edit-v2v",
+    "skip_reason": "provider pending: Luma"
+  },
+  {
+    "prompt": "generate a still for approval then animate",
+    "expected_skill": "still-then-video",
+    "expected_tool": "seedream_t2i",
+    "suite": "still-then-video",
+    "skip_reason": ""
+  },
+  {
+    "prompt": "lock character then i2v",
+    "expected_skill": "still-then-video",
+    "expected_tool": "kling_i2v",
+    "suite": "still-then-video",
+    "skip_reason": ""
+  },
+  {
+    "prompt": "text in image then motion",
+    "expected_skill": "still-then-video",
+    "expected_tool": "ideogram_t2i",
+    "suite": "still-then-video",
+    "skip_reason": "provider pending: Ideogram"
+  },
+  {
+    "prompt": "make this avatar say the script",
+    "expected_skill": "lipsync",
+    "expected_tool": "hedra_character3",
+    "suite": "lipsync",
+    "skip_reason": "provider pending: talking-head/lipsync adapter; TTS alone cannot animate an avatar"
+  },
+  {
+    "prompt": "cheap lipsync LivePortrait",
+    "expected_skill": "lipsync",
+    "expected_tool": "liveportrait_lipsync",
+    "suite": "lipsync",
+    "skip_reason": "provider pending: talking-head/lipsync adapter; TTS alone cannot animate an avatar"
+  },
+  {
+    "prompt": "TTS then talking head",
+    "expected_skill": "lipsync",
+    "expected_tool": "elevenlabs_tts",
+    "suite": "lipsync",
+    "skip_reason": "provider pending: talking-head/lipsync adapter; TTS alone cannot animate an avatar"
+  },
+  {
+    "prompt": "upscale to 1080p deliverable",
+    "expected_skill": "upscale",
+    "expected_tool": "seedvr2_upscale",
+    "suite": "upscale",
+    "skip_reason": "provider pending: SeedVR2"
+  },
+  {
+    "prompt": "premium Topaz upscale",
+    "expected_skill": "upscale",
+    "expected_tool": "topaz_upscale",
+    "suite": "upscale",
+    "skip_reason": "provider pending: Topaz"
+  },
+  {
+    "prompt": "interpolate frames then upscale",
+    "expected_skill": "upscale",
+    "expected_tool": "rife_interpolate",
+    "suite": "upscale",
+    "skip_reason": "provider pending: RIFE"
+  },
+  {
+    "prompt": "add foley from the video",
+    "expected_skill": "audio-bed",
+    "expected_tool": "mmaudio_sfx",
+    "suite": "audio-bed",
+    "skip_reason": "provider pending: MMAudio"
+  },
+  {
+    "prompt": "generate a music bed",
+    "expected_skill": "audio-bed",
+    "expected_tool": "ace_step_music",
+    "suite": "audio-bed",
+    "skip_reason": "provider pending: ACE-Step"
+  },
+  {
+    "prompt": "narrate with ElevenLabs",
+    "expected_skill": "audio-bed",
+    "expected_tool": "elevenlabs_tts",
+    "suite": "audio-bed",
+    "skip_reason": ""
+  },
+  {
+    "prompt": "Remotion lower thirds",
+    "expected_skill": "motion-graphics",
+    "expected_tool": "remotion_render",
+    "suite": "motion-graphics",
+    "skip_reason": ""
+  },
+  {
+    "prompt": "kinetic titles brand kit",
+    "expected_skill": "motion-graphics",
+    "expected_tool": "remotion_render",
+    "suite": "motion-graphics",
+    "skip_reason": ""
+  },
+  {
+    "prompt": "explainer with Ideogram assets",
+    "expected_skill": "motion-graphics",
+    "expected_tool": "ideogram_t2i",
+    "suite": "motion-graphics",
+    "skip_reason": "provider pending: Ideogram"
+  },
+  {
+    "prompt": "check face consistency across takes",
+    "expected_skill": "continuity-qc",
+    "expected_tool": "local_qc",
+    "suite": "continuity-qc",
+    "skip_reason": ""
+  },
+  {
+    "prompt": "reject bad previews for training",
+    "expected_skill": "continuity-qc",
+    "expected_tool": "wan_t2v",
+    "suite": "continuity-qc",
+    "skip_reason": ""
+  },
+  {
+    "prompt": "QC before paid upscale",
+    "expected_skill": "continuity-qc",
+    "expected_tool": "local_qc",
+    "suite": "continuity-qc",
+    "skip_reason": ""
+  },
+  {
+    "prompt": "export project for DaVinci Resolve",
+    "expected_skill": "resolve-handoff",
+    "expected_tool": "otio_export",
+    "suite": "resolve-handoff",
+    "skip_reason": ""
+  },
+  {
+    "prompt": "I only have free Resolve give me FCPXML",
+    "expected_skill": "resolve-handoff",
+    "expected_tool": "fcpxml_export",
+    "suite": "resolve-handoff",
+    "skip_reason": ""
+  },
+  {
+    "prompt": "package media with EDL",
+    "expected_skill": "resolve-handoff",
+    "expected_tool": "edl_export",
+    "suite": "resolve-handoff",
+    "skip_reason": ""
+  },
+  {
+    "prompt": "zip media for conform",
+    "expected_skill": "resolve-handoff",
+    "expected_tool": "media_package",
+    "suite": "resolve-handoff",
+    "skip_reason": ""
+  },
+  {
+    "prompt": "rough cut from transcript",
+    "expected_skill": "resolve-rough-cut",
+    "expected_tool": "edl_export",
+    "suite": "resolve-rough-cut",
+    "skip_reason": "provider pending: local Resolve bridge, transcription/subtitle or roundtrip adapter; packaging alone does not perform this workflow"
+  },
+  {
+    "prompt": "remove silences into new timeline",
+    "expected_skill": "resolve-silence-cut",
+    "expected_tool": "edl_export",
+    "suite": "resolve-silence-cut",
+    "skip_reason": "provider pending: local Resolve bridge, transcription/subtitle or roundtrip adapter; packaging alone does not perform this workflow"
+  },
+  {
+    "prompt": "auto captions for Resolve",
+    "expected_skill": "resolve-auto-subs",
+    "expected_tool": "fcpxml_export",
+    "suite": "resolve-auto-subs",
+    "skip_reason": "provider pending: local Resolve bridge, transcription/subtitle or roundtrip adapter; packaging alone does not perform this workflow"
+  },
+  {
+    "prompt": "import editor FCPXML back",
+    "expected_skill": "resolve-roundtrip",
+    "expected_tool": "fcpxml_export",
+    "suite": "resolve-roundtrip",
+    "skip_reason": "provider pending: local Resolve bridge, transcription/subtitle or roundtrip adapter; packaging alone does not perform this workflow"
+  },
+  {
+    "prompt": "apply AI edit without touching grade",
+    "expected_skill": "resolve-new-track-safety",
+    "expected_tool": "otio_export",
+    "suite": "resolve-new-track-safety",
+    "skip_reason": "provider pending: local Resolve bridge, transcription/subtitle or roundtrip adapter; packaging alone does not perform this workflow"
+  },
+  {
+    "prompt": "generate with Veo 3.1 native audio dialogue",
+    "expected_skill": "veo-t2v",
+    "expected_tool": "veo_t2v",
+    "suite": "veo-t2v",
+    "skip_reason": "provider pending: Veo"
+  },
+  {
+    "prompt": "animate this still with Veo image to video",
+    "expected_skill": "veo-t2v",
+    "expected_tool": "veo_i2v",
+    "suite": "veo-t2v",
+    "skip_reason": "provider pending: Veo"
+  },
+  {
+    "prompt": "extend this Veo clip another 7 seconds",
+    "expected_skill": "veo-t2v",
+    "expected_tool": "veo_extend",
+    "suite": "veo-t2v",
+    "skip_reason": "provider pending: Veo"
+  },
+  {
+    "prompt": "Veo first and last frame interpolation",
+    "expected_skill": "veo-t2v",
+    "expected_tool": "veo_i2v",
+    "suite": "veo-t2v",
+    "skip_reason": "provider pending: Veo"
+  },
+  {
+    "prompt": "Act-Two performance capture onto character image",
+    "expected_skill": "act-two",
+    "expected_tool": "runway_act_two",
+    "suite": "act-two",
+    "skip_reason": "provider pending: Runway Act-Two"
+  },
+  {
+    "prompt": "drive this avatar with my acting take",
+    "expected_skill": "act-two",
+    "expected_tool": "runway_act_two",
+    "suite": "act-two",
+    "skip_reason": "provider pending: Runway Act-Two"
+  },
+  {
+    "prompt": "Runway performance capture gestures on",
+    "expected_skill": "act-two",
+    "expected_tool": "runway_act_two",
+    "suite": "act-two",
+    "skip_reason": "provider pending: Runway Act-Two"
+  },
+  {
+    "prompt": "cheap LivePortrait lipsync from driving video",
+    "expected_skill": "lipsync",
+    "expected_tool": "liveportrait_lipsync",
+    "suite": "lipsync",
+    "skip_reason": "provider pending: talking-head/lipsync adapter; TTS alone cannot animate an avatar"
+  },
+  {
+    "prompt": "InfiniteTalk talking avatar from image and audio",
+    "expected_skill": "lipsync",
+    "expected_tool": "infinitetalk_lipsync",
+    "suite": "lipsync",
+    "skip_reason": "provider pending: talking-head/lipsync adapter; TTS alone cannot animate an avatar"
+  },
+  {
+    "prompt": "Hedra Character-3 spokesperson",
+    "expected_skill": "lipsync",
+    "expected_tool": "hedra_character3",
+    "suite": "lipsync",
+    "skip_reason": "provider pending: talking-head/lipsync adapter; TTS alone cannot animate an avatar"
+  },
+  {
+    "prompt": "ElevenLabs then fal InfiniteTalk",
+    "expected_skill": "lipsync",
+    "expected_tool": "elevenlabs_tts",
+    "suite": "lipsync",
+    "skip_reason": "provider pending: talking-head/lipsync adapter; TTS alone cannot animate an avatar"
+  },
+  {
+    "prompt": "MMAudio foley from this silent clip",
+    "expected_skill": "audio-bed",
+    "expected_tool": "mmaudio_sfx",
+    "suite": "audio-bed",
+    "skip_reason": "provider pending: MMAudio"
+  },
+  {
+    "prompt": "ACE-Step lofi track with lyrics",
+    "expected_skill": "audio-bed",
+    "expected_tool": "ace_step_music",
+    "suite": "audio-bed",
+    "skip_reason": "provider pending: ACE-Step"
+  },
+  {
+    "prompt": "generate music bed ace-step chillhop",
+    "expected_skill": "audio-bed",
+    "expected_tool": "ace_step_music",
+    "suite": "audio-bed",
+    "skip_reason": "provider pending: ACE-Step"
+  },
+  {
+    "prompt": "video to audio synchronized SFX",
+    "expected_skill": "audio-bed",
+    "expected_tool": "mmaudio_sfx",
+    "suite": "audio-bed",
+    "skip_reason": "provider pending: MMAudio"
+  },
+  {
+    "prompt": "Ideogram poster with readable headline text",
+    "expected_skill": "motion-graphics",
+    "expected_tool": "ideogram_t2i",
+    "suite": "motion-graphics",
+    "skip_reason": "provider pending: Ideogram"
+  },
+  {
+    "prompt": "Recraft SVG logo for brand kit",
+    "expected_skill": "motion-graphics",
+    "expected_tool": "recraft_t2i",
+    "suite": "motion-graphics",
+    "skip_reason": "provider pending: Recraft"
+  },
+  {
+    "prompt": "Remotion lower third using Ideogram asset",
+    "expected_skill": "motion-graphics",
+    "expected_tool": "remotion_render",
+    "suite": "motion-graphics",
+    "skip_reason": ""
+  },
+  {
+    "prompt": "vector brand mark then animate in Remotion",
+    "expected_skill": "motion-graphics",
+    "expected_tool": "recraft_t2i",
+    "suite": "motion-graphics",
+    "skip_reason": "provider pending: Recraft"
+  }
+]

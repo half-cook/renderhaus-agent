@@ -3,6 +3,7 @@ name: final-assembly
 description: Assemble existing assets into a final Remotion video and verify the rendered MP4 result.
 metadata:
   include_tools: call_editor_tool
+  gateway_tools: Remotion___export_nle_timeline Remotion___get_render_progress Remotion___render_timeline
 ---
 
 # Final assembly
@@ -16,6 +17,10 @@ Call Remotion___get_render_progress with those identifiers. The host polls the s
 If waiting times out, preserve the ID and describe pending work. Never start a replacement
 because a poll failed. Deliver a video only when a successful poll provides the final MP4.
 Report a dry-run timeline as a preview and an incomplete export.
+
+For an editor ZIP rather than a rendered video, read
+[Resolve handoff](../resolve-handoff/SKILL.md) and use Remotion___export_nle_timeline.
+A handoff ZIP does not satisfy final MP4 delivery.
 
 Report progress before provider work. Respect DRY_RUN. Never change it to obtain an artifact.
 A preview or queued job is not finished media. Required approval appears in the existing chat.
