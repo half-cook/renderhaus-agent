@@ -219,6 +219,7 @@ only discovered tools and validates each call against that schema before dispatc
 | --- | --- | --- |
 | Seedream | `Seedream___text_to_image`, `Seedream___image_to_image` | Immutable image versions |
 | Seedance | `Seedance___text_to_video`, `Seedance___image_to_video`, `Seedance___get_video_task` | Provider job, then video versions |
+| Luma | `Luma___text_to_video`, `Luma___image_to_video`, `Luma___extend_video`, `Luma___modify_video`, `Luma___get_video_task`, `Luma___list_luma_models` | Ray 3.2 job, then non-training-eligible video versions |
 | ElevenLabs | Full HTTP catalog with semantic descriptions | Audio/files or provider-specific jobs |
 | Fish Audio | Speech generation tools | Audio versions |
 | Remotion | `Remotion___render_timeline`, `Remotion___get_render_progress` | Render identifiers, then a completed MP4 |
@@ -453,6 +454,7 @@ Secrets Manager JSON secret. Do not commit secrets.
 | `AGENTCORE_GATEWAY_URL`, `AGENTCORE_GATEWAY_AUTH_TOKEN` | HTTPS Gateway endpoint and optional bearer token. |
 | `AGENTCORE_GATEWAY_ALLOW_LOOPBACK_HTTP` | Explicit credential-free local MCP development only; see README. |
 | `SEEDREAM_DRY_RUN`, `SEEDANCE_DRY_RUN`, `ELEVENLABS_DRY_RUN`, `FISH_AUDIO_DRY_RUN` | Keep individual providers from creating paid media when true. |
+| `LUMA_API_KEY`, `LUMA_DRY_RUN` | Current official Luma bearer key and default-true dry-run flag. Only false enables traffic. See [Luma provider reference](providers/luma.md). |
 | `REMOTION_APP_*` | Four required Remotion deployment settings listed above. |
 | `REMOTION_RENDER_TIMEOUT_SECONDS`, `REMOTION_POLL_INTERVAL_SECONDS`, `REMOTION_FRAMES_PER_LAMBDA`, `REMOTION_LAMBDA_TIMEOUT_SECONDS` | Remotion runtime and deployed-function tuning. Long source-video timelines default to 100 frames per renderer chunk and a 600-second Lambda timeout. |
 
