@@ -7,6 +7,7 @@ from typing import Any
 
 from providers.fish_audio.api import MODELS, VOICES
 from providers.runway.contracts import I2V_RATIOS, IMAGE_RATIOS
+from providers.fal.wan import ASPECT_RATIOS, EDIT_MODES, MODELS as FAL_MODELS, RESOLUTIONS
 from providers.seedance.api import MAX_DURATION_SECONDS, MIN_DURATION_SECONDS
 
 
@@ -25,6 +26,13 @@ STATIC_FIELD_OPTIONS: dict[str, dict[str, list[str | int]]] = {
         "model": ["gen4.5", "aleph2", "gen4_image", "gen4_image_turbo"],
         "ratio": list(dict.fromkeys(I2V_RATIOS + IMAGE_RATIOS)),
         "duration_seconds": list(range(2, 11)),
+    },
+    "fal": {
+        "model": list(FAL_MODELS),
+        "aspect_ratio": list(ASPECT_RATIOS),
+        "resolution": list(RESOLUTIONS),
+        "edit_mode": list(EDIT_MODES),
+        "task": list(EDIT_MODES[1:]),
     },
     "seedance": {
         "aspect_ratio": list(SEEDANCE_RATIOS),
@@ -48,6 +56,7 @@ STATIC_FIELD_OPTIONS: dict[str, dict[str, list[str | int]]] = {
 
 LIVE_CHOICE_TOOLS: tuple[tuple[str, str, str], ...] = (
     ("kling", "list_kling_models", "model"),
+    ("fal", "list_fal_models", "model"),
     ("seedance", "list_seedance_models", "model"),
     ("seedream", "list_seedream_models", "model"),
     ("elevenlabs", "voices_search", "voice_id"),

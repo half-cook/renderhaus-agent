@@ -81,6 +81,18 @@ const CREATIVE_TOOLS: ToolDefinition[] = [
     defaults: {"model": "gen4_image", "ratio": "1280:720"},
   },
   {
+    id: "video.falGenerate",
+    displayName: "Wan VACE video",
+    description: "Generate a Wan VACE clip from a prompt",
+    category: "video",
+    providerId: "fal",
+    toolName: "text_to_video",
+    inputPorts: [{ id: "prompt", label: "Prompt", dataType: "text", targetField: "prompt", required: true }],
+    outputPorts: [{ id: "video", label: "Video", dataType: "video" }],
+    primaryFields: ["prompt", "model", "aspect_ratio", "num_frames", "frames_per_second", "resolution"],
+    pollTool: "get_video_task",
+  },
+  {
     id: "image.generate",
     displayName: "Image",
     description: "Generate a still from a prompt",
@@ -190,8 +202,11 @@ export function toolForAgentArtifact(
   // agent used an input asset or a composition tool, placing the result must
   // not create an invisible dependency on another artifact in the run.
   const runway = `${event?.provider || ""} ${event?.name || ""}`.toLowerCase().includes("runway");
+  const fal = `${event?.provider || ""} ${event?.name || ""}`.toLowerCase().includes("fal");
   if (kind === "image") return toolById(runway ? "runway.image.generate" : "image.generate");
-  if (kind === "video") return toolById(runway ? "runway.video.generate" : "video.generate");
+  if (kind === "video") {
+    return toolById(runway ? "runway.video.generate" : fal ? "video.falGenerate" : "video.generate");
+  }
   const source = `${event?.provider || ""} ${event?.name || ""}`.toLowerCase();
   return toolById(
     source.includes("fish_audio") || source.includes("speech") || source.includes("voice")

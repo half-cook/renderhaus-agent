@@ -52,6 +52,14 @@ TOOL_GUIDANCE: dict[str, dict[str, str]] = {
         "get_runway_task": "Poll an existing Runway job_id once. Never submit another generation to check status. Wait at least five seconds between calls. Completed media URLs expire and must be saved.",
         "list_runway_models": "List locally documented supported Runway models and limits. Free, no API request. This catalog does not verify account access or live model availability.",
     },
+    "fal": {
+        "text_to_video": "Generate a Wan VACE clip from text. Returns job_id; poll get_video_task with download=true until terminal.",
+        "image_to_video": "Animate first_frame_url using Wan VACE. Returns job_id; poll get_video_task with download=true until terminal.",
+        "reference_to_video": "Generate a Wan VACE clip guided by ref_image_urls for subject consistency. Returns job_id; poll get_video_task with download=true until terminal.",
+        "video_to_video": "Edit video_url with Wan VACE. Choose freeform, inpainting, outpainting, reframe, depth, or pose. Inpainting needs one mask; outpainting needs expansion sides. Returns job_id; poll get_video_task with download=true until terminal.",
+        "get_video_task": "Poll an existing fal job_id once. Fetch completed results and optionally download the MP4. Never submits another generation.",
+        "list_fal_models": "List documented Wan VACE models, endpoints, licences, and published pricing. Static catalog; no network or generation.",
+    },
     "seedream": {
         "text_to_image": (
             "Use when the user needs a new still image from a text description. Do not use for "
@@ -381,6 +389,10 @@ def dummy_arguments(schema: dict[str, Any]) -> dict[str, Any]:
     args: dict[str, Any] = {}
     for name in required:
         args[name] = dummy_value(props.get(name) or {"type": "string"})
+    for name in ("video_url", "first_frame_url", "ref_image_urls"):
+        if name in args:
+            url = "https://example.com/ci-smoke.mp4" if name == "video_url" else "https://example.com/ci-smoke.png"
+            args[name] = [url] if name == "ref_image_urls" else url
     source_fields = {
         "extend_song": "song_id",
         "region_edit_song": "song_id",

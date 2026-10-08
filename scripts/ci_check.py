@@ -22,6 +22,7 @@ def _force_dry_run() -> None:
     os.environ["ELEVENLABS_DRY_RUN"] = "true"
     os.environ["FISH_AUDIO_DRY_RUN"] = "true"
     os.environ["REMOTION_DRY_RUN"] = "true"
+    os.environ["FAL_DRY_RUN"] = "true"
 
 
 _force_dry_run()
@@ -95,6 +96,11 @@ def check_dry_run_dispatch() -> None:
                     arguments["video_duration_seconds"] = 2.0
                 if name == "get_runway_task":
                     arguments["job_id"] = "00000000-0000-4000-8000-000000000000"
+            if spec.id == "fal":
+                if name == "get_video_task":
+                    arguments["job_id"] = "fal-ai/wan-vace-14b:ci-smoke"
+                elif name == "video_to_video":
+                    arguments["prompt"] = "A small offline smoke test"
             result = dispatch(spec.id, name, arguments)
             assert isinstance(result, dict), f"{spec.id}.{name} did not return a dict"
             if "error" in result and result.get("error_type"):

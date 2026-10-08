@@ -41,6 +41,7 @@ jobs:
           FISH_AUDIO_DRY_RUN: "true"
           REMOTION_DRY_RUN: "true"
           KLING_DRY_RUN: "true"
+          FAL_DRY_RUN: "true"
 
       - name: CI checks
         run: python scripts/ci_check.py
@@ -54,3 +55,4 @@ jobs:
           FISH_AUDIO_DRY_RUN: "true"
           REMOTION_DRY_RUN: "true"
           KLING_DRY_RUN: "true"
+          FAL_DRY_RUN: "true"
