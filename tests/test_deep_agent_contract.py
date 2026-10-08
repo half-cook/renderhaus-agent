@@ -166,6 +166,62 @@ class DeepAgentContractTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(self.repo.get_conversation_items("user:local", self.conversation)[0]["type"],
                          "renderhaus_deepagents_session")
 
+    async def test_streamed_asset_and_final_result_share_one_registered_version(self):
+        png = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jrXcAAAAASUVORK5CYII="
+        self.gateway.call_tool.return_value = {"status": "succeeded", "image_url": "data:image/png;base64," + png}
+        self.steps = [read_skill(), image(), final()]
+        chunks = [chunk async for chunk in agent_invocation({
+            "prompt": "Make a product still", "autonomous": True, "job_id": self.job,
+            "workspace_id": "user:local", "project_id": "project", "conversation_id": self.conversation,
+        }, SimpleNamespace(session_id="runtime-session"))]
+
+        class ResultStream(httpx.AsyncByteStream):
+            async def __aiter__(self):
+                for chunk in chunks:
+                    yield ("data: " + json.dumps(chunk) + "\n\n").encode()
+
+        def route(request):
+            if request.url.path == "/ping":
+                return httpx.Response(200, json={"status": "healthy"})
+            return httpx.Response(200, headers={"content-type": "text/event-stream"}, stream=ResultStream())
+
+        client = httpx.AsyncClient
+        with patch.dict(os.environ, {"AGENTCORE_DEV_URL": "http://runtime.test"}), patch(
+            "server.studio.httpx.AsyncClient", side_effect=lambda **kw: client(transport=httpx.MockTransport(route), **kw),
+        ), patch.object(self.repo, "register_source", wraps=self.repo.register_source) as ingest:
+            await studio._run_studio_agent_job(
+                self.job, "Make a product still", [], self.conversation,
+                workspace_id="user:local", project_id="project", user_id="local", autonomous=True,
+            )
+        execution = self.repo.get_execution("user:local", self.job)
+        self.assertEqual(execution["status"], "completed")
+        self.assertEqual(ingest.call_count, 1)
+        self.assertEqual(len(execution["result"]["assets"]), 1)
+        self.assertEqual(execution["result"]["assets"][0]["version_id"], execution["tool_calls"][0]["assets"][0]["version_id"])
+
+    async def test_identical_search_in_two_jobs_preserves_both_ledgers(self):
+        from agent.studio_agent_next import _GATEWAY_SEARCH_TOOL
+        from mcp import Tool
+        self.gateway.tools = [Tool(
+            name=_GATEWAY_SEARCH_TOOL, description="Search tools", inputSchema={
+                "type": "object", "properties": {"query": {"type": "string"}}, "required": ["query"]},
+        )]
+        self.gateway.call_tool.return_value = {"tools": []}
+        first_job = self.job
+        for index in range(2):
+            self.steps = [call(_GATEWAY_SEARCH_TOOL, {"query": "product image"}, "search"), final()]
+            if index:
+                self.job = self.repo.create_execution(
+                    workspace_id="user:local", project_id="project", user_id="local",
+                    prompt="Make a product still", conversation_id=self.conversation,
+                )["job_id"]
+            await self.run_job()
+        first = self.repo.get_execution("user:local", first_job)
+        second = self.repo.get_execution("user:local", self.job)
+        self.assertEqual(len(first["tool_calls"]), 1)
+        self.assertEqual(len(second["tool_calls"]), 1)
+        self.assertNotEqual(first["tool_calls"][0]["id"], second["tool_calls"][0]["id"])
+
     async def test_backend_flag_keeps_codex_runner_available(self):
         from agent.studio_agent_next import StudioAgentRequest, StudioAgentOutput, run_studio_agent
         output = StudioAgentOutput.model_validate(FINAL)

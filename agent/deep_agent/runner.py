@@ -126,7 +126,12 @@ async def run_with_servers(request, studio, servers, *, model=None):
             if tool_name.split("___", 1)[0] not in DISPATCH_TARGETS[wrapper]:
                 return {"status": "failed", "error": "This role cannot call that provider."}
             key = _signature(tool_name, arguments)
-            call_id = aliases[key].popleft() if aliases[key] else runtime.tool_call_id
+            call_id = aliases[key].popleft() if aliases[key] else "tool-" + hashlib.sha256(
+                json.dumps([
+                    _scope(request), runtime.config["configurable"].get("checkpoint_ns", ""),
+                    runtime.tool_call_id,
+                ]).encode()
+            ).hexdigest()
             return await executor.execute(
                 {"tool_name": tool_name, "arguments": arguments, "call_id": call_id}, approved=True,
             )
@@ -140,7 +145,7 @@ async def run_with_servers(request, studio, servers, *, model=None):
         async def search(**arguments):
             return await executor.execute({
                 "tool_name": _GATEWAY_SEARCH_TOOL, "arguments": arguments,
-                "call_id": "search-" + hashlib.sha256(json.dumps(arguments, sort_keys=True).encode()).hexdigest(),
+                "call_id": "search-" + hashlib.sha256((_scope(request) + json.dumps(arguments, sort_keys=True)).encode()).hexdigest(),
             }, approved=True)
 
         from langchain_core.tools import StructuredTool

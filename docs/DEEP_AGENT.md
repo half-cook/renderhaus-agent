@@ -95,7 +95,9 @@ A fresh worker restores the same native thread and files from the snapshot.
 Local Studio saves checkpoints through `session_sink` after each graph checkpoint or write.
 AgentCore streams them in private `kind=checkpoint` SSE messages while the worker runs, and
 returns them with completed, approval, and failed results. Studio saves received snapshots and
-tool events before waiting for the final result. The progress and result envelopes are unchanged.
+tool events before waiting for the final result. Final payload hydration reuses the persisted
+asset version, so streamed media is registered once. Search and dispatch call IDs include
+execution scope to keep job ledgers separate. The progress and result envelopes are unchanged.
 A disconnect retains checkpoints and media events that already reached Studio. A remote worker
 lost before emitting its latest checkpoint still needs external durable storage or reconciliation. Portable snapshots currently retain checkpoint history;
 large, long-lived conversations need retention limits or a durable saver.

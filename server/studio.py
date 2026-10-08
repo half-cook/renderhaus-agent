@@ -254,8 +254,15 @@ def _hydrate_tool_event_assets(
     user_id: str,
     execution_id: str,
 ) -> None:
+    execution = repository.get_execution(workspace_id, execution_id) if execution_id else None
+    saved_assets = {
+        call["id"]: call.get("assets") or []
+        for call in (execution or {}).get("tool_calls", [])
+    }
     seen_sources: set[str] = set()
     for event in events:
+        if not getattr(event, "assets", None) and saved_assets.get(event.id):
+            event.assets = list(saved_assets[event.id])
         existing = list(getattr(event, "assets", None) or [])
         if existing:
             continue

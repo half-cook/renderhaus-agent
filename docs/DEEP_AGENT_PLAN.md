@@ -36,7 +36,7 @@ calls were made. Browser verification is blocked, not passed.
 
 ## Throughput checkpoint
 
-Four units produce four logical commits, including the policy extraction and final documentation. Each unit ends
+The migration produces five logical commits, including extraction, graph integration, caller migration, documentation, and review fixes. Each unit ends
 with focused tests before the next begins. Checks use `.venv/bin/python`, because `python` is
 absent and system `python3` has no project dependencies. The supplied venv baseline ran 138
 tests with no failures or errors. Local `main` and the starting branch have the same commit.
@@ -44,8 +44,8 @@ The reported single error on main was not reproduced in this environment.
 
 ## Final gate
 
-The baseline at local main `7d6c9fe` passed 138 tests. The final suite passed 163 tests,
-including 25 new graph and contract tests, with zero failures, errors, or skips. Ruff and
+The baseline at local main `7d6c9fe` passed 138 tests. The final suite passed 165 tests,
+including 27 new graph and contract tests, with zero failures, errors, or skips. Ruff and
 `ci_check.py` passed. A built wheel contains all six skills and project memory. Runtime stream
 disconnect recovery is exercised through the actual SSE parser with a local mock transport.
 The Comet check is recorded as blocked and pending under `.renderhaus/e2e/`.
@@ -59,3 +59,9 @@ The independent review found a blank-model fallback issue and a runtime disconne
 gap. Both were corrected and verified. Eighteen narrative comment/docstring lines were removed;
 public tool descriptions and protocol constraints were retained. No encoding approval was needed.
 Snapshot retention for long conversations remains a documented follow-up.
+
+The follow-up stream review caught duplicate asset hydration and search ID collisions across
+jobs. Persisted asset versions are now reused; search and dispatch IDs bind execution scope.
+Two additional contract tests cover these regressions. The final independent review found no
+remaining blocker in those fixes. Long-conversation retention and real Comet/provider checks
+remain open.
