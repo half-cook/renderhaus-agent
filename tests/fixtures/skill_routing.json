@@ -2,7 +2,7 @@
   {
     "prompt": "make a 5 second cinematic drone shot",
     "expected_skill": "t2v",
-    "expected_tool": "kling_t2v",
+    "expected_tool": "seedance_t2v",
     "suite": "t2v",
     "skip_reason": ""
   },
@@ -23,7 +23,7 @@
   {
     "prompt": "animate this product photo",
     "expected_skill": "i2v",
-    "expected_tool": "kling_i2v",
+    "expected_tool": "seedance_i2v",
     "suite": "i2v",
     "skip_reason": ""
   },
@@ -72,7 +72,7 @@
   {
     "prompt": "lock character then i2v",
     "expected_skill": "still-then-video",
-    "expected_tool": "kling_i2v",
+    "expected_tool": "seedance_i2v",
     "suite": "still-then-video",
     "skip_reason": ""
   },

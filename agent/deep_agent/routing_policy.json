@@ -1,6 +1,6 @@
 {
   "premium_video_approval": true,
-  "default_video_tool": "wan_t2v",
+  "default_video_tool": "seedance_t2v",
   "premium_targets": [
     "Kling",
     "Runway",
@@ -518,7 +518,7 @@
       "abstract_tool": "seedvr2_upscale"
     },
     {
-      "pattern": "\\bveo\\b|highest quality.*audio",
+      "pattern": "\\bveo\\b",
       "skill": "veo-t2v",
       "abstract_tool": "veo_t2v"
     },
@@ -653,14 +653,14 @@
       "abstract_tool": "wan_i2v"
     },
     {
-      "pattern": "kling.*(image|i2v)|(image|i2v).*kling|animate.*product photo",
+      "pattern": "kling.*(image|i2v)|(image|i2v).*kling",
       "skill": "i2v",
       "abstract_tool": "kling_i2v"
     },
     {
       "pattern": "animat|image to video|\\bi2v\\b|first.*last frame",
       "skill": "i2v",
-      "abstract_tool": "wan_i2v"
+      "abstract_tool": "seedance_i2v"
     },
     {
       "pattern": "runway.*(video|gen.?4)|gen.?4.?5",
@@ -673,14 +673,14 @@
       "abstract_tool": "seedance_t2v"
     },
     {
-      "pattern": "kling|cinematic drone",
+      "pattern": "kling",
       "skill": "t2v",
       "abstract_tool": "kling_t2v"
     },
     {
-      "pattern": "video|\\bt2v\\b|generate.*clip",
+      "pattern": "video|\\bt2v\\b|generate.*clip|cinematic drone shot",
       "skill": "t2v",
-      "abstract_tool": "wan_t2v"
+      "abstract_tool": "seedance_t2v"
     }
   ],
   "pending_skills": {
@@ -692,5 +692,1043 @@
   },
   "continuity_qc": {
     "dinov3_enabled": false
-  }
+  },
+  "ladder": {
+    "default_tier": "standard",
+    "preview_tier": "draft",
+    "retry_tier": "draft",
+    "confidential_provider": "fal",
+    "image_default_size": "2K",
+    "v2v_tiers": {
+      "draft": [
+        "fal"
+      ],
+      "standard": [
+        "luma"
+      ],
+      "premium": [
+        "runway"
+      ]
+    },
+    "faithful_edit_provider": "runway",
+    "generation_tiers": {
+      "draft": [
+        "fal"
+      ],
+      "standard": [
+        "seedance",
+        "kling"
+      ],
+      "premium": [
+        "kling",
+        "veo",
+        "runway"
+      ]
+    }
+  },
+  "capabilities": [
+    {
+      "provider": "fal",
+      "model": "fal-ai/wan-vace-14b",
+      "label": "Wan VACE 14B",
+      "tools": {
+        "t2v": "Fal___text_to_video",
+        "i2v": "Fal___image_to_video",
+        "v2v_edit": "Fal___video_to_video",
+        "reference": "Fal___reference_to_video"
+      },
+      "tiers": [
+        "draft"
+      ],
+      "jobs": {
+        "t2v": true,
+        "i2v": true,
+        "start_end_frame": true,
+        "native_audio": false,
+        "multi_shot": false,
+        "v2v_edit": true,
+        "reference_elements": true,
+        "lipsync": false,
+        "upscale": false,
+        "image": false,
+        "max_resolution": 720,
+        "4k": false
+      },
+      "resolutions": [
+        240,
+        360,
+        480,
+        580,
+        720
+      ],
+      "speed_class": "standard",
+      "policy_ref": "fal",
+      "price": {
+        "unit": "second at num_frames / 16",
+        "source": "server.billing_rates._fal_cost",
+        "unknown": [
+          "auto/240p/360p",
+          "Wan 2.2 freeform/pose"
+        ]
+      },
+      "notes": "No image tool, native audio, lipsync, upscale, or native multi-shot. Reference images are not Kling element IDs.",
+      "controls": {
+        "t2v": [
+          "prompt",
+          "model",
+          "num_frames",
+          "frames_per_second",
+          "resolution",
+          "aspect_ratio",
+          "negative_prompt",
+          "seed"
+        ],
+        "i2v": [
+          "first_frame_url",
+          "prompt",
+          "model",
+          "num_frames",
+          "frames_per_second",
+          "resolution",
+          "aspect_ratio",
+          "last_frame_url",
+          "negative_prompt",
+          "seed"
+        ],
+        "v2v_edit": [
+          "video_url",
+          "prompt",
+          "edit_mode",
+          "task",
+          "model",
+          "num_frames",
+          "frames_per_second",
+          "resolution",
+          "aspect_ratio",
+          "mask_video_url",
+          "mask_image_url",
+          "ref_image_urls",
+          "first_frame_url",
+          "last_frame_url",
+          "preprocess",
+          "expand_left",
+          "expand_right",
+          "expand_top",
+          "expand_bottom",
+          "expand_ratio",
+          "zoom_factor",
+          "trim_borders",
+          "negative_prompt",
+          "seed"
+        ],
+        "reference": [
+          "ref_image_urls",
+          "prompt",
+          "model",
+          "num_frames",
+          "frames_per_second",
+          "resolution",
+          "aspect_ratio",
+          "first_frame_url",
+          "last_frame_url",
+          "negative_prompt",
+          "seed"
+        ]
+      },
+      "durations": {},
+      "frame_limits": {
+        "num_frames": [
+          81,
+          241
+        ],
+        "frames_per_second": [
+          5,
+          30
+        ]
+      }
+    },
+    {
+      "provider": "fal",
+      "model": "fal-ai/wan-22-vace-fun-a14b",
+      "label": "Wan 2.2 VACE",
+      "tools": {
+        "t2v": "Fal___text_to_video",
+        "i2v": "Fal___image_to_video",
+        "v2v_edit": "Fal___video_to_video",
+        "reference": "Fal___reference_to_video"
+      },
+      "tiers": [
+        "draft"
+      ],
+      "jobs": {
+        "t2v": true,
+        "i2v": true,
+        "start_end_frame": true,
+        "native_audio": false,
+        "multi_shot": false,
+        "v2v_edit": true,
+        "reference_elements": true,
+        "lipsync": false,
+        "upscale": false,
+        "image": false,
+        "max_resolution": 720,
+        "4k": false
+      },
+      "resolutions": [
+        240,
+        360,
+        480,
+        580,
+        720
+      ],
+      "speed_class": "standard",
+      "policy_ref": "fal",
+      "price": {
+        "unit": "second at num_frames / 16",
+        "source": "server.billing_rates._fal_cost",
+        "unknown": [
+          "auto/240p/360p",
+          "Wan 2.2 freeform/pose"
+        ]
+      },
+      "notes": "No image tool, native audio, lipsync, upscale, or native multi-shot. Reference images are not Kling element IDs.",
+      "controls": {
+        "t2v": [
+          "prompt",
+          "model",
+          "num_frames",
+          "frames_per_second",
+          "resolution",
+          "aspect_ratio",
+          "negative_prompt",
+          "seed"
+        ],
+        "i2v": [
+          "first_frame_url",
+          "prompt",
+          "model",
+          "num_frames",
+          "frames_per_second",
+          "resolution",
+          "aspect_ratio",
+          "last_frame_url",
+          "negative_prompt",
+          "seed"
+        ],
+        "v2v_edit": [
+          "video_url",
+          "prompt",
+          "edit_mode",
+          "task",
+          "model",
+          "num_frames",
+          "frames_per_second",
+          "resolution",
+          "aspect_ratio",
+          "mask_video_url",
+          "mask_image_url",
+          "ref_image_urls",
+          "first_frame_url",
+          "last_frame_url",
+          "preprocess",
+          "expand_left",
+          "expand_right",
+          "expand_top",
+          "expand_bottom",
+          "expand_ratio",
+          "zoom_factor",
+          "trim_borders",
+          "negative_prompt",
+          "seed"
+        ],
+        "reference": [
+          "ref_image_urls",
+          "prompt",
+          "model",
+          "num_frames",
+          "frames_per_second",
+          "resolution",
+          "aspect_ratio",
+          "first_frame_url",
+          "last_frame_url",
+          "negative_prompt",
+          "seed"
+        ]
+      },
+      "durations": {},
+      "frame_limits": {
+        "num_frames": [
+          81,
+          241
+        ],
+        "frames_per_second": [
+          5,
+          30
+        ]
+      }
+    },
+    {
+      "provider": "seedance",
+      "model": "seedance-1-5-pro-251215",
+      "label": "Seedance 1.5 Pro",
+      "tools": {
+        "t2v": "Seedance___text_to_video",
+        "i2v": "Seedance___image_to_video"
+      },
+      "tiers": [
+        "standard"
+      ],
+      "jobs": {
+        "t2v": true,
+        "i2v": true,
+        "start_end_frame": false,
+        "native_audio": true,
+        "multi_shot": false,
+        "v2v_edit": false,
+        "reference_elements": false,
+        "lipsync": false,
+        "upscale": false,
+        "image": false,
+        "max_resolution": 1080,
+        "4k": false
+      },
+      "resolutions": [
+        480,
+        720,
+        1080
+      ],
+      "speed_class": "standard",
+      "policy_ref": "seedance",
+      "price": {
+        "unit": "second (pixel/fps token formula)",
+        "source": "server.billing_rates._seedance_cost"
+      },
+      "notes": "No end frame, elements, native multi-shot, or editing controls in built schema.",
+      "controls": {
+        "t2v": [
+          "prompt",
+          "duration_seconds",
+          "aspect_ratio",
+          "resolution",
+          "model",
+          "watermark",
+          "generate_audio",
+          "service_tier"
+        ],
+        "i2v": [
+          "image_path_or_url",
+          "prompt",
+          "duration_seconds",
+          "aspect_ratio",
+          "resolution",
+          "model",
+          "watermark",
+          "generate_audio",
+          "service_tier"
+        ]
+      },
+      "durations": {
+        "t2v": [
+          4,
+          12
+        ],
+        "i2v": [
+          4,
+          12
+        ]
+      }
+    },
+    {
+      "provider": "seedream",
+      "model": "seedream-5-0-lite-260128",
+      "label": "Seedream 5.0 Lite",
+      "tools": {
+        "image": "Seedream___text_to_image",
+        "image_edit": "Seedream___image_to_image"
+      },
+      "tiers": [
+        "standard"
+      ],
+      "jobs": {
+        "t2v": false,
+        "i2v": false,
+        "start_end_frame": false,
+        "native_audio": false,
+        "multi_shot": false,
+        "v2v_edit": false,
+        "reference_elements": false,
+        "lipsync": false,
+        "upscale": false,
+        "image": true,
+        "max_resolution": 3072,
+        "4k": false
+      },
+      "resolutions": [
+        1024,
+        2048,
+        3072
+      ],
+      "speed_class": "fast",
+      "policy_ref": "seedream",
+      "price": {
+        "unit": "image",
+        "source": "server.billing_rates._seedream_cost",
+        "unknown": [
+          "2K/3K/custom size"
+        ]
+      },
+      "notes": "Only 1K pricing confirmed. No 4K preset. Custom dimensions do not establish a supported maximum.",
+      "controls": {
+        "image": [
+          "prompt",
+          "aspect_ratio",
+          "size",
+          "model",
+          "watermark",
+          "response_format"
+        ],
+        "image_edit": [
+          "image_path_or_url",
+          "prompt",
+          "aspect_ratio",
+          "size",
+          "model",
+          "watermark",
+          "response_format"
+        ]
+      },
+      "durations": {}
+    },
+    {
+      "provider": "kling",
+      "model": "kling-3.0",
+      "label": "Kling 3.0",
+      "tools": {
+        "t2v": "Kling___text_to_video",
+        "i2v": "Kling___image_to_video"
+      },
+      "tiers": [
+        "standard",
+        "premium"
+      ],
+      "jobs": {
+        "t2v": true,
+        "i2v": true,
+        "start_end_frame": true,
+        "native_audio": true,
+        "multi_shot": true,
+        "v2v_edit": false,
+        "reference_elements": true,
+        "lipsync": false,
+        "upscale": false,
+        "image": false,
+        "max_resolution": 2160,
+        "4k": true
+      },
+      "resolutions": [
+        720,
+        1080,
+        2160
+      ],
+      "speed_class": "standard",
+      "policy_ref": "kling",
+      "price": {
+        "unit": "second",
+        "source": "server.billing_rates._kling_cost"
+      },
+      "notes": "Elements require existing provider library IDs. No video-to-video, lipsync or upscale tool. Elements only on i2v or Omni.",
+      "controls": {
+        "t2v": [
+          "prompt",
+          "duration_seconds",
+          "aspect_ratio",
+          "resolution",
+          "model",
+          "generate_audio",
+          "multi_shot",
+          "shots"
+        ],
+        "i2v": [
+          "image_path_or_url",
+          "prompt",
+          "duration_seconds",
+          "resolution",
+          "model",
+          "end_image_path_or_url",
+          "generate_audio",
+          "multi_shot",
+          "shots",
+          "elements"
+        ]
+      },
+      "durations": {
+        "t2v": [
+          3,
+          15
+        ],
+        "i2v": [
+          3,
+          15
+        ]
+      }
+    },
+    {
+      "provider": "kling",
+      "model": "kling-3.0-turbo",
+      "label": "Kling 3.0 Turbo",
+      "tools": {
+        "t2v": "Kling___text_to_video",
+        "i2v": "Kling___image_to_video"
+      },
+      "tiers": [
+        "standard",
+        "premium"
+      ],
+      "jobs": {
+        "t2v": true,
+        "i2v": true,
+        "start_end_frame": false,
+        "native_audio": false,
+        "multi_shot": true,
+        "v2v_edit": false,
+        "reference_elements": false,
+        "lipsync": false,
+        "upscale": false,
+        "image": false,
+        "max_resolution": 1080,
+        "4k": false
+      },
+      "resolutions": [
+        720,
+        1080
+      ],
+      "speed_class": "fast",
+      "policy_ref": "kling",
+      "price": "unknown",
+      "notes": "Turbo has no audio/end-frame/elements/4K controls and unconfirmed pricing.",
+      "controls": {
+        "t2v": [
+          "prompt",
+          "duration_seconds",
+          "aspect_ratio",
+          "resolution",
+          "model",
+          "generate_audio",
+          "multi_shot",
+          "shots"
+        ],
+        "i2v": [
+          "image_path_or_url",
+          "prompt",
+          "duration_seconds",
+          "resolution",
+          "model",
+          "end_image_path_or_url",
+          "generate_audio",
+          "multi_shot",
+          "shots",
+          "elements"
+        ]
+      },
+      "durations": {
+        "t2v": [
+          3,
+          15
+        ],
+        "i2v": [
+          3,
+          15
+        ]
+      }
+    },
+    {
+      "provider": "kling",
+      "model": "kling-3.0-omni",
+      "label": "Kling 3.0 Omni",
+      "tools": {
+        "t2v": "Kling___omni_video",
+        "i2v": "Kling___omni_video"
+      },
+      "tiers": [
+        "standard",
+        "premium"
+      ],
+      "jobs": {
+        "t2v": true,
+        "i2v": true,
+        "start_end_frame": true,
+        "native_audio": true,
+        "multi_shot": true,
+        "v2v_edit": false,
+        "reference_elements": true,
+        "lipsync": false,
+        "upscale": false,
+        "image": false,
+        "max_resolution": 2160,
+        "4k": true
+      },
+      "resolutions": [
+        720,
+        1080,
+        2160
+      ],
+      "speed_class": "standard",
+      "policy_ref": "kling",
+      "price": {
+        "unit": "second",
+        "source": "server.billing_rates._kling_cost"
+      },
+      "notes": "Elements require existing provider library IDs. No video-to-video, lipsync or upscale tool. Elements only on i2v or Omni.",
+      "controls": {
+        "t2v": [
+          "prompt",
+          "reference_images",
+          "elements",
+          "image_path_or_url",
+          "end_image_path_or_url",
+          "duration_seconds",
+          "aspect_ratio",
+          "resolution",
+          "generate_audio",
+          "multi_shot",
+          "shots"
+        ],
+        "i2v": [
+          "prompt",
+          "reference_images",
+          "elements",
+          "image_path_or_url",
+          "end_image_path_or_url",
+          "duration_seconds",
+          "aspect_ratio",
+          "resolution",
+          "generate_audio",
+          "multi_shot",
+          "shots"
+        ]
+      },
+      "durations": {
+        "t2v": [
+          3,
+          15
+        ],
+        "i2v": [
+          3,
+          15
+        ]
+      }
+    },
+    {
+      "provider": "runway",
+      "model": "gen4.5",
+      "label": "Runway Gen-4.5",
+      "tools": {
+        "t2v": "Runway___text_to_video",
+        "i2v": "Runway___image_to_video"
+      },
+      "tiers": [
+        "premium"
+      ],
+      "jobs": {
+        "t2v": true,
+        "i2v": true,
+        "start_end_frame": false,
+        "native_audio": false,
+        "multi_shot": false,
+        "v2v_edit": false,
+        "reference_elements": false,
+        "lipsync": false,
+        "upscale": false,
+        "image": false,
+        "max_resolution": 720,
+        "4k": false
+      },
+      "resolutions": [
+        720
+      ],
+      "speed_class": "standard",
+      "policy_ref": "runway",
+      "price": {
+        "unit": "second",
+        "source": "server.billing_rates._runway_cost"
+      },
+      "notes": "Built ratios are 720-class only. No audio/end frame/multi-shot/elements controls.",
+      "controls": {
+        "t2v": [
+          "prompt",
+          "duration_seconds",
+          "ratio",
+          "model",
+          "seed"
+        ],
+        "i2v": [
+          "image_path_or_url",
+          "prompt",
+          "duration_seconds",
+          "ratio",
+          "model",
+          "seed"
+        ]
+      },
+      "durations": {
+        "t2v": [
+          2,
+          10
+        ],
+        "i2v": [
+          2,
+          10
+        ]
+      }
+    },
+    {
+      "provider": "runway",
+      "model": "aleph2",
+      "label": "Runway Aleph",
+      "tools": {
+        "v2v_edit": "Runway___video_to_video"
+      },
+      "tiers": [
+        "premium"
+      ],
+      "jobs": {
+        "t2v": false,
+        "i2v": false,
+        "start_end_frame": false,
+        "native_audio": false,
+        "multi_shot": false,
+        "v2v_edit": true,
+        "reference_elements": false,
+        "lipsync": false,
+        "upscale": false,
+        "image": false,
+        "max_resolution": 0,
+        "4k": false
+      },
+      "resolutions": [],
+      "speed_class": "slow",
+      "policy_ref": "runway",
+      "price": {
+        "unit": "source second",
+        "source": "server.billing_rates._runway_cost",
+        "unknown": [
+          "fractional duration"
+        ]
+      },
+      "notes": "Faithful and multi-shot plate edits are routing preferences, not a native multi_shot control. Input max 1080p; output resolution is unspecified, so max_resolution=0. Single reference image, not element library.",
+      "controls": {
+        "v2v_edit": [
+          "video_path_or_url",
+          "prompt",
+          "video_duration_seconds",
+          "reference_image_path_or_url",
+          "reference_seconds",
+          "model",
+          "seed"
+        ]
+      },
+      "durations": {
+        "v2v_edit": [
+          2,
+          30
+        ]
+      }
+    },
+    {
+      "provider": "runway",
+      "model": "gen4_image",
+      "label": "Runway Gen-4 Image",
+      "tools": {
+        "image_edit": "Runway___image_to_image",
+        "image": "Runway___text_to_image"
+      },
+      "tiers": [
+        "standard",
+        "premium"
+      ],
+      "jobs": {
+        "t2v": false,
+        "i2v": false,
+        "start_end_frame": false,
+        "native_audio": false,
+        "multi_shot": false,
+        "v2v_edit": false,
+        "reference_elements": false,
+        "lipsync": false,
+        "upscale": false,
+        "image": true,
+        "max_resolution": 1080,
+        "4k": false
+      },
+      "resolutions": [
+        720,
+        1080
+      ],
+      "speed_class": "fast",
+      "policy_ref": "runway",
+      "price": {
+        "unit": "image",
+        "source": "server.billing_rates._runway_cost"
+      },
+      "notes": "Turbo requires a source image. Reference image tags are not element library IDs.",
+      "controls": {
+        "image_edit": [
+          "image_path_or_url",
+          "prompt",
+          "ratio",
+          "model",
+          "reference_images",
+          "seed"
+        ],
+        "image": [
+          "prompt",
+          "ratio",
+          "model",
+          "seed"
+        ]
+      },
+      "durations": {}
+    },
+    {
+      "provider": "runway",
+      "model": "gen4_image_turbo",
+      "label": "Runway Gen-4 Image Turbo",
+      "tools": {
+        "image_edit": "Runway___image_to_image"
+      },
+      "tiers": [
+        "standard",
+        "premium"
+      ],
+      "jobs": {
+        "t2v": false,
+        "i2v": false,
+        "start_end_frame": false,
+        "native_audio": false,
+        "multi_shot": false,
+        "v2v_edit": false,
+        "reference_elements": false,
+        "lipsync": false,
+        "upscale": false,
+        "image": true,
+        "max_resolution": 1080,
+        "4k": false
+      },
+      "resolutions": [
+        720,
+        1080
+      ],
+      "speed_class": "fast",
+      "policy_ref": "runway",
+      "price": {
+        "unit": "image",
+        "source": "server.billing_rates._runway_cost"
+      },
+      "notes": "Turbo requires a source image. Reference image tags are not element library IDs.",
+      "controls": {
+        "image_edit": [
+          "image_path_or_url",
+          "prompt",
+          "ratio",
+          "model",
+          "reference_images",
+          "seed"
+        ]
+      },
+      "durations": {}
+    },
+    {
+      "provider": "luma",
+      "model": "ray-3.2",
+      "label": "Luma Ray 3.2",
+      "tools": {
+        "t2v": "Luma___text_to_video",
+        "i2v": "Luma___image_to_video",
+        "v2v_edit": "Luma___modify_video",
+        "extend": "Luma___extend_video"
+      },
+      "tiers": [
+        "standard",
+        "premium"
+      ],
+      "jobs": {
+        "t2v": true,
+        "i2v": true,
+        "start_end_frame": true,
+        "native_audio": false,
+        "multi_shot": false,
+        "v2v_edit": true,
+        "reference_elements": false,
+        "lipsync": false,
+        "upscale": false,
+        "image": false,
+        "max_resolution": 1080,
+        "4k": false
+      },
+      "resolutions": [
+        360,
+        540,
+        720,
+        1080
+      ],
+      "speed_class": "standard",
+      "policy_ref": "luma",
+      "price": {
+        "unit": "published 5s/10s clip or extend unit",
+        "source": "server.billing_rates._luma_cost",
+        "unknown": [
+          "360p extend",
+          "other modify source durations"
+        ]
+      },
+      "notes": "Default standard generation uses Seedance/Kling; Luma is standard only for Modify, or explicit provider requests. i2v exactly 5s; no native audio/multi-shot/elements. No training/evaluation datasets under existing terms.",
+      "controls": {
+        "t2v": [
+          "prompt",
+          "duration_seconds",
+          "aspect_ratio",
+          "resolution",
+          "model"
+        ],
+        "i2v": [
+          "prompt",
+          "image_path_or_url",
+          "last_frame_path_or_url",
+          "duration_seconds",
+          "aspect_ratio",
+          "resolution",
+          "model"
+        ],
+        "v2v_edit": [
+          "prompt",
+          "source_duration_seconds",
+          "video_path_or_url",
+          "source_generation_id",
+          "resolution",
+          "strength",
+          "model"
+        ],
+        "extend": [
+          "prompt",
+          "generation_id",
+          "direction",
+          "resolution",
+          "model"
+        ]
+      },
+      "durations": {
+        "t2v": [
+          5,
+          10
+        ],
+        "i2v": [
+          5,
+          5
+        ],
+        "v2v_edit": [
+          5,
+          10
+        ]
+      },
+      "duration_values": {
+        "t2v": [
+          5,
+          10
+        ],
+        "i2v": [
+          5
+        ]
+      }
+    },
+    {
+      "provider": "veo",
+      "model": "pending",
+      "label": "Veo",
+      "tools": {},
+      "tiers": [
+        "premium"
+      ],
+      "jobs": {
+        "t2v": false,
+        "i2v": false,
+        "start_end_frame": false,
+        "native_audio": false,
+        "multi_shot": false,
+        "v2v_edit": false,
+        "reference_elements": false,
+        "lipsync": false,
+        "upscale": false,
+        "image": false,
+        "max_resolution": 0,
+        "4k": false
+      },
+      "resolutions": [],
+      "speed_class": "unknown",
+      "policy_ref": "veo",
+      "price": "unknown",
+      "notes": "Unavailable/pending provider. All capabilities false until built schema and policy approval exist.",
+      "controls": {},
+      "durations": {}
+    },
+    {
+      "provider": "minimax_h3",
+      "model": "pending",
+      "label": "MiniMax H3",
+      "tools": {},
+      "tiers": [
+        "premium"
+      ],
+      "jobs": {
+        "t2v": false,
+        "i2v": false,
+        "start_end_frame": false,
+        "native_audio": false,
+        "multi_shot": false,
+        "v2v_edit": false,
+        "reference_elements": false,
+        "lipsync": false,
+        "upscale": false,
+        "image": false,
+        "max_resolution": 0,
+        "4k": false
+      },
+      "resolutions": [],
+      "speed_class": "unknown",
+      "policy_ref": "minimax_h3",
+      "price": "unknown",
+      "notes": "Unavailable/pending provider. All capabilities false until built schema and policy approval exist.",
+      "controls": {},
+      "durations": {}
+    },
+    {
+      "provider": "hunyuan",
+      "model": "pending",
+      "label": "Hunyuan",
+      "tools": {},
+      "tiers": [
+        "premium"
+      ],
+      "jobs": {
+        "t2v": false,
+        "i2v": false,
+        "start_end_frame": false,
+        "native_audio": false,
+        "multi_shot": false,
+        "v2v_edit": false,
+        "reference_elements": false,
+        "lipsync": false,
+        "upscale": false,
+        "image": false,
+        "max_resolution": 0,
+        "4k": false
+      },
+      "resolutions": [],
+      "speed_class": "unknown",
+      "policy_ref": "hunyuan",
+      "price": "unknown",
+      "notes": "Unavailable/pending provider. All capabilities false until built schema and policy approval exist.",
+      "controls": {},
+      "durations": {}
+    }
+  ]
 }
