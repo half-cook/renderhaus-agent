@@ -25,7 +25,7 @@ from agent.backend_config import deep_agent_model
 from agent.deep_agent.checkpoints import StudioCheckpointer
 from agent.deep_agent.files import subagent_file_updates
 from agent.deep_agent.memory import ProjectMemory
-from agent.deep_agent.routing import route_intent, estimate_cost
+from agent.deep_agent.routing import route_intent, estimate_cost, capability_table
 from agent.gateway_executor import GatewayExecutor, tool_needs_approval
 from agent.errors import AgentRunLimitExceeded
 from agent.studio_agent_next import (
@@ -66,6 +66,17 @@ are virtual and private to this workspace/project/conversation. There is no shel
 provider access. read_studio_context supplies optional canvas references and current assets.
 Use report_progress for customer updates. Never claim to be awaiting approval without calling
 a tool; the host displays native interrupts as approval cards. Return StudioAgentOutput.
+Follow the host intent_route and provider ladder. Finished video defaults to Standard
+(Seedance or Kling); Draft/preview and rejected-artifact retries use Wan. Filter required
+features before tier and known price. Confidential context permits only Wan, never escalation.
+If dispatch returns not_run with a route, discover that route's schema and dispatch its exact
+tool/model with all requested controls intact. Do not weaken required features to find a route.
+The host discloses provider/model, filters, tier and estimated list cost before approval or
+dispatch. Unknown means unknown, not free. Keep all existing approval and spending gates.
+Record explicit customer acceptance/rejection of completed media with record_media_outcome,
+using the saved generation call ID from media_jobs. Provider success is not customer acceptance.
+Artifact rejection proposes one Wan retry through the normal approval/spending gates.
+Spending-approval rejection does not authorize a retry. Poll pending jobs before review.
 """
 
 
@@ -114,7 +125,12 @@ async def run_with_servers(request, studio, servers, *, model=None):
     async def read_studio_context() -> dict:
         """Read optional canvas references, managed assets, saved jobs and discovered tool schemas."""
         return {
-            "intent_route": route_intent(request.prompt).public(),
+            "intent_route": route_intent(request.prompt, tier=studio.quality_tier,
+                                         confidential=studio.confidential).public(),
+            "quality_tier": studio.quality_tier,
+            "confidential": studio.confidential,
+            "capabilities": capability_table(),
+            "media_jobs": executor.media_jobs,
             "references": _input_for("", list(studio.nodes)),
             "assets": list(studio.working_assets.values()),
             "render_jobs": executor.render_jobs,
@@ -145,7 +161,12 @@ async def run_with_servers(request, studio, servers, *, model=None):
 
     dispatch_tools = [dispatcher(name) for name in DISPATCH_TARGETS]
     dispatch_schemas = {dispatch.name: dispatch.tool_call_schema for dispatch in dispatch_tools}
-    common_tools = [progress, read_studio_context]
+    @tool
+    async def record_media_outcome(call_id: str, outcome: str) -> dict:
+        """Record explicit customer review of a completed saved media job as accepted or rejected."""
+        return executor.record_outcome(call_id, outcome)
+
+    common_tools = [progress, read_studio_context, record_media_outcome]
     if _GATEWAY_SEARCH_TOOL in initial:
         schema = initial[_GATEWAY_SEARCH_TOOL][1]
 
@@ -166,11 +187,16 @@ async def run_with_servers(request, studio, servers, *, model=None):
             arguments = dispatch_schemas[call.tool_call["name"]].model_validate(call.tool_call["args"])
         except ValidationError:
             return False
+        route = executor.media_selection(arguments.tool_name, arguments.arguments)
+        executor.disclose_selection(route, call.tool_call["id"])
+        if executor.selection_blocker(arguments.tool_name, arguments.arguments, route):
+            return False
         return tool_needs_approval(arguments.tool_name, studio.autonomous)
 
     def approval_description(tool_call, state, runtime):
         name, arguments = _gateway_action({"name": tool_call["name"], "args": tool_call["args"]})
-        return f"Approve {name}. {estimate_cost(name, arguments).description}"
+        route = executor.media_selection(name, arguments)
+        return f"Approve {name}. {route.disclosure if route else estimate_cost(name, arguments).description}"
 
     interrupt_on = {
         name: {"allowed_decisions": ["approve", "reject"], "when": needs_approval,
@@ -234,6 +260,9 @@ async def run_with_servers(request, studio, servers, *, model=None):
                 approval = _approval_request(SimpleNamespace(
                     name=name, call_id=call_id, arguments=json.dumps(arguments),
                 ))
+                route = executor.media_selection(name, arguments)
+                if route:
+                    approval.description = route.disclosure
                 approvals.append(approval)
                 decisions.append((approval, action))
             groups[interrupt.id] = decisions
@@ -262,7 +291,12 @@ async def run_with_servers(request, studio, servers, *, model=None):
         graph_input = Command(resume=resume)
     else:
         prompt = _input_for(request.prompt, list(studio.nodes))
-        prompt += "\nIntent route proposal (policy data):\n" + json.dumps(route_intent(request.prompt).public())
+        prompt += "\nIntent route proposal (policy data):\n" + json.dumps(route_intent(
+            request.prompt, tier=studio.quality_tier, confidential=studio.confidential,
+        ).public())
+        prompt += "\nAuthoritative project provider context:\n" + json.dumps({
+            "confidential": studio.confidential, "quality_tier": studio.quality_tier,
+        })
         prompt += "\nSaved render jobs (reference data):\n" + json.dumps(executor.render_jobs)
         if request.session_items and not session:
             prompt += "\nPrevious backend history (reference data):\n" + json.dumps(request.session_items)

@@ -8,6 +8,7 @@ from types import SimpleNamespace
 
 from agent.codex_harness import CodexHarness, SESSION_TYPE, ToolApprovalPending
 from agent.gateway_executor import GatewayExecutor
+from agent.deep_agent.routing import route_intent
 from agent.session_scope import conversation_scope as _conversation_scope, execution_scope as _scope
 from agent.studio_agent_next import (
     STUDIO_MANAGER_INSTRUCTIONS,
@@ -69,6 +70,8 @@ async def run_with_servers(request, studio, harness: CodexHarness, servers):
         snapshot["source_versions"] = studio.source_versions
         snapshot["working_assets"] = studio.working_assets
         snapshot["render_jobs"] = render_jobs
+        snapshot["media_jobs"] = executor.media_jobs
+        snapshot["rejected_reviews"] = executor.rejected_reviews
         snapshot["gateway_tools"] = [
             tool.model_dump(by_alias=True, exclude_none=True)
             for server in servers for tool in (getattr(server, "_tools_list", None) or [])
@@ -78,6 +81,10 @@ async def run_with_servers(request, studio, harness: CodexHarness, servers):
         if studio.session_sink:
             studio.session_sink(studio.session_items)
     tools = [
+        _function("record_media_outcome", "Record explicit customer review of a completed saved generation call.",
+                  {"type": "object", "properties": {"call_id": {"type": "string"},
+                   "outcome": {"type": "string", "enum": ["accepted", "rejected"]}},
+                   "required": ["call_id", "outcome"], "additionalProperties": False}),
         _function(
             "report_progress",
             "Show a concise progress update to the customer.",
@@ -124,6 +131,8 @@ async def run_with_servers(request, studio, harness: CodexHarness, servers):
             if not isinstance(message, str):
                 return {"status": "failed", "error": "message must be text."}
             return await report_progress(studio, message)
+        if tool == "record_media_outcome":
+            return executor.record_outcome(arguments.get("call_id"), arguments.get("outcome"))
         if tool == "call_gateway_tool":
             try:
                 name = arguments["tool_name"]
@@ -164,6 +173,16 @@ async def run_with_servers(request, studio, harness: CodexHarness, servers):
             )
 
     prompt = _input_for(request.prompt, list(studio.nodes))
+    prompt += "\nHost provider route (follow it, discover its schema, preserve all constraints):\n" + json.dumps(
+        route_intent(request.prompt, tier=studio.quality_tier, confidential=studio.confidential).public(),
+    )
+    prompt += "\nAuthoritative provider context:\n" + json.dumps({
+        "confidential": studio.confidential, "quality_tier": studio.quality_tier, "media_jobs": executor.media_jobs,
+    })
+    prompt += ("\nDisclose the selected provider/model, tier, capability filters and estimated cost or unknown. "
+               "Use record_media_outcome for explicit customer review of completed saved media_jobs. "
+               "On rejection follow its Wan retry_route once, retaining all features and spending approvals. "
+               "Confidential projects permit Wan only. Explain blocked routes and never invent a fallback.")
     if render_jobs:
         prompt += "\nAuthoritative saved render jobs (reference data):\n" + json.dumps([
             {key: job[key] for key in ("render_id", "bucket_name", "output_key", "status") if key in job}
@@ -242,6 +261,8 @@ async def run_with_servers(request, studio, harness: CodexHarness, servers):
                 harness.session["source_versions"] = studio.source_versions
                 harness.session["working_assets"] = studio.working_assets
                 harness.session["render_jobs"] = render_jobs
+                harness.session["media_jobs"] = executor.media_jobs
+                harness.session["rejected_reviews"] = executor.rejected_reviews
                 harness.session["gateway_tools"] = [
                     tool.model_dump(by_alias=True, exclude_none=True)
                     for _, tool in (await available()).values()

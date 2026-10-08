@@ -14,7 +14,7 @@ import re
 import secrets
 import time
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 from urllib.parse import parse_qs, quote, unquote, urlparse
 
 import httpx
@@ -219,9 +219,11 @@ def _register_payload_assets(
     tool_call_id: str | None = None,
     source_version_ids: list[str] | None = None,
     relation_type: str = "derived_from",
+    provider: str | None = None,
 ) -> list[dict[str, Any]]:
     registered: list[dict[str, Any]] = []
-    training_eligible = _payload_training_eligibility(payload)
+    provenance = {**payload, "provider": provider} if provider and isinstance(payload, dict) else payload
+    training_eligible = _payload_training_eligibility(provenance)
     for candidate in collect_asset_sources(payload):
         candidate_kind = candidate["kind"]
         if kind and candidate_kind != kind:
@@ -245,11 +247,16 @@ def _register_payload_assets(
 
 
 def _payload_training_eligibility(payload: Any) -> bool | None:
+    from agent.deep_agent.routing import POLICY, training_eligible
+
     if isinstance(payload, dict):
-        if payload.get("training_eligible") is False or payload.get("provider") == "luma":
+        provider = POLICY["providers"].get(payload.get("provider"), {})
+        if payload.get("training_eligible") is False or provider.get("training_eligible") is False:
             return False
         if any(_payload_training_eligibility(value) is False for value in payload.values()):
             return False
+        if training_eligible(payload):
+            return True
     elif isinstance(payload, list):
         if any(_payload_training_eligibility(value) is False for value in payload):
             return False
@@ -300,6 +307,10 @@ def _hydrate_tool_event_assets(
             )
             if _payload_training_eligibility(payload) is False:
                 stub["training_eligible"] = False
+            elif _payload_training_eligibility(payload) is True:
+                stub.update({key: payload[key] for key in (
+                    "provider", "model", "status", "weights_license", "training_eligible",
+                ) if key in payload})
             try:
                 registered.extend(
                     _register_payload_assets(
@@ -310,6 +321,8 @@ def _hydrate_tool_event_assets(
                         kind=kind,  # type: ignore[arg-type]
                         execution_id=execution_id,
                         tool_call_id=getattr(event, "id", None) or None,
+                        source_version_ids=getattr(event, "source_version_ids", None) or _source_version_ids(getattr(event, "arguments", {})),
+                        provider=event.name.partition("___")[0].lower(),
                     )
                 )
             except Exception:
@@ -389,9 +402,15 @@ async def studio_status() -> dict[str, Any]:
     }
 
 
+class ProjectProviderPolicy(BaseModel):
+    confidential: bool = False
+    quality_tier: Literal["draft", "standard", "premium"] = "standard"
+
+
 class StudioProjectBody(BaseModel):
     name: str = Field(default="Untitled", min_length=1, max_length=120)
     project_id: str | None = Field(default=None, min_length=1, max_length=120)
+    provider_policy: ProjectProviderPolicy = Field(default_factory=ProjectProviderPolicy)
 
 
 class StudioCanvasBody(BaseModel):
@@ -527,10 +546,29 @@ async def create_studio_project(body: StudioProjectBody, auth: AuthUser) -> dict
             user_id,
             body.name,
             project_id=body.project_id,
+            provider_policy=body.provider_policy.model_dump(),
         )
     except Exception as exc:
         logger.exception("Could not create Studio project")
         raise HTTPException(status_code=409, detail="Could not create project.") from exc
+
+
+@router.put("/projects/{project_id}/provider-policy")
+async def set_project_provider_policy(project_id: str, body: ProjectProviderPolicy, auth: AuthUser) -> dict[str, Any]:
+    try:
+        return await asyncio.to_thread(repository.set_project_provider_policy,
+                                       current_workspace_id(auth), project_id, body.model_dump())
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="Project not found.") from exc
+
+
+@router.get("/projects/{project_id}/provider-policy")
+async def project_provider_policy(project_id: str, auth: AuthUser) -> dict[str, Any]:
+    try:
+        policy = await asyncio.to_thread(repository.project_provider_policy, current_workspace_id(auth), project_id)
+        return ProjectProviderPolicy.model_validate(policy).model_dump()
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="Project not found.") from exc
 
 
 @router.get("/projects/{project_id}/canvas")
@@ -731,6 +769,7 @@ async def invoke_tool(body: InvokeBody, auth: AuthUser) -> dict[str, Any]:
         assets = await asyncio.to_thread(
             _register_payload_assets,
             payload=result,
+            provider=body.provider,
             workspace_id=workspace_id,
             project_id=body.project_id,
             user_id=user_id,
@@ -1207,6 +1246,9 @@ def _studio_agent_request(
     approval_decisions: list[StudioApprovalDecision] | None = None,
     resume_tool_names: list[str] | None = None,
 ) -> StudioAgentRequest:
+    policy = ProjectProviderPolicy()
+    if workspace_id and project_id:
+        policy = ProjectProviderPolicy.model_validate(repository.project_provider_policy(workspace_id, project_id))
     return StudioAgentRequest(
         prompt=prompt,
         nodes=[
@@ -1228,6 +1270,8 @@ def _studio_agent_request(
         project_id=project_id,
         user_id=user_id,
         autonomous=autonomous,
+        confidential=policy.confidential,
+        quality_tier=policy.quality_tier,
         resume_state=resume_state,
         approval_decisions=list(approval_decisions or []),
         resume_tool_names=list(resume_tool_names or []),
@@ -1261,6 +1305,7 @@ def _events_from_payload(raw: list[Any]) -> list[StudioToolEvent]:
                     else {}
                 ),
                 assets=list(item.get("assets") or []),
+                source_version_ids=list(item.get("source_version_ids") or []),
                 result=dict(item.get("result") or {})
                 if isinstance(item.get("result"), dict)
                 else {},
@@ -1453,6 +1498,9 @@ async def run_studio_agent(
         user_id=request.user_id,
         session_items=list(request.session_items),
         autonomous=request.autonomous,
+        confidential=request.confidential,
+        quality_tier=request.quality_tier,
+        prompt=request.prompt,
     )
     studio.restore_events(list(prior_tool_events or []))
     if request.workspace_id and request.conversation_id and request.job_id:
@@ -1483,6 +1531,8 @@ async def _run_studio_agent_job(
     prior_tool_events: list[StudioToolEvent] | None = None,
     resume_tool_names: list[str] | None = None,
 ) -> None:
+    from agent.gateway_executor import GatewayExecutor
+
     session_items = await asyncio.to_thread(
         repository.get_conversation_recovery_items, workspace_id, conversation_id
     )
@@ -1503,6 +1553,7 @@ async def _run_studio_agent_job(
         for run in reversed(previous_runs):
             for call in run.get("tool_calls", []):
                 result = call.get("result") or {}
+                GatewayExecutor.restore_media_review(snapshot.get("media_jobs", {}), _events_from_payload([call])[0])
                 if call["name"].endswith("render_timeline") and result.get("render_id"):
                     jobs.setdefault(result["render_id"], result)
                 if call["name"].endswith("get_render_progress") and result.get("status") == "succeeded":
@@ -1525,6 +1576,7 @@ async def _run_studio_agent_job(
     def register_assets(**kwargs: Any) -> list[dict[str, Any]]:
         return _register_payload_assets(
             payload=kwargs["result"],
+            provider=kwargs.get("provider"),
             workspace_id=workspace_id,
             project_id=project_id,
             user_id=user_id,
