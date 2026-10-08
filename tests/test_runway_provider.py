@@ -492,7 +492,9 @@ class RunwayProviderTests(unittest.TestCase):
                 result = api.get_runway_task(JOB_ID)
             self.assertEqual(result["media_kind"], kind)
             self.assertEqual(result[f"{kind}_url"], url)
-            self.assertEqual(result["assets"], [{"kind": kind, "url": url}])
+            self.assertEqual(len(result["assets"]), 1)
+            self.assertEqual(result["assets"][0]["kind"], kind)
+            self.assertEqual(result["assets"][0][f"{kind}_url"], url)
             self.assertIsNone(result["model"])
             self.assertNotIn("output_path", result)
 

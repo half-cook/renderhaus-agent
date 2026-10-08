@@ -43,7 +43,7 @@ MODEL_CONSTRAINTS: dict[str, dict[str, Any]] = {
         "media_kind": "video",
         "tools": ("video_to_video",),
         "video_duration_seconds": {"minimum": 2, "maximum": 30},
-        "input_fps": 30,
+        "max_input_fps": 30,
         "max_input_resolution": "1080p",
         "max_reference_images": 1,
     },
@@ -128,10 +128,10 @@ def validate_job_id(job_id: Any) -> str:
     return job_id
 
 
-def validate_https_url(value: Any, field: str) -> str:
+def validate_https_url(value: Any, field: str, *, max_length: int = 2048) -> str:
     """Check URL syntax without fetching a caller-supplied asset."""
-    if not isinstance(value, str) or not 13 <= len(value) <= 2048:
-        raise ValueError(f"{field} must be an HTTPS domain URL of at most 2048 characters.")
+    if not isinstance(value, str) or not 13 <= len(value) <= max_length:
+        raise ValueError(f"{field} must be an HTTPS domain URL of at most {max_length} characters.")
     if any(character.isspace() or ord(character) < 32 for character in value) or "\\" in value:
         raise ValueError(f"{field} must not contain whitespace or backslashes.")
     try:

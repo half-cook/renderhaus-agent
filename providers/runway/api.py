@@ -275,7 +275,7 @@ def video_to_video(
     model: str = "aleph2",
     seed: int | None = None,
 ) -> dict[str, Any]:
-    """Edit a 2-30 second, 30 fps, up-to-1080p video with Aleph 2, then poll get_runway_task.
+    """Edit a 2-30 second, at most 30 fps, up-to-1080p video with Aleph 2, then poll get_runway_task.
 
     The caller must supply the true input duration for the cost estimate and a
     compatible clip. This tool checks URI syntax, not remote media properties.
@@ -349,7 +349,7 @@ def _kind_from_extension(extension: str) -> str | None:
 
 def _validate_output_request(request: httpx.Request) -> None:
     # Validate redirects too. Never attach the authenticated API client's headers.
-    validate_https_url(str(request.url), "Runway output URL")
+    validate_https_url(str(request.url), "Runway output URL", max_length=16384)
 
 
 def _output_client() -> httpx.Client:
@@ -426,14 +426,14 @@ def _assets(job_id: str, output: Any, download: bool) -> list[dict[str, Any]]:
     assets = []
     for index, url in enumerate(output):
         try:
-            validate_https_url(url, "Runway output URL")
+            validate_https_url(url, "Runway output URL", max_length=16384)
         except ValueError:
             raise RuntimeError("Runway returned an invalid output URL.") from None
         extension = Path(urlsplit(url).path).suffix.lower()
         kind = _kind_from_extension(extension)
         if kind is None:
             kind, extension = _output_type(url)
-        asset: dict[str, Any] = {"kind": kind, "url": url}
+        asset: dict[str, Any] = {"kind": kind, "url": url, f"{kind}_url": url}
         if download:
             suffix = "" if index == 0 else f"_{index + 1}"
             output_path = _media_dir() / kind / f"{job_id}{suffix}{extension}"
