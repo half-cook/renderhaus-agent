@@ -74,6 +74,7 @@ class Asset:
             "reelName": self.reel_name,
             "provenance": self.provenance,
             "generated": self.generated,
+            "hasAudio": self.has_audio,
             "sourceDurationFrames": self.duration,
         }
 

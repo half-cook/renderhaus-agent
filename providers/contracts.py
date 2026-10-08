@@ -187,6 +187,7 @@ def enrich_tool_schema(provider_id: str, tool: dict[str, Any]) -> dict[str, Any]
             "{fps, width, height, durationInFrames, timecode, dropFrame}. Every referenced asset "
             "requires id, kind, url, versionId, checksum (SHA-256), durationSec (whole source), "
             "sourceTimecode, reelName, non-empty provenance object, and generated boolean. "
+            "Video assets also require explicit hasAudio boolean; audio media has audio. "
             "Tracks use the existing Remotion items with assetId, start, duration, sourceIn. "
             "Use exact rational fps 30000/1001 for 29.97 and dropFrame=true for DF timecodes. "
             "Export supports cuts and gaps; bake titles, effects, fades, and retimes first. "
