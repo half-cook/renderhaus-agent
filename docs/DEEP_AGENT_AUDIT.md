@@ -75,7 +75,7 @@ Each row answers used, wired correctly, gap, decision, and verification.
 | --- | --- | --- | --- | --- |
 | 1. Native agent construction | `runner.run_with_servers` compiles `create_deep_agent`, rather than a custom model loop. | Core, Primer; `deepagents/graph.py:create_deep_agent`. | none | Defer changes. Real compiled-graph tests already exercise this. |
 | 2. Skills and progressive tools | `runner.py` supplies `/skills/` and a replacement `SkillsMiddleware` with dispatch tools. All six `skills/*/SKILL.md` files declare `metadata.include_tools`. Roles receive only their focused dispatch tools. | Core; `middleware/skills.py` reads metadata first, discloses tools after successful reads or pins, and caches metadata in thread state. | high for stale metadata after a skill update | Fix now F2. Reload the index on new turns and preserve native interrupted state. Test changed metadata and tool disclosure across fresh workers. |
-| 3. Heavy-job subagents | Planner, media, audio, editor, and overridden general-purpose are isolated dict specs. Media covers generation and editing; editor covers assembly and export. No separate QC agent. | Orchestration; `middleware/subagents.py:SubAgent`, `CompiledSubAgent`; `middleware/async_subagents.py:AsyncSubAgent`. | low for separate QC; none for existing roles | Defer F4. Current workflows need the existing schemas and inherited HITL. A QC agent needs a defined artifact inspection capability. Test focused tools and nested resume now. |
+| 3. Heavy-job subagents | Planner, media, audio, editor, and overridden general-purpose are isolated dict specs. Media covers generation and editing; editor covers assembly and export. No separate QC agent. Children return full file snapshots. | Orchestration; `middleware/subagents.py:SubAgent`, `CompiledSubAgent`; `middleware/async_subagents.py:AsyncSubAgent`. | high for stale sibling files; low for separate QC | Fix now F13, filter unchanged task files. Defer F4. Current workflows need existing schemas and inherited HITL. A QC agent needs a defined artifact inspection capability. Test focused tools, parallel files, and nested resume now. |
 | 4. Planning | Roles have planning prose and project files, but no `write_todos` tool. A compiled baseline graph confirmed its absence. | Orchestration describes `TodoListMiddleware`; installed `graph.py` does not add it. `langchain/agents/middleware/todo.py` provides the middleware and state. | high | Fix now F1. Add middleware explicitly to manager and roles. Test saved todos and isolation from child planning. |
 | 5. Backend and project memory | `CompositeBackend(default=StateBackend(), routes={"/skills/": FilesystemBackend(...)})`; skills are protected, other files persist within the conversation snapshot. Media assets use handles, not binary files. | Memory; `backends/state.py`, `composite.py`, `store.py`, `filesystem.py`. StateBackend is thread scoped; StoreBackend can persist across threads with an explicit namespace. | low for cross-conversation memory | Defer F5. Adding a durable store requires tenant isolation, migrations, and a project-memory ownership decision. Existing conversation-scoped memory is intentional. |
 | 6. Persistence and resume | `checkpoints.py:StudioCheckpointer` exports storage, blobs, pending writes, and engine versions. `session_scope.py` hashes workspace, project, and conversation; approval scope also includes job. `Command(resume={interrupt_id: ...})` supports batches and nested tasks. | Persistence, HITL; `langgraph/checkpoint/memory/__init__.py`, `middleware/subagents.py` leaves child checkpointer unset to inherit parent persistence per invocation. | high for unbounded snapshots and remote crash windows | Defer F6. Retention must preserve DeltaChannel dependencies and pending child writes. Distributed durable storage is a separate deployment change. Fresh-worker, nested, rejected, batched, and foreign-scope tests already pass. |
@@ -96,7 +96,7 @@ the additional skill or module named in a row supplies the relevant contract.
 | `tools` | Progress, read-only Studio context, and Gateway search. Provider dispatch exists only in skill middleware. | Adds tools to middleware tools, rather than replacing built-ins. | none | Defer changes. Do not expose dispatch eagerly or direct provider access. |
 | `system_prompt` | Existing Studio manager rules plus Deep Agents routing, files, and approval instructions. | String or `SystemMessage`; model profile content may append to it. | low | Fix now F1 only for explicit multi-step todo guidance. |
 | `middleware` | Replacement filesystem, skill disclosure, and `ProjectMemory` middleware. | Name-based replacements preserve default ordering. New entries precede the tail. | high | Fix now F1 adds todos. Retain built-in summarization and caching. |
-| `subagents` | Five declarative role dictionaries with focused skill tools, files, memory, and inherited approval rules. | Declarative, precompiled, remote async, and experimental fork forms. See Orchestration and `middleware/subagents.py`. | none | Defer conversion F4. Existing dicts fit isolated model-led tasks. |
+| `subagents` | Five declarative role dictionaries with focused skill tools, files, memory, and inherited approval rules. Children return inherited files as well as their edits. | Declarative, precompiled, remote async, and experimental fork forms. See Orchestration and `middleware/subagents.py`. | high for parallel stale file updates | Fix now F13. Defer conversion F4. Existing dicts fit isolated model-led tasks. |
 | `skills` | `["/skills/"]` on manager and all roles. | Backend-relative POSIX sources, metadata cache, and progressive disclosure. | high | Fix now F2 refreshes metadata only on ordinary turns. |
 | `memory` | `["/AGENTS.md"]`; `memory.py:ProjectMemory` reloads file content instead of cached `memory_contents`. Child roles explicitly install it. | `middleware/memory.py` loads backend files into the prompt and optionally marks Anthropic cache blocks. See Memory. | low | Defer F11. The custom replacement omits `add_cache_control=True`; provider cache effectiveness needs provider-specific measurement. File refresh itself is correct. |
 | `permissions` | Top-level parameter omitted. Replacement `FilesystemMiddleware` on every role receives `PERMISSIONS`, denying `/skills/**` writes. | Public top-level rules inherit to declarative children; `allow`, `deny`, and `interrupt` modes. `middleware/filesystem.py:FilesystemPermission`; first matching rule wins. | none | Defer wiring changes. Existing replacements already enforce the rule, remove shell tools, and are covered by a denied-write test. |
@@ -188,7 +188,8 @@ The pstack figure-it-out workflow for this audit is recorded here.
    and the Studio TypeScript check. Inspect diffs and record blocked Comet E2E.
 
 The throughput checkpoint is five implementation units plus this audit and a
-final verification record. No new dependency, UI contract, migration, push,
+final verification record. F13 and F14 were added after the native review
+reproduced them, before their failing tests or implementation. No new dependency, UI contract, migration, push,
 deployment, live API, or model-provider call is authorized. Pstack's external
 Claude and Grok lanes are excluded by the offline constraint. Native review
 reduces provider diversity and is not a cross-provider verdict.
@@ -206,4 +207,49 @@ text progress, and paid-tool approval/rejection. Those checks remain blocked.
 
 ## Verification record
 
-Implementation and final check outcomes will be appended after the fixes.
+All five selected fixes are implemented. Each had a failing regression test
+before its fix and a focused graph/contract check before its commit.
+
+| Finding | Commit | Observed supporting check |
+| --- | --- | --- |
+| F1 | `99b4c58` | Two red tests became green. Todos survive JSON snapshot restoration; child todos do not replace the manager plan. 31 focused tests passed. |
+| F2 | `dc2b7e5` | A changed skill description failed before reset. The next turn now reloads both description and `include_tools`; nested approval resumes still pass. 32 focused tests passed. |
+| F13 | `10c22b1` | Parent read returned `Old brief` after concurrent work before the fix. Changed-file task Commands preserve the edited brief and independent audio file, including fresh-worker recovery. 33 focused tests passed. |
+| F14 | `165cc06` | Four malformed wrapper cases crashed or interrupted before the fix. All now produce recoverable tool errors without Gateway dispatch. Valid paid, admin, autonomous, exempt, and nested cases still pass. 34 focused tests passed. |
+| F3 | `56c48c7` | Two partial-stream regressions failed before message streaming. A third regression exposed internal summary text and became green after filtering. Partial text arrives before the next chunk, parent and child IDs remain distinct, and tool arguments stay out of progress. 37 focused tests passed. |
+
+F13 filters unchanged inherited files; it does not resolve two intentional edits
+to the same file. Such edits still need task ownership or a separate conflict
+policy. F3 retains the existing 1,000-character progress limit. It does not
+change final response delivery or provider job tracking.
+
+Final checks all passed on the five-fix tree.
+
+| Check | Result | Ignored local evidence |
+| --- | --- | --- |
+| `.venv/bin/ruff check agent lambdas scripts server providers` | Passed. | `.renderhaus/e2e/audit-ruff.log` |
+| `.venv/bin/python -m unittest discover -s tests -q` | 378 tests passed, zero failures, errors, or skips. Baseline was 370; eight regression tests were added. | `.renderhaus/e2e/audit-unittest.log` |
+| `.venv/bin/python scripts/ci_check.py` | Passed provider schemas, dry-run dispatch, imports, and actual Lambda ZIP assembly. | `.renderhaus/e2e/audit-ci.log` |
+| Studio `./node_modules/.bin/tsc --noEmit -p .` | Passed. Temporary link to the supplied node_modules was removed. | `.renderhaus/e2e/audit-studio-tsc.log` |
+
+Unittest and CI ran with `RENDERHAUS_SECRETS_NAME=""` and all nine requested
+provider dry-run flags enabled. Tracing was disabled. Lambda packaging normally
+invokes pip against an index. CI instead used `PIP_NO_INDEX=true` and an offline
+wheelhouse recovered from existing cached wheel bytes. The first offline
+attempt selected Python 2 tags for two dual-version wheels and failed dependency
+resolution. Correcting the ignored recovery helper to select Python 3 tags made
+the unchanged CI script pass. No package was downloaded and no check was mocked
+or skipped. The helper is `.renderhaus/e2e/recover_cached_wheels.py`.
+
+The native review independently passed all 37 focused tests and found no
+remaining actionable defect. The scoped comment review found no new comments,
+suppressions, or required deletions. External Claude and Grok review was not run
+under the offline constraint; no cross-provider or different-family verdict is
+claimed. The decision trail is `docs/deep-agent-decisions.tsv`.
+
+Comet E2E remains **blocked**, recorded through
+`python3 scripts/browser_e2e_hook.py record --report` in ignored
+`.renderhaus/e2e/deep-agent-audit.json`. There was no browser interaction,
+authenticated Studio validation, live model capability evaluation, live provider
+call, or generated-media playback check. Contract tests are supporting evidence
+only. No push or deployment occurred.
