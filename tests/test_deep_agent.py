@@ -342,8 +342,8 @@ class DeepAgentTests(unittest.IsolatedAsyncioTestCase):
             with self.assertRaises(ValueError):
                 agent_backend()
 
-    async def test_kling_and_runway_dispatch_through_media_role_with_approval(self):
-        for name in ("Kling___text_to_video", "Runway___video_to_video"):
+    async def test_new_paid_providers_dispatch_through_media_role_with_approval(self):
+        for name in ("Kling___text_to_video", "Runway___video_to_video", "Fal___text_to_video"):
             with self.subTest(tool=name):
                 tool = Tool(name=name, description="Paid video", inputSchema=IMAGE.input_schema)
                 request = self.request()
@@ -359,3 +359,13 @@ class DeepAgentTests(unittest.IsolatedAsyncioTestCase):
                                        approval_decisions=[StudioApprovalDecision(call_id=approval.call_id, decision="approve")])
                 await self.run_graph(resumed, [final()], gateway)
                 gateway.call_tool.assert_awaited_once_with(name, {"prompt": "Hero"})
+
+    async def test_nle_export_is_free_editor_dispatch_without_approval(self):
+        tool = Tool(name="Remotion___export_nle_timeline", description="Export NLE handoff",
+                    inputSchema={"type": "object", "properties": {"timeline_json": {"type": "string"}},
+                                 "required": ["timeline_json"], "additionalProperties": False})
+        gateway = Gateway(tools=[tool], result={"status": "succeeded", "filename": "handoff.zip"})
+        export = call("call_editor_tool", {"tool_name": tool.name, "arguments": {"timeline_json": "{}"}}, "export")
+        read = call("read_file", {"file_path": "/skills/final-assembly/SKILL.md"}, "skill")
+        await self.run_graph(self.request(), [read, export, final()], gateway)
+        gateway.call_tool.assert_awaited_once_with(tool.name, {"timeline_json": "{}"})
