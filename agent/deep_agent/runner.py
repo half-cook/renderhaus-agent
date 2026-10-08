@@ -19,6 +19,7 @@ from langchain.tools import ToolRuntime, tool
 from langchain_core.messages import AIMessage, HumanMessage
 from langgraph.types import Command
 from langgraph.errors import GraphRecursionError
+from pydantic import ValidationError
 
 from agent.backend_config import deep_agent_model
 from agent.deep_agent.checkpoints import StudioCheckpointer
@@ -141,6 +142,7 @@ async def run_with_servers(request, studio, servers, *, model=None):
         return dispatch
 
     dispatch_tools = [dispatcher(name) for name in DISPATCH_TARGETS]
+    dispatch_schemas = {dispatch.name: dispatch.tool_call_schema for dispatch in dispatch_tools}
     common_tools = [progress, read_studio_context]
     if _GATEWAY_SEARCH_TOOL in initial:
         schema = initial[_GATEWAY_SEARCH_TOOL][1]
@@ -158,8 +160,11 @@ async def run_with_servers(request, studio, servers, *, model=None):
         ))
 
     def needs_approval(call):
-        name, _ = _gateway_action({"name": call.tool_call["name"], "args": call.tool_call["args"]})
-        return tool_needs_approval(name, studio.autonomous)
+        try:
+            arguments = dispatch_schemas[call.tool_call["name"]].model_validate(call.tool_call["args"])
+        except ValidationError:
+            return False
+        return tool_needs_approval(arguments.tool_name, studio.autonomous)
 
     interrupt_on = {
         name: {"allowed_decisions": ["approve", "reject"], "when": needs_approval}

@@ -306,6 +306,26 @@ class DeepAgentTests(unittest.IsolatedAsyncioTestCase):
         gateway.call_tool.assert_not_awaited()
         self.assertFalse(any(e.status == "succeeded" for e in studio.tool_events))
 
+    async def test_malformed_dispatch_wrappers_return_tool_errors_without_dispatch(self):
+        invalid = [
+            {"arguments": {"prompt": "Hero"}},
+            {"tool_name": 42, "arguments": {"prompt": "Hero"}},
+            {"tool_name": IMAGE.name},
+            {"tool_name": IMAGE.name, "arguments": "not an object"},
+        ]
+
+        def recover(messages, tools):
+            self.assertEqual(messages[-1].status, "error")
+            return final()
+
+        for arguments in invalid:
+            with self.subTest(arguments=arguments):
+                gateway = Gateway()
+                await self.run_graph(self.request(), [
+                    read_skill(), call("call_media_tool", arguments, "bad-wrapper"), recover,
+                ], gateway)
+                gateway.call_tool.assert_not_awaited()
+
     async def test_project_files_cannot_write_into_shipped_skills(self):
         def check(messages, tools):
             self.assertIn("denied", messages[-1].text.lower())
