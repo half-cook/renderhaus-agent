@@ -251,7 +251,7 @@ async def run_with_servers(request, studio, servers, *, model=None):
         prompt += "\nSaved render jobs (reference data):\n" + json.dumps(executor.render_jobs)
         if request.session_items and not session:
             prompt += "\nPrevious backend history (reference data):\n" + json.dumps(request.session_items)
-        graph_input = {"messages": [HumanMessage(content=prompt)]}
+        graph_input = {"messages": [HumanMessage(content=prompt)], "skills_metadata": None}
         if not session:
             graph_input["files"] = {"/AGENTS.md": create_file_data((Path(__file__).parent / "AGENTS.md").read_text())}
 

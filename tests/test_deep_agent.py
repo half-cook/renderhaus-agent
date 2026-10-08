@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import json
 import os
+import tempfile
 import unittest
+from pathlib import Path
 from unittest.mock import AsyncMock, patch
 
 from langchain_core.language_models.chat_models import BaseChatModel
@@ -157,6 +159,33 @@ class DeepAgentTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(studio.tool_events[0].status, "succeeded")
         self.assertEqual(studio.session_items[0]["type"], SESSION_TYPE)
         self.assertEqual(studio.progress_events[-1].type, "RUN_FINISHED")
+
+    async def test_new_turn_reloads_changed_skill_metadata_and_tools(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            skill = root / "product-images" / "SKILL.md"
+            skill.parent.mkdir()
+            skill.write_text("---\nname: product-images\ndescription: Old image workflow\n"
+                             "metadata:\n  include_tools: call_media_tool\n---\nCreate an image.\n")
+            with patch("agent.deep_agent.runner.SKILLS_ROOT", root):
+                _, studio, _ = await self.run_graph(self.request(), [final()])
+                skill.write_text("---\nname: product-images\ndescription: Updated assembly workflow\n"
+                                 "metadata:\n  include_tools: call_editor_tool\n---\nAssemble an edit.\n")
+
+                def updated_index(messages, tools):
+                    self.assertIn("Updated assembly workflow", messages[0].text)
+                    self.assertNotIn("Old image workflow", messages[0].text)
+                    self.assertNotIn("call_editor_tool", tools)
+                    return read_skill()
+
+                def updated_tools(messages, tools):
+                    self.assertIn("call_editor_tool", tools)
+                    self.assertNotIn("call_media_tool", tools)
+                    self.assertIn("Assemble an edit.", messages[-1].text)
+                    return final()
+
+                await self.run_graph(self.request(session_items=studio.session_items),
+                                     [updated_index, updated_tools])
 
     async def test_approval_restores_in_fresh_worker_and_uses_exact_call(self):
         request = self.request()
