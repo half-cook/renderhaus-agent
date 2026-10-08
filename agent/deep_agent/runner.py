@@ -22,7 +22,7 @@ from langgraph.errors import GraphRecursionError
 from agent.backend_config import deep_agent_model
 from agent.deep_agent.checkpoints import StudioCheckpointer
 from agent.deep_agent.memory import ProjectMemory
-from agent.gateway_executor import GatewayExecutor
+from agent.gateway_executor import GatewayExecutor, tool_needs_approval
 from agent.errors import AgentRunLimitExceeded
 from agent.studio_agent_next import (
     STUDIO_MANAGER_INSTRUCTIONS,
@@ -155,9 +155,8 @@ async def run_with_servers(request, studio, servers, *, model=None):
         ))
 
     def needs_approval(call):
-        from providers.elevenlabs.catalog import requires_approval
         name, _ = _gateway_action({"name": call.tool_call["name"], "args": call.tool_call["args"]})
-        return not studio.autonomous or requires_approval(name)
+        return tool_needs_approval(name, studio.autonomous)
 
     interrupt_on = {
         name: {"allowed_decisions": ["approve", "reject"], "when": needs_approval}
@@ -167,7 +166,8 @@ async def run_with_servers(request, studio, servers, *, model=None):
         ("planner", "Plan a brief and still-first storyboard without calling paid media tools.", []),
         ("media", "Generate, edit or refine stills and video shots with Seedream, Seedance, Kling, Runway and fal Wan VACE.", [dispatch_tools[0]]),
         ("audio", "Produce voiceover, music and sound effects using audio providers.", [dispatch_tools[1]]),
-        ("editor", "Assemble approved assets into a final Remotion MP4 and poll it to completion.", [dispatch_tools[2]]),
+        ("editor", "Assemble approved assets into a final Remotion MP4 and poll it to completion, "
+                   "or export an NLE handoff (OTIO/FCPXML/EDL) for DaVinci Resolve.", [dispatch_tools[2]]),
         ("general-purpose", "Plan or research the current project without provider dispatch.", []),
     ]
     subagents = [{

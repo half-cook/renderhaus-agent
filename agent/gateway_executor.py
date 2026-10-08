@@ -20,6 +20,19 @@ from agent.studio_agent_next import (
 )
 
 
+# Free, non-generative tools that only package existing project media. They
+# create no paid provider work, so they never pause for customer approval.
+APPROVAL_EXEMPT_TOOLS = frozenset({"Remotion___export_nle_timeline"})
+
+
+def tool_needs_approval(name: str, autonomous: bool) -> bool:
+    from providers.elevenlabs.catalog import requires_approval
+
+    if name in APPROVAL_EXEMPT_TOOLS:
+        return False
+    return not autonomous or requires_approval(name)
+
+
 class GatewayExecutor:
     def __init__(self, studio, servers, session=None):
         self.studio = studio
@@ -116,8 +129,7 @@ class GatewayExecutor:
                 "error": "Arguments do not match the discovered tool schema.",
                 "path": list(exc.absolute_path),
             }
-        from providers.elevenlabs.catalog import requires_approval
-        if (not studio.autonomous or requires_approval(name)) and not approved and rejection is None:
+        if tool_needs_approval(name, studio.autonomous) and not approved and rejection is None:
             raise ToolApprovalPending(call)
         if rejection is not None:
             output = {"status": "rejected", "message": rejection}

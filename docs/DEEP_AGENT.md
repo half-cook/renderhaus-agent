@@ -67,7 +67,10 @@ Gateway discovers an available Fish Audio target. Skills explicitly report unava
 The model cannot invent a target or call a provider directly.
 
 The `planner` subagent has no provider dispatch. `media` can dispatch only Seedance/Seedream/Kling/Runway/Fal;
-`audio` can dispatch only audio providers; `editor` can dispatch only Remotion. The overridden
+`audio` can dispatch only audio providers; `editor` can dispatch only Remotion,
+including `Remotion___export_nle_timeline` for the DaVinci Resolve handoff. That export is free and
+only packages existing project media, so it is exempt from approval (`APPROVAL_EXEMPT_TOOLS` in
+`agent/gateway_executor.py`); every paid tool still follows the native approval policy. The overridden
 `general-purpose` subagent also has no provider dispatch. All roles share project files and
 read-only Studio context. They inherit native approval policy and have no shell tool.
 
