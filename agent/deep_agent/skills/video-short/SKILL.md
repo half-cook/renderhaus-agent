@@ -9,14 +9,16 @@ metadata:
 # Video short
 
 Read the brief and read_studio_context. Use planner for a short shot plan when useful.
-Search x_amz_bedrock_agentcore_search for Seedream text_to_image and Fal text_to_video.
-Use call_media_tool with Seedream___text_to_image for a cheap direction preview first.
-After the preview meets the brief and required approval, call Fal___text_to_video for
-short clips. For a still-led scene, use Fal___image_to_video with first_frame_url instead.
-Poll the returned job with Fal___get_video_task; reuse its exact ID. Read
-[text to video](../t2v/SKILL.md) for native arguments and premium-provider approval.
-For an explicit Seedance request, use Seedance___text_to_video or Seedance___image_to_video
-and poll Seedance___get_video_task. Read the audio skill if sound is needed.
+Read [product images](../product-images/SKILL.md) for still routing and its confidentiality limit.
+Reuse approved stills or generate one compatible direction preview through the host image route.
+After review, use the host-selected Standard route for finished shots, usually
+Seedance___text_to_video or Seedance___image_to_video with image_path_or_url.
+Draft and rejected-shot retries use Fal___text_to_video or Fal___image_to_video with first_frame_url.
+Confidential projects stay Wan. Preserve features, disclose provider/model and estimated cost,
+and record explicit shot acceptance/rejection with record_media_outcome.
+Poll the corresponding provider with its saved job ID. Read
+[text to video](../t2v/SKILL.md) for native arguments and spending approval.
+Read the audio skill if sound is needed.
 Read final-assembly and assemble clips through Remotion. Deliver only the successful MP4.
 Avoid multiple video variants unless requested. Never replace a running job.
 
