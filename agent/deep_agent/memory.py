@@ -1,5 +1,3 @@
-"""Reload project memory from checkpointed files on each invocation."""
-
 from deepagents.middleware.memory import MemoryMiddleware
 
 

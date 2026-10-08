@@ -287,6 +287,48 @@ class DeepAgentTests(unittest.IsolatedAsyncioTestCase):
         ], gateway)
         self.assertIn("incomplete", result.summary)
 
+    async def test_gateway_search_discovers_a_schema_for_dispatch(self):
+        from agent.studio_agent_next import _GATEWAY_SEARCH_TOOL
+        search = Tool(name=_GATEWAY_SEARCH_TOOL, description="Search Gateway tools",
+                      inputSchema={"type": "object", "properties": {"query": {"type": "string"}},
+                                   "required": ["query"]})
+        gateway = Gateway([search])
+
+        async def respond(name, arguments):
+            if name == search.name:
+                gateway.tools.append(IMAGE)
+                return {"tools": [IMAGE.model_dump(by_alias=True)]}
+            return {"status": "succeeded", "image_url": "https://cdn.example/hero.png"}
+
+        gateway.call_tool.side_effect = respond
+        await self.run_graph(self.request(autonomous=True), [
+            call(search.name, {"query": "product image"}, "search"), read_skill(), image(), final(),
+        ], gateway)
+        self.assertEqual([item.args[0] for item in gateway.call_tool.await_args_list], [search.name, IMAGE.name])
+
+    async def test_existing_render_survives_fresh_worker_and_poll_uses_canonical_ids(self):
+        render = Tool(name="Remotion___render_timeline", description="Start render",
+                      inputSchema={"type": "object", "properties": {}})
+        poll = Tool(name="Remotion___get_render_progress", description="Poll render",
+                    inputSchema={"type": "object", "properties": {
+                        key: {"type": "string"} for key in ("render_id", "bucket_name", "output_key")},
+                                 "required": ["render_id", "bucket_name"]})
+        gateway = Gateway([render, poll], {"status": "queued", "render_id": "render-1",
+                                          "bucket_name": "bucket-1", "output_key": "out.mp4"})
+        _, studio, _ = await self.run_graph(self.request(autonomous=True), [
+            call("read_file", {"file_path": "/skills/final-assembly/SKILL.md"}, "skill"),
+            call("call_editor_tool", {"tool_name": render.name, "arguments": {}}, "render"), final(),
+        ], gateway)
+        gateway.call_tool.reset_mock()
+        gateway.call_tool.return_value = {"status": "succeeded", "render_id": "render-1", "url": "https://cdn.example/out.mp4"}
+        await self.run_graph(self.request(autonomous=True, session_items=studio.session_items), [
+            call("call_editor_tool", {"tool_name": render.name, "arguments": {}}, "replacement"),
+            call("call_editor_tool", {"tool_name": poll.name, "arguments": {
+                "render_id": "render-1", "bucket_name": "mistyped", "output_key": "mistyped"}}, "poll"), final(),
+        ], gateway)
+        gateway.call_tool.assert_awaited_once_with(poll.name, {
+            "render_id": "render-1", "bucket_name": "bucket-1", "output_key": "out.mp4"})
+
     async def test_backend_and_provider_configuration(self):
         from agent.backend_config import agent_backend, agent_configured, deep_agent_model
         with patch.dict(os.environ, {"RENDERHAUS_AGENT_BACKEND": "deepagents", "RENDERHAUS_AGENT_MODEL": "anthropic:test",
@@ -294,6 +336,8 @@ class DeepAgentTests(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(agent_backend(), "deepagents")
             self.assertEqual(deep_agent_model(), "anthropic:test")
             self.assertTrue(agent_configured())
+        with patch.dict(os.environ, {"RENDERHAUS_AGENT_MODEL": "  ", "AGENT_MODEL": "  "}):
+            self.assertEqual(deep_agent_model(), "openai:gpt-5.6-luna")
         with patch.dict(os.environ, {"RENDERHAUS_AGENT_BACKEND": "invalid"}):
             with self.assertRaises(ValueError):
                 agent_backend()

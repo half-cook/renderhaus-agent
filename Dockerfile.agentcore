@@ -6,6 +6,7 @@ WORKDIR /app
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     AGENTCORE_RUNTIME=1 \
+    RENDERHAUS_AGENT_BACKEND=deepagents \
     RENDERHAUS_MEDIA_DIR=/tmp/renderhaus/media \
     PIP_DISABLE_PIP_VERSION_CHECK=1
 
@@ -15,9 +16,8 @@ COPY providers ./providers
 COPY configs ./configs
 COPY server ./server
 
-# openai-codex installs the pinned native Codex runtime for linux/arm64.
 RUN pip install --no-cache-dir -e . \
-    && python -c "import subprocess; from codex_cli_bin import bundled_codex_path; subprocess.run([str(bundled_codex_path()), '--version'], check=True)"
+    && python -c "import importlib.metadata; from agent.deep_agent.runner import SKILLS_ROOT; assert importlib.metadata.version('deepagents') == '0.7.23'; assert len(list(SKILLS_ROOT.glob('*/SKILL.md'))) == 6"
 
 EXPOSE 8080
 

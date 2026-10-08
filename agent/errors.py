@@ -1,0 +1,2 @@
+class AgentRunLimitExceeded(RuntimeError):
+    pass

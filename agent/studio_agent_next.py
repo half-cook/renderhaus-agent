@@ -21,6 +21,7 @@ from functools import lru_cache
 from typing import Any
 
 from agent.codex_harness import CodexHarness
+from agent.backend_config import agent_backend
 from agent.gateway_client import GatewayClient
 from bedrock_agentcore.runtime import BedrockAgentCoreApp
 from mcp import Tool as MCPTool
@@ -291,7 +292,7 @@ class StudioAgentContext:
                 self.working_assets[version_id] = asset
 
     def restore_events(self, events: list[StudioToolEvent]) -> None:
-        """Restore durable tool context before resuming a Codex checkpoint."""
+        """Restore durable tool context before resuming a conversation checkpoint."""
         self.tool_events = list(events)
         for event in events:
             self.add_assets(event.assets)
@@ -372,7 +373,7 @@ class StudioAgentContext:
 
 
 class StudioAgentApprovalRequired(Exception):
-    """A durable Codex checkpoint awaiting one or more Studio tool decisions."""
+    """A durable checkpoint awaiting one or more Studio tool decisions."""
 
     def __init__(
         self,
@@ -386,6 +387,15 @@ class StudioAgentApprovalRequired(Exception):
         self.approvals = approvals
         self.session_items = list(session_items or [])
         self.tool_events = list(tool_events or [])
+
+
+class StudioAgentRunFailed(RuntimeError):
+    """An AgentCore worker failure with resumable conversation and completed tool events."""
+
+    def __init__(self, message, session_items, tool_events):
+        super().__init__(message)
+        self.session_items = session_items
+        self.tool_events = tool_events
 
 
 async def report_progress(
@@ -1433,7 +1443,11 @@ async def run_studio_agent(
     event_sink: Any = None,
     progress_sink: Any = None,
 ) -> StudioAgentOutput:
-    from agent.studio_codex_runner import run_with_servers
+    backend = "codex" if harness is not None else agent_backend()
+    if backend == "codex":
+        from agent.studio_codex_runner import run_with_servers
+    else:
+        from agent.deep_agent.runner import run_with_servers as run_deep_agent
 
     studio = studio or _context_from_request(
         request,
@@ -1443,25 +1457,31 @@ async def run_studio_agent(
         event_sink=event_sink,
         progress_sink=progress_sink,
     )
-    harness = harness or CodexHarness()
+    async def run(servers):
+        if backend == "codex":
+            return await run_with_servers(request, studio, harness or CodexHarness(), servers)
+        return await run_deep_agent(request, studio, servers)
+
     if mcp_servers is not None:
-        return await run_with_servers(request, studio, harness, mcp_servers)
+        return await run(mcp_servers)
     async with gateway_mcp_server(
         argument_transformer=studio.prepare_gateway_arguments, user_id=studio.user_id
     ) as server:
-        return await run_with_servers(request, studio, harness, [server])
+        return await run([server])
 
 
 def _invocation_error(
-    exc: BaseException, payload: dict[str, Any] | None, session_id: Any
+    exc: BaseException, payload: dict[str, Any] | None, session_id: Any,
+    studio: StudioAgentContext | None = None,
 ) -> dict[str, Any]:
     return {
         "status": "failed",
         "error": str(exc)[:400],
         "error_type": type(exc).__name__,
         "result": None,
-        "tool_events": [],
-        "progress_events": [],
+        "tool_events": [event.public() for event in studio.tool_events] if studio else [],
+        "progress_events": [event.public() for event in studio.progress_events] if studio else [],
+        "session_items": studio.session_items if studio else [],
         "job_id": (payload or {}).get("job_id") if isinstance(payload, dict) else None,
         "session_id": session_id if isinstance(session_id, str) else None,
     }
@@ -1471,8 +1491,10 @@ async def _agent_invocation_result(
     payload: dict[str, Any],
     context: Any,
     progress_sink: ProgressSink | None = None,
+    checkpoint_sink: Callable[[dict[str, Any]], None] | None = None,
 ) -> dict[str, Any]:
     session_id = getattr(context, "session_id", None)
+    studio = None
     logger.debug("Received AgentCore payload for session %s", session_id)
     try:
         request = StudioAgentRequest.model_validate(payload or {})
@@ -1481,6 +1503,11 @@ async def _agent_invocation_result(
             session_id=session_id if isinstance(session_id, str) else None,
             progress_sink=progress_sink,
         )
+        if checkpoint_sink:
+            studio.session_sink = lambda items: checkpoint_sink({"session_items": items})
+            studio.event_sink = lambda event: checkpoint_sink({
+                "session_items": studio.session_items, "tool_events": [event.public()],
+            })
         output = await run_studio_agent(request, studio=studio)
         return {
             "status": "completed",
@@ -1505,30 +1532,35 @@ async def _agent_invocation_result(
         }
     except (ValidationError, ValueError) as exc:
         logger.warning("Invalid Studio AgentCore payload: %s", exc)
-        return _invocation_error(exc, payload, session_id)
+        return _invocation_error(exc, payload, session_id, studio)
     except Exception as exc:  # noqa: BLE001 - runtime must return a JSON error, not crash
         logger.exception("Studio AgentCore invocation failed")
-        return _invocation_error(exc, payload, session_id)
+        return _invocation_error(exc, payload, session_id, studio)
 
 
 @app.entrypoint
 async def agent_invocation(payload: dict[str, Any], context: Any):
     """Stream progress and the final result from AgentCore Runtime over SSE."""
-    progress_queue: asyncio.Queue[StudioProgressEvent] = asyncio.Queue()
+    queue: asyncio.Queue[dict[str, Any]] = asyncio.Queue()
+    loop = asyncio.get_running_loop()
 
     def enqueue(event: StudioProgressEvent) -> None:
-        progress_queue.put_nowait(event)
+        loop.call_soon_threadsafe(queue.put_nowait, {"kind": "progress", "event": event.public()})
 
-    task = asyncio.create_task(_agent_invocation_result(payload, context, enqueue))
+    def checkpoint(checkpoint_payload: dict[str, Any]) -> None:
+        loop.call_soon_threadsafe(queue.put_nowait, {"kind": "checkpoint", "payload": checkpoint_payload})
+
+    task = asyncio.create_task(_agent_invocation_result(payload, context, enqueue, checkpoint))
     try:
         while not task.done():
             try:
-                event = await asyncio.wait_for(progress_queue.get(), timeout=0.1)
+                chunk = await asyncio.wait_for(queue.get(), timeout=0.1)
             except TimeoutError:
                 continue
-            yield {"kind": "progress", "event": event.public()}
-        while not progress_queue.empty():
-            yield {"kind": "progress", "event": progress_queue.get_nowait().public()}
+            yield chunk
+        await asyncio.sleep(0)
+        while not queue.empty():
+            yield queue.get_nowait()
         yield {"kind": "result", "payload": await task}
     finally:
         if not task.done():

@@ -17,11 +17,13 @@ from typing import Any, Awaitable, Callable
 
 from codex_cli_bin import bundled_codex_path
 
+from agent.errors import AgentRunLimitExceeded
+
 SESSION_TYPE = "renderhaus_codex_session"
 CHECKPOINT_VERSION = 1
 
 
-class CodexRunLimitExceeded(RuntimeError):
+class CodexRunLimitExceeded(AgentRunLimitExceeded):
     pass
 
 

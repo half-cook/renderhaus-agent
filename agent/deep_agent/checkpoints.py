@@ -1,5 +1,3 @@
-"""Portable LangGraph checkpoints saved through Studio's conversation sink."""
-
 from __future__ import annotations
 
 import base64

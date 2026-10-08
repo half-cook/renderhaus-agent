@@ -2,18 +2,17 @@
 
 from __future__ import annotations
 
-import hashlib
 import json
 from types import SimpleNamespace
 
 
 from agent.codex_harness import CodexHarness, SESSION_TYPE, ToolApprovalPending
 from agent.gateway_executor import GatewayExecutor
+from agent.session_scope import conversation_scope as _conversation_scope, execution_scope as _scope
 from agent.studio_agent_next import (
     STUDIO_MANAGER_INSTRUCTIONS,
     StudioAgentApprovalRequired,
     StudioAgentOutput,
-    StudioAgentRequest,
     _GATEWAY_SEARCH_TOOL,
     _agent_model,
     _approval_request,
@@ -25,30 +24,6 @@ from agent.studio_agent_next import (
     report_progress,
 )
 
-
-def _scope(request: StudioAgentRequest) -> str:
-    return hashlib.sha256(
-        json.dumps(
-            [
-                request.workspace_id,
-                request.project_id,
-                request.conversation_id,
-                request.job_id,
-            ]
-        ).encode()
-    ).hexdigest()
-
-
-def _conversation_scope(request: StudioAgentRequest) -> str:
-    return hashlib.sha256(
-        json.dumps(
-            [
-                request.workspace_id,
-                request.project_id,
-                request.conversation_id or request.job_id,
-            ]
-        ).encode()
-    ).hexdigest()
 
 
 def _function(name, description, schema):

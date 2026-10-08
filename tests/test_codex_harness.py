@@ -561,6 +561,7 @@ class NativeProtocolTests(unittest.IsolatedAsyncioTestCase):
                     os.environ,
                     {
                         "OPENAI_API_KEY": "local-test-placeholder",
+                        "RENDERHAUS_AGENT_BACKEND": "codex",
                         "CODEX_RUN_TIMEOUT_SECONDS": "15",
                     },
                 ),

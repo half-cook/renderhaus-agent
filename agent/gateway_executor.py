@@ -1,5 +1,3 @@
-"""Shared Studio execution policy for model backends."""
-
 from __future__ import annotations
 
 import asyncio
@@ -23,8 +21,6 @@ from agent.studio_agent_next import (
 
 
 class GatewayExecutor:
-    """Schema-checked provider dispatch, job recovery and media registration."""
-
     def __init__(self, studio, servers, session=None):
         self.studio = studio
         self.servers = servers
@@ -98,7 +94,6 @@ class GatewayExecutor:
                                    and event.arguments.get("render_id") == arguments.get("render_id")), None)
             if completed_poll:
                 return {**completed_poll.result, "note": "Already completed and saved in this execution. Deliver this MP4; no additional status check is needed."}
-        # Restored completed calls must never be charged or dispatched again.
         previous = next(
             (
                 event
@@ -141,9 +136,6 @@ class GatewayExecutor:
             )
             try:
                 output = await server.call_tool(name, arguments)
-                # One approved status check follows the same job to completion.
-                # Waiting belongs to the host, not a model loop that can give up
-                # after several immediate polls (or require approval for each one).
                 if name.rsplit("___", 1)[-1] in {
                     "query_music_task", "get_music_task", "get_video_task", "get_render_progress"
                 }:
@@ -174,7 +166,6 @@ class GatewayExecutor:
                         status="completed", tool_call_id=call_id, tool_call_name=name,
                     )
             except Exception as exc:
-                # Preserve a visible failure and allow Codex to correct tool input.
                 payload = getattr(exc, "payload", {})
                 output = {**payload, "status": "failed", "error": str(exc)[:400],
                           "transport_error": not bool(payload.get("render_id") and payload.get("status") == "failed")}
@@ -182,8 +173,6 @@ class GatewayExecutor:
         if saving_media:
             _progress(studio, event_id=f"save-{call_id}", event_type="MEDIA_WAIT", title="Saving media",
                       message="Saving completed media to your project…", status="running")
-        # Media downloads can take seconds or minutes. Keep the event loop free
-        # so the Studio can poll progress, stop, and serve existing artifacts.
         await asyncio.to_thread(
             _append_harvested_event,
             studio,

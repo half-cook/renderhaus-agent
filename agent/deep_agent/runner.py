@@ -1,5 +1,3 @@
-"""Deep Agents graph mapped to the existing Studio job and approval contract."""
-
 from __future__ import annotations
 
 import asyncio
@@ -19,11 +17,13 @@ from langchain.agents.structured_output import ToolStrategy
 from langchain.tools import ToolRuntime, tool
 from langchain_core.messages import AIMessage, HumanMessage
 from langgraph.types import Command
+from langgraph.errors import GraphRecursionError
 
 from agent.backend_config import deep_agent_model
 from agent.deep_agent.checkpoints import StudioCheckpointer
 from agent.deep_agent.memory import ProjectMemory
 from agent.gateway_executor import GatewayExecutor
+from agent.errors import AgentRunLimitExceeded
 from agent.studio_agent_next import (
     STUDIO_MANAGER_INSTRUCTIONS,
     StudioAgentApprovalRequired,
@@ -37,7 +37,7 @@ from agent.studio_agent_next import (
     normalize_markdown_filename,
     report_progress,
 )
-from agent.studio_codex_runner import _conversation_scope, _scope
+from agent.session_scope import conversation_scope as _conversation_scope, execution_scope as _scope
 
 SESSION_TYPE = "renderhaus_deepagents_session"
 SKILLS_ROOT = Path(__file__).parent / "skills"
@@ -279,6 +279,8 @@ async def run_with_servers(request, studio, servers, *, model=None):
         return final
     except StudioAgentApprovalRequired:
         raise
+    except (GraphRecursionError, TimeoutError) as exc:
+        raise AgentRunLimitExceeded("The manager reached its execution limit.") from exc
     except Exception as exc:
         _progress(studio, event_id="run", event_type="RUN_ERROR", title="Agent stopped",
                   message=f"The run stopped ({type(exc).__name__}).", status="failed")
