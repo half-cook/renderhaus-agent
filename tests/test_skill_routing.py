@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import json
+import os
 import re
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 import yaml
 
@@ -12,10 +14,11 @@ CASES = json.loads((ROOT / "tests/fixtures/skill_routing.json").read_text())
 
 
 def gateway_names():
+    from agent.hyperframes import HYPERFRAMES_TOOL
     from providers.catalog import PROVIDERS
 
     targets = {p.id: p.target_name for p in PROVIDERS} | {"fish_audio": "FishAudio"}
-    return {
+    return {HYPERFRAMES_TOOL.name} | {
         f"{targets[p.name.removesuffix('.tools.json')]}___{t['name']}"
         for p in (ROOT / "configs/gateway").glob("*.tools.json")
         for t in json.loads(p.read_text())
@@ -30,7 +33,8 @@ def routing_case(case):
     def check(self):
         from agent.deep_agent.routing import route_intent, TOOL_MAP
 
-        route = route_intent(case["prompt"])
+        with patch.dict(os.environ, case.get("env", {})):
+            route = route_intent(case["prompt"])
         self.assertEqual(route.skill, case["expected_skill"])
         self.assertEqual(route.tool, TOOL_MAP[case["expected_tool"]]["gateway_tool"])
         self.assertEqual(route.status, "ready")
@@ -93,9 +97,9 @@ class SkillContracts(unittest.TestCase):
         self.assertFalse({"veo-t2v", "act-two", "lipsync", "upscale"} & names)
 
     def test_fixture_retains_all_rows_and_explicit_skips(self):
-        self.assertEqual(len(CASES), 55)
-        self.assertEqual(sum(not c["skip_reason"] for c in CASES), 21)
-        self.assertEqual(sum(bool(c["skip_reason"]) for c in CASES), 34)
+        self.assertEqual(len(CASES), 58)
+        self.assertEqual(sum(not c["skip_reason"] for c in CASES), 23)
+        self.assertEqual(sum(bool(c["skip_reason"]) for c in CASES), 35)
 
     def test_standard_is_default_and_unknown_requests_do_not_invent_tools(self):
         from agent.deep_agent.routing import route_intent
@@ -165,6 +169,7 @@ class SkillContracts(unittest.TestCase):
                     "mmaudio_sfx",
                     "ace_step_music",
                     "remotion_render",
+                    "hyperframes_render",
                     "veo_t2v",
                     "veo_i2v",
                     "veo_extend",
@@ -177,5 +182,5 @@ class SkillContracts(unittest.TestCase):
                     "local_qc",
                 ]
             ),
-            34,
+            35,
         )
