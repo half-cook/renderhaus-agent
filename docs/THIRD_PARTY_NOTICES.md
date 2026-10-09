@@ -39,3 +39,31 @@ are not included.
 
 See [the assessment](HYPERFRAMES_ASSESSMENT.md) for the source files, per-skill
 decisions, runtime requirements, and remaining work.
+
+## HyperFrames cinematic-caption and tactile-collage packs
+
+The existing HyperFrames skill expands with adapted recipes and example HTML from
+[audrey-560/hyperframes-cinematic-caption at 6cdb01d74949cab379e048e9092709adbb3b203b](https://github.com/audrey-560/hyperframes-cinematic-caption/tree/6cdb01d74949cab379e048e9092709adbb3b203b)
+and [audrey-560/hyperframes-tactile-collage at ef6a49f5a250e6b3b1a0839cafc7a2d43872e619](https://github.com/audrey-560/hyperframes-tactile-collage/tree/ef6a49f5a250e6b3b1a0839cafc7a2d43872e619).
+Both full upstream LICENSE files were read on 2026-10-09. Both are MIT,
+Copyright (c) 2026 Audrey.
+
+The complete copyright, permission, and warranty notices remain verbatim in
+[cinematic-caption LICENSE](../third_party/hyperframes-cinematic-caption/LICENSE)
+and [tactile-collage LICENSE](../third_party/hyperframes-tactile-collage/LICENSE).
+Python distributions include both licences and the adapted resources. The
+AgentCore image copies the `third_party/` directory. Adapted files identify their
+upstream source and Renderhaus modifications.
+
+Caption recipes retain semantic emphasis, reading order, translucent hero text,
+safe placement, and contact-sheet review. Collage recipes retain paper/ink roles,
+physical scene grammar, safe layering modes, and restrained motion.
+Renderhaus replaces installation and script dispatch with the existing preview
+contract. It removes the hidden tactile template root and uses host-provided
+GSAP only as a future rendering requirement. No upstream font data, installer,
+transcription, segmentation, third-party footage, or hosted API is included.
+
+These packs remain resources inside the `hyperframes` skill. Remotion stays the
+default renderer. Their permissive code licences do not authorize training on
+customer source media. See [pack details](HYPERFRAMES_TEMPLATE_PACKS.md) for
+the preview contract and remaining verification.

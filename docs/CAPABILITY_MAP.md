@@ -21,7 +21,7 @@ One quality-first default serves each capability. Selection order is **explicit 
 | sfx | `mirelo_v2a` | `text_only_sfx` → `elevenlabs_sfx_v2` (text-only sound effect) | — | elevenlabs_sfx_v2 |
 | upscale | `topaz_upscale` | — | — | — |
 | interpolate | `topaz_interpolate` | `linear_fps` → `topaz_interpolate` (Chronos for linear frame-rate conversion) | — | — |
-| motion_graphics | `remotion_render` | `explicit_html_template` → `hyperframes_render` (explicit HTML template request) | — | — |
+| motion_graphics | `remotion_render` | `explicit_hyperframes` → `hyperframes_render` (HyperFrames named explicitly) | — | — |
 | nle_handoff | `Remotion___export_nle_timeline` | — | — | — |
 | continuity_qc | `local_qc` | — | — | gemini_vlm_judge |
 
@@ -42,7 +42,7 @@ licence block remains. BytePlus is optional only for authorized non-US platform 
 - `full_body_motion`: dance/body motion → Kling Motion Control. `facial_performance`: facial expression/performance → Act-Two. Body motion wins when both apply.
 - `duration_over_30s`: generation/performance single shots over 30 seconds are blocked with a split-into-shots reason. A long presenter/digital twin lipsync request uses pending HeyGen Avatar V.
 - `text_only_sfx`: a sound request without source video → built ElevenLabs SFX v2. Source-video Foley → built Mirelo. Its verified endpoint returns muxed videos and is included in the paid-video approval gate.
-- `explicit_html_template`: explicit HTML/CSS/web template request → flag-gated HyperFrames; ordinary motion graphics uses Remotion.
+- `explicit_hyperframes`: a request naming HyperFrames → flag-gated HyperFrames; unnamed HTML/CSS templates and motion graphics use Remotion.
 - `linear_fps`: built Topaz interpolation with Chronos rather than the default Apollo; explicit model requests still win. See [Topaz](TOPAZ.md).
 
 ## Explicit-only tools and approvals

@@ -26,8 +26,9 @@ titles and motions; arbitrary per-word kinetic typography or custom components n
 future integration. Explain that limit for a brief requiring unsupported animation.
 
 For missing image assets, read [still images](../image-gen/SKILL.md) and use the matching
-default or specialist. Recraft vector and Ideogram text-only edits remain pending. A supplied
-existing Ideogram asset needs no generation. Do not promise SVG from raster interims.
+default or specialist. Recraft vector output and Ideogram text-only edits use the built
+image-gen exceptions. A supplied existing Ideogram asset needs no generation.
+Do not promise SVG from a raster tool.
 
 Submit one render and preserve `render_id`, `bucket_name`, and `output_key` unchanged.
 Poll `Remotion___get_render_progress` and inspect the completed MP4 before delivery.

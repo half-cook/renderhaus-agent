@@ -4,6 +4,10 @@ Assessed on 2026-10-08 from the public upstream source at commit
 [`3aa68869f7d4cec8b37cdfcb9cd539389b63abed`](https://github.com/heygen-com/hyperframes/tree/3aa68869f7d4cec8b37cdfcb9cd539389b63abed).
 The assessed CLI, engine, and producer packages report version `0.8.143`.
 
+The separate [caption and collage pack assessment](HYPERFRAMES_TEMPLATE_PACKS.md)
+records MIT recipe and HTML adaptations added on 2026-10-09. The runtime and
+playback limits in this original assessment still apply.
+
 ## Decision and fit next to Remotion
 
 Adapt selected skill prose into one scoped Renderhaus `hyperframes` skill.
