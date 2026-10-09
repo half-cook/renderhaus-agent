@@ -470,6 +470,9 @@ Secrets Manager JSON secret. Do not commit secrets.
 | `CODEX_RUN_TIMEOUT_SECONDS` | Native turn timeout; default 1800, with a 160-tool-call cap. |
 | `AGENTCORE_GATEWAY_URL`, `AGENTCORE_GATEWAY_AUTH_TOKEN` | HTTPS Gateway endpoint and optional bearer token. |
 | `AGENTCORE_GATEWAY_ALLOW_LOOPBACK_HTTP` | Explicit credential-free local MCP development only; see README. |
+| `SEEDANCE_TRANSPORT`, `SEEDANCE_FAL_REGION` | Seedance 2.5 defaults to fal US; global fal and BytePlus are operator choices. |
+| `BYTEPLUS_API_KEY`, `ARK_API_KEY` | Optional non-US BytePlus route; BYTEPLUS_API_KEY takes precedence. Sync through Secrets Manager. |
+| `SEEDANCE_BYTEPLUS_PLATFORM_AUTHORIZED` | Default false; optional direct live use requires written platform authorization. US access remains blocked. |
 | `SEEDREAM_DRY_RUN`, `SEEDANCE_DRY_RUN`, `KLING_DRY_RUN`, `ELEVENLABS_DRY_RUN`, `FISH_AUDIO_DRY_RUN` | Keep individual providers from creating paid media when true. Kling defaults to dry-run. |
 | `LUMA_API_KEY`, `LUMA_DRY_RUN` | Current official Luma bearer key and default-true dry-run flag. Only false enables traffic. See [Luma provider reference](providers/luma.md). |
 | `REMOTION_APP_*` | Four required Remotion deployment settings listed above. |

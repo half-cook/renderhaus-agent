@@ -23,6 +23,7 @@ SOURCE = {"video_url": "https://example.invalid/source.mp4", "source_duration_se
 
 
 class ModelStudioRoutingTests(unittest.TestCase):
+    @patch.dict(routing.POLICY["providers"]["alibaba_modelstudio"]["model_policies"]["wan3.0-video"], {"live_enabled": True})
     def test_defaults_and_explicit_requests_select_real_tools(self):
         for capability, alias, tool in [("v2v_edit", "wan3_edit", EDIT), ("extend", "wan3_extend", EXTEND)]:
             for tier in (None, "draft", "standard", "premium"):
@@ -30,7 +31,7 @@ class ModelStudioRoutingTests(unittest.TestCase):
                     route = routing.select_provider(capability, tier=tier)
                     self.assertEqual((route.status, route.alias, route.tool, route.provider),
                                      ("ready", alias, tool, "alibaba_modelstudio"))
-                    self.assertIsNone(routing.POLICY["capability_map"][capability]["interim"])
+                    self.assertIsNotNone(routing.POLICY["capability_map"][capability]["interim"])
                     self.assertEqual(routing.POLICY["capability_map"][capability]["exceptions"], [])
                     self.assertNotIn("interim", route.disclosure)
         for prompt, tool in [("restyle this footage", EDIT), ("extend this clip by 10 seconds", EXTEND),
@@ -66,12 +67,12 @@ class ModelStudioRoutingTests(unittest.TestCase):
             for arguments in ({**SOURCE, "duration": -1}, {"duration": 7},
                               {**SOURCE, "source_duration_seconds": float("nan")}):
                 self.assertIsNone(routing.estimate_cost(EDIT, arguments, list_price=True).total_cents)
-            route = routing.select_provider("v2v_edit", arguments={**SOURCE, "duration": -1})
+            route = routing.select_provider("v2v_edit", provider="alibaba_modelstudio", arguments={**SOURCE, "duration": -1})
             self.assertEqual(route.status, "ready")
             self.assertIsNone(route.estimated_cost["total_cents"])
 
     def test_extend_by_seconds_uses_total_output_requirement(self):
-        route = routing.route_intent("extend this clip by 2 seconds", arguments=SOURCE)
+        route = routing.route_intent("Model Studio extend this clip by 2 seconds", arguments=SOURCE)
         self.assertEqual((route.status, route.tool), ("ready", EXTEND))
         self.assertEqual(route.required["duration_seconds"], 7)
         self.assertEqual(route.required["extension_seconds"], 2)
@@ -84,7 +85,7 @@ class ModelStudioRoutingTests(unittest.TestCase):
             self.assertIn("UNVERIFIED", routing.policy_blocker(EDIT, SOURCE))
         with patch.dict(os.environ, {"MODELSTUDIO_DRY_RUN": "false",
             "DASHSCOPE_BASE_URL": "https://testworkspace.us-east-1.maas.aliyuncs.com"}):
-            route = routing.route_intent("restyle this footage", arguments=SOURCE)
+            route = routing.route_intent("Model Studio restyle this footage", arguments=SOURCE)
             self.assertEqual(route.status, "blocked")
             self.assertIn("licence", route.reason)
 
@@ -94,7 +95,7 @@ class ModelStudioGraphTests(unittest.IsolatedAsyncioTestCase):
         with tempfile.TemporaryDirectory() as directory, patch.dict(os.environ, {
             "MODELSTUDIO_DRY_RUN": "true", "RENDERHAUS_OUTCOME_DIR": directory,
         }):
-            request = StudioAgentRequest(prompt="restyle this footage", autonomous=True, job_id="saved-task")
+            request = StudioAgentRequest(prompt="Model Studio restyle this footage", autonomous=True, job_id="saved-task")
             studio = _context_from_request(request)
             gateway = Gateway([Tool(name=name, inputSchema={"type": "object"}) for name in (EDIT, POLL)])
             gateway.call_tool.side_effect = [
@@ -122,7 +123,7 @@ class ModelStudioGraphTests(unittest.IsolatedAsyncioTestCase):
                     os.environ, {"MODELSTUDIO_DRY_RUN": "true", "DASHSCOPE_REGION": "us-east-1",
                                  "RENDERHAUS_OUTCOME_DIR": directory},
                 ):
-                    request = StudioAgentRequest(prompt=prompt, autonomous=True, workspace_id="workspace",
+                    request = StudioAgentRequest(prompt="Model Studio " + prompt, autonomous=True, workspace_id="workspace",
                         project_id="project", job_id=tool + decision)
                     studio = _context_from_request(request)
                     gateway = Gateway(tools, {"status": "queued", "job_id": "task-saved"})
@@ -157,7 +158,7 @@ class ModelStudioGraphTests(unittest.IsolatedAsyncioTestCase):
             ("edit video of my CEO", EDIT, SOURCE, "consent"),
             ("extend this clip by 2 seconds", EXTEND, {**SOURCE, "duration": 2}, "duration"),
         ]:
-            request = StudioAgentRequest(prompt=prompt, autonomous=True, job_id="guard")
+            request = StudioAgentRequest(prompt="Model Studio " + prompt, autonomous=True, job_id="guard")
             gateway = Gateway(tools)
             result = await GatewayExecutor(_context_from_request(request), [gateway]).execute(
                 {"tool_name": tool, "arguments": arguments, "call_id": "guard"}, approved=True)

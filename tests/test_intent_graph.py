@@ -122,9 +122,15 @@ class IntentGraphTests(unittest.IsolatedAsyncioTestCase):
         )
 
     async def test_cap_failure_is_visible_in_graph_without_second_dispatch(self):
+        self.enterContext(patch.dict(os.environ, {
+            "SEEDANCE_DRY_RUN": "false", "FAL_DRY_RUN": "false",
+            "SEEDANCE_TRANSPORT": "fal", "SEEDANCE_FAL_REGION": "us",
+            "SEEDANCE_MODEL": "dreamina-seedance-2-5-260628",
+        }))
         name = "Seedance___text_to_video"
         tool = Tool(name=name, inputSchema=PREMIUM.input_schema)
         cents = cost_for("seedance", "text_to_video", {"prompt": "forest"}).total_cents
+        self.assertGreater(cents, 0)
         with patch.dict(os.environ, {"RENDERHAUS_AUTONOMOUS_RUN_CAP_CENTS": str(cents)}):
             request = self.request().model_copy(update={"prompt": "make a video with Seedance"})
             studio = _context_from_request(request)

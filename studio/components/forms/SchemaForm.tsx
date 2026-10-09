@@ -98,6 +98,40 @@ export function SchemaForm({ schema, values, options, hiddenFields, onlyFields, 
           (typeof value === "string" && !value.trim());
         const needsInput = required.has(name) && empty;
 
+        if (field.type === "array" && ["string", "number", "integer"].includes(field.items?.type || "")) {
+          const entries: unknown[] = Array.isArray(value) ? value : [];
+          const numeric = field.items?.type !== "string";
+          return (
+            <div className="field" key={name}>
+              <span>{label}{requiredMark}</span>
+              {entries.map((entry, index) => (
+                <div className="field-pill-row" key={index}>
+                  <input
+                    aria-label={`${label} ${index + 1}`}
+                    type={numeric ? "number" : "text"}
+                    step={field.items?.type === "integer" ? 1 : "any"}
+                    value={entry === undefined || entry === null ? "" : String(entry)}
+                    onChange={(event) => {
+                      const raw = event.target.value;
+                      const next = [...entries];
+                      next[index] = numeric ? (raw === "" ? undefined : Number(raw)) : raw;
+                      onChange(name, next);
+                    }}
+                  />
+                  <button type="button" aria-label={`Remove ${label} ${index + 1}`}
+                    onClick={() => onChange(name, entries.filter((_, position) => position !== index))}>
+                    Remove
+                  </button>
+                </div>
+              ))}
+              <button type="button" aria-label={`Add ${label}`}
+                onClick={() => onChange(name, [...entries, numeric ? undefined : ""])}>
+                Add
+              </button>
+            </div>
+          );
+        }
+
         if (field.type === "boolean") {
           return (
             <label className="field check" key={name}>

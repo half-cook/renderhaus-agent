@@ -67,9 +67,9 @@ Missing reference-video measurements and smart duration disclose unknown cost, n
 All three tools pause for native approval with the estimate, including autonomous runs.
 The existing spend cap and `APPROVAL_EXEMPT_TOOLS` are unchanged.
 Selection stays explicit request, then named exception, then default. Seedance 2.5 remains
-the `dialogue && !real_face_refs` exception. Its T2V/I2V interim still runs the existing
-BytePlus 1.5 adapter, with disclosure; its R2V tool remains pending. The future Seedance
-host preference remains fal for US customers. Real-face references force Wan.
+the `dialogue && !real_face_refs` exception. Its T2V, I2V and reference tools now run
+Seedance 2.5 through fal US by default. BytePlus 1.5 remains an explicit optional model.
+See [Seedance transport and policy](SEEDANCE_2_5.md). Real-face references force Wan.
 The stored `project.confidential` field has no routing effect.
 Luma, Seedream, Fish, Vidu, Kling generation, Runway generation and legacy VACE code remain.
 `local_qc` stays the continuity-QC default.

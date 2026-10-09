@@ -3,6 +3,7 @@ export type JsonSchema = {
   enum?: Array<string | number | boolean>;
   description?: string;
   properties?: Record<string, JsonSchema>;
+  items?: JsonSchema;
   required?: string[];
 };
 

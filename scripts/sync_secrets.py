@@ -4,6 +4,9 @@ RENDERHAUS_AGENT_MODEL, RENDERHAUS_AGENT_EFFORT, their per-role overrides, ELEVE
 and the existing FAL_KEY/FAL_DRY_RUN settings shared by Wan 3, VACE and Vidu.
 Model Studio uses DASHSCOPE_API_KEY, DASHSCOPE_REGION, DASHSCOPE_BASE_URL,
 DASHSCOPE_WORKSPACE_ID, DASHSCOPE_MODEL and MODELSTUDIO_DRY_RUN.
+Seedance 2.5 defaults to FAL_KEY with SEEDANCE_TRANSPORT=fal and SEEDANCE_FAL_REGION=us.
+The optional authorized non-US route uses BYTEPLUS_API_KEY, with ARK_API_KEY as fallback,
+and SEEDANCE_BYTEPLUS_PLATFORM_AUTHORIZED. SEEDANCE_DRY_RUN remains true by default.
 """
 
 from __future__ import annotations

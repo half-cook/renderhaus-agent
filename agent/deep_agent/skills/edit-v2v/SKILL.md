@@ -1,18 +1,46 @@
 ---
 name: edit-v2v
-description: Edit, restyle or extend existing video with Wan 3.0 on US-first Alibaba Model Studio.
+description: Edit or extend video with Seedance 2.5 while the Wan 3.0 default has a preview licence block.
 metadata:
   include_tools: call_media_tool
-  routing_tools: wan3_edit wan3_extend
-  gateway_tools: ModelStudio___edit_wan3_video ModelStudio___extend_wan3_video ModelStudio___get_task
+  routing_tools: wan3_edit wan3_extend seedance25_edit seedance25_extend
+  gateway_tools: Seedance___edit_video Seedance___extend_video Seedance___get_video_task Fal___get_video_task ModelStudio___edit_wan3_video ModelStudio___extend_wan3_video ModelStudio___get_task
 ---
 
 # Edit existing video
 
-Use `ModelStudio___edit_wan3_video` for edits and `ModelStudio___extend_wan3_video` for extension.
-They bind `wan3_edit` and `wan3_extend`, with no exceptions or interim. Explicit Aleph, Luma
-or Wan VACE requests use [named provider](../named-provider/SKILL.md).
+The capability defaults remain `wan3_edit` and `wan3_extend`. While Wan's commercial policy
+has `live_enabled=false`, select the declared `seedance25_edit` or `seedance25_extend` interim.
+Use `Seedance___edit_video` or `Seedance___extend_video` through fal US. Follow the host route.
+Disclose Wan's preview licence block, the Seedance interim, its host and cost before approval.
+All paid video pauses even in autonomous runs. There is no automatic price or tier fallback.
+Explicit Aleph, Luma or Wan VACE requests use [named provider](../named-provider/SKILL.md).
 Trims, titles, captions, soundtrack and ordering use final-assembly.
+
+For Seedance, supply `video_url`, `prompt`, measured `source_duration_seconds`, `source_fps`,
+and `source_aspect_ratio`. Editing accepts sources from 4 through 30 seconds and preserves
+approximately their duration. The vendor can shorten an edit by about 0.4 seconds.
+The provider forces adaptive aspect ratio and automatic edit duration.
+Extension accepts a source from 2 through 30 seconds and `duration_seconds` for requested
+output seconds. Use clear continuation intent in the prompt. Never promise that the returned
+clip includes the entire original. Inspect the artifact before final assembly.
+Requests phrased as "extend by N seconds" are blocked because appended-versus-combined
+length semantics are UNVERIFIED. Request a specific generated output duration instead.
+Optional reference images and audio use the matching reference fields and measured metadata.
+Never invent measurements. Source plus generated video seconds incur token charges.
+An adaptive quote without source aspect is unknown. Do not equate unknown with free.
+Never send real-person photos or video to Seedance, even when consent exists. Set
+`real_face_refs=true` or `user_supplied_real_person_refs=true` when provenance indicates them.
+The host refuses real-face editing/extension while Wan remains preview blocked because
+all other allowed editors are explicit-only. Explain the reason; do not select another model.
+Poll the saved fal handle with `Seedance___get_video_task` or `Fal___get_video_task` and
+`download=true`. A dry-run or queued job is incomplete. Open/play the actual artifact.
+Seedance uses proprietary commercial API terms, vendor AUP and watermark requirements.
+Outputs are not training eligible.
+
+For an explicit Model Studio preview, follow the constraints below. Changing routing
+`live_enabled` after a licence review restores Wan selection; the existing adapter's hard
+preview licence restriction still blocks live requests and must not be bypassed.
 
 Keep the original asset version. Supply its `video_url` or Studio asset handle, a `prompt`,
 measured `source_duration_seconds` from 1 through 15 and measured `source_fps` of at least 16.
@@ -46,7 +74,7 @@ Keep continuity-qc on `local_qc`. The model has closed weights, evaluation-only 
 
 Follow `read_studio_context.intent_route`. Selection uses the explicit requested provider/model,
 then a named exception, then the capability default. Cost estimates support approval and disclosure;
-they never select a provider. Pending defaults use only the policy's declared interim tool.
+they never select a provider. Pending or commercially blocked defaults use only the policy's declared interim tool.
 Disclose provider, model, estimated cost and `default`, `exception: <reason>`, `explicit request`,
 or `interim default until <provider> lands` before each dispatch. Unknown prices stay unknown.
 All paid video pauses for approval even in autonomous runs when `premium_video_approval` is enabled.

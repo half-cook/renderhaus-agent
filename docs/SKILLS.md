@@ -36,7 +36,7 @@ exact Gateway names, native arguments, and operational constraints.
 | [audio-bed](../agent/deep_agent/skills/audio-bed/SKILL.md) | `call_audio_tool` | `eleven_v4_turbo`<br>`voices_ivc_create`<br>`mureka_v95`<br>`mirelo_v2a`<br>`elevenlabs_sfx_v2` |
 | [continuity-qc](../agent/deep_agent/skills/continuity-qc/SKILL.md) | `call_media_tool` | `local_qc`<br>`gemini_vlm_judge` |
 | [conversational-edit](../agent/deep_agent/skills/conversational-edit/SKILL.md) | `call_editor_tool`<br>`call_audio_tool` | `remotion_render`<br>`hyperframes_render` |
-| [edit-v2v](../agent/deep_agent/skills/edit-v2v/SKILL.md) | `call_media_tool` | `wan3_edit`<br>`wan3_extend` |
+| [edit-v2v](../agent/deep_agent/skills/edit-v2v/SKILL.md) | `call_media_tool` | `wan3_edit`<br>`wan3_extend`<br>`seedance25_edit`<br>`seedance25_extend` |
 | [final-assembly](../agent/deep_agent/skills/final-assembly/SKILL.md) | `call_editor_tool` | `remotion_render` |
 | [hyperframes](../agent/deep_agent/skills/hyperframes/SKILL.md) | `call_editor_tool`<br>`call_audio_tool` | `hyperframes_render` |
 | [i2v](../agent/deep_agent/skills/i2v/SKILL.md) | `call_media_tool` | `wan3_i2v`<br>`wan3_r2v`<br>`seedance25_i2v`<br>`seedance25_r2v` |
@@ -47,7 +47,7 @@ exact Gateway names, native arguments, and operational constraints.
 | [named-provider](../agent/deep_agent/skills/named-provider/SKILL.md) | `call_media_tool`<br>`call_audio_tool` | `kling_t2v`<br>`kling_i2v`<br>`runway_gen45_t2v`<br>`runway_aleph_edit`<br>`luma_ray3_t2v`<br>`luma_ray3_modify`<br>`vidu_q4_i2v`<br>`vidu_q4_r2v`<br>`seedream_t2i`<br>`fish_audio_tts`<br>`wan_vace_edit` |
 | [product-demo-video](../agent/deep_agent/skills/product-demo-video/SKILL.md) | `call_editor_tool` | `cutaway_record`<br>`remotion_render`<br>`hyperframes_render` |
 | [product-images](../agent/deep_agent/skills/product-images/SKILL.md) | `call_media_tool` | `gpt_image25_t2i`<br>`gpt_image25_edit`<br>`recraft_v41_vector`<br>`ideogram45_edit` |
-| [refinement](../agent/deep_agent/skills/refinement/SKILL.md) | `call_media_tool`<br>`call_audio_tool`<br>`call_editor_tool` | `gpt_image25_edit`<br>`wan3_edit`<br>`remotion_render` |
+| [refinement](../agent/deep_agent/skills/refinement/SKILL.md) | `call_media_tool`<br>`call_audio_tool`<br>`call_editor_tool` | `gpt_image25_edit`<br>`wan3_edit`<br>`seedance25_edit`<br>`remotion_render` |
 | [resolve-handoff](../agent/deep_agent/skills/resolve-handoff/SKILL.md) | `call_editor_tool` | `Remotion___export_nle_timeline` |
 | [still-then-video](../agent/deep_agent/skills/still-then-video/SKILL.md) | `call_media_tool` | `gpt_image25_t2i`<br>`gpt_image25_edit`<br>`wan3_i2v`<br>`seedance25_i2v` |
 | [storyboard-shots](../agent/deep_agent/skills/storyboard-shots/SKILL.md) | `call_media_tool` | `gpt_image25_t2i`<br>`gpt_image25_edit`<br>`wan3_i2v`<br>`wan3_r2v`<br>`seedance25_i2v`<br>`seedance25_r2v` |
@@ -69,12 +69,13 @@ Selection uses an explicit requested provider/model, then a matching exception, 
 capability default. A pending default uses only its declared interim. Cost and stored quality
 tiers do not order models. Prices support disclosure and spending controls.
 
-Wan 3.0 on fal now provides t2v, i2v and reference_video defaults. The synthetic-dialogue exceptions retain their declared Seedance interims until 2.5 is built.
+Wan 3.0 on fal now provides t2v, i2v and reference_video defaults. The synthetic-dialogue exceptions use the upgraded Seedance 2.5 tools through fal US.
 Still-image defaults are pending feat/provider-openai-images with no automatic interim.
 Seedream requires an explicit named request. Wan 3.0 on Alibaba Model Studio
-provides edit and extend defaults. Luma modify and extend remain explicit-only.
+remains the edit and extend default. Its preview licence blocks commercial use, so the declared
+Seedance 2.5 fal interims serve synthetic inputs. Luma modify and extend remain explicit-only.
 ElevenLabs music is the music interim.
-These entries expire when their capability default becomes built; they do not create permanent
+These entries expire when their capability default becomes commercially available; they do not create permanent
 exceptions for demoted providers. An exact named pending model has no substitute interim.
 
 Dialogue without real-person references selects the Seedance exception. Real-person photo/video
@@ -191,9 +192,11 @@ See [decisions and verification](conversational-edit-decisions.tsv) and
 
 ## Offline routing verification
 
-`tests/fixtures/skill_routing.json` contains 122 retained capability-map workbook rows.
-There are 81 active cases and 41 explicit skips, including three Model Studio
-preview-licence blocks. The 23 archived rows are dropped,
+`tests/fixtures/skill_routing.json` contains 129 retained routing rows.
+There are 91 active cases and 38 explicit skips. Seedance reference dialogue and two
+previously licence-skipped edit cases now use built Seedance tools. The extension increment
+case stays skipped because appended-versus-combined length semantics are UNVERIFIED.
+The 23 archived rows are dropped,
 including confidential-route and `[project.confidential=true]` rows. A false prefix is ordinary
 routing input. The read-only workbook and source map are not copied into the repository.
 
@@ -212,10 +215,11 @@ assert that explicit retired requests dispatch nothing. [Decisions](capability-m
 record these differences from the workbook.
 
 The pending specialists cover sync, HeyGen, Act-Two, Kling Motion Control, Topaz, Mirelo,
-Recraft, Ideogram edit, Mureka lyrics video, reference-video exceptions, VLM judging,
+Recraft, Ideogram edit, Mureka lyrics video, VLM judging,
 and cutaway capture. A declared interim activates other pending defaults where supported.
-Wan 3 generation and Model Studio edit/extend use their built tools. Real-person references
-require consent and never substitute Seedance.
+Wan 3 generation uses its built tools. Model Studio edit/extend retain their default IDs but
+select Seedance while the commercial policy is blocked. Real-person references require Wan
+consent for generation and refuse the Seedance edit/extend interim.
 
 `.venv/bin/python -m unittest discover -s tests -p test_skill_routing.py -v` reports each
 fixture and skip reason. Supporting tests cover capability defaults/exceptions, named demoted
@@ -260,9 +264,9 @@ Model configuration resolves through the existing environment and native argumen
 explicit model arguments take precedence. Changing an environment default cannot bypass a
 model allowlist. MiniMax H3 and Hunyuan remain blocked and never train QC.
 
-Future Seedance 2.5 routing defaults to fal for US and Canadian customers; BytePlus is optional.
-The current interim still uses the built BytePlus 1.5 adapter. No host or adapter upgrade is
-performed here. [US availability](CAPABILITY_MAP.md) separates verified availability from
+Seedance 2.5 defaults to fal US. Global fal and the authorized non-US BytePlus route are
+operator configuration choices. BytePlus live platform use requires written authorization;
+US end users remain excluded. The 1.5 Pro model stays selectable on BytePlus. [US availability](CAPABILITY_MAP.md) separates verified availability from
 unclear evidence. Real-face/voice consent follows each provider's actual terms.
 
 Only successful, non-dry-run Fal assets with a policy-approved legacy Wan model,
@@ -420,15 +424,17 @@ audio timing/volume/fades are supported; captions and motion effects require Lam
 
 ## Wan 3 edit and extend
 
-The existing edit-v2v skill now uses `ModelStudio___edit_wan3_video`,
-`ModelStudio___extend_wan3_video`, and free `ModelStudio___get_task`. Refinement also
-discovers the edit and poll tools. Measured source duration and frame rate are required.
-Extension duration means total output length, including the source. Smart-duration previews
-have unknown cost. All paid video still pauses in autonomous runs.
+The default IDs remain `wan3_edit` and `wan3_extend`. Their existing Model Studio adapter
+retains its hard preview licence restriction. Automatic customer routing follows the declared
+`seedance25_edit` and `seedance25_extend` interims while the Wan model policy has
+`live_enabled=false`. A single change to that policy flag restores Wan selection. It cannot
+remove the adapter's hard live block or establish commercial rights.
 
-The adapter defaults to dry-run and the US region. Its mandated legacy US host is
-UNVERIFIED for video synthesis and blocked live; documented workspace hosts are configurable.
-There are now 9 providers, 84 Gateway tools, and 24 skills. Three previously active fixture rows
-now name Model Studio but are skipped because its preview licence permits only internal evaluation;
-38 other fixture rows remain skipped. Disabling dry-run cannot bypass the licence gate.
-See [configuration, pricing, terms, and validation limits](ALIBABA_MODELSTUDIO.md).
+The edit-v2v and refinement skills discover the built Seedance tools, reuse fal polling,
+require measured source inputs and prohibit real-person references. Explicit Luma, Aleph,
+and VACE requests remain available with disclosure. Paid video pauses in autonomous runs.
+There are 9 providers, 87 Gateway tools and 24 skills. Seedance reference dialogue and the
+two edit fixture rows are active. The extension increment row remains skipped because its
+length semantics are UNVERIFIED; 37 other rows still have dependency blockers.
+See [Seedance configuration, prices and licence limits](SEEDANCE_2_5.md) and
+[Model Studio's unchanged restriction](ALIBABA_MODELSTUDIO.md).

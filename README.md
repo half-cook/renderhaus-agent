@@ -112,7 +112,9 @@ persists local job state under `.renderhaus/web-jobs/`, and serves completed MP4
 job-scoped media URLs.
 
 `SEEDANCE_DRY_RUN=true` keeps the full flow in preview mode without creating a paid video task.
-Set `SEEDANCE_DRY_RUN=false` in `.env.local` only when you intend to run live video generation.
+Seedance 2.5 defaults to fal US. Both `SEEDANCE_DRY_RUN` and `FAL_DRY_RUN` gate that transport.
+The optional non-US BytePlus route requires written platform authorization. See
+[Seedance configuration and pricing](docs/SEEDANCE_2_5.md).
 
 ### Remotion Lambda renders
 
@@ -267,7 +269,7 @@ not an LLM swarm over paid tools.
 
 Generation job records are written under `.renderhaus/jobs/`.
 
-Seedance video generation is live when `SEEDANCE_DRY_RUN=false`; Fish Audio TTS is live when
+Seedance video generation requires its transport and authorization gates to permit live use; Fish Audio TTS is live when
 `FISH_AUDIO_DRY_RUN=false`.
 
 ### ElevenLabs setup

@@ -42,7 +42,8 @@
     "suite": "i2v",
     "skip_reason": "",
     "note": "explicit Seedance request (exception engine named)",
-    "source_status": "updated"
+    "source_status": "updated",
+    "expected_gateway_tool": "Seedance___image_to_video"
   },
   {
     "prompt": "Wan first last frame morph",
@@ -67,10 +68,10 @@
     "expected_skill": "edit-v2v",
     "expected_tool": "wan3_edit",
     "suite": "edit-v2v",
-    "skip_reason": "licence blocked: Wan 3.0 preview permits internal evaluation only (feat/provider-alibaba-modelstudio)",
-    "note": "Adapter exists for dry-run contract tests; customer live use remains blocked by Preview Product Terms 1.1.",
+    "skip_reason": "",
+    "note": "Wan remains the quality-first default; Seedance 2.5 serves the declared interim while Wan preview licensing blocks customer use.",
     "source_status": "updated",
-    "expected_gateway_tool": "ModelStudio___edit_wan3_video"
+    "expected_gateway_tool": "Seedance___edit_video"
   },
   {
     "prompt": "change look keep performance Luma",
@@ -662,7 +663,8 @@
     "suite": "t2v",
     "skip_reason": "",
     "note": "exception: dialogue, synthetic",
-    "source_status": "new"
+    "source_status": "new",
+    "expected_gateway_tool": "Seedance___text_to_video"
   },
   {
     "prompt": "two cartoon foxes talking about the weather, lip-synced",
@@ -671,7 +673,8 @@
     "suite": "t2v",
     "skip_reason": "",
     "note": "exception: dialogue, synthetic",
-    "source_status": "new"
+    "source_status": "new",
+    "expected_gateway_tool": "Seedance___text_to_video"
   },
   {
     "prompt": "my CEO (photo attached, consent) says \"thanks team\" on camera",
@@ -689,7 +692,8 @@
     "suite": "i2v",
     "skip_reason": "",
     "note": "exception: dialogue, non-real start frame",
-    "source_status": "new"
+    "source_status": "new",
+    "expected_gateway_tool": "Seedance___image_to_video"
   },
   {
     "prompt": "this anime girl image speaking a greeting",
@@ -698,7 +702,8 @@
     "suite": "i2v",
     "skip_reason": "",
     "note": "exception: dialogue, non-real start frame",
-    "source_status": "new"
+    "source_status": "new",
+    "expected_gateway_tool": "Seedance___image_to_video"
   },
   {
     "prompt": "multi-shot scene with these 3 character refs, no dialogue",
@@ -714,9 +719,10 @@
     "expected_skill": "i2v",
     "expected_tool": "seedance25_r2v",
     "suite": "i2v",
-    "skip_reason": "provider pending: seedance25_r2v (feat/seedance-2-5)",
-    "note": "exception: synthetic dialogue r2v",
-    "source_status": "new"
+    "skip_reason": "",
+    "note": "Built synthetic dialogue reference-to-video exception.",
+    "source_status": "new",
+    "expected_gateway_tool": "Seedance___reference_to_video"
   },
   {
     "prompt": "reference video of a real actor with consent, keep identity across shots",
@@ -732,20 +738,20 @@
     "expected_skill": "edit-v2v",
     "expected_tool": "wan3_extend",
     "suite": "edit-v2v",
-    "skip_reason": "licence blocked: Wan 3.0 preview permits internal evaluation only (feat/provider-alibaba-modelstudio)",
-    "note": "Adapter exists for dry-run contract tests; customer live use remains blocked by Preview Product Terms 1.1.",
+    "skip_reason": "semantics unverified: Seedance appended-versus-combined extension length (feat/seedance-2-5); Wan extend remains preview-licence blocked",
+    "note": "Seedance supports extension with explicit generated output duration; this increment request cannot safely infer that duration.",
     "source_status": "new",
-    "expected_gateway_tool": "ModelStudio___extend_wan3_video"
+    "expected_gateway_tool": "Seedance___extend_video"
   },
   {
     "prompt": "make this footage look like a watercolor painting",
     "expected_skill": "edit-v2v",
     "expected_tool": "wan3_edit",
     "suite": "edit-v2v",
-    "skip_reason": "licence blocked: Wan 3.0 preview permits internal evaluation only (feat/provider-alibaba-modelstudio)",
-    "note": "Adapter exists for dry-run contract tests; customer live use remains blocked by Preview Product Terms 1.1.",
+    "skip_reason": "",
+    "note": "Wan remains the quality-first default; Seedance 2.5 serves the declared interim while Wan preview licensing blocks customer use.",
     "source_status": "new",
-    "expected_gateway_tool": "ModelStudio___edit_wan3_video"
+    "expected_gateway_tool": "Seedance___edit_video"
   },
   {
     "prompt": "generate a 45 second single shot",

@@ -71,7 +71,7 @@ def check_routing_inventory() -> None:
     from providers.registry import load_committed_schemas
 
     assert len(PROVIDERS) == 9
-    assert sum(len(load_committed_schemas(spec)) for spec in PROVIDERS) == 84
+    assert sum(len(load_committed_schemas(spec)) for spec in PROVIDERS) == 87
     paths = list(SKILLS_ROOT.glob("*/SKILL.md"))
     assert len(paths) == 24
     assert "ladder" not in POLICY and "premium_targets" not in POLICY
@@ -88,8 +88,8 @@ def check_routing_inventory() -> None:
         assert set(metadata["include_tools"].split()) <= DISPATCH_TARGETS.keys(), path
         assert all(TOOL_MAP[alias]["status"] != "retired" for alias in metadata["routing_tools"].split()), path
     cases = json.loads((ROOT / "tests/fixtures/skill_routing.json").read_text())
-    assert len(cases) == 129 and sum(not case["skip_reason"] for case in cases) == 88
-    print("ok routing inventory (9 providers, 84 Gateway tools, 24 skills, 87 active routing rows, 1 expected-failure readiness gate)")
+    assert len(cases) == 129 and sum(not case["skip_reason"] for case in cases) == 91
+    print("ok routing inventory (9 providers, 87 Gateway tools, 24 skills, 90 active routing rows, 1 expected-failure readiness gate)")
 
 
 def _assert_gateway_shape(schema: object) -> None:
@@ -118,6 +118,12 @@ def check_dry_run_dispatch() -> None:
         for schema in load_committed_schemas(spec):
             name = schema["name"]
             arguments = dummy_arguments(schema)
+            if spec.id == "seedance" and name in {"text_to_video", "image_to_video", "reference_to_video", "edit_video", "extend_video"}:
+                arguments["model"] = "dreamina-seedance-2-5-260628"
+            if spec.id == "seedance" and name in {"edit_video", "extend_video"}:
+                arguments.update({"video_url": "https://example.test/source.mp4",
+                                  "source_duration_seconds": 5, "source_fps": 24,
+                                  "source_aspect_ratio": "16:9"})
             if spec.id == "kling":
                 if name == "image_to_video":
                     arguments["image_path_or_url"] = "https://example.test/frame.png"
