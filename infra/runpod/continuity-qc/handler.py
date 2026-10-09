@@ -8,6 +8,7 @@ from pathlib import Path
 
 os.environ["HF_HUB_OFFLINE"] = "1"
 os.environ["HF_HUB_DISABLE_IMPLICIT_TOKEN"] = "1"
+os.environ["RUNPOD_LOG_LEVEL"] = "INFO"
 
 import runpod  # noqa: E402
 import torch  # noqa: E402

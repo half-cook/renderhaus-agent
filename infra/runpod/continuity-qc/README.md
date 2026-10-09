@@ -99,7 +99,11 @@ and exactly one DINO model. The worker never substitutes models.
 The example probabilities are rounded illustrations. Production computes them
 from `agent/deep_agent/continuity_qc_calibration.json`. Errors return
 `{"error":{"code":"invalid_input","message":"..."}}` with sanitized messages.
-Errors never include frame URLs, payloads, exception text, or secrets.
+Errors never include frame URLs, payloads, exception text, or secrets. The handler
+sets `RUNPOD_LOG_LEVEL=INFO` before importing the SDK to suppress its default DEBUG
+logs, which include input payloads, output embeddings, and worker job URLs. Keep
+SDK CLI logging at INFO. Explicit CLI DEBUG options can override this protection;
+do not enable them for requests with signed URLs or private frames.
 
 Supported frames are still PNG, JPEG, or WebP raster images. The decoder rejects
 other formats before conversion or image loading.

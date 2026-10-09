@@ -11,5 +11,5 @@ RUN --mount=type=secret,id=hf_token \
     HF_HOME=/tmp/model-build-cache HF_HUB_DISABLE_IMPLICIT_TOKEN=1 \
     python /app/download_models.py --include-dinov3 "$INCLUDE_DINOV3" \
     && rm -rf /tmp/model-build-cache
-ENV HF_HUB_OFFLINE=1 HF_HUB_DISABLE_IMPLICIT_TOKEN=1 CONTINUITY_QC_MODEL_DIR=/models CONTINUITY_QC_BATCH_SIZE=4
+ENV RUNPOD_LOG_LEVEL=INFO HF_HUB_OFFLINE=1 HF_HUB_DISABLE_IMPLICIT_TOKEN=1 CONTINUITY_QC_MODEL_DIR=/models CONTINUITY_QC_BATCH_SIZE=4
 CMD ["python", "-u", "/app/handler.py"]

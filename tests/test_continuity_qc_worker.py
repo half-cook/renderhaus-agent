@@ -1,6 +1,7 @@
 """Worker contract tests deliberately need no torch, RunPod, Pillow, or network."""
 
 import base64
+import builtins
 import importlib.util
 import math
 import os
@@ -433,7 +434,7 @@ class WorkerAdapterTests(unittest.TestCase):
         )
         modules = {
             "torch": torch,
-            "runpod": SimpleNamespace(),
+            "runpod": SimpleNamespace(import_log_levels=[]),
             "transformers": SimpleNamespace(
                 AutoImageProcessor=auto_processor, AutoModel=auto_model
             ),
@@ -442,9 +443,25 @@ class WorkerAdapterTests(unittest.TestCase):
             "worker_adapter_under_test", WORKER / "handler.py"
         )
         module = importlib.util.module_from_spec(spec)
-        with patch.dict(sys.modules, modules), patch.dict(os.environ, {}, clear=False):
+        original_import = builtins.__import__
+
+        def observe_import(name, *args, **kwargs):
+            if name == "runpod":
+                modules["runpod"].import_log_levels.append(os.environ.get("RUNPOD_LOG_LEVEL"))
+            return original_import(name, *args, **kwargs)
+
+        with (
+            patch.dict(sys.modules, modules),
+            patch.dict(os.environ, {}, clear=False),
+            patch("builtins.__import__", side_effect=observe_import),
+        ):
             spec.loader.exec_module(module)
         return module, torch, auto_model, processor
+
+    def test_sdk_logging_is_safe_before_import_initialization(self):
+        with patch.dict(os.environ, {"RUNPOD_LOG_LEVEL": "DEBUG"}):
+            module, _, _, _ = self.load_handler()
+        self.assertEqual(module.runpod.import_log_levels, ["INFO"])
 
     def test_models_load_once_and_runtime_is_offline(self):
         module, _, auto_model, _ = self.load_handler()
