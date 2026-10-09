@@ -655,8 +655,9 @@
     "expected_tool": "eleven_v4_turbo",
     "suite": "whiteboard-explainer",
     "skip_reason": "",
-    "note": "VO step",
-    "source_status": "updated"
+    "note": "VO step; narrated workflow belongs to whiteboard-explainer",
+    "source_status": "updated",
+    "expected_routed_skill": "whiteboard-explainer"
   },
   {
     "prompt": "a robot character says \"welcome to the future\" to camera",
@@ -1741,7 +1742,7 @@
     "prompt": "Give me 9:16, 1:1 and 4:5 versions of this 16:9 spot.",
     "expected_skill": "remotion-aspect-ratio-variants",
     "expected_tool": "remotion_render",
-    "skip_reason": "provider pending: subject-aware aspect layouts and reframe ops (feat/remotion-aspect-ratio-variants)",
+    "skip_reason": "",
     "negative": false,
     "expected_behaviour": "Probe, scene list, per-shot crop/pad plan, contact sheet for approval.",
     "source_expected_skill": "remotion-aspect-ratio-variants",
@@ -1762,7 +1763,9 @@
       "REMOTION_DRY_RUN": "true",
       "FFMPEG_DRY_RUN": "true"
     },
-    "note": "Router checks skill/tool proposal only. Table, sandbox, artifact and approval semantics have dedicated provider/executor tests."
+    "note": "Router verifies the tool proposal. Crop geometry, real artifacts, sandbox, backend refusal and approval have separate tests. No detector is run.",
+    "expected_routed_skill": "remotion-aspect-ratio-variants",
+    "expected_routed_alias": "ad_variant_matrix"
   },
   {
     "test_id": "RT-E012",
@@ -1771,9 +1774,9 @@
     "prompt": "Make a vertical cut of this interview for Reels.",
     "expected_skill": "remotion-aspect-ratio-variants",
     "expected_tool": "ffmpeg_tool",
-    "skip_reason": "provider pending: subject-aware aspect layouts and reframe ops (feat/remotion-aspect-ratio-variants)",
+    "skip_reason": "",
     "negative": false,
-    "expected_behaviour": "Subject-aware per-shot crop; safe zone; blurred-pad where subject is too wide; approval of contact sheet.",
+    "expected_behaviour": "Per-shot static crop with optional planner-supplied subject box; centre fallback; safe zone and blurred pad; editorial contact-sheet review.",
     "source_expected_skill": "remotion-aspect-ratio-variants",
     "source_must_call_tools": "ffmpeg_tool, remotion_render",
     "source_must_not_call": "any shell / free-form ffmpeg; any resolve_* tool or resolve-* skill; run_script_unsafe",
@@ -1792,7 +1795,9 @@
       "REMOTION_DRY_RUN": "true",
       "FFMPEG_DRY_RUN": "true"
     },
-    "note": "Router checks skill/tool proposal only. Table, sandbox, artifact and approval semantics have dedicated provider/executor tests."
+    "note": "Router verifies the tool proposal. Crop geometry, real artifacts, sandbox, backend refusal and approval have separate tests. No detector is run.",
+    "expected_routed_skill": "remotion-aspect-ratio-variants",
+    "expected_routed_alias": "ad_variant_matrix"
   },
   {
     "test_id": "RT-E013",
@@ -1801,7 +1806,7 @@
     "prompt": "Reframe this Remotion composition for 4:5 (it's our own template).",
     "expected_skill": "remotion-aspect-ratio-variants",
     "expected_tool": "remotion_render",
-    "skip_reason": "provider pending: subject-aware aspect layouts and reframe ops (feat/remotion-aspect-ratio-variants)",
+    "skip_reason": "",
     "negative": false,
     "expected_behaviour": "Re-render the composition with aspect prop and layout, no crop.",
     "source_expected_skill": "remotion-aspect-ratio-variants",
@@ -1822,7 +1827,9 @@
       "REMOTION_DRY_RUN": "true",
       "FFMPEG_DRY_RUN": "true"
     },
-    "note": "Router checks skill/tool proposal only. Table, sandbox, artifact and approval semantics have dedicated provider/executor tests."
+    "note": "Router verifies the tool proposal. Crop geometry, real artifacts, sandbox, backend refusal and approval have separate tests. No detector is run.",
+    "expected_routed_skill": "remotion-aspect-ratio-variants",
+    "expected_routed_alias": "remotion_render"
   },
   {
     "test_id": "RT-E014",
@@ -1831,7 +1838,7 @@
     "prompt": "Centre crop is fine, just do 1:1 quickly from this mp4.",
     "expected_skill": "remotion-aspect-ratio-variants",
     "expected_tool": "ffmpeg_tool",
-    "skip_reason": "provider pending: subject-aware aspect layouts and reframe ops (feat/remotion-aspect-ratio-variants)",
+    "skip_reason": "",
     "negative": false,
     "expected_behaviour": "Single static crop op (reframe_crop) is acceptable; verify output size and SAR.",
     "source_expected_skill": "remotion-aspect-ratio-variants",
@@ -1852,7 +1859,9 @@
       "REMOTION_DRY_RUN": "true",
       "FFMPEG_DRY_RUN": "true"
     },
-    "note": "Router checks skill/tool proposal only. Table, sandbox, artifact and approval semantics have dedicated provider/executor tests."
+    "note": "Router verifies the tool proposal. Crop geometry, real artifacts, sandbox, backend refusal and approval have separate tests. No detector is run.",
+    "expected_routed_skill": "remotion-aspect-ratio-variants",
+    "expected_routed_alias": "ffmpeg_tool"
   },
   {
     "test_id": "RT-E015",
@@ -1861,9 +1870,9 @@
     "prompt": "Use YOLOv8 from ultralytics to track the person and ship that in the pipeline.",
     "expected_skill": "remotion-aspect-ratio-variants",
     "expected_tool": null,
-    "skip_reason": "provider pending: subject-aware aspect layouts and reframe ops (feat/remotion-aspect-ratio-variants)",
+    "skip_reason": "",
     "negative": true,
-    "expected_behaviour": "Refuse AGPL in product code; offer MediaPipe / OpenCV-YuNet / planner vision boxes (Apache-2.0) pending Research Engineer choice.",
+    "expected_behaviour": "Refuse detector dependencies in this branch; offer centre framing or an optional planner-supplied subject box.",
     "source_expected_skill": "remotion-aspect-ratio-variants",
     "source_must_call_tools": "",
     "source_must_not_call": "vendoring/calling ultralytics (AGPL-3.0)",
@@ -1882,7 +1891,11 @@
       "REMOTION_DRY_RUN": "true",
       "FFMPEG_DRY_RUN": "true"
     },
-    "note": "Router checks skill/tool proposal only. Table, sandbox, artifact and approval semantics have dedicated provider/executor tests."
+    "note": "Router verifies the tool proposal. Crop geometry, real artifacts, sandbox, backend refusal and approval have separate tests. No detector is run.",
+    "expected_routed_skill": "remotion-aspect-ratio-variants",
+    "expected_routed_alias": null,
+    "expected_status": "blocked",
+    "expected_reason": "detector"
   },
   {
     "test_id": "RT-E016",
@@ -1891,7 +1904,7 @@
     "prompt": "Extend the sides of this 9:16 clip to make a 16:9 by generating the missing background.",
     "expected_skill": "remotion-aspect-ratio-variants -> edit-v2v",
     "expected_tool": null,
-    "skip_reason": "provider pending: subject-aware aspect layouts and reframe ops (feat/remotion-aspect-ratio-variants)",
+    "skip_reason": "",
     "negative": true,
     "expected_behaviour": "Out of scope (generative outpainting): route to edit-v2v with cost approval; offer blurred-pad as the free alternative.",
     "source_expected_skill": "remotion-aspect-ratio-variants -> edit-v2v",
@@ -1912,7 +1925,9 @@
       "REMOTION_DRY_RUN": "true",
       "FFMPEG_DRY_RUN": "true"
     },
-    "note": "Router checks skill/tool proposal only. Table, sandbox, artifact and approval semantics have dedicated provider/executor tests."
+    "note": "Router verifies the tool proposal. Crop geometry, real artifacts, sandbox, backend refusal and approval have separate tests. No detector is run.",
+    "expected_routed_skill": "edit-v2v",
+    "expected_routed_alias": "seedance25_edit"
   },
   {
     "test_id": "RT-E017",
@@ -1921,9 +1936,9 @@
     "prompt": "Use Resolve's Smart Reframe on this clip.",
     "expected_skill": "remotion-aspect-ratio-variants",
     "expected_tool": null,
-    "skip_reason": "provider pending: subject-aware aspect layouts and reframe ops (feat/remotion-aspect-ratio-variants)",
+    "skip_reason": "",
     "negative": true,
-    "expected_behaviour": "Resolve is parked: explain; offer this skill's detector-driven reframe instead.",
+    "expected_behaviour": "Resolve is parked: refuse Smart Reframe; offer centre/safe-zone crops or blurred padding without detectors.",
     "source_expected_skill": "remotion-aspect-ratio-variants",
     "source_must_call_tools": "",
     "source_must_not_call": "resolve_* ; resolve-aspect-ratio-variants",
@@ -1942,7 +1957,11 @@
       "REMOTION_DRY_RUN": "true",
       "FFMPEG_DRY_RUN": "true"
     },
-    "note": "Router checks skill/tool proposal only. Table, sandbox, artifact and approval semantics have dedicated provider/executor tests."
+    "note": "Router verifies the tool proposal. Crop geometry, real artifacts, sandbox, backend refusal and approval have separate tests. No detector is run.",
+    "expected_routed_skill": "remotion-aspect-ratio-variants",
+    "expected_routed_alias": null,
+    "expected_status": "blocked",
+    "expected_reason": "Resolve is parked"
   },
   {
     "test_id": "RT-E018",
@@ -1951,9 +1970,9 @@
     "prompt": "Crop it so the logo disappears.",
     "expected_skill": "remotion-aspect-ratio-variants",
     "expected_tool": null,
-    "skip_reason": "provider pending: subject-aware aspect layouts and reframe ops (feat/remotion-aspect-ratio-variants)",
+    "skip_reason": "",
     "negative": true,
-    "expected_behaviour": "Ask whose logo; removing a third party's mark or watermark is refused; own-brand removal needs a clean source.",
+    "expected_behaviour": "Clarify logo ownership and request an approved clean/layered source before cropping; preserve legal and branding content.",
     "source_expected_skill": "remotion-aspect-ratio-variants",
     "source_must_call_tools": "",
     "source_must_not_call": "removing logo/watermark of third party",
@@ -1972,7 +1991,11 @@
       "REMOTION_DRY_RUN": "true",
       "FFMPEG_DRY_RUN": "true"
     },
-    "note": "Router checks skill/tool proposal only. Table, sandbox, artifact and approval semantics have dedicated provider/executor tests."
+    "note": "Router verifies the tool proposal. Crop geometry, real artifacts, sandbox, backend refusal and approval have separate tests. No detector is run.",
+    "expected_routed_skill": "remotion-aspect-ratio-variants",
+    "expected_routed_alias": null,
+    "expected_status": "blocked",
+    "expected_reason": "logo"
   },
   {
     "test_id": "RT-E019",
@@ -1981,7 +2004,7 @@
     "prompt": "Reframe this phone clip that has a rotate flag.",
     "expected_skill": "remotion-aspect-ratio-variants",
     "expected_tool": "ffmpeg_tool",
-    "skip_reason": "provider pending: subject-aware aspect layouts and reframe ops (feat/remotion-aspect-ratio-variants)",
+    "skip_reason": "",
     "negative": false,
     "expected_behaviour": "Probe first; honour rotation; do not reframe twice.",
     "source_expected_skill": "remotion-aspect-ratio-variants",
@@ -2002,7 +2025,9 @@
       "REMOTION_DRY_RUN": "true",
       "FFMPEG_DRY_RUN": "true"
     },
-    "note": "Router checks skill/tool proposal only. Table, sandbox, artifact and approval semantics have dedicated provider/executor tests."
+    "note": "Router verifies the tool proposal. Crop geometry, real artifacts, sandbox, backend refusal and approval have separate tests. No detector is run.",
+    "expected_routed_skill": "remotion-aspect-ratio-variants",
+    "expected_routed_alias": "ffmpeg_tool"
   },
   {
     "test_id": "RT-E020",
@@ -2791,7 +2816,7 @@
     "prompt": "Take this finished ad, make it vertical and deliver it.",
     "expected_skill": "remotion-aspect-ratio-variants > remotion-delivery-render",
     "expected_tool": "remotion_render",
-    "skip_reason": "provider pending: subject-aware aspect layouts and reframe ops (feat/remotion-aspect-ratio-variants)",
+    "skip_reason": "provider pending: delivery render and certification chain (feat/remotion-delivery-qc)",
     "negative": false,
     "expected_behaviour": "Reframe approval then delivery chain.",
     "source_expected_skill": "remotion-aspect-ratio-variants > remotion-delivery-render",
@@ -4005,5 +4030,27 @@
       "FFMPEG_DRY_RUN": "true"
     },
     "note": "Router checks skill/tool proposal only. Table, sandbox, artifact and approval semantics have dedicated provider/executor tests."
+  },
+  {
+    "prompt": "make a no-narration Vibe-style knowledge short about the control illusion",
+    "expected_skill": "knowledge-explainer",
+    "expected_tool": "remotion_render",
+    "suite": "knowledge-explainer",
+    "note": "silent graphic explainer (added 23:50 ET)",
+    "skip_reason": "",
+    "source_status": "new"
+  },
+  {
+    "prompt": "HyperFrames silent science explainer with event foley only",
+    "expected_skill": "knowledge-explainer",
+    "expected_tool": "hyperframes_render",
+    "suite": "knowledge-explainer",
+    "note": "explicit HyperFrames exception",
+    "skip_reason": "",
+    "source_status": "new",
+    "env": {
+      "HYPERFRAMES_ENABLED": "true",
+      "HYPERFRAMES_DRY_RUN": "true"
+    }
   }
 ]

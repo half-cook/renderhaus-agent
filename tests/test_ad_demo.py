@@ -30,14 +30,29 @@ class AdDemoTests(unittest.TestCase):
             self.assertNotIn("secret", result.stdout.lower())
             job = media / "demo"
             with (job / "variants.csv").open() as table:
-                self.assertEqual(len(list(csv.DictReader(table))), 6)
+                rows = list(csv.DictReader(table))
+                self.assertEqual(len(rows), 15)
+                self.assertEqual({row["aspect"] for row in rows}, {"9:16", "1:1", "4:5", "16:9", "2.39:1"})
+            with (job / "reframe.csv").open() as table:
+                reframe_rows = list(csv.DictReader(table))
+                self.assertEqual(len(reframe_rows), 5)
+                self.assertEqual(set(reframe_rows[0]), {"variant_key", "aspect"})
+            self.assertTrue(json.loads((job / "reframe-brief.json").read_text())["reframe_only"])
             with Image.open(job / "logo_A.png") as logo:
                 self.assertEqual(logo.mode, "RGBA")
             base = [str(PYTHON), str(driver), "--media-root", str(media), "--job-id", "demo"]
             planned = json.loads(subprocess.run([*base, "plan"], check=True, capture_output=True,
                                                text=True, timeout=30).stdout)
             self.assertEqual(planned["status"], "planned", planned)
-            self.assertEqual(planned["render_count"], 6)
+            self.assertEqual(planned["render_count"], 15)
+            reframe = json.loads(subprocess.run([*base, "plan", "--mode", "reframe"], check=True,
+                                                capture_output=True, text=True, timeout=30).stdout)
+            self.assertEqual(reframe["status"], "planned", reframe)
+            self.assertEqual(reframe["render_count"], 5)
+            self.assertTrue(reframe["candidate_set"])
+            upscaled = json.loads(subprocess.run([*base, "plan", "--mode", "reframe", "--allow-upscale"],
+                                                 check=True, capture_output=True, text=True, timeout=30).stdout)
+            self.assertNotEqual(upscaled["plan_hash"], reframe["plan_hash"])
             refused = subprocess.run([*base, "render_batch"], capture_output=True, text=True, timeout=30)
             self.assertNotEqual(refused.returncode, 0)
             self.assertIn("approve-plan", refused.stderr)

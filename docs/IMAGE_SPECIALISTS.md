@@ -103,10 +103,8 @@ an artifact. Studio registers durable versions and preserves training exclusion.
 Reuse existing `FAL_KEY` from environment/Secrets Manager and `FAL_DRY_RUN=true`.
 No new secrets or dry-run flags. Existing bucket environment keys are now included in
 fal's secret synchronization configuration; configure one for Lambda outputs.
-There are 14 providers, 110 Gateway tools and 24 installed skills. Six fixture rows
-(two Ideogram, four Recraft) activate, giving 122 active rows and seven skips of 129.
-Remaining skips: HyperFrames overlays (1), cutaway capture (3), VLM judge (1), NLE import
-(1), and unverified Seedance extension-length semantics (1).
+Six specialist fixture rows are active: two Ideogram and four Recraft.
+Current inventory and routing totals are in [Skill routing](SKILLS.md#offline-routing-verification).
 
 Tests use mocked HTTP and scripted models with the installed Deep Agents 0.7.23 harness.
 They cover dry-run, contracts, async result persistence, SVG sanitization, billing,

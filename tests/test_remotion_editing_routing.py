@@ -14,6 +14,44 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class RemotionEditingRoutingTests(unittest.TestCase):
+    def test_aspect_intents_choose_existing_editor_tools(self):
+        for prompt, alias in [
+            ("Give me 9:16, 1:1 and 4:5 versions of this 16:9 spot.", "ad_variant_matrix"),
+            ("Make a vertical cut of this interview for Reels.", "ad_variant_matrix"),
+            ("Reframe this Remotion composition for 4:5 (it's our own template).", "remotion_render"),
+            ("Centre crop is fine, just do 1:1 quickly from this mp4.", "ffmpeg_tool"),
+            ("Reframe this phone clip that has a rotate flag.", "ffmpeg_tool"),
+            ("crop_plan_preview for a 9:16 source", "ffmpeg_tool"),
+        ]:
+            with self.subTest(prompt=prompt):
+                route = route_intent(prompt)
+                self.assertEqual(route.skill, "remotion-aspect-ratio-variants")
+                self.assertEqual(route.alias, alias)
+                self.assertEqual(route.dispatch_tool, "call_editor_tool")
+
+    def test_outpainting_keeps_generative_edit_approval(self):
+        from agent.gateway_executor import tool_needs_approval
+
+        prompt = "Extend the sides of this 9:16 clip to make a 16:9 by generating the missing background."
+        route = route_intent(prompt)
+        self.assertEqual(route.skill, "edit-v2v")
+        self.assertEqual(route.alias, "seedance25_edit")
+        self.assertTrue(tool_needs_approval(route.tool, autonomous=False))
+
+    def test_aspect_refusals_never_offer_a_detector_or_resolve_tool(self):
+        for prompt, reason in [
+            ("Use YOLOv8 from ultralytics to track the person and ship that in the pipeline.", "detector"),
+            ("Use Resolve's Smart Reframe on this clip.", "Resolve is parked"),
+            ("Crop it so the logo disappears.", "logo"),
+        ]:
+            with self.subTest(prompt=prompt):
+                route = route_intent(prompt)
+                self.assertEqual(route.skill, "remotion-aspect-ratio-variants")
+                self.assertEqual(route.status, "blocked")
+                self.assertIsNone(route.tool)
+                self.assertIn(reason, route.reason)
+                self.assertEqual(filter_request_tools(prompt, {"Ffmpeg___ffmpeg_tool", "Remotion___render_timeline"}), set())
+
     def test_matrix_intents_use_the_stage_tool_before_generic_media_routes(self):
         prompts = [
             "Make 12 SKU variants with prices and CTAs in 9:16 and 1:1",
@@ -103,7 +141,7 @@ class RemotionEditingRoutingTests(unittest.TestCase):
         for case in editing:
             self.assertIn("expected_behaviour", case)
             self.assertEqual(case["source_read_date"], "2026-10-09")
-            if case["category"] in {"ad-matrix", "resolve-only", "free-form-shell"}:
+            if case["category"] in {"ad-matrix", "aspect", "resolve-only", "free-form-shell"}:
                 self.assertFalse(case["skip_reason"], case["test_id"])
             if case["category"] in {"resolve-only", "free-form-shell"}:
                 self.assertTrue(case["negative"])

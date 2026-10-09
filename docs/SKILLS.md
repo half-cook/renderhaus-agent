@@ -13,7 +13,7 @@ refusals return `blocked`, retired requests return `retired`, and unknown intent
 
 ## Packaged skills
 
-The backend packages 25 skills. Some explain pending capabilities; installing their
+The backend packages 27 skills. Some explain pending capabilities; installing their
 instructions does not install a provider adapter. The original execution skills remain
 available. `image-gen` and `named-provider` cover the new still-image policy and explicit
 requests for providers retained outside automatic selection. The archived `vidu-q4` skill
@@ -41,6 +41,7 @@ exact Gateway names, native arguments, and operational constraints.
 | [hyperframes](../agent/deep_agent/skills/hyperframes/SKILL.md) | `call_editor_tool`<br>`call_audio_tool` | `hyperframes_render` |
 | [i2v](../agent/deep_agent/skills/i2v/SKILL.md) | `call_media_tool` | `wan3_i2v`<br>`wan3_r2v`<br>`seedance25_i2v`<br>`seedance25_r2v` |
 | [image-gen](../agent/deep_agent/skills/image-gen/SKILL.md) | `call_media_tool` | `gpt_image25_t2i`<br>`gpt_image25_edit`<br>`recraft_v41_vector`<br>`ideogram45_edit` |
+| [knowledge-explainer](../agent/deep_agent/skills/knowledge-explainer/SKILL.md) | `call_editor_tool`<br>`call_media_tool`<br>`call_audio_tool` | `remotion_render`<br>`hyperframes_render`<br>`mirelo_v2a`<br>`elevenlabs_sfx_v2` |
 | [lipsync](../agent/deep_agent/skills/lipsync/SKILL.md) | `call_media_tool`<br>`call_audio_tool` | `sync3_lipsync`<br>`heygen_avatar_v`<br>`eleven_v4_turbo` |
 | [lyrics-video](../agent/deep_agent/skills/lyrics-video/SKILL.md) | `call_audio_tool`<br>`call_editor_tool` | `mureka_lyrics_video`<br>`mureka_v95` |
 | [motion-graphics](../agent/deep_agent/skills/motion-graphics/SKILL.md) | `call_editor_tool`<br>`call_media_tool` | `remotion_render`<br>`hyperframes_render` |
@@ -49,13 +50,14 @@ exact Gateway names, native arguments, and operational constraints.
 | [product-images](../agent/deep_agent/skills/product-images/SKILL.md) | `call_media_tool` | `gpt_image25_t2i`<br>`gpt_image25_edit`<br>`recraft_v41_vector`<br>`ideogram45_edit` |
 | [refinement](../agent/deep_agent/skills/refinement/SKILL.md) | `call_media_tool`<br>`call_audio_tool`<br>`call_editor_tool` | `gpt_image25_edit`<br>`wan3_edit`<br>`seedance25_edit`<br>`remotion_render` |
 | [remotion-ad-variant-matrix](../agent/deep_agent/skills/remotion-ad-variant-matrix/SKILL.md) | `call_editor_tool` | `ad_variant_matrix`<br>`remotion_render`<br>`ffmpeg_tool` |
+| [remotion-aspect-ratio-variants](../agent/deep_agent/skills/remotion-aspect-ratio-variants/SKILL.md) | `call_editor_tool` | `ad_variant_matrix`<br>`remotion_render`<br>`ffmpeg_tool` |
 | [resolve-handoff](../agent/deep_agent/skills/resolve-handoff/SKILL.md) | `call_editor_tool` | `Remotion___export_nle_timeline`, `Remotion___import_nle_timeline` |
 | [still-then-video](../agent/deep_agent/skills/still-then-video/SKILL.md) | `call_media_tool` | `gpt_image25_t2i`<br>`gpt_image25_edit`<br>`wan3_i2v`<br>`seedance25_i2v` |
 | [storyboard-shots](../agent/deep_agent/skills/storyboard-shots/SKILL.md) | `call_media_tool` | `gpt_image25_t2i`<br>`gpt_image25_edit`<br>`wan3_i2v`<br>`wan3_r2v`<br>`seedance25_i2v`<br>`seedance25_r2v` |
 | [t2v](../agent/deep_agent/skills/t2v/SKILL.md) | `call_media_tool` | `wan3_t2v`<br>`seedance25_t2v` |
 | [upscale](../agent/deep_agent/skills/upscale/SKILL.md) | `call_media_tool` | `topaz_upscale`<br>`topaz_interpolate` |
 | [video-short](../agent/deep_agent/skills/video-short/SKILL.md) | `call_media_tool`<br>`call_audio_tool`<br>`call_editor_tool` | `gpt_image25_t2i`<br>`wan3_t2v`<br>`wan3_i2v`<br>`seedance25_t2v`<br>`seedance25_i2v`<br>`remotion_render` |
-| [whiteboard-explainer](../agent/deep_agent/skills/whiteboard-explainer/SKILL.md) | `call_editor_tool` | `remotion_render`<br>`hyperframes_render` |
+| [whiteboard-explainer](../agent/deep_agent/skills/whiteboard-explainer/SKILL.md) | `call_editor_tool`<br>`call_audio_tool` | `remotion_render`<br>`hyperframes_render`<br>`eleven_v4_turbo` |
 
 Fish Audio has built API code and a committed schema but is not in the active provider
 catalog. Its named request requires a discovered target. `local_qc` is a Python integration
@@ -205,8 +207,8 @@ Topaz submissions always pause with cost, including autonomous runs. Dry-run pre
 and queued jobs never satisfy final delivery. See [Topaz](TOPAZ.md) for pricing, licence
 sources, unknown-price blockers and the blocked Comet check.
 
-`tests/fixtures/skill_routing.json` contains 218 retained routing rows.
-There are 173 active cases and 45 explicit skips. Five caption/collage cases cover the
+`tests/fixtures/skill_routing.json` contains 220 retained routing rows.
+There are 184 active cases and 36 explicit skips. Five caption/collage cases cover the
 new templates' renderer selection. Seven performance-transfer cases now use built tools. Three Mureka lyrics-video cases
 now use built tools; music routes use Mureka without an ElevenLabs interim. Five Topaz upscale/interpolation cases
 now use built tools. Seedance reference dialogue and two
@@ -240,6 +242,16 @@ fixture and skip reason. Supporting tests cover capability defaults/exceptions, 
 providers, interim constraints, inert project flags, every paid-video autonomous approval,
 provider/model/region policy, spend recovery, provenance, and injected continuity embeddings.
 They make no live provider calls and download no weights.
+
+## Silent knowledge explainers
+
+`knowledge-explainer` plans silent graphic beats and event-timed SFX, with Remotion as the
+default renderer. Explicit HyperFrames requests retain its enabled preview gate. Video-input
+SFX uses Mirelo; text-described one-shots use ElevenLabs SFX. Speech tools are excluded before
+approval and dispatch. Narrated whiteboards retain `whiteboard-explainer`, and adding Foley
+to existing footage retains `audio-bed`. Two seed rows are active; a third related narrated
+row retains its source expectation with corrected workflow ownership. See
+[contracts, official sources and limits](KNOWLEDGE_EXPLAINER.md).
 
 ## Optional HyperFrames compositions
 
@@ -434,8 +446,7 @@ records the final offline checks without retaining superseded historical suite t
 The existing t2v, i2v, still-then-video and storyboard-shots skills now name
 `Fal___generate_wan3_t2v`, `Fal___generate_wan3_i2v` and `Fal___generate_wan3_r2v`.
 All three poll `Fal___get_video_task`. Controls, costs, consent and dry-run limits are in
-[the Wan 3 provider reference](FAL_WAN3_PROVIDER.md). There are still 24 packaged skills.
-The Wan branch activated four specific workbook rows; after Sync, 31 dependency rows remain skipped.
+[the Wan 3 provider reference](FAL_WAN3_PROVIDER.md). The Wan branch activated four specific workbook rows.
 
 Plain shot/clip requests with voiceover produce video, TTS and final-assembly steps.
 Independent video and narration share an execution group and start together before a
@@ -484,10 +495,7 @@ quote remains unknown and live submission blocked. Read edit-v2v for resolution 
 
 RT-091 is now active with explicit output wording. RT-008 and RT-092 use Seedance editing;
 RT-166/167 cover generic edit/extend and RT-168 covers named Wan's preview warning and block.
-A separate skipped unit test records the unresolved source-inclusion semantics. The fixture
-has 133 active cases and four dependency skips; inventory remains 15 providers, 113 tools
-and 24 skills.
-See [Seedance configuration, prices and licence limits](SEEDANCE_2_5.md) and
+A separate skipped unit test records the unresolved source-inclusion semantics. See [Seedance configuration, prices and licence limits](SEEDANCE_2_5.md) and
 [Model Studio's unchanged restriction](ALIBABA_MODELSTUDIO.md).
 
 ## OpenAI still images
@@ -496,9 +504,7 @@ See [Seedance configuration, prices and licence limits](SEEDANCE_2_5.md) and
 defaults, including text-in-image generation. Edits accept a primary image, up to 15 additional
 references, and an optional mask. Results contain saved images synchronously, without polling.
 Seedream remains explicit-only. Spending approval and visual approval remain separate.
-The OpenAI branch activated eight GPT routing rows. With Sync, 98 routing cases are active
-and 31 remain skipped, including Recraft and Ideogram specialists.
-There are 12 providers, 95 Gateway tools, and 24 packaged skills.
+The OpenAI branch activated eight GPT routing rows.
 
 [OpenAI configuration and verified sources](OPENAI_IMAGES.md) describe the default dry-run flag,
 unknown pre-call costs, output training restriction, and blocked Comet validation.
@@ -511,7 +517,7 @@ subjects, explicit consent and measured timing. Fal is primary; direct Sync requ
 operator acknowledgement of written vendor permission. Sync always requires cost approval.
 Five routing rows become active: four existing-footage requests select Sync, and the
 image-plus-audio generated talking shot selects Seedance 2.5 i2v. HeyGen handles the long-presenter exception.
-There are 12 providers, 95 Gateway tools and 24 packaged skills. No new skill directory is
+No new skill directory is
 needed because the existing lipsync draft is converted in place. See [SYNC.md](SYNC.md) and
 [lipsync decisions](lipsync-sync3-decisions.tsv). Browser E2E remains blocked: Comet is unavailable.
 
@@ -521,7 +527,7 @@ needed because the existing lipsync draft is converted in place. See [SYNC.md](S
 The existing lipsync skill now exposes four `HeyGen___` tools for Avatar V presenters.
 It follows explicit request → duration over 30 seconds with presenter/digital-twin intent →
 sync-3 default. Project confidentiality does not change this order. Both matching workbook
-rows are active: 98 routing cases and 31 dependency skips remain. Every HeyGen submission
+rows are active. Every HeyGen submission
 requires recorded face/voice consent and pauses with a price estimate, including autonomous
 runs. Preview output is incomplete media. [HeyGen reference](HEYGEN.md) records API contracts,
 commercial restrictions, upload training, pricing and the blocked Comet check.
@@ -533,7 +539,7 @@ Mureka V9.5 is the music default on fal, with instrumental beds and songs under
 lyrics-video skills now use six `Mureka___` tools; no new skill directory was needed.
 Lyrics video always pauses with cost, including autonomous runs. Raw audio/TTS
 upload preparation remains blocked until the upload and recognition APIs are wired.
-There are 15 providers, 113 Gateway tools and 24 packaged skills. See
+See
 [Mureka](MUREKA.md) for contracts, official dated prices, licences and blocked Comet E2E.
 
 ## Performance transfer
@@ -545,7 +551,7 @@ See [performance contracts, prices and limits](PERFORMANCE_TRANSFER.md). Browser
 
 ## Picture-synchronized SFX
 
-The audio-bed skill now exposes `Fal___mirelo_v2a` and reuses `Fal___get_video_task` through the manager/media role. Video input selects Mirelo; text-only effects select ElevenLabs SFX. Explicit requests win. Mirelo returns video with audio and pauses with cost even in autonomous runs under the paid-video policy. Samples 2–4 remain dry-run-only because their billing is unverified. Three SFX rows remain active. The current routing fixture has 133 active cases and 4 skips. No skill directory was added. See [Mirelo](MIRELO.md) for sources, contracts and pending playback/A/B validation.
+The audio-bed skill now exposes `Fal___mirelo_v2a` and reuses `Fal___get_video_task` through the manager/media role. Video input selects Mirelo; text-only effects select ElevenLabs SFX. Explicit requests win. Mirelo returns video with audio and pauses with cost even in autonomous runs under the paid-video policy. Samples 2–4 remain dry-run-only because their billing is unverified. Three SFX rows remain active. No skill directory was added. See [Mirelo](MIRELO.md) for sources, contracts and pending playback/A/B validation.
 
 ## Image specialist activation
 
@@ -554,8 +560,7 @@ The audio-bed skill now exposes `Fal___mirelo_v2a` and reuses `Fal___get_video_t
 `Fal___get_video_task`, default to dry-run, quote verified fal image prices and
 exclude training. SVG content is validated and sanitized before persistence.
 The image-gen, product-images and refinement skills expose their real tool names.
-Six specialist fixture rows are active. The current fixture has 133 active rows
-and four skipped of 137. The inventory is 15 providers, 113 tools and 24 skills.
+Six specialist fixture rows are active.
 Comet validation and Ideogram quality A/B
 remain pending. See [Image specialists](IMAGE_SPECIALISTS.md) for contracts,
 official sources read 2026-10-09, licence decisions and configuration.
@@ -566,8 +571,7 @@ The continuity skill now includes `Gemini___judge_continuity` and `Gemini___get_
 The canonical `gemini_vlm_judge` alias is built and its retained routing row is active.
 `local_qc` remains default. The VLM is dry-run by default and promotion requires a complete,
 committed, hash-pinned live result above 0.85 on the 420 frozen pairs. No result is committed.
-Current inventory is 15 providers, 113 Gateway tools, 24 skills and 135 active routing rows
-with 4 skips. See [Gemini configuration and sources](GEMINI_CONTINUITY_QC.md),
+See [Gemini configuration and sources](GEMINI_CONTINUITY_QC.md),
 [benchmark procedure](CONTINUITY_QC_BENCHMARK.md#experimental-gemini-judge-and-eval-gate),
 and [decisions](continuity-qc-vlm-decisions.tsv). Comet E2E remains blocked.
 
@@ -583,14 +587,13 @@ retained for review. The canvas graph and the legacy flat timeline are separate 
 Import retains opaque source handles without publishing or fetching media. No new
 provider, model, key, secret, or environment variable is needed. `REMOTION_DRY_RUN`
 remains true by default. All existing paid-video approval and spending gates remain.
-There are 15 providers, 113 Gateway tools, 24 skills, 133 active fixture rows, and four
-dependency skips. Read [NLE import](NLE_EXPORT.md#import-an-editors-timeline) for the
+Read [NLE import](NLE_EXPORT.md#import-an-editors-timeline) for the
 parser contract and unsupported edits. Comet and real editor validation remain blocked
 or unverified; offline tests do not establish browser success.
 
 ## Routing gates RT-169 and RT-170 (2026-10-09)
 
-The fixture now has 139 rows (135 active, 4 skipped). RT-091 and RT-167 use explicit output-length wording
+RT-091 and RT-167 use explicit output-length wording
 ("extend this clip so the result is 15 / 9 seconds long") and still route to `seedance25_extend`. RT-169
 ("extend this clip by 4 seconds") must be refused with a clarifying reason and no billable submission, and
 forbids `wan3_extend`, `wan3_edit` and `seedance25_edit`. RT-170 is the plain lighthouse shot with voiceover; its
@@ -610,22 +613,37 @@ The manager and final-assembly role follow the [matrix skill](../agent/deep_agen
 they do not bypass its sample gate with standalone timeline calls.
 
 The free `Ffmpeg___ffmpeg_tool` supports `probe`, `extract_frames`, `contact_sheet`, `sha256`,
-`check_faststart` and `volume_stats` on the worker owning the job directory. It accepts validated
+`check_faststart`, `volume_stats`, `crop_plan_preview`, `reframe_crop`, `reframe_pad_blur`
+and `detect_scenes` on the worker owning the job directory. It accepts validated
 parameters for fixed operations, never command lines or network paths. Resolve operations remain parked.
 The matrix explicitly refuses Lambda until a worker can access its local job directory.
 Overlay timeline parity uses the same document/renderConfig contract, with an explicit Lambda
 composition-version refusal for newly added font and box fields.
 
 All 79 Remotion workbook rows are preserved with source prompts, behavioural expectations and
-source tool aliases. Thirty-eight rows are active. RT-E001 through RT-E010 cover matrix
+source tool aliases. Forty-seven rows are active. RT-E001 through RT-E010 cover matrix
 selection; RT-E056 through RT-E075 cover parked Resolve and shell refusal. Existing built
 flows activate RT-E047, RT-E049 and RT-E053 through RT-E055. RT-E076 through RT-E078 cover
-licensing, consent and matrix face-swap scope. Forty-one rows remain deferred. Aspect work
-names `feat/remotion-aspect-ratio-variants`; delivery/loudness/QC work names
+licensing, consent and matrix face-swap scope. RT-E011 through RT-E019 cover aspect
+selection, fixed crops, rotation and negative detector/Resolve/outpainting/logo paths.
+Thirty-two rows remain deferred. RT-E046 and delivery/loudness/QC work name
 `feat/remotion-delivery-qc`. Candidate LUT and multicam semantics remain unverified.
 Routing checks do not establish OCR equality or artifact completion. Dedicated provider and
 executor tests cover validation, file rendering and approval.
 
-Current inventory is 16 providers, 115 Gateway tools, 25 packaged skills and 218 fixture rows,
-with 173 active and 45 skipped. The original four dependency skips remain. See
+Current inventory is 16 providers, 115 Gateway tools, 27 packaged skills and 220 fixture rows,
+with 184 active and 36 skipped. The original four dependency skips remain. See
 [Remotion editing](REMOTION_EDITING.md) for licensing, real local verification and pending checks.
+
+## Static aspect variants
+
+The [aspect skill](../agent/deep_agent/skills/remotion-aspect-ratio-variants/SKILL.md) uses
+existing Remotion and ffmpeg tools. Minimal matrix rows are `variant_key` and `aspect` with
+`brief.reframe_only=true`. Static centre/safe-zone crops use optional planner-supplied
+subject boxes, not detectors. A box that cannot fit switches to blurred padding. Source
+rotation is applied once, windows change only at cuts, and native crops do not upscale
+unless explicitly requested. Every output includes a contact sheet for human editorial
+review; `candidate_set=true` and `editorial_review="pending"` prevent render authorization
+from claiming framing approval. New per-item crop/pad options are refused by Lambda before
+any request. Outpainting keeps the existing quality-first generative edit and cost approval.
+See [decisions](remotion-aspect-ratio-variants-decisions.tsv) for licence sources and limits.

@@ -181,6 +181,8 @@ def _command(props: dict[str, Any], directory: Path, *, media_roots: tuple[Path,
     count = 0
     text_count = 0
     total_bytes = 0
+    sources: dict[str, tuple[Path, dict[str, Any]]] = {}
+    loaded_paths: set[Path] = set()
     for track in document['tracks']:
         for item in track['items']:
             if item['type'] == 'text':
@@ -201,13 +203,21 @@ def _command(props: dict[str, Any], directory: Path, *, media_roots: tuple[Path,
                 raise ValueError('Local assembly does not support motion/grade/rotation; use Lambda.')
             count += 1
             asset = assets[item['assetId']]
-            source = _source(asset['url'], directory=directory, index=count,
-                             media_roots=media_roots, source_root=source_root)
-            total_bytes += source.stat().st_size
-            if total_bytes > MAX_TOTAL_BYTES:
-                raise ValueError('Local assembly source media exceeds the total size limit.')
-            probe = _probe(source)
+            if asset['url'] not in sources:
+                source = _source(asset['url'], directory=directory, index=count,
+                                 media_roots=media_roots, source_root=source_root)
+                if source not in loaded_paths:
+                    loaded_paths.add(source)
+                    total_bytes += source.stat().st_size
+                    if total_bytes > MAX_TOTAL_BYTES:
+                        raise ValueError('Local assembly source media exceeds the total size limit.')
+                sources[asset['url']] = source, _probe(source)
+            source, probe = sources[asset['url']]
             kind = asset['kind']
+            if 'cropBox' in item or item.get('fit') == 'pad_blur':
+                from providers.remotion.api import _require_square_reframe_source
+
+                _require_square_reframe_source(next(s for s in probe['streams'] if s.get('codec_type') == 'video'))
             rate = float(item.get('playbackRate', 1))
             command += ['-protocol_whitelist', 'file,pipe', '-format_whitelist', FORMATS]
             if kind == 'image':
@@ -217,8 +227,8 @@ def _command(props: dict[str, Any], directory: Path, *, media_roots: tuple[Path,
             command += ['-t', str(float(item['duration']) * rate), '-i', str(source)]
             if kind != 'audio':
                 fit = item.get('fit', 'cover')
-                if fit not in {'cover', 'contain'}:
-                    raise ValueError('Visual fit must be cover or contain.')
+                if fit not in {'cover', 'contain', 'pad_blur'}:
+                    raise ValueError('Visual fit must be cover, contain or pad_blur.')
                 px = number(item.get('positionX', .5), 'positionX', 0, 1)
                 py = number(item.get('positionY', .5), 'positionY', 0, 1)
                 box = box_geometry(item['box'], width, height) if 'box' in item else {
@@ -230,13 +240,42 @@ def _command(props: dict[str, Any], directory: Path, *, media_roots: tuple[Path,
                 y = box['y'] + (box['height'] - target_height) / 2
                 chain = [f'[{count}:v]setpts=(PTS-STARTPTS)/{rate:g}',
                          f'fps={frame_rate}', 'format=rgba']
+                crop = item.get('cropBox')
+                if crop:
+                    from providers.contracts import validate_crop_box
+                    from providers.remotion.api import _media_dimensions
+
+                    validate_crop_box(crop, 'timeline cropBox')
+                    source_size = _media_dimensions(next(s for s in probe['streams'] if s.get('codec_type') == 'video'))
+                    if source_size is None or crop['x'] + crop['width'] > source_size[0] or crop['y'] + crop['height'] > source_size[1]:
+                        raise ValueError('cropBox must fit inside the measured display-oriented source.')
+                    if fit != 'cover':
+                        raise ValueError('cropBox requires fit=cover.')
+                    if not item.get('allowUpscale', False) and (target_width > crop['width'] or target_height > crop['height']):
+                        raise ValueError('Reframing beyond the crop pixels requires allow_upscale=true.')
+                    chain.append(f'crop={crop["width"]}:{crop["height"]}:{crop["x"]}:{crop["y"]}:exact=1')
                 if fit == 'cover':
                     chain += [f'scale={target_width}:{target_height}:force_original_aspect_ratio=increase:flags=lanczos',
                               f'crop={target_width}:{target_height}:x=(iw-ow)*{px:g}:y=(ih-oh)*{py:g}']
-                else:
+                elif fit == 'contain':
                     padding = 'black@0'
                     chain += [f'scale={target_width}:{target_height}:force_original_aspect_ratio=decrease:flags=lanczos',
                               f'pad={target_width}:{target_height}:x=(ow-iw)*{px:g}:y=(oh-ih)*{py:g}:color={padding}']
+                else:
+                    filters.append(','.join(chain) + f',split=2[fg{count}][bg{count}]')
+                    filters.append(f'[bg{count}]scale={target_width}:{target_height}:force_original_aspect_ratio=increase:flags=lanczos,'
+                                   f'crop={target_width}:{target_height},gblur=sigma=20[blur{count}]')
+                    if 'padBox' in item:
+                        pad = box_geometry(item['padBox'], width, height)
+                        foreground_width, foreground_height = int(pad['width']), int(pad['height'])
+                        foreground_x, foreground_y = f'{pad["x"]:g}', f'{pad["y"]:g}'
+                        foreground_scale = f'scale={foreground_width}:{foreground_height}:flags=lanczos'
+                    else:
+                        foreground_scale = (f'scale={target_width}:{target_height}:force_original_aspect_ratio=decrease:'
+                                            'force_divisible_by=2:flags=lanczos')
+                        foreground_x, foreground_y = f'(W-w)*{px:g}', f'(H-h)*{py:g}'
+                    filters.append(f'[fg{count}]{foreground_scale}[foreground{count}]')
+                    chain = [f'[blur{count}][foreground{count}]overlay=x={foreground_x}:y={foreground_y}:shortest=1', 'format=rgba']
                 if scale > 1 and 'box' in item:
                     chain += [f'crop={max(2, round(box["width"] / 2) * 2)}:{max(2, round(box["height"] / 2) * 2)}']
                     x, y = box['x'], box['y']

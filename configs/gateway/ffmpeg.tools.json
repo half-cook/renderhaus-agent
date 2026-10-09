@@ -1,13 +1,13 @@
 [
   {
     "name": "ffmpeg_tool",
-    "description": "Free local/worker media inspection. Fixed operations only; no commands, filtergraphs, URLs or network access. Always execute on the machine containing job_id. Missing binaries fail softly; Lambda hosts without ffmpeg cannot run binary ops.",
+    "description": "Free local/worker media inspection and fixed reframing. Fixed operations only; no commands, filtergraphs, URLs or network access. Always execute on the machine containing job_id. Missing binaries fail softly; Lambda hosts without ffmpeg cannot run binary ops.",
     "inputSchema": {
       "type": "object",
       "properties": {
         "op": {
           "type": "string",
-          "description": "Allowed values: probe, extract_frames, contact_sheet, sha256, check_faststart, volume_stats. One of: probe, extract_frames, contact_sheet, sha256, check_faststart, volume_stats."
+          "description": "Allowed values: crop_plan_preview, reframe_crop, reframe_pad_blur, detect_scenes, probe, extract_frames, contact_sheet, sha256, check_faststart, volume_stats. One of: crop_plan_preview, reframe_crop, reframe_pad_blur, detect_scenes, probe, extract_frames, contact_sheet, sha256, check_faststart, volume_stats."
         },
         "job_id": {
           "type": "string",
@@ -20,12 +20,128 @@
         "params": {
           "type": "object",
           "properties": {
+            "aspect": {
+              "type": "string",
+              "description": "crop_plan_preview: Target aspect enum. Nominal sizes come from the shared aspect table. reframe_crop: Target aspect enum. Nominal sizes come from the shared aspect table. One of: 9:16, 1:1, 4:5, 16:9, 2.39:1."
+            },
+            "subject_box": {
+              "type": [
+                "object",
+                "null"
+              ],
+              "properties": {
+                "x": {
+                  "type": "number",
+                  "description": "Allowed range: 0 to 16384. Default 0."
+                },
+                "y": {
+                  "type": "number",
+                  "description": "Allowed range: 0 to 16384. Default 0."
+                },
+                "width": {
+                  "type": "number",
+                  "description": "Allowed range: 1 to 16384. Default 0."
+                },
+                "height": {
+                  "type": "number",
+                  "description": "Allowed range: 1 to 16384. Default 0."
+                }
+              },
+              "required": [
+                "x",
+                "y",
+                "width",
+                "height"
+              ],
+              "description": "crop_plan_preview: Optional box in displayed source pixels. x/y nonnegative, dimensions positive, within source. crop_box requires even integers; subject_box is only a crop-centre hint, never detection. reframe_crop: Optional box in displayed source pixels. x/y nonnegative, dimensions positive, within source. crop_box requires even integers; subject_box is only a crop-centre hint, never detection. "
+            },
+            "crop_box": {
+              "type": [
+                "object",
+                "null"
+              ],
+              "properties": {
+                "x": {
+                  "type": "number",
+                  "description": "Allowed range: 0 to 16384. Default 0."
+                },
+                "y": {
+                  "type": "number",
+                  "description": "Allowed range: 0 to 16384. Default 0."
+                },
+                "width": {
+                  "type": "number",
+                  "description": "Allowed range: 1 to 16384. Default 0."
+                },
+                "height": {
+                  "type": "number",
+                  "description": "Allowed range: 1 to 16384. Default 0."
+                }
+              },
+              "required": [
+                "x",
+                "y",
+                "width",
+                "height"
+              ],
+              "description": "crop_plan_preview: Optional box in displayed source pixels. x/y nonnegative, dimensions positive, within source. crop_box requires even integers; subject_box is only a crop-centre hint, never detection. reframe_crop: Optional box in displayed source pixels. x/y nonnegative, dimensions positive, within source. crop_box requires even integers; subject_box is only a crop-centre hint, never detection. "
+            },
+            "safe_zone": {
+              "type": [
+                "object",
+                "null"
+              ],
+              "properties": {
+                "top": {
+                  "type": "number",
+                  "description": "Allowed range: 0 to 0.49. Default 0."
+                },
+                "bottom": {
+                  "type": "number",
+                  "description": "Allowed range: 0 to 0.49. Default 0."
+                },
+                "side": {
+                  "type": "number",
+                  "description": "Allowed range: 0 to 0.49. Default 0."
+                }
+              },
+              "description": "crop_plan_preview: Safe-zone fraction overrides top,bottom,side; leave at least 5% inner width/height. Null uses configured aspect placeholders. reframe_crop: Safe-zone fraction overrides top,bottom,side; leave at least 5% inner width/height. Null uses configured aspect placeholders. reframe_pad_blur: Safe-zone fraction overrides top,bottom,side; leave at least 5% inner width/height. Null uses configured aspect placeholders. "
+            },
+            "anchor": {
+              "type": "string",
+              "description": "crop_plan_preview: Static centre or edge anchor. A supplied subject box takes precedence. reframe_crop: Static centre or edge anchor. A supplied subject box takes precedence. One of: center, top, bottom, left, right."
+            },
+            "allow_upscale": {
+              "type": "boolean",
+              "description": "crop_plan_preview: Allow crop/foreground resampling to table size; disclosed as no added detail. reframe_crop: Allow crop/foreground resampling to table size; disclosed as no added detail. reframe_pad_blur: Allow crop/foreground resampling to table size; disclosed as no added detail. "
+            },
+            "source_width": {
+              "type": "integer",
+              "description": "crop_plan_preview: Allowed range: 2 to 16384. Default 1920. "
+            },
+            "source_height": {
+              "type": "integer",
+              "description": "crop_plan_preview: Allowed range: 2 to 16384. Default 1080. "
+            },
+            "rotation": {
+              "type": "number",
+              "description": "crop_plan_preview: Allowed range: -360 to 360. Default 0. "
+            },
+            "size": {
+              "type": "string",
+              "description": "reframe_pad_blur: Target aspect enum. Nominal sizes come from the shared aspect table. One of: 9:16, 1:1, 4:5, 16:9, 2.39:1."
+            },
+            "T": {
+              "type": "number",
+              "description": "detect_scenes: Allowed range: 0.1 to 0.6. Default 0.3. "
+            },
             "times": {
               "type": "array",
-              "description": "extract_frames: 1 to 20 frame times, each 0 to 600 seconds. Default [0]. ",
               "items": {
-                "type": "number"
-              }
+                "type": "number",
+                "description": "Allowed range: 0 to 600. Default 0."
+              },
+              "description": "extract_frames: 1 to 20 frame times, each 0 to 600 seconds. Default [0]. "
             },
             "width": {
               "type": "integer",

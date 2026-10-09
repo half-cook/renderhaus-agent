@@ -66,9 +66,27 @@ class Route:
 
 
 _VIDEO_DELIVERABLE = r"\b(?:shots?|clips?|videos?|mp4)\b"
-_VOICEOVER = r"\b(?:voice[ -]?over|narration|narrate|vo)\b"
+_VOICEOVER = r"\b(?:voice[ -]?over|narrat(?:ion|e|ed|ing|or)|tts|vo)\b"
+_SPEECH_LABEL = r"(?:voice[ -]?over|narration|narrator|tts|vo|speech|dialogue)"
+_NEGATED_NARRATION = (
+    rf"\b(?:no|without)(?:[ -]+(?:any|an?|the))?[ -]+(?:spoken[ -]+)?{_SPEECH_LABEL}"
+    rf"(?:[ ,]+(?:and|or|nor)?[ -]*{_SPEECH_LABEL})*\b|"
+    rf"\b(?:do not|don't|never)\s+(?:(?:add|include|use|generate)\s+)?{_SPEECH_LABEL}\b|"
+    r"\b(?:narration|voice[ -]?over)[ -]free\b|\bnot[ -]+narrated\b|"
+    r"\b(?:do not|don't|never)\s+narrate\b"
+)
 _IMAGE_ALIASES = ("gpt_image25_t2i", "gpt_image25_edit", "recraft_v41_vector", "ideogram45_edit", "seedream_t2i")
+_SPEECH_PRODUCTION_TOOLS = {
+    "ElevenLabs___speech_to_speech_convert",
+    "ElevenLabs___text_to_voice_create",
+    "ElevenLabs___text_to_voice_design",
+    "ElevenLabs___text_to_voice_remix",
+    "ElevenLabs___dubbing_create",
+    "ElevenLabs___dubbing_project_create",
+    "ElevenLabs___dubbing_project_language_create",
+}
 _LIPSYNC_REQUEST = next(rule["pattern"] for rule in POLICY["rules"] if rule.get("capability") == "lipsync")
+_KNOWLEDGE_REQUEST = next(rule["pattern"] for rule in POLICY["rules"] if rule["skill"] == "knowledge-explainer")
 _MODELSTUDIO_PREVIEW_WARNING = (
     "Alibaba preview terms permit internal testing, research and evaluation only until GA. "
     "Live customer use is blocked by the preview licence."
@@ -102,13 +120,52 @@ def deliverable_duration(prompt: str) -> DeliverableDuration | None:
     return None
 
 
+def _narration_text(prompt: str) -> str:
+    return re.sub(_NEGATED_NARRATION, " ", _instruction_text(prompt), flags=re.I)
+
+
+def _knowledge_explainer_request(prompt: str) -> bool:
+    text = _instruction_text(prompt)
+    if not re.search(_KNOWLEDGE_REQUEST, text, re.I):
+        return False
+    if re.search(_VOICEOVER + r"|\b(?:dialogue|talking head|interview)\b", _narration_text(prompt), re.I):
+        return False
+    return bool(re.search(
+        r"\bknowledge[ -]explainer\b|知识大赏|\b(?:silent|unnarrated|unvoiced)\b|"
+        r"event[ -]foley|(?:sound effects?|sfx).*\b(?:synced|synchroni[sz]ed|only)\b|"
+        r"\b(?:synced|synchroni[sz]ed)\b.*(?:sound effects?|sfx)|html.*seekable|seekable.*html",
+        text, re.I,
+    ) or re.search(_NEGATED_NARRATION, text, re.I))
+
+
+def _audio_postprocess_request(prompt: str) -> bool:
+    text = _instruction_text(prompt)
+    sound = re.search(r"\b(?:foley|sfx|sound effects?|ambience)\b", text, re.I)
+    action = re.search(r"\b(?:add|apply|make|create|generate|score|mix|layer|replace)\b", text, re.I)
+    if not sound or not action:
+        return False
+    picture = re.search(r"\b(?:make|create|render|generate)\b[^.;!?]*?\b(?:explainer|video|short)\b", text, re.I)
+    if picture and picture.end() <= sound.start():
+        return False
+    return bool(re.search(
+        r"\b(?:an?|this|the|my|existing|attached|uploaded|rendered)\b(?:\s+[\w-]+){0,4}\s+(?:explainer|clip|video|short)\b",
+        text, re.I,
+    ))
+
+
 def _video_voiceover(prompt: str) -> bool:
-    return bool(re.search(_VIDEO_DELIVERABLE, prompt, re.I) and re.search(_VOICEOVER, prompt, re.I))
+    return bool(re.search(_VIDEO_DELIVERABLE, _instruction_text(prompt), re.I)
+                and re.search(_VOICEOVER, _narration_text(prompt), re.I)
+                and not _knowledge_explainer_request(prompt))
 
 
 def request_tool_blocker(prompt: str, name: str) -> str | None:
     if refusal := editing_request_refusal(prompt):
         return refusal
+    if _knowledge_explainer_request(prompt) and (
+        job_type(name) in {"tts", "voice_clone"} or name in _SPEECH_PRODUCTION_TOOLS
+    ):
+        return "A silent knowledge explainer uses on-screen graphics and event SFX; narration/TTS is excluded."
     if _video_voiceover(prompt) and job_type(name) in {"still_image", "image_edit"}:
         return "A shot or clip with voiceover uses video, TTS and assembly; image tools are excluded."
     if name.startswith("Seedream___") and not re.search(r"\bseedream\b", prompt, re.I):
@@ -149,7 +206,7 @@ def capability_constraints(constraints: dict, capability: str) -> dict:
         scoped["provider"] = next((candidate for candidate in scoped["provider_candidates"]
                                    if capability in POLICY["explicit_routes"].get(candidate, {})), None)
         scoped["model"] = scoped["named_model"] = None
-    if not constraints["predicates"].get("video_voiceover"):
+    if not (constraints["predicates"].get("video_voiceover") or constraints["predicates"].get("knowledge_explainer")):
         return scoped
     named = scoped.get("named_model")
     if named and capability not in POLICY["named_models"][named]["aliases"]:
@@ -172,6 +229,8 @@ def _video_capability(prompt: str, constraints: dict) -> tuple[str, str]:
 
 def _delivery_route(prompt: str, constraints: dict, *, region: str | None,
                     available_tools: set[str] | None, arguments: dict | None) -> Route | None:
+    if _knowledge_explainer_request(prompt):
+        return None
     if any(rule.get("capability") == "ad_variant_matrix" and re.search(rule["pattern"], prompt, re.I)
            for rule in POLICY["rules"]):
         return None
@@ -268,8 +327,10 @@ def resolve_alias(alias: str) -> str | None:
 def route_intent(prompt: str, *, region: str | None = None, tier: str | None = None,
                  confidential: bool = False, arguments: dict | None = None,
                  available_tools: set[str] | None = None, retry: bool = False) -> Route:
-    if refusal := editing_request_refusal(prompt):
-        return Route(skill="remotion-ad-variant-matrix", status="blocked", reason=refusal, disclosure=refusal)
+    for refusal in POLICY.get("editing_refusals", []):
+        if re.search(refusal["pattern"], prompt, re.IGNORECASE):
+            return Route(skill=refusal.get("skill", "remotion-ad-variant-matrix"), status="blocked",
+                         reason=refusal["reason"], disclosure=refusal["reason"])
     if any(re.search(pattern, prompt, re.I) for pattern in POLICY.get("non_dispatch_requests", [])):
         return Route(reason="No media intent matched; answer the Remotion licensing question from the editing skill.")
     constraints = intent_constraints(prompt, tier=tier, confidential=confidential, arguments=arguments)
@@ -283,8 +344,28 @@ def route_intent(prompt: str, *, region: str | None = None, tier: str | None = N
     delivery = None if lipsync else _delivery_route(prompt, constraints, region=region, available_tools=available_tools, arguments=arguments)
     if delivery is not None:
         return delivery
+    knowledge_request = _knowledge_explainer_request(prompt)
+    audio_postprocess = knowledge_request and _audio_postprocess_request(prompt)
+    video_capabilities = {"t2v", "i2v", "reference_video"}
+    explicit_video = bool(
+        video_capabilities.intersection(POLICY["explicit_routes"].get(constraints["provider"], {}))
+        or video_capabilities.intersection(POLICY["named_models"].get(constraints["named_model"], {}).get("aliases", {}))
+    )
     for rule in POLICY["rules"]:
-        rule_prompt = _instruction_text(prompt) if rule.get("capability") in {"still_image", "image_edit"} else prompt
+        if rule["skill"] == "knowledge-explainer" and not knowledge_request:
+            continue
+        if knowledge_request and rule.get("capability") == "tts":
+            continue
+        if knowledge_request and explicit_video and not audio_postprocess and rule.get("capability") == "sfx":
+            continue
+        if knowledge_request and (audio_postprocess or explicit_video) and rule.get("capability") == "motion_graphics":
+            continue
+        if rule.get("capability") == "tts":
+            rule_prompt = _narration_text(prompt)
+        elif rule.get("capability") in {"still_image", "image_edit"} or rule["skill"] == "knowledge-explainer":
+            rule_prompt = _instruction_text(prompt)
+        else:
+            rule_prompt = prompt
         if not re.search(rule["pattern"], rule_prompt, re.IGNORECASE):
             continue
         skill, alias = rule["skill"], rule["abstract_tool"]
@@ -317,7 +398,7 @@ def route_intent(prompt: str, *, region: str | None = None, tier: str | None = N
         if capability == "t2v" and constraints["required"].get("start_end_frame"):
             capability, skill = "i2v", "i2v"
         if capability:
-            scoped = capability_constraints(constraints, capability) if capability == "lipsync" else constraints
+            scoped = capability_constraints(constraints, capability) if capability == "lipsync" or knowledge_request else constraints
             route = select_provider(capability, arguments=arguments, available_tools=available_tools,
                                     region=region, retry=retry, **scoped)
             if capability != "performance_transfer" and (constraints["provider"] in {"kling", "runway", "luma", "seedream", "fish_audio", "alibaba_modelstudio"} or (
@@ -552,8 +633,11 @@ def intent_constraints(prompt: str, *, tier: str | None = None, confidential: bo
     dialogue = bool(re.search(r'["“][^"”]+["”]|\b(?:says?|saying|talking|talks?|dialogue|speaking)\b', dialogue_prompt, re.I))
     if re.search(r"\b(?:no|without) dialogue\b|\bnot talking\b|silent scene", prompt, re.I):
         dialogue = False
+    knowledge_explainer = _knowledge_explainer_request(prompt)
     video_sfx = bool(args.get("video_url") or args.get("source_video_url") or re.search(r"(?:from|to|for|on) (?:the |this |my |an? )?(?:attached |uploaded )?(?:video|clip)|video to audio|foley|synchroni[sz]ed|silent clip|picture.synced", prompt, re.I))
-    if not (args.get("video_url") or args.get("source_video_url")) and re.search(r"no video|without video", prompt, re.I):
+    if not (args.get("video_url") or args.get("source_video_url")) and (
+        re.search(r"no video|without video", prompt, re.I) or knowledge_explainer and args.get("text")
+    ):
         video_sfx = False
     lyrics_capabilities = {capability for capability, _ in _lyrics_capabilities(prompt)}
     predicates = {
@@ -563,6 +647,7 @@ def intent_constraints(prompt: str, *, tier: str | None = None, confidential: bo
         "instrumental_music": bool(re.search(r"music bed|instrumental|no vocals|without vocals", prompt, re.I)),
         "dialogue": dialogue, "real_face_refs": real_face,
         "video_voiceover": _video_voiceover(prompt),
+        "knowledge_explainer": knowledge_explainer,
         "vector_output": bool(re.search(r"\bsvg\b|vector|editable.*illustrator", prompt, re.I)),
         "text_only_edit": _text_only_image_edit(prompt, args),
         "full_body_motion": bool(re.search(r"full.body|whole.body|\bdance\b|\bdancing\b", prompt, re.I)),

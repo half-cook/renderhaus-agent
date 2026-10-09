@@ -399,9 +399,12 @@ def ad_matrix_estimate(arguments: dict[str, Any]) -> dict[str, Any]:
     """Disclose operator allowances separately from media charges; never invent a bill."""
     rows = arguments.get("rows") or []
     count = len(rows)
-    first = sum(1 for row in rows if isinstance(row, dict) and isinstance(rows[0], dict)
-                and (row.get("sku"), row.get("locale")) ==
-                (rows[0].get("sku"), rows[0].get("locale"))) if rows else 0
+    reframe_only = (arguments.get("brief") or {}).get("reframe_only") is True
+    sku_default, locale_default = ("master", "und") if reframe_only else (None, None)
+    first_group = ((rows[0].get("sku", sku_default), rows[0].get("locale", locale_default))
+                   if rows and isinstance(rows[0], dict) else None)
+    first = sum(1 for row in rows if isinstance(row, dict)
+                and (row.get("sku", sku_default), row.get("locale", locale_default)) == first_group)
     stage = arguments.get("stage", "plan")
     count = first if stage == "render_first" else count - first if stage == "render_batch" else count
     allowance = _matrix_setting("REMOTION_LICENSE_RENDER_USD", "0.01", 1000)

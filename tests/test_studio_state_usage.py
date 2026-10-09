@@ -383,6 +383,37 @@ class ChargeUsageTests(unittest.TestCase):
             self.assertEqual(state["daily_allowance_remaining_cents"], 0)
             self.assertEqual(repository.get_balance("user:1"), 100_000 - total_wallet)
 
+    def test_separate_repositories_charge_shared_buckets_and_refuse_excess(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            repositories = [self._repository(directory) for _ in range(8)]
+            repository = repositories[0]
+            repository.adjust_balance("user:1", 100, "purchase")
+            repository.sync_subscription(
+                "user:1", stripe_subscription_id="sub_1", plan_id="basic", status="active",
+                monthly_budget_cents=3000, current_period_end=None,
+            )
+            for worker in repositories:
+                worker.init()
+
+            def charge_one(index: int) -> UsageCharge | None:
+                try:
+                    return repositories[index % len(repositories)].charge_usage(
+                        "user:1", 10, "generation",
+                    )
+                except InsufficientBalanceError:
+                    return None
+
+            with ThreadPoolExecutor(max_workers=8) as pool:
+                results = list(pool.map(charge_one, range(32)))
+            charges = [charge for charge in results if charge is not None]
+            self.assertEqual(len(charges), 20)
+            self.assertEqual(sum(charge.daily_cents for charge in charges), 100)
+            self.assertEqual(sum(charge.wallet_cents for charge in charges), 100)
+            self.assertEqual(repository.get_balance("user:1"), 0)
+            self.assertEqual(repository.get_subscription_state("user:1")["daily_allowance_remaining_cents"], 0)
+            with repository._connect() as connection:
+                self.assertEqual(connection.execute("SELECT COUNT(*) FROM usage_events").fetchone()[0], 20)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -99,8 +99,7 @@ All sources below were read on **2026-10-09**:
 The adapter tests use mocked HTTP and no provider keys. Routing fixtures exercise built defaults,
 explicit Seedream, pending specialists, and still-before-video sequencing. Deep Agents tests use
 the installed 0.7.23 graph to check approval/resume and rejection without live dispatch.
-The eight GPT readiness rows are active; the 38 existing dependency skips retain their reasons.
-Inventory is 10 providers, 89 Gateway tools, and 24 skills.
+The eight GPT readiness rows are active. Current inventory and routing totals are in [Skill routing](SKILLS.md#offline-routing-verification).
 
 Comet browser E2E is **blocked**: Comet cannot be controlled in this environment and the task
 prohibits live provider calls. This is not a browser pass or evidence of live output. The ignored

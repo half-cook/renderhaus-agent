@@ -113,14 +113,13 @@ and native approval rejection. No provider requests use real credentials.
 Native approval acceptance also restores and dispatches the exact quoted request once.
 Regression cases cover FPS multipliers and default scaling without changing quote controls.
 Five Topaz routing fixture rows activate. Other pending and licence-blocked providers retain
-accurate skips. The inventory is 13 providers, 99 Gateway tools, and 24 skills.
+accurate skips. Current inventory and routing totals are in [Skill routing](SKILLS.md#offline-routing-verification).
 
 Final offline verification on 2026-10-09: 1,146 tests run, 1,118 passed, 28 skipped,
 including 42 passing Topaz contract, lifecycle and wiring tests. Ruff, `scripts/ci_check.py`
 (all providers forced dry-run), and the Studio TypeScript typecheck pass. The temporary
 Studio dependency symlink was removed. Logs are under ignored `.renderhaus/e2e/topaz-*`.
-There are 103 active routing fixtures and 26 dependency/semantics skips; the
-[capability map](CAPABILITY_MAP.md#skills-and-routing-fixtures) lists their reasons.
+The [capability map](CAPABILITY_MAP.md#skills-and-routing-fixtures) lists current skip reasons.
 The [decision record](topaz-decisions.tsv) records sources, read dates and limitations.
 
 Comet browser E2E is blocked because Comet control is unavailable in this environment. No UI

@@ -1,269 +1,256 @@
-# Remotion retail ad variants
+# Remotion editing
 
-One brief and a table produce review renders with SKU, price, CTA, logo and legal overlays.
-The matrix reuses the existing Remotion timeline builder and backend selector. The local
-backend composes real files with ffmpeg. This branch adds no paid media provider or model.
-Resolve is parked. The next branches add subject-aware aspect variants and delivery QC.
+One brief and a table produce real local ad variants with editable price, CTA, logo and
+legal overlays. A finished master can also produce static aspect candidates with contact
+sheets for human editorial review. The existing Remotion timeline path performs assembly.
+Resolve is parked. Loudness and full deliverable certification remain pending
+`feat/remotion-delivery-qc`; these review files must not be sold as certified deliverables.
 
-## Tools and architecture
+## Tool contracts
 
 `Remotion___render_ad_variants`, alias `ad_variant_matrix`, accepts these arguments:
 
 | Argument | Contract |
 | --- | --- |
 | `stage` | `plan`, `render_first` or `render_batch` |
-| `job_id` | ASCII ID selecting an existing job directory below `RENDERHAUS_MEDIA_DIR` |
-| `brief` | Campaign and rendering/layout requirements, including locale legal requirements |
-| `rows` | Complete array of 1-100 table rows, unchanged across stages |
-| `master_asset` | Readable immutable video inside the job directory |
-| `plan_hash` | Hash returned by `plan`, required for rendering and tied to content |
+| `job_id` | ASCII ID for an existing directory below `RENDERHAUS_MEDIA_DIR` |
+| `brief` | Campaign, layout and rendering requirements; `reframe_only=true` for a flat master without overlays |
+| `rows` | Complete array of 1-100 immutable table rows across all stages |
+| `master_asset` | Immutable regular video file inside that job directory |
+| `plan_hash` | Exact content hash from `plan`, required for rendering |
 | `concurrency` | Integer 1-2, default 2 |
 
-The public schema has no approval fields. The trusted Gateway executor owns approval state.
-Studio local calls must use the authenticated execution's `job_id`; they cannot inspect
-another job. The generic Studio invocation endpoint refuses both local workflow tools.
-Stage approved files inside that owned job directory before using the Studio agent.
-Plan documents use the same `document` and `renderConfig` contract as ordinary
-`Remotion___render_timeline`. Each output calls that existing rendering code path internally.
-No arbitrary JSX, script or composition source enters the matrix tool.
+Retail rows require `variant_key`, `sku`, `price_text`, `cta_text`, `logo_asset`, `legal_text`,
+`locale` and `aspect`. Copy stays verbatim; the planner never computes discounts or translates
+legal text. `product_asset`, `vo_asset`, `start_s` and `end_s` are optional. Minimal reframe
+rows require only `variant_key` and `aspect` with `brief.reframe_only=true`. Their internal
+SKU/locale are `master`/`und` and they add no retail overlays. IDs contain 1-40 ASCII letters,
+digits, underscores or hyphens. Duplicate keys and `(sku, locale, aspect)` tuples are refused.
+The selected source range is finite, inside the master and at most 600 seconds long.
 
-Required table columns are `variant_key`, `sku`, `price_text`, `cta_text`, `logo_asset`,
-`legal_text`, `locale` and `aspect`. Optional columns are `product_asset`, `vo_asset`,
-`start_s` and `end_s`. Aspects are `9:16`, `1:1`, `4:5` and `16:9`.
-Required cells cannot be empty. Duplicate `(sku, locale, aspect)` tuples and unsafe
-`variant_key` values are refused. `variant_key`, `sku` and `locale` are 1-40 ASCII letters,
-digits, underscores or hyphens. Copy remains verbatim. Legal rules come from the table
-and brief, never from a generated translation. The planner does not compute discounted prices.
+Rows may also contain `subject_box`, `crop_box`, `anchor`, `safe_zone`, `allow_upscale`,
+`shots` or `scene_times`. The brief can set shared box, anchor, safe-zone and upscale defaults.
+Boxes use `{x,y,width,height}` in display-oriented source pixels. Crop coordinates and
+sizes are even integers inside the displayed source. Subject boxes are validated geometry,
+not a detector result verified by this code. Anchors are `center`, `top`, `bottom`, `left`
+or `right`; a subject box supplies the centre when present. Safe-zone fractions accept
+`top`, `bottom` and `side` within `0..0.49` and must leave at least 5% inner width and height.
 
-Planning probes real media, checks logo alpha when required, measures text fit and checks
-safe-zone geometry. It hashes the table, brief, assets and timeline documents. Replacing a
-logo at the same path changes the plan hash. External asset URLs are refused. An operator
-must stage approved source files before calling `plan`.
+A `shots` list has contiguous `{from_s,to_s}` spans covering the selected source range,
+with optional per-shot `subject_box`, `crop_box` and `anchor`. Alternatively, `scene_times`
+supplies increasing cut times in source seconds. At most 60 shots are accepted. Windows
+remain static within each shot; there is no tracking, detector, slow pan or mid-shot jitter.
+Planning makes one crop/pad decision per shot and composes that sequence through the existing
+`Remotion___render_timeline` document path. `brief.fit="contain"` keeps the whole foreground
+frame with blurred padding. Direct timeline visuals use `crop_box`, `pad_box`,
+`reframe_size={width,height}` and `allow_upscale`; `fit="pad_blur"` uses the safe viewport
+`pad_box`. Their normalized document names are `cropBox`, `padBox`, `reframeSize` and
+`allowUpscale`. All primary clips share the same requested canvas.
 
-The brief accepts `campaign` (a 1-40 character ASCII identifier), `logo_alpha_required`
-(boolean, default `true`), `legal_locales` (locale list), `legal_by_locale` (locale to verbatim
-legal line), `fps`, `source_width`, `source_height`, `output_resolution` and `fit`.
-FPS/source dimensions, when supplied, must match the measured flat master.
-`output_resolution` uses the existing `source`, `720p`, `1080p`, `1440p` or `2160p` policy;
-`fit` is `cover` or `contain`. Other brief fields, template source and shell code are refused.
-Optional `start_s`/`end_s` select a finite range of at most 600 seconds inside the master.
+The public schema contains no approval fields. The trusted host owns spending authorization.
+Studio local tools bind `job_id` to the authenticated execution. The generic invocation
+endpoint refuses these local workflow tools. An operator stages approved files in that
+owned directory before planning. Neither matrix nor timeline accepts arbitrary JSX or scripts.
 
-## Sample review and approval
+## Planning and review gates
 
-The manager and final-assembly role use this sequence:
+1. `plan` probes actual media, validates rows and assets, measures overlay text fit, checks
+   geometry and hashes the table, brief, files and resulting timeline documents. It returns
+   planned/blocked rows, aspect count, decisions, cost estimate and plan hash without rendering.
+2. `render_first` pauses with count, aspects, cost and hash, even in autonomous mode. It
+   renders the first SKU/locale group at every represented aspect and returns actual MP4s,
+   review frames and contact sheets. A sample spending approval does not accept its framing.
+3. A person opens each artifact and reviews crop/pad decisions, burned-in legal and branding
+   content, and expected overlay text. No automatic OCR or editorial acceptance is claimed.
+4. `render_batch` pauses again for the unchanged hash and requires successful reviewed first
+   renders. Changed files, stale hashes or sample failures block the batch. Rendering uses
+   bounded concurrency; one failed row does not stop the other rows and there are no blind retries.
 
-1. `plan` validates and returns planned/blocked rows, document hashes, count, estimate and
-   the plan hash. This stage is free. It writes no review render and cannot approve one.
-2. `render_first` pauses for human approval with the count, aspects, cost and hash,
-   including during autonomous runs. It renders the first SKU/locale group at each aspect
-   represented for that group, then extracts frames near 5%, 50% and the end card.
-3. A person inspects the sample frames and compares the price, CTA, SKU and legal line
-   with the expected table strings. Sample spending approval does not establish visual acceptance.
-4. `render_batch` pauses again. The trusted executor records approval for the matching
-   first-render hash. Missing approval, a changed table/asset or a failed sample blocks the batch.
-   Rows render with bounded concurrency. One failure does not stop the remaining rows.
+Every output has a per-aspect contact sheet. The result is a `candidate_set=true` with
+`editorial_review="pending"`; a successful renderer cannot certify an editorial decision.
+The manifest records identities, document hashes, file paths, hashes, duration and QC metadata.
+Artifacts use generated/versioned names. Saved manifest paths, identities and hashes are
+checked before reuse. The worker freezes hash-checked inputs before rendering. Studio asset
+records include `output_path` for both videos and review images. Previous batches cannot
+certify a new plan. Approval to render and human approval of the finished framing are separate.
 
-The manifest records `variant_key`, `sku`, `locale`, `aspect`, composition/template ID,
-`input_props_hash`, `file`, `sha256`, `duration_s`, `qc`, `ocr_match` and `approved_by`.
-The stage report counts planned, rendered, blocked and failed variants. There are no blind retries.
-Output files use generated/versioned safe names and never overwrite prior renders.
-Probe dimensions/FPS/duration and hashes refer to actual completed MP4s.
-Review images also have `output_path` records for Studio asset ingestion. Completion uses
-the current batch, so a previous successful matrix cannot certify a new plan or sample.
-The worker freezes hash-checked inputs before rendering and validates saved manifest
-identities, confined artifact paths and hashes before reusing completed outputs.
+## Crop plans and output resolution
 
-There is no OCR engine or Tesseract dependency. Text fit and geometry are deterministic,
-but pixel equality of copy remains unverified until a human or real vision pass compares
-the extracted frames. `volume_stats` cannot certify LUFS or true peak. Delivery, loudness
-and full per-output certification are unavailable until `feat/remotion-delivery-qc`.
-Do not advertise these review renders as loudness-checked final deliverables yet.
+`providers/ffmpeg/reframe.py` implements pure crop geometry. Source dimensions are supplied
+before rotation; boxes are supplied after display rotation. Probe the rotation flag first,
+then apply orientation once. A portrait phone clip must not be cropped as landscape and
+rotated again. Without a subject box, the plan centres on the frame or requested edge anchor.
+A subject box chooses the centre but must fit with its safe-zone margins. If it cannot fit,
+the shot switches to blurred padding: fit the intact whole foreground over a blurred copy.
+No YOLO, Ultralytics, MediaPipe, OpenCV or other detector is installed or invoked.
 
-## Flat masters and resolution
+The target table contains these nominal maximum canvases:
 
-The timeline combines the locked master with editable overlays. A product, price or colour
-baked into the master pixels cannot be swapped by this job. Supply a layered source or use
-a separately approved generative edit for changes to baked content.
-
-The branch uses the existing simple centre-crop/pad fit. It does not detect subjects or plan
-per-shot reframe windows. The master FPS and bitrate preservation remain in effect. The
-default canvas follows the existing source-resolution policy. Aspect fit may crop or
-resample source pixels; explicit larger canvases also resample them.
-State each delivered width and height, `source_resolution` and all resolution warnings.
-For example, a 1920x1080 canvas resampled from 1280x720 is "upscaled from 1280x720; no added
-detail". Native 1280x720 is 720p. The existing Topaz `upscale` skill provides actual enhancement
-with its existing approval gate. Unknown source dimensions remain unknown.
-
-Safe zones in `providers/remotion/ad_layouts.json` are placeholders to confirm per channel:
-
-| Aspect | Top | Bottom | Left/right |
-| --- | --- | --- | --- |
-| `9:16` | 14% | 22% | 6% |
-| `1:1` | 8% | 12% | 6% |
-| `4:5` | 8% | 12% | 6% |
-| `16:9` | 8% | 12% | 6% |
-
-The source resolution policy can produce smaller canvases than the layout's maximum target.
-Safe-zone geometry scales with the actual canvas. These margins are not certified platform specs.
-
-## Backend support
-
-| Capability | Local ffmpeg | Lambda |
+| Aspect | Nominal size | Safe-zone top/bottom/side placeholders |
 | --- | --- | --- |
-| Existing trims, fit, FPS/bitrate preservation and native canvas policy | Supported | Existing path retained |
-| Text with allow-listed font, measured fit, box, colour, opacity and fades | Supported | New font/box props require compatible composition contract version |
-| Image/video overlay scale, position, alpha, opacity and fades | Supported within validated contract | New box props require compatible composition contract version |
-| Video grade, motion and rotation | Clear unsupported message | Existing composition capabilities |
-| Matrix stages and artifact checks | Supported on worker owning job directory | Explicit refusal until that directory is accessible to its worker |
-| Fixed `ffmpeg_tool` binary ops | Installed ffmpeg/ffprobe required | Refused on Gateway host without binaries; no binary is added to Lambda zip |
-| `sha256`, `check_faststart` | Pure Python | Requires the actual job directory/files |
+| `9:16` | `1080x1920` | `0.14 / 0.22 / 0.06` |
+| `1:1` | `1080x1080` | `0.08 / 0.12 / 0.06` |
+| `4:5` | `1080x1350` | `0.08 / 0.12 / 0.06` |
+| `16:9` | `1920x1080` | `0.08 / 0.12 / 0.06` |
+| `2.39:1` | `1920x804` | `0.08 / 0.12 / 0.06` |
 
-`REMOTION_OVERLAY_CONTRACT_VERSION` defaults to 1. Setting it to 2 declares that a compatible
-Lambda composition and matching font package have been deployed separately. Do not set it
-to bypass a refusal. This task makes no deployment or live Lambda call. Tests compare
-canonical props and explicit refusals, rather than claiming deployed pixel parity.
+Safe zones are editable configuration in `providers/remotion/ad_layouts.json`, not certified
+platform specifications. Confirm them for the destination and scale them with the actual
+canvas. Odd dimensions round to even pixels; tiny sources warn when their aspect is approximate.
 
-Text uses system `DejaVuSans.ttf` and `DejaVuSans-Bold.ttf` through fixed IDs `dejavu-sans`
-and `dejavu-sans-bold`. Pillow measures the same font files used by drawtext. The renderer
-shrinks only within configured integer size bounds and returns `text_overflow` at the minimum.
-Unsupported glyphs return a clear error. Text files and `expansion=none` keep percent sequences
-and punctuation out of filter syntax. Caller-supplied font paths are refused.
+Native crops never upscale beyond the crop's available pixels by default. For example,
+a centre crop of a `1920x1080` master to `9:16` uses a `606x1080` window
+and delivers `606x1076` after even-pixel aspect rounding. To request exactly
+`1080x1920`, set `allow_upscale=true`: the crop is resampled and adds no detail. The existing
+output-resolution policy and FPS/bitrate preservation remain in effect. A native `1280x720`
+export is 720p. A larger canvas resampled from that source must say "upscaled from 1280x720;
+no added detail". State every delivered width and height, `source_resolution` and resolution
+warning. The existing Topaz `upscale` skill provides actual enhancement with its existing
+cost approval. Unknown source dimensions stay unknown.
 
-## Fixed ffmpeg inspection
+Metadata FPS alone does not prove constant cadence. FFmpeg reframe operations preserve
+frame timing; the timeline renderer uses the measured nominal FPS and produces CFR. Inspect
+VFR metadata and disclose conversion/cadence warnings rather than claiming cadence preservation.
+Reframe ops and new crop/pad timeline paths require a square-pixel source (SAR `1:1`); supply a
+normalized square-pixel master if the source is anamorphic. No normalization op is available
+here. Probe actual outputs for dimensions, SAR `1:1`, FPS, duration and audio. Rendering cannot
+move a price, logo or legal line baked into the master; request an approved layered source
+if framing would cut it off. Native authored timelines can rearrange their existing layers
+for a new canvas instead of cropping a rendered composition. Arbitrary new templates remain unsupported.
 
-`Ffmpeg___ffmpeg_tool`, alias `ffmpeg_tool`, is a free editor/manager operation with
-`op`, `job_id`, `input_path` and optional `params`. The op registry owns a fixed argv builder,
-parameter validators, timeout and parser for each op. Adding an op means one registry entry
-and its table-driven contract/real-binary tests. Callers cannot choose a shell, executable,
-codec, filtergraph, raw argument list, input protocol or output path.
-The provider's full JSON Schema uses a discriminator branch per op to enforce its bounds.
-AgentCore's restricted schema dialect omits those branches and bounds; the same registry
-enforces them again in code before any execution. The published descriptions retain each
-operation's parameters and ranges.
+## Fixed ffmpeg operations
+
+`Ffmpeg___ffmpeg_tool`, alias `ffmpeg_tool`, is free and takes `op`, `job_id`, `input_path`
+and optional `params`. An op registry owns each fixed argv builder, bounds, timeout and
+parser. The full JSON Schema discriminates by op; AgentCore's restricted schema strips some
+branches/bounds, so code validates the same contract before execution.
 
 | Op | Params | Result |
 | --- | --- | --- |
-| `probe` | `{}` | Streams, container, dimensions, duration, FPS and audio metadata |
-| `extract_frames` | `times`, 1-20 finite seconds in 0-600; `width`, integer 16-1920 | PNG frames with generated names |
-| `contact_sheet` | `every_s`, finite 0.1-600; `cols`/`rows`, integers 1-10; `width`/`height`, integers 16-640 | JPEG sheet, maximum 4096x4096 and 600-second sample window |
-| `sha256` | `{}` | File hash and byte count, pure Python |
-| `check_faststart` | `{}` | Atom order and whether `moov` precedes `mdat`, pure Python |
-| `volume_stats` | `{}` | Mean and maximum sample volume; no LUFS or true-peak certification |
+| `probe` | `{}` | Structured stream/container metadata, including dimensions, rotation, FPS, SAR and audio |
+| `crop_plan_preview` | `source_width`/`source_height`: integers 2-16384; `aspect`; optional `rotation`, `subject_box`, `crop_box`, `anchor`, `safe_zone`, `allow_upscale` | Pure crop/pad window and output dimensions; no binary or file read |
+| `reframe_crop` | `aspect`; optional `subject_box`, `crop_box`, `anchor`, `safe_zone`, `allow_upscale` | Static crop, or blurred-pad fallback if subject/safe zone cannot fit |
+| `reframe_pad_blur` | `size` (aspect enum); optional `safe_zone`, `allow_upscale` | Whole foreground frame over a blurred copy |
+| `detect_scenes` | `T`: finite `0.1..0.6`, default `0.3` | Bounded cut times and shots, at most 60 |
+| `extract_frames` | `times`: 1-20 finite seconds in `0..600`; `width`: integer 16-1920 | Versioned PNG frames |
+| `contact_sheet` | `every_s`: finite 0.1-600; `cols`/`rows`: integers 1-10; `width`/`height`: integers 16-640 | JPEG, maximum 4096x4096 and 600-second sample window |
+| `sha256` | `{}` | File hash/bytes, pure Python |
+| `check_faststart` | `{}` | MP4 atom order, pure Python |
+| `volume_stats` | `{}` | Mean and sample peak; no LUFS or true-peak certification |
 
-Defaults are `times=[0]` and `width=640` for frames. Contact-sheet defaults are `every_s=1`,
-`cols=3`, `rows=1`, `width=320` and `height=180`.
+Preview defaults are 1920/1080 source dimensions and `9:16`; supply the measured dimensions
+explicitly. Rotation is a finite multiple of 90 degrees in `-360..360`. Pure preview still
+validates the input path lexically but does not require a file. Render ops probe the real
+source; caller-supplied source dimensions are refused. Padding `size` uses the aspect enum,
+not an arbitrary width/height pair. Crops scale with Lanczos and normalize SAR to `1:1`.
+Scene detection uses fixed `select`/`showinfo`, bounds diagnostic output and rejects truncation.
+See [FFmpeg filters](https://ffmpeg.org/ffmpeg-filters.html), read 2026-10-09.
 
-Results have `op`, `ok`, `outputs[{path,sha256,bytes}]`, `metrics`, `warnings` and
-`ffmpeg_version`. Failure logs expose only a bounded redacted tail. Missing binaries return
-a structured failure. The host never passes credentials or signed URLs to ffmpeg.
+Results are structured `op`, `ok`, `outputs[{path,sha256,bytes}]`, `metrics`, `warnings` and
+`ffmpeg_version`. Failure logs expose only a bounded redacted tail. Callers cannot select
+shell commands, codecs, filtergraphs, executable paths, protocols or output paths. Unknown
+operations are refused with the nearest available op.
 
-Inputs are regular readable files below the selected job directory. Path traversal, URLs,
-escaping symlinks, special files, Unicode name tricks, newlines and option-prefixed names
-are refused. Input size is at most 128 MiB. Generated output names match ASCII-safe templates.
-Each output is capped at 16 MiB and all outputs at 64 MiB. Commands use argv lists with
-`shell=False`, job-directory cwd, a scrubbed environment, stdin disabled, protocol/format
-allow-lists, bounded logs, hard timeouts and thread caps. `ffprobe` 7.1.5 has no `-nostdin`;
-the process instead receives `stdin=DEVNULL`. There is no network or overwrite operation.
+Inputs are regular files confined inside a per-job directory. URLs, traversal, escaping
+symlinks, special files, option-prefixed names, Unicode name tricks and newlines are refused.
+Generated outputs never overwrite. Commands use argv lists with `shell=False`, job cwd,
+a scrubbed environment, stdin disabled, protocol/format allow-lists, bounded logs, timeouts,
+thread caps and output-size caps. No network is available. FFprobe 7.1.5 lacks `-nostdin`;
+its stdin is `DEVNULL`. Installed FFmpeg/FFprobe are required for binary ops; missing binaries
+return a clear structured failure. No binary is added to the Lambda zip.
 
-`FFMPEG_DRY_RUN` defaults to `true` and previews validated requests without creating media.
-CI forces it to `true`. Real tests explicitly opt into the local binary path and use generated
-lavfi media. No provider keys, paid API calls or new Python dependencies are needed.
+## Backend contract
+
+| Capability | Local worker | Lambda |
+| --- | --- | --- |
+| Existing timeline trims, ordinary fit, FPS/bitrate and native canvas policy | Supported | Existing path retained |
+| Fitted text and positioned image/video overlays | Supported | Versioned font/box contract required |
+| New per-item static crop windows or blurred-pad fit | Supported | Explicit refusal before source retrieval or AWS request |
+| Matrix stages, including minimal reframe mode | Supported on host owning job directory | Explicit refusal before dry-run or AWS request |
+| Fixed ffmpeg binary ops | Installed binaries and job directory required | Refused without binaries; no binary bundled |
+| Pure crop preview | Supported without binary/input file | Requires only a validated job directory and request |
+| Video grade, motion and rotation effects | Unsupported message | Existing composition capabilities |
+
+`REMOTION_OVERLAY_CONTRACT_VERSION` defaults to 1. Version 2 declares a separately deployed
+compatible font/box composition; it does not enable the new crop/pad fields. No deployment
+or live Lambda call occurs here. Parity tests compare the canonical document and early
+backend refusals; they do not claim deployed pixel parity. Render options must work on both
+backends or be refused explicitly. Never silently switch backends or disable dry-run.
 
 ## Cost and licence
 
-Local media cost is $0. `REMOTION_LICENSE_RENDER_USD`, default `0.01`, adds an operator
-allowance per render. This is an allowance for Automators, not an asserted local charge.
-Six local renders therefore disclose $0 media plus $0.06 allowance. Sample/batch cards
-disclose the count for their own stage as well as plan identity.
+Local media cost is $0. Existing `REMOTION_LICENSE_RENDER_USD`, default `0.01`, adds an
+operator allowance per render; this is not an asserted local-render charge. Five local
+candidates disclose $0 media and $0.05 allowance. Sample/batch cards show their own counts.
+Lambda matrix rendering remains refused. Its existing compute estimator uses configurable
+workload assumptions with [AWS Lambda pricing](https://aws.amazon.com/lambda/pricing/),
+read 2026-10-09; no new price or paid provider is added here.
 
-The Lambda estimate uses configurable memory, aggregate worker compute seconds and request
-count. Defaults are 3008 MB, 120 aggregate worker seconds and 10 requests per render.
-At x86 on-demand list rates of $0.0000166667/GB-second plus $0.20/million requests, the
-compute estimate is about $0.005877 per render, plus the licence allowance. S3, network,
-free tiers and discounts are excluded. These workload assumptions are placeholders, not a
-measured Lambda render. `REMOTION_MATRIX_LAMBDA_RENDER_USD` can replace the per-render compute
-estimate. Invalid configured estimates are refused. Source is
-[AWS Lambda pricing](https://aws.amazon.com/lambda/pricing/), read 2026-10-09.
-
-The new configuration has no secrets:
-
-| Environment variable | Default | Purpose |
-| --- | --- | --- |
-| `FFMPEG_DRY_RUN` | `true` | Validated preview for the free inspection tool |
-| `REMOTION_LICENSE_RENDER_USD` | `0.01` | Operator licence allowance per render |
-| `REMOTION_MATRIX_LAMBDA_MEMORY_MB` | `3008` | Estimated worker memory in MB |
-| `REMOTION_MATRIX_LAMBDA_COMPUTE_SECONDS` | `120` | Aggregate worker seconds per render |
-| `REMOTION_MATRIX_LAMBDA_REQUESTS` | `10` | Estimated requests per render |
-| `REMOTION_MATRIX_LAMBDA_RENDER_USD` | Derived from the above | Optional compute USD estimate override |
-| `REMOTION_OVERLAY_CONTRACT_VERSION` | `1` | Explicit compatible Lambda font/box contract declaration |
-
-Existing `REMOTION_DRY_RUN`, `REMOTION_RENDER_BACKEND`, `RENDERHAUS_MEDIA_DIR` and render
-timeout variables keep their roles. `scripts/sync_secrets.py` needs no new secret names.
-
-Remotion's custom licence permits free use by individuals and teams of up to three people.
-A Company License applies at four or more people operating the project. Automators costs
-$0.01 per successful render with a $100/month minimum. Agencies aggregate collaborating
-operators' headcounts. Clients receiving only MP4s do not add to that headcount. Whether our
-local ffmpeg compositor's renders are metered under that licence remains UNVERIFIED.
-Confirm with Remotion before scaling. Sources are
+Remotion permits free use for individuals and teams of up to three. At four or more people
+operating the project, a Company License applies. Automators costs $0.01 per successful
+render with a $100/month minimum; free-licence automations do not pay per render. Whether
+this local ffmpeg compositor is metered remains **UNVERIFIED**. Sources:
 [Remotion licence FAQ](https://www.remotion.dev/docs/license/faq) and
-[Remotion terms v5.0](https://www.remotion.dev/docs/terms), read 2026-10-09.
+[terms v5.0](https://www.remotion.dev/docs/terms), read 2026-10-09.
 
-FFmpeg is LGPL/GPL depending on its build. The installed demo binary reports GNU GPL
-version 2 or later (`ffmpeg -L`, checked 2026-10-09). This wrapper copies no FFmpeg code
-and redistributes no binary. Source is [FFmpeg legal](https://ffmpeg.org/legal.html),
-read 2026-10-09. DejaVu font changes are public-domain and the base fonts use the Bitstream
-Vera licence, verified in [DejaVu licence](https://dejavu-fonts.github.io/License.html), read
-2026-10-09. This branch introduces no model or weights. `training_eligible=false` for both
-new tool IDs. Editing retains the input media's rights and does not grant training permission.
-No AGPL, OpenMontage, guizang-product-video-skill or non-commercial code/weights are copied.
+FFmpeg is LGPL-2.1-or-later, or GPL-2.0-or-later when optional GPL components are enabled.
+The installed demo binary reports GPL version 2 or later (`ffmpeg -L`). No FFmpeg code or
+binary is copied or redistributed. See [FFmpeg legal](https://ffmpeg.org/legal.html), read
+2026-10-09. Text and demo logo labels use system DejaVu fonts: Bitstream Vera licence,
+public-domain DejaVu changes and the included font licence conditions. See
+[DejaVu licence](https://dejavu-fonts.github.io/License.html), read 2026-10-09. Videos, tones,
+logos and product stills are generated locally by the demo script; no external asset is used.
+There are no new models or weights. Existing editing policies retain `training_eligible=false`;
+source media rights are not training permission. No AGPL or non-commercial code/weights are copied.
+
+No new environment variable, dependency or secret is required in this branch. Existing
+`FFMPEG_DRY_RUN` and `REMOTION_DRY_RUN` default to `true`; CI forces both true. The explicit
+operator driver selects local and opts into real rendering. Existing media-root, backend,
+licence allowance, Lambda estimate and timeout variables retain their roles.
 
 ## Run the real local demo
 
-Run these commands from the repository root with ffmpeg, ffprobe and the project `.venv`.
-The generator creates a 1280x720, four-second, 24 FPS master with synthetic audio, three
-alpha logos, product stills, a six-row CSV and a brief under `.renderhaus/demo/ad-demo/`.
-It refuses to overwrite an existing job; use a different `--job-id` for another fixture.
+The generator creates a short master with synthetic audio, three alpha logos, three product
+stills, a fifteen-row retail CSV, and a five-row reframe CSV plus briefs under
+`.renderhaus/demo/<job-id>/`. Default master: `1280x720`, four seconds, 24 FPS. Use `--size
+1080p` for `1920x1080`, or `--size small` for a two-second `640x360` fixture. Existing jobs
+are never overwritten.
 
 ```sh
-.venv/bin/python scripts/make_ad_demo_assets.py --job-id ad-demo
-.venv/bin/python scripts/run_ad_demo.py plan --job-id ad-demo
+.venv/bin/python scripts/make_ad_demo_assets.py --job-id aspect-demo --size 1080p
+.venv/bin/python scripts/run_ad_demo.py plan --job-id aspect-demo --mode reframe
 ```
 
-Inspect the blocked/planned rows, documents, safe zones and cost. Six local outputs have
-$0 media cost and a $0.06 licence allowance at the default setting. Copy the exact returned
-hash only after approving the plan. The following flag is an explicit operator approval
-for the named stage; it is unavailable as an agent tool parameter.
+Inspect each crop/pad plan, native output dimensions and cost. Copy the exact plan hash only
+after reviewing it. The driver requires operator approval for each rendering stage:
 
 ```sh
 AD_PLAN_HASH='paste-the-exact-reviewed-plan-hash'
-.venv/bin/python scripts/run_ad_demo.py render_first --job-id ad-demo --approve-plan "$AD_PLAN_HASH"
+.venv/bin/python scripts/run_ad_demo.py render_first --job-id aspect-demo --mode reframe --approve-plan "$AD_PLAN_HASH"
 ```
 
-Open every sample MP4 and each `review_frames`/contact-sheet artifact returned in the JSON.
-Compare SKU, price, CTA and legal strings and inspect the output dimensions, FPS, duration
-and resolution warnings. The first group contains SKU A in both `1:1` and `4:5`.
-After accepting those samples, explicitly authorize the remaining four rows:
+Open all five MP4s and contact sheets. Compare framing, dimensions, audio, FPS, SAR and
+warnings with the plan. Approve this candidate set editorially before authorizing the batch:
 
 ```sh
-.venv/bin/python scripts/run_ad_demo.py render_batch --job-id ad-demo --approve-plan "$AD_PLAN_HASH"
+.venv/bin/python scripts/run_ad_demo.py render_batch --job-id aspect-demo --mode reframe --approve-plan "$AD_PLAN_HASH"
 ```
 
-Read the returned `manifest_path` and adjacent `report.json`; verify all six artifacts and
-hashes, including the two first renders. A changed input changes the hash and requires a
-new plan and review. Copy is not automatically OCR-certified. The driver selects the local
-backend and sets `REMOTION_DRY_RUN=false` to render actual files. It makes no paid or Lambda
-call. This explicit operator driver is separate from the default dry-run Gateway workflow.
-For a faster fixture, generate a fresh job with `--size small`: 320x240, two seconds, 24 FPS.
-CLI artifact checks do not establish Comet browser E2E; that validation remains blocked.
+All rows belong to one master/locale group, so the first stage covers all five aspects;
+the approved batch verifies and reuses those files. To request nominal table sizes, include
+`--allow-upscale` in **every** stage and re-plan. A 1080p portrait output then requires and
+reports resampling with no added detail. For retail overlays, omit `--mode reframe`; each of
+three SKU groups has all five aspects. The driver makes no paid or Lambda calls.
 
-## Verification limits and next branches
+## Verification limits
 
-Tests use generated media and real installed binaries for local artifacts. They also exercise
-path/parameter attacks, text punctuation, overflow, table rules, stale hashes, approval branches,
-backend refusal and props parity. Unit/CLI evidence is distinct from browser evidence.
-Comet is unavailable in this environment, so Studio E2E is blocked and pending. No dry-run or
-mock result is recorded as browser success. Lambda is not invoked or deployed.
+Tests use synthetic files and real installed binaries for geometry, scene cuts, output
+sizes, SAR, timing, audio, path attacks, parameter bounds, stale plans and backend refusals.
+Routing now activates RT-E011..RT-E019 alongside prior matrix and negative Resolve/shell
+cases. Of 79 editing workbook rows, 47 are active and 32 are deferred; RT-E046 delivery
+chaining remains deferred to `feat/remotion-delivery-qc`. Candidate LUT/multicam semantics
+remain unverified. Total inventory is 16 providers, 115 Gateway tools, 27 packaged skills
+and 220 routing rows (184 active, 36 deferred, including the original four dependency skips).
 
 On 2026-10-09, the operator CLI completed all six four-second demo renders at 24 FPS.
 Three outputs are 720x720 and three are 720x900, each with `source_resolution=1280x720`.
@@ -292,5 +279,11 @@ cannot claim those checks until the real operations run and the actual artifacts
 
 The routing fixture preserves RT-E001..RT-E079. Thirty-eight rows are active and forty-one
 are deferred to named branches or unverified candidate semantics. Including the earlier
-fixture, there are 218 rows, 173 active and 45 skipped. Current inventory is 16 providers,
-115 Gateway tools and 25 packaged skills. No secrets are added.
+fixture, there are 220 rows, 175 active and 45 skipped. Current inventory is 16 providers,
+115 Gateway tools and 27 packaged skills. No secrets are added.
+Comet is unavailable here, so real Studio browser E2E is blocked and pending. CLI/media
+checks are supporting evidence, never a browser pass. No Lambda deployment, live Lambda
+call or paid provider call is performed. Safe-zone presets, local licence metering and VFR
+cadence require explicit review. A later detector branch may evaluate MediaPipe/OpenCV and
+model licences; none is included now. Delivery, loudness and final QC await
+`feat/remotion-delivery-qc`. See [decisions](remotion-aspect-ratio-variants-decisions.tsv).

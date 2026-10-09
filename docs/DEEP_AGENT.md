@@ -188,7 +188,7 @@ See [the capability map](CAPABILITY_MAP.md) and [routing policy](SKILLS.md#capab
 
 ## Skills and delegation
 
-There are 25 packaged `SKILL.md` files under `agent/deep_agent/skills/`.
+There are 26 packaged `SKILL.md` files under `agent/deep_agent/skills/`.
 Deep Agents reads metadata first. Full instructions enter context when a relevant skill is read.
 `metadata.include_tools` documents real dispatch wrappers, which are stably bound per role. `metadata.routing_tools` holds
 canonical capability/workflow IDs, while `metadata.gateway_tools` lists built names only.
@@ -199,7 +199,11 @@ The original video-short, product-images, storyboard-shots, audio, final-assembl
 skills remain. Image-gen applies GPT still defaults and Recraft/Ideogram exceptions.
 Named-provider honors explicit demoted generation providers. Act-Two and Kling Motion Control
 use the act-two skill even for explicit performance requests. Mureka lyrics-video and Topaz finishing are built. Product-demo-video keeps the pending cutaway capture utility;
-whiteboard-explainer plans Remotion templates without claiming unsupported marker-hand animation.
+whiteboard-explainer plans narrated Remotion templates without claiming unsupported marker-hand animation.
+The new knowledge-explainer plans silent graphic beats and event-timed SFX. Its shared request
+guard excludes narration/TTS before approval and dispatch, including on resumes. It reuses
+Remotion, explicit HyperFrames previews, Mirelo and ElevenLabs SFX. Existing-clip audio-only
+requests retain audio-bed. See [knowledge explainers](KNOWLEDGE_EXPLAINER.md).
 
 The deterministic router supplies skill and tool proposals in graph input and Studio context.
 For a generated shot with independent narration, `intent_route.execution_groups` puts video
@@ -231,7 +235,7 @@ order. The short Studio summary also includes per-step costs when they fit its 3
 contract; larger runs refer to the complete breakdown. Unknown charges remain explicit,
 with a known subtotal. Model token charges are recorded separately by `ModelUsage`.
 
-The capability-map fixture contains 137 retained rows, with 133 active and 4 dependency skips.
+The capability-map fixture contains 220 retained rows, with 175 active and 45 dependency skips.
 Archived/confidential routes are dropped. Active rows cover built tools and declared interims;
 pending specialists keep named branch reasons. Editorial overrides retain the safe preparer,
 separate rendering approval, and existing export/HyperFrames narration workflow contracts.
@@ -390,7 +394,7 @@ See [the decisions record](fix-parallel-approvals-decisions.tsv) for reproductio
 ## AgentCore and verification
 
 `Dockerfile.agentcore` defaults to Deep Agents and retains Codex for explicit fallback.
-It installs pinned dependencies and verifies the Deep Agents version and all 24 packaged
+It installs pinned dependencies and verifies the Deep Agents version and all 26 packaged
 skills during the build. The entrypoint remains `python -m agent.studio_agent_next`.
 The existing Studio approval/review surfaces display the edit plan, subtitles, grade and
 audio fades. The database schema stays compatible.
@@ -467,9 +471,7 @@ Model Studio remains preview-blocked when explicitly named. See
 defaults, including text-in-image generation. Edits accept a primary image, up to 15 additional
 references, and an optional mask. Results contain saved images synchronously, without polling.
 Seedream remains explicit-only. Spending approval and visual approval remain separate.
-The OpenAI branch activated eight GPT routing rows. With Sync, 98 routing cases are active
-and 31 remain skipped, including Recraft and Ideogram specialists.
-There are 12 providers, 95 Gateway tools, and 24 packaged skills.
+The OpenAI branch activated eight GPT routing rows.
 
 [OpenAI configuration and verified sources](OPENAI_IMAGES.md) describe the default dry-run flag,
 unknown pre-call costs, output training restriction, and blocked Comet validation.
@@ -499,14 +501,13 @@ recorded consent before interruption; the provider checks accepted HeyGen consen
 The direct Studio invoke endpoint refuses HeyGen generation so it cannot bypass approval.
 Saved poll artifacts finish standalone presenters; captions or assembly require rendering.
 `training_eligible=false` follows the model policy even when an outcome claims otherwise.
-Inventory is 12 providers, 95 Gateway tools and 24 skills. See [HeyGen](HEYGEN.md).
+See [HeyGen](HEYGEN.md).
 
 Mureka music and lyrics-video share the audio role and six Gateway tools. Native
 0.7.23 interrupts quote paid video and resume once after approval; rejection performs
 no dispatch. This includes autonomous lyrics-video requests. Songs pause unless
 autonomous. See [Mureka](MUREKA.md) for transport, pending raw-audio preparation,
-licences and blocked browser validation. The current inventory is 15 providers,
-113 Gateway tools and 24 skills.
+licences and blocked browser validation.
 
 Performance transfer uses the installed act-two skill with native cost/consent interrupts on
 `call_media_tool`. Long sources process each approved Act-Two chunk sequentially; polls never
@@ -525,8 +526,7 @@ locally; scripted-model approval/resume tests are offline and do not establish l
 `Fal___get_video_task`, default to dry-run, quote verified fal image prices and
 exclude training. SVG content is validated and sanitized before persistence.
 The image-gen, product-images and refinement skills expose their real tool names.
-Six specialist fixture rows are active. The current fixture has 133 active rows
-and four skipped of 137. The inventory is 15 providers, 113 tools and 24 skills.
+Six specialist fixture rows are active.
 Comet validation and Ideogram quality A/B
 remain pending. See [Image specialists](IMAGE_SPECIALISTS.md) for contracts,
 official sources read 2026-10-09, licence decisions and configuration.
@@ -537,8 +537,7 @@ The continuity skill now includes `Gemini___judge_continuity` and `Gemini___get_
 The canonical `gemini_vlm_judge` alias is built and its retained routing row is active.
 `local_qc` remains default. The VLM is dry-run by default and promotion requires a complete,
 committed, hash-pinned live result above 0.85 on the 420 frozen pairs. No result is committed.
-Current inventory is 15 providers, 113 Gateway tools, 24 skills and 133 active routing rows
-with 4 skips. See [Gemini configuration and sources](GEMINI_CONTINUITY_QC.md),
+See [Gemini configuration and sources](GEMINI_CONTINUITY_QC.md),
 [benchmark procedure](CONTINUITY_QC_BENCHMARK.md#experimental-gemini-judge-and-eval-gate),
 and [decisions](continuity-qc-vlm-decisions.tsv). Comet E2E remains blocked.
 
@@ -568,8 +567,7 @@ retained for review. The canvas graph and the legacy flat timeline are separate 
 Import retains opaque source handles without publishing or fetching media. No new
 provider, model, key, secret, or environment variable is needed. `REMOTION_DRY_RUN`
 remains true by default. All existing paid-video approval and spending gates remain.
-There are 15 providers, 113 Gateway tools, 24 skills, 133 active fixture rows, and four
-dependency skips. Read [NLE import](NLE_EXPORT.md#import-an-editors-timeline) for the
+Read [NLE import](NLE_EXPORT.md#import-an-editors-timeline) for the
 parser contract and unsupported edits. Comet and real editor validation remain blocked
 or unverified; offline tests do not establish browser success.
 
@@ -585,7 +583,7 @@ compute/licence estimate. The trusted executor records approval; the agent canno
 an approval by passing fields in the tool arguments.
 
 Media inspection is free. It runs on the machine owning the confined local job directory,
-with fixed ffmpeg/ffprobe executables and a six-op registry. No arbitrary scripts, paths or
+with fixed ffmpeg/ffprobe executables and a ten-op registry. No arbitrary scripts, paths or
 arguments enter subprocess commands. Resolve-only requests return a parked refusal before
 generic generation or NLE-handoff matching. Existing interchange export remains available
 for supported requests. The stored confidential field does not change these routes.
@@ -597,5 +595,19 @@ composition. This task makes no deployment or Lambda call. Matrix jobs refuse th
 backend until the same job directory exists on its worker. See
 [Remotion editing](REMOTION_EDITING.md) for the supported backend table and demo commands.
 
-Inventory is 16 providers, 115 Gateway tools and 25 skills. The fixture has 173 active and
-45 deferred cases among 218 rows. Browser validation through Comet remains blocked here.
+Inventory is 16 providers, 115 Gateway tools and 27 skills. The fixture has 184 active and
+36 deferred cases among 220 rows. Browser validation through Comet remains blocked here.
+
+## Per-shot static reframing
+
+The manager reads the [aspect skill](../agent/deep_agent/skills/remotion-aspect-ratio-variants/SKILL.md)
+for approved flat-master or existing Remotion-timeline aspect changes. The same matrix tool
+accepts `brief.reframe_only=true` and minimal rows. `crop_plan_preview` is pure geometry;
+`detect_scenes` supplies bounded cut times, and fixed crop/pad operations preserve real
+file provenance. Per-shot timeline windows are static, validated in display coordinates
+and switch to whole-frame blurred padding if a supplied box cannot fit its safe zone.
+No detector runs. Local crop/pad timeline fields share their canonical contract with the
+Lambda validator, which explicitly refuses them before any AWS call. Existing deployed
+Lambda timelines remain unchanged. Render results are editorial candidates with contact
+sheets and pending review, not certified delivery output. Paid outpainting still selects
+`edit-v2v` and pauses with the existing cost estimate. No model defaults or spend caps change.

@@ -45,6 +45,11 @@ through Remotion. The matrix plans first, pauses for sample-render approval, the
 explicit sample review before a batch. Free ffmpeg inspection uses fixed operations in the
 local job directory. [Remotion editing](docs/REMOTION_EDITING.md) documents the real local
 demo, backend limits, licence allowance and pending delivery/loudness certification.
+Static centre/safe-zone crops and blurred-pad fallback produce `9:16`, `1:1`, `4:5`,
+`16:9` and `2.39:1` candidates with per-aspect contact sheets. Optional planner-supplied
+boxes choose crop centres; no detector runs. Use `scripts/run_ad_demo.py --mode reframe`
+for a flat master. Current inventory is 16 providers, 115 Gateway tools, 26 skills and
+218 routing rows (182 active, 36 deferred).
 
 ## Development workflow
 

@@ -337,14 +337,21 @@ Apache-2.0 weights/model metadata, DINOv2 Apache-2.0 code. `training_eligible=fa
 
 ## Skills and routing fixtures
 
-There are 24 packaged skills, 15 provider targets and 113 Gateway tools. No tools or skills were added for the permanent Seedance default decision. Vidu’s archived skill is removed; its real tools remain under named-provider. Draft alias include_tools cannot be copied verbatim into this harness: `metadata.include_tools` must contain real dispatch wrappers, `metadata.routing_tools` records the canonical aliases, and `metadata.gateway_tools` contains only built Gateway names.
+There are 26 packaged skills, 16 provider targets and 115 Gateway tools. No tools or skills were added for the permanent Seedance default decision. Vidu’s archived skill is removed; its real tools remain under named-provider. Draft alias include_tools cannot be copied verbatim into this harness: `metadata.include_tools` must contain real dispatch wrappers, `metadata.routing_tools` records the canonical aliases, and `metadata.gateway_tools` contains only built Gateway names.
 
-The routing fixture has 137 cases: 133 active and four dependency skips. RT-091 now requests an explicit 15-second generated output and passes the Seedance contract. RT-008, RT-092, RT-166 and RT-167 use the permanent Seedance defaults; RT-168 covers named-only, preview-blocked Wan editing. A separate skipped unit test retains the unresolved question of whether Seedance extension output includes the source or only continuation. Ambiguous “by N seconds” requests actively test refusal. The 23 archived/confidential rows remain dropped. Detailed changes are in [the default decision trail](seedance-edit-extend-default-decisions.tsv).
+The routing fixture has 220 cases: 175 active and 45 dependency skips. RT-091 now requests an explicit 15-second generated output and passes the Seedance contract. RT-008, RT-092, RT-166 and RT-167 use the permanent Seedance defaults; RT-168 covers named-only, preview-blocked Wan editing. A separate skipped unit test retains the unresolved question of whether Seedance extension output includes the source or only continuation. Ambiguous “by N seconds” requests actively test refusal. The 23 archived/confidential rows remain dropped. Detailed changes are in [the default decision trail](seedance-edit-extend-default-decisions.tsv).
 
 | Skipped dependency/reason | Rows |
 | --- | --- |
 | provider pending: HyperFrames overlays (feat/hyperframes-overlays) | 1 |
 | provider pending: cutaway_record (feat/product-demo-capture) | 3 |
+| provider pending: delivery, loudness and deliverable QC ops/skills (feat/remotion-delivery-qc) | 29 |
+| provider pending: subject-aware aspect layouts and reframe ops (feat/remotion-aspect-ratio-variants) | 10 |
+| semantics unverified: candidate LUT/multicam work is outside this matrix branch (feat/remotion-delivery-qc) | 2 |
+
+The [knowledge-explainer workflow](KNOWLEDGE_EXPLAINER.md) adds silent event-timed graphics
+with two active seed rows. It reuses the existing renderers and SFX tools without changing
+capability defaults or model policies.
 
 ## Verification
 
@@ -375,8 +382,7 @@ for official URLs read 2026-10-09, authorization, watermark limits and blocked C
 `Fal___get_video_task`, default to dry-run, quote verified fal image prices and
 exclude training. SVG content is validated and sanitized before persistence.
 The image-gen, product-images and refinement skills expose their real tool names.
-Six fixture rows activate: 123 active, six skipped of 129. The inventory is
-15 providers, 112 tools and 24 skills. Comet validation and Ideogram quality A/B
+Six specialist fixture rows are active. Comet validation and Ideogram quality A/B
 remain pending. See [Image specialists](IMAGE_SPECIALISTS.md) for contracts,
 official sources read 2026-10-09, licence decisions and configuration.
 
@@ -386,7 +392,6 @@ The continuity skill now includes `Gemini___judge_continuity` and `Gemini___get_
 The canonical `gemini_vlm_judge` alias is built and its retained routing row is active.
 `local_qc` remains default. The VLM is dry-run by default and promotion requires a complete,
 committed, hash-pinned live result above 0.85 on the 420 frozen pairs. No result is committed.
-Current inventory is 15 providers, 112 Gateway tools, 24 skills and 123 active routing rows
-with 6 skips. See [Gemini configuration and sources](GEMINI_CONTINUITY_QC.md),
+See [Gemini configuration and sources](GEMINI_CONTINUITY_QC.md),
 [benchmark procedure](CONTINUITY_QC_BENCHMARK.md#experimental-gemini-judge-and-eval-gate),
 and [decisions](continuity-qc-vlm-decisions.tsv). Comet E2E remains blocked.
