@@ -394,6 +394,7 @@ async def studio_status() -> dict[str, Any]:
         "mode": "local",
         "agent": agent_configured(),
         "dry_run": {
+            "gemini": os.getenv("GEMINI_DRY_RUN", "true").lower() != "false",
             "topaz": topaz_dry_run(),
             "heygen": heygen_dry_run(),
             "sync": sync_dry_run(),

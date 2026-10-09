@@ -25,6 +25,7 @@ SEEDREAM_RATIOS = ("1:1", "16:9", "9:16")
 SEEDANCE_RESOLUTIONS = ("480p", "720p", "1080p")
 SEEDREAM_SIZES = ("1K", "2K", "3K")
 STATIC_FIELD_OPTIONS: dict[str, dict[str, list[str | int]]] = {
+    "gemini": {"model": ["gemini-3.8-flash"]},
     "mureka": {
         "model": ["mureka-9.5"], "aspect_ratio": ["16:9", "9:16", "3:4", "4:3"],
         "layout": [f"layout_{i}" for i in range(1, 8)], "gender": ["female", "male"],

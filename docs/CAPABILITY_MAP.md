@@ -336,15 +336,14 @@ Apache-2.0 weights/model metadata, DINOv2 Apache-2.0 code. `training_eligible=fa
 
 ## Skills and routing fixtures
 
-There are 24 packaged skills, 14 provider targets and 110 Gateway tools. No deployment is claimed. New packaged skills are image-gen, named-provider, act-two, lipsync, upscale, lyrics-video, product-demo-video and whiteboard-explainer. Vidu’s archived skill is removed; its real tools remain under named-provider. Draft alias include_tools cannot be copied verbatim into this harness: `metadata.include_tools` must contain real dispatch wrappers, `metadata.routing_tools` records the canonical aliases, and `metadata.gateway_tools` contains only built Gateway names.
+There are 24 packaged skills, 15 provider targets and 112 Gateway tools. No deployment is claimed. New packaged skills are image-gen, named-provider, act-two, lipsync, upscale, lyrics-video, product-demo-video and whiteboard-explainer. Vidu’s archived skill is removed; its real tools remain under named-provider. Draft alias include_tools cannot be copied verbatim into this harness: `metadata.include_tools` must contain real dispatch wrappers, `metadata.routing_tools` records the canonical aliases, and `metadata.gateway_tools` contains only built Gateway names.
 
-The original workbook migration retained 122 fixtures; later provider branches expanded the set to 129. There are now 122 active cases and 7 skips, including one unverified extension-semantics case and six named dependencies. The 23 archived/confidential rows remain dropped. “Active” includes built interims and the required 45-second single-shot refusal; it does not assert future adapters exist. NLE import remains skipped. Detailed expectation adjustments and retired replacements are in [capability-map-decisions.tsv](capability-map-decisions.tsv).
+The original workbook migration retained 122 fixtures; later provider branches expanded the set to 129. There are now 123 active cases and 6 skips, including one unverified extension-semantics case and five named dependencies. The 23 archived/confidential rows remain dropped. “Active” includes built interims and the required 45-second single-shot refusal; it does not assert future adapters exist. NLE import remains skipped. Detailed expectation adjustments and retired replacements are in [capability-map-decisions.tsv](capability-map-decisions.tsv).
 
 | Skipped dependency/reason | Rows |
 | --- | --- |
 | provider pending: HyperFrames overlays (feat/hyperframes-overlays) | 1 |
 | provider pending: cutaway_record (feat/product-demo-capture) | 3 |
-| provider pending: gemini_vlm_judge (feat/continuity-qc-vlm-judge) | 1 |
 | provider pending: nle import (feat/nle-import-fcpxml) | 1 |
 | semantics unverified: Seedance appended-versus-combined extension length (feat/seedance-2-5); Wan extend remains preview-licence blocked | 1 |
 
@@ -373,7 +372,18 @@ for official URLs read 2026-10-09, authorization, watermark limits and blocked C
 `Fal___get_video_task`, default to dry-run, quote verified fal image prices and
 exclude training. SVG content is validated and sanitized before persistence.
 The image-gen, product-images and refinement skills expose their real tool names.
-Six fixture rows activate: 122 active, seven skipped of 129. The inventory is
-14 providers, 110 tools and 24 skills. Comet validation and Ideogram quality A/B
+Six fixture rows activate: 123 active, six skipped of 129. The inventory is
+15 providers, 112 tools and 24 skills. Comet validation and Ideogram quality A/B
 remain pending. See [Image specialists](IMAGE_SPECIALISTS.md) for contracts,
 official sources read 2026-10-09, licence decisions and configuration.
+
+## Experimental Gemini continuity candidate
+
+The continuity skill now includes `Gemini___judge_continuity` and `Gemini___get_task`.
+The canonical `gemini_vlm_judge` alias is built and its retained routing row is active.
+`local_qc` remains default. The VLM is dry-run by default and promotion requires a complete,
+committed, hash-pinned live result above 0.85 on the 420 frozen pairs. No result is committed.
+Current inventory is 15 providers, 112 Gateway tools, 24 skills and 123 active routing rows
+with 6 skips. See [Gemini configuration and sources](GEMINI_CONTINUITY_QC.md),
+[benchmark procedure](CONTINUITY_QC_BENCHMARK.md#experimental-gemini-judge-and-eval-gate),
+and [decisions](continuity-qc-vlm-decisions.tsv). Comet E2E remains blocked.

@@ -24,6 +24,7 @@ on:
           - heygen
           - topaz
           - mureka
+          - gemini
           - runway
           - fal
           - luma
@@ -111,6 +112,7 @@ jobs:
                   PROVIDER=all
                 else
                   SELECTED=()
+                  echo "$CHANGED" | grep -E '^providers/gemini/|^configs/gateway/gemini\.tools\.json' >/dev/null && SELECTED+=(gemini)
                   echo "$CHANGED" | grep -E '^providers/sync/|^configs/gateway/sync\.tools\.json' >/dev/null && SELECTED+=(sync)
                   echo "$CHANGED" | grep -E '^providers/heygen/|^configs/gateway/heygen\.tools\.json' >/dev/null && SELECTED+=(heygen)
                   echo "$CHANGED" | grep -E '^providers/mureka/|^configs/gateway/mureka\.tools\.json' >/dev/null && SELECTED+=(mureka)
@@ -165,7 +167,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install -e .
 
-      - name: Check inventories (14 providers, 110 tools, 24 skills)
+      - name: Check inventories (15 providers, 112 tools, 24 skills)
         run: python -c "from scripts.ci_check import check_routing_inventory; check_routing_inventory()"
 
       - name: Configure AWS (OIDC)

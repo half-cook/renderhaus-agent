@@ -17,6 +17,13 @@ class ProviderSpec:
 
 PROVIDERS: tuple[ProviderSpec, ...] = (
     ProviderSpec(
+        id="gemini", target_name="Gemini", function_name="renderhaus-gemini-tools",
+        module_path="providers.gemini.tools",
+        env_keys=("GEMINI_API_KEY", "GEMINI_DRY_RUN", "GEMINI_VLM_MODEL",
+                  "GEMINI_VLM_TIMEOUT_SECONDS", "GEMINI_VLM_MAX_RETRIES", "GEMINI_TOOL_COST_CENTS_JSON"),
+        default_env={"GEMINI_DRY_RUN": "true", "GEMINI_VLM_MODEL": "gemini-3.8-flash"},
+    ),
+    ProviderSpec(
         id="mureka", target_name="Mureka", function_name="renderhaus-mureka-tools",
         module_path="providers.mureka.api",
         env_keys=("MUREKA_DRY_RUN", "MUREKA_MODEL", "FAL_KEY", "FAL_DRY_RUN"),

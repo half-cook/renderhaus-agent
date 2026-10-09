@@ -1,0 +1,47 @@
+[
+  {
+    "name": "judge_continuity",
+    "description": "Submit two PNG/JPEG keyframes for the fixed continuity rubric; poll get_task. Paid evaluation requires normal approval. Default dry-run is skipped, never a continuity verdict.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "before_image_b64": {
+          "type": "string",
+          "description": "Strict base64 PNG/JPEG keyframe, at most 4 MiB and 16 million pixels. No URL or local path."
+        },
+        "after_image_b64": {
+          "type": "string",
+          "description": "Strict base64 PNG/JPEG keyframe, at most 4 MiB and 16 million pixels. No URL or local path."
+        },
+        "model": {
+          "type": "string",
+          "description": "Optional Gemini model ID; empty uses GEMINI_VLM_MODEL. UNVERIFIED models are dry-run only."
+        }
+      },
+      "required": [
+        "before_image_b64",
+        "after_image_b64"
+      ]
+    }
+  },
+  {
+    "name": "get_task",
+    "description": "Poll an existing Gemini interaction once. No new paid submission. Skipped reports remain incomplete checks and never block rendering.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "job_id": {
+          "type": "string",
+          "description": "Exact ASCII interaction ID returned by judge_continuity; reuse without resubmitting."
+        },
+        "model": {
+          "type": "string",
+          "description": "Optional Gemini model ID; empty uses GEMINI_VLM_MODEL. UNVERIFIED models are dry-run only."
+        }
+      },
+      "required": [
+        "job_id"
+      ]
+    }
+  }
+]

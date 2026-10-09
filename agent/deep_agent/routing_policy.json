@@ -817,6 +817,30 @@
       "us_available": "yes",
       "availability_source": "https://fal.ai/legal/api-services",
       "availability_note": "fal hosted API customer integrations; account/model access not exercised."
+    },
+    "gemini": {
+      "enabled": true,
+      "license": "service-terms",
+      "training_eligible": false,
+      "allowed_regions": [],
+      "models": [
+        "gemini-3.8-flash"
+      ],
+      "default_model": "gemini-3.8-flash",
+      "explicit_only": true,
+      "model_policies": {
+        "gemini-3.8-flash": {
+          "enabled": true,
+          "license": "service-terms",
+          "weights_license": "closed-weights",
+          "training_eligible": false,
+          "commercial_status": "Commercial Gemini Developer API paid service; source rights required.",
+          "license_source": "https://ai.google.dev/gemini-api/terms",
+          "read_date": "2026-10-09",
+          "training_reason": "Gemini terms prohibit developing competing models; no clear Renderhaus continuity-training grant.",
+          "consent_requirements": "Input media rights and applicable personal-data permissions required. No Gemini-specific recorded likeness consent workflow verified."
+        }
+      }
     }
   },
   "tools": {
@@ -1562,23 +1586,24 @@
       "dry_run": true
     },
     "gemini_vlm_judge": {
-      "gateway_tool": null,
-      "status": "pending",
+      "gateway_tool": "Gemini___judge_continuity",
+      "status": "ready",
       "provider": "gemini",
-      "reason": "provider pending: gemini_vlm_judge (feat/continuity-qc-vlm-judge)",
-      "verification": "verified; adapter pending; live use disabled",
+      "reason": "Experimental explicit candidate; embeddings stay default until committed 420-pair eval accuracy >0.85.",
+      "verification": "Official model, Interactions submit/poll, image input, JSON schema and standard pricing verified; offline mocked adapter; browser E2E and live eval pending.",
       "training_eligible": false,
       "model": "gemini-3.8-flash",
       "host": "Gemini Developer API paid",
       "us_available": "yes",
       "availability_source": "https://ai.google.dev/gemini-api/docs/available-regions",
-      "read_date": "2026-10-08",
+      "read_date": "2026-10-09",
       "license": "proprietary Gemini API terms; API model licence is distinct from documentation CC-BY/Apache sample licences",
       "license_source": "https://ai.google.dev/gemini-api/terms",
-      "training_reason": "No clear permission for output model-training verified.",
+      "training_reason": "Gemini terms prohibit developing competing models; no clear Renderhaus continuity-training grant.",
       "source": "https://ai.google.dev/gemini-api/docs/models/gemini-3.8-flash",
       "price_source": "https://ai.google.dev/gemini-api/docs/pricing",
-      "dry_run": true
+      "dry_run": true,
+      "skill": "continuity-qc"
     },
     "cutaway_record": {
       "gateway_tool": null,
@@ -1997,7 +2022,16 @@
   ],
   "pending_skills": {},
   "continuity_qc": {
-    "dinov3_enabled": false
+    "dinov3_enabled": false,
+    "vlm_prefilter_threshold": 0.1,
+    "vlm_eval_gate": {
+      "result_path": "agent/deep_agent/continuity_qc_vlm_eval.json",
+      "result_sha256": null,
+      "required_pairs": 420,
+      "minimum_accuracy_exclusive": 0.85,
+      "manifest_sha256": "26232ff4bfd314025fc5355f9dcc8e828e95c1d6395aba48b8b9ca17e1577311",
+      "inputs_sha256": "4f0d731ffd01450dfef03c3bf74fa804d6307e144b9fdeaffdb82009c1f5a091"
+    }
   },
   "capabilities": [
     {
@@ -5030,6 +5064,9 @@
     "mureka": {
       "music": "mureka_v95",
       "lyrics_video": "mureka_lyrics_video"
+    },
+    "gemini": {
+      "continuity_qc": "gemini_vlm_judge"
     }
   },
   "named_models": {
@@ -5627,12 +5664,15 @@
       }
     },
     "gemini_vlm_judge": {
-      "license": "proprietary Gemini API terms; API model licence is distinct from documentation CC-BY/Apache sample licences",
-      "license_source": "https://ai.google.dev/gemini-api/terms",
+      "enabled": true,
+      "license": "service-terms",
+      "weights_license": "closed-weights",
       "training_eligible": false,
-      "training_reason": "No clear permission for output model-training verified.",
-      "commercial_status": "commercial service or permissive code; source media rights still required",
-      "read_date": "2026-10-08"
+      "commercial_status": "Commercial Gemini Developer API paid service; source rights required.",
+      "license_source": "https://ai.google.dev/gemini-api/terms",
+      "read_date": "2026-10-09",
+      "training_reason": "Gemini terms prohibit developing competing models; no clear Renderhaus continuity-training grant.",
+      "consent_requirements": "Input media rights and applicable personal-data permissions required. No Gemini-specific recorded likeness consent workflow verified."
     },
     "remotion_render": {
       "license": "Remotion commercial licence; in-house exporter repo licence",

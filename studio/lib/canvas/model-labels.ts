@@ -1,4 +1,5 @@
 const MODEL_LABELS: Record<string, string> = {
+  "gemini-3.8-flash": "Gemini 3.8 Flash continuity judge (experimental)",
   "ideogram/v4.5/edit": "Ideogram 4.5 edit",
   "fal-ai/recraft/v4.1/pro/text-to-vector": "Recraft V4.1 Pro vector",
   "mirelo-ai/sfx1.6/video-to-video": "Mirelo SFX 1.6 video foley",

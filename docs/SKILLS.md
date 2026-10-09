@@ -203,7 +203,7 @@ and queued jobs never satisfy final delivery. See [Topaz](TOPAZ.md) for pricing,
 sources, unknown-price blockers and the blocked Comet check.
 
 `tests/fixtures/skill_routing.json` contains 129 retained routing rows.
-There are 122 active cases and 7 explicit skips. Seven performance-transfer cases now use built tools. Three Mureka lyrics-video cases
+There are 123 active cases and 6 explicit skips. Seven performance-transfer cases now use built tools. Three Mureka lyrics-video cases
 now use built tools; music routes use Mureka without an ElevenLabs interim. Five Topaz upscale/interpolation cases
 now use built tools. Seedance reference dialogue and two
 previously licence-skipped edit cases now use built Seedance tools. The extension increment
@@ -226,7 +226,7 @@ generation rule. Retired-provider replacement examples retain `source_prompt`; s
 assert that explicit retired requests dispatch nothing. [Decisions](capability-map-decisions.tsv)
 record these differences from the workbook.
 
-The pending specialists cover VLM judging and cutaway capture. A declared interim activates other pending defaults where supported.
+The VLM judge is built as an explicit experimental candidate. Cutaway capture remains pending. A declared interim activates other pending defaults where supported.
 Wan 3 generation uses its built tools. Model Studio edit/extend retain their default IDs but
 select Seedance while the commercial policy is blocked. Real-person references require Wan
 consent for generation and refuse the Seedance edit/extend interim.
@@ -316,9 +316,16 @@ VACE is reachable by name; it is not an automatic low-cost default.
 
 ## Continuity QC
 
-`local_qc` remains the continuity-QC default for every project. The pending `gemini_vlm_judge`
-can be promoted only after beating 0.85 accuracy on the 420 labelled pairs. This branch adds no
-VLM adapter or benchmark result. `CONTINUITY_QC_BACKEND=local` remains the default. The optional `runpod` backend sends a
+`local_qc` remains the continuity-QC default for every project. The built `gemini_vlm_judge`
+is an explicit experimental candidate, with `Gemini___judge_continuity` and
+`Gemini___get_task` in the existing continuity skill. `CONTINUITY_QC_BACKEND=vlm` composes
+local or RunPod embeddings with the fixed Gemini rubric. The pre-filter skips clear rejections
+and retains embedding metrics. Judge failures yield skipped reports without blocking render.
+The candidate can become default only with a committed hash-pinned live result above 0.85
+on all 420 pairs. No eval result is committed; `CONTINUITY_QC_BACKEND=local` remains the default.
+See [Gemini configuration](GEMINI_CONTINUITY_QC.md),
+[eval procedure](CONTINUITY_QC_BENCHMARK.md#experimental-gemini-judge-and-eval-gate), and
+[decisions](continuity-qc-vlm-decisions.tsv). The optional `runpod` backend sends a
 batch to a separate RunPod Serverless worker with baked SigLIP and DINO weights. It uses
 the same calibration and acceptance rule. Configure `RUNPOD_API_KEY` and
 `CONTINUITY_QC_RUNPOD_ENDPOINT_ID` on the host only after endpoint setup. A remote failure
@@ -491,7 +498,7 @@ Mureka V9.5 is the music default on fal, with instrumental beds and songs under
 lyrics-video skills now use six `Mureka___` tools; no new skill directory was needed.
 Lyrics video always pauses with cost, including autonomous runs. Raw audio/TTS
 upload preparation remains blocked until the upload and recognition APIs are wired.
-There are 14 providers, 110 Gateway tools and 24 packaged skills. See
+There are 15 providers, 112 Gateway tools and 24 packaged skills. See
 [Mureka](MUREKA.md) for contracts, official dated prices, licences and blocked Comet E2E.
 
 ## Performance transfer
@@ -503,7 +510,7 @@ See [performance contracts, prices and limits](PERFORMANCE_TRANSFER.md). Browser
 
 ## Picture-synchronized SFX
 
-The audio-bed skill now exposes `Fal___mirelo_v2a` and reuses `Fal___get_video_task` through the manager/media role. Video input selects Mirelo; text-only effects select ElevenLabs SFX. Explicit requests win. Mirelo returns video with audio and pauses with cost even in autonomous runs under the paid-video policy. Samples 2–4 remain dry-run-only because their billing is unverified. Three SFX rows are activated, leaving 122 active routing cases and 7 skips. No skill directory was added. See [Mirelo](MIRELO.md) for sources, contracts and pending playback/A/B validation.
+The audio-bed skill now exposes `Fal___mirelo_v2a` and reuses `Fal___get_video_task` through the manager/media role. Video input selects Mirelo; text-only effects select ElevenLabs SFX. Explicit requests win. Mirelo returns video with audio and pauses with cost even in autonomous runs under the paid-video policy. Samples 2–4 remain dry-run-only because their billing is unverified. Three SFX rows are activated, leaving 123 active routing cases and 6 skips. No skill directory was added. See [Mirelo](MIRELO.md) for sources, contracts and pending playback/A/B validation.
 
 ## Image specialist activation
 
@@ -512,7 +519,18 @@ The audio-bed skill now exposes `Fal___mirelo_v2a` and reuses `Fal___get_video_t
 `Fal___get_video_task`, default to dry-run, quote verified fal image prices and
 exclude training. SVG content is validated and sanitized before persistence.
 The image-gen, product-images and refinement skills expose their real tool names.
-Six fixture rows activate: 122 active, seven skipped of 129. The inventory is
-14 providers, 110 tools and 24 skills. Comet validation and Ideogram quality A/B
+Six fixture rows activate: 123 active, six skipped of 129. The inventory is
+15 providers, 112 tools and 24 skills. Comet validation and Ideogram quality A/B
 remain pending. See [Image specialists](IMAGE_SPECIALISTS.md) for contracts,
 official sources read 2026-10-09, licence decisions and configuration.
+
+## Experimental Gemini continuity candidate
+
+The continuity skill now includes `Gemini___judge_continuity` and `Gemini___get_task`.
+The canonical `gemini_vlm_judge` alias is built and its retained routing row is active.
+`local_qc` remains default. The VLM is dry-run by default and promotion requires a complete,
+committed, hash-pinned live result above 0.85 on the 420 frozen pairs. No result is committed.
+Current inventory is 15 providers, 112 Gateway tools, 24 skills and 123 active routing rows
+with 6 skips. See [Gemini configuration and sources](GEMINI_CONTINUITY_QC.md),
+[benchmark procedure](CONTINUITY_QC_BENCHMARK.md#experimental-gemini-judge-and-eval-gate),
+and [decisions](continuity-qc-vlm-decisions.tsv). Comet E2E remains blocked.

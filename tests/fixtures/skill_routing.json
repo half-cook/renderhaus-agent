@@ -926,8 +926,8 @@
     "expected_skill": "continuity-qc",
     "expected_tool": "gemini_vlm_judge",
     "suite": "continuity-qc",
-    "skip_reason": "provider pending: gemini_vlm_judge (feat/continuity-qc-vlm-judge)",
-    "note": "gated: only once VLM beats 0.85; else local_qc",
+    "skip_reason": "",
+    "note": "Explicit experimental dry-run candidate. Default promotion still requires committed 420-pair eval >0.85.",
     "source_status": "new"
   },
   {
