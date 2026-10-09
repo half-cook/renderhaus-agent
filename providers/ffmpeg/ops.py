@@ -200,12 +200,20 @@ def _source_metrics(directory, source):
 
 
 def _reframe(directory, source, params, *, pad=False):
+    from fractions import Fraction
+
     from providers.ffmpeg.reframe import crop_plan
 
     metadata, video, size, duration = _source_metrics(directory, source)
     if video.get("sample_aspect_ratio") not in {None, "1:1", "0:1"}:
         raise ValueError("Reframing requires square source pixels (SAR 1:1); "
                          "normalize anamorphic media before crop/pad.")
+    try:
+        fps = float(Fraction(video.get("avg_frame_rate")))
+    except (ValueError, TypeError, ZeroDivisionError, OverflowError):
+        raise ValueError("Reframing requires a valid measured frame rate.") from None
+    if not math.isfinite(fps) or fps <= 0:
+        raise ValueError("Reframing requires a positive measured frame rate.")
     aspect = params["size"] if pad else params["aspect"]
     box = dict(x=0, y=0, width=size[0], height=size[1]) if pad else params["subject_box"]
     plan = crop_plan(*size, aspect, subject_box=box,
@@ -274,7 +282,9 @@ def _scene_metrics(results):
     if result.stderr_truncated:
         raise ValueError("Scene detection exceeded its bounded log capture; no complete shot list is available.")
     log = result.stderr.decode("utf-8", errors="replace")
-    times = [float(value) for value in re.findall(r"\bpts_time:([0-9.eE+-]+)", log)]
+    times = [float(value) for value in re.findall(
+        r"^\[Parsed_showinfo_\d+ @ 0x[0-9a-fA-F]+\]\s+n:\s*\d+\s+pts:\s*-?\d+\s+"
+        r"pts_time:([0-9.eE+-]+)(?:\s|$)", log, re.MULTILINE)]
     if len(times) >= MAX_SHOTS:
         raise ValueError("Scene detection found more than 60 shots; split the source into shorter masters.")
     return {"scene_times": times}

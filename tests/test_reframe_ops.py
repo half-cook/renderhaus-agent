@@ -66,6 +66,22 @@ class ReframeParamTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             spec.parse([api.ProcessResult(0,b"",b"",stderr_truncated=True)])
 
+    def test_scene_parser_ignores_timestamps_in_source_metadata(self):
+        from providers.ffmpeg.ops import OPS
+
+        log = (b"    COMMENT : pts_time:0.125\n"
+               b"[Parsed_showinfo_1 @ 0x123abc] n: 0 pts: 6400 pts_time:0.5 duration:512\n"
+               b"    COMMENT : pts_time:0.75\n")
+        metrics = OPS["detect_scenes"].parse([api.ProcessResult(0, b"", log)])
+        self.assertEqual(metrics["scene_times"], [.5])
+
+    def test_scene_parser_ignores_metadata_when_no_scene_was_selected(self):
+        from providers.ffmpeg.ops import OPS
+
+        metrics = OPS["detect_scenes"].parse([
+            api.ProcessResult(0, b"", b"    COMMENT : pts_time:0.5\n    COMMENT : pts_time:0.5\n")])
+        self.assertEqual(metrics["scene_times"], [])
+
     def test_nested_probe_cannot_extend_parent_operation_deadline(self):
         from providers.ffmpeg.ops import OPS, Command, OpSpec
         def outer(directory, source, params):
@@ -86,6 +102,20 @@ class ReframeParamTests(unittest.TestCase):
             self.assertFalse(result["ok"], result)
             self.assertLess(time.monotonic() - started, .25)
 
+    def test_invalid_measured_fps_is_refused_before_rendering(self):
+        from providers.ffmpeg.ops import OPS
+
+        spec, params = validate_params("reframe_crop", {"aspect": "1:1"})
+        self.assertIs(spec, OPS["reframe_crop"])
+        for fps in (None, "", "0/0", "0/1", "-24/1", "invalid"):
+            video = {"avg_frame_rate": fps, "r_frame_rate": fps, "sample_aspect_ratio": "1:1"}
+            with self.subTest(fps=fps), tempfile.TemporaryDirectory() as tmp:
+                directory = Path(tmp)
+                with patch("providers.ffmpeg.ops._source_metrics",
+                           return_value=({"streams": [video]}, video, (320, 180), 1)):
+                    with self.assertRaisesRegex(ValueError, "frame rate"):
+                        spec.builder(directory, directory / "source.mp4", params)
+
 
 @unittest.skipUnless(shutil.which("ffmpeg") and shutil.which("ffprobe"),"ffmpeg/ffprobe absent")
 class ReframeBinaryTests(unittest.TestCase):
@@ -101,6 +131,9 @@ class ReframeBinaryTests(unittest.TestCase):
                  "drawbox=x=0:y=0:w=40:h=180:c=yellow:t=fill,"
                  "drawbox=x=280:y=0:w=40:h=180:c=blue:t=fill", audio=True)
         cls.make("tiny.mp4", "color=c=red:s=160x90:r=24:d=0.2")
+        subprocess.run(["ffmpeg", "-nostdin", "-hide_banner", "-v", "error", "-i",
+                        str(cls.job / "tiny.mp4"), "-c", "copy", "-metadata", "comment=pts_time:0.1",
+                        str(cls.job / "metadata.mkv")], check=True, capture_output=True, timeout=30)
         cls.make("anamorphic.mp4", "color=c=red:s=720x480:r=24:d=0.2,setsar=32/27")
         subprocess.run(["ffmpeg","-nostdin","-hide_banner","-v","error","-f","lavfi","-i",
                         "color=c=black:s=160x90:r=24:d=0.5","-f","lavfi","-i",
@@ -183,6 +216,12 @@ class ReframeBinaryTests(unittest.TestCase):
         self.assertEqual(len(r["metrics"]["scene_times"]),1)
         self.assertAlmostEqual(r["metrics"]["scene_times"][0],.5,places=3)
         self.assertEqual(r["metrics"]["shots"],[{"from_s":0,"to_s":.5},{"from_s":.5,"to_s":1}])
+
+    def test_scene_detection_ignores_pts_time_in_real_source_metadata(self):
+        result = self.call("detect_scenes", source="metadata.mkv")
+        self.assertEqual(result["metrics"]["scene_times"], [])
+        self.assertEqual(result["metrics"]["shots"], [
+            {"from_s": 0, "to_s": result["metrics"]["source_duration"]}])
 
     def test_native_small_pad_and_crop_fallback_decode(self):
         for op, params in [("reframe_pad_blur", {"size": "9:16"}),

@@ -7,7 +7,6 @@ from pathlib import Path
 
 
 ASPECTS = json.loads((Path(__file__).parents[1] / "remotion/ad_layouts.json").read_text())
-ASPECTS.setdefault("2.39:1", {"size": [1920, 804], "safe": dict(ASPECTS["16:9"]["safe"])})
 MAX_DIMENSION = 16384
 MAX_SHOTS = 60
 
