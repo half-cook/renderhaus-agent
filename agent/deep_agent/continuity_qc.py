@@ -17,9 +17,11 @@ Benchmark: docs/CONTINUITY_QC_BENCHMARK.md.
 
 from __future__ import annotations
 
+import json
 import math
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any, Callable, Protocol, Sequence, TypeVar
 
 
@@ -29,6 +31,8 @@ DINOV3_MODEL = "facebook/dinov3-vitb16-pretrain-lvd1689m"
 DINOV3_MIN_TRANSFORMERS = "4.56"
 APPROVED_MODELS = frozenset({SIGLIP_MODEL, DINO_MODEL})
 OPT_IN_MODELS = frozenset({DINOV3_MODEL})
+CALIBRATION_PATH = Path(__file__).with_name("continuity_qc_calibration.json")
+RULES = ("calibrated_mean", "legacy_min")
 TrainingResult = TypeVar("TrainingResult")
 
 
@@ -55,12 +59,86 @@ class UnconfiguredFaceIdentity:
 
 @dataclass(frozen=True)
 class ContinuityConfig:
+    """Acceptance rule for adjacent shots.
+
+    ``calibrated_mean`` (default): map each model's cosine to a probability with its own
+    calibration, accept when the mean probability >= ``acceptance_threshold`` and no single
+    model falls below ``veto_threshold``. ``legacy_min`` keeps the old
+    ``min(siglip, dino) >= similarity_threshold`` rule for comparison only; DINO cosines run
+    far lower than SigLIP's, so it rejects most true continuity pairs.
+    """
+
     similarity_threshold: float = 0.8
     enable_dinov3: bool = False
+    rule: str = "calibrated_mean"
+    acceptance_threshold: float | None = None
+    veto_threshold: float | None = None
 
     def __post_init__(self):
         if not math.isfinite(self.similarity_threshold) or not -1 <= self.similarity_threshold <= 1:
             raise ValueError("similarity_threshold must be finite and between -1 and 1.")
+        if self.rule not in RULES:
+            raise ValueError(f"rule must be one of {RULES}.")
+        for name in ("acceptance_threshold", "veto_threshold"):
+            value = getattr(self, name)
+            if value is not None and (not math.isfinite(value) or not 0 <= value <= 1):
+                raise ValueError(f"{name} must be a probability between 0 and 1.")
+
+
+def _sigmoid(z: float) -> float:
+    if z >= 0:
+        return 1 / (1 + math.exp(-z))
+    e = math.exp(z)
+    return e / (1 + e)
+
+
+@dataclass(frozen=True)
+class Calibration:
+    """Per-model Platt scaling: probability = sigmoid(slope * cosine + intercept)."""
+
+    models: dict[str, tuple[float, float]]
+    acceptance_threshold: float = 0.5
+    veto_threshold: float = 0.2
+    method: str = "platt-logistic-class-balanced"
+    warning: str = ""
+    metrics: dict[str, Any] = field(default_factory=dict)
+
+    def probability(self, model_id: str, cosine: float) -> float:
+        if model_id not in self.models:
+            raise ValueError(f"No continuity calibration for {model_id}.")
+        slope, intercept = self.models[model_id]
+        return _sigmoid(slope * cosine + intercept)
+
+    def decide(self, siglip: float, dino: float, dino_model: str,
+               config: ContinuityConfig) -> tuple[bool, float, float]:
+        """Return (accepted, siglip_probability, dino_probability)."""
+        p_siglip = self.probability(SIGLIP_MODEL, siglip)
+        p_dino = self.probability(dino_model, dino)
+        if config.rule == "legacy_min":
+            return min(siglip, dino) >= config.similarity_threshold, p_siglip, p_dino
+        acceptance = config.acceptance_threshold if config.acceptance_threshold is not None else self.acceptance_threshold
+        veto = config.veto_threshold if config.veto_threshold is not None else self.veto_threshold
+        accepted = (p_siglip + p_dino) / 2 >= acceptance and min(p_siglip, p_dino) >= veto
+        return accepted, p_siglip, p_dino
+
+
+def load_calibration(path: Path | str | None = None) -> Calibration:
+    """Load the committed calibration (see docs/CONTINUITY_QC_BENCHMARK.md)."""
+    data = json.loads(Path(path or CALIBRATION_PATH).read_text())
+    models = {}
+    for model_id, fit in data["models"].items():
+        slope, intercept = float(fit["slope"]), float(fit["intercept"])
+        if not (math.isfinite(slope) and math.isfinite(intercept)) or slope <= 0:
+            raise ValueError(f"Invalid continuity calibration for {model_id}.")
+        models[model_id] = (slope, intercept)
+    return Calibration(
+        models=models,
+        acceptance_threshold=float(data["acceptance_threshold"]),
+        veto_threshold=float(data["veto_threshold"]),
+        method=data["method"],
+        warning=data.get("warning", ""),
+        metrics=data.get("metrics", {}),
+    )
 
 
 @dataclass(frozen=True)
@@ -77,10 +155,15 @@ class ShotPairScore:
     dino_similarity: float
     face_identity: FaceIdentityResult
     accepted: bool
+    siglip_score: float | None = None
+    dino_score: float | None = None
 
     @property
     def score(self) -> float:
-        return (self.siglip_similarity + self.dino_similarity) / 2
+        """Mean calibrated probability (raw cosine mean only if uncalibrated)."""
+        if self.siglip_score is None or self.dino_score is None:
+            return (self.siglip_similarity + self.dino_similarity) / 2
+        return (self.siglip_score + self.dino_score) / 2
 
 
 @dataclass(frozen=True)
@@ -88,6 +171,8 @@ class ContinuityReport:
     pairs: tuple[ShotPairScore, ...]
     similarity_threshold: float
     dino_model: str = DINO_MODEL
+    rule: str = "calibrated_mean"
+    acceptance_threshold: float | None = None
 
     @property
     def accepted(self) -> bool:
@@ -178,6 +263,7 @@ class ContinuityQC:
         dino: ImageEmbedder | None = None,
         face_identity: FaceIdentity | None = None,
         config: ContinuityConfig | None = None,
+        calibration: Calibration | None = None,
     ):
         from agent.deep_agent.routing import POLICY
 
@@ -193,6 +279,10 @@ class ContinuityQC:
                 "(DINOv3 only when continuity_qc.dinov3_enabled is on)."
             )
         self.face_identity = face_identity or UnconfiguredFaceIdentity()
+        self.calibration = calibration or load_calibration()
+        missing = {SIGLIP_MODEL, self.dino_model} - set(self.calibration.models)
+        if missing:
+            raise ValueError(f"Continuity calibration is missing {sorted(missing)}.")
 
     def score(self, shots: Sequence[Shot]) -> ContinuityReport:
         if len(shots) < 2:
@@ -204,6 +294,7 @@ class ContinuityQC:
         for index, (before, after) in enumerate(zip(shots, shots[1:])):
             siglip = cosine_similarity(embeddings[index][0], embeddings[index + 1][0])
             dino = cosine_similarity(embeddings[index][1], embeddings[index + 1][1])
+            accepted, p_siglip, p_dino = self.calibration.decide(siglip, dino, self.dino_model, self.config)
             pairs.append(
                 ShotPairScore(
                     before=before.shot_id,
@@ -211,10 +302,15 @@ class ContinuityQC:
                     siglip_similarity=siglip,
                     dino_similarity=dino,
                     face_identity=self.face_identity.compare(before.frame, after.frame),
-                    accepted=min(siglip, dino) >= self.config.similarity_threshold,
+                    accepted=accepted,
+                    siglip_score=p_siglip,
+                    dino_score=p_dino,
                 )
             )
-        return ContinuityReport(tuple(pairs), self.config.similarity_threshold, self.dino_model)
+        acceptance = (self.config.acceptance_threshold if self.config.acceptance_threshold is not None
+                      else self.calibration.acceptance_threshold)
+        return ContinuityReport(tuple(pairs), self.config.similarity_threshold, self.dino_model,
+                                self.config.rule, acceptance if self.config.rule == "calibrated_mean" else None)
 
 
 def training_loop_hook(

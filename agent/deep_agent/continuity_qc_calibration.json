@@ -1,0 +1,67 @@
+{
+  "method": "platt-logistic-class-balanced",
+  "description": "Per-model Platt scaling p = sigmoid(slope * cosine + intercept), class-balanced, fitted on docs/continuity_qc_benchmark_scores.json. A pair is accepted when the mean of the SigLIP and DINO probabilities is >= acceptance_threshold and neither probability is below veto_threshold (single-model drift guard).",
+  "warning": "Fitted on 420 labelled pairs of Blender open-movie frames, not Renderhaus generations. Recalibrate on labelled Renderhaus Wan/Kling/Seedance outputs before relying on it.",
+  "fitted_on": "2026-10-08",
+  "source": "docs/continuity_qc_benchmark_scores.json",
+  "acceptance_threshold": 0.5,
+  "veto_threshold": 0.2,
+  "models": {
+    "google/siglip-so400m-patch14-384": {
+      "slope": 19.565686,
+      "intercept": -13.205105
+    },
+    "facebook/dinov2-base": {
+      "slope": 10.443198,
+      "intercept": -2.705778
+    },
+    "facebook/dinov3-vitb16-pretrain-lvd1689m": {
+      "slope": 9.757232,
+      "intercept": -3.215259
+    }
+  },
+  "metrics": {
+    "siglip+dinov2": {
+      "calibrated_accuracy_in_sample": 0.8452380952380952,
+      "calibrated_accuracy_cv5": 0.8452380952380952,
+      "legacy_min_0.8_accuracy": 0.5190476190476191,
+      "calibrated_accept_rate": {
+        "same_shot": 1.0,
+        "cross_shot_same_scene": 0.6714285714285714,
+        "same_character_other_scene": 0.5285714285714286,
+        "perturbed": 1.0,
+        "different_scene": 0.05714285714285714,
+        "hard_negative": 0.07142857142857142
+      },
+      "legacy_accept_rate": {
+        "same_shot": 0.42857142857142855,
+        "cross_shot_same_scene": 0.02857142857142857,
+        "same_character_other_scene": 0.0,
+        "perturbed": 0.6571428571428571,
+        "different_scene": 0.0,
+        "hard_negative": 0.0
+      }
+    },
+    "siglip+dinov3": {
+      "calibrated_accuracy_in_sample": 0.8428571428571429,
+      "calibrated_accuracy_cv5": 0.8452380952380952,
+      "legacy_min_0.8_accuracy": 0.5833333333333334,
+      "calibrated_accept_rate": {
+        "same_shot": 1.0,
+        "cross_shot_same_scene": 0.6857142857142857,
+        "same_character_other_scene": 0.5428571428571428,
+        "perturbed": 1.0,
+        "different_scene": 0.07142857142857142,
+        "hard_negative": 0.1
+      },
+      "legacy_accept_rate": {
+        "same_shot": 0.5714285714285714,
+        "cross_shot_same_scene": 0.04285714285714286,
+        "same_character_other_scene": 0.0,
+        "perturbed": 0.8857142857142857,
+        "different_scene": 0.0,
+        "hard_negative": 0.0
+      }
+    }
+  }
+}

@@ -8,6 +8,8 @@ Stages (run in order; every stage is offline once footage and weights are local)
     embed   Embed every frame with each model on CPU and time it.
     report  AUROC (overall, per category, bootstrap CI), best-threshold accuracy,
             cross-validated threshold accuracy and latency, as JSON and Markdown.
+    calibrate  Fit per-model Platt scaling from docs/continuity_qc_benchmark_scores.json
+            and write agent/deep_agent/continuity_qc_calibration.json.
 
 Embeddings use agent.deep_agent.continuity_qc.LazyImageEmbedder, the production
 code path, which loads weights with local_files_only=True. Weights must already be
@@ -164,6 +166,68 @@ def paired_bootstrap_delta(left: dict[str, float], right: dict[str, float], pair
     draws = sorted(delta([rng.choice(pos) for _ in pos], [rng.choice(neg) for _ in neg]) for _ in range(rounds))
     return {"delta": delta(pos, neg), "ci95": [draws[int(0.025 * rounds)], draws[int(0.975 * rounds) - 1]],
             "p_left_better": sum(d > 0 for d in draws) / rounds}
+
+
+def _sigmoid(z: float) -> float:
+    if z >= 0:
+        return 1 / (1 + math.exp(-z))
+    e = math.exp(z)
+    return e / (1 + e)
+
+
+def fit_platt(scores: Sequence[float], labels: Sequence[int], *, l2: float = 1e-4,
+              iterations: int = 100) -> tuple[float, float]:
+    """Class-balanced Platt scaling: p = sigmoid(slope * cosine + intercept).
+
+    Newton's method on weighted logistic loss; each class carries half the total weight,
+    so p = 0.5 is the equal-error boundary regardless of class imbalance."""
+    positives = sum(1 for y in labels if y)
+    negatives = len(labels) - positives
+    if not positives or not negatives or len(scores) != len(labels):
+        raise ValueError("Platt scaling needs aligned scores with both classes present.")
+    weights = [len(labels) / (2 * positives) if y else len(labels) / (2 * negatives) for y in labels]
+    slope, intercept = 1.0, 0.0
+    for _ in range(iterations):
+        g0 = g1 = h00 = h01 = h11 = 0.0
+        for x, y, w in zip(scores, labels, weights):
+            p = _sigmoid(slope * x + intercept)
+            r, c = w * (p - y), w * p * (1 - p)
+            g0, g1 = g0 + r * x, g1 + r
+            h00, h01, h11 = h00 + c * x * x, h01 + c * x, h11 + c
+        g0 += l2 * slope
+        h00 += l2
+        h11 += 1e-12
+        det = h00 * h11 - h01 * h01
+        step0, step1 = (h11 * g0 - h01 * g1) / det, (h00 * g1 - h01 * g0) / det
+        slope, intercept = slope - step0, intercept - step1
+        if abs(step0) + abs(step1) < 1e-12:
+            break
+    return slope, intercept
+
+
+def calibrated_accept(siglip: float, dino: float, siglip_fit: tuple[float, float],
+                      dino_fit: tuple[float, float], *, acceptance: float = 0.5,
+                      veto: float = 0.2) -> bool:
+    """Mirror ContinuityQC's calibrated_mean rule."""
+    ps = (_sigmoid(siglip_fit[0] * siglip + siglip_fit[1]), _sigmoid(dino_fit[0] * dino + dino_fit[1]))
+    return sum(ps) / 2 >= acceptance and min(ps) >= veto
+
+
+def cross_validated_calibrated_accuracy(siglip: Sequence[float], dino: Sequence[float],
+                                        labels: Sequence[int], *, folds: int = 5, seed: int = 0,
+                                        acceptance: float = 0.5, veto: float = 0.2) -> float:
+    """Fit both Platt models on k-1 folds and score the held-out fold."""
+    order = list(range(len(labels)))
+    random.Random(seed).shuffle(order)
+    correct = 0
+    for fold in range(folds):
+        held = set(order[fold::folds])
+        train = [i for i in order if i not in held]
+        sfit = fit_platt([siglip[i] for i in train], [labels[i] for i in train])
+        dfit = fit_platt([dino[i] for i in train], [labels[i] for i in train])
+        correct += sum(calibrated_accept(siglip[i], dino[i], sfit, dfit, acceptance=acceptance, veto=veto)
+                       == bool(labels[i]) for i in held)
+    return correct / len(labels)
 
 
 def combine(siglip: float, dino: float, rule: str) -> float:
@@ -555,6 +619,47 @@ def stage_report(args) -> None:
     print(markdown(results))
 
 
+def stage_calibrate(args) -> None:
+    """Fit per-model Platt scaling from per-pair cosines and write the calibration file."""
+    source = json.loads(args.scores.read_text())
+    rows = source["pairs"]
+    labels = [1 if r["label"] == "consistent" else 0 for r in rows]
+    fits = {source["models"][key]: fit_platt([r[key] for r in rows], labels) for key in source["models"]}
+    siglip = source["models"]["siglip"]
+    metrics = {}
+    for key in ("dinov2", "dinov3"):
+        model = source["models"][key]
+        new = [calibrated_accept(r["siglip"], r[key], fits[siglip], fits[model]) for r in rows]
+        old = [min(r["siglip"], r[key]) >= 0.8 for r in rows]
+        metrics[f"siglip+{key}"] = {
+            "calibrated_accuracy_in_sample": sum(a == bool(y) for a, y in zip(new, labels)) / len(rows),
+            "calibrated_accuracy_cv5": cross_validated_calibrated_accuracy(
+                [r["siglip"] for r in rows], [r[key] for r in rows], labels),
+            "legacy_min_0.8_accuracy": sum(a == bool(y) for a, y in zip(old, labels)) / len(rows),
+            "calibrated_accept_rate": {c: statistics.fmean([a for a, r in zip(new, rows) if r["category"] == c])
+                                       for c in POSITIVE + NEGATIVE},
+            "legacy_accept_rate": {c: statistics.fmean([a for a, r in zip(old, rows) if r["category"] == c])
+                                   for c in POSITIVE + NEGATIVE},
+        }
+    payload = {
+        "method": "platt-logistic-class-balanced",
+        "description": ("Per-model Platt scaling p = sigmoid(slope * cosine + intercept), class-balanced, "
+                        "fitted on docs/continuity_qc_benchmark_scores.json. A pair is accepted when the mean "
+                        "of the SigLIP and DINO probabilities is >= acceptance_threshold and neither "
+                        "probability is below veto_threshold (single-model drift guard)."),
+        "warning": ("Fitted on 420 labelled pairs of Blender open-movie frames, not Renderhaus generations. "
+                    "Recalibrate on labelled Renderhaus Wan/Kling/Seedance outputs before relying on it."),
+        "fitted_on": "2026-10-08",
+        "source": "docs/continuity_qc_benchmark_scores.json",
+        "acceptance_threshold": 0.5,
+        "veto_threshold": 0.2,
+        "models": {model: {"slope": round(fit[0], 6), "intercept": round(fit[1], 6)} for model, fit in fits.items()},
+        "metrics": metrics,
+    }
+    args.calibration_out.write_text(json.dumps(payload, indent=2) + "\n")
+    print(json.dumps(metrics, indent=2))
+
+
 def markdown(results: dict) -> str:
     cats = POSITIVE + NEGATIVE
     head = "| Scorer | AUROC (95% CI) | " + " | ".join(cats) + " | Best-thr acc (thr) | 5-fold CV acc | Acc @0.8 |"
@@ -578,7 +683,7 @@ def markdown(results: dict) -> str:
 
 def main(argv: Sequence[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("stage", choices=["detect", "sheets", "pairs", "embed", "report"])
+    parser.add_argument("stage", choices=["detect", "sheets", "pairs", "embed", "report", "calibrate"])
     parser.add_argument("--footage", type=Path, default=Path("footage"))
     parser.add_argument("--work", type=Path, default=Path("work"))
     parser.add_argument("--scenes", type=Path, default=ROOT / "docs/continuity_qc_benchmark_scenes.json")
@@ -586,10 +691,14 @@ def main(argv: Sequence[str] | None = None) -> None:
     parser.add_argument("--models", default="siglip,dinov2,dinov3")
     parser.add_argument("--threads", type=int, default=4)
     parser.add_argument("--out", type=Path, default=ROOT / "docs/continuity_qc_benchmark_results.json")
+    parser.add_argument("--scores", type=Path, default=ROOT / "docs/continuity_qc_benchmark_scores.json")
+    parser.add_argument("--calibration-out", type=Path,
+                        default=ROOT / "agent/deep_agent/continuity_qc_calibration.json")
     args = parser.parse_args(argv)
-    args.work.mkdir(parents=True, exist_ok=True)
+    if args.stage != "calibrate":
+        args.work.mkdir(parents=True, exist_ok=True)
     {"detect": stage_detect, "sheets": stage_sheets, "pairs": stage_pairs,
-     "embed": stage_embed, "report": stage_report}[args.stage](args)
+     "embed": stage_embed, "report": stage_report, "calibrate": stage_calibrate}[args.stage](args)
 
 
 if __name__ == "__main__":

@@ -19,11 +19,12 @@ Raw numbers: `docs/continuity_qc_benchmark_results.json`. Scene labels:
     than SigLIP's, so `min` is in practice always the DINO score: "SigLIP+DINOv2 (min)" has
     exactly DINOv2's AUROC, and SigLIP's signal is thrown away.
   - SigLIP alone scores AUROC 0.932, +0.042 over the production rule (CI +0.021 to +0.064).
-  - The mean rule (`ShotPairScore.score`) scores 0.922, +0.032 (CI +0.022 to +0.044).
+  - The raw cosine mean (the old `ShotPairScore.score`) scores 0.922, +0.032 (CI +0.022 to +0.044).
   - At the shared 0.8 threshold the production rule accepts only 43% of same-shot pairs and
     3% of same-scene cross-shot pairs. It never false-accepts here, but it rejects almost
     every real continuity match.
-- **Suggested follow-up** (separate change, not made here):
+- **Follow-up:** calibrated scoring has since replaced the old rule; see
+  [Calibrated scoring](#calibrated-scoring) below. Original suggestion:
   - per-model calibrated thresholds, or a mean of per-model z-scored similarities, fit on
     Renderhaus Wan outputs;
   - reassess DINOv3 once that is in place, with legal sign-off.
@@ -93,6 +94,53 @@ threshold cannot suit both slots.
   - SigLIP so400m/384 is about 15-18x slower than either DINO ViT-B.
   - DINOv3 ViT-B/16 is about 15% faster than DINOv2-base, which processes more tokens at
     its default crop.
+
+## Calibrated scoring
+
+`ContinuityQC` now uses the `calibrated_mean` rule by default, still with SigLIP+DINOv2
+(DINOv3 stays off).
+
+- **Method:** per-model Platt scaling with class balancing: `p = sigmoid(slope * cosine + intercept)`.
+  It is fitted by Newton's method, with each class carrying half the weight, so p = 0.5 is the
+  equal-error boundary.
+- **Accept rule:** mean(p_siglip, p_dino) >= 0.5, and neither p falls below 0.2. The veto keeps
+  gross drift in one model from being averaged away.
+- **Files:**
+  - Calibration: `agent/deep_agent/continuity_qc_calibration.json`.
+  - Input: the per-pair cosines in `docs/continuity_qc_benchmark_scores.json`.
+  - Refit: `python scripts/continuity_qc_benchmark.py calibrate`.
+  - Tests: `tests/test_continuity_qc_calibration.py` checks that the committed fit reproduces
+    from the committed scores.
+- **Fitted parameters (2026-10-08):**
+  - SigLIP: slope 19.566, intercept -13.205. p = 0.5 at cosine 0.675.
+  - DINOv2: slope 10.443, intercept -2.706. p = 0.5 at cosine 0.259.
+  - DINOv3: slope 9.757, intercept -3.215. p = 0.5 at cosine 0.330.
+
+| Rule on the 420 benchmark pairs | Accuracy | 5-fold CV | same shot | perturbed | same scene, other shot | same character, other scene | different scene (false accept) | hard negative (false accept) |
+|---|---|---|---|---|---|---|---|---|
+| Old: min(SigLIP, DINOv2) >= 0.8 | 0.519 | n/a | 0.43 | 0.66 | 0.03 | 0.00 | 0.00 | 0.00 |
+| New: calibrated mean, SigLIP+DINOv2 | **0.845** | **0.845** | 1.00 | 1.00 | 0.67 | 0.53 | 0.06 | 0.07 |
+| Old rule with DINOv3 | 0.583 | n/a | 0.57 | 0.89 | 0.04 | 0.00 | 0.00 | 0.00 |
+| New: calibrated mean, SigLIP+DINOv3 | 0.843 | 0.845 | 1.00 | 1.00 | 0.69 | 0.54 | 0.07 | 0.10 |
+
+Category columns are acceptance rates. The calibrated rule trades a 6-7% false-accept rate on
+clear negatives for accepting every same-shot and perturbed pair, against the old rule's 43%
+and 66%. DINOv3 still gives no measurable gain once calibrated, so keeping it off remains the
+recommendation.
+
+**The thresholds must be recalibrated on real Renderhaus generations before they are relied
+on.** This calibration comes from Blender open-movie frames, not Wan, Kling or Seedance outputs.
+Generated footage has different noise, motion and identity drift, so both the cosine
+distributions and the right boundary will shift.
+
+To recalibrate:
+1. Label a few hundred adjacent-shot pairs from real projects as consistent or inconsistent.
+2. Embed them with the production models.
+3. Write the cosines in the same format as `docs/continuity_qc_benchmark_scores.json`.
+4. Run `calibrate --scores <file>`.
+5. Review the per-category acceptance rates before committing.
+
+`rule="legacy_min"` stays available for comparison only.
 
 ## Dataset
 
