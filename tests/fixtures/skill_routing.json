@@ -49,7 +49,7 @@
     "expected_skill": "i2v",
     "expected_tool": "wan3_i2v",
     "suite": "i2v",
-    "skip_reason": "provider pending: wan3_i2v (feat/provider-fal-wan3); explicit Wan request does not substitute Seedance",
+    "skip_reason": "",
     "note": "default",
     "source_status": "updated"
   },
@@ -669,7 +669,7 @@
     "expected_skill": "i2v",
     "expected_tool": "wan3_i2v",
     "suite": "i2v",
-    "skip_reason": "provider pending: wan3_i2v (feat/provider-fal-wan3); real_face_refs prohibits Seedance interim",
+    "skip_reason": "",
     "note": "real_face_refs blocks Seedance",
     "source_status": "new"
   },
@@ -696,7 +696,7 @@
     "expected_skill": "i2v",
     "expected_tool": "wan3_r2v",
     "suite": "i2v",
-    "skip_reason": "provider pending: wan3_r2v (feat/provider-fal-wan3)",
+    "skip_reason": "",
     "note": "default r2v",
     "source_status": "new"
   },
@@ -714,7 +714,7 @@
     "expected_skill": "i2v",
     "expected_tool": "wan3_r2v",
     "suite": "i2v",
-    "skip_reason": "provider pending: wan3_r2v (feat/provider-fal-wan3)",
+    "skip_reason": "",
     "note": "real_face_refs \u2192 Wan",
     "source_status": "new"
   },

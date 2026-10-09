@@ -28,15 +28,15 @@ class CapabilityMapTests(unittest.TestCase):
         self.assertNotIn("ladder", routing.POLICY)
         for tier in [None, "draft", "standard", "premium"]:
             route = routing.select_provider("t2v", tier=tier)
-            self.assertEqual(route.tool, "Seedance___text_to_video")
+            self.assertEqual(route.tool, "Fal___generate_wan3_t2v")
             self.assertEqual(route.alias, "wan3_t2v")
-            self.assertIn("interim default until", route.disclosure)
+            self.assertNotIn("interim default until", route.disclosure)
 
     def test_plain_video_never_automatically_chooses_demoted_providers(self):
         for prompt in ["generate a video", "cheapest video preview", "highest quality video", "draft video"]:
             route = routing.route_intent(prompt)
-            self.assertEqual(route.provider, "seedance")
-        for required in [{"multi_shot": True}, {"start_end_frame": True}, {"max_resolution": 2160}]:
+            self.assertEqual(route.provider, "fal")
+        for required in [{"max_resolution": 2160}]:
             route = routing.select_provider("i2v", required=required)
             self.assertEqual(route.status, "blocked")
             self.assertIsNone(route.tool)
@@ -78,18 +78,17 @@ class CapabilityMapTests(unittest.TestCase):
         for prompt in ['my CEO photo attached says "hello"', 'use Seedance with my CEO photo saying "hi"']:
             route = routing.route_intent(prompt)
             self.assertEqual(route.alias, "wan3_i2v")
-            self.assertEqual(route.status, "pending")
-            self.assertIsNone(route.tool)
-        self.assertEqual(routing.select_provider("i2v", provider="seedance", arguments={"real_face_refs": True}).status, "pending")
+            self.assertEqual(route.status, "ready")
+            self.assertEqual(route.tool, "Fal___generate_wan3_i2v")
+        self.assertEqual(routing.select_provider("i2v", provider="seedance", arguments={"real_face_refs": True}).tool, "Fal___generate_wan3_i2v")
 
     def test_pending_default_only_uses_declared_interim(self):
         self.assertEqual(routing.select_provider("image").tool, "Seedream___text_to_image")
         self.assertEqual(routing.select_provider("v2v_edit").tool, "Luma___modify_video")
-        self.assertEqual(routing.select_provider("reference_video").status, "pending")
+        self.assertEqual(routing.select_provider("reference_video").tool, "Fal___generate_wan3_r2v")
         self.assertEqual(routing.select_provider("lipsync").status, "pending")
         self.assertEqual(routing.select_provider("t2v", available_tools={"Kling___text_to_video"}).status, "blocked")
-        with patch.dict(routing.TOOL_MAP["wan3_t2v"], {"status": "ready", "gateway_tool": "Fal___text_to_video"}):
-            self.assertEqual(routing.select_provider("t2v").tool, "Fal___text_to_video")
+        self.assertEqual(routing.select_provider("t2v").tool, "Fal___generate_wan3_t2v")
 
     def test_long_generation_refuses_with_split_reason(self):
         route = routing.route_intent("generate a 45 second single shot")

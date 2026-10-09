@@ -23,7 +23,10 @@ type MenuState = { x: number; y: number; flowX: number; flowY: number } | null;
 const QUICK_ADD: Array<{ label: string; kind: CreativeNodeKind; toolId?: string }> = [
   { label: "Text", kind: "text" },
   { label: "Scene", kind: "image", toolId: "image.generate" },
-  { label: "Video", kind: "video", toolId: "video.generate" },
+  { label: "Video", kind: "video", toolId: "video.wan3.generate" },
+  { label: "Wan 3 image to video", kind: "video", toolId: "video.wan3.animate" },
+  { label: "Wan 3 reference video", kind: "video", toolId: "video.wan3.reference" },
+  { label: "Seedance video", kind: "video", toolId: "video.generate" },
   { label: "Runway video", kind: "video", toolId: "runway.video.generate" },
   { label: "Runway image to video", kind: "video", toolId: "runway.video.fromImage" },
   { label: "Runway Aleph edit", kind: "video", toolId: "runway.video.edit" },

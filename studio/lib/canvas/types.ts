@@ -49,7 +49,7 @@ export type ToolDefinition = {
   primaryFields: string[];
   pollTool?: string;
   pollIntervalMs?: number;
-  defaults?: Record<string, string | number>;
+  defaults?: Record<string, string | number | boolean>;
 };
 
 export type AgentToolEvent = {

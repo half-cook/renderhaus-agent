@@ -8,6 +8,7 @@ from typing import Any
 from providers.fish_audio.api import MODELS, VOICES
 from providers.runway.contracts import I2V_RATIOS, IMAGE_RATIOS
 from providers.fal.wan import ASPECT_RATIOS, EDIT_MODES, MODELS as FAL_MODELS, RESOLUTIONS
+from providers.fal import wan3
 from providers.luma.catalog import (
     ASPECT_RATIOS as LUMA_ASPECT_RATIOS,
     DURATIONS as LUMA_DURATIONS,
@@ -35,9 +36,10 @@ STATIC_FIELD_OPTIONS: dict[str, dict[str, list[str | int]]] = {
         "duration_seconds": list(range(2, 11)),
     },
     "fal": {
-        "model": list(FAL_MODELS),
-        "aspect_ratio": list(ASPECT_RATIOS),
-        "resolution": list(RESOLUTIONS),
+        "model": list(FAL_MODELS) + list(wan3.ENDPOINTS),
+        "aspect_ratio": list(dict.fromkeys((*ASPECT_RATIOS, *wan3.ASPECT_RATIOS))),
+        "resolution": list(dict.fromkeys((*RESOLUTIONS, *wan3.RESOLUTIONS))),
+        "duration": list(range(2, 31)),
         "edit_mode": list(EDIT_MODES),
         "task": list(EDIT_MODES[1:]),
     },
