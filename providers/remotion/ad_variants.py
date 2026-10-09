@@ -262,6 +262,14 @@ def _plan(job: Path, master_asset: str, rows: list[dict], brief: dict) -> dict:
         raise ValueError("The master must contain readable video.")
     hashes = {master_asset: _file_hash(master)}
     source_video = next(s for s in source["streams"] if s.get("codec_type") == "video")
+    source_frame_rates = {"average": source_video.get("avg_frame_rate"),
+                          "nominal": source_video.get("r_frame_rate")}
+    cadence_warnings = []
+    if source_frame_rates["average"] != source_frame_rates["nominal"]:
+        cadence_warnings.append(
+            f"Frame-rate metadata suggests VFR (average {source_frame_rates['average']}, "
+            f"nominal {source_frame_rates['nominal']}); source cadence is unverified. "
+            "The timeline produces CFR at its configured FPS.")
     tuples, keys = set(), set()
     for index, row in enumerate(rows):
         try:
@@ -313,6 +321,7 @@ def _plan(job: Path, master_asset: str, rows: list[dict], brief: dict) -> dict:
                     clip["url"] = str(Path(clip["url"]).relative_to(job))
             planned.append({"row_index": index, **row, "timeline": props, "render_arguments": arguments,
                             "reframe_plan": reframe_plan,
+                            "source_frame_rates": source_frame_rates, "cadence_warnings": cadence_warnings,
                             "input_props_hash": digest(props), "filename": _filename(row, campaign),
                             "expected_strings": {} if brief.get("reframe_only", False) else
                             {field: row[field] for field in ("sku", "price_text", "cta_text", "legal_text")}})
@@ -329,7 +338,8 @@ def _plan(job: Path, master_asset: str, rows: list[dict], brief: dict) -> dict:
             "estimated_time_s": sum(p["timeline"]["renderConfig"]["durationInFrames"] /
                                     p["timeline"]["renderConfig"]["fps"] * 4 for p in planned),
             "source_resolution": "x".join(map(str, api._media_dimensions(source_video))) if api._media_dimensions(source_video) else None,
-            "warnings": ["Safe-zone percentages are placeholders; confirm with the channel brief.",
+            "source_frame_rates": source_frame_rates, "cadence_warnings": cadence_warnings,
+            "warnings": [*cadence_warnings, "Safe-zone percentages are placeholders; confirm with the channel brief.",
                          "Flat-master swaps affect overlays only; baked-in pixels cannot change.",
                          "Delivery/loudness/black/freeze QC is pending feat/remotion-delivery-qc."]}
 
@@ -434,6 +444,7 @@ def _render(row: dict, job: Path, directory: Path, approved_by: str, review: boo
                   "qc": {"text_fit": "passed", "safe_zone": "passed", "delivery_qc": "pending"},
                   "ocr_match": None, "approved_by": approved_by, "editorial_review": "pending",
                   "reframe_plan": row["reframe_plan"],
+                  "source_frame_rates": row["source_frame_rates"], "cadence_warnings": row["cadence_warnings"],
                   **{key: result.get(key) for key in ("width", "height", "source_resolution", "upscaled", "warnings")}})
     duration = entry["duration_s"]
     sheet = execute("contact_sheet", job, str(destination.relative_to(job)),

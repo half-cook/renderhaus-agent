@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import copy
+import json
 import os
 from pathlib import Path
 import shutil
@@ -158,6 +159,33 @@ class ReframeMatrixTests(unittest.TestCase):
                     self.job, self.job / "master.mp4", {"format": {"duration": "1"}, "streams": [{
                         "codec_type": "video", "width": 320, "height": 180,
                         "avg_frame_rate": rate, "r_frame_rate": rate, "sample_aspect_ratio": "1:1"}]})
+
+    def test_cadence_conversion_is_disclosed_in_plan_and_artifact(self):
+        original_media = ad_variants._media
+
+        def measured_media(job, path):
+            file, metadata = original_media(job, path)
+            metadata = copy.deepcopy(metadata)
+            video = next(s for s in ad_variants._probe_payload(metadata)["streams"]
+                         if s["codec_type"] == "video")
+            video.update(avg_frame_rate="12/1", r_frame_rate="24/1")
+            return file, metadata
+
+        args = {**self.args, "rows": [{"variant_key": "cadence", "aspect": "1:1"}]}
+        with patch("providers.remotion.ad_variants._media", side_effect=measured_media):
+            plan = ad_variants.render_ad_variants(stage="plan", **args)
+            self.assertEqual(plan["status"], "planned", plan)
+            self.assertIn("CFR", " ".join(plan["cadence_warnings"]))
+            self.assertEqual(plan["planned"][0]["cadence_warnings"], plan["cadence_warnings"])
+            with ad_variants.authorize("render_first", plan["plan_hash"], "operator:test"):
+                rendered = ad_variants.render_ad_variants(stage="render_first", plan_hash=plan["plan_hash"], **args)
+        self.assertEqual(rendered["status"], "succeeded", rendered)
+        entry = rendered["rendered"][0]
+        self.assertEqual(entry["cadence_warnings"], plan["cadence_warnings"])
+        self.assertEqual(entry["source_frame_rates"], {"average": "12/1", "nominal": "24/1"})
+        self.assertEqual(entry["warnings"], [])
+        manifest = json.loads(Path(rendered["manifest_path"]).read_text())
+        self.assertEqual(manifest[0]["cadence_warnings"], plan["cadence_warnings"])
 
 
 if __name__ == "__main__":
