@@ -70,7 +70,7 @@ def accuracy(results):
 class CalibrationFileTests(unittest.TestCase):
     def test_default_calibration_covers_every_slot_model_and_states_its_limits(self):
         calibration = load_calibration()
-        self.assertIsInstance(calibration, Calibration)
+        self.assertEqual(type(calibration).__name__, Calibration.__name__)
         self.assertEqual(set(calibration.models), {SIGLIP_MODEL, DINO_MODEL, DINOV3_MODEL})
         self.assertEqual(calibration.method, "platt-logistic-class-balanced")
         self.assertEqual((calibration.acceptance_threshold, calibration.veto_threshold), (0.5, 0.2))

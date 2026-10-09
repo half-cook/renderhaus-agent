@@ -50,4 +50,4 @@ license-files = ["third_party/video-use/LICENSE", "third_party/hyperframes/LICEN
 [tool.setuptools.package-data]
 "providers.elevenlabs" = ["openapi.json"]
 
-"agent.deep_agent" = ["AGENTS.md", "routing_policy.json", "skills/*/SKILL.md"]
+"agent.deep_agent" = ["AGENTS.md", "routing_policy.json", "continuity_qc_calibration.json", "skills/*/SKILL.md"]

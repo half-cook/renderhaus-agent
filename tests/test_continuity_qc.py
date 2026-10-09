@@ -49,7 +49,7 @@ class ContinuityQCTests(unittest.TestCase):
         self.assertEqual(report.pairs[0].siglip_similarity, 1.0)
         self.assertEqual(report.pairs[0].dino_similarity, 1.0)
         self.assertTrue(report.pairs[0].accepted)
-        self.assertEqual(report.pairs[1].score, 0.0)
+        self.assertLess(report.pairs[1].score, 0.5)  # mean calibrated probability
         self.assertFalse(report.pairs[1].accepted)
         self.assertFalse(report.accepted)
         self.assertEqual(checker.siglip.frames, ["a", "b", "c"])
@@ -59,7 +59,9 @@ class ContinuityQCTests(unittest.TestCase):
         report = self.checker(dino={"a": [1, 0], "b": [0, 1]}).score(
             [Shot("one", "a"), Shot("two", "b")]
         )
-        self.assertEqual(report.pairs[0].score, 0.5)
+        pair = report.pairs[0]
+        self.assertGreater(pair.siglip_score, 0.9)
+        self.assertLess(pair.dino_score, 0.2)  # below the per-model veto
         self.assertFalse(report.accepted)
 
     def test_face_identity_defaults_to_not_configured(self):

@@ -80,8 +80,12 @@ class MetricTests(unittest.TestCase):
         dino = Fake(DINO_MODEL, {"a": [1, 0], "b": [0.6, 0.8]})
         pair = ContinuityQC(siglip=siglip, dino=dino).score([Shot("1", "a"), Shot("2", "b")]).pairs[0]
         s, d = pair.siglip_similarity, pair.dino_similarity
-        self.assertAlmostEqual(bench.combine(s, d, "mean"), pair.score)
-        self.assertEqual(bench.combine(s, d, "min") >= 0.8, pair.accepted)
+        self.assertAlmostEqual(bench.combine(s, d, "mean"), (s + d) / 2)
+        from agent.deep_agent.continuity_qc import load_calibration
+
+        cal = load_calibration()
+        self.assertEqual(bench.calibrated_accept(s, d, cal.models[SIGLIP_MODEL], cal.models[DINO_MODEL]),
+                         pair.accepted)
         self.assertAlmostEqual(bench.combine(s, d, "min"), min(s, d))
         with self.assertRaises(ValueError):
             bench.combine(s, d, "max")
