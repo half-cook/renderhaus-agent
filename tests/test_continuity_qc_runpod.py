@@ -89,7 +89,7 @@ class RunPodBackendTests(unittest.TestCase):
             patcher = patch(target, replacement)
             patcher.start()
             self.addCleanup(patcher.stop)
-        self.http_patcher = patch("urllib.request.urlopen")
+        self.http_patcher = patch("agent.deep_agent.continuity_qc_runpod._open")
         self.http = self.http_patcher.start()
         self.addCleanup(self.http_patcher.stop)
         self.shots = [Shot("one", Frame("a")), Shot("two", Frame("b"))]
@@ -199,8 +199,8 @@ class RunPodBackendTests(unittest.TestCase):
         self.assert_skipped(self.checker().score(self.shots))
         self.assertEqual(self.http.call_count, 3)
 
-    def test_401_and_validation_400_are_not_retried(self):
-        for status in (401, 400):
+    def test_401_validation_400_and_redirect_are_not_retried(self):
+        for status in (401, 400, 302):
             with self.subTest(status=status):
                 self.http.reset_mock()
                 self.http.side_effect = HTTPError("https://example.test", status,
@@ -325,6 +325,19 @@ class RunPodBackendTests(unittest.TestCase):
     def test_unexpected_adapter_exception_is_sanitized_and_fail_soft(self):
         self.http.side_effect = RuntimeError("runpod-offline-test-key")
         self.assert_skipped(self.checker().score(self.shots))
+
+    def test_encoding_counts_towards_total_deadline(self):
+        class SlowFrame(Frame):
+            def save(frame, stream, *, format):
+                self.clock.now += 11
+                super().save(stream, format=format)
+        self.assert_skipped(self.checker().score([Shot("one", SlowFrame("a")), self.shots[1]]))
+        self.http.assert_not_called()
+
+    def test_too_many_frames_skip_before_http(self):
+        shots = [Shot(str(index), Frame("a")) for index in range(9)]
+        self.assert_skipped(self.checker().score(shots))
+        self.http.assert_not_called()
 
     def test_local_backend_never_dispatches_http(self):
         local = ContinuityQC(siglip=Embedder(SIGLIP_MODEL, 0.92),
