@@ -329,7 +329,7 @@ def _reframe_canvas(videos: list[dict[str, Any]], metadata: list[_VisualMetadata
             raise ValueError("All primary clips must use the same reframe_size canvas.")
         width, height = requested[0]["width"], requested[0]["height"]
         base_width, base_height = ASPECT_SIZES[aspect]
-        if abs(width - height * base_width / base_height) > 2:
+        if abs(width - height * base_width / base_height) > 2 + 2 * base_width / base_height:
             raise ValueError("reframe_size must match aspect_ratio after even-pixel rounding.")
     crop_scales = []
     for clip, measured in zip(videos, metadata, strict=True):

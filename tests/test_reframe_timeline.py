@@ -150,6 +150,19 @@ class ReframeTimelineRenderTests(unittest.TestCase):
             api.build_timeline_props("Bad crop", [self.visual(crop_box={"x": 200, "y": 0,
                 "width": 180, "height": 180})])
 
+    def test_repeated_shots_count_and_probe_one_master_once(self):
+        visuals = [self.visual(duration_seconds=.5, source_in_seconds=start,
+            crop_box={"x": 0, "y": 0, "width": 180, "height": 180},
+            reframe_size={"width": 180, "height": 180}) for start in (0, .5)]
+        props = api.build_timeline_props("Shared master", visuals, aspect_ratio="1:1")
+        with tempfile.TemporaryDirectory(dir=self.root) as temporary, \
+                patch.object(local, "MAX_TOTAL_BYTES", self.source.stat().st_size + 1), \
+                patch.object(local, "_probe", wraps=local._probe) as probes:
+            command, _ = local._command(props, Path(temporary), media_roots=(self.root,),
+                                         source_root=self.root, filename="output.mp4")
+        self.assertEqual(probes.call_count, 1)
+        self.assertEqual(command.count(str(self.source)), 2)
+
     def test_upscale_requires_allowance_and_reports_no_added_detail(self):
         visual = self.visual(crop_box={"x": 0, "y": 0, "width": 180, "height": 180},
                              reframe_size={"width": 360, "height": 360})

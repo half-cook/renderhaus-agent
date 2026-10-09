@@ -394,12 +394,21 @@ def enrich_tool_schema(provider_id: str, tool: dict[str, Any]) -> dict[str, Any]
             "type": "object", "properties": {
                 **{field: {"type": "string"} for field in required},
                 "product_asset": {"type": "string"}, "vo_asset": {"type": "string"},
-                "start_s": {"type": "number"}, "end_s": {"type": "number"}},
-            "required": list(required),
+                "start_s": {"type": "number"}, "end_s": {"type": "number"},
+                "subject_box": deepcopy(_BOX_SCHEMA), "crop_box": deepcopy(_VISUAL_ITEM_SCHEMA["properties"]["crop_box"]),
+                "safe_zone": {"type": "object", "properties": {key: {"type": "number"} for key in ("top", "bottom", "side")}},
+                "anchor": {"type": "string", "description": "center, top, bottom, left or right."},
+                "allow_upscale": {"type": "boolean"},
+                "scene_times": {"type": "array", "items": {"type": "number"}},
+                "shots": {"type": "array", "items": {"type": "object", "required": ["from_s", "to_s"],
+                    "properties": {"from_s": {"type": "number"}, "to_s": {"type": "number"},
+                        "subject_box": deepcopy(_BOX_SCHEMA), "crop_box": deepcopy(_VISUAL_ITEM_SCHEMA["properties"]["crop_box"]),
+                        "anchor": {"type": "string"}}}}},
+            "required": ["variant_key", "aspect"],
         }
         properties["stage"]["description"] = "Allowed values: plan, render_first, render_batch. Plan is free. First and batch always need human approval, including autonomous runs."
-        properties["rows"]["description"] = "1-100 rows. Nonempty required strings; verbatim price/CTA/legal. Unique sku/locale/aspect and variant_key. Assets confined to job directory."
-        properties["brief"]["description"] = "campaign ASCII identifier; optional logo_alpha_required (default true), legal_locales, legal_by_locale, fps, source_width/source_height, output_resolution source or 720p/1080p/1440p/2160p, fit cover/contain. No custom shell or template code."
+        properties["rows"]["description"] = "1-100 rows. Retail requires variant_key, sku, price_text, cta_text, logo_asset, legal_text, locale, aspect. brief.reframe_only=true requires only variant_key/aspect. Optional subject_box/crop_box/safe_zone/anchor/allow_upscale; shots contiguous or scene_times. Assets confined to job directory."
+        properties["brief"]["description"] = "campaign ASCII identifier; optional reframe_only, logo_alpha_required (default true), legal_locales, legal_by_locale, fps, source_width/source_height, output_resolution source or 720p/1080p/1440p/2160p. Shared subject_box/crop_box/safe_zone/anchor/allow_upscale defaults. No custom shell or template code."
         properties["plan_hash"]["description"] = "Exact immutable SHA-256 returned by plan. Required for render stages; changes to copy/media invalidate approval. Approval is trusted host context, never an argument."
         properties["concurrency"]["description"] = "Integer 1-2 local renders. A failed variant does not stop the others."
     if provider_id == "remotion" and tool_name == "prepare_conversational_edit":

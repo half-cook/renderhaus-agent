@@ -181,6 +181,8 @@ def _command(props: dict[str, Any], directory: Path, *, media_roots: tuple[Path,
     count = 0
     text_count = 0
     total_bytes = 0
+    sources: dict[str, tuple[Path, dict[str, Any]]] = {}
+    loaded_paths: set[Path] = set()
     for track in document['tracks']:
         for item in track['items']:
             if item['type'] == 'text':
@@ -201,12 +203,16 @@ def _command(props: dict[str, Any], directory: Path, *, media_roots: tuple[Path,
                 raise ValueError('Local assembly does not support motion/grade/rotation; use Lambda.')
             count += 1
             asset = assets[item['assetId']]
-            source = _source(asset['url'], directory=directory, index=count,
-                             media_roots=media_roots, source_root=source_root)
-            total_bytes += source.stat().st_size
-            if total_bytes > MAX_TOTAL_BYTES:
-                raise ValueError('Local assembly source media exceeds the total size limit.')
-            probe = _probe(source)
+            if asset['url'] not in sources:
+                source = _source(asset['url'], directory=directory, index=count,
+                                 media_roots=media_roots, source_root=source_root)
+                if source not in loaded_paths:
+                    loaded_paths.add(source)
+                    total_bytes += source.stat().st_size
+                    if total_bytes > MAX_TOTAL_BYTES:
+                        raise ValueError('Local assembly source media exceeds the total size limit.')
+                sources[asset['url']] = source, _probe(source)
+            source, probe = sources[asset['url']]
             kind = asset['kind']
             rate = float(item.get('playbackRate', 1))
             command += ['-protocol_whitelist', 'file,pipe', '-format_whitelist', FORMATS]

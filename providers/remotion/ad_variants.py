@@ -25,6 +25,8 @@ from server.billing_rates import ad_matrix_estimate
 LAYOUTS = json.loads(Path(__file__).with_name("ad_layouts.json").read_text())
 REQUIRED = ("variant_key", "sku", "price_text", "cta_text", "logo_asset", "legal_text", "locale", "aspect")
 OPTIONAL = ("product_asset", "vo_asset", "start_s", "end_s")
+REFRAME_FIELDS = ("subject_box", "crop_box", "safe_zone", "anchor", "allow_upscale")
+OPTIONAL += REFRAME_FIELDS + ("shots", "scene_times")
 _AUTHORIZATION: ContextVar[tuple[str, str, str] | None] = ContextVar("ad_matrix_authorization", default=None)
 
 
@@ -103,7 +105,58 @@ def _filename(row: dict, campaign: str) -> str:
     return stem + ".mp4"
 
 
-def _row_arguments(row: dict, brief: dict, job: Path, master: Path, source: dict) -> dict:
+def reframe_shots(master: str, source_width: int, source_height: int, aspect: str,
+                  shots: list[dict], *, rotation: int = 0, subject_box: dict | None = None,
+                  crop_box: dict | None = None, safe_zone: dict | None = None,
+                  anchor: str = "center", allow_upscale: bool = False,
+                  target_size: tuple[int, int] | None = None, volume: float = 1,
+                  fit: Literal["cover", "contain"] = "cover") -> tuple[list[dict], list[dict]]:
+    """Compile one static validated window per shot into consecutive timeline clips."""
+    from providers.ffmpeg.reframe import crop_plan, display_size, finite
+
+    if not isinstance(shots, list) or not 1 <= len(shots) <= 60:
+        raise ValueError("shots must contain 1-60 consecutive ranges.")
+    previous = None
+    for shot in shots:
+        if not isinstance(shot, dict) or set(shot) - {"from_s", "to_s", "subject_box", "crop_box", "anchor"}:
+            raise ValueError("Each shot accepts from_s, to_s and optional subject_box, crop_box, anchor.")
+        start = finite(shot.get("from_s"), "from_s", 0, 600)
+        end = finite(shot.get("to_s"), "to_s", 0, 600)
+        if start >= end or previous is not None and not math.isclose(start, previous, abs_tol=1e-6):
+            raise ValueError("Shot ranges must be positive and consecutive without gaps or overlap.")
+        previous = end
+    options = dict(rotation=rotation, subject_box=subject_box, crop_box=crop_box,
+                   safe_zone=safe_zone, anchor=anchor, allow_upscale=allow_upscale)
+    shot_options = [{**options, **{key: shot[key] for key in ("subject_box", "crop_box", "anchor") if key in shot}}
+                    for shot in shots]
+    plans = [crop_plan(source_width, source_height, aspect, target_size=target_size, **option)
+             for option in shot_options]
+    if fit == "contain":
+        width, height = display_size(source_width, source_height, rotation)
+        full_frame = {"x": 0, "y": 0, "width": width, "height": height}
+        shot_options = [{**option, "subject_box": full_frame, "crop_box": None} for option in shot_options]
+        plans = [crop_plan(source_width, source_height, aspect, target_size=target_size, **option)
+                 for option in shot_options]
+    common_size = (min(plan["width"] for plan in plans), min(plan["height"] for plan in plans))
+    if any((plan["width"], plan["height"]) != common_size for plan in plans):
+        plans = [crop_plan(source_width, source_height, aspect, target_size=common_size,
+                           **option) for option in shot_options]
+    visuals = []
+    origin = shots[0]["from_s"]
+    for shot, plan in zip(shots, plans, strict=True):
+        plan.update(from_s=shot["from_s"], to_s=shot["to_s"])
+        visual = {"kind": "video", "url": master, "start_seconds": shot["from_s"] - origin,
+                  "source_in_seconds": shot["from_s"], "duration_seconds": shot["to_s"] - shot["from_s"],
+                  "fit": "cover" if plan["mode"] == "crop" else "pad_blur", "volume": volume,
+                  "reframe_size": {"width": plan["width"], "height": plan["height"]},
+                  "allow_upscale": allow_upscale, "transition": "cut"}
+        visual["crop_box" if plan["mode"] == "crop" else "pad_box"] = plan[
+            "crop_box" if plan["mode"] == "crop" else "foreground_box"]
+        visuals.append(visual)
+    return visuals, plans
+
+
+def _row_arguments(row: dict, brief: dict, job: Path, master: Path, source: dict) -> tuple[dict, list[dict]]:
     video = next(s for s in source["streams"] if s["codec_type"] == "video")
     duration = float(source["format"]["duration"])
     start, end = row.get("start_s", 0), row.get("end_s", duration)
@@ -124,13 +177,38 @@ def _row_arguments(row: dict, brief: dict, job: Path, master: Path, source: dict
     for name, measured in zip(("width", "height"), dimensions):
         if brief.get(f"source_{name}", measured) != measured:
             raise ValueError("Flat-master resolution differs from the brief/composition.")
-    width, height = api.choose_canvas(row["aspect"], [dimensions], brief.get("output_resolution", "source"))
-    safe = LAYOUTS[row["aspect"]]["safe"]
+    target_size = api.choose_canvas(row["aspect"], [dimensions], brief.get("output_resolution", "source"))
+    options = {key: row.get(key, brief.get(key)) for key in REFRAME_FIELDS if key in row or key in brief}
+    rotation = next((entry["rotation"] for entry in video.get("side_data_list", [])
+                     if isinstance(entry, dict) and "rotation" in entry), (video.get("tags") or {}).get("rotate", 0))
+    rotation = float(rotation)
+    if not math.isfinite(rotation) or rotation % 90:
+        raise ValueError("Master rotation must be a finite multiple of 90 degrees.")
+    if "shots" in row and "scene_times" in row:
+        raise ValueError("Choose shots or scene_times, not both.")
+    if "scene_times" in row:
+        from providers.ffmpeg.reframe import shots_from_scenes
+
+        shots = shots_from_scenes(row["scene_times"], duration)
+        shots = [{"from_s": max(start, shot["from_s"]), "to_s": min(end, shot["to_s"])}
+                 for shot in shots if shot["to_s"] > start and shot["from_s"] < end]
+    else:
+        shots = row.get("shots", [{"from_s": start, "to_s": end}])
+    visuals, plans = reframe_shots(str(master), video["width"], video["height"], row["aspect"], shots,
+                                   rotation=int(rotation), target_size=target_size,
+                                   volume=0 if row.get("vo_asset") else 1, fit=brief.get("fit", "cover"), **options)
+    if not math.isclose(shots[0]["from_s"], start, abs_tol=1e-6) or not math.isclose(shots[-1]["to_s"], end, abs_tol=1e-6):
+        raise ValueError("shots must cover the entire start_s/end_s master range.")
+    width, height = plans[0]["width"], plans[0]["height"]
+    safe = plans[0]["safe_zone"]
     x, y = width * safe["side"], height * safe["top"]
     box_width, box_height = width * (1 - 2 * safe["side"]), height * (1 - safe["top"] - safe["bottom"])
     length = end - start
-    visuals = [{"kind": "video", "url": str(master), "duration_seconds": length,
-                "source_in_seconds": start, "fit": brief.get("fit", "cover"), "volume": 0 if row.get("vo_asset") else 1}]
+    audio = [{"url": str(job / row["vo_asset"]), "duration_seconds": length, "fade_out_seconds": 0}] if row.get("vo_asset") else []
+    if brief.get("reframe_only", False):
+        return {"title": brief["campaign"], "visuals": visuals, "text_overlays": [], "audio_tracks": audio,
+                "aspect_ratio": row["aspect"], "fps": fps,
+                "output_resolution": brief.get("output_resolution", "source")}, plans
     logo = {"x": x, "y": y, "width": box_width * 0.25, "height": box_height * 0.15}
     visuals.append({"kind": "image", "url": str(job / row["logo_asset"]), "duration_seconds": length,
                     "track": 1, "fit": "contain", "box": logo})
@@ -147,19 +225,20 @@ def _row_arguments(row: dict, brief: dict, job: Path, master: Path, source: dict
                      "min_font_size": 16, "max_font_size": min(180, max(16, int(height * size))),
                      "color": "#ffffff", "background_color": "#151515",
                      "fade_in_seconds": 0, "fade_out_seconds": 0})
-    audio = [{"url": str(job / row["vo_asset"]), "duration_seconds": length, "fade_out_seconds": 0}] if row.get("vo_asset") else []
     return {"title": brief["campaign"], "visuals": visuals, "text_overlays": text,
             "audio_tracks": audio, "aspect_ratio": row["aspect"], "fps": fps,
-            "output_resolution": brief.get("output_resolution", "source")}
+            "output_resolution": brief.get("output_resolution", "source")}, plans
 
 
 def _plan(job: Path, master_asset: str, rows: list[dict], brief: dict) -> dict:
     planned, blocked = [], []
     brief = {"campaign": "campaign", "logo_alpha_required": True, **brief}
     if set(brief) - {"campaign", "logo_alpha_required", "legal_locales", "legal_by_locale", "fps",
-                    "source_width", "source_height", "output_resolution", "fit"}:
+                    "source_width", "source_height", "output_resolution", "fit", "reframe_only", *REFRAME_FIELDS}:
         raise ValueError("Brief contains unsupported fields; template/shell code is forbidden.")
-    if (type(brief["logo_alpha_required"]) is not bool
+    if brief.get("fit", "cover") not in {"cover", "contain"}:
+        raise ValueError("fit must be cover or contain; contain preserves the whole master with blurred padding.")
+    if (type(brief["logo_alpha_required"]) is not bool or type(brief.get("reframe_only", False)) is not bool
             or not isinstance(brief.get("legal_by_locale", {}), dict)
             or any(not isinstance(k, str) or not isinstance(v, str) or not v.strip()
                    for k, v in brief.get("legal_by_locale", {}).items())
@@ -180,14 +259,17 @@ def _plan(job: Path, master_asset: str, rows: list[dict], brief: dict) -> dict:
         try:
             if not isinstance(row, dict) or set(row) - set(REQUIRED + OPTIONAL):
                 raise ValueError("Table row contains unsupported columns.")
-            missing = [key for key in REQUIRED if not isinstance(row.get(key), str) or not row[key].strip()]
+            required = ("variant_key", "aspect") if brief.get("reframe_only", False) else REQUIRED
+            missing = [key for key in required if not isinstance(row.get(key), str) or not row[key].strip()]
             if missing:
                 raise ValueError("Missing or empty required cells: " + ", ".join(missing))
+            if brief.get("reframe_only", False):
+                row = {"sku": "master", "locale": "und", **row}
             for field in ("variant_key", "sku", "locale"):
-                if not re.fullmatch(r"[A-Za-z0-9_-]{1,40}", row[field]):
+                if not isinstance(row[field], str) or not re.fullmatch(r"[A-Za-z0-9_-]{1,40}", row[field]):
                     raise ValueError(f"Unsafe {field}; use ASCII letters, digits, underscores or hyphens.")
             if row["aspect"] not in LAYOUTS:
-                raise ValueError("aspect must be 9:16, 1:1, 4:5 or 16:9.")
+                raise ValueError("aspect must be one of " + ", ".join(LAYOUTS) + ".")
             identity = (row["sku"], row["locale"], row["aspect"])
             if identity in tuples or row["variant_key"] in keys:
                 raise ValueError("Duplicate (sku, locale, aspect) or variant_key.")
@@ -212,16 +294,20 @@ def _plan(job: Path, master_asset: str, rows: list[dict], brief: dict) -> dict:
                         if "A" not in image.getbands() and "transparency" not in image.info:
                             raise ValueError("Logo alpha channel is required by the template.")
                 hashes[row[field]] = _file_hash(path)
-            arguments = _row_arguments(row, brief, job, master, source)
+            arguments, reframe_plan = _row_arguments(row, brief, job, master, source)
             props = api.build_timeline_props(**arguments)
+            if len(props["document"]["assets"]) > 60:
+                raise ValueError("The matrix row exceeds the 60-asset local timeline limit; use fewer shots.")
             for asset in props["document"]["assets"]:
                 asset["url"] = str(Path(asset["url"]).relative_to(job))
             for field in ("visuals", "audio_tracks"):
                 for clip in arguments[field]:
                     clip["url"] = str(Path(clip["url"]).relative_to(job))
             planned.append({"row_index": index, **row, "timeline": props, "render_arguments": arguments,
+                            "reframe_plan": reframe_plan,
                             "input_props_hash": digest(props), "filename": _filename(row, campaign),
-                            "expected_strings": {field: row[field] for field in ("sku", "price_text", "cta_text", "legal_text")}})
+                            "expected_strings": {} if brief.get("reframe_only", False) else
+                            {field: row[field] for field in ("sku", "price_text", "cta_text", "legal_text")}})
         except (ValueError, OSError, KeyError, StopIteration) as exc:
             blocked.append({"row_index": index, "variant_key": row.get("variant_key") if isinstance(row, dict) else None,
                             "reasons": [str(exc)]})
@@ -229,6 +315,7 @@ def _plan(job: Path, master_asset: str, rows: list[dict], brief: dict) -> dict:
     plan_hash = digest({"planned": planned, "blocked": blocked, "brief": brief,
                         "assets": hashes, "layouts": LAYOUTS, "estimate": quote})
     return {"status": "blocked" if blocked else "planned", "planned": planned, "blocked": blocked,
+            "candidate_set": True, "review_note": "Reframing is editorial. These are candidates; a person must approve each aspect's contact sheet.",
             "asset_hashes": hashes,
             "plan_hash": plan_hash, "render_count": len(planned), "estimate": quote,
             "estimated_time_s": sum(p["timeline"]["renderConfig"]["durationInFrames"] /
@@ -337,18 +424,21 @@ def _render(row: dict, job: Path, directory: Path, approved_by: str, review: boo
                   "file": str(destination), "output_path": str(destination), "sha256": _file_hash(destination),
                   "duration_s": config["durationInFrames"] / config["fps"],
                   "qc": {"text_fit": "passed", "safe_zone": "passed", "delivery_qc": "pending"},
-                  "ocr_match": None, "approved_by": approved_by,
-                  **{key: result.get(key) for key in ("width", "height", "source_resolution", "warnings")}})
+                  "ocr_match": None, "approved_by": approved_by, "editorial_review": "pending",
+                  "reframe_plan": row["reframe_plan"],
+                  **{key: result.get(key) for key in ("width", "height", "source_resolution", "upscaled", "warnings")}})
+    duration = entry["duration_s"]
+    sheet = execute("contact_sheet", job, str(destination.relative_to(job)),
+                    {"every_s": max(.1, duration / 3), "cols": 3, "rows": 1})
+    if not sheet["ok"]:
+        raise ValueError(sheet.get("error", "Contact sheet failed."))
+    entry.update(contact_sheet=sheet["outputs"][0]["path"],
+                 review_assets=[{"output_path": output["path"]} for output in sheet["outputs"]])
     if review:
-        duration = entry["duration_s"]
         frames = execute("extract_frames", job, str(destination.relative_to(job)),
                          {"times": [duration * .05, duration * .5, max(0, duration - 1 / config["fps"])], "width": min(1920, config["width"])})
         if not frames["ok"]:
             raise ValueError(frames.get("error", "Review frame extraction failed."))
-        sheet = execute("contact_sheet", job, str(destination.relative_to(job)),
-                        {"every_s": max(.1, duration / 3), "cols": 3, "rows": 1})
-        if not sheet["ok"]:
-            raise ValueError(sheet.get("error", "Contact sheet failed."))
         entry.update(review_frames=[o["path"] for o in frames["outputs"]],
                      contact_sheet=sheet["outputs"][0]["path"], expected_strings=row["expected_strings"],
                      review_assets=[{"output_path": o["path"]} for o in frames["outputs"] + sheet["outputs"]])
@@ -404,7 +494,7 @@ def render_ad_variants(stage: Literal["plan", "render_first", "render_batch"], j
             frozen = _freeze_sources(job, directory, plan["asset_hashes"])
         except (ValueError, OSError, KeyError, TypeError) as exc:
             return {"status": "blocked", "reason": str(exc)}
-        first_key = (rows[0]["sku"], rows[0]["locale"])
+        first_key = (plan["planned"][0]["sku"], plan["planned"][0]["locale"])
         first = [r for r in plan["planned"] if (r["sku"], r["locale"]) == first_key]
         completed = {r["variant_key"] for r in rendered if Path(r["file"]).is_file()
                      and _file_hash(Path(r["file"])) == r["sha256"]}
@@ -436,6 +526,7 @@ def render_ad_variants(stage: Literal["plan", "render_first", "render_batch"], j
         _save(directory / "report.json", {"planned": plan["render_count"], "rendered": len(rendered),
                                           "blocked": plan["blocked"], "failed": failed})
         return {"status": "failed" if failed else "succeeded", "plan_hash": plan_hash,
+                "candidate_set": True, "review_note": plan["review_note"],
                 "planned": plan["render_count"], "rendered": rendered, "blocked": plan["blocked"],
                 "failed": failed, "manifest_path": str(manifest_path), "warnings": plan["warnings"],
                 "estimate": ad_matrix_estimate(args)}
