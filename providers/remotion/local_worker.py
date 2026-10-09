@@ -1,4 +1,3 @@
-"""Wait for one local ffmpeg render and persist its terminal outcome."""
 from __future__ import annotations
 
 import json

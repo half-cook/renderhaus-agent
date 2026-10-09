@@ -117,7 +117,7 @@ class LocalGateway:
                 try:
                     result = await asyncio.to_thread(dispatch, provider, verb, arguments)
                     payload = result if isinstance(result, dict) else {'result': result}
-                except Exception as exc:  # Same registry boundary as the Lambda handler.
+                except Exception as exc:
                     payload = {'error': 'Local provider dispatch failed.', 'error_type': type(exc).__name__}
                 if self.max_spend_cents is not None:
                     async with self._spend_lock:
@@ -131,7 +131,6 @@ class LocalGateway:
                   'latency_ms': round((time.monotonic() - started) * 1000),
                   'estimate_cents': estimate if self.max_spend_cents is not None else None,
                   'charged_cents': estimate if attempted and payload.get('status') != 'dry_run' else 0}
-        # Never log arguments, credentials, URLs, provider payloads, or exception text.
         logger.info(json.dumps(record, sort_keys=True))
         if self.ledger:
             self.ledger.parent.mkdir(parents=True, exist_ok=True)

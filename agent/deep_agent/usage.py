@@ -16,7 +16,6 @@ MODEL_RATES = {
 
 
 class ModelUsage:
-    """Meter completed model messages once, including child updates and approval resumes."""
 
     def __init__(self, run_scope: str):
         self.run_scope = run_scope

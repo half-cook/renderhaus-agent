@@ -93,7 +93,6 @@ def _video_voiceover(prompt: str) -> bool:
 
 
 def request_tool_blocker(prompt: str, name: str) -> str | None:
-    """Apply request exclusions before discovery, disclosure and dispatch."""
     if _video_voiceover(prompt) and job_type(name) in {"still_image", "image_edit"}:
         return "A shot or clip with voiceover uses video, TTS and assembly; image tools are excluded."
     if name.startswith("Seedream___") and not re.search(r"\bseedream\b", prompt, re.I):
@@ -107,7 +106,6 @@ def filter_request_tools(prompt: str, names: set[str]) -> set[str]:
 
 
 def capability_constraints(constraints: dict, capability: str) -> dict:
-    """Scope named video and audio choices to their step in a narration workflow."""
     scoped = dict(constraints)
     if not constraints["predicates"].get("video_voiceover"):
         return scoped
@@ -136,7 +134,6 @@ def _delivery_route(prompt: str, constraints: dict, *, region: str | None,
     mp4_export = bool(re.search(r"(?:assemble|render|export|final).*\bmp4\b|assemble.*(?:video|clip)", prompt, re.I))
     if not voiceover and not mp4_export:
         return None
-    # Template, animation and NLE requests retain their dedicated skills.
     if re.search(r"whiteboard|hyperframes|remotion|\botio\b|\bfcpxml\b|\bedl\b|(?:still|image).*animat", prompt, re.I):
         return None
     steps = []
