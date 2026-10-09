@@ -220,7 +220,7 @@ def _licence_interim(alias: str) -> str | None:
     model_policy = policy.get("model_policies", {}).get(model, {})
     if model_policy.get("live_enabled") is not False:
         return None
-    return next((row["interim"] for row in POLICY["capability_map"].values()
+    return next((row.get("interim") for row in POLICY["capability_map"].values()
                  if row["default"] == alias), None)
 
 
@@ -235,7 +235,7 @@ def resolve_alias(alias: str) -> str | None:
         return None
     interim = entry.get("interim_alias")
     if interim is None:
-        interim = next((row["interim"] for row in POLICY["capability_map"].values()
+        interim = next((row.get("interim") for row in POLICY["capability_map"].values()
                         if row["default"] == alias), None)
     return TOOL_MAP.get(interim, {}).get("gateway_tool") if interim else None
 
@@ -291,9 +291,9 @@ def route_intent(prompt: str, *, region: str | None = None, tier: str | None = N
             scoped = capability_constraints(constraints, capability) if capability == "lipsync" else constraints
             route = select_provider(capability, arguments=arguments, available_tools=available_tools,
                                     region=region, retry=retry, **scoped)
-            if capability != "performance_transfer" and (constraints["provider"] in {"kling", "runway", "luma", "seedream", "fish_audio"} or (
+            if capability != "performance_transfer" and (constraints["provider"] in {"kling", "runway", "luma", "seedream", "fish_audio", "alibaba_modelstudio"} or (
                 constraints["provider"] == "fal" and re.search(r"vidu|vace", prompt, re.I)
-            )):
+            ) or constraints["named_model"] == "wan3" and capability in {"v2v_edit", "extend"}):
                 skill = "named-provider"
             return replace(route, skill=skill)
         entry = TOOL_MAP[alias]
@@ -328,7 +328,7 @@ def job_type(name: str | None) -> str | None:
             if tool == name:
                 return {"image_edit": "image_edit", "reference": "reference_video", "image": "still_image", "instrumental": "music"}.get(job, job)
     for capability, choice in POLICY["capability_map"].items():
-        aliases = [choice["default"], choice["interim"]] + [ex["tool"] for ex in choice["exceptions"]]
+        aliases = [choice["default"], choice.get("interim")] + [ex["tool"] for ex in choice["exceptions"]]
         if any(alias and name in [TOOL_MAP.get(alias, {}).get("gateway_tool"), *TOOL_MAP.get(alias, {}).get("gateway_variants", [])] for alias in aliases):
             return capability
     if name == "FishAudio___generate_speech":
@@ -707,7 +707,7 @@ def select_provider(job: str, *, tier: str | None = None, required: dict | None 
         return Route(alias=alias, basis=basis, status="blocked", job_type=capability, reason=reason, disclosure=reason)
     tool = entry.get("gateway_tool")
     if entry["status"] == "pending":
-        interim = None if named_model else entry.get("interim_alias") or (choice["interim"] if alias == choice["default"] and not provider else None)
+        interim = None if named_model else entry.get("interim_alias") or (choice.get("interim") if alias == choice["default"] and not provider else None)
         if predicates["real_face_refs"] and capability in {"t2v", "i2v", "reference_video"}:
             interim = None
         if not interim:
@@ -809,7 +809,7 @@ def select_provider(job: str, *, tier: str | None = None, required: dict | None 
     if provider_id == "gemini":
         disclosure += " Experimental continuity judge. Default promotion requires a committed passing eval. Background inputs are stored by the vendor."
     if provider_id == "alibaba_modelstudio":
-        disclosure += " Dry-run preview only; live customer use is blocked by the preview licence."
+        disclosure += " Alibaba preview terms permit internal testing, research and evaluation only until GA. Live customer use is blocked by the preview licence."
     if predicates["real_face_refs"] and alias in {"wan3_t2v", "wan3_i2v", "wan3_r2v", "wan3_edit", "wan3_extend"}:
         required["real_face_refs"] = True
         disclosure += " Real-person likeness consent " + (
