@@ -1,14 +1,11 @@
-# resolve-new-track-safety draft
+# NLE track safety reference
 
-Status: provider pending
+Status: export workflow in the installed resolve-handoff skill. Local graded-timeline control remains pending.
 
-Unlocking provider or integration: local Resolve Studio bridge and verified import workflow.
+The canonical handoff is `Remotion___export_nle_timeline`. It places generated media on new
+export tracks and preserves recorded source timecodes, reel names and provenance. The exporter
+cannot modify a local graded Resolve timeline or guarantee preservation through the editor's
+import choices. FCPXML/OTIO re-import remains pending feat/nle-import-fcpxml.
 
-Seed aliases: `otio_export`. These aliases are not live dispatch tools.
-
-The live handoff exporter separates generated assets onto new export tracks. It cannot modify a local graded Resolve timeline or guarantee grade preservation through the editor import choices.
-
-Before activation, add the Gateway schema, policy gates, and offline routing cases.
-Use only `server/billing_rates.py` for prices. Unconfirmed prices remain unknown.
-Require existing spending authorization and shared approval policy for paid work.
-Verify the completed artifact and real Studio flow before claiming live support.
+No retired `otio_export` placeholder adds a separate operation. A completed package is an
+outbound handoff, not evidence of local Resolve control or a verified round trip.

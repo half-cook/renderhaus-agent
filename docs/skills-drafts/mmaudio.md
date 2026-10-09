@@ -1,14 +1,10 @@
-# mmaudio draft
+# mmaudio retired reference
 
-Status: provider pending
+Status: retired.
 
-Unlocking provider or integration: fal MMAudio video-to-audio adapter.
+Former aliases `mmaudio_sfx` never route to this provider. MMAudio checkpoints are CC-BY-NC; non-commercial weights block product use. No weight download or live inference is allowed.
 
-Seed aliases: `mmaudio_sfx`. These aliases are not live dispatch tools.
+The replacement is Mirelo picture-synced SFX (`mirelo_v2a`, feat/sfx-mirelo), or built ElevenLabs text-only SFX. Use the capability map and disclose the pending
+provider or declared interim; do not claim that a replacement fulfills a named retired-provider request.
 
-The built Fal adapter supports Wan VACE video only. MMAudio code and checkpoint licences differ. Checkpoints may carry non-commercial conditions, so review commercial rights before activation. Generic ElevenLabs SFX does not establish video-synchronized MMAudio generation.
-
-Before activation, add the Gateway schema, policy gates, and offline routing cases.
-Use only `server/billing_rates.py` for prices. Unconfirmed prices remain unknown.
-Require existing spending authorization and shared approval policy for paid work.
-Verify the completed artifact and real Studio flow before claiming live support.
+See [capability map](../CAPABILITY_MAP.md). This file is historical guidance, not an active skill.

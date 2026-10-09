@@ -1,103 +1,140 @@
 # Skill routing and media policy
 
 Renderhaus proposes an intent skill before media work. The deterministic router in
-`agent/deep_agent/routing.py` reads `routing_policy.json`. The Deep Agents runner includes
-the proposal in the user message and `read_studio_context`. The model reads the selected
+`agent/deep_agent/routing.py` reads `routing_policy.json`. The Deep Agents runner supplies
+that proposal in the user message and `read_studio_context`. The model reads the selected
 `/skills/<name>/SKILL.md`, discovers the actual Gateway schema, and proposes dispatch.
-A route is a proposal, not proof that a live model follows it. Pending providers return `pending`, explicitly denied provider requests return `blocked`,
-and unknown intents return `unrouted`. None invents a tool or a paid fallback.
-The shared Gateway executor enforces provider/model gates, approvals, and spending limits
-regardless of the model's proposal, including subagent dispatch and approved resumes.
+The shared Gateway executor enforces provider/model policy, approvals, and spending limits
+on manager calls, subagent calls, and approved resumes.
+
+A route is a proposal, not evidence of live output. Unbuilt tools return `pending`, policy
+refusals return `blocked`, retired requests return `retired`, and unknown intents return
+`unrouted`. No status invents a Gateway target or authorizes a substitute paid provider.
 
 ## Packaged skills
 
-The backend packages 17 live skills, including vidu-q4, conversational-edit and the optional
-hyperframes skill. The original six names remain compatible.
-`metadata.include_tools` is a space-separated string of dispatch wrappers.
-`metadata.gateway_tools` records exact Gateway names separately. Abstract seed aliases never
-replace wrapper names in `include_tools`. Tests parse the actual middleware metadata and
-check every declared or body-referenced tool name against `configs/gateway/*.tools.json`
-and the optional local HyperFrames schema.
+The backend packages 24 skills. Some explain pending capabilities; installing their
+instructions does not install a provider adapter. The original execution skills remain
+available. `image-gen` and `named-provider` cover the new still-image policy and explicit
+requests for providers retained outside automatic selection. The archived `vidu-q4` skill
+is removed; its built Fal tools remain available through `named-provider`.
 
-| Skill | Dispatch tools | Gateway tools |
+`metadata.include_tools` is a space-separated string of real dispatch wrappers.
+`metadata.routing_tools` separately lists canonical defaults, exceptions, or workflow IDs.
+`metadata.gateway_tools` contains only built Gateway names, including the optional local
+HyperFrames schema. Pending IDs never become dispatch wrappers or fabricated endpoints.
+Tests parse the installed Deep Agents middleware metadata and check Gateway references
+against `configs/gateway/*.tools.json` and the local schema.
+
+The following table comes from the packaged `SKILL.md` metadata. Each linked skill owns its
+exact Gateway names, native arguments, and operational constraints.
+
+| Skill | Dispatch wrappers | Capability routing IDs |
 | --- | --- | --- |
-| [audio](../agent/deep_agent/skills/audio/SKILL.md) | `call_audio_tool` | `ElevenLabs___music_compose`<br>`ElevenLabs___text_to_sound_effects_convert`<br>`ElevenLabs___text_to_speech_convert`<br>`FishAudio___generate_speech` |
-| [audio-bed](../agent/deep_agent/skills/audio-bed/SKILL.md) | `call_audio_tool` | `ElevenLabs___text_to_speech_convert`<br>`ElevenLabs___music_compose`<br>`ElevenLabs___text_to_sound_effects_convert`<br>`FishAudio___generate_speech` |
-| [continuity-qc](../agent/deep_agent/skills/continuity-qc/SKILL.md) | `call_media_tool` | `Fal___text_to_video`<br>`Fal___get_video_task` |
-| [conversational-edit](../agent/deep_agent/skills/conversational-edit/SKILL.md) | `call_editor_tool`<br>`call_audio_tool` | `Remotion___prepare_conversational_edit`<br>`Remotion___render_timeline`<br>`Remotion___get_render_progress`<br>`Remotion___export_nle_timeline`<br>`ElevenLabs___speech_to_text_convert`<br>`ElevenLabs___speech_to_text_transcripts_get` |
-| [edit-v2v](../agent/deep_agent/skills/edit-v2v/SKILL.md) | `call_media_tool` | `Fal___video_to_video`<br>`Fal___get_video_task`<br>`Fal___list_fal_models`<br>`Runway___video_to_video`<br>`Runway___get_runway_task`<br>`Runway___list_runway_models`<br>`Luma___modify_video`<br>`Luma___get_video_task`<br>`Luma___list_luma_models` |
-| [final-assembly](../agent/deep_agent/skills/final-assembly/SKILL.md) | `call_editor_tool` | `Remotion___export_nle_timeline`<br>`Remotion___get_render_progress`<br>`Remotion___render_timeline` |
-| [hyperframes](../agent/deep_agent/skills/hyperframes/SKILL.md) | `call_editor_tool`<br>`call_audio_tool` | Local `HyperFrames___render_composition`<br>`ElevenLabs___text_to_speech_convert` |
-| [i2v](../agent/deep_agent/skills/i2v/SKILL.md) | `call_media_tool` | `Fal___image_to_video`<br>`Fal___reference_to_video`<br>`Fal___get_video_task`<br>`Kling___image_to_video`<br>`Kling___get_video_task`<br>`Seedance___image_to_video`<br>`Seedance___get_video_task`<br>`Runway___image_to_video`<br>`Runway___get_runway_task`<br>`Seedream___text_to_image`<br>`Seedream___image_to_image`<br>`Luma___image_to_video`<br>`Luma___get_video_task`<br>`Luma___list_luma_models`<br>`Fal___vidu_q4_i2v`<br>`Fal___vidu_q4_r2v` |
-| [motion-graphics](../agent/deep_agent/skills/motion-graphics/SKILL.md) | `call_editor_tool`<br>`call_media_tool` | `Remotion___render_timeline`<br>`Remotion___get_render_progress`<br>`Remotion___export_nle_timeline`<br>`Seedream___text_to_image`<br>`Seedream___image_to_image`<br>`Runway___text_to_image`<br>`Runway___image_to_image`<br>`Runway___get_runway_task` |
-| [product-images](../agent/deep_agent/skills/product-images/SKILL.md) | `call_media_tool` | `Runway___get_runway_task`<br>`Runway___image_to_image`<br>`Runway___text_to_image`<br>`Seedream___image_to_image`<br>`Seedream___text_to_image` |
-| [refinement](../agent/deep_agent/skills/refinement/SKILL.md) | `call_media_tool`<br>`call_audio_tool`<br>`call_editor_tool` | `Fal___video_to_video`<br>`Luma___modify_video`<br>`Runway___video_to_video`<br>`Seedream___image_to_image` |
+| [act-two](../agent/deep_agent/skills/act-two/SKILL.md) | `call_media_tool` | `runway_act_two`<br>`kling_motion_control` |
+| [audio](../agent/deep_agent/skills/audio/SKILL.md) | `call_audio_tool` | `eleven_v4_turbo`<br>`voices_ivc_create`<br>`mureka_v95`<br>`mirelo_v2a`<br>`elevenlabs_sfx_v2` |
+| [audio-bed](../agent/deep_agent/skills/audio-bed/SKILL.md) | `call_audio_tool` | `eleven_v4_turbo`<br>`voices_ivc_create`<br>`mureka_v95`<br>`mirelo_v2a`<br>`elevenlabs_sfx_v2` |
+| [continuity-qc](../agent/deep_agent/skills/continuity-qc/SKILL.md) | `call_media_tool` | `local_qc`<br>`gemini_vlm_judge` |
+| [conversational-edit](../agent/deep_agent/skills/conversational-edit/SKILL.md) | `call_editor_tool`<br>`call_audio_tool` | `remotion_render`<br>`hyperframes_render` |
+| [edit-v2v](../agent/deep_agent/skills/edit-v2v/SKILL.md) | `call_media_tool` | `wan3_edit`<br>`wan3_extend` |
+| [final-assembly](../agent/deep_agent/skills/final-assembly/SKILL.md) | `call_editor_tool` | `remotion_render` |
+| [hyperframes](../agent/deep_agent/skills/hyperframes/SKILL.md) | `call_editor_tool`<br>`call_audio_tool` | `hyperframes_render` |
+| [i2v](../agent/deep_agent/skills/i2v/SKILL.md) | `call_media_tool` | `wan3_i2v`<br>`wan3_r2v`<br>`seedance25_i2v`<br>`seedance25_r2v` |
+| [image-gen](../agent/deep_agent/skills/image-gen/SKILL.md) | `call_media_tool` | `gpt_image25_t2i`<br>`gpt_image25_edit`<br>`recraft_v41_vector`<br>`ideogram45_edit` |
+| [lipsync](../agent/deep_agent/skills/lipsync/SKILL.md) | `call_media_tool` | `sync3_lipsync`<br>`heygen_avatar_v` |
+| [lyrics-video](../agent/deep_agent/skills/lyrics-video/SKILL.md) | `call_audio_tool`<br>`call_editor_tool` | `mureka_lyrics_video`<br>`mureka_v95` |
+| [motion-graphics](../agent/deep_agent/skills/motion-graphics/SKILL.md) | `call_editor_tool`<br>`call_media_tool` | `remotion_render`<br>`hyperframes_render` |
+| [named-provider](../agent/deep_agent/skills/named-provider/SKILL.md) | `call_media_tool`<br>`call_audio_tool` | `kling_t2v`<br>`kling_i2v`<br>`runway_gen45_t2v`<br>`runway_aleph_edit`<br>`luma_ray3_t2v`<br>`luma_ray3_modify`<br>`vidu_q4_i2v`<br>`vidu_q4_r2v`<br>`seedream_t2i`<br>`fish_audio_tts`<br>`wan_vace_edit` |
+| [product-demo-video](../agent/deep_agent/skills/product-demo-video/SKILL.md) | `call_editor_tool` | `cutaway_record`<br>`remotion_render`<br>`hyperframes_render` |
+| [product-images](../agent/deep_agent/skills/product-images/SKILL.md) | `call_media_tool` | `gpt_image25_t2i`<br>`gpt_image25_edit`<br>`recraft_v41_vector`<br>`ideogram45_edit` |
+| [refinement](../agent/deep_agent/skills/refinement/SKILL.md) | `call_media_tool`<br>`call_audio_tool`<br>`call_editor_tool` | `gpt_image25_edit`<br>`wan3_edit`<br>`remotion_render` |
 | [resolve-handoff](../agent/deep_agent/skills/resolve-handoff/SKILL.md) | `call_editor_tool` | `Remotion___export_nle_timeline` |
-| [still-then-video](../agent/deep_agent/skills/still-then-video/SKILL.md) | `call_media_tool` | `Seedream___text_to_image`<br>`Seedream___image_to_image`<br>`Runway___text_to_image`<br>`Runway___image_to_image`<br>`Runway___get_runway_task`<br>`Fal___image_to_video`<br>`Fal___get_video_task`<br>`Kling___image_to_video`<br>`Kling___get_video_task`<br>`Seedance___image_to_video`<br>`Seedance___get_video_task`<br>`Fal___vidu_q4_i2v`<br>`Fal___vidu_q4_r2v` |
-| [storyboard-shots](../agent/deep_agent/skills/storyboard-shots/SKILL.md) | `call_media_tool` | `Fal___get_video_task`<br>`Fal___image_to_video`<br>`Seedance___get_video_task`<br>`Seedance___image_to_video`<br>`Seedream___image_to_image`<br>`Fal___vidu_q4_i2v`<br>`Fal___vidu_q4_r2v` |
-| [t2v](../agent/deep_agent/skills/t2v/SKILL.md) | `call_media_tool` | `Fal___text_to_video`<br>`Fal___get_video_task`<br>`Fal___list_fal_models`<br>`Kling___text_to_video`<br>`Kling___omni_video`<br>`Kling___get_video_task`<br>`Kling___list_kling_models`<br>`Runway___text_to_video`<br>`Runway___get_runway_task`<br>`Runway___list_runway_models`<br>`Seedance___text_to_video`<br>`Seedance___get_video_task`<br>`Seedance___list_seedance_models`<br>`Luma___text_to_video`<br>`Luma___extend_video`<br>`Luma___get_video_task`<br>`Luma___list_luma_models` |
-| [video-short](../agent/deep_agent/skills/video-short/SKILL.md) | `call_media_tool`<br>`call_audio_tool`<br>`call_editor_tool` | `Fal___get_video_task`<br>`Fal___image_to_video`<br>`Fal___text_to_video`<br>`Seedance___get_video_task`<br>`Seedance___image_to_video`<br>`Seedance___text_to_video`<br>`Seedream___text_to_image` |
-| [vidu-q4](../agent/deep_agent/skills/vidu-q4/SKILL.md) | `call_media_tool` | `Fal___vidu_q4_i2v`<br>`Fal___vidu_q4_r2v`<br>`Fal___get_video_task`<br>`Fal___list_fal_models` |
+| [still-then-video](../agent/deep_agent/skills/still-then-video/SKILL.md) | `call_media_tool` | `gpt_image25_t2i`<br>`gpt_image25_edit`<br>`wan3_i2v`<br>`seedance25_i2v` |
+| [storyboard-shots](../agent/deep_agent/skills/storyboard-shots/SKILL.md) | `call_media_tool` | `gpt_image25_t2i`<br>`gpt_image25_edit`<br>`wan3_i2v`<br>`wan3_r2v`<br>`seedance25_i2v`<br>`seedance25_r2v` |
+| [t2v](../agent/deep_agent/skills/t2v/SKILL.md) | `call_media_tool` | `wan3_t2v`<br>`seedance25_t2v` |
+| [upscale](../agent/deep_agent/skills/upscale/SKILL.md) | `call_media_tool` | `topaz_upscale`<br>`topaz_interpolate` |
+| [video-short](../agent/deep_agent/skills/video-short/SKILL.md) | `call_media_tool`<br>`call_audio_tool`<br>`call_editor_tool` | `gpt_image25_t2i`<br>`wan3_t2v`<br>`wan3_i2v`<br>`seedance25_t2v`<br>`seedance25_i2v`<br>`remotion_render` |
+| [whiteboard-explainer](../agent/deep_agent/skills/whiteboard-explainer/SKILL.md) | `call_editor_tool` | `remotion_render`<br>`hyperframes_render` |
 
-Fish Audio has built API code and a committed schema, but it is not in the active provider
-catalog. `FishAudio___generate_speech` requires a discovered target. An absent target is an
-incomplete capability, not permission to invent one. Local QC is a Python integration with
-caller-supplied decoded frames. It has no Gateway endpoint; the skill reports incomplete QC
-when the host has not configured embeddings. Synthetic Wan preview generation is disclosed
-separately by the QC skill.
+Fish Audio has built API code and a committed schema but is not in the active provider
+catalog. Its named request requires a discovered target. `local_qc` is a Python integration
+with caller-decoded frames, not a Gateway endpoint. A ready QC route does not prove the host
+has configured embeddings or completed a comparison.
 
-## Seed aliases
+## Capability selection
 
-Every canonical alias from the read-only seed README has a mapping or explicit pending reason.
-The resolver also contains `runway_i2v` and `runway_gen4_t2i` for built Runway image workflows.
-NLE aliases all package the same timeline snapshot. The exporter returns OTIO, FCPXML, EDLs,
-a manifest, and media together; an alias does not imply a separate Gateway tool.
+[The capability map](CAPABILITY_MAP.md) is the reference for defaults, exception predicates,
+explicit-only tools, pending branches, US hosts, evidence, and A/B candidates.
+Selection uses an explicit requested provider/model, then a matching exception, then the
+capability default. A pending default uses only its declared interim. Cost and stored quality
+tiers do not order models. Prices support disclosure and spending controls.
 
-| Abstract name | Gateway tool or pending provider |
-| --- | --- |
-| `kling_t2v` | `Kling___text_to_video` |
-| `kling_i2v` | `Kling___image_to_video` |
-| `runway_gen45_t2v` | `Runway___text_to_video` |
-| `runway_aleph_edit` | `Runway___video_to_video` |
-| `wan_t2v` | `Fal___text_to_video` |
-| `wan_i2v` | `Fal___image_to_video` |
-| `wan_vace_edit` | `Fal___video_to_video` |
-| `vidu_q4_i2v` | `Fal___vidu_q4_i2v` |
-| `vidu_q4_r2v` | `Fal___vidu_q4_r2v` |
-| `seedance_t2v` | `Seedance___text_to_video` |
-| `seedance_i2v` | `Seedance___image_to_video` |
-| `seedream_t2i` | `Seedream___text_to_image` |
-| `elevenlabs_tts` | `ElevenLabs___text_to_speech_convert` |
-| `fish_audio_tts` | `FishAudio___generate_speech` |
-| `remotion_render` | `Remotion___render_timeline` |
-| `otio_export` | `Remotion___export_nle_timeline` |
-| `fcpxml_export` | `Remotion___export_nle_timeline` |
-| `edl_export` | `Remotion___export_nle_timeline` |
-| `media_package` | `Remotion___export_nle_timeline` |
-| `local_qc` | Local `continuity_qc.ContinuityQC`, no Gateway dispatch |
-| `runway_act_two` | provider pending: Runway Act-Two |
-| `hedra_character3` | provider pending: Hedra |
-| `liveportrait_lipsync` | provider pending: LivePortrait |
-| `infinitetalk_lipsync` | provider pending: InfiniteTalk |
-| `seedvr2_upscale` | provider pending: SeedVR2 |
-| `rife_interpolate` | provider pending: RIFE |
-| `topaz_upscale` | provider pending: Topaz |
-| `mmaudio_sfx` | provider pending: MMAudio |
-| `ace_step_music` | provider pending: ACE-Step |
-| `veo_t2v` | provider pending: Veo |
-| `veo_i2v` | provider pending: Veo |
-| `veo_extend` | provider pending: Veo |
-| `ideogram_t2i` | provider pending: Ideogram |
-| `recraft_t2i` | provider pending: Recraft |
-| `runway_gen4_t2i` | `Runway___text_to_image` |
-| `runway_i2v` | `Runway___image_to_video` |
-| `transcript_edit` | `Remotion___prepare_conversational_edit` |
-| `hyperframes_render` | provider pending: HyperFrames |
+The current Seedance tools provide the declared generation interims while Wan 3.0 is pending.
+Current Seedream tools provide the still-image interims. Luma preserves the existing edit
+and extend behavior through explicit interim entries. ElevenLabs music is the music interim.
+These entries expire when their capability default becomes built; they do not create permanent
+exceptions for demoted providers. An exact named pending model has no substitute interim.
+
+Dialogue without real-person references selects the Seedance exception. Real-person photo/video
+references force Wan and prohibit Seedance or Omni, including the Seedance interim. A pending
+real-face route therefore stays pending. Vector output selects pending Recraft. Text-only edits
+on an existing image select pending Ideogram; Ideogram generation without an edit image selects
+the GPT generation default. Full-body motion selects pending Kling Motion Control; facial and
+upper-body acting select pending Act-Two. Video-synchronized SFX remains pending Mirelo, while
+text-only effects use built ElevenLabs. Requests over 30 seconds need supported shot splitting
+or a refusal; long presenter/digital-twin videos use the pending HeyGen exception.
+
+Explicit-only Kling generation, Runway generation/Aleph/images, Luma, Vidu Q4, Seedream,
+Fish Audio, ElevenLabs music, and legacy Wan VACE retain their code, schemas, and billing.
+An explicit request gets `explicit request; not the default for <capability>` disclosure.
+Their presence in Gateway discovery does not authorize automatic selection.
+Veo, Hedra, LivePortrait, InfiniteTalk, SeedVR2, RIFE, MMAudio, and ACE-Step are retired.
+MMAudio checkpoints and non-commercial InsightFace weights remain blocked for product use.
+MiniMax H3 and Hunyuan remain blocked. A retired named request reports retirement before the
+customer chooses a mapped replacement.
+
+`routing.capability_table()` exposes built job controls, limits, provider/model policy, and
+billing references. Selection checks native controls, duration, availability, licence, and
+region for the chosen tool. An unsupported combination refuses rather than searches a price
+ladder. The executor requires those controls in the actual submitted arguments. A wrong tool
+or model returns the selected route for rediscovery; approval never authorizes silent substitution.
+
+### Stored project settings
+
+Projects retain `provider_policy` in `projects.provider_policy_json` and the authenticated,
+workspace-scoped `GET` and `PUT /api/studio/projects/{project_id}/provider-policy` endpoints.
+Existing `confidential` and `quality_tier` fields remain compatible with stored requests.
+Neither field changes routing, approvals, or provider selection. Mentioning confidentiality
+in chat also adds no provider restriction. There is no `confidential-route` skill or FLUX
+confidential fallback. Every project uses the same quality-first capability map.
+
+### Disclosure and approval
+
+Before each dispatch, the host emits `MODEL_UPDATE` with provider, model, estimated cost
+including the existing platform fee, and the selection basis. The basis is `default`,
+`exception: <reason>`, `explicit request`, or `interim default until <provider> lands`.
+Unpublished rates remain unknown. Published-price disclosure does not confuse dry-run zero
+charges with a live price and does not change a provider setting.
+
+All paid video pauses with an estimate even in autonomous runs while
+`premium_video_approval` is enabled. That includes current Seedance, Kling, Runway, Luma,
+Vidu and rendering tools, plus future video-producing capabilities when implemented.
+`RENDERHAUS_PREMIUM_VIDEO_APPROVAL=false` disables the additional autonomous video pause.
+Paid non-video retains the existing non-autonomous approvals and authorized autonomous mode.
+`APPROVAL_EXEMPT_TOOLS`, free tools, and the autonomous spending cap remain unchanged.
+The free conversational-edit preparer still requires separate cut-plan confirmation.
+The Codex fallback shares this executor and policy.
+
+Billing comes from `server/billing_rates.py` and the provider's documented contract.
+Vidu Q4 uses its dated promotion through 2026-11-30 and list rates afterward.
+Dispatch and cap accounting use actual dry-run charges. Unsupported dimensions, missing
+measured source durations, unconfirmed larger Seedream sizes, and operator quotes can remain
+unknown. Unknown is never free or a guessed amount. A cap blocks unknown-cost paid dispatch.
 
 ## Conversational editing after generation
 
 The editor compiles cuts from existing footage and word-level transcripts. It does not select
-the generative V2V ladder. Explicit restyling still selects `edit-v2v`; an existing approved
+the generative video-edit capability. Explicit restyling still selects `edit-v2v`; an existing approved
 timeline export still selects `resolve-handoff`. An OTIO request after an agent cut selects
 `conversational-edit` and the existing exporter. A requested HyperFrames edit returns pending
 instead of silently substituting a different overlay provider.
@@ -120,13 +157,12 @@ The required `plan_summary` is a plain-English proposal. The host requests cut-p
 before preparation, including autonomous runs. Approve resumes the exact saved call; reject
 never reaches Gateway. The pure tool has zero provider cost and does not reserve paid spend.
 `APPROVAL_EXEMPT_TOOLS` stays unchanged. The free-tools list and free billing branch add only
-this preparer. Rendering retains its separate approval and cap behavior; premium-generation
-rules are unchanged. A plan approval never authorizes new transcription or video generation.
+this preparer. Rendering retains its separate paid-video approval and cap behavior, including autonomous runs. A plan approval never authorizes new transcription or video generation.
 
 The manager or audio role uses the existing paid ElevenLabs `speech_to_text_convert`, with
 verbatim word timestamps, and supplies its result to the editor. Transcripts are cached by
 immutable source version in private conversation files. Operator-configured Scribe quotes
-remain required for a known estimate; otherwise the cost is unknown. Confidential-project
+remain required for a known estimate; otherwise the cost is unknown. Existing approval
 and autonomous-cap rules still apply. No new price is asserted. Transcripts and plans do not
 enter the outcome training hook, and preparation preserves asset handles until render dispatch.
 
@@ -147,212 +183,92 @@ NLE export requires actual pinned source metadata and baked effects. A preparati
 alone lacks the checksums/timecodes/provenance needed for export. Local ffmpeg merge/probe
 utilities live in `server/projects.py`; Aleph input probing lives in `server/runway_inputs.py`.
 Neither exposes an editor QC Gateway tool. Cut, playback and loudness inspection therefore
-remain incomplete without host inspection. HyperFrames, fframes, local-QC dispatch, live
-model judgment and real NLE round trips remain unverified or unavailable.
+remain incomplete without host inspection. HyperFrames footage compositing, local-QC dispatch, live model judgment, and real NLE round
+trips remain unverified or unavailable. fframes is retired.
 See [decisions and verification](conversational-edit-decisions.tsv) and
 [third-party notices](THIRD_PARTY_NOTICES.md) for the adaptation and its MIT notice.
 
 ## Offline routing verification
 
-`tests/fixtures/skill_routing.json` retains all 55 original workbook rows plus the Vidu Q4 (6),
-conversational-edit (3) and HyperFrames (3) CSV rows, for **67 total**, **29 active** and
-**38 skipped** cases. The Vidu CSV re-states three i2v workbook prompts, so those prompts appear
-twice; the HyperFrames CSV's seven motion-graphics rows already existed and are not duplicated.
-The unqualified product-photo row expects Kling and is skipped because the existing cheapest
-Standard route uses Seedance. HyperFrames cases explicitly enable the dry-run tool. The
-conversational-edit HyperFrames-overlay row stays skipped: overlays inside conversational edits
-are not wired, even though the standalone hyperframes skill now exists.
-Each skip is a generated unittest with its concrete reason, not a dropped fixture row.
-An active case asserts the selected skill and proposed exact Gateway name through the same
-router used by the runner. Five Resolve suites need a local bridge or transcription/import
-integration even though the final packaging tool exists. TTS-only lipsync rows are skipped
-because speech alone does not animate a character.
-The conversational OTIO row is active. The local-QC and HyperFrames rows keep their exact
-seed aliases and explicit dependency skips; they do not claim working QC or overlays.
+`tests/fixtures/skill_routing.json` contains 122 retained capability-map workbook rows.
+There are 80 active cases and 42 explicit dependency skips. The 23 archived rows are dropped,
+including confidential-route and `[project.confidential=true]` rows. A false prefix is ordinary
+routing input. The read-only workbook and source map are not copied into the repository.
 
-Run `.venv/bin/python -m unittest discover -s tests -p test_skill_routing.py -v` to see each
-case and skip reason. Other offline tests exercise the compiled graph with `ScriptedModel`
-and fake Gateway, premium approve/reject resumes, model/environment/region gates, unknown
-quotes, concurrent and interrupted spending, and injected continuity embeddings.
-`test_provider_ladder.py` adds capability/tier/cost ordering, confidential project context,
-review provenance, retry recovery, and compiled fake-model approval-interrupt checks. These
-checks make no live or paid provider calls and download no weights.
+Active cases assert the canonical routing choice, selected skill, actual built/interim Gateway
+name, and status. The over-30-second single-shot case asserts a refusal. Pending rows keep
+`provider pending: <tool> (feat/<branch>)` reasons. The NLE import row stays skipped with
+`provider pending: nle import (feat/nle-import-fcpxml)`.
+
+Fixture overrides preserve the existing transcript preparer and cut-plan approval instead of
+routing directly to rendering. Export after an agent cut retains the conversational-edit
+workflow. Explicit HyperFrames plus narration retains its existing workflow and enabled dry-run
+fixture context. HyperFrames footage overlays remain skipped because standalone preview does
+not implement compositing. The ambiguous Ideogram asset-generation row follows the binding GPT
+generation rule. Retired-provider replacement examples retain `source_prompt`; separate tests
+assert that explicit retired requests dispatch nothing. [Decisions](capability-map-decisions.tsv)
+record these differences from the workbook.
+
+The pending specialists cover sync, HeyGen, Act-Two, Kling Motion Control, Topaz, Mirelo,
+Recraft, Ideogram edit, Mureka lyrics video, reference-video defaults/exceptions, VLM judging,
+and cutaway capture. A declared interim activates other pending defaults where supported.
+An explicit Wan request and a real-face Wan shot stay pending instead of using Seedance.
+
+`.venv/bin/python -m unittest discover -s tests -p test_skill_routing.py -v` reports each
+fixture and skip reason. Supporting tests cover capability defaults/exceptions, named demoted
+providers, interim constraints, inert project flags, every paid-video autonomous approval,
+provider/model/region policy, spend recovery, provenance, and injected continuity embeddings.
+They make no live provider calls and download no weights.
 
 ## Optional HyperFrames compositions
 
-The [HyperFrames skill](../agent/deep_agent/skills/hyperframes/SKILL.md) adapts selected
-Apache-2.0 guidance for faceless explainers, product launches, captions with supplied
-timings, and kinetic titles. There are now 15 packaged skills. The
-[assessment](HYPERFRAMES_ASSESSMENT.md) records all 21 upstream skill decisions,
-runtime requirements, and hosted HeyGen exclusions. Attribution and modifications
-appear in [third-party notices](THIRD_PARTY_NOTICES.md).
+The [HyperFrames skill](../agent/deep_agent/skills/hyperframes/SKILL.md) adapts Apache-2.0
+guidance for HTML compositions, supplied timings, and kinetic titles. The
+[assessment](HYPERFRAMES_ASSESSMENT.md) records upstream decisions, runtime dependencies,
+and hosted HeyGen exclusions. Attribution remains in [third-party notices](THIRD_PARTY_NOTICES.md).
 
-| Contract | Behavior |
-| --- | --- |
-| `metadata.include_tools` | `call_editor_tool call_audio_tool` |
-| `metadata.gateway_tools` | `HyperFrames___render_composition ElevenLabs___text_to_speech_convert` |
-| `HYPERFRAMES_ENABLED` | Defaults to `false`. Explicit HyperFrames requests are blocked while disabled. |
-| `HYPERFRAMES_DRY_RUN` | Defaults to `true`. The optional local tool validates input and returns preview metadata. |
-| Live rendering | Returns `not_run` because an isolated renderer is not configured, even when dry-run is disabled. |
-| Compute estimate | Unknown. Non-autonomous dispatch pauses, and an autonomous cap blocks an unknown quote. |
-| Confidential projects | The existing executor allowlist blocks HyperFrames previews. No confidentiality gate is relaxed. |
+`HYPERFRAMES_ENABLED` defaults false. While disabled, explicit requests report a blocker.
+`HYPERFRAMES_DRY_RUN` defaults true. The enabled local
+`HyperFrames___render_composition` validates input and returns preview metadata through
+`call_editor_tool`; it is not a deployed Gateway Lambda target. Live rendering returns
+`not_run` until an isolated renderer exists, even if dry-run is disabled.
 
-`HyperFrames___render_composition` is an implemented local tool with an MCP-shaped
-schema in `agent/hyperframes.py`. Deep Agents injects it only when enabled. It is
-not a deployed Gateway Lambda target, so it has no entry in the provider catalog or
-`configs/gateway`. Skill contract checks include this local schema alongside the
-remote Gateway schemas. Discover it through `read_studio_context`; use its exact
-schema and the editor dispatch wrapper. No renderer dependencies enter the Lambda ZIP.
-
-Remotion stays the default for unnamed motion graphics and explicit Remotion requests,
-including "Remotion lower thirds". Explicit HyperFrames requests take priority over
-generic kinetic-title and video rules. A request for HyperFrames with ElevenLabs VO
-selects the HyperFrames skill and the existing speech tool as its first step.
-The feature flag makes HyperFrames available and does not reroute unnamed requests.
-
-The tool previews HTML and output settings without executing scripts, fetching assets,
-producing frames, or creating a media artifact. Schema validation is not HyperFrames
-lint or visual validation. Dry-run and blocked results leave video delivery incomplete.
-The approval exemption set, premium-video policy, provider ladder, and spending cap
-remain unchanged. HyperFrames outputs are never continuity training inputs.
-
-TODOs are the isolated Node/Chromium/FFmpeg worker, local dependency and managed-media
-staging, lint and proof-frame inspection, actual MP4 playback, and any hosted-service
-terms and pricing review. Comet E2E remains blocked in this environment.
+Remotion remains the motion-graphics default. An explicit HyperFrames or HTML-template
+request selects the optional exception without changing unnamed requests. HyperFrames with
+ElevenLabs VO uses the existing speech step first. The preview does not execute HTML, fetch
+assets, create frames, mix audio, composite footage, or produce an MP4. Schema validation
+cannot pass artifact/playback checks. Compute cost remains unknown; paid-video approval
+and any active cap still apply. The stored confidential flag creates no HyperFrames restriction.
+HyperFrames outputs remain ineligible for continuity training.
 
 ## Provider, model, licence, and region policy
 
-`agent/deep_agent/routing_policy.json` is packaged with the backend. Each provider has an
-`enabled` switch, a licence classification, regional restrictions, and training eligibility.
-Model allowlists and `model_policies` add model-specific licence and region gates. Region
-checks use `RENDERHAUS_CUSTOMER_REGION`, an operator-provided customer country code, not the
-AWS deployment region. An empty allowed-region list adds no regional restriction. A
-nonempty list fails closed when the customer region is missing. Provider and model blocks
-apply even when a dispatch has already been approved.
+`routing_policy.json` packages provider availability, hosted-service or weight licence status,
+model allowlists, commercial status, consent notes, region restrictions, and training eligibility.
+`explicit_only` governs automatic selection separately from whether a built named request can run.
+`service-terms` is an internal API classification, not an open-weight licence or a grant of rights.
+Future unverified IDs/API contracts remain pending and dry-run; the capability map records the
+verification and US-host evidence rather than guessing availability.
 
-`service-terms` is an internal hosted-service classification, not an open-weight licence
-or a claim about legal rights. Approved built hosted APIs can generate but cannot train QC.
-Fal supports the two declared Wan VACE models with Apache-2.0 policy and the two fixed
-Vidu Q4 endpoints under `service-terms`. Vidu training and output terms remain a TODO.
-Their model policies set `training_eligible=false`, with no new region blocks. Seedance and
-Seedream initially allow their current configured default models only. Add a reviewed model
-to the policy before changing those defaults. Kling, Runway, and Fish allow their declared
-built models. Policy resolves `KLING_MODEL`, `SEEDANCE_MODEL`, `SEEDREAM_MODEL`, and
-`FISH_AUDIO_MODEL` before enforcing gates or estimating spend; explicit arguments take
-precedence. Omni uses its fixed model rather than the Kling default environment setting.
+Region gates use `RENDERHAUS_CUSTOMER_REGION`, the operator-provided customer country code.
+An empty allowed-region list adds no regional restriction. A nonempty list fails closed without
+an allowed region. Provider/model blocks still apply after spending approval.
+Model configuration resolves through the existing environment and native argument contract;
+explicit model arguments take precedence. Changing an environment default cannot bypass a
+model allowlist. MiniMax H3 and Hunyuan remain blocked and never train QC.
 
-MiniMax H3 and Hunyuan are disabled by default and declare a US region block for any future
-activation. Neither is training-eligible in any region. Veo remains disabled/pending. Luma (`ray-3.2`) is enabled under service terms, routed through `t2v`, `i2v` and `edit-v2v`, premium (cost estimate + approval, also in autonomous runs) and never training-eligible.
-Only successful, non-dry-run Fal assets with an allowed Wan model, `training_eligible=true`,
-and `weights_license="Apache-2.0"` may enter the training hook. Both provider and model policy
-must permit Apache training. Queued/failed results and missing provenance fail. Kling,
-Runway, Luma, Seedance, Seedream, and Veo outputs cannot enter training, even with forged
-eligibility flags. This validation trusts host-supplied provider provenance; it does not
-cryptographically authenticate arbitrary dictionaries submitted by a caller.
+Future Seedance 2.5 routing defaults to fal for US and Canadian customers; BytePlus is optional.
+The current interim still uses the built BytePlus 1.5 adapter. No host or adapter upgrade is
+performed here. [US availability](CAPABILITY_MAP.md) separates verified availability from
+unclear evidence. Real-face/voice consent follows each provider's actual terms.
 
-## Provider capability table and ladder
+Only successful, non-dry-run Fal assets with a policy-approved legacy Wan model,
+`training_eligible=true`, and `weights_license="Apache-2.0"` can enter the existing training hook.
+Both provider and model policy must permit that use. Queued/failed assets and missing provenance
+fail. Hosted closed-model outputs remain ineligible even with forged flags. This boundary trusts
+host provenance; it does not cryptographically authenticate arbitrary caller dictionaries.
 
-`routing_policy.json` is the single source for capabilities, tier membership, native controls,
-and duration limits. `routing.capability_table()` resolves each row's `policy_ref` against
-existing provider/model licence, region and training policy. It derives price grids from
-`server/billing_rates.py` and its Fal price helper. No copied rate numbers are stored in the
-config. `jobs` records t2v, i2v, start_end_frame, native_audio, max_resolution, 4k, voice_references, multi_shot,
-v2v_edit, reference_elements, lipsync, upscale, and image. Unclear capabilities are false
-with a note. The `controls` map narrows a capability to the actual job schema.
-
-This table summarizes all 17 configured rows. All rows have lipsync=false and upscale=false.
-Resolutions describe supported output presets, not inferred provider marketing claims.
-
-| Provider/model | Built jobs | Extra supported controls | Maximum output | Pricing status |
-| --- | --- | --- | --- | --- |
-| Fal Wan VACE 14B | t2v, i2v, reference, v2v | End frame, reference images | 720p | Published endpoint/resolution rates |
-| Fal Wan 2.2 VACE | t2v, i2v, reference, v2v | End frame, reference images | 720p | Depth/inpaint/outpaint/reframe known; freeform/pose unknown |
-| Fal Vidu Q4 I2V | i2v | Implicit native audio, 3 through 16 seconds | 4K | Published per-second promo and list rates |
-| Fal Vidu Q4 R2V | i2v, reference | Audio toggle, up to 12 images and 3 voice clips | 4K | Same rates, no audio surcharge |
-| Seedance 1.5 Pro | t2v, i2v | Native audio | 1080p | Published token formula |
-| Seedream 5.0 Lite | Image, image edit | Image references | 3K | 1K known; 2K/3K unknown |
-| Kling 3.0 | t2v, i2v | Audio, end frame, multi-shot, i2v elements | 4K | Published per-second grids |
-| Kling 3.0 Turbo | t2v, i2v | Multi-shot | 1080p | Unknown |
-| Kling 3.0 Omni | t2v, i2v | Audio, end frame, multi-shot, elements | 4K | Published per-second grids |
-| Runway Gen-4.5 | t2v, i2v | No audio/end frame/multi-shot control | 720 class | Published per-second rate |
-| Runway Aleph 2 | v2v | Single reference image | Unspecified, input up to 1080p | Integer measured duration known; fractional unknown |
-| Runway gen4_image | Image, image edit | Image references | 1080 class | Published per-image rates |
-| Runway gen4_image_turbo | Image edit only | Source image required | 1080 class | Published per-image rate |
-| Luma Ray 3.2 | t2v, i2v, modify, extend | End frame on i2v | 1080p | Published duration/resolution tiers only |
-| Veo | Unavailable | All capabilities false | Unspecified | Unknown |
-| MiniMax H3 | Unavailable | All capabilities false; existing US block | Unspecified | Unknown |
-| Hunyuan | Unavailable | All capabilities false; existing US block | Unspecified | Unknown |
-
-Speed classes are typical labels, not measured SLAs. Only the two approved Wan models
-are training-eligible. Hosted models retain their service-terms restrictions. MiniMax H3
-and Hunyuan retain their US blocks even if an operator later enables them.
-
-Selection filters required capabilities, native controls, duration, availability, licence,
-and region before considering tier. Within the tier, the cheapest known total price wins;
-unknown prices sort after known prices. An explicit provider wins only when all policy and
-capability checks pass. A failed request returns its refusal reason in chat. Tool arguments
-must actually enable the required audio/end-frame/reference controls and meet the requested
-resolution and duration. A wrong tool/model returns the selected route for rediscovery,
-never silently substitutes the action after an approval.
-
-| Tier | New finished video | Video edit |
-| --- | --- | --- |
-| Draft | Fal Wan | Fal Wan VACE |
-| Standard, default | Seedance, Kling or Vidu Q4 by cost | Luma Modify, `Luma___modify_video` |
-| Premium | Built, enabled Kling or Runway Gen-4.5; Veo unavailable | Runway Aleph |
-
-Faithful plate and multi-shot edits prefer Aleph unless Draft or confidential. This is an
-editing preference, not a native multi-shot capability. Draft previews and an automatic
-retry after an explicit artifact rejection use Wan only, retaining the rejected job's
-requirements. If Wan cannot meet them, the retry is blocked instead of weakening the brief
-or escalating. Approval rejection never starts a retry. A saved review/retry transition is
-idempotent across a resume. Unrelated new shots retain their chosen tier.
-
-The default still requirement is 2K, selecting Seedream with an unknown quote. At a compatible
-lower resolution, cost ordering can select Runway images. Draft still previews can reuse an
-approved image or show a Wan video frame. There is no built Wan image-generation tool;
-Draft/confidential image generation and image reject retries fail with a clear capability
-refusal. Building a Wan image tool is an open dependency, not an invented capability.
-
-### Confidential project source
-
-Projects persist `provider_policy` in `projects.provider_policy_json`. Project creation
-accepts `{"provider_policy":{"confidential":true,"quality_tier":"standard"}}`.
-Authenticated, workspace-scoped `GET` and `PUT /api/studio/projects/{project_id}/provider-policy`
-read/update that policy. The Studio host populates `StudioAgentRequest.confidential` and
-`quality_tier` from it, for both local and remote workers. The executor uses that host context
-for both Deep Agents and Codex. Mentioning confidential in chat also tightens the policy;
-a prompt cannot relax a confidential project. There is no new Studio settings control yet.
-
-Confidential video/image projects use Wan at every tier and on rejection. Unsupported
-capabilities refuse generation. This rule never permits escalation to another image/video
-provider, including a previously approved call. New audio generation on other providers is also
-blocked. Polling and assembly of existing media remain available.
-
-### Chat disclosure and approval
-
-Before dispatch, the host emits a chat `MODEL_UPDATE` with provider/model, tier, capability
-filters, estimated cost including the existing platform fee, and typical speed class.
-Unpublished rates render as **unknown**. Published-price disclosure ignores dry-run zero charges
-without changing any provider setting. Q4 uses the promotional schedule through 2026-11-30
-and the published list schedule afterward. Dispatch/cap accounting continues to use billing's
-actual dry-run charge. Both quote paths keep billing validation. Missing measured edit
-durations stay unknown. Q4 pricing and its dated expiry are encoded in `server/billing_rates.py`.
-
-Paid tools still pause in non-autonomous runs. The existing premium video target rule for
-Kling, Runway, Luma and future Veo still pauses autonomous runs, with the estimate in the
-native interrupt description. Kling requires this approval even when selected at Standard.
-`premium_video_approval` and `RENDERHAUS_PREMIUM_VIDEO_APPROVAL` retain their previous semantics.
-`APPROVAL_EXEMPT_TOOLS`, existing free tools and the optional autonomous spend cap are unchanged.
-The new free conversational-edit preparer requires separate cut-plan confirmation.
-The Codex fallback uses the same executor and retains its approval/checkpoint protocol.
-
-Unknown combinations include Kling Turbo, Wan 2.2 freeform/pose and unpriced resolutions,
-fractional Aleph billing, unpriced Luma lengths, Seedream larger sizes, invalid ElevenLabs
-operator quotes, and Remotion's compute placeholder. Unknown is never a guessed amount or
-a dry-run zero. A spending cap blocks an unknown-cost paid call as before.
-
-### Provider outcomes and training
+## Provider outcomes and training
 
 `record_media_outcome(call_id, outcome)` records an explicit customer acceptance or rejection
 of a saved completed generation call. The host checks for a verdict in the current request,
@@ -361,7 +277,8 @@ English verdict recognizer can refuse unfamiliar wording; the model cannot creat
 
 `agent/deep_agent/outcomes.py` appends JSONL to `.renderhaus/provider-outcomes/outcomes.jsonl`,
 or `RENDERHAUS_OUTCOME_DIR/outcomes.jsonl`. Each row includes event ID, provider/model, job type,
-provider job ID when available, workspace/project/execution scope, verdict, and stage.
+provider job ID when available, workspace/project/execution scope, verdict, stage, and optional
+`ab_arm`. The arm field is metadata only; there is no A/B execution framework.
 Approval-stage rows distinguish spending authorization/rejection from artifact review.
 Offline dry-run authorizations can be logged but never become training rows. A lock serializes
 appends, and event IDs deduplicate replays within workspace/project scope. The store contains
@@ -375,9 +292,16 @@ Owned lineage restrictions survive session recovery. Hosted-provider outcomes al
 ineligible, even with forged flags. Logging does not itself emit a dataset or run training.
 The continuity training hook below remains Wan-only.
 
+Explicit artifact rejection retains the existing legacy Wan training retry path and requested
+features. Unsupported retry capabilities refuse. Approval rejection never starts a retry.
+Saved review/retry transitions are idempotent across a resume. Outside that path, legacy Wan
+VACE is reachable by name; it is not an automatic low-cost default.
+
 ## Continuity QC
 
-`CONTINUITY_QC_BACKEND=local` remains the default. The optional `runpod` backend sends a
+`local_qc` remains the continuity-QC default for every project. The pending `gemini_vlm_judge`
+can be promoted only after beating 0.85 accuracy on the 420 labelled pairs. This branch adds no
+VLM adapter or benchmark result. `CONTINUITY_QC_BACKEND=local` remains the default. The optional `runpod` backend sends a
 batch to a separate RunPod Serverless worker with baked SigLIP and DINO weights. It uses
 the same calibration and acceptance rule. Configure `RUNPOD_API_KEY` and
 `CONTINUITY_QC_RUNPOD_ENDPOINT_ID` on the host only after endpoint setup. A remote failure
@@ -446,86 +370,26 @@ distributed billing guarantee. Durability still depends on the host persisting `
 
 ## Pending drafts and references
 
-Live skills never disclose unbuilt provider tools. Drafts under `docs/skills-drafts/` carry
-`Status: provider pending` and the provider or integration needed to unlock them.
+Installed skills distinguish a built dispatch tool from a pending routing alias.
+`docs/skills-drafts/` keeps pending adapter references and retired historical guidance.
+Act-Two/Kling motion control, sync/HeyGen, Topaz, Mirelo, Recraft and Ideogram edit await their
+named branches. MMAudio, ACE-Step and Veo references are retired, not future activation plans.
+Transcript cuts, silence removal and captions are folded into conversational-edit. NLE re-import
+still needs feat/nle-import-fcpxml. File export does not control Resolve, establish a graded
+round trip, or provide AAF. Fish discovery remains conditional.
 
-- `veo-t2v` requires Google Veo; `act-two` requires the separate Runway character-performance adapter.
-- `lipsync` requires LivePortrait, InfiniteTalk, or Hedra. ElevenLabs speech alone cannot unlock it.
-- `upscale` requires SeedVR2, Topaz, or RIFE.
-- `mmaudio`, `ace-step`, `ideogram`, and `recraft` require their own adapters and reviewed contracts/licences.
-- `resolve-rough-cut`, `resolve-silence-cut`, `resolve-auto-subs`, `resolve-roundtrip`, and
-  `resolve-new-track-safety` require local Resolve/transcription/import integrations.
-
-Built Kling, Runway, Fal Wan VACE, and Resolve export draft notes are retained as historical
-references and now point to the live skills. File-based export does not control Resolve,
-perform a graded round trip, or provide AAF. Fish Audio discovery remains conditional.
-
-[Remotion's upstream skills](https://github.com/remotion-dev/skills) are an optional reference.
-No upstream content was vendored, and no upstream licence grant is assumed. Motion graphics
-use this branch's `Remotion___render_timeline` snapshot contract rather than arbitrary JSX.
+[Remotion's upstream skills](https://github.com/remotion-dev/skills) are optional reference
+material. No upstream content or licence grant is assumed. The built renderer uses its typed
+timeline contract, not arbitrary JSX. No AGPL code or non-commercial weights are adopted.
 
 ## Validation limits
 
-Vidu Q4 validation results are recorded in [vidu-q4-decisions.tsv](vidu-q4-decisions.tsv).
-The suite ran 551 tests: 516 passed and 35 skipped. Ruff passed for `agent lambdas scripts server providers`, and
+Offline checks establish deterministic routing, actual skill metadata/schema references,
+approval/spend behavior, and QC/provenance boundaries. They do not establish live model judgment,
+provider credentials, account access, generated playback, quality, or a real NLE import.
 
-Conversational-edit branch: final checks ran 552 tests, with 516 passed and 36 explicit skips.
-`scripts/ci_check.py` passed with every provider DRY_RUN flag enabled and secrets loading
-disabled. Its Lambda packaging used the existing local wheelhouse with pip network access
-disabled. Studio's `tsc --noEmit -p .` and the timeline-review checks passed; the temporary
-`node_modules` link was removed. The Remotion renderer's separate typecheck remains blocked
-because its npm package/types are unavailable locally. Current offline checks cover routing proposals,
-actual skill parsing/schema names, both approval paths, spending, and QC boundaries. They
-do not prove live model judgment, legal review, provider/account access, model-weight quality,
-generated playback, or an editor import. Comet cannot be controlled here, and the task forbids
-live/paid provider calls and downloads. Studio browser E2E is blocked and remains pending,
-recorded under ignored `.renderhaus/e2e/` with `scripts/browser_e2e_hook.py`.
-
-## Luma routing (added on staging)
-
-Luma landed on staging after this branch was cut, so it was wired in during the staging merge:
-
-| Seed alias | Gateway tool | Skill |
-| --- | --- | --- |
-| `luma_ray3_t2v` | `Luma___text_to_video` | `t2v` |
-| `luma_ray3_extend` | `Luma___extend_video` | `t2v` |
-| `luma_ray3_i2v` | `Luma___image_to_video` | `i2v` |
-| `luma_ray3_modify` | `Luma___modify_video` | `edit-v2v` |
-
-- Policy: `providers.luma` is enabled, licence `service-terms`, model `ray-3.2` only, no region gate, `training_eligible: false`.
-- `Luma` is a premium target (`text_to_video`, `image_to_video`, `extend_video`, `modify_video`), so its paid calls pause for approval with the `cost_for` estimate even in autonomous runs; `list_luma_models` and `get_video_task` are free.
-- Estimates come from the official Ray 3.2 table in `server/billing_rates.py`; settings without a published price (e.g. 360p extend, non-5/10 s modify sources) show as unknown.
-- The routing fixture's Luma case is active (see the counts above).
-
-## Vidu Q4 on fal
-
-The fixed endpoint tools use the radar names with the existing `Fal___` target prefix.
-Separate schemas avoid mixing Wan frame controls with Q4 seconds and audio controls.
-The [I2V API](https://fal.ai/models/fal-ai/vidu/q4/image-to-video/api) requires `image_url`
-and has an optional `prompt`. The [R2V API](https://fal.ai/models/fal-ai/vidu/q4/reference-to-video/api)
-requires `prompt`, accepts optional `reference_image_urls` and `reference_audio_urls`,
-and defaults to silent `audio=false`. I2V audio is implicit and has no toggle.
-Both tools use integer `duration` from 3 through 16, default 5, and exact resolution enums
-`540p`, `720p`, `1080p`, `2K`, and `4K`, default `720p`. `2K` uses the existing nominal
-comparison rank 2048 in policy. That rank does not assert the artifact's pixel dimensions.
-
-Official [I2V pricing](https://fal.ai/models/fal-ai/vidu/q4/image-to-video) and
-[R2V pricing](https://fal.ai/models/fal-ai/vidu/q4/reference-to-video), accessed 2026-10-08,
-list a promotion until November 30 and the later list rates. This branch binds the cutoff
-to the requested 2026-11-30, inclusive in UTC. `vidu_q4_rates()` uses list rates from
-2026-12-01. The platform fee uses the existing `_with_fee`. Audio does not increase
-R2V pricing. Estimates remain unknown for undocumented settings.
-
-Q4 is Standard because these are general still and reference generation endpoints with
-published per-second prices and no requested premium step-up. Standard cost ordering is
-unchanged; Seedance remains the unqualified default. Q4 is outside `premium_targets` and
-`free_tools`. Non-autonomous paid calls pause with a native cost preview and chat disclosure.
-Autonomous Q4 keeps the existing spend cap. Premium approvals and exempt tools are unchanged.
-Confidential projects and rejected-artifact retries restrict fal to the Wan model allowlist.
-Q4 polling retains non-training provenance from the endpoint handle, including after restart.
-
-There are still eight provider targets. Fal grows from six tools to eight. CI derives tool
-counts from generated schemas, so it has no numeric threshold to update. The deploy workflow's
-eight-provider threshold remains correct. The Docker skill-count check changes to 15.
-Billing-only edits rebuild both the Gateway ZIP and agent runtime so their shared rates stay current.
-No AGPL code or source workbook/ledger files were copied into this repository.
+Comet browser E2E is blocked because this environment has no controllable Comet session.
+This task also prohibits paid/live provider calls. Browser validation remains pending;
+ignored `.renderhaus/e2e/` records the blocker through `scripts/browser_e2e_hook.py`.
+No dry-run, scripted model or accepted job is a browser E2E pass. The branch's decisions file
+records the final offline checks without retaining superseded historical suite totals here.

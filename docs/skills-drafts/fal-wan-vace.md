@@ -1,7 +1,8 @@
 # Route generation and editing to fal Wan VACE
 
-Status: provider built. Guidance is incorporated in the live t2v, i2v, edit-v2v, and continuity-qc skills.
-The live skills and `agent/deep_agent/routing_policy.json` define current routing.
+Status: provider built. Explicit-request guidance lives in named-provider; unchanged training guidance lives in continuity-qc.
+The named-provider skill and `agent/deep_agent/routing_policy.json` define current routing.
+This provider is explicit-only outside its existing training path or declared pending-default interim.
 
 This provider reference informs the installed intent skills. Those skills own live routing.
 The authoritative tool and pricing reference is
@@ -9,8 +10,8 @@ The authoritative tool and pricing reference is
 
 Use this provider for Wan VACE text clips, animation from a first frame,
 reference-guided subject consistency, and edits that need masks, expansion,
-reframing, depth, or pose control. Choose it when the user requests Wan VACE or
-needs those edit controls. Wan is the default tier for ordinary video generation as well as these controls.
+reframing, depth, or pose control. Choose it when the user explicitly requests Wan VACE, or the unchanged host training path selects it. Wan 2.x VACE is explicit-only outside the unchanged training path. Ordinary video uses Wan 3.0
+or its declared interim; edit controls alone do not opt into legacy VACE.
 
 ## Tool order
 

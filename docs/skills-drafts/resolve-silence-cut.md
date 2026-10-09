@@ -1,14 +1,10 @@
-# resolve-silence-cut draft
+# resolve-silence-cut workflow reference
 
-Status: provider pending
+Status: folded into the installed conversational-edit skill.
 
-Unlocking provider or integration: silence detection and local Resolve bridge.
+Use conversational-edit for approved silence cuts, the existing word-level transcript/preparer contract,
+and cut-plan approval before rendering. Use resolve-handoff after an approved timeline exists
+for the single outbound Remotion exporter. Do not claim local Resolve control.
 
-Seed aliases: `edl_export`. These aliases are not live dispatch tools.
-
-Silence removal needs analysis and an approved derived timeline. The existing handoff exporter does not discover pauses or modify an editor project.
-
-Before activation, add the Gateway schema, policy gates, and offline routing cases.
-Use only `server/billing_rates.py` for prices. Unconfirmed prices remain unknown.
-Require existing spending authorization and shared approval policy for paid work.
-Verify the completed artifact and real Studio flow before claiming live support.
+Source timing, actual rendered media, and any real NLE import remain separately verifiable.
+The old export placeholder never established analysis/editing by itself.

@@ -1,14 +1,13 @@
-# ideogram draft
+# ideogram provider reference
 
-Status: provider pending
+Status: provider pending (feat/image-specialists).
 
-Unlocking provider or integration: Ideogram image-generation adapter.
+Canonical routing aliases are `ideogram45_edit`. They are not Gateway endpoints.
 
-Seed aliases: `ideogram_t2i`. These aliases are not live dispatch tools.
+Ideogram is an exception only for pixel-preserving text-only edits on an existing image. Without an existing edit image, named Ideogram poster/typography generation routes to gpt_image25_t2i. The former ideogram_t2i alias is retired.
 
-Readable text-in-image generation needs its own native Gateway schema and confirmed pricing. Seedream and Runway stills are available alternatives only if the user accepts them. Do not claim editable SVG from a raster output.
-
-Before activation, add the Gateway schema, policy gates, and offline routing cases.
-Use only `server/billing_rates.py` for prices. Unconfirmed prices remain unknown.
-Require existing spending authorization and shared approval policy for paid work.
-Verify the completed artifact and real Studio flow before claiming live support.
+The relevant installed skill explains default/exception selection and pending behavior.
+Read [capability map](../CAPABILITY_MAP.md). Use server billing estimates only; unverified
+prices remain unknown. Every paid video pauses with an estimate even in autonomous runs.
+No adapter is added by the routing branch. Future activation requires verified commercial
+terms, US-host availability, native typed contract, approval, polling and real artifact validation.

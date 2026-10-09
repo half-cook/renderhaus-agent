@@ -1,14 +1,13 @@
-# upscale draft
+# upscale provider reference
 
-Status: provider pending
+Status: provider pending (feat/finishing-topaz).
 
-Unlocking provider or integration: SeedVR2, Topaz, or RIFE provider adapter.
+Canonical routing aliases are `topaz_upscale, topaz_interpolate`. They are not Gateway endpoints.
 
-Seed aliases: `seedvr2_upscale, topaz_upscale, rife_interpolate`. These aliases are not live dispatch tools.
+Topaz Starlight is the upscale default. Apollo is the interpolation default; the same interpolation tool selects Chronos for plain linear-motion FPS conversion. SeedVR2 and RIFE are retired. Generating a new higher-resolution clip does not upscale the supplied asset.
 
-Resolution restoration and frame interpolation need native schemas, cost handling, and artifact validation. A larger generation resolution is not an upscale of the supplied version. Do not use SUPIR or ProPainter without a commercial grant.
-
-Before activation, add the Gateway schema, policy gates, and offline routing cases.
-Use only `server/billing_rates.py` for prices. Unconfirmed prices remain unknown.
-Require existing spending authorization and shared approval policy for paid work.
-Verify the completed artifact and real Studio flow before claiming live support.
+The relevant installed skill explains default/exception selection and pending behavior.
+Read [capability map](../CAPABILITY_MAP.md). Use server billing estimates only; unverified
+prices remain unknown. Every paid video pauses with an estimate even in autonomous runs.
+No adapter is added by the routing branch. Future activation requires verified commercial
+terms, US-host availability, native typed contract, approval, polling and real artifact validation.

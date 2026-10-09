@@ -1,14 +1,10 @@
-# resolve-auto-subs draft
+# resolve-auto-subs workflow reference
 
-Status: provider pending
+Status: folded into the installed conversational-edit skill.
 
-Unlocking provider or integration: transcription and subtitle-to-Resolve integration.
+Use conversational-edit for timed captions, the existing word-level transcript/preparer contract,
+and cut-plan approval before rendering. Use resolve-handoff after an approved timeline exists
+for the single outbound Remotion exporter. Do not claim local Resolve control.
 
-Seed aliases: `fcpxml_export`. These aliases are not live dispatch tools.
-
-Automatic captions require source transcription and supported subtitle interchange. The existing handoff exporter preserves media edits and does not create transcripts or subtitle tracks.
-
-Before activation, add the Gateway schema, policy gates, and offline routing cases.
-Use only `server/billing_rates.py` for prices. Unconfirmed prices remain unknown.
-Require existing spending authorization and shared approval policy for paid work.
-Verify the completed artifact and real Studio flow before claiming live support.
+Source timing, actual rendered media, and any real NLE import remain separately verifiable.
+The old export placeholder never established analysis/editing by itself.
