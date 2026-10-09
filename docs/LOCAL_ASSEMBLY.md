@@ -94,7 +94,7 @@ Local rendering uses a system ffmpeg binary. Metadata probing additionally uses
 PyAV 14.2.0 under BSD-3-Clause; its selected wheels bundle FFmpeg reporting
 GPL-3.0-or-later, with no AGPL or non-commercial dependency added. The wheel's
 BSD notice is retained by pip packaging. The bundled FFmpeg's licence and source
-obligations also apply to redistribution; it is not a BSD-only bundle.
+obligations also apply to redistribution.
 Renderhaus's existing Remotion licence obligations remain.
 
 The pinned CPython 3.11 arm64 wheel targets manylinux2014/GLIBC 2.17, compatible

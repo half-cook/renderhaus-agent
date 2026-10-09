@@ -348,7 +348,7 @@ async def run_lighthouse(options, *, agent_run=None):
     summary = {'status': 'dry_run', 'run_id': run_id, 'model': deep_agent_model(),
                'spend_cap_usd': cap_cents / 100, 'model_cost_usd': 0, 'media_cost_usd': 0,
                'total_cost_usd': 0, 'tokens': {}, 'media_steps': [], 'wall_time_seconds': 0,
-               'fps': None, 'bitrate_bps': None, 'browser_e2e': 'blocked: Comet unavailable'}
+               'fps': None, 'bitrate_bps': None, 'browser_e2e': 'not_run: API driver does not exercise Comet'}
     journal.record('request', prompt=options.prompt, model=summary['model'], live=options.live,
                    spend_cap_usd=summary['spend_cap_usd'])
     if not options.live:

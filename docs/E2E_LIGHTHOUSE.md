@@ -62,7 +62,7 @@ published-price estimates, not provider invoices.
 `--max-output-tokens` defaults to 4096, `--max-turns` to 40 and
 `--timeout-seconds` to 1800. Reaching a limit records an incomplete run.
 Tracing is disabled in both legacy/V2 environment settings and the LangSmith
-execution context. Files strip credential fields and signed URL queries.
+execution context. JSON and text records strip credential fields and signed URL queries.
 
 ## Outputs and completion
 
