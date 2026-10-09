@@ -1,0 +1,15 @@
+# Override the root exclusion of infra. Send only this worker and shared maths.
+**
+!infra/
+!infra/runpod/
+!infra/runpod/continuity-qc/
+!infra/runpod/continuity-qc/Dockerfile
+!infra/runpod/continuity-qc/requirements.txt
+!infra/runpod/continuity-qc/worker_logic.py
+!infra/runpod/continuity-qc/download_models.py
+!infra/runpod/continuity-qc/handler.py
+!infra/runpod/continuity-qc/test_input.json
+!agent/
+!agent/deep_agent/
+!agent/deep_agent/continuity_qc.py
+!agent/deep_agent/continuity_qc_calibration.json
