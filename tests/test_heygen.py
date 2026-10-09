@@ -214,6 +214,12 @@ class HeyGenProviderTests(unittest.TestCase):
                     self.api.create_avatar_video(**ARGUMENTS)
         self.assertEqual(self.requests, [])
 
+    def test_live_audio_asset_handle_requires_authorized_host_resolution(self):
+        with self.assertRaisesRegex(ValueError, "resolv"):
+            self.api.create_avatar_video(**{**ARGUMENTS, "script": None, "voice_id": None,
+                                           "audio_url": "renderhaus-asset://authorized_audio"})
+        self.assertEqual(self.requests, [])
+
     def test_ineligible_look_cannot_start_generation(self):
         for look in ({"avatar_type": "photo_avatar"}, {"supported_api_engines": ["avatar_iv"]},
                      {"status": "pending"}, {"id": "different_look"}, {"group_id": "../group"}):

@@ -220,6 +220,8 @@ def create_avatar_video(
         raise ValueError(blocker)
     if os.getenv("AWS_LAMBDA_FUNCTION_NAME") and not _bucket():
         raise ValueError("Hosted live HeyGen requires AWS_S3_BUCKET for durable job storage before submission.")
+    if request.audio_url and request.audio_url.startswith("renderhaus-asset://"):
+        raise ValueError("Live HeyGen audio asset handles require the authorized Studio asset resolver before provider I/O.")
     manifest.group_id = _preflight(request)
     _save(manifest)
     try:
