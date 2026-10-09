@@ -243,7 +243,7 @@ class TranscriptEditTests(unittest.TestCase):
             validate_tool_arguments("remotion", "prepare_conversational_edit", arguments, schema)
 
     def test_existing_render_contract_accepts_subtitles_grade_and_audio_fades(self) -> None:
-        arguments = {"title": "Cut", "visuals": [{"kind": "video", "url": "https://example.test/a.mp4",
+        arguments = {"title": "Cut", "fps": 30, "visuals": [{"kind": "video", "url": "https://example.test/a.mp4",
                      "duration_seconds": 1, "grade": "neutral", "audio_fade_in_seconds": 0.03,
                      "audio_fade_out_seconds": 0.03}],
                      "subtitles": [{"text": "Hello", "start_seconds": 0.1, "duration_seconds": 0.5}]}
@@ -259,7 +259,7 @@ class TranscriptEditTests(unittest.TestCase):
                 "fade_in_seconds": 0, "fade_out_seconds": 0}
         props = api.build_timeline_props("Cut", [{"kind": "video", "url": "https://example.test/a.mp4",
                                                    "duration_seconds": 2}],
-                                         text_overlays=[text], subtitles=[text])
+                                         text_overlays=[text], subtitles=[text], fps=30)
         titles, subtitles = props["document"]["tracks"][-2:]
         self.assertEqual(titles["items"][0]["fadeIn"], 0.2)
         self.assertEqual(titles["items"][0]["fadeOut"], 0.2)
@@ -269,7 +269,7 @@ class TranscriptEditTests(unittest.TestCase):
     def test_one_frame_subtitle_without_fade_fields_is_visible(self) -> None:
         text = {"text": "Yes", "start_seconds": 0, "duration_seconds": 1 / 30}
         props = api.build_timeline_props("Cut", [{"kind": "video", "url": "https://example.test/a.mp4",
-                                                   "duration_seconds": 1}], subtitles=[text])
+                                                   "duration_seconds": 1}], subtitles=[text], fps=30)
         caption = props["document"]["tracks"][-1]["items"][0]
         self.assertEqual(caption["fadeIn"], 0)
         self.assertEqual(caption["fadeOut"], 0)

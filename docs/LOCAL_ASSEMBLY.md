@@ -10,6 +10,22 @@ local `output_path` needs no `file://` prefix and must resolve inside the
 configured `RENDERHAUS_MEDIA_DIR` or the workspace `.renderhaus` directory.
 Lambda can upload the same local sources using its existing S3 preparation.
 
+Omit `fps` unless the customer requests a timeline frame rate. The primary video
+supplies its measured frame rate, including fractional rates such as 30000/1001;
+image-only timelines default to 30 fps. Local sources are inspected with ffprobe.
+For remote video, supply measured `visuals[].source_fps`, or download the source
+into the media directory first. Missing remote metadata blocks submission rather
+than guessing a frame rate. `visuals[].source_bitrate` supplies a measured remote
+video bitrate; local files supply it through ffprobe when available.
+
+`video_bitrate` is an optional positive integer target in bits per second. Both
+backends use at least 1.25 times the highest measured source-video bitrate to
+allow for assembly overhead. Without a measured bitrate or explicit target,
+they use CRF18. Lambda receives the same frame rate and quality settings, with
+JPEG quality 100 for intermediate frames. The generated 30 fps regression
+fixture exports at 30/1 and 593,506 b/s from a 566,061 b/s source. These offline
+checks verify that fixture; they do not measure perceptual quality for every codec.
+
 The local backend submits ffmpeg asynchronously. Poll
 `Remotion___get_render_progress` with its returned `render_id` and `bucket_name=local`
 sentinel. A separate local worker waits for ffmpeg and atomically persists its terminal
@@ -71,5 +87,7 @@ build/licence depends on the installed distribution; Renderhaus's existing
 Remotion licence obligations are unchanged.
 
 Official references read 2026-10-09: [FFmpeg filters](https://ffmpeg.org/ffmpeg-filters.html),
+[FFmpeg encoding options](https://ffmpeg.org/ffmpeg-codecs.html),
+[Remotion Lambda render options](https://www.remotion.dev/docs/lambda/rendermediaonlambda),
 [FFmpeg licence](https://ffmpeg.org/legal.html), and
 [Remotion licence](https://www.remotion.dev/docs/license).

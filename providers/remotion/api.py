@@ -12,10 +12,12 @@ import math
 import mimetypes
 import os
 import re
+import shutil
 import tempfile
 import time
 import uuid
 from dataclasses import dataclass
+from fractions import Fraction
 from pathlib import Path
 from typing import Any, Literal
 from urllib.parse import unquote, urlparse
@@ -169,14 +171,44 @@ def _prepare_input_props(
     return prepared
 
 
+def _visual_metadata(clip: dict[str, Any]) -> tuple[float | None, int | None]:
+    source_fps = clip.get("source_fps")
+    source_bitrate = clip.get("source_bitrate")
+    source = str(clip.get("url") or clip.get("output_path") or "")
+    if not urlparse(source).scheme:
+        path = Path(source).expanduser()
+        path = (path if path.is_absolute() else ROOT / path).resolve()
+        if _is_allowed_local(path) and path.is_file() and shutil.which("ffprobe"):
+            from providers.remotion.local import _probe
+
+            probe = _probe(path)
+            video = next((s for s in probe["streams"] if s.get("codec_type") == "video"), None)
+            if video is None:
+                raise ValueError("A video visual must contain a video stream.")
+            rate = video.get("avg_frame_rate") or video.get("r_frame_rate")
+            if rate and rate != "0/0":
+                source_fps = float(Fraction(rate))
+            source_bitrate = video.get("bit_rate") or source_bitrate
+    if source_fps is not None:
+        source_fps = float(source_fps)
+        if not math.isfinite(source_fps) or not 0 < source_fps <= 240:
+            raise ValueError("Measured source_fps must be greater than 0 and at most 240.")
+    if source_bitrate is not None:
+        source_bitrate = int(source_bitrate)
+        if source_bitrate <= 0:
+            raise ValueError("Measured source_bitrate must be a positive bitrate in bits per second.")
+    return source_fps, source_bitrate
+
+
 def build_timeline_props(
     title: str,
     visuals: list[dict[str, Any]],
     audio_tracks: list[dict[str, Any]] | None = None,
     text_overlays: list[dict[str, Any]] | None = None,
     aspect_ratio: str = "9:16",
-    fps: int = 30,
+    fps: float | None = None,
     subtitles: list[dict[str, Any]] | None = None,
+    video_bitrate: int | None = None,
 ) -> dict[str, Any]:
     validate_remotion_timeline_arguments({
         "visuals": visuals, "audio_tracks": audio_tracks,
@@ -186,6 +218,21 @@ def build_timeline_props(
         raise ValueError(f"aspect_ratio must be one of {', '.join(ASPECT_SIZES)}.")
     if not visuals:
         raise ValueError("At least one visual clip is required for a Remotion render.")
+    videos = sorted((clip for clip in visuals if clip.get("kind") == "video"),
+                    key=lambda clip: (clip.get("track", 0), clip.get("start_seconds", 0)))
+    metadata = [_visual_metadata(clip) for clip in videos]
+    if fps is None:
+        if metadata and metadata[0][0] is None:
+            raise ValueError("Download the primary video for ffprobe or supply measured source_fps; "
+                             "set fps only when the user requests an explicit timeline rate.")
+        fps = metadata[0][0] if metadata else 30
+    if isinstance(fps, bool) or not math.isfinite(fps) or not 0 < fps <= 240:
+        raise ValueError("Timeline fps must be greater than 0 and at most 240.")
+    if video_bitrate is not None and (isinstance(video_bitrate, bool)
+                                     or not isinstance(video_bitrate, int) or video_bitrate <= 0):
+        raise ValueError("video_bitrate must be a positive integer in bits per second.")
+    source_floor = max((rate for _, rate in metadata if rate is not None), default=0)
+    video_bitrate = max(video_bitrate or 0, math.ceil(source_floor * 1.25)) or None
     width, height = ASPECT_SIZES[aspect_ratio]
     assets: list[dict[str, Any]] = []
     visual_tracks: dict[int, list[dict[str, Any]]] = {}
@@ -359,10 +406,12 @@ def build_timeline_props(
             "tracks": tracks,
         },
         "renderConfig": {
-            "fps": max(12, min(int(fps), 60)),
+            "fps": fps,
             "width": width,
             "height": height,
             "durationInFrames": max(1, math.ceil(visual_duration * fps - 1e-9)),
+            "videoBitrate": video_bitrate,
+            "crf": None if video_bitrate else 18,
         },
     }
 
@@ -397,6 +446,11 @@ def _start_lambda_render(
             ),
             max_retries=1,
             x264_preset="veryfast",
+            force_fps=prepared["renderConfig"].get("fps"),
+            video_bitrate=prepared["renderConfig"].get("videoBitrate"),
+            crf=(None if prepared["renderConfig"].get("videoBitrate")
+                 else prepared["renderConfig"].get("crf", 18)),
+            jpeg_quality=100,
         )
     )
     if response is None:
@@ -417,9 +471,10 @@ def render_timeline(
     audio_tracks: list[dict[str, Any]] | None = None,
     text_overlays: list[dict[str, Any]] | None = None,
     aspect_ratio: Literal["16:9", "9:16", "1:1", "2.39:1"] = "9:16",
-    fps: int = 30,
+    fps: float | None = None,
     output_filename: str = "renderhaus-video.mp4",
     subtitles: list[dict[str, Any]] | None = None,
+    video_bitrate: int | None = None,
 ) -> dict[str, Any]:
     """Compose generated image, video, and audio clips into one final MP4, then poll get_render_progress."""
     if dry_run():
@@ -438,8 +493,9 @@ def render_timeline(
         audio_tracks=audio_tracks,
         text_overlays=text_overlays,
         aspect_ratio=str(aspect_ratio),
-        fps=int(fps),
+        fps=fps,
         subtitles=subtitles,
+        video_bitrate=video_bitrate,
     )
     return _start_render(props, output_filename=output_filename)
 
