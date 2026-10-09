@@ -148,17 +148,17 @@ class LadderTests(unittest.TestCase):
                    for path in Path("configs/gateway").glob("*.tools.json")}
         for row in rows:
             policy = routing.POLICY["providers"][row["provider"]]
-            self.assertEqual(row["license"], policy["license"])
+            self.assertEqual(row["license"], policy.get("model_policies", {}).get(row["model"], {}).get("license", policy["license"]))
             self.assertEqual(row["allowed_regions"], policy["allowed_regions"])
             self.assertEqual(row["blocked_regions"], policy.get("blocked_regions", []))
-            self.assertEqual(row["training_eligible"], policy["training_eligible"])
+            self.assertEqual(row["training_eligible"], policy["training_eligible"] and policy.get("model_policies", {}).get(row["model"], {}).get("training_eligible", False))
             self.assertTrue(set(row["tools"].values()) <= known)
             for variant, name in row["tools"].items():
                 provider, tool = routing.tool_parts(name)
                 self.assertTrue(set(row["controls"][variant]) <= set(schemas[provider][tool]["properties"]))
             self.assertFalse(row["jobs"]["lipsync"])
             self.assertFalse(row["jobs"]["upscale"])
-        self.assertEqual(len(rows), 15)
+        self.assertEqual(len(rows), 17)
         self.assertFalse(next(r for r in rows if r["provider"] == "seedance")["jobs"]["start_end_frame"])
 
 

@@ -1,5 +1,3 @@
-"""Offline Vidu Q4 policy and native approval behavior."""
-
 from __future__ import annotations
 
 import json
