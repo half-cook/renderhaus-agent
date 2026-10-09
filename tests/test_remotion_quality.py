@@ -123,7 +123,7 @@ class RemotionQualityTests(unittest.TestCase):
         self.assertEqual(props["renderConfig"]["videoBitrate"], 1_250_000)
 
     def test_gateway_lambda_measures_remote_video_without_ffprobe(self) -> None:
-        source = self.sources["mkv30"]
+        source = self.sources[30]
         client = Mock()
         client.render_media_on_lambda.return_value = Mock(render_id="render", bucket_name="bucket")
         transport = httpx.MockTransport(lambda request: httpx.Response(200, content=source.read_bytes()))
