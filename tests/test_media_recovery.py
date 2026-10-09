@@ -26,7 +26,7 @@ class MusicTimingTests(unittest.TestCase):
 
     def test_replaced_soundtrack_can_mute_source_video(self):
         props = build_timeline_props('replace score', [{'kind': 'video', 'url': 'https://example.test/a.mp4',
-                                                       'duration_seconds': 30, 'source_in_seconds': 5, 'volume': 0}])
+                                                       'duration_seconds': 30, 'source_in_seconds': 5, 'volume': 0}], fps=30)
         clip = props['document']['tracks'][0]['items'][0]
         self.assertEqual((clip['volume'], clip['sourceIn'], clip['sourceOut']), (0, 5, 35))
 

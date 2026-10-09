@@ -628,7 +628,7 @@ class DeepAgentTests(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(deep_agent_model(), "anthropic:test")
             self.assertTrue(agent_configured())
         with patch.dict(os.environ, {"RENDERHAUS_AGENT_MODEL": "  ", "AGENT_MODEL": "  "}):
-            self.assertEqual(deep_agent_model(), "anthropic:claude-haiku-5-5")
+            self.assertEqual(deep_agent_model(), "anthropic:claude-sonnet-5-5")
         with patch.dict(os.environ, {"RENDERHAUS_AGENT_BACKEND": "invalid"}):
             with self.assertRaises(ValueError):
                 agent_backend()

@@ -63,6 +63,7 @@ class RemotionProviderTests(unittest.TestCase):
     def test_edit_plan_maps_b_roll_motion_titles_and_audio_fades(self) -> None:
         props = build_timeline_props(
             "Editorial cut",
+            fps=30,
             visuals=[
                 {
                     "kind": "video",

@@ -78,6 +78,7 @@ class GatewayExecutor:
         self.render_jobs = dict((session or {}).get("render_jobs") or {})
         self.media_jobs = dict((session or {}).get("media_jobs") or {})
         self.rejected_reviews = dict((session or {}).get("rejected_reviews") or {})
+        self.cost_ledger = dict((session or {}).get("cost_ledger") or {})
         self.outcomes = OutcomeStore()
         for event in studio.tool_events:
             self.restore_media_review(self.media_jobs, event)
@@ -115,6 +116,7 @@ class GatewayExecutor:
             if snapshot.get("type") in {"renderhaus_deepagents_session", "renderhaus_codex_session"}:
                 snapshot["media_jobs"] = dict(self.media_jobs)
                 snapshot["rejected_reviews"] = dict(self.rejected_reviews)
+                snapshot["cost_ledger"] = dict(self.cost_ledger)
         spending = self.snapshot()["spending"]
         self.studio.session_items = [item for item in self.studio.session_items
                                      if item.get("type") != SPENDING_SESSION_TYPE] + [
@@ -171,6 +173,7 @@ class GatewayExecutor:
             "render_jobs": self.render_jobs,
             "media_jobs": self.media_jobs,
             "rejected_reviews": self.rejected_reviews,
+            "cost_ledger": dict(self.cost_ledger),
             "gateway_tools": [
                 tool.model_dump(by_alias=True, exclude_none=True)
                 for server in self.servers
@@ -600,7 +603,7 @@ class GatewayExecutor:
                     provider_cents, fee_cents = cost.provider_cents, cost.fee_cents
                 except (ValueError, TypeError, KeyError):
                     pass
-            logger.info(json.dumps({
+            cost_record = {
                 "event": "provider_call", "entry_point": "gateway_executor",
                 "request_id": self.run_scope, "call_id": call_id, "tool": name,
                 "provider": provider, "model": effective_model(provider, raw_tool, arguments),
@@ -608,7 +611,11 @@ class GatewayExecutor:
                 "latency_seconds": 0 if rejection is not None else round(time.monotonic() - started_at, 3),
                 "provider_cost_estimate_cents": provider_cents, "fee_estimate_cents": fee_cents,
                 "total_estimate_cents": quote.total_cents, "currency": "USD",
-            }))
+            }
+            logger.info(json.dumps(cost_record))
+            if not is_free_tool(name) and completed.status not in {"rejected", "dry_run"}:
+                self.cost_ledger[call_id] = cost_record
+                self.publish_spending()
         if route:
             provider, tool_name = tool_parts(name)
             model = effective_model(provider, tool_name, arguments)

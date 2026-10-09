@@ -7,7 +7,7 @@ if TYPE_CHECKING:
     from langchain_core.language_models.chat_models import BaseChatModel
 
 
-DEFAULT_DEEP_AGENT_MODEL = "anthropic:claude-haiku-5-5"
+DEFAULT_DEEP_AGENT_MODEL = "anthropic:claude-sonnet-5-5"
 SUPPORTED_MODEL_PROVIDERS = ("openai", "anthropic", "bedrock", "bedrock_converse")
 AGENT_ROLES = ("planner", "media", "audio", "editor", "general-purpose")
 ADAPTIVE_MODELS = {"claude-haiku-5-5", "claude-opus-5-5", "claude-sonnet-5-5",
@@ -62,8 +62,8 @@ def configured_deep_agent_model(role: str | None = None) -> str | BaseChatModel:
         raise RuntimeError("ANTHROPIC_API_KEY is required when an Anthropic agent model is selected.")
     from langchain.chat_models import init_chat_model
 
-    # Haiku migration and effort contract read 2026-10-09:
-    # https://platform.claude.com/docs/en/models/haiku-5-5/migration-guide
+    # Sonnet 5.5 rejects budgets, sampling overrides, prefills and forced tool choices.
+    # https://platform.claude.com/docs/en/models/sonnet-5-5/migration-guide (2026-10-09)
     settings = {}
     if model.split(":", 1)[1] in ADAPTIVE_MODELS:
         settings = {"thinking": {"type": "adaptive"}, "output_config": {"effort": effort}}

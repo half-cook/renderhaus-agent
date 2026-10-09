@@ -300,6 +300,9 @@ def check_lambda_zip() -> None:
     assert zip_bytes[:2] == b"PK", "lambda zip is not a zip archive"
     with zipfile.ZipFile(io.BytesIO(zip_bytes)) as archive:
         names = archive.namelist()
+        assert sum(item.file_size for item in archive.infolist()) <= 250 * 1024 * 1024, (
+            "Lambda zip exceeds the 250 MiB uncompressed deployment limit"
+        )
     assert "server/billing_rates.py" in names, "lambda zip is missing shared Q4 billing rates"
     linux_native = [
         name
@@ -315,6 +318,10 @@ def check_lambda_zip() -> None:
         if name.startswith("opentimelineio/") and name.endswith(".so") and "aarch64" in name
     ]
     assert otio_native, "lambda zip is missing the Linux aarch64 OpenTimelineIO native module"
+    assert "av-14.2.0.dist-info/METADATA" in names, "lambda zip is missing the AL2-compatible PyAV pin"
+    assert any(name.startswith("av/") and name.endswith(".so") and "aarch64" in name for name in names), (
+        "lambda zip is missing the Linux aarch64 PyAV native module"
+    )
     print(f"ok lambda zip ({len(zip_bytes)} bytes)")
 
 

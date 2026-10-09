@@ -1,13 +1,17 @@
 """Explicit development backend for the shared Remotion timeline document.
 
 Filter semantics verified against https://ffmpeg.org/ffmpeg-filters.html, read 2026-10-09.
-System binary only; no FFmpeg or Remotion code is vendored.
+Local rendering uses system FFmpeg. Gateway metadata probing uses PyAV 14.2.0
+(BSD-3-Clause) and its wheel's FFmpeg (GPL-3.0-or-later, no AGPL), read 2026-10-09:
+https://github.com/PyAV-Org/PyAV/blob/v14.2.0/LICENSE.txt
+https://github.com/PyAV-Org/PyAV/blob/v14.2.0/scripts/build-deps
 """
 from __future__ import annotations
 
 import ipaddress
 import json
 import os
+from fractions import Fraction
 from pathlib import Path
 import re
 import shutil
@@ -34,7 +38,8 @@ def _output_root(media_roots: tuple[Path, ...]) -> Path:
 
 
 def _source(source: str, *, directory: Path, index: int,
-            media_roots: tuple[Path, ...], source_root: Path) -> Path:
+            media_roots: tuple[Path, ...], source_root: Path,
+            allowed_hosts: set[str] | None = None, deadline_seconds: float = 120) -> Path:
     parsed = urlsplit(source)
     if not parsed.scheme:
         path = Path(source).expanduser()
@@ -44,7 +49,8 @@ def _source(source: str, *, directory: Path, index: int,
         if not path.is_file() or not 0 < path.stat().st_size <= MAX_MEDIA_BYTES:
             raise ValueError('Local render sources must be nonempty media files within the size limit.')
         return path
-    hosts = set(os.getenv('REMOTION_LOCAL_MEDIA_HOSTS', '').split(',')) - {''}
+    hosts = (set(os.getenv('REMOTION_LOCAL_MEDIA_HOSTS', '').split(',')) - {''}
+             if allowed_hosts is None else allowed_hosts)
     if (parsed.scheme != 'https' or parsed.hostname not in hosts or parsed.username
             or parsed.password or parsed.port not in {None, 443} or parsed.fragment):
         raise ValueError('Local remote sources require HTTPS on an exact REMOTION_LOCAL_MEDIA_HOSTS host.')
@@ -52,7 +58,7 @@ def _source(source: str, *, directory: Path, index: int,
     if not addresses or any(not ipaddress.ip_address(a[4][0]).is_global for a in addresses):
         raise ValueError('Local remote media hosts must resolve to public addresses.')
     destination = directory / f'source-{index}.media'
-    deadline = time.monotonic() + 120
+    deadline = time.monotonic() + deadline_seconds
     try:
         with httpx.Client(timeout=30, follow_redirects=False, trust_env=False) as client:
             with client.stream('GET', source) as response:
@@ -75,6 +81,22 @@ def _source(source: str, *, directory: Path, index: int,
 
 
 def _probe(path: Path) -> dict[str, Any]:
+    if not shutil.which('ffprobe'):
+        import av
+
+        try:
+            with path.open('rb') as source, av.open(source, mode='r', options={
+                'format_whitelist': FORMATS, 'protocol_whitelist': 'file,pipe',
+            }) as container:
+                streams = []
+                for stream in container.streams:
+                    rate = stream.average_rate if stream.type == 'video' else None
+                    streams.append({'codec_type': stream.type, 'avg_frame_rate': str(rate) if rate else '0/0',
+                                    'bit_rate': stream.codec_context.bit_rate})
+                return {'streams': streams, 'format': {'duration': (container.duration or 0) / av.time_base,
+                                                      'bit_rate': container.bit_rate}}
+        except av.FFmpegError:
+            raise ValueError('Local source/output is not a supported media container.') from None
     result = subprocess.run(['ffprobe', '-v', 'error', '-protocol_whitelist', 'file,pipe',
                              '-format_whitelist', FORMATS, '-show_streams', '-show_format',
                              '-of', 'json', str(path)], capture_output=True, timeout=30)
@@ -110,14 +132,15 @@ def _audio_filter(label: str, item: dict[str, Any], *, rate: float = 1,
 def _command(props: dict[str, Any], directory: Path, *, media_roots: tuple[Path, ...],
              source_root: Path, filename: str) -> tuple[list[str], float]:
     config, document = props['renderConfig'], props['document']
-    fps, width, height = int(config['fps']), int(config['width']), int(config['height'])
+    fps, width, height = float(config['fps']), int(config['width']), int(config['height'])
+    frame_rate = str(Fraction(fps).limit_denominator(100_000))
     duration = int(config['durationInFrames']) / fps
     if not 0 < duration <= 600 or len(document['assets']) > 60:
         raise ValueError('Local renders allow at most 600 seconds and 60 assets.')
     assets = {asset['id']: asset for asset in document['assets']}
     command = ['ffmpeg', '-hide_banner', '-nostdin', '-v', 'error', '-y',
                '-filter_complex_threads', '1', '-f', 'lavfi', '-i',
-               f'color=c=black:s={width}x{height}:r={fps}:d={duration:g}']
+               f'color=c=black:s={width}x{height}:r={frame_rate}:d={duration:g}']
     filters: list[str] = []
     visual = '0:v'
     audio: list[str] = []
@@ -142,7 +165,7 @@ def _command(props: dict[str, Any], directory: Path, *, media_roots: tuple[Path,
             rate = float(item.get('playbackRate', 1))
             command += ['-protocol_whitelist', 'file,pipe', '-format_whitelist', FORMATS]
             if kind == 'image':
-                command += ['-loop', '1', '-framerate', str(fps)]
+                command += ['-loop', '1', '-framerate', frame_rate]
             else:
                 command += ['-ss', str(item.get('sourceIn', 0))]
             command += ['-t', str(float(item['duration']) * rate), '-i', str(source)]
@@ -155,7 +178,7 @@ def _command(props: dict[str, Any], directory: Path, *, media_roots: tuple[Path,
                           f'scale={width}:{height}:force_original_aspect_ratio=decrease,'
                           f'pad={width}:{height}:x=(ow-iw)*{px:g}:y=(oh-ih)*{py:g}:color=black')
                 chain = [f'[{count}:v]setpts=(PTS-STARTPTS)/{rate:g}',
-                         f'fps={fps}', resize, 'setsar=1', 'format=rgba']
+                         f'fps={frame_rate}', resize, 'setsar=1', 'format=rgba']
                 opacity = float(item.get('opacity', 1))
                 if opacity != 1:
                     chain += [f'colorchannelmixer=aa={opacity:g}']
@@ -184,8 +207,10 @@ def _command(props: dict[str, Any], directory: Path, *, media_roots: tuple[Path,
     command += ['-filter_complex', ';'.join(filters), '-map', '[video]']
     if audio:
         command += ['-map', '[audio]', '-c:a', 'aac', '-ar', '48000']
+    bitrate = config.get('videoBitrate')
+    quality = ['-b:v', str(bitrate)] if bitrate else ['-crf', str(config.get('crf') or 18)]
     command += ['-c:v', 'libx264', '-threads', '2', '-preset', 'veryfast', '-pix_fmt', 'yuv420p',
-                '-movflags', '+faststart', '-t', str(duration), '-progress',
+                *quality, '-movflags', '+faststart', '-t', str(duration), '-progress',
                 str(directory / 'progress.txt'), str(directory / filename)]
     return command, duration
 

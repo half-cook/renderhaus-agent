@@ -14,7 +14,7 @@ sys.path.insert(0, str(ROOT))
 from server.config import load_local_env
 from providers.catalog import get_provider
 from providers.registry import load_committed_schemas
-from scripts.deploy_gateway import build_lambda_zip, _find_gateway, GATEWAY_NAME
+from scripts.deploy_gateway import build_lambda_zip, _find_gateway, GATEWAY_NAME, lambda_package_code
 import boto3
 
 
@@ -58,13 +58,14 @@ def main():
                  "REMOTION_APP_BUCKET_NAME": env["REMOTION_APP_BUCKET_NAME"]}
     # Package before any mutation, so packaging errors leave the deployment untouched.
     package = build_lambda_zip()
+    code = lambda_package_code(package, env=env, region=region)
     deployed = subprocess.run(["node", "scripts/deploy.mjs"], cwd=ROOT / "remotion",
                               env=child_env, text=True, capture_output=True, check=True)
     site = json.loads(deployed.stdout.strip().splitlines()[-1])
     print("Uploaded versioned Remotion composition.", flush=True)
     for name, config in configs.items():
         spec = get_provider(name)
-        lam.update_function_code(FunctionName=spec.function_name, ZipFile=package,
+        lam.update_function_code(FunctionName=spec.function_name, **code,
                                  RevisionId=config["RevisionId"])
         lam.get_waiter("function_updated_v2").wait(FunctionName=spec.function_name)
         if name == "remotion":

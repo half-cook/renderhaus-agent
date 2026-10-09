@@ -53,6 +53,7 @@ class Route:
     estimated_cost: dict | None = None
     disclosure: str = ""
     steps: tuple[Route, ...] = ()
+    execution_groups: tuple[tuple[str, ...], ...] = ()
     expected_output: str | None = None
     forbidden_tools: tuple[str, ...] = ()
 
@@ -177,10 +178,17 @@ def _delivery_route(prompt: str, constraints: dict, *, region: str | None,
         steps.append(replace(route, skill=skill))
     first = steps[0]
     incomplete = next((step for step in steps if step.status != 'ready'), None)
+    execution_groups = tuple(group for group in (
+        tuple(step.alias for step in steps[:-1] if step.alias),
+        tuple(step.alias for step in steps[-1:] if step.alias),
+    ) if group)
     return replace(first, steps=tuple(steps), expected_output='assembled MP4',
+                   execution_groups=execution_groups,
                    forbidden_tools=_IMAGE_ALIASES if voiceover else (),
                    status=incomplete.status if incomplete else first.status,
-                   reason=incomplete.reason if incomplete else 'Generate video if needed, synthesize voiceover, then assemble the final MP4.')
+                   reason=incomplete.reason if incomplete else
+                   'Start independent video and voiceover together; assemble after both finish.' if voiceover else
+                   'Assemble the existing assets into the final MP4.')
 
 
 def _lyrics_capabilities(prompt: str) -> list[tuple[str, str]]:

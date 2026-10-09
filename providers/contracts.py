@@ -170,6 +170,7 @@ TOOL_ARGUMENT_RULES: dict[str, dict[str, dict[str, ArgumentRule]]] = {
         "render_timeline": {
             "aspect_ratio": ArgumentRule(choices=("16:9", "9:16", "1:1", "2.39:1")),
             "fps": ArgumentRule(minimum=12, maximum=60),
+            "video_bitrate": ArgumentRule(minimum=1),
         },
         "prepare_conversational_edit": {
             "aspect_ratio": ArgumentRule(choices=("16:9", "9:16", "1:1", "2.39:1")),
@@ -190,6 +191,8 @@ _VISUAL_ITEM_SCHEMA = {
         },
         "output_path": {"type": "string", "description": "Existing local media path returned by a provider, under RENDERHAUS_MEDIA_DIR; no file:// prefix. Use instead of url."},
         "duration_seconds": {"type": "number", "description": "Must be greater than 0."},
+        "source_fps": {"type": "number", "description": "Optional measured source video frame rate. Local files and trusted HTTPS video hosts are measured automatically before rendering."},
+        "source_bitrate": {"type": "integer", "description": "Optional measured source bitrate in bits per second. Local files and trusted HTTPS video hosts are measured automatically; unknown stream bitrate uses the conservative container bitrate."},
         "start_seconds": {"type": "number", "description": "Must be at least 0."},
         "source_in_seconds": {"type": "number", "description": "Must be at least 0."},
         "track": {"type": "integer", "description": "Allowed range: 0 to 8."},
@@ -554,6 +557,10 @@ def _validate_cross_fields(provider_id: str, tool_name: str, arguments: dict[str
             for field in ("start_seconds", "source_in_seconds"):
                 if field in clip and float(clip[field]) < 0:
                     raise ValueError(f"arguments.visuals[{index}].{field} must be at least 0.")
+            if "source_fps" in clip and not 0 < float(clip["source_fps"]) <= 240:
+                raise ValueError(f"arguments.visuals[{index}].source_fps must be greater than 0 and at most 240.")
+            if "source_bitrate" in clip and clip["source_bitrate"] <= 0:
+                raise ValueError(f"arguments.visuals[{index}].source_bitrate must be positive.")
             choices = {
                 "transition": {"cut", "fade", "dip_to_black"},
                 "fit": {"cover", "contain"},

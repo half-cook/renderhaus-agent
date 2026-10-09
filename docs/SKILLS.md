@@ -436,7 +436,12 @@ All three poll `Fal___get_video_task`. Controls, costs, consent and dry-run limi
 [the Wan 3 provider reference](FAL_WAN3_PROVIDER.md). There are still 24 packaged skills.
 The Wan branch activated four specific workbook rows; after Sync, 31 dependency rows remain skipped.
 
-Plain shot/clip requests with voiceover produce ordered video, TTS and final-assembly steps.
+Plain shot/clip requests with voiceover produce video, TTS and final-assembly steps.
+Independent video and narration share an execution group and start together before a
+blocking video poll; assembly waits for both. The audio-bed and final-assembly instructions
+carry this rule. Customer dependencies, such as narration based on the generated video's
+transcript, remain sequential. Final assembly omits fps and bitrate unless the customer
+requests them, allowing the renderer to preserve measured source settings.
 The router excludes image generation and editing from their discovered tools and dispatches.
 MP4 export uses final-assembly; OTIO, FCPXML and EDL export uses resolve-handoff.
 Deliverable duration describes the shot/clip length, never audio placement such as starting at 1 s.

@@ -12,7 +12,10 @@ metadata:
 Read read_studio_context and project shot plans. Reuse existing managed asset versions.
 Search x_amz_bedrock_agentcore_search for Remotion render_timeline and get_render_progress.
 Build the typed timeline according to the returned schema. Include ordered clips, precise
-durations, audio, and the requested aspect ratio. Lambda supports captions and motion effects;
+durations, audio, and the requested aspect ratio.
+Omit `fps` and `video_bitrate` unless the customer sets them. The renderer uses the primary
+video's measured frame rate and preserves its quality. A cinematic brief alone does not set fps.
+Lambda supports captions and motion effects;
 the local ffmpeg backend supports trims, fit, fades, and audio timing/volume/fades. Unsupported
 effects require Lambda. Use durable URLs for Lambda; for local assembly use provider-returned
 plain `output_path` fields in visuals/audio_tracks, without a `file://` prefix. Call call_editor_tool with
