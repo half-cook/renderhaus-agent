@@ -193,8 +193,18 @@ See [decisions and verification](conversational-edit-decisions.tsv) and
 
 ## Offline routing verification
 
+The [upscale skill](../agent/deep_agent/skills/upscale/SKILL.md) now dispatches
+`Topaz___upscale_video` and `Topaz___interpolate_video`, then polls
+`Topaz___get_video_task`. Starlight Precise 2.6 and Apollo are the quality-first defaults;
+Chronos applies to plain linear-motion FPS conversion unless a model is explicitly named.
+Measured input dimensions, duration and FPS bind the quote to the submitted request.
+Topaz submissions always pause with cost, including autonomous runs. Dry-run previews
+and queued jobs never satisfy final delivery. See [Topaz](TOPAZ.md) for pricing, licence
+sources, unknown-price blockers and the blocked Comet check.
+
 `tests/fixtures/skill_routing.json` contains 129 retained routing rows.
-There are 98 active cases and 31 explicit skips. Seedance reference dialogue and two
+There are 103 active cases and 26 explicit skips. Five Topaz upscale/interpolation cases
+now use built tools. Seedance reference dialogue and two
 previously licence-skipped edit cases now use built Seedance tools. The extension increment
 case stays skipped because appended-versus-combined length semantics are UNVERIFIED.
 The 23 archived rows are dropped,
@@ -215,7 +225,7 @@ generation rule. Retired-provider replacement examples retain `source_prompt`; s
 assert that explicit retired requests dispatch nothing. [Decisions](capability-map-decisions.tsv)
 record these differences from the workbook.
 
-The pending specialists cover Act-Two, Kling Motion Control, Topaz, Mirelo,
+The pending specialists cover Act-Two, Kling Motion Control, Mirelo,
 Recraft, Ideogram edit, Mureka lyrics video, VLM judging,
 and cutaway capture. A declared interim activates other pending defaults where supported.
 Wan 3 generation uses its built tools. Model Studio edit/extend retain their default IDs but
@@ -380,7 +390,7 @@ distributed billing guarantee. Durability still depends on the host persisting `
 
 Installed skills distinguish a built dispatch tool from a pending routing alias.
 `docs/skills-drafts/` keeps pending adapter references and retired historical guidance.
-Act-Two/Kling motion control, Topaz, Mirelo, Recraft and Ideogram edit await their
+Act-Two/Kling motion control, Mirelo, Recraft and Ideogram edit await their
 named branches. MMAudio, ACE-Step and Veo references are retired, not future activation plans.
 Transcript cuts, silence removal and captions are folded into conversational-edit. NLE re-import
 still needs feat/nle-import-fcpxml. File export does not control Resolve, establish a graded

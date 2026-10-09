@@ -268,6 +268,9 @@ large, long-lived conversations need retention limits or a durable saver.
 Native `interrupt_on` uses a `when` predicate. Paid non-video dispatch pauses in
 non-autonomous runs and proceeds under existing spending authorization when autonomous.
 All paid video pauses even when autonomous while `premium_video_approval` is enabled.
+Topaz finishing, like the existing quality-first generation/avatar tools, always pauses
+with cost even when that switch is disabled. Topaz uses measured source properties and
+refuses live submission when its published estimate is unknown; see [Topaz](TOPAZ.md).
 The shared policy adds a `server.billing_rates.cost_for` estimate to approval descriptions
 and visible labels. Unconfirmed prices remain unknown. `RENDERHAUS_PREMIUM_VIDEO_APPROVAL=false`
 disables the additional autonomous video pause. ElevenLabs administrative tools still interrupt
@@ -308,6 +311,7 @@ export RENDERHAUS_SECRETS_NAME=''
 export SEEDANCE_DRY_RUN=true SEEDREAM_DRY_RUN=true ELEVENLABS_DRY_RUN=true
 export FISH_AUDIO_DRY_RUN=true REMOTION_DRY_RUN=true
 export KLING_DRY_RUN=true RUNWAY_DRY_RUN=true FAL_DRY_RUN=true
+export TOPAZ_DRY_RUN=true
 export LUMA_DRY_RUN=true HYPERFRAMES_DRY_RUN=true
 .venv/bin/python -m unittest discover -s tests -q
 .venv/bin/ruff check agent lambdas scripts server providers
