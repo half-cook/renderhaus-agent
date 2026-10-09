@@ -1527,6 +1527,7 @@ async def run_studio_agent(
         event_sink=event_sink,
         progress_sink=progress_sink,
     )
+    studio.prompt = request.prompt
     async def run(servers):
         if backend == "codex":
             return await run_with_servers(request, studio, harness or CodexHarness(), servers)
