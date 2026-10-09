@@ -54,7 +54,7 @@ class TopazContractTests(unittest.TestCase):
             {"source_width": 3840, "source_height": 2160},
             {"source_width": 4096, "source_height": 2160, "upscale_factor": 1.0},
             {"source_width": 1000, "source_height": 1000, "upscale_factor": 4.0},
-            {"target_resolution": "4K"},
+            {"target_resolution": "4K", "source_width": 320, "source_height": 180},
         ):
             with self.subTest(arguments=arguments), self.assertRaises(ValueError):
                 self.contracts.request_for("upscale_video", {**SOURCE, **arguments})
