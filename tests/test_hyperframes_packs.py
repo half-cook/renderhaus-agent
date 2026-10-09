@@ -188,6 +188,20 @@ process.stdout.write(JSON.stringify({timelines, registry: sandbox.window.__timel
 
 
 class HyperFramesPackRoutingTests(unittest.TestCase):
+    def test_compound_photo_collage_output_is_motion(self):
+        from agent.deep_agent.routing import route_intent
+
+        prompts = ["Make a photo collage video from the supplied photos",
+                   "Create an image collage animation", "Create an animated photo collage"]
+        for enabled in ("true", "false"):
+            with patch.dict(os.environ, {"HYPERFRAMES_ENABLED": enabled}):
+                for confidential in (True, False):
+                    for prompt in prompts:
+                        with self.subTest(enabled=enabled, confidential=confidential, prompt=prompt):
+                            route = route_intent(prompt, confidential=confidential)
+                            self.assertEqual((route.skill, route.alias, route.tool, route.status),
+                                             ("motion-graphics", "remotion_render", "Remotion___render_timeline", "ready"))
+
     def test_html_templates_keep_remotion_without_an_explicit_hyperframes_name(self):
         from agent.deep_agent.routing import route_intent
 
@@ -222,7 +236,8 @@ class HyperFramesPackRoutingTests(unittest.TestCase):
     def test_requested_still_images_with_caption_styling_use_image_generation(self):
         from agent.deep_agent.routing import route_intent
 
-        for prompt in ["Generate images with cinematic captions", "Generate an image with cinematic captions"]:
+        for prompt in ["Generate images with cinematic captions", "Generate an image with cinematic captions",
+                       "Generate a still poster for the collage video"]:
             with self.subTest(prompt=prompt):
                 route = route_intent(prompt)
                 self.assertEqual((route.skill, route.alias, route.tool),
