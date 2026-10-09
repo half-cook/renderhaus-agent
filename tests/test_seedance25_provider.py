@@ -17,6 +17,13 @@ from server import billing_rates
 
 
 class Seedance25ProviderTests(unittest.TestCase):
+    def test_catalog_remains_readable_when_legacy_config_uses_default_fal_host(self):
+        with patch.dict(os.environ, {"SEEDANCE_TRANSPORT": "fal", "SEEDANCE_MODEL": "seedance-1-5-pro-251215"}), patch.object(api.queue, "submit") as submit:
+            result = api.list_seedance_models()
+        self.assertIn("byteplus", result["configuration_error"])
+        self.assertTrue(result["models"])
+        submit.assert_not_called()
+
     def setUp(self) -> None:
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)

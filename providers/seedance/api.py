@@ -84,7 +84,6 @@ def _write_task_meta(job_id: str, metadata: dict[str, Any]) -> None:
 def _read_task_meta(job_id: str) -> dict[str, Any]:
     path = _task_meta_path(job_id)
     if not path.exists():
-        # Preserve previously submitted BytePlus tasks from the 1.5 adapter.
         if re.fullmatch(r"[A-Za-z0-9_-]+", job_id):
             legacy = _video_dir() / ".tasks" / f"{job_id}.json"
             if legacy.exists():
@@ -343,9 +342,15 @@ def text_to_video_and_wait(prompt: str, duration_seconds: int = 4, aspect_ratio:
 
 def list_seedance_models() -> dict:
     """Return the verified offline Seedance catalog without credentials or account requests."""
+    try:
+        selected = contracts.effective_model("text_to_video", {})
+        configuration_error = None
+    except ValueError as exc:
+        selected = contracts.configured_model({})
+        configuration_error = str(exc)
     return {
         "status": "dry_run" if _dry_run() else "ok",
-        "selected_model": contracts.effective_model("text_to_video", {}),
+        "selected_model": selected, "configuration_error": configuration_error,
         "transport": contracts.transport(), "verified_on": "2026-10-09",
         "models": [{"id": endpoint, "api_url": spec.api_url, **contracts.TRAINING_METADATA}
                    for endpoint, spec in contracts.ENDPOINTS.items()]
