@@ -17,6 +17,7 @@ from providers.luma.catalog import (
     RESOLUTIONS as LUMA_RESOLUTIONS,
 )
 from providers.seedance.api import MAX_DURATION_SECONDS, MIN_DURATION_SECONDS
+from providers.openai_images import contracts as openai_images
 
 
 SEEDANCE_RATIOS = ("16:9", "9:16", "1:1", "4:3", "3:4", "21:9", "adaptive")
@@ -24,6 +25,13 @@ SEEDREAM_RATIOS = ("1:1", "16:9", "9:16")
 SEEDANCE_RESOLUTIONS = ("480p", "720p", "1080p")
 SEEDREAM_SIZES = ("1K", "2K", "3K")
 STATIC_FIELD_OPTIONS: dict[str, dict[str, list[str | int]]] = {
+    "openai_images": {
+        "model": list(openai_images.MODELS), "aspect_ratio": list(openai_images.RATIOS),
+        "size": list(openai_images.SIZES), "quality": list(openai_images.QUALITY),
+        "background": ["auto", "opaque", "transparent"],
+        "output_format": list(openai_images.FORMAT), "moderation": ["auto", "low"],
+        "n": list(range(1, 11)),
+    },
     "kling": {
         "aspect_ratio": ["16:9", "9:16", "1:1"],
         "resolution": ["720p", "1080p", "4k"],

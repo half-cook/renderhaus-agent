@@ -4,6 +4,7 @@ description: Create and revise approved product stills through the still-image c
 metadata:
   include_tools: call_media_tool
   routing_tools: gpt_image25_t2i gpt_image25_edit recraft_v41_vector ideogram45_edit
+  gateway_tools: OpenAI___generate_image OpenAI___edit_image
 ---
 
 # Product images

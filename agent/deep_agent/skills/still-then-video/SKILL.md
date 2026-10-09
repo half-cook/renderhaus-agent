@@ -4,22 +4,22 @@ description: Review a still first, then animate the approved version through the
 metadata:
   include_tools: call_media_tool
   routing_tools: gpt_image25_t2i gpt_image25_edit wan3_i2v seedance25_i2v
-  gateway_tools: Fal___generate_wan3_i2v Fal___get_video_task Seedance___get_video_task Seedance___image_to_video
+  gateway_tools: Fal___generate_wan3_i2v Fal___get_video_task Seedance___get_video_task Seedance___image_to_video OpenAI___generate_image OpenAI___edit_image
 ---
 
 # Still before video
 
 Generate the first look through `gpt_image25_t2i`; revise it through `gpt_image25_edit`.
-Both image defaults are pending with no automatic interim. Explicit Seedream requests use
-named-provider; otherwise disclose the pending image step and stop. Image specialists and exceptions
+Dispatch through `OpenAI___generate_image` and `OpenAI___edit_image` respectively.
+These return saved images synchronously without polling. Explicit Seedream requests use
+named-provider with disclosure. Image specialists and exceptions
 are documented in [still images](../image-gen/SKILL.md).
 Show the completed still, obtain visual approval, and pin that immutable version before animation.
 An existing approved character/frame can start at the animation step without generating another still.
 
 Animate through `wan3_i2v` by default or `seedance25_i2v` for synthetic dialogue.
 Wan uses `Fal___generate_wan3_i2v` with the approved version in `start_image_url` and saved-job
-polling through `Fal___get_video_task`. Only the Seedance dialogue exception uses the current
-`Seedance___image_to_video` interim while 2.5 remains pending.
+polling through `Fal___get_video_task`. The synthetic-dialogue exception uses `Seedance___image_to_video`.
 Real-person references force Wan and require `real_face_refs=true` plus `likeness_consent=true`.
 Read [image to video](../i2v/SKILL.md) for native inputs and saved-job polling.
 

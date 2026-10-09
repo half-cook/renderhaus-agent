@@ -1,4 +1,6 @@
 const MODEL_LABELS: Record<string, string> = {
+  "gpt-image-2.5-sunburst": "GPT Image 2.5 Sunburst",
+  "gpt-image-2.5-sunburst-2026-09-08": "GPT Image 2.5 Sunburst (2026-09-08)",
   "kling-3.0": "Kling 3.0",
   "kling-3.0-turbo": "Kling 3.0 Turbo",
   "kling-3.0-omni": "Kling 3.0 Omni",

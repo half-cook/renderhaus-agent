@@ -4,7 +4,7 @@ description: Turn approved storyboard frames into consistent shots with the capa
 metadata:
   include_tools: call_media_tool
   routing_tools: gpt_image25_t2i gpt_image25_edit wan3_i2v wan3_r2v seedance25_i2v seedance25_r2v
-  gateway_tools: Fal___generate_wan3_i2v Fal___generate_wan3_r2v Fal___get_video_task
+  gateway_tools: Fal___generate_wan3_i2v Fal___generate_wan3_r2v Fal___get_video_task OpenAI___generate_image OpenAI___edit_image
 ---
 
 # Storyboard shots
@@ -15,7 +15,7 @@ stills before animation. Use `Fal___generate_wan3_i2v` for a start frame or
 `Fal___generate_wan3_r2v` for image/video/audio reference sets. Read i2v for limits and required
 reference duration/fps metadata. Preserve the selected schema and poll `Fal___get_video_task`.
 Real-face references force Wan and require `real_face_refs=true` and `likeness_consent=true`.
-Synthetic dialogue uses the Seedance exception. Its reference-video tool remains pending.
+Synthetic dialogue uses the built Seedance exception; read i2v for its native reference inputs.
 Reuse accepted shots and read final-assembly to render the clips rather than still previews.
 
 Follow `read_studio_context.intent_route`. Selection uses the explicit requested provider/model,
