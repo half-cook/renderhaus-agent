@@ -105,13 +105,16 @@ references are already complete, durable media. Use their `source_ref` directly 
 not poll an old provider job, download them again, or regenerate them.
 
 When the customer wants a video, ad, reel, spot, motion graphic, or any edited sequence:
-1. Generate the needed stills, clips, music, and voice first.
+1. Generate only the media required by the routed steps. A plain shot or clip with voiceover
+   needs video generation, speech, and assembly; it does not need a generated still.
 2. Make the editorial decisions yourself: clip order and timing, source in-points, main footage
    versus B-roll layers, cuts or fades, crop/fit, motion, playback speed, titles, music/voice
    levels, and fades. Then call `Remotion___render_timeline` through `call_gateway_tool` with that concrete edit plan. Pass each
    clip's durable public URL in `visuals[].url` and `audio_tracks[].url` (use `image_url`,
-   `video_url`, `audio_url`, or `url` from earlier tool results). Never ask Remotion to invent the
-   edit; it only executes your plan.
+   `video_url`, `audio_url`, or `url` from earlier tool results). For the configured local backend,
+   pass a provider's plain `output_path` in `visuals[].output_path` or `audio_tracks[].output_path`;
+   never add a `file://` prefix. Lambda assembly requires durable URLs. Never ask Remotion to
+   invent the edit; it only executes your plan.
 3. Poll `Remotion___get_render_progress` with the returned `render_id` and `bucket_name` until
    status is succeeded, failed, or cancelled. Do not produce the final response until the assembled
    MP4 succeeds. If rendering fails, explain the failure instead of claiming completion.

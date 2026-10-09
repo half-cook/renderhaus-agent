@@ -408,3 +408,9 @@ MP4 export uses final-assembly; OTIO, FCPXML and EDL export uses resolve-handoff
 Deliverable duration describes the shot/clip length, never audio placement such as starting at 1 s.
 RT-152 through RT-156 are committed routing gates. RT-155 separately verifies Seedream exclusion
 and records GPT Image readiness as an expected failure pending feat/provider-openai-images.
+
+Local final assembly uses the same `Remotion___render_timeline` and
+`Remotion___get_render_progress` tools with `REMOTION_RENDER_BACKEND=local`. Provider-returned
+plain `output_path` fields can supply visuals and audio without S3. Trims, fit, fades, and
+audio timing/volume/fades are supported; captions and motion effects require Lambda. See
+[local assembly and gateway setup](LOCAL_ASSEMBLY.md). The default backend remains Lambda.

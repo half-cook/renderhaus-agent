@@ -12,7 +12,10 @@ metadata:
 Read read_studio_context and project shot plans. Reuse existing managed asset versions.
 Search x_amz_bedrock_agentcore_search for Remotion render_timeline and get_render_progress.
 Build the typed timeline according to the returned schema. Include ordered clips, precise
-durations, audio, captions, and the requested aspect ratio. Call call_editor_tool with
+durations, audio, and the requested aspect ratio. Lambda supports captions and motion effects;
+the local ffmpeg backend supports trims, fit, fades, and audio timing/volume/fades. Unsupported
+effects require Lambda. Use durable URLs for Lambda; for local assembly use provider-returned
+plain `output_path` fields in visuals/audio_tracks, without a `file://` prefix. Call call_editor_tool with
 Remotion___render_timeline once. Save render_id, bucket_name, and output_key unchanged.
 Call Remotion___get_render_progress with those identifiers. The host polls the same render.
 If waiting times out, preserve the ID and describe pending work. Never start a replacement

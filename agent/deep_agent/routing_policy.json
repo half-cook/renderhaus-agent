@@ -1123,7 +1123,7 @@
       "skill": "audio-bed",
       "model": "eleven_v4_turbo",
       "model_env": "ELEVENLABS_TTS_MODEL",
-      "verification": "verified ID; existing REST TTS transport UNVERIFIED",
+      "verification": "official generic HTTP TTS schema verified 2026-10-09; operator confirmed eleven_v4_turbo HTTP TTS; other gateway variants UNVERIFIED",
       "source": "https://elevenlabs.io/docs/overview/models",
       "read_date": "2026-10-08",
       "host": "ElevenLabs direct",

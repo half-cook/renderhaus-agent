@@ -14,7 +14,8 @@ remain because they are the generation and output APIs for current dubbing model
 
 Account, subscription, usage, workspace, API-key/service-account, conversational-agent, phone,
 production-order, ElevenLabs Studio/Flows/assets management and resource edit/delete APIs are
-excluded. Image/video generation stays with Seedream/Seedance. The full upstream specification
+excluded. Image/video generation follows the capability map: Wan 3.0 is the plain-video default,
+GPT Image support is pending, and Seedream requires an explicit request. The full upstream specification
 is retained only for validation and review; it is not the exposed tool catalog.
 Existing Mureka media remains in project history; Mureka is no longer a selectable provider.
 
@@ -48,8 +49,9 @@ whether it changes content, and whether explicit approval is required.
 The manager instructions contain the same routing rules. Official
 [ElevenLabs skills](https://github.com/elevenlabs/skills) informed this guidance. Installing a
 global skill alone would not reach Renderhaus: its Codex harness disables host skill discovery.
-Music and voiceover canvas nodes use ElevenLabs; normal image/video creation retains Seedream
-and Seedance. Account administration, phone/voice-agent work and human production orders are
+Voiceover uses Eleven v4 Turbo. Music routing follows the capability map; pending defaults
+remain blocked rather than silently substituting a demoted provider. Account administration,
+phone/voice-agent work and human production orders are
 unavailable through Renderhaus, including in autonomous mode.
 
 ## Wire format and boundaries
