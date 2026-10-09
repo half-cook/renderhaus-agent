@@ -67,6 +67,10 @@ _VIDEO_DELIVERABLE = r"\b(?:shots?|clips?|videos?|mp4)\b"
 _VOICEOVER = r"\b(?:voice[ -]?over|narration|narrate|vo)\b"
 _IMAGE_ALIASES = ("gpt_image25_t2i", "gpt_image25_edit", "recraft_v41_vector", "ideogram45_edit", "seedream_t2i")
 _LIPSYNC_REQUEST = next(rule["pattern"] for rule in POLICY["rules"] if rule.get("capability") == "lipsync")
+_MODELSTUDIO_PREVIEW_WARNING = (
+    "Alibaba preview terms permit internal testing, research and evaluation only until GA. "
+    "Live customer use is blocked by the preview licence."
+)
 
 
 @dataclass(frozen=True)
@@ -799,17 +803,20 @@ def select_provider(job: str, *, tier: str | None = None, required: dict | None 
     if available_tools is not None and tool is not None and tool not in available_tools:
         reason = f"Selected tool {tool} is unavailable; no automatic provider fallback."
         return Route(alias=alias, basis=basis, status="blocked", reason=reason, disclosure=reason)
+    provider_id = row["provider"] if row else tool_parts(tool)[0] if tool else "local"
     blocker = policy_blocker(tool, quote_args, region=region) if tool else None
     if blocker:
-        return Route(alias=alias, basis=basis, status="blocked", reason=blocker, disclosure=blocker)
+        disclosure = blocker
+        if provider_id == "alibaba_modelstudio":
+            disclosure += " " + _MODELSTUDIO_PREVIEW_WARNING
+        return Route(alias=alias, basis=basis, status="blocked", reason=blocker, disclosure=disclosure)
     quote = estimate_cost(tool, quote_args, list_price=True) if tool else CostEstimate(0)
-    provider_id = row["provider"] if row else tool_parts(tool)[0] if tool else "local"
     label = row["label"] if row else alias
     disclosure = f"Selected {label}. Provider {provider_id}; model {model or 'none'}. {basis}. {quote.description}"
     if provider_id == "gemini":
         disclosure += " Experimental continuity judge. Default promotion requires a committed passing eval. Background inputs are stored by the vendor."
     if provider_id == "alibaba_modelstudio":
-        disclosure += " Alibaba preview terms permit internal testing, research and evaluation only until GA. Live customer use is blocked by the preview licence."
+        disclosure += " " + _MODELSTUDIO_PREVIEW_WARNING
     if predicates["real_face_refs"] and alias in {"wan3_t2v", "wan3_i2v", "wan3_r2v", "wan3_edit", "wan3_extend"}:
         required["real_face_refs"] = True
         disclosure += " Real-person likeness consent " + (
