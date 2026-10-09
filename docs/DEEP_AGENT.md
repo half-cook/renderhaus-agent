@@ -172,7 +172,7 @@ use the act-two skill even for explicit performance requests. Mureka lyrics-vide
 whiteboard-explainer plans Remotion templates without claiming unsupported marker-hand animation.
 
 The deterministic router supplies skill and tool proposals in graph input and Studio context.
-The capability-map fixture contains 129 retained rows, with 122 active and 7 dependency skips.
+The capability-map fixture contains 129 retained rows, with 123 active and 6 dependency skips.
 Archived/confidential routes are dropped. Active rows cover built tools and declared interims;
 pending specialists keep named branch reasons. Editorial overrides retain the safe preparer,
 separate rendering approval, and existing export/HyperFrames narration workflow contracts.
@@ -406,8 +406,8 @@ Mureka music and lyrics-video share the audio role and six Gateway tools. Native
 0.7.23 interrupts quote paid video and resume once after approval; rejection performs
 no dispatch. This includes autonomous lyrics-video requests. Songs pause unless
 autonomous. See [Mureka](MUREKA.md) for transport, pending raw-audio preparation,
-licences and blocked browser validation. The current inventory is 14 providers,
-110 Gateway tools and 24 skills.
+licences and blocked browser validation. The current inventory is 15 providers,
+112 Gateway tools and 24 skills.
 
 Performance transfer uses the installed act-two skill with native cost/consent interrupts on
 `call_media_tool`. Long sources process each approved Act-Two chunk sequentially; polls never
@@ -426,7 +426,18 @@ locally; scripted-model approval/resume tests are offline and do not establish l
 `Fal___get_video_task`, default to dry-run, quote verified fal image prices and
 exclude training. SVG content is validated and sanitized before persistence.
 The image-gen, product-images and refinement skills expose their real tool names.
-Six fixture rows activate: 122 active, seven skipped of 129. The inventory is
-14 providers, 110 tools and 24 skills. Comet validation and Ideogram quality A/B
+Six fixture rows activate: 123 active, six skipped of 129. The inventory is
+15 providers, 112 tools and 24 skills. Comet validation and Ideogram quality A/B
 remain pending. See [Image specialists](IMAGE_SPECIALISTS.md) for contracts,
 official sources read 2026-10-09, licence decisions and configuration.
+
+## Experimental Gemini continuity candidate
+
+The continuity skill now includes `Gemini___judge_continuity` and `Gemini___get_task`.
+The canonical `gemini_vlm_judge` alias is built and its retained routing row is active.
+`local_qc` remains default. The VLM is dry-run by default and promotion requires a complete,
+committed, hash-pinned live result above 0.85 on the 420 frozen pairs. No result is committed.
+Current inventory is 15 providers, 112 Gateway tools, 24 skills and 123 active routing rows
+with 6 skips. See [Gemini configuration and sources](GEMINI_CONTINUITY_QC.md),
+[benchmark procedure](CONTINUITY_QC_BENCHMARK.md#experimental-gemini-judge-and-eval-gate),
+and [decisions](continuity-qc-vlm-decisions.tsv). Comet E2E remains blocked.

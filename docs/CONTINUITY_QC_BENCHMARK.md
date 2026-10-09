@@ -142,6 +142,86 @@ To recalibrate:
 
 `rule="legacy_min"` stays available for comparison only.
 
+## Experimental Gemini judge and eval gate
+
+The `vlm` stage runs the fixed Gemini rubric on both decoded keyframes of every one of the
+420 labelled pairs. It measures VLM accuracy, category acceptance and accuracy, and cascade
+accuracy using the frozen calibrated SigLIP+DINOv2 pre-filter. Production skips pairs whose
+calibrated mean is below 0.1; the benchmark still judges all pairs so rejected positives cannot
+disappear from its denominator. The model receives images and the rubric, never labels,
+pair IDs or embedding scores. Mock-client tests cover all 420 pairs without provider access.
+
+`gemini-3.8-flash` is [verified in the official model docs](https://ai.google.dev/gemini-api/docs/models/gemini-3.8-flash),
+read 2026-10-09. [Official standard pricing](https://ai.google.dev/gemini-api/docs/pricing),
+read 2026-10-09, is $0.75/M input tokens and $3.75/M output tokens including thinking through
+2026-12-31. The rates double on 2027-01-01. A **labelled estimate**, assuming 2,048 input
+tokens and 512 output/thinking tokens per pair, is
+`420 * (2048 * 0.75 + 512 * 3.75) / 1_000_000 = $1.45152`, about **$1.46**.
+The corresponding later estimate is $2.90304. Image resolution, actual token usage, retries,
+taxes and platform fees can change the total; this estimate is not a spending cap. Request
+usage is captured when returned. Pre-call tool quotes stay unknown unless an operator
+supplies an estimate. This branch makes no live calls.
+
+### Run the live eval
+
+Satya must review the estimate and authorize the live run separately. Configure
+`GEMINI_API_KEY` in the environment or Secrets Manager without writing it to the command,
+logs or report. Use the original work manifest at `/workspace/rh-bench/work/pairs.json`,
+and its decoded frames, or an identical copy in another frames directory. Do not rebuild
+different pair references. The stage validates IDs, labels, categories, perturbations,
+the pinned manifest and a hash of decoded image pixels before any judge call.
+
+First run the offline path. It writes an ignored report with 420 skipped decisions, not an
+accuracy result or passing gate:
+
+```bash
+GEMINI_DRY_RUN=true .venv/bin/python scripts/continuity_qc_benchmark.py vlm \
+  --work /workspace/rh-bench/work --frames /workspace/rh-bench/work/frames \
+  --vlm-out .renderhaus/e2e/vlm-dryrun.json
+```
+
+Only after authorization, run the live path with the verified model and default rubric:
+
+```bash
+GEMINI_DRY_RUN=false GEMINI_VLM_MODEL=gemini-3.8-flash \
+  .venv/bin/python scripts/continuity_qc_benchmark.py vlm \
+  --work /workspace/rh-bench/work --frames /workspace/rh-bench/work/frames \
+  --live --approve-estimated-cost --vlm-out .renderhaus/e2e/vlm-live-eval.json
+```
+
+`--approve-estimated-cost` acknowledges the estimate; it does not override a missing key,
+unverified model or invalid input. The CLI refuses a live environment without `--live`.
+An injected fake client always produces `live=false` evidence, even if its caller requests
+a live receipt. All skips remain in the 420-pair denominator and prevent promotion.
+No images, keys, signed URLs or provider request bodies enter the eval report.
+
+### Review and promote
+
+The fixed gate requires all 420 unique canonical decisions, strict judgement fields,
+`live=true`, the verified model and **accuracy strictly greater than 0.85**, at least
+358 correct decisions. Cascade accuracy must also exceed 0.85. The gate recomputes accuracy
+from committed labels and predictions instead of trusting summary numbers. It binds model,
+rubric, JSON schema/generation settings, calibration, labels, frame manifest, decoded inputs
+and pre-filter threshold. DINOv3 remains off. A changed input or setting requires a new eval.
+
+Review issues, category false acceptance and failures before promotion. The existing
+`same_character_other_scene` labels are positive, while the fixed continuity rubric also
+checks location and lighting. That semantic mismatch may make this judge fail the gate.
+Do not relabel those pairs or alter the rubric after observing results to claim success.
+The benchmark also remains film footage rather than Renderhaus generations.
+
+If the reviewed live report passes, copy it to
+`agent/deep_agent/continuity_qc_vlm_eval.json`, compute its SHA-256, and set that digest as
+`continuity_qc.vlm_eval_gate.result_sha256` in `routing_policy.json`. Change the capability's
+default to `gemini_vlm_judge` in the same reviewed commit. Run the checks before committing
+the artifact and policy. CI requires the artifact to be tracked; runtime requires the pinned
+hash and qualifying evidence. A missing, stale or nonqualifying artifact falls back to local
+embeddings. Explicit experimental use does not promote the default.
+
+This branch commits no eval result and keeps `result_sha256=null` and `default=local_qc`.
+Provider configuration and fail-soft behavior are documented in
+[GEMINI_CONTINUITY_QC.md](GEMINI_CONTINUITY_QC.md).
+
 ## Dataset
 
 Four Blender Foundation open movies, all Creative Commons Attribution:
