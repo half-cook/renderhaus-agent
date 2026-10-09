@@ -145,7 +145,7 @@ def _submit(tool: str, arguments: dict[str, Any]) -> dict[str, Any]:
         "provider": "seedance", "transport": host, "mode": tool, "model": model,
         "endpoint_id": model if host == "fal" else None,
         "duration_seconds": arguments.get("duration_seconds", -1 if tool == "edit_video" else 5),
-        "aspect_ratio": arguments.get("aspect_ratio", "16:9"),
+        "aspect_ratio": contracts.output_aspect_ratio(tool, arguments),
         "resolution": arguments.get("resolution", "720p"),
         "estimated_cost_usd": float(estimate / 100) if estimate is not None else None,
         "cost_estimate": f"${estimate / 100:.2f} provider estimate before Renderhaus fee" if estimate is not None else "unknown",

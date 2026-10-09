@@ -155,8 +155,8 @@ def seedance_price_cents(tool: str, arguments: dict[str, Any]) -> Decimal:
     output_seconds = source_seconds if tool == "edit_video" else Decimal(str(arguments.get("duration_seconds", 5)))
     if not output_seconds.is_finite() or output_seconds < 4 or output_seconds > 30:
         raise ValueError("Seedance output duration must be known and from 4 to 30 seconds.")
-    ratio = arguments.get("aspect_ratio", "16:9")
-    if tool in {"image_to_video", "edit_video", "extend_video"}:
+    ratio = contracts.output_aspect_ratio(tool, arguments)
+    if ratio == "adaptive" and tool in {"image_to_video", "edit_video", "extend_video"}:
         ratio = arguments.get("source_aspect_ratio")
     width, height = _video_dimensions(resolution, ratio)
     tokens = Decimal(width * height * SEEDANCE_FPS) * (output_seconds + source_seconds) / Decimal(1024)

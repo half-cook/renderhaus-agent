@@ -15,7 +15,7 @@
         },
         "aspect_ratio": {
           "type": "string",
-          "description": "Allowed values: 16:9, 9:16, 1:1, 4:3, 3:4, 21:9, adaptive."
+          "description": "Requested output aspect for text/reference generation and legacy BytePlus 1.5. Seedance 2.5 image animation, editing, and extension preserve the source aspect automatically; supply source_aspect_ratio for a known cost estimate."
         },
         "resolution": {
           "type": "string",
@@ -73,7 +73,7 @@
         },
         "aspect_ratio": {
           "type": "string",
-          "description": "Allowed values: 16:9, 9:16, 1:1, 4:3, 3:4, 21:9, adaptive."
+          "description": "Requested output aspect for text/reference generation and legacy BytePlus 1.5. Seedance 2.5 image animation, editing, and extension preserve the source aspect automatically; supply source_aspect_ratio for a known cost estimate."
         },
         "resolution": {
           "type": "string",
@@ -178,7 +178,7 @@
         },
         "aspect_ratio": {
           "type": "string",
-          "description": "Allowed values: 16:9, 9:16, 1:1, 4:3, 3:4, 21:9, adaptive."
+          "description": "Requested output aspect for text/reference generation and legacy BytePlus 1.5. Seedance 2.5 image animation, editing, and extension preserve the source aspect automatically; supply source_aspect_ratio for a known cost estimate."
         },
         "resolution": {
           "type": "string",
@@ -248,7 +248,7 @@
         },
         "aspect_ratio": {
           "type": "string",
-          "description": "Allowed values: 16:9, 9:16, 1:1, 4:3, 3:4, 21:9, adaptive."
+          "description": "Requested output aspect for text/reference generation and legacy BytePlus 1.5. Seedance 2.5 image animation, editing, and extension preserve the source aspect automatically; supply source_aspect_ratio for a known cost estimate."
         },
         "resolution": {
           "type": "string",
@@ -342,7 +342,7 @@
         },
         "aspect_ratio": {
           "type": "string",
-          "description": "Allowed values: 16:9, 9:16, 1:1, 4:3, 3:4, 21:9, adaptive."
+          "description": "Requested output aspect for text/reference generation and legacy BytePlus 1.5. Seedance 2.5 image animation, editing, and extension preserve the source aspect automatically; supply source_aspect_ratio for a known cost estimate."
         },
         "resolution": {
           "type": "string",

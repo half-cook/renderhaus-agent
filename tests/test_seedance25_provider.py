@@ -324,6 +324,38 @@ class Seedance25ProviderTests(unittest.TestCase):
         self.assertEqual(result["cost_estimate"], "unknown")
         self.assertIn("aspect ratio", result["cost_estimate_reason"])
 
+    def test_byteplus25_image_output_uses_adaptive_source_aspect(self) -> None:
+        with patch.dict(os.environ, {"SEEDANCE_TRANSPORT": "byteplus"}):
+            result = api.image_to_video("https://example.test/source.png", "robot", aspect_ratio="16:9", source_aspect_ratio="1:1")
+        self.assertEqual(result["request_preview"]["ratio"], "adaptive")
+        self.assertEqual(result["aspect_ratio"], "adaptive")
+        self.assertEqual(result["estimated_cost_usd"], 0.650025)
+
+    def test_byteplus15_image_quote_uses_explicit_output_aspect(self) -> None:
+        with patch.dict(os.environ, {"SEEDANCE_TRANSPORT": "byteplus"}):
+            result = api.image_to_video("https://example.test/source.png", "robot", model="seedance-1-5-pro-251215", aspect_ratio="16:9", source_aspect_ratio="1:1")
+            quoted = billing_rates.seedance_price_cents("image_to_video", {"model": "seedance-1-5-pro-251215", "aspect_ratio": "16:9", "source_aspect_ratio": "1:1"})
+        self.assertEqual(result["request_preview"]["ratio"], "16:9")
+        self.assertEqual(result["estimated_cost_usd"], 0.2592)
+        self.assertEqual(quoted, Decimal("25.92"))
+
+    def test_byteplus15_fixed_image_aspect_does_not_require_source_measurement(self) -> None:
+        with patch.dict(os.environ, {"SEEDANCE_TRANSPORT": "byteplus"}):
+            result = api.image_to_video("https://example.test/source.png", "robot", model="seedance-1-5-pro-251215", aspect_ratio="16:9")
+        self.assertEqual(result["estimated_cost_usd"], 0.2592)
+
+    def test_byteplus15_adaptive_image_aspect_uses_source_measurement(self) -> None:
+        with patch.dict(os.environ, {"SEEDANCE_TRANSPORT": "byteplus"}):
+            result = api.image_to_video("https://example.test/source.png", "robot", model="seedance-1-5-pro-251215", aspect_ratio="adaptive", source_aspect_ratio="1:1")
+        self.assertEqual(result["request_preview"]["ratio"], "adaptive")
+        self.assertEqual(result["estimated_cost_usd"], 0.1458)
+
+    def test_byteplus15_supports_1080p_from_official_model_table(self) -> None:
+        with patch.dict(os.environ, {"SEEDANCE_TRANSPORT": "byteplus"}):
+            result = api.text_to_video("robot", model="seedance-1-5-pro-251215", resolution="1080p")
+        self.assertEqual(result["request_preview"]["resolution"], "1080p")
+        self.assertEqual(result["estimated_cost_usd"], 0.5832)
+
 
 if __name__ == "__main__":
     unittest.main()

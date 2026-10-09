@@ -4,6 +4,7 @@ https://fal.ai/models/bytedance/seedance-2.5/us/reference-to-video/api
 https://fal.ai/models/bytedance/seedance-2.5/us/image-to-video/api
 https://fal.ai/models/bytedance/seedance-2.5/us/text-to-video/api
 https://docs.byteplus.com/en/docs/modelark/create-video-generation-task-api
+https://docs.byteplus.com/zh-CN/docs/modelark/create-video-generation-task-api?redirect=1
 https://docs.byteplus.com/en/docs/modelark/seedance-2-5
 """
 
@@ -60,6 +61,7 @@ _COMMON_RULES = {
 ARGUMENT_RULES = {tool: dict(_COMMON_RULES) for tool in GENERATING_TOOLS}
 ARGUMENT_RULES["edit_video"]["duration_seconds"] = ArgumentRule(choices=(-1,))
 FIELD_DESCRIPTIONS = {
+    "aspect_ratio": "Requested output aspect for text/reference generation and legacy BytePlus 1.5. Seedance 2.5 image animation, editing, and extension preserve the source aspect automatically; supply source_aspect_ratio for a known cost estimate.",
     "duration_seconds": "Output duration from 4 to 30 seconds. Edit uses -1 to preserve the measured source duration. Extension requests generated output seconds, not a promised combined timeline length.",
     "real_face_refs": "True when a reference contains a real person's likeness. Seedance rejects these inputs; route generation to Wan with consent.",
     "user_supplied_real_person_refs": "True for user-supplied real-person photos or videos. These inputs are forbidden for Seedance, even with consent.",
@@ -219,16 +221,24 @@ def live_blocker(tool: str, arguments: dict[str, Any]) -> str | None:
     return None
 
 
+def output_aspect_ratio(tool: str, arguments: dict[str, Any]) -> str:
+    if tool in {"edit_video", "extend_video"}:
+        return "adaptive"
+    if tool == "image_to_video" and (transport() == "fal" or configured_model(arguments) == MODEL_25):
+        return "adaptive"
+    return arguments.get("aspect_ratio", "16:9")
+
+
 def request_body(tool: str, arguments: dict[str, Any]) -> tuple[str, dict[str, Any]]:
     model = effective_model(tool, arguments)
-    ratio = arguments.get("aspect_ratio", "16:9")
+    ratio = output_aspect_ratio(tool, arguments)
     duration = arguments.get("duration_seconds", -1 if tool == "edit_video" else 5)
     task = {"reference_to_video": "reference", "edit_video": "editing", "extend_video": "extension"}.get(tool)
     if transport() == "fal":
         body: dict[str, Any] = {
             "prompt": arguments["prompt"], "resolution": arguments.get("resolution", "720p"),
             "duration": "auto" if duration == -1 else str(duration),
-            "aspect_ratio": "auto" if ratio == "adaptive" or tool in {"image_to_video", "edit_video", "extend_video"} else ratio,
+            "aspect_ratio": "auto" if ratio == "adaptive" else ratio,
             "generate_audio": arguments.get("generate_audio", True),
         }
         if tool == "image_to_video":
@@ -258,7 +268,7 @@ def request_body(tool: str, arguments: dict[str, Any]) -> tuple[str, dict[str, A
         for url in urls:
             content.append({"type": f"{kind}_url", f"{kind}_url": {"url": url}, "role": f"reference_{kind}"})
     body = {
-        "model": model, "content": content, "ratio": "adaptive" if tool in {"edit_video", "extend_video"} else ratio,
+        "model": model, "content": content, "ratio": ratio,
         "duration": duration, "resolution": arguments.get("resolution", "720p"),
         "watermark": arguments.get("watermark", True), "generate_audio": arguments.get("generate_audio", True),
     }
