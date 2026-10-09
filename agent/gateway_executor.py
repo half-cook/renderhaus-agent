@@ -299,7 +299,7 @@ class GatewayExecutor:
         blocker = policy_blocker(name, arguments)
         route = self.media_selection(name, arguments)
         self.disclose_selection(route, call_id, name, arguments)
-        blocker = blocker or self.selection_blocker(name, arguments, route)
+        blocker = self.selection_blocker(name, arguments, route) or blocker
         if blocker and rejection is None:
             return {"status": "not_run", "reason": blocker, "route": route.public() if route else None}
         if tool_needs_approval(name, studio.autonomous) and not approved and rejection is None:

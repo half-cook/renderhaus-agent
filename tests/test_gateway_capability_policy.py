@@ -82,6 +82,7 @@ class CapabilityExecutorTests(unittest.IsolatedAsyncioTestCase):
             ("ElevenLabs___text_to_speech_convert", "make a voiceover"),
             ("ElevenLabs___music_compose", "compose music"),
             ("ElevenLabs___text_to_sound_effects_convert", "make sound effects"),
+            ("UnknownProvider___generate_audio", "make audio"),
         )
         for name, prompt in refused:
             with self.subTest(name=name):
