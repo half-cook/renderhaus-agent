@@ -77,7 +77,6 @@ def build_lambda_zip() -> bytes:
                 "httpx",
                 "pydantic",
                 "jsonschema",
-                "av==14.2.0",
                 "remotion-lambda==4.0.515",
                 "opentimelineio==0.18.1",
                 "-t",

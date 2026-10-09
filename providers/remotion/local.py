@@ -1,10 +1,6 @@
 """Explicit development backend for the shared Remotion timeline document.
 
 Filter semantics verified against https://ffmpeg.org/ffmpeg-filters.html, read 2026-10-09.
-Local rendering uses system FFmpeg. Gateway metadata probing uses PyAV 14.2.0
-(BSD-3-Clause) and its wheel's FFmpeg (GPL-3.0-or-later, no AGPL), read 2026-10-09:
-https://github.com/PyAV-Org/PyAV/blob/v14.2.0/LICENSE.txt
-https://github.com/PyAV-Org/PyAV/blob/v14.2.0/scripts/build-deps
 """
 from __future__ import annotations
 
@@ -25,6 +21,8 @@ from urllib.parse import urlsplit
 import uuid
 
 import httpx
+
+from providers.remotion import mp4_probe
 
 MAX_MEDIA_BYTES = 128 * 1024 * 1024
 MAX_TOTAL_BYTES = 384 * 1024 * 1024
@@ -82,21 +80,7 @@ def _source(source: str, *, directory: Path, index: int,
 
 def _probe(path: Path) -> dict[str, Any]:
     if not shutil.which('ffprobe'):
-        import av
-
-        try:
-            with path.open('rb') as source, av.open(source, mode='r', options={
-                'format_whitelist': FORMATS, 'protocol_whitelist': 'file,pipe',
-            }) as container:
-                streams = []
-                for stream in container.streams:
-                    rate = stream.average_rate if stream.type == 'video' else None
-                    streams.append({'codec_type': stream.type, 'avg_frame_rate': str(rate) if rate else '0/0',
-                                    'bit_rate': stream.codec_context.bit_rate})
-                return {'streams': streams, 'format': {'duration': (container.duration or 0) / av.time_base,
-                                                      'bit_rate': container.bit_rate}}
-        except av.FFmpegError:
-            raise ValueError('Local source/output is not a supported media container.') from None
+        return mp4_probe.probe(path, max_bytes=MAX_MEDIA_BYTES)
     result = subprocess.run(['ffprobe', '-v', 'error', '-protocol_whitelist', 'file,pipe',
                              '-format_whitelist', FORMATS, '-show_streams', '-show_format',
                              '-of', 'json', str(path)], capture_output=True, timeout=30)

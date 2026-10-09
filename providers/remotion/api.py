@@ -27,6 +27,7 @@ from remotion_lambda import Privacy, RemotionClient, RenderMediaParams, ValidSti
 from remotion_lambda.exception import RemotionException
 
 from providers.contracts import validate_remotion_timeline_arguments
+from providers.remotion.mp4_probe import UnsupportedContainer
 from providers.remotion.transcript import build_conversational_edit
 
 
@@ -188,14 +189,20 @@ def _visual_metadata(clip: dict[str, Any], *, measure_remote: bool = False,
         with tempfile.TemporaryDirectory(prefix="renderhaus-probe-") as temporary:
             path = _source(source, directory=Path(temporary), index=1, media_roots=_allowed_local_roots(),
                            source_root=ROOT, allowed_hosts=hosts, deadline_seconds=30)
-            probe = _probe(path)
+            try:
+                probe = _probe(path)
+            except UnsupportedContainer:
+                pass
     if not urlparse(source).scheme and measure_local:
         path = Path(source).expanduser()
         path = (path if path.is_absolute() else ROOT / path).resolve()
         if _is_allowed_local(path) and path.is_file():
             from providers.remotion.local import _probe
 
-            probe = _probe(path)
+            try:
+                probe = _probe(path)
+            except UnsupportedContainer:
+                pass
     if probe is not None:
         video = next((s for s in probe["streams"] if s.get("codec_type") == "video"), None)
         if video is None:

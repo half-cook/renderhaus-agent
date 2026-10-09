@@ -42,10 +42,10 @@ proprietary commercial API under [Anthropic Commercial Terms](https://www.anthro
 read 2026-10-09. Planning outputs are treated as `training_eligible=false`;
 commercial access does not imply permission for competing-model training.
 Existing media-model licences, consent rules and training policies are unchanged.
-The new metadata dependency is PyAV 14.2.0, BSD-3-Clause, whose selected wheels
-bundle FFmpeg GPL-3.0-or-later. It adds no model weights, AGPL or non-commercial
-code. [The assembly reference](LOCAL_ASSEMBLY.md) links the licence/build sources
-and records redistribution obligations and the compatible Lambda wheel.
+The metadata fallback now uses the original stdlib-only MP4/MOV parser.
+[The PyAV removal reference](DROP_PYAV.md) records the licence rationale,
+supported containers and current packaging checks. The PyAV measurements below
+describe this branch's historical package before that removal.
 The optional live lighthouse path retains Wan 3's closed commercial service
 licence under [fal terms](https://fal.ai/legal/terms-of-service) and Eleven v4
 Turbo's service licence under [ElevenLabs terms](https://elevenlabs.io/terms-of-use)

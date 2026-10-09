@@ -13,6 +13,8 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
+MAX_LAMBDA_UNCOMPRESSED_BYTES = 250 * 1024 * 1024
+MAX_LAMBDA_ZIP_BYTES = 50 * 1024 * 1024
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
@@ -297,10 +299,16 @@ def check_lambda_zip() -> None:
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     zip_bytes = module.build_lambda_zip()
+    validate_lambda_zip(zip_bytes)
+    print(f"ok lambda zip ({len(zip_bytes)} bytes)")
+
+
+def validate_lambda_zip(zip_bytes: bytes) -> None:
     assert zip_bytes[:2] == b"PK", "lambda zip is not a zip archive"
+    assert len(zip_bytes) <= MAX_LAMBDA_ZIP_BYTES, "Lambda zip exceeds 50 MiB compressed"
     with zipfile.ZipFile(io.BytesIO(zip_bytes)) as archive:
         names = archive.namelist()
-        assert sum(item.file_size for item in archive.infolist()) <= 250 * 1024 * 1024, (
+        assert sum(item.file_size for item in archive.infolist()) <= MAX_LAMBDA_UNCOMPRESSED_BYTES, (
             "Lambda zip exceeds the 250 MiB uncompressed deployment limit"
         )
     assert "server/billing_rates.py" in names, "lambda zip is missing shared Q4 billing rates"
@@ -318,11 +326,14 @@ def check_lambda_zip() -> None:
         if name.startswith("opentimelineio/") and name.endswith(".so") and "aarch64" in name
     ]
     assert otio_native, "lambda zip is missing the Linux aarch64 OpenTimelineIO native module"
-    assert "av-14.2.0.dist-info/METADATA" in names, "lambda zip is missing the AL2-compatible PyAV pin"
-    assert any(name.startswith("av/") and name.endswith(".so") and "aarch64" in name for name in names), (
-        "lambda zip is missing the Linux aarch64 PyAV native module"
+    assert "providers/remotion/mp4_probe.py" in names, "lambda zip is missing the stdlib MP4 parser"
+    assert not any(name.startswith(("av/", "av.libs/", "av-")) for name in names), (
+        "Lambda zip contains PyAV or its bundled FFmpeg libraries"
     )
-    print(f"ok lambda zip ({len(zip_bytes)} bytes)")
+    assert not any(Path(name).name.startswith(("libx264", "libavcodec"))
+                   and ".so" in Path(name).name for name in names), (
+        "Lambda zip contains an FFmpeg shared object"
+    )
 
 
 def main() -> int:

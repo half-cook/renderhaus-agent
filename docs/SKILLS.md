@@ -445,6 +445,9 @@ requests them, allowing the renderer to preserve measured source settings.
 TTS discovery offers only the priced `eleven_v4_turbo` and `eleven_v4` model IDs. Omitted
 `model_id` uses `ELEVENLABS_TTS_MODEL`, defaulting to `eleven_v4_turbo`. Invalid models or
 missing billing quotes return a failed tool result before approval. See [ElevenLabs](ELEVENLABS.md).
+Without ffprobe, source measurement uses the [stdlib MP4/MOV parser](DROP_PYAV.md).
+WebM/MKV requires ffprobe or measured `source_fps`; fragmented MP4 is unsupported
+by that fallback.
 The router excludes image generation and editing from their discovered tools and dispatches.
 MP4 export uses final-assembly; OTIO, FCPXML and EDL export uses resolve-handoff.
 Deliverable duration describes the shot/clip length, never audio placement such as starting at 1 s.
