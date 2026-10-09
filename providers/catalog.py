@@ -17,6 +17,12 @@ class ProviderSpec:
 
 PROVIDERS: tuple[ProviderSpec, ...] = (
     ProviderSpec(
+        id="topaz", target_name="Topaz", function_name="renderhaus-topaz-tools",
+        module_path="providers.topaz.api",
+        env_keys=("TOPAZ_DRY_RUN", "FAL_KEY", "FAL_DRY_RUN"),
+        default_env={"TOPAZ_DRY_RUN": "true", "FAL_DRY_RUN": "true"},
+    ),
+    ProviderSpec(
         id="heygen", target_name="HeyGen", function_name="renderhaus-heygen-tools",
         module_path="providers.heygen.api",
         env_keys=("HEYGEN_API_KEY", "HEYGEN_DRY_RUN", "HEYGEN_MODEL", "HEYGEN_API_PLAN", "AWS_S3_BUCKET"),

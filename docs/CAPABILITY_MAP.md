@@ -43,13 +43,13 @@ licence block remains. BytePlus is optional only for authorized non-US platform 
 - `duration_over_30s`: generation/performance single shots over 30 seconds are blocked with a split-into-shots reason. A long presenter/digital twin lipsync request uses pending HeyGen Avatar V.
 - `text_only_sfx`: a sound request without source video → built ElevenLabs SFX v2. Source-video Foley → pending Mirelo. Its verified endpoint returns muxed videos and is included in the paid-video approval gate.
 - `explicit_html_template`: explicit HTML/CSS/web template request → flag-gated HyperFrames; ordinary motion graphics uses Remotion.
-- `linear_fps`: Topaz interpolation with Chronos rather than the default Apollo; adapter pending.
+- `linear_fps`: built Topaz interpolation with Chronos rather than the default Apollo; explicit model requests still win. See [Topaz](TOPAZ.md).
 
 ## Explicit-only tools and approvals
 
 Kling generation/Omni, Runway Gen-4.5/Aleph/Gen-4 Image, Luma, Vidu Q4, Seedream, Fish Audio, ElevenLabs music and Wan 2.x VACE remain built. Named requests use their existing tools with “explicit request; not the default for <capability>”. Declared interims can use demoted tools while their replacement is pending. The existing rejected-shot Wan 2.x training retry path and provenance eligibility checks remain unchanged. MiniMax H3 and Hunyuan stay blocked.
 
-All paid video pauses for approval with a cost estimate, including autonomous runs: current Seedance, Fal/Wan/Vidu, Kling, Runway, Luma and Remotion, plus the future Act-Two, Kling Motion, HeyGen, Topaz, Mureka lyrics-video and Mirelo aliases. Sync is built and always pauses, even when the general premium-video switch is disabled. `premium_video_approval` / `RENDERHAUS_PREMIUM_VIDEO_APPROVAL` remains the global switch. Approval exemptions and the autonomous spending cap are unchanged; paid non-video behavior follows the existing effect classification. Voice-clone writes retain their existing autonomous behavior. Editorial cut-plan confirmation and final paid rendering remain separate approvals.
+All paid video pauses for approval with a cost estimate, including autonomous runs: current Seedance, Fal/Wan/Vidu, Kling, Runway, Luma and Remotion, plus built Sync, HeyGen and Topaz and the future Act-Two, Kling Motion, Mureka lyrics-video and Mirelo aliases. Sync, HeyGen and Topaz always pause even when the general premium-video switch is disabled. `premium_video_approval` / `RENDERHAUS_PREMIUM_VIDEO_APPROVAL` remains the global switch. Approval exemptions and the autonomous spending cap are unchanged; paid non-video behavior follows the existing effect classification. Voice-clone writes retain their existing autonomous behavior. Editorial cut-plan confirmation and final paid rendering remain separate approvals.
 
 Each dispatch publishes MODEL_UPDATE with provider, model, approval estimate and default/exception/explicit/interim reason. Unknown prices stay unknown, including in dry-run mode. The optional `ab_arm` outcome field only records a label; no A/B runner or evaluation harness is activated.
 
@@ -342,16 +342,15 @@ Apache-2.0 weights/model metadata, DINOv2 Apache-2.0 code. `training_eligible=fa
 
 ## Skills and routing fixtures
 
-There are 24 packaged skills, 11 provider targets and 91 Gateway tools. No deployment is claimed. New packaged skills are image-gen, named-provider, act-two, lipsync, upscale, lyrics-video, product-demo-video and whiteboard-explainer. Vidu’s archived skill is removed; its real tools remain under named-provider. Draft alias include_tools cannot be copied verbatim into this harness: `metadata.include_tools` must contain real dispatch wrappers, `metadata.routing_tools` records the canonical aliases, and `metadata.gateway_tools` contains only built Gateway names.
+There are 24 packaged skills, 13 provider targets and 99 Gateway tools. No deployment is claimed. New packaged skills are image-gen, named-provider, act-two, lipsync, upscale, lyrics-video, product-demo-video and whiteboard-explainer. Vidu’s archived skill is removed; its real tools remain under named-provider. Draft alias include_tools cannot be copied verbatim into this harness: `metadata.include_tools` must contain real dispatch wrappers, `metadata.routing_tools` records the canonical aliases, and `metadata.gateway_tools` contains only built Gateway names.
 
-The original workbook migration retained 122 fixtures; later provider branches expanded the set to 129. There are now 96 active cases and 33 skips, including one unverified extension-semantics case and 32 named dependencies. The 23 archived/confidential rows remain dropped. “Active” includes built interims and the required 45-second single-shot refusal; it does not assert future adapters exist. NLE import remains skipped. Detailed expectation adjustments and retired replacements are in [capability-map-decisions.tsv](capability-map-decisions.tsv).
+The original workbook migration retained 122 fixtures; later provider branches expanded the set to 129. There are now 103 active cases and 26 skips, including one unverified extension-semantics case and 25 named dependencies. The 23 archived/confidential rows remain dropped. “Active” includes built interims and the required 45-second single-shot refusal; it does not assert future adapters exist. NLE import remains skipped. Detailed expectation adjustments and retired replacements are in [capability-map-decisions.tsv](capability-map-decisions.tsv).
 
 | Skipped dependency/reason | Rows |
 | --- | --- |
 | provider pending: HyperFrames overlays (feat/hyperframes-overlays) | 1 |
 | provider pending: cutaway_record (feat/product-demo-capture) | 3 |
 | provider pending: gemini_vlm_judge (feat/continuity-qc-vlm-judge) | 1 |
-| provider pending: heygen_avatar_v (feat/provider-heygen-avatar-v) | 2 |
 | provider pending: ideogram45_edit (feat/image-specialists) | 2 |
 | provider pending: kling_motion_control (feat/perf-transfer) | 2 |
 | provider pending: mirelo_v2a (feat/sfx-mirelo) | 3 |
@@ -359,8 +358,6 @@ The original workbook migration retained 122 fixtures; later provider branches e
 | provider pending: nle import (feat/nle-import-fcpxml) | 1 |
 | provider pending: recraft_v41_vector (feat/image-specialists) | 4 |
 | provider pending: runway_act_two (feat/perf-transfer) | 5 |
-| provider pending: topaz_interpolate (feat/finishing-topaz) | 3 |
-| provider pending: topaz_upscale (feat/finishing-topaz) | 2 |
 | semantics unverified: Seedance appended-versus-combined extension length (feat/seedance-2-5); Wan extend remains preview-licence blocked | 1 |
 
 ## Verification

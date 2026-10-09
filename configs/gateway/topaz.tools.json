@@ -1,0 +1,147 @@
+[
+  {
+    "name": "upscale_video",
+    "description": "Finish existing video with Starlight Precise 2.6 through fal. Requires video_url and measured source_duration_seconds, source_fps, source_width and source_height. Choose target_resolution 1080p/4K or upscale_factor 1\u20134; default is 2x. Optional target_fps 16\u201360. H264_output defaults true. All paid submissions pause with cost, including autonomous runs. Unknown quotes block live submission. Default dry-run is a preview, not media. Poll get_video_task with download=true and inspect the saved MP4. Outputs are not training eligible.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "video_url": {
+          "type": "string",
+          "description": "Public HTTPS source video or renderhaus-asset:// version handle for preview. Resolve Studio handles before live submission."
+        },
+        "source_duration_seconds": {
+          "type": "number",
+          "description": "Measured source duration in seconds, greater than zero and at most 300. Required for a cost estimate."
+        },
+        "source_fps": {
+          "type": "number",
+          "description": "Measured positive source frame rate. Used to compute output and price, never sent to fal."
+        },
+        "source_width": {
+          "type": "integer",
+          "description": "Measured positive source width in pixels. Output must fit landscape or portrait 4K."
+        },
+        "source_height": {
+          "type": "integer",
+          "description": "Measured positive source height in pixels. Output must fit landscape or portrait 4K."
+        },
+        "upscale_factor": {
+          "type": "number",
+          "description": "Scale both dimensions by 1 to 4. Defaults to 2 when target_resolution is absent."
+        },
+        "target_resolution": {
+          "type": "string",
+          "description": "Optional 1080p or 4K short-edge target preserving aspect. Must agree with any supplied upscale_factor."
+        },
+        "target_fps": {
+          "type": "integer",
+          "description": "Optional output FPS. Upscale accepts 16 to 60; interpolation accepts 16 to 120 and defaults to 60. Changing FPS during upscale adds Apollo interpolation."
+        },
+        "model": {
+          "type": "string",
+          "description": "Upscale uses Starlight Precise 2.6. Interpolation uses Apollo by default or Chronos for plain linear-motion FPS conversion. Direct aliases slp-2.6, apo-8 and chr-2 normalize to fal names."
+        },
+        "softness": {
+          "type": "number",
+          "description": "Optional Starlight Precise 2.6 softness from 1, sharpest, to 5, softest. Unset uses Topaz's default."
+        },
+        "H264_output": {
+          "type": "boolean",
+          "description": "Use H264 for browser playback. Defaults to true; fal's default H265 can require a compatible player."
+        }
+      },
+      "required": [
+        "video_url",
+        "source_duration_seconds",
+        "source_fps",
+        "source_width",
+        "source_height"
+      ]
+    }
+  },
+  {
+    "name": "interpolate_video",
+    "description": "Finish existing video with Apollo by default; use Chronos for plain linear-motion FPS conversion unless the user names a model. Requires video_url and measured source_duration_seconds, source_fps, source_width and source_height. Choose target_fps 16\u2013120 or fps_multiplier; default is 60 FPS. slowdown_factor 1\u20138 defaults 1; slow-motion prices remain unknown and live submission is blocked. All paid submissions pause with cost even in autonomous runs. Poll get_video_task with download=true. Dry-run previews are not media; outputs are not training eligible.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "video_url": {
+          "type": "string",
+          "description": "Public HTTPS source video or renderhaus-asset:// version handle for preview. Resolve Studio handles before live submission."
+        },
+        "source_duration_seconds": {
+          "type": "number",
+          "description": "Measured source duration in seconds, greater than zero and at most 300. Required for a cost estimate."
+        },
+        "source_fps": {
+          "type": "number",
+          "description": "Measured positive source frame rate. Used to compute output and price, never sent to fal."
+        },
+        "source_width": {
+          "type": "integer",
+          "description": "Measured positive source width in pixels. Output must fit landscape or portrait 4K."
+        },
+        "source_height": {
+          "type": "integer",
+          "description": "Measured positive source height in pixels. Output must fit landscape or portrait 4K."
+        },
+        "target_fps": {
+          "type": "integer",
+          "description": "Optional output FPS. Upscale accepts 16 to 60; interpolation accepts 16 to 120 and defaults to 60. Changing FPS during upscale adds Apollo interpolation."
+        },
+        "fps_multiplier": {
+          "type": "number",
+          "description": "Optional multiplier of measured source_fps for interpolation. Supply this or target_fps, with an integral result from 16 to 120."
+        },
+        "model": {
+          "type": "string",
+          "description": "Upscale uses Starlight Precise 2.6. Interpolation uses Apollo by default or Chronos for plain linear-motion FPS conversion. Direct aliases slp-2.6, apo-8 and chr-2 normalize to fal names."
+        },
+        "slowdown_factor": {
+          "type": "integer",
+          "description": "Integer 1 to 8. Multiplies output duration at the target FPS. Unverified prices remain preview-only."
+        },
+        "H264_output": {
+          "type": "boolean",
+          "description": "Use H264 for browser playback. Defaults to true; fal's default H265 can require a compatible player."
+        }
+      },
+      "required": [
+        "video_url",
+        "source_duration_seconds",
+        "source_fps",
+        "source_width",
+        "source_height"
+      ]
+    }
+  },
+  {
+    "name": "get_video_task",
+    "description": "Poll the exact saved Topaz job_id once without resubmitting. download=true saves and validates the completed MP4. Dry-run handles remain previews across configuration changes. Output provenance retains Topaz and the selected model.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "job_id": {
+          "type": "string",
+          "description": "Exact Topaz handle returned by a submit tool. Contains model identity for polling after a restart."
+        },
+        "download": {
+          "type": "boolean",
+          "description": "Download a completed video and validate its MP4 video container before reporting an artifact."
+        }
+      },
+      "required": [
+        "job_id"
+      ]
+    }
+  },
+  {
+    "name": "list_topaz_models",
+    "description": "List verified finishing models, endpoint identifiers, service licences and documented price examples locally. Free, no credentials or network calls. Does not verify account access or live behavior.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": []
+    }
+  }
+]

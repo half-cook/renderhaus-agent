@@ -11,6 +11,7 @@ from pathlib import Path
 POLICY = json.loads(Path(__file__).with_name("routing_policy.json").read_text())
 TOOL_MAP = POLICY["tools"]
 TARGET_PROVIDERS = {
+    "Topaz": "topaz",
     "HeyGen": "heygen",
     "Sync": "sync",
     "OpenAI": "openai_images",
@@ -352,6 +353,10 @@ def _capability_price(row: dict):
     elif provider == "sync":
         values = {"fal_cents_per_minute": str(rates.SYNC_FAL_CENTS_PER_MINUTE),
                   "direct_legacy_base_cents_per_second_at_25fps": str(rates.SYNC_DIRECT_BASE_CENTS_PER_SECOND_25FPS)}
+    elif provider == "topaz":
+        values = {"upscale_cents_per_10_seconds": rates.TOPAZ_UPSCALE_CENTS_PER_10_SECONDS,
+                  "interpolate_cents_per_new_frame": {key: str(value) for key, value in
+                                                      rates.TOPAZ_INTERPOLATE_CENTS_PER_FRAME.items()}}
     else:
         return "unknown"
     return {**price, "rates": values,
@@ -394,6 +399,9 @@ def intent_constraints(prompt: str, *, tier: str | None = None, confidential: bo
     resolution = re.search(r"\b(480p|540p|580p|720p|1080p|2k|4k)\b", prompt, re.I)
     if resolution:
         required["max_resolution"] = resolution_value(resolution[1])
+    fps = re.search(r"(?:to|at)\s*(\d+)\s*fps\b", prompt, re.I)
+    if fps and re.search(r"interpolat|smooth|convert|upscale", prompt, re.I):
+        required["target_fps"] = int(fps[1])
     duration = deliverable_duration(prompt)
     seconds = duration.seconds if duration else None
     if seconds is not None:
@@ -423,7 +431,7 @@ def intent_constraints(prompt: str, *, tier: str | None = None, confidential: bo
         "presenter": bool(re.search(r"presenter|digital twin", prompt, re.I)),
         "text_only_sfx": not video_sfx,
         "explicit_html_template": bool(re.search(r"hyperframes|html.*template", prompt, re.I)),
-        "linear_fps": bool(re.search(r"linear|simple pan", prompt, re.I)),
+        "linear_fps": bool(re.search(r"linear|simple pan", prompt, re.I)) and not bool(re.search(r"non[ -]?linear|not linear", prompt, re.I)),
     }
     predicates.update({k: bool(args[k]) for k in predicates if k in args})
     predicates["real_face_refs"] = real_face
@@ -524,6 +532,24 @@ def select_provider(job: str, *, tier: str | None = None, required: dict | None 
         if exception:
             alias, basis = exception["tool"], "exception: " + exception["reason"]
     entry = TOOL_MAP[alias]
+    if entry.get("provider") == "topaz":
+        from providers.topaz.contracts import configured_model
+
+        verb = "upscale_video" if capability == "upscale" else "interpolate_video"
+        model_args = dict(args)
+        explicit_model = args.get("model") or model
+        if named_model in {"topaz_apollo", "topaz_chronos", "topaz_starlight"}:
+            explicit_model = POLICY["named_models"][named_model]["model"]
+        if explicit_model:
+            model_args["model"] = explicit_model
+            basis = "explicit request"
+        elif capability == "interpolate" and predicates["linear_fps"]:
+            model_args["model"] = "Chronos"
+            basis = "exception: Chronos for linear frame-rate conversion"
+        try:
+            model = configured_model(verb, model_args)
+        except ValueError as exc:
+            return Route(alias=alias, status="blocked", reason=str(exc), disclosure=str(exc))
     if entry.get("provider") in (excluded_providers or []):
         reason = f"Requested provider exclusion blocks {entry['provider']} for {capability}; no substitute was selected."
         return Route(alias=alias, status="blocked", job_type=capability, reason=reason, disclosure=reason)
@@ -609,7 +635,7 @@ def select_provider(job: str, *, tier: str | None = None, required: dict | None 
         limits = row["durations"].get(variant)
         values = row.get("duration_values", {}).get(variant)
         unsupported = any(row["jobs"].get(k, False) < value for k, value in required.items()
-                          if k not in {"duration_seconds", "extension_seconds"})
+                          if k not in {"duration_seconds", "extension_seconds", "target_fps"})
         unsupported |= duration is not None and limits is not None and not limits[0] <= duration <= limits[1]
         unsupported |= bool(duration is not None and values and duration not in values)
         unsupported |= bool(row.get("duration_field") and duration is not None and type(duration) is not int)
@@ -628,7 +654,7 @@ def select_provider(job: str, *, tier: str | None = None, required: dict | None 
             reason = f"{basis}. Selected {tool} cannot satisfy {capability} required capabilities {required}; no automatic provider fallback."
             return Route(alias=alias, basis=basis, status="blocked", job_type=capability, required=required, reason=reason, disclosure=reason)
         quote_args = {**args, "model": model}
-        if duration and row["provider"] != "sync":
+        if duration and row["provider"] not in {"sync", "topaz"}:
             key = row.get("duration_field") or ("source_duration_seconds" if row["provider"] == "sync" or tool.endswith("modify_video") else "video_duration_seconds" if tool.endswith("video_to_video") and row["provider"] == "runway" else "duration_seconds")
             if row["provider"] == "fal" and not row.get("duration_field"):
                 quote_args["num_frames"] = args.get("num_frames", round(duration * args.get("frames_per_second", 16)) + 1)
@@ -697,6 +723,12 @@ def premium_video(name: str) -> bool:
 
 def effective_model(provider: str, tool: str, arguments: dict) -> str | None:
     policy = POLICY["providers"].get(provider, {})
+    if provider == "topaz":
+        if tool not in {"upscale_video", "interpolate_video"}:
+            return None
+        from providers.topaz.contracts import configured_model
+
+        return configured_model(tool, arguments)
     if provider == "heygen":
         if tool != "create_avatar_video":
             return None
@@ -848,7 +880,7 @@ def estimate_cost(name: str, arguments: dict, *, list_price: bool = False) -> Co
         return CostEstimate(None, blocker)
     provider, tool = tool_parts(name)
     model = effective_model(provider, tool, arguments)
-    if provider == "heygen":
+    if provider in {"heygen", "topaz"}:
         try:
             return CostEstimate(_published_cost(provider, tool, arguments).total_cents)
         except (ValueError, TypeError, KeyError) as exc:
@@ -922,6 +954,11 @@ def _published_cost(provider: str, tool: str, arguments: dict):
         return rates._seedream_cost(arguments)
     if provider == "heygen":
         return rates._with_fee(ceil(rates.heygen_price_cents(arguments)))
+    if provider == "topaz":
+        cents = rates.topaz_price_cents(tool, arguments)
+        if cents is None:
+            raise ValueError("Topaz price unknown for these dimensions, FPS or slowdown; official quote TODO.")
+        return rates._with_fee(ceil(cents))
     if provider == "sync":
         cents = rates.sync_price_cents(arguments)
         return rates._with_fee(ceil(cents))

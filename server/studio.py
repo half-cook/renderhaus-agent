@@ -388,11 +388,13 @@ async def studio_status() -> dict[str, Any]:
     from providers.seedance.api import dry_run as seedance_dry_run
     from providers.sync.api import dry_run as sync_dry_run
     from providers.heygen.api import dry_run as heygen_dry_run
+    from providers.topaz.api import dry_run as topaz_dry_run
 
     return {
         "mode": "local",
         "agent": agent_configured(),
         "dry_run": {
+            "topaz": topaz_dry_run(),
             "heygen": heygen_dry_run(),
             "sync": sync_dry_run(),
             "openai_images": os.getenv("OPENAI_IMAGES_DRY_RUN", "true").lower() != "false",
@@ -711,6 +713,8 @@ async def invoke_tool(body: InvokeBody, auth: AuthUser) -> dict[str, Any]:
             status_code=409,
             detail="Use the agent presenter workflow for recorded consent and cost approval before HeyGen generation.",
         )
+    if body.provider == "topaz" and body.tool in {"upscale_video", "interpolate_video"}:
+        raise HTTPException(status_code=409, detail="Use the agent finishing workflow for required cost approval before Topaz processing.")
     cleaned = _tool_arguments(body.provider, body.tool, body.arguments)
     source_version_ids = list(dict.fromkeys([*body.source_version_ids, *_source_version_ids(cleaned)]))
     preparing_edit = (body.provider, body.tool) == ("remotion", "prepare_conversational_edit")

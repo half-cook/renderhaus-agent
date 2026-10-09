@@ -48,7 +48,8 @@ def tool_needs_approval(name: str, autonomous: bool) -> bool:
     if name in APPROVAL_EXEMPT_TOOLS:
         return False
     if name in {"Remotion___prepare_conversational_edit", "Sync___lipsync_video", "sync3_lipsync",
-                "HeyGen___create_avatar_video", "heygen_avatar_v"}:
+                "HeyGen___create_avatar_video", "heygen_avatar_v", "Topaz___upscale_video",
+                "Topaz___interpolate_video", "topaz_upscale", "topaz_interpolate"}:
         return True
     return not autonomous or requires_approval(name) or premium_video(name)
 
@@ -250,6 +251,14 @@ class GatewayExecutor:
             return blocker
         provider, tool = tool_parts(name)
         sync_request = None
+        topaz_request = None
+        if provider == "topaz" and tool in {"upscale_video", "interpolate_video"}:
+            from providers.topaz.contracts import request_for
+
+            try:
+                topaz_request = request_for(tool, arguments)
+            except ValueError as exc:
+                return str(exc)
         if name == "HeyGen___create_avatar_video":
             from providers.heygen.contracts import request_for
 
@@ -298,7 +307,9 @@ class GatewayExecutor:
         if route.required.get("voice_references") and not arguments.get("reference_audio_urls"):
             return "Required voice references must be supplied using reference_audio_urls."
         if route.required.get("max_resolution"):
-            if sync_request:
+            if topaz_request:
+                actual = min(topaz_request.output_width, topaz_request.output_height)
+            elif sync_request:
                 from providers.sync.chunks import plan_for
 
                 actual = min(sync_request.source_width or 0, sync_request.source_height or 0)
@@ -313,7 +324,7 @@ class GatewayExecutor:
             if actual < route.required["max_resolution"]:
                 return "Required output resolution must be set in the selected tool's native arguments."
         if route.required.get("duration_seconds"):
-            actual = (sync_request.output_duration if sync_request else
+            actual = (topaz_request.output_duration if topaz_request else sync_request.output_duration if sync_request else
                       arguments.get("duration", arguments.get("duration_seconds", arguments.get("video_duration_seconds",
                       arguments.get("source_duration_seconds", 5)))))
             if provider == "fal" and not row.get("duration_field"):
@@ -321,6 +332,8 @@ class GatewayExecutor:
                 actual = (arguments.get("num_frames", 81) - 1) / fps if fps > 0 else 0
             if actual != route.required["duration_seconds"]:
                 return "Required duration must be set in the selected tool's native arguments."
+        if topaz_request and route.required.get("target_fps") and topaz_request.output_fps != route.required["target_fps"]:
+            return "Required target FPS must be set in the finishing tool's native arguments."
         return None
 
     def record_outcome(self, call_id, outcome):

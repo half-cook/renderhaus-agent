@@ -30,6 +30,7 @@ def _force_dry_run() -> None:
     os.environ["MODELSTUDIO_DRY_RUN"] = "true"
     os.environ["SYNC_DRY_RUN"] = "true"
     os.environ["HEYGEN_DRY_RUN"] = "true"
+    os.environ["TOPAZ_DRY_RUN"] = "true"
 
 
 _force_dry_run()
@@ -73,8 +74,8 @@ def check_routing_inventory() -> None:
     from providers.catalog import PROVIDERS
     from providers.registry import load_committed_schemas
 
-    assert len(PROVIDERS) == 12
-    assert sum(len(load_committed_schemas(spec)) for spec in PROVIDERS) == 95
+    assert len(PROVIDERS) == 13
+    assert sum(len(load_committed_schemas(spec)) for spec in PROVIDERS) == 99
     paths = list(SKILLS_ROOT.glob("*/SKILL.md"))
     assert len(paths) == 24
     assert "ladder" not in POLICY and "premium_targets" not in POLICY
@@ -91,8 +92,8 @@ def check_routing_inventory() -> None:
         assert set(metadata["include_tools"].split()) <= DISPATCH_TARGETS.keys(), path
         assert all(TOOL_MAP[alias]["status"] != "retired" for alias in metadata["routing_tools"].split()), path
     cases = json.loads((ROOT / "tests/fixtures/skill_routing.json").read_text())
-    assert len(cases) == 129 and sum(not case["skip_reason"] for case in cases) == 98
-    print("ok routing inventory (12 providers, 95 Gateway tools, 24 skills, 98 active routing rows)")
+    assert len(cases) == 129 and sum(not case["skip_reason"] for case in cases) == 103
+    print("ok routing inventory (13 providers, 99 Gateway tools, 24 skills, 103 active routing rows)")
 
 
 def _assert_gateway_shape(schema: object) -> None:
@@ -119,9 +120,16 @@ def check_dry_run_dispatch() -> None:
             assert result["status"] == "dry_run"
             continue
         heygen_job_id = None
+        topaz_job_id = None
         for schema in load_committed_schemas(spec):
             name = schema["name"]
             arguments = dummy_arguments(schema)
+            if spec.id == "topaz" and name in {"upscale_video", "interpolate_video"}:
+                arguments.update(video_url="https://example.test/source.mp4", source_duration_seconds=10.0,
+                                 source_fps=30.0, source_width=960, source_height=540)
+            if spec.id == "topaz" and name == "get_video_task":
+                assert topaz_job_id, "Topaz poll must reuse a submitted dry-run handle"
+                arguments["job_id"] = topaz_job_id
             if spec.id == "heygen" and name == "create_avatar_video":
                 arguments.update(avatar_id="lk_ci", voice_id="voice_ci", script="Offline presenter preview",
                                  duration_seconds=90.0, subjects="Authorized test presenter and voice",
@@ -181,6 +189,8 @@ def check_dry_run_dispatch() -> None:
             assert isinstance(result, dict), f"{spec.id}.{name} did not return a dict"
             if spec.id == "heygen" and name == "create_avatar_video":
                 heygen_job_id = result["job_id"]
+            if spec.id == "topaz" and name in {"upscale_video", "interpolate_video"}:
+                topaz_job_id = result["job_id"]
             if "error" in result and result.get("error_type"):
                 raise AssertionError(f"{spec.id}.{name} dispatch error: {result}")
             print(f"ok dry-run {spec.id}.{name} status={result.get('status', 'ok')}")

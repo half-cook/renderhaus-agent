@@ -19,7 +19,8 @@
     "prepare_conversational_edit",
     "get_task",
     "get_video_status",
-    "list_avatars"
+    "list_avatars",
+    "list_topaz_models"
   ],
   "providers": {
     "kling": {
@@ -634,6 +635,64 @@
       "availability_source": "https://www.heygen.com/terms",
       "availability_note": "US-hosted company; no US exclusion in published service terms. Account access not tested.",
       "read_date": "2026-10-09"
+    },
+    "topaz": {
+      "enabled": true,
+      "license": "service-terms",
+      "training_eligible": false,
+      "allowed_regions": [],
+      "models": [
+        "Starlight Precise 2.6",
+        "Apollo",
+        "Chronos"
+      ],
+      "default_models": {
+        "upscale_video": "Starlight Precise 2.6",
+        "interpolate_video": "Apollo"
+      },
+      "model_policies": {
+        "Starlight Precise 2.6": {
+          "enabled": true,
+          "license": "service-terms",
+          "weights_license": "closed-weights",
+          "training_eligible": false,
+          "commercial_status": "Commercial hosted API; source rights and likeness/voice permissions required.",
+          "license_source": "https://fal.ai/legal/api-services",
+          "consent_requirements": "Input media rights and all required depicted likeness/voice consents under fal terms 6(d). No Topaz-specific recorded-consent API requirement verified.",
+          "consent_source": "https://fal.ai/legal/terms-of-service",
+          "training_reason": "No unambiguous training grant; fal terms restrict competing model training.",
+          "read_date": "2026-10-09"
+        },
+        "Apollo": {
+          "enabled": true,
+          "license": "service-terms",
+          "weights_license": "closed-weights",
+          "training_eligible": false,
+          "commercial_status": "Commercial hosted API; source rights and likeness/voice permissions required.",
+          "license_source": "https://fal.ai/legal/api-services",
+          "consent_requirements": "Input media rights and all required depicted likeness/voice consents under fal terms 6(d). No Topaz-specific recorded-consent API requirement verified.",
+          "consent_source": "https://fal.ai/legal/terms-of-service",
+          "training_reason": "No unambiguous training grant; fal terms restrict competing model training.",
+          "read_date": "2026-10-09"
+        },
+        "Chronos": {
+          "enabled": true,
+          "license": "service-terms",
+          "weights_license": "closed-weights",
+          "training_eligible": false,
+          "commercial_status": "Commercial hosted API; source rights and likeness/voice permissions required.",
+          "license_source": "https://fal.ai/legal/api-services",
+          "consent_requirements": "Input media rights and all required depicted likeness/voice consents under fal terms 6(d). No Topaz-specific recorded-consent API requirement verified.",
+          "consent_source": "https://fal.ai/legal/terms-of-service",
+          "training_reason": "No unambiguous training grant; fal terms restrict competing model training.",
+          "read_date": "2026-10-09"
+        }
+      },
+      "explicit_only": false,
+      "host": "fal",
+      "us_available": "yes",
+      "availability_source": "https://fal.ai/legal/api-services",
+      "availability_note": "Worldwide customer integrations licensed by fal API terms; account/model access not tested."
     }
   },
   "tools": {
@@ -830,19 +889,19 @@
       "reason": "retired: rife_interpolate; not adopted by quality-first capability map"
     },
     "topaz_upscale": {
-      "gateway_tool": null,
-      "status": "pending",
+      "gateway_tool": "Topaz___upscale_video",
+      "status": "ready",
       "provider": "topaz",
-      "reason": "provider pending: topaz_upscale (feat/finishing-topaz)",
-      "verification": "verified; adapter pending; live use disabled",
+      "reason": "Built Topaz finishing via fal; requires cost approval and measured source metadata.",
+      "verification": "verified official fal schema and model IDs; live transport and visual quality untested",
       "training_eligible": false,
       "model": "Starlight Precise 2.6",
-      "host": "fal default; Topaz direct optional",
+      "host": "fal primary; direct Topaz deferred",
       "us_available": "yes",
       "availability_source": "https://fal.ai/legal/terms-of-service",
-      "read_date": "2026-10-08",
-      "license": "commercial API, fal Commercial use",
-      "license_source": "https://fal.ai/models/topaz/interpolate/video",
+      "read_date": "2026-10-09",
+      "license": "service-terms",
+      "license_source": "https://fal.ai/legal/api-services",
       "training_reason": "fal third-party competing-model training restriction.",
       "source": "https://fal.ai/models/topaz/upscale/video/generative/api",
       "price_source": "https://fal.ai/models/topaz/upscale/video/generative",
@@ -1315,22 +1374,22 @@
       "produces_video": true
     },
     "topaz_interpolate": {
-      "gateway_tool": null,
-      "status": "pending",
+      "gateway_tool": "Topaz___interpolate_video",
+      "status": "ready",
       "provider": "topaz",
-      "reason": "provider pending: topaz_interpolate (feat/finishing-topaz)",
-      "verification": "verified; adapter pending; live use disabled",
+      "reason": "Built Topaz finishing via fal; requires cost approval and measured source metadata.",
+      "verification": "verified official fal schema and model IDs; live transport and visual quality untested",
       "training_eligible": false,
       "model": "Apollo",
-      "host": "fal default; Topaz direct optional",
+      "host": "fal primary; direct Topaz deferred",
       "us_available": "yes",
       "availability_source": "https://fal.ai/legal/terms-of-service",
-      "read_date": "2026-10-08",
-      "license": "commercial API, fal Commercial use",
-      "license_source": "https://fal.ai/models/topaz/interpolate/video",
+      "read_date": "2026-10-09",
+      "license": "service-terms",
+      "license_source": "https://fal.ai/legal/api-services",
       "training_reason": "fal third-party competing-model training restriction.",
-      "source": "https://fal.ai/models/topaz/upscale/video/generative/api",
-      "price_source": "https://fal.ai/models/topaz/upscale/video/generative",
+      "source": "https://fal.ai/models/topaz/interpolate/video/api",
+      "price_source": "https://fal.ai/models/topaz/interpolate/video",
       "dry_run": true,
       "endpoint": "topaz/interpolate/video",
       "linear_fps_model": "Chronos"
@@ -1711,13 +1770,13 @@
       "capability": "t2v"
     },
     {
-      "pattern": "interpolat|\\d+\\s*fps.*\\d+\\s*fps|smooth.*clip.*fps",
+      "pattern": "interpolat|\\d+\\s*fps.*\\d+\\s*fps|smooth.*clip.*fps|\\bapollo\\b|\\bchronos\\b",
       "skill": "upscale",
       "abstract_tool": "topaz_interpolate",
       "capability": "interpolate"
     },
     {
-      "pattern": "upscale|topaz|seedvr",
+      "pattern": "upscale|topaz|seedvr|\\bstarlight\\b",
       "skill": "upscale",
       "abstract_tool": "topaz_upscale",
       "capability": "upscale"
@@ -4136,6 +4195,133 @@
       },
       "native_audio_field": null,
       "native_audio_default": true
+    },
+    {
+      "provider": "topaz",
+      "policy_ref": "topaz",
+      "model": "Starlight Precise 2.6",
+      "label": "Topaz Starlight Precise 2.6",
+      "tools": {
+        "upscale": "Topaz___upscale_video"
+      },
+      "jobs": {
+        "max_resolution": 2160
+      },
+      "controls": {
+        "upscale": [
+          "video_url",
+          "source_duration_seconds",
+          "source_fps",
+          "source_width",
+          "source_height",
+          "model",
+          "target_fps",
+          "H264_output",
+          "upscale_factor",
+          "target_resolution",
+          "softness"
+        ]
+      },
+      "durations": {
+        "upscale": [
+          0,
+          300
+        ]
+      },
+      "resolutions": [
+        1080,
+        2160
+      ],
+      "price": {
+        "source": "https://fal.ai/models/topaz/upscale/video/generative",
+        "checked_at": "2026-10-09",
+        "estimate_note": "Published examples scaled by measured duration/new frames. Other upscale FPS/dimensions and slow-motion quotes remain unknown."
+      },
+      "native_audio_field": null
+    },
+    {
+      "provider": "topaz",
+      "policy_ref": "topaz",
+      "model": "Apollo",
+      "label": "Topaz Apollo",
+      "tools": {
+        "interpolate": "Topaz___interpolate_video"
+      },
+      "jobs": {
+        "max_resolution": 2160
+      },
+      "controls": {
+        "interpolate": [
+          "video_url",
+          "source_duration_seconds",
+          "source_fps",
+          "source_width",
+          "source_height",
+          "model",
+          "target_fps",
+          "H264_output",
+          "fps_multiplier",
+          "slowdown_factor"
+        ]
+      },
+      "durations": {
+        "interpolate": [
+          0,
+          300
+        ]
+      },
+      "resolutions": [
+        1080,
+        2160
+      ],
+      "price": {
+        "source": "https://fal.ai/models/topaz/interpolate/video",
+        "checked_at": "2026-10-09",
+        "estimate_note": "Published examples scaled by measured duration/new frames. Other upscale FPS/dimensions and slow-motion quotes remain unknown."
+      },
+      "native_audio_field": null
+    },
+    {
+      "provider": "topaz",
+      "policy_ref": "topaz",
+      "model": "Chronos",
+      "label": "Topaz Chronos",
+      "tools": {
+        "interpolate": "Topaz___interpolate_video"
+      },
+      "jobs": {
+        "max_resolution": 2160
+      },
+      "controls": {
+        "interpolate": [
+          "video_url",
+          "source_duration_seconds",
+          "source_fps",
+          "source_width",
+          "source_height",
+          "model",
+          "target_fps",
+          "H264_output",
+          "fps_multiplier",
+          "slowdown_factor"
+        ]
+      },
+      "durations": {
+        "interpolate": [
+          0,
+          300
+        ]
+      },
+      "resolutions": [
+        1080,
+        2160
+      ],
+      "price": {
+        "source": "https://fal.ai/models/topaz/interpolate/video",
+        "checked_at": "2026-10-09",
+        "estimate_note": "Published examples scaled by measured duration/new frames. Other upscale FPS/dimensions and slow-motion quotes remain unknown."
+      },
+      "native_audio_field": null
     }
   ],
   "image_default_size": "2K",
@@ -4369,7 +4555,9 @@
     "Seedance___edit_video",
     "Seedance___extend_video",
     "Sync___lipsync_video",
-    "HeyGen___create_avatar_video"
+    "HeyGen___create_avatar_video",
+    "Topaz___upscale_video",
+    "Topaz___interpolate_video"
   ],
   "explicit_routes": {
     "kling": {
@@ -4397,7 +4585,9 @@
       "i2v": "wan3_i2v",
       "reference_video": "wan3_r2v",
       "v2v_edit": "wan_vace_edit",
-      "lipsync": "sync3_lipsync"
+      "lipsync": "sync3_lipsync",
+      "upscale": "topaz_upscale",
+      "interpolate": "topaz_interpolate"
     },
     "seedance": {
       "t2v": "seedance25_t2v",
@@ -4432,9 +4622,34 @@
     },
     "heygen": {
       "lipsync": "heygen_avatar_v"
+    },
+    "topaz": {
+      "upscale": "topaz_upscale",
+      "interpolate": "topaz_interpolate"
     }
   },
   "named_models": {
+    "topaz_apollo": {
+      "pattern": "\\bapollo\\b|\\bapo-8\\b",
+      "model": "Apollo",
+      "aliases": {
+        "interpolate": "topaz_interpolate"
+      }
+    },
+    "topaz_chronos": {
+      "pattern": "\\bchronos\\b|\\bchr-2\\b",
+      "model": "Chronos",
+      "aliases": {
+        "interpolate": "topaz_interpolate"
+      }
+    },
+    "topaz_starlight": {
+      "pattern": "\\bstarlight\\b|\\bslp-2\\.6\\b",
+      "model": "Starlight Precise 2.6",
+      "aliases": {
+        "upscale": "topaz_upscale"
+      }
+    },
     "wan3": {
       "pattern": "\\bwan(?:[ -]?3(?:\\.0)?\\b|\\b(?![ -]?2(?:\\.\\d+)?\\b)(?!.*vace))",
       "aliases": {
@@ -4525,7 +4740,9 @@
     "\\bveo\\b": "veo_t2v",
     "\\bkandinsky\\b": "kandinsky6_t2v",
     "\\bfframes\\b": "fframes_render",
-    "heygen.*generative": "heygen_video_t2v"
+    "heygen.*generative": "heygen_video_t2v",
+    "\\bseedvr[ -]?2\\b": "seedvr2_upscale",
+    "\\brife\\b": "rife_interpolate"
   },
   "provider_hosts": [
     {
@@ -4928,20 +5145,40 @@
       "read_date": "2026-10-08"
     },
     "topaz_upscale": {
-      "license": "commercial API, fal Commercial use",
-      "license_source": "https://fal.ai/models/topaz/interpolate/video",
+      "enabled": true,
+      "license": "service-terms",
+      "weights_license": "closed-weights",
       "training_eligible": false,
-      "training_reason": "fal third-party competing-model training restriction.",
-      "commercial_status": "commercial service or permissive code; source media rights still required",
-      "read_date": "2026-10-08"
+      "commercial_status": "Commercial hosted API; source rights and likeness/voice permissions required.",
+      "license_source": "https://fal.ai/legal/api-services",
+      "consent_requirements": "Input media rights and all required depicted likeness/voice consents under fal terms 6(d). No Topaz-specific recorded-consent API requirement verified.",
+      "consent_source": "https://fal.ai/legal/terms-of-service",
+      "training_reason": "No unambiguous training grant; fal terms restrict competing model training.",
+      "read_date": "2026-10-09",
+      "license_description": "Closed Topaz weights, commercial fal API",
+      "source_model_ids": {
+        "Starlight Precise 2.6": "slp-2.6",
+        "Apollo": "apo-8",
+        "Chronos": "chr-2"
+      }
     },
     "topaz_interpolate": {
-      "license": "commercial API, fal Commercial use",
-      "license_source": "https://fal.ai/models/topaz/interpolate/video",
+      "enabled": true,
+      "license": "service-terms",
+      "weights_license": "closed-weights",
       "training_eligible": false,
-      "training_reason": "fal third-party competing-model training restriction.",
-      "commercial_status": "commercial service or permissive code; source media rights still required",
-      "read_date": "2026-10-08"
+      "commercial_status": "Commercial hosted API; source rights and likeness/voice permissions required.",
+      "license_source": "https://fal.ai/legal/api-services",
+      "consent_requirements": "Input media rights and all required depicted likeness/voice consents under fal terms 6(d). No Topaz-specific recorded-consent API requirement verified.",
+      "consent_source": "https://fal.ai/legal/terms-of-service",
+      "training_reason": "No unambiguous training grant; fal terms restrict competing model training.",
+      "read_date": "2026-10-09",
+      "license_description": "Closed Topaz weights, commercial fal API",
+      "source_model_ids": {
+        "Starlight Precise 2.6": "slp-2.6",
+        "Apollo": "apo-8",
+        "Chronos": "chr-2"
+      }
     },
     "gemini_vlm_judge": {
       "license": "proprietary Gemini API terms; API model licence is distinct from documentation CC-BY/Apache sample licences",
