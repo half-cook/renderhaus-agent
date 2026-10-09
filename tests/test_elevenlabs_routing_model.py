@@ -28,8 +28,8 @@ class TTSModelTests(TestCase):
         self.assertEqual(len(calls), 1)
 
     def test_verified_model_override_is_configurable(self):
-        with patch.dict(os.environ, {'ELEVENLABS_TTS_MODEL': 'eleven_multilingual_v2'}):
-            self.assertEqual(effective_model('elevenlabs', 'text_to_speech_convert', {}), 'eleven_multilingual_v2')
+        with patch.dict(os.environ, {'ELEVENLABS_TTS_MODEL': 'eleven_v4'}):
+            self.assertEqual(effective_model('elevenlabs', 'text_to_speech_convert', {}), 'eleven_v4')
 
     def test_bootstrap_and_provider_defaults_stay_dry_run(self):
         from providers.catalog import PROVIDERS
@@ -42,7 +42,7 @@ class TTSModelTests(TestCase):
         self.assertEqual(DEFAULT_ENV['REMOTION_DRY_RUN'], 'true')
         self.assertEqual(DEFAULT_ENV['ELEVENLABS_TTS_MODEL'], 'eleven_v4_turbo')
         self.assertIn('ELEVENLABS_TTS_MODEL', RUNTIME_BOOTSTRAP_KEYS)
-        config = {'ELEVENLABS_TTS_MODEL': 'eleven_multilingual_v2'}
+        config = {'ELEVENLABS_TTS_MODEL': 'eleven_v4'}
         self.assertEqual(secret_payload_from_mapping(config), config)
         with patch.dict(os.environ, {}, clear=True):
             self.assertTrue(api.dry_run())
