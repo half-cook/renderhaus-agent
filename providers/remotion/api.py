@@ -25,6 +25,9 @@ from botocore.exceptions import ClientError
 from remotion_lambda import Privacy, RemotionClient, RenderMediaParams, ValidStillImageFormats
 from remotion_lambda.exception import RemotionException
 
+from providers.contracts import validate_remotion_timeline_arguments
+from providers.remotion.transcript import build_conversational_edit
+
 
 ROOT = Path(__file__).resolve().parents[2]
 DEPLOYMENT_PATH = ROOT / ".renderhaus" / "remotion" / "deployment.json"
@@ -157,7 +160,12 @@ def build_timeline_props(
     text_overlays: list[dict[str, Any]] | None = None,
     aspect_ratio: str = "9:16",
     fps: int = 30,
+    subtitles: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
+    validate_remotion_timeline_arguments({
+        "visuals": visuals, "audio_tracks": audio_tracks,
+        "text_overlays": text_overlays, "subtitles": subtitles,
+    })
     if aspect_ratio not in ASPECT_SIZES:
         raise ValueError(f"aspect_ratio must be one of {', '.join(ASPECT_SIZES)}.")
     if not visuals:
@@ -233,6 +241,11 @@ def build_timeline_props(
                 ),
                 "motion": motion,
                 "transition": transition,
+                "grade": clip.get("grade", "none"),
+                **({"audioFadeIn": float(clip["audio_fade_in_seconds"])}
+                   if "audio_fade_in_seconds" in clip else {}),
+                **({"audioFadeOut": float(clip["audio_fade_out_seconds"])}
+                   if "audio_fade_out_seconds" in clip else {}),
             }
         )
         track_ends[track] = max(track_ends.get(track, 0.0), start + duration)
@@ -297,37 +310,30 @@ def build_timeline_props(
                 ],
             }
         )
-    overlay_items: list[dict[str, Any]] = []
-    for index, overlay in enumerate(text_overlays or []):
-        text = str(overlay.get("text") or "").strip()
-        if not text:
-            raise ValueError("Each text overlay needs non-empty text.")
-        duration = float(overlay.get("duration_seconds") or 0)
-        if not math.isfinite(duration) or duration <= 0:
-            raise ValueError("Each text overlay needs duration_seconds greater than 0.")
-        position = str(overlay.get("position") or "center")
-        if position not in {"top", "center", "bottom"}:
-            raise ValueError("Text overlay position must be top, center, or bottom.")
-        overlay_items.append(
-            {
-                "id": f"text-{index + 1}",
-                "type": "text",
-                "text": text[:500],
-                "start": max(0.0, float(overlay.get("start_seconds") or 0)),
-                "duration": duration,
-                "position": position,
-                "fontSize": max(16, min(int(overlay.get("font_size") or 64), 180)),
+    for track_id, name, item_prefix, items in (("titles-1", "Titles", "text", text_overlays),
+                                              ("subtitles-1", "Subtitles", "subtitle", subtitles)):
+        text_items: list[dict[str, Any]] = []
+        for index, overlay in enumerate(items or []):
+            duration = float(overlay["duration_seconds"])
+            fade_in = float(overlay.get("fade_in_seconds", 0.2))
+            fade_out = float(overlay.get("fade_out_seconds", 0.2))
+            if item_prefix == "text":
+                fade_in = fade_in or 0.2
+                fade_out = fade_out or 0.2
+            text_items.append({
+                "id": f"{item_prefix}-{index + 1}", "type": "text",
+                "text": overlay["text"].strip()[:500],
+                "start": float(overlay["start_seconds"]), "duration": duration,
+                "position": overlay.get("position", "center"),
+                "fontSize": int(overlay.get("font_size", 64)),
                 "color": str(overlay.get("color") or "#ffffff")[:32],
                 "backgroundColor": str(overlay.get("background_color") or "transparent")[:32],
-                "fontWeight": max(100, min(int(overlay.get("font_weight") or 700), 900)),
-                "fadeIn": max(0.0, min(float(overlay.get("fade_in_seconds") or 0.2), duration)),
-                "fadeOut": max(0.0, min(float(overlay.get("fade_out_seconds") or 0.2), duration)),
-            }
-        )
-    if overlay_items:
-        tracks.append(
-            {"id": "titles-1", "kind": "caption", "name": "Titles", "items": overlay_items}
-        )
+                "fontWeight": int(overlay.get("font_weight", 700)),
+                "fadeIn": min(fade_in, duration),
+                "fadeOut": min(fade_out, duration),
+            })
+        if text_items:
+            tracks.append({"id": track_id, "kind": "caption", "name": name, "items": text_items})
     return {
         "document": {
             "id": "agent-render",
@@ -339,7 +345,7 @@ def build_timeline_props(
             "fps": max(12, min(int(fps), 60)),
             "width": width,
             "height": height,
-            "durationInFrames": max(1, math.ceil(visual_duration * fps)),
+            "durationInFrames": max(1, math.ceil(visual_duration * fps - 1e-9)),
         },
     }
 
@@ -396,6 +402,7 @@ def render_timeline(
     aspect_ratio: Literal["16:9", "9:16", "1:1", "2.39:1"] = "9:16",
     fps: int = 30,
     output_filename: str = "renderhaus-video.mp4",
+    subtitles: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """Compose generated image, video, and audio clips into one final MP4, then poll get_render_progress."""
     if dry_run():
@@ -415,8 +422,29 @@ def render_timeline(
         text_overlays=text_overlays,
         aspect_ratio=str(aspect_ratio),
         fps=int(fps),
+        subtitles=subtitles,
     )
     return _start_lambda_render(props, output_filename=output_filename)
+
+
+def prepare_conversational_edit(
+    title: str,
+    plan_summary: str,
+    sources: list[dict[str, Any]],
+    segments: list[dict[str, Any]],
+    overlays: list[dict[str, Any]] | None = None,
+    grade: Literal["none", "neutral", "warm"] = "none",
+    subtitles: bool = True,
+    aspect_ratio: Literal["16:9", "9:16", "1:1", "2.39:1"] = "9:16",
+    fps: int = 30,
+) -> dict[str, Any]:
+    """Prepare an approved word-range edit as a pure dry-run preview, without fetching or rendering media."""
+    result = build_conversational_edit(
+        title, plan_summary, sources, segments, overlays=overlays,
+        grade=grade, subtitles=subtitles, aspect_ratio=aspect_ratio, fps=fps,
+    )
+    result["timeline"] = build_timeline_props(**result["render_arguments"])
+    return result
 
 
 def _progress_payload(
@@ -641,12 +669,14 @@ def export_nle_timeline(
 
 
 TOOL_HANDLERS = {
+    "prepare_conversational_edit": prepare_conversational_edit,
     "render_timeline": render_timeline,
     "get_render_progress": get_render_progress,
     "export_nle_timeline": export_nle_timeline,
 }
 
 GATEWAY_TOOLS = (
+    "prepare_conversational_edit",
     "render_timeline",
     "get_render_progress",
     "export_nle_timeline",

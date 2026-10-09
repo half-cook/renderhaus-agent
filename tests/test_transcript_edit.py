@@ -178,6 +178,14 @@ class TranscriptEditTests(unittest.TestCase):
         self.assertEqual(item["audioFadeIn"], clip["audio_fade_in_seconds"])
         self.assertEqual(item["audioFadeOut"], clip["audio_fade_out_seconds"])
 
+    def test_repeated_cuts_keep_exact_frame_total_without_a_black_tail(self) -> None:
+        original = {"id": "interview", "url": "https://example.test/source.mp4", "duration_seconds": 2,
+                    "words": [{"text": "Hi", "start": 0.3, "end": 0.7}]}
+        result = self.prepare(sources=[original], segments=[
+            {"source_id": "interview", "first_word": 0, "last_word": 0}] * 13, fps=14)
+        self.assertEqual(result["qc_expectations"]["duration_in_frames"], 78)
+        self.assertEqual(result["timeline"]["renderConfig"]["durationInFrames"], 78)
+
     def test_invalid_word_timing_is_rejected(self) -> None:
         for field, invalid in [("start", math.nan), ("end", math.inf), ("start", True),
                                ("end", False), ("start", -1), ("end", 0.1), ("end", 4)]:
@@ -245,6 +253,18 @@ class TranscriptEditTests(unittest.TestCase):
         props = api.build_timeline_props(**arguments)
         self.assertEqual(props["document"]["tracks"][-1]["name"], "Subtitles")
         self.assertEqual(props["document"]["tracks"][0]["items"][0]["grade"], "neutral")
+
+    def test_legacy_title_zero_fades_use_defaults_and_subtitle_zero_fades_stay_zero(self) -> None:
+        text = {"text": "Hello", "start_seconds": 0, "duration_seconds": 1,
+                "fade_in_seconds": 0, "fade_out_seconds": 0}
+        props = api.build_timeline_props("Cut", [{"kind": "video", "url": "https://example.test/a.mp4",
+                                                   "duration_seconds": 2}],
+                                         text_overlays=[text], subtitles=[text])
+        titles, subtitles = props["document"]["tracks"][-2:]
+        self.assertEqual(titles["items"][0]["fadeIn"], 0.2)
+        self.assertEqual(titles["items"][0]["fadeOut"], 0.2)
+        self.assertEqual(subtitles["items"][0]["fadeIn"], 0)
+        self.assertEqual(subtitles["items"][0]["fadeOut"], 0)
 
     def test_render_contract_rejects_invalid_grade_fades_and_subtitles(self) -> None:
         schema = schema_for("render_timeline")

@@ -101,6 +101,13 @@ TOOL_GUIDANCE: dict[str, dict[str, str]] = {
         ),
     },
     "remotion": {
+        "prepare_conversational_edit": (
+            "Use for conversational transcript edits after proposing the cut, grade, and captions "
+            "in plan_summary for required host approval. Always returns a side-effect-free dry_run "
+            "preview with word-safe cuts, output-timed transcript/captions, timeline, render_arguments, "
+            "and QC expectations. It never fetches media or starts a render. Use the separate paid "
+            "render_timeline tool with render_arguments after preparation."
+        ),
         "render_timeline": (
             "Use after all source assets exist to execute a concrete edit decision list and make "
             "one assembled MP4. The caller must choose timing, B-roll layers, crop/motion, "
