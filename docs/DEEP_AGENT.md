@@ -50,14 +50,14 @@ this conversion when they support the project's MCP version.
 ## Provider ladder
 
 The config capability table filters required features before quality tier and cost. Finished
-shots default to Standard. Draft previews and rejected-shot retries use Wan; confidential
+shots default to Standard, including Vidu Q4 where capabilities and price select it. Draft previews and rejected-shot retries use Wan; confidential
 projects stay Wan. The shared executor discloses the provider/model and estimated cost in
 chat, retains existing approval/spend rules, and logs provider outcomes locally with Wan-only
 training eligibility. See [capabilities, tiers, project policy and outcomes](SKILLS.md#provider-capability-table-and-ladder).
 
 ## Skills and delegation
 
-Fourteen packaged `SKILL.md` files live under `agent/deep_agent/skills/`.
+Fifteen packaged `SKILL.md` files live under `agent/deep_agent/skills/`.
 Deep Agents reads their metadata first. Full instructions enter context only when a relevant
 skill is read. `metadata.include_tools` discloses the corresponding dispatch tools.
 
@@ -70,12 +70,13 @@ skill is read. `metadata.include_tools` discloses the corresponding dispatch too
 | `final-assembly` | Existing asset handles into a typed Remotion timeline, saved identifiers, poll the final MP4. |
 | `refinement` | Edit the referenced version and reuse unaffected media; prefer timeline edits for timing changes. |
 
-Eight additional intent skills are `t2v`, `i2v`, `edit-v2v`, `still-then-video`, `audio-bed`,
-`motion-graphics`, `continuity-qc`, and `resolve-handoff`. The six original names remain.
+Nine additional intent skills are `t2v`, `i2v`, `edit-v2v`, `still-then-video`, `audio-bed`,
+`motion-graphics`, `continuity-qc`, `resolve-handoff`, and `vidu-q4`. The six original names remain.
+`vidu-q4` adds fixed fal I2V and reference tools with model-specific audio and duration controls.
 Their wrapper and exact Gateway tool mappings are listed in [Skills and routing](SKILLS.md).
 The deterministic policy router proposes the selected skill and tool in the graph input and
 Studio context. Unsupported providers and local Resolve workflows remain explicit pending
-routes, with all 55 workbook cases retained in offline tests, 21 active and 34 skipped (the Luma case was enabled on staging).
+routes, with all 55 original workbook cases and 6 Q4 CSV rows retained in offline tests, 26 active and 35 skipped.
 
 Fish Audio is not in the current active provider catalog. Its speech tool is usable only when
 Gateway discovers an available Fish Audio target. Skills explicitly report unavailable tools.
@@ -177,7 +178,7 @@ reconciliation. Neither backend supplies an exactly-once distributed execution g
 ## AgentCore and verification
 
 `Dockerfile.agentcore` defaults to Deep Agents and retains Codex for explicit fallback.
-It installs pinned dependencies and verifies the Deep Agents version and all fourteen packaged
+It installs pinned dependencies and verifies the Deep Agents version and all fifteen packaged
 skills during the build. The entrypoint remains `python -m agent.studio_agent_next`.
 No Studio UI or database schema change is required.
 
