@@ -30,7 +30,9 @@ class MurekaProviderTests(unittest.TestCase):
         self.submit_patch = patch('providers.fal.queue.submit', return_value={'request_id': 'req_123', 'status': 'IN_QUEUE'})
         self.submit = self.submit_patch.start()
         self.addCleanup(self.submit_patch.stop)
-        self.quote = self.stack.enter_context(patch('server.billing_rates.mureka_price_cents', return_value=Decimal('22.5'), create=True))
+        self.quote_patch = patch('server.billing_rates.mureka_price_cents', return_value=Decimal('22.5'), create=True)
+        self.quote = self.quote_patch.start()
+        self.addCleanup(self.quote_patch.stop)
 
     def live(self):
         self.stack.enter_context(patch.dict(os.environ, {'MUREKA_DRY_RUN': 'false', 'FAL_DRY_RUN': 'false'}))
@@ -298,6 +300,20 @@ class MurekaProviderTests(unittest.TestCase):
         with patch('shutil.which', return_value=None), patch('httpx.stream') as download, self.assertRaisesRegex(RuntimeError, 'ffprobe'):
             self.api.get_music_task(job['job_id'], download=True)
         download.assert_not_called()
+
+    def test_real_billing_helper_quotes_gateway_arguments_without_wire_fields(self):
+        self.quote_patch.stop()
+        self.live()
+        for tool, arguments, price in [
+            ('generate_song', {'lyrics': 'Hello world'}, 0.225),
+            ('generate_song', {'prompt': 'Love song'}, 0.75),
+            ('generate_instrumental', {'prompt': 'Piano'}, 0.225),
+            ('generate_lyrics_video', {'song_id': 'song_1'}, 0.15),
+        ]:
+            with self.subTest(tool=tool, arguments=arguments):
+                result = getattr(self.api, tool)(**arguments)
+                self.assertEqual(result['status'], 'queued')
+                self.assertEqual(result['estimated_cost_usd'], price)
 
     def test_catalog_is_offline_and_reports_terms_and_price_sources(self):
         catalog = self.api.list_mureka_models()
