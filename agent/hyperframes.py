@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import math
 
 from jsonschema import ValidationError, validate
 from mcp import Tool
@@ -58,6 +59,9 @@ class HyperFramesServer:
         except ValidationError as exc:
             return {"status": "not_run", "reason": "Composition arguments do not match the schema.",
                     "path": list(exc.absolute_path)}
+        if not math.isfinite(arguments["duration_seconds"]):
+            return {"status": "not_run", "reason": "Duration must be finite and match the schema.",
+                    "path": ["duration_seconds"]}
         if not dry_run():
             return {"status": "not_run", "reason": "HyperFrames isolated renderer not configured. Live HTML execution is unavailable."}
         return {

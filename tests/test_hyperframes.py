@@ -15,6 +15,7 @@ from agent.studio_agent_next import (
     StudioApprovalDecision,
     _context_from_request,
     _validate_video_delivery,
+    StudioToolEvent,
 )
 from test_deep_agent import ScriptedModel, Gateway, call, final
 
@@ -85,6 +86,7 @@ class HyperFramesRuntimeTests(unittest.IsolatedAsyncioTestCase):
                 {"html": ""}, {"html": "x" * 200001}, {"duration_seconds": 0},
                 {"duration_seconds": 301}, {"width": 3841}, {"height": 2161},
                 {"fps": 0}, {"fps": 61}, {"width": True}, {"fps": 29.97},
+                {"duration_seconds": float("nan")},
                 {"command": "npx hyperframes"},
             ]:
                 with self.subTest(changes=list(changes)):
@@ -160,6 +162,15 @@ class HyperFramesRoutingTests(unittest.TestCase):
             self.assertTrue(tool_needs_approval(TOOL_NAME, False))
             self.assertFalse(tool_needs_approval(TOOL_NAME, True))
         self.assertEqual(APPROVAL_EXEMPT_TOOLS, frozenset({"Remotion___export_nle_timeline"}))
+
+    def test_apache_skill_license_does_not_authorize_training_on_compositions(self):
+        from agent.deep_agent.routing import training_eligible
+
+        with patch.dict(os.environ, PREVIEW_ENV):
+            self.assertFalse(training_eligible({
+                "provider": "hyperframes", "model": "html", "weights_license": "Apache-2.0",
+                "training_eligible": True, "status": "succeeded",
+            }))
 
 
 class HyperFramesGraphTests(unittest.IsolatedAsyncioTestCase):
@@ -310,6 +321,37 @@ class HyperFramesGraphTests(unittest.IsolatedAsyncioTestCase):
         spending = next(item["spending"] for item in studio.session_items if "spending" in item)
         self.assertTrue(spending["stopped"])
         self.assertEqual(spending["reservations"], {})
+
+    async def test_default_disabled_gate_blocks_an_approved_stale_schema(self):
+        from agent.hyperframes import HYPERFRAMES_TOOL
+        from agent.gateway_executor import GatewayExecutor
+
+        gateway = Gateway([HYPERFRAMES_TOOL])
+        studio = _context_from_request(self.request())
+        with patch.dict(os.environ, {}, clear=True):
+            result = await GatewayExecutor(studio, [gateway]).execute({
+                "tool_name": TOOL_NAME, "arguments": COMPOSITION, "call_id": "stale-schema",
+            }, approved=True)
+        self.assertEqual(result["status"], "not_run")
+        self.assertIn("disabled", result["reason"].lower())
+        gateway.call_tool.assert_not_awaited()
+
+    def test_saved_remotion_artifact_cannot_complete_a_hyperframes_export(self):
+        request = self.request().model_copy(update={"prompt": "Make a HyperFrames video"})
+        studio = _context_from_request(request)
+        studio.tool_events = [
+            StudioToolEvent(id="old-remotion", name="Remotion___get_render_progress",
+                            label="Previous render", status="succeeded", summary="Previous MP4",
+                            result={"status": "succeeded", "output_path": "/tmp/previous.mp4"}),
+        ]
+        self.assertFalse(_validate_video_delivery(request, studio))
+        studio.tool_events.append(StudioToolEvent(
+            id="new-preview", name=TOOL_NAME, label="HyperFrames preview", status="dry_run",
+            summary="No MP4", result={"status": "dry_run", "dry_run": True},
+        ))
+        self.assertFalse(_validate_video_delivery(request, studio))
+        switched = request.model_copy(update={"prompt": "Use Remotion lower thirds instead"})
+        self.assertTrue(_validate_video_delivery(switched, studio))
 
     async def test_media_role_cannot_dispatch_hyperframes(self):
         request = self.request(autonomous=True)

@@ -1433,7 +1433,14 @@ def _validate_video_delivery(
     wants_video = _requests_video_deliverable(request.prompt) or render_started
     if not wants_video:
         return True
-    rendered = any(
+    hyperframes_started = any(event.name == "HyperFrames___render_composition" for event in studio.tool_events)
+    hyperframes_export = bool(re.search(r"\bhyperframes\b", request.prompt, re.IGNORECASE))
+    if hyperframes_started or hyperframes_export:
+        from agent.deep_agent.routing import route_intent
+
+        route = route_intent(request.prompt)
+        hyperframes_export = route.skill == "hyperframes" or (hyperframes_started and route.tool != "Remotion___render_timeline")
+    rendered = not hyperframes_export and any(
         event.name.endswith("get_render_progress")
         and event.status.lower() in {"succeeded", "success", "completed"}
         and str(event.result.get("status") or event.status).lower()
