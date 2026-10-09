@@ -1964,13 +1964,19 @@
       "capability": "still_image"
     },
     {
+      "pattern": "\\b(?:generate|create|design|make)\\s+(?:(?:an?|the|some|new|still|captioned|cinematic|editorial|tactile|paper|collage)\\s+)*(?:images?|photos?|posters?|stills?)\\b(?=\\s*(?:$|[,.;!?]|\\b(?:with|for|of|using|from|showing|featuring)\\b))",
+      "skill": "image-gen",
+      "abstract_tool": "gpt_image25_t2i",
+      "capability": "still_image"
+    },
+    {
       "pattern": "^(?!.*(?:vector|\\bsvg\\b)).*(?:remotion|lower thirds?|kinetic titles|title card|html template|motion graphic)",
       "skill": "motion-graphics",
       "abstract_tool": "remotion_render",
       "capability": "motion_graphics"
     },
     {
-      "pattern": "^(?!.*\\b(?:generate|create|design|make)\\s+(?:(?:an?|the|some|new|still|captioned|cinematic|editorial|tactile|paper|collage)\\s+)*(?:images?|photos?|posters?|stills?)\\b)(?:(?=.*\\b(?:videos?|clips?|footage|animated|animation|motion)\\b)|(?!.*\\b(?:images?|photos?|posters?|stills?)\\b)).*(?:\\b(?:cinematic|editorial)\\s+captions?\\b|\\bcaptions?\\b.*\\b(?:clip|footage|video)\\b|\\b(?:tactile(?:\\s+paper)?|paper)\\s+collage\\b.*\\b(?:video|animation|motion)\\b|\\banimated\\s+(?:paper\\s+)?(?:collage|scrapbook)\\b|\\bcollage\\s+(?:video|animation)\\b|\\bvideo\\s+collage\\b)",
+      "pattern": "\\b(?:cinematic|editorial)\\s+captions?\\b\\s*$|\\bcaptions?\\b.*\\b(?:videos?|clips?|footage|overlay|animation|motion)\\b|\\b(?:tactile(?:\\s+paper)?|paper)\\s+collage\\b.*\\b(?:videos?|animations?|motion)\\b|\\banimated\\s+(?:(?:tactile|paper|photo|image)\\s+)*(?:collage|scrapbook)\\b|\\b(?:collage|scrapbook)\\s+(?:videos?|animations?)\\b|\\bvideos?\\s+(?:collage|scrapbook)\\b",
       "skill": "motion-graphics",
       "abstract_tool": "remotion_render",
       "capability": "motion_graphics"
