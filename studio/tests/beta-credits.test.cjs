@@ -247,6 +247,16 @@ test("empty-wallet guidance distinguishes spent beta credit from an ordinary emp
   assert.equal(emptyWalletMessage({ ...emptyAccount, balance_cents: 1 }), null);
 });
 
+test("available daily plan allowance suppresses out-of-credit guidance", () => {
+  const { emptyWalletMessage } = harness(responses()).load("lib/beta-credits.ts");
+  const subscription = { plan_id: "basic", status: "active", monthly_budget_cents: 3000,
+    daily_allowance_cents: 100, daily_allowance_remaining_cents: 100, current_period_end: null };
+  assert.equal(emptyWalletMessage({ ...emptyAccount, subscription,
+    beta_credit: { granted_cents: 1000, remaining_cents: 0, spent_cents: 1000 } }), null);
+  assert.equal(emptyWalletMessage({ ...emptyAccount, subscription: { ...subscription, status: "past_due" } }),
+    "Your wallet is empty. Top up to keep creating.");
+});
+
 test("an invalid public status cannot enable the claim flow", async () => {
   const ui = harness(async () => json({ enabled: true, spots_left: "unlimited" }));
   ui.render();

@@ -85,6 +85,7 @@ export async function joinBetaWaitlist(email: string): Promise<string> {
 
 export function emptyWalletMessage(account: StudioAccount): string | null {
   if (account.balance_cents > 0) return null;
+  if (account.subscription?.status === "active" && account.subscription.daily_allowance_remaining_cents > 0) return null;
   return account.beta_credit && account.beta_credit.remaining_cents === 0
     ? "Your free beta credit is used up. Top up to keep creating."
     : "Your wallet is empty. Top up to keep creating.";
