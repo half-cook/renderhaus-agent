@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib.util
+import json
 import os
 import shutil
 import subprocess
@@ -10,6 +11,8 @@ from contextlib import ExitStack
 from decimal import Decimal
 from pathlib import Path
 from unittest.mock import MagicMock, patch
+
+import httpx
 
 
 class MurekaProviderTests(unittest.TestCase):
@@ -22,7 +25,9 @@ class MurekaProviderTests(unittest.TestCase):
         self.addCleanup(self.stack.close)
         self.root = self.stack.enter_context(tempfile.TemporaryDirectory())
         self.stack.enter_context(patch.dict(os.environ, {'MUREKA_DRY_RUN': 'true', 'FAL_DRY_RUN': 'true', 'MUREKA_MODEL': 'mureka-9.5', 'RENDERHAUS_MEDIA_DIR': self.root}))
-        self.submit = self.stack.enter_context(patch('providers.fal.queue.submit', return_value={'request_id': 'req_123', 'status': 'IN_QUEUE'}))
+        self.submit_patch = patch('providers.fal.queue.submit', return_value={'request_id': 'req_123', 'status': 'IN_QUEUE'})
+        self.submit = self.submit_patch.start()
+        self.addCleanup(self.submit_patch.stop)
         self.quote = self.stack.enter_context(patch('server.billing_rates.mureka_price_cents', return_value=Decimal('22.5'), create=True))
 
     def live(self):
@@ -228,3 +233,118 @@ class MurekaProviderTests(unittest.TestCase):
         self.assertEqual(len(catalog['models']), 3)
         self.assertTrue(all(row['api_url'].startswith('https://fal.ai/models/mureka/') for row in catalog['models']))
         self.submit.assert_not_called()
+
+
+class MurekaHTTPTransportTests(unittest.TestCase):
+    def setUp(self):
+        MurekaProviderTests.setUp(self)
+        self.submit_patch.stop()
+        self.http_client_type = httpx.Client
+        MurekaProviderTests.live(self)
+        self.stack.enter_context(patch.dict(os.environ, {'FAL_KEY': 'offline-test-only-key'}))
+
+    def transport(self, handler):
+        client_type = self.http_client_type
+        transport = httpx.MockTransport(handler)
+        return self.stack.enter_context(patch('providers.fal.queue.httpx.Client', side_effect=lambda **kwargs: client_type(transport=transport, **kwargs)))
+
+    def test_actual_queue_submits_each_verified_endpoint_and_body(self):
+        requests = []
+
+        def handler(request):
+            requests.append(request)
+            return httpx.Response(200, json={'request_id': 'http_req', 'status': 'IN_QUEUE'})
+
+        self.transport(handler)
+        song = self.api.generate_song(prompt='Love song', styles=['pop'])
+        instrumental = self.api.generate_instrumental(prompt='Piano')
+        video = self.api.generate_lyrics_video(song_id='song_1', selection_start=0, selection_end=1000)
+        self.assertEqual([result['status'] for result in [song, instrumental, video]], ['queued'] * 3)
+        self.assertEqual([request.method for request in requests], ['POST'] * 3)
+        self.assertEqual([request.url.path for request in requests], ['/mureka/api/generate/song', '/mureka/api/generate/instrumental', '/mureka/api/generate/lyrics-video'])
+        self.assertTrue(all(request.url.host == 'queue.fal.run' for request in requests))
+        self.assertTrue(all(request.headers['authorization'] == 'Key offline-test-only-key' for request in requests))
+        self.assertEqual(json.loads(requests[0].content), {'prompt': 'Love song', 'styles': ['pop'], 'model': 'mureka-9.5', 'enable_safety_checker': True})
+        self.assertNotIn('model', json.loads(requests[2].content))
+        self.assertEqual(json.loads(requests[2].content)['selection_end'], 1000)
+
+    def test_real_status_and_result_routes_preserve_audio_and_song_chain(self):
+        requests = []
+
+        def handler(request):
+            requests.append((request.method, request.url.path))
+            if request.method == 'POST':
+                return httpx.Response(200, json={'request_id': 'http_req'})
+            if request.url.path.endswith('/status'):
+                return httpx.Response(200, json={'status': 'COMPLETED'})
+            return httpx.Response(200, json={'song_id': 'song_from_http', 'duration': 1000, 'audio': {'url': 'https://media.example.test/generated.mp3'}, 'lyrics_sections': [{'start': 0, 'end': 1000, 'lines': [{'text': 'Hello'}]}]})
+
+        self.transport(handler)
+        job = self.api.generate_song(lyrics='Hello')
+        result = self.api.get_music_task(job['job_id'])
+        self.assertEqual(result['song_id'], 'song_from_http')
+        self.assertEqual(result['duration_seconds'], 1)
+        self.assertEqual(result['lyrics_sections'][0]['lines'][0]['text'], 'Hello')
+        self.assertEqual(result['audio_url'], 'https://media.example.test/generated.mp3')
+        self.assertEqual(requests, [('POST', '/mureka/api/generate/song'), ('GET', '/mureka/api/requests/http_req/status'), ('GET', '/mureka/api/requests/http_req')])
+
+    def test_live_transport_missing_key_rejects_before_http(self):
+        calls = []
+        self.transport(lambda request: calls.append(request) or httpx.Response(200, json={'request_id': 'unexpected'}))
+        with patch.dict(os.environ, {'FAL_KEY': ''}), self.assertRaisesRegex(RuntimeError, 'FAL_KEY'):
+            self.api.generate_song(prompt='Love song')
+        self.assertEqual(calls, [])
+
+    def test_failed_paid_submission_is_not_retried(self):
+        from providers.fal.queue import FalAPIError
+
+        requests = []
+        self.transport(lambda request: requests.append(request) or httpx.Response(401, json={'detail': 'Invalid test account'}))
+        with self.assertRaises(FalAPIError):
+            self.api.generate_instrumental(prompt='Piano')
+        self.assertEqual(len(requests), 1)
+
+    def test_uncertain_paid_submission_is_not_retried(self):
+        requests = []
+
+        def handler(request):
+            requests.append(request)
+            raise httpx.ReadTimeout('Mock transport timeout', request=request)
+
+        self.transport(handler)
+        with self.assertRaises(httpx.ReadTimeout):
+            self.api.generate_song(prompt='Love song')
+        self.assertEqual(len(requests), 1)
+
+    def test_malformed_http_submit_json_is_not_reported_as_queued(self):
+        from providers.fal.queue import FalAPIError
+
+        for response in [httpx.Response(200, content=b'not JSON'), httpx.Response(200, json=[]), httpx.Response(200, json={})]:
+            with self.subTest(content=response.content):
+                self.transport(lambda request, response=response: response)
+                with self.assertRaises((FalAPIError, RuntimeError)):
+                    self.api.generate_song(prompt='Love song')
+
+    def test_terminal_result_failure_is_not_audio_success(self):
+        def handler(request):
+            if request.url.path.endswith('/status'):
+                return httpx.Response(200, json={'status': 'COMPLETED'})
+            return httpx.Response(422, json={'detail': 'Generation rejected'})
+
+        self.transport(handler)
+        result = self.api.get_music_task('mureka:music:song:mureka-9.5:http_req')
+        self.assertEqual(result['status'], 'failed')
+        self.assertIsNone(result.get('audio_url'))
+        self.assertIsNone(result.get('output_path'))
+
+    def test_malformed_remote_audio_output_is_not_an_artifact(self):
+        for output in [{'audio': {'url': 'http://localhost/internal'}}, {'song_id': 's'}, {'audio': {'url': 'https://media.example.test/audio.mp3'}, 'duration': '1000'}]:
+            def handler(request):
+                payload = {'status': 'COMPLETED'} if request.url.path.endswith('/status') else output
+                return httpx.Response(200, json=payload)
+
+            with self.subTest(output=output):
+                self.transport(handler)
+                with self.assertRaises(RuntimeError):
+                    self.api.get_music_task('mureka:music:song:mureka-9.5:http_req', download=True)
+        self.assertFalse(list(Path(self.root).rglob('*.mp3')))
