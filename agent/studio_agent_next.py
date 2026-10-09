@@ -1447,10 +1447,26 @@ def _validate_video_delivery(
     wants_video = _requests_video_deliverable(request.prompt) or render_started
     if not wants_video:
         return True
+    from agent.deep_agent.routing import route_intent
+
+    requires_assembly = render_started or bool(re.search(
+        r"assemble|montage|combine|merge|stitch|"
+        r"(?:add|burn|overlay|insert|include|with).*\b(?:captions?|subtitles?|titles?|music|b.?roll|graphics)\b",
+        request.prompt, re.IGNORECASE,
+    ))
+    if not requires_assembly and route_intent(request.prompt).alias == "sync3_lipsync":
+        if any(
+            event.name == "Sync___get_video_task"
+            and event.status.lower() in {"succeeded", "success", "completed"}
+            and event.result.get("status") == "succeeded"
+            and event.result.get("downloaded") is True
+            and _completed_video_artifact({"url": event.result.get("video_url"),
+                                           "output_path": event.result.get("output_path")})
+            for event in studio.tool_events
+        ):
+            return True
     hyperframes_export = bool(re.search(r"\bhyperframes\b", request.prompt, re.IGNORECASE))
     if hyperframes_export:
-        from agent.deep_agent.routing import route_intent
-
         route = route_intent(request.prompt)
         hyperframes_export = route.skill == "hyperframes"
     rendered = not hyperframes_export and any(
