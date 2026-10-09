@@ -49,6 +49,25 @@ class ModelStudioRoutingTests(unittest.TestCase):
                         self.assertIn("internal testing", route.disclosure)
                         self.assertIn("until GA", route.disclosure)
 
+    def test_named_edit_and_extend_without_media_nouns_keep_named_provider(self):
+        with patch.dict(os.environ, {"MODELSTUDIO_DRY_RUN": "true"}):
+            for name in ["Wan", "Wan3.0", "Wan 3.0", "Model Studio", "DashScope"]:
+                for action, alias, tool in [("edit", "wan3_edit", EDIT), ("extend", "wan3_extend", EXTEND)]:
+                    prompt = f"{name} {action}"
+                    with self.subTest(prompt=prompt):
+                        route = routing.route_intent(prompt)
+                        self.assertEqual((route.status, route.skill, route.alias, route.tool, route.provider),
+                                         ("ready", "named-provider", alias, tool, "alibaba_modelstudio"))
+                        self.assertIn("Alibaba preview terms", route.disclosure)
+                        self.assertIn("internal testing", route.disclosure)
+                        self.assertIn("until GA", route.disclosure)
+            for prompt in ["edit", "edit my project", "please edit"]:
+                with self.subTest(prompt=prompt):
+                    self.assertEqual(routing.route_intent(prompt).status, "unrouted")
+            for prompt in ["edit this photo", "edit this image"]:
+                with self.subTest(prompt=prompt):
+                    self.assertEqual(routing.route_intent(prompt).alias, "gpt_image25_edit")
+
     def test_named_demoted_tools_and_confidential_field_are_preserved(self):
         for prompt, tool in [("use Runway Aleph to relight this clip", "Runway___video_to_video"),
                              ("Luma modify this video", "Luma___modify_video"),
