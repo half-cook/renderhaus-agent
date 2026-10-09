@@ -99,7 +99,7 @@ class LocalAssemblyTests(unittest.TestCase):
             (directory / 'partial.mp4').write_bytes(b'playable-partial-fixture')
             (directory / 'progress.txt').write_text('progress=end\n')
             for exit_code, duration, expected in [(None, 1, 'queued'), (1, 1, 'failed'),
-                                                   (0, .5, 'failed'), (0, 1, 'succeeded')]:
+                                                   (0, .5, 'failed'), (0, 1, 'succeeded'), (0, 'timeout', 'failed')]:
                 with self.subTest(exit_code=exit_code, duration=duration):
                     terminal = directory / 'terminal.json'
                     terminal.unlink(missing_ok=True)
@@ -107,6 +107,6 @@ class LocalAssemblyTests(unittest.TestCase):
                         terminal.write_text(json.dumps({'exit_code': exit_code}))
                     with patch.object(local, '_probe', return_value={
                         'format': {'duration': str(duration)}, 'streams': [{'codec_type': 'video'}],
-                    }):
+                    }, side_effect=subprocess.TimeoutExpired('ffprobe', 30) if duration == 'timeout' else None):
                         result = local.get_progress(render_id, media_roots=roots)
                     self.assertEqual(result['status'], expected)

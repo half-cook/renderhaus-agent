@@ -248,7 +248,7 @@ def get_progress(render_id: str, *, media_roots: tuple[Path, ...]) -> dict[str, 
             if destination.is_file() and destination.stat().st_size > 0:
                 try:
                     probe = _probe(destination)
-                except ValueError:
+                except (ValueError, OSError, subprocess.SubprocessError):
                     probe = {}
                 actual = float(probe.get('format', {}).get('duration', 0))
                 tolerance = max(.1, 2 / job['fps'])
