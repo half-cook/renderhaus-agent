@@ -385,6 +385,8 @@ def _source_version_ids(value: Any) -> list[str]:
 
 @router.get("/status")
 async def studio_status() -> dict[str, Any]:
+    from providers.seedance.api import dry_run as seedance_dry_run
+
     return {
         "mode": "local",
         "agent": agent_configured(),
@@ -394,7 +396,7 @@ async def studio_status() -> dict[str, Any]:
             "fal": os.getenv("FAL_DRY_RUN", "true").lower() != "false",
             "luma": os.getenv("LUMA_DRY_RUN", "true").lower() != "false",
             "alibaba_modelstudio": os.getenv("MODELSTUDIO_DRY_RUN", "true").lower() != "false",
-            "seedance": os.getenv("SEEDANCE_DRY_RUN", "true").lower() != "false",
+            "seedance": seedance_dry_run(),
             "seedream": os.getenv("SEEDREAM_DRY_RUN", os.getenv("SEEDANCE_DRY_RUN", "true")).lower()
             != "false",
             "elevenlabs": os.getenv("ELEVENLABS_DRY_RUN", "true").lower() == "true",

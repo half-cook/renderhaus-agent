@@ -63,7 +63,7 @@ STATIC_FIELD_OPTIONS: dict[str, dict[str, list[str | int]]] = {
         "resolution": list(SEEDANCE_RESOLUTIONS),
         "duration_seconds": list(range(MIN_DURATION_SECONDS, MAX_DURATION_SECONDS + 1)),
         "service_tier": ["default", "flex"],
-        "model": ["seedance-1-5-pro-251215"],
+        "model": ["dreamina-seedance-2-5-260628", "seedance-1-5-pro-251215"],
     },
     "seedream": {
         "aspect_ratio": list(SEEDREAM_RATIOS),
