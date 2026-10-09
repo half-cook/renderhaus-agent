@@ -191,7 +191,7 @@ Fish Audio is not in the current active provider catalog. Its speech tool is usa
 Gateway discovers an available Fish Audio target. Skills explicitly report unavailable tools.
 The model cannot invent a target or call a provider directly.
 
-The `planner` subagent has no provider dispatch. `media` can dispatch only Seedance/Seedream/Kling/Runway/Fal/Luma;
+The `planner` subagent has no provider dispatch. `media` can dispatch only OpenAI/Seedance/Seedream/Kling/Runway/Fal/Luma;
 `audio` can dispatch only audio providers; `editor` can dispatch Remotion and the optional HyperFrames tool,
 including `Remotion___export_nle_timeline` for the DaVinci Resolve handoff. That export is free and
 only packages existing project media, so it is exempt from approval (`APPROVAL_EXEMPT_TOOLS` in
@@ -357,3 +357,16 @@ references force Wan generation with consent and refuse the Seedance edit/extend
 Changing Wan's `live_enabled` policy flag restores default selection; the unchanged hard
 Model Studio adapter restriction still blocks commercial live work. See
 [Seedance contracts, pricing and unresolved limits](SEEDANCE_2_5.md).
+
+## OpenAI still images
+
+`OpenAI___generate_image` and `OpenAI___edit_image` implement the still-image and image-edit
+defaults, including text-in-image generation. Edits accept a primary image, up to 15 additional
+references, and an optional mask. Results contain saved images synchronously, without polling.
+Seedream remains explicit-only. Spending approval and visual approval remain separate.
+Eight GPT routing readiness rows now assert built tools; all 91 active cases pass their routing
+expectations. The 38 dependency skips remain, including Recraft and Ideogram specialists.
+There are 10 providers, 89 Gateway tools, and 24 packaged skills.
+
+[OpenAI configuration and verified sources](OPENAI_IMAGES.md) describe the default dry-run flag,
+unknown pre-call costs, output training restriction, and blocked Comet validation.

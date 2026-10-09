@@ -70,7 +70,7 @@ capability default. A pending default uses only its declared interim. Cost and s
 tiers do not order models. Prices support disclosure and spending controls.
 
 Wan 3.0 on fal now provides t2v, i2v and reference_video defaults. The synthetic-dialogue exceptions use the upgraded Seedance 2.5 tools through fal US.
-Still-image defaults are pending feat/provider-openai-images with no automatic interim.
+Still-image and image-edit defaults use the built OpenAI GPT Image 2.5 Sunburst tools.
 Seedream requires an explicit named request. Wan 3.0 on Alibaba Model Studio
 remains the edit and extend default. Its preview licence blocks commercial use, so the declared
 Seedance 2.5 fal interims serve synthetic inputs. Luma modify and extend remain explicit-only.
@@ -414,7 +414,7 @@ The router excludes image generation and editing from their discovered tools and
 MP4 export uses final-assembly; OTIO, FCPXML and EDL export uses resolve-handoff.
 Deliverable duration describes the shot/clip length, never audio placement such as starting at 1 s.
 RT-152 through RT-156 are committed routing gates. RT-155 separately verifies Seedream exclusion
-and records GPT Image readiness as an expected failure pending feat/provider-openai-images.
+and verifies the built GPT Image default without an expected failure.
 
 Local final assembly uses the same `Remotion___render_timeline` and
 `Remotion___get_render_progress` tools with `REMOTION_RENDER_BACKEND=local`. Provider-returned
@@ -433,8 +433,21 @@ remove the adapter's hard live block or establish commercial rights.
 The edit-v2v and refinement skills discover the built Seedance tools, reuse fal polling,
 require measured source inputs and prohibit real-person references. Explicit Luma, Aleph,
 and VACE requests remain available with disclosure. Paid video pauses in autonomous runs.
-There are 9 providers, 87 Gateway tools and 24 skills. Seedance reference dialogue and the
+There are 10 providers, 89 Gateway tools and 24 skills. Seedance reference dialogue and the
 two edit fixture rows are active. The extension increment row remains skipped because its
 length semantics are UNVERIFIED; 37 other rows still have dependency blockers.
 See [Seedance configuration, prices and licence limits](SEEDANCE_2_5.md) and
 [Model Studio's unchanged restriction](ALIBABA_MODELSTUDIO.md).
+
+## OpenAI still images
+
+`OpenAI___generate_image` and `OpenAI___edit_image` implement the still-image and image-edit
+defaults, including text-in-image generation. Edits accept a primary image, up to 15 additional
+references, and an optional mask. Results contain saved images synchronously, without polling.
+Seedream remains explicit-only. Spending approval and visual approval remain separate.
+Eight GPT routing readiness rows now assert built tools; all 91 active cases pass their routing
+expectations. The 38 dependency skips remain, including Recraft and Ideogram specialists.
+There are 10 providers, 89 Gateway tools, and 24 packaged skills.
+
+[OpenAI configuration and verified sources](OPENAI_IMAGES.md) describe the default dry-run flag,
+unknown pre-call costs, output training restriction, and blocked Comet validation.
