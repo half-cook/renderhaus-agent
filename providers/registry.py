@@ -73,6 +73,7 @@ TOOL_GUIDANCE: dict[str, dict[str, str]] = {
         ),
     },
     "runway": {
+        "act_two": "Performance transfer default Act-Two. Require character_uri (image/video), performance_uri, measured performance_duration_seconds 3-30, subjects and consent_confirmed=true for every face, voice and body. body_control and expression_intensity 1-5 are optional; character video requires body_control=false. Always pause with cost even autonomous. For long sources use approved shot/silence segments with source_duration_seconds, performance_start_seconds and boundary_kind; process sequentially then assemble through Remotion. Poll get_runway_task with download=true. Dry-run produces no media; outputs never enter training.",
         "text_to_video": "Create a Gen-4.5 video from text. Starts paid work unless dry-run. Poll get_runway_task with the returned job_id at least five seconds apart.",
         "image_to_video": "Animate a supplied image with Gen-4.5. Starts paid work unless dry-run. Poll get_runway_task with the returned job_id at least five seconds apart.",
         "video_to_video": "Edit an existing 2-30 second clip with Aleph 2.0 and a text instruction, optionally guided by a timed reference image. Supply the actual source duration for the cost estimate. Poll get_runway_task.",
@@ -82,6 +83,7 @@ TOOL_GUIDANCE: dict[str, dict[str, str]] = {
         "list_runway_models": "List locally documented supported Runway models and limits. Free, no API request. This catalog does not verify account access or live model availability.",
     },
     "fal": {
+        "kling_motion_control": "Full-body performance transfer exception through fal Kling 3 Pro Motion Control. Require image_url, video_url, measured performance_duration_seconds 3-30, subjects and consent_confirmed=true for every face, voice and body. character_orientation defaults video; image orientation max 10s. keep_original_sound defaults true. Always pause with cost even autonomous. Poll get_video_task with download=true. Dry-run produces no media; outputs never enter training.",
         "text_to_video": "Generate a Wan VACE clip from text. Returns job_id; poll get_video_task with download=true until terminal.",
         "image_to_video": "Animate first_frame_url using Wan VACE. Returns job_id; poll get_video_task with download=true until terminal.",
         "reference_to_video": "Generate a Wan VACE clip guided by ref_image_urls for subject consistency. Returns job_id; poll get_video_task with download=true until terminal.",

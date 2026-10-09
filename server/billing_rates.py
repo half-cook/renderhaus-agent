@@ -204,7 +204,7 @@ def _seedream_cost(arguments: dict[str, Any]) -> GenerationCost:
 # Runway developer pricing verified 2026-10-08.
 # https://docs.dev.runwayml.com/guides/pricing/
 # One credit is $0.01. Default MP4 only; no professional-format surcharge.
-RUNWAY_CENTS_PER_SECOND = {"gen4.5": 12, "aleph2": 28}
+RUNWAY_CENTS_PER_SECOND = {"gen4.5": 12, "aleph2": 28, "act_two": 5}
 RUNWAY_IMAGE_CENTS = {"gen4_image": {"720p": 5, "1080p": 8}, "gen4_image_turbo": 2}
 
 
@@ -214,6 +214,9 @@ def _runway_cost(tool: str, arguments: dict[str, Any]) -> GenerationCost:
 
     if tool in {"get_runway_task", "list_runway_models"}:
         return GenerationCost(0, 0)
+    if tool == "act_two":
+        cents = performance_price_cents(arguments)
+        return GenerationCost(0, 0) if dry_run() else _with_fee(math.ceil(cents))
     if tool in {"text_to_video", "image_to_video", "video_to_video"}:
         edit = tool == "video_to_video"
         model = arguments.get("model") or ("aleph2" if edit else "gen4.5")
@@ -246,6 +249,33 @@ def _runway_cost(tool: str, arguments: dict[str, Any]) -> GenerationCost:
     else:
         raise ValueError("Unknown Runway tool. No fallback price is available.")
     return GenerationCost(0, 0) if dry_run() else _with_fee(cents)
+
+
+def _performance_seconds(arguments: dict[str, Any], maximum: float = 30) -> Decimal:
+    duration = arguments.get("performance_duration_seconds")
+    if (isinstance(duration, bool) or not isinstance(duration, (int, float))
+            or not math.isfinite(duration) or not 3 <= duration <= maximum):
+        raise ValueError("Performance cost unknown without measured supported driving duration.")
+    return Decimal(str(duration))
+
+
+def performance_price_cents(arguments: dict[str, Any]) -> Decimal:
+    # https://docs.dev.runwayml.com/guides/pricing/ read 2026-10-09.
+    # act_two is 5 credits/s; credits cost $0.01. Whole-credit rounding is an estimate.
+    if arguments.get("model", "act_two") != "act_two":
+        raise ValueError("UNVERIFIED Act-Two model; cost unknown.")
+    return _performance_seconds(arguments) * 5
+
+
+def motion_control_price_cents(arguments: dict[str, Any]) -> Decimal:
+    # https://fal.ai/models/fal-ai/kling-video/v3/pro/motion-control read 2026-10-09.
+    # Pro price is $0.168/s. This is fal pricing, not Kling direct pricing.
+    if arguments.get("model", "fal-ai/kling-video/v3/pro/motion-control") != "fal-ai/kling-video/v3/pro/motion-control":
+        raise ValueError("UNVERIFIED Kling Motion Control model; cost unknown.")
+    orientation = arguments.get("character_orientation", "video")
+    if orientation not in {"image", "video"}:
+        raise ValueError("Unknown Motion Control orientation.")
+    return _performance_seconds(arguments, 10 if orientation == "image" else 30) * Decimal("16.8")
 
 
 # -- Fish Audio (voice) ---------------------------------------------------
@@ -720,6 +750,11 @@ def cost_for(provider: str, tool: str, arguments: dict[str, Any]) -> GenerationC
     if provider == "runway":
         return _runway_cost(tool, arguments)
     if provider == "fal":
+        if tool == "kling_motion_control":
+            from providers.fal.queue import dry_run
+
+            cents = motion_control_price_cents(arguments)
+            return GenerationCost(0, 0) if dry_run() else _with_fee(math.ceil(cents))
         return _fal_cost(tool, arguments)
     if provider == "luma":
         return _luma_cost(tool, arguments)

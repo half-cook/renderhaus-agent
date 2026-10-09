@@ -77,7 +77,7 @@ def check_routing_inventory() -> None:
     from providers.registry import load_committed_schemas
 
     assert len(PROVIDERS) == 14
-    assert sum(len(load_committed_schemas(spec)) for spec in PROVIDERS) == 105
+    assert sum(len(load_committed_schemas(spec)) for spec in PROVIDERS) == 107
     paths = list(SKILLS_ROOT.glob("*/SKILL.md"))
     assert len(paths) == 24
     assert "ladder" not in POLICY and "premium_targets" not in POLICY
@@ -94,8 +94,8 @@ def check_routing_inventory() -> None:
         assert set(metadata["include_tools"].split()) <= DISPATCH_TARGETS.keys(), path
         assert all(TOOL_MAP[alias]["status"] != "retired" for alias in metadata["routing_tools"].split()), path
     cases = json.loads((ROOT / "tests/fixtures/skill_routing.json").read_text())
-    assert len(cases) == 129 and sum(not case["skip_reason"] for case in cases) == 106
-    print("ok routing inventory (14 providers, 105 Gateway tools, 24 skills, 106 active routing rows)")
+    assert len(cases) == 129 and sum(not case["skip_reason"] for case in cases) == 113
+    print("ok routing inventory (14 providers, 107 Gateway tools, 24 skills, 113 active routing rows)")
 
 
 def _assert_gateway_shape(schema: object) -> None:
@@ -167,6 +167,11 @@ def check_dry_run_dispatch() -> None:
                 elif name == "get_video_task":
                     arguments["job_id"] = "current:text_to_video:ci-smoke"
             if spec.id == "runway":
+                if name == "act_two":
+                    arguments = {"character_uri": "https://example.com/character.png",
+                                 "performance_uri": "https://example.com/performance.mp4",
+                                 "performance_duration_seconds": 5, "subjects": "Authorized performer",
+                                 "consent_confirmed": True}
                 for field in ("image_path_or_url", "video_path_or_url"):
                     if field in arguments:
                         arguments[field] = "https://example.com/source.mp4" if field.startswith("video") else "https://example.com/source.png"
@@ -175,6 +180,11 @@ def check_dry_run_dispatch() -> None:
                 if name == "get_runway_task":
                     arguments["job_id"] = "00000000-0000-4000-8000-000000000000"
             if spec.id == "fal":
+                if name == "kling_motion_control":
+                    arguments = {"image_url": "https://example.com/character.png",
+                                 "video_url": "https://example.com/performance.mp4",
+                                 "performance_duration_seconds": 5, "subjects": "Authorized performer",
+                                 "consent_confirmed": True}
                 if name == "get_video_task":
                     arguments["job_id"] = "fal-ai/wan-vace-14b:ci-smoke"
                 elif name in {"vidu_q4_i2v", "generate_wan3_i2v"}:

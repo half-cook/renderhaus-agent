@@ -289,9 +289,9 @@ def route_intent(prompt: str, *, region: str | None = None, tier: str | None = N
             scoped = capability_constraints(constraints, capability) if capability == "lipsync" else constraints
             route = select_provider(capability, arguments=arguments, available_tools=available_tools,
                                     region=region, retry=retry, **scoped)
-            if constraints["provider"] in {"kling", "runway", "luma", "seedream", "fish_audio"} or (
+            if capability != "performance_transfer" and (constraints["provider"] in {"kling", "runway", "luma", "seedream", "fish_audio"} or (
                 constraints["provider"] == "fal" and re.search(r"vidu|vace", prompt, re.I)
-            ):
+            )):
                 skill = "named-provider"
             return replace(route, skill=skill)
         entry = TOOL_MAP[alias]
@@ -365,6 +365,8 @@ def capability_table() -> list[dict]:
 
 
 def _capability_price(row: dict):
+    if "performance_transfer" in row["tools"]:
+        return row["price"]
     from server import billing_rates as rates
 
     price = row["price"]
@@ -475,7 +477,7 @@ def intent_constraints(prompt: str, *, tier: str | None = None, confidential: bo
             required["aspect_ratio"] = "9:16"
         elif re.search(r"horizontal|landscape", prompt, re.I):
             required["aspect_ratio"] = "16:9"
-    supplied_duration = next((args[k] for k in ("duration", "duration_seconds", "video_duration_seconds", "source_duration_seconds") if args.get(k) is not None), seconds)
+    supplied_duration = next((args[k] for k in ("performance_duration_seconds", "duration", "duration_seconds", "video_duration_seconds", "source_duration_seconds") if args.get(k) is not None), seconds)
     real_face = bool(args.get("real_face_refs") or args.get("user_supplied_real_person_refs") or re.search(
         r"real[ -](?:person|human|actor)|my (?:ceo|face|selfie)|(?:photo|video).*(?:of me|of my|real person)|(?:user.supplied|uploaded).*(?:person|face)", prompt, re.I))
     dialogue_prompt = re.sub(r"(?:voice[ -]?over|narration|\bvo\b)\s*:?\s*[\'\"“].*?[\'\"”]", "", prompt, flags=re.I)
@@ -656,7 +658,7 @@ def select_provider(job: str, *, tier: str | None = None, required: dict | None 
     if entry.get("provider") == "alibaba_modelstudio":
         if model is None:
             model = effective_model("alibaba_modelstudio", entry["gateway_tool"].split("___")[1], args)
-    duration = required.get("duration_seconds") or next((args[k] for k in ("duration", "duration_seconds", "video_duration_seconds", "source_duration_seconds") if args.get(k) is not None), None)
+    duration = required.get("duration_seconds") or next((args[k] for k in ("performance_duration_seconds", "duration", "duration_seconds", "video_duration_seconds", "source_duration_seconds") if args.get(k) is not None), None)
     if entry.get("provider") == "alibaba_modelstudio" and not required.get("duration_seconds"):
         duration = args.get("duration")
     if (predicates["duration_over_30s"] or isinstance(duration, (int, float)) and duration > 30) and capability in {"t2v", "i2v", "reference_video", "performance_transfer"}:
@@ -729,8 +731,8 @@ def select_provider(job: str, *, tier: str | None = None, required: dict | None 
             return Route(alias=alias, basis=basis, status="blocked", job_type=capability, required=required, reason=reason, disclosure=reason)
         quote_args = dict(args) if tool == "Mureka___generate_lyrics_video" else {**args, "model": model}
         if duration and row["provider"] not in {"sync", "topaz", "mureka"}:
-            key = row.get("duration_field") or ("source_duration_seconds" if row["provider"] == "sync" or tool.endswith("modify_video") else "video_duration_seconds" if tool.endswith("video_to_video") and row["provider"] == "runway" else "duration_seconds")
-            if row["provider"] == "fal" and not row.get("duration_field"):
+            key = row.get("duration_field") or ("performance_duration_seconds" if capability == "performance_transfer" else "source_duration_seconds" if row["provider"] == "sync" or tool.endswith("modify_video") else "video_duration_seconds" if tool.endswith("video_to_video") and row["provider"] == "runway" else "duration_seconds")
+            if row["provider"] == "fal" and not row.get("duration_field") and capability != "performance_transfer":
                 quote_args["num_frames"] = args.get("num_frames", round(duration * args.get("frames_per_second", 16)) + 1)
             else:
                 quote_args[key] = duration
@@ -966,7 +968,7 @@ def estimate_cost(name: str, arguments: dict, *, list_price: bool = False) -> Co
         return CostEstimate(None, blocker)
     provider, tool = tool_parts(name)
     model = effective_model(provider, tool, arguments)
-    if provider in {"heygen", "topaz", "mureka"}:
+    if provider in {"heygen", "topaz", "mureka"} or name in {"Runway___act_two", "Fal___kling_motion_control"}:
         try:
             return CostEstimate(_published_cost(provider, tool, arguments).total_cents)
         except (ValueError, TypeError, KeyError) as exc:
@@ -1037,6 +1039,10 @@ def _published_cost(provider: str, tool: str, arguments: dict):
         if cents is None:
             raise ValueError("Mureka estimate unknown for invalid inputs or UNVERIFIED model.")
         return rates._with_fee(ceil(cents))
+    if provider == "runway" and tool == "act_two":
+        return rates._with_fee(ceil(rates.performance_price_cents(arguments)))
+    if provider == "fal" and tool == "kling_motion_control":
+        return rates._with_fee(ceil(rates.motion_control_price_cents(arguments)))
     if provider == "seedance":
         from math import ceil
 

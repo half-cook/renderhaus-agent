@@ -1,5 +1,49 @@
 [
   {
+    "name": "kling_motion_control",
+    "description": "Full-body performance transfer exception through fal Kling 3 Pro Motion Control. Require image_url, video_url, measured performance_duration_seconds 3-30, subjects and consent_confirmed=true for every face, voice and body. character_orientation defaults video; image orientation max 10s. keep_original_sound defaults true. Always pause with cost even autonomous. Poll get_video_task with download=true. Dry-run produces no media; outputs never enter training.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "image_url": {
+          "type": "string"
+        },
+        "video_url": {
+          "type": "string"
+        },
+        "performance_duration_seconds": {
+          "type": "number",
+          "description": "Measured driving clip duration. 3-30 seconds for video orientation; 3-10 for image orientation. Not a vendor duration control."
+        },
+        "subjects": {
+          "type": "string",
+          "description": "Identify every real face, voice and body in the inputs."
+        },
+        "consent_confirmed": {
+          "type": "boolean",
+          "description": "Must be true. Caller acknowledges rights and consent for all depicted likenesses, performances and voices."
+        },
+        "character_orientation": {
+          "type": "string",
+          "description": "One of: image, video."
+        },
+        "keep_original_sound": {
+          "type": "boolean"
+        },
+        "prompt": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "image_url",
+        "video_url",
+        "performance_duration_seconds",
+        "subjects",
+        "consent_confirmed"
+      ]
+    }
+  },
+  {
     "name": "text_to_video",
     "description": "Generate a Wan VACE clip from text. Returns job_id; poll get_video_task with download=true until terminal.",
     "inputSchema": {

@@ -717,6 +717,8 @@ async def invoke_tool(body: InvokeBody, auth: AuthUser) -> dict[str, Any]:
         raise HTTPException(status_code=409, detail="Use the agent finishing workflow for required cost approval before Topaz processing.")
     if body.provider == "mureka" and body.tool == "generate_lyrics_video":
         raise HTTPException(status_code=409, detail="Use the agent lyrics-video workflow for required cost approval before Mureka video generation.")
+    if (body.provider, body.tool) in {("runway", "act_two"), ("fal", "kling_motion_control")}:
+        raise HTTPException(status_code=409, detail="Use the agent performance-transfer workflow for required consent and cost approval.")
     cleaned = _tool_arguments(body.provider, body.tool, body.arguments)
     source_version_ids = list(dict.fromkeys([*body.source_version_ids, *_source_version_ids(cleaned)]))
     preparing_edit = (body.provider, body.tool) == ("remotion", "prepare_conversational_edit")

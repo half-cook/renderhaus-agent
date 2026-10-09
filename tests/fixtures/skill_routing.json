@@ -339,7 +339,7 @@
     "expected_skill": "act-two",
     "expected_tool": "runway_act_two",
     "suite": "act-two",
-    "skip_reason": "provider pending: runway_act_two (feat/perf-transfer)",
+    "skip_reason": "",
     "note": "default (A/B)",
     "source_status": "unchanged"
   },
@@ -348,7 +348,7 @@
     "expected_skill": "act-two",
     "expected_tool": "runway_act_two",
     "suite": "act-two",
-    "skip_reason": "provider pending: runway_act_two (feat/perf-transfer)",
+    "skip_reason": "",
     "note": "default (A/B)",
     "source_status": "unchanged"
   },
@@ -357,7 +357,7 @@
     "expected_skill": "act-two",
     "expected_tool": "runway_act_two",
     "suite": "act-two",
-    "skip_reason": "provider pending: runway_act_two (feat/perf-transfer)",
+    "skip_reason": "",
     "note": "default (A/B)",
     "source_status": "unchanged"
   },
@@ -366,7 +366,7 @@
     "expected_skill": "act-two",
     "expected_tool": "runway_act_two",
     "suite": "lipsync",
-    "skip_reason": "provider pending: runway_act_two (feat/perf-transfer)",
+    "skip_reason": "",
     "note": "LivePortrait retired; driving-video = performance transfer",
     "source_status": "updated"
   },
@@ -851,7 +851,7 @@
     "expected_skill": "act-two",
     "expected_tool": "runway_act_two",
     "suite": "act-two",
-    "skip_reason": "provider pending: runway_act_two (feat/perf-transfer)",
+    "skip_reason": "",
     "note": "default facial (A/B)",
     "source_status": "new"
   },
@@ -860,7 +860,7 @@
     "expected_skill": "act-two",
     "expected_tool": "kling_motion_control",
     "suite": "act-two",
-    "skip_reason": "provider pending: kling_motion_control (feat/perf-transfer)",
+    "skip_reason": "",
     "note": "exception: full_body_motion (A/B)",
     "source_status": "new"
   },
@@ -869,7 +869,7 @@
     "expected_skill": "act-two",
     "expected_tool": "kling_motion_control",
     "suite": "act-two",
-    "skip_reason": "provider pending: kling_motion_control (feat/perf-transfer)",
+    "skip_reason": "",
     "note": "exception: full_body_motion (A/B)",
     "source_status": "new"
   },

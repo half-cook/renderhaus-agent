@@ -38,6 +38,7 @@ class PerformanceContracts(unittest.TestCase):
                      {"performance_duration_seconds": True}, {"performance_duration_seconds": float("nan")},
                      {"consent_confirmed": "true"}, {"extra": "unsupported"}]
             cases += ([{"character_type": "audio"}, {"body_control": "false"},
+                       {"character_type": "video", "body_control": True},
                        {"expression_intensity": 6}, {"expression_intensity": True},
                        {"ratio": "16:9"}, {"character_uri": "/etc/passwd"}]
                       if provider == "runway" else
