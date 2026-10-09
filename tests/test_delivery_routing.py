@@ -61,3 +61,25 @@ class VideoVoiceoverTests(unittest.TestCase):
         self.assertIsNone(routing.resolve_alias('gpt_image25_t2i'))
         self.assertIsNotNone(routing.request_tool_blocker('Make a still image of a lighthouse', 'Seedream___text_to_image'))
         self.assertEqual(routing.route_intent('Make this still with Seedream: a lighthouse').tool, 'Seedream___text_to_image')
+
+
+class MultiStepModalityTests(unittest.TestCase):
+    def test_voiceover_preserves_video_modality_and_native_tts_dispatch(self):
+        from agent.gateway_executor import GatewayExecutor
+        from agent.studio_agent_next import StudioAgentRequest, _context_from_request
+
+        cases = [
+            ('Make a 5-second clip from this start frame with a calm voiceover', 'wan3_i2v'),
+            ('Make a 5-second clip from multi-ref images with a calm voiceover', 'wan3_r2v'),
+            ('Use Wan 3.0 to make a 5-second clip with voiceover', 'wan3_t2v'),
+            ('Use Kling to make a 5-second clip with voiceover', 'kling_t2v'),
+        ]
+        for prompt, alias in cases:
+            with self.subTest(prompt=prompt):
+                route = routing.route_intent(prompt)
+                self.assertEqual(route.steps[0].alias, alias)
+                executor = GatewayExecutor(_context_from_request(StudioAgentRequest(prompt=prompt)), [])
+                args = {'text': 'Hello', 'voice_id': 'test'}
+                audio = executor.media_selection('ElevenLabs___text_to_speech_convert', args)
+                self.assertEqual(audio.status, 'ready')
+                self.assertIsNone(executor.selection_blocker('ElevenLabs___text_to_speech_convert', args, audio))

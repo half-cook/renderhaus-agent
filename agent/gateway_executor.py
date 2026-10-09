@@ -18,6 +18,7 @@ from agent.deep_agent.routing import (
     tool_variant,
     POLICY,
     request_tool_blocker,
+    capability_constraints,
 )
 from agent.deep_agent.outcomes import OutcomeStore
 from agent.hyperframes import HYPERFRAMES_TOOL
@@ -126,12 +127,14 @@ class GatewayExecutor:
 
     def filter_discovery(self, value):
         if isinstance(value, list):
-            return [self.filter_discovery(item) for item in value if not (
-                isinstance(item, dict) and isinstance(item.get("name"), str)
-                and request_tool_blocker(self.studio.prompt, item["name"])
-            )]
+            filtered = [self.filter_discovery(item) for item in value]
+            return [item for item in filtered if item is not None]
         if isinstance(value, dict):
-            return {key: self.filter_discovery(item) for key, item in value.items()}
+            name = value.get("name") or value.get("toolName") or value.get("tool_name")
+            if isinstance(name, str) and request_tool_blocker(self.studio.prompt, name):
+                return None
+            filtered = {key: self.filter_discovery(item) for key, item in value.items()}
+            return {key: item for key, item in filtered.items() if item is not None}
         if isinstance(value, str):
             try:
                 decoded = json.loads(value)
@@ -174,6 +177,7 @@ class GatewayExecutor:
         if retry:
             for key, value in rejected.get("required", {}).items():
                 constraints["required"][key] = max(value, constraints["required"].get(key, 0))
+        constraints = capability_constraints(constraints, job)
         variant = tool_variant(name)
         route = select_provider(job, arguments=arguments, tool_variant=variant, retry=retry, **constraints)
         return route

@@ -105,6 +105,31 @@ def filter_request_tools(prompt: str, names: set[str]) -> set[str]:
     return {name for name in names if request_tool_blocker(prompt, name) is None}
 
 
+
+def capability_constraints(constraints: dict, capability: str) -> dict:
+    """Scope named video and audio choices to their step in a narration workflow."""
+    scoped = dict(constraints)
+    if not constraints["predicates"].get("video_voiceover"):
+        return scoped
+    named = scoped.get("named_model")
+    if named and capability not in POLICY["named_models"][named]["aliases"]:
+        scoped["named_model"] = None
+    if capability not in POLICY["explicit_routes"].get(scoped.get("provider"), {}):
+        scoped["provider"] = next((candidate for candidate in scoped["provider_candidates"]
+                                   if capability in POLICY["explicit_routes"].get(candidate, {})), None)
+        scoped["model"] = None
+    return scoped
+
+
+def _video_capability(prompt: str, constraints: dict) -> tuple[str, str]:
+    if re.search(r"\brefs\b|reference[ -]to[ -]video|multi.ref|\br2v\b", prompt, re.I):
+        return "reference_video", "i2v"
+    if (constraints["predicates"]["real_face_refs"] or constraints["required"].get("start_end_frame")
+            or re.search(r"animat|image[ -]to[ -]video|\bi2v\b|\bstart frame\b|(?:from|using).*\b(?:image|photo|still)\b", prompt, re.I)):
+        return "i2v", "i2v"
+    return "t2v", "t2v"
+
+
 def _delivery_route(prompt: str, constraints: dict, *, region: str | None,
                     available_tools: set[str] | None, arguments: dict | None) -> Route | None:
     voiceover = _video_voiceover(prompt)
@@ -117,15 +142,8 @@ def _delivery_route(prompt: str, constraints: dict, *, region: str | None,
     steps = []
     creates = bool(re.search(r"\b(?:make|create|generate)\b.*\b(?:shot|clip|video)\b", prompt, re.I))
     existing = bool(re.search(r"\b(?:referenced|existing|attached|uploaded)\b.*\b(?:clip|video|shot)\b", prompt, re.I))
-    for capability, skill in ([('t2v', 't2v')] if creates and not existing else []) + ([('tts', 'audio-bed')] if voiceover else []) + [('motion_graphics', 'final-assembly')]:
-        scoped = dict(constraints)
-        named = scoped.get("named_model")
-        if named and capability not in POLICY["named_models"][named]["aliases"]:
-            scoped["named_model"] = None
-        if capability not in POLICY["explicit_routes"].get(scoped.get("provider"), {}):
-            scoped["provider"] = next((candidate for candidate in scoped["provider_candidates"]
-                                       if capability in POLICY["explicit_routes"].get(candidate, {})), None)
-            scoped["model"] = None
+    for capability, skill in ([_video_capability(prompt, constraints)] if creates and not existing else []) + ([('tts', 'audio-bed')] if voiceover else []) + [('motion_graphics', 'final-assembly')]:
+        scoped = capability_constraints(constraints, capability)
         route = select_provider(capability, region=region, available_tools=available_tools,
                                 arguments=arguments, **scoped)
         steps.append(replace(route, skill=skill))

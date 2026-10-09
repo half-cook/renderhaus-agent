@@ -1,3 +1,4 @@
+import json
 import unittest
 
 from mcp import Tool
@@ -27,3 +28,13 @@ class RequestToolExclusionTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(result['status'], 'not_run')
         self.assertEqual(gateway.call_tool.await_count, 1)
         self.assertFalse(any('Seedream' in e.message or 'Runway' in e.message for e in studio.progress_events))
+
+    async def test_all_supported_search_tool_shapes_hide_forbidden_image_names(self):
+        prompt = 'Make a 5-second shot with a calm voiceover'
+        executor = GatewayExecutor(_context_from_request(StudioAgentRequest(prompt=prompt)), [])
+        for key in ('name', 'toolName', 'tool_name'):
+            definition = {key: 'Seedream___text_to_image', 'inputSchema': {'type': 'object'}}
+            for value in ({'tool': definition}, {'tools': [definition]},
+                          {'content': [{'type': 'text', 'text': json.dumps({'tool': definition})}]}):
+                with self.subTest(key=key, value=value):
+                    self.assertNotIn('Seedream___text_to_image', str(executor.filter_discovery(value)))
