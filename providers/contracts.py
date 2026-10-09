@@ -341,6 +341,13 @@ def enrich_tool_schema(provider_id: str, tool: dict[str, Any]) -> dict[str, Any]
         }
         properties["reference_images"]["description"] = "Up to two additional references, for at most three images including image_path_or_url."
     if provider_id == "remotion" and tool_name == "render_timeline":
+        if isinstance(properties.get("output_resolution"), dict):
+            properties["output_resolution"]["description"] = (
+                "One of: source, 720p, 1080p, 1440p, 2160p. "
+                "Default source uses the largest measured video short edge, capped at the aspect table. "
+                "Explicit tiers scale that table relative to 1080p; 2.39:1 at 1080p stays 1920x804. "
+                "Upscaling adds no detail; use the Topaz upscale skill before assembly for added detail."
+            )
         if isinstance(properties.get("visuals"), dict):
             properties["visuals"]["items"] = deepcopy(_VISUAL_ITEM_SCHEMA)
             properties["visuals"]["description"] = "Ordered visual clips in the final timeline."

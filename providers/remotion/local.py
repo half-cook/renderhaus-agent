@@ -156,10 +156,10 @@ def _command(props: dict[str, Any], directory: Path, *, media_roots: tuple[Path,
             if kind != 'audio':
                 fit = item.get('fit', 'cover')
                 px, py = float(item.get('positionX', .5)), float(item.get('positionY', .5))
-                resize = (f'scale={width}:{height}:force_original_aspect_ratio=increase,'
+                resize = (f'scale={width}:{height}:force_original_aspect_ratio=increase:flags=lanczos,'
                           f'crop={width}:{height}:x=(iw-ow)*{px:g}:y=(ih-oh)*{py:g}'
                           if fit == 'cover' else
-                          f'scale={width}:{height}:force_original_aspect_ratio=decrease,'
+                          f'scale={width}:{height}:force_original_aspect_ratio=decrease:flags=lanczos,'
                           f'pad={width}:{height}:x=(ow-iw)*{px:g}:y=(oh-ih)*{py:g}:color=black')
                 chain = [f'[{count}:v]setpts=(PTS-STARTPTS)/{rate:g}',
                          f'fps={frame_rate}', resize, 'setsar=1', 'format=rgba']
@@ -201,6 +201,8 @@ def _command(props: dict[str, Any], directory: Path, *, media_roots: tuple[Path,
 
 def start_render(props: dict[str, Any], *, output_filename: str,
                  media_roots: tuple[Path, ...], source_root: Path) -> dict[str, Any]:
+    from providers.remotion.api import _resolution_report
+
     if not shutil.which('ffmpeg') or not shutil.which('ffprobe'):
         raise RuntimeError('Local assembly requires ffmpeg and ffprobe on PATH.')
     render_id = f'local-{uuid.uuid4().hex}'
@@ -209,6 +211,7 @@ def start_render(props: dict[str, Any], *, output_filename: str,
     filename = re.sub(r'[^A-Za-z0-9._-]+', '-', Path(output_filename).stem).strip('._-')[:90]
     filename = (filename or 'renderhaus-video') + '.mp4'
     process: subprocess.Popen | None = None
+    resolution = _resolution_report(props['renderConfig'].get('resolution', props['renderConfig']))
     try:
         timeout = max(1, float(os.getenv('REMOTION_RENDER_TIMEOUT_SECONDS', '1200')))
         command, duration = _command(props, directory, media_roots=media_roots,
@@ -221,6 +224,7 @@ def start_render(props: dict[str, Any], *, output_filename: str,
             _PROCESSES[render_id] = process
         (directory / 'job.json').write_text(json.dumps({'filename': filename, 'pid': process.pid,
                                                        'duration': duration, 'fps': props['renderConfig']['fps'],
+                                                       'resolution': resolution,
                                                        'timeout': timeout, 'started': time.time()}))
     except Exception:
         if process is not None:
@@ -232,10 +236,12 @@ def start_render(props: dict[str, Any], *, output_filename: str,
         shutil.rmtree(directory, ignore_errors=True)
         raise
     return {'status': 'queued', 'render_id': render_id, 'bucket_name': 'local', 'output_key': '',
-            'filename': filename, 'progress': 0.0, 'backend': 'local'}
+            'filename': filename, 'progress': 0.0, 'backend': 'local', **resolution}
 
 
 def get_progress(render_id: str, *, media_roots: tuple[Path, ...]) -> dict[str, Any]:
+    from providers.remotion.api import _media_dimensions, _resolution_report
+
     if not re.fullmatch(r'local-[0-9a-f]{32}', render_id):
         raise ValueError('Invalid local render id.')
     directory = _output_root(media_roots) / render_id
@@ -243,7 +249,8 @@ def get_progress(render_id: str, *, media_roots: tuple[Path, ...]) -> dict[str, 
         raise ValueError('Unknown local render id.')
     job = json.loads((directory / 'job.json').read_text())
     result: dict[str, Any] = {'render_id': render_id, 'bucket_name': 'local', 'backend': 'local',
-                              'filename': job['filename'], 'progress': 0.0}
+                              'filename': job['filename'], 'progress': 0.0,
+                              **_resolution_report(job.get('resolution'))}
     with _LOCK:
         process = _PROCESSES.get(render_id)
         code = process.poll() if process else None
@@ -261,8 +268,15 @@ def get_progress(render_id: str, *, media_roots: tuple[Path, ...]) -> dict[str, 
                     probe = {}
                 actual = float(probe.get('format', {}).get('duration', 0))
                 tolerance = max(.1, 2 / job['fps'])
-                has_video = any(stream.get('codec_type') == 'video' for stream in probe.get('streams', []))
-                if has_video and actual > 0 and abs(actual - job['duration']) <= tolerance:
+                video = next((stream for stream in probe.get('streams', [])
+                              if stream.get('codec_type') == 'video'), None)
+                if video and actual > 0 and abs(actual - job['duration']) <= tolerance:
+                    dimensions = _media_dimensions(video)
+                    if dimensions:
+                        result.update(width=dimensions[0], height=dimensions[1])
+                    else:
+                        result['width'] = result['height'] = None
+                        result['warnings'].append('Rendered output dimensions could not be measured.')
                     return {**result, 'status': 'succeeded', 'output_path': str(destination),
                             'size_bytes': destination.stat().st_size, 'progress': 1.0}
             return {**result, 'status': 'failed', 'error': 'Local ffmpeg output is incomplete or invalid.'}

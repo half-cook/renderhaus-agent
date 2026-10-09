@@ -37,6 +37,20 @@ def header(kind: bytes, timescale: int, duration: int, version: int = 0) -> byte
     return box(kind, bytes([version, 0, 0, 0]) + fields + suffix)
 
 
+def track_header(*, version: int = 0, rotation: int = 0, flags: int = 7,
+                 matrix: tuple[int, ...] | None = None) -> bytes:
+    matrices = {
+        0: (65536, 0, 0, 0, 65536, 0, 0, 0, 1073741824),
+        90: (0, 65536, 0, -65536, 0, 0, 720 * 65536, 0, 1073741824),
+        180: (-65536, 0, 0, 0, -65536, 0, 1280 * 65536, 720 * 65536, 1073741824),
+        270: (0, -65536, 0, 65536, 0, 0, 0, 1280 * 65536, 1073741824),
+    }
+    timing = struct.pack(">QQIIQ" if version == 1 else ">IIIII", 0, 0, 1, 0, 60000)
+    return box(b"tkhd", bytes([version]) + flags.to_bytes(3, "big") + timing + b"\0" * 16
+               + struct.pack(">9i", *(matrix if matrix is not None else matrices[rotation]))
+               + struct.pack(">II", 1280 * 65536, 720 * 65536))
+
+
 def track(
     *,
     kind: bytes = b"vide",
@@ -51,6 +65,8 @@ def track(
     stsz: bytes | None = None,
     stts: bytes | None = None,
     stsd: bytes | None = None,
+    dimensions: tuple[int, int] | None = None,
+    tkhd: bytes | None = None,
 ) -> bytes:
     if stsz is None:
         if sizes is not None:
@@ -66,14 +82,15 @@ def track(
             + b"".join(struct.pack(">II", *run) for run in runs),
         )
     if stsd is None:
-        sample_entry = box(
-            codec, b"\0" * 6 + struct.pack(">H", 1) + b"\0" * (70 if kind == b"vide" else 20)
-        )
+        payload = b"\0" * 6 + struct.pack(">H", 1) + b"\0" * (70 if kind == b"vide" else 20)
+        if kind == b"vide" and dimensions is not None:
+            payload = payload[:24] + struct.pack(">HH", *dimensions) + payload[28:]
+        sample_entry = box(codec, payload)
         stsd = box(b"stsd", b"\0" * 4 + struct.pack(">I", 1) + sample_entry)
     handler = box(b"hdlr", b"\0" * 8 + kind + b"\0" * 12)
     return box(
         b"trak",
-        box(
+        (tkhd or b"") + box(
             b"mdia",
             header(b"mdhd", timescale, duration, version)
             + handler
@@ -148,6 +165,77 @@ class MP4ProbeTests(unittest.TestCase):
             result["streams"][1],
             {"codec_type": "audio", "codec_name": "aac", "avg_frame_rate": "0/0", "bit_rate": 4000},
         )
+
+    def test_visual_sample_entry_reports_dimensions(self) -> None:
+        for codec, size in ((b"avc1", (1280, 720)), (b"hvc1", (1920, 1080)),
+                            (b"av01", (720, 1280))):
+            with self.subTest(codec=codec, size=size):
+                result = self.probe(movie(track(codec=codec, dimensions=size)))
+                self.assertEqual((result["streams"][0]["width"], result["streams"][0]["height"]), size)
+
+    def test_stdlib_fallback_reports_dimensions(self) -> None:
+        self.path.write_bytes(movie(track(dimensions=(1280, 720))))
+        with patch.object(local.shutil, "which", return_value=None):
+            video = local._probe(self.path)["streams"][0]
+        self.assertEqual((video["width"], video["height"]), (1280, 720))
+
+    def test_zero_sample_entry_dimensions_remain_unknown(self) -> None:
+        for size in ((0, 720), (1280, 0), (0, 0)):
+            with self.subTest(size=size):
+                video = self.probe(movie(track(dimensions=size)))["streams"][0]
+                self.assertNotIn("width", video)
+                self.assertNotIn("height", video)
+
+    def test_track_header_quarter_turns_report_display_dimensions(self) -> None:
+        for version in (0, 1):
+            for rotation in (90, 270):
+                for flags in (1, 3, 7, 15):
+                    with self.subTest(version=version, rotation=rotation, flags=flags):
+                        video = self.probe(movie(track(dimensions=(1280, 720),
+                            tkhd=track_header(version=version, rotation=rotation, flags=flags))))["streams"][0]
+                        self.assertEqual((video["width"], video["height"]), (720, 1280))
+
+    def test_track_header_identity_and_half_turn_preserve_dimensions(self) -> None:
+        for version in (0, 1):
+            for rotation in (0, 180):
+                with self.subTest(version=version, rotation=rotation):
+                    video = self.probe(movie(track(dimensions=(1280, 720),
+                        tkhd=track_header(version=version, rotation=rotation))))["streams"][0]
+                    self.assertEqual(video, {"codec_type": "video", "codec_name": "h264",
+                        "width": 1280, "height": 720, "avg_frame_rate": "30/1", "bit_rate": 24000})
+
+    def test_track_header_unknown_matrix_omits_dimensions(self) -> None:
+        for version in (0, 1):
+            for matrix in (
+                (46341, 46341, 0, -46341, 46341, 0, 0, 0, 1073741824),
+                (131072, 0, 0, 0, 131072, 0, 0, 0, 1073741824),
+                (-65536, 0, 0, 0, 65536, 0, 0, 0, 1073741824),
+                (65536, 0, 1, 0, 65536, 0, 0, 0, 1073741824),
+                (65536, 0, 0, 0, 65536, 0, 0, 0, 65536),
+                (0,) * 9,
+            ):
+                with self.subTest(version=version, matrix=matrix):
+                    video = self.probe(movie(track(dimensions=(1280, 720),
+                        tkhd=track_header(version=version, matrix=matrix))))["streams"][0]
+                    self.assertNotIn("width", video)
+                    self.assertNotIn("height", video)
+                    self.assertEqual(video["avg_frame_rate"], "30/1")
+
+    def test_track_header_invalid_version_and_bounds_are_rejected(self) -> None:
+        headers = [track_header(version=2)]
+        for version in (0, 1):
+            valid = track_header(version=version)
+            for length in (3, len(valid) - 9, len(valid) - 16, len(valid) - 45):
+                headers.append(box(b"tkhd", valid[8:8 + length]))
+        for index, tkhd in enumerate(headers):
+            with self.subTest(index=index, size=len(tkhd)):
+                self.unsupported(movie(track(dimensions=(1280, 720), tkhd=tkhd)))
+
+    def test_track_header_parent_and_uniqueness_are_enforced(self) -> None:
+        for content in (movie(track(dimensions=(1280, 720)), extra=track_header()),
+                        movie(track(dimensions=(1280, 720), tkhd=track_header() + track_header()))):
+            with self.subTest(size=len(content)):
+                self.unsupported(content)
 
     def test_extended_box_size(self) -> None:
         self.assertEqual(
@@ -303,7 +391,7 @@ class MP4ProbeTests(unittest.TestCase):
 
     def test_ffprobe_preferred_without_changing_subprocess_arguments(self) -> None:
         expected = {
-            "streams": [{"codec_type": "video", "avg_frame_rate": "24/1"}],
+            "streams": [{"codec_type": "video", "avg_frame_rate": "24/1", "width": 1280, "height": 720}],
             "format": {"duration": "2.0"},
         }
         with (
@@ -437,6 +525,33 @@ class MP4ProbeTests(unittest.TestCase):
 
 @unittest.skipUnless(shutil.which("ffmpeg"), "ffmpeg required for generated media")
 class GeneratedMP4ProbeTests(unittest.TestCase):
+    @unittest.skipUnless(shutil.which("ffprobe"), "ffprobe required to verify the written display matrix")
+    def test_generated_quarter_turn_video_reports_display_dimensions(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            source = Path(temporary) / "source.mp4"
+            rotated = Path(temporary) / "rotated.mp4"
+            subprocess.run([
+                "ffmpeg", "-v", "error", "-f", "lavfi", "-i",
+                "testsrc2=size=1280x720:rate=24:duration=0.25", "-c:v", "libx264",
+                "-preset", "ultrafast", "-pix_fmt", "yuv420p", str(source),
+            ], check=True, timeout=30)
+            help_text = subprocess.check_output(["ffmpeg", "-hide_banner", "-h", "full"],
+                                                stderr=subprocess.STDOUT, timeout=30)
+            rotation = ["-display_rotation", "90"] if b"-display_rotation" in help_text else []
+            subprocess.run([
+                "ffmpeg", "-v", "error", *rotation, "-i", str(source), "-c", "copy",
+                *([] if rotation else ["-metadata:s:v:0", "rotate=90"]), str(rotated),
+            ], check=True, timeout=30)
+            encoded = json.loads(subprocess.check_output([
+                "ffprobe", "-v", "error", "-show_streams", "-of", "json", str(rotated),
+            ], timeout=30))["streams"][0]
+            if not any(abs(side.get("rotation", 0)) == 90 for side in encoded.get("side_data_list", [])):
+                self.skipTest("Installed ffmpeg did not write a quarter-turn display matrix.")
+            self.assertEqual((encoded["width"], encoded["height"]), (1280, 720))
+            video = mp4_probe.probe(rotated, max_bytes=local.MAX_MEDIA_BYTES)["streams"][0]
+            self.assertEqual((video["width"], video["height"]), (720, 1280))
+            self.assertEqual(video["avg_frame_rate"], "24/1")
+
     def test_generated_video_and_audio_match_ffprobe(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             for audio, extension, fps in ((False, ".mp4", "30000/1001"), (True, ".mov", "24")):
@@ -473,6 +588,7 @@ class GeneratedMP4ProbeTests(unittest.TestCase):
                     self.assertEqual(
                         Fraction(result["streams"][0]["avg_frame_rate"]), Fraction(fps)
                     )
+                    self.assertEqual((result["streams"][0]["width"], result["streams"][0]["height"]), (64, 64))
                     if not shutil.which("ffprobe"):
                         continue
                     expected = json.loads(
@@ -502,6 +618,9 @@ class GeneratedMP4ProbeTests(unittest.TestCase):
                         result["streams"], expected["streams"], strict=True
                     ):
                         if actual["codec_type"] == "video":
+                            self.assertEqual((actual["width"], actual["height"]), (64, 64))
+                            self.assertEqual((actual["width"], actual["height"]),
+                                             (measured["width"], measured["height"]))
                             self.assertEqual(
                                 Fraction(actual["avg_frame_rate"]),
                                 Fraction(measured["avg_frame_rate"]),

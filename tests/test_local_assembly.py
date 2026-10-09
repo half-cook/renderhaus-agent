@@ -62,7 +62,8 @@ class LocalAssemblyTests(unittest.TestCase):
             self.assertEqual({s['codec_type'] for s in probe['streams']}, {'video', 'audio'})
             pixels = subprocess.check_output(['ffmpeg', '-v', 'error', '-ss', '0.5', '-i',
                 str(output), '-frames:v', '1', '-f', 'rawvideo', '-pix_fmt', 'rgb24', 'pipe:1'])
-            center = (90 * 320 + 160) * 3
+            video = next(stream for stream in probe['streams'] if stream['codec_type'] == 'video')
+            center = ((video['height'] // 2) * video['width'] + video['width'] // 2) * 3
             self.assertGreater(pixels[center + 2], 200)  # source trim selected blue
             self.assertLess(pixels[0], 20)  # contain preserved black sidebars
             pcm = subprocess.check_output(['ffmpeg', '-v', 'error', '-i', str(output),

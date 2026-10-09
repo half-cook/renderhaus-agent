@@ -204,7 +204,7 @@
   },
   {
     "name": "render_timeline",
-    "description": "Use after all source assets exist to execute a concrete edit decision list and make one assembled MP4. The caller must choose timing, B-roll layers, crop/motion, transitions, speed, titles, and audio fades, then poll get_render_progress. Sources may use url or output_path (a local provider result, no file:// prefix). Omit fps to preserve the primary video's measured frame rate; set it only for a user-requested timeline rate. Source metadata is measured before rendering: local media, fal.media subdomains, configured S3 bucket hosts, or REMOTION_LOCAL_MEDIA_HOSTS. Optional source_fps/source_bitrate carry prior measurements. video_bitrate is a target in bits/s with a source quality floor; unknown bitrate uses high-quality CRF18. Local development selects REMOTION_RENDER_BACKEND=local; Lambda remains the default. Local assembly supports trims, fit, fades, timing, opacity, speed, and audio mixing; titles/subtitles, motion, grade, scale, and rotation require Lambda.",
+    "description": "Use after all source assets exist to execute a concrete edit decision list and make one assembled MP4. The caller must choose timing, B-roll layers, crop/motion, transitions, speed, titles, and audio fades, then poll get_render_progress. Sources may use url or output_path (a local provider result, no file:// prefix). Omit fps to preserve the primary video's measured frame rate; set it only for a user-requested timeline rate. Source metadata is measured before rendering: local media, fal.media subdomains, configured S3 bucket hosts, or REMOTION_LOCAL_MEDIA_HOSTS. Optional source_fps/source_bitrate carry prior measurements. video_bitrate is a target in bits/s with a source quality floor; automatic bitrate does not exceed the measured source maximum on smaller canvases, and unknown bitrate uses high-quality CRF18. Omit output_resolution to use the largest measured video short edge, capped at the aspect table. Explicit 720p/1080p/1440p/2160p scale that table; images-only or no measured video dimensions use the table. Results include width, height, source_resolution, upscaled, and warnings, including enlargement from fit, clip scale, and motion. Upscaling adds no detail; use the Topaz upscale skill before assembly for added detail. Local development selects REMOTION_RENDER_BACKEND=local; Lambda remains the default. Local assembly supports trims, fit, fades, timing, opacity, speed, and audio mixing; titles/subtitles, motion, grade, scale, and rotation require Lambda.",
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -484,6 +484,10 @@
         "video_bitrate": {
           "type": "integer",
           "description": "Must be at least 1."
+        },
+        "output_resolution": {
+          "type": "string",
+          "description": "One of: source, 720p, 1080p, 1440p, 2160p. Default source uses the largest measured video short edge, capped at the aspect table. Explicit tiers scale that table relative to 1080p; 2.39:1 at 1080p stays 1920x804. Upscaling adds no detail; use the Topaz upscale skill before assembly for added detail."
         }
       },
       "required": [

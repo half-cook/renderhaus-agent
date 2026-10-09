@@ -19,6 +19,10 @@ Wan 3.0 uses `Fal___generate_wan3_t2v`. Discover its schema before dispatch. Nat
 `prompt`, `resolution`, `aspect_ratio`, `duration`, `audio`, `seed`, `enable_thinking`,
 `enable_prompt_expansion` and `enable_safety_checker`. There is no negative-prompt field.
 Defaults are 1080p, adaptive aspect ratio, five seconds and audio enabled. Request 2-30 seconds per shot.
+Choosing a lower Wan resolution produces a lower-resolution final assembly unless the
+customer requests upscaling. A larger assembly canvas resamples pixels and adds no detail.
+Use the Topaz [upscale skill](../upscale/SKILL.md) for actual enhancement with cost approval.
+Keep the current resolution default and quality-first provider selection.
 Multi-shot direction belongs in the prompt, not an invented multi_shot argument.
 Poll `Fal___get_video_task` with the saved job ID and `download=true`.
 Seedance 2.5 uses `Seedance___text_to_video` through fal's US host by default.

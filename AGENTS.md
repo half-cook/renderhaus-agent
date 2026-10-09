@@ -39,3 +39,10 @@ precedence, including requests to stop, skip a test, or avoid a particular actio
 
 Satya chose `claude-sonnet-5-5` after Haiku 5.5 as the default Deep Agents
 manager/planner and every subagent.
+
+When summarizing an assembled video, state the successful render's delivered width and
+height and source_resolution. Include its resolution warnings. A native 1280x720 export
+is 720p. A 1920x1080 canvas resampled from it must say "upscaled from 1280x720; no added
+detail". Mention the Topaz `upscale` skill for actual enhancement, with existing approval.
+Unknown source dimensions remain unknown. Choosing a lower Wan resolution produces a
+lower-resolution deliverable unless an upscale is requested; keep routing and cost defaults.

@@ -12,13 +12,14 @@ import math
 import mimetypes
 import os
 import re
+import subprocess
 import tempfile
 import time
 import uuid
 from dataclasses import dataclass
 from fractions import Fraction
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any, Literal, TypedDict
 from urllib.parse import unquote, urlparse
 
 import boto3
@@ -37,6 +38,86 @@ OUTPUT_DIR = ROOT / ".renderhaus" / "media" / "remotion"
 COMPOSITION_ID = "RenderhausTimeline"
 ASPECT_SIZES = {"16:9": (1920, 1080), "9:16": (1080, 1920), "1:1": (1080, 1080), "2.39:1": (1920, 804)}
 DEFAULT_FRAMES_PER_LAMBDA = 100
+OutputResolution = Literal["source", "720p", "1080p", "1440p", "2160p"]
+_RESOLUTION_TIERS = {"720p": 720, "1080p": 1080, "1440p": 1440, "2160p": 2160}
+_UNKNOWN_RESOLUTION_WARNING = "Source resolution metadata is unavailable for this render; upscaling is unknown."
+_UNKNOWN_DIMENSIONS_WARNING = "Video source dimensions could not be measured; the canvas may resize the source."
+_UPSCALE_WARNING_PATTERN = (
+    r"Video upscaled from [1-9]\d*x[1-9]\d* to [1-9]\d*x[1-9]\d* "
+    r"with no added detail\. Use the Topaz upscale skill before assembly for added detail\."
+)
+
+
+@dataclass(frozen=True, slots=True)
+class _VisualMetadata:
+    fps: float | None
+    bitrate: int | None
+    size: tuple[int, int] | None
+    container_bitrate: int | None
+
+
+class _ResolutionReport(TypedDict):
+    width: int | None
+    height: int | None
+    source_resolution: str | None
+    upscaled: bool
+    warnings: list[str]
+
+
+def choose_canvas(aspect_ratio: str, source_sizes: list[tuple[int, int]],
+                  output_resolution: OutputResolution = "source") -> tuple[int, int]:
+    if aspect_ratio not in ASPECT_SIZES:
+        raise ValueError(f"aspect_ratio must be one of {', '.join(ASPECT_SIZES)}.")
+    if output_resolution not in {"source", *_RESOLUTION_TIERS}:
+        raise ValueError("output_resolution must be source, 720p, 1080p, 1440p, or 2160p.")
+    base = ASPECT_SIZES[aspect_ratio]
+    if output_resolution == "source":
+        short_edge = max((min(size) for size in source_sizes), default=min(base))
+        scale = min(Fraction(1), Fraction(short_edge, min(base)))
+    else:
+        scale = Fraction(_RESOLUTION_TIERS[output_resolution], 1080)
+    return tuple(max(2, dimension * scale.numerator // scale.denominator // 2 * 2)
+                 for dimension in base)
+
+
+def _media_dimensions(video: dict[str, Any]) -> tuple[int, int] | None:
+    width, height = video.get("width"), video.get("height")
+    if all(isinstance(value, int) and not isinstance(value, bool) and value > 0
+           for value in (width, height)):
+        rotation = next((entry["rotation"] for entry in video.get("side_data_list", [])
+                         if isinstance(entry, dict) and "rotation" in entry),
+                        (video.get("tags") or {}).get("rotate", 0))
+        try:
+            rotation = float(rotation)
+        except (TypeError, ValueError):
+            return None
+        if not math.isfinite(rotation) or not math.isclose(rotation / 90, round(rotation / 90), abs_tol=1e-6):
+            return None
+        return (height, width) if round(rotation / 90) % 2 else (width, height)
+    return None
+
+
+def _resolution_report(value: Any) -> _ResolutionReport:
+    value = value if isinstance(value, dict) else {}
+    size = _media_dimensions(value)
+    source = value.get("source_resolution")
+    if not isinstance(source, str) or not re.fullmatch(r"[1-9]\d*x[1-9]\d*", source):
+        source = None
+    upscaled = value.get("upscaled")
+    warnings = value.get("warnings")
+    warnings = [warning for warning in warnings if isinstance(warning, str)
+                and (warning in {_UNKNOWN_RESOLUTION_WARNING, _UNKNOWN_DIMENSIONS_WARNING}
+                     or re.fullmatch(_UPSCALE_WARNING_PATTERN, warning))] if isinstance(warnings, list) else []
+    if not isinstance(upscaled, bool):
+        upscaled = False
+        if _UNKNOWN_RESOLUTION_WARNING not in warnings:
+            warnings.append(_UNKNOWN_RESOLUTION_WARNING)
+    return {"width": size[0] if size else None, "height": size[1] if size else None,
+            "source_resolution": source, "upscaled": upscaled, "warnings": warnings}
+
+
+def _resolution_key(render_id: str) -> str:
+    return f"renderhaus-metadata/{render_id}/resolution.json"
 
 
 @dataclass(frozen=True, slots=True)
@@ -172,12 +253,14 @@ def _prepare_input_props(
 
 
 def _visual_metadata(clip: dict[str, Any], *, measure_remote: bool = False,
-                     measure_local: bool = True) -> tuple[float | None, int | None]:
+                     measure_local: bool = True) -> _VisualMetadata:
     source_fps = clip.get("source_fps")
     source_bitrate = clip.get("source_bitrate")
     source = str(clip.get("url") or clip.get("output_path") or "")
     probe = None
-    if urlparse(source).scheme and measure_remote and (source_fps is None or source_bitrate is None):
+    size = None
+    container_bitrate = None
+    if urlparse(source).scheme and measure_remote:
         from providers.remotion.local import _probe, _source
 
         _, _, bucket_hosts = _nle_storage()
@@ -186,13 +269,14 @@ def _visual_metadata(clip: dict[str, Any], *, measure_remote: bool = False,
         if source_host == "fal.media" or source_host.endswith(".fal.media"):
             hosts.add(source_host)
         hosts.update(set(os.getenv("REMOTION_LOCAL_MEDIA_HOSTS", "").split(",")) - {""})
-        with tempfile.TemporaryDirectory(prefix="renderhaus-probe-") as temporary:
-            path = _source(source, directory=Path(temporary), index=1, media_roots=_allowed_local_roots(),
-                           source_root=ROOT, allowed_hosts=hosts, deadline_seconds=30)
-            try:
-                probe = _probe(path)
-            except UnsupportedContainer:
-                pass
+        if source_host in hosts or source_fps is None or source_bitrate is None:
+            with tempfile.TemporaryDirectory(prefix="renderhaus-probe-") as temporary:
+                path = _source(source, directory=Path(temporary), index=1, media_roots=_allowed_local_roots(),
+                               source_root=ROOT, allowed_hosts=hosts, deadline_seconds=30)
+                try:
+                    probe = _probe(path)
+                except UnsupportedContainer:
+                    pass
     if not urlparse(source).scheme and measure_local:
         path = Path(source).expanduser()
         path = (path if path.is_absolute() else ROOT / path).resolve()
@@ -207,10 +291,12 @@ def _visual_metadata(clip: dict[str, Any], *, measure_remote: bool = False,
         video = next((s for s in probe["streams"] if s.get("codec_type") == "video"), None)
         if video is None:
             raise ValueError("A video visual must contain a video stream.")
+        size = _media_dimensions(video)
         rate = video.get("avg_frame_rate") or video.get("r_frame_rate")
         if rate and rate != "0/0":
             source_fps = float(Fraction(rate))
         source_bitrate = video.get("bit_rate") or probe.get("format", {}).get("bit_rate") or source_bitrate
+        container_bitrate = int(probe.get("format", {}).get("bit_rate") or 0) or None
     if source_fps is not None:
         source_fps = float(source_fps)
         if not math.isfinite(source_fps) or not 0 < source_fps <= 240:
@@ -219,7 +305,7 @@ def _visual_metadata(clip: dict[str, Any], *, measure_remote: bool = False,
         source_bitrate = int(source_bitrate)
         if source_bitrate <= 0:
             raise ValueError("Measured source_bitrate must be a positive bitrate in bits per second.")
-    return source_fps, source_bitrate
+    return _VisualMetadata(source_fps, source_bitrate, size, container_bitrate)
 
 
 def build_timeline_props(
@@ -231,14 +317,14 @@ def build_timeline_props(
     fps: float | None = None,
     subtitles: list[dict[str, Any]] | None = None,
     video_bitrate: int | None = None,
+    output_resolution: OutputResolution = "source",
     *, measure_remote: bool = False, measure_local: bool = True,
 ) -> dict[str, Any]:
     validate_remotion_timeline_arguments({
         "visuals": visuals, "audio_tracks": audio_tracks,
         "text_overlays": text_overlays, "subtitles": subtitles,
     })
-    if aspect_ratio not in ASPECT_SIZES:
-        raise ValueError(f"aspect_ratio must be one of {', '.join(ASPECT_SIZES)}.")
+    choose_canvas(aspect_ratio, [], output_resolution)
     if not visuals:
         raise ValueError("At least one visual clip is required for a Remotion render.")
     videos = sorted((clip for clip in visuals if clip.get("kind") == "video"),
@@ -246,18 +332,47 @@ def build_timeline_props(
     metadata = [_visual_metadata(clip, measure_remote=measure_remote, measure_local=measure_local)
                 for clip in videos]
     if fps is None:
-        if metadata and metadata[0][0] is None:
+        if metadata and metadata[0].fps is None:
             raise ValueError("Download the primary video for ffprobe or supply measured source_fps; "
                              "set fps only when the user requests an explicit timeline rate.")
-        fps = metadata[0][0] if metadata else 30
+        fps = metadata[0].fps if metadata else 30
     if isinstance(fps, bool) or not math.isfinite(fps) or not 0 < fps <= 240:
         raise ValueError("Timeline fps must be greater than 0 and at most 240.")
     if video_bitrate is not None and (isinstance(video_bitrate, bool)
                                      or not isinstance(video_bitrate, int) or video_bitrate <= 0):
         raise ValueError("video_bitrate must be a positive integer in bits per second.")
-    source_floor = max((rate for _, rate in metadata if rate is not None), default=0)
-    video_bitrate = max(video_bitrate or 0, math.ceil(source_floor * 1.25)) or None
-    width, height = ASPECT_SIZES[aspect_ratio]
+    sizes = [measured.size for measured in metadata if measured.size is not None]
+    width, height = choose_canvas(aspect_ratio, sizes, output_resolution)
+    source_floor = max((measured.bitrate for measured in metadata if measured.bitrate is not None), default=0)
+    base_width, base_height = ASPECT_SIZES[aspect_ratio]
+    automatic_bitrate = math.ceil(source_floor * 1.25)
+    if width * height < base_width * base_height:
+        source_cap = max((max(measured.bitrate or 0, measured.container_bitrate or 0)
+                          for measured in metadata), default=0)
+        automatic_bitrate = min(automatic_bitrate, source_cap)
+    video_bitrate = max(video_bitrate or 0, automatic_bitrate) or None
+    largest_source = max(sizes, key=lambda size: (min(size), size[0] * size[1]), default=None)
+    resolution: _ResolutionReport = {
+        "width": width, "height": height,
+        "source_resolution": f"{largest_source[0]}x{largest_source[1]}" if largest_source else None,
+        "upscaled": False, "warnings": [],
+    }
+    for clip, measured in zip(videos, metadata, strict=True):
+        if measured.size is None:
+            warning = _UNKNOWN_DIMENSIONS_WARNING
+        else:
+            source_width, source_height = measured.size
+            ratios = (width / source_width, height / source_height)
+            fit_scale = min(ratios) if clip.get("fit") == "contain" else max(ratios)
+            clip_scale = max(0.1, min(float(clip.get("scale", 1)), 4.0))
+            motion_scale = 1.08 if clip.get("motion") in {"zoom_in", "zoom_out", "pan_left", "pan_right"} else 1
+            if fit_scale * clip_scale * motion_scale <= 1 + 1e-9:
+                continue
+            resolution["upscaled"] = True
+            warning = (f"Video upscaled from {source_width}x{source_height} to {width}x{height} "
+                       "with no added detail. Use the Topaz upscale skill before assembly for added detail.")
+        if warning not in resolution["warnings"]:
+            resolution["warnings"].append(warning)
     assets: list[dict[str, Any]] = []
     visual_tracks: dict[int, list[dict[str, Any]]] = {}
     track_ends: dict[int, float] = {}
@@ -436,6 +551,7 @@ def build_timeline_props(
             "durationInFrames": max(1, math.ceil(visual_duration * fps - 1e-9)),
             "videoBitrate": video_bitrate,
             "crf": None if video_bitrate else 18,
+            "resolution": resolution,
         },
     }
 
@@ -479,6 +595,14 @@ def _start_lambda_render(
     )
     if response is None:
         raise RuntimeError("Remotion Lambda did not return a render identifier.")
+    resolution = _resolution_report(prepared["renderConfig"].get("resolution", prepared["renderConfig"]))
+    try:
+        session.client("s3").put_object(
+            Bucket=response.bucket_name, Key=_resolution_key(response.render_id),
+            Body=json.dumps(resolution).encode(), ContentType="application/json",
+        )
+    except Exception:
+        resolution["warnings"].append("Resolution metadata could not be stored; later polls may report unknown source resolution.")
     return {
         "status": "queued",
         "render_id": response.render_id,
@@ -486,6 +610,7 @@ def _start_lambda_render(
         "output_key": f"renders/{response.render_id}/{output_key}",
         "filename": safe_name,
         "progress": 0.0,
+        **resolution,
     }
 
 
@@ -499,8 +624,10 @@ def render_timeline(
     output_filename: str = "renderhaus-video.mp4",
     subtitles: list[dict[str, Any]] | None = None,
     video_bitrate: int | None = None,
+    output_resolution: OutputResolution = "source",
 ) -> dict[str, Any]:
     """Compose generated image, video, and audio clips into one final MP4, then poll get_render_progress."""
+    choose_canvas(str(aspect_ratio), [], output_resolution)
     if dry_run():
         return {
             "status": "dry_run",
@@ -520,6 +647,7 @@ def render_timeline(
         fps=fps,
         subtitles=subtitles,
         video_bitrate=video_bitrate,
+        output_resolution=output_resolution,
         measure_remote=True,
     )
     return _start_render(props, output_filename=output_filename)
@@ -561,6 +689,15 @@ def _progress_payload(
     settings = load_remotion_settings()
     session = boto3.Session(region_name=settings.region)
     s3 = session.client("s3")
+    try:
+        receipt = s3.get_object(Bucket=bucket_name, Key=_resolution_key(render_id))
+        resolution = _resolution_report(json.loads(receipt["Body"].read()))
+    except Exception:
+        resolution = _resolution_report(None)
+    metadata = (getattr(progress, "renderMetadata", None) or {}) if progress else {}
+    completed_dimensions = _media_dimensions(metadata.get("dimensions") or {}) if isinstance(metadata, dict) else None
+    if completed_dimensions:
+        resolution.update(width=completed_dimensions[0], height=completed_dimensions[1])
     done = completed_from_s3 or bool(progress and progress.done)
     failed = bool(progress and progress.fatalErrorEncountered)
     overall = (
@@ -576,6 +713,7 @@ def _progress_payload(
             "bucket_name": bucket_name,
             "progress": overall,
             "error": "Remotion render failed: " + "; ".join(messages),
+            **resolution,
         }
     if not done:
         return {
@@ -584,6 +722,7 @@ def _progress_payload(
             "bucket_name": bucket_name,
             "output_key": output_key,
             "progress": overall,
+            **resolution,
         }
     out_key = output_key if completed_from_s3 else str((progress.outKey if progress else "") or "")
     if not out_key and progress and progress.outputFile:
@@ -603,8 +742,12 @@ def _progress_payload(
         "url": url,
         "filename": Path(out_key).name,
         "progress": 1.0,
+        **resolution,
     }
     should_download = download and not _on_lambda()
+    if not completed_dimensions and not should_download:
+        result["width"] = result["height"] = None
+        result["warnings"].append("Rendered output dimensions could not be measured.")
     if should_download:
         OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
         destination = OUTPUT_DIR / f"{render_id}-{Path(out_key).name}"
@@ -612,6 +755,20 @@ def _progress_payload(
         if not destination.is_file() or destination.stat().st_size <= 0:
             raise RuntimeError("The rendered MP4 could not be downloaded from S3.")
         result["output_path"] = str(destination)
+        from providers.remotion.local import _probe
+
+        try:
+            video = next((stream for stream in _probe(destination)["streams"]
+                          if stream.get("codec_type") == "video"), {})
+            dimensions = _media_dimensions(video)
+        except (OSError, ValueError, subprocess.SubprocessError):
+            dimensions = None
+        if dimensions:
+            result.update(width=dimensions[0], height=dimensions[1])
+        else:
+            result["width"] = completed_dimensions[0] if completed_dimensions else None
+            result["height"] = completed_dimensions[1] if completed_dimensions else None
+            result["warnings"].append("Rendered output dimensions could not be measured.")
     return result
 
 

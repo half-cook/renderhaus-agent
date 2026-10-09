@@ -22,12 +22,61 @@ Trusted HTTPS video is measured automatically before submitting a render:
 `fal.media` and its subdomains, configured S3 bucket hosts, and existing
 `REMOTION_LOCAL_MEDIA_HOSTS` overrides. Downloads reject redirects/private DNS,
 cap each source at 128 MiB and use a 30-second measurement deadline.
-Prior measured `visuals[].source_fps` and `visuals[].source_bitrate` can avoid the
-download. Unavailable source metadata blocks submission rather than guessing fps.
+Prior measured `visuals[].source_fps` and `visuals[].source_bitrate` preserve frame-rate
+and bitrate information. Trusted video hosts still need measurement for source dimensions.
+Unavailable frame-rate metadata blocks submission rather than guessing fps.
+
+`output_resolution` is optional and defaults to `source`. The shared timeline canvas uses
+the largest measured video short edge, capped at the existing aspect canvas. Dimensions
+round down to even pixels. A 1280x720 video at 16:9 delivers 1280x720, a 1920x1080 source
+delivers 1920x1080, and mixed sources use the largest source up to that cap. A 720x1280
+portrait source delivers 720x1280 at 9:16. Images do not reduce a video canvas; image-only
+timelines keep the existing aspect canvas.
+
+An explicit `720p`, `1080p`, `1440p`, or `2160p` request scales the existing aspect table
+by the requested tier divided by 1080. For 16:9, the resulting sizes are 1280x720,
+1920x1080, 2560x1440, and 3840x2160. Portrait swaps the edges, square uses equal edges,
+and cinema retains its existing 1920x804 canvas at 1080p. Explicit requests can exceed
+the default canvas or downscale a source.
+The Python argument enforces these choices before submission. The existing Gateway Lambda
+schema uses a string with the choices in its description, matching its supported fields.
+
+The ffprobe path and bounded stdlib MP4/MOV probe supply source width and height.
+Measurements account for quarter-turn display rotation, including portrait phone footage
+encoded with landscape dimensions. Unrecognized display transforms leave dimensions unknown.
+If no video dimensions can be measured, the renderer keeps the existing aspect canvas
+and returns a warning. Mixed timelines use measured videos and warn about unmeasured ones.
+It does not infer pixels from provider labels. Malformed media,
+unsafe downloads, and missing frame-rate measurements retain their existing failures.
+
+Render results report `width`, `height`, the largest measured `source_resolution` as
+`WIDTHxHEIGHT` or null, `upscaled`, and `warnings`. Queued dimensions describe the plan;
+successful dimensions come from completed render metadata or output probing. Missing final
+dimensions remain null with a warning. `upscaled=true` means at least one
+measured video needs enlargement under its fit, requested scale, or motion preset. This
+includes smaller clips in a mixed timeline. Unknown dimensions cannot establish that no upscale occurred.
+Explicit 1080p assembly from a 720p source warns "upscaled from 1280x720; no added detail"
+and points to the Topaz `upscale` skill for actual enhancement with its existing approval.
+Both local scale filters use Lanczos for downscaling and enlargement. Lambda consumes
+the same canvas dimensions through the composition's renderConfig.
+
+Local jobs persist the resolution report with their existing job metadata. Lambda keeps
+a private S3 receipt in its output bucket so polling retains the source and warning across
+processes. Receipts contain no media URLs or credentials. Failed receipt persistence retains
+the accepted render handle and reports the limitation. Legacy or missing receipts leave
+source resolution unknown with a warning. Local completion measures the final MP4;
+Lambda uses its completed render metadata and measures downloaded output where available.
+If output probing fails, keep the completed download with a warning. Use completed Lambda
+dimensions when available; never treat a planned canvas as measured output.
 
 `video_bitrate` is an optional positive integer target in bits per second. Both
-backends use at least 1.25 times the highest measured source-video bitrate to
-allow for assembly overhead. With ffprobe, containers such as Matroska may omit stream
+backends retain the existing 1.25 times highest measured source-video bitrate floor
+when the canvas remains full size. When the canvas shrinks below the aspect default, the
+automatic bitrate target caps at the highest measured source stream/container bitrate. This avoids adding
+the old 25 percent allowance to a smaller native canvas. An explicit target can raise that
+rate and retains the existing source-quality floor. These are encoder targets, not a hard
+bound on every encoded frame.
+With ffprobe, containers such as Matroska may omit stream
 bitrate; the measured container bitrate supplies a conservative fallback.
 Without a measured bitrate or explicit target,
 they use CRF18. Lambda receives the same frame rate and quality settings, with
@@ -93,7 +142,7 @@ and delayed voiceover. They support the application check; browser E2E and the
 operator's live lighthouse rerun are still required. Comet is unavailable in
 this workspace, so browser validation remains blocked.
 
-No new model, training policy, secret or paid endpoint is introduced.
+No new model, training policy, secret, dry-run flag, dependency, or paid endpoint is introduced.
 Local rendering uses a system ffmpeg binary. Metadata probing uses ffprobe or
 original Renderhaus code using the Python standard library. The Gateway Lambda
 package contains no PyAV package or bundled FFmpeg libraries.
@@ -108,8 +157,14 @@ FFmpeg shared libraries. [DROP_PYAV.md](DROP_PYAV.md) records package measuremen
 No deployment was performed here.
 
 Official references read 2026-10-09: [FFmpeg filters](https://ffmpeg.org/ffmpeg-filters.html),
+[FFmpeg scaler](https://ffmpeg.org/ffmpeg-scaler.html),
 [FFmpeg encoding options](https://ffmpeg.org/ffmpeg-codecs.html),
 [Remotion Lambda render options](https://www.remotion.dev/docs/lambda/rendermediaonlambda),
+[Remotion completed render dimensions](https://www.remotion.dev/docs/lambda/getrenderprogress),
+[Gateway Lambda schema fields](https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/gateway-add-target-lambda.html),
+[QuickTime visual sample-entry dimensions](https://developer.apple.com/documentation/quicktime-file-format/video_sample_description),
+[QuickTime track display matrix](https://developer.apple.com/documentation/quicktime-file-format/track_header_atom),
+[FFmpeg display rotation](https://ffmpeg.org/ffmpeg.html),
 [FFmpeg licence](https://ffmpeg.org/legal.html), and
 [Remotion licence](https://www.remotion.dev/docs/license).
 Additional sources read 2026-10-09:
