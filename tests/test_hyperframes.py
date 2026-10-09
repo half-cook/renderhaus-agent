@@ -202,18 +202,20 @@ class HyperFramesGraphTests(unittest.IsolatedAsyncioTestCase):
     def render(self, dispatch="call_editor_tool"):
         return call(dispatch, {"tool_name": TOOL_NAME, "arguments": COMPOSITION}, "preview")
 
-    async def test_skill_read_discloses_editor_and_audio_without_media_role(self):
+    async def test_skill_read_preserves_dispatch_tools_and_previews_with_editor(self):
         from agent.hyperframes import HyperFramesServer
 
+        bound_tools = set()
+
         def before(messages, tools):
-            self.assertNotIn("call_editor_tool", tools)
-            self.assertNotIn("call_audio_tool", tools)
+            self.assertTrue({"call_editor_tool", "call_audio_tool", "call_media_tool"}.issubset(tools))
+            self.assertNotIn("Seedream___text_to_image", tools)
+            bound_tools.update(tools)
             return self.read_skill()
 
         def after(messages, tools):
-            self.assertIn("call_editor_tool", tools)
-            self.assertIn("call_audio_tool", tools)
-            self.assertNotIn("call_media_tool", tools)
+            self.assertEqual(tools, bound_tools)
+            self.assertIn("Preview an HTML composition", messages[-1].text)
             return self.render()
 
         request = self.request(autonomous=True)

@@ -28,7 +28,7 @@ class DeepAgentContractTests(unittest.IsolatedAsyncioTestCase):
         self.job = self.repo.create_execution(
             workspace_id="user:local", project_id="project", user_id="local",
             prompt="Make a product still with Seedream", conversation_id=self.conversation,
-            request={"prompt": "Make a product still", "conversation_id": self.conversation,
+            request={"prompt": "Make a product still with Seedream", "conversation_id": self.conversation,
                      "workspace_id": "user:local", "project_id": "project", "user_id": "local"},
         )["job_id"]
         self.gateway = Gateway()
@@ -49,7 +49,7 @@ class DeepAgentContractTests(unittest.IsolatedAsyncioTestCase):
 
     async def run_job(self):
         await studio._run_studio_agent_job(
-            self.job, "Make a product still", [], self.conversation,
+            self.job, "Make a product still with Seedream", [], self.conversation,
             workspace_id="user:local", project_id="project", user_id="local",
         )
 
@@ -90,7 +90,7 @@ class DeepAgentContractTests(unittest.IsolatedAsyncioTestCase):
             final(),
         ]
         chunks = [chunk async for chunk in agent_invocation({
-            "prompt": "Make a product still", "job_id": self.job,
+            "prompt": "Make a product still with Seedream", "job_id": self.job,
             "workspace_id": "user:local", "project_id": "project", "conversation_id": self.conversation,
         }, SimpleNamespace(session_id="runtime-session"))]
         self.assertTrue(any(c["kind"] == "progress" for c in chunks))
@@ -106,7 +106,7 @@ class DeepAgentContractTests(unittest.IsolatedAsyncioTestCase):
     async def test_agentcore_approval_payload_is_portable(self):
         self.steps = [read_skill(), image()]
         chunks = [chunk async for chunk in agent_invocation({
-            "prompt": "Make a product still", "job_id": self.job,
+            "prompt": "Make a product still with Seedream", "job_id": self.job,
             "workspace_id": "user:local", "project_id": "project", "conversation_id": self.conversation,
         }, SimpleNamespace(session_id="runtime-session"))]
         payload = chunks[-1]["payload"]
@@ -123,7 +123,7 @@ class DeepAgentContractTests(unittest.IsolatedAsyncioTestCase):
         self.gateway.call_tool.return_value = {"status": "dry_run"}
         self.steps = [read_skill(), image(), failure]
         chunks = [chunk async for chunk in agent_invocation({
-            "prompt": "Make a product still", "autonomous": True, "job_id": self.job,
+            "prompt": "Make a product still with Seedream", "autonomous": True, "job_id": self.job,
             "workspace_id": "user:local", "project_id": "project", "conversation_id": self.conversation,
         }, SimpleNamespace(session_id="runtime-session"))]
         payload = chunks[-1]["payload"]
@@ -135,7 +135,7 @@ class DeepAgentContractTests(unittest.IsolatedAsyncioTestCase):
         self.gateway.call_tool.return_value = {"status": "dry_run"}
         self.steps = [read_skill(), image(), final()]
         chunks = [chunk async for chunk in agent_invocation({
-            "prompt": "Make a product still", "autonomous": True, "job_id": self.job,
+            "prompt": "Make a product still with Seedream", "autonomous": True, "job_id": self.job,
             "workspace_id": "user:local", "project_id": "project", "conversation_id": self.conversation,
         }, SimpleNamespace(session_id="runtime-session"))]
 
@@ -156,7 +156,7 @@ class DeepAgentContractTests(unittest.IsolatedAsyncioTestCase):
             "server.studio.httpx.AsyncClient", side_effect=lambda **kw: client(transport=httpx.MockTransport(route), **kw),
         ):
             await studio._run_studio_agent_job(
-                self.job, "Make a product still", [], self.conversation,
+                self.job, "Make a product still with Seedream", [], self.conversation,
                 workspace_id="user:local", project_id="project", user_id="local", autonomous=True,
             )
         execution = self.repo.get_execution("user:local", self.job)
@@ -171,7 +171,7 @@ class DeepAgentContractTests(unittest.IsolatedAsyncioTestCase):
         self.gateway.call_tool.return_value = {"status": "succeeded", "image_url": "data:image/png;base64," + png}
         self.steps = [read_skill(), image(), final()]
         chunks = [chunk async for chunk in agent_invocation({
-            "prompt": "Make a product still", "autonomous": True, "job_id": self.job,
+            "prompt": "Make a product still with Seedream", "autonomous": True, "job_id": self.job,
             "workspace_id": "user:local", "project_id": "project", "conversation_id": self.conversation,
         }, SimpleNamespace(session_id="runtime-session"))]
 
@@ -190,7 +190,7 @@ class DeepAgentContractTests(unittest.IsolatedAsyncioTestCase):
             "server.studio.httpx.AsyncClient", side_effect=lambda **kw: client(transport=httpx.MockTransport(route), **kw),
         ), patch.object(self.repo, "register_source", wraps=self.repo.register_source) as ingest:
             await studio._run_studio_agent_job(
-                self.job, "Make a product still", [], self.conversation,
+                self.job, "Make a product still with Seedream", [], self.conversation,
                 workspace_id="user:local", project_id="project", user_id="local", autonomous=True,
             )
         execution = self.repo.get_execution("user:local", self.job)
