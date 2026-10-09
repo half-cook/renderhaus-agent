@@ -69,11 +69,8 @@ capability selection. Explicit request, exception predicate, default remains the
 selection order; paid approvals and the existing autonomous cap remain in place.
 No confidential-project routing, price tiers or cheapest-provider selection was added.
 
-The inventory remains 15 providers, 113 Gateway tools, 24 packaged skills and
-137 capability fixture rows: 133 active, four skipped. No routing row was
-activated by this branch. One skip needs HyperFrames overlays; three need
-`cutaway_record` product-demo capture. Their existing named dependency reasons
-remain. Count thresholds therefore stay unchanged.
+Current inventory and routing totals are in [Skill routing](SKILLS.md#offline-routing-verification). No routing row was activated by the model-change branch;
+its count thresholds stayed unchanged.
 
 The skipped rows are one `conversational-edit` → `hyperframes_render` case
 (`feat/hyperframes-overlays`) and three `product-demo-video` → `cutaway_record`

@@ -21,8 +21,8 @@ ElevenLabs, then final MP4 assembly. Input frames/references preserve i2v/r2v. A
 provider affects the video step rather than blocking the audio step. Assembly/export is distinct
 from an NLE ZIP handoff.
 
-No provider generation tools were added. The existing eight providers, 81 Gateway tools and
-24 skills remain. The local MCP gateway adds the standard search tool
+No provider generation tools were added by the debug branch. Current inventory and routing totals are in [Skill routing](SKILLS.md#offline-routing-verification).
+The local MCP gateway adds the standard search tool
 `x_amz_bedrock_agentcore_search(query, limit=8)` and exposes provider schemas progressively;
 `limit` is 1–20. Calls still use `Provider___verb` and the registry's typed contracts.
 An optional spend cap blocks unknown estimates and reserves concurrent calls before dispatch.

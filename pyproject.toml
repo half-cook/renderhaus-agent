@@ -52,4 +52,4 @@ license-files = ["third_party/video-use/LICENSE", "third_party/hyperframes/LICEN
 "providers.elevenlabs" = ["openapi.json"]
 "providers.remotion" = ["ad_layouts.json"]
 
-"agent.deep_agent" = ["AGENTS.md", "routing_policy.json", "continuity_qc_calibration.json", "continuity_qc_vlm_eval.json", "skills/*/SKILL.md", "skills/hyperframes/templates/*.html", "skills/hyperframes/templates/*.json", "skills/hyperframes/references/*.md"]
+"agent.deep_agent" = ["AGENTS.md", "routing_policy.json", "continuity_qc_calibration.json", "continuity_qc_vlm_eval.json", "skills/*/SKILL.md", "skills/hyperframes/templates/*.html", "skills/hyperframes/templates/*.json", "skills/hyperframes/references/*.md", "skills/knowledge-explainer/templates/*.json"]

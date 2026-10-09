@@ -1834,12 +1834,9 @@ class StudioRepository:
         same ledger row) -- the compatibility guarantee for every current
         top-up-only user.
 
-        The daily-allowance leg uses optimistic compare-and-swap rather than
-        a lock: this database is shared by two separate OS processes (the
-        FastAPI server and the AgentCore agent runtime), so only a CAS retry
-        against the stored row -- the same pattern save_canvas already uses
-        for its `revision` column -- protects the read-compute-write
-        sequence below from a concurrent charge on the same subscription.
+        Read and update both buckets in a SQLite write transaction. Its
+        reservation coordinates FastAPI and AgentCore connections across
+        processes before calculating the charge.
         """
         self.ensure_account(user_id)
         self.flush_pending_refunds(user_id)
@@ -1861,6 +1858,7 @@ class StudioRepository:
 
         for _ in range(5):
             with self._connect() as connection:
+                connection.execute("BEGIN IMMEDIATE")
                 row = connection.execute(
                     "SELECT daily_allowance_cents, daily_allowance_used_cents, daily_allowance_reset_date "
                     "FROM subscriptions WHERE user_id = ?",
@@ -1898,10 +1896,6 @@ class StudioRepository:
                     ),
                 )
                 if cursor.rowcount == 0:
-                    # Lost a race with a concurrent charge on this same
-                    # subscription (possibly from the other process) --
-                    # retry with freshly-read state rather than fail the
-                    # generation over a benign race.
                     continue
                 if wallet_portion > 0:
                     self._apply_balance_delta(connection, user_id, -wallet_portion, now)
