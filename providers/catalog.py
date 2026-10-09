@@ -101,12 +101,14 @@ PROVIDERS: tuple[ProviderSpec, ...] = (
         module_path="providers.elevenlabs.api",
         env_keys=(
             "ELEVENLABS_DRY_RUN",
+            "ELEVENLABS_TTS_MODEL",
             "AWS_S3_BUCKET",
             "PROVIDER_INPUT_BUCKET",
             "REMOTION_APP_BUCKET_NAME",
         ),
         default_env={
-            "ELEVENLABS_DRY_RUN": "false",
+            "ELEVENLABS_DRY_RUN": "true",
+            "ELEVENLABS_TTS_MODEL": "eleven_v4_turbo",
         },
     ),
     ProviderSpec(

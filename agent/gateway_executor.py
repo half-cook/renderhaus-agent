@@ -141,8 +141,10 @@ class GatewayExecutor:
         job = job_type(name)
         if not job or is_free_tool(name):
             return None
-        constraints = intent_constraints(self.studio.prompt, tier=self.studio.quality_tier,
-                                         confidential=self.studio.confidential, arguments=arguments)
+        constraints = intent_constraints(self.studio.prompt, confidential=self.studio.confidential,
+                                         arguments=arguments)
+        if job in {"motion_graphics", "nle_handoff"}:
+            constraints["provider"] = constraints["model"] = constraints["named_model"] = None
         rejected_id = self.rejected_reviews.get(job)
         rejected = self.media_jobs.get(rejected_id, {})
         retry = bool(rejected_id and (rejected.get("retry_scope") == self.run_scope or
@@ -154,28 +156,30 @@ class GatewayExecutor:
         route = select_provider(job, arguments=arguments, tool_variant=variant, retry=retry, **constraints)
         return route
 
-    def disclose_selection(self, route, event_id):
+    def dispatch_disclosure(self, name, arguments, route):
         if route:
+            return route.disclosure or route.reason
+        provider, tool = tool_parts(name)
+        model = effective_model(provider, tool, arguments) or tool
+        proposal = arguments.get("plan_summary", "") if name == "Remotion___prepare_conversational_edit" else ""
+        return f"{proposal} Provider {provider}; model {model}; default. {estimate_cost(name, arguments).description}".strip()
+
+    def disclose_selection(self, route, event_id, name=None, arguments=None):
+        if route or (name and not is_free_tool(name)):
+            message = self.dispatch_disclosure(name, arguments or {}, route)
             _progress(self.studio, event_id=f"provider-{event_id}", event_type="MODEL_UPDATE",
-                      title="Provider choice", message=route.disclosure or route.reason,
-                      status="completed")
+                      title="Provider choice", message=message, status="completed")
 
     def selection_blocker(self, name, arguments, route):
         provider, tool = tool_parts(name)
-        if self.studio.confidential and provider not in {"fal", "remotion"} and not is_free_tool(name):
-            return "Confidential projects permit Wan generation only. Reuse existing media for assembly."
-        if self.studio.confidential and provider == "fal" and not is_free_tool(name) and effective_model(
-            provider, tool, arguments
-        ) not in POLICY["ladder"]["wan_models"]:
-            return "Confidential projects permit Wan generation only. Vidu Q4 is excluded."
         if route is None:
             return None
         if route.status != "ready":
             return route.reason
         if name != route.tool or effective_model(provider, tool, arguments) != route.model:
-            return f"Provider ladder selected {route.tool} ({route.model}). Discover its schema and use that route. {route.reason}"
-        row = next(row for row in POLICY["capabilities"]
-                   if row["model"] == route.model and name in row["tools"].values())
+            return f"Capability map selected {route.tool} ({route.model}). Discover its schema and use that route. {route.reason}"
+        row = next((row for row in POLICY["capabilities"]
+                    if row["model"] == route.model and name in row["tools"].values()), {})
         audio_field = row.get("native_audio_field", "generate_audio")
         for field, feature in [(audio_field, "native_audio"), ("multi_shot", "multi_shot")]:
             if field is None:
@@ -226,7 +230,7 @@ class GatewayExecutor:
             job_type=job["job_type"], provider_job_id=job.get("provider_job_id"),
             outcome=outcome, stage="review", asset=job["asset"],
             workspace_id=self.studio.workspace_id, project_id=self.studio.project_id,
-            execution_id=self.studio.job_id,
+            execution_id=self.studio.job_id, ab_arm=job.get("ab_arm"),
         )
         if job.get("review") == outcome:
             return {"status": "recorded", "outcome": row}
@@ -294,8 +298,8 @@ class GatewayExecutor:
             }
         blocker = policy_blocker(name, arguments)
         route = self.media_selection(name, arguments)
-        self.disclose_selection(route, call_id)
-        blocker = blocker or self.selection_blocker(name, arguments, route)
+        self.disclose_selection(route, call_id, name, arguments)
+        blocker = self.selection_blocker(name, arguments, route) or blocker
         if blocker and rejection is None:
             return {"status": "not_run", "reason": blocker, "route": route.public() if route else None}
         if tool_needs_approval(name, studio.autonomous) and not approved and rejection is None:

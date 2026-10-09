@@ -18,7 +18,7 @@ COPY server ./server
 COPY third_party ./third_party
 
 RUN pip install --no-cache-dir -e . \
-    && python -c "import importlib.metadata; from agent.deep_agent.runner import SKILLS_ROOT; assert importlib.metadata.version('deepagents') == '0.7.23'; assert len(list(SKILLS_ROOT.glob('*/SKILL.md'))) == 17"
+    && python -c "import importlib.metadata; from agent.deep_agent.runner import SKILLS_ROOT; assert importlib.metadata.version('deepagents') == '0.7.23'; assert len(list(SKILLS_ROOT.glob('*/SKILL.md'))) == 24"
 
 EXPOSE 8080
 

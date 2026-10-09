@@ -1,14 +1,13 @@
-# lipsync draft
+# lipsync provider reference
 
-Status: provider pending
+Status: provider pending (feat/lipsync-sync3 and feat/provider-heygen-avatar-v).
 
-Unlocking provider or integration: Hedra Character-3, fal LivePortrait, or fal InfiniteTalk adapter.
+Canonical routing aliases are `sync3_lipsync, heygen_avatar_v`. They are not Gateway endpoints.
 
-Seed aliases: `hedra_character3, liveportrait_lipsync, infinitetalk_lipsync`. These aliases are not live dispatch tools.
+sync-3 is the existing-footage lip-sync default. HeyGen Avatar V is the over-30-second presenter/digital-twin exception. LivePortrait, Hedra and InfiniteTalk are retired. Speech alone cannot animate a face. Non-commercial InsightFace weights remain blocked.
 
-ElevenLabs and conditional Fish Audio can produce narration, but no built provider transfers that audio into avatar lip motion. Do not dispatch speech alone as a completed lip-sync. LivePortrait would require replacing or separately licensing non-commercial InsightFace model dependencies.
-
-Before activation, add the Gateway schema, policy gates, and offline routing cases.
-Use only `server/billing_rates.py` for prices. Unconfirmed prices remain unknown.
-Require existing spending authorization and shared approval policy for paid work.
-Verify the completed artifact and real Studio flow before claiming live support.
+The relevant installed skill explains default/exception selection and pending behavior.
+Read [capability map](../CAPABILITY_MAP.md). Use server billing estimates only; unverified
+prices remain unknown. Every paid video pauses with an estimate even in autonomous runs.
+No adapter is added by the routing branch. Future activation requires verified commercial
+terms, US-host availability, native typed contract, approval, polling and real artifact validation.

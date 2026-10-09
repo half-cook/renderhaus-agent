@@ -4,13 +4,14 @@ description: Export existing Renderhaus media as OTIO, FCPXML, EDL, and a media 
 metadata:
   include_tools: call_editor_tool
   gateway_tools: Remotion___export_nle_timeline
+  routing_tools: Remotion___export_nle_timeline
 ---
 
 # Resolve handoff
 
 Search Gateway for `Remotion___export_nle_timeline` and read its input schema.
-The seed aliases `otio_export`, `fcpxml_export`, `edl_export`, and `media_package` all map
-to this one tool through `call_editor_tool`. One invocation creates the complete handoff.
+The canonical routing ID is `Remotion___export_nle_timeline`, dispatched through `call_editor_tool`.
+Previous export placeholders are superseded by that single exporter. One invocation creates the complete handoff.
 Do not submit a separate export for each format. The contract is documented in
 `docs/NLE_EXPORT.md`; it is a file-based export and requires no Resolve remote connection.
 
@@ -36,9 +37,9 @@ the cloud agent to control Resolve. Transfer generated clips onto new destinatio
 when finishing a graded timeline. Premiere compatibility and real Resolve round trips
 remain unverified. AAF is unimplemented and untested.
 
-Live Resolve control, transcript rough cuts, automatic silence cuts, automatic subtitles,
-Resolve-to-Renderhaus re-import, and modifications inside an existing graded timeline are
-pending integration drafts. Local scripting generally needs Resolve Studio on the editor's
+Transcript rough cuts, silence cuts and captions route through conversational-edit before this
+export. Live Resolve control, Resolve-to-Renderhaus re-import and modifications inside an existing
+graded timeline remain pending integrations. Re-import stays blocked pending feat/nle-import-fcpxml. Local scripting generally needs Resolve Studio on the editor's
 machine. The built export tool does not establish those capabilities.
 
 Report progress before provider work. Respect DRY_RUN. Never change it to obtain an artifact.

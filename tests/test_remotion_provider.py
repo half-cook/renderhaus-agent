@@ -13,10 +13,10 @@ from providers.remotion.api import (
 
 
 class RemotionProviderTests(unittest.TestCase):
-    def test_live_rendering_is_the_default(self) -> None:
+    def test_dry_run_is_the_default(self) -> None:
         with patch.dict(os.environ):
             os.environ.pop("REMOTION_DRY_RUN", None)
-            self.assertFalse(dry_run())
+            self.assertTrue(dry_run())
 
     def test_build_timeline_props_maps_clips_to_document(self) -> None:
         props = build_timeline_props(

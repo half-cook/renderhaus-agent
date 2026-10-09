@@ -1,14 +1,10 @@
-# veo-t2v draft
+# veo-t2v retired reference
 
-Status: provider pending
+Status: retired.
 
-Unlocking provider or integration: Google Veo Gemini or Vertex provider.
+Former aliases `veo_t2v, veo_i2v, veo_extend` never route to this provider. Not selected by the quality-first capability map. Retired aliases never dispatch.
 
-Seed aliases: `veo_t2v, veo_i2v, veo_extend`. These aliases are not live dispatch tools.
+The replacement is Wan 3.0 generation/edit/extend. Use the capability map and disclose the pending
+provider or declared interim; do not claim that a replacement fulfills a named retired-provider request.
 
-Text and image generation with native audio, scene extension, and first or last frame controls require a built Gateway adapter. Premium video must use the shared estimate and approval policy, including autonomous runs. Veo outputs are not continuity training inputs.
-
-Before activation, add the Gateway schema, policy gates, and offline routing cases.
-Use only `server/billing_rates.py` for prices. Unconfirmed prices remain unknown.
-Require existing spending authorization and shared approval policy for paid work.
-Verify the completed artifact and real Studio flow before claiming live support.
+See [capability map](../CAPABILITY_MAP.md). This file is historical guidance, not an active skill.

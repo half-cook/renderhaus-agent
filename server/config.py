@@ -28,8 +28,9 @@ DEFAULT_ENV = {
     "FAL_DRY_RUN": "true",
     "FISH_AUDIO_DRY_RUN": "true",
     "FISH_AUDIO_MODEL": "s2.1-pro-free",
-    "ELEVENLABS_DRY_RUN": "false",
-    "REMOTION_DRY_RUN": "false",
+    "ELEVENLABS_DRY_RUN": "true",
+    "ELEVENLABS_TTS_MODEL": "eleven_v4_turbo",
+    "REMOTION_DRY_RUN": "true",
     "TIME_OUT_SECONDS": "300",
     "RENDERHAUS_MEDIA_DIR": ".renderhaus/media",
 }

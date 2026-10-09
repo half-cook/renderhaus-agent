@@ -1,14 +1,16 @@
 # Runway skill guidance draft
 
-Status: provider built. Guidance is incorporated in the live t2v, i2v, edit-v2v, and product-images skills.
-The live skills and `agent/deep_agent/routing_policy.json` define current routing.
+Status: provider built. Explicit-request guidance is incorporated in the installed named-provider skill.
+The named-provider skill and `agent/deep_agent/routing_policy.json` define current routing.
+This provider is explicit-only outside its existing training path or declared pending-default interim.
 
 This provider reference informs the installed intent skills. Those skills own live routing.
 
 ## Choose Runway for the requested media operation
 
-Route to Runway when the user requests Runway, Gen-4.5, Gen-4 Image, or Aleph, or when
-an existing clip needs a generative visual edit. Use Aleph to change the scene,
+Route to Runway generation/edit/image tools only when the user requests Runway, Gen-4.5,
+Gen-4 Image or Aleph. A generic edit request follows Wan 3.0 and its declared interim.
+Runway Act-Two is a separate pending performance-transfer default. Use Aleph to change the scene,
 objects, appearance, or lighting in a source clip with a text instruction.
 Use the ordinary composition renderer for cuts, titles, audio placement, and assembly.
 

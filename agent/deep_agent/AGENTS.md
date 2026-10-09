@@ -11,8 +11,10 @@ URLs, successful artifacts, or approvals. Poll saved jobs before proposing anoth
 
 Preview inexpensive stills before video. Respect configured DRY_RUN flags. A dry-run result is
 an input preview, not produced media. Never change provider configuration or request secret
-values. Autonomous mode authorizes standard media calls. Premium video step-ups still require
-approval under routing_policy.json, as do administrative ElevenLabs calls. Show the host's
+values. Autonomous mode authorizes paid non-video calls. All paid video still requires
+approval under routing_policy.json when premium_video_approval is enabled, as do administrative
+ElevenLabs calls. Follow capability defaults and named exceptions after explicit requests.
+Every project follows the same capability map. Show the host's
 cost estimate, including unknown quotes. Honor any per-run autonomous spending cap.
 Only approved Apache Wan assets may enter continuity training. A rejected action must not
 be retried unless the customer asks.
@@ -22,3 +24,5 @@ an MP4. Report partial progress and saved job IDs if a provider fails or times o
 Remotion is the default renderer. Explicit HyperFrames requests may preview compositions
 when enabled. A HyperFrames preview is an incomplete export; never replace it with an
 unrequested Remotion render or a hosted HeyGen API call.
+
+The project confidential field is stored metadata and does not change routing or approvals.

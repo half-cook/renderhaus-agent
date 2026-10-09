@@ -47,40 +47,42 @@ installed MCP 2.3.0 has no such module. The backend therefore builds LangChain t
 existing MCP client rather than downgrading MCP or bypassing Studio policy. Adapters can replace
 this conversion when they support the project's MCP version.
 
-## Provider ladder
+## Capability routing
 
-The config capability table filters required features before quality tier and cost. Finished
-shots default to Standard, including Vidu Q4 where capabilities and price select it. Draft previews and rejected-shot retries use Wan; confidential
-projects stay Wan. The shared executor discloses the provider/model and estimated cost in
-chat, retains existing approval/spend rules, and logs provider outcomes locally with Wan-only
-training eligibility. See [capabilities, tiers, project policy and outcomes](SKILLS.md#provider-capability-table-and-ladder).
+The quality-first capability map selects an explicit requested provider/model, then a named
+exception, then the capability default. Pending defaults use only declared interims.
+Cost estimates support disclosure and approvals, never tier or price ordering. Stored
+`confidential` and `quality_tier` project fields do not affect selection or approvals.
+The shared executor enforces the same choice on both backends, including approved resumes.
+
+Demoted generation/edit/image providers remain built and explicit-only through named-provider.
+Vidu's archived skill is removed while its Fal tools remain. All paid video pauses with an
+estimate even during autonomous runs when the global video-approval switch is enabled.
+Only the existing legacy Wan provenance/training retry path retains its special behavior.
+See [the capability map](CAPABILITY_MAP.md) and [routing policy](SKILLS.md#capability-selection).
 
 ## Skills and delegation
 
-Fifteen packaged `SKILL.md` files live under `agent/deep_agent/skills/`.
-Deep Agents reads their metadata first. Full instructions enter context only when a relevant
-skill is read. `metadata.include_tools` discloses the corresponding dispatch tools.
+There are 24 packaged `SKILL.md` files under `agent/deep_agent/skills/`.
+Deep Agents reads metadata first. Full instructions enter context when a relevant skill is read.
+`metadata.include_tools` discloses real dispatch wrappers. `metadata.routing_tools` holds
+canonical capability/workflow IDs, while `metadata.gateway_tools` lists built names only.
+Pending aliases cannot dispatch as Gateway tools. The generated inventory is in
+[packaged skills](SKILLS.md#packaged-skills).
 
-| Skill | Workflow |
-| --- | --- |
-| `video-short` | Brief, inexpensive still preview, Standard clips from the provider ladder, audio if needed, Remotion export. |
-| `product-images` | Seedream generation or reference-based editing, one still before additional variants. |
-| `storyboard-shots` | Shot plan, consistent Seedream keyframes, approved stills into the selected Standard image-to-video route. |
-| `audio` | ElevenLabs voiceover/music/SFX or Fish Audio speech if that target is available. |
-| `final-assembly` | Existing asset handles into a typed Remotion timeline, saved identifiers, poll the final MP4. |
-| `refinement` | Edit the referenced version and reuse unaffected media; prefer timeline edits for timing changes. |
-| `conversational-edit` | Confirm a transcript-driven cut plan for existing footage, compile safe word ranges, grade, overlay, burn subtitles last and render or export. |
+The original video-short, product-images, storyboard-shots, audio, final-assembly and refinement
+skills remain. Image-gen applies GPT still defaults and Recraft/Ideogram exceptions.
+Named-provider honors explicit demoted providers. Pending specialists include lipsync,
+act-two, upscale and lyrics-video. Product-demo-video keeps the pending cutaway capture utility;
+whiteboard-explainer plans Remotion templates without claiming unsupported marker-hand animation.
 
-Nine additional intent skills are `t2v`, `i2v`, `edit-v2v`, `still-then-video`, `audio-bed`,
-`motion-graphics`, `continuity-qc`, `resolve-handoff`, and `vidu-q4`. The six original names remain.
-`vidu-q4` adds fixed fal I2V and reference tools with model-specific audio and duration controls.
-Their wrapper and exact Gateway tool mappings are listed in [Skills and routing](SKILLS.md).
-The deterministic policy router proposes the selected skill and tool in the graph input and
-Studio context. Unsupported providers and local Resolve workflows remain explicit pending
-routes, with all 55 original workbook cases plus the Vidu Q4, conversational-edit and HyperFrames
-CSV rows retained in offline tests (67 rows), 29 active and 38 skipped.
-See [conversational editing](SKILLS.md#conversational-editing-after-generation) for the new
-editor preparer, the existing paid transcription path, plan confirmation, and QC limitations.
+The deterministic router supplies skill and tool proposals in graph input and Studio context.
+The capability-map fixture contains 122 retained rows, with 80 active and 42 dependency skips.
+Archived/confidential routes are dropped. Active rows cover built tools and declared interims;
+pending specialists keep named branch reasons. Editorial overrides retain the safe preparer,
+separate rendering approval, and existing export/HyperFrames narration workflow contracts.
+See [fixture verification](SKILLS.md#offline-routing-verification) and
+[conversational editing](SKILLS.md#conversational-editing-after-generation).
 
 The optional [HyperFrames composition skill](SKILLS.md#optional-hyperframes-compositions)
 adds HTML authoring guidance beside Remotion. `HYPERFRAMES_ENABLED=false` and
@@ -130,8 +132,8 @@ The optional `RENDERHAUS_AUTONOMOUS_RUN_CAP_CENTS` caps estimated paid spend for
 job. It is off when unset and requires a stable job ID when enabled. Reservations persist
 before submission, share one executor across subagents, and stop unknown-priced or excessive
 paid dispatch while allowing job recovery polls. See [Skills and routing](SKILLS.md) for the
-policy schema, cached/lazy SigLIP and DINOv2 QC, unconfigured face interface, DINOv3 opt-in DINO slot (off by default; see docs/CONTINUITY_QC_BENCHMARK.md),
-and all pending-provider drafts.
+policy schema, cached, lazily loaded SigLIP and DINOv2 QC, unconfigured face interface, DINOv3 opt-in DINO slot (off by default; see docs/CONTINUITY_QC_BENCHMARK.md),
+and the pending and retired provider references.
 
 ## Memory and durable threads
 
@@ -166,11 +168,11 @@ large, long-lived conversations need retention limits or a durable saver.
 
 ## Approval and recovery behavior
 
-Native `interrupt_on` uses a `when` predicate. Non-autonomous provider dispatch pauses;
-autonomous standard media runs proceed under the existing spending authorization.
-Kling and Runway premium video calls now interrupt autonomous runs by default. The shared
-policy adds an estimate from `server.billing_rates.cost_for` to approval descriptions and
-visible labels; unconfirmed prices remain unknown. `RENDERHAUS_PREMIUM_VIDEO_APPROVAL=false`
+Native `interrupt_on` uses a `when` predicate. Paid non-video dispatch pauses in
+non-autonomous runs and proceeds under existing spending authorization when autonomous.
+All paid video pauses even when autonomous while `premium_video_approval` is enabled.
+The shared policy adds a `server.billing_rates.cost_for` estimate to approval descriptions
+and visible labels. Unconfirmed prices remain unknown. `RENDERHAUS_PREMIUM_VIDEO_APPROVAL=false`
 disables the additional autonomous video pause. ElevenLabs administrative tools still interrupt
 in autonomous mode. Existing non-autonomous approval rules remain intact, including free-tool
 behavior, and free NLE packaging remains exempt. Only approve/reject decisions are
@@ -193,7 +195,7 @@ reconciliation. Neither backend supplies an exactly-once distributed execution g
 ## AgentCore and verification
 
 `Dockerfile.agentcore` defaults to Deep Agents and retains Codex for explicit fallback.
-It installs pinned dependencies and verifies the Deep Agents version and all fifteen packaged
+It installs pinned dependencies and verifies the Deep Agents version and all 24 packaged
 skills during the build. The entrypoint remains `python -m agent.studio_agent_next`.
 The existing Studio approval/review surfaces display the edit plan, subtitles, grade and
 audio fades. The database schema stays compatible.
@@ -215,6 +217,5 @@ export LUMA_DRY_RUN=true HYPERFRAMES_DRY_RUN=true
 .venv/bin/python scripts/ci_check.py
 ```
 
-Comet browser E2E is blocked in this environment. There is no controllable browser, Clerk
-session, or paid provider credential set. The blocker is recorded under ignored
+Comet browser E2E is blocked in this environment. There is no controllable Comet session, and this task prohibits paid/live provider calls. The blocker is recorded under ignored
 `.renderhaus/e2e/` using `scripts/browser_e2e_hook.py`. No live E2E pass is claimed.

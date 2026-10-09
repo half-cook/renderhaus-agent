@@ -1,0 +1,590 @@
+{
+  "read_date": "2026-10-08",
+  "scope": "Official public docs only; no live provider requests. Pending adapters remain pending.",
+  "retirement_evidence": [
+    {
+      "alias": "mmaudio_sfx",
+      "licence": "CC-BY-NC-4.0 weights",
+      "decision": "retired and blocked for commercial live use",
+      "source": "https://huggingface.co/hkchengrex/MMAudio",
+      "read_date": "2026-10-08"
+    }
+  ],
+  "records": [
+    {
+      "aliases": [
+        "wan3_t2v",
+        "wan3_i2v",
+        "wan3_r2v"
+      ],
+      "provider": "Alibaba Wan 3.0",
+      "host": "fal",
+      "model_ids": [
+        "alibaba/wan-3.0/text-to-video",
+        "alibaba/wan-3.0/image-to-video",
+        "alibaba/wan-3.0/reference-to-video"
+      ],
+      "verification": "verified",
+      "sources": [
+        "https://fal.ai/wan-3",
+        "https://fal.ai/models/alibaba/wan-3.0/reference-to-video/api",
+        "https://fal.ai/models/alibaba/wan-3.0/image-to-video"
+      ],
+      "schema": "fal queue submit/status/result; prompt, resolution, duration 2-30s, audio; image_url for i2v; refs capped at 10 images, 5 videos and 5 audio, each video/audio total <=15s.",
+      "price": "USD/s 480p=0.05, 720p=0.10, 1080p=0.20. Reference input seconds require branch-specific estimate review.",
+      "price_source": "https://fal.ai/models/alibaba/wan-3.0/reference-to-video",
+      "licence": "commercial API; closed weights; fal model card Commercial use",
+      "licence_source": "https://fal.ai/models/alibaba/wan-3.0/reference-to-video",
+      "training_eligible": false,
+      "training_reason": "fal terms 14.3 prohibit improving competing third-party products from outputs",
+      "us_available": "yes",
+      "availability_source": "https://fal.ai/legal/terms-of-service",
+      "availability_note": "Inferred from US customer provisions, US-based fal and commercial model listing; model-specific geographic guarantee not published.",
+      "notes": "Fal reference schema does not document edit-preserve-duration or explicit extend mode.",
+      "read_date": "2026-10-08"
+    },
+    {
+      "aliases": [
+        "wan3_edit",
+        "wan3_extend"
+      ],
+      "provider": "Alibaba Wan 3.0",
+      "host": "Alibaba Model Studio, US Virginia or Singapore",
+      "model_ids": [
+        "wan3.0-video"
+      ],
+      "verification": "verified",
+      "sources": [
+        "https://www.alibabacloud.com/help/en/model-studio/wan3-video-generation-api-reference"
+      ],
+      "schema": "POST https://{WorkspaceId}.us-east-1.maas.aliyuncs.com/api/v1/services/aigc/video-generation/video-synthesis; X-DashScope-Async:enable; model, input.prompt, input.media reference_video; extend prompt includes extension intent and ratio adaptive. GET same regional /api/v1/tasks/{task_id}.",
+      "price": "Virginia USD/s 480P=0.041256,720P=0.082513,1080P=0.165025; Singapore=0.05/0.10/0.20. Input video plus output seconds billed.",
+      "price_source": "https://www.alibabacloud.com/help/en/model-studio/wan3-0-video",
+      "licence": "proprietary API; exact model-specific training rights UNVERIFIED",
+      "licence_source": "https://www.alibabacloud.com/help/en/model-studio/wan3-0-video",
+      "training_eligible": false,
+      "training_reason": "No clear public permission for output training verified.",
+      "us_available": "yes",
+      "availability_source": "https://www.alibabacloud.com/help/en/model-studio/wan3-video-generation-api-reference",
+      "availability_note": "Official Virginia endpoint and same-reference edit/extension examples verified. Workspace, model and API key must share region.",
+      "notes": "Model is preview. duration=-1 means smart duration, not guaranteed source-preserving edit.",
+      "read_date": "2026-10-08"
+    },
+    {
+      "aliases": [
+        "seedance25_t2v",
+        "seedance25_i2v",
+        "seedance25_r2v"
+      ],
+      "provider": "ByteDance Seedance 2.5",
+      "host": "fal US default",
+      "model_ids": [
+        "bytedance/seedance-2.5/us/text-to-video",
+        "bytedance/seedance-2.5/us/image-to-video",
+        "bytedance/seedance-2.5/us/reference-to-video"
+      ],
+      "verification": "verified",
+      "sources": [
+        "https://fal.ai/models/bytedance/seedance-2.5/us/text-to-video/api",
+        "https://fal.ai/models/bytedance/seedance-2.5/us/image-to-video/api",
+        "https://fal.ai/models/bytedance/seedance-2.5/us/reference-to-video"
+      ],
+      "schema": "fal queue; prompt for t2v, image_url/end_image_url for i2v, image_urls/video_urls/audio_urls for refs; resolution 480p/720p/1080p, duration to 30s, generate_audio,end_user_id.",
+      "price": "US USD/s approx 480p=0.2646,720p=0.5676,1080p=1.396278; USD/1K tokens 0.02568 at 480p/720p,0.02808 at1080p; video reference price multiplier 0.6 on input+output duration.",
+      "price_source": "https://fal.ai/models/bytedance/seedance-2.5/us/text-to-video",
+      "licence": "commercial API, proprietary weights, fal Commercial use",
+      "licence_source": "https://fal.ai/models/bytedance/seedance-2.5/us/text-to-video",
+      "training_eligible": false,
+      "training_reason": "fal third-party competing-model training restriction.",
+      "us_available": "yes",
+      "availability_source": "https://fal.ai/models/bytedance/seedance-2.5/us/text-to-video",
+      "availability_note": "Explicit US-hosted endpoint.",
+      "notes": "US endpoint rates exceed map's non-US fal leads. Real-person references remain blocked by routing.",
+      "read_date": "2026-10-08"
+    },
+    {
+      "aliases": [
+        "seedance25_t2v",
+        "seedance25_i2v",
+        "seedance25_r2v"
+      ],
+      "provider": "ByteDance Seedance 2.5",
+      "host": "BytePlus optional",
+      "model_ids": [
+        "dreamina-seedance-2-5-260628"
+      ],
+      "verification": "verified ID and async endpoint; optional direct host",
+      "sources": [
+        "https://docs.byteplus.com/en/docs/ModelArk/availability",
+        "https://docs.byteplus.com/en/docs/Byteplus_LAS/video_gen_enhanced",
+        "https://docs.byteplus.com/id/docs/modelark/video-generation-tutorial",
+        "https://docs.byteplus.com/id/docs/modelark/model-pricing?redirect=1"
+      ],
+      "schema": "ModelArk POST https://ark.ap-southeast.bytepluses.com/api/v3/contents/generations/tasks; model,content[{type:text,text}|{type:image_url,image_url:{url}}],generate_audio,ratio,duration. Poll GET /contents/generations/tasks/{id}. LAS is a separate v1 operator surface.",
+      "price": "Official direct pricing displays 480p/720p list USD3.5/M tokens without video and2.1/M with video plus time-limited discounts. Exact current promo/1080p row TODO unknown; don't use as US default.",
+      "price_source": "https://docs.byteplus.com/id/docs/modelark/model-pricing?redirect=1",
+      "licence": "proprietary API; direct model-specific terms require upgrade-branch verification",
+      "licence_source": "https://docs.byteplus.com/en/docs/ModelArk/availability",
+      "training_eligible": false,
+      "training_reason": "No output-training grant verified.",
+      "us_available": "no",
+      "availability_source": "https://docs.byteplus.com/en/docs/ModelArk/availability",
+      "availability_note": "Published exhaustive country list includes Canada and omits US. Availability subject to point-of-purchase confirmation.",
+      "read_date": "2026-10-08"
+    },
+    {
+      "aliases": [
+        "gpt_image25_t2i",
+        "gpt_image25_edit"
+      ],
+      "provider": "OpenAI GPT Image 2.5 Sunburst",
+      "host": "OpenAI Images API",
+      "model_ids": [
+        "gpt-image-2.5-sunburst",
+        "gpt-image-2.5-sunburst-2026-09-08"
+      ],
+      "verification": "verified",
+      "sources": [
+        "https://developers.openai.com/api/docs/models/gpt-image-2.5-sunburst",
+        "https://developers.openai.com/api/docs/guides/image-generation",
+        "https://developers.openai.com/api/reference/resources/images/methods/generate"
+      ],
+      "schema": "POST /v1/images/generations or /v1/images/edits; model,prompt; edit has input images; size dimensions multiples16, ratio1:3..3:1; quality low/medium/high/xhigh/max/auto.",
+      "price": "USD/1M tokens text input=5, image input=8, image output=30, batch output=15.",
+      "price_source": "https://developers.openai.com/api/docs/models/gpt-image-2.5-sunburst",
+      "licence": "OpenAI Services Agreement proprietary API; commercial applications and output ownership",
+      "licence_source": "https://openai.com/policies/services-agreement/",
+      "training_eligible": false,
+      "training_reason": "Services Agreement 3.3(e) restricts developing competing AI with outputs except defined permitted exceptions.",
+      "us_available": "yes",
+      "availability_source": "https://help.openai.com/en/articles/5347006-openai-api-supported-countries-and-territories",
+      "availability_note": "United States explicitly listed. Organization verification may be required.",
+      "read_date": "2026-10-08"
+    },
+    {
+      "aliases": [
+        "recraft_v41_vector"
+      ],
+      "provider": "Recraft V4.1 Pro vector",
+      "host": "fal",
+      "model_ids": [
+        "fal-ai/recraft/v4.1/pro/text-to-vector"
+      ],
+      "verification": "verified",
+      "sources": [
+        "https://fal.ai/models/fal-ai/recraft/v4.1/pro/text-to-vector/api"
+      ],
+      "schema": "fal queue; prompt,image_size,colors,background_color; images[] SVG files output.",
+      "price": "USD 0.30/image",
+      "price_source": "https://fal.ai/models/fal-ai/recraft/v4.1/pro/text-to-vector",
+      "licence": "commercial API, fal Commercial use",
+      "licence_source": "https://fal.ai/models/fal-ai/recraft/v4.1/pro/text-to-vector",
+      "training_eligible": false,
+      "training_reason": "fal third-party competing-model training restriction.",
+      "us_available": "yes",
+      "availability_source": "https://fal.ai/legal/terms-of-service",
+      "availability_note": "US fal service eligibility inferred from terms; model-specific region guarantee not published.",
+      "notes": "Map omitted fal-ai prefix; corrected official host endpoint does not change canonical routing alias.",
+      "read_date": "2026-10-08"
+    },
+    {
+      "aliases": [
+        "ideogram45_edit"
+      ],
+      "provider": "Ideogram 4.5 edit",
+      "host": "fal",
+      "model_ids": [
+        "ideogram/v4.5/edit"
+      ],
+      "verification": "verified",
+      "sources": [
+        "https://fal.ai/models/ideogram/v4.5/edit/api"
+      ],
+      "schema": "prompt,image_url required; reference_image_urls,mask_url; edit_precision=high for unchanged-pixel restoration; quality very_low/low/medium/high.",
+      "price": "USD/image very_low=0.008,low=0.03,medium=0.06,high=0.22.",
+      "price_source": "https://fal.ai/models/ideogram/v4.5/edit",
+      "licence": "commercial API, fal Commercial use",
+      "licence_source": "https://fal.ai/models/ideogram/v4.5/edit",
+      "training_eligible": false,
+      "training_reason": "fal third-party competing-model training restriction.",
+      "us_available": "yes",
+      "availability_source": "https://fal.ai/legal/terms-of-service",
+      "availability_note": "US fal eligibility inferred from terms; no model-specific region guarantee.",
+      "notes": "Only edit requests select specialist; generation remains GPT Image default.",
+      "read_date": "2026-10-08"
+    },
+    {
+      "aliases": [
+        "sync3_lipsync"
+      ],
+      "provider": "sync-3",
+      "host": "sync.so",
+      "model_ids": [
+        "sync-3"
+      ],
+      "verification": "verified",
+      "sources": [
+        "https://sync.so/docs/api-reference/api/generate-api/create",
+        "https://sync.so/docs/models/lipsync"
+      ],
+      "schema": "POST https://api.sync.so/v2/generate; model=sync-3,input[] typed video/image and audio URLs; API key header; poll generations.",
+      "price": "USD/frame base=0.00534; 25fps USD/s base=0.13340,Growth=0.12660,Scale=0.10660; subscription separate.",
+      "price_source": "https://sync.so/pricing",
+      "licence": "proprietary commercial API, Sync Labs Terms",
+      "licence_source": "https://sync.so/terms",
+      "training_eligible": false,
+      "training_reason": "No unambiguous public output-training grant verified.",
+      "us_available": "unclear",
+      "availability_source": "https://sync.so/terms",
+      "availability_note": "Public docs expose API; no explicit country eligibility list located. Do not equate US governing law with guaranteed access.",
+      "read_date": "2026-10-08"
+    },
+    {
+      "aliases": [
+        "heygen_avatar_v"
+      ],
+      "provider": "HeyGen Avatar V",
+      "host": "HeyGen direct",
+      "model_ids": [
+        "avatar_v"
+      ],
+      "verification": "verified",
+      "sources": [
+        "https://developers.heygen.com/avatar-v",
+        "https://developers.heygen.com/llms.txt"
+      ],
+      "schema": "POST /v3/videos type=avatar,avatar_id,script,voice_id,resolution,engine={type:avatar_v}; poll GET /v3/videos/{video_id}. Avatar look must list avatar_v in supported_api_engines; consent.",
+      "price": "TODO unknown; map https://developers.heygen.com/docs/pricing returns404; current official index points to signed-in API dashboard and unpublished enterprise pricing.",
+      "price_source": "https://developers.heygen.com/llms.txt",
+      "licence": "proprietary API; exact terms require future adapter branch verification",
+      "licence_source": "https://developers.heygen.com/avatar-v",
+      "training_eligible": false,
+      "training_reason": "No clear output-training permission verified.",
+      "us_available": "unclear",
+      "availability_source": "https://help.heygen.com/en/articles/11187873-heygen-privacy-and-security-standards",
+      "availability_note": "Official help confirms US AWS hosting; no explicit customer-country eligibility table verified.",
+      "notes": "Avatar V requires an eligible digital_twin look; arbitrary photo animation should not silently use Avatar IV.",
+      "read_date": "2026-10-08"
+    },
+    {
+      "aliases": [
+        "runway_act_two"
+      ],
+      "provider": "Runway Act-Two",
+      "host": "Runway direct",
+      "model_ids": [
+        "act_two"
+      ],
+      "verification": "verified",
+      "sources": [
+        "https://docs.dev.runwayml.com/guides/models/",
+        "https://raw.githubusercontent.com/runwayml/sdk-python/main/src/runwayml/types/character_performance_create_params.py",
+        "https://raw.githubusercontent.com/runwayml/sdk-python/main/src/runwayml/resources/character_performance.py"
+      ],
+      "schema": "POST /v1/character_performance; model=act_two,character={type:image|video,uri},reference={type:video,uri} duration3..30s; optional bodyControl,expressionIntensity1..5,ratio,seed. Character must have visible recognizable face; task poll through existing Runway endpoint.",
+      "price": "USD 0.05/second per official model list; credit conversion pricing page not fully rendered by text browser.",
+      "price_source": "https://docs.dev.runwayml.com/guides/models/",
+      "licence": "Runway Terms proprietary API; commercial use allowed; competing product training restricted.",
+      "licence_source": "https://runway.com/terms-of-use",
+      "training_eligible": false,
+      "training_reason": "Runway Terms5.2(viii) restricts using outputs to train similar/competitive products.",
+      "us_available": "yes",
+      "availability_source": "https://runway.com/terms-of-use",
+      "availability_note": "Section15 says services controlled and offered from US facilities.",
+      "read_date": "2026-10-08"
+    },
+    {
+      "aliases": [
+        "kling_motion_control"
+      ],
+      "provider": "Kling 3.0 Motion Control Pro",
+      "host": "fal; direct Kling optional",
+      "model_ids": [
+        "fal-ai/kling-video/v3/pro/motion-control"
+      ],
+      "verification": "verified fal; direct UNVERIFIED",
+      "sources": [
+        "https://fal.ai/models/fal-ai/kling-video/v3/pro/motion-control",
+        "https://fal.ai/models/fal-ai/kling-video/v3/pro/motion-control/api"
+      ],
+      "schema": "image_url,video_url,character_orientation=image|video required; optional prompt,keep_original_sound defaulttrue. image orientation max10s; video orientation max30s; one optional facial-binding element on video orientation.",
+      "price": "USD 0.168/second fal pro; direct Kling pricing TODO unknown.",
+      "price_source": "https://fal.ai/models/fal-ai/kling-video/v3/pro/motion-control",
+      "licence": "commercial fal API, Commercial use model label",
+      "licence_source": "https://fal.ai/models/fal-ai/kling-video/v3/pro/motion-control",
+      "training_eligible": false,
+      "training_reason": "fal third-party competing-model training restriction.",
+      "us_available": "yes",
+      "availability_source": "https://fal.ai/legal/terms-of-service",
+      "availability_note": "US fal eligibility inferred from terms. Direct Kling US eligibility unclear.",
+      "read_date": "2026-10-08"
+    },
+    {
+      "aliases": [
+        "mureka_v95",
+        "mureka_lyrics_video"
+      ],
+      "provider": "Mureka V9.5",
+      "host": "Mureka direct",
+      "model_ids": [
+        "mureka-9.5"
+      ],
+      "verification": "verified ID in official docs JS schema; API branches pending",
+      "sources": [
+        "https://platform.mureka.ai/docs/api/operations/post-v1-song-generate.html",
+        "https://platform.mureka.ai/docs/api/operations/post-v1-instrumental-generate.html",
+        "https://platform.mureka.ai/docs/api/operations/post-v1-lyrics-video-generate.html",
+        "https://platform.mureka.ai/docs/assets/chunks/theme.Cv864CFs.js"
+      ],
+      "schema": "Song POST /v1/song/generate requires lyrics,model. Instrumental POST /v1/instrumental/generate requires model. model enum includes mureka-9.5; n defaults2 max3 billed per song. Lyrics-video POST /v1/lyrics-video/generate song_id xor upload_audio_id, background assets.",
+      "price": "TODO unknown; official pricing page renders no public price text in available browser; map $0.15/song unverified.",
+      "price_source": "https://platform.mureka.ai/pricing",
+      "licence": "paid API output full usage rights and commercial authorization per FAQ; weights proprietary",
+      "licence_source": "https://platform.mureka.ai/docs/en/faq.html",
+      "training_eligible": false,
+      "training_reason": "Commercial distribution permission does not explicitly authorize model training.",
+      "us_available": "yes",
+      "availability_source": "https://platform.mureka.ai/privacy_policy.pdf",
+      "availability_note": "Inferred from explicit US-user privacy provisions; no API-specific region guarantee located.",
+      "read_date": "2026-10-08"
+    },
+    {
+      "aliases": [
+        "mirelo_v2a"
+      ],
+      "provider": "Mirelo SFX1.6",
+      "host": "fal",
+      "model_ids": [
+        "mirelo-ai/sfx1.6/video-to-video"
+      ],
+      "verification": "verified",
+      "sources": [
+        "https://fal.ai/models/mirelo-ai/sfx1.6/video-to-video",
+        "https://fal.ai/models/mirelo-ai/sfx1.6/video-to-video/api"
+      ],
+      "schema": "video_url required;text_prompt,duration default10 (sliding windows >10),num_samples default2,seed; result.video[] muxed videos. Advertised up to60s.",
+      "price": "USD 0.01/second; exact per-sample multiplier requires branch schema verification.",
+      "price_source": "https://fal.ai/models/mirelo-ai/sfx1.6/video-to-video",
+      "licence": "commercial fal API model card",
+      "licence_source": "https://fal.ai/models/mirelo-ai/sfx1.6/video-to-video",
+      "training_eligible": false,
+      "training_reason": "fal third-party competing-model training restriction.",
+      "us_available": "yes",
+      "availability_source": "https://fal.ai/legal/terms-of-service",
+      "availability_note": "US fal eligibility inferred from terms; direct Mirelo availability unclear.",
+      "read_date": "2026-10-08",
+      "notes": "Canonical mirelo_v2a is a routing alias; verified map endpoint returns muxed videos, not bare audio. Future adapter must handle/extract audio without silently changing endpoint. Explicitly set num_samples to estimate accurately."
+    },
+    {
+      "aliases": [
+        "eleven_v4_turbo"
+      ],
+      "provider": "ElevenLabs Eleven v4 Turbo",
+      "host": "ElevenLabs direct",
+      "model_ids": [
+        "eleven_v4_turbo"
+      ],
+      "verification": "verified ID; existing REST TTS transport UNVERIFIED",
+      "sources": [
+        "https://elevenlabs.io/docs/overview/models",
+        "https://elevenlabs.io/docs/changelog/2026/9/28",
+        "https://elevenlabs.io/docs/eleven-api/guides/how-to/websockets/realtime-tdd",
+        "https://elevenlabs.io/docs/api-reference/text-to-speech/convert"
+      ],
+      "schema": "Official launch/model docs specifically direct v4 Turbo to wss://api.elevenlabs.io/v1/text-to-dialogue/stream-input. REST /v1/text-to-speech/{voice_id} requires model can_do_text_to_speech; public reference does not verify v4 Turbo flag.",
+      "price": "USD/1000chars standard0.04; promo0.011 through Oct12 2026, then standard rate. Do not retain promo indefinitely.",
+      "price_source": "https://elevenlabs.io/pricing/api",
+      "licence": "ElevenLabs paid commercial API; Terms of Service",
+      "licence_source": "https://elevenlabs.io/terms-of-use",
+      "training_eligible": false,
+      "training_reason": "No clear model-training permission verified.",
+      "us_available": "yes",
+      "availability_source": "https://help.elevenlabs.io/hc/en-us/articles/22497891312401-Do-you-restrict-access-to-the-service-and-platform-for-any-specific-countries",
+      "availability_note": "Official restricted-country list excludes US.",
+      "notes": "Do not mark model ID unverified; endpoint support is unverified. Keep unsupported transport dry-run.",
+      "read_date": "2026-10-08"
+    },
+    {
+      "aliases": [
+        "elevenlabs_sfx_v2"
+      ],
+      "provider": "ElevenLabs SFX v2",
+      "host": "ElevenLabs direct",
+      "model_ids": [
+        "eleven_text_to_sound_v2"
+      ],
+      "verification": "verified",
+      "sources": [
+        "https://elevenlabs.io/docs/overview/models",
+        "https://elevenlabs.io/docs/api-reference/text-to-sound-effects/convert"
+      ],
+      "schema": "POST /v1/sound-generation;text required;duration_seconds0.5..30,loop,prompt_influence0..1,model_id enum/default eleven_text_to_sound_v2. Returns audio.",
+      "price": "USD 0.12/minute per API pricing; pricing FAQ ambiguously says per generation metering. Verify exact SFX estimate unit before changing built rate.",
+      "price_source": "https://elevenlabs.io/pricing/api",
+      "licence": "paid commercial API, royalty-free generated SFX",
+      "licence_source": "https://elevenlabs.io/pricing/api",
+      "training_eligible": false,
+      "training_reason": "No explicit model-training grant verified.",
+      "us_available": "yes",
+      "availability_source": "https://help.elevenlabs.io/hc/en-us/articles/22497891312401-Do-you-restrict-access-to-the-service-and-platform-for-any-specific-countries",
+      "availability_note": "No US restriction listed.",
+      "read_date": "2026-10-08"
+    },
+    {
+      "aliases": [
+        "topaz_upscale",
+        "topaz_interpolate"
+      ],
+      "provider": "Topaz Starlight Precise2.6, Apollo, Chronos",
+      "host": "fal default; Topaz direct optional",
+      "model_ids": [
+        "topaz/upscale/video/generative",
+        "topaz/interpolate/video",
+        "apo-8"
+      ],
+      "verification": "verified",
+      "sources": [
+        "https://fal.ai/models/topaz/upscale/video/generative/api",
+        "https://fal.ai/models/topaz/interpolate/video/api",
+        "https://developer.topazlabs.com/video-models/frame-interpolation/apollo"
+      ],
+      "schema": "fal video_url; upscale model='Starlight Precise 2.6',upscale_factor,target_fps,softness; interpolation model Apollo/Chronos/Aion,target_fps,slowdown_factor. Direct Apollo=apo-8,slowmo,fps.",
+      "price": "Starlight 10s30fps USD1.20<=1080p,2.60at4K; Apollo/Chronos10s30to60fps USD0.30at1080p,0.60at4K. Frame-rate/slowdown affects cost; direct dollars per credit TODO.",
+      "price_source": "https://fal.ai/models/topaz/upscale/video/generative",
+      "licence": "commercial API, fal Commercial use",
+      "licence_source": "https://fal.ai/models/topaz/interpolate/video",
+      "training_eligible": false,
+      "training_reason": "fal third-party competing-model training restriction.",
+      "us_available": "yes",
+      "availability_source": "https://fal.ai/legal/terms-of-service",
+      "availability_note": "US fal eligibility inferred. Direct Topaz customer-region guarantee not located.",
+      "read_date": "2026-10-08"
+    },
+    {
+      "aliases": [
+        "gemini_vlm_judge"
+      ],
+      "provider": "Google Gemini3.8 Flash",
+      "host": "Gemini Developer API paid",
+      "model_ids": [
+        "gemini-3.8-flash"
+      ],
+      "verification": "verified",
+      "sources": [
+        "https://ai.google.dev/gemini-api/docs/models/gemini-3.8-flash"
+      ],
+      "schema": "Text/Image/Video/Audio/PDF inputs, text output, structured output supported; video/keyframe judge needs branch schema.",
+      "price": "Standard paid USD/1M tokens input0.75,output3.75 through2026-12-31; from2027-01-01 input1.50,output7.50. Batch half. Model-output cost depends on video/keyframe tokens.",
+      "price_source": "https://ai.google.dev/gemini-api/docs/pricing",
+      "licence": "proprietary Gemini API terms; API model licence is distinct from documentation CC-BY/Apache sample licences",
+      "licence_source": "https://ai.google.dev/gemini-api/terms",
+      "training_eligible": false,
+      "training_reason": "No clear permission for output model-training verified.",
+      "us_available": "yes",
+      "availability_source": "https://ai.google.dev/gemini-api/docs/available-regions",
+      "availability_note": "United States explicitly listed.",
+      "notes": "Pending eval-gated alternative; local_qc remains continuity default.",
+      "read_date": "2026-10-08"
+    },
+    {
+      "aliases": [
+        "remotion_render",
+        "remotion_nle_export"
+      ],
+      "provider": "Remotion and in-house NLE exporter",
+      "host": "customer AWS Lambda / local exporter",
+      "model_ids": [],
+      "verification": "built, not model APIs",
+      "sources": [
+        "https://www.remotion.dev/docs/license",
+        "https://www.remotion.dev/docs/lambda"
+      ],
+      "schema": "Existing repo contracts unchanged; no new adapter.",
+      "price": "Remotion licence and AWS compute charges depend on organization/render settings; no invented fixed render charge.",
+      "price_source": "https://www.remotion.dev/docs/license",
+      "licence": "Remotion commercial licence; in-house exporter repo licence",
+      "licence_source": "https://www.remotion.dev/docs/license",
+      "training_eligible": false,
+      "training_reason": "No generated model-output training policy needed; retain existing repo policy.",
+      "us_available": "yes",
+      "availability_source": "https://www.remotion.dev/docs/lambda",
+      "availability_note": "Official region list includes us-east-1,us-east-2,us-west-1,us-west-2; in-house local exporter no regional vendor gate.",
+      "read_date": "2026-10-08"
+    },
+    {
+      "aliases": [
+        "hyperframes_render"
+      ],
+      "provider": "HyperFrames",
+      "host": "local dry-run renderer",
+      "model_ids": [],
+      "verification": "built, flag-gated explicit-only",
+      "sources": [
+        "https://github.com/heygen-com/hyperframes/blob/main/LICENSE"
+      ],
+      "schema": "Existing repo tool unchanged.",
+      "price": "Local runtime compute; hosted HeyGen HyperFrames rate TODO unknown, not adopted.",
+      "price_source": "https://developers.heygen.com/llms.txt",
+      "licence": "Apache-2.0 code",
+      "licence_source": "https://github.com/heygen-com/hyperframes/blob/main/LICENSE",
+      "training_eligible": false,
+      "training_reason": "Code licence does not blanket-authorize source media use.",
+      "us_available": "yes",
+      "availability_source": "https://github.com/heygen-com/hyperframes/blob/main/LICENSE",
+      "availability_note": "Apache code licence has no US exclusion; local operation.",
+      "read_date": "2026-10-08"
+    },
+    {
+      "aliases": [
+        "voices_ivc_create"
+      ],
+      "provider": "ElevenLabs Instant Voice Cloning",
+      "host": "ElevenLabs direct",
+      "model_ids": [],
+      "verification": "verified built endpoint",
+      "sources": [
+        "https://elevenlabs.io/docs/api-reference/voices/ivc/create",
+        "https://elevenlabs.io/docs/eleven-creative/voices/voice-cloning/instant-voice-cloning"
+      ],
+      "schema": "POST /v1/voices/add multipart name/files required; optional remove_background_noise,description,labels; returns voice_id,requires_verification. Require subject rights and consent.",
+      "price": "API pricing Starter and above includes Instant Voice Cloning; standalone per-create charge not published. Keep existing billing policy or TODO unknown.",
+      "price_source": "https://elevenlabs.io/pricing/api",
+      "licence": "paid commercial API; explicit rights and consent required for source voice",
+      "licence_source": "https://elevenlabs.io/docs/eleven-creative/voices/voice-cloning/instant-voice-cloning",
+      "training_eligible": false,
+      "training_reason": "No permission to export a clone or train a separate model verified.",
+      "us_available": "yes",
+      "availability_source": "https://help.elevenlabs.io/hc/en-us/articles/22497891312401-Do-you-restrict-access-to-the-service-and-platform-for-any-specific-countries",
+      "availability_note": "Official restricted-country list excludes US.",
+      "read_date": "2026-10-08"
+    },
+    {
+      "aliases": [
+        "local_qc"
+      ],
+      "provider": "SigLIP and DINOv2 continuity embeddings",
+      "host": "existing RunPod worker / local",
+      "model_ids": [
+        "google/siglip-so400m-patch14-384",
+        "facebook/dinov2-base"
+      ],
+      "verification": "official upstream model families verified; deployed config unchanged",
+      "sources": [
+        "https://huggingface.co/google/siglip-so400m-patch14-384",
+        "https://huggingface.co/facebook/dinov2-base",
+        "https://github.com/facebookresearch/dinov2/blob/main/LICENSE"
+      ],
+      "schema": "Existing in-house embeddings/QC contract; no new adapter or remote API.",
+      "price": "Compute depends on existing worker deployment; no fixed model-generation rate.",
+      "price_source": "https://huggingface.co/facebook/dinov2-base",
+      "licence": "Apache-2.0 weights/model metadata, DINOv2 Apache-2.0 code",
+      "licence_source": "https://huggingface.co/facebook/dinov2-base",
+      "training_eligible": false,
+      "training_reason": "Retain existing QC policy; model licence alone does not authorize training on user source media.",
+      "us_available": "yes",
+      "availability_source": "https://github.com/facebookresearch/dinov2/blob/main/LICENSE",
+      "availability_note": "Worldwide Apache licence for customer-controlled execution; specific RunPod account/region availability not verified.",
+      "read_date": "2026-10-08"
+    }
+  ]
+}

@@ -497,7 +497,7 @@ async def config() -> dict[str, Any]:
         "live_image_generation": (
             os.getenv("SEEDREAM_DRY_RUN", os.getenv("SEEDANCE_DRY_RUN", "true")).lower() == "false"
         ),
-        "live_music_generation": os.getenv("ELEVENLABS_DRY_RUN", "false").lower() != "true",
+        "live_music_generation": os.getenv("ELEVENLABS_DRY_RUN", "true").lower() != "true",
         "agent_ready": False,
         "langfuse_ready": False,
         "clerk_enabled": clerk_enabled(),

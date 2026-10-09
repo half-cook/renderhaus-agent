@@ -16,7 +16,8 @@ class OutcomeStore:
     def record(self, *, event_id: str, provider: str, model: str, job_type: str,
                outcome: str, stage: str, provider_job_id: str | None = None,
                asset: dict | None = None, workspace_id: str | None = None,
-               project_id: str | None = None, execution_id: str | None = None) -> dict:
+               project_id: str | None = None, execution_id: str | None = None,
+               ab_arm: str | None = None) -> dict:
         if outcome not in {"accepted", "rejected"} or stage not in {"approval", "review"}:
             raise ValueError("Outcome must be accepted/rejected with approval/review stage.")
         asset = asset or {}
@@ -27,7 +28,7 @@ class OutcomeStore:
         row = {"event_id": event_id, "timestamp": int(time.time()), "provider": provider,
                "model": model, "job_type": job_type, "provider_job_id": provider_job_id,
                "outcome": outcome, "stage": stage, "workspace_id": workspace_id,
-               "project_id": project_id, "execution_id": execution_id,
+               "project_id": project_id, "execution_id": execution_id, "ab_arm": ab_arm,
                "version_id": asset.get("version_id"), "training_eligible": eligible}
         self.path.parent.mkdir(parents=True, exist_ok=True)
         with self.path.open("a+", encoding="utf-8") as stream:

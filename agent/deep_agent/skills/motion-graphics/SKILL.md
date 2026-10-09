@@ -3,12 +3,13 @@ name: motion-graphics
 description: Assemble lower thirds, captions, simple motion, and explainers using the built Remotion timeline contract.
 metadata:
   include_tools: call_editor_tool call_media_tool
-  gateway_tools: Remotion___render_timeline Remotion___get_render_progress Remotion___export_nle_timeline Seedream___text_to_image Seedream___image_to_image Runway___text_to_image Runway___image_to_image Runway___get_runway_task
+  gateway_tools: Remotion___render_timeline Remotion___get_render_progress Remotion___export_nle_timeline HyperFrames___render_composition
+  routing_tools: remotion_render hyperframes_render
 ---
 
 # Motion graphics
 
-Remotion is the default renderer. For an explicit HyperFrames request, read
+Remotion is the default renderer. For an explicit HyperFrames or HTML-template request, read
 [HyperFrames](../hyperframes/SKILL.md) and follow the host's optional-tool route.
 
 Read `read_studio_context` and reuse existing assets. Search Gateway for Remotion's
@@ -24,12 +25,9 @@ choose native position, color, size, weight, and fades. The built contract suppo
 titles and motions; arbitrary per-word kinetic typography or custom components need a
 future integration. Explain that limit for a brief requiring unsupported animation.
 
-For a missing image asset, read [product images](../product-images/SKILL.md).
-Use `call_media_tool` with `Seedream___text_to_image` or `Seedream___image_to_image`.
-Explicit Gen-4 Image requests use `Runway___text_to_image` or `Runway___image_to_image`;
-poll `Runway___get_runway_task` until completed and save the image before assembly.
-Ideogram text-in-image and Recraft SVG generation are provider-pending. Do not promise
-editable vector output from the built raster image tools.
+For missing image assets, read [still images](../image-gen/SKILL.md) and use the matching
+default or specialist. Recraft vector and Ideogram text-only edits remain pending. A supplied
+existing Ideogram asset needs no generation. Do not promise SVG from raster interims.
 
 Submit one render and preserve `render_id`, `bucket_name`, and `output_key` unchanged.
 Poll `Remotion___get_render_progress` and inspect the completed MP4 before delivery.
@@ -43,3 +41,19 @@ No upstream skill content is vendored here, and no upstream licence grant is ass
 Report progress before provider work. Respect DRY_RUN. Never change it to obtain an artifact.
 A preview or queued job is not finished media. Required approval appears in the existing chat.
 Use the smallest useful request and avoid redundant paid variants.
+
+Follow `read_studio_context.intent_route`. Selection uses the explicit requested provider/model,
+then a named exception, then the capability default. Cost estimates support approval and disclosure;
+they never select a provider. Pending defaults use only the policy's declared interim tool.
+Disclose provider, model, estimated cost and `default`, `exception: <reason>`, `explicit request`,
+or `interim default until <provider> lands` before each dispatch. Unknown prices stay unknown.
+All paid video pauses for approval even in autonomous runs when `premium_video_approval` is enabled.
+Paid non-video retains the existing non-autonomous approval and autonomous spend cap.
+
+Search Gateway for the selected built tool and use its exact schema through the matching role.
+Pending aliases are routing identifiers, not Gateway endpoints. Never invent a tool or change a
+DRY_RUN flag to satisfy a request. Submit once, preserve the returned job ID, and poll the same job.
+A queued job or dry-run is incomplete media. Open/play the actual saved artifact before delivery.
+Record explicit customer visual acceptance/rejection with `record_media_outcome` and the saved call ID.
+A spending approval is not visual acceptance. Training eligibility follows provenance and the existing
+Wan training hook; these routing instructions cannot grant training rights.

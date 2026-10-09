@@ -11,7 +11,7 @@ class PolicyTests(unittest.TestCase):
     def test_premium_video_approval_is_required_in_autonomous_runs(self):
         for name in ["Kling___text_to_video", "Runway___image_to_video", "Runway___video_to_video"]:
             self.assertTrue(tool_needs_approval(name, True), name)
-        self.assertFalse(tool_needs_approval("Fal___text_to_video", True))
+        self.assertTrue(tool_needs_approval("Fal___text_to_video", True))
         with patch.dict(os.environ, {"RENDERHAUS_PREMIUM_VIDEO_APPROVAL": "false"}):
             self.assertFalse(tool_needs_approval("Kling___text_to_video", True))
             self.assertTrue(tool_needs_approval("Kling___text_to_video", False))
@@ -185,13 +185,15 @@ class LumaPolicyTests(unittest.TestCase):
         from agent.deep_agent.routing import route_intent
 
         modify = route_intent("change look keep performance Luma")
-        self.assertEqual((modify.skill, modify.tool, modify.status), ("edit-v2v", "Luma___modify_video", "ready"))
+        self.assertEqual((modify.skill, modify.tool, modify.status), ("named-provider", "Luma___modify_video", "ready"))
         t2v = route_intent("Luma Ray text to video of a beach at dawn")
-        self.assertEqual((t2v.skill, t2v.tool, t2v.status), ("t2v", "Luma___text_to_video", "ready"))
+        self.assertEqual((t2v.skill, t2v.tool, t2v.status), ("named-provider", "Luma___text_to_video", "ready"))
         i2v = route_intent("luma image to video from this start frame")
-        self.assertEqual((i2v.skill, i2v.tool), ("i2v", "Luma___image_to_video"))
+        self.assertEqual((i2v.skill, i2v.tool), ("named-provider", "Luma___image_to_video"))
+        for route in (modify, t2v, i2v):
+            self.assertIn("explicit request; not the default", route.disclosure)
 
-    def test_luma_is_enabled_premium_and_never_training_eligible(self):
+    def test_luma_is_explicit_only_paid_video_and_never_training_eligible(self):
         from agent.deep_agent.routing import is_free_tool, policy_blocker, premium_video, training_eligible
 
         for tool in ("text_to_video", "image_to_video", "extend_video", "modify_video"):

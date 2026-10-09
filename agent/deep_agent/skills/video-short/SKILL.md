@@ -1,27 +1,32 @@
 ---
 name: video-short
-description: Create a text-to-video ad or short with affordable still previews and a final MP4.
+description: Plan a short film/ad using approved stills, capability-map shots, audio and Remotion assembly.
 metadata:
   include_tools: call_media_tool call_audio_tool call_editor_tool
-  gateway_tools: Fal___get_video_task Fal___image_to_video Fal___text_to_video Seedance___get_video_task Seedance___image_to_video Seedance___text_to_video Seedream___text_to_image
+  routing_tools: gpt_image25_t2i wan3_t2v wan3_i2v seedance25_t2v seedance25_i2v remotion_render
 ---
 
 # Video short
 
-Read the brief and read_studio_context. Use planner for a short shot plan when useful.
-Read [product images](../product-images/SKILL.md) for still routing and its confidentiality limit.
-Reuse approved stills or generate one compatible direction preview through the host image route.
-After review, use the host-selected Standard route for finished shots, usually
-Seedance___text_to_video or Seedance___image_to_video with image_path_or_url.
-Draft and rejected-shot retries use Fal___text_to_video or Fal___image_to_video with first_frame_url.
-Confidential projects stay Wan. Preserve features, disclose provider/model and estimated cost,
-and record explicit shot acceptance/rejection with record_media_outcome.
-Poll the corresponding provider with its saved job ID. Read
-[text to video](../t2v/SKILL.md) for native arguments and spending approval.
-Read the audio skill if sound is needed.
-Read final-assembly and assemble clips through Remotion. Deliver only the successful MP4.
-Avoid multiple video variants unless requested. Never replace a running job.
+Read the brief and Studio context. Save a short shot plan with one action per shot.
+Read image-gen/still-then-video for visual approval, t2v/i2v for default/exception generation,
+audio-bed for authorized sound, and final-assembly for the final MP4. Each selected capability
+uses its declared interim while pending. Do not replace a failed shot with an unrelated provider.
+Reuse accepted assets, preserve saved jobs and record explicit customer shot reviews.
+Do not request multiple paid variants unless the brief requires them.
 
-Report progress before provider work. Respect DRY_RUN. Never change it to obtain an artifact.
-A preview or queued job is not finished media. Required approval appears in the existing chat.
-Use the smallest useful request and avoid redundant paid variants.
+Follow `read_studio_context.intent_route`. Selection uses the explicit requested provider/model,
+then a named exception, then the capability default. Cost estimates support approval and disclosure;
+they never select a provider. Pending defaults use only the policy's declared interim tool.
+Disclose provider, model, estimated cost and `default`, `exception: <reason>`, `explicit request`,
+or `interim default until <provider> lands` before each dispatch. Unknown prices stay unknown.
+All paid video pauses for approval even in autonomous runs when `premium_video_approval` is enabled.
+Paid non-video retains the existing non-autonomous approval and autonomous spend cap.
+
+Search Gateway for the selected built tool and use its exact schema through the matching role.
+Pending aliases are routing identifiers, not Gateway endpoints. Never invent a tool or change a
+DRY_RUN flag to satisfy a request. Submit once, preserve the returned job ID, and poll the same job.
+A queued job or dry-run is incomplete media. Open/play the actual saved artifact before delivery.
+Record explicit customer visual acceptance/rejection with `record_media_outcome` and the saved call ID.
+A spending approval is not visual acceptance. Training eligibility follows provenance and the existing
+Wan training hook; these routing instructions cannot grant training rights.

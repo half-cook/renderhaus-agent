@@ -4,6 +4,7 @@ description: Assemble existing assets into a final Remotion video and verify the
 metadata:
   include_tools: call_editor_tool
   gateway_tools: Remotion___export_nle_timeline Remotion___get_render_progress Remotion___render_timeline
+  routing_tools: remotion_render
 ---
 
 # Final assembly
