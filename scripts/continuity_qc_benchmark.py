@@ -1,4 +1,4 @@
-"""Offline continuity-qc embedder benchmark on openly licensed films.
+"""Continuity-qc benchmark on openly licensed films.
 
 Stages (run in order; every stage is offline once footage and weights are local):
 
@@ -8,6 +8,7 @@ Stages (run in order; every stage is offline once footage and weights are local)
     embed   Embed every frame with each model on CPU and time it.
     report  AUROC (overall, per category, bootstrap CI), best-threshold accuracy,
             cross-validated threshold accuracy and latency, as JSON and Markdown.
+    vlm     Experimental Gemini judge on all 420 pairs. Dry-run unless explicitly enabled.
     calibrate  Fit per-model Platt scaling from docs/continuity_qc_benchmark_scores.json
             and write agent/deep_agent/continuity_qc_calibration.json.
 
@@ -28,10 +29,12 @@ Example:
 from __future__ import annotations
 
 import argparse
+import hashlib
 import io
 import json
 import math
 import random
+import re
 import statistics
 import subprocess
 import sys
@@ -660,6 +663,98 @@ def stage_calibrate(args) -> None:
     print(json.dumps(metrics, indent=2))
 
 
+def validate_vlm_pairs(pairs: list[dict], canonical: list[dict]) -> None:
+    from agent.deep_agent.continuity_qc_vlm import manifest_hash
+    from agent.deep_agent.routing import POLICY
+
+    expected = {row["id"]: (row["category"], row["label"]) for row in canonical}
+    if len(pairs) != 420 or len(expected) != 420:
+        raise ValueError("VLM eval requires the canonical 420 pairs.")
+    ids = [pair["id"] for pair in pairs]
+    if len(set(ids)) != 420 or set(ids) != set(expected):
+        raise ValueError("VLM eval pair IDs must match the canonical benchmark exactly.")
+    for pair in pairs:
+        if (pair["category"], pair["label"]) != expected[pair["id"]]:
+            raise ValueError("VLM eval labels/categories must match committed labels.")
+        for side in ("a", "b"):
+            ref = pair[side]
+            if (not isinstance(ref, list) or len(ref) != 4 or not isinstance(ref[0], str)
+                    or not re.fullmatch(r"[A-Za-z0-9_-]+", ref[0])
+                    or isinstance(ref[1], bool) or not isinstance(ref[1], (int, float))
+                    or not math.isfinite(ref[1]) or ref[1] < 0):
+                raise ValueError("Invalid VLM frame reference.")
+        if pair.get("perturbation") not in (None, *PERTURBATIONS):
+            raise ValueError("Invalid VLM frame perturbation.")
+    if manifest_hash(pairs) != POLICY["continuity_qc"]["vlm_eval_gate"]["manifest_sha256"]:
+        raise ValueError("VLM frame manifest differs from the frozen benchmark.")
+
+
+def vlm_inputs_hash(pairs: list[dict], frames: Path) -> str:
+    digest = hashlib.sha256()
+    for pair in sorted(pairs, key=lambda row: row["id"]):
+        digest.update(pair["id"].encode())
+        try:
+            a, b = pair_images(pair, frames)
+            for image in (a, b):
+                digest.update(str(image.size).encode())
+                digest.update(image.tobytes())
+                image.close()
+        except Exception:
+            raise ValueError("VLM eval frames are missing or cannot be decoded.") from None
+    return digest.hexdigest()
+
+
+def evaluate_vlm(pairs: list[dict], frames: Path, *, client=None, live: bool = False) -> dict:
+    from agent.deep_agent.continuity_qc import ContinuityConfig, load_calibration, DINO_MODEL
+    from agent.deep_agent.continuity_qc_vlm import SCORES_PATH, eval_report
+    from providers.gemini.api import judge_pair, dry_run
+    from providers.gemini.contracts import GeminiJudgement
+
+    if client is None and not live and not dry_run():
+        raise ValueError("Live adapter use requires live=True; offline evaluation requires dry-run or a fake client.")
+    canonical = json.loads(SCORES_PATH.read_text())["pairs"]
+    validate_vlm_pairs(pairs, canonical)
+    metrics = {row["id"]: row for row in canonical}
+    from agent.deep_agent.routing import POLICY
+
+    if vlm_inputs_hash(pairs, frames) != POLICY["continuity_qc"]["vlm_eval_gate"]["inputs_sha256"]:
+        raise ValueError("VLM images differ from the frozen benchmark.")
+    config = ContinuityConfig(backend="local")
+    calibration = load_calibration()
+    decisions = []
+    for pair in pairs:
+        a, b = pair_images(pair, frames)
+        try:
+            judgement = GeminiJudgement.model_validate(client.judge(a, b) if client else judge_pair(a, b))
+            score = metrics[pair["id"]]
+            _, siglip, dino = calibration.decide(score["siglip"], score["dinov2"], DINO_MODEL, config)
+            cascade = judgement.same_shot_continuity and (siglip + dino) / 2 >= config.vlm_prefilter_threshold
+            decisions.append({"id": pair["id"], "status": "completed", **judgement.model_dump(),
+                              "cascade_accepted": cascade})
+        except Exception:
+            decisions.append({"id": pair["id"], "status": "skipped", "reason": "Judge unavailable or dry-run."})
+        finally:
+            a.close()
+            b.close()
+    return eval_report(decisions, live=live and client is None)
+
+
+def stage_vlm(args) -> None:
+    from providers.gemini.api import dry_run
+    from agent.deep_agent.continuity_qc_vlm import eval_qualifies
+
+    if args.live and (dry_run() or not args.approve_estimated_cost):
+        raise ValueError("Live eval requires GEMINI_DRY_RUN=false and --approve-estimated-cost.")
+    if not args.live and not dry_run():
+        raise ValueError("Set GEMINI_DRY_RUN=true for an offline eval, or explicitly use --live with cost approval.")
+    pairs = json.loads((args.work / "pairs.json").read_text())
+    result = evaluate_vlm(pairs, args.frames or args.work / "frames", live=args.live)
+    args.vlm_out.parent.mkdir(parents=True, exist_ok=True)
+    args.vlm_out.write_text(json.dumps(result, indent=2) + "\n")
+    print(json.dumps({key: result[key] for key in ("pairs", "complete", "live", "accuracy", "cascade_accuracy", "per_category")}))
+    print("eligible for review:", eval_qualifies(result))
+
+
 def markdown(results: dict) -> str:
     cats = POSITIVE + NEGATIVE
     head = "| Scorer | AUROC (95% CI) | " + " | ".join(cats) + " | Best-thr acc (thr) | 5-fold CV acc | Acc @0.8 |"
@@ -683,7 +778,7 @@ def markdown(results: dict) -> str:
 
 def main(argv: Sequence[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("stage", choices=["detect", "sheets", "pairs", "embed", "report", "calibrate"])
+    parser.add_argument("stage", choices=["detect", "sheets", "pairs", "embed", "report", "calibrate", "vlm"])
     parser.add_argument("--footage", type=Path, default=Path("footage"))
     parser.add_argument("--work", type=Path, default=Path("work"))
     parser.add_argument("--scenes", type=Path, default=ROOT / "docs/continuity_qc_benchmark_scenes.json")
@@ -692,13 +787,17 @@ def main(argv: Sequence[str] | None = None) -> None:
     parser.add_argument("--threads", type=int, default=4)
     parser.add_argument("--out", type=Path, default=ROOT / "docs/continuity_qc_benchmark_results.json")
     parser.add_argument("--scores", type=Path, default=ROOT / "docs/continuity_qc_benchmark_scores.json")
+    parser.add_argument("--frames", type=Path, help="Existing decoded keyframes directory for VLM eval")
+    parser.add_argument("--vlm-out", type=Path, default=ROOT / ".renderhaus/e2e/vlm-eval.json")
+    parser.add_argument("--live", action="store_true", help="Explicitly authorize a live VLM evaluation")
+    parser.add_argument("--approve-estimated-cost", action="store_true", help="Acknowledge the labelled estimate in CONTINUITY_QC_BENCHMARK.md")
     parser.add_argument("--calibration-out", type=Path,
                         default=ROOT / "agent/deep_agent/continuity_qc_calibration.json")
     args = parser.parse_args(argv)
     if args.stage != "calibrate":
         args.work.mkdir(parents=True, exist_ok=True)
     {"detect": stage_detect, "sheets": stage_sheets, "pairs": stage_pairs,
-     "embed": stage_embed, "report": stage_report, "calibrate": stage_calibrate}[args.stage](args)
+     "embed": stage_embed, "report": stage_report, "calibrate": stage_calibrate, "vlm": stage_vlm}[args.stage](args)
 
 
 if __name__ == "__main__":

@@ -291,6 +291,13 @@ class GatewayExecutor:
                     return "Process Act-Two chunks sequentially. Poll the accepted chunk to completion before submitting another."
         sync_request = None
         topaz_request = None
+        if provider == "gemini":
+            from providers.gemini.contracts import validate_arguments
+
+            try:
+                validate_arguments(tool, arguments)
+            except ValueError as exc:
+                return str(exc)
         if provider == "mureka":
             from providers.mureka.contracts import validate_arguments
 
@@ -606,6 +613,8 @@ class GatewayExecutor:
             payload = _unwrap_tool_output(output)
             provider_job_id = completed.provider_job_id or payload.get("job_id")
             ab_arm = route.alias if route.job_type == "image_edit" and intent_constraints(studio.prompt, arguments=arguments)["predicates"]["text_only_edit"] else None
+            if route.job_type == "continuity_qc":
+                ab_arm = "gemini_vlm_judge"
             self.outcomes.record(
                 event_id=f"approval-{self.run_scope}-{call_id}", provider=provider, model=model,
                 job_type=job_type(name), provider_job_id=provider_job_id,

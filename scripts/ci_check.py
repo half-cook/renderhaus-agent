@@ -16,6 +16,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 def _force_dry_run() -> None:
+    os.environ["GEMINI_DRY_RUN"] = "true"
     os.environ["KLING_DRY_RUN"] = "true"
     os.environ["RUNWAY_DRY_RUN"] = "true"
     os.environ["LUMA_DRY_RUN"] = "true"
@@ -76,8 +77,8 @@ def check_routing_inventory() -> None:
     from providers.catalog import PROVIDERS
     from providers.registry import load_committed_schemas
 
-    assert len(PROVIDERS) == 14
-    assert sum(len(load_committed_schemas(spec)) for spec in PROVIDERS) == 110
+    assert len(PROVIDERS) == 15
+    assert sum(len(load_committed_schemas(spec)) for spec in PROVIDERS) == 112
     paths = list(SKILLS_ROOT.glob("*/SKILL.md"))
     assert len(paths) == 24
     assert "ladder" not in POLICY and "premium_targets" not in POLICY
@@ -94,8 +95,15 @@ def check_routing_inventory() -> None:
         assert set(metadata["include_tools"].split()) <= DISPATCH_TARGETS.keys(), path
         assert all(TOOL_MAP[alias]["status"] != "retired" for alias in metadata["routing_tools"].split()), path
     cases = json.loads((ROOT / "tests/fixtures/skill_routing.json").read_text())
-    assert len(cases) == 129 and sum(not case["skip_reason"] for case in cases) == 122
-    print("ok routing inventory (14 providers, 110 Gateway tools, 24 skills, 122 active routing rows)")
+    assert len(cases) == 129 and sum(not case["skip_reason"] for case in cases) == 123
+    from agent.deep_agent.continuity_qc_vlm import EVAL_PATH, default_vlm_enabled
+
+    if POLICY["continuity_qc"]["vlm_eval_gate"]["result_sha256"]:
+        import subprocess
+
+        subprocess.run(["git", "ls-files", "--error-unmatch", str(EVAL_PATH.relative_to(ROOT))], check=True, capture_output=True)
+        assert default_vlm_enabled(), "Committed VLM evidence does not qualify for promotion."
+    print("ok routing inventory (15 providers, 112 Gateway tools, 24 skills, 123 active routing rows)")
 
 
 def _assert_gateway_shape(schema: object) -> None:
@@ -124,9 +132,22 @@ def check_dry_run_dispatch() -> None:
         mureka_jobs = {}
         heygen_job_id = None
         topaz_job_id = None
+        gemini_job_id = None
         for schema in load_committed_schemas(spec):
             name = schema["name"]
             arguments = dummy_arguments(schema)
+            if spec.id == "gemini":
+                if name == "judge_continuity":
+                    import base64
+                    from PIL import Image
+
+                    frame = io.BytesIO()
+                    Image.new("RGB", (16, 16), "blue").save(frame, format="PNG")
+                    encoded = base64.b64encode(frame.getvalue()).decode("ascii")
+                    arguments = {"before_image_b64": encoded, "after_image_b64": encoded}
+                else:
+                    assert gemini_job_id, "Gemini poll must reuse a submitted dry-run handle"
+                    arguments = {"job_id": gemini_job_id}
             if spec.id == "mureka":
                 arguments = {"generate_song": {"lyrics": "[Verse]\nOffline song"},
                              "generate_instrumental": {"prompt": "Gentle piano"},
@@ -208,6 +229,8 @@ def check_dry_run_dispatch() -> None:
                     "segments": [{"source_id": "source", "first_word": 0, "last_word": 0}],
                 }
             result = dispatch(spec.id, name, arguments)
+            if spec.id == "gemini" and name == "judge_continuity":
+                gemini_job_id = result["job_id"]
             if spec.id == "mureka" and name.startswith("generate_"):
                 mureka_jobs[name] = result["job_id"]
             assert isinstance(result, dict), f"{spec.id}.{name} did not return a dict"

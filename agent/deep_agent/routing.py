@@ -11,6 +11,7 @@ from pathlib import Path
 POLICY = json.loads(Path(__file__).with_name("routing_policy.json").read_text())
 TOOL_MAP = POLICY["tools"]
 TARGET_PROVIDERS = {
+    "Gemini": "gemini",
     "Mureka": "mureka",
     "Topaz": "topaz",
     "HeyGen": "heygen",
@@ -468,6 +469,7 @@ def intent_constraints(prompt: str, *, tier: str | None = None, confidential: bo
         (r"\bopenai\b|gpt[ -]image", "openai_images"),
         (r"\brunway\b|\baleph\b|gen.?4", "runway"), (r"\bluma\b|\bray.?3\b", "luma"),
         (r"\bmureka\b", "mureka"), (r"\bfish\b", "fish_audio"), (r"\belevenlabs\b", "elevenlabs"),
+        (r"\bgemini\b", "gemini"),
         (r"\bsync[ -]?3\b|sync\.so|\b(?:use|using|via)\s+sync\b", "sync"),
         (r"\bheygen\b|\bavatar[ -]v\b", "heygen"),
         (r"model[ -]?studio|dashscope|alibaba", "alibaba_modelstudio"),
@@ -598,6 +600,11 @@ def select_provider(job: str, *, tier: str | None = None, required: dict | None 
     if capability not in POLICY["capability_map"]:
         return Route(status="blocked", reason=f"No capability map for {capability}.")
     choice = POLICY["capability_map"][capability]
+    if capability == "continuity_qc" and choice["default"] == "gemini_vlm_judge":
+        from agent.deep_agent.continuity_qc_vlm import default_vlm_enabled
+
+        if not default_vlm_enabled():
+            choice = {**choice, "default": "local_qc"}
     if provider and capability not in POLICY["explicit_routes"].get(provider, {}):
         provider = next((p for p in provider_candidates or []
                          if capability in POLICY["explicit_routes"].get(p, {})), provider)
@@ -799,6 +806,8 @@ def select_provider(job: str, *, tier: str | None = None, required: dict | None 
     provider_id = row["provider"] if row else tool_parts(tool)[0] if tool else "local"
     label = row["label"] if row else alias
     disclosure = f"Selected {label}. Provider {provider_id}; model {model or 'none'}. {basis}. {quote.description}"
+    if provider_id == "gemini":
+        disclosure += " Experimental continuity judge. Default promotion requires a committed passing eval. Background inputs are stored by the vendor."
     if provider_id == "alibaba_modelstudio":
         disclosure += " Dry-run preview only; live customer use is blocked by the preview licence."
     if predicates["real_face_refs"] and alias in {"wan3_t2v", "wan3_i2v", "wan3_r2v", "wan3_edit", "wan3_extend"}:
@@ -836,6 +845,8 @@ def premium_video(name: str) -> bool:
 
 
 def effective_model(provider: str, tool: str, arguments: dict) -> str | None:
+    if provider == "gemini":
+        return arguments.get("model") or os.getenv("GEMINI_VLM_MODEL", "gemini-3.8-flash")
     policy = POLICY["providers"].get(provider, {})
     if provider == "mureka":
         if tool == "generate_lyrics_video":
@@ -909,6 +920,10 @@ def policy_blocker(name: str, arguments: dict, *, region: str | None = None) -> 
         return f"Tool {name} has a fixed model {model}."
     if model is not None and not isinstance(model, str):
         return f"Model for {provider} must be a string."
+    if provider == "gemini" and model not in policy["models"]:
+        from providers.gemini.api import dry_run
+
+        return None if dry_run() else "UNVERIFIED Gemini model; live use blocked and estimate unknown."
     if provider == "mureka" and model not in policy["models"]:
         from providers.mureka.api import dry_run
 
@@ -1006,6 +1021,13 @@ def estimate_cost(name: str, arguments: dict, *, list_price: bool = False) -> Co
         return CostEstimate(None, blocker)
     provider, tool = tool_parts(name)
     model = effective_model(provider, tool, arguments)
+    if provider == "gemini":
+        try:
+            from server.billing_rates import gemini_quote
+
+            return CostEstimate(gemini_quote(tool, arguments).total_cents)
+        except ValueError as exc:
+            return CostEstimate(None, str(exc))
     if provider in {"heygen", "topaz", "mureka"} or name in {"Runway___act_two", "Fal___kling_motion_control", "Fal___mirelo_v2a", "Fal___ideogram_edit", "Fal___recraft_text_to_vector"}:
         try:
             return CostEstimate(_published_cost(provider, tool, arguments).total_cents)

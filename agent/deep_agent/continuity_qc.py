@@ -20,9 +20,12 @@ from __future__ import annotations
 import json
 import math
 import os
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
-from typing import Any, Callable, Protocol, Sequence, TypeVar
+from typing import TYPE_CHECKING, Any, Callable, Protocol, Sequence, TypeVar
+
+if TYPE_CHECKING:
+    from providers.gemini.contracts import GeminiJudgement
 
 
 SIGLIP_MODEL = "google/siglip-so400m-patch14-384"
@@ -34,6 +37,27 @@ OPT_IN_MODELS = frozenset({DINOV3_MODEL})
 CALIBRATION_PATH = Path(__file__).with_name("continuity_qc_calibration.json")
 RULES = ("calibrated_mean", "legacy_min")
 TrainingResult = TypeVar("TrainingResult")
+
+
+class ContinuityJudge(Protocol):
+    def judge(self, before: Any, after: Any) -> GeminiJudgement: ...
+
+
+def _default_backend() -> str:
+    if backend := os.environ.get("CONTINUITY_QC_BACKEND"):
+        return backend
+    from agent.deep_agent.routing import POLICY
+    from agent.deep_agent.continuity_qc_vlm import default_vlm_enabled
+
+    if POLICY["capability_map"]["continuity_qc"]["default"] == "gemini_vlm_judge" and default_vlm_enabled():
+        return "vlm"
+    return "local"
+
+
+def _prefilter_threshold() -> float:
+    from agent.deep_agent.routing import POLICY
+
+    return POLICY["continuity_qc"].get("vlm_prefilter_threshold", 0.1)
 
 
 class ImageEmbedder(Protocol):
@@ -73,9 +97,16 @@ class ContinuityConfig:
     rule: str = "calibrated_mean"
     acceptance_threshold: float | None = None
     veto_threshold: float | None = None
-    backend: str = field(default_factory=lambda: os.environ.get("CONTINUITY_QC_BACKEND", "local"))
+    backend: str = field(default_factory=_default_backend)
+    embedding_backend: str = field(default_factory=lambda: os.getenv("CONTINUITY_QC_EMBEDDING_BACKEND", "local"))
+    vlm_prefilter_threshold: float = field(default_factory=_prefilter_threshold)
 
     def __post_init__(self):
+        if self.embedding_backend not in {"local", "runpod"}:
+            raise ValueError("embedding_backend must be local or runpod.")
+        if (isinstance(self.vlm_prefilter_threshold, bool) or not math.isfinite(self.vlm_prefilter_threshold)
+                or not 0 <= self.vlm_prefilter_threshold <= 1):
+            raise ValueError("vlm_prefilter_threshold must be a finite probability.")
         if not math.isfinite(self.similarity_threshold) or not -1 <= self.similarity_threshold <= 1:
             raise ValueError("similarity_threshold must be finite and between -1 and 1.")
         if self.rule not in RULES:
@@ -158,6 +189,9 @@ class ShotPairScore:
     accepted: bool
     siglip_score: float | None = None
     dino_score: float | None = None
+    judgement: GeminiJudgement | None = None
+    judge_status: str = "embeddings"
+    judge_reason: str = ""
 
     @property
     def score(self) -> float:
@@ -267,6 +301,7 @@ class ContinuityQC:
         face_identity: FaceIdentity | None = None,
         config: ContinuityConfig | None = None,
         calibration: Calibration | None = None,
+        judge: ContinuityJudge | None = None,
     ):
         from agent.deep_agent.routing import POLICY
 
@@ -282,18 +317,33 @@ class ContinuityQC:
                 "(DINOv3 only when continuity_qc.dinov3_enabled is on)."
             )
         self.face_identity = face_identity or UnconfiguredFaceIdentity()
+        self.judge = judge
         self.calibration = calibration or load_calibration()
         missing = {SIGLIP_MODEL, self.dino_model} - set(self.calibration.models)
         if missing:
             raise ValueError(f"Continuity calibration is missing {sorted(missing)}.")
 
     def score(self, shots: Sequence[Shot]) -> ContinuityReport:
+        if self.config.backend == "vlm":
+            try:
+                metrics = ContinuityQC(
+                    siglip=self.siglip, dino=self.dino, face_identity=self.face_identity,
+                    calibration=self.calibration,
+                    config=replace(self.config, backend=self.config.embedding_backend),
+                ).score(shots)
+                if metrics.status != "completed":
+                    return metrics
+                return self._judge_report(shots, metrics)
+            except Exception:
+                return ContinuityReport((), self.config.similarity_threshold, self.dino_model,
+                                        self.config.rule, status="skipped",
+                                        reason="VLM continuity embedding pre-filter unavailable.")
         if self.config.backend != "local":
             from agent.deep_agent.continuity_qc_runpod import RunPodBackendError, runpod_similarities
 
             try:
                 if self.config.backend != "runpod":
-                    raise RunPodBackendError("Continuity backend must be local or runpod.")
+                    raise RunPodBackendError("Continuity backend must be local, runpod or vlm.")
                 similarities = runpod_similarities(shots, self.dino_model)
                 return self._report(shots, similarities)
             except RunPodBackendError as exc:
@@ -316,6 +366,30 @@ class ContinuityQC:
             for index in range(len(shots) - 1)
         ]
         return self._report(shots, similarities)
+
+    def _judge_report(self, shots: Sequence[Shot], metrics: ContinuityReport) -> ContinuityReport:
+        from providers.gemini.api import GeminiError, judge_pair
+        from providers.gemini.contracts import GeminiJudgement
+
+        pairs = []
+        reason = ""
+        for before, after, pair in zip(shots, shots[1:], metrics.pairs):
+            if pair.score < self.config.vlm_prefilter_threshold:
+                pairs.append(replace(pair, accepted=False, judge_status="prefilter_rejected"))
+                continue
+            try:
+                judgement = (self.judge.judge(before.frame, after.frame) if self.judge
+                             else judge_pair(before.frame, after.frame))
+                judgement = GeminiJudgement.model_validate(judgement)
+                pairs.append(replace(pair, accepted=judgement.same_shot_continuity,
+                                     judgement=judgement, judge_status="completed"))
+            except Exception as exc:
+                reason = str(exc) if isinstance(exc, GeminiError) else "VLM continuity judge unavailable."
+                pairs.append(replace(pair, judge_status="skipped", judge_reason=reason))
+                pairs.extend(replace(rest, judge_status="skipped", judge_reason=reason)
+                             for rest in metrics.pairs[len(pairs):])
+                break
+        return replace(metrics, pairs=tuple(pairs), status="skipped" if reason else "completed", reason=reason)
 
     def _report(self, shots: Sequence[Shot], similarities: Sequence[tuple[float, float]]) -> ContinuityReport:
         pairs = []

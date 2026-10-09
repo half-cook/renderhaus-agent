@@ -59,6 +59,44 @@ def _with_fee(provider_cents: int) -> GenerationCost:
     return GenerationCost(provider_cents=max(0, provider_cents), fee_cents=fee)
 
 
+GEMINI_PRICING_URL = "https://ai.google.dev/gemini-api/docs/pricing"
+GEMINI_PRICING_READ_DATE = "2026-10-09"
+GEMINI_PROMO_END = date(2026, 12, 31)
+
+
+def gemini_rates(*, as_of: date | None = None) -> tuple[Decimal, Decimal]:
+    """Standard paid input/output dollars per million, including thought tokens."""
+    day = as_of or datetime.now(timezone.utc).date()
+    return (Decimal("0.75"), Decimal("3.75")) if day <= GEMINI_PROMO_END else (Decimal("1.50"), Decimal("7.50"))
+
+
+def gemini_usage_usd(usage: dict, *, as_of: date | None = None) -> float:
+    counts = [usage.get(key, 0) for key in ("total_input_tokens", "total_output_tokens", "total_thought_tokens")]
+    if any(type(value) is not int or value < 0 for value in counts):
+        raise ValueError("Gemini usage counts must be nonnegative integers.")
+    input_rate, output_rate = gemini_rates(as_of=as_of)
+    return float((counts[0] * input_rate + (counts[1] + counts[2]) * output_rate) / Decimal(1000000))
+
+
+def gemini_quote(tool: str, arguments: dict) -> GenerationCost:
+    if tool == "get_task":
+        return GenerationCost(0, 0)
+    if tool != "judge_continuity":
+        raise ValueError("Unknown Gemini tool.")
+    from agent.deep_agent.routing import effective_model
+
+    if effective_model("gemini", tool, arguments) != "gemini-3.8-flash":
+        raise ValueError("UNVERIFIED Gemini model; estimate unknown.")
+    try:
+        quotes = json.loads(os.getenv("GEMINI_TOOL_COST_CENTS_JSON", "{}"))
+    except ValueError:
+        raise ValueError("Gemini quote config is invalid; estimate unknown.") from None
+    quote = quotes.get(tool) if isinstance(quotes, dict) else None
+    if type(quote) is not int or quote < 0:
+        raise ValueError("Gemini pre-call token usage is unknown. Configure GEMINI_TOOL_COST_CENTS_JSON for billed live calls; official token rates are verified.")
+    return _with_fee(quote)
+
+
 # Official fal model pricing read 2026-10-09. Recraft's page embeds
 # publicEndpointBilling {billing_unit: images, price: 0.3} for this exact endpoint.
 IDEOGRAM_PRICING_URL = "https://fal.ai/models/ideogram/v4.5/edit"
@@ -736,6 +774,10 @@ def cost_for(provider: str, tool: str, arguments: dict[str, Any]) -> GenerationC
     (to charge the same amount), so it must be a pure function of the
     request, not of anything the provider returns.
     """
+    if provider == "gemini":
+        from providers.gemini.api import dry_run
+
+        return GenerationCost(0, 0) if dry_run() else gemini_quote(tool, arguments)
     if provider == "mureka":
         if tool in {"get_music_task", "get_video_task", "list_mureka_models"}:
             return GenerationCost(0, 0)
