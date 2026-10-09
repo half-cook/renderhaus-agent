@@ -47,7 +47,8 @@ Read `read_studio_context` and discover the actual Gateway schema before each op
 4. Call pure `crop_plan_preview` with `source_width`, `source_height`, `aspect` and optional
    `rotation`, `subject_box`, `crop_box`, `anchor`, `safe_zone` and `allow_upscale`.
    `crop_box` uses even integer `x,y,width,height`. It must fit inside the display frame.
-   `safe_zone` accepts `top`, `bottom` and `side` fractions in `0..0.49`.
+   `safe_zone` accepts `top`, `bottom` and `side` fractions in `0..0.49`,
+   leaving at least 5% inner width and height.
    The planner clamps one static window per shot to the frame. If the subject and safe
    margins cannot fit, the decision is `pad_blur`, which retains the whole foreground.
    No pans, tracking or mid-shot crop changes are available.
@@ -77,6 +78,8 @@ warnings for a person to approve. Check burned-in legal lines, price, logo and c
 at the beginning, middle and end. Request an approved clean/layered source if those pixels
 cannot fit, rather than cropping them away. Clarify logo ownership before removing a mark.
 
+New timeline crop/pad fields require a square-pixel (SAR `1:1`) source; ask for a normalized
+master rather than silently distorting anamorphic footage. No normalization op exists here.
 Probe each completed file. Report delivered width and height, `source_resolution`, FPS,
 audio, SAR `1:1`, crop/pad method and every resolution warning. Preserve the measured FPS
 and bitrate policy. The nominal maximum targets are `1080x1920`, `1080x1080`, `1080x1350`,
