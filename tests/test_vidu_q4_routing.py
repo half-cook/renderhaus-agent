@@ -35,29 +35,31 @@ class ViduRoutingTests(unittest.TestCase):
         ]:
             with self.subTest(prompt=prompt):
                 route = routing.route_intent(prompt)
-                self.assertEqual((route.skill, route.tool, route.model, route.tier, route.status),
-                                 ("vidu-q4", tool, model, "standard", "ready"))
+                self.assertEqual((route.skill, route.tool, route.model, route.status),
+                                 ("named-provider", tool, model, "ready"))
                 self.assertIn("Estimated cost $", route.disclosure)
-        self.assertEqual(routing.route_intent("Wan first last frame morph").tool, "Fal___image_to_video")
+                self.assertIn("explicit request; not the default", route.disclosure)
+        self.assertEqual(routing.route_intent("Wan 2.2 VACE first last frame morph").tool, "Fal___image_to_video")
         self.assertEqual(routing.route_intent("animate an image").tool, "Seedance___image_to_video")
 
-    def test_paid_standard_approval_and_fixed_identity(self):
+    def test_paid_video_approval_and_fixed_identity(self):
         for name, model in [(I2V, I2V_MODEL), (R2V, R2V_MODEL)]:
-            self.assertEqual(routing.job_type(name), "i2v")
+            self.assertEqual(routing.job_type(name), "i2v" if name == I2V else "reference_video")
             self.assertFalse(routing.is_free_tool(name))
-            self.assertFalse(routing.premium_video(name))
+            self.assertTrue(routing.premium_video(name))
             self.assertTrue(tool_needs_approval(name, autonomous=False))
-            self.assertFalse(tool_needs_approval(name, autonomous=True))
+            self.assertTrue(tool_needs_approval(name, autonomous=True))
             self.assertEqual(routing.effective_model("fal", name.split("___")[1], {}), model)
             self.assertIsNone(routing.policy_blocker(name, {}, region="US"))
             self.assertIsNone(routing.policy_blocker(name, {}, region="CA"))
-        self.assertNotIn("Fal", routing.POLICY["premium_targets"])
+        self.assertNotIn("premium_targets", routing.POLICY)
 
     def test_capabilities_and_billing_derived_prices(self):
         rows = [r for r in routing.capability_table() if r["model"] in {I2V_MODEL, R2V_MODEL}]
         self.assertEqual(len(rows), 2)
         for row in rows:
-            self.assertEqual(row["tiers"], ["standard"])
+            self.assertNotIn("tiers", row)
+            self.assertTrue(row["explicit_only"])
             self.assertEqual(row["jobs"]["max_resolution"], 2160)
             self.assertTrue(row["jobs"]["i2v"])
             self.assertTrue(row["jobs"]["native_audio"])
@@ -83,16 +85,23 @@ class ViduRoutingTests(unittest.TestCase):
             self.assertEqual(routing.select_provider("i2v", provider="fal", model=I2V_MODEL,
                                                     arguments=args).status, "blocked")
         route = routing.select_provider("i2v", required={"voice_references": True})
-        self.assertEqual(route.tool, R2V)
+        self.assertEqual(route.status, "blocked")
+        self.assertIsNone(route.tool)
 
-    def test_confidential_and_retry_cannot_select_q4_even_on_same_provider(self):
-        for option in ({"confidential": True}, {"retry": True}):
-            route = routing.select_provider("i2v", provider="fal", model=I2V_MODEL, **option)
-            self.assertEqual(route.tool, "Fal___image_to_video")
-            self.assertNotIn("vidu", route.model)
-            self.assertEqual(routing.select_provider("i2v", required={"native_audio": True},
-                                                    **option).status, "blocked")
-        self.assertNotEqual(routing.route_intent("confidential Vidu Q4 video").tool, I2V)
+    def test_confidential_metadata_does_not_change_explicit_q4_selection(self):
+        for confidential in (False, True):
+            route = routing.select_provider("i2v", provider="fal", model=I2V_MODEL,
+                                            confidential=confidential)
+            self.assertEqual(route.tool, I2V)
+            self.assertEqual(route.model, I2V_MODEL)
+        self.assertEqual(routing.route_intent("confidential Vidu Q4 video").tool, I2V)
+
+    def test_training_retry_stays_on_wan_and_preserves_required_features(self):
+        route = routing.select_provider("i2v", provider="fal", model=I2V_MODEL, retry=True)
+        self.assertEqual(route.tool, "Fal___image_to_video")
+        self.assertNotIn("vidu", route.model)
+        self.assertEqual(routing.select_provider("i2v", required={"native_audio": True},
+                                                retry=True).status, "blocked")
 
     def test_q4_provenance_never_enters_training(self):
         from agent.deep_agent.outcomes import OutcomeStore
@@ -131,7 +140,7 @@ class ViduGraphTests(unittest.IsolatedAsyncioTestCase):
                 args = {"image_url": IMAGE, "prompt": "A talking product", "duration": 5}
                 with self.assertRaises(StudioAgentApprovalRequired) as paused:
                     await run_with_servers(request, studio, [gateway], model=ScriptedModel([
-                        call("read_file", {"file_path": "/skills/vidu-q4/SKILL.md"}, "skill"),
+                        call("read_file", {"file_path": "/skills/named-provider/SKILL.md"}, "skill"),
                         call("call_media_tool", {"tool_name": I2V, "arguments": args}, "q4")]))
                 approval = paused.exception.approvals[0]
                 self.assertEqual(approval.tool_name, I2V)
@@ -166,11 +175,16 @@ class ViduGraphTests(unittest.IsolatedAsyncioTestCase):
                         {"reference_audio_urls": []}, {"resolution": "720p"}):
             self.assertIsNotNone(executor.selection_blocker(R2V, {**args, **changed}, route))
 
-    async def test_preapproved_confidential_q4_fails_without_dispatch(self):
-        gateway = self.gateway()
-        studio = _context_from_request(StudioAgentRequest(prompt="animate image", confidential=True,
-                                                         autonomous=True, job_id="private"))
-        result = await GatewayExecutor(studio, [gateway]).execute({"tool_name": I2V,
-            "arguments": {"image_url": IMAGE}, "call_id": "bypass"}, approved=True)
-        self.assertEqual(result["status"], "not_run")
-        gateway.call_tool.assert_not_awaited()
+    async def test_preapproved_unnamed_q4_cannot_bypass_capability_default(self):
+        for confidential in (False, True):
+            with self.subTest(confidential=confidential):
+                gateway = self.gateway()
+                studio = _context_from_request(StudioAgentRequest(
+                    prompt="animate image", confidential=confidential,
+                    autonomous=True, job_id="project",
+                ))
+                result = await GatewayExecutor(studio, [gateway]).execute({"tool_name": I2V,
+                    "arguments": {"image_url": IMAGE}, "call_id": "bypass"}, approved=True)
+                self.assertEqual(result["status"], "not_run")
+                self.assertIn("Capability map selected", result["reason"])
+                gateway.call_tool.assert_not_awaited()

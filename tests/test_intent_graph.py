@@ -111,7 +111,10 @@ class IntentGraphTests(unittest.IsolatedAsyncioTestCase):
 
         def check_route(messages, tools):
             self.assertIn('"skill": "t2v"', messages[-1].text)
-            self.assertIn("Fal___text_to_video", messages[-1].text)
+            self.assertIn("Seedance___text_to_video", messages[-1].text)
+            self.assertIn('"alias": "wan3_t2v"', messages[-1].text)
+            self.assertIn('"basis": "interim default until', messages[-1].text)
+            self.assertNotIn('"tier":', messages[-1].text)
             return final()
 
         await run_with_servers(
@@ -131,13 +134,33 @@ class IntentGraphTests(unittest.IsolatedAsyncioTestCase):
                 self.assertIn("spending cap", messages[-1].text)
                 return final()
 
-            await run_with_servers(
-                request,
-                studio,
-                [gateway],
-                model=ScriptedModel(
-                    [read_t2v(), generate(name, "first"), generate(name, "second"), check_cap]
-                ),
-            )
+            with self.assertRaises(StudioAgentApprovalRequired) as first_pending:
+                await run_with_servers(request, studio, [gateway], model=ScriptedModel([
+                    read_t2v(), generate(name, "first"),
+                ]))
+            gateway.call_tool.assert_not_awaited()
+            first = first_pending.exception.approvals[0]
+            self.assertEqual(first.tool_name, name)
+            first_resume = request.model_copy(update={
+                "session_items": json.loads(json.dumps(studio.session_items)),
+                "resume_state": first_pending.exception.state,
+                "approval_decisions": [StudioApprovalDecision(call_id=first.call_id, decision="approve")],
+            })
+            second_studio = _context_from_request(first_resume)
+            with self.assertRaises(StudioAgentApprovalRequired) as second_pending:
+                await run_with_servers(first_resume, second_studio, [gateway], model=ScriptedModel([
+                    generate(name, "second"),
+                ]))
+            gateway.call_tool.assert_awaited_once_with(name, {"prompt": "forest"})
+            second = second_pending.exception.approvals[0]
+            self.assertEqual(second.tool_name, name)
+            self.assertNotEqual(second.call_id, first.call_id)
+            second_resume = request.model_copy(update={
+                "session_items": json.loads(json.dumps(second_studio.session_items)),
+                "resume_state": second_pending.exception.state,
+                "approval_decisions": [StudioApprovalDecision(call_id=second.call_id, decision="approve")],
+            })
+            restored = _context_from_request(second_resume)
+            await run_with_servers(second_resume, restored, [gateway], model=ScriptedModel([check_cap]))
             gateway.call_tool.assert_awaited_once()
-            self.assertTrue(studio.session_items[0]["spending"]["stopped"])
+            self.assertTrue(restored.session_items[0]["spending"]["stopped"])

@@ -48,16 +48,16 @@ class SpendingTests(unittest.IsolatedAsyncioTestCase):
             patch("agent.gateway_executor.estimate_cost", side_effect=AssertionError("cap is off")),
         ):
             executor, gateway = self.executor()
-            await self.paid(executor)
+            await self.paid(executor, approved=True)
             gateway.call_tool.assert_awaited_once()
             self.assertEqual(executor.reservations, {})
 
     async def test_cap_allows_exact_limit_and_then_stops_paid_tools(self):
         with patch.dict(os.environ, {"RENDERHAUS_AUTONOMOUS_RUN_CAP_CENTS": CAP}):
             executor, gateway = self.executor()
-            first = await self.paid(executor)
+            first = await self.paid(executor, approved=True)
             self.assertEqual(first["status"], "succeeded")
-            blocked = await self.paid(executor, "two")
+            blocked = await self.paid(executor, "two", approved=True)
             self.assertEqual(blocked["status"], "not_run")
             self.assertIn("cap", blocked["reason"])
             gateway.call_tool.assert_awaited_once()
@@ -84,7 +84,7 @@ class SpendingTests(unittest.IsolatedAsyncioTestCase):
     async def test_concurrent_dispatch_cannot_overspend(self):
         with patch.dict(os.environ, {"RENDERHAUS_AUTONOMOUS_RUN_CAP_CENTS": CAP}):
             executor, gateway = self.executor()
-            outputs = await asyncio.gather(self.paid(executor, "one"), self.paid(executor, "two"))
+            outputs = await asyncio.gather(self.paid(executor, "one", approved=True), self.paid(executor, "two", approved=True))
             self.assertEqual(sum(x["status"] == "succeeded" for x in outputs), 1)
             gateway.call_tool.assert_awaited_once()
 
@@ -98,7 +98,7 @@ class SpendingTests(unittest.IsolatedAsyncioTestCase):
             )
             self.assertIn("unknown", output["reason"])
             self.assertEqual(output["status"], "not_run")
-            await self.paid(executor, "later")
+            await self.paid(executor, "later", approved=True)
             gateway.call_tool.assert_not_awaited()
 
     async def test_non_autonomous_runs_ignore_cap_and_keep_approval(self):
@@ -123,8 +123,8 @@ class SpendingTests(unittest.IsolatedAsyncioTestCase):
         with patch.dict(os.environ, {"RENDERHAUS_AUTONOMOUS_RUN_CAP_CENTS": CAP}):
             executor, gateway = self.executor()
             gateway.call_tool.side_effect = RuntimeError("timeout after submission")
-            await self.paid(executor)
-            await self.paid(executor, "two")
+            await self.paid(executor, approved=True)
+            await self.paid(executor, "two", approved=True)
             gateway.call_tool.assert_awaited_once()
             self.assertTrue(executor.reservations)
 
@@ -153,12 +153,12 @@ class SpendingTests(unittest.IsolatedAsyncioTestCase):
 
             gateway.call_tool.side_effect = cancel_after_submission
             with self.assertRaises(asyncio.CancelledError):
-                await self.paid(executor)
+                await self.paid(executor, approved=True)
             restored = self.context()
             restored.session_items = saved[-1]
             stale = {"spending": {"scope": "run-one", "reservations": {}}}
             restarted, _ = self.executor(studio=restored, session=stale, gateway=gateway)
-            blocked = await self.paid(restarted, "second")
+            blocked = await self.paid(restarted, "second", approved=True)
             self.assertEqual(blocked["status"], "not_run")
             gateway.call_tool.assert_awaited_once()
 

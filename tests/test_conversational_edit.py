@@ -51,11 +51,12 @@ class ConversationalRoutingTests(unittest.TestCase):
         cases = json.loads((Path(__file__).parent / "fixtures/skill_routing.json").read_text())
         rows = [case for case in cases if case["suite"] == "conversational-edit"]
         self.assertEqual([(row["prompt"], row["expected_tool"]) for row in rows], [
-            ("cut filler ums and burn bold captions on this interview", "local_qc"),
+            ("cut filler ums and burn bold captions on this interview", "remotion_render"),
             ("conversational edit talking head with HyperFrames overlays", "hyperframes_render"),
-            ("export the edit to OTIO after agent cut", "otio_export"),
+            ("export the edit to OTIO after agent cut", "Remotion___export_nle_timeline"),
         ])
-        self.assertTrue(rows[0]["skip_reason"])
+        self.assertEqual(rows[0]["expected_routed_alias"], "transcript_edit")
+        self.assertFalse(rows[0]["skip_reason"])
         self.assertTrue(rows[1]["skip_reason"])
         self.assertFalse(rows[2]["skip_reason"])
 
@@ -76,9 +77,9 @@ class ConversationalRoutingTests(unittest.TestCase):
         self.assertEqual((route.skill, route.tool),
                          ("conversational-edit", "Remotion___export_nle_timeline"))
         self.assertEqual(route_intent("export timeline to Resolve").skill, "resolve-handoff")
-        self.assertEqual(route_intent("restyle this footage keep motion Aleph").skill, "edit-v2v")
+        self.assertEqual(route_intent("restyle this footage keep motion Aleph").skill, "named-provider")
         self.assertEqual(route_intent("edit multi-shot footage faithfully").skill, "edit-v2v")
-        self.assertEqual(route_intent("TTS then talking head").skill, "lipsync")
+        self.assertEqual(route_intent("TTS then talking head").skill, "audio-bed")
 
     def test_hyperframes_request_is_explicitly_pending(self):
         route = route_intent("conversational edit talking head with HyperFrames overlays")
@@ -193,14 +194,18 @@ class ConversationalGraphTests(unittest.IsolatedAsyncioTestCase):
             gateway.call_tool.assert_not_awaited()
             self.assertFalse(list(Path(directory).glob("*.jsonl")))
 
-    async def test_confidential_project_refuses_paid_scribe(self):
+    async def test_confidential_metadata_does_not_change_paid_scribe_dispatch(self):
         scribe = Tool(name="ElevenLabs___speech_to_text_convert", description="Transcribe",
                       inputSchema={"type": "object", "properties": {}})
-        gateway = Gateway([scribe])
-        await self.invoke(self.request(autonomous=True, confidential=True), [
-            read_edit(), call("call_audio_tool", {"tool_name": scribe.name, "arguments": {}}, "scribe"), final(),
-        ], gateway)
-        gateway.call_tool.assert_not_awaited()
+        for confidential in (False, True):
+            with self.subTest(confidential=confidential):
+                gateway = Gateway([scribe])
+                await self.invoke(self.request(autonomous=True, confidential=confidential), [
+                    read_edit(), call("call_audio_tool", {
+                        "tool_name": scribe.name, "arguments": {},
+                    }, "scribe"), final(),
+                ], gateway)
+                gateway.call_tool.assert_awaited_once_with(scribe.name, {})
 
     async def test_approved_plan_compiles_and_renders_only_a_dry_run(self):
         from providers.catalog import get_provider
@@ -235,14 +240,38 @@ class ConversationalGraphTests(unittest.IsolatedAsyncioTestCase):
                                        model=ScriptedModel([read_edit(), prepare()]))
             gateway.call_tool.assert_not_awaited()
             approval = pending.exception.approvals[0]
-            restored = await self.invoke(self.request(
-                autonomous=True, session_items=studio.session_items, resume_state=pending.exception.state,
+            self.assertEqual(approval.tool_name, PREPARE.name)
+            self.assertIn(SUMMARY, approval.description)
+            plan_resume = self.request(
+                autonomous=True, session_items=json.loads(json.dumps(studio.session_items)),
+                resume_state=pending.exception.state,
                 approval_decisions=[StudioApprovalDecision(call_id=approval.call_id, decision="approve")],
-            ), [render, final()], gateway)
+            )
+            rendering = _context_from_request(plan_resume)
+            with self.assertRaises(StudioAgentApprovalRequired) as render_pending:
+                await run_with_servers(plan_resume, rendering, [gateway], model=ScriptedModel([render]))
+            gateway.call_tool.assert_awaited_once_with(PREPARE.name, ARGS)
+            self.assertEqual(rendering.tool_events[0].status, "dry_run")
+            self.assertFalse(rendering.tool_events[0].assets)
+            render_approval = render_pending.exception.approvals[0]
+            self.assertEqual(render_approval.tool_name, "Remotion___render_timeline")
+            self.assertNotEqual(render_approval.call_id, approval.call_id)
+            self.assertIn("Estimated cost", render_approval.description)
+            restored = await self.invoke(self.request(
+                autonomous=True, session_items=json.loads(json.dumps(rendering.session_items)),
+                resume_state=render_pending.exception.state,
+                approval_decisions=[StudioApprovalDecision(call_id=render_approval.call_id, decision="approve")],
+            ), [final()], gateway)
             self.assertEqual(gateway.call_tool.await_count, 2)
-            self.assertEqual([event.status for event in restored.tool_events], ["dry_run"] * 2)
-            self.assertFalse(restored.session_items[0]["media_jobs"])
-            self.assertFalse(list(Path(directory).glob("*.jsonl")))
+            self.assertEqual([event.status for event in restored.tool_events], ["dry_run"])
+            jobs = list(restored.session_items[0]["media_jobs"].values())
+            self.assertEqual(len(jobs), 1)
+            self.assertEqual(jobs[0]["status"], "dry_run")
+            self.assertIsNone(jobs[0]["provider_job_id"])
+            self.assertFalse(jobs[0]["asset"].get("version_id"))
+            outcomes = [json.loads(line) for line in (Path(directory) / "outcomes.jsonl").read_text().splitlines()]
+            self.assertEqual([(row["stage"], row["outcome"]) for row in outcomes], [("approval", "accepted")])
+            self.assertFalse(outcomes[0]["training_eligible"])
             self.assertTrue(all(not event.assets for event in restored.tool_events))
 
 

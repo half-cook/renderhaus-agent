@@ -168,13 +168,13 @@ class DeepAgentTests(unittest.IsolatedAsyncioTestCase):
             self.assertNotIn("execute", tools)
             prompt = messages[0].text
             self.assertIn("product-images", prompt)
-            self.assertNotIn("Start with one inexpensive still", prompt)
+            self.assertNotIn("# Product images", prompt)
             return read_skill()
 
         def after(messages, tools):
             self.assertIn("call_media_tool", tools)
             self.assertNotIn("call_audio_tool", tools)
-            self.assertIn("Start with one inexpensive still", "\n".join(m.text for m in messages))
+            self.assertIn("# Product images", messages[-1].text)
             return image()
 
         gateway = Gateway()
@@ -427,10 +427,24 @@ class DeepAgentTests(unittest.IsolatedAsyncioTestCase):
         render = Tool(name="Remotion___render_timeline", description="Render timeline",
                       inputSchema={"type": "object", "properties": {}})
         gateway = Gateway([render], {"status": "dry_run", "timeline": {}})
-        result, _, _ = await self.run_graph(request, [
-            call("read_file", {"file_path": "/skills/final-assembly/SKILL.md"}, "assembly"),
-            call("call_editor_tool", {"tool_name": render.name, "arguments": {}}, "render"), final(),
-        ], gateway)
+        studio = _context_from_request(request)
+        with self.assertRaises(StudioAgentApprovalRequired) as paused:
+            await self.run_graph(request, [
+                call("read_file", {"file_path": "/skills/final-assembly/SKILL.md"}, "assembly"),
+                call("call_editor_tool", {"tool_name": render.name, "arguments": {}}, "render"),
+            ], gateway, studio)
+        gateway.call_tool.assert_not_awaited()
+        approval = paused.exception.approvals[0]
+        self.assertEqual(approval.tool_name, render.name)
+        self.assertIn("Estimated cost", approval.description)
+        resumed = request.model_copy(update={
+            "session_items": json.loads(json.dumps(studio.session_items)),
+            "resume_state": paused.exception.state,
+            "approval_decisions": [StudioApprovalDecision(call_id=approval.call_id, decision="approve")],
+        })
+        result, restored, _ = await self.run_graph(resumed, [final()], gateway)
+        gateway.call_tool.assert_awaited_once_with(render.name, {})
+        self.assertEqual(restored.tool_events[-1].status, "dry_run")
         self.assertIn("incomplete", result.summary)
 
     async def test_gateway_search_discovers_a_schema_for_dispatch(self):
@@ -533,14 +547,40 @@ class DeepAgentTests(unittest.IsolatedAsyncioTestCase):
                                  "required": ["render_id", "bucket_name"]})
         gateway = Gateway([render, poll], {"status": "queued", "render_id": "render-1",
                                           "bucket_name": "bucket-1", "output_key": "out.mp4"})
-        _, studio, _ = await self.run_graph(self.request(autonomous=True), [
-            call("read_file", {"file_path": "/skills/final-assembly/SKILL.md"}, "skill"),
-            call("call_editor_tool", {"tool_name": render.name, "arguments": {}}, "render"), final(),
-        ], gateway)
+        request = self.request(autonomous=True)
+        studio = _context_from_request(request)
+        with self.assertRaises(StudioAgentApprovalRequired) as paused:
+            await self.run_graph(request, [
+                call("read_file", {"file_path": "/skills/final-assembly/SKILL.md"}, "skill"),
+                call("call_editor_tool", {"tool_name": render.name, "arguments": {}}, "render"),
+            ], gateway, studio)
+        gateway.call_tool.assert_not_awaited()
+        approval = paused.exception.approvals[0]
+        self.assertEqual(approval.tool_name, render.name)
+        resumed = request.model_copy(update={
+            "session_items": json.loads(json.dumps(studio.session_items)),
+            "resume_state": paused.exception.state,
+            "approval_decisions": [StudioApprovalDecision(call_id=approval.call_id, decision="approve")],
+        })
+        _, studio, _ = await self.run_graph(resumed, [final()], gateway)
+        gateway.call_tool.assert_awaited_once_with(render.name, {})
         gateway.call_tool.reset_mock()
         gateway.call_tool.return_value = {"status": "succeeded", "render_id": "render-1", "url": "https://cdn.example/out.mp4"}
-        await self.run_graph(self.request(autonomous=True, session_items=studio.session_items), [
-            call("call_editor_tool", {"tool_name": render.name, "arguments": {}}, "replacement"),
+        replacement = self.request(autonomous=True, session_items=json.loads(json.dumps(studio.session_items)))
+        replacement_studio = _context_from_request(replacement)
+        with self.assertRaises(StudioAgentApprovalRequired) as replacement_pending:
+            await self.run_graph(replacement, [
+                call("call_editor_tool", {"tool_name": render.name, "arguments": {}}, "replacement"),
+            ], gateway, replacement_studio)
+        gateway.call_tool.assert_not_awaited()
+        replacement_approval = replacement_pending.exception.approvals[0]
+        self.assertEqual(replacement_approval.tool_name, render.name)
+        poll_resume = replacement.model_copy(update={
+            "session_items": json.loads(json.dumps(replacement_studio.session_items)),
+            "resume_state": replacement_pending.exception.state,
+            "approval_decisions": [StudioApprovalDecision(call_id=replacement_approval.call_id, decision="approve")],
+        })
+        await self.run_graph(poll_resume, [
             call("call_editor_tool", {"tool_name": poll.name, "arguments": {
                 "render_id": "render-1", "bucket_name": "mistyped", "output_key": "mistyped"}}, "poll"), final(),
         ], gateway)
