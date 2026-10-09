@@ -52,6 +52,12 @@ STATIC_FIELD_OPTIONS: dict[str, dict[str, list[str | int]]] = {
         "direction": ["forward", "backward"],
         "strength": list(LUMA_EDIT_STRENGTHS),
     },
+    "alibaba_modelstudio": {
+        "aspect_ratio": ["adaptive", "21:9", "16:9", "4:3", "1:1", "3:4", "9:16"],
+        "resolution": ["480p", "720p", "1080p"],
+        "duration": [-1, *range(2, 31)],
+        "direction": ["forward", "backward", "both"],
+    },
     "seedance": {
         "aspect_ratio": list(SEEDANCE_RATIOS),
         "resolution": list(SEEDANCE_RESOLUTIONS),

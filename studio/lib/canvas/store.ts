@@ -165,7 +165,7 @@ function cloneGraph(nodes: CanvasNode[], edges: CanvasEdge[]): Snapshot {
 }
 
 function defaultsFor(tool: ToolDefinition, fieldOptions: FieldOptions): Record<string, unknown> {
-  if (tool.providerId === "fal" && tool.toolName.startsWith("generate_wan3_")) {
+  if ((tool.providerId === "fal" && tool.toolName.startsWith("generate_wan3_")) || tool.providerId === "alibaba_modelstudio") {
     return { ...tool.defaults };
   }
   const preferred = PREFERRED[tool.providerId] || {};

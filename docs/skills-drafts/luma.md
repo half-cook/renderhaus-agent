@@ -11,9 +11,9 @@ Use the provider's Gateway tools. Do not call Luma HTTP endpoints from an agent 
 
 ## Choose the operation
 
-Route to Luma when the user explicitly requests Luma or Ray 3.2, or the capability map
-selects its declared interim while Wan 3.0 edit/extend is pending. It is not an automatic exception
-for start/end anchors or restyling.
+Route to Luma only when the user explicitly requests Luma or Ray 3.2. Ordinary edit
+and extend requests select the built Model Studio Wan 3.0 default. Luma is not an
+automatic exception for start/end anchors or restyling.
 Use the configured default provider for ordinary requests without a Luma-specific need.
 Read [the provider reference](../providers/luma.md) for the tool signatures and limits.
 

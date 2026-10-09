@@ -1,6 +1,6 @@
 # Renderhaus capability map
 
-One quality-first default serves each capability. Selection order is **explicit provider/model request > named exception > default > declared interim while the default is pending**. Prices inform approval and disclosure; they never order models. Wan 3 adds three Gateway tools on the existing fal provider. See [Wan 3 provider contracts](FAL_WAN3_PROVIDER.md).
+One quality-first default serves each capability. Selection order is **explicit provider/model request > named exception > default > declared interim while the default is pending**. Prices inform approval and disclosure; they never order models. Wan 3 generation uses fal; edit and extend use Alibaba Model Studio. See [fal contracts](FAL_WAN3_PROVIDER.md) and [Model Studio contracts](ALIBABA_MODELSTUDIO.md).
 
 ## Capability choices
 
@@ -9,8 +9,8 @@ One quality-first default serves each capability. Selection order is **explicit 
 | t2v | `wan3_t2v` | `dialogue && !real_face_refs` → `seedance25_t2v` (synthetic dialogue) | None; Wan 3 built | gemini_omni_11_flash |
 | i2v | `wan3_i2v` | `dialogue && !real_face_refs` → `seedance25_i2v` (synthetic dialogue) | None; Wan 3 built | gemini_omni_11_flash, vidu_q4_i2v |
 | reference_video | `wan3_r2v` | `dialogue && !real_face_refs` → `seedance25_r2v` (synthetic dialogue references) | — | — |
-| v2v_edit | `wan3_edit` | — | `luma_ray3_modify` | — |
-| extend | `wan3_extend` | — | `luma_ray3_extend` | — |
+| v2v_edit | `wan3_edit` | — | None; Model Studio dry-run only | — |
+| extend | `wan3_extend` | — | None; Model Studio dry-run only | — |
 | still_image | `gpt_image25_t2i` | `vector_output` → `recraft_v41_vector` (editable vector output) | `seedream_t2i` | — |
 | image_edit | `gpt_image25_edit` | `text_only_edit` → `ideogram45_edit` (pixel-preserving text-only edit) | `seedream_edit` | ideogram45_edit |
 | lipsync | `sync3_lipsync` | `duration_over_30s && presenter` → `heygen_avatar_v` (long presenter or digital twin) | — | heygen_avatar_v |
@@ -106,9 +106,9 @@ POST https://{WorkspaceId}.us-east-1.maas.aliyuncs.com/api/v1/services/aigc/vide
 
 Virginia USD/s 480P=0.041256,720P=0.082513,1080P=0.165025; Singapore=0.05/0.10/0.20. Input video plus output seconds billed. [Official pricing](https://www.alibabacloud.com/help/en/model-studio/wan3-0-video)
 
-proprietary API; exact model-specific training rights UNVERIFIED. `training_eligible=false`: No clear public permission for output training verified.. [Licence/terms source](https://www.alibabacloud.com/help/en/model-studio/wan3-0-video)
+Proprietary service terms and closed weights. **Customer live use is blocked** by [Preview Product Terms §1.1](https://www.alibabacloud.com/help/en/legal/latest/alibaba-cloud-international-website-beta-testing-terms), which permits only internal testing, research and evaluation. Product Terms §3.14 makes the preview terms controlling. Both sources read 2026-10-09. `training_eligible=false`: §4.48 restricts training competing products without authorization. Personal references require rights and consent. [Licence/terms source](https://www.alibabacloud.com/help/en/legal/latest/alibaba-cloud-international-website-product-terms-of-service-v-3-8-0), read 2026-10-09.
 
-Model is preview. duration=-1 means smart duration, not guaranteed source-preserving edit.
+Model is preview. `duration=-1` means smart duration and remains dry-run with unknown cost. Explicit extension duration is total output length. The documented workspace endpoint is verified; the mandated default `https://dashscope-us.aliyuncs.com` synthesis POST is **UNVERIFIED** and blocked live. [Regions](https://www.alibabacloud.com/help/en/model-studio/regions), read 2026-10-09. See [Model Studio configuration and decisions](ALIBABA_MODELSTUDIO.md).
 
 ### ByteDance Seedance 2.5 — fal US default
 
@@ -325,12 +325,13 @@ Apache-2.0 weights/model metadata, DINOv2 Apache-2.0 code. `training_eligible=fa
 
 ## Skills and routing fixtures
 
-There are 24 packaged skills, 8 provider targets and 81 Gateway tools. No deployment is claimed. New packaged skills are image-gen, named-provider, act-two, lipsync, upscale, lyrics-video, product-demo-video and whiteboard-explainer. Vidu’s archived skill is removed; its real tools remain under named-provider. Draft alias include_tools cannot be copied verbatim into this harness: `metadata.include_tools` must contain real dispatch wrappers, `metadata.routing_tools` records the canonical aliases, and `metadata.gateway_tools` contains only built Gateway names.
+There are 24 packaged skills, 9 provider targets and 84 Gateway tools. No deployment is claimed. New packaged skills are image-gen, named-provider, act-two, lipsync, upscale, lyrics-video, product-demo-video and whiteboard-explainer. Vidu’s archived skill is removed; its real tools remain under named-provider. Draft alias include_tools cannot be copied verbatim into this harness: `metadata.include_tools` must contain real dispatch wrappers, `metadata.routing_tools` records the canonical aliases, and `metadata.gateway_tools` contains only built Gateway names.
 
-The 145-row workbook becomes 122 fixtures: 23 archived/confidential rows are dropped, 84 active checks pass and 38 remain skipped for named dependencies. “Active” includes built interims and the required 45-second single-shot refusal; it does not assert future adapters exist. NLE import remains skipped. Detailed expectation adjustments and retired replacements are in [capability-map-decisions.tsv](capability-map-decisions.tsv).
+The 145-row workbook becomes 122 fixtures: 23 archived/confidential rows are dropped, 81 active checks pass and 41 remain skipped, including three Model Studio preview-licence blocks and 38 named dependencies. “Active” includes built interims and the required 45-second single-shot refusal; it does not assert future adapters exist. NLE import remains skipped. Detailed expectation adjustments and retired replacements are in [capability-map-decisions.tsv](capability-map-decisions.tsv).
 
 | Skipped dependency/reason | Rows |
 | --- | --- |
+| licence blocked: Wan 3.0 preview internal evaluation only | 3 |
 | provider pending: HyperFrames overlays (feat/hyperframes-overlays) | 1 |
 | provider pending: cutaway_record (feat/product-demo-capture) | 3 |
 | provider pending: gemini_vlm_judge (feat/continuity-qc-vlm-judge) | 1 |
@@ -349,7 +350,7 @@ The 145-row workbook becomes 122 fixtures: 23 archived/confidential rows are dro
 
 ## Verification
 
-Final checks: **792 tests run, 748 passed, 44 skipped**; Ruff, offline CI packaging and Studio TypeScript typecheck pass. Gateway schemas regenerated without changes. No new dry-run flags or secrets were added; optional `ELEVENLABS_TTS_MODEL` is the one new runtime config key.
+The original capability-map branch recorded **792 tests run, 748 passed, 44 skipped**; Ruff, offline CI packaging and Studio TypeScript typecheck pass. Gateway schemas regenerated without changes. That branch added no dry-run flags or secrets; optional `ELEVENLABS_TTS_MODEL` is the one new runtime config key.
 
 Offline tests exercise deterministic routing, native Deep Agents interrupt/resume/reject in fresh workers, disclosure and billing guards, training provenance, fixture expectations, schema/inventory checks and dry-run provider dispatch. Comet browser E2E is **blocked**: user reports Comet is unavailable in this environment. No browser actions, live generation, artifact playback or authenticated paid provider calls are claimed.
 

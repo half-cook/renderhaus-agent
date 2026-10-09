@@ -1,28 +1,48 @@
 ---
 name: edit-v2v
-description: Edit, restyle or extend existing video with Wan 3.0 and the declared interim while pending.
+description: Edit, restyle or extend existing video with Wan 3.0 on US-first Alibaba Model Studio.
 metadata:
   include_tools: call_media_tool
   routing_tools: wan3_edit wan3_extend
-  gateway_tools: Luma___extend_video Luma___get_video_task Luma___list_luma_models Luma___modify_video
+  gateway_tools: ModelStudio___edit_wan3_video ModelStudio___extend_wan3_video ModelStudio___get_task
 ---
 
 # Edit existing video
 
-Use `wan3_edit` for generative edits and `wan3_extend` for extension. Neither has an exception.
-Both Model Studio tools remain pending. The policy's declared interim preserves current behavior
-through `Luma___modify_video` or `Luma___extend_video`; disclose that temporary selection.
-For an explicit Aleph, Luma or Wan VACE request, read [named provider](../named-provider/SKILL.md).
-For trims, titles, captions, soundtrack or ordering, use final-assembly rather than generative edits.
+Use `ModelStudio___edit_wan3_video` for edits and `ModelStudio___extend_wan3_video` for extension.
+They bind `wan3_edit` and `wan3_extend`, with no exceptions or interim. Explicit Aleph, Luma
+or Wan VACE requests use [named provider](../named-provider/SKILL.md).
+Trims, titles, captions, soundtrack and ordering use final-assembly.
 
-Keep the original asset version. Luma Modify accepts exactly one `video_path_or_url` or
-`source_generation_id`, its measured `source_duration_seconds` of 5 or 10, and supported `strength`.
-Other source lengths have no confirmed price and are refused. Luma Extend uses a completed
-Luma generation UUID and `direction`, not an arbitrary uploaded clip. A missing eligible generation
-is a blocker, not permission to create a new paid video first. Inspect `Luma___list_luma_models` when needed.
+Keep the original asset version. Supply its `video_url` or Studio asset handle, a `prompt`,
+measured `source_duration_seconds` from 1 through 15 and measured `source_fps` of at least 16.
+Do not invent source measurements. The adapter supports one source video and optional
+`reference_image_urls` and `reference_audio_urls`; each audio needs its matching measured
+`reference_audio_durations`. References containing real faces or voices need
+`real_face_refs=true` and `likeness_consent=true` for permission to use each likeness.
 
-Poll `Luma___get_video_task` with the saved ID and `download=true`. Compare the changed region
-and preserved motion. Luma outputs remain ineligible for training/evaluation datasets.
+Resolution defaults to `1080p`, audio to true, and aspect ratio to `adaptive`.
+Edit `duration=-1` requests source-length preservation. Extend `duration` is the TOTAL target
+output length, not the added portion. For a 5-second source extended by 2 seconds, use
+`duration=7`, billed as 5 input plus 7 output seconds. Use `direction` forward, backward or
+both; it becomes prompt intent, not a vendor request field. Extension requires adaptive ratio.
+Input plus output duration cannot exceed 30 seconds. Split longer inputs before submission.
+Smart `duration=-1` has an unknown quote and stays dry-run until billing reconciliation exists.
+Any future permitted live call requires an explicit integer output duration; extension must
+exceed source length. Current preview licensing blocks all live customer use, including
+workspace hosts. Explain the internal-evaluation restriction and stop; spending approval
+and disabling dry-run cannot override it.
+
+The host defaults to US Virginia prices. `DASHSCOPE_BASE_URL` defaults to the legacy US host,
+whose synthesis POST is UNVERIFIED and blocked live. The documented US workspace host can
+be configured by the operator. Never alter flags or host settings to bypass a blocked request.
+Approval shows input plus total output cost, including the platform fee, even in autonomous runs.
+
+Submit once, save the returned `job_id`, and poll `ModelStudio___get_task` with `download=true`
+at least 15 seconds apart. A failed/expired/unknown task is a blocker, not authority to resubmit.
+Download the actual MP4 before its 24-hour URL expires and inspect the edit and preserved motion.
+Keep continuity-qc on `local_qc`. The model has closed weights, evaluation-only preview licensing and
+`training_eligible=false`; customer visual acceptance does not grant training rights.
 
 Follow `read_studio_context.intent_route`. Selection uses the explicit requested provider/model,
 then a named exception, then the capability default. Cost estimates support approval and disclosure;

@@ -1,0 +1,196 @@
+[
+  {
+    "name": "edit_wan3_video",
+    "description": "Dry-run preview of Alibaba Model Studio Wan 3 editing. The preview licence allows only internal testing, research and evaluation, so customer live requests are blocked even with approval. Requires video_url, prompt, measured source_duration_seconds and source_fps. Default duration=-1 has unknown cost; explicit total output seconds quote input plus output. Outputs are not training eligible. A preview is not generated media.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "video_url": {
+          "type": "string",
+          "description": "Public HTTP(S) MP4/MOV source video URL without embedded credentials. Exactly one reference video is supported."
+        },
+        "prompt": {
+          "type": "string",
+          "description": "Edit or extend instruction. The adapter adds the required Video 1 intent to the prompt."
+        },
+        "source_duration_seconds": {
+          "type": "number",
+          "description": "Actual measured input video seconds from 1 to 15. Input seconds also incur cost; local field."
+        },
+        "source_fps": {
+          "type": "number",
+          "description": "Actual measured source frame rate, at least 16 fps; local field."
+        },
+        "duration": {
+          "type": "integer",
+          "description": "Total output seconds from 2 to 30. Input plus output must be at most 30. Default -1 is smart duration with unknown cost, dry-run only. Extension output must exceed the source duration."
+        },
+        "resolution": {
+          "type": "string",
+          "description": "Allowed values: 480p, 720p, 1080p."
+        },
+        "aspect_ratio": {
+          "type": "string",
+          "description": "Allowed values: adaptive, 16:9, 4:3, 1:1, 3:4, 9:16, 21:9."
+        },
+        "audio": {
+          "type": "boolean"
+        },
+        "prompt_extend": {
+          "type": "boolean"
+        },
+        "watermark": {
+          "type": "boolean"
+        },
+        "seed": {
+          "type": "integer",
+          "description": "Allowed range: -1 to 2.14748e+09."
+        },
+        "reference_image_urls": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Up to 10 public image references. No unpublished image input charge."
+        },
+        "reference_audio_urls": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Up to 5 public audio references totaling at most 15 seconds. Voice references require likeness_consent=true."
+        },
+        "reference_audio_durations": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "description": "Measured positive seconds for each audio reference, in matching order; local field."
+        },
+        "real_face_refs": {
+          "type": "boolean",
+          "description": "True when the source or references contain a real person's likeness; requires likeness_consent=true."
+        },
+        "likeness_consent": {
+          "type": "boolean",
+          "description": "Acknowledge the rights and consent for all referenced real likenesses and voices; local field."
+        }
+      },
+      "required": [
+        "video_url",
+        "prompt",
+        "source_duration_seconds",
+        "source_fps"
+      ]
+    }
+  },
+  {
+    "name": "extend_wan3_video",
+    "description": "Dry-run preview of Alibaba Model Studio Wan 3 extension. Customer live use is blocked by its internal-evaluation preview licence, which spending approval cannot override. duration is TOTAL output length: a 5s source extended by 2s uses duration=7 and bills 12s. Default -1 has unknown cost. Uses adaptive ratio and prompt-based direction. Outputs are not training eligible.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "video_url": {
+          "type": "string",
+          "description": "Public HTTP(S) MP4/MOV source video URL without embedded credentials. Exactly one reference video is supported."
+        },
+        "prompt": {
+          "type": "string",
+          "description": "Edit or extend instruction. The adapter adds the required Video 1 intent to the prompt."
+        },
+        "source_duration_seconds": {
+          "type": "number",
+          "description": "Actual measured input video seconds from 1 to 15. Input seconds also incur cost; local field."
+        },
+        "source_fps": {
+          "type": "number",
+          "description": "Actual measured source frame rate, at least 16 fps; local field."
+        },
+        "duration": {
+          "type": "integer",
+          "description": "Total output seconds from 2 to 30. Input plus output must be at most 30. Default -1 is smart duration with unknown cost, dry-run only. Extension output must exceed the source duration."
+        },
+        "resolution": {
+          "type": "string",
+          "description": "Allowed values: 480p, 720p, 1080p."
+        },
+        "aspect_ratio": {
+          "type": "string",
+          "description": "Allowed values: adaptive, 16:9, 4:3, 1:1, 3:4, 9:16, 21:9."
+        },
+        "audio": {
+          "type": "boolean"
+        },
+        "prompt_extend": {
+          "type": "boolean"
+        },
+        "watermark": {
+          "type": "boolean"
+        },
+        "seed": {
+          "type": "integer",
+          "description": "Allowed range: -1 to 2.14748e+09."
+        },
+        "reference_image_urls": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Up to 10 public image references. No unpublished image input charge."
+        },
+        "reference_audio_urls": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Up to 5 public audio references totaling at most 15 seconds. Voice references require likeness_consent=true."
+        },
+        "reference_audio_durations": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "description": "Measured positive seconds for each audio reference, in matching order; local field."
+        },
+        "real_face_refs": {
+          "type": "boolean",
+          "description": "True when the source or references contain a real person's likeness; requires likeness_consent=true."
+        },
+        "likeness_consent": {
+          "type": "boolean",
+          "description": "Acknowledge the rights and consent for all referenced real likenesses and voices; local field."
+        },
+        "direction": {
+          "type": "string",
+          "description": "Extend forward, backward, or both. Adds prompt text only; never a wire parameter."
+        }
+      },
+      "required": [
+        "video_url",
+        "prompt",
+        "source_duration_seconds",
+        "source_fps"
+      ]
+    }
+  },
+  {
+    "name": "get_task",
+    "description": "Inspect a saved Model Studio task or dry-run handle without submitting work. Preview licensing currently blocks live task polling. In a permitted future workflow, download=true persists a completed MP4 and provenance. Reuse saved jobs instead of resubmitting; previews are not generated media.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "job_id": {
+          "type": "string",
+          "description": "Exact task UUID returned by a submit tool. Poll once per call; this never submits video work."
+        },
+        "download": {
+          "type": "boolean",
+          "description": "Save completed MP4 and provenance under RENDERHAUS_MEDIA_DIR. Defaults to true; cached downloads are reused."
+        }
+      },
+      "required": [
+        "job_id"
+      ]
+    }
+  }
+]

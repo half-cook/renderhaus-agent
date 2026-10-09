@@ -26,7 +26,7 @@ R2V accepts up to 10 images, 5 videos and 5 audio references. Video references t
 most 15 seconds, with each video at least 16 fps. Audio references total at most 15 seconds.
 `file_url` and `web_url` require `enable_thinking=true`. Web pages must be public.
 These are reference-conditioning inputs. They do not promise duration-preserving edits
-or video extension, which remain separate pending Model Studio tools.
+or video extension. Those use the built direct [Model Studio tools](ALIBABA_MODELSTUDIO.md).
 
 The contracts require caller-measured `reference_video_durations`, `reference_video_fps`
 and `reference_audio_durations` parallel to their URL lists. They check counts, positive

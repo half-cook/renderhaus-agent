@@ -22,6 +22,7 @@ on:
           - runway
           - fal
           - luma
+          - alibaba_modelstudio
           - seedance
           - kling
           - seedream
@@ -109,6 +110,7 @@ jobs:
                   echo "$CHANGED" | grep -E '^providers/runway/|^configs/gateway/runway\.tools\.json' >/dev/null && SELECTED+=(runway)
                   echo "$CHANGED" | grep -E '^providers/fal/|^configs/gateway/fal\.tools\.json' >/dev/null && SELECTED+=(fal)
                   echo "$CHANGED" | grep -E '^providers/luma/|^configs/gateway/luma\.tools\.json' >/dev/null && SELECTED+=(luma)
+                  echo "$CHANGED" | grep -E '^providers/alibaba_modelstudio/|^configs/gateway/alibaba_modelstudio\.tools\.json' >/dev/null && SELECTED+=(alibaba_modelstudio)
                   echo "$CHANGED" | grep -E '^providers/seedance/|^lambdas/seedance/' >/dev/null && SELECTED+=(seedance)
                   echo "$CHANGED" | grep -E '^providers/seedream/|^lambdas/seedream/' >/dev/null && SELECTED+=(seedream)
                   echo "$CHANGED" | grep -E '^providers/elevenlabs/|^configs/gateway/elevenlabs\.tools\.json' >/dev/null && SELECTED+=(elevenlabs)
@@ -153,7 +155,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install -e .
 
-      - name: Check inventories (8 providers, 81 tools, 24 skills)
+      - name: Check inventories (9 providers, 84 tools, 24 skills)
         run: python -c "from scripts.ci_check import check_routing_inventory; check_routing_inventory()"
 
       - name: Configure AWS (OIDC)

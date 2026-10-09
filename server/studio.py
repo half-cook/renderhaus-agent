@@ -393,6 +393,7 @@ async def studio_status() -> dict[str, Any]:
             "runway": os.getenv("RUNWAY_DRY_RUN", "true").lower() != "false",
             "fal": os.getenv("FAL_DRY_RUN", "true").lower() != "false",
             "luma": os.getenv("LUMA_DRY_RUN", "true").lower() != "false",
+            "alibaba_modelstudio": os.getenv("MODELSTUDIO_DRY_RUN", "true").lower() != "false",
             "seedance": os.getenv("SEEDANCE_DRY_RUN", "true").lower() != "false",
             "seedream": os.getenv("SEEDREAM_DRY_RUN", os.getenv("SEEDANCE_DRY_RUN", "true")).lower()
             != "false",

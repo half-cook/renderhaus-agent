@@ -16,7 +16,8 @@
     "list_voices",
     "estimate_tts_cost",
     "export_nle_timeline",
-    "prepare_conversational_edit"
+    "prepare_conversational_edit",
+    "get_task"
   ],
   "providers": {
     "kling": {
@@ -367,6 +368,40 @@
       "license": "Apache-2.0",
       "allowed_regions": [],
       "training_eligible": false
+    },
+    "alibaba_modelstudio": {
+      "enabled": true,
+      "license": "service-terms",
+      "allowed_regions": [],
+      "training_eligible": false,
+      "models": [
+        "wan3.0-video"
+      ],
+      "model_env": "DASHSCOPE_MODEL",
+      "default_model": "wan3.0-video",
+      "default_models": {
+        "edit_wan3_video": "wan3.0-video",
+        "extend_wan3_video": "wan3.0-video"
+      },
+      "model_policies": {
+        "wan3.0-video": {
+          "enabled": true,
+          "license": "service-terms",
+          "weights_license": "closed-weights",
+          "license_source": "https://www.alibabacloud.com/help/en/legal/latest/alibaba-cloud-international-website-product-terms-of-service-v-3-8-0",
+          "license_read_date": "2026-10-09",
+          "commercial_use": "blocked: preview terms 1.1 allow only internal testing, research and evaluation",
+          "training_eligible": false,
+          "training_reason": "Output use for competing model training is restricted; no clear permission for Renderhaus continuity training.",
+          "consent_required": true,
+          "consent_source": "https://www.alibabacloud.com/help/en/legal/latest/alibaba-cloud-international-website-product-terms-of-service-v-3-8-0",
+          "verification": "Official US workspace video API verified; legacy US synthesis POST UNVERIFIED.",
+          "preview_terms_source": "https://www.alibabacloud.com/help/en/legal/latest/alibaba-cloud-international-website-beta-testing-terms",
+          "preview_terms_read_date": "2026-10-09",
+          "live_enabled": false,
+          "live_block_reason": "Preview licence does not permit customer production use; additional commercial rights unverified."
+        }
+      }
     }
   },
   "tools": {
@@ -744,42 +779,46 @@
       "consent_verification": "fal terms 6(d) require input rights and consents. Alibaba-specific real-face consent flow UNVERIFIED."
     },
     "wan3_edit": {
-      "gateway_tool": null,
-      "status": "pending",
-      "provider": "modelstudio",
-      "reason": "provider pending: wan3_edit (feat/provider-alibaba-modelstudio)",
-      "verification": "verified; adapter pending; live use disabled",
+      "gateway_tool": "ModelStudio___edit_wan3_video",
+      "status": "ready",
+      "provider": "alibaba_modelstudio",
+      "reason": "Built US-first direct adapter; MODELSTUDIO_DRY_RUN defaults true.",
+      "verification": "Official US workspace API verified; legacy dashscope-us synthesis POST UNVERIFIED and blocked live.",
       "training_eligible": false,
       "model": "wan3.0-video",
       "host": "Alibaba Model Studio, US Virginia or Singapore",
       "us_available": "yes",
       "availability_source": "https://www.alibabacloud.com/help/en/model-studio/wan3-video-generation-api-reference",
-      "read_date": "2026-10-08",
-      "license": "proprietary API; exact model-specific training rights UNVERIFIED",
-      "license_source": "https://www.alibabacloud.com/help/en/model-studio/wan3-0-video",
-      "training_reason": "No clear public permission for output training verified.",
+      "read_date": "2026-10-09",
+      "license": "service-terms",
+      "license_source": "https://www.alibabacloud.com/help/en/legal/latest/alibaba-cloud-international-website-product-terms-of-service-v-3-8-0",
+      "training_reason": "Closed API output training is restricted under service terms.",
       "source": "https://www.alibabacloud.com/help/en/model-studio/wan3-video-generation-api-reference",
       "price_source": "https://www.alibabacloud.com/help/en/model-studio/wan3-0-video",
-      "dry_run": true
+      "dry_run": true,
+      "live_enabled": false,
+      "live_block_reason": "Preview licence does not permit customer production use; additional commercial rights unverified."
     },
     "wan3_extend": {
-      "gateway_tool": null,
-      "status": "pending",
-      "provider": "modelstudio",
-      "reason": "provider pending: wan3_extend (feat/provider-alibaba-modelstudio)",
-      "verification": "verified; adapter pending; live use disabled",
+      "gateway_tool": "ModelStudio___extend_wan3_video",
+      "status": "ready",
+      "provider": "alibaba_modelstudio",
+      "reason": "Built US-first direct adapter; MODELSTUDIO_DRY_RUN defaults true.",
+      "verification": "Official US workspace API verified; legacy dashscope-us synthesis POST UNVERIFIED and blocked live.",
       "training_eligible": false,
       "model": "wan3.0-video",
       "host": "Alibaba Model Studio, US Virginia or Singapore",
       "us_available": "yes",
       "availability_source": "https://www.alibabacloud.com/help/en/model-studio/wan3-video-generation-api-reference",
-      "read_date": "2026-10-08",
-      "license": "proprietary API; exact model-specific training rights UNVERIFIED",
-      "license_source": "https://www.alibabacloud.com/help/en/model-studio/wan3-0-video",
-      "training_reason": "No clear public permission for output training verified.",
+      "read_date": "2026-10-09",
+      "license": "service-terms",
+      "license_source": "https://www.alibabacloud.com/help/en/legal/latest/alibaba-cloud-international-website-product-terms-of-service-v-3-8-0",
+      "training_reason": "Closed API output training is restricted under service terms.",
       "source": "https://www.alibabacloud.com/help/en/model-studio/wan3-video-generation-api-reference",
       "price_source": "https://www.alibabacloud.com/help/en/model-studio/wan3-0-video",
-      "dry_run": true
+      "dry_run": true,
+      "live_enabled": false,
+      "live_block_reason": "Preview licence does not permit customer production use; additional commercial rights unverified."
     },
     "seedance25_t2v": {
       "gateway_tool": null,
@@ -2476,7 +2515,7 @@
           "other modify source durations"
         ]
       },
-      "notes": "Default standard generation uses Seedance/Kling; Luma is standard only for Modify, or explicit provider requests. i2v exactly 5s; no native audio/multi-shot/elements. No training/evaluation datasets under existing terms.",
+      "notes": "Explicit-request-only Ray 3.2 generation, modification and extension. i2v exactly 5s; no native audio, multi-shot or elements. Outputs excluded from training.",
       "controls": {
         "t2v": [
           "prompt",
@@ -2843,6 +2882,100 @@
         "minimum_video_fps": 16
       },
       "multi_shot_field": null
+    },
+    {
+      "provider": "alibaba_modelstudio",
+      "model": "wan3.0-video",
+      "label": "Wan 3.0 Model Studio",
+      "policy_ref": "alibaba_modelstudio",
+      "tools": {
+        "v2v_edit": "ModelStudio___edit_wan3_video",
+        "extend": "ModelStudio___extend_wan3_video"
+      },
+      "jobs": {
+        "v2v_edit": true,
+        "extend": true,
+        "native_audio": true,
+        "multi_shot": false,
+        "start_end_frame": false,
+        "reference_elements": true,
+        "voice_references": true,
+        "max_resolution": 1080
+      },
+      "resolutions": [
+        480,
+        720,
+        1080
+      ],
+      "resolution_labels": {
+        "480": "480p",
+        "720": "720p",
+        "1080": "1080p"
+      },
+      "resolution_default": "1080p",
+      "native_audio_field": "audio",
+      "native_audio_default": true,
+      "duration_field": "duration",
+      "multi_shot_field": null,
+      "durations": {},
+      "controls": {
+        "v2v_edit": [
+          "video_url",
+          "prompt",
+          "source_duration_seconds",
+          "source_fps",
+          "duration",
+          "resolution",
+          "aspect_ratio",
+          "audio",
+          "prompt_extend",
+          "watermark",
+          "seed",
+          "reference_image_urls",
+          "reference_audio_urls",
+          "reference_audio_durations",
+          "real_face_refs",
+          "likeness_consent"
+        ],
+        "extend": [
+          "video_url",
+          "prompt",
+          "source_duration_seconds",
+          "source_fps",
+          "duration",
+          "resolution",
+          "aspect_ratio",
+          "audio",
+          "prompt_extend",
+          "watermark",
+          "seed",
+          "reference_image_urls",
+          "reference_audio_urls",
+          "reference_audio_durations",
+          "real_face_refs",
+          "likeness_consent",
+          "direction"
+        ]
+      },
+      "price": {
+        "unit": "input plus total output video seconds",
+        "source": "server.billing_rates.modelstudio_price_cents",
+        "url": "https://www.alibabacloud.com/help/en/model-studio/wan3-0-video",
+        "read_date": "2026-10-09",
+        "unknown": [
+          "smart duration -1",
+          "unverified configured model"
+        ]
+      },
+      "reference_limits": {
+        "videos": 1,
+        "video_seconds_total": 15,
+        "minimum_video_fps": 16,
+        "images": 10,
+        "audio": 5,
+        "audio_seconds_total": 15
+      },
+      "notes": "US-first default for edit and extend. Extension duration is total output length. Live legacy US host and smart duration blocked until verified; documented workspace host configurable."
     }
   ],
   "image_default_size": "2K",
@@ -2891,13 +3024,13 @@
     "v2v_edit": {
       "default": "wan3_edit",
       "exceptions": [],
-      "interim": "luma_ray3_modify",
+      "interim": null,
       "ab_candidates": []
     },
     "extend": {
       "default": "wan3_extend",
       "exceptions": [],
-      "interim": "luma_ray3_extend",
+      "interim": null,
       "ab_candidates": []
     },
     "still_image": {
@@ -3069,7 +3202,9 @@
     "wan3_extend",
     "wan3_i2v",
     "wan3_r2v",
-    "wan3_t2v"
+    "wan3_t2v",
+    "ModelStudio___edit_wan3_video",
+    "ModelStudio___extend_wan3_video"
   ],
   "explicit_routes": {
     "kling": {
@@ -3115,6 +3250,10 @@
       "voice_clone": "voices_ivc_create",
       "sfx": "elevenlabs_sfx_v2",
       "music": "elevenlabs_music"
+    },
+    "alibaba_modelstudio": {
+      "v2v_edit": "wan3_edit",
+      "extend": "wan3_extend"
     }
   },
   "named_models": {
@@ -3410,20 +3549,32 @@
       "consent_verification": "fal terms 6(d) require input rights and consents. Alibaba-specific real-face consent flow UNVERIFIED."
     },
     "wan3_edit": {
-      "license": "proprietary API; exact model-specific training rights UNVERIFIED",
-      "license_source": "https://www.alibabacloud.com/help/en/model-studio/wan3-0-video",
+      "license": "service-terms",
+      "license_source": "https://www.alibabacloud.com/help/en/legal/latest/alibaba-cloud-international-website-product-terms-of-service-v-3-8-0",
       "training_eligible": false,
-      "training_reason": "No clear public permission for output training verified.",
-      "commercial_status": "UNVERIFIED: model-specific terms pending",
-      "read_date": "2026-10-08"
+      "training_reason": "Product terms 4.48 restrict output use for competing models; no clear continuity-training grant.",
+      "commercial_status": "blocked: preview terms 1.1 allow only internal testing, research and evaluation",
+      "read_date": "2026-10-09",
+      "weights_license": "closed-weights",
+      "consent_requirements": "Rights and consent for real likeness or voice references; explicit likeness_consent acknowledgement required.",
+      "consent_source": "https://www.alibabacloud.com/help/en/legal/latest/alibaba-cloud-international-website-product-terms-of-service-v-3-8-0",
+      "verification": "Official regional workspace API verified; legacy US synthesis POST UNVERIFIED and blocked live.",
+      "preview_terms_source": "https://www.alibabacloud.com/help/en/legal/latest/alibaba-cloud-international-website-beta-testing-terms",
+      "live_enabled": false
     },
     "wan3_extend": {
-      "license": "proprietary API; exact model-specific training rights UNVERIFIED",
-      "license_source": "https://www.alibabacloud.com/help/en/model-studio/wan3-0-video",
+      "license": "service-terms",
+      "license_source": "https://www.alibabacloud.com/help/en/legal/latest/alibaba-cloud-international-website-product-terms-of-service-v-3-8-0",
       "training_eligible": false,
-      "training_reason": "No clear public permission for output training verified.",
-      "commercial_status": "UNVERIFIED: model-specific terms pending",
-      "read_date": "2026-10-08"
+      "training_reason": "Product terms 4.48 restrict output use for competing models; no clear continuity-training grant.",
+      "commercial_status": "blocked: preview terms 1.1 allow only internal testing, research and evaluation",
+      "read_date": "2026-10-09",
+      "weights_license": "closed-weights",
+      "consent_requirements": "Rights and consent for real likeness or voice references; explicit likeness_consent acknowledgement required.",
+      "consent_source": "https://www.alibabacloud.com/help/en/legal/latest/alibaba-cloud-international-website-product-terms-of-service-v-3-8-0",
+      "verification": "Official regional workspace API verified; legacy US synthesis POST UNVERIFIED and blocked live.",
+      "preview_terms_source": "https://www.alibabacloud.com/help/en/legal/latest/alibaba-cloud-international-website-beta-testing-terms",
+      "live_enabled": false
     },
     "seedance25_t2v": {
       "license": "commercial API, proprietary weights, fal Commercial use",
