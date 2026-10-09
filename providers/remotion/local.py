@@ -13,6 +13,7 @@ import re
 import shutil
 import socket
 import subprocess
+import sys
 import threading
 import time
 from typing import Any
@@ -203,15 +204,15 @@ def start_render(props: dict[str, Any], *, output_filename: str,
         timeout = max(1, float(os.getenv('REMOTION_RENDER_TIMEOUT_SECONDS', '1200')))
         command, duration = _command(props, directory, media_roots=media_roots,
                                      source_root=source_root, filename=filename)
-        with (directory / 'stderr.txt').open('wb') as stderr:
-            process = subprocess.Popen(command, stdout=subprocess.DEVNULL, stderr=stderr)
+        (directory / 'worker.json').write_text(json.dumps({'command': command, 'timeout': timeout}))
+        process = subprocess.Popen([sys.executable, '-m', 'providers.remotion.local_worker', str(directory)],
+                                   cwd=source_root, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                                   start_new_session=True)
         with _LOCK:
             _PROCESSES[render_id] = process
-        timer = threading.Timer(timeout, lambda: process.kill() if process.poll() is None else None)
-        timer.daemon = True
-        timer.start()
         (directory / 'job.json').write_text(json.dumps({'filename': filename, 'pid': process.pid,
-                                                       'duration': duration, 'started': time.time()}))
+                                                       'duration': duration, 'fps': props['renderConfig']['fps'],
+                                                       'timeout': timeout, 'started': time.time()}))
     except Exception:
         if process is not None:
             if process.poll() is None:
@@ -239,22 +240,32 @@ def get_progress(render_id: str, *, media_roots: tuple[Path, ...]) -> dict[str, 
         code = process.poll() if process else None
         if process and code is not None:
             _PROCESSES.pop(render_id, None)
-    progress_file = directory / 'progress.txt'
-    progress = progress_file.read_text() if progress_file.is_file() else ''
-    if 'progress=end' in progress:
-        destination = directory / job['filename']
-        if destination.is_file() and destination.stat().st_size > 0:
-            probe = _probe(destination)
-            if float(probe.get('format', {}).get('duration', 0)) > 0:
-                return {**result, 'status': 'succeeded', 'output_path': str(destination),
-                        'size_bytes': destination.stat().st_size, 'progress': 1.0}
+    terminal_file = directory / 'terminal.json'
+    if terminal_file.is_file():
+        terminal = json.loads(terminal_file.read_text())
+        if terminal.get('exit_code') == 0:
+            destination = directory / job['filename']
+            if destination.is_file() and destination.stat().st_size > 0:
+                try:
+                    probe = _probe(destination)
+                except ValueError:
+                    probe = {}
+                actual = float(probe.get('format', {}).get('duration', 0))
+                tolerance = max(.1, 2 / job['fps'])
+                has_video = any(stream.get('codec_type') == 'video' for stream in probe.get('streams', []))
+                if has_video and actual > 0 and abs(actual - job['duration']) <= tolerance:
+                    return {**result, 'status': 'succeeded', 'output_path': str(destination),
+                            'size_bytes': destination.stat().st_size, 'progress': 1.0}
+            return {**result, 'status': 'failed', 'error': 'Local ffmpeg output is incomplete or invalid.'}
+        return {**result, 'status': 'failed',
+                'error': terminal.get('error', 'Local ffmpeg assembly failed; inspect local stderr.txt.')}
     if process is not None and code is None:
         return {**result, 'status': 'queued'}
-    if process is None and time.time() - job['started'] < 1200:
+    if process is None and time.time() - job['started'] < job['timeout']:
         try:
             os.kill(int(job['pid']), 0)
         except ProcessLookupError:
             pass
         else:
             return {**result, 'status': 'queued'}
-    return {**result, 'status': 'failed', 'error': 'Local ffmpeg assembly failed or timed out; inspect local stderr.txt.'}
+    return {**result, 'status': 'failed', 'error': 'Local render worker ended without a terminal outcome.'}

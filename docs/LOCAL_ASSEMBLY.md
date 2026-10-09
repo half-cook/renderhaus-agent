@@ -12,8 +12,10 @@ Lambda can upload the same local sources using its existing S3 preparation.
 
 The local backend submits ffmpeg asynchronously. Poll
 `Remotion___get_render_progress` with its returned `render_id` and `bucket_name=local`
-sentinel. Success requires ffmpeg to finish and a nonempty MP4 with a
-positive ffprobe duration. The result contains `output_path`, `filename`,
+sentinel. A separate local worker waits for ffmpeg and atomically persists its terminal
+exit code, surviving Gateway restarts. Success requires exit code zero and a
+nonempty MP4 with a video stream and the expected ffprobe duration. A partial
+file or progress=end message never establishes success. The result contains `output_path`, `filename`,
 `size_bytes`, and `backend=local`; the Studio can ingest the local artifact.
 Jobs and artifacts live under `RENDERHAUS_MEDIA_DIR/remotion/local/`.
 

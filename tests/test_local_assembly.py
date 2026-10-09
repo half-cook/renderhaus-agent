@@ -49,6 +49,10 @@ class LocalAssemblyTests(unittest.TestCase):
                         break
                     time.sleep(.05)
             self.assertEqual(finished['status'], 'succeeded', finished)
+            from providers.remotion import local
+            with patch.dict(local._PROCESSES, {}, clear=True):
+                repeated = api.get_render_progress(started['render_id'], started['bucket_name'])
+            self.assertEqual(repeated, finished)
             output = Path(finished['output_path'])
             self.assertGreater(output.stat().st_size, 0)
             self.assertTrue(root in output.parents)
@@ -80,3 +84,29 @@ class LocalAssemblyTests(unittest.TestCase):
                 with self.subTest(source=source), self.assertRaises(ValueError):
                     api.render_timeline('Forbidden source', [{'kind': 'video', 'url': source,
                                                               'duration_seconds': 1}])
+
+    def test_success_requires_terminal_zero_exit_and_complete_expected_duration(self) -> None:
+        from providers.remotion import local
+        with tempfile.TemporaryDirectory() as folder:
+            roots = (Path(folder),)
+            render_id = 'local-' + 'a' * 32
+            directory = Path(folder) / 'remotion' / 'local' / render_id
+            directory.mkdir(parents=True)
+            (directory / 'job.json').write_text(json.dumps({
+                'filename': 'partial.mp4', 'pid': os.getpid(), 'duration': 1,
+                'started': time.time(), 'timeout': 1200, 'fps': 30,
+            }))
+            (directory / 'partial.mp4').write_bytes(b'playable-partial-fixture')
+            (directory / 'progress.txt').write_text('progress=end\n')
+            for exit_code, duration, expected in [(None, 1, 'queued'), (1, 1, 'failed'),
+                                                   (0, .5, 'failed'), (0, 1, 'succeeded')]:
+                with self.subTest(exit_code=exit_code, duration=duration):
+                    terminal = directory / 'terminal.json'
+                    terminal.unlink(missing_ok=True)
+                    if exit_code is not None:
+                        terminal.write_text(json.dumps({'exit_code': exit_code}))
+                    with patch.object(local, '_probe', return_value={
+                        'format': {'duration': str(duration)}, 'streams': [{'codec_type': 'video'}],
+                    }):
+                        result = local.get_progress(render_id, media_roots=roots)
+                    self.assertEqual(result['status'], expected)
