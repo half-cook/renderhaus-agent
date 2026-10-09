@@ -73,6 +73,7 @@ class ContinuityConfig:
     rule: str = "calibrated_mean"
     acceptance_threshold: float | None = None
     veto_threshold: float | None = None
+    backend: str = field(default_factory=lambda: os.environ.get("CONTINUITY_QC_BACKEND", "local"))
 
     def __post_init__(self):
         if not math.isfinite(self.similarity_threshold) or not -1 <= self.similarity_threshold <= 1:
@@ -173,10 +174,12 @@ class ContinuityReport:
     dino_model: str = DINO_MODEL
     rule: str = "calibrated_mean"
     acceptance_threshold: float | None = None
+    status: str = "completed"
+    reason: str = ""
 
     @property
     def accepted(self) -> bool:
-        return all(pair.accepted for pair in self.pairs)
+        return self.status == "completed" and all(pair.accepted for pair in self.pairs)
 
 
 class LazyImageEmbedder:
@@ -285,15 +288,39 @@ class ContinuityQC:
             raise ValueError(f"Continuity calibration is missing {sorted(missing)}.")
 
     def score(self, shots: Sequence[Shot]) -> ContinuityReport:
+        if self.config.backend != "local":
+            from agent.deep_agent.continuity_qc_runpod import RunPodBackendError, runpod_similarities
+
+            try:
+                if self.config.backend != "runpod":
+                    raise RunPodBackendError("Continuity backend must be local or runpod.")
+                similarities = runpod_similarities(shots, self.dino_model)
+                return self._report(shots, similarities)
+            except RunPodBackendError as exc:
+                reason = str(exc)
+            except Exception as exc:
+                reason = f"RunPod continuity QC failed ({type(exc).__name__})."
+            acceptance = (self.config.acceptance_threshold if self.config.acceptance_threshold is not None
+                          else self.calibration.acceptance_threshold)
+            return ContinuityReport((), self.config.similarity_threshold, self.dino_model,
+                                    self.config.rule, acceptance if self.config.rule == "calibrated_mean" else None,
+                                    status="skipped", reason=reason)
         if len(shots) < 2:
             raise ValueError("Continuity QC needs at least two shots.")
         embeddings = [
             (self.siglip.embed(shot.frame), self.dino.embed(shot.frame)) for shot in shots
         ]
+        similarities = [
+            (cosine_similarity(embeddings[index][0], embeddings[index + 1][0]),
+             cosine_similarity(embeddings[index][1], embeddings[index + 1][1]))
+            for index in range(len(shots) - 1)
+        ]
+        return self._report(shots, similarities)
+
+    def _report(self, shots: Sequence[Shot], similarities: Sequence[tuple[float, float]]) -> ContinuityReport:
         pairs = []
         for index, (before, after) in enumerate(zip(shots, shots[1:])):
-            siglip = cosine_similarity(embeddings[index][0], embeddings[index + 1][0])
-            dino = cosine_similarity(embeddings[index][1], embeddings[index + 1][1])
+            siglip, dino = similarities[index]
             accepted, p_siglip, p_dino = self.calibration.decide(siglip, dino, self.dino_model, self.config)
             pairs.append(
                 ShotPairScore(

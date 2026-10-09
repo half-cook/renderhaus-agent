@@ -1,0 +1,18 @@
+{
+  "input": {
+    "frames": [
+      {
+        "id": "red",
+        "b64": "iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAEElEQVR4nGP4z8AARAwQCgAf7gP9i18U1AAAAABJRU5ErkJggg=="
+      },
+      {
+        "id": "blue",
+        "b64": "iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAD0lEQVR4nGNgYPgPRmAKABf2A/1+6zfzAAAAAElFTkSuQmCC"
+      }
+    ],
+    "return": [
+      "similarities",
+      "scores"
+    ]
+  }
+}
