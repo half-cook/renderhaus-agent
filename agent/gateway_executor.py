@@ -269,6 +269,13 @@ class GatewayExecutor:
         if blocker := request_tool_blocker(self.studio.prompt, name):
             return blocker
         provider, tool = tool_parts(name)
+        if provider == "fal" and tool in {"ideogram_edit", "recraft_text_to_vector"}:
+            from providers.fal.images import request_for
+
+            try:
+                request_for(tool, arguments)
+            except ValueError as exc:
+                return str(exc)
         if name in {"Runway___act_two", "Fal___kling_motion_control"}:
             from providers.runway.performance import request_for as act_request
             from providers.fal.motion import request_for as motion_request
@@ -598,11 +605,13 @@ class GatewayExecutor:
             model = effective_model(provider, tool_name, arguments)
             payload = _unwrap_tool_output(output)
             provider_job_id = completed.provider_job_id or payload.get("job_id")
+            ab_arm = route.alias if route.job_type == "image_edit" and intent_constraints(studio.prompt, arguments=arguments)["predicates"]["text_only_edit"] else None
             self.outcomes.record(
                 event_id=f"approval-{self.run_scope}-{call_id}", provider=provider, model=model,
                 job_type=job_type(name), provider_job_id=provider_job_id,
                 outcome="rejected" if rejection is not None else "accepted", stage="approval",
                 workspace_id=studio.workspace_id, project_id=studio.project_id, execution_id=studio.job_id,
+                ab_arm=ab_arm,
             )
             if rejection is None:
                 self.media_jobs[call_id] = {
@@ -611,6 +620,7 @@ class GatewayExecutor:
                     "endpoint_id": payload.get("endpoint_id"),
                     "arguments": arguments, "required": route.required,
                     "asset": self.review_asset(completed, provider, model),
+                    "ab_arm": ab_arm,
                 }
         elif is_free_tool(name) and arguments.get("job_id"):
             for job in self.media_jobs.values():

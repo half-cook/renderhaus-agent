@@ -165,7 +165,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install -e .
 
-      - name: Check inventories (14 providers, 108 tools, 24 skills)
+      - name: Check inventories (14 providers, 110 tools, 24 skills)
         run: python -c "from scripts.ci_check import check_routing_inventory; check_routing_inventory()"
 
       - name: Configure AWS (OIDC)

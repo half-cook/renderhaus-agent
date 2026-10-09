@@ -54,7 +54,7 @@ from server.studio_options import LIVE_CHOICE_TOOLS, extract_choice_ids, static_
 router = APIRouter(prefix="/api/studio", tags=["studio"])
 logger = logging.getLogger(__name__)
 
-IMAGE_SUFFIXES = {".png", ".jpg", ".jpeg", ".webp", ".gif"}
+IMAGE_SUFFIXES = {".png", ".jpg", ".jpeg", ".webp", ".gif", ".svg"}
 VIDEO_SUFFIXES = {".mp4", ".webm", ".mov", ".m4v"}
 AUDIO_SUFFIXES = {".mp3", ".wav", ".m4a", ".ogg", ".flac"}
 URL_KEYS = {

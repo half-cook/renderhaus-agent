@@ -1,5 +1,129 @@
 [
   {
+    "name": "ideogram_edit",
+    "description": "Pixel-preserving text-only image edit exception via Ideogram 4.5; evidence is thin, compare A/B. Requires existing image_url. edit_precision=high restores unchanged pixels; mask_url is black-edit/white-preserve and requires source dimensions. At most 4 references or 3 with mask. Paid images pause unless autonomous. Poll get_video_task; every returned image persists. No training eligibility.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "prompt": {
+          "type": "string",
+          "description": "Describe the edit or vector design, 1-10000 characters. Recraft styles are described in the prompt; there is no separate style field."
+        },
+        "image_url": {
+          "type": "string",
+          "description": "Existing source image, public HTTPS URL or renderhaus-asset:// version handle. Resolve authorized handles before live submission."
+        },
+        "reference_image_urls": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Up to 4 references, or 3 when mask_url is present. Public HTTPS URLs or authorized Studio handles."
+        },
+        "mask_url": {
+          "type": "string",
+          "description": "Optional source-sized inpainting mask. Black edits, white preserves; both regions required by the vendor. Public HTTPS or authorized Studio handle."
+        },
+        "edit_precision": {
+          "type": "string",
+          "description": "high by default for unchanged-pixel restoration; regular redraws and permits resizing. Pixel preservation remains an A/B candidate, not a guarantee."
+        },
+        "quality": {
+          "type": "string",
+          "description": "Ideogram quality very_low/low/medium/high, default medium. Provider price $0.008/$0.03/$0.06/$0.22 per image, independent of dimensions."
+        },
+        "image_size": {
+          "type": "string",
+          "description": "Ideogram defaults auto; masked or high-precision edits require auto. Recraft defaults square_hd. Named presets only; custom dimensions are not exposed."
+        },
+        "num_images": {
+          "type": "integer",
+          "description": "Ideogram variations, integer 1-8, default 1. Every output is billed."
+        },
+        "seed": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "prompt",
+        "image_url"
+      ]
+    }
+  },
+  {
+    "name": "recraft_text_to_vector",
+    "description": "Editable SVG/vector exception via Recraft V4.1 Pro. Describe style in prompt; optional named image_size, colors and background_color RGB palette. No style field. Paid images pause unless autonomous; provider price $0.30/image plus disclosed fee. Poll get_video_task; every SVG is content-type checked and sanitized before persistence. No training eligibility.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "prompt": {
+          "type": "string",
+          "description": "Describe the edit or vector design, 1-10000 characters. Recraft styles are described in the prompt; there is no separate style field."
+        },
+        "image_size": {
+          "type": "string",
+          "description": "Ideogram defaults auto; masked or high-precision edits require auto. Recraft defaults square_hd. Named presets only; custom dimensions are not exposed."
+        },
+        "colors": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "r": {
+                "type": "integer",
+                "description": "Integer 0-255."
+              },
+              "g": {
+                "type": "integer",
+                "description": "Integer 0-255."
+              },
+              "b": {
+                "type": "integer",
+                "description": "Integer 0-255."
+              }
+            },
+            "required": [
+              "r",
+              "g",
+              "b"
+            ]
+          },
+          "description": "Preferred RGB palette, each channel an integer 0-255."
+        },
+        "background_color": {
+          "type": "object",
+          "description": "Preferred background RGB, each channel an integer 0-255.",
+          "properties": {
+            "r": {
+              "type": "integer",
+              "description": "Integer 0-255."
+            },
+            "g": {
+              "type": "integer",
+              "description": "Integer 0-255."
+            },
+            "b": {
+              "type": "integer",
+              "description": "Integer 0-255."
+            }
+          },
+          "required": [
+            "r",
+            "g",
+            "b"
+          ]
+        },
+        "enable_safety_checker": {
+          "type": "boolean",
+          "description": "Defaults true. Disabling requires fal account authorization."
+        }
+      },
+      "required": [
+        "prompt"
+      ]
+    }
+  },
+  {
     "name": "mirelo_v2a",
     "description": "Video-input SFX default Mirelo SFX 1.6 via fal. Required video_url, optional text_prompt, duration 1-60 seconds, num_samples 1-4, optional seed. Renderhaus defaults to one sample; samples 2-4 are dry-run only with cost unknown. Returns videos with generated audio tracks, not a separate audio file. Paid video requires cost approval even autonomous when premium_video_approval is enabled. Poll get_video_task with download=true and play the saved MP4. Commercial API; outputs are not training eligible.",
     "inputSchema": {
@@ -623,7 +747,7 @@
   },
   {
     "name": "get_video_task",
-    "description": "Poll an existing fal job_id once. Fetch completed results and optionally download the MP4. Never submits another generation.",
+    "description": "Poll an existing fal image or video job_id once. Image outputs always persist after content validation; SVGs are sanitized. download=true saves completed MP4s. Never submits another generation.",
     "inputSchema": {
       "type": "object",
       "properties": {

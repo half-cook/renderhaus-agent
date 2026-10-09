@@ -1440,11 +1440,13 @@ def _requests_video_deliverable(prompt: str) -> bool:
     return False
 
 
-def _video_input_arguments(nodes: list[StudioNode]) -> dict[str, str]:
+def _media_input_arguments(nodes: list[StudioNode]) -> dict[str, str]:
+    arguments = {}
     for node in nodes:
-        if node.kind == "video" and (node.version_id or node.source):
-            return {"video_url": f"renderhaus-asset://{node.version_id}" if node.version_id else node.source}
-    return {}
+        if node.kind in {"video", "image"} and (node.version_id or node.source):
+            field = "video_url" if node.kind == "video" else "image_url"
+            arguments.setdefault(field, f"renderhaus-asset://{node.version_id}" if node.version_id else node.source)
+    return arguments
 
 
 def _validate_video_delivery(
@@ -1454,7 +1456,7 @@ def _validate_video_delivery(
 ) -> bool:
     from agent.deep_agent.routing import route_intent
 
-    delivery_route = route_intent(request.prompt, arguments=_video_input_arguments(studio.nodes))
+    delivery_route = route_intent(request.prompt, arguments=_media_input_arguments(studio.nodes))
     delivery_alias = delivery_route.steps[-1].alias if delivery_route.steps else delivery_route.alias
     prior_events = {event["id"]: event for event in request.prior_tool_events}
     current_events = [event for event in studio.tool_events if event.public() != prior_events.get(event.id)]

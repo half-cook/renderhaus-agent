@@ -369,7 +369,9 @@
         "alibaba/wan-3.0/image-to-video",
         "alibaba/wan-3.0/reference-to-video",
         "fal-ai/kling-video/v3/pro/motion-control",
-        "mirelo-ai/sfx1.6/video-to-video"
+        "mirelo-ai/sfx1.6/video-to-video",
+        "ideogram/v4.5/edit",
+        "fal-ai/recraft/v4.1/pro/text-to-vector"
       ],
       "default_model": "fal-ai/wan-vace-14b",
       "model_policies": {
@@ -461,6 +463,32 @@
           "consent_requirements": "Input rights and required real-face/voice permissions under fal terms 6(d). No Mirelo-specific recorded-consent field verified.",
           "consent_source": "https://fal.ai/legal/terms-of-service",
           "read_date": "2026-10-09"
+        },
+        "ideogram/v4.5/edit": {
+          "enabled": true,
+          "license": "service-terms",
+          "weights_license": "closed-weights",
+          "license_source": "https://fal.ai/models/ideogram/v4.5/edit",
+          "hosted_terms_url": "https://fal.ai/legal/terms-of-service",
+          "training_eligible": false,
+          "training_reason": "No express output-training grant; fal terms 14.3 prohibit training competing models from outputs.",
+          "commercial_status": "Commercial hosted API per fal model card; source media rights required.",
+          "consent_requirements": "Input rights and all required likeness consents under fal terms 6(d). No model-specific recorded-consent API field verified.",
+          "consent_source": "https://fal.ai/legal/terms-of-service",
+          "read_date": "2026-10-09"
+        },
+        "fal-ai/recraft/v4.1/pro/text-to-vector": {
+          "enabled": true,
+          "license": "service-terms",
+          "weights_license": "closed-weights",
+          "license_source": "https://fal.ai/models/fal-ai/recraft/v4.1/pro/text-to-vector",
+          "hosted_terms_url": "https://fal.ai/legal/terms-of-service",
+          "training_eligible": false,
+          "training_reason": "No express output-training grant; fal terms 14.3 prohibit training competing models from outputs.",
+          "commercial_status": "Commercial hosted API per fal model card; source media rights required.",
+          "consent_requirements": "Input rights and all required likeness consents under fal terms 6(d). No model-specific recorded-consent API field verified.",
+          "consent_source": "https://fal.ai/legal/terms-of-service",
+          "read_date": "2026-10-09"
         }
       },
       "fixed_models": {
@@ -470,7 +498,9 @@
         "generate_wan3_i2v": "alibaba/wan-3.0/image-to-video",
         "generate_wan3_r2v": "alibaba/wan-3.0/reference-to-video",
         "kling_motion_control": "fal-ai/kling-video/v3/pro/motion-control",
-        "mirelo_v2a": "mirelo-ai/sfx1.6/video-to-video"
+        "mirelo_v2a": "mirelo-ai/sfx1.6/video-to-video",
+        "ideogram_edit": "ideogram/v4.5/edit",
+        "recraft_text_to_vector": "fal-ai/recraft/v4.1/pro/text-to-vector"
       },
       "default_models": {
         "vidu_q4_i2v": "fal-ai/vidu/q4/image-to-video",
@@ -479,7 +509,9 @@
         "generate_wan3_i2v": "alibaba/wan-3.0/image-to-video",
         "generate_wan3_r2v": "alibaba/wan-3.0/reference-to-video",
         "kling_motion_control": "fal-ai/kling-video/v3/pro/motion-control",
-        "mirelo_v2a": "mirelo-ai/sfx1.6/video-to-video"
+        "mirelo_v2a": "mirelo-ai/sfx1.6/video-to-video",
+        "ideogram_edit": "ideogram/v4.5/edit",
+        "recraft_text_to_vector": "fal-ai/recraft/v4.1/pro/text-to-vector"
       },
       "host": "fal",
       "us_available": "yes",
@@ -1492,18 +1524,18 @@
       "linear_fps_model": "Chronos"
     },
     "recraft_v41_vector": {
-      "gateway_tool": null,
-      "status": "pending",
-      "provider": "recraft",
-      "reason": "provider pending: recraft_v41_vector (feat/image-specialists)",
-      "verification": "verified; adapter pending; live use disabled",
+      "gateway_tool": "Fal___recraft_text_to_vector",
+      "status": "ready",
+      "provider": "fal",
+      "reason": "Verified image exception on existing fal host",
+      "verification": "Verified official endpoint, schema and per-image rate; offline adapter validated, browser E2E blocked.",
       "training_eligible": false,
       "model": "fal-ai/recraft/v4.1/pro/text-to-vector",
       "host": "fal",
       "us_available": "yes",
       "availability_source": "https://fal.ai/legal/terms-of-service",
-      "read_date": "2026-10-08",
-      "license": "commercial API, fal Commercial use",
+      "read_date": "2026-10-09",
+      "license": "service-terms",
       "license_source": "https://fal.ai/models/fal-ai/recraft/v4.1/pro/text-to-vector",
       "training_reason": "fal third-party competing-model training restriction.",
       "source": "https://fal.ai/models/fal-ai/recraft/v4.1/pro/text-to-vector/api",
@@ -1511,18 +1543,18 @@
       "dry_run": true
     },
     "ideogram45_edit": {
-      "gateway_tool": null,
-      "status": "pending",
-      "provider": "ideogram",
-      "reason": "provider pending: ideogram45_edit (feat/image-specialists)",
-      "verification": "verified; adapter pending; live use disabled",
+      "gateway_tool": "Fal___ideogram_edit",
+      "status": "ready",
+      "provider": "fal",
+      "reason": "Verified image exception on existing fal host",
+      "verification": "Verified official endpoint, schema and per-image rate; offline adapter validated, browser E2E blocked.",
       "training_eligible": false,
       "model": "ideogram/v4.5/edit",
       "host": "fal",
       "us_available": "yes",
       "availability_source": "https://fal.ai/legal/terms-of-service",
-      "read_date": "2026-10-08",
-      "license": "commercial API, fal Commercial use",
+      "read_date": "2026-10-09",
+      "license": "service-terms",
       "license_source": "https://fal.ai/models/ideogram/v4.5/edit",
       "training_reason": "fal third-party competing-model training restriction.",
       "source": "https://fal.ai/models/ideogram/v4.5/edit/api",
@@ -1897,22 +1929,22 @@
       "capability": "still_image"
     },
     {
-      "pattern": "vector|\\bsvg\\b|recraft|gpt[ -]image",
-      "skill": "image-gen",
-      "abstract_tool": "gpt_image25_t2i",
-      "capability": "still_image"
-    },
-    {
-      "pattern": "remotion|lower thirds?|kinetic titles|title card|html template|motion graphic",
+      "pattern": "^(?!.*(?:vector|\\bsvg\\b)).*(?:remotion|lower thirds?|kinetic titles|title card|html template|motion graphic)",
       "skill": "motion-graphics",
       "abstract_tool": "remotion_render",
       "capability": "motion_graphics"
     },
     {
-      "pattern": "(?:change|fix|edit|remove|replace).*(?:headline|typo|text on|banner|poster|background person|photo|image)",
+      "pattern": "\\b(?:change|fix|edit|remove|replace)\\b.*(?:headline|typo|text|banner|poster|background person|photo|image)|ideogram.*\\b(?:edit|inpaint)\\b",
       "skill": "image-gen",
       "abstract_tool": "gpt_image25_edit",
       "capability": "image_edit"
+    },
+    {
+      "pattern": "vector|\\bsvg\\b|recraft|gpt[ -]image",
+      "skill": "image-gen",
+      "abstract_tool": "gpt_image25_t2i",
+      "capability": "still_image"
     },
     {
       "pattern": "animat.*(?:image|photo|still|mascot)|(?:image|photo|still).*animat",
@@ -4609,6 +4641,76 @@
       "duration_integer": false,
       "native_audio_field": null,
       "notes": "Video with SFX audio track. 1-60s, sliding-window above10. Thin evidence; A/B with ElevenLabs. Samples2-4 preview only until billing verified."
+    },
+    {
+      "provider": "fal",
+      "policy_ref": "fal",
+      "model": "ideogram/v4.5/edit",
+      "label": "Ideogram 4.5 precise edit",
+      "tools": {
+        "image_edit": "Fal___ideogram_edit"
+      },
+      "jobs": {
+        "image_edit": true,
+        "reference_elements": true,
+        "vector_output": false
+      },
+      "resolutions": [],
+      "speed_class": "standard",
+      "price": {
+        "source": "https://fal.ai/models/ideogram/v4.5/edit",
+        "read_date": "2026-10-09",
+        "unit": "image"
+      },
+      "notes": "Thin evidence; A/B against GPT Image 2.5. High edit precision restores unchanged pixels.",
+      "controls": {
+        "image_edit": [
+          "prompt",
+          "image_url",
+          "reference_image_urls",
+          "mask_url",
+          "edit_precision",
+          "quality",
+          "image_size",
+          "num_images",
+          "seed"
+        ]
+      },
+      "durations": {},
+      "explicit_only": false
+    },
+    {
+      "provider": "fal",
+      "policy_ref": "fal",
+      "model": "fal-ai/recraft/v4.1/pro/text-to-vector",
+      "label": "Recraft V4.1 Pro vector",
+      "tools": {
+        "image": "Fal___recraft_text_to_vector"
+      },
+      "jobs": {
+        "image": true,
+        "reference_elements": false,
+        "vector_output": true
+      },
+      "resolutions": [],
+      "speed_class": "standard",
+      "price": {
+        "source": "https://fal.ai/models/fal-ai/recraft/v4.1/pro/text-to-vector",
+        "read_date": "2026-10-09",
+        "unit": "image"
+      },
+      "notes": "Editable SVG output is a capability gap; no raster resolution guarantee.",
+      "controls": {
+        "image": [
+          "prompt",
+          "image_size",
+          "colors",
+          "background_color",
+          "enable_safety_checker"
+        ]
+      },
+      "durations": {},
+      "explicit_only": false
     }
   ],
   "image_default_size": "2K",
@@ -4684,7 +4786,7 @@
         {
           "when": "text_only_edit",
           "tool": "ideogram45_edit",
-          "reason": "pixel-preserving text-only edit"
+          "reason": "pixel-preserving text-only edit; thin evidence, A/B against GPT Image 2.5"
         }
       ],
       "interim": null,
@@ -5035,6 +5137,18 @@
         "t2v": "seedance_t2v",
         "i2v": "seedance_i2v"
       }
+    },
+    "ideogram45": {
+      "pattern": "(?=.*\\bideogram\\b)(?=.*\\b(?:edit|editing|fix|change|replace|remove|inpaint|typo)\\b)",
+      "aliases": {
+        "image_edit": "ideogram45_edit"
+      }
+    },
+    "recraft41": {
+      "pattern": "\\brecraft\\b",
+      "aliases": {
+        "still_image": "recraft_v41_vector"
+      }
     }
   },
   "retired_requests": {
@@ -5348,20 +5462,30 @@
       "verification": "Verified official model ID and JSON generation/edit schema; input_fidelity support UNVERIFIED and omitted."
     },
     "recraft_v41_vector": {
-      "license": "commercial API, fal Commercial use",
+      "enabled": true,
+      "license": "service-terms",
+      "weights_license": "closed-weights",
       "license_source": "https://fal.ai/models/fal-ai/recraft/v4.1/pro/text-to-vector",
+      "hosted_terms_url": "https://fal.ai/legal/terms-of-service",
       "training_eligible": false,
-      "training_reason": "fal third-party competing-model training restriction.",
-      "commercial_status": "commercial service or permissive code; source media rights still required",
-      "read_date": "2026-10-08"
+      "training_reason": "No express output-training grant; fal terms 14.3 prohibit training competing models from outputs.",
+      "commercial_status": "Commercial hosted API per fal model card; source media rights required.",
+      "consent_requirements": "Input rights and all required likeness consents under fal terms 6(d). No model-specific recorded-consent API field verified.",
+      "consent_source": "https://fal.ai/legal/terms-of-service",
+      "read_date": "2026-10-09"
     },
     "ideogram45_edit": {
-      "license": "commercial API, fal Commercial use",
+      "enabled": true,
+      "license": "service-terms",
+      "weights_license": "closed-weights",
       "license_source": "https://fal.ai/models/ideogram/v4.5/edit",
+      "hosted_terms_url": "https://fal.ai/legal/terms-of-service",
       "training_eligible": false,
-      "training_reason": "fal third-party competing-model training restriction.",
-      "commercial_status": "commercial service or permissive code; source media rights still required",
-      "read_date": "2026-10-08"
+      "training_reason": "No express output-training grant; fal terms 14.3 prohibit training competing models from outputs.",
+      "commercial_status": "Commercial hosted API per fal model card; source media rights required.",
+      "consent_requirements": "Input rights and all required likeness consents under fal terms 6(d). No model-specific recorded-consent API field verified.",
+      "consent_source": "https://fal.ai/legal/terms-of-service",
+      "read_date": "2026-10-09"
     },
     "sync3_lipsync": {
       "license": "service-terms",

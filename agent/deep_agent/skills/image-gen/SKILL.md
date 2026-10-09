@@ -4,7 +4,7 @@ description: Generate or edit still images with GPT Image 2.5; specialize SVG an
 metadata:
   include_tools: call_media_tool
   routing_tools: gpt_image25_t2i gpt_image25_edit recraft_v41_vector ideogram45_edit
-  gateway_tools: OpenAI___generate_image OpenAI___edit_image
+  gateway_tools: OpenAI___generate_image OpenAI___edit_image Fal___ideogram_edit Fal___recraft_text_to_vector Fal___get_video_task
 ---
 
 # Still images
@@ -25,8 +25,25 @@ review every returned artifact before using it for animation. Dry-run creates no
 OpenAI outputs are `training_eligible=false`; API no-training defaults do not grant output training rights.
 
 Use `recraft_v41_vector` only when editable SVG/vector output is required. Raster tools cannot serve
-that pending exception. Use `ideogram45_edit` only for pixel-preserving text-only changes on an
+that exception. Use `ideogram45_edit` only for pixel-preserving text-only changes on an
 existing image, such as correcting a typo while keeping the rest. That exception is thin evidence.
+
+`Fal___ideogram_edit` takes `prompt`, `image_url`, optional `reference_image_urls` (four,
+or three with a mask), `mask_url`, `edit_precision` (high by default), `image_size` (auto),
+`quality` (medium), `num_images` (1–8) and optional `seed`. Mask black edits and white
+preserves; dimensions must match the source. High precision or a mask requires auto size.
+`Fal___recraft_text_to_vector` takes `prompt`, named `image_size` (square_hd), preferred
+RGB `colors`, optional RGB `background_color` and `enable_safety_checker` (true).
+Describe style in the prompt; this endpoint has no style parameter. Custom sizes are omitted.
+Both submit asynchronously and reuse `Fal___get_video_task`. Preserve the full returned
+job ID. Poll to completion, then open every persisted image; an accepted job is incomplete.
+SVGs require image/svg+xml and are sanitized before storage, with active content removed.
+Ideogram costs $0.008/$0.03/$0.06/$0.22 per image at very_low/low/medium/high;
+Recraft costs $0.30 per SVG. Read official fal pages 2026-10-09. Quotes cover all outputs.
+Paid images pause unless autonomous, under the unchanged spend cap. Both models are
+commercial service-terms APIs and training_eligible=false. Require input rights/consent.
+Log Ideogram text-edit outcomes with ab_arm=ideogram45_edit. Compare against GPT edits
+only with separately authorized work; do not generate a second paid image automatically.
 
 A named Ideogram request without an existing image to edit uses the GPT generation default,
 including posters and typography. It cannot create a text-only edit input from nothing.

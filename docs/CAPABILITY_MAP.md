@@ -336,18 +336,16 @@ Apache-2.0 weights/model metadata, DINOv2 Apache-2.0 code. `training_eligible=fa
 
 ## Skills and routing fixtures
 
-There are 24 packaged skills, 14 provider targets and 108 Gateway tools. No deployment is claimed. New packaged skills are image-gen, named-provider, act-two, lipsync, upscale, lyrics-video, product-demo-video and whiteboard-explainer. Vidu’s archived skill is removed; its real tools remain under named-provider. Draft alias include_tools cannot be copied verbatim into this harness: `metadata.include_tools` must contain real dispatch wrappers, `metadata.routing_tools` records the canonical aliases, and `metadata.gateway_tools` contains only built Gateway names.
+There are 24 packaged skills, 14 provider targets and 110 Gateway tools. No deployment is claimed. New packaged skills are image-gen, named-provider, act-two, lipsync, upscale, lyrics-video, product-demo-video and whiteboard-explainer. Vidu’s archived skill is removed; its real tools remain under named-provider. Draft alias include_tools cannot be copied verbatim into this harness: `metadata.include_tools` must contain real dispatch wrappers, `metadata.routing_tools` records the canonical aliases, and `metadata.gateway_tools` contains only built Gateway names.
 
-The original workbook migration retained 122 fixtures; later provider branches expanded the set to 129. There are now 116 active cases and 13 skips, including one unverified extension-semantics case and 12 named dependencies. The 23 archived/confidential rows remain dropped. “Active” includes built interims and the required 45-second single-shot refusal; it does not assert future adapters exist. NLE import remains skipped. Detailed expectation adjustments and retired replacements are in [capability-map-decisions.tsv](capability-map-decisions.tsv).
+The original workbook migration retained 122 fixtures; later provider branches expanded the set to 129. There are now 122 active cases and 7 skips, including one unverified extension-semantics case and six named dependencies. The 23 archived/confidential rows remain dropped. “Active” includes built interims and the required 45-second single-shot refusal; it does not assert future adapters exist. NLE import remains skipped. Detailed expectation adjustments and retired replacements are in [capability-map-decisions.tsv](capability-map-decisions.tsv).
 
 | Skipped dependency/reason | Rows |
 | --- | --- |
 | provider pending: HyperFrames overlays (feat/hyperframes-overlays) | 1 |
 | provider pending: cutaway_record (feat/product-demo-capture) | 3 |
 | provider pending: gemini_vlm_judge (feat/continuity-qc-vlm-judge) | 1 |
-| provider pending: ideogram45_edit (feat/image-specialists) | 2 |
 | provider pending: nle import (feat/nle-import-fcpxml) | 1 |
-| provider pending: recraft_v41_vector (feat/image-specialists) | 4 |
 | semantics unverified: Seedance appended-versus-combined extension length (feat/seedance-2-5); Wan extend remains preview-licence blocked | 1 |
 
 ## Verification
@@ -367,3 +365,15 @@ need measured source aspect and never assume unknown dimensions. BytePlus video-
 estimates remain UNVERIFIED until its minimum-token floor is available.
 See [the provider reference](SEEDANCE_2_5.md) and [decisions](seedance-2-5-decisions.tsv)
 for official URLs read 2026-10-09, authorization, watermark limits and blocked Comet E2E.
+
+## Image specialist activation
+
+`Fal___ideogram_edit` serves the text-only existing-image edit exception and
+`Fal___recraft_text_to_vector` serves editable SVG/vector output. Both reuse
+`Fal___get_video_task`, default to dry-run, quote verified fal image prices and
+exclude training. SVG content is validated and sanitized before persistence.
+The image-gen, product-images and refinement skills expose their real tool names.
+Six fixture rows activate: 122 active, seven skipped of 129. The inventory is
+14 providers, 110 tools and 24 skills. Comet validation and Ideogram quality A/B
+remain pending. See [Image specialists](IMAGE_SPECIALISTS.md) for contracts,
+official sources read 2026-10-09, licence decisions and configuration.

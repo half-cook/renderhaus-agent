@@ -79,8 +79,8 @@ These entries expire when their capability default becomes commercially availabl
 exceptions for demoted providers. An exact named pending model has no substitute interim.
 
 Dialogue without real-person references selects the Seedance exception. Real-person photo/video
-references force Wan and prohibit Seedance or Omni, including the Seedance interim. Real-face Wan 3 dispatch requires an explicit likeness_consent acknowledgement. Vector output selects pending Recraft. Text-only edits
-on an existing image select pending Ideogram; Ideogram generation without an edit image selects
+references force Wan and prohibit Seedance or Omni, including the Seedance interim. Real-face Wan 3 dispatch requires an explicit likeness_consent acknowledgement. Vector output selects built Recraft. Text-only edits
+on an existing image select built Ideogram; Ideogram generation without an edit image selects
 the GPT generation default. Full-body motion selects built Kling Motion Control on fal; facial and
 upper-body acting select built Act-Two on Runway. Video-synchronized SFX uses built Mirelo on fal, while
 text-only effects use built ElevenLabs. Requests over 30 seconds need supported shot splitting
@@ -203,7 +203,7 @@ and queued jobs never satisfy final delivery. See [Topaz](TOPAZ.md) for pricing,
 sources, unknown-price blockers and the blocked Comet check.
 
 `tests/fixtures/skill_routing.json` contains 129 retained routing rows.
-There are 116 active cases and 13 explicit skips. Seven performance-transfer cases now use built tools. Three Mureka lyrics-video cases
+There are 122 active cases and 7 explicit skips. Seven performance-transfer cases now use built tools. Three Mureka lyrics-video cases
 now use built tools; music routes use Mureka without an ElevenLabs interim. Five Topaz upscale/interpolation cases
 now use built tools. Seedance reference dialogue and two
 previously licence-skipped edit cases now use built Seedance tools. The extension increment
@@ -226,9 +226,7 @@ generation rule. Retired-provider replacement examples retain `source_prompt`; s
 assert that explicit retired requests dispatch nothing. [Decisions](capability-map-decisions.tsv)
 record these differences from the workbook.
 
-The pending specialists cover Mirelo,
-Recraft, Ideogram edit, VLM judging,
-and cutaway capture. A declared interim activates other pending defaults where supported.
+The pending specialists cover VLM judging and cutaway capture. A declared interim activates other pending defaults where supported.
 Wan 3 generation uses its built tools. Model Studio edit/extend retain their default IDs but
 select Seedance while the commercial policy is blocked. Real-person references require Wan
 consent for generation and refuse the Seedance edit/extend interim.
@@ -391,7 +389,7 @@ distributed billing guarantee. Durability still depends on the host persisting `
 
 Installed skills distinguish a built dispatch tool from a pending routing alias.
 `docs/skills-drafts/` keeps pending adapter references and retired historical guidance.
-Recraft and Ideogram edit await their named branches. MMAudio, ACE-Step and Veo references are retired, not future activation plans.
+Recraft and Ideogram edit now use built fal tools; see [Image specialists](IMAGE_SPECIALISTS.md). MMAudio, ACE-Step and Veo references are retired, not future activation plans.
 Transcript cuts, silence removal and captions are folded into conversational-edit. NLE re-import
 still needs feat/nle-import-fcpxml. File export does not control Resolve, establish a graded
 round trip, or provide AAF. Fish discovery remains conditional.
@@ -493,7 +491,7 @@ Mureka V9.5 is the music default on fal, with instrumental beds and songs under
 lyrics-video skills now use six `Mureka___` tools; no new skill directory was needed.
 Lyrics video always pauses with cost, including autonomous runs. Raw audio/TTS
 upload preparation remains blocked until the upload and recognition APIs are wired.
-There are 14 providers, 108 Gateway tools and 24 packaged skills. See
+There are 14 providers, 110 Gateway tools and 24 packaged skills. See
 [Mureka](MUREKA.md) for contracts, official dated prices, licences and blocked Comet E2E.
 
 ## Performance transfer
@@ -505,4 +503,16 @@ See [performance contracts, prices and limits](PERFORMANCE_TRANSFER.md). Browser
 
 ## Picture-synchronized SFX
 
-The audio-bed skill now exposes `Fal___mirelo_v2a` and reuses `Fal___get_video_task` through the manager/media role. Video input selects Mirelo; text-only effects select ElevenLabs SFX. Explicit requests win. Mirelo returns video with audio and pauses with cost even in autonomous runs under the paid-video policy. Samples 2–4 remain dry-run-only because their billing is unverified. Three SFX rows are activated, leaving 116 active routing cases and 13 skips. No skill directory was added. See [Mirelo](MIRELO.md) for sources, contracts and pending playback/A/B validation.
+The audio-bed skill now exposes `Fal___mirelo_v2a` and reuses `Fal___get_video_task` through the manager/media role. Video input selects Mirelo; text-only effects select ElevenLabs SFX. Explicit requests win. Mirelo returns video with audio and pauses with cost even in autonomous runs under the paid-video policy. Samples 2–4 remain dry-run-only because their billing is unverified. Three SFX rows are activated, leaving 122 active routing cases and 7 skips. No skill directory was added. See [Mirelo](MIRELO.md) for sources, contracts and pending playback/A/B validation.
+
+## Image specialist activation
+
+`Fal___ideogram_edit` serves the text-only existing-image edit exception and
+`Fal___recraft_text_to_vector` serves editable SVG/vector output. Both reuse
+`Fal___get_video_task`, default to dry-run, quote verified fal image prices and
+exclude training. SVG content is validated and sanitized before persistence.
+The image-gen, product-images and refinement skills expose their real tool names.
+Six fixture rows activate: 122 active, seven skipped of 129. The inventory is
+14 providers, 110 tools and 24 skills. Comet validation and Ideogram quality A/B
+remain pending. See [Image specialists](IMAGE_SPECIALISTS.md) for contracts,
+official sources read 2026-10-09, licence decisions and configuration.
