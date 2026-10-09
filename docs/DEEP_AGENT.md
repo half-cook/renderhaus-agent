@@ -168,11 +168,11 @@ Pending aliases cannot dispatch as Gateway tools. The generated inventory is in
 The original video-short, product-images, storyboard-shots, audio, final-assembly and refinement
 skills remain. Image-gen applies GPT still defaults and Recraft/Ideogram exceptions.
 Named-provider honors explicit demoted providers. Pending specialists include
-act-two, upscale and lyrics-video. Product-demo-video keeps the pending cutaway capture utility;
+act-two and Kling Motion Control. Mureka lyrics-video and Topaz finishing are built. Product-demo-video keeps the pending cutaway capture utility;
 whiteboard-explainer plans Remotion templates without claiming unsupported marker-hand animation.
 
 The deterministic router supplies skill and tool proposals in graph input and Studio context.
-The capability-map fixture contains 129 retained rows, with 98 active and 31 dependency skips.
+The capability-map fixture contains 129 retained rows, with 106 active and 23 dependency skips.
 Archived/confidential routes are dropped. Active rows cover built tools and declared interims;
 pending specialists keep named branch reasons. Editorial overrides retain the safe preparer,
 separate rendering approval, and existing export/HyperFrames narration workflow contracts.
@@ -401,3 +401,10 @@ The direct Studio invoke endpoint refuses HeyGen generation so it cannot bypass 
 Saved poll artifacts finish standalone presenters; captions or assembly require rendering.
 `training_eligible=false` follows the model policy even when an outcome claims otherwise.
 Inventory is 12 providers, 95 Gateway tools and 24 skills. See [HeyGen](HEYGEN.md).
+
+Mureka music and lyrics-video share the audio role and six Gateway tools. Native
+0.7.23 interrupts quote paid video and resume once after approval; rejection performs
+no dispatch. This includes autonomous lyrics-video requests. Songs pause unless
+autonomous. See [Mureka](MUREKA.md) for transport, pending raw-audio preparation,
+licences and blocked browser validation. The current inventory is 14 providers,
+105 Gateway tools and 24 skills.

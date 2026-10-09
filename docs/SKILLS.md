@@ -203,7 +203,8 @@ and queued jobs never satisfy final delivery. See [Topaz](TOPAZ.md) for pricing,
 sources, unknown-price blockers and the blocked Comet check.
 
 `tests/fixtures/skill_routing.json` contains 129 retained routing rows.
-There are 103 active cases and 26 explicit skips. Five Topaz upscale/interpolation cases
+There are 106 active cases and 23 explicit skips. Three Mureka lyrics-video cases
+now use built tools; music routes use Mureka without an ElevenLabs interim. Five Topaz upscale/interpolation cases
 now use built tools. Seedance reference dialogue and two
 previously licence-skipped edit cases now use built Seedance tools. The extension increment
 case stays skipped because appended-versus-combined length semantics are UNVERIFIED.
@@ -226,7 +227,7 @@ assert that explicit retired requests dispatch nothing. [Decisions](capability-m
 record these differences from the workbook.
 
 The pending specialists cover Act-Two, Kling Motion Control, Mirelo,
-Recraft, Ideogram edit, Mureka lyrics video, VLM judging,
+Recraft, Ideogram edit, VLM judging,
 and cutaway capture. A declared interim activates other pending defaults where supported.
 Wan 3 generation uses its built tools. Model Studio edit/extend retain their default IDs but
 select Seedance while the commercial policy is blocked. Real-person references require Wan
@@ -485,3 +486,13 @@ rows are active: 98 routing cases and 31 dependency skips remain. Every HeyGen s
 requires recorded face/voice consent and pauses with a price estimate, including autonomous
 runs. Preview output is incomplete media. [HeyGen reference](HEYGEN.md) records API contracts,
 commercial restrictions, upload training, pricing and the blocked Comet check.
+
+## Mureka music and lyrics video
+
+Mureka V9.5 is the music default on fal, with instrumental beds and songs under
+`mureka_v95`. ElevenLabs music remains explicit-only. The existing audio-bed and
+lyrics-video skills now use six `Mureka___` tools; no new skill directory was needed.
+Lyrics video always pauses with cost, including autonomous runs. Raw audio/TTS
+upload preparation remains blocked until the upload and recognition APIs are wired.
+There are 14 providers, 105 Gateway tools and 24 packaged skills. See
+[Mureka](MUREKA.md) for contracts, official dated prices, licences and blocked Comet E2E.
