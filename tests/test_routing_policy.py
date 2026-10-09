@@ -11,7 +11,7 @@ class PolicyTests(unittest.TestCase):
     def test_premium_video_approval_is_required_in_autonomous_runs(self):
         for name in ["Kling___text_to_video", "Runway___image_to_video", "Runway___video_to_video"]:
             self.assertTrue(tool_needs_approval(name, True), name)
-        self.assertFalse(tool_needs_approval("Fal___text_to_video", True))
+        self.assertTrue(tool_needs_approval("Fal___text_to_video", True))
         with patch.dict(os.environ, {"RENDERHAUS_PREMIUM_VIDEO_APPROVAL": "false"}):
             self.assertFalse(tool_needs_approval("Kling___text_to_video", True))
             self.assertTrue(tool_needs_approval("Kling___text_to_video", False))

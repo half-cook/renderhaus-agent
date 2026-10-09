@@ -1,0 +1,7 @@
+ts	phase	decision	why	evidence	result
+2026-10-08T23:40:00Z	frame	Keep existing selector API and resolve exact aliases	Model the Domain puts defaults and named exceptions in one table; a typed compiler adds migration cost	agent/deep_agent/routing.py	selected
+2026-10-08T23:40:00Z	frame	No provider adapters added	User scoped this branch to routing and policy	pyproject.toml	8 providers retained
+2026-10-08T23:40:00Z	validation	Restore missing dependencies from local uv cache	Supplied venv contained packaging only; network installs forbidden	/tmp/rh-routing-uv-cache	offline installation
+2026-10-08T23:40:00Z	policy	Confidential stills resolve to pending FLUX 4B; no fallback	Later Satya binding decisions override map refusal text	project policy decision 11c/12	pending
+2026-10-08T23:40:00Z	fixtures	Ideogram generation uses GPT default	Ambiguous explainer with Ideogram assets has no existing image to edit	capability-map.routing.csv	intent override
+2026-10-08T23:40:00Z	design	Two alternatives considered by native reviewer	External Claude/Grok lanes not exposed here; same-model review reduces diversity	/tmp/rh-capability-research.md	limited review
