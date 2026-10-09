@@ -49,7 +49,9 @@ class ModelStudioTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory, patch.dict(os.environ, {
             "MODELSTUDIO_DRY_RUN": "false", "DASHSCOPE_API_KEY": "dummy-test-key",
             "DASHSCOPE_BASE_URL": WORKSPACE_HOST, "RENDERHAUS_MEDIA_DIR": directory,
-        }), patch.object(api.httpx, "Client", side_effect=lambda **kwargs: client(transport=transport, **kwargs)):
+        }), patch.object(api.config, "live_blocker", return_value=None), patch.object(
+            api.httpx, "Client", side_effect=lambda **kwargs: client(transport=transport, **kwargs)
+        ):
             yield Path(directory)
 
     def test_catalog_and_discovered_schemas_use_named_argument_contracts(self):
@@ -188,11 +190,15 @@ class ModelStudioTests(unittest.TestCase):
     def test_legacy_us_unverified_model_and_smart_duration_block_live(self):
         with patch.object(self.api().httpx, "Client", side_effect=AssertionError("HTTP called")):
             for extra, duration, message in (({}, 7, "UNVERIFIED"),
-                ({"DASHSCOPE_BASE_URL": WORKSPACE_HOST}, -1, "smart duration"),
+                ({"DASHSCOPE_BASE_URL": WORKSPACE_HOST}, -1, "licence"),
                 ({"DASHSCOPE_BASE_URL": WORKSPACE_HOST, "DASHSCOPE_MODEL": "wan-unverified"}, 7, "UNVERIFIED")):
                 with self.subTest(extra=extra), patch.dict(os.environ, {"MODELSTUDIO_DRY_RUN": "false", **extra}):
                     with self.assertRaisesRegex(ValueError, message):
                         self.api().edit_wan3_video(**BASE_ARGUMENTS, duration=duration)
+            with patch.dict(os.environ, {"MODELSTUDIO_DRY_RUN": "false", "DASHSCOPE_BASE_URL": WORKSPACE_HOST}), patch.object(
+                self.config(), "live_blocker", return_value=None
+            ), self.assertRaisesRegex(ValueError, "smart duration"):
+                self.api().edit_wan3_video(**BASE_ARGUMENTS)
         with patch.dict(os.environ, {"DASHSCOPE_MODEL": "wan-unverified"}):
             output = self.api().edit_wan3_video(**BASE_ARGUMENTS, duration=7)
             self.assertEqual(output["model"], "wan-unverified")
@@ -214,6 +220,24 @@ class ModelStudioTests(unittest.TestCase):
                     dispatch("alibaba_modelstudio", tool, {**BASE_ARGUMENTS, "duration": 7})
             with self.assertRaisesRegex(ValueError, "licence.*preview"):
                 self.api().get_task(TASK_ID)
+
+    def test_legacy_cached_artifact_cannot_bypass_current_licence_or_dry_run(self):
+        with tempfile.TemporaryDirectory() as directory, patch.dict(os.environ, {
+            "MODELSTUDIO_DRY_RUN": "false", "DASHSCOPE_BASE_URL": WORKSPACE_HOST,
+            "RENDERHAUS_MEDIA_DIR": directory,
+        }), patch.object(self.api().httpx, "Client", side_effect=AssertionError("HTTP called")):
+            metadata, output = self.api()._paths(TASK_ID)
+            output.parent.mkdir(parents=True, exist_ok=True)
+            output.write_bytes(b"mock-mp4")
+            self.api()._write_metadata(metadata, {"status": "succeeded", "job_id": TASK_ID,
+                "base_url": WORKSPACE_HOST, "region": "us-east-1", "model": "wan3.0-video"})
+            with self.assertRaisesRegex(ValueError, "licence.*preview"):
+                self.api().get_task(TASK_ID)
+            with patch.dict(os.environ, {"MODELSTUDIO_DRY_RUN": "true"}):
+                result = self.api().get_task(TASK_ID)
+                self.assertEqual(result["status"], "dry_run")
+                self.assertTrue(result["live_use_blocked"])
+                self.assertNotIn("output_path", result)
 
     def test_malformed_task_ids_fail_before_http(self):
         with patch.object(self.api().httpx, "Client", side_effect=AssertionError("HTTP called")):
