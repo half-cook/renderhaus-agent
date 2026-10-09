@@ -2016,7 +2016,7 @@
       "capability": "extend"
     },
     {
-      "pattern": "aleph|restyle|relight|modify|watercolor|masked|swap.*product|change look|edit.*(?:video|footage|clip)|edit.*vace",
+      "pattern": "aleph|restyle|relight|modify|watercolor|masked|swap.*product|change look|edit.*(?:video|footage|clip)|edit.*vace|(?:\\bwan(?:[ -]?3(?:\\.0)?)?\\b|model[ -]?studio|dashscope)\\s+(?:to\\s+)?edit\\b",
       "skill": "edit-v2v",
       "abstract_tool": "seedance25_edit",
       "capability": "v2v_edit"
