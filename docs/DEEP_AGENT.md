@@ -210,6 +210,19 @@ artifacts. A brief that requires the generated clip's transcript or synchronized
 retains that dependency. The scripted real-graph regression verifies dispatch ordering
 through the normal approval/resume path; live model compliance remains to be measured.
 
+Final assembly omits `output_resolution` or uses `source` unless the customer requests
+`720p`, `1080p`, `1440p`, or `2160p`. The canvas follows the largest measured video short
+edge up to the aspect default. A single 1280x720 shot at 16:9 therefore delivers 1280x720.
+Choosing a lower Wan resolution produces a lower-resolution deliverable unless an upscale
+is requested. This does not change generation defaults or quality-first routing.
+The final-assembly skill and project memory require delivered `width` and `height`,
+`source_resolution`, and resolution warnings in the summary and Markdown. A larger
+requested canvas must disclose "upscaled from 1280x720; no added detail" using the measured
+source size. Topaz through the existing upscale skill is the route to actual enhancement.
+If no video dimensions can be measured, retain the aspect canvas with an explicit warning.
+See [assembly resolution and encoder behavior](LOCAL_ASSEMBLY.md) and
+[resolution decisions](fix-assembly-native-resolution-decisions.tsv).
+
 The executor persists a `cost_ledger` keyed by tool call ID in its session snapshot.
 Paid attempts retain their list-price estimate across approval resumes and failures;
 free tools, rejected approvals and dry runs do not add paid line items. Completion appends

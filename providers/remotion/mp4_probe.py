@@ -18,7 +18,7 @@ _CHUNK_ENTRIES = 4096
 _CONTAINERS = {b"moov", b"trak", b"mdia", b"minf", b"stbl", b"udta",
                b"edts", b"dinf", b"tref", b"meta", b"ilst"}
 _PARENTS = {
-    b"moov": {None}, b"trak": {b"moov"}, b"mvhd": {b"moov"},
+    b"moov": {None}, b"trak": {b"moov"}, b"mvhd": {b"moov"}, b"tkhd": {b"trak"},
     b"mdia": {b"trak"}, b"mdhd": {b"mdia"}, b"hdlr": {b"mdia", b"minf", b"meta"},
     b"minf": {b"mdia"}, b"stbl": {b"minf"}, b"edts": {b"trak"},
     b"dinf": {b"minf"}, b"tref": {b"trak"}, b"ftyp": {None},
@@ -26,7 +26,7 @@ _PARENTS = {
     b"stz2": {b"stbl"},
 }
 _UNIQUE = set(_PARENTS) - {b"trak"}
-_TRACK_HEADERS = {b"mdhd", b"hdlr", b"stsd", b"stsz", b"stts"}
+_TRACK_HEADERS = {b"tkhd", b"mdhd", b"hdlr", b"stsd", b"stsz", b"stts"}
 _CODECS = {
     b"avc1": "h264", b"avc3": "h264", b"hvc1": "hevc", b"hev1": "hevc",
     b"mp4a": "aac", b"mp4v": "mpeg4", b"vp09": "vp9", b"vp08": "vp8",
@@ -187,13 +187,13 @@ class _Parser:
             raise ValueError(_ERROR)
         return samples, ticks
 
-    def codec(self, box: _Box, kind: bytes) -> str:
+    def sample_entry(self, box: _Box, kind: bytes) -> dict[str, Any]:
         self.full_box(box)
         count = struct.unpack(">I", self.read(box, 4, 4))[0]
         if not count or count > (box.end - box.start - 8) // 8:
             raise ValueError(_ERROR)
         self.charge_entries(count)
-        first: bytes | None = None
+        first: _Box | None = None
         actual_count = 0
         for entry in self.boxes(box.start + 8, box.end, box.depth + 1):
             actual_count += 1
@@ -201,10 +201,34 @@ class _Parser:
             if actual_count > count or entry.end - entry.start < minimum:
                 raise ValueError(_ERROR)
             if first is None:
-                first = entry.kind
+                first = entry
         if actual_count != count or first is None:
             raise ValueError(_ERROR)
-        return _CODECS.get(first, first.decode("latin1"))
+        metadata: dict[str, Any] = {"codec_name": _CODECS.get(first.kind, first.kind.decode("latin1"))}
+        if kind == b"vide":
+            width, height = struct.unpack(">HH", self.read(first, 24, 4))
+            if width > 0 and height > 0:
+                metadata.update(width=width, height=height)
+        return metadata
+
+    def display_dimensions(self, metadata: dict[str, Any], box: _Box) -> None:
+        version = self.read(box, 0, 4)[0]
+        if version not in (0, 1):
+            raise ValueError(_ERROR)
+        offset = 52 if version == 1 else 40
+        if box.end - box.start < offset + 44:
+            raise ValueError(_ERROR)
+        a, b, u, c, d, v, _, _, w = struct.unpack(">9i", self.read(box, offset, 36))
+        orientation = (a, b, c, d)
+        if (u, v, w) == (0, 0, 1073741824):
+            if orientation in {(65536, 0, 0, 65536), (-65536, 0, 0, -65536)}:
+                return
+            if orientation in {(0, 65536, -65536, 0), (0, -65536, 65536, 0)}:
+                if "width" in metadata and "height" in metadata:
+                    metadata["width"], metadata["height"] = metadata["height"], metadata["width"]
+                return
+        metadata.pop("width", None)
+        metadata.pop("height", None)
 
     def stream(self, track: dict[bytes, _Box]) -> tuple[dict[str, Any] | None, Fraction]:
         if b"mdhd" not in track or b"hdlr" not in track:
@@ -231,9 +255,12 @@ class _Parser:
             if timed_samples != samples:
                 raise ValueError(_ERROR)
             fps = Fraction(timed_samples * timescale, sample_ticks)
+        metadata = self.sample_entry(track[b"stsd"], kind)
+        if kind == b"vide" and b"tkhd" in track:
+            self.display_dimensions(metadata, track[b"tkhd"])
         return {
             "codec_type": "video" if kind == b"vide" else "audio",
-            "codec_name": self.codec(track[b"stsd"], kind),
+            **metadata,
             "avg_frame_rate": f"{fps.numerator}/{fps.denominator}" if kind == b"vide" else "0/0",
             "bit_rate": int(sample_bytes * 8 / duration),
         }, duration
