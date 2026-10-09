@@ -283,6 +283,10 @@ class TopazAPITests(unittest.TestCase):
         result = self.api.list_topaz_models()
         self.assertEqual({model["model"] for model in result["models"]}, {"Starlight Precise 2.6", "Apollo", "Chronos"})
         self.assertTrue(all(model["training_eligible"] is False for model in result["models"]))
+        self.assertEqual({model["pricing_url"] for model in result["models"]}, {
+            "https://fal.ai/models/topaz/upscale/video/generative",
+            "https://fal.ai/models/topaz/interpolate/video",
+        })
         self.assertEqual(self.calls, [])
 
 

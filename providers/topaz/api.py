@@ -1,5 +1,3 @@
-"""Paid video finishing with explicit dry-run gates and fal queue polling."""
-
 from __future__ import annotations
 
 import math
@@ -171,7 +169,7 @@ def list_topaz_models() -> dict:
                 "model": "Starlight Precise 2.6", "direct_model_id": "slp-2.6",
                 "endpoint_id": contracts.UPSCALE_ENDPOINT, "capability_id": "topaz_upscale",
                 "api_url": contracts.ENDPOINTS[contracts.UPSCALE_ENDPOINT].api_url,
-                "pricing_url": f"https://fal.ai/models/{contracts.UPSCALE_ENDPOINT}/pricing",
+                "pricing_url": f"https://fal.ai/models/{contracts.UPSCALE_ENDPOINT}",
                 "example_prices_usd": {"10s_1080p30": 1.2, "10s_4K30": 2.6, "10s_1080p60": 2.4, "10s_4K60": 5.1},
                 **contracts.TRAINING_METADATA,
             },
@@ -180,7 +178,7 @@ def list_topaz_models() -> dict:
                     "model": model, "direct_model_id": direct_id,
                     "endpoint_id": contracts.INTERPOLATE_ENDPOINT, "capability_id": "topaz_interpolate",
                     "api_url": contracts.ENDPOINTS[contracts.INTERPOLATE_ENDPOINT].api_url,
-                    "pricing_url": f"https://fal.ai/models/{contracts.INTERPOLATE_ENDPOINT}/pricing",
+                    "pricing_url": f"https://fal.ai/models/{contracts.INTERPOLATE_ENDPOINT}",
                     "example_prices_usd": {"10s_1080p_30_to_60": 0.3, "10s_4K_30_to_60": 0.6},
                     **contracts.TRAINING_METADATA,
                 }
