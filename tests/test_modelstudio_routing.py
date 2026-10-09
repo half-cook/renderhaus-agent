@@ -145,6 +145,9 @@ class ModelStudioGraphTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual(result["status"], "not_run")
                     self.assertIn("licence blocked", result["reason"])
                     self.assertIn("preview", result["reason"])
+                    self.assertIn("Alibaba preview terms", result["route"]["disclosure"])
+                    self.assertIn("internal testing", result["route"]["disclosure"])
+                    self.assertIn("until GA", result["route"]["disclosure"])
                     gateway.call_tool.assert_not_awaited()
             provider_request.assert_not_called()
 
