@@ -162,7 +162,7 @@ class ViduGraphTests(unittest.IsolatedAsyncioTestCase):
                 self.assertFalse(rows[-1]["training_eligible"])
 
     async def test_native_audio_references_and_duration_cannot_be_weakened(self):
-        request = StudioAgentRequest(prompt="Vidu Q4 multi-ref with voice clips native audio 16 seconds at 4K",
+        request = StudioAgentRequest(prompt="Vidu Q4 16-second video multi-ref with voice clips native audio at 4K",
                                      autonomous=True, job_id="native")
         executor = GatewayExecutor(_context_from_request(request), [self.gateway()])
         args = {"prompt": "[@reference_image_1] speaks in [reference_audio_1]",

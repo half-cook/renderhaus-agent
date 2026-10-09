@@ -4,13 +4,14 @@ description: Generate or edit still images with GPT Image 2.5; specialize SVG an
 metadata:
   include_tools: call_media_tool
   routing_tools: gpt_image25_t2i gpt_image25_edit recraft_v41_vector ideogram45_edit
-  gateway_tools: Seedream___image_to_image Seedream___text_to_image
+  gateway_tools: ""
 ---
 
 # Still images
 
-Use `gpt_image25_t2i` for generation and `gpt_image25_edit` for editing. Both are pending;
-the declared interims are `Seedream___text_to_image` and `Seedream___image_to_image`.
+Use `gpt_image25_t2i` for generation and `gpt_image25_edit` for editing. Both are pending
+feat/provider-openai-images, with no automatic interim. Disclose that generation is pending
+and stop before dispatch. Seedream is available only when the user names it explicitly.
 The image default size stays 2K. Its current Seedream price can be unknown; never quote a 1K price for 2K.
 Use `recraft_v41_vector` only when editable SVG/vector output is required. Raster tools cannot serve
 that pending exception. Use `ideogram45_edit` only for pixel-preserving text-only changes on an
@@ -21,8 +22,7 @@ including posters and typography. It cannot create a text-only edit input from n
 A supplied existing Ideogram asset for Remotion rendering does not request image generation.
 Explicit Seedream or Runway image requests belong in named-provider with disclosure.
 
-Reuse immutable references. Discover the selected schema. Seedream editing uses
-`image_path_or_url`; do not generate a replacement for an approved reference without review.
+Reuse immutable references. Discover the selected schema. Explicit image editing uses its native source field; do not generate a replacement for an approved reference without review.
 Review the actual still before any animation. Image spending approval does not approve its visual look.
 
 Follow `read_studio_context.intent_route`. Selection uses the explicit requested provider/model,

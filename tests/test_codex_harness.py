@@ -220,7 +220,7 @@ class StudioCodexTests(unittest.IsolatedAsyncioTestCase):
         registrar = unittest.mock.Mock(return_value=[{"version_id": "image-v1", "kind": "image"}])
         studio = StudioAgentContext(autonomous=True, asset_registrar=registrar)
         await run_studio_agent(
-            StudioAgentRequest(prompt="Make an image", autonomous=True),
+            StudioAgentRequest(prompt="Make an image with Seedream", autonomous=True),
             studio=studio,
             harness=harness,
             mcp_servers=[gateway],
@@ -234,7 +234,7 @@ class StudioCodexTests(unittest.IsolatedAsyncioTestCase):
     async def _pause(self):
         gateway, harness = FakeGateway(), FakeHarness([image_call()])
         request = StudioAgentRequest(
-            prompt="Make an image",
+            prompt="Make an image with Seedream",
             workspace_id="workspace-1",
             conversation_id="conversation-1",
             job_id="job-1",
@@ -290,7 +290,7 @@ class StudioCodexTests(unittest.IsolatedAsyncioTestCase):
         unknown["arguments"]["tool_name"] = "Invented___generate"
         gateway, harness = FakeGateway(), FakeHarness([unknown, image_call(prompt=3)])
         await run_studio_agent(
-            StudioAgentRequest(prompt="Make an image", autonomous=True),
+            StudioAgentRequest(prompt="Make an image with Seedream", autonomous=True),
             harness=harness,
             mcp_servers=[gateway],
         )
@@ -313,7 +313,7 @@ class StudioCodexTests(unittest.IsolatedAsyncioTestCase):
 
         with patch.object(GatewayClient, "call_tool", side_effect=dispatch) as invoke:
             await run_studio_agent(
-                StudioAgentRequest(prompt="Make an image", autonomous=True),
+                StudioAgentRequest(prompt="Make an image with Seedream", autonomous=True),
                 harness=harness,
                 mcp_servers=[server],
             )
@@ -466,7 +466,7 @@ class NativeProtocolTests(unittest.IsolatedAsyncioTestCase):
             with patch("agent.studio_agent_next.gateway_mcp_server", return_value=gateway):
                 with self.assertRaises(StudioAgentApprovalRequired) as paused:
                     await run_studio_agent(
-                        StudioAgentRequest(prompt="Make an image", autonomous=False),
+                        StudioAgentRequest(prompt="Make an image with Seedream", autonomous=False),
                         harness=FakeHarness([tool_call]),
                     )
             self.assertEqual(paused.exception.approvals[0].call_id, "search-1")
@@ -575,7 +575,7 @@ class NativeProtocolTests(unittest.IsolatedAsyncioTestCase):
                 ):
                     requests.clear()
                     gateway = FakeGateway()
-                    request = StudioAgentRequest(prompt="Make an image", autonomous=autonomous)
+                    request = StudioAgentRequest(prompt="Make an image with Seedream", autonomous=autonomous)
                     studio = StudioAgentContext(autonomous=autonomous)
                     if autonomous:
                         result = await run_studio_agent(

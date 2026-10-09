@@ -70,7 +70,8 @@ capability default. A pending default uses only its declared interim. Cost and s
 tiers do not order models. Prices support disclosure and spending controls.
 
 Wan 3.0 on fal now provides t2v, i2v and reference_video defaults. The synthetic-dialogue exceptions retain their declared Seedance interims until 2.5 is built.
-Current Seedream tools provide the still-image interims. Luma preserves the existing edit
+Still-image defaults are pending feat/provider-openai-images with no automatic interim.
+Seedream requires an explicit named request. Luma preserves the existing edit
 and extend behavior through explicit interim entries. ElevenLabs music is the music interim.
 These entries expire when their capability default becomes built; they do not create permanent
 exceptions for demoted providers. An exact named pending model has no substitute interim.
@@ -400,3 +401,10 @@ The existing t2v, i2v, still-then-video and storyboard-shots skills now name
 All three poll `Fal___get_video_task`. Controls, costs, consent and dry-run limits are in
 [the Wan 3 provider reference](FAL_WAN3_PROVIDER.md). There are still 24 packaged skills.
 Four Wan-specific workbook rows are active; 38 other dependency rows remain skipped.
+
+Plain shot/clip requests with voiceover produce ordered video, TTS and final-assembly steps.
+The router excludes image generation and editing from their discovered tools and dispatches.
+MP4 export uses final-assembly; OTIO, FCPXML and EDL export uses resolve-handoff.
+Deliverable duration describes the shot/clip length, never audio placement such as starting at 1 s.
+RT-152 through RT-156 are committed routing gates. RT-155 separately verifies Seedream exclusion
+and records GPT Image readiness as an expected failure pending feat/provider-openai-images.

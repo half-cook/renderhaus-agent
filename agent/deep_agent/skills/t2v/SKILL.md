@@ -10,7 +10,11 @@ metadata:
 # Text to video
 
 Use `wan3_t2v` by default. Use `seedance25_t2v` only for dialogue without real-person references.
-Dialogue includes quoted speech, says, talking and speaking; a silent/no-dialogue request is not the exception.
+Dialogue means on-camera speech by a character. Off-screen voiceover, even when quoted, does not
+activate the dialogue exception. A silent/no-dialogue request is not the exception.
+For a plain shot or clip with voiceover, follow the ordered intent_route.steps. Generate the Wan
+video directly, use audio-bed for ElevenLabs narration, then final-assembly to render the MP4.
+Image tools are excluded from this flow. Do not insert a still/keyframe generation step.
 Wan 3.0 uses `Fal___generate_wan3_t2v`. Discover its schema before dispatch. Native controls include
 `prompt`, `resolution`, `aspect_ratio`, `duration`, `audio`, `seed`, `enable_thinking`,
 `enable_prompt_expansion` and `enable_safety_checker`. There is no negative-prompt field.

@@ -1,0 +1,10 @@
+read_date	decision	evidence	result
+2026-10-09	Parse deliverable length rather than first timestamp	/workspace/rh-e2e/out/e2e-report.md bug 3; table-driven tests/test_delivery_routing.py	Typed DeliverableDuration recognizes hyphenated, compact, spelled-out and minute lengths; timing cues are excluded
+2026-10-09	Keep video requirements off audio and assembly calls	GatewayExecutor.media_selection passes the whole prompt to each capability	select_provider strips video required fields for TTS, clone, music, SFX, motion graphics and NLE; native arguments remain provider validated
+2026-10-09	Represent shot plus VO as ordered steps	/workspace/rh-e2e/out/e2e-report.md bug 4; exact Routing Tests RT-152..154	Wan video then ElevenLabs narration then Remotion assembly; top-level Route remains first step for existing callers
+2026-10-09	Treat MP4 export as assembly	Live lighthouse follow-up asks to assemble and export final MP4	Final assembly is distinct from OTIO/FCPXML/EDL handoff
+2026-10-09	Exclude still-image tools for plain shot plus VO	RT-152..154 forbidden_tools; capability map	Request filters reject image discovery and dispatch; executor and runner integration use request_tool_blocker/filter_request_tools
+2026-10-09	Remove automatic Seedream still/edit interims	Binding user decision; RT-155 negative and RT-156 named positive	Generic image route is pending feat/provider-openai-images; explicit Seedream code remains available
+2026-10-09	Commit exact seed workbook gates	/workspace/research/renderhaus-skills-seed-2026-10-08.xlsx Routing Tests RT-152..156	Five rows imported with original columns and strings; RT-155 readiness expectedFailure reason pending feat/provider-openai-images; Seedream exclusion tested separately
+2026-10-09	No provider or model additions	Existing canonical Wan/ElevenLabs/Remotion mappings	Prices, licences and training policies unchanged; no network or paid provider calls; no new env vars
+2026-10-09	Browser validation blocked	User confirms Comet unavailable	Offline routing checks support operator rerun; browser E2E not claimed passed
