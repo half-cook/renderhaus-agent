@@ -17,6 +17,7 @@ from agent.deep_agent.routing import (
     resolution_value,
     tool_variant,
     POLICY,
+    request_tool_blocker,
 )
 from agent.deep_agent.outcomes import OutcomeStore
 from agent.hyperframes import HYPERFRAMES_TOOL
@@ -120,7 +121,25 @@ class GatewayExecutor:
         return {
             tool.name: (server, tool)
             for server in self.servers for tool in await server.list_tools()
+            if request_tool_blocker(self.studio.prompt, tool.name) is None
         }
+
+    def filter_discovery(self, value):
+        if isinstance(value, list):
+            return [self.filter_discovery(item) for item in value if not (
+                isinstance(item, dict) and isinstance(item.get("name"), str)
+                and request_tool_blocker(self.studio.prompt, item["name"])
+            )]
+        if isinstance(value, dict):
+            return {key: self.filter_discovery(item) for key, item in value.items()}
+        if isinstance(value, str):
+            try:
+                decoded = json.loads(value)
+            except ValueError:
+                return value
+            if isinstance(decoded, (list, dict)):
+                return json.dumps(self.filter_discovery(decoded))
+        return value
 
     def snapshot(self):
         return {
@@ -136,6 +155,7 @@ class GatewayExecutor:
                 for server in self.servers
                 for tool in (getattr(server, "_tools_list", None) or [])
                 if tool.name not in {_GATEWAY_SEARCH_TOOL, HYPERFRAMES_TOOL.name}
+                and request_tool_blocker(self.studio.prompt, tool.name) is None
             ],
         }
 
@@ -173,6 +193,8 @@ class GatewayExecutor:
                       title="Provider choice", message=message, status="completed")
 
     def selection_blocker(self, name, arguments, route):
+        if blocker := request_tool_blocker(self.studio.prompt, name):
+            return blocker
         provider, tool = tool_parts(name)
         if route is None:
             return None
@@ -291,6 +313,8 @@ class GatewayExecutor:
         )
         if previous:
             return previous.result
+        if blocker := request_tool_blocker(studio.prompt, name):
+            return {"status": "not_run", "reason": blocker}
         registry = await self.available()
         if name not in registry:
             return {"status": "failed", "error": "Search for this Gateway tool before invoking it."}
@@ -347,6 +371,8 @@ class GatewayExecutor:
             )
             try:
                 output = await server.call_tool(name, arguments)
+                if name == _GATEWAY_SEARCH_TOOL:
+                    output = self.filter_discovery(_unwrap_tool_output(output))
                 if name.rsplit("___", 1)[-1] in {
                     "query_music_task", "get_music_task", "get_video_task", "get_runway_task",
                     "get_render_progress",
