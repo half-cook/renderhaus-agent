@@ -31,16 +31,17 @@ class CapabilityEvidenceTests(unittest.TestCase):
                     self.assertEqual(effective_model('seedance', verb, {}),
                                      f'bytedance/seedance-2.5/us/{endpoint}')
 
-    def test_official_evidence_never_enables_pending_tools(self):
+    def test_image_specialists_bind_verified_built_tools(self):
         for alias in ['recraft_v41_vector', 'ideogram45_edit']:
             with self.subTest(alias=alias):
                 entry = POLICY['tools'][alias]
-                self.assertEqual(entry['status'], 'pending')
-                self.assertIsNone(entry['gateway_tool'])
+                self.assertEqual(entry['status'], 'ready')
+                self.assertEqual(entry['gateway_tool'], {'recraft_v41_vector': 'Fal___recraft_text_to_vector',
+                                                        'ideogram45_edit': 'Fal___ideogram_edit'}[alias])
                 self.assertFalse(entry['training_eligible'])
-                self.assertEqual(entry['read_date'], '2026-10-08')
+                self.assertEqual(entry['read_date'], '2026-10-09')
                 self.assertTrue(entry['license_source'].startswith('https://'))
-                self.assertIn('adapter pending', entry['verification'])
+                self.assertEqual(resolve_alias(alias), entry['gateway_tool'])
         entry = POLICY['tools']['heygen_avatar_v']
         self.assertEqual(entry['status'], 'ready')
         self.assertEqual(entry['gateway_tool'], 'HeyGen___create_avatar_video')

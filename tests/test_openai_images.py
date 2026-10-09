@@ -192,8 +192,8 @@ class OpenAIImagesTests(unittest.TestCase):
             self.assertEqual(route.model, MODEL)
             self.assertIn('unknown', route.disclosure)
         self.assertEqual(routing.route_intent('use Seedream for a still').tool, 'Seedream___text_to_image')
-        self.assertEqual(routing.route_intent('editable SVG logo').status, 'pending')
-        self.assertEqual(routing.route_intent('fix the typo in this banner').status, 'pending')
+        self.assertEqual(routing.route_intent('editable SVG logo').tool, 'Fal___recraft_text_to_vector')
+        self.assertEqual(routing.route_intent('fix the typo in this banner').tool, 'Fal___ideogram_edit')
         self.assertEqual(routing.route_intent('generate a still', confidential=True).tool, 'OpenAI___generate_image')
         self.assertFalse(routing.training_eligible({'provider': 'openai_images', 'model': MODEL}))
 

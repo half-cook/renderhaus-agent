@@ -254,7 +254,8 @@ def route_intent(prompt: str, *, region: str | None = None, tier: str | None = N
     if delivery is not None:
         return delivery
     for rule in POLICY["rules"]:
-        if not re.search(rule["pattern"], prompt, re.IGNORECASE):
+        rule_prompt = _instruction_text(prompt) if rule.get("capability") in {"still_image", "image_edit"} else prompt
+        if not re.search(rule["pattern"], rule_prompt, re.IGNORECASE):
             continue
         skill, alias = rule["skill"], rule["abstract_tool"]
         capability = rule.get("capability")
@@ -376,7 +377,11 @@ def _capability_price(row: dict):
     if provider == "mureka":
         values = {"lyrics_to_song_cents": str(rates.MUREKA_LYRICS_SONG_CENTS), "prompt_to_song_cents": str(rates.MUREKA_PROMPT_SONG_CENTS), "instrumental_cents": str(rates.MUREKA_INSTRUMENTAL_CENTS), "lyrics_video_cents": str(rates.MUREKA_LYRICS_VIDEO_CENTS)}
     elif provider == "fal":
-        if model == "mirelo-ai/sfx1.6/video-to-video":
+        if model == "ideogram/v4.5/edit":
+            values = {quality: str(value) for quality, value in rates.IDEOGRAM_CENTS_PER_IMAGE.items()}
+        elif model == "fal-ai/recraft/v4.1/pro/text-to-vector":
+            values = {"cents_per_image": str(rates.RECRAFT_VECTOR_CENTS_PER_IMAGE)}
+        elif model == "mirelo-ai/sfx1.6/video-to-video":
             values = {"single_sample_cents_per_second": str(rates.MIRELO_CENTS_PER_SECOND),
                       "multi_sample": "unknown"}
         elif model.startswith("alibaba/wan-3.0/"):
@@ -426,16 +431,37 @@ def _capability_price(row: dict):
             "fee": "server.billing_rates._with_fee"}
 
 
+def _instruction_text(prompt: str) -> str:
+    return re.sub(r"\"[^\"]*\"|“[^”]*”|(?<!\w)'[^']*'(?!\w)", "", prompt)
+
+
+def _text_only_image_edit(prompt: str, arguments: dict) -> bool:
+    text = _instruction_text(prompt)
+    existing = bool(arguments.get("image_url") or arguments.get("image_path_or_url") or re.search(
+        r"\b(?:this|the|my|existing|attached|uploaded|original)\s+(?:\w+\s+){0,3}(?:image|photo|banner|poster)\b", text, re.I))
+    text_change = bool(arguments.get("text_only_edit") or re.search(
+        r"\bonly\s+(?:change|replace|edit).*\b(?:text|headline)\b|(?:change|replace|edit).*\bonly\b.*(?:text|headline)|(?:change|replace|edit).*(?:text|headline).*\bonly\b|fix.*typo|text.only.*edit", text, re.I))
+    visual_changes = re.finditer(r"\b(?:change|replace|remove|add|edit|restyle|relight|make)\s+(?:(?:the|a|an|its|that|this|entire|whole|original|all)\s+){0,3}(?:background|lighting|person|color|colour|product|composition|logo|object|subject)\b|\b(?:crop|rotate|resize|reframe)\b", text, re.I)
+    mixed = any(not re.search(r"(?:don't|do not|not|never|without)\s*$", text[:match.start()], re.I)
+                for match in visual_changes)
+    negated = re.search(r"(?:don't|do not|not|never|without)\s+(?:change|replace|fix|edit)[^,;.!?]*\b(?:text|headline|typo)\b(?!\s+(?:placement|position|layout|font)\b)", text, re.I)
+    new = re.search(r"\b(?:generate|create|make|design)\b.*\b(?:new|a|an)\b.*\b(?:image|poster|banner)\b", text, re.I)
+    return bool(existing and text_change and not mixed and not negated and not new)
+
+
 def intent_constraints(prompt: str, *, tier: str | None = None, confidential: bool = False,
                        arguments: dict | None = None) -> dict:
     args = arguments or {}
     excluded_names = re.compile(
         r"\b(?:not|no|avoid|without|never|don't|do not)(?:\s+use)?\s+"
-        r"(heygen(?:\s+avatar\s+v)?|avatar[ -]v|sync(?:[ -]?3|\.so)?)\b", re.IGNORECASE,
+        r"(heygen(?:\s+avatar\s+v)?|avatar[ -]v|sync(?:[ -]?3|\.so)?|ideogram(?:\s+4\.5)?|recraft(?:\s+v?4\.1)?)\b", re.IGNORECASE,
     )
-    excluded_providers = sorted({"heygen" if match[1].lower().startswith(("heygen", "avatar")) else "sync"
-                                 for match in excluded_names.finditer(prompt)})
-    provider_prompt = excluded_names.sub("", prompt)
+    exclusions = [match[1].lower() for match in excluded_names.finditer(_instruction_text(prompt))]
+    excluded_providers = sorted({"heygen" if name.startswith(("heygen", "avatar")) else "sync"
+                                 for name in exclusions if name.startswith(("heygen", "avatar", "sync"))})
+    excluded_aliases = [alias for name, alias in (("ideogram", "ideogram45_edit"), ("recraft", "recraft_v41_vector"))
+                        if any(exclusion.startswith(name) for exclusion in exclusions)]
+    provider_prompt = excluded_names.sub("", _instruction_text(prompt))
     provider_candidates = [p for pattern, p in [
         (r"\bvidu\b|\bvace\b|\bfal\b|\bwan[ -]?2", "fal"), (r"\bseedance\b", "seedance"),
         (r"\bseedream\b", "seedream"), (r"\bkling\b", "kling"),
@@ -499,7 +525,7 @@ def intent_constraints(prompt: str, *, tier: str | None = None, confidential: bo
         "dialogue": dialogue, "real_face_refs": real_face,
         "video_voiceover": _video_voiceover(prompt),
         "vector_output": bool(re.search(r"\bsvg\b|vector|editable.*illustrator", prompt, re.I)),
-        "text_only_edit": bool(re.search(r"(?:change|replace).*only.*(?:text|headline)|fix.*typo|text.only.*edit", prompt, re.I)),
+        "text_only_edit": _text_only_image_edit(prompt, args),
         "full_body_motion": bool(re.search(r"full.body|whole.body|\bdance\b|\bdancing\b", prompt, re.I)),
         "facial_performance": bool(re.search(r"facial|face.*acting|upper.body", prompt, re.I)),
         "duration_over_30s": isinstance(supplied_duration, (int, float)) and supplied_duration > 30,
@@ -509,6 +535,7 @@ def intent_constraints(prompt: str, *, tier: str | None = None, confidential: bo
         "linear_fps": bool(re.search(r"linear|simple pan", prompt, re.I)) and not bool(re.search(r"non[ -]?linear|not linear", prompt, re.I)),
     }
     predicates.update({k: bool(args[k]) for k in predicates if k in args})
+    predicates["text_only_edit"] = _text_only_image_edit(prompt, args)
     predicates["real_face_refs"] = real_face
     model = None
     if provider == "fal":
@@ -522,7 +549,7 @@ def intent_constraints(prompt: str, *, tier: str | None = None, confidential: bo
     named_model = next((key for key, entry in POLICY["named_models"].items()
                         if re.search(entry["pattern"], provider_prompt, re.I)), None)
     return {"provider": provider, "model": model, "named_model": named_model,
-            "provider_candidates": provider_candidates, "excluded_providers": excluded_providers,
+            "provider_candidates": provider_candidates, "excluded_providers": excluded_providers, "excluded_aliases": excluded_aliases,
             "required": required, "predicates": predicates}
 
 
@@ -550,7 +577,8 @@ def select_provider(job: str, *, tier: str | None = None, required: dict | None 
                     available_tools: set[str] | None = None, tool_variant: str | None = None,
                     predicates: dict | None = None, named_model: str | None = None,
                     provider_candidates: list[str] | None = None,
-                    excluded_providers: list[str] | None = None) -> Route:
+                    excluded_providers: list[str] | None = None,
+                    excluded_aliases: list[str] | None = None) -> Route:
     args, required = dict(arguments or {}), dict(required or {})
     detected = intent_constraints("", arguments=args)["predicates"]
     predicates = {**detected, **(predicates or {})}
@@ -625,6 +653,9 @@ def select_provider(job: str, *, tier: str | None = None, required: dict | None 
             model = configured_model(verb, model_args)
         except ValueError as exc:
             return Route(alias=alias, status="blocked", reason=str(exc), disclosure=str(exc))
+    if alias in (excluded_aliases or []):
+        reason = f"Requested model exclusion blocks {alias} for {capability}; no substitute was selected."
+        return Route(alias=alias, status="blocked", job_type=capability, reason=reason, disclosure=reason)
     if entry.get("provider") in (excluded_providers or []):
         reason = f"Requested provider exclusion blocks {entry['provider']} for {capability}; no substitute was selected."
         return Route(alias=alias, status="blocked", job_type=capability, reason=reason, disclosure=reason)
@@ -685,6 +716,9 @@ def select_provider(job: str, *, tier: str | None = None, required: dict | None 
         tool = tool_variant
     if alias == "mureka_v95" and predicates.get("instrumental_music"):
         tool = "Mureka___generate_instrumental"
+    if capability == "still_image" and predicates.get("vector_output") and alias != "recraft_v41_vector":
+        reason = "Requested raster model cannot produce editable vector/SVG output; no automatic provider fallback."
+        return Route(alias=alias, basis=basis, status="blocked", reason=reason, disclosure=reason)
     variant = {"still_image": "image", "reference_video": "reference"}.get(capability, capability)
     row = next((r for r in capability_table() if tool in r["tools"].values() and (model is None or r["model"] == model)), None)
     if model and row is None and any(tool in r["tools"].values() for r in POLICY["capabilities"]):
@@ -706,7 +740,7 @@ def select_provider(job: str, *, tier: str | None = None, required: dict | None 
         resolution = args.get("resolution") or args.get("size") or args.get("ratio")
         if resolution:
             required["max_resolution"] = max(required.get("max_resolution", 0), resolution_value(resolution))
-        if capability == "still_image" and not resolution and not provider:
+        if capability == "still_image" and alias != "recraft_v41_vector" and not resolution and not provider:
             required["max_resolution"] = max(required.get("max_resolution", 0), resolution_value(POLICY["image_default_size"]))
         if capability == "v2v_edit":
             required.pop("multi_shot", None)
@@ -972,7 +1006,7 @@ def estimate_cost(name: str, arguments: dict, *, list_price: bool = False) -> Co
         return CostEstimate(None, blocker)
     provider, tool = tool_parts(name)
     model = effective_model(provider, tool, arguments)
-    if provider in {"heygen", "topaz", "mureka"} or name in {"Runway___act_two", "Fal___kling_motion_control", "Fal___mirelo_v2a"}:
+    if provider in {"heygen", "topaz", "mureka"} or name in {"Runway___act_two", "Fal___kling_motion_control", "Fal___mirelo_v2a", "Fal___ideogram_edit", "Fal___recraft_text_to_vector"}:
         try:
             return CostEstimate(_published_cost(provider, tool, arguments).total_cents)
         except (ValueError, TypeError, KeyError) as exc:
@@ -1052,6 +1086,8 @@ def _published_cost(provider: str, tool: str, arguments: dict):
         if cents is None:
             raise ValueError("Mirelo multi-sample cost unknown; official billing TODO.")
         return rates._with_fee(ceil(cents))
+    if provider == "fal" and tool in {"ideogram_edit", "recraft_text_to_vector"}:
+        return rates._with_fee(ceil(rates.image_specialist_price_cents(tool, arguments)))
     if provider == "seedance":
         from math import ceil
 

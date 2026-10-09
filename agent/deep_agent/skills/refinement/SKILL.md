@@ -3,8 +3,8 @@ name: refinement
 description: Refine retained media or edits through capability defaults without repeating successful work.
 metadata:
   include_tools: call_media_tool call_audio_tool call_editor_tool
-  routing_tools: gpt_image25_edit wan3_edit seedance25_edit remotion_render
-  gateway_tools: ModelStudio___edit_wan3_video ModelStudio___get_task Seedance___edit_video Seedance___get_video_task Fal___get_video_task OpenAI___generate_image OpenAI___edit_image
+  routing_tools: ideogram45_edit recraft_v41_vector gpt_image25_edit wan3_edit seedance25_edit remotion_render
+  gateway_tools: ModelStudio___edit_wan3_video ModelStudio___get_task Seedance___edit_video Seedance___get_video_task Fal___get_video_task OpenAI___generate_image OpenAI___edit_image Fal___ideogram_edit Fal___recraft_text_to_vector
 ---
 
 # Refinement

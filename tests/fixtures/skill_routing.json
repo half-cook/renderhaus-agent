@@ -453,7 +453,7 @@
     "expected_skill": "image-gen",
     "expected_tool": "recraft_v41_vector",
     "suite": "motion-graphics",
-    "skip_reason": "provider pending: recraft_v41_vector (feat/image-specialists)",
+    "skip_reason": "",
     "note": "vector exception",
     "source_status": "updated"
   },
@@ -471,7 +471,7 @@
     "expected_skill": "image-gen",
     "expected_tool": "recraft_v41_vector",
     "suite": "motion-graphics",
-    "skip_reason": "provider pending: recraft_v41_vector (feat/image-specialists)",
+    "skip_reason": "",
     "note": "vector exception",
     "source_status": "updated"
   },
@@ -779,7 +779,7 @@
     "expected_skill": "image-gen",
     "expected_tool": "recraft_v41_vector",
     "suite": "image-gen",
-    "skip_reason": "provider pending: recraft_v41_vector (feat/image-specialists)",
+    "skip_reason": "",
     "note": "exception: vector_output",
     "source_status": "new"
   },
@@ -788,7 +788,7 @@
     "expected_skill": "image-gen",
     "expected_tool": "recraft_v41_vector",
     "suite": "image-gen",
-    "skip_reason": "provider pending: recraft_v41_vector (feat/image-specialists)",
+    "skip_reason": "",
     "note": "exception: vector_output",
     "source_status": "new"
   },
@@ -797,7 +797,7 @@
     "expected_skill": "image-gen",
     "expected_tool": "ideogram45_edit",
     "suite": "image-gen",
-    "skip_reason": "provider pending: ideogram45_edit (feat/image-specialists)",
+    "skip_reason": "",
     "note": "exception: text_only_edit (A/B)",
     "source_status": "new"
   },
@@ -806,7 +806,7 @@
     "expected_skill": "image-gen",
     "expected_tool": "ideogram45_edit",
     "suite": "image-gen",
-    "skip_reason": "provider pending: ideogram45_edit (feat/image-specialists)",
+    "skip_reason": "",
     "note": "exception: text_only_edit (A/B)",
     "source_status": "new"
   },

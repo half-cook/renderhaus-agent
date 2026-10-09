@@ -4,6 +4,7 @@ import json
 import os
 import tempfile
 import unittest
+from contextlib import nullcontext
 from pathlib import Path
 from unittest.mock import Mock, patch
 
@@ -13,7 +14,7 @@ from mcp import Tool
 from agent.deep_agent import routing
 from agent.gateway_executor import tool_needs_approval
 from agent.studio_agent_next import (
-    StudioAgentApprovalRequired, StudioAgentRequest, StudioApprovalDecision,
+    StudioAgentApprovalRequired, StudioAgentRequest, StudioApprovalDecision, StudioNode,
     _context_from_request,
 )
 from providers.fal import api as fal
@@ -69,7 +70,7 @@ class ImageSpecialistProviderTests(unittest.TestCase):
             {"num_images": True}, {"num_images": 0}, {"num_images": 9}, {"num_images": 1.5},
             {"reference_image_urls": [EDIT["image_url"]] * 5},
             {"reference_image_urls": [EDIT["image_url"]] * 4, "mask_url": EDIT["image_url"]},
-            {"mask_url": "javascript:alert(1)"}, {"edit_precision": "high", "image_size": "square"},
+            {"mask_url": ""}, {"mask_url": "javascript:alert(1)"}, {"edit_precision": "high", "image_size": "square"},
             {"edit_precision": "regular", "mask_url": EDIT["image_url"], "image_size": "square"},
             {"edit_precision": "regular", "image_size": {"width": 257, "height": 512}},
             {"edit_precision": "regular", "image_size": {"width": 4096, "height": 4096}},
@@ -212,6 +213,60 @@ class ImageSpecialistPolicyTests(unittest.TestCase):
         route = routing.route_intent("change only the text", arguments={"image_url": "renderhaus-asset://source"})
         self.assertEqual(route.tool, "Fal___ideogram_edit")
 
+    def test_preservation_instructions_do_not_count_as_mixed_visual_changes(self):
+        for prompt in ("Fix the typo in this image but do not change the background",
+                       "Replace only the text on this image; do not edit lighting or composition",
+                       "Change only the headline in this poster, don't change the product"):
+            with self.subTest(prompt=prompt):
+                self.assertEqual(routing.route_intent(prompt).tool, "Fal___ideogram_edit")
+
+    def test_mixed_new_and_negated_edits_do_not_take_text_only_exception(self):
+        for prompt in ("fix the typo in this image and change the background", "do not fix the typo, edit this image lighting", "generate a new poster and fix a typo"):
+            with self.subTest(prompt=prompt):
+                self.assertFalse(routing.intent_constraints(prompt)["predicates"]["text_only_edit"])
+        route = routing.route_intent("use GPT Image 2.5 for an editable SVG logo")
+        self.assertEqual(route.status, "blocked")
+        self.assertIn("vector", route.reason.lower())
+
+    def test_mixed_visual_verbs_and_excluded_specialists(self):
+        for change in ("make the background blue", "remove that person", "change the entire background",
+                       "crop it square", "add a logo"):
+            prompt = "Fix the typo in this image and " + change
+            with self.subTest(prompt=prompt):
+                self.assertEqual(routing.route_intent(prompt).tool, "OpenAI___edit_image")
+        for prompt in ("Do not use Ideogram; edit this image and remove the background person",
+                       "Do not use Recraft; generate a raster logo"):
+            with self.subTest(prompt=prompt):
+                self.assertTrue(routing.route_intent(prompt).tool.startswith("OpenAI___"))
+        self.assertEqual(routing.route_intent("Do not use Recraft; make an editable SVG logo").status, "blocked")
+        self.assertEqual(routing.route_intent("Do not use Ideogram; fix the typo in this image").status, "blocked")
+
+    def test_quoted_text_and_placement_preservation_do_not_select_models(self):
+        for prompt in ('Fix the typo in this banner; replace "Recraf" with "Recraft"',
+                       'Only change the text on this image',
+                       'Fix the typo in this image; do not change the text placement'):
+            with self.subTest(prompt=prompt):
+                self.assertEqual(routing.route_intent(prompt).tool, "Fal___ideogram_edit")
+        self.assertEqual(routing.route_intent('Use Ideogram to generate a poster with the headline "fix a typo"').tool,
+                         "OpenAI___generate_image")
+
+    def test_graphic_text_edits_keep_remotion_modality(self):
+        for prompt in ("Change the text in this Remotion title card", "Edit the text in this motion graphic"):
+            with self.subTest(prompt=prompt):
+                self.assertEqual(routing.route_intent(prompt).alias, "remotion_render")
+
+    def test_quoted_dialogue_still_uses_seedance_exception(self):
+        route = routing.route_intent('Generate a video of a fictional fox: "Hello there"')
+        self.assertEqual(route.alias, "seedance25_t2v")
+
+    def test_vector_headline_generation_and_whiteboard_keep_their_modality(self):
+        for prompt in ('Generate an editable SVG logo with headline',
+                       'Generate an editable SVG with the headline "edit text"'):
+            with self.subTest(prompt=prompt):
+                self.assertEqual(routing.route_intent(prompt).tool, "Fal___recraft_text_to_vector")
+        self.assertEqual(routing.route_intent("whiteboard explainer").skill, "whiteboard-explainer")
+        self.assertEqual(routing.route_intent("Change the text in this Remotion title card").skill, "motion-graphics")
+
     def test_image_approval_rules_and_official_cost_quotes(self):
         for tool, args, provider_cents in [("ideogram_edit", {**EDIT, "quality": "low", "num_images": 2}, 6),
                                          ("ideogram_edit", {**EDIT, "quality": "medium"}, 6),
@@ -245,12 +300,42 @@ class ImageSpecialistPolicyTests(unittest.TestCase):
                 ref = repo.register_source(workspace_id="workspace", project_id="project", user_id="user", source=value, kind="image", training_eligible=False)
                 self.assertEqual(ref.mime_type, "image/svg+xml")
                 self.assertNotIn(b"script", repo.version_path("workspace", ref.version_id).read_bytes())
+            remote = "https://example.com/vector.svg"
+            response = httpx.Response(200, content=UNSAFE_SVG, headers={"content-type": "image/svg+xml"},
+                                      request=httpx.Request("GET", remote))
+            with patch.object(httpx, "stream", return_value=nullcontext(response)):
+                ref = repo.register_source(workspace_id="workspace", project_id="project", user_id="user", source=remote,
+                                           kind="image", training_eligible=False)
+                self.assertNotIn(b"script", repo.version_path("workspace", ref.version_id).read_bytes())
+            mislabeled = httpx.Response(200, content=UNSAFE_SVG, headers={"content-type": "text/html"},
+                                        request=httpx.Request("GET", remote))
+            with patch.object(httpx, "stream", return_value=nullcontext(mislabeled)), self.assertRaisesRegex(ValueError, "content-type"):
+                repo.register_source(workspace_id="workspace", project_id="project", user_id="user", source=remote, kind="image")
             with patch.dict(os.environ, {"RENDERHAUS_MEDIA_DIR": directory}):
                 assets = studio.collect_asset_sources({"output_path": str(source)})
                 self.assertEqual(assets[0]["kind"], "image")
 
 
 class ImageSpecialistApprovalTests(unittest.IsolatedAsyncioTestCase):
+    async def test_manager_and_context_use_attached_image_for_text_only_edits(self):
+        from agent.deep_agent.runner import run_with_servers
+        from langchain_core.messages import HumanMessage, ToolMessage
+
+        request = StudioAgentRequest(prompt="change only the text", nodes=[StudioNode(
+            id="image", title="Approved poster", kind="image", version_id="image_123")])
+
+        def observe(messages, tools):
+            proposal = next(message.content for message in messages if isinstance(message, HumanMessage))
+            self.assertIn("Fal___ideogram_edit", proposal)
+            context = next(json.loads(message.content) for message in messages
+                           if isinstance(message, ToolMessage) and message.name == "read_studio_context")
+            self.assertEqual(context["intent_route"]["tool"], "Fal___ideogram_edit")
+            return final()
+
+        with tempfile.TemporaryDirectory() as directory, patch.dict(os.environ, {"RENDERHAUS_OUTCOME_DIR": directory}):
+            await run_with_servers(request, _context_from_request(request), [Gateway()], model=ScriptedModel([
+                call("read_studio_context", {}, "context"), observe]))
+
     async def test_native_cost_pause_reject_and_approve_do_not_double_submit(self):
         from agent.deep_agent.runner import run_with_servers
         for tool, args, prompt in [("ideogram_edit", EDIT, "fix the typo in this image"),
@@ -274,5 +359,8 @@ class ImageSpecialistApprovalTests(unittest.IsolatedAsyncioTestCase):
                     await run_with_servers(resumed, _context_from_request(resumed), [gateway], model=ScriptedModel([final()]))
                     if decision == "approve":
                         gateway.call_tool.assert_awaited_once_with(name, args)
+                        records = [json.loads(line) for line in (Path(directory) / "outcomes.jsonl").read_text().splitlines()]
+                        if tool == "ideogram_edit":
+                            self.assertEqual(records[-1]["ab_arm"], "ideogram45_edit")
                     else:
                         gateway.call_tool.assert_not_awaited()

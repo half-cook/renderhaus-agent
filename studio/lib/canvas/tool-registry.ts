@@ -2,6 +2,38 @@ import type { AgentToolEvent, CreativeNodeKind, PortDataType, ToolDefinition } f
 
 const CREATIVE_TOOLS: ToolDefinition[] = [
   {
+    id: "image.ideogram.edit",
+    displayName: "Ideogram text edit",
+    description: "Correct text in an existing image; review pixel preservation",
+    category: "image",
+    providerId: "fal",
+    toolName: "ideogram_edit",
+    inputPorts: [
+      { id: "image", label: "Source image", dataType: "image", targetField: "image_url", required: true },
+      { id: "prompt", label: "Edit instruction", dataType: "text", targetField: "prompt", required: true },
+      { id: "mask", label: "Edit mask", dataType: "image", targetField: "mask_url" },
+    ],
+    outputPorts: [{ id: "image", label: "Edited image", dataType: "image" }],
+    primaryFields: ["prompt", "image_url", "mask_url", "reference_image_urls", "edit_precision", "image_size", "quality", "num_images", "seed"],
+    pollTool: "get_video_task",
+    pollIntervalMs: 5000,
+    defaults: { edit_precision: "high", image_size: "auto", quality: "medium", num_images: 1 },
+  },
+  {
+    id: "image.recraft.vector",
+    displayName: "Recraft editable vector",
+    description: "Generate an editable SVG with a preferred RGB palette",
+    category: "image",
+    providerId: "fal",
+    toolName: "recraft_text_to_vector",
+    inputPorts: [{ id: "prompt", label: "Vector design", dataType: "text", targetField: "prompt", required: true }],
+    outputPorts: [{ id: "image", label: "SVG", dataType: "image" }],
+    primaryFields: ["prompt", "image_size", "colors", "background_color", "enable_safety_checker"],
+    pollTool: "get_video_task",
+    pollIntervalMs: 5000,
+    defaults: { image_size: "square_hd", enable_safety_checker: true },
+  },
+  {
     id: "video.mirelo.foley",
     displayName: "Mirelo video foley",
     description: "Use chat to approve synchronized SFX with a cost estimate",
@@ -523,14 +555,18 @@ export function defaultToolForRail(
 
 export function toolForAgentArtifact(
   kind: "image" | "video" | "audio",
-  event?: Pick<AgentToolEvent, "name" | "provider">,
+  event?: Pick<AgentToolEvent, "name" | "provider" | "providerJobId">,
 ): ToolDefinition | undefined {
   // Agent artifacts become self-contained text-to-media nodes. Even when the
   // agent used an input asset or a composition tool, placing the result must
   // not create an invisible dependency on another artifact in the run.
-  const provider = `${event?.provider || ""} ${event?.name || ""}`.toLowerCase();
+  const provider = `${event?.provider || ""} ${event?.name || ""} ${event?.providerJobId || ""}`.toLowerCase();
   const runway = provider.includes("runway");
-  if (kind === "image") return toolById(runway ? "runway.image.generate" : provider.includes("seedream") ? "image.generate" : "openai.image.generate");
+  if (kind === "image") {
+    if (provider.includes("ideogram")) return toolById("image.ideogram.edit");
+    if (provider.includes("recraft")) return toolById("image.recraft.vector");
+    return toolById(runway ? "runway.image.generate" : provider.includes("seedream") ? "image.generate" : "openai.image.generate");
+  }
   if (kind === "video") {
     return toolById(
       provider.includes("heygen") ? "video.heygen.presenter"
