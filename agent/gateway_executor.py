@@ -87,10 +87,21 @@ class GatewayExecutor:
     @classmethod
     def restore_media_review(cls, media_jobs, event):
         for job in media_jobs.values():
-            if (job.get("provider_job_id") and job["provider_job_id"] == event.provider_job_id
-                    and job["provider"] == tool_parts(event.name)[0]):
+            if cls.matches_media_job(job, event.name, event.provider_job_id):
                 job["status"] = event.status
                 job["asset"] = cls.review_asset(event, job["provider"], job["model"], job["asset"])
+
+    @staticmethod
+    def matches_media_job(job, name, job_id):
+        if not job_id or job.get("provider_job_id") != job_id:
+            return False
+        provider = tool_parts(name)[0]
+        if job["provider"] == provider:
+            return True
+        endpoint, separator, request_id = str(job_id).partition(":")
+        return bool(provider == "fal" and job["provider"] == "seedance"
+                    and separator and request_id and endpoint.startswith("bytedance/seedance-2.5/")
+                    and job.get("endpoint_id") == endpoint and job.get("model") == endpoint)
 
     def publish_spending(self):
         for snapshot in self.studio.session_items:
@@ -166,8 +177,25 @@ class GatewayExecutor:
         job = job_type(name)
         if not job or is_free_tool(name):
             return None
+        selection_arguments = dict(arguments)
+        version_ids = _asset_version_ids(arguments)
+        values = list(arguments.values())
+        while values:
+            value = values.pop()
+            if isinstance(value, dict):
+                values.extend(value.values())
+            elif isinstance(value, list):
+                values.extend(value)
+            elif isinstance(value, str) and value in self.studio.source_versions:
+                version_ids.append(self.studio.source_versions[value])
+        for version_id in version_ids:
+            asset = self.studio.working_assets.get(version_id, {})
+            metadata = asset.get("metadata", {})
+            if (asset.get("real_face_refs") or asset.get("user_supplied_real_person_refs")
+                    or isinstance(metadata, dict) and (metadata.get("real_face_refs") or metadata.get("user_supplied_real_person_refs"))):
+                selection_arguments["real_face_refs"] = True
         constraints = intent_constraints(self.studio.prompt, confidential=self.studio.confidential,
-                                         arguments=arguments)
+                                         arguments=selection_arguments)
         if job in {"motion_graphics", "nle_handoff"}:
             constraints["provider"] = constraints["model"] = constraints["named_model"] = None
         rejected_id = self.rejected_reviews.get(job)
@@ -179,7 +207,7 @@ class GatewayExecutor:
                 constraints["required"][key] = max(value, constraints["required"].get(key, 0))
         constraints = capability_constraints(constraints, job)
         variant = tool_variant(name)
-        route = select_provider(job, arguments=arguments, tool_variant=variant, retry=retry, **constraints)
+        route = select_provider(job, arguments=selection_arguments, tool_variant=variant, retry=retry, **constraints)
         return route
 
     def dispatch_disclosure(self, name, arguments, route):
@@ -419,7 +447,7 @@ class GatewayExecutor:
         source_version_ids = _asset_version_ids(arguments)
         if is_free_tool(name) and arguments.get("job_id"):
             for job in self.media_jobs.values():
-                if job.get("provider_job_id") == arguments["job_id"] and job["provider"] == tool_parts(name)[0]:
+                if self.matches_media_job(job, name, arguments["job_id"]):
                     source_version_ids = list(dict.fromkeys(source_version_ids + _asset_version_ids(job["arguments"])))
         await asyncio.to_thread(
             _append_harvested_event,
@@ -471,12 +499,13 @@ class GatewayExecutor:
                 self.media_jobs[call_id] = {
                     "provider": provider, "model": model, "job_type": route.job_type,
                     "provider_job_id": provider_job_id, "status": completed.status,
+                    "endpoint_id": payload.get("endpoint_id"),
                     "arguments": arguments, "required": route.required,
                     "asset": self.review_asset(completed, provider, model),
                 }
         elif is_free_tool(name) and arguments.get("job_id"):
             for job in self.media_jobs.values():
-                if job.get("provider_job_id") == arguments["job_id"] and job["provider"] == tool_parts(name)[0]:
+                if self.matches_media_job(job, name, arguments["job_id"]):
                     job["status"] = completed.status
                     job["asset"] = self.review_asset(completed, job["provider"], job["model"], job["asset"])
         if name.endswith("render_timeline") and completed.result.get("render_id"):

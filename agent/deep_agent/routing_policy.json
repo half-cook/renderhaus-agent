@@ -120,22 +120,145 @@
       "allowed_regions": [],
       "training_eligible": false,
       "models": [
-        "seedance-1-5-pro-251215"
+        "dreamina-seedance-2-5-260628",
+        "seedance-1-5-pro-251215",
+        "bytedance/seedance-2.5/text-to-video",
+        "bytedance/seedance-2.5/image-to-video",
+        "bytedance/seedance-2.5/reference-to-video",
+        "bytedance/seedance-2.5/us/text-to-video",
+        "bytedance/seedance-2.5/us/image-to-video",
+        "bytedance/seedance-2.5/us/reference-to-video"
       ],
-      "default_model": "seedance-1-5-pro-251215",
+      "default_model": "dreamina-seedance-2-5-260628",
       "model_env": "SEEDANCE_MODEL",
       "model_policies": {
         "seedance-1-5-pro-251215": {
           "license": "service-terms",
+          "weights_license": "closed-weights",
           "training_eligible": false,
-          "allowed_regions": []
+          "training_reason": "No unambiguous output training grant; fal terms restrict competing model training.",
+          "license_source": "https://docs.byteplus.com/en/docs/legal/docs-service-specific-terms",
+          "read_date": "2026-10-09",
+          "commercial_status": "conditional: written BytePlus authorization required for API resale or platform UGC integration",
+          "consent_requirements": "Real-person likeness and voice references require appropriate consent under BytePlus AUP.",
+          "verification": "Verified official model schema",
+          "blocked_regions": [
+            "US"
+          ],
+          "consent_source": "https://docs.byteplus.com/en/docs/legal/acceptable_use_policy_byteplus_genai"
+        },
+        "dreamina-seedance-2-5-260628": {
+          "license": "service-terms",
+          "weights_license": "closed-weights",
+          "training_eligible": false,
+          "training_reason": "No unambiguous output training grant; fal terms restrict competing model training.",
+          "license_source": "https://docs.byteplus.com/en/docs/legal/docs-service-specific-terms",
+          "read_date": "2026-10-09",
+          "commercial_status": "conditional: written BytePlus authorization required for API resale or platform UGC integration",
+          "real_face_refs_allowed": false,
+          "consent_requirements": "Do not submit real-person photo/video references; route to Wan or refuse.",
+          "verification": "Verified official model schema",
+          "blocked_regions": [
+            "US"
+          ],
+          "consent_source": "https://docs.byteplus.com/en/docs/legal/acceptable_use_policy_byteplus_genai"
+        },
+        "bytedance/seedance-2.5/text-to-video": {
+          "license": "service-terms",
+          "weights_license": "closed-weights",
+          "training_eligible": false,
+          "training_reason": "No unambiguous output training grant; fal terms restrict competing model training.",
+          "license_source": "https://fal.ai/legal/terms-of-service",
+          "read_date": "2026-10-09",
+          "commercial_status": "commercial API",
+          "real_face_refs_allowed": false,
+          "consent_requirements": "Do not submit real-person photo/video references; route to Wan or refuse.",
+          "verification": "Verified official model schema",
+          "blocked_regions": [],
+          "consent_source": "https://docs.byteplus.com/en/docs/modelark/seedance-portrait-asset-guide",
+          "source": "https://fal.ai/models/bytedance/seedance-2.5/text-to-video/api"
+        },
+        "bytedance/seedance-2.5/image-to-video": {
+          "license": "service-terms",
+          "weights_license": "closed-weights",
+          "training_eligible": false,
+          "training_reason": "No unambiguous output training grant; fal terms restrict competing model training.",
+          "license_source": "https://fal.ai/legal/terms-of-service",
+          "read_date": "2026-10-09",
+          "commercial_status": "commercial API",
+          "real_face_refs_allowed": false,
+          "consent_requirements": "Do not submit real-person photo/video references; route to Wan or refuse.",
+          "verification": "Verified official model schema",
+          "blocked_regions": [],
+          "consent_source": "https://docs.byteplus.com/en/docs/modelark/seedance-portrait-asset-guide",
+          "source": "https://fal.ai/models/bytedance/seedance-2.5/image-to-video/api"
+        },
+        "bytedance/seedance-2.5/reference-to-video": {
+          "license": "service-terms",
+          "weights_license": "closed-weights",
+          "training_eligible": false,
+          "training_reason": "No unambiguous output training grant; fal terms restrict competing model training.",
+          "license_source": "https://fal.ai/legal/terms-of-service",
+          "read_date": "2026-10-09",
+          "commercial_status": "commercial API",
+          "real_face_refs_allowed": false,
+          "consent_requirements": "Do not submit real-person photo/video references; route to Wan or refuse.",
+          "verification": "Verified official model schema",
+          "blocked_regions": [],
+          "consent_source": "https://docs.byteplus.com/en/docs/modelark/seedance-portrait-asset-guide",
+          "source": "https://fal.ai/models/bytedance/seedance-2.5/reference-to-video/api"
+        },
+        "bytedance/seedance-2.5/us/text-to-video": {
+          "license": "service-terms",
+          "weights_license": "closed-weights",
+          "training_eligible": false,
+          "training_reason": "No unambiguous output training grant; fal terms restrict competing model training.",
+          "license_source": "https://fal.ai/legal/terms-of-service",
+          "read_date": "2026-10-09",
+          "commercial_status": "commercial API",
+          "real_face_refs_allowed": false,
+          "consent_requirements": "Do not submit real-person photo/video references; route to Wan or refuse.",
+          "verification": "Verified official model schema",
+          "blocked_regions": [],
+          "consent_source": "https://docs.byteplus.com/en/docs/modelark/seedance-portrait-asset-guide",
+          "source": "https://fal.ai/models/bytedance/seedance-2.5/us/text-to-video/api"
+        },
+        "bytedance/seedance-2.5/us/image-to-video": {
+          "license": "service-terms",
+          "weights_license": "closed-weights",
+          "training_eligible": false,
+          "training_reason": "No unambiguous output training grant; fal terms restrict competing model training.",
+          "license_source": "https://fal.ai/legal/terms-of-service",
+          "read_date": "2026-10-09",
+          "commercial_status": "commercial API",
+          "real_face_refs_allowed": false,
+          "consent_requirements": "Do not submit real-person photo/video references; route to Wan or refuse.",
+          "verification": "Verified official model schema",
+          "blocked_regions": [],
+          "consent_source": "https://docs.byteplus.com/en/docs/modelark/seedance-portrait-asset-guide",
+          "source": "https://fal.ai/models/bytedance/seedance-2.5/us/image-to-video/api"
+        },
+        "bytedance/seedance-2.5/us/reference-to-video": {
+          "license": "service-terms",
+          "weights_license": "closed-weights",
+          "training_eligible": false,
+          "training_reason": "No unambiguous output training grant; fal terms restrict competing model training.",
+          "license_source": "https://fal.ai/legal/terms-of-service",
+          "read_date": "2026-10-09",
+          "commercial_status": "commercial API",
+          "real_face_refs_allowed": false,
+          "consent_requirements": "Do not submit real-person photo/video references; route to Wan or refuse.",
+          "verification": "Verified official model schema",
+          "blocked_regions": [],
+          "consent_source": "https://docs.byteplus.com/en/docs/modelark/seedance-portrait-asset-guide",
+          "source": "https://fal.ai/models/bytedance/seedance-2.5/us/reference-to-video/api"
         }
       },
-      "host": "BytePlus",
-      "us_available": "no",
+      "host": "fal default; BytePlus optional",
+      "us_available": "yes via fal; no via BytePlus",
       "availability_source": "https://docs.byteplus.com/en/docs/ModelArk/availability",
-      "availability_note": "Current 1.5 interim host. Future 2.5 default uses fal US. No silent host substitution.",
-      "read_date": "2026-10-08"
+      "availability_note": "SEEDANCE_TRANSPORT defaults fal; SEEDANCE_FAL_REGION defaults us. BytePlus is opt-in and unavailable to US customers.",
+      "read_date": "2026-10-09"
     },
     "seedream": {
       "enabled": true,
@@ -450,12 +573,18 @@
     "seedance_t2v": {
       "gateway_tool": "Seedance___text_to_video",
       "skill": "t2v",
-      "status": "ready"
+      "status": "ready",
+      "provider": "seedance",
+      "model": "seedance-1-5-pro-251215",
+      "explicit_only": true
     },
     "seedance_i2v": {
       "gateway_tool": "Seedance___image_to_video",
       "skill": "i2v",
-      "status": "ready"
+      "status": "ready",
+      "provider": "seedance",
+      "model": "seedance-1-5-pro-251215",
+      "explicit_only": true
     },
     "seedream_t2i": {
       "gateway_tool": "Seedream___text_to_image",
@@ -821,20 +950,19 @@
       "live_block_reason": "Preview licence does not permit customer production use; additional commercial rights unverified."
     },
     "seedance25_t2v": {
-      "gateway_tool": null,
-      "status": "pending",
+      "gateway_tool": "Seedance___text_to_video",
+      "status": "ready",
       "provider": "seedance",
-      "reason": "provider pending: seedance25_t2v (feat/seedance-2-5)",
-      "verification": "verified; adapter pending; live use disabled",
+      "reason": "Built Seedance 2.5 adapter; fal is the default transport.",
+      "verification": "Verified official fal task schema; SEEDANCE_DRY_RUN defaults true.",
       "training_eligible": false,
-      "model": "bytedance/seedance-2.5/us/text-to-video",
-      "interim_alias": "seedance_t2v",
-      "host": "fal US default",
+      "model": "dreamina-seedance-2-5-260628",
+      "host": "fal US default; BytePlus optional",
       "us_available": "yes",
       "availability_source": "https://fal.ai/models/bytedance/seedance-2.5/us/text-to-video",
-      "read_date": "2026-10-08",
-      "license": "commercial API, proprietary weights, fal Commercial use",
-      "license_source": "https://fal.ai/models/bytedance/seedance-2.5/us/text-to-video",
+      "read_date": "2026-10-09",
+      "license": "service-terms",
+      "license_source": "https://fal.ai/legal/terms-of-service",
       "training_reason": "fal third-party competing-model training restriction.",
       "source": "https://fal.ai/models/bytedance/seedance-2.5/us/text-to-video/api",
       "price_source": "https://fal.ai/models/bytedance/seedance-2.5/us/text-to-video",
@@ -850,23 +978,22 @@
       }
     },
     "seedance25_i2v": {
-      "gateway_tool": null,
-      "status": "pending",
+      "gateway_tool": "Seedance___image_to_video",
+      "status": "ready",
       "provider": "seedance",
-      "reason": "provider pending: seedance25_i2v (feat/seedance-2-5)",
-      "verification": "verified; adapter pending; live use disabled",
+      "reason": "Built Seedance 2.5 adapter; fal is the default transport.",
+      "verification": "Verified official fal task schema; SEEDANCE_DRY_RUN defaults true.",
       "training_eligible": false,
-      "model": "bytedance/seedance-2.5/us/image-to-video",
-      "interim_alias": "seedance_i2v",
-      "host": "fal US default",
+      "model": "dreamina-seedance-2-5-260628",
+      "host": "fal US default; BytePlus optional",
       "us_available": "yes",
-      "availability_source": "https://fal.ai/models/bytedance/seedance-2.5/us/text-to-video",
-      "read_date": "2026-10-08",
-      "license": "commercial API, proprietary weights, fal Commercial use",
-      "license_source": "https://fal.ai/models/bytedance/seedance-2.5/us/text-to-video",
+      "availability_source": "https://fal.ai/models/bytedance/seedance-2.5/us/image-to-video",
+      "read_date": "2026-10-09",
+      "license": "service-terms",
+      "license_source": "https://fal.ai/legal/terms-of-service",
       "training_reason": "fal third-party competing-model training restriction.",
-      "source": "https://fal.ai/models/bytedance/seedance-2.5/us/text-to-video/api",
-      "price_source": "https://fal.ai/models/bytedance/seedance-2.5/us/text-to-video",
+      "source": "https://fal.ai/models/bytedance/seedance-2.5/us/image-to-video/api",
+      "price_source": "https://fal.ai/models/bytedance/seedance-2.5/us/image-to-video",
       "dry_run": true,
       "optional_host": {
         "host": "BytePlus optional",
@@ -879,22 +1006,22 @@
       }
     },
     "seedance25_r2v": {
-      "gateway_tool": null,
-      "status": "pending",
+      "gateway_tool": "Seedance___reference_to_video",
+      "status": "ready",
       "provider": "seedance",
-      "reason": "provider pending: seedance25_r2v (feat/seedance-2-5)",
-      "verification": "verified; adapter pending; live use disabled",
+      "reason": "Built Seedance 2.5 adapter; fal is the default transport.",
+      "verification": "Verified official fal task schema; SEEDANCE_DRY_RUN defaults true.",
       "training_eligible": false,
-      "model": "bytedance/seedance-2.5/us/reference-to-video",
-      "host": "fal US default",
+      "model": "dreamina-seedance-2-5-260628",
+      "host": "fal US default; BytePlus optional",
       "us_available": "yes",
-      "availability_source": "https://fal.ai/models/bytedance/seedance-2.5/us/text-to-video",
-      "read_date": "2026-10-08",
-      "license": "commercial API, proprietary weights, fal Commercial use",
-      "license_source": "https://fal.ai/models/bytedance/seedance-2.5/us/text-to-video",
+      "availability_source": "https://fal.ai/models/bytedance/seedance-2.5/us/reference-to-video",
+      "read_date": "2026-10-09",
+      "license": "service-terms",
+      "license_source": "https://fal.ai/legal/terms-of-service",
       "training_reason": "fal third-party competing-model training restriction.",
-      "source": "https://fal.ai/models/bytedance/seedance-2.5/us/text-to-video/api",
-      "price_source": "https://fal.ai/models/bytedance/seedance-2.5/us/text-to-video",
+      "source": "https://fal.ai/models/bytedance/seedance-2.5/us/reference-to-video/api",
+      "price_source": "https://fal.ai/models/bytedance/seedance-2.5/us/reference-to-video",
       "dry_run": true,
       "optional_host": {
         "host": "BytePlus optional",
@@ -1298,6 +1425,38 @@
       "skill": "named-provider",
       "status": "ready",
       "explicit_only": true
+    },
+    "seedance25_edit": {
+      "gateway_tool": "Seedance___edit_video",
+      "status": "ready",
+      "provider": "seedance",
+      "model": "dreamina-seedance-2-5-260628",
+      "reason": "Built Seedance 2.5 adapter; fal is the default transport.",
+      "verification": "Verified official fal task schema; SEEDANCE_DRY_RUN defaults true.",
+      "training_eligible": false,
+      "host": "fal US default; BytePlus optional",
+      "license": "service-terms",
+      "license_source": "https://fal.ai/legal/terms-of-service",
+      "read_date": "2026-10-09",
+      "source": "https://fal.ai/models/bytedance/seedance-2.5/us/reference-to-video/api",
+      "price_source": "https://fal.ai/models/bytedance/seedance-2.5/us/reference-to-video",
+      "availability_source": "https://fal.ai/models/bytedance/seedance-2.5/us/reference-to-video"
+    },
+    "seedance25_extend": {
+      "gateway_tool": "Seedance___extend_video",
+      "status": "ready",
+      "provider": "seedance",
+      "model": "dreamina-seedance-2-5-260628",
+      "reason": "Built Seedance 2.5 adapter; fal is the default transport.",
+      "verification": "Verified official fal task schema; SEEDANCE_DRY_RUN defaults true.",
+      "training_eligible": false,
+      "host": "fal US default; BytePlus optional",
+      "license": "service-terms",
+      "license_source": "https://fal.ai/legal/terms-of-service",
+      "read_date": "2026-10-09",
+      "source": "https://fal.ai/models/bytedance/seedance-2.5/us/reference-to-video/api",
+      "price_source": "https://fal.ai/models/bytedance/seedance-2.5/us/reference-to-video",
+      "availability_source": "https://fal.ai/models/bytedance/seedance-2.5/us/reference-to-video"
     }
   },
   "rules": [
@@ -1977,7 +2136,8 @@
           12
         ]
       },
-      "explicit_only": false
+      "explicit_only": true,
+      "duration_field": "duration_seconds"
     },
     {
       "provider": "seedream",
@@ -2976,6 +3136,651 @@
         "audio_seconds_total": 15
       },
       "notes": "US-first default for edit and extend. Extension duration is total output length. Live legacy US host and smart duration blocked until verified; documented workspace host configurable."
+    },
+    {
+      "provider": "seedance",
+      "model": "dreamina-seedance-2-5-260628",
+      "label": "Seedance 2.5",
+      "tools": {
+        "t2v": "Seedance___text_to_video",
+        "i2v": "Seedance___image_to_video",
+        "reference": "Seedance___reference_to_video",
+        "v2v_edit": "Seedance___edit_video",
+        "extend": "Seedance___extend_video"
+      },
+      "jobs": {
+        "t2v": true,
+        "i2v": true,
+        "reference_elements": true,
+        "voice_references": true,
+        "native_audio": true,
+        "start_end_frame": true,
+        "v2v_edit": true,
+        "extend": true,
+        "max_resolution": 1080
+      },
+      "resolutions": [
+        480,
+        720,
+        1080
+      ],
+      "resolution_default": "720p",
+      "controls": {
+        "t2v": [
+          "prompt",
+          "duration_seconds",
+          "aspect_ratio",
+          "resolution",
+          "model",
+          "watermark",
+          "generate_audio",
+          "service_tier",
+          "seed",
+          "real_face_refs",
+          "user_supplied_real_person_refs"
+        ],
+        "i2v": [
+          "prompt",
+          "duration_seconds",
+          "aspect_ratio",
+          "resolution",
+          "model",
+          "watermark",
+          "generate_audio",
+          "service_tier",
+          "seed",
+          "real_face_refs",
+          "user_supplied_real_person_refs",
+          "image_path_or_url",
+          "end_image_path_or_url",
+          "source_aspect_ratio"
+        ],
+        "reference": [
+          "prompt",
+          "duration_seconds",
+          "aspect_ratio",
+          "resolution",
+          "model",
+          "watermark",
+          "generate_audio",
+          "service_tier",
+          "seed",
+          "real_face_refs",
+          "user_supplied_real_person_refs",
+          "reference_image_urls",
+          "reference_video_urls",
+          "reference_audio_urls",
+          "reference_video_durations",
+          "reference_video_fps",
+          "reference_audio_durations"
+        ],
+        "v2v_edit": [
+          "prompt",
+          "duration_seconds",
+          "aspect_ratio",
+          "resolution",
+          "model",
+          "watermark",
+          "generate_audio",
+          "service_tier",
+          "seed",
+          "real_face_refs",
+          "user_supplied_real_person_refs",
+          "video_url",
+          "source_duration_seconds",
+          "source_fps",
+          "source_aspect_ratio",
+          "reference_image_urls",
+          "reference_video_urls",
+          "reference_audio_urls",
+          "reference_video_durations",
+          "reference_video_fps",
+          "reference_audio_durations"
+        ],
+        "extend": [
+          "prompt",
+          "duration_seconds",
+          "aspect_ratio",
+          "resolution",
+          "model",
+          "watermark",
+          "generate_audio",
+          "service_tier",
+          "seed",
+          "real_face_refs",
+          "user_supplied_real_person_refs",
+          "video_url",
+          "source_duration_seconds",
+          "source_fps",
+          "source_aspect_ratio",
+          "reference_image_urls",
+          "reference_video_urls",
+          "reference_audio_urls",
+          "reference_video_durations",
+          "reference_video_fps",
+          "reference_audio_durations"
+        ]
+      },
+      "durations": {
+        "t2v": [
+          4,
+          30
+        ],
+        "i2v": [
+          4,
+          30
+        ],
+        "reference": [
+          4,
+          30
+        ],
+        "v2v_edit": [
+          -1,
+          30
+        ],
+        "extend": [
+          4,
+          30
+        ]
+      },
+      "duration_field": "duration_seconds",
+      "native_audio_field": "generate_audio",
+      "native_audio_default": true,
+      "policy_ref": "seedance",
+      "price": {
+        "unit": "video tokens",
+        "source": "server.billing_rates._seedance_cost",
+        "url": "https://fal.ai/models/bytedance/seedance-2.5/reference-to-video",
+        "read_date": "2026-10-09"
+      },
+      "notes": "Synthetic-character dialogue exception; edit and extend licence interims. Real-face refs prohibited.",
+      "duration_values": {
+        "v2v_edit": [
+          -1
+        ]
+      }
+    },
+    {
+      "provider": "seedance",
+      "model": "bytedance/seedance-2.5/text-to-video",
+      "label": "Seedance 2.5",
+      "tools": {
+        "t2v": "Seedance___text_to_video"
+      },
+      "jobs": {
+        "t2v": true,
+        "i2v": false,
+        "reference_elements": true,
+        "voice_references": true,
+        "native_audio": true,
+        "start_end_frame": true,
+        "v2v_edit": false,
+        "extend": false,
+        "max_resolution": 1080
+      },
+      "resolutions": [
+        480,
+        720,
+        1080
+      ],
+      "resolution_default": "720p",
+      "controls": {
+        "t2v": [
+          "prompt",
+          "duration_seconds",
+          "aspect_ratio",
+          "resolution",
+          "model",
+          "watermark",
+          "generate_audio",
+          "service_tier",
+          "seed",
+          "real_face_refs",
+          "user_supplied_real_person_refs"
+        ]
+      },
+      "durations": {
+        "t2v": [
+          4,
+          30
+        ]
+      },
+      "duration_field": "duration_seconds",
+      "native_audio_field": "generate_audio",
+      "native_audio_default": true,
+      "policy_ref": "seedance",
+      "price": {
+        "unit": "video tokens",
+        "source": "server.billing_rates._seedance_cost",
+        "url": "https://fal.ai/models/bytedance/seedance-2.5/text-to-video",
+        "read_date": "2026-10-09"
+      },
+      "notes": "Synthetic-character dialogue exception; edit and extend licence interims. Real-face refs prohibited."
+    },
+    {
+      "provider": "seedance",
+      "model": "bytedance/seedance-2.5/image-to-video",
+      "label": "Seedance 2.5",
+      "tools": {
+        "i2v": "Seedance___image_to_video"
+      },
+      "jobs": {
+        "t2v": false,
+        "i2v": true,
+        "reference_elements": true,
+        "voice_references": true,
+        "native_audio": true,
+        "start_end_frame": true,
+        "v2v_edit": false,
+        "extend": false,
+        "max_resolution": 1080
+      },
+      "resolutions": [
+        480,
+        720,
+        1080
+      ],
+      "resolution_default": "720p",
+      "controls": {
+        "i2v": [
+          "prompt",
+          "duration_seconds",
+          "aspect_ratio",
+          "resolution",
+          "model",
+          "watermark",
+          "generate_audio",
+          "service_tier",
+          "seed",
+          "real_face_refs",
+          "user_supplied_real_person_refs",
+          "image_path_or_url",
+          "end_image_path_or_url",
+          "source_aspect_ratio"
+        ]
+      },
+      "durations": {
+        "i2v": [
+          4,
+          30
+        ]
+      },
+      "duration_field": "duration_seconds",
+      "native_audio_field": "generate_audio",
+      "native_audio_default": true,
+      "policy_ref": "seedance",
+      "price": {
+        "unit": "video tokens",
+        "source": "server.billing_rates._seedance_cost",
+        "url": "https://fal.ai/models/bytedance/seedance-2.5/image-to-video",
+        "read_date": "2026-10-09"
+      },
+      "notes": "Synthetic-character dialogue exception; edit and extend licence interims. Real-face refs prohibited."
+    },
+    {
+      "provider": "seedance",
+      "model": "bytedance/seedance-2.5/reference-to-video",
+      "label": "Seedance 2.5",
+      "tools": {
+        "reference": "Seedance___reference_to_video",
+        "v2v_edit": "Seedance___edit_video",
+        "extend": "Seedance___extend_video"
+      },
+      "jobs": {
+        "t2v": false,
+        "i2v": false,
+        "reference_elements": true,
+        "voice_references": true,
+        "native_audio": true,
+        "start_end_frame": true,
+        "v2v_edit": true,
+        "extend": true,
+        "max_resolution": 1080
+      },
+      "resolutions": [
+        480,
+        720,
+        1080
+      ],
+      "resolution_default": "720p",
+      "controls": {
+        "reference": [
+          "prompt",
+          "duration_seconds",
+          "aspect_ratio",
+          "resolution",
+          "model",
+          "watermark",
+          "generate_audio",
+          "service_tier",
+          "seed",
+          "real_face_refs",
+          "user_supplied_real_person_refs",
+          "reference_image_urls",
+          "reference_video_urls",
+          "reference_audio_urls",
+          "reference_video_durations",
+          "reference_video_fps",
+          "reference_audio_durations"
+        ],
+        "v2v_edit": [
+          "prompt",
+          "duration_seconds",
+          "aspect_ratio",
+          "resolution",
+          "model",
+          "watermark",
+          "generate_audio",
+          "service_tier",
+          "seed",
+          "real_face_refs",
+          "user_supplied_real_person_refs",
+          "video_url",
+          "source_duration_seconds",
+          "source_fps",
+          "source_aspect_ratio",
+          "reference_image_urls",
+          "reference_video_urls",
+          "reference_audio_urls",
+          "reference_video_durations",
+          "reference_video_fps",
+          "reference_audio_durations"
+        ],
+        "extend": [
+          "prompt",
+          "duration_seconds",
+          "aspect_ratio",
+          "resolution",
+          "model",
+          "watermark",
+          "generate_audio",
+          "service_tier",
+          "seed",
+          "real_face_refs",
+          "user_supplied_real_person_refs",
+          "video_url",
+          "source_duration_seconds",
+          "source_fps",
+          "source_aspect_ratio",
+          "reference_image_urls",
+          "reference_video_urls",
+          "reference_audio_urls",
+          "reference_video_durations",
+          "reference_video_fps",
+          "reference_audio_durations"
+        ]
+      },
+      "durations": {
+        "reference": [
+          4,
+          30
+        ],
+        "v2v_edit": [
+          -1,
+          30
+        ],
+        "extend": [
+          4,
+          30
+        ]
+      },
+      "duration_field": "duration_seconds",
+      "native_audio_field": "generate_audio",
+      "native_audio_default": true,
+      "policy_ref": "seedance",
+      "price": {
+        "unit": "video tokens",
+        "source": "server.billing_rates._seedance_cost",
+        "url": "https://fal.ai/models/bytedance/seedance-2.5/reference-to-video",
+        "read_date": "2026-10-09"
+      },
+      "notes": "Synthetic-character dialogue exception; edit and extend licence interims. Real-face refs prohibited.",
+      "duration_values": {
+        "v2v_edit": [
+          -1
+        ]
+      }
+    },
+    {
+      "provider": "seedance",
+      "model": "bytedance/seedance-2.5/us/text-to-video",
+      "label": "Seedance 2.5",
+      "tools": {
+        "t2v": "Seedance___text_to_video"
+      },
+      "jobs": {
+        "t2v": true,
+        "i2v": false,
+        "reference_elements": true,
+        "voice_references": true,
+        "native_audio": true,
+        "start_end_frame": true,
+        "v2v_edit": false,
+        "extend": false,
+        "max_resolution": 1080
+      },
+      "resolutions": [
+        480,
+        720,
+        1080
+      ],
+      "resolution_default": "720p",
+      "controls": {
+        "t2v": [
+          "prompt",
+          "duration_seconds",
+          "aspect_ratio",
+          "resolution",
+          "model",
+          "watermark",
+          "generate_audio",
+          "service_tier",
+          "seed",
+          "real_face_refs",
+          "user_supplied_real_person_refs"
+        ]
+      },
+      "durations": {
+        "t2v": [
+          4,
+          30
+        ]
+      },
+      "duration_field": "duration_seconds",
+      "native_audio_field": "generate_audio",
+      "native_audio_default": true,
+      "policy_ref": "seedance",
+      "price": {
+        "unit": "video tokens",
+        "source": "server.billing_rates._seedance_cost",
+        "url": "https://fal.ai/models/bytedance/seedance-2.5/us/text-to-video",
+        "read_date": "2026-10-09"
+      },
+      "notes": "Synthetic-character dialogue exception; edit and extend licence interims. Real-face refs prohibited."
+    },
+    {
+      "provider": "seedance",
+      "model": "bytedance/seedance-2.5/us/image-to-video",
+      "label": "Seedance 2.5",
+      "tools": {
+        "i2v": "Seedance___image_to_video"
+      },
+      "jobs": {
+        "t2v": false,
+        "i2v": true,
+        "reference_elements": true,
+        "voice_references": true,
+        "native_audio": true,
+        "start_end_frame": true,
+        "v2v_edit": false,
+        "extend": false,
+        "max_resolution": 1080
+      },
+      "resolutions": [
+        480,
+        720,
+        1080
+      ],
+      "resolution_default": "720p",
+      "controls": {
+        "i2v": [
+          "prompt",
+          "duration_seconds",
+          "aspect_ratio",
+          "resolution",
+          "model",
+          "watermark",
+          "generate_audio",
+          "service_tier",
+          "seed",
+          "real_face_refs",
+          "user_supplied_real_person_refs",
+          "image_path_or_url",
+          "end_image_path_or_url",
+          "source_aspect_ratio"
+        ]
+      },
+      "durations": {
+        "i2v": [
+          4,
+          30
+        ]
+      },
+      "duration_field": "duration_seconds",
+      "native_audio_field": "generate_audio",
+      "native_audio_default": true,
+      "policy_ref": "seedance",
+      "price": {
+        "unit": "video tokens",
+        "source": "server.billing_rates._seedance_cost",
+        "url": "https://fal.ai/models/bytedance/seedance-2.5/us/image-to-video",
+        "read_date": "2026-10-09"
+      },
+      "notes": "Synthetic-character dialogue exception; edit and extend licence interims. Real-face refs prohibited."
+    },
+    {
+      "provider": "seedance",
+      "model": "bytedance/seedance-2.5/us/reference-to-video",
+      "label": "Seedance 2.5",
+      "tools": {
+        "reference": "Seedance___reference_to_video",
+        "v2v_edit": "Seedance___edit_video",
+        "extend": "Seedance___extend_video"
+      },
+      "jobs": {
+        "t2v": false,
+        "i2v": false,
+        "reference_elements": true,
+        "voice_references": true,
+        "native_audio": true,
+        "start_end_frame": true,
+        "v2v_edit": true,
+        "extend": true,
+        "max_resolution": 1080
+      },
+      "resolutions": [
+        480,
+        720,
+        1080
+      ],
+      "resolution_default": "720p",
+      "controls": {
+        "reference": [
+          "prompt",
+          "duration_seconds",
+          "aspect_ratio",
+          "resolution",
+          "model",
+          "watermark",
+          "generate_audio",
+          "service_tier",
+          "seed",
+          "real_face_refs",
+          "user_supplied_real_person_refs",
+          "reference_image_urls",
+          "reference_video_urls",
+          "reference_audio_urls",
+          "reference_video_durations",
+          "reference_video_fps",
+          "reference_audio_durations"
+        ],
+        "v2v_edit": [
+          "prompt",
+          "duration_seconds",
+          "aspect_ratio",
+          "resolution",
+          "model",
+          "watermark",
+          "generate_audio",
+          "service_tier",
+          "seed",
+          "real_face_refs",
+          "user_supplied_real_person_refs",
+          "video_url",
+          "source_duration_seconds",
+          "source_fps",
+          "source_aspect_ratio",
+          "reference_image_urls",
+          "reference_video_urls",
+          "reference_audio_urls",
+          "reference_video_durations",
+          "reference_video_fps",
+          "reference_audio_durations"
+        ],
+        "extend": [
+          "prompt",
+          "duration_seconds",
+          "aspect_ratio",
+          "resolution",
+          "model",
+          "watermark",
+          "generate_audio",
+          "service_tier",
+          "seed",
+          "real_face_refs",
+          "user_supplied_real_person_refs",
+          "video_url",
+          "source_duration_seconds",
+          "source_fps",
+          "source_aspect_ratio",
+          "reference_image_urls",
+          "reference_video_urls",
+          "reference_audio_urls",
+          "reference_video_durations",
+          "reference_video_fps",
+          "reference_audio_durations"
+        ]
+      },
+      "durations": {
+        "reference": [
+          4,
+          30
+        ],
+        "v2v_edit": [
+          -1,
+          30
+        ],
+        "extend": [
+          4,
+          30
+        ]
+      },
+      "duration_field": "duration_seconds",
+      "native_audio_field": "generate_audio",
+      "native_audio_default": true,
+      "policy_ref": "seedance",
+      "price": {
+        "unit": "video tokens",
+        "source": "server.billing_rates._seedance_cost",
+        "url": "https://fal.ai/models/bytedance/seedance-2.5/us/reference-to-video",
+        "read_date": "2026-10-09"
+      },
+      "notes": "Synthetic-character dialogue exception; edit and extend licence interims. Real-face refs prohibited.",
+      "duration_values": {
+        "v2v_edit": [
+          -1
+        ]
+      }
     }
   ],
   "image_default_size": "2K",
@@ -3024,13 +3829,13 @@
     "v2v_edit": {
       "default": "wan3_edit",
       "exceptions": [],
-      "interim": null,
+      "interim": "seedance25_edit",
       "ab_candidates": []
     },
     "extend": {
       "default": "wan3_extend",
       "exceptions": [],
-      "interim": null,
+      "interim": "seedance25_extend",
       "ab_candidates": []
     },
     "still_image": {
@@ -3204,7 +4009,10 @@
     "wan3_r2v",
     "wan3_t2v",
     "ModelStudio___edit_wan3_video",
-    "ModelStudio___extend_wan3_video"
+    "ModelStudio___extend_wan3_video",
+    "Seedance___reference_to_video",
+    "Seedance___edit_video",
+    "Seedance___extend_video"
   ],
   "explicit_routes": {
     "kling": {
@@ -3236,7 +4044,9 @@
     "seedance": {
       "t2v": "seedance25_t2v",
       "i2v": "seedance25_i2v",
-      "reference_video": "seedance25_r2v"
+      "reference_video": "seedance25_r2v",
+      "v2v_edit": "seedance25_edit",
+      "extend": "seedance25_extend"
     },
     "seedream": {
       "still_image": "seedream_t2i",
@@ -3272,7 +4082,9 @@
       "aliases": {
         "t2v": "seedance25_t2v",
         "i2v": "seedance25_i2v",
-        "reference_video": "seedance25_r2v"
+        "reference_video": "seedance25_r2v",
+        "v2v_edit": "seedance25_edit",
+        "extend": "seedance25_extend"
       }
     },
     "gpt_image25": {
@@ -3329,6 +4141,13 @@
       "pattern": "gemini.*judge|vlm.*judge",
       "aliases": {
         "continuity_qc": "gemini_vlm_judge"
+      }
+    },
+    "seedance15": {
+      "pattern": "seedance[ -]?1[.-]5",
+      "aliases": {
+        "t2v": "seedance_t2v",
+        "i2v": "seedance_i2v"
       }
     }
   },
@@ -3577,28 +4396,34 @@
       "live_enabled": false
     },
     "seedance25_t2v": {
-      "license": "commercial API, proprietary weights, fal Commercial use",
-      "license_source": "https://fal.ai/models/bytedance/seedance-2.5/us/text-to-video",
+      "license": "service-terms",
+      "license_source": "https://fal.ai/legal/terms-of-service",
       "training_eligible": false,
-      "training_reason": "fal third-party competing-model training restriction.",
-      "commercial_status": "commercial service or permissive code; source media rights still required",
-      "read_date": "2026-10-08"
+      "training_reason": "fal terms 14.3 restrict output use for competing models.",
+      "commercial_status": "commercial API; source media rights required",
+      "read_date": "2026-10-09",
+      "weights_license": "closed-weights",
+      "consent_requirements": "Real-face photo/video references are prohibited; consent does not override this restriction."
     },
     "seedance25_i2v": {
-      "license": "commercial API, proprietary weights, fal Commercial use",
-      "license_source": "https://fal.ai/models/bytedance/seedance-2.5/us/text-to-video",
+      "license": "service-terms",
+      "license_source": "https://fal.ai/legal/terms-of-service",
       "training_eligible": false,
-      "training_reason": "fal third-party competing-model training restriction.",
-      "commercial_status": "commercial service or permissive code; source media rights still required",
-      "read_date": "2026-10-08"
+      "training_reason": "fal terms 14.3 restrict output use for competing models.",
+      "commercial_status": "commercial API; source media rights required",
+      "read_date": "2026-10-09",
+      "weights_license": "closed-weights",
+      "consent_requirements": "Real-face photo/video references are prohibited; consent does not override this restriction."
     },
     "seedance25_r2v": {
-      "license": "commercial API, proprietary weights, fal Commercial use",
-      "license_source": "https://fal.ai/models/bytedance/seedance-2.5/us/text-to-video",
+      "license": "service-terms",
+      "license_source": "https://fal.ai/legal/terms-of-service",
       "training_eligible": false,
-      "training_reason": "fal third-party competing-model training restriction.",
-      "commercial_status": "commercial service or permissive code; source media rights still required",
-      "read_date": "2026-10-08"
+      "training_reason": "fal terms 14.3 restrict output use for competing models.",
+      "commercial_status": "commercial API; source media rights required",
+      "read_date": "2026-10-09",
+      "weights_license": "closed-weights",
+      "consent_requirements": "Real-face photo/video references are prohibited; consent does not override this restriction."
     },
     "gpt_image25_t2i": {
       "license": "OpenAI Services Agreement proprietary API; commercial applications and output ownership",
@@ -3771,6 +4596,26 @@
       "training_reason": "Retain existing QC policy; model licence alone does not authorize training on user source media.",
       "commercial_status": "commercial service or permissive code; source media rights still required",
       "read_date": "2026-10-08"
+    },
+    "seedance25_edit": {
+      "license": "service-terms",
+      "license_source": "https://fal.ai/legal/terms-of-service",
+      "training_eligible": false,
+      "training_reason": "fal terms 14.3 restrict output use for competing models.",
+      "commercial_status": "commercial API; source media rights required",
+      "read_date": "2026-10-09",
+      "weights_license": "closed-weights",
+      "consent_requirements": "Real-face photo/video references are prohibited; consent does not override this restriction."
+    },
+    "seedance25_extend": {
+      "license": "service-terms",
+      "license_source": "https://fal.ai/legal/terms-of-service",
+      "training_eligible": false,
+      "training_reason": "fal terms 14.3 restrict output use for competing models.",
+      "commercial_status": "commercial API; source media rights required",
+      "read_date": "2026-10-09",
+      "weights_license": "closed-weights",
+      "consent_requirements": "Real-face photo/video references are prohibited; consent does not override this restriction."
     }
   }
 }

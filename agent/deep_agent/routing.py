@@ -153,10 +153,25 @@ def _delivery_route(prompt: str, constraints: dict, *, region: str | None,
                    reason=incomplete.reason if incomplete else 'Generate video if needed, synthesize voiceover, then assemble the final MP4.')
 
 
+def _licence_interim(alias: str) -> str | None:
+    entry = TOOL_MAP.get(alias, {})
+    policy = POLICY["providers"].get(entry.get("provider"), {})
+    model = entry.get("model")
+    if entry.get("gateway_tool") and entry.get("provider"):
+        model = effective_model(entry["provider"], entry["gateway_tool"].split("___")[1], {})
+    model_policy = policy.get("model_policies", {}).get(model, {})
+    if model_policy.get("live_enabled") is not False:
+        return None
+    return next((row["interim"] for row in POLICY["capability_map"].values()
+                 if row["default"] == alias), None)
+
+
 def resolve_alias(alias: str) -> str | None:
     """Resolve a canonical choice through its declared interim, never a provider ladder."""
     entry = TOOL_MAP.get(alias, {})
     if entry.get("status") == "ready":
+        if interim := _licence_interim(alias):
+            return TOOL_MAP.get(interim, {}).get("gateway_tool")
         return entry.get("gateway_tool")
     if entry.get("status") != "pending":
         return None
@@ -295,7 +310,10 @@ def _capability_price(row: dict):
     elif provider == "runway":
         values = rates.RUNWAY_IMAGE_CENTS.get(model, rates.RUNWAY_CENTS_PER_SECOND.get(model))
     elif provider == "seedance":
-        values = {"cents_per_1000_tokens": rates.SEEDANCE_TOKEN_RATE_CENTS_PER_1K,
+        values = {"fal_usd_per_million_tokens": {region: {resolution: str(rate) for resolution, rate in table.items()}
+                                               for region, table in rates.SEEDANCE_FAL_USD_PER_M_TOKENS.items()},
+                  "byteplus_usd_per_million_tokens": {str(video): {resolution: str(rate) for resolution, rate in table.items()}
+                                                    for video, table in rates.SEEDANCE_BYTEPLUS_USD_PER_M_TOKENS.items()},
                   "fps": rates.SEEDANCE_FPS, "formula": "width * height * fps * duration / 1024"}
     elif provider == "seedream":
         values = {"1K": rates.SEEDREAM_COST_CENTS_BY_SIZE["1K"], "2K": "unknown", "3K": "unknown"}
@@ -346,8 +364,8 @@ def intent_constraints(prompt: str, *, tier: str | None = None, confidential: bo
         added = float(extension[1])
         required["extension_seconds"] = int(added) if added.is_integer() else added
     supplied_duration = next((args[k] for k in ("duration", "duration_seconds", "video_duration_seconds", "source_duration_seconds") if args.get(k) is not None), seconds)
-    real_face = bool(args.get("real_face_refs") or re.search(
-        r"real (?:person|human|actor)|my (?:ceo|face|selfie)|(?:photo|video).*(?:of me|of my|real person)|(?:user.supplied|uploaded).*(?:person|face)", prompt, re.I))
+    real_face = bool(args.get("real_face_refs") or args.get("user_supplied_real_person_refs") or re.search(
+        r"real[ -](?:person|human|actor)|my (?:ceo|face|selfie)|(?:photo|video).*(?:of me|of my|real person)|(?:user.supplied|uploaded).*(?:person|face)", prompt, re.I))
     dialogue_prompt = re.sub(r"(?:voice[ -]?over|narration|\bvo\b)\s*:?\s*[\'\"“].*?[\'\"”]", "", prompt, flags=re.I)
     dialogue = bool(re.search(r'["“][^"”]+["”]|\b(?:says?|saying|talking|talks?|dialogue|speaking)\b', dialogue_prompt, re.I))
     if re.search(r"\b(?:no|without) dialogue\b|\bnot talking\b|silent scene", prompt, re.I):
@@ -407,7 +425,9 @@ def select_provider(job: str, *, tier: str | None = None, required: dict | None 
                     predicates: dict | None = None, named_model: str | None = None,
                     provider_candidates: list[str] | None = None) -> Route:
     args, required = dict(arguments or {}), dict(required or {})
-    predicates = {**intent_constraints("", arguments=args)["predicates"], **(predicates or {})}
+    detected = intent_constraints("", arguments=args)["predicates"]
+    predicates = {**detected, **(predicates or {})}
+    predicates["real_face_refs"] = detected["real_face_refs"] or predicates["real_face_refs"]
     capability = {"image": "still_image", "reference": "reference_video"}.get(job, job)
     if tool_variant in {"reference", "reference_video"}:
         capability = "reference_video"
@@ -460,14 +480,33 @@ def select_provider(job: str, *, tier: str | None = None, required: dict | None 
         if exception:
             alias, basis = exception["tool"], "exception: " + exception["reason"]
     entry = TOOL_MAP[alias]
+    if basis == "default" and not provider and not model and not named_model:
+        if interim := _licence_interim(alias):
+            entry = TOOL_MAP[interim]
+            basis = f"interim for {alias}; default is commercially licence-blocked"
+    if entry.get("provider") == "seedance":
+        if predicates["real_face_refs"]:
+            reason = "Seedance prohibits real-person photo/video references. Wan edit/extend remains preview licence-blocked; no permitted automatic route is configured."
+            return Route(alias=alias, basis=basis, status="blocked", job_type=capability,
+                         reason=reason, disclosure=reason)
+        if named_model == "seedance15":
+            args["model"] = entry["model"]
+        elif model is not None:
+            args.setdefault("model", model)
+        try:
+            model = effective_model("seedance", entry["gateway_tool"].split("___")[1], args)
+        except ValueError as exc:
+            reason = str(exc)
+            return Route(alias=alias, basis=basis, status="blocked", job_type=capability,
+                         reason=reason, disclosure=reason)
+    if entry.get("provider") in {"alibaba_modelstudio", "seedance"} and capability == "extend" and "extension_seconds" in required:
+        source = args.get("source_duration_seconds")
+        if isinstance(source, (int, float)) and not isinstance(source, bool):
+            target = source + required["extension_seconds"]
+            required["duration_seconds"] = int(target) if float(target).is_integer() else target
+        else:
+            required.pop("duration_seconds", None)
     if entry.get("provider") == "alibaba_modelstudio":
-        if capability == "extend" and "extension_seconds" in required:
-            source = args.get("source_duration_seconds")
-            if isinstance(source, (int, float)) and not isinstance(source, bool):
-                target = source + required["extension_seconds"]
-                required["duration_seconds"] = int(target) if float(target).is_integer() else target
-            else:
-                required.pop("duration_seconds", None)
         if model is None:
             model = effective_model("alibaba_modelstudio", entry["gateway_tool"].split("___")[1], args)
     duration = required.get("duration_seconds") or next((args[k] for k in ("duration", "duration_seconds", "video_duration_seconds", "source_duration_seconds") if args.get(k) is not None), None)
@@ -606,6 +645,15 @@ def premium_video(name: str) -> bool:
 
 def effective_model(provider: str, tool: str, arguments: dict) -> str | None:
     policy = POLICY["providers"].get(provider, {})
+    if provider == "seedance":
+        if tool == "get_video_task":
+            endpoint = str(arguments.get("job_id", "")).partition(":")[0]
+            return endpoint if endpoint.startswith("bytedance/seedance-2.5/") else None
+        if tool == "list_seedance_models":
+            return None
+        from providers.seedance.contracts import effective_model as seedance_model
+
+        return seedance_model(tool, arguments)
     if provider == "elevenlabs" and tool.startswith(("text_to_speech_", "text_to_dialogue_")):
         return arguments.get("model_id") or os.getenv("ELEVENLABS_TTS_MODEL", "eleven_v4_turbo")
     if tool in policy.get("fixed_models", {}):
@@ -639,7 +687,12 @@ def policy_blocker(name: str, arguments: dict, *, region: str | None = None) -> 
         return f"Provider {provider} is blocked in region {region}."
     if policy["allowed_regions"] and region not in policy["allowed_regions"]:
         return f"Provider {provider} needs an allowed customer region before dispatch."
-    model = effective_model(provider, tool, arguments)
+    try:
+        model = effective_model(provider, tool, arguments)
+    except ValueError as exc:
+        return str(exc)
+    if provider == "seedance" and (arguments.get("real_face_refs") or arguments.get("user_supplied_real_person_refs")):
+        return "Seedance prohibits real-person photo/video references, even with likeness consent."
     if tool in policy.get("fixed_models", {}) and arguments.get("model", model) != model:
         return f"Tool {name} has a fixed model {model}."
     if model is not None and not isinstance(model, str):
@@ -657,6 +710,13 @@ def policy_blocker(name: str, arguments: dict, *, region: str | None = None) -> 
         blocker = live_blocker()
         if blocker:
             return blocker
+    if provider == "seedance":
+        from providers.seedance.api import dry_run
+        from providers.seedance.contracts import live_blocker
+
+        if not dry_run():
+            if blocker := live_blocker(tool, arguments):
+                return blocker
     if (
         region in model_policy.get("blocked_regions", [])
         or model_policy.get("allowed_regions")
@@ -775,7 +835,9 @@ def _published_cost(provider: str, tool: str, arguments: dict):
     from server import billing_rates as rates
 
     if provider == "seedance":
-        return rates._seedance_cost(arguments)
+        from math import ceil
+
+        return rates._with_fee(ceil(rates.seedance_price_cents(tool, arguments)))
     if provider == "seedream":
         return rates._seedream_cost(arguments)
     if provider == "alibaba_modelstudio":
