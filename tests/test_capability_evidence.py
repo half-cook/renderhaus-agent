@@ -20,7 +20,7 @@ class CapabilityEvidenceTests(unittest.TestCase):
         self.assertEqual(resolve_alias('seedance25_t2v'), 'Seedance___text_to_video')
 
     def test_official_evidence_never_enables_pending_tools(self):
-        for alias in ['wan3_edit', 'mureka_v95', 'mirelo_v2a', 'sync3_lipsync',
+        for alias in ['mureka_v95', 'mirelo_v2a', 'sync3_lipsync',
                       'heygen_avatar_v', 'recraft_v41_vector', 'ideogram45_edit', 'topaz_upscale']:
             with self.subTest(alias=alias):
                 entry = POLICY['tools'][alias]

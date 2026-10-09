@@ -27,6 +27,8 @@ import math
 import os
 from typing import Any
 
+from providers.alibaba_modelstudio import contracts as modelstudio_contracts
+
 # Flat percentage added on top of the provider's own cost. A tunable
 # constant, not logic -- change PLATFORM_FEE_RATE to retune margin
 # everywhere at once. MIN_FEE_CENTS keeps very cheap calls (e.g. a tiny
@@ -363,6 +365,41 @@ WAN3_CENTS_PER_SECOND = {"480p": Decimal("5"), "720p": Decimal("10"), "1080p": D
 WAN3_PRICING_URL = "https://fal.ai/wan-3"
 WAN3_PRICING_READ_DATE = "2026-10-09"
 
+MODELSTUDIO_CENTS_PER_SECOND = modelstudio_contracts.CENTS_PER_SECOND
+MODELSTUDIO_PRICING_URL = modelstudio_contracts.PRICING_URL
+MODELSTUDIO_PRICING_READ_DATE = "2026-10-09"
+
+def modelstudio_price_cents(tool: str, arguments: dict[str, Any], *, region: str | None = None) -> Decimal:
+    """Quote documented regional input-plus-output billing, before the platform fee."""
+    from providers.alibaba_modelstudio import api, config, contracts
+
+    configuration = config.settings()
+    model = arguments.get("model", configuration.model)
+    if model != configuration.model:
+        raise ValueError("Model Studio quote model must match DASHSCOPE_MODEL.")
+    cleaned = api._validated(tool, {key: value for key, value in arguments.items() if key != "model"})
+    return contracts.price_cents(tool, cleaned, region=region or configuration.region, model=model)
+
+
+def _modelstudio_cost(tool: str, arguments: dict[str, Any]) -> GenerationCost:
+    from providers.alibaba_modelstudio import api, config
+
+    if tool == "get_task":
+        return GenerationCost(0, 0)
+    if tool not in {"edit_wan3_video", "extend_wan3_video"}:
+        raise ValueError("Unknown Model Studio tool.")
+    configuration = config.settings()
+    if arguments.get("model", configuration.model) != configuration.model:
+        raise ValueError("Model Studio quote model must match DASHSCOPE_MODEL.")
+    cleaned = api._validated(tool, {key: value for key, value in arguments.items() if key != "model"})
+    if config.dry_run():
+        return GenerationCost(0, 0)
+    blocker = config.live_blocker()
+    if blocker:
+        raise ValueError(blocker)
+    quote_arguments = {**cleaned, "model": configuration.model}
+    return _with_fee(round(modelstudio_price_cents(tool, quote_arguments)))
+
 
 def wan3_price_cents(arguments: dict[str, Any]) -> Decimal:
     """Quote output plus measured reference-video seconds without fetching media."""
@@ -461,6 +498,8 @@ def cost_for(provider: str, tool: str, arguments: dict[str, Any]) -> GenerationC
     """
     if provider == "kling":
         return _kling_cost(tool, arguments)
+    if provider == "alibaba_modelstudio":
+        return _modelstudio_cost(tool, arguments)
     if tool in POLLING_TOOLS or (provider == "remotion" and tool in {
         "export_nle_timeline", "prepare_conversational_edit",
     }):

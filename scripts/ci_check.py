@@ -26,6 +26,7 @@ def _force_dry_run() -> None:
     os.environ["REMOTION_DRY_RUN"] = "true"
     os.environ["FAL_DRY_RUN"] = "true"
     os.environ["HYPERFRAMES_DRY_RUN"] = "true"
+    os.environ["MODELSTUDIO_DRY_RUN"] = "true"
 
 
 _force_dry_run()
@@ -69,8 +70,8 @@ def check_routing_inventory() -> None:
     from providers.catalog import PROVIDERS
     from providers.registry import load_committed_schemas
 
-    assert len(PROVIDERS) == 8, "Wan 3 reuses the existing fal provider."
-    assert sum(len(load_committed_schemas(spec)) for spec in PROVIDERS) == 81
+    assert len(PROVIDERS) == 9
+    assert sum(len(load_committed_schemas(spec)) for spec in PROVIDERS) == 84
     paths = list(SKILLS_ROOT.glob("*/SKILL.md"))
     assert len(paths) == 24
     assert "ladder" not in POLICY and "premium_targets" not in POLICY
@@ -87,8 +88,8 @@ def check_routing_inventory() -> None:
         assert set(metadata["include_tools"].split()) <= DISPATCH_TARGETS.keys(), path
         assert all(TOOL_MAP[alias]["status"] != "retired" for alias in metadata["routing_tools"].split()), path
     cases = json.loads((ROOT / "tests/fixtures/skill_routing.json").read_text())
-    assert len(cases) == 129 and sum(not case["skip_reason"] for case in cases) == 91
-    print("ok routing inventory (8 providers, 81 Gateway tools, 24 skills, 90 active routing rows, 1 expected-failure readiness gate)")
+    assert len(cases) == 129 and sum(not case["skip_reason"] for case in cases) == 88
+    print("ok routing inventory (9 providers, 84 Gateway tools, 24 skills, 87 active routing rows, 1 expected-failure readiness gate)")
 
 
 def _assert_gateway_shape(schema: object) -> None:
@@ -137,6 +138,12 @@ def check_dry_run_dispatch() -> None:
                     arguments["start_image_url" if name == "generate_wan3_i2v" else "image_url"] = "https://example.test/frame.png"
                 elif name == "video_to_video":
                     arguments["prompt"] = "A small offline smoke test"
+            if spec.id == "alibaba_modelstudio":
+                if name == "get_task":
+                    arguments["job_id"] = "00000000-0000-4000-8000-000000000000"
+                else:
+                    arguments.update({"video_url": "https://example.test/source.mp4",
+                                      "source_duration_seconds": 5, "source_fps": 24})
             if spec.id == "remotion" and name == "prepare_conversational_edit":
                 arguments = {
                     "title": "Offline interview cut", "plan_summary": "Keep the greeting with subtitles.",

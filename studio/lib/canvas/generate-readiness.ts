@@ -47,7 +47,7 @@ export function generateBlockers(
     }
   }
 
-  for (const key of ["video_path_or_url", "video_duration_seconds"]) {
+  for (const key of ["video_path_or_url", "video_duration_seconds", "video_url", "source_duration_seconds", "source_fps"]) {
     if (required.has(key) && !connectedFields.includes(key)) {
       const value = data.config[key];
       if (value === undefined || value === null || value === "") {

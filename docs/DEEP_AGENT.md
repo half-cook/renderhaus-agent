@@ -325,3 +325,20 @@ The existing native `interrupt_on` callbacks pause them before dispatch, with li
 including autonomous runs. Approval exemptions and the autonomous spend cap are unchanged.
 Real-face consent is checked against both the current prompt and native tool arguments.
 See [Wan 3 provider contracts](FAL_WAN3_PROVIDER.md) for schemas and offline validation limits.
+
+## Wan 3 edit and extend on Model Studio
+
+`call_media_tool` dispatches the `ModelStudio` target. The edit-v2v and refinement skills
+discover its real Gateway names. `wan3_edit` and `wan3_extend` are built capability defaults
+without exceptions or interims. Explicit Luma, Aleph, and VACE remain available.
+
+Paid edit/extend interrupts retain the installed deepagents 0.7.23 checkpointer and
+`Command(resume=...)` behavior. Cost descriptions use regional input plus output seconds,
+including existing platform fees. Approval/rejection recovery is tested in autonomous runs.
+The free poll tool uses the existing job loop at 15-second intervals and persists output.
+Training eligibility is false under proprietary service terms.
+
+The default legacy US base URL remains UNVERIFIED for generation and blocked live.
+Preview licensing also blocks customer live use on workspace hosts. Configuration,
+smart-duration limits, the licence restriction, and blocked Comet E2E are documented
+in [the Model Studio provider reference](ALIBABA_MODELSTUDIO.md).

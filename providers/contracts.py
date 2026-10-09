@@ -359,6 +359,12 @@ def enrich_tool_schema(provider_id: str, tool: dict[str, Any]) -> dict[str, Any]
                 for field, description in contract.FIELD_DESCRIPTIONS.items():
                     if field in properties:
                         properties[field]["description"] = description
+    if provider_id == "alibaba_modelstudio":
+        from providers.alibaba_modelstudio import contracts
+
+        for field, description in contracts.FIELD_DESCRIPTIONS.items():
+            if field in properties:
+                properties[field]["description"] = description
     return enriched
 
 
@@ -426,6 +432,10 @@ def _validate_rule(path: str, value: Any, rule: ArgumentRule) -> None:
 
 
 def _validate_cross_fields(provider_id: str, tool_name: str, arguments: dict[str, Any]) -> None:
+    if provider_id == "alibaba_modelstudio":
+        from providers.alibaba_modelstudio.contracts import validate_arguments
+
+        validate_arguments(tool_name, arguments)
     if provider_id == "runway":
         from providers.runway.contracts import validate_runway_arguments
 
@@ -550,6 +560,11 @@ def validate_tool_arguments(
     input_schema: dict[str, Any],
 ) -> dict[str, Any]:
     """Validate every Gateway call at the last boundary before provider I/O."""
+    if provider_id == "alibaba_modelstudio":
+        optional = {"seed", "reference_image_urls", "reference_audio_urls", "reference_audio_durations"}
+        for field, value in (arguments or {}).items():
+            if value is None and field not in optional:
+                raise ValueError(f"arguments.{field} cannot be null.")
     cleaned = {key: value for key, value in (arguments or {}).items() if value is not None}
     _validate_schema(cleaned, input_schema, "arguments",
                      allow_empty_strings=provider_id == "remotion" and tool_name == "prepare_conversational_edit")
@@ -568,6 +583,10 @@ def validate_tool_arguments(
 
 
 def argument_rules(provider_id: str, tool_name: str) -> dict[str, ArgumentRule]:
+    if provider_id == "alibaba_modelstudio":
+        from providers.alibaba_modelstudio.contracts import ARGUMENT_RULES
+
+        return ARGUMENT_RULES.get(tool_name, {})
     if provider_id == "fal":
         from providers.fal import vidu, wan, wan3
 

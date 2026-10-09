@@ -379,7 +379,7 @@ class GatewayExecutor:
                     output = self.filter_discovery(_unwrap_tool_output(output))
                 if name.rsplit("___", 1)[-1] in {
                     "query_music_task", "get_music_task", "get_video_task", "get_runway_task",
-                    "get_render_progress",
+                    "get_render_progress", "get_task",
                 }:
                     started = time.monotonic()
                     deadline = started + float(os.getenv("STUDIO_MEDIA_WAIT_SECONDS", "600"))
@@ -400,7 +400,8 @@ class GatewayExecutor:
                             output = {**payload, "wait_timed_out": True,
                                       "note": "The existing job is still running. Its id is saved; resume to check it without generating again."}
                             break
-                        await asyncio.sleep(min(8, max(0, deadline - time.monotonic())))
+                        interval = 15 if name == "ModelStudio___get_task" else 8
+                        await asyncio.sleep(min(interval, max(0, deadline - time.monotonic())))
                         output = await server.call_tool(name, arguments)
                     _progress(
                         studio, event_id=f"wait-{call_id}", event_type="MEDIA_WAIT",

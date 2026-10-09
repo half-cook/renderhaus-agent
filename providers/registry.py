@@ -20,6 +20,11 @@ FORBIDDEN_TOOL_RE = re.compile(r"^(wait_for_.*|.*_and_wait)$")
 
 
 TOOL_GUIDANCE: dict[str, dict[str, str]] = {
+    "alibaba_modelstudio": {
+        "edit_wan3_video": "Dry-run preview of Alibaba Model Studio Wan 3 editing. The preview licence allows only internal testing, research and evaluation, so customer live requests are blocked even with approval. Requires video_url, prompt, measured source_duration_seconds and source_fps. Default duration=-1 has unknown cost; explicit total output seconds quote input plus output. Outputs are not training eligible. A preview is not generated media.",
+        "extend_wan3_video": "Dry-run preview of Alibaba Model Studio Wan 3 extension. Customer live use is blocked by its internal-evaluation preview licence, which spending approval cannot override. duration is TOTAL output length: a 5s source extended by 2s uses duration=7 and bills 12s. Default -1 has unknown cost. Uses adaptive ratio and prompt-based direction. Outputs are not training eligible.",
+        "get_task": "Inspect a saved Model Studio task or dry-run handle without submitting work. Preview licensing currently blocks live task polling. In a permitted future workflow, download=true persists a completed MP4 and provenance. Reuse saved jobs instead of resubmitting; previews are not generated media.",
+    },
     "kling": {
         "text_to_video": (
             "Use for a new Kling video from text, including native audio and multi-shot prompts. "

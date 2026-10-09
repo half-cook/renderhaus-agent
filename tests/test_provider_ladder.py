@@ -85,7 +85,7 @@ class CapabilityMapTests(unittest.TestCase):
     def test_pending_default_only_uses_declared_interim(self):
         self.assertEqual(routing.select_provider("image").status, "pending")
         self.assertIsNone(routing.select_provider("image").tool)
-        self.assertEqual(routing.select_provider("v2v_edit").tool, "Luma___modify_video")
+        self.assertEqual(routing.select_provider("v2v_edit").tool, "ModelStudio___edit_wan3_video")
         self.assertEqual(routing.select_provider("reference_video").tool, "Fal___generate_wan3_r2v")
         self.assertEqual(routing.select_provider("lipsync").status, "pending")
         self.assertEqual(routing.select_provider("t2v", available_tools={"Kling___text_to_video"}).status, "blocked")

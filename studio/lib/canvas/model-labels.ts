@@ -7,6 +7,7 @@ const MODEL_LABELS: Record<string, string> = {
   "alibaba/wan-3.0/text-to-video": "Wan 3.0 text to video",
   "alibaba/wan-3.0/image-to-video": "Wan 3.0 image to video",
   "alibaba/wan-3.0/reference-to-video": "Wan 3.0 reference to video",
+  "wan3.0-video": "Wan 3.0 Model Studio",
   "ray-3.2": "Luma Ray 3.2",
   "seedream-5-0-lite-260128": "Seedream 5 Lite",
   "seedance-1-5-pro-251215": "Seedance 1.5 Pro",

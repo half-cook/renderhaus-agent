@@ -71,8 +71,9 @@ tiers do not order models. Prices support disclosure and spending controls.
 
 Wan 3.0 on fal now provides t2v, i2v and reference_video defaults. The synthetic-dialogue exceptions retain their declared Seedance interims until 2.5 is built.
 Still-image defaults are pending feat/provider-openai-images with no automatic interim.
-Seedream requires an explicit named request. Luma preserves the existing edit
-and extend behavior through explicit interim entries. ElevenLabs music is the music interim.
+Seedream requires an explicit named request. Wan 3.0 on Alibaba Model Studio
+provides edit and extend defaults. Luma modify and extend remain explicit-only.
+ElevenLabs music is the music interim.
 These entries expire when their capability default becomes built; they do not create permanent
 exceptions for demoted providers. An exact named pending model has no substitute interim.
 
@@ -191,7 +192,8 @@ See [decisions and verification](conversational-edit-decisions.tsv) and
 ## Offline routing verification
 
 `tests/fixtures/skill_routing.json` contains 122 retained capability-map workbook rows.
-There are 84 active cases and 38 explicit dependency skips. The 23 archived rows are dropped,
+There are 81 active cases and 41 explicit skips, including three Model Studio
+preview-licence blocks. The 23 archived rows are dropped,
 including confidential-route and `[project.confidential=true]` rows. A false prefix is ordinary
 routing input. The read-only workbook and source map are not copied into the repository.
 
@@ -210,9 +212,10 @@ assert that explicit retired requests dispatch nothing. [Decisions](capability-m
 record these differences from the workbook.
 
 The pending specialists cover sync, HeyGen, Act-Two, Kling Motion Control, Topaz, Mirelo,
-Recraft, Ideogram edit, Mureka lyrics video, reference-video defaults/exceptions, VLM judging,
+Recraft, Ideogram edit, Mureka lyrics video, reference-video exceptions, VLM judging,
 and cutaway capture. A declared interim activates other pending defaults where supported.
-An explicit Wan request and a real-face Wan shot stay pending instead of using Seedance.
+Wan 3 generation and Model Studio edit/extend use their built tools. Real-person references
+require consent and never substitute Seedance.
 
 `.venv/bin/python -m unittest discover -s tests -p test_skill_routing.py -v` reports each
 fixture and skip reason. Supporting tests cover capability defaults/exceptions, named demoted
@@ -414,3 +417,18 @@ Local final assembly uses the same `Remotion___render_timeline` and
 plain `output_path` fields can supply visuals and audio without S3. Trims, fit, fades, and
 audio timing/volume/fades are supported; captions and motion effects require Lambda. See
 [local assembly and gateway setup](LOCAL_ASSEMBLY.md). The default backend remains Lambda.
+
+## Wan 3 edit and extend
+
+The existing edit-v2v skill now uses `ModelStudio___edit_wan3_video`,
+`ModelStudio___extend_wan3_video`, and free `ModelStudio___get_task`. Refinement also
+discovers the edit and poll tools. Measured source duration and frame rate are required.
+Extension duration means total output length, including the source. Smart-duration previews
+have unknown cost. All paid video still pauses in autonomous runs.
+
+The adapter defaults to dry-run and the US region. Its mandated legacy US host is
+UNVERIFIED for video synthesis and blocked live; documented workspace hosts are configurable.
+There are now 9 providers, 84 Gateway tools, and 24 skills. Three previously active fixture rows
+now name Model Studio but are skipped because its preview licence permits only internal evaluation;
+38 other fixture rows remain skipped. Disabling dry-run cannot bypass the licence gate.
+See [configuration, pricing, terms, and validation limits](ALIBABA_MODELSTUDIO.md).
