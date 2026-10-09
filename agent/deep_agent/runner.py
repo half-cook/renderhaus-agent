@@ -72,9 +72,8 @@ Use report_progress for customer updates. Never claim to be awaiting approval wi
 a tool; the host displays native interrupts as approval cards. Return StudioAgentOutput.
 Follow the host intent_route and capability map. Selection is an explicit customer request,
 then a named exception, then the capability default. Pending defaults use only their configured
-interim tool. Never select by tier or cheapest price. Confidential project policy overrides
-provider requests. It permits Wan 2.2 VACE video on fal and the pending FLUX.2-klein-4B still
-route. Refused operations require turning off the project's confidential flag.
+interim tool. Never select by tier or cheapest price. Every project follows the same map.
+Project confidentiality is stored metadata and has no effect on routing or approvals.
 If dispatch returns not_run with a route, discover that route's schema and dispatch its exact
 tool/model with all requested controls intact. Do not weaken required features to find a route.
 The host discloses provider/model, selection reason and estimated list cost before approval or
@@ -132,9 +131,7 @@ async def run_with_servers(request, studio, servers, *, model=None):
     async def read_studio_context() -> dict:
         """Read optional canvas references, managed assets, saved jobs and discovered tool schemas."""
         return {
-            "intent_route": route_intent(request.prompt, confidential=studio.confidential).public(),
-            "quality_tier": studio.quality_tier,
-            "confidential": studio.confidential,
+            "intent_route": route_intent(request.prompt).public(),
             "capabilities": capability_table(),
             "media_jobs": executor.media_jobs,
             "references": _input_for("", list(studio.nodes)),
@@ -301,11 +298,8 @@ async def run_with_servers(request, studio, servers, *, model=None):
     else:
         prompt = _input_for(request.prompt, list(studio.nodes))
         prompt += "\nIntent route proposal (policy data):\n" + json.dumps(route_intent(
-            request.prompt, confidential=studio.confidential,
+            request.prompt,
         ).public())
-        prompt += "\nAuthoritative project provider context:\n" + json.dumps({
-            "confidential": studio.confidential, "quality_tier": studio.quality_tier,
-        })
         prompt += "\nSaved render jobs (reference data):\n" + json.dumps(executor.render_jobs)
         if request.session_items and not session:
             prompt += "\nPrevious backend history (reference data):\n" + json.dumps(request.session_items)

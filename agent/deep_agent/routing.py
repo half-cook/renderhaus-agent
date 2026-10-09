@@ -39,7 +39,8 @@ class Route:
     reason: str = "No media intent matched; ask or plan before dispatch."
     provider: str | None = None
     model: str | None = None
-    tier: str | None = None
+    alias: str | None = None
+    basis: str = ""
     job_type: str | None = None
     required: dict = field(default_factory=dict)
     estimated_cost: dict | None = None
@@ -49,81 +50,93 @@ class Route:
         return asdict(self)
 
 
+def resolve_alias(alias: str) -> str | None:
+    """Resolve a canonical choice through its declared interim, never a provider ladder."""
+    entry = TOOL_MAP.get(alias, {})
+    if entry.get("status") == "ready":
+        return entry.get("gateway_tool")
+    if entry.get("status") != "pending":
+        return None
+    interim = entry.get("interim_alias")
+    if interim is None:
+        interim = next((row["interim"] for row in POLICY["capability_map"].values()
+                        if row["default"] == alias), None)
+    return TOOL_MAP.get(interim, {}).get("gateway_tool") if interim else None
+
+
 def route_intent(prompt: str, *, region: str | None = None, tier: str | None = None,
                  confidential: bool = False, arguments: dict | None = None,
                  available_tools: set[str] | None = None, retry: bool = False) -> Route:
+    constraints = intent_constraints(prompt, tier=tier, confidential=confidential, arguments=arguments)
+    for pattern, alias in POLICY["retired_requests"].items():
+        if re.search(pattern, prompt, re.I):
+            return Route(alias=alias, status="retired", reason=TOOL_MAP[alias]["reason"],
+                         disclosure=TOOL_MAP[alias]["reason"])
     for rule in POLICY["rules"]:
         if not re.search(rule["pattern"], prompt, re.IGNORECASE):
             continue
-        skill, abstract = rule["skill"], rule["abstract_tool"]
-        entry = TOOL_MAP[abstract]
-        pending = POLICY["pending_skills"].get(skill) or entry.get("reason")
-        if pending:
-            return Route(
-                skill=skill,
-                status=entry["status"] if entry["status"] != "ready" else "pending",
-                reason=pending,
-            )
+        skill, alias = rule["skill"], rule["abstract_tool"]
+        capability = rule.get("capability")
         if skill == "hyperframes":
-            blocker = policy_blocker("HyperFrames___render_composition", {})
-            if blocker:
-                return Route(skill=skill, status="blocked", reason=blocker)
+            blocker = policy_blocker("HyperFrames___render_composition", {}, region=region)
             if available_tools is not None and "HyperFrames___render_composition" not in available_tools:
-                return Route(skill=skill, status="blocked", reason="Requested HyperFrames renderer tool is unavailable in this session.")
-        tool = entry["gateway_tool"]
-        job = job_type(tool) if tool else None
-        if job:
-            constraints = intent_constraints(prompt, tier=tier, confidential=confidential, arguments=arguments)
-            if job == "t2v" and constraints["required"].get("start_end_frame"):
-                job, skill = "i2v", "i2v"
-            variant = tool_variant(tool)
-            selection = select_provider(
-                job, arguments=arguments, available_tools=available_tools, region=region,
-                retry=retry, tool_variant=variant if variant in {"reference", "image_edit"} else job,
-                **constraints,
-            )
-            return replace(selection, skill=skill)
-        if tool:
-            if skill == "hyperframes" and available_tools is not None and tool not in available_tools:
-                return Route(skill=skill, status="blocked", reason="Requested HyperFrames workflow tool is unavailable in this session.")
-            blocker = policy_blocker(tool, {}, region=region)
+                blocker = "Requested HyperFrames renderer tool is unavailable in this session."
             if blocker:
-                return Route(skill=skill, status="blocked", reason=blocker)
-        dispatch = (
-            None
-            if not tool
-            else "call_editor_tool"
-            if tool.startswith(("Remotion___", "HyperFrames___"))
-            else (
-                "call_audio_tool"
-                if tool.startswith(("ElevenLabs___", "FishAudio___"))
-                else "call_media_tool"
-            )
-        )
-        return Route(
-            skill,
-            tool,
-            dispatch,
-            "ready",
-            "Read the selected skill, then discover the exact schema.",
-        )
+                return Route(skill=skill, status="blocked", reason=blocker, disclosure=blocker)
+        if constraints["predicates"]["real_face_refs"] and capability == "t2v":
+            capability, skill = "i2v", "i2v"
+        if capability == "t2v" and constraints["required"].get("start_end_frame"):
+            capability, skill = "i2v", "i2v"
+        if capability:
+            route = select_provider(capability, arguments=arguments, available_tools=available_tools,
+                                    region=region, retry=retry, **constraints)
+            if constraints["provider"] in {"kling", "runway", "luma", "seedream", "fish_audio"} or (
+                constraints["provider"] == "fal" and re.search(r"vidu|vace", prompt, re.I)
+            ):
+                skill = "named-provider"
+            return replace(route, skill=skill)
+        entry = TOOL_MAP[alias]
+        if entry["status"] != "ready":
+            return Route(skill=skill, alias=alias, status=entry["status"], reason=entry["reason"], disclosure=entry["reason"])
+        tool = entry.get("gateway_tool")
+        blocker = policy_blocker(tool, {}, region=region) if tool else None
+        if available_tools is not None and tool and tool not in available_tools:
+            blocker = f"Requested tool {tool} is unavailable in this session."
+        if blocker:
+            return Route(skill=skill, status="blocked", reason=blocker, disclosure=blocker)
+        return Route(skill=skill, alias=alias, tool=tool, dispatch_tool=_dispatch(tool), status="ready",
+                     reason="Read the selected skill, then discover the exact schema.", basis="default")
     return Route()
+
+
+def _dispatch(tool: str | None) -> str | None:
+    if not tool:
+        return None
+    if tool.startswith(("Remotion___", "HyperFrames___")):
+        return "call_editor_tool"
+    if tool.startswith(("ElevenLabs___", "FishAudio___")):
+        return "call_audio_tool"
+    return "call_media_tool"
 
 
 def job_type(name: str | None) -> str | None:
     for row in POLICY["capabilities"]:
         for job, tool in row["tools"].items():
             if tool == name:
-                return {"image_edit": "image", "reference": "i2v", "extend": "extend"}.get(job, job)
+                return {"image_edit": "image_edit", "reference": "reference_video", "image": "still_image"}.get(job, job)
+    for capability, choice in POLICY["capability_map"].items():
+        aliases = [choice["default"], choice["interim"]] + [ex["tool"] for ex in choice["exceptions"]]
+        if any(alias and TOOL_MAP.get(alias, {}).get("gateway_tool") == name for alias in aliases):
+            return capability
+    if name == "FishAudio___generate_speech":
+        return "tts"
     return None
 
 
 def tool_variant(name: str) -> str | None:
     if name.endswith(("reference_to_video", "vidu_q4_r2v")):
         return "reference"
-    if name.endswith("image_to_image"):
-        return "image_edit"
-    return job_type(name)
+    return {"still_image": "image"}.get(job_type(name), job_type(name))
 
 
 def capability_table() -> list[dict]:
@@ -182,18 +195,17 @@ def _capability_price(row: dict):
 
 def intent_constraints(prompt: str, *, tier: str | None = None, confidential: bool = False,
                        arguments: dict | None = None) -> dict:
+    args = arguments or {}
     provider = next((p for pattern, p in [
-        (r"\bwan\b|\bfal\b|vace|\bvidu\b", "fal"), (r"seedance", "seedance"),
-        (r"seedream", "seedream"), (r"kling", "kling"), (r"runway|aleph|gen.?4", "runway"),
-        (r"luma|ray.?3", "luma"), (r"\bveo\b", "veo"),
+        (r"\bvidu\b|\bvace\b|\bfal\b|\bwan[ -]?2", "fal"), (r"\bseedance\b", "seedance"),
+        (r"\bseedream\b", "seedream"), (r"\bkling\b", "kling"),
+        (r"\brunway\b|\baleph\b|gen.?4", "runway"), (r"\bluma\b|\bray.?3\b", "luma"),
+        (r"\bfish\b", "fish_audio"), (r"\belevenlabs\b", "elevenlabs"),
         (r"mini.?max", "minimax_h3"), (r"hunyuan", "hunyuan"),
     ] if re.search(pattern, prompt, re.I)), None)
-    requested_tier = next((value for value in ["draft", "standard", "premium"]
-                           if re.search(rf"\b{value}\b", prompt, re.I)), None)
-    if requested_tier is None and re.search(r"preview|cheap(?:est|ly)?|training", prompt, re.I):
-        requested_tier = POLICY["ladder"]["preview_tier"]
-    if requested_tier is None and re.search(r"highest quality|best quality", prompt, re.I):
-        requested_tier = "premium"
+    # Act-Two names a performance tool, not Runway's demoted generation family.
+    if re.search(r"act.two|performance capture", prompt, re.I) and provider == "runway":
+        provider = None
     required = {}
     for feature, pattern in {
         "native_audio": r"native audio|with audio|needs? audio",
@@ -207,23 +219,46 @@ def intent_constraints(prompt: str, *, tier: str | None = None, confidential: bo
     resolution = re.search(r"\b(480p|540p|580p|720p|1080p|2k|4k)\b", prompt, re.I)
     if resolution:
         required["max_resolution"] = resolution_value(resolution[1])
-    duration = re.search(r"\b(\d+)\s*(?:second|seconds|s)\b", prompt, re.I)
-    if duration:
-        required["duration_seconds"] = int(duration[1])
-    faithful = bool(re.search(r"faithful|keep performance|plate edit|multi.shot", prompt, re.I))
+    duration = re.search(r"\b(\d+(?:\.\d+)?)\s*(seconds?|secs?|s|minutes?|mins?)\b", prompt, re.I)
+    seconds = float(duration[1]) * (60 if duration[2].lower().startswith("m") else 1) if duration else None
+    if seconds is not None:
+        required["duration_seconds"] = int(seconds) if seconds.is_integer() else seconds
+    supplied_duration = next((args[k] for k in ("duration", "duration_seconds", "video_duration_seconds", "source_duration_seconds") if args.get(k) is not None), seconds)
+    real_face = bool(args.get("real_face_refs") or re.search(
+        r"real (?:person|human|actor)|my (?:ceo|face|selfie)|(?:photo|video).*(?:of me|of my|real person)|(?:user.supplied|uploaded).*(?:person|face)", prompt, re.I))
+    dialogue = bool(re.search(r'["“][^"”]+["”]|\b(?:says?|saying|talking|talks?|dialogue|speaking)\b', prompt, re.I))
+    if re.search(r"\b(?:no|without) dialogue\b|\bnot talking\b|silent scene", prompt, re.I):
+        dialogue = False
+    video_sfx = bool(re.search(r"from (?:the|this).*?(?:video|clip)|video to audio|foley|synchroni[sz]ed|silent clip|picture.synced", prompt, re.I))
+    if re.search(r"no video|without video", prompt, re.I):
+        video_sfx = False
+    predicates = {
+        "dialogue": dialogue, "real_face_refs": real_face,
+        "vector_output": bool(re.search(r"\bsvg\b|vector|editable.*illustrator", prompt, re.I)),
+        "text_only_edit": bool(re.search(r"(?:change|replace).*only.*(?:text|headline)|fix.*typo|text.only.*edit", prompt, re.I)),
+        "full_body_motion": bool(re.search(r"full.body|whole.body|\bdance\b|\bdancing\b", prompt, re.I)),
+        "facial_performance": bool(re.search(r"facial|face.*acting|upper.body", prompt, re.I)),
+        "duration_over_30s": isinstance(supplied_duration, (int, float)) and supplied_duration > 30,
+        "presenter": bool(re.search(r"presenter|digital twin", prompt, re.I)),
+        "text_only_sfx": not video_sfx,
+        "explicit_html_template": bool(re.search(r"hyperframes|html.*template", prompt, re.I)),
+        "linear_fps": bool(re.search(r"linear|simple pan", prompt, re.I)),
+    }
+    predicates.update({k: bool(args[k]) for k in predicates if k in args})
+    predicates["real_face_refs"] = real_face
     model = None
-    if re.search(r"\bvidu\b", prompt, re.I):
-        args = arguments or {}
-        reference = (required.get("reference_elements") or required.get("voice_references")
-                     or args.get("reference_image_urls") or args.get("reference_audio_urls")
-                     or re.search(r"\br2v\b|\bvoice\b", prompt, re.I))
-        tool = "vidu_q4_r2v" if reference else "vidu_q4_i2v"
-        model = POLICY["providers"]["fal"]["default_models"][tool]
-    elif re.search(r"\bwan\b|vace", prompt, re.I):
-        model = POLICY["providers"]["fal"]["default_model"]
-    return {"provider": provider, "model": model, "tier": requested_tier or tier, "required": required,
-            "confidential": confidential or bool(re.search(r"\bconfidential\b", prompt, re.I)),
-            "faithful": faithful}
+    if provider == "fal":
+        if re.search(r"vidu", prompt, re.I):
+            reference = required.get("reference_elements") or required.get("voice_references") or args.get("reference_image_urls") or args.get("reference_audio_urls")
+            model = POLICY["providers"]["fal"]["default_models"]["vidu_q4_r2v" if reference else "vidu_q4_i2v"]
+        else:
+            model = "fal-ai/wan-22-vace-fun-a14b" if re.search(r"wan[ -]?2\.2", prompt, re.I) else POLICY["providers"]["fal"]["default_model"]
+    if re.search(r"kling.*(?:turbo|omni)", prompt, re.I):
+        model = "kling-3.0-omni" if re.search("omni", prompt, re.I) else "kling-3.0-turbo"
+    named_model = next((key for key, entry in POLICY["named_models"].items()
+                        if re.search(entry["pattern"], prompt, re.I)), None)
+    return {"provider": provider, "model": model, "named_model": named_model,
+            "required": required, "predicates": predicates}
 
 
 def resolution_value(value: str) -> int:
@@ -235,148 +270,150 @@ def resolution_value(value: str) -> int:
     )
 
 
+def _matches(when: str, predicates: dict) -> bool:
+    return all(not predicates.get(term[1:], False) if term.startswith("!") else predicates.get(term, False)
+               for term in when.split(" && "))
+
+
 def select_provider(job: str, *, tier: str | None = None, required: dict | None = None,
                     arguments: dict | None = None, provider: str | None = None,
                     model: str | None = None, confidential: bool = False, retry: bool = False,
                     faithful: bool = False, region: str | None = None,
-                    available_tools: set[str] | None = None, tool_variant: str | None = None) -> Route:
+                    available_tools: set[str] | None = None, tool_variant: str | None = None,
+                    predicates: dict | None = None, named_model: str | None = None) -> Route:
     args, required = dict(arguments or {}), dict(required or {})
-    tier = tier or POLICY["ladder"]["default_tier"]
-    if tier not in {"draft", "standard", "premium"}:
-        return Route(status="blocked", reason="Unknown quality tier.")
-    if confidential or retry:
-        tier = "draft"
-        if confidential and provider and provider != POLICY["ladder"]["confidential_provider"]:
-            return Route(status="blocked", reason="Confidential projects permit Wan only.", disclosure="Confidential projects permit Wan only.")
-        provider = POLICY["ladder"]["confidential_provider"]
-        model = None
-    elif job == "v2v_edit" and faithful and provider is None and tier != "draft":
-        provider, tier = POLICY["ladder"]["faithful_edit_provider"], "premium"
-    for key, feature in [("generate_audio", "native_audio"), ("audio", "native_audio"), ("multi_shot", "multi_shot"),
-                         ("shots", "multi_shot"), ("elements", "reference_elements"),
-                         ("reference_image_urls", "reference_elements"), ("ref_image_urls", "reference_elements"),
-                         ("reference_audio_urls", "voice_references"),
-                         ("last_frame_url", "start_end_frame"), ("end_image_path_or_url", "start_end_frame"),
-                         ("last_frame_path_or_url", "start_end_frame")]:
-        if args.get(key):
-            required[feature] = True
-    if required.get("voice_references"):
-        required["native_audio"] = True
-    resolution = args.get("resolution") or args.get("size") or args.get("ratio")
-    if resolution:
-        required["max_resolution"] = max(required.get("max_resolution", 0), resolution_value(resolution))
-    if job == "image" and not resolution and not provider and not required.get("max_resolution"):
-        required["max_resolution"] = max(required.get("max_resolution", 0), resolution_value(POLICY["ladder"]["image_default_size"]))
-    if job == "v2v_edit":
-        required.pop("multi_shot", None)
-    duration = required.get("duration_seconds") or args.get("duration") or args.get("duration_seconds") or args.get("video_duration_seconds") or args.get("source_duration_seconds")
-    if "duration" in args:
-        duration = required.get("duration_seconds", args["duration"])
-        required["duration_seconds"] = duration
-    candidates, refusals = [], []
-    variant = tool_variant or job
-    for row in capability_table():
-        if provider and row["provider"] != provider or model and row["model"] != model:
-            continue
-        if (confidential or retry) and row["model"] not in POLICY["ladder"]["wan_models"]:
-            continue
-        if provider == "fal" and model is None and tier == "draft" and row["model"] not in POLICY["ladder"]["wan_models"]:
-            continue
-        tool = row["tools"].get(variant)
-        if tool is None:
-            continue
-        if available_tools is not None and tool not in available_tools:
-            continue
-        if any(row["jobs"].get(key, False) < value for key, value in required.items() if key != "duration_seconds"):
-            continue
+    predicates = {**intent_constraints("", arguments=args)["predicates"], **(predicates or {})}
+    capability = {"image": "still_image", "reference": "reference_video"}.get(job, job)
+    if tool_variant in {"reference", "reference_video"}:
+        capability = "reference_video"
+    elif tool_variant == "image_edit":
+        capability = "image_edit"
+    if capability not in POLICY["capability_map"]:
+        return Route(status="blocked", reason=f"No capability map for {capability}.")
+    choice = POLICY["capability_map"][capability]
+    alias, basis = choice["default"], "default"
+    if retry and capability in {"t2v", "i2v", "v2v_edit", "reference_video"}:
+        alias = {"t2v": "wan_t2v", "i2v": "wan_i2v", "v2v_edit": "wan_vace_edit", "reference_video": "wan_reference"}[capability]
+        model, basis = POLICY["providers"]["fal"]["default_model"], "training retry after artifact rejection"
+    elif predicates["real_face_refs"] and capability in {"t2v", "i2v", "reference_video"}:
+        alias, basis = choice["default"], "default; real-face references require Wan; Seedance and Omni blocked"
+    elif named_model:
+        alias = POLICY["named_models"][named_model]["aliases"].get(capability)
+        if not alias:
+            reason = f"Requested model {named_model} has no {capability} tool."
+            return Route(status="blocked", reason=reason, disclosure=reason)
+        model, basis = None, "explicit request"
+    elif provider or model:
+        if provider in {"minimax_h3", "hunyuan"}:
+            return Route(status="blocked", reason=f"Provider {provider} is blocked.", disclosure=f"Provider {provider} is blocked.")
+        aliases = POLICY["explicit_routes"].get(provider, {})
+        alias = aliases.get(capability)
+        if provider == "fal" and model and "vidu" in model:
+            alias = "vidu_q4_r2v" if "reference" in model else "vidu_q4_i2v"
+        if provider == "kling" and model == "kling-3.0-omni":
+            alias = "kling_omni"
+        if not alias:
+            return Route(status="blocked", job_type=capability, reason=f"Requested provider {provider} has no built {capability} tool.")
+        basis = f"explicit request; not the default for {capability}"
+    else:
+        exception = next((ex for ex in choice["exceptions"] if _matches(ex["when"], predicates)), None)
+        if exception:
+            alias, basis = exception["tool"], "exception: " + exception["reason"]
+    entry = TOOL_MAP[alias]
+    duration = required.get("duration_seconds") or next((args[k] for k in ("duration", "duration_seconds", "video_duration_seconds", "source_duration_seconds") if args.get(k) is not None), None)
+    if (predicates["duration_over_30s"] or isinstance(duration, (int, float)) and duration > 30) and capability in {"t2v", "i2v", "reference_video", "performance_transfer"}:
+        reason = "Duration exceeds 30 seconds; split into shots of at most 30 seconds before generation."
+        return Route(alias=alias, basis=basis, status="blocked", job_type=capability, reason=reason, disclosure=reason)
+    tool = entry.get("gateway_tool")
+    if entry["status"] == "pending":
+        interim = None if basis.startswith("explicit request") else entry.get("interim_alias") or (choice["interim"] if alias == choice["default"] else None)
+        if predicates["real_face_refs"] and capability in {"t2v", "i2v", "reference_video"}:
+            interim = None
+        if not interim:
+            reason = entry["reason"]
+            return Route(alias=alias, basis=basis, status="pending", reason=reason, job_type=capability,
+                         provider=entry.get("provider"), model=entry.get("model"), required=required,
+                         estimated_cost=CostEstimate(None, "Provider pending; official quote TODO.").public(),
+                         disclosure=f"{basis}. {reason} Estimated cost unknown.")
+        tool = TOOL_MAP[interim]["gateway_tool"]
+        basis = (basis + "; " if basis != "default" else "") + f"interim default until {alias} lands"
+    variant = {"still_image": "image", "reference_video": "reference"}.get(capability, capability)
+    row = next((r for r in capability_table() if tool in r["tools"].values() and (model is None or r["model"] == model)), None)
+    if model and row is None and any(tool in r["tools"].values() for r in POLICY["capabilities"]):
+        return Route(alias=alias, status="blocked", reason=f"Model {model} does not support the selected tool.")
+    if row:
+        # The chosen alias fixes the tool; explicit model picks do not trigger another provider.
+        model = row["model"]
+        for key, feature in [("generate_audio", "native_audio"), ("audio", "native_audio"), ("multi_shot", "multi_shot"),
+                             ("shots", "multi_shot"), ("elements", "reference_elements"), ("reference_image_urls", "reference_elements"),
+                             ("ref_image_urls", "reference_elements"), ("reference_audio_urls", "voice_references"),
+                             ("last_frame_url", "start_end_frame"), ("end_image_path_or_url", "start_end_frame"), ("last_frame_path_or_url", "start_end_frame")]:
+            if args.get(key):
+                required[feature] = True
+        if required.get("voice_references"):
+            required["native_audio"] = True
+        resolution = args.get("resolution") or args.get("size") or args.get("ratio")
+        if resolution:
+            required["max_resolution"] = max(required.get("max_resolution", 0), resolution_value(resolution))
+        if capability == "still_image" and not resolution and not provider:
+            required["max_resolution"] = max(required.get("max_resolution", 0), resolution_value(POLICY["image_default_size"]))
+        if capability == "v2v_edit":
+            required.pop("multi_shot", None)
+        controls = row["controls"].get(variant, [])
         limits = row["durations"].get(variant)
-        if row.get("duration_field") and duration is not None and type(duration) is not int:
-            continue
-        if duration is not None and limits and not limits[0] <= duration <= limits[1]:
-            continue
         values = row.get("duration_values", {}).get(variant)
-        if duration and values and duration not in values:
-            continue
+        unsupported = any(row["jobs"].get(k, False) < value for k, value in required.items() if k != "duration_seconds")
+        unsupported |= duration is not None and limits is not None and not limits[0] <= duration <= limits[1]
+        unsupported |= bool(duration is not None and values and duration not in values)
+        unsupported |= bool(row.get("duration_field") and duration is not None and type(duration) is not int)
+        unsupported |= any(args.get(k) and resolution_value(args[k]) not in row["resolutions"] for k in ("resolution", "size") if k in controls and args.get(k) != "auto")
+        audio_field = row.get("native_audio_field", "generate_audio")
+        unsupported |= bool(required.get("native_audio") and audio_field is not None and audio_field not in controls)
+        unsupported |= bool(required.get("start_end_frame") and not any(k in controls for k in ("last_frame_url", "end_image_path_or_url", "last_frame_path_or_url")))
+        unsupported |= bool(required.get("reference_elements") and not any(k in controls for k in ("elements", "ref_image_urls", "reference_image_urls")))
+        unsupported |= bool(required.get("voice_references") and "reference_audio_urls" not in controls)
         if row.get("frame_limits"):
             fps = args.get("frames_per_second", 16)
             frames = args.get("num_frames", round(duration * fps) + 1 if duration else 81)
-            if any(not low <= value <= high for value, (low, high) in (
-                (fps, row["frame_limits"]["frames_per_second"]),
-                (frames, row["frame_limits"]["num_frames"]),
-            )):
-                continue
-        controls = row["controls"].get(variant, [])
-        if any(args.get(key) and resolution_value(args[key]) not in row["resolutions"]
-               for key in ("resolution", "size") if key in controls and args.get(key) != "auto"):
-            continue
-        audio_field = row.get("native_audio_field", "generate_audio")
-        if required.get("native_audio") and audio_field is not None and audio_field not in controls:
-            continue
-        if required.get("start_end_frame") and not any(key in controls for key in (
-            "last_frame_url", "end_image_path_or_url", "last_frame_path_or_url",
-        )):
-            continue
-        if required.get("reference_elements") and not any(key in controls for key in ("elements", "ref_image_urls", "reference_image_urls")):
-            continue
-        if required.get("voice_references") and "reference_audio_urls" not in controls:
-            continue
-        if not provider:
-            eligible = (POLICY["ladder"]["v2v_tiers"][tier] if job == "v2v_edit" else
-                        POLICY["ladder"]["generation_tiers"][tier] if job in {"t2v", "i2v"} else None)
-            if tier not in row["tiers"] or eligible is not None and row["provider"] not in eligible:
-                continue
-        quote_args = {**args, "model": row["model"]}
+            unsupported |= any(not low <= val <= high for val, (low, high) in ((fps, row["frame_limits"]["frames_per_second"]), (frames, row["frame_limits"]["num_frames"])))
+        if unsupported:
+            reason = f"{basis}. Selected {tool} cannot satisfy {capability} required capabilities {required}; no automatic provider fallback."
+            return Route(alias=alias, basis=basis, status="blocked", job_type=capability, required=required, reason=reason, disclosure=reason)
+        quote_args = {**args, "model": model}
         if duration:
-            key = "source_duration_seconds" if tool.endswith("modify_video") else "video_duration_seconds" if tool.endswith("video_to_video") and row["provider"] == "runway" else "duration_seconds"
-            if row.get("duration_field"):
-                quote_args[row["duration_field"]] = duration
-            elif row["provider"] == "fal":
+            key = row.get("duration_field") or ("source_duration_seconds" if tool.endswith("modify_video") else "video_duration_seconds" if tool.endswith("video_to_video") and row["provider"] == "runway" else "duration_seconds")
+            if row["provider"] == "fal" and not row.get("duration_field"):
                 quote_args["num_frames"] = args.get("num_frames", round(duration * args.get("frames_per_second", 16)) + 1)
             else:
                 quote_args[key] = duration
         if required.get("native_audio") and audio_field:
             quote_args[audio_field] = True
         if required.get("max_resolution"):
-            native = (args.get("size", "2K") if "size" in controls else
-                      args.get("ratio", "1280:720") if "ratio" in controls else args.get("resolution", "720p"))
-            minimum = max(required["max_resolution"], resolution_value(native))
-            value = min(value for value in row["resolutions"] if value >= minimum)
+            minimum = required["max_resolution"]
+            value = min(v for v in row["resolutions"] if v >= minimum)
             if "resolution" in controls:
                 quote_args["resolution"] = row.get("resolution_labels", {}).get(str(value), "4k" if value == 2160 else f"{value}p")
             elif "size" in controls:
-                quote_args["size"] = f"{value // 1024}K"
+                quote_args["size"] = args.get("size", f"{value // 1024}K")
             elif "ratio" in controls:
-                quote_args["ratio"] = "1920:1080" if value == 1080 else "1280:720"
-        blocker = policy_blocker(tool, quote_args, region=region)
-        if blocker:
-            refusals.append(blocker)
-            continue
-        quote = estimate_cost(tool, quote_args, list_price=True)
-        candidates.append((quote.total_cents is None, quote.total_cents or 0, row, tool, quote))
-    if not candidates:
-        reason = ("Confidential Wan-only constraint. " if confidential else "Wan reject retry. " if retry else "")
-        reason += f"No enabled built provider satisfies {job}, {tier} tier and required capabilities {required}."
-        if provider:
-            reason += f" Requested provider {provider} refused."
-        reason += " " + " ".join(dict.fromkeys(refusals))
-        return Route(status="blocked", reason=reason.strip(), tier=tier, job_type=job,
-                     required=required, disclosure=reason.strip())
-    _, _, row, tool, quote = min(candidates, key=lambda candidate: candidate[:2])
-    if tier not in row["tiers"]:
-        tier = row["tiers"][0]
-    reason = f"{tier} tier; capability filters {required or 'none'}; cheapest known price before unknown quotes."
-    if provider:
-        reason = f"{tier} tier; explicit provider or ladder constraint; capability filters {required or 'none'}."
-    if confidential:
-        reason += " Confidential project, Wan only."
-    if retry:
-        reason += " Automatic Wan retry after artifact rejection."
-    speed = ("Speed is unverified; no measured SLA." if row["speed_class"] == "unknown" else
-             f"Speed class {row['speed_class']} is typical, not a measured SLA.")
-    disclosure = f"Selected {row['label']} ({row['model']}). {reason} {quote.description} {speed}"
-    return Route(tool=tool, dispatch_tool="call_media_tool", status="ready", reason=reason,
-                 provider=row["provider"], model=row["model"], tier=tier, job_type=job,
-                 required=required, estimated_cost=quote.public(), disclosure=disclosure)
+                quote_args["ratio"] = args.get("ratio", "1920:1080" if value == 1080 else "1280:720")
+    else:
+        provider_id, verb = tool_parts(tool) if tool else ("local", "embeddings")
+        model = effective_model(provider_id, verb, args)
+        quote_args = dict(args)
+    if available_tools is not None and tool is not None and tool not in available_tools:
+        reason = f"Selected tool {tool} is unavailable; no automatic provider fallback."
+        return Route(alias=alias, basis=basis, status="blocked", reason=reason, disclosure=reason)
+    blocker = policy_blocker(tool, quote_args, region=region) if tool else None
+    if blocker:
+        return Route(alias=alias, basis=basis, status="blocked", reason=blocker, disclosure=blocker)
+    quote = estimate_cost(tool, quote_args, list_price=True) if tool else CostEstimate(0)
+    provider_id = row["provider"] if row else tool_parts(tool)[0] if tool else "local"
+    label = row["label"] if row else alias
+    disclosure = f"Selected {label}. Provider {provider_id}; model {model or 'none'}. {basis}. {quote.description}"
+    return Route(tool=tool, alias=alias, basis=basis, dispatch_tool=_dispatch(tool), status="ready", reason=basis,
+                 provider=provider_id, model=model, job_type=capability, required=required,
+                 estimated_cost=quote.public(), disclosure=disclosure)
 
 
 def tool_parts(name: str) -> tuple[str, str]:
@@ -400,12 +437,13 @@ def is_free_tool(name: str) -> bool:
 def premium_video(name: str) -> bool:
     enabled = os.getenv("RENDERHAUS_PREMIUM_VIDEO_APPROVAL")
     enabled = POLICY["premium_video_approval"] if enabled is None else enabled.lower() != "false"
-    target, _, tool = name.partition("___")
-    return enabled and target in POLICY["premium_targets"] and tool in POLICY["premium_video_tools"]
+    return bool(enabled and name in POLICY["paid_video_tools"])
 
 
 def effective_model(provider: str, tool: str, arguments: dict) -> str | None:
     policy = POLICY["providers"].get(provider, {})
+    if provider == "elevenlabs" and tool in {"text_to_speech_convert", "text_to_dialogue_convert"}:
+        return arguments.get("model_id") or os.getenv("ELEVENLABS_TTS_MODEL", "eleven_v4_turbo")
     if tool in policy.get("fixed_models", {}):
         return policy["fixed_models"][tool]
     model_env = policy.get("model_env", "") if tool != "omni_video" else ""
@@ -597,5 +635,5 @@ def _published_cost(provider: str, tool: str, arguments: dict):
             duration = arguments.get("video_duration_seconds") if tool == "video_to_video" else arguments.get("duration_seconds", 5)
             cents = rates.RUNWAY_CENTS_PER_SECOND[arguments["model"]] * duration
     else:
-        raise ValueError("No published ladder price.")
+        raise ValueError("No published capability price.")
     return rates._with_fee(round(cents))

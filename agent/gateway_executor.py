@@ -14,7 +14,7 @@ from agent.deep_agent.routing import (
     is_free_tool, premium_video, policy_blocker, estimate_cost, job_type,
     select_provider, intent_constraints, effective_model, tool_parts,
     resolution_value,
-    tool_variant, project_policy_blocker,
+    tool_variant,
     POLICY,
 )
 from agent.deep_agent.outcomes import OutcomeStore
@@ -143,6 +143,8 @@ class GatewayExecutor:
             return None
         constraints = intent_constraints(self.studio.prompt, confidential=self.studio.confidential,
                                          arguments=arguments)
+        if job in {"motion_graphics", "nle_handoff"}:
+            constraints["provider"] = constraints["model"] = constraints["named_model"] = None
         rejected_id = self.rejected_reviews.get(job)
         rejected = self.media_jobs.get(rejected_id, {})
         retry = bool(rejected_id and (rejected.get("retry_scope") == self.run_scope or
@@ -159,7 +161,8 @@ class GatewayExecutor:
             return route.disclosure or route.reason
         provider, tool = tool_parts(name)
         model = effective_model(provider, tool, arguments) or tool
-        return f"Provider {provider}; model {model}; default. {estimate_cost(name, arguments).description}"
+        proposal = arguments.get("plan_summary", "") if name == "Remotion___prepare_conversational_edit" else ""
+        return f"{proposal} Provider {provider}; model {model}; default. {estimate_cost(name, arguments).description}".strip()
 
     def disclose_selection(self, route, event_id, name=None, arguments=None):
         if route or (name and not is_free_tool(name)):
@@ -169,9 +172,6 @@ class GatewayExecutor:
 
     def selection_blocker(self, name, arguments, route):
         provider, tool = tool_parts(name)
-        blocker = project_policy_blocker(name, arguments, self.studio.confidential)
-        if blocker:
-            return blocker
         if route is None:
             return None
         if route.status != "ready":

@@ -174,15 +174,15 @@ async def run_with_servers(request, studio, harness: CodexHarness, servers):
 
     prompt = _input_for(request.prompt, list(studio.nodes))
     prompt += "\nHost provider route (follow it, discover its schema, preserve all constraints):\n" + json.dumps(
-        route_intent(request.prompt, tier=studio.quality_tier, confidential=studio.confidential).public(),
+        route_intent(request.prompt).public(),
     )
     prompt += "\nAuthoritative provider context:\n" + json.dumps({
-        "confidential": studio.confidential, "quality_tier": studio.quality_tier, "media_jobs": executor.media_jobs,
+        "media_jobs": executor.media_jobs,
     })
-    prompt += ("\nDisclose the selected provider/model, tier, capability filters and estimated cost or unknown. "
+    prompt += ("\nDisclose the selected provider/model, default or exception reason, capability filters and estimated cost or unknown. "
                "Use record_media_outcome for explicit customer review of completed saved media_jobs. "
                "On rejection follow its Wan retry_route once, retaining all features and spending approvals. "
-               "Confidential projects permit Wan only. Explain blocked routes and never invent a fallback.")
+               "Every project follows the same capability map. Explain blocked routes and never invent a fallback.")
     if render_jobs:
         prompt += "\nAuthoritative saved render jobs (reference data):\n" + json.dumps([
             {key: job[key] for key in ("render_id", "bucket_name", "output_key", "status") if key in job}
