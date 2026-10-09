@@ -12,8 +12,6 @@ from agent.studio_agent_next import StudioAgentRequest, _context_from_request
 from test_deep_agent import Gateway
 from server.billing_rates import cost_for
 
-CAP = str(cost_for("seedance", "text_to_video", {"prompt": "forest"}).total_cents)
-
 PAID = Tool(
     name="Seedance___text_to_video",
     inputSchema={
@@ -26,6 +24,16 @@ FREE = Tool(name="Seedance___get_video_task", inputSchema={"type": "object"})
 
 
 class SpendingTests(unittest.IsolatedAsyncioTestCase):
+    def setUp(self):
+        self.enterContext(patch.dict(os.environ, {
+            "SEEDANCE_DRY_RUN": "false", "FAL_DRY_RUN": "false",
+            "SEEDANCE_TRANSPORT": "fal", "SEEDANCE_FAL_REGION": "us",
+            "SEEDANCE_MODEL": "dreamina-seedance-2-5-260628",
+        }))
+        cents = cost_for("seedance", "text_to_video", {"prompt": "forest"}).total_cents
+        self.assertGreater(cents, 0)
+        self.cap_cents = str(cents)
+
     def context(self, autonomous=True):
         return _context_from_request(
             StudioAgentRequest(prompt="Seedance video", autonomous=autonomous, job_id="job")
@@ -55,7 +63,7 @@ class SpendingTests(unittest.IsolatedAsyncioTestCase):
             estimate.assert_called_once_with(PAID.name, {"prompt": "forest"}, list_price=True)
 
     async def test_cap_allows_exact_limit_and_then_stops_paid_tools(self):
-        with patch.dict(os.environ, {"RENDERHAUS_AUTONOMOUS_RUN_CAP_CENTS": CAP}):
+        with patch.dict(os.environ, {"RENDERHAUS_AUTONOMOUS_RUN_CAP_CENTS": self.cap_cents}):
             executor, gateway = self.executor()
             first = await self.paid(executor, approved=True)
             self.assertEqual(first["status"], "succeeded")
@@ -70,7 +78,7 @@ class SpendingTests(unittest.IsolatedAsyncioTestCase):
             gateway.call_tool.assert_awaited_with(FREE.name, {})
 
     async def test_cap_survives_approved_calls_and_restarts(self):
-        with patch.dict(os.environ, {"RENDERHAUS_AUTONOMOUS_RUN_CAP_CENTS": CAP}):
+        with patch.dict(os.environ, {"RENDERHAUS_AUTONOMOUS_RUN_CAP_CENTS": self.cap_cents}):
             executor, gateway = self.executor()
             await self.paid(executor, approved=True)
             restarted, _ = self.executor(session=executor.snapshot(), gateway=gateway)
@@ -84,7 +92,7 @@ class SpendingTests(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(gateway.call_tool.await_count, 2)
 
     async def test_concurrent_dispatch_cannot_overspend(self):
-        with patch.dict(os.environ, {"RENDERHAUS_AUTONOMOUS_RUN_CAP_CENTS": CAP}):
+        with patch.dict(os.environ, {"RENDERHAUS_AUTONOMOUS_RUN_CAP_CENTS": self.cap_cents}):
             executor, gateway = self.executor()
             outputs = await asyncio.gather(self.paid(executor, "one", approved=True), self.paid(executor, "two", approved=True))
             self.assertEqual(sum(x["status"] == "succeeded" for x in outputs), 1)
@@ -114,7 +122,7 @@ class SpendingTests(unittest.IsolatedAsyncioTestCase):
             gateway.call_tool.assert_awaited_once()
 
     async def test_rejections_and_schema_failures_consume_no_spend(self):
-        with patch.dict(os.environ, {"RENDERHAUS_AUTONOMOUS_RUN_CAP_CENTS": CAP}):
+        with patch.dict(os.environ, {"RENDERHAUS_AUTONOMOUS_RUN_CAP_CENTS": self.cap_cents}):
             executor, gateway = self.executor()
             await self.paid(executor, rejection="skip")
             await executor.execute({"tool_name": PAID.name, "arguments": {}, "call_id": "invalid"})
@@ -122,7 +130,7 @@ class SpendingTests(unittest.IsolatedAsyncioTestCase):
             gateway.call_tool.assert_not_awaited()
 
     async def test_transport_failure_keeps_conservative_reservation(self):
-        with patch.dict(os.environ, {"RENDERHAUS_AUTONOMOUS_RUN_CAP_CENTS": CAP}):
+        with patch.dict(os.environ, {"RENDERHAUS_AUTONOMOUS_RUN_CAP_CENTS": self.cap_cents}):
             executor, gateway = self.executor()
             gateway.call_tool.side_effect = RuntimeError("timeout after submission")
             await self.paid(executor, approved=True)
@@ -143,7 +151,7 @@ class SpendingTests(unittest.IsolatedAsyncioTestCase):
     async def test_reservation_is_persisted_before_submission_and_survives_cancellation(self):
         import copy
 
-        with patch.dict(os.environ, {"RENDERHAUS_AUTONOMOUS_RUN_CAP_CENTS": CAP}):
+        with patch.dict(os.environ, {"RENDERHAUS_AUTONOMOUS_RUN_CAP_CENTS": self.cap_cents}):
             studio = self.context()
             saved = []
             studio.session_sink = lambda items: saved.append(copy.deepcopy(items))

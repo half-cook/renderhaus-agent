@@ -115,7 +115,7 @@ class GatewayToolSchemaTests(unittest.TestCase):
         with patch.dict(os.environ, {"SEEDANCE_DRY_RUN": "true"}):
             with self.assertRaisesRegex(ValueError, "480p, 720p, 1080p"):
                 dispatch("seedance", "text_to_video", {"prompt": "Launch", "resolution": "2K"})
-            with self.assertRaisesRegex(ValueError, "adaptive, 16:9"):
+            with self.assertRaisesRegex(ValueError, r"arguments\.aspect_ratio must be one of"):
                 dispatch(
                     "seedance",
                     "image_to_video",

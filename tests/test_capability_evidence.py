@@ -1,23 +1,35 @@
+import os
 import unittest
+from unittest.mock import patch
 
-from agent.deep_agent.routing import POLICY, resolve_alias
+from agent.deep_agent.routing import POLICY, effective_model, resolve_alias
 
 
 class CapabilityEvidenceTests(unittest.TestCase):
-    def test_future_seedance_uses_us_fal_without_enabling_an_adapter(self):
-        for alias, endpoint in [
-            ('seedance25_t2v', 'text-to-video'),
-            ('seedance25_i2v', 'image-to-video'),
-            ('seedance25_r2v', 'reference-to-video'),
-        ]:
-            entry = POLICY['tools'][alias]
-            self.assertEqual(entry['model'], f'bytedance/seedance-2.5/us/{endpoint}')
-            self.assertEqual(entry['host'], 'fal US default')
-            self.assertEqual(entry['us_available'], 'yes')
-            self.assertEqual(entry['status'], 'pending')
-            self.assertIsNone(entry['gateway_tool'])
-            self.assertFalse(entry['training_eligible'])
-        self.assertEqual(resolve_alias('seedance25_t2v'), 'Seedance___text_to_video')
+    def test_seedance25_ready_adapter_uses_us_fal_by_default(self):
+        with patch.dict(os.environ, {
+            "SEEDANCE_TRANSPORT": "fal", "SEEDANCE_FAL_REGION": "us",
+            "SEEDANCE_MODEL": "dreamina-seedance-2-5-260628",
+        }):
+            for alias, endpoint, verb in [
+                ('seedance25_t2v', 'text-to-video', 'text_to_video'),
+                ('seedance25_i2v', 'image-to-video', 'image_to_video'),
+                ('seedance25_r2v', 'reference-to-video', 'reference_to_video'),
+                ('seedance25_edit', 'reference-to-video', 'edit_video'),
+                ('seedance25_extend', 'reference-to-video', 'extend_video'),
+            ]:
+                with self.subTest(alias=alias):
+                    entry = POLICY['tools'][alias]
+                    self.assertEqual(entry['model'], 'dreamina-seedance-2-5-260628')
+                    self.assertIn('fal US default', entry['host'])
+                    self.assertIn('/us/', entry['availability_source'])
+                    self.assertIn('yes via fal', POLICY['providers']['seedance']['us_available'])
+                    self.assertEqual(entry['status'], 'ready')
+                    self.assertEqual(entry['gateway_tool'], 'Seedance___' + verb)
+                    self.assertFalse(entry['training_eligible'])
+                    self.assertEqual(resolve_alias(alias), entry['gateway_tool'])
+                    self.assertEqual(effective_model('seedance', verb, {}),
+                                     f'bytedance/seedance-2.5/us/{endpoint}')
 
     def test_official_evidence_never_enables_pending_tools(self):
         for alias in ['mureka_v95', 'mirelo_v2a', 'sync3_lipsync',
