@@ -22,10 +22,11 @@ from providers.contracts import validate_tool_arguments
 from providers.fal import queue, vidu, wan, wan3
 from providers.registry import schema_from_callable
 from providers.seedance import contracts as seedance_contracts
+from providers.sync import contracts as sync_contracts
 
 
 TOOL_CONTRACTS = {tool: contract for contract in (wan, vidu, wan3) for tool in contract.GENERATING_TOOLS}
-ENDPOINT_CONTRACTS = {endpoint: contract for contract in (wan, vidu, wan3, seedance_contracts) for endpoint in contract.ENDPOINTS}
+ENDPOINT_CONTRACTS = {endpoint: contract for contract in (wan, vidu, wan3, seedance_contracts, sync_contracts) for endpoint in contract.ENDPOINTS}
 
 
 def _validated(tool: str, arguments: dict[str, Any]) -> dict[str, Any]:
@@ -325,7 +326,11 @@ def get_video_task(job_id: str, download: bool = False) -> dict:
     """Poll one fal queue status, fetch a completed result, and optionally save the MP4."""
     _validated("get_video_task", locals())
     endpoint_id, request_id = _parse_job(job_id)
-    if queue.dry_run() or request_id.startswith("dry_") or (endpoint_id in seedance_contracts.ENDPOINTS and os.getenv("SEEDANCE_DRY_RUN", "true").lower() != "false"):
+    if (
+        queue.dry_run() or request_id.startswith("dry_")
+        or (endpoint_id in seedance_contracts.ENDPOINTS and os.getenv("SEEDANCE_DRY_RUN", "true").lower() != "false")
+        or (endpoint_id in sync_contracts.ENDPOINTS and os.getenv("SYNC_DRY_RUN", "true").lower() != "false")
+    ):
         contract = ENDPOINT_CONTRACTS[endpoint_id]
         endpoint = contract.ENDPOINTS[endpoint_id]
         return {
@@ -394,9 +399,10 @@ def _poll_video_task(job_id: str, endpoint_id: str, request_id: str, *, download
     }
     if contract is wan3:
         normalized.update(duration=result.get("duration"), actual_prompt=result.get("actual_prompt"))
-    metadata = json.loads(metadata_path.read_text()) if metadata_path.exists() else {}
-    metadata.update(normalized)
-    _write_metadata(metadata_path, metadata)
+    if contract is not sync_contracts:
+        metadata = json.loads(metadata_path.read_text()) if metadata_path.exists() else {}
+        metadata.update(normalized)
+        _write_metadata(metadata_path, metadata)
     return normalized
 
 

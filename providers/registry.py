@@ -20,6 +20,10 @@ FORBIDDEN_TOOL_RE = re.compile(r"^(wait_for_.*|.*_and_wait)$")
 
 
 TOOL_GUIDANCE: dict[str, dict[str, str]] = {
+    "sync": {
+        "lipsync_video": "Put replacement audio on existing footage using sync-3 via fal by default. Requires measured video/audio durations, source fps, every face/voice subject and explicit consent_confirmed=true. Script only: create authorized ElevenLabs TTS first. All paid requests pause with a cost estimate even in autonomous runs. Large equal-length cut_off inputs require supplied silence/shot chunk boundaries plus ffmpeg and S3. Dry-run is an input preview. Poll get_video_task with download=true; never claim completion until the saved MP4 plays. No training eligibility.",
+        "get_video_task": "Poll a saved Sync job or chunk manifest once; download=true persists completed MP4 media and provenance. Reuse the exact job_id, never submit another lip-sync job to check status. No paid generation. Dry-run never produces an artifact.",
+    },
     "alibaba_modelstudio": {
         "edit_wan3_video": "Dry-run preview of Alibaba Model Studio Wan 3 editing. The preview licence allows only internal testing, research and evaluation, so customer live requests are blocked even with approval. Requires video_url, prompt, measured source_duration_seconds and source_fps. Default duration=-1 has unknown cost; explicit total output seconds quote input plus output. Outputs are not training eligible. A preview is not generated media.",
         "extend_wan3_video": "Dry-run preview of Alibaba Model Studio Wan 3 extension. Customer live use is blocked by its internal-evaluation preview licence, which spending approval cannot override. duration is TOTAL output length: a 5s source extended by 2s uses duration=7 and bills 12s. Default -1 has unknown cost. Uses adaptive ratio and prompt-based direction. Outputs are not training eligible.",

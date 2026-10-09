@@ -25,6 +25,10 @@ SEEDREAM_RATIOS = ("1:1", "16:9", "9:16")
 SEEDANCE_RESOLUTIONS = ("480p", "720p", "1080p")
 SEEDREAM_SIZES = ("1K", "2K", "3K")
 STATIC_FIELD_OPTIONS: dict[str, dict[str, list[str | int]]] = {
+    "sync": {
+        "model": ["sync-3"],
+        "sync_mode": ["cut_off", "loop", "bounce", "silence", "remap"],
+    },
     "openai_images": {
         "model": list(openai_images.MODELS), "aspect_ratio": list(openai_images.RATIOS),
         "size": list(openai_images.SIZES), "quality": list(openai_images.QUALITY),

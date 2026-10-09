@@ -1,0 +1,91 @@
+[
+  {
+    "name": "lipsync_video",
+    "description": "Put replacement audio on existing footage using sync-3 via fal by default. Requires measured video/audio durations, source fps, every face/voice subject and explicit consent_confirmed=true. Script only: create authorized ElevenLabs TTS first. All paid requests pause with a cost estimate even in autonomous runs. Large equal-length cut_off inputs require supplied silence/shot chunk boundaries plus ffmpeg and S3. Dry-run is an input preview. Poll get_video_task with download=true; never claim completion until the saved MP4 plays. No training eligibility.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "video_url": {
+          "type": "string",
+          "description": "Existing HTTPS video or renderhaus-asset:// version handle. Live handles must resolve through the authorized Studio asset resolver."
+        },
+        "audio_url": {
+          "type": "string",
+          "description": "Existing HTTPS speech audio or renderhaus-asset:// version handle. No new voice is generated."
+        },
+        "source_duration_seconds": {
+          "type": "number",
+          "description": "Measured positive finite duration of the source video in seconds. Used to validate chunking and quote cost."
+        },
+        "audio_duration_seconds": {
+          "type": "number",
+          "description": "Measured positive finite duration of the speech audio in seconds. Sync mode determines output length."
+        },
+        "source_fps": {
+          "type": "number",
+          "description": "Measured positive finite video frame rate. Direct legacy-base pricing scales by frame count; fal pricing does not."
+        },
+        "subjects": {
+          "type": "string",
+          "description": "Nonblank declaration identifying everyone who appears and whose voice is used. An explicit synthetic-subject and synthetic-voice declaration is allowed."
+        },
+        "consent_confirmed": {
+          "type": "boolean",
+          "description": "Must be the boolean true, confirming permission to use every depicted likeness and supplied voice. Required even for synthetic declarations."
+        },
+        "sync_mode": {
+          "type": "string",
+          "description": "cut_off uses the shorter input; loop, bounce and remap follow audio length; silence uses the longer input. Long chunked runs support equal-length inputs with cut_off only."
+        },
+        "chunk_boundaries_seconds": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "description": "Strictly increasing internal silence or shot timestamps. Required when either input exceeds SYNC_MAX_CHUNK_SECONDS. Every resulting span must fit the cap. fal's hard duration maximum is UNVERIFIED."
+        },
+        "model": {
+          "type": "string",
+          "description": "Configured model override. sync-3 is verified. Other identifiers are UNVERIFIED and allowed only in dry-run previews."
+        },
+        "source_width": {
+          "type": "integer",
+          "description": "Optional measured input width in positive pixels, paired with source_height. No provider resolution setting is sent; single jobs inherit input dimensions and the current chunk concatenator produces 720p."
+        },
+        "source_height": {
+          "type": "integer",
+          "description": "Optional measured input height in positive pixels, paired with source_width. Required with width to assess an explicitly requested output resolution."
+        }
+      },
+      "required": [
+        "video_url",
+        "audio_url",
+        "source_duration_seconds",
+        "audio_duration_seconds",
+        "source_fps",
+        "subjects",
+        "consent_confirmed"
+      ]
+    }
+  },
+  {
+    "name": "get_video_task",
+    "description": "Poll a saved Sync job or chunk manifest once; download=true persists completed MP4 media and provenance. Reuse the exact job_id, never submit another lip-sync job to check status. No paid generation. Dry-run never produces an artifact.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "job_id": {
+          "type": "string",
+          "description": "Exact saved Sync job handle from lipsync_video. Polling never submits another generation."
+        },
+        "download": {
+          "type": "boolean",
+          "description": "Save a completed MP4 atomically. Aggregate jobs always download completed children to concatenate their outputs."
+        }
+      },
+      "required": [
+        "job_id"
+      ]
+    }
+  }
+]

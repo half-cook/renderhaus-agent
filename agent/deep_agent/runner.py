@@ -56,7 +56,7 @@ class StudioAgentState(AgentState):
 SESSION_TYPE = "renderhaus_deepagents_session"
 SKILLS_ROOT = Path(__file__).parent / "skills"
 DISPATCH_TARGETS = {
-    "call_media_tool": {"OpenAI", "Seedance", "Seedream", "Kling", "Runway", "Fal", "Luma", "ModelStudio"},
+    "call_media_tool": {"OpenAI", "Seedance", "Seedream", "Kling", "Runway", "Fal", "Luma", "ModelStudio", "Sync"},
     "call_audio_tool": {"ElevenLabs", "FishAudio", "FishAudioProvider", "Fish_Audio", "Mureka"},
     "call_editor_tool": {"Remotion", "HyperFrames"},
 }
@@ -88,7 +88,8 @@ If dispatch returns not_run with a route, discover that route's schema and dispa
 tool/model with all requested controls intact. Do not weaken required features to find a route.
 The host discloses provider/model, selection reason and estimated list cost before approval or
 dispatch. Unknown means unknown, not free. All paid video requires approval even in autonomous
-runs when premium_video_approval is enabled. Keep all existing approval and spending gates.
+runs when premium_video_approval is enabled. Sync always requires consent and cost approval
+independently of that switch. Keep all existing approval and spending gates.
 Record explicit customer acceptance/rejection of completed media with record_media_outcome,
 using the saved generation call ID from media_jobs. Provider success is not customer acceptance.
 Artifact rejection proposes one capability-map retry through the normal approval/spending gates.

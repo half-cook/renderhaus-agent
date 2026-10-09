@@ -114,18 +114,20 @@
     "expected_skill": "lipsync",
     "expected_tool": "sync3_lipsync",
     "suite": "lipsync",
-    "skip_reason": "provider pending: sync3_lipsync (feat/lipsync-sync3)",
+    "skip_reason": "",
     "note": "default",
-    "source_status": "updated"
+    "source_status": "updated",
+    "expected_gateway_tool": "Sync___lipsync_video"
   },
   {
     "prompt": "cheap lipsync LivePortrait",
     "expected_skill": "lipsync",
     "expected_tool": "sync3_lipsync",
     "suite": "lipsync",
-    "skip_reason": "provider pending: sync3_lipsync (feat/lipsync-sync3)",
+    "skip_reason": "",
     "note": "LivePortrait retired (InsightFace NC); disclose + default",
-    "source_status": "updated"
+    "source_status": "updated",
+    "expected_gateway_tool": "Sync___lipsync_video"
   },
   {
     "prompt": "TTS then talking head",
@@ -369,21 +371,23 @@
   },
   {
     "prompt": "InfiniteTalk talking avatar from image and audio",
-    "expected_skill": "lipsync",
-    "expected_tool": "sync3_lipsync",
+    "expected_skill": "i2v",
+    "expected_tool": "seedance25_i2v",
     "suite": "lipsync",
-    "skip_reason": "provider pending: sync3_lipsync (feat/lipsync-sync3)",
-    "note": "InfiniteTalk retired; AMBIGUOUS: image-only start may belong in i2v seedance25_i2v",
-    "source_status": "updated"
+    "skip_reason": "",
+    "note": "InfiniteTalk retired; new synthetic talking shot from image uses Seedance, existing footage uses sync-3",
+    "source_status": "updated",
+    "expected_gateway_tool": "Seedance___image_to_video"
   },
   {
     "prompt": "Hedra Character-3 spokesperson",
     "expected_skill": "lipsync",
     "expected_tool": "sync3_lipsync",
     "suite": "lipsync",
-    "skip_reason": "provider pending: sync3_lipsync (feat/lipsync-sync3)",
+    "skip_reason": "",
     "note": "Hedra retired",
-    "source_status": "updated"
+    "source_status": "updated",
+    "expected_gateway_tool": "Sync___lipsync_video"
   },
   {
     "prompt": "ElevenLabs then fal InfiniteTalk",
@@ -815,9 +819,10 @@
     "expected_skill": "lipsync",
     "expected_tool": "sync3_lipsync",
     "suite": "lipsync",
-    "skip_reason": "provider pending: sync3_lipsync (feat/lipsync-sync3)",
+    "skip_reason": "",
     "note": "default (A/B)",
-    "source_status": "new"
+    "source_status": "new",
+    "expected_gateway_tool": "Sync___lipsync_video"
   },
   {
     "prompt": "2 minute multilingual presenter video of my digital twin",

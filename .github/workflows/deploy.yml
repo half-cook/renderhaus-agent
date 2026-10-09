@@ -20,6 +20,7 @@ on:
         options:
           - all
           - openai_images
+          - sync
           - runway
           - fal
           - luma
@@ -107,6 +108,7 @@ jobs:
                   PROVIDER=all
                 else
                   SELECTED=()
+                  echo "$CHANGED" | grep -E '^providers/sync/|^configs/gateway/sync\.tools\.json' >/dev/null && SELECTED+=(sync)
                   echo "$CHANGED" | grep -E '^providers/openai_images/|^configs/gateway/openai_images\.tools\.json' >/dev/null && SELECTED+=(openai_images)
                   echo "$CHANGED" | grep -E '^providers/kling/|^configs/gateway/kling\.tools\.json' >/dev/null && SELECTED+=(kling)
                   echo "$CHANGED" | grep -E '^providers/runway/|^configs/gateway/runway\.tools\.json' >/dev/null && SELECTED+=(runway)
@@ -117,7 +119,7 @@ jobs:
                   echo "$CHANGED" | grep -E '^providers/seedream/|^lambdas/seedream/' >/dev/null && SELECTED+=(seedream)
                   echo "$CHANGED" | grep -E '^providers/elevenlabs/|^configs/gateway/elevenlabs\.tools\.json' >/dev/null && SELECTED+=(elevenlabs)
                   echo "$CHANGED" | grep -E '^providers/remotion/' >/dev/null && SELECTED+=(remotion)
-                  if [ "${#SELECTED[@]}" -eq 0 ] || [ "${#SELECTED[@]}" -ge 10 ]; then
+                  if [ "${#SELECTED[@]}" -eq 0 ] || [ "${#SELECTED[@]}" -ge 11 ]; then
                     PROVIDER=all
                   else
                     IFS=,
@@ -157,7 +159,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install -e .
 
-      - name: Check inventories (10 providers, 89 tools, 24 skills)
+      - name: Check inventories (11 providers, 91 tools, 24 skills)
         run: python -c "from scripts.ci_check import check_routing_inventory; check_routing_inventory()"
 
       - name: Configure AWS (OIDC)

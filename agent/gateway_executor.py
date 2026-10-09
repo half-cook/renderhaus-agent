@@ -47,7 +47,7 @@ def tool_needs_approval(name: str, autonomous: bool) -> bool:
 
     if name in APPROVAL_EXEMPT_TOOLS:
         return False
-    if name == "Remotion___prepare_conversational_edit":
+    if name in {"Remotion___prepare_conversational_edit", "Sync___lipsync_video", "sync3_lipsync"}:
         return True
     return not autonomous or requires_approval(name) or premium_video(name)
 
@@ -211,6 +211,18 @@ class GatewayExecutor:
         return route
 
     def dispatch_disclosure(self, name, arguments, route):
+        if name == "Sync___lipsync_video":
+            from providers.sync.contracts import configured_transport
+
+            consent = "confirmed" if arguments.get("consent_confirmed") is True else "required"
+            terms = ("Direct Sync terms permit upload reuse for service improvement. "
+                     if configured_transport() == "direct" else
+                     "fal API terms restrict training on client content except excluded models. ")
+            return (f"Provider sync via {configured_transport()}; model {effective_model('sync', 'lipsync_video', arguments)}. "
+                    f"{route.basis if route else 'default'}. {estimate_cost(name, arguments).description} "
+                    f"Faces and voices: {arguments.get('subjects') or 'identify every subject'}. Consent {consent}. "
+                    f"Uploads are processed by the host and Sync. {terms}"
+                    "Outputs are not training eligible.")
         if route:
             return route.disclosure or route.reason
         provider, tool = tool_parts(name)
@@ -228,6 +240,20 @@ class GatewayExecutor:
         if blocker := request_tool_blocker(self.studio.prompt, name):
             return blocker
         provider, tool = tool_parts(name)
+        sync_request = None
+        if name == "Sync___lipsync_video" and (
+            arguments.get("consent_confirmed") is not True
+            or not isinstance(arguments.get("subjects"), str)
+            or not arguments["subjects"].strip()
+        ):
+            return "Lip-sync requires identifying every face/voice subject and explicit consent_confirmed=true."
+        if name == "Sync___lipsync_video":
+            from providers.sync.contracts import request_for
+
+            try:
+                sync_request = request_for(arguments)
+            except ValueError as exc:
+                return str(exc)
         if route is None:
             return None
         if route.status != "ready":
@@ -236,7 +262,7 @@ class GatewayExecutor:
             return f"Capability map selected {route.tool} ({route.model}). Discover its schema and use that route. {route.reason}"
         row = next((row for row in POLICY["capabilities"]
                     if row["model"] == route.model and name in row["tools"].values()), {})
-        if route.required.get("real_face_refs") and arguments.get("likeness_consent") is not True:
+        if provider != "sync" and route.required.get("real_face_refs") and arguments.get("likeness_consent") is not True:
             return "Real-person likeness references require explicit likeness_consent=true acknowledgement."
         audio_field = row.get("native_audio_field", "generate_audio")
         for field, feature in [(audio_field, "native_audio"), (row.get("multi_shot_field", "multi_shot"), "multi_shot")]:
@@ -256,14 +282,24 @@ class GatewayExecutor:
         if route.required.get("voice_references") and not arguments.get("reference_audio_urls"):
             return "Required voice references must be supplied using reference_audio_urls."
         if route.required.get("max_resolution"):
-            value = (arguments.get("ratio", "1280:720") if provider == "runway" else
-                     arguments.get("size", "2K") if provider in {"seedream", "openai_images"} else arguments.get("resolution", row.get("resolution_default", "720p")))
-            actual = resolution_value(value)
+            if sync_request:
+                from providers.sync.chunks import plan_for
+
+                actual = min(sync_request.source_width or 0, sync_request.source_height or 0)
+                if len(plan_for(sync_request)) > 1:
+                    actual = min(actual, 720)
+                if actual < route.required["max_resolution"]:
+                    return "Sync inherits source resolution: supply measured source_width/source_height. Chunked output is limited to 720p."
+            else:
+                value = (arguments.get("ratio", "1280:720") if provider == "runway" else
+                         arguments.get("size", "2K") if provider in {"seedream", "openai_images"} else arguments.get("resolution", row.get("resolution_default", "720p")))
+                actual = resolution_value(value)
             if actual < route.required["max_resolution"]:
                 return "Required output resolution must be set in the selected tool's native arguments."
         if route.required.get("duration_seconds"):
-            actual = arguments.get("duration", arguments.get("duration_seconds", arguments.get("video_duration_seconds",
-                     arguments.get("source_duration_seconds", 5))))
+            actual = (sync_request.output_duration if sync_request else
+                      arguments.get("duration", arguments.get("duration_seconds", arguments.get("video_duration_seconds",
+                      arguments.get("source_duration_seconds", 5)))))
             if provider == "fal" and not row.get("duration_field"):
                 fps = arguments.get("frames_per_second", 16)
                 actual = (arguments.get("num_frames", 81) - 1) / fps if fps > 0 else 0

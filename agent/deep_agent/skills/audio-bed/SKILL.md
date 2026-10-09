@@ -23,8 +23,9 @@ with `prompt` and `music_length_ms`. Disclose that ElevenLabs is temporary, or e
 Video-synchronized foley defaults to `mirelo_v2a`, pending with no interim. A text-only sound effect
 uses the built `elevenlabs_sfx_v2` exception through `ElevenLabs___text_to_sound_effects_convert`.
 Use native `text` and supported `duration_seconds`. Text-only SFX cannot synchronize to source picture.
-For a TTS-then-avatar/lyrics/whiteboard workflow, prepare authorized speech first and disclose the
-remaining pending video step. Speech alone is not a lipsync video.
+For script-only lip sync, prepare authorized ElevenLabs speech, then follow the lipsync skill
+for consented sync-3 on existing footage. Long HeyGen presenters and lyrics-video remain pending.
+Speech alone is not a lipsync video.
 
 Fish Audio is named-only. MMAudio is retired because its weights are non-commercial; ACE-Step is
 retired from the quality-first map. Do not install or load their weights as a workaround.
