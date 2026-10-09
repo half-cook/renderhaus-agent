@@ -609,10 +609,8 @@ def estimate_cost(name: str, arguments: dict, *, list_price: bool = False) -> Co
                 arguments.get("num_frames", 81),
             )
         if provider == "elevenlabs":
-            quotes = json.loads(os.getenv("ELEVENLABS_TOOL_COST_CENTS_JSON", "{}"))
-            quote = quotes.get(tool) if isinstance(quotes, dict) else None
-            if not isinstance(quote, int) or isinstance(quote, bool) or quote < 0:
-                raise ValueError("Configure a confirmed ElevenLabs quote first.")
+            from server.billing_rates import elevenlabs_quote
+            return CostEstimate(elevenlabs_quote(tool, arguments).total_cents)
         if provider == "runway" and tool == "video_to_video":
             duration = arguments.get("video_duration_seconds")
             if isinstance(duration, float) and not duration.is_integer():

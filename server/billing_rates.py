@@ -57,6 +57,41 @@ def _with_fee(provider_cents: int) -> GenerationCost:
     return GenerationCost(provider_cents=max(0, provider_cents), fee_cents=fee)
 
 
+# Official API pricing read 2026-10-09, https://elevenlabs.io/pricing/api.
+# v4 is $0.08/1k characters; Turbo's 0.5 multiplier gives $0.04/1k.
+# The v4 promotion is $0.022/1k ($0.011 Turbo), through October 12.
+ELEVENLABS_V4_PROMO_END = date(2026, 10, 12)
+ELEVENLABS_CHARACTER_MULTIPLIERS = {'eleven_v4': Decimal('1'), 'eleven_v4_turbo': Decimal('0.5')}
+
+
+def elevenlabs_quote(tool: str, arguments: dict[str, Any]) -> GenerationCost:
+    """Use operator quotes for billed calls, or official TTS list rates without Stripe."""
+    quotes = json.loads(os.getenv("ELEVENLABS_TOOL_COST_CENTS_JSON", "{}"))
+    quote = quotes.get(tool) if isinstance(quotes, dict) else None
+    if isinstance(quote, int) and not isinstance(quote, bool) and quote >= 0:
+        return _with_fee(quote)
+    if os.getenv("STRIPE_SECRET_KEY"):
+        raise ValueError("Configure an ElevenLabs tool quote in ELEVENLABS_TOOL_COST_CENTS_JSON before enabling billed calls.")
+    if not tool.startswith(("text_to_speech_", "text_to_dialogue_")):
+        raise ValueError("No official ElevenLabs per-call estimate for this operation; configure an operator quote.")
+    model = arguments.get("model_id") or os.getenv("ELEVENLABS_TTS_MODEL", "eleven_v4_turbo")
+    multiplier = ELEVENLABS_CHARACTER_MULTIPLIERS.get(model)
+    if multiplier is None:
+        raise ValueError("No verified character multiplier for this ElevenLabs model.")
+    if tool.startswith("text_to_dialogue_"):
+        inputs = json.loads(arguments.get("inputs_json", "[]"))
+        if not isinstance(inputs, list) or any(not isinstance(item, dict) or not isinstance(item.get("text"), str) for item in inputs):
+            raise ValueError("Supply dialogue text before quoting cost.")
+        characters = sum(len(item["text"]) for item in inputs)
+    else:
+        text = arguments.get("text")
+        if not isinstance(text, str) or not text:
+            raise ValueError("Supply TTS text before quoting cost.")
+        characters = len(text)
+    rate = Decimal('2.2') if date.today() <= ELEVENLABS_V4_PROMO_END else Decimal('8')
+    return _with_fee(math.ceil(characters * multiplier * rate / 1000))
+
+
 # -- Seedance (video) ---------------------------------------------------
 # BytePlus's own worked example (1080p 16:9, 5s = $0.612, 10s = $1.224)
 # reverse-engineers almost exactly to $0.0025 per 1,000 tokens at 24fps,
@@ -445,15 +480,11 @@ def cost_for(provider: str, tool: str, arguments: dict[str, Any]) -> GenerationC
         entry = CATALOG.get(tool)
         if entry is None:
             raise ValueError("Unknown ElevenLabs tool.")
-        if entry["effect"] == "read" or not os.getenv("STRIPE_SECRET_KEY"):
+        if entry["effect"] == "read":
             return GenerationCost(0, 0)
-        # ponytail: per-call operator quotes until usage-based invoice reconciliation exists.
-        # Never reuse Mureka's placeholder price for unrelated ElevenLabs operations.
-        quotes = json.loads(os.getenv("ELEVENLABS_TOOL_COST_CENTS_JSON", "{}"))
-        quote = quotes.get(tool)
-        if not isinstance(quote, int) or isinstance(quote, bool) or quote < 0:
-            raise ValueError("Configure an ElevenLabs tool quote in ELEVENLABS_TOOL_COST_CENTS_JSON before enabling billed calls.")
-        return _with_fee(quote)
+        if not os.getenv("STRIPE_SECRET_KEY") and not tool.startswith(("text_to_speech_", "text_to_dialogue_")):
+            return GenerationCost(0, 0)
+        return elevenlabs_quote(tool, arguments)
     if provider == "fish_audio":
         return _fish_audio_cost(arguments)
     if provider == "remotion":
