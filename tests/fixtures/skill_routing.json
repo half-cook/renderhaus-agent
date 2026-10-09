@@ -320,11 +320,11 @@
   {
     "prompt": "import editor FCPXML back",
     "expected_skill": "resolve-handoff",
-    "expected_tool": "Remotion___export_nle_timeline",
+    "expected_tool": "nle_import",
     "suite": "resolve-roundtrip",
-    "skip_reason": "provider pending: nle import (feat/nle-import-fcpxml)",
-    "note": "FCPXML import has no tool yet; skipped pending feat/nle-import-fcpxml",
-    "source_status": "skipped-until feat/nle-import-fcpxml"
+    "skip_reason": "",
+    "note": "Free local FCPXML/OTIO importer; no external editor control.",
+    "source_status": "updated"
   },
   {
     "prompt": "apply AI edit without touching grade",

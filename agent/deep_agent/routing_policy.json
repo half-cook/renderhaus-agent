@@ -21,7 +21,8 @@
     "get_video_status",
     "list_avatars",
     "list_topaz_models",
-    "list_mureka_models"
+    "list_mureka_models",
+    "import_nle_timeline"
   ],
   "providers": {
     "kling": {
@@ -1614,12 +1615,20 @@
       "training_eligible": false
     },
     "nle_import": {
-      "gateway_tool": null,
-      "status": "pending",
+      "gateway_tool": "Remotion___import_nle_timeline",
+      "status": "ready",
       "provider": "remotion",
-      "reason": "provider pending: nle import (feat/nle-import-fcpxml)",
-      "verification": "UNVERIFIED: adapter, request schema, endpoint and price must be verified on its provider branch",
-      "training_eligible": false
+      "skill": "resolve-handoff",
+      "host": "local / customer AWS Lambda, no media I/O",
+      "us_available": "yes",
+      "training_eligible": false,
+      "license": "In-house code; existing OpenTimelineIO dependency Apache-2.0; Python stdlib XML parser",
+      "license_source": "https://github.com/AcademySoftwareFoundation/OpenTimelineIO/blob/v0.18.1/LICENSE.txt",
+      "source": "https://developer.apple.com/documentation/professional-video-applications/fcpxml-reference",
+      "read_date": "2026-10-09",
+      "price_source": "in-house local operation; no provider price",
+      "verification": "Local schema and offline round trips verified; real editor and Comet E2E pending",
+      "training_reason": "Import does not generate media or grant training rights to source assets."
     },
     "eleven_v4_turbo": {
       "gateway_tool": "ElevenLabs___text_to_speech_convert",
@@ -1862,7 +1871,8 @@
     {
       "pattern": "import.*(?:fcpxml|otio)|roundtrip|fcpxml.*back",
       "skill": "resolve-handoff",
-      "abstract_tool": "nle_import"
+      "abstract_tool": "nle_import",
+      "capability": "nle_import"
     },
     {
       "pattern": "export|handoff|\\botio\\b|\\bedl\\b|\\bfcpxml\\b|package media|zip media|conform|without touching grade",
@@ -4937,6 +4947,12 @@
       "exceptions": [],
       "interim": null,
       "ab_candidates": []
+    },
+    "nle_import": {
+      "default": "nle_import",
+      "exceptions": [],
+      "interim": null,
+      "ab_candidates": []
     }
   },
   "paid_video_tools": [
@@ -5734,6 +5750,14 @@
       "read_date": "2026-10-09",
       "weights_license": "closed-weights",
       "consent_requirements": "Real-face photo/video references are prohibited; consent does not override this restriction."
+    },
+    "remotion_nle_import": {
+      "license": "In-house code and Apache-2.0 OpenTimelineIO; no model or weights",
+      "license_source": "https://github.com/AcademySoftwareFoundation/OpenTimelineIO/blob/v0.18.1/LICENSE.txt",
+      "training_eligible": false,
+      "training_reason": "No generated output; source media rights are unchanged.",
+      "commercial_status": "Local interchange code; source media rights required.",
+      "read_date": "2026-10-09"
     }
   }
 }

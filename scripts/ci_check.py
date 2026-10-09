@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import io
+import json
 import asyncio
 import os
 import sys
@@ -78,7 +79,7 @@ def check_routing_inventory() -> None:
     from providers.registry import load_committed_schemas
 
     assert len(PROVIDERS) == 15
-    assert sum(len(load_committed_schemas(spec)) for spec in PROVIDERS) == 112
+    assert sum(len(load_committed_schemas(spec)) for spec in PROVIDERS) == 113
     paths = list(SKILLS_ROOT.glob("*/SKILL.md"))
     assert len(paths) == 24
     assert "ladder" not in POLICY and "premium_targets" not in POLICY
@@ -95,7 +96,7 @@ def check_routing_inventory() -> None:
         assert set(metadata["include_tools"].split()) <= DISPATCH_TARGETS.keys(), path
         assert all(TOOL_MAP[alias]["status"] != "retired" for alias in metadata["routing_tools"].split()), path
     cases = json.loads((ROOT / "tests/fixtures/skill_routing.json").read_text())
-    assert len(cases) == 129 and sum(not case["skip_reason"] for case in cases) == 123
+    assert len(cases) == 129 and sum(not case["skip_reason"] for case in cases) == 124
     from agent.deep_agent.continuity_qc_vlm import EVAL_PATH, default_vlm_enabled
 
     if POLICY["continuity_qc"]["vlm_eval_gate"]["result_sha256"]:
@@ -103,7 +104,7 @@ def check_routing_inventory() -> None:
 
         subprocess.run(["git", "ls-files", "--error-unmatch", str(EVAL_PATH.relative_to(ROOT))], check=True, capture_output=True)
         assert default_vlm_enabled(), "Committed VLM evidence does not qualify for promotion."
-    print("ok routing inventory (15 providers, 112 Gateway tools, 24 skills, 123 active routing rows)")
+    print("ok routing inventory (15 providers, 113 Gateway tools, 24 skills, 124 active routing rows)")
 
 
 def _assert_gateway_shape(schema: object) -> None:
@@ -136,6 +137,13 @@ def check_dry_run_dispatch() -> None:
         for schema in load_committed_schemas(spec):
             name = schema["name"]
             arguments = dummy_arguments(schema)
+            if spec.id == "remotion" and name == "import_nle_timeline":
+                arguments = {
+                    "format": "fcpxml",
+                    "interchange_text": '<fcpxml version="1.10"><resources><format id="f" frameDuration="1/24s" width="1920" height="1080"/></resources><project><sequence format="f" duration="1s"><spine><gap offset="0s" start="0s" duration="1s"/></spine></sequence></project></fcpxml>',
+                    "timeline_json": json.dumps({"document": {"id": "ci", "assets": [], "tracks": []},
+                                                 "renderConfig": {"fps": 24}}),
+                }
             if spec.id == "gemini":
                 if name == "judge_continuity":
                     import base64

@@ -111,8 +111,8 @@ class SkillContracts(unittest.TestCase):
 
     def test_fixture_preserves_active_workbook_rows_and_explains_pending_dependencies(self):
         self.assertEqual(len(CASES), 129)
-        self.assertEqual(sum(not c["skip_reason"] for c in CASES), 123)
-        self.assertEqual(sum(bool(c["skip_reason"]) for c in CASES), 6)
+        self.assertEqual(sum(not c["skip_reason"] for c in CASES), 124)
+        self.assertEqual(sum(bool(c["skip_reason"]) for c in CASES), 5)
         self.assertTrue(all(c.get("source_status") != "archived" for c in CASES))
         self.assertTrue(all("[project.confidential=true]" not in c["prompt"] for c in CASES))
         self.assertTrue(all(c["expected_skill"] != "confidential-route" for c in CASES))
@@ -122,7 +122,8 @@ class SkillContracts(unittest.TestCase):
                 self.assertRegex(case["skip_reason"], r"\(feat/[a-z0-9-]+\)")
         imports = [c for c in CASES if c["prompt"] == "import editor FCPXML back"]
         self.assertEqual(len(imports), 1)
-        self.assertEqual(imports[0]["skip_reason"], "provider pending: nle import (feat/nle-import-fcpxml)")
+        self.assertEqual(imports[0]["skip_reason"], "")
+        self.assertEqual(imports[0]["expected_tool"], "nle_import")
 
     def test_quality_default_and_unknown_requests_do_not_invent_tools(self):
         from agent.deep_agent.routing import route_intent

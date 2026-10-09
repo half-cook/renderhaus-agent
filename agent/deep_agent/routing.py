@@ -593,9 +593,9 @@ def select_provider(job: str, *, tier: str | None = None, required: dict | None 
     if capability in {"still_image", "image_edit"} and predicates.get("video_voiceover"):
         reason = "A shot or clip with voiceover excludes image tools; use video, TTS and assembly."
         return Route(status="blocked", job_type=capability, reason=reason, disclosure=reason)
-    if capability in {"tts", "voice_clone", "music", "sfx", "motion_graphics", "nle_handoff"}:
+    if capability in {"tts", "voice_clone", "music", "sfx", "motion_graphics", "nle_handoff", "nle_import"}:
         required = {}
-        if capability in {"motion_graphics", "nle_handoff"}:
+        if capability in {"motion_graphics", "nle_handoff", "nle_import"}:
             provider = model = named_model = None
     if capability not in POLICY["capability_map"]:
         return Route(status="blocked", reason=f"No capability map for {capability}.")

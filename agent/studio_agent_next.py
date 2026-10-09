@@ -346,7 +346,7 @@ class StudioAgentContext:
         arguments: dict[str, Any],
     ) -> dict[str, Any]:
         """Resolve opaque Studio asset handles only at the provider boundary."""
-        if _tool_name == "Remotion___prepare_conversational_edit":
+        if _tool_name in {"Remotion___prepare_conversational_edit", "Remotion___import_nle_timeline"}:
             return dict(arguments)
         if _tool_name.startswith("Runway___"):
             from server.runway_inputs import prepare_runway_arguments
