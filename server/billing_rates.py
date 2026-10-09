@@ -59,6 +59,27 @@ def _with_fee(provider_cents: int) -> GenerationCost:
     return GenerationCost(provider_cents=max(0, provider_cents), fee_cents=fee)
 
 
+# Official fal model pricing read 2026-10-09. Recraft's page embeds
+# publicEndpointBilling {billing_unit: images, price: 0.3} for this exact endpoint.
+IDEOGRAM_PRICING_URL = "https://fal.ai/models/ideogram/v4.5/edit"
+RECRAFT_PRICING_URL = "https://fal.ai/models/fal-ai/recraft/v4.1/pro/text-to-vector"
+IMAGE_SPECIALIST_PRICING_VERIFIED_ON = "2026-10-09"
+IDEOGRAM_CENTS_PER_IMAGE = {"very_low": Decimal("0.8"), "low": Decimal("3"), "medium": Decimal("6"), "high": Decimal("22")}
+RECRAFT_VECTOR_CENTS_PER_IMAGE = Decimal("30")
+
+
+def image_specialist_price_cents(tool: str, arguments: dict) -> Decimal:
+    if tool == "recraft_text_to_vector":
+        return RECRAFT_VECTOR_CENTS_PER_IMAGE
+    if tool != "ideogram_edit":
+        raise ValueError("Unknown fal image specialist tool.")
+    quality = arguments.get("quality", "medium")
+    count = arguments.get("num_images", 1)
+    if not isinstance(quality, str) or quality not in IDEOGRAM_CENTS_PER_IMAGE or type(count) is not int or not 1 <= count <= 8:
+        raise ValueError("Ideogram quote requires a documented quality and integer num_images 1-8.")
+    return IDEOGRAM_CENTS_PER_IMAGE[quality] * count
+
+
 # Official API pricing read 2026-10-09, https://elevenlabs.io/pricing/api.
 # v4 is $0.08/1k characters; Turbo's 0.5 multiplier gives $0.04/1k.
 # The v4 promotion is $0.022/1k ($0.011 Turbo), through October 12.
@@ -767,6 +788,11 @@ def cost_for(provider: str, tool: str, arguments: dict[str, Any]) -> GenerationC
     if provider == "runway":
         return _runway_cost(tool, arguments)
     if provider == "fal":
+        if tool in {"ideogram_edit", "recraft_text_to_vector"}:
+            from providers.fal.queue import dry_run
+
+            cents = image_specialist_price_cents(tool, arguments)
+            return GenerationCost(0, 0) if dry_run() else _with_fee(math.ceil(cents))
         if tool == "mirelo_v2a":
             from providers.fal.queue import dry_run
 

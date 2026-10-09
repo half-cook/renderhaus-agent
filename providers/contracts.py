@@ -366,13 +366,19 @@ def enrich_tool_schema(provider_id: str, tool: dict[str, Any]) -> dict[str, Any]
         )
         properties["output_filename"]["description"] = "ZIP download filename; directory components are removed."
     if provider_id == "fal":
-        from providers.fal import vidu, wan3, motion, mirelo
+        from providers.fal import vidu, wan3, motion, mirelo, images
 
-        for contract in (vidu, wan3, motion, mirelo):
+        for contract in (vidu, wan3, motion, mirelo, images):
             if tool_name in contract.TOOL_ENDPOINTS:
                 for field, description in contract.FIELD_DESCRIPTIONS.items():
                     if field in properties:
                         properties[field]["description"] = description
+        if tool_name == "recraft_text_to_vector":
+            rgb = {"type": "object", "properties": {
+                channel: {"type": "integer", "description": "Integer 0-255."} for channel in ("r", "g", "b")
+            }, "required": ["r", "g", "b"]}
+            properties["colors"]["items"] = deepcopy(rgb)
+            properties["background_color"].update(deepcopy(rgb))
     if provider_id == "openai_images":
         from providers.openai_images.contracts import FIELD_DESCRIPTIONS
 
@@ -498,8 +504,9 @@ def _validate_cross_fields(provider_id: str, tool_name: str, arguments: dict[str
 
         validate_runway_arguments(tool_name, arguments)
     if provider_id == "fal":
-        from providers.fal import vidu, wan, wan3, motion, mirelo
+        from providers.fal import vidu, wan, wan3, motion, mirelo, images
 
+        images.validate_arguments(tool_name, arguments)
         mirelo.validate_arguments(tool_name, arguments)
         motion.validate_arguments(tool_name, arguments)
         wan3.validate_arguments(tool_name, arguments)
@@ -619,6 +626,10 @@ def validate_tool_arguments(
     input_schema: dict[str, Any],
 ) -> dict[str, Any]:
     """Validate every Gateway call at the last boundary before provider I/O."""
+    if provider_id == "fal":
+        from providers.fal.images import validate_arguments
+
+        validate_arguments(tool_name, arguments or {})
     if provider_id == "fal" and tool_name == "mirelo_v2a":
         from providers.fal.mirelo import validate_arguments
 

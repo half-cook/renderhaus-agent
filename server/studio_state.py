@@ -134,7 +134,7 @@ def _kind_for_mime_or_name(mime_type: str | None, filename: str) -> StudioAssetK
     if mime.startswith("audio/"):
         return "audio"
     suffix = Path(filename.split("?", 1)[0]).suffix.lower()
-    if suffix in {".png", ".jpg", ".jpeg", ".webp", ".gif"}:
+    if suffix in {".png", ".jpg", ".jpeg", ".webp", ".gif", ".svg"}:
         return "image"
     if suffix in {".mp4", ".webm", ".mov", ".m4v"}:
         return "video"
@@ -963,6 +963,15 @@ class StudioRepository:
         source = source_path.resolve()
         if not source.is_file() or source.stat().st_size <= 0:
             raise FileNotFoundError(f"Asset output is missing: {source}")
+        sanitized_svg = None
+        if mime_type == "image/svg+xml" or Path(filename).suffix.lower() == ".svg":
+            from providers.svg import MAX_SVG_BYTES, SVG_MIME, sanitize_svg
+
+            if mime_type != SVG_MIME:
+                raise ValueError("SVG assets require image/svg+xml content-type.")
+            if source.stat().st_size > MAX_SVG_BYTES:
+                raise ValueError("SVG exceeds the 20 MiB ingest limit.")
+            sanitized_svg = sanitize_svg(source.read_bytes())
         if project_id:
             self.require_project(workspace_id, project_id)
         resolved_asset_id = asset_id or uuid.uuid4().hex
@@ -986,7 +995,10 @@ class StudioRepository:
         )
         destination.parent.mkdir(parents=True, exist_ok=True)
         if source != destination:
-            shutil.copy2(source, destination)
+            if sanitized_svg is not None:
+                destination.write_bytes(sanitized_svg)
+            else:
+                shutil.copy2(source, destination)
         checksum = hashlib.sha256()
         with destination.open("rb") as handle:
             while chunk := handle.read(1024 * 1024):
@@ -1014,7 +1026,10 @@ class StudioRepository:
                     / safe_name
                 )
                 destination.parent.mkdir(parents=True, exist_ok=True)
-                shutil.copy2(source, destination)
+                if sanitized_svg is not None:
+                    destination.write_bytes(sanitized_svg)
+                else:
+                    shutil.copy2(source, destination)
             if not existing:
                 connection.execute(
                     "INSERT INTO assets(id, workspace_id, project_id, kind, name, current_version_id, "

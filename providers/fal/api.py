@@ -19,7 +19,7 @@ from urllib.parse import urlsplit
 import httpx
 
 from providers.contracts import validate_tool_arguments
-from providers.fal import queue, vidu, wan, wan3, motion, mirelo
+from providers.fal import queue, vidu, wan, wan3, motion, mirelo, images
 from providers.registry import schema_from_callable
 from providers.seedance import contracts as seedance_contracts
 from providers.sync import contracts as sync_contracts
@@ -27,8 +27,8 @@ from providers.topaz import contracts as topaz_contracts
 from providers.mureka import contracts as mureka_contracts
 
 
-TOOL_CONTRACTS = {tool: contract for contract in (wan, vidu, wan3, motion, mirelo) for tool in contract.GENERATING_TOOLS}
-ENDPOINT_CONTRACTS = {endpoint: contract for contract in (wan, vidu, wan3, motion, mirelo, seedance_contracts, sync_contracts, topaz_contracts, mureka_contracts) for endpoint in contract.ENDPOINTS}
+TOOL_CONTRACTS = {tool: contract for contract in (wan, vidu, wan3, motion, mirelo, images) for tool in contract.GENERATING_TOOLS}
+ENDPOINT_CONTRACTS = {endpoint: contract for contract in (wan, vidu, wan3, motion, mirelo, images, seedance_contracts, sync_contracts, topaz_contracts, mureka_contracts) for endpoint in contract.ENDPOINTS}
 
 
 def _validated(tool: str, arguments: dict[str, Any]) -> dict[str, Any]:
@@ -70,7 +70,11 @@ def _submit(tool: str, arguments: dict[str, Any]) -> dict[str, Any]:
     arguments = _validated(tool, arguments)
     contract = TOOL_CONTRACTS[tool]
     endpoint, body = contract.request_body(tool, arguments)
-    if contract is mirelo:
+    if contract is images:
+        from server.billing_rates import image_specialist_price_cents
+
+        estimate = image_specialist_price_cents(tool, arguments)
+    elif contract is mirelo:
         from server.billing_rates import mirelo_price_cents
 
         estimate = mirelo_price_cents(arguments)
@@ -86,7 +90,7 @@ def _submit(tool: str, arguments: dict[str, Any]) -> dict[str, Any]:
         estimate = None
     if queue.dry_run():
         preview = {}
-        if contract in (wan3, motion, mirelo):
+        if contract in (wan3, motion, mirelo, images):
             preview = {
                 "request_preview": body,
                 "estimated_cost_usd": float(estimate / 100) if estimate is not None else None,
@@ -107,7 +111,10 @@ def _submit(tool: str, arguments: dict[str, Any]) -> dict[str, Any]:
             **contract.TRAINING_METADATA,
             "note": "No fal request made. Set FAL_DRY_RUN=false for live generation.",
         }
-    if contract is mirelo:
+    if contract is images:
+        images.require_resolved_references(body)
+        images.require_durable_output()
+    elif contract is mirelo:
         if arguments["video_url"].startswith("renderhaus-asset://"):
             raise ValueError("Studio asset handles must resolve to authorized HTTPS media before live Mirelo submission.")
         if estimate is None:
@@ -154,8 +161,35 @@ def _submit(tool: str, arguments: dict[str, Any]) -> dict[str, Any]:
         "error": payload.get("error"),
         "error_type": payload.get("error_type"),
         **contract.TRAINING_METADATA,
-        "note": "Call get_video_task with this job_id until terminal; use download=true for the MP4.",
+        "note": ("Call get_video_task with this job_id until terminal; image results are validated and persisted, SVGs sanitized."
+                 if contract is images else "Call get_video_task with this job_id until terminal; use download=true for the MP4."),
     }
+
+
+def ideogram_edit(
+    prompt: str,
+    image_url: str,
+    reference_image_urls: list[str] | None = None,
+    mask_url: str | None = None,
+    edit_precision: Literal["regular", "high"] = "high",
+    quality: Literal["very_low", "low", "medium", "high"] = "medium",
+    image_size: str = "auto",
+    num_images: int = 1,
+    seed: int | None = None,
+) -> dict:
+    """Edit an existing image with Ideogram 4.5; paid image approval, then poll get_video_task."""
+    return _submit("ideogram_edit", locals())
+
+
+def recraft_text_to_vector(
+    prompt: str,
+    image_size: str = "square_hd",
+    colors: list[dict] | None = None,
+    background_color: dict | None = None,
+    enable_safety_checker: bool = True,
+) -> dict:
+    """Generate editable SVG with Recraft V4.1 Pro; paid image approval, then poll get_video_task."""
+    return _submit("recraft_text_to_vector", locals())
 
 
 def text_to_video(
@@ -364,7 +398,7 @@ def _download(video_url: str, output_path: Path) -> None:
 
 
 def get_video_task(job_id: str, download: bool = False) -> dict:
-    """Poll one fal queue status, fetch a completed result, and optionally save the MP4."""
+    """Poll a saved fal image or video job; image outputs always persist safely, download=true saves MP4."""
     _validated("get_video_task", locals())
     endpoint_id, request_id = _parse_job(job_id)
     if (
@@ -422,6 +456,12 @@ def _poll_video_task(job_id: str, endpoint_id: str, request_id: str, *, download
             "error": result.get("error"),
             "error_type": result.get("error_type"),
         }
+    if contract is images:
+        normalized = {**base, "status": "succeeded", **images.persist_images(job_id, endpoint_id, result)}
+        metadata_path, _ = _paths(job_id)
+        metadata = json.loads(metadata_path.read_text()) if metadata_path.exists() else {}
+        _write_metadata(metadata_path, {**metadata, **normalized})
+        return normalized
     videos = mirelo.result_videos(result) if contract is mirelo else None
     video = videos[0] if videos else result.get("video")
     video_url = video.get("url") if isinstance(video, dict) else None
@@ -471,7 +511,8 @@ def list_fal_models() -> dict:
             for endpoint in vidu.ENDPOINTS
         ] + [{"id": endpoint, **wan3.TRAINING_METADATA} for endpoint in wan3.ENDPOINTS]
         + [{"id": endpoint, **motion.TRAINING_METADATA} for endpoint in motion.ENDPOINTS]
-        + [{"id": endpoint, **mirelo.TRAINING_METADATA} for endpoint in mirelo.ENDPOINTS],
+        + [{"id": endpoint, **mirelo.TRAINING_METADATA} for endpoint in mirelo.ENDPOINTS]
+        + [{"id": endpoint, **images.TRAINING_METADATA} for endpoint in images.ENDPOINTS],
         "endpoints": [
             {
                 "id": endpoint.id,
@@ -550,12 +591,23 @@ def list_fal_models() -> dict:
              "multi_sample_pricing": "UNVERIFIED; dry-run only; estimate unknown",
              "duration_range": [1, 60], "num_samples_range": [1, 4],
              **mirelo.TRAINING_METADATA}
+        ] + [
+            {"id": endpoint, "model": endpoint, "endpoint_id": endpoint, "mode": tool,
+             "api_url": f"https://fal.ai/models/{endpoint}/api",
+             "pricing_url": f"https://fal.ai/models/{endpoint}",
+             "price_unit": "image", "pricing_checked_at": "2026-10-09", "pricing_confirmed": True,
+             **({"usd_per_unit_by_quality": {"very_low": "0.008", "low": "0.03", "medium": "0.06", "high": "0.22"}}
+                if endpoint == images.IDEOGRAM else {"usd_per_unit": "0.30"}),
+             **images.TRAINING_METADATA}
+            for tool, endpoint in images.TOOL_ENDPOINTS.items()
         ],
         "note": "Static documented catalog. Does not confirm account access. fal hosted Terms of Service apply.",
     }
 
 
 TOOL_HANDLERS = {
+    "ideogram_edit": ideogram_edit,
+    "recraft_text_to_vector": recraft_text_to_vector,
     "mirelo_v2a": mirelo_v2a,
     "kling_motion_control": kling_motion_control,
     "text_to_video": text_to_video,

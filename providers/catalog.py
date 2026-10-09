@@ -82,7 +82,7 @@ PROVIDERS: tuple[ProviderSpec, ...] = (
         target_name="Fal",
         function_name="renderhaus-fal-tools",
         module_path="providers.fal.api",
-        env_keys=("FAL_KEY", "FAL_DRY_RUN"),
+        env_keys=("FAL_KEY", "FAL_DRY_RUN", "AWS_S3_BUCKET", "REMOTION_APP_BUCKET_NAME"),
         default_env={"FAL_DRY_RUN": "true"},
     ),
     ProviderSpec(
