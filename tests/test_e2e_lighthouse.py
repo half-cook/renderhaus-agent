@@ -17,6 +17,71 @@ from langchain_core.outputs import ChatGeneration, LLMResult
 
 
 class LighthouseSafetyTests(unittest.IsolatedAsyncioTestCase):
+    async def test_parallel_subagent_approvals_use_discovered_schemas_and_never_retry(self):
+        from agent.studio_agent_next import run_studio_agent
+        from scripts.e2e_lighthouse import LighthouseOptions, run_lighthouse
+        from test_deep_agent import ScriptedModel, call
+        from test_deep_agent_execution import FINAL, VIDEO, VIDEO_ARGS, VOICES, dispatch
+
+        voice_args = {"search": "narrator"}
+        tasks = AIMessage(content="", tool_calls=[
+            call("task", {"subagent_type": "media", "description": "Generate the lighthouse"}, "media-task").tool_calls[0],
+            call("task", {"subagent_type": "audio", "description": "Find a narrator"}, "audio-task").tool_calls[0],
+        ])
+
+        def propose(messages, tools):
+            if "call_media_tool" in tools:
+                return dispatch(VIDEO, VIDEO_ARGS, "wan-call")
+            return dispatch(VOICES, voice_args, "voices-call")
+
+        def completed(messages, tools):
+            from langchain_core.messages import ToolMessage
+
+            self.assertIsInstance(messages[-1], ToolMessage, "Approval resume replayed the proposed call")
+            self.assertEqual(messages[-1].tool_call_id,
+                             "wan-call" if "call_media_tool" in tools else "voices-call")
+            result = json.loads(messages[-1].text)
+            self.assertNotEqual(result.get("status"), "failed", result)
+            return AIMessage(content="Task completed.")
+
+        model = ScriptedModel([
+            call("x_amz_bedrock_agentcore_search", {
+                "query": f"{VIDEO.name} {VOICES.name}", "limit": 2,
+            }, "search"), tasks, propose, propose, completed, completed,
+            call("StudioAgentOutput", FINAL, "finish"),
+        ])
+        batches = []
+        failures = []
+
+        async def agent(request, **kwargs):
+            if request.approval_decisions:
+                batches.append(request.approval_decisions)
+            with patch("agent.deep_agent.runner.configured_deep_agent_model", return_value=model):
+                try:
+                    return await run_studio_agent(request, **kwargs)
+                except AssertionError as exc:
+                    failures.append(str(exc))
+                    raise
+
+        with tempfile.TemporaryDirectory() as directory, patch.dict("os.environ", {
+            "RENDERHAUS_OUTCOME_DIR": directory, "STRIPE_SECRET_KEY": "",
+        }), patch("scripts.local_gateway.dispatch", return_value={"status": "queued", "job_id": "offline-job"}) as provider, \
+                patch("scripts.e2e_lighthouse.probe_artifact", return_value={}):
+            out = Path(directory) / "out"
+            summary = await run_lighthouse(LighthouseOptions(out=out, live=True), agent_run=agent)
+            rows = [json.loads(line) for line in (out / "agent_events.jsonl").read_text().splitlines()]
+            ledger = [json.loads(line) for line in (out / "gateway_ledger.jsonl").read_text().splitlines()]
+        self.assertEqual(summary["status"], "completed", {"native_failures": failures, "summary": summary})
+        self.assertEqual(len(batches), 1)
+        self.assertEqual([item.decision for item in batches[0]], ["approve", "approve"])
+        self.assertCountEqual([row["tool"] for row in rows if row["kind"] == "approval"],
+                              [VIDEO.name, VOICES.name])
+        self.assertFalse(any("retries" in row.get("reason", "").lower() for row in rows))
+        self.assertCountEqual([row["tool"] for row in ledger if row["attempted"]], [VIDEO.name, VOICES.name])
+        self.assertCountEqual([item.args for item in provider.call_args_list],
+                              [("fal", "generate_wan3_t2v", VIDEO_ARGS), ("elevenlabs", "voices_search", voice_args)])
+        self.assertFalse(model._steps)
+
     async def test_operator_run_disables_inherited_external_tracing(self):
         from langsmith import tracing_context
         from langsmith.utils import tracing_is_enabled

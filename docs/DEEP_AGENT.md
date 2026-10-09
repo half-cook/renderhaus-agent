@@ -345,6 +345,35 @@ new conversation when switching engines to avoid importing large legacy history 
 A provider job accepted before a process crash but not yet persisted can still require
 reconciliation. Neither backend supplies an exactly-once distributed execution guarantee.
 
+### Parallel subagent approvals
+
+The installed deepagents 0.7.23 and LangGraph 1.2.14 surface both media and audio
+interrupts through the parent task state. The host sends every decision in one
+`Command(resume={interrupt_id: {"decisions": [...]}})`. Decisions match their approval
+call IDs and retain each interrupt's action order. A fresh worker resumes the original
+tool calls before the subagent models receive their results. Rejected calls return
+feedback to their subagents while approved siblings dispatch once.
+
+The captured Sonnet Lighthouse failure came from the driver's Gateway client.
+`LocalGateway.list_tools` exposes search only. The bare `GatewayClient` forwarded
+search results without adding the returned schemas to its tool list. Approved calls
+resumed, but the executor returned `Search for this Gateway tool before invoking it.`
+before contacting a provider. The models then requested new calls. The trace also
+contains two earlier serial voice-search approvals that failed the same way.
+
+The Lighthouse loopback now uses the same `GatewayMCPServer` discovery client as
+Studio. It caches searched schemas and supports their restoration from session state.
+Parallelism, approval IDs, version-1 resume state, cost estimates, and both no-paid-retry
+guards retain their existing behavior. No provider or model configuration changes.
+
+Offline regressions exercise the compiled graph, serial approval and rejection, both
+mixed parallel decisions, and the real Lighthouse approval loop with loopback MCP.
+Models and provider dispatch are scripted. The parallel driver test replaces final
+artifact probing to isolate approval and dispatch behavior, so it does not establish
+generated-media playback or browser success. Comet validation is blocked because no
+controllable Comet session is available and this task prohibits live provider calls.
+See [the decisions record](fix-parallel-approvals-decisions.tsv) for reproduction evidence.
+
 ## AgentCore and verification
 
 `Dockerfile.agentcore` defaults to Deep Agents and retains Codex for explicit fallback.
