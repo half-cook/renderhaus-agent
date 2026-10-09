@@ -18,7 +18,7 @@ from agent.studio_agent_next import (
     StudioAgentApprovalRequired, StudioAgentRequest, StudioApprovalDecision,
     StudioToolEvent, _context_from_request, _validate_video_delivery,
 )
-from server.billing_rates import cost_for
+from server.billing_rates import cost_for, HEYGEN_AVATAR_V_CENTS_PER_SECOND
 import server.studio as studio_api
 from test_deep_agent import Gateway, ScriptedModel, call, final
 
@@ -61,16 +61,19 @@ class HeyGenWiringTests(unittest.TestCase):
             self.assertTrue(routing.is_free_tool(f"HeyGen___{name}"))
             self.assertEqual(cost_for("heygen", name, {}).total_cents, 0)
 
-    def test_unknown_price_is_never_zero_list_quote(self):
-        with patch.dict(os.environ, {"HEYGEN_DRY_RUN": "true"}):
+    def test_verified_self_serve_quote_and_unknown_enterprise(self):
+        self.assertEqual(HEYGEN_AVATAR_V_CENTS_PER_SECOND, 12)
+        with patch.dict(os.environ, {"HEYGEN_DRY_RUN": "true", "HEYGEN_API_PLAN": "unknown"}):
             for list_price in (False, True):
                 quote = routing.estimate_cost(NAME, ARGS, list_price=list_price)
-                self.assertIsNone(quote.total_cents)
-                self.assertIn("unknown", quote.description.lower())
+                self.assertEqual(quote.total_cents, 1404)
             self.assertEqual(cost_for("heygen", "create_avatar_video", ARGS).total_cents, 0)
         with patch.dict(os.environ, {"HEYGEN_DRY_RUN": "false", "HEYGEN_API_PLAN": "paid_self_serve"}):
-            with self.assertRaisesRegex(ValueError, "unknown"):
-                cost_for("heygen", "create_avatar_video", ARGS)
+            self.assertEqual(cost_for("heygen", "create_avatar_video", ARGS).total_cents, 1404)
+        with patch.dict(os.environ, {"HEYGEN_DRY_RUN": "true", "HEYGEN_API_PLAN": "enterprise"}):
+            quote = routing.estimate_cost(NAME, ARGS)
+            self.assertIsNone(quote.total_cents)
+            self.assertIn("unknown", quote.description.lower())
 
     def test_consent_record_required_at_host_boundary(self):
         executor = object.__new__(GatewayExecutor)
@@ -81,7 +84,7 @@ class HeyGenWiringTests(unittest.TestCase):
                        {"subjects": " "}, {"consent_record_id": ""}):
             self.assertIsNotNone(executor.selection_blocker(NAME, {**ARGS, **change}, route))
         disclosure = executor.dispatch_disclosure(NAME, ARGS, route)
-        for text in ("Alice", "consent", "unknown", "training", "API"):
+        for text in ("Alice", "consent", "$14.04", "training", "API"):
             self.assertIn(text.lower(), disclosure.lower())
         self.assertFalse(routing.training_eligible({"provider": "heygen", "model": "avatar_v",
             "status": "succeeded", "training_eligible": True, "weights_license": "Apache-2.0"}))
@@ -129,7 +132,7 @@ class HeyGenNativeApprovalTests(unittest.IsolatedAsyncioTestCase):
                     ]))
                 gateway.call_tool.assert_not_awaited()
                 approval = paused.exception.approvals[0]
-                for text in ("Alice", "consent", "unknown", "avatar_v"):
+                for text in ("Alice", "consent", "$14.04", "avatar_v"):
                     self.assertIn(text.lower(), approval.description.lower())
                 resumed = request.model_copy(update={
                     "session_items": json.loads(json.dumps(studio.session_items)),
