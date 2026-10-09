@@ -1480,9 +1480,12 @@ def _validate_video_delivery(
 def _completed_video_artifact(result: dict[str, Any]) -> bool:
     url = result.get("url")
     if isinstance(url, str):
-        parsed = urlsplit(url)
-        if parsed.scheme in {"http", "https"} and parsed.hostname and not parsed.username:
-            return True
+        try:
+            parsed = urlsplit(url)
+            if parsed.scheme in {"http", "https"} and parsed.hostname and not parsed.username:
+                return True
+        except ValueError:
+            pass
     output_path = result.get("output_path")
     if not isinstance(output_path, str) or output_path.startswith("file://"):
         return False

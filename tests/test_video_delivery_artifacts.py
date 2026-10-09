@@ -26,6 +26,9 @@ class VideoDeliveryArtifactTests(unittest.TestCase):
                         self.assertFalse(_validate_video_delivery(request, studio))
                 self.assertFalse(_validate_video_delivery(request, self._context({}, assets=[{'id': 'invented'}])))
                 self.assertTrue(_validate_video_delivery(request, self._context({'url': 'https://cdn.example/final.mp4'})))
+                for url in ('https://[broken/final.mp4', 'file:///tmp/final.mp4', 'https://user:password@cdn.example/final.mp4'):
+                    with self.subTest(url=url):
+                        self.assertFalse(_validate_video_delivery(request, self._context({'url': url})))
         if not shutil.which('ffmpeg') or not shutil.which('ffprobe'):
             return
         with tempfile.TemporaryDirectory() as directory:
