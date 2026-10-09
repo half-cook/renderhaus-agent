@@ -362,7 +362,7 @@ class HyperFramesGraphTests(unittest.IsolatedAsyncioTestCase):
                             summary="No MP4", result={"status": "dry_run"}),
             StudioToolEvent(id="current-remotion", name="Remotion___get_render_progress",
                             label="Completed render", status="succeeded", summary="Current MP4",
-                            result={"status": "succeeded", "output_path": "/tmp/current.mp4"}),
+                            result={"status": "succeeded", "url": "https://cdn.example/current.mp4"}),
         ]
         self.assertTrue(_validate_video_delivery(request, studio))
 
@@ -372,7 +372,7 @@ class HyperFramesGraphTests(unittest.IsolatedAsyncioTestCase):
         studio.tool_events = [
             StudioToolEvent(id="old-remotion", name="Remotion___get_render_progress",
                             label="Previous render", status="succeeded", summary="Previous MP4",
-                            result={"status": "succeeded", "output_path": "/tmp/previous.mp4"}),
+                            result={"status": "succeeded", "url": "https://cdn.example/previous.mp4"}),
         ]
         self.assertFalse(_validate_video_delivery(request, studio))
         studio.tool_events.append(StudioToolEvent(
