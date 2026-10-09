@@ -188,6 +188,31 @@ process.stdout.write(JSON.stringify({timelines, registry: sandbox.window.__timel
 
 
 class HyperFramesPackRoutingTests(unittest.TestCase):
+    def test_source_images_preserve_caption_and_collage_motion_output(self):
+        from agent.deep_agent.routing import route_intent
+
+        prompts = ["Create an animated paper collage using the uploaded photo",
+                   "Add cinematic captions to this video with my photo",
+                   "Use the still image in an animated collage video",
+                   "Make a video collage from these images"]
+        for enabled in ("true", "false"):
+            with patch.dict(os.environ, {"HYPERFRAMES_ENABLED": enabled}):
+                for confidential in (True, False):
+                    for prompt in prompts:
+                        with self.subTest(enabled=enabled, confidential=confidential, prompt=prompt):
+                            route = route_intent(prompt, confidential=confidential)
+                            self.assertEqual((route.skill, route.alias, route.tool, route.status),
+                                             ("motion-graphics", "remotion_render", "Remotion___render_timeline", "ready"))
+
+    def test_requested_still_images_with_caption_styling_use_image_generation(self):
+        from agent.deep_agent.routing import route_intent
+
+        for prompt in ["Generate images with cinematic captions", "Generate an image with cinematic captions"]:
+            with self.subTest(prompt=prompt):
+                route = route_intent(prompt)
+                self.assertEqual((route.skill, route.alias, route.tool),
+                                 ("image-gen", "gpt_image25_t2i", "OpenAI___generate_image"))
+
     def test_unnamed_caption_and_collage_styles_use_remotion_in_every_project(self):
         from agent.deep_agent.routing import route_intent
 
@@ -209,7 +234,8 @@ class HyperFramesPackRoutingTests(unittest.TestCase):
         for enabled in ("true", "false"):
             with patch.dict(os.environ, {"HYPERFRAMES_ENABLED": enabled}):
                 for confidential in (True, False):
-                    for prompt in ("HyperFrames cinematic caption over product footage", "HyperFrames tactile collage video"):
+                    for prompt in ("HyperFrames cinematic caption over product footage", "HyperFrames tactile collage video",
+                                   "HyperFrames animated paper collage using the uploaded photo"):
                         with self.subTest(enabled=enabled, confidential=confidential, prompt=prompt):
                             route = route_intent(prompt, confidential=confidential)
                             self.assertEqual(route.skill, "hyperframes")
@@ -225,6 +251,7 @@ class HyperFramesPackRoutingTests(unittest.TestCase):
 
         for prompt, skill, alias in [
             ("cut filler ums and add cinematic captions", "conversational-edit", "transcript_edit"),
+            ("cut filler ums and add cinematic captions to this video with my photo", "conversational-edit", "transcript_edit"),
             ("generate an image collage poster", "image-gen", "gpt_image25_t2i"),
             ("create a collage image poster", "image-gen", "gpt_image25_t2i"),
         ]:
