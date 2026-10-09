@@ -51,6 +51,7 @@ def track(
     stsz: bytes | None = None,
     stts: bytes | None = None,
     stsd: bytes | None = None,
+    dimensions: tuple[int, int] | None = None,
 ) -> bytes:
     if stsz is None:
         if sizes is not None:
@@ -66,9 +67,10 @@ def track(
             + b"".join(struct.pack(">II", *run) for run in runs),
         )
     if stsd is None:
-        sample_entry = box(
-            codec, b"\0" * 6 + struct.pack(">H", 1) + b"\0" * (70 if kind == b"vide" else 20)
-        )
+        payload = b"\0" * 6 + struct.pack(">H", 1) + b"\0" * (70 if kind == b"vide" else 20)
+        if kind == b"vide" and dimensions is not None:
+            payload = payload[:24] + struct.pack(">HH", *dimensions) + payload[28:]
+        sample_entry = box(codec, payload)
         stsd = box(b"stsd", b"\0" * 4 + struct.pack(">I", 1) + sample_entry)
     handler = box(b"hdlr", b"\0" * 8 + kind + b"\0" * 12)
     return box(
@@ -148,6 +150,19 @@ class MP4ProbeTests(unittest.TestCase):
             result["streams"][1],
             {"codec_type": "audio", "codec_name": "aac", "avg_frame_rate": "0/0", "bit_rate": 4000},
         )
+
+    def test_visual_sample_entry_reports_dimensions(self) -> None:
+        for codec, size in ((b"avc1", (1280, 720)), (b"hvc1", (1920, 1080)),
+                            (b"av01", (720, 1280))):
+            with self.subTest(codec=codec, size=size):
+                result = self.probe(movie(track(codec=codec, dimensions=size)))
+                self.assertEqual((result["streams"][0]["width"], result["streams"][0]["height"]), size)
+
+    def test_stdlib_fallback_reports_dimensions(self) -> None:
+        self.path.write_bytes(movie(track(dimensions=(1280, 720))))
+        with patch.object(local.shutil, "which", return_value=None):
+            video = local._probe(self.path)["streams"][0]
+        self.assertEqual((video["width"], video["height"]), (1280, 720))
 
     def test_extended_box_size(self) -> None:
         self.assertEqual(
@@ -303,7 +318,7 @@ class MP4ProbeTests(unittest.TestCase):
 
     def test_ffprobe_preferred_without_changing_subprocess_arguments(self) -> None:
         expected = {
-            "streams": [{"codec_type": "video", "avg_frame_rate": "24/1"}],
+            "streams": [{"codec_type": "video", "avg_frame_rate": "24/1", "width": 1280, "height": 720}],
             "format": {"duration": "2.0"},
         }
         with (
@@ -473,6 +488,7 @@ class GeneratedMP4ProbeTests(unittest.TestCase):
                     self.assertEqual(
                         Fraction(result["streams"][0]["avg_frame_rate"]), Fraction(fps)
                     )
+                    self.assertEqual((result["streams"][0]["width"], result["streams"][0]["height"]), (64, 64))
                     if not shutil.which("ffprobe"):
                         continue
                     expected = json.loads(
@@ -502,6 +518,9 @@ class GeneratedMP4ProbeTests(unittest.TestCase):
                         result["streams"], expected["streams"], strict=True
                     ):
                         if actual["codec_type"] == "video":
+                            self.assertEqual((actual["width"], actual["height"]), (64, 64))
+                            self.assertEqual((actual["width"], actual["height"]),
+                                             (measured["width"], measured["height"]))
                             self.assertEqual(
                                 Fraction(actual["avg_frame_rate"]),
                                 Fraction(measured["avg_frame_rate"]),
