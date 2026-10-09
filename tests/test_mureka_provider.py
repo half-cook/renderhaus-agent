@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 import importlib.util
+import io
 import json
 import os
 import shutil
 import subprocess
 import tempfile
 import unittest
+import wave
 from contextlib import ExitStack
 from decimal import Decimal
 from pathlib import Path
@@ -41,7 +43,7 @@ class MurekaProviderTests(unittest.TestCase):
 
     def poll_dependencies(self, result=None, status=None):
         self.stack.enter_context(patch('providers.fal.queue.status', return_value=status or {'status': 'COMPLETED'}))
-        self.stack.enter_context(patch('providers.fal.queue.result', return_value=result or {'song_id': 'song_1', 'audio': {'url': 'https://media.example.test/music.mp3'}, 'duration': 12000, 'lyrics_sections': [{'start': 0, 'end': 12000, 'lines': [{'text': 'Hello world', 'start': 0, 'end': 12000}]}]}))
+        self.stack.enter_context(patch('providers.fal.queue.result', return_value=result or {'song_id': 'song_1', 'audio': {'url': 'https://media.example.test/music.mp3', 'content_type': 'audio/mpeg'}, 'duration': 12000, 'lyrics_sections': [{'start': 0, 'end': 12000, 'lines': [{'text': 'Hello world', 'start': 0, 'end': 12000}]}]}))
 
     def test_default_song_is_preview_without_media_or_submit(self):
         result = self.api.generate_song(lyrics='Hello world')
@@ -185,7 +187,7 @@ class MurekaProviderTests(unittest.TestCase):
 
     def test_success_requires_audio_url_and_valid_duration(self):
         job = self.queued()
-        for result in [{'audio': {}}, {'audio': {'url': 'javascript:bad'}}, {'audio': {'url': 'https://media.example.test/music.mp3'}, 'duration': -1}, {'audio': {'url': 'https://media.example.test/music.mp3'}, 'duration': True}]:
+        for result in [{'audio': {}}, {'audio': {'url': 'javascript:bad'}}, {'audio': {'url': 'https://media.example.test/music.mp3', 'content_type': 'audio/mpeg'}, 'duration': -1}, {'audio': {'url': 'https://media.example.test/music.mp3', 'content_type': 'audio/mpeg'}, 'duration': True}]:
             with self.subTest(result=result), patch('providers.fal.queue.status', return_value={'status': 'COMPLETED'}), patch('providers.fal.queue.result', return_value=result), self.assertRaises(RuntimeError):
                 self.api.get_music_task(job['job_id'])
 
@@ -203,7 +205,7 @@ class MurekaProviderTests(unittest.TestCase):
         fixture = Path(self.root) / 'fixture.mp3'
         subprocess.run(['ffmpeg', '-hide_banner', '-loglevel', 'error', '-f', 'lavfi', '-i', 'sine=frequency=440:duration=0.1', '-y', str(fixture)], check=True)
         job = self.queued()
-        self.poll_dependencies({'song_id': 'song_1', 'audio': {'url': 'https://media.example.test/music.mp3?signature=secret'}, 'duration': 100})
+        self.poll_dependencies({'song_id': 'song_1', 'audio': {'url': 'https://media.example.test/music.mp3?signature=secret', 'content_type': 'audio/mpeg'}, 'duration': 100})
         response = MagicMock()
         response.iter_bytes.return_value = [fixture.read_bytes()]
         response.__enter__.return_value = response
@@ -225,6 +227,77 @@ class MurekaProviderTests(unittest.TestCase):
             self.api.get_music_task(job['job_id'], download=True)
         self.assertFalse(list(Path(self.root).rglob('*.mp3')))
         self.assertFalse(list(Path(self.root).rglob('*.tmp')))
+
+    def test_generic_wav_output_keeps_extension_and_validates_actual_container(self):
+        if not shutil.which('ffprobe'):
+            self.skipTest('Local ffprobe required for verified non-MP3 audio')
+        data = io.BytesIO()
+        with wave.open(data, 'wb') as file:
+            file.setnchannels(1)
+            file.setsampwidth(2)
+            file.setframerate(8000)
+            file.writeframes(b'\x00\x00' * 800)
+        job = self.queued()
+        self.poll_dependencies({'audio': {'url': 'https://media.example.test/file', 'content_type': 'audio/wav', 'file_name': 'song.wav'}, 'duration': 100})
+        response = MagicMock()
+        response.__enter__.return_value = response
+        response.iter_bytes.return_value = [data.getvalue()]
+        with patch('httpx.stream', return_value=response):
+            result = self.api.get_music_task(job['job_id'], download=True)
+        self.assertEqual(Path(result['output_path']).suffix, '.wav')
+        self.assertEqual(result['audio_content_type'], 'audio/wav')
+        self.assertTrue(result['downloaded'])
+
+    def test_filename_identifies_supported_audio_when_mime_is_absent(self):
+        job = self.queued()
+        self.poll_dependencies({'audio': {'url': 'https://media.example.test/file', 'file_name': 'Song.MP3'}})
+        result = self.api.get_music_task(job['job_id'])
+        self.assertEqual(result['audio_content_type'], 'audio/mpeg')
+        self.assertFalse(result['downloaded'])
+
+    def test_unknown_or_contradictory_audio_format_is_rejected_before_download(self):
+        job = self.queued()
+        values = [
+            {'content_type': 'audio/unknown', 'file_name': 'song.mp3'},
+            {'content_type': 'audio/mpeg', 'file_name': 'song.wav'},
+            {'content_type': 'text/html'},
+            {'content_type': 1},
+            {'file_name': 'song.unsupported'},
+            {'file_name': 1},
+            {},
+        ]
+        for fields in values:
+            output = {'audio': {'url': 'https://media.example.test/file', **fields}}
+            with self.subTest(fields=fields), patch('providers.fal.queue.status', return_value={'status': 'COMPLETED'}), patch('providers.fal.queue.result', return_value=output), patch('httpx.stream') as download:
+                with self.assertRaises(RuntimeError):
+                    self.api.get_music_task(job['job_id'], download=True)
+                download.assert_not_called()
+
+    def test_mp3_label_does_not_accept_a_wav_container(self):
+        if not shutil.which('ffprobe'):
+            self.skipTest('Local ffprobe required to compare claimed and actual audio formats')
+        data = io.BytesIO()
+        with wave.open(data, 'wb') as file:
+            file.setnchannels(1)
+            file.setsampwidth(2)
+            file.setframerate(8000)
+            file.writeframes(b'\x00\x00' * 800)
+        job = self.queued()
+        self.poll_dependencies()
+        response = MagicMock()
+        response.__enter__.return_value = response
+        response.iter_bytes.return_value = [data.getvalue()]
+        with patch('httpx.stream', return_value=response), self.assertRaises(RuntimeError):
+            self.api.get_music_task(job['job_id'], download=True)
+        self.assertFalse(list(Path(self.root).rglob('*.mp3')))
+        self.assertFalse(list(Path(self.root).rglob('*.tmp')))
+
+    def test_non_mp3_download_requires_available_container_validation(self):
+        job = self.queued()
+        self.poll_dependencies({'audio': {'url': 'https://media.example.test/file', 'content_type': 'audio/flac'}})
+        with patch('shutil.which', return_value=None), patch('httpx.stream') as download, self.assertRaisesRegex(RuntimeError, 'ffprobe'):
+            self.api.get_music_task(job['job_id'], download=True)
+        download.assert_not_called()
 
     def test_catalog_is_offline_and_reports_terms_and_price_sources(self):
         catalog = self.api.list_mureka_models()
@@ -277,7 +350,7 @@ class MurekaHTTPTransportTests(unittest.TestCase):
                 return httpx.Response(200, json={'request_id': 'http_req'})
             if request.url.path.endswith('/status'):
                 return httpx.Response(200, json={'status': 'COMPLETED'})
-            return httpx.Response(200, json={'song_id': 'song_from_http', 'duration': 1000, 'audio': {'url': 'https://media.example.test/generated.mp3'}, 'lyrics_sections': [{'start': 0, 'end': 1000, 'lines': [{'text': 'Hello'}]}]})
+            return httpx.Response(200, json={'song_id': 'song_from_http', 'duration': 1000, 'audio': {'url': 'https://media.example.test/generated.mp3', 'content_type': 'audio/mpeg'}, 'lyrics_sections': [{'start': 0, 'end': 1000, 'lines': [{'text': 'Hello'}]}]})
 
         self.transport(handler)
         job = self.api.generate_song(lyrics='Hello')
