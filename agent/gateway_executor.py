@@ -25,6 +25,7 @@ from agent.hyperframes import HYPERFRAMES_TOOL
 
 from agent.codex_harness import ToolApprovalPending
 from agent.studio_agent_next import (
+    GatewayToolError,
     _GATEWAY_SEARCH_TOOL,
     _append_harvested_event,
     _asset_version_ids,
@@ -601,8 +602,8 @@ class GatewayExecutor:
                                        f"human:{call_id}" if approved else ""):
                             output = await asyncio.to_thread(dispatch, provider, verb, arguments)
                         payload = _unwrap_tool_output(output)
-                        if payload.get("error") or payload.get("status") in {"failed", "error"}:
-                            raise RuntimeError(payload.get("error") or payload.get("message") or "Local render failed.")
+                        if payload.get("error") or payload.get("status") in {"failed", "error", "blocked", "not_run"}:
+                            raise GatewayToolError(payload)
                     except Exception:
                         if charge is not None:
                             await asyncio.to_thread(repository.refund_usage, studio.user_id, charge, "refund: local agent dispatch failed")

@@ -786,7 +786,7 @@ class GatewayMCPServer(GatewayClient):
             if (
                 getattr(result, "is_error", False)
                 or payload.get("error")
-                or payload.get("status") in {"failed", "error"}
+                or payload.get("status") in {"failed", "error", "blocked", "not_run"}
             ):
                 raise GatewayToolError(payload)
         except Exception:

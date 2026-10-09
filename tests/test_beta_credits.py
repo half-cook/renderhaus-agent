@@ -465,6 +465,11 @@ class BetaApiTests(BetaFixture, unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["balance_cents"], 1000)
 
+    def test_ci_inventory_checks_the_mounted_application(self):
+        with patch.dict("os.environ", {}), patch("builtins.print"):
+            from scripts.ci_check import check_beta_inventory
+            check_beta_inventory()
+
     def test_admin_token_required_and_wave_persists(self):
         with patch.dict("os.environ", {"BETA_ADMIN_TOKEN": ""}):
             self.assertEqual(self.client.post("/api/admin/beta/next-wave").status_code, 503)
@@ -528,6 +533,11 @@ class BetaBillingIntegrationTests(BetaFixture, unittest.IsolatedAsyncioTestCase)
                 await gateway.call_tool("Seedream___text_to_image", {"prompt": "robot"})
             self.assertEqual(self.repo.get_balance("one"), 750)
             self.assertEqual(self.repo.get_beta_credit("one")["remaining_cents"], 750)
+            for status in ("blocked", "not_run"):
+                call.return_value = {"status": status, "reason": "No work performed."}
+                with self.assertRaises(RuntimeError):
+                    await gateway.call_tool("Seedream___text_to_image", {"prompt": "robot"})
+                self.assertEqual(self.repo.get_balance("one"), 750)
             with patch.dict("os.environ", {"BETA_CREDITS_ENABLED": "false"}):
                 call.return_value = {"status": "dry_run"}
                 await gateway.call_tool("Seedream___text_to_image", {"prompt": "robot"})
@@ -564,6 +574,67 @@ class BetaBillingIntegrationTests(BetaFixture, unittest.IsolatedAsyncioTestCase)
             response = await studio_account(SimpleNamespace(payload={"sub": "one"}))
         self.assertEqual(response["balance_cents"], 1000)
         self.assertEqual(response["beta_credit"]["remaining_cents"], 1000)
+
+    async def test_local_render_failure_refunds_and_insufficient_credit_prevents_dispatch(self):
+        from mcp import Tool
+        from providers.registry import dispatch as real_dispatch
+        from agent.gateway_executor import GatewayExecutor
+        from agent.studio_agent_next import StudioAgentRequest, _context_from_request
+        gateway = SimpleNamespace(list_tools=AsyncMock(return_value=[Tool(name="Remotion___render_ad_variants", inputSchema={"type": "object"})]))
+        arguments = {"stage": "render_first", "job_id": "beta-run", "brief": {"campaign": "demo"},
+            "rows": [{"variant_key": "demo", "sku": "demo", "price_text": "$1", "cta_text": "Try",
+                      "logo_asset": "logo.png", "legal_text": "Terms apply", "locale": "en-CA", "aspect": "1:1"}],
+            "master_asset": "master.mp4", "plan_hash": "a" * 64}
+        partial_failure = {"status": "failed", "error": "mock failure", "rendered": [{"variant_key": "demo"}],
+                           "failed": [{"variant_key": "second"}], "manifest_path": "manifest.json", "plan_hash": "a" * 64}
+        for cost, failure in ((300, partial_failure), (300, RuntimeError("mock transport failure")),
+                              (300, {"status": "blocked", "reason": "No work performed."}),
+                              (300, {"status": "not_run", "reason": "No work performed."}), (1001, None)):
+            with self.subTest(cost=cost, failure=failure):
+                studio = _context_from_request(StudioAgentRequest(prompt="ad variants", user_id="one", job_id="beta-run"))
+                executor = GatewayExecutor(studio, [gateway])
+                with patch.dict("os.environ", {"REMOTION_RENDER_BACKEND": "lambda"}), \
+                        patch("server.studio_state.repository", self.repo), \
+                        patch("server.billing_rates.cost_for", return_value=SimpleNamespace(total_cents=cost, provider_cents=cost, fee_cents=0)), \
+                        patch("providers.registry.dispatch") as dispatch:
+                    if isinstance(failure, Exception):
+                        dispatch.side_effect = failure
+                    elif isinstance(failure, dict) and failure["status"] == "blocked":
+                        dispatch.side_effect = real_dispatch
+                    else:
+                        dispatch.return_value = failure
+                    result = await executor.execute({"tool_name": "Remotion___render_ad_variants",
+                        "arguments": arguments, "call_id": "local"}, approved=True)
+                    self.assertIn(result["status"], {"failed", "blocked", "not_run"}, result)
+                    self.assertEqual(dispatch.call_count, 0 if cost > 1000 else 1)
+                    if failure is partial_failure:
+                        for key in ("rendered", "failed", "manifest_path", "plan_hash"):
+                            self.assertEqual(result.get(key), failure[key])
+                self.assertEqual(self.repo.get_balance("one"), 1000)
+                self.assertEqual(self.repo.get_beta_credit("one")["remaining_cents"], 1000)
+                self.assertEqual(sum(row["delta"] for row in self.repo.list_ledger("one")), 1000)
+
+    async def test_studio_no_work_results_refund_the_grant(self):
+        from server.studio import InvokeBody, invoke_tool
+        from server.billing_rates import GenerationCost
+        body = InvokeBody(provider="seedream", tool="text_to_image", arguments={"prompt": "robot"}, project_id="beta-project")
+        for status in ("failed", "error", "blocked", "not_run"):
+            with self.subTest(status=status), patch("server.studio.repository", self.repo), \
+                    patch("server.studio.cost_for", return_value=GenerationCost(300, 0)), \
+                    patch("server.studio.dispatch", return_value={"status": status, "reason": "No work performed."}):
+                result = await invoke_tool(body, SimpleNamespace(payload={"sub": "one"}))
+                self.assertEqual(result["result"]["status"], status)
+                self.assertEqual(result["assets"], [])
+                self.assertEqual(self.repo.get_balance("one"), 1000)
+                self.assertEqual(self.repo.get_beta_credit("one")["remaining_cents"], 1000)
+
+    def test_actual_remotion_dry_run_quote_is_zero_without_changing_live_quote(self):
+        from server.billing_rates import cost_for
+        arguments = {"stage": "render_first", "rows": [{"sku": "demo", "locale": "en-CA"}]}
+        with patch.dict("os.environ", {"REMOTION_DRY_RUN": "true", "REMOTION_RENDER_BACKEND": "local"}):
+            self.assertEqual(cost_for("remotion", "render_ad_variants", arguments).total_cents, 0)
+        with patch.dict("os.environ", {"REMOTION_DRY_RUN": "false", "REMOTION_RENDER_BACKEND": "local", "REMOTION_LICENSE_RENDER_USD": "0.01"}):
+            self.assertEqual(cost_for("remotion", "render_ad_variants", arguments).total_cents, 1)
 
 
 if __name__ == "__main__":

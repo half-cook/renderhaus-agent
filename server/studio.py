@@ -750,12 +750,6 @@ async def invoke_tool(body: InvokeBody, auth: AuthUser) -> dict[str, Any]:
     billed = cost.total_cents > 0 and (stripe_enabled() or beta_billing_enabled(repository, user_id))
     charge = None
     if billed:
-        # Debit *before* dispatch, not after: charge_usage's daily-allowance
-        # CAS and wallet UPDATE are both atomic, so two concurrent requests
-        # reading the same allowance/balance can no longer both pass a
-        # check and both spend real provider money -- whichever debits
-        # first wins, the other sees the reduced amounts and correctly
-        # 402s before anything is dispatched.
         try:
             charge = await asyncio.to_thread(
                 repository.charge_usage, user_id, cost.total_cents, "generation"
@@ -795,6 +789,9 @@ async def invoke_tool(body: InvokeBody, auth: AuthUser) -> dict[str, Any]:
         if billed:
             await refund("dispatch failed")
         raise HTTPException(status_code=500, detail=str(exc)) from exc
+    if result.get("error") or result.get("status") in {"failed", "error", "blocked", "not_run"}:
+        await refund("provider returned a failed or no-work result")
+        return {"provider": body.provider, "tool": body.tool, "result": result, "assets": [], "cost": cost.public()}
     if body.provider == "runway" and body.tool != "get_runway_task" and result.get("job_id"):
         await asyncio.to_thread(repository.record_provider_task, workspace_id, body.project_id, "runway", result["job_id"])
     if preparing_edit:
