@@ -8,6 +8,7 @@ import tempfile
 import unittest
 from contextlib import contextmanager
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import patch
 
 import httpx
@@ -36,6 +37,9 @@ class SyncProviderTests(unittest.TestCase):
     def setUp(self):
         self.assertIsNotNone(
             importlib.util.find_spec("providers.sync"), "The Sync provider is not implemented."
+        )
+        self.assertIsNotNone(
+            importlib.util.find_spec("providers.sync.api"), "The Sync provider API is not implemented."
         )
         self.api = importlib.import_module("providers.sync.api")
         self.contracts = importlib.import_module("providers.sync.contracts")
@@ -573,6 +577,61 @@ class SyncProviderTests(unittest.TestCase):
                 split.assert_not_called()
                 upload.assert_not_called()
         self.assertEqual(self.requests, [])
+
+    def test_preprocessing_splits_paired_media_and_uploads_all_before_submission(self):
+        from providers.remotion import local
+
+        os.environ.update(AWS_S3_BUCKET="offline-chunks", REMOTION_LOCAL_MEDIA_HOSTS="media.example.test")
+        source_video = Path(self.directory.name) / "source.mp4"
+        source_audio = Path(self.directory.name) / "source.wav"
+        source_video.write_bytes(b"video")
+        source_audio.write_bytes(b"audio")
+        commands, uploaded = [], []
+
+        def source(value, **kwargs):
+            return source_video if value == VIDEO_URL else source_audio
+
+        def probe(path):
+            duration = 125.0
+            if path.name.startswith("chunk-"):
+                duration = (45.0, 45.0, 35.0)[int(path.stem.split("-")[1])]
+            stream = {"codec_type": "video" if path.suffix == ".mp4" else "audio", "duration": str(duration)}
+            if stream["codec_type"] == "video":
+                stream["avg_frame_rate"] = "25/1"
+            return {"format": {"duration": str(duration)}, "streams": [stream]}
+
+        def split(command, **kwargs):
+            self.assertEqual(self.requests, [])
+            commands.append(command)
+            Path(command[-1]).write_bytes(b"clipped")
+            return SimpleNamespace(returncode=0)
+
+        class S3:
+            def upload_file(s3, *, Filename, Bucket, Key, ExtraArgs):
+                self.assertEqual(self.requests, [])
+                self.assertEqual(Bucket, "offline-chunks")
+                self.assertTrue(Path(Filename).is_file())
+                uploaded.append((Key, ExtraArgs["ContentType"]))
+
+            def generate_presigned_url(s3, operation, *, Params, ExpiresIn):
+                self.assertEqual(len(commands), 6)
+                return "https://chunks.example.test/" + Params["Key"] + "?X-Amz-Signature=temporary"
+
+        for index in range(3):
+            self.fal_submit_route(f"part_{index}")
+        with (
+            patch.object(self.chunks.shutil, "which", return_value="/usr/bin/tool"),
+            patch.object(local, "_source", side_effect=source),
+            patch.object(local, "_probe", side_effect=probe),
+            patch.object(self.chunks.subprocess, "run", side_effect=split),
+            patch.object(self.chunks.boto3, "client", return_value=S3()),
+        ):
+            output = self.submit_aggregate_without_patch()
+        self.assertEqual(output["status"], "queued")
+        self.assertEqual(len(commands), 6)
+        self.assertEqual([command[command.index("-t") + 1] for command in commands], ["45", "45", "45", "45", "35", "35"])
+        self.assertEqual([mime for _, mime in uploaded], ["video/mp4", "audio/wav"] * 3)
+        self.assertEqual(len(self.requests), 3)
 
 
 if __name__ == "__main__":
