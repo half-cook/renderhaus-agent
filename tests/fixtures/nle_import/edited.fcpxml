@@ -1,0 +1,62 @@
+<fcpxml version="1.9">
+  <resources>
+    <format id="r1" name="Renderhaus" frameDuration="1/24s" width="1920" height="1080" />
+    <asset id="r2" name="Camera" start="59s" duration="4s" hasVideo="1" hasAudio="0" format="r1">
+      <media-rep kind="original-media" src="media/version-camera-1/camera-e312e17d56711f5a.mp4" />
+      <metadata>
+        <md key="com.renderhaus.assetId" value="camera" />
+        <md key="com.renderhaus.versionId" value="version-camera-1" />
+        <md key="com.renderhaus.checksum" value="e312e17d56711f5ac901eb9e7e33b71055799a1cc3d8ef19b97325e19e94167e" />
+        <md key="com.renderhaus.sourceTimecode" value="00:00:59:00" />
+        <md key="com.renderhaus.reelName" value="CAMERA_A_LONG_REEL" />
+        <md key="com.renderhaus.provenance" value="{&quot;origin&quot;:&quot;upload&quot;}" />
+        <md key="com.renderhaus.generated" value="false" />
+        <md key="com.renderhaus.hasAudio" value="false" />
+        <md key="com.renderhaus.sourceDurationFrames" value="96" />
+      </metadata>
+    </asset>
+    <asset id="r3" name="Generated" start="59s" duration="4s" hasVideo="1" hasAudio="0" format="r1">
+      <media-rep kind="original-media" src="media/version-generated-1/generated-6c27522e2c2ef5ba.mp4" />
+      <metadata>
+        <md key="com.renderhaus.assetId" value="generated" />
+        <md key="com.renderhaus.versionId" value="version-generated-1" />
+        <md key="com.renderhaus.checksum" value="6c27522e2c2ef5babec036a95b88b67de6d7bcda0e2875c09ff01d50aff75f7d" />
+        <md key="com.renderhaus.sourceTimecode" value="00:00:59:00" />
+        <md key="com.renderhaus.reelName" value="GEN_001" />
+        <md key="com.renderhaus.provenance" value="{&quot;origin&quot;:&quot;generation&quot;,&quot;source_version_ids&quot;:[&quot;version-camera-1&quot;],&quot;tool&quot;:&quot;seedance.image_to_video&quot;}" />
+        <md key="com.renderhaus.generated" value="true" />
+        <md key="com.renderhaus.hasAudio" value="false" />
+        <md key="com.renderhaus.sourceDurationFrames" value="96" />
+      </metadata>
+    </asset>
+  </resources>
+  <library>
+    <event name="Renderhaus handoff">
+      <project name="Editor handoff">
+        <sequence format="r1" duration="2s" tcStart="3600s" tcFormat="NDF" audioLayout="stereo" audioRate="48k">
+          <spine>
+            <asset-clip ref="r3" name="Generated" offset="3600s" start="119/2s" duration="1/2s" srcEnable="video">
+                <adjust-conform type="fill" />
+                <metadata>
+                  <md key="com.renderhaus.assetId" value="generated" />
+                  <md key="com.renderhaus.versionId" value="version-generated-1" />
+                  <md key="com.renderhaus.checksum" value="6c27522e2c2ef5babec036a95b88b67de6d7bcda0e2875c09ff01d50aff75f7d" />
+                  <md key="com.renderhaus.sourceTimecode" value="00:00:59:00" />
+                  <md key="com.renderhaus.reelName" value="GEN_001" />
+                  <md key="com.renderhaus.provenance" value="{&quot;origin&quot;:&quot;generation&quot;,&quot;source_version_ids&quot;:[&quot;version-camera-1&quot;],&quot;tool&quot;:&quot;seedance.image_to_video&quot;}" />
+                  <md key="com.renderhaus.generated" value="true" />
+                  <md key="com.renderhaus.hasAudio" value="false" />
+                  <md key="com.renderhaus.sourceDurationFrames" value="96" />
+                  <md key="com.renderhaus.clipId" value="generated-clip" />
+                  <md key="com.renderhaus.trackId" value="renderhaus-generated-d804c07f273fb64d" />
+                  <md key="com.renderhaus.trackName" value="Generated - Camera" />
+                  <md key="com.renderhaus.originalTrackId" value="camera-track" />
+                  <md key="com.renderhaus.recordStartFrame" value="24" />
+                </metadata>
+              <marker start="239/4s" duration="1/24s" value="Review this cut" /></asset-clip>
+            </spine>
+        </sequence>
+      </project>
+    </event>
+  </library>
+</fcpxml>
