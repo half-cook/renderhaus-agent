@@ -24,6 +24,9 @@ MODEL_25 = "dreamina-seedance-2-5-260628"
 MODEL_15 = "seedance-1-5-pro-251215"
 GENERATING_TOOLS = ("text_to_video", "image_to_video", "reference_to_video", "edit_video", "extend_video")
 RESOLUTIONS = ("480p", "720p", "1080p")
+# Official BytePlus edit/extend limits, read 2026-10-09. Use the stricter source
+# range on fal too; its generic references allow 1.8-30.2 seconds.
+SOURCE_DURATION_LIMITS = {"edit_video": (4, 30), "extend_video": (2, 30)}
 ASPECT_RATIOS = ("16:9", "9:16", "1:1", "4:3", "3:4", "21:9", "adaptive")
 FAL_ROUTES = {"text_to_video": "text-to-video", "image_to_video": "image-to-video",
               "reference_to_video": "reference-to-video", "edit_video": "reference-to-video",
@@ -62,7 +65,7 @@ ARGUMENT_RULES = {tool: dict(_COMMON_RULES) for tool in GENERATING_TOOLS}
 ARGUMENT_RULES["edit_video"]["duration_seconds"] = ArgumentRule(choices=(-1,))
 FIELD_DESCRIPTIONS = {
     "aspect_ratio": "Requested output aspect for text/reference generation and legacy BytePlus 1.5. Seedance 2.5 image animation, editing, and extension preserve the source aspect automatically; supply source_aspect_ratio for a known cost estimate.",
-    "duration_seconds": "Output duration from 4 to 30 seconds. Edit uses -1 to preserve the measured source duration. Extension requests generated output seconds, not a promised combined timeline length.",
+    "duration_seconds": "Output duration from 4 to 30 integer seconds per call. Edit uses -1 to preserve the measured source duration. Extension requests generated output seconds. Whether extension output includes the source or only the continuation is UNVERIFIED; never infer an appended increment or a final stitched length.",
     "real_face_refs": "True when a reference contains a real person's likeness. Seedance rejects these inputs; route generation to Wan with consent.",
     "user_supplied_real_person_refs": "True for user-supplied real-person photos or videos. These inputs are forbidden for Seedance, even with consent.",
     "reference_image_urls": "Up to 30 reference images. Refer to them as @Image1, @Image2 in the prompt.",
@@ -71,7 +74,7 @@ FIELD_DESCRIPTIONS = {
     "reference_video_durations": "Measured seconds for each video URL. Required with video references; local validation and billing only.",
     "reference_video_fps": "Measured fps for each video URL. Each fal reference must be 24 to 60 fps; local only.",
     "reference_audio_durations": "Measured seconds for each audio URL. Required with audio references; local only.",
-    "source_duration_seconds": "Measured source seconds, from 4 to 30 for editing or 2 to 30 for extension. Used to quote editing or extension; local only.",
+    "source_duration_seconds": "Measured source seconds, from 4 to 30 for editing or 2 to 30 for extension. fal bills these input seconds plus requested output seconds with the video-input discount; BytePlus video-input quotes remain unknown until its minimum token floor is verified. Local only.",
     "source_fps": "Measured source fps, from 24 to 60 on fal; local only.",
     "watermark": "BytePlus visible watermark, enabled by default. fal has no watermark request field; this argument is not sent to fal and does not guarantee a fal watermark.",
     "service_tier": "BytePlus default or flex for 1.5. Seedance 2.5 rejects flex. Not sent to fal.",
@@ -188,9 +191,9 @@ def validate_arguments(tool: str, arguments: dict[str, Any]) -> None:
         _media_reference(arguments["video_url"], "video_url")
         duration = arguments["source_duration_seconds"]
         fps = arguments["source_fps"]
-        minimum = 4 if tool == "edit_video" else 2
-        if not math.isfinite(duration) or not minimum <= duration <= 30:
-            raise ValueError(f"source_duration_seconds must be measured and from {minimum} to 30.")
+        minimum, maximum = SOURCE_DURATION_LIMITS[tool]
+        if not math.isfinite(duration) or not minimum <= duration <= maximum:
+            raise ValueError(f"source_duration_seconds must be measured and from {minimum} to {maximum}.")
         if not math.isfinite(fps) or not 24 <= fps <= 60:
             raise ValueError("source_fps must be measured and from 24 to 60.")
     if host == "byteplus" and configured_model(arguments) != MODEL_15 and arguments.get("reference_audio_urls"):
