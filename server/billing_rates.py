@@ -568,12 +568,41 @@ def _openai_images_cost(tool: str, arguments: dict[str, Any]) -> GenerationCost:
     return _with_fee(quote * request.n)
 
 
+SYNC_FAL_CENTS_PER_MINUTE = Decimal("800")
+SYNC_DIRECT_BASE_CENTS_PER_SECOND_25FPS = Decimal("13.3")
+SYNC_PRICING_READ_DATE = "2026-10-09"
+SYNC_FAL_PRICING_URL = "https://fal.ai/models/fal-ai/sync-lipsync/v3"
+SYNC_DIRECT_PRICING_URL = "https://sync.so/docs/product/billing"
+
+
+def sync_price_cents(arguments: dict[str, Any]) -> Decimal:
+    """Published usage estimate; subscriptions, storage and concat compute are excluded."""
+    from providers.sync.contracts import configured_transport, request_for
+
+    request = request_for(arguments)
+    if request.model != "sync-3":
+        raise ValueError("UNVERIFIED Sync model; estimate unknown.")
+    duration = Decimal(str(request.output_duration))
+    if configured_transport() == "fal":
+        return duration * SYNC_FAL_CENTS_PER_MINUTE / 60
+    if os.getenv("SYNC_BILLING_PLAN", "legacy_base") != "legacy_base":
+        raise ValueError("Sync credit/negotiated billing estimate unknown; verify the account rate.")
+    frames = Decimal(math.ceil(float(duration) * request.source_fps))
+    return frames * SYNC_DIRECT_BASE_CENTS_PER_SECOND_25FPS / 25
+
+
 def cost_for(provider: str, tool: str, arguments: dict[str, Any]) -> GenerationCost:
     """Real cost (provider + disclosed fee) for one call to `provider`/`tool`.
     Called both before dispatch (to check affordability) and after success
     (to charge the same amount), so it must be a pure function of the
     request, not of anything the provider returns.
     """
+    if provider == "sync":
+        if tool == "get_video_task":
+            return GenerationCost(0, 0)
+        if tool != "lipsync_video":
+            raise ValueError("Unknown Sync tool.")
+        return _with_fee(math.ceil(sync_price_cents(arguments)))
     if provider == "openai_images":
         return _openai_images_cost(tool, arguments)
     if provider == "kling":

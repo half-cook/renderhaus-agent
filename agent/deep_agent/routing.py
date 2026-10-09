@@ -11,6 +11,7 @@ from pathlib import Path
 POLICY = json.loads(Path(__file__).with_name("routing_policy.json").read_text())
 TOOL_MAP = POLICY["tools"]
 TARGET_PROVIDERS = {
+    "Sync": "sync",
     "OpenAI": "openai_images",
     "Kling": "kling",
     "Runway": "runway",
@@ -61,6 +62,7 @@ class Route:
 _VIDEO_DELIVERABLE = r"\b(?:shots?|clips?|videos?|mp4)\b"
 _VOICEOVER = r"\b(?:voice[ -]?over|narration|narrate|vo)\b"
 _IMAGE_ALIASES = ("gpt_image25_t2i", "gpt_image25_edit", "recraft_v41_vector", "ideogram45_edit", "seedream_t2i")
+_LIPSYNC_REQUEST = next(rule["pattern"] for rule in POLICY["rules"] if rule.get("capability") == "lipsync")
 
 
 @dataclass(frozen=True)
@@ -109,6 +111,10 @@ def filter_request_tools(prompt: str, names: set[str]) -> set[str]:
 
 def capability_constraints(constraints: dict, capability: str) -> dict:
     scoped = dict(constraints)
+    if capability == "lipsync" and scoped.get("provider") in {"elevenlabs", "fish_audio"}:
+        scoped["provider"] = next((candidate for candidate in scoped["provider_candidates"]
+                                   if capability in POLICY["explicit_routes"].get(candidate, {})), None)
+        scoped["model"] = scoped["named_model"] = None
     if not constraints["predicates"].get("video_voiceover"):
         return scoped
     named = scoped.get("named_model")
@@ -191,7 +197,8 @@ def route_intent(prompt: str, *, region: str | None = None, tier: str | None = N
         if re.search(pattern, prompt, re.I):
             return Route(alias=alias, status="retired", reason=TOOL_MAP[alias]["reason"],
                          disclosure=TOOL_MAP[alias]["reason"])
-    delivery = _delivery_route(prompt, constraints, region=region, available_tools=available_tools, arguments=arguments)
+    lipsync = bool(re.search(_LIPSYNC_REQUEST, prompt, re.I))
+    delivery = None if lipsync else _delivery_route(prompt, constraints, region=region, available_tools=available_tools, arguments=arguments)
     if delivery is not None:
         return delivery
     for rule in POLICY["rules"]:
@@ -199,6 +206,19 @@ def route_intent(prompt: str, *, region: str | None = None, tier: str | None = N
             continue
         skill, alias = rule["skill"], rule["abstract_tool"]
         capability = rule.get("capability")
+        if capability == "lipsync" and re.search(r"\b(?:tts|elevenlabs)\b.*\b(?:then|first)\b", prompt, re.I):
+            continue
+        if capability == "lipsync" and not constraints["provider"]:
+            existing = ((arguments or {}).get("video_url") or (arguments or {}).get("source_video_url")
+                        or re.search(r"footage|(?:existing|attached|uploaded|this|the)\s+(?:interview\s+)?(?:clip|video)", prompt, re.I))
+            from_still = re.search(r"(?:from|using|with).*\b(?:image|photo|still)\b", prompt, re.I)
+            generated = re.search(
+                r"\b(?:generate|create|make)\b.*\b(?:talking|speaking)\b|"
+                r"(?:cartoon|synthetic|fictional|foxes|mascot|illustrated).*(?:talk|say|dialogue|speak)", prompt, re.I,
+            )
+            if not existing and (from_still or generated):
+                capability = "i2v" if from_still else "t2v"
+                skill = capability
         if capability == "t2v" and re.search(r"\brefs\b|reference[ -]to[ -]video|multi.ref", prompt, re.I):
             capability, skill = "reference_video", "i2v"
         elif capability == "t2v" and re.search(r"animat|(?:image|photo|still).*(?:talk|speak)", prompt, re.I):
@@ -214,8 +234,9 @@ def route_intent(prompt: str, *, region: str | None = None, tier: str | None = N
         if capability == "t2v" and constraints["required"].get("start_end_frame"):
             capability, skill = "i2v", "i2v"
         if capability:
+            scoped = capability_constraints(constraints, capability) if capability == "lipsync" else constraints
             route = select_provider(capability, arguments=arguments, available_tools=available_tools,
-                                    region=region, retry=retry, **constraints)
+                                    region=region, retry=retry, **scoped)
             if constraints["provider"] in {"kling", "runway", "luma", "seedream", "fish_audio"} or (
                 constraints["provider"] == "fal" and re.search(r"vidu|vace", prompt, re.I)
             ):
@@ -324,6 +345,9 @@ def _capability_price(row: dict):
     elif provider == "alibaba_modelstudio":
         values = {region: {resolution: str(value) for resolution, value in table.items()}
                   for region, table in rates.MODELSTUDIO_CENTS_PER_SECOND.items()}
+    elif provider == "sync":
+        values = {"fal_cents_per_minute": str(rates.SYNC_FAL_CENTS_PER_MINUTE),
+                  "direct_legacy_base_cents_per_second_at_25fps": str(rates.SYNC_DIRECT_BASE_CENTS_PER_SECOND_25FPS)}
     else:
         return "unknown"
     return {**price, "rates": values,
@@ -340,6 +364,7 @@ def intent_constraints(prompt: str, *, tier: str | None = None, confidential: bo
         (r"\bopenai\b|gpt[ -]image", "openai_images"),
         (r"\brunway\b|\baleph\b|gen.?4", "runway"), (r"\bluma\b|\bray.?3\b", "luma"),
         (r"\bfish\b", "fish_audio"), (r"\belevenlabs\b", "elevenlabs"),
+        (r"\bsync[ -]?3\b|sync\.so|\b(?:use|using|via)\s+sync\b", "sync"),
         (r"model[ -]?studio|dashscope|alibaba", "alibaba_modelstudio"),
         (r"mini.?max", "minimax_h3"), (r"hunyuan", "hunyuan"),
     ] if re.search(pattern, prompt, re.I)]
@@ -586,8 +611,8 @@ def select_provider(job: str, *, tier: str | None = None, required: dict | None 
             reason = f"{basis}. Selected {tool} cannot satisfy {capability} required capabilities {required}; no automatic provider fallback."
             return Route(alias=alias, basis=basis, status="blocked", job_type=capability, required=required, reason=reason, disclosure=reason)
         quote_args = {**args, "model": model}
-        if duration:
-            key = row.get("duration_field") or ("source_duration_seconds" if tool.endswith("modify_video") else "video_duration_seconds" if tool.endswith("video_to_video") and row["provider"] == "runway" else "duration_seconds")
+        if duration and row["provider"] != "sync":
+            key = row.get("duration_field") or ("source_duration_seconds" if row["provider"] == "sync" or tool.endswith("modify_video") else "video_duration_seconds" if tool.endswith("video_to_video") and row["provider"] == "runway" else "duration_seconds")
             if row["provider"] == "fal" and not row.get("duration_field"):
                 quote_args["num_frames"] = args.get("num_frames", round(duration * args.get("frames_per_second", 16)) + 1)
             else:
@@ -727,6 +752,13 @@ def policy_blocker(name: str, arguments: dict, *, region: str | None = None) -> 
         if not dry_run():
             if blocker := live_blocker(tool, arguments):
                 return blocker
+    if provider == "sync":
+        from providers.sync.api import dry_run
+        from providers.sync.contracts import live_blocker
+
+        if not dry_run():
+            if blocker := live_blocker(arguments):
+                return blocker
     if (
         region in model_policy.get("blocked_regions", [])
         or model_policy.get("allowed_regions")
@@ -844,6 +876,7 @@ def estimate_cost(name: str, arguments: dict, *, list_price: bool = False) -> Co
 
 def _published_cost(provider: str, tool: str, arguments: dict):
     from decimal import Decimal
+    from math import ceil
     from server import billing_rates as rates
 
     if provider == "seedance":
@@ -852,6 +885,9 @@ def _published_cost(provider: str, tool: str, arguments: dict):
         return rates._with_fee(ceil(rates.seedance_price_cents(tool, arguments)))
     if provider == "seedream":
         return rates._seedream_cost(arguments)
+    if provider == "sync":
+        cents = rates.sync_price_cents(arguments)
+        return rates._with_fee(ceil(cents))
     if provider == "alibaba_modelstudio":
         cents = rates.modelstudio_price_cents(tool, arguments)
     elif provider == "fal" and tool in {"generate_wan3_t2v", "generate_wan3_i2v", "generate_wan3_r2v"}:

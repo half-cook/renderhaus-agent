@@ -32,7 +32,7 @@ class CapabilityEvidenceTests(unittest.TestCase):
                                      f'bytedance/seedance-2.5/us/{endpoint}')
 
     def test_official_evidence_never_enables_pending_tools(self):
-        for alias in ['mureka_v95', 'mirelo_v2a', 'sync3_lipsync',
+        for alias in ['mureka_v95', 'mirelo_v2a',
                       'heygen_avatar_v', 'recraft_v41_vector', 'ideogram45_edit', 'topaz_upscale']:
             with self.subTest(alias=alias):
                 entry = POLICY['tools'][alias]
@@ -42,5 +42,13 @@ class CapabilityEvidenceTests(unittest.TestCase):
                 self.assertEqual(entry['read_date'], '2026-10-08')
                 self.assertTrue(entry['license_source'].startswith('https://'))
                 self.assertIn('adapter pending', entry['verification'])
-        self.assertEqual(POLICY['tools']['sync3_lipsync']['us_available'], 'unclear')
         self.assertEqual(POLICY['tools']['heygen_avatar_v']['us_available'], 'unclear')
+
+    def test_sync_verified_adapter_binds_the_canonical_alias(self):
+        entry = POLICY['tools']['sync3_lipsync']
+        self.assertEqual(entry['status'], 'ready')
+        self.assertEqual(entry['gateway_tool'], 'Sync___lipsync_video')
+        self.assertEqual(entry['read_date'], '2026-10-09')
+        self.assertEqual(entry['us_available'], 'yes')
+        self.assertFalse(entry['training_eligible'])
+        self.assertEqual(resolve_alias('sync3_lipsync'), entry['gateway_tool'])

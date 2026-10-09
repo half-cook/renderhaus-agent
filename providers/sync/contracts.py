@@ -42,7 +42,7 @@ FIELD_DESCRIPTIONS = {
     "subjects": "Nonblank declaration identifying everyone who appears and whose voice is used. An explicit synthetic-subject and synthetic-voice declaration is allowed.",
     "consent_confirmed": "Must be the boolean true, confirming permission to use every depicted likeness and supplied voice. Required even for synthetic declarations.",
     "sync_mode": "cut_off uses the shorter input; loop, bounce and remap follow audio length; silence uses the longer input. Long chunked runs support equal-length inputs with cut_off only.",
-    "chunk_boundaries_seconds": "Strictly increasing internal silence or shot timestamps. Required when output exceeds SYNC_MAX_CHUNK_SECONDS. Every resulting span must fit the cap. fal's hard duration maximum is UNVERIFIED.",
+    "chunk_boundaries_seconds": "Strictly increasing internal silence or shot timestamps. Required when either input exceeds SYNC_MAX_CHUNK_SECONDS. Every resulting span must fit the cap. fal's hard duration maximum is UNVERIFIED.",
     "model": "Configured model override. sync-3 is verified. Other identifiers are UNVERIFIED and allowed only in dry-run previews.",
     "job_id": "Exact saved Sync job handle from lipsync_video. Polling never submits another generation.",
     "download": "Save a completed MP4 atomically. Aggregate jobs always download completed children to concatenate their outputs.",

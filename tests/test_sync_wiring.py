@@ -24,7 +24,12 @@ class SyncWiringTests(unittest.TestCase):
     def test_existing_footage_routes_to_sync_without_confidential_or_price_tiers(self):
         for prompt in ["lipsync this footage", "revoice this interview clip",
                        "dub this interview clip into Spanish",
-                       "lip-sync existing footage with a new narration voiceover"]:
+                       "lip-sync existing footage with a new narration voiceover",
+                       "revoice this interview clip with ElevenLabs audio",
+                       "lipsync this clip with ElevenLabs TTS",
+                       "dub this uploaded footage into French",
+                       "dub this existing video into French",
+                       "replace the voice in this video"]:
             for confidential in (False, True):
                 route = routing.route_intent(prompt, confidential=confidential, arguments=ARGS)
                 self.assertEqual(route.tool, "Sync___lipsync_video")
@@ -45,6 +50,7 @@ class SyncWiringTests(unittest.TestCase):
         with patch.dict(os.environ, {"RENDERHAUS_PREMIUM_VIDEO_APPROVAL": "false"}):
             for autonomous in (False, True):
                 self.assertTrue(tool_needs_approval("Sync___lipsync_video", autonomous))
+                self.assertTrue(tool_needs_approval("sync3_lipsync", autonomous))
         self.assertFalse(tool_needs_approval("Sync___get_video_task", True))
         self.assertEqual(routing.estimate_cost("Sync___get_video_task", {}).total_cents, 0)
 

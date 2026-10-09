@@ -87,7 +87,7 @@ class CapabilityMapTests(unittest.TestCase):
         self.assertEqual(routing.select_provider("image").tool, "OpenAI___generate_image")
         self.assertEqual(routing.select_provider("v2v_edit").tool, "Seedance___edit_video")
         self.assertEqual(routing.select_provider("reference_video").tool, "Fal___generate_wan3_r2v")
-        self.assertEqual(routing.select_provider("lipsync").status, "pending")
+        self.assertEqual(routing.select_provider("lipsync").status, "ready")
         self.assertEqual(routing.select_provider("t2v", available_tools={"Kling___text_to_video"}).status, "blocked")
         self.assertEqual(routing.select_provider("t2v").tool, "Fal___generate_wan3_t2v")
 

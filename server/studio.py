@@ -386,11 +386,13 @@ def _source_version_ids(value: Any) -> list[str]:
 @router.get("/status")
 async def studio_status() -> dict[str, Any]:
     from providers.seedance.api import dry_run as seedance_dry_run
+    from providers.sync.api import dry_run as sync_dry_run
 
     return {
         "mode": "local",
         "agent": agent_configured(),
         "dry_run": {
+            "sync": sync_dry_run(),
             "openai_images": os.getenv("OPENAI_IMAGES_DRY_RUN", "true").lower() != "false",
             "kling": os.getenv("KLING_DRY_RUN", "true").lower() != "false",
             "runway": os.getenv("RUNWAY_DRY_RUN", "true").lower() != "false",
@@ -697,6 +699,11 @@ async def invoke_tool(body: InvokeBody, auth: AuthUser) -> dict[str, Any]:
         await asyncio.to_thread(repository.require_project, workspace_id, body.project_id)
     except KeyError as exc:
         raise HTTPException(status_code=404, detail="Project not found.") from exc
+    if (body.provider, body.tool) == ("sync", "lipsync_video"):
+        raise HTTPException(
+            status_code=409,
+            detail="Use the agent lip-sync workflow for required consent and cost approval before Sync generation.",
+        )
     cleaned = _tool_arguments(body.provider, body.tool, body.arguments)
     source_version_ids = list(dict.fromkeys([*body.source_version_ids, *_source_version_ids(cleaned)]))
     preparing_edit = (body.provider, body.tool) == ("remotion", "prepare_conversational_edit")

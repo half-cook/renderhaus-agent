@@ -49,8 +49,9 @@ class SyncNativeApprovalTests(unittest.IsolatedAsyncioTestCase):
                         "resume_state": paused.exception.state,
                         "approval_decisions": [StudioApprovalDecision(call_id=approval.call_id, decision=decision)],
                     })
-                    _, restored, _ = await run_with_servers(
-                        resumed, _context_from_request(resumed), [gateway], model=ScriptedModel([final()]),
+                    restored = _context_from_request(resumed)
+                    await run_with_servers(
+                        resumed, restored, [gateway], model=ScriptedModel([final()]),
                     )
                     if decision == "approve":
                         gateway.call_tool.assert_awaited_once_with(name, ARGS)

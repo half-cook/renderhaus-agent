@@ -567,6 +567,35 @@
       "us_available": "yes",
       "availability_source": "https://developers.openai.com/api/docs/supported-countries",
       "read_date": "2026-10-09"
+    },
+    "sync": {
+      "enabled": true,
+      "license": "service-terms",
+      "training_eligible": false,
+      "allowed_regions": [],
+      "models": [
+        "sync-3"
+      ],
+      "default_model": "sync-3",
+      "model_env": "SYNC_MODEL",
+      "default_models": {
+        "lipsync_video": "sync-3"
+      },
+      "model_policies": {
+        "sync-3": {
+          "license": "service-terms",
+          "weights_license": "closed-weights",
+          "training_eligible": false,
+          "enabled": true,
+          "commercial_status": "fal commercial API; direct requires express written permission for competitor/customer integration restrictions",
+          "license_source": "https://fal.ai/legal/api-services",
+          "consent_requirements": "Required subjects and consent_confirmed=true for every real face and voice.",
+          "consent_source": "https://sync.so/terms",
+          "training_reason": "No clear output-training grant; fal competing-model restriction. Sync upload-use grant includes service improvement.",
+          "read_date": "2026-10-09"
+        }
+      },
+      "explicit_only": false
     }
   },
   "tools": {
@@ -1116,22 +1145,22 @@
       "skill": "image-gen"
     },
     "sync3_lipsync": {
-      "gateway_tool": null,
-      "status": "pending",
+      "gateway_tool": "Sync___lipsync_video",
+      "status": "ready",
       "provider": "sync",
-      "reason": "provider pending: sync3_lipsync (feat/lipsync-sync3)",
-      "verification": "verified; adapter pending; live use disabled",
+      "reason": "Quality-first default for new audio on existing footage; explicit consent and paid-video approval required.",
+      "verification": "Official sync-3 ID, direct API and fal endpoint/schema verified; fal maximum duration UNVERIFIED; operational chunk cap 60s.",
       "training_eligible": false,
       "model": "sync-3",
-      "host": "sync.so",
-      "us_available": "unclear",
-      "availability_source": "https://sync.so/terms",
-      "read_date": "2026-10-08",
-      "license": "proprietary commercial API, Sync Labs Terms",
-      "license_source": "https://sync.so/terms",
+      "host": "fal",
+      "us_available": "yes",
+      "availability_source": "https://fal.ai/models/fal-ai/sync-lipsync/v3",
+      "read_date": "2026-10-09",
+      "license": "service-terms",
+      "license_source": "https://fal.ai/legal/api-services",
       "training_reason": "No unambiguous public output-training grant verified.",
-      "source": "https://sync.so/docs/api-reference/api/generate-api/create",
-      "price_source": "https://sync.so/pricing",
+      "source": "https://fal.ai/models/fal-ai/sync-lipsync/v3/api",
+      "price_source": "https://fal.ai/models/fal-ai/sync-lipsync/v3",
       "dry_run": true
     },
     "heygen_avatar_v": {
@@ -1577,6 +1606,12 @@
       "capability": "nle_handoff"
     },
     {
+      "pattern": "lipsync|lip.sync|talking head|talking avatar|spokesperson|avatar.*(?:say|script|presenter)|presenter|digital twin|dub.*(?:interview|clip|footage|video)|hedra|infinitetalk|re[ -]?voic|replace.*(?:voice|dialogue).*(?:footage|video|clip)|sync[ -]?3|sync\\.so",
+      "skill": "lipsync",
+      "abstract_tool": "sync3_lipsync",
+      "capability": "lipsync"
+    },
+    {
       "pattern": "\\bfish\\b|narrat|\\btts\\b|\\bvo\\b|voiceover|elevenlabs(?!.*(?:music|sound effect))",
       "skill": "audio-bed",
       "abstract_tool": "eleven_v4_turbo",
@@ -1622,12 +1657,6 @@
       "skill": "t2v",
       "abstract_tool": "wan3_t2v",
       "capability": "t2v"
-    },
-    {
-      "pattern": "lipsync|lip.sync|talking head|talking avatar|spokesperson|avatar.*(?:say|script|presenter)|presenter|digital twin|dub.*(?:interview|clip)|hedra|infinitetalk",
-      "skill": "lipsync",
-      "abstract_tool": "sync3_lipsync",
-      "capability": "lipsync"
     },
     {
       "pattern": "interpolat|\\d+\\s*fps.*\\d+\\s*fps|smooth.*clip.*fps",
@@ -3967,6 +3996,47 @@
       },
       "durations": {},
       "explicit_only": false
+    },
+    {
+      "provider": "sync",
+      "policy_ref": "sync",
+      "model": "sync-3",
+      "label": "sync-3 lip sync",
+      "tools": {
+        "lipsync": "Sync___lipsync_video"
+      },
+      "jobs": {
+        "native_audio": true,
+        "max_resolution": 2160
+      },
+      "controls": {
+        "lipsync": [
+          "video_url",
+          "audio_url",
+          "source_duration_seconds",
+          "audio_duration_seconds",
+          "source_fps",
+          "subjects",
+          "consent_confirmed",
+          "sync_mode",
+          "chunk_boundaries_seconds",
+          "source_width",
+          "source_height"
+        ]
+      },
+      "durations": {},
+      "resolutions": [
+        480,
+        720,
+        1080,
+        2160
+      ],
+      "price": {
+        "source": "https://fal.ai/models/fal-ai/sync-lipsync/v3",
+        "checked_at": "2026-10-09"
+      },
+      "native_audio_field": null,
+      "native_audio_default": true
     }
   ],
   "image_default_size": "2K",
@@ -4198,7 +4268,8 @@
     "ModelStudio___extend_wan3_video",
     "Seedance___reference_to_video",
     "Seedance___edit_video",
-    "Seedance___extend_video"
+    "Seedance___extend_video",
+    "Sync___lipsync_video"
   ],
   "explicit_routes": {
     "kling": {
@@ -4225,7 +4296,8 @@
       "t2v": "wan3_t2v",
       "i2v": "wan3_i2v",
       "reference_video": "wan3_r2v",
-      "v2v_edit": "wan_vace_edit"
+      "v2v_edit": "wan_vace_edit",
+      "lipsync": "sync3_lipsync"
     },
     "seedance": {
       "t2v": "seedance25_t2v",
@@ -4254,6 +4326,9 @@
     "openai_images": {
       "still_image": "gpt_image25_t2i",
       "image_edit": "gpt_image25_edit"
+    },
+    "sync": {
+      "lipsync": "sync3_lipsync"
     }
   },
   "named_models": {
@@ -4515,6 +4590,14 @@
       "availability_source": "https://github.com/facebookresearch/dinov2/blob/main/LICENSE",
       "availability_note": "Worldwide Apache licence for customer-controlled execution; specific RunPod account/region availability not verified.",
       "read_date": "2026-10-08"
+    },
+    {
+      "provider": "sync-3",
+      "host": "fal (primary), sync.so (authorized direct optional)",
+      "us_available": "yes",
+      "availability_source": "https://fal.ai/legal/api-services",
+      "availability_note": "fal customer integration licence is worldwide; direct Sync competitor permission required.",
+      "read_date": "2026-10-09"
     }
   ],
   "model_policies": {
@@ -4656,12 +4739,16 @@
       "read_date": "2026-10-08"
     },
     "sync3_lipsync": {
-      "license": "proprietary commercial API, Sync Labs Terms",
-      "license_source": "https://sync.so/terms",
+      "license": "service-terms",
+      "weights_license": "closed-weights",
       "training_eligible": false,
-      "training_reason": "No unambiguous public output-training grant verified.",
-      "commercial_status": "commercial service or permissive code; source media rights still required",
-      "read_date": "2026-10-08"
+      "enabled": true,
+      "commercial_status": "fal commercial API; direct requires express written permission for competitor/customer integration restrictions",
+      "license_source": "https://fal.ai/legal/api-services",
+      "consent_requirements": "Required subjects and consent_confirmed=true for every real face and voice.",
+      "consent_source": "https://sync.so/terms",
+      "training_reason": "No clear output-training grant; fal competing-model restriction. Sync upload-use grant includes service improvement.",
+      "read_date": "2026-10-09"
     },
     "heygen_avatar_v": {
       "license": "proprietary API; exact terms require future adapter branch verification",

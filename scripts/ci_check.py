@@ -28,6 +28,7 @@ def _force_dry_run() -> None:
     os.environ["OPENAI_IMAGES_DRY_RUN"] = "true"
     os.environ["HYPERFRAMES_DRY_RUN"] = "true"
     os.environ["MODELSTUDIO_DRY_RUN"] = "true"
+    os.environ["SYNC_DRY_RUN"] = "true"
 
 
 _force_dry_run()
@@ -71,8 +72,8 @@ def check_routing_inventory() -> None:
     from providers.catalog import PROVIDERS
     from providers.registry import load_committed_schemas
 
-    assert len(PROVIDERS) == 10
-    assert sum(len(load_committed_schemas(spec)) for spec in PROVIDERS) == 89
+    assert len(PROVIDERS) == 11
+    assert sum(len(load_committed_schemas(spec)) for spec in PROVIDERS) == 91
     paths = list(SKILLS_ROOT.glob("*/SKILL.md"))
     assert len(paths) == 24
     assert "ladder" not in POLICY and "premium_targets" not in POLICY
@@ -89,8 +90,8 @@ def check_routing_inventory() -> None:
         assert set(metadata["include_tools"].split()) <= DISPATCH_TARGETS.keys(), path
         assert all(TOOL_MAP[alias]["status"] != "retired" for alias in metadata["routing_tools"].split()), path
     cases = json.loads((ROOT / "tests/fixtures/skill_routing.json").read_text())
-    assert len(cases) == 129 and sum(not case["skip_reason"] for case in cases) == 91
-    print("ok routing inventory (10 providers, 89 Gateway tools, 24 skills, 91 active routing rows)")
+    assert len(cases) == 129 and sum(not case["skip_reason"] for case in cases) == 96
+    print("ok routing inventory (11 providers, 91 Gateway tools, 24 skills, 96 active routing rows)")
 
 
 def _assert_gateway_shape(schema: object) -> None:
@@ -119,6 +120,14 @@ def check_dry_run_dispatch() -> None:
         for schema in load_committed_schemas(spec):
             name = schema["name"]
             arguments = dummy_arguments(schema)
+            if spec.id == "sync" and name == "lipsync_video":
+                arguments.update(video_url="https://example.test/source.mp4",
+                                 audio_url="https://example.test/voice.wav",
+                                 source_duration_seconds=5.0, audio_duration_seconds=5.0,
+                                 source_fps=25.0, subjects="Synthetic test face and authorized synthetic voice",
+                                 consent_confirmed=True)
+            if spec.id == "sync" and name == "get_video_task":
+                arguments["job_id"] = "sync:dry:00000000000000000000000000000000"
             if spec.id == "seedance" and name in {"text_to_video", "image_to_video", "reference_to_video", "edit_video", "extend_video"}:
                 arguments["model"] = "dreamina-seedance-2-5-260628"
             if spec.id == "seedance" and name in {"edit_video", "extend_video"}:

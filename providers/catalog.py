@@ -17,6 +17,16 @@ class ProviderSpec:
 
 PROVIDERS: tuple[ProviderSpec, ...] = (
     ProviderSpec(
+        id="sync", target_name="Sync", function_name="renderhaus-sync-tools",
+        module_path="providers.sync.api",
+        env_keys=("SYNC_API_KEY", "SYNC_DRY_RUN", "SYNC_MODEL", "SYNC_TRANSPORT",
+                  "SYNC_DIRECT_AUTHORIZED", "SYNC_MAX_CHUNK_SECONDS", "SYNC_BILLING_PLAN",
+                  "FAL_KEY", "FAL_DRY_RUN", "AWS_S3_BUCKET", "REMOTION_LOCAL_MEDIA_HOSTS"),
+        default_env={"SYNC_DRY_RUN": "true", "SYNC_MODEL": "sync-3", "SYNC_TRANSPORT": "fal",
+                     "SYNC_DIRECT_AUTHORIZED": "false", "SYNC_MAX_CHUNK_SECONDS": "60",
+                     "SYNC_BILLING_PLAN": "legacy_base", "FAL_DRY_RUN": "true"},
+    ),
+    ProviderSpec(
         id="openai_images", target_name="OpenAI", function_name="renderhaus-openai-images-tools",
         module_path="providers.openai_images.api",
         env_keys=("OPENAI_API_KEY", "OPENAI_IMAGES_DRY_RUN", "OPENAI_IMAGES_MODEL",
