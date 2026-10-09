@@ -66,10 +66,11 @@
   {
     "prompt": "swap the product in the masked region cheaply",
     "expected_skill": "edit-v2v",
-    "expected_tool": "wan3_edit",
+    "expected_tool": "seedance25_edit",
     "suite": "edit-v2v",
+    "test_id": "RT-008",
     "skip_reason": "",
-    "note": "Wan remains the quality-first default; Seedance 2.5 serves the declared interim while Wan preview licensing blocks customer use.",
+    "note": "Seedance 2.5 is the permanent video editing default. Wan edit is explicit-only.",
     "source_status": "updated",
     "expected_gateway_tool": "Seedance___edit_video"
   },
@@ -735,22 +736,39 @@
     "source_status": "new"
   },
   {
-    "prompt": "extend this clip by 10 seconds",
+    "prompt": "extend this clip to produce a 15-second output video",
     "expected_skill": "edit-v2v",
-    "expected_tool": "wan3_extend",
+    "expected_tool": "seedance25_extend",
     "suite": "edit-v2v",
-    "skip_reason": "semantics unverified: Seedance appended-versus-combined extension length (feat/seedance-2-5); Wan extend remains preview-licence blocked",
-    "note": "Seedance supports extension with explicit generated output duration; this increment request cannot safely infer that duration.",
-    "source_status": "new",
-    "expected_gateway_tool": "Seedance___extend_video"
+    "test_id": "RT-091",
+    "skip_reason": "",
+    "note": "Seedance 2.5 extends with an explicit generated output duration; source inclusion in the output remains unverified.",
+    "source_status": "updated",
+    "expected_gateway_tool": "Seedance___extend_video",
+    "arguments": {
+      "video_url": "https://example.invalid/source.mp4",
+      "source_duration_seconds": 5,
+      "source_fps": 24,
+      "source_aspect_ratio": "16:9",
+      "prompt": "Continue the motion naturally."
+    },
+    "env": {
+      "SEEDANCE_DRY_RUN": "true",
+      "SEEDANCE_TRANSPORT": "fal",
+      "SEEDANCE_FAL_REGION": "us",
+      "FAL_DRY_RUN": "true"
+    },
+    "verify_provider_contract": true,
+    "expected_duration_seconds": 15
   },
   {
     "prompt": "make this footage look like a watercolor painting",
     "expected_skill": "edit-v2v",
-    "expected_tool": "wan3_edit",
+    "expected_tool": "seedance25_edit",
     "suite": "edit-v2v",
+    "test_id": "RT-092",
     "skip_reason": "",
-    "note": "Wan remains the quality-first default; Seedance 2.5 serves the declared interim while Wan preview licensing blocks customer use.",
+    "note": "Seedance 2.5 is the permanent video editing default. Wan edit is explicit-only.",
     "source_status": "new",
     "expected_gateway_tool": "Seedance___edit_video"
   },
@@ -1313,5 +1331,64 @@
     "env": {
       "HYPERFRAMES_ENABLED": "true"
     }
+  },
+  {
+    "prompt": "edit this clip",
+    "expected_skill": "edit-v2v",
+    "expected_tool": "seedance25_edit",
+    "expected_gateway_tool": "Seedance___edit_video",
+    "forbidden_tools": "wan3_edit",
+    "suite": "edit-v2v",
+    "test_id": "RT-166",
+    "skip_reason": "",
+    "note": "Plain clip editing selects the permanent Seedance 2.5 default.",
+    "source_status": "new"
+  },
+  {
+    "prompt": "continue this clip with a generated video lasting 12 seconds",
+    "expected_skill": "edit-v2v",
+    "expected_tool": "seedance25_extend",
+    "expected_gateway_tool": "Seedance___extend_video",
+    "forbidden_tools": "wan3_extend",
+    "suite": "edit-v2v",
+    "test_id": "RT-167",
+    "skip_reason": "",
+    "note": "Explicit generated output duration selects Seedance 2.5 without inferring appended timeline length.",
+    "source_status": "new",
+    "arguments": {
+      "video_url": "https://example.invalid/source.mp4",
+      "source_duration_seconds": 5,
+      "source_fps": 24,
+      "source_aspect_ratio": "16:9",
+      "prompt": "Continue the motion naturally."
+    },
+    "env": {
+      "SEEDANCE_DRY_RUN": "true",
+      "SEEDANCE_TRANSPORT": "fal",
+      "SEEDANCE_FAL_REGION": "us",
+      "FAL_DRY_RUN": "true"
+    },
+    "verify_provider_contract": true,
+    "expected_duration_seconds": 12
+  },
+  {
+    "prompt": "use Wan to edit this clip",
+    "expected_skill": "named-provider",
+    "expected_tool": "wan3_edit",
+    "expected_gateway_tool": "ModelStudio___edit_wan3_video",
+    "forbidden_tools": "seedance25_edit",
+    "suite": "named-provider",
+    "test_id": "RT-168",
+    "skip_reason": "",
+    "note": "Named Wan editing keeps the real ModelStudio tool and its preview restrictions.",
+    "source_status": "new",
+    "env": {
+      "MODELSTUDIO_DRY_RUN": "true"
+    },
+    "expected_disclosure": [
+      "Alibaba preview terms",
+      "internal testing",
+      "until GA"
+    ]
   }
 ]

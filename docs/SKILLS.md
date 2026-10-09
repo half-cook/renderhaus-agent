@@ -71,15 +71,17 @@ tiers do not order models. Prices support disclosure and spending controls.
 
 Wan 3.0 on fal now provides t2v, i2v and reference_video defaults. The synthetic-dialogue exceptions use the upgraded Seedance 2.5 tools through fal US.
 Still-image and image-edit defaults use the built OpenAI GPT Image 2.5 Sunburst tools.
-Seedream requires an explicit named request. Wan 3.0 on Alibaba Model Studio
-remains the edit and extend default. Its preview licence blocks commercial use, so the declared
-Seedance 2.5 fal interims serve synthetic inputs. Luma modify and extend remain explicit-only.
+Seedream requires an explicit named request. Seedance 2.5 through fal US is the permanent
+edit and extend default, with no exceptions, interims or automatic fallback. Wan 3.0 edit/extend
+on Alibaba Model Studio are named-only and preview-blocked for customer use. Named-provider
+warns that Alibaba preview terms permit internal testing only until GA. Luma modify and extend remain explicit-only.
 ElevenLabs music is the music interim.
-These entries expire when their capability default becomes commercially available; they do not create permanent
-exceptions for demoted providers. An exact named pending model has no substitute interim.
+Declared interims for other capabilities expire when their default becomes commercially available;
+they do not create permanent exceptions for demoted providers. An exact named pending model has no substitute interim.
 
 Dialogue without real-person references selects the Seedance exception. Real-person photo/video
-references force Wan and prohibit Seedance or Omni, including the Seedance interim. Real-face Wan 3 dispatch requires an explicit likeness_consent acknowledgement. Vector output selects built Recraft. Text-only edits
+references force Wan generation and prohibit Seedance or Omni. Seedance editing/extension
+refuse real-person references. Real-face Wan 3 dispatch requires an explicit likeness_consent acknowledgement. Vector output selects built Recraft. Text-only edits
 on an existing image select built Ideogram; Ideogram generation without an edit image selects
 the GPT generation default. Full-body motion selects built Kling Motion Control on fal; facial and
 upper-body acting select built Act-Two on Runway. Video-synchronized SFX uses built Mirelo on fal, while
@@ -202,13 +204,14 @@ Topaz submissions always pause with cost, including autonomous runs. Dry-run pre
 and queued jobs never satisfy final delivery. See [Topaz](TOPAZ.md) for pricing, licence
 sources, unknown-price blockers and the blocked Comet check.
 
-`tests/fixtures/skill_routing.json` contains 134 retained routing rows.
-There are 129 active cases and 5 explicit skips. Five caption/collage cases cover the
+`tests/fixtures/skill_routing.json` contains 137 retained routing rows.
+There are 133 active cases and 4 explicit skips. Five caption/collage cases cover the
 new templates' renderer selection. Seven performance-transfer cases now use built tools. Three Mureka lyrics-video cases
 now use built tools; music routes use Mureka without an ElevenLabs interim. Five Topaz upscale/interpolation cases
 now use built tools. Seedance reference dialogue and two
-previously licence-skipped edit cases now use built Seedance tools. The extension increment
-case stays skipped because appended-versus-combined length semantics are UNVERIFIED.
+previously licence-skipped edit cases now use built Seedance tools. RT-091 now requests
+explicit generated output seconds and is active. A separate skipped unit retains the
+UNVERIFIED source-inclusion question; ambiguous extension increments actively test refusal.
 The 23 archived rows are dropped,
 including confidential-route and `[project.confidential=true]` rows. A false prefix is ordinary
 routing input. The read-only workbook and source map are not copied into the repository.
@@ -227,9 +230,9 @@ assert that explicit retired requests dispatch nothing. [Decisions](capability-m
 record these differences from the workbook.
 
 The VLM judge is built as an explicit experimental candidate. Cutaway capture remains pending. A declared interim activates other pending defaults where supported.
-Wan 3 generation uses its built tools. Model Studio edit/extend retain their default IDs but
-select Seedance while the commercial policy is blocked. Real-person references require Wan
-consent for generation and refuse the Seedance edit/extend interim.
+Wan 3 generation uses its built tools. Seedance 2.5 is the permanent edit/extend default.
+Model Studio edit/extend are named-only and remain preview-blocked for live customer use.
+Real-person references require Wan consent for generation and refuse Seedance edit/extend.
 
 `.venv/bin/python -m unittest discover -s tests -p test_skill_routing.py -v` reports each
 fixture and skip reason. Supporting tests cover capability defaults/exceptions, named demoted
@@ -446,20 +449,29 @@ plain `output_path` fields can supply visuals and audio without S3. Trims, fit, 
 audio timing/volume/fades are supported; captions and motion effects require Lambda. See
 [local assembly and gateway setup](LOCAL_ASSEMBLY.md). The default backend remains Lambda.
 
-## Wan 3 edit and extend
+## Permanent Seedance edit/extend defaults and named Wan
 
-The default IDs remain `wan3_edit` and `wan3_extend`. Their existing Model Studio adapter
-retains its hard preview licence restriction. Automatic customer routing follows the declared
-`seedance25_edit` and `seedance25_extend` interims while the Wan model policy has
-`live_enabled=false`. A single change to that policy flag restores Wan selection. It cannot
-remove the adapter's hard live block or establish commercial rights.
+Satya chose `seedance25_edit` and `seedance25_extend` as permanent defaults on 2026-10-09.
+The edit-v2v and refinement skills expose `Seedance___edit_video` and
+`Seedance___extend_video`, reuse fal polling, require measured source inputs and refuse
+real-person references. Changing Wan's licence flag cannot change these defaults.
+The named-provider skill exposes `wan3_edit` and `wan3_extend` for explicit Wan or Model
+Studio requests and warns about internal testing only until GA. Live use remains preview-blocked.
+Explicit Luma, Aleph and VACE retain their tools. Paid video pauses in autonomous runs.
 
-The edit-v2v and refinement skills discover the built Seedance tools, reuse fal polling,
-require measured source inputs and prohibit real-person references. Explicit Luma, Aleph,
-and VACE requests remain available with disclosure. Paid video pauses in autonomous runs.
-After HeyGen wiring there are 12 providers, 95 Gateway tools and 24 skills. Seedance reference dialogue and the
-two edit fixture rows are active. The extension increment row remains skipped because its
-length semantics are UNVERIFIED; 30 other rows still have dependency blockers.
+Extension sources must be 2–30 seconds at 24–60 fps; `duration_seconds` is an integer
+4–30 generated-output request per call. “Extend this clip to produce a 15-second output
+video” passes the contract. “Extend this clip by 4 seconds” is refused because the official
+docs do not clearly say whether output includes the source or only continuation. Do not
+promise a final stitched length or compute an increment. Fal bills source plus requested
+output seconds. BytePlus's video-input minimum-token floor is still UNVERIFIED, so its
+quote remains unknown and live submission blocked. Read edit-v2v for resolution and aspect.
+
+RT-091 is now active with explicit output wording. RT-008 and RT-092 use Seedance editing;
+RT-166/167 cover generic edit/extend and RT-168 covers named Wan's preview warning and block.
+A separate skipped unit test records the unresolved source-inclusion semantics. The fixture
+has 133 active cases and four dependency skips; inventory remains 15 providers, 113 tools
+and 24 skills.
 See [Seedance configuration, prices and licence limits](SEEDANCE_2_5.md) and
 [Model Studio's unchanged restriction](ALIBABA_MODELSTUDIO.md).
 
@@ -518,7 +530,7 @@ See [performance contracts, prices and limits](PERFORMANCE_TRANSFER.md). Browser
 
 ## Picture-synchronized SFX
 
-The audio-bed skill now exposes `Fal___mirelo_v2a` and reuses `Fal___get_video_task` through the manager/media role. Video input selects Mirelo; text-only effects select ElevenLabs SFX. Explicit requests win. Mirelo returns video with audio and pauses with cost even in autonomous runs under the paid-video policy. Samples 2–4 remain dry-run-only because their billing is unverified. Three SFX rows remain active. The current routing fixture has 129 active cases and 5 skips. No skill directory was added. See [Mirelo](MIRELO.md) for sources, contracts and pending playback/A/B validation.
+The audio-bed skill now exposes `Fal___mirelo_v2a` and reuses `Fal___get_video_task` through the manager/media role. Video input selects Mirelo; text-only effects select ElevenLabs SFX. Explicit requests win. Mirelo returns video with audio and pauses with cost even in autonomous runs under the paid-video policy. Samples 2–4 remain dry-run-only because their billing is unverified. Three SFX rows remain active. The current routing fixture has 133 active cases and 4 skips. No skill directory was added. See [Mirelo](MIRELO.md) for sources, contracts and pending playback/A/B validation.
 
 ## Image specialist activation
 
@@ -527,8 +539,8 @@ The audio-bed skill now exposes `Fal___mirelo_v2a` and reuses `Fal___get_video_t
 `Fal___get_video_task`, default to dry-run, quote verified fal image prices and
 exclude training. SVG content is validated and sanitized before persistence.
 The image-gen, product-images and refinement skills expose their real tool names.
-Six specialist fixture rows are active. The current fixture has 129 active rows
-and five skipped of 134. The inventory is 15 providers, 113 tools and 24 skills.
+Six specialist fixture rows are active. The current fixture has 133 active rows
+and four skipped of 137. The inventory is 15 providers, 113 tools and 24 skills.
 Comet validation and Ideogram quality A/B
 remain pending. See [Image specialists](IMAGE_SPECIALISTS.md) for contracts,
 official sources read 2026-10-09, licence decisions and configuration.
@@ -539,8 +551,8 @@ The continuity skill now includes `Gemini___judge_continuity` and `Gemini___get_
 The canonical `gemini_vlm_judge` alias is built and its retained routing row is active.
 `local_qc` remains default. The VLM is dry-run by default and promotion requires a complete,
 committed, hash-pinned live result above 0.85 on the 420 frozen pairs. No result is committed.
-Current inventory is 15 providers, 113 Gateway tools, 24 skills and 129 active routing rows
-with 5 skips. See [Gemini configuration and sources](GEMINI_CONTINUITY_QC.md),
+Current inventory is 15 providers, 113 Gateway tools, 24 skills and 133 active routing rows
+with 4 skips. See [Gemini configuration and sources](GEMINI_CONTINUITY_QC.md),
 [benchmark procedure](CONTINUITY_QC_BENCHMARK.md#experimental-gemini-judge-and-eval-gate),
 and [decisions](continuity-qc-vlm-decisions.tsv). Comet E2E remains blocked.
 
@@ -556,7 +568,7 @@ retained for review. The canvas graph and the legacy flat timeline are separate 
 Import retains opaque source handles without publishing or fetching media. No new
 provider, model, key, secret, or environment variable is needed. `REMOTION_DRY_RUN`
 remains true by default. All existing paid-video approval and spending gates remain.
-There are 15 providers, 113 Gateway tools, 24 skills, 129 active fixture rows, and five
+There are 15 providers, 113 Gateway tools, 24 skills, 133 active fixture rows, and four
 dependency skips. Read [NLE import](NLE_EXPORT.md#import-an-editors-timeline) for the
 parser contract and unsupported edits. Comet and real editor validation remain blocked
 or unverified; offline tests do not establish browser success.

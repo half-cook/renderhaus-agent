@@ -1,6 +1,6 @@
 # Renderhaus capability map
 
-One quality-first default serves each capability. Selection order is **explicit provider/model request > named exception > default > declared interim while the default is pending or commercially blocked**. Prices inform approval and disclosure; they never order models. Wan 3 generation uses fal; its edit and extend defaults use Alibaba Model Studio. See [fal contracts](FAL_WAN3_PROVIDER.md) and [Model Studio contracts](ALIBABA_MODELSTUDIO.md).
+One quality-first default serves each capability. Selection order is **explicit provider/model request > named exception > default**. Other pending or commercially blocked capabilities retain their declared interim mechanism. Prices inform approval and disclosure; they never order models. Wan 3 generation uses fal. Seedance 2.5 through fal US is the permanent edit and extend default, chosen by Satya on 2026-10-09. Wan 3 edit/extend on Model Studio are named-only and preview-blocked. See [Seedance contracts](SEEDANCE_2_5.md) and [Model Studio contracts](ALIBABA_MODELSTUDIO.md).
 
 ## Capability choices
 
@@ -9,8 +9,8 @@ One quality-first default serves each capability. Selection order is **explicit 
 | t2v | `wan3_t2v` | `dialogue && !real_face_refs` → `seedance25_t2v` (synthetic dialogue) | None; Wan 3 built | gemini_omni_11_flash |
 | i2v | `wan3_i2v` | `dialogue && !real_face_refs` → `seedance25_i2v` (synthetic dialogue) | None; Wan 3 built | gemini_omni_11_flash, vidu_q4_i2v |
 | reference_video | `wan3_r2v` | `dialogue && !real_face_refs` → `seedance25_r2v` (synthetic dialogue references) | — | — |
-| v2v_edit | `wan3_edit` | — | `seedance25_edit` while Wan commercial policy is blocked | — |
-| extend | `wan3_extend` | — | `seedance25_extend` while Wan commercial policy is blocked | — |
+| v2v_edit | `seedance25_edit` | — | — | — |
+| extend | `seedance25_extend` | — | — | — |
 | still_image | `gpt_image25_t2i` | `vector_output` → `recraft_v41_vector` (editable vector output) | `seedream_t2i` | — |
 | image_edit | `gpt_image25_edit` | `text_only_edit` → `ideogram45_edit` (pixel-preserving text-only edit) | `seedream_edit` | ideogram45_edit |
 | lipsync | `sync3_lipsync` | `duration_over_30s && presenter` → `heygen_avatar_v` (long presenter or digital twin) | — | heygen_avatar_v |
@@ -29,10 +29,11 @@ Canonical aliases remain stable even when an official endpoint differs from the 
 
 The t2v, i2v and reference_video defaults use Wan 3 on fal. The synthetic-dialogue exceptions
 now use Seedance 2.5 through fal US. Real-person references force Wan generation with consent.
-Wan edit/extend remain defaults but their preview licence selects the declared Seedance 2.5
-interims for synthetic sources. Real-person edit/extend refuse that interim. The single Wan
-model `live_enabled` policy switch restores its selection, while the unchanged adapter hard
-licence block remains. BytePlus is optional only for authorized non-US platform use.
+Edit/extend select Seedance 2.5 directly, without exceptions, interims or automatic fallback.
+Real-person edit/extend refuse Seedance. Naming Wan 3.0 or Model Studio selects only the
+preview-blocked Model Studio route with an internal-testing-only-until-GA warning. Changing
+Wan's `live_enabled` flag cannot change these defaults. BytePlus is optional only for
+authorized non-US platform use.
 
 ## Deterministic intent predicates
 
@@ -47,7 +48,7 @@ licence block remains. BytePlus is optional only for authorized non-US platform 
 
 ## Explicit-only tools and approvals
 
-Kling generation/Omni, Runway Gen-4.5/Aleph/Gen-4 Image, Luma, Vidu Q4, Seedream, Fish Audio, ElevenLabs music and Wan 2.x VACE remain built. Named requests use their existing tools with “explicit request; not the default for <capability>”. Declared interims can use demoted tools while their replacement is pending. The existing rejected-shot Wan 2.x training retry path and provenance eligibility checks remain unchanged. MiniMax H3 and Hunyuan stay blocked.
+Kling generation/Omni, Runway Gen-4.5/Aleph/Gen-4 Image, Luma, Vidu Q4, Seedream, Fish Audio, ElevenLabs music and Wan 2.x VACE remain built. Named requests use their existing tools with “explicit request; not the default for <capability>”. Wan 3 edit/extend are also named-only; Alibaba preview terms permit internal testing only until GA, and live customer use stays blocked. Declared interims for other capabilities can use demoted tools while their replacement is pending. The existing rejected-shot Wan 2.x training retry path and provenance eligibility checks remain unchanged. MiniMax H3 and Hunyuan stay blocked.
 
 All paid video pauses for approval with a cost estimate, including autonomous runs: current Seedance, Fal/Wan/Vidu, Kling, Runway, Luma and Remotion, plus built Sync, HeyGen, Topaz, Act-Two, Kling Motion and Mureka lyrics-video and Mirelo. Sync, HeyGen, Topaz, Act-Two and Kling Motion always pause even when the general premium-video switch is disabled. `premium_video_approval` / `RENDERHAUS_PREMIUM_VIDEO_APPROVAL` remains the global switch. Approval exemptions and the autonomous spending cap are unchanged; paid non-video behavior follows the existing effect classification. Voice-clone writes retain their existing autonomous behavior. Editorial cut-plan confirmation and final paid rendering remain separate approvals.
 
@@ -336,18 +337,20 @@ Apache-2.0 weights/model metadata, DINOv2 Apache-2.0 code. `training_eligible=fa
 
 ## Skills and routing fixtures
 
-There are 24 packaged skills, 15 provider targets and 112 Gateway tools. No deployment is claimed. New packaged skills are image-gen, named-provider, act-two, lipsync, upscale, lyrics-video, product-demo-video and whiteboard-explainer. Vidu’s archived skill is removed; its real tools remain under named-provider. Draft alias include_tools cannot be copied verbatim into this harness: `metadata.include_tools` must contain real dispatch wrappers, `metadata.routing_tools` records the canonical aliases, and `metadata.gateway_tools` contains only built Gateway names.
+There are 24 packaged skills, 15 provider targets and 113 Gateway tools. No tools or skills were added for the permanent Seedance default decision. Vidu’s archived skill is removed; its real tools remain under named-provider. Draft alias include_tools cannot be copied verbatim into this harness: `metadata.include_tools` must contain real dispatch wrappers, `metadata.routing_tools` records the canonical aliases, and `metadata.gateway_tools` contains only built Gateway names.
 
-The original workbook migration retained 122 fixtures; later provider branches expanded the set to 129. There are now 123 active cases and 6 skips, including one unverified extension-semantics case and five named dependencies. The 23 archived/confidential rows remain dropped. “Active” includes built interims and the required 45-second single-shot refusal; it does not assert future adapters exist. NLE import remains skipped. Detailed expectation adjustments and retired replacements are in [capability-map-decisions.tsv](capability-map-decisions.tsv).
+The routing fixture has 137 cases: 133 active and four dependency skips. RT-091 now requests an explicit 15-second generated output and passes the Seedance contract. RT-008, RT-092, RT-166 and RT-167 use the permanent Seedance defaults; RT-168 covers named-only, preview-blocked Wan editing. A separate skipped unit test retains the unresolved question of whether Seedance extension output includes the source or only continuation. Ambiguous “by N seconds” requests actively test refusal. The 23 archived/confidential rows remain dropped. Detailed changes are in [the default decision trail](seedance-edit-extend-default-decisions.tsv).
 
 | Skipped dependency/reason | Rows |
 | --- | --- |
 | provider pending: HyperFrames overlays (feat/hyperframes-overlays) | 1 |
 | provider pending: cutaway_record (feat/product-demo-capture) | 3 |
-| provider pending: nle import (feat/nle-import-fcpxml) | 1 |
-| semantics unverified: Seedance appended-versus-combined extension length (feat/seedance-2-5); Wan extend remains preview-licence blocked | 1 |
 
 ## Verification
+
+The permanent Seedance edit/extend default branch ran **1,384 tests: 1,378 passed and six
+skipped**. Ruff, dry-run CI schema/inventory/packaging checks and Studio TypeScript passed.
+The temporary Studio dependency link was removed. No live provider request was made.
 
 The original capability-map branch recorded **792 tests run, 748 passed, 44 skipped**; Ruff, offline CI packaging and Studio TypeScript typecheck pass. Gateway schemas regenerated without changes. That branch added no dry-run flags or secrets; optional `ELEVENLABS_TTS_MODEL` is the one new runtime config key.
 
@@ -357,7 +360,7 @@ Read [SKILLS.md](SKILLS.md), [DEEP_AGENT.md](DEEP_AGENT.md) and the [decision tr
 
 ## Seedance 2.5 upgrade evidence
 
-The three dialogue exceptions and both edit/extend interims now bind built Seedance Gateway
+The three dialogue exceptions and both permanent edit/extend defaults bind built Seedance Gateway
 tools. Fal's reference endpoint explicitly supports `task=editing` and `task=extension`.
 The default host is fal US; global endpoints retain separate verified rates. Adaptive prices
 need measured source aspect and never assume unknown dimensions. BytePlus video-input

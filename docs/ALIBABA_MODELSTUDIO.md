@@ -1,8 +1,11 @@
 # Wan 3.0 edit and extend on Alibaba Model Studio
 
-Wan 3.0 is the capability-map default for `v2v_edit` and `extend`. Both use the
-direct Model Studio adapter. They have no exceptions or Luma interim. Explicit
-Aleph, Luma, and Wan VACE requests retain their existing tools and disclosure.
+Wan 3.0 edit/extend are named-only options through the direct Model Studio adapter.
+They never appear as capability defaults, exceptions, interims or automatic fallbacks.
+Seedance 2.5 through fal US is the permanent `v2v_edit` and `extend` default, chosen by Satya
+on 2026-10-09. Named Wan or Model Studio requests use named-provider and warn about Alibaba
+preview terms: internal testing only until GA. Changing the model licence flag cannot restore
+default selection. Explicit Aleph, Luma and Wan VACE retain their tools and disclosure.
 
 **LIVE USE BLOCKED BY PREVIEW LICENSING.** The adapter is usable for dry-run contract
 previews only. [Preview Product Terms §1.1](https://www.alibabacloud.com/help/en/legal/latest/alibaba-cloud-international-website-beta-testing-terms),
@@ -70,7 +73,7 @@ Optional references allow up to 10 images and 5 audio clips totaling at most 15 
 Callers supply measured durations and frame rate. The adapter does not download inputs to
 independently establish those measurements or validate every vendor pixel/file-size limit.
 Vendor source limits are 100 MB per video and 240 through 4096 pixels per side.
-The installed edit-v2v skill requires source inspection rather than invented metadata.
+The installed named-provider skill requires source inspection rather than invented metadata.
 
 The [Wan guide](https://www.alibabacloud.com/help/en/model-studio/wan3-video-generation-guide),
 read 2026-10-09, recommends `duration=-1` for edit source-length preservation. Extension
@@ -128,19 +131,19 @@ No vendor code, model weights, AGPL code, or non-commercial implementation is co
 ## Validation
 
 Provider HTTP and downloads use fakes. Tests cover request bodies, regional prices,
-validation failures, dry-run isolation, status transitions, output persistence, default
-routing, consent, and native autonomous approve/reject recovery. The starting suite had
-852 tests and 40 skips. Final validation ran **893 tests, 850 passed and 43 skipped**.
+validation failures, dry-run isolation, status transitions, output persistence, named-only
+routing, consent, and native autonomous approve/reject recovery. The original adapter branch
+started with 852 tests and 40 skips and ran **893 tests, 850 passed and 43 skipped**.
 Ruff, offline CI packaging/schema checks, and Studio TypeScript typecheck passed. The
 temporary Studio dependency link was removed. The supplied Python venv was empty;
 ignored local links expose existing deepagents 0.7.23 packages and Ruff without downloading.
 This environment bootstrap is not committed or part of deployment. Details are in [decisions](alibaba-modelstudio-decisions.tsv).
 
-Three existing fixture rows for `wan3_edit` and `wan3_extend` now name ModelStudio
-instead of Luma. They were active through the interim and now remain skipped with the
-preview licence blocker. No skipped row is activated. There are 81 active fixture rows and
-41 skips, including the 38 unchanged provider or workflow dependencies. `modelstudio.routing.csv` was absent; the read-only capability-map
-CSV was inspected and remains unchanged.
+The current fixture routes generic edits/extensions to Seedance. RT-168 explicitly names
+Wan and checks named-provider's preview warning and live block. The fixture contains 137
+rows: 133 active and four pending dependencies. A separate unit test remains skipped for
+Seedance's unresolved extension source-inclusion semantics. See the
+[permanent-default decision](seedance-edit-extend-default-decisions.tsv).
 
 Comet browser E2E is **blocked**. This environment has no controllable Comet session, and
 the task prohibits live provider requests. The blocked receipt is recorded under ignored

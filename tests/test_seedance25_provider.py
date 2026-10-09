@@ -298,6 +298,51 @@ class Seedance25ProviderTests(unittest.TestCase):
         self.assertEqual(result["status"], "dry_run")
         self.assertGreater(result["estimated_cost_usd"], 0)
 
+    def test_extension_output_seconds_are_sent_and_billed_without_timeline_arithmetic(self) -> None:
+        for host in ("fal", "byteplus"):
+            with patch.dict(os.environ, {"SEEDANCE_TRANSPORT": host}), patch.object(api.queue, "submit") as submit, patch.object(api.httpx, "Client") as client:
+                for output_seconds in range(4, 31):
+                    with self.subTest(host=host, output_seconds=output_seconds):
+                        result = api.extend_video(
+                            "https://example.invalid/source.mp4", "continue the synthetic scene",
+                            source_duration_seconds=30, source_fps=60, source_aspect_ratio="16:9",
+                            duration_seconds=output_seconds,
+                        )
+                        body = result["request_preview"]
+                        self.assertEqual(body["duration"], str(output_seconds) if host == "fal" else output_seconds)
+                        if host == "fal":
+                            tokens = Decimal(1280 * 720 * 24 * (30 + output_seconds)) / 1024
+                            expected_cents = tokens * Decimal("25.68") * Decimal("0.6") / 10000
+                            self.assertEqual(result["estimated_cost_usd"], float(expected_cents / 100))
+                        else:
+                            self.assertEqual(result["cost_estimate"], "unknown")
+                            self.assertIn("floor", result["cost_estimate_reason"])
+                submit.assert_not_called()
+                client.assert_not_called()
+
+    def test_extension_source_output_and_fps_limits_reject_before_transport(self) -> None:
+        source = {"video_url": "https://example.invalid/source.mp4", "prompt": "continue robot",
+                  "source_duration_seconds": 5, "source_fps": 24, "source_aspect_ratio": "16:9"}
+        for host in ("fal", "byteplus"):
+            with patch.dict(os.environ, {"SEEDANCE_TRANSPORT": host}), patch.object(api.queue, "submit") as submit, patch.object(api.httpx, "Client") as client:
+                for invalid in ({"source_duration_seconds": 1.9}, {"source_duration_seconds": 30.1},
+                                {"source_fps": 23}, {"source_fps": 61}, {"duration_seconds": 3},
+                                {"duration_seconds": 31}, {"duration_seconds": -1}, {"duration_seconds": 4.5}):
+                    with self.subTest(host=host, invalid=invalid), self.assertRaises(ValueError):
+                        api.extend_video(**{**source, **invalid})
+                submit.assert_not_called()
+                client.assert_not_called()
+
+    def test_edit_extend_quotes_reject_sources_outside_the_contract(self) -> None:
+        for tool, durations in (("edit_video", (3.9, 30.1, float("nan"), float("inf"))),
+                                ("extend_video", (-1, 1.9, 30.1, float("nan"), float("inf")))):
+            for duration in durations:
+                with self.subTest(tool=tool, duration=duration), self.assertRaises(ValueError):
+                    billing_rates.seedance_price_cents(tool, {
+                        "source_duration_seconds": duration, "source_aspect_ratio": "16:9",
+                        "duration_seconds": 15,
+                    })
+
     def test_source_aspect_invalid_or_nonfinite_is_rejected(self) -> None:
         for value in ("adaptive", "0:1", "nan:1", "999:1"):
             with self.subTest(value=value), self.assertRaisesRegex(ValueError, "source_aspect_ratio"):

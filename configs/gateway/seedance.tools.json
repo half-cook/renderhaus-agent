@@ -11,7 +11,7 @@
         },
         "duration_seconds": {
           "type": "integer",
-          "description": "Output duration from 4 to 30 seconds. Edit uses -1 to preserve the measured source duration. Extension requests generated output seconds, not a promised combined timeline length."
+          "description": "Output duration from 4 to 30 integer seconds per call. Edit uses -1 to preserve the measured source duration. Extension requests generated output seconds. Whether extension output includes the source or only the continuation is UNVERIFIED; never infer an appended increment or a final stitched length."
         },
         "aspect_ratio": {
           "type": "string",
@@ -69,7 +69,7 @@
         },
         "duration_seconds": {
           "type": "integer",
-          "description": "Output duration from 4 to 30 seconds. Edit uses -1 to preserve the measured source duration. Extension requests generated output seconds, not a promised combined timeline length."
+          "description": "Output duration from 4 to 30 integer seconds per call. Edit uses -1 to preserve the measured source duration. Extension requests generated output seconds. Whether extension output includes the source or only the continuation is UNVERIFIED; never infer an appended increment or a final stitched length."
         },
         "aspect_ratio": {
           "type": "string",
@@ -174,7 +174,7 @@
         },
         "duration_seconds": {
           "type": "integer",
-          "description": "Output duration from 4 to 30 seconds. Edit uses -1 to preserve the measured source duration. Extension requests generated output seconds, not a promised combined timeline length."
+          "description": "Output duration from 4 to 30 integer seconds per call. Edit uses -1 to preserve the measured source duration. Extension requests generated output seconds. Whether extension output includes the source or only the continuation is UNVERIFIED; never infer an appended increment or a final stitched length."
         },
         "aspect_ratio": {
           "type": "string",
@@ -232,7 +232,7 @@
         },
         "source_duration_seconds": {
           "type": "number",
-          "description": "Measured source seconds, from 4 to 30 for editing or 2 to 30 for extension. Used to quote editing or extension; local only."
+          "description": "Measured source seconds, from 4 to 30 for editing or 2 to 30 for extension. fal bills these input seconds plus requested output seconds with the video-input discount; BytePlus video-input quotes remain unknown until its minimum token floor is verified. Local only."
         },
         "source_fps": {
           "type": "number",
@@ -244,7 +244,7 @@
         },
         "duration_seconds": {
           "type": "integer",
-          "description": "Output duration from 4 to 30 seconds. Edit uses -1 to preserve the measured source duration. Extension requests generated output seconds, not a promised combined timeline length."
+          "description": "Output duration from 4 to 30 integer seconds per call. Edit uses -1 to preserve the measured source duration. Extension requests generated output seconds. Whether extension output includes the source or only the continuation is UNVERIFIED; never infer an appended increment or a final stitched length."
         },
         "aspect_ratio": {
           "type": "string",
@@ -326,7 +326,7 @@
         },
         "source_duration_seconds": {
           "type": "number",
-          "description": "Measured source seconds, from 4 to 30 for editing or 2 to 30 for extension. Used to quote editing or extension; local only."
+          "description": "Measured source seconds, from 4 to 30 for editing or 2 to 30 for extension. fal bills these input seconds plus requested output seconds with the video-input discount; BytePlus video-input quotes remain unknown until its minimum token floor is verified. Local only."
         },
         "source_fps": {
           "type": "number",
@@ -338,7 +338,7 @@
         },
         "duration_seconds": {
           "type": "integer",
-          "description": "Output duration from 4 to 30 seconds. Edit uses -1 to preserve the measured source duration. Extension requests generated output seconds, not a promised combined timeline length."
+          "description": "Output duration from 4 to 30 integer seconds per call. Edit uses -1 to preserve the measured source duration. Extension requests generated output seconds. Whether extension output includes the source or only the continuation is UNVERIFIED; never infer an appended increment or a final stitched length."
         },
         "aspect_ratio": {
           "type": "string",

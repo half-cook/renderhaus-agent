@@ -574,6 +574,7 @@
     },
     "alibaba_modelstudio": {
       "enabled": true,
+      "explicit_only": true,
       "license": "service-terms",
       "allowed_regions": [],
       "training_eligible": false,
@@ -589,6 +590,7 @@
       "model_policies": {
         "wan3.0-video": {
           "enabled": true,
+          "explicit_only": true,
           "license": "service-terms",
           "weights_license": "closed-weights",
           "license_source": "https://www.alibabacloud.com/help/en/legal/latest/alibaba-cloud-international-website-product-terms-of-service-v-3-8-0",
@@ -1235,8 +1237,9 @@
     "wan3_edit": {
       "gateway_tool": "ModelStudio___edit_wan3_video",
       "status": "ready",
+      "explicit_only": true,
       "provider": "alibaba_modelstudio",
-      "reason": "Built US-first direct adapter; MODELSTUDIO_DRY_RUN defaults true.",
+      "reason": "Built explicit-only direct adapter; MODELSTUDIO_DRY_RUN defaults true.",
       "verification": "Official US workspace API verified; legacy dashscope-us synthesis POST UNVERIFIED and blocked live.",
       "training_eligible": false,
       "model": "wan3.0-video",
@@ -1256,8 +1259,9 @@
     "wan3_extend": {
       "gateway_tool": "ModelStudio___extend_wan3_video",
       "status": "ready",
+      "explicit_only": true,
       "provider": "alibaba_modelstudio",
-      "reason": "Built US-first direct adapter; MODELSTUDIO_DRY_RUN defaults true.",
+      "reason": "Built explicit-only direct adapter; MODELSTUDIO_DRY_RUN defaults true.",
       "verification": "Official US workspace API verified; legacy dashscope-us synthesis POST UNVERIFIED and blocked live.",
       "training_eligible": false,
       "model": "wan3.0-video",
@@ -2008,13 +2012,13 @@
     {
       "pattern": "extend|continue.*clip",
       "skill": "edit-v2v",
-      "abstract_tool": "wan3_extend",
+      "abstract_tool": "seedance25_extend",
       "capability": "extend"
     },
     {
-      "pattern": "aleph|restyle|relight|modify|watercolor|masked|swap.*product|change look|edit.*(?:video|footage)|edit.*vace",
+      "pattern": "aleph|restyle|relight|modify|watercolor|masked|swap.*product|change look|edit.*(?:video|footage|clip)|edit.*vace|(?:\\bwan(?:[ -]?3(?:\\.0)?)?\\b|model[ -]?studio|dashscope)\\s+(?:to\\s+)?edit\\b",
       "skill": "edit-v2v",
-      "abstract_tool": "wan3_edit",
+      "abstract_tool": "seedance25_edit",
       "capability": "v2v_edit"
     },
     {
@@ -3417,6 +3421,7 @@
       "provider": "alibaba_modelstudio",
       "model": "wan3.0-video",
       "label": "Wan 3.0 Model Studio",
+      "explicit_only": true,
       "policy_ref": "alibaba_modelstudio",
       "tools": {
         "v2v_edit": "ModelStudio___edit_wan3_video",
@@ -3505,7 +3510,7 @@
         "audio": 5,
         "audio_seconds_total": 15
       },
-      "notes": "US-first default for edit and extend. Extension duration is total output length. Live legacy US host and smart duration blocked until verified; documented workspace host configurable."
+      "notes": "Explicit-only edit and extend provider. Extension duration is total output length. Live legacy US host and smart duration blocked until verified; documented workspace host configurable."
     },
     {
       "provider": "seedance",
@@ -3663,7 +3668,7 @@
         "url": "https://fal.ai/models/bytedance/seedance-2.5/reference-to-video",
         "read_date": "2026-10-09"
       },
-      "notes": "Synthetic-character dialogue exception; edit and extend licence interims. Real-face refs prohibited.",
+      "notes": "Synthetic-character dialogue exception; permanent edit and extend defaults. Real-face refs prohibited.",
       "duration_values": {
         "v2v_edit": [
           -1
@@ -3725,7 +3730,7 @@
         "url": "https://fal.ai/models/bytedance/seedance-2.5/text-to-video",
         "read_date": "2026-10-09"
       },
-      "notes": "Synthetic-character dialogue exception; edit and extend licence interims. Real-face refs prohibited."
+      "notes": "Synthetic-character dialogue exception; permanent edit and extend defaults. Real-face refs prohibited."
     },
     {
       "provider": "seedance",
@@ -3785,7 +3790,7 @@
         "url": "https://fal.ai/models/bytedance/seedance-2.5/image-to-video",
         "read_date": "2026-10-09"
       },
-      "notes": "Synthetic-character dialogue exception; edit and extend licence interims. Real-face refs prohibited."
+      "notes": "Synthetic-character dialogue exception; permanent edit and extend defaults. Real-face refs prohibited."
     },
     {
       "provider": "seedance",
@@ -3904,7 +3909,7 @@
         "url": "https://fal.ai/models/bytedance/seedance-2.5/reference-to-video",
         "read_date": "2026-10-09"
       },
-      "notes": "Synthetic-character dialogue exception; edit and extend licence interims. Real-face refs prohibited.",
+      "notes": "Synthetic-character dialogue exception; permanent edit and extend defaults. Real-face refs prohibited.",
       "duration_values": {
         "v2v_edit": [
           -1
@@ -3966,7 +3971,7 @@
         "url": "https://fal.ai/models/bytedance/seedance-2.5/us/text-to-video",
         "read_date": "2026-10-09"
       },
-      "notes": "Synthetic-character dialogue exception; edit and extend licence interims. Real-face refs prohibited."
+      "notes": "Synthetic-character dialogue exception; permanent edit and extend defaults. Real-face refs prohibited."
     },
     {
       "provider": "seedance",
@@ -4026,7 +4031,7 @@
         "url": "https://fal.ai/models/bytedance/seedance-2.5/us/image-to-video",
         "read_date": "2026-10-09"
       },
-      "notes": "Synthetic-character dialogue exception; edit and extend licence interims. Real-face refs prohibited."
+      "notes": "Synthetic-character dialogue exception; permanent edit and extend defaults. Real-face refs prohibited."
     },
     {
       "provider": "seedance",
@@ -4145,7 +4150,7 @@
         "url": "https://fal.ai/models/bytedance/seedance-2.5/us/reference-to-video",
         "read_date": "2026-10-09"
       },
-      "notes": "Synthetic-character dialogue exception; edit and extend licence interims. Real-face refs prohibited.",
+      "notes": "Synthetic-character dialogue exception; permanent edit and extend defaults. Real-face refs prohibited.",
       "duration_values": {
         "v2v_edit": [
           -1
@@ -4813,15 +4818,13 @@
       "ab_candidates": []
     },
     "v2v_edit": {
-      "default": "wan3_edit",
+      "default": "seedance25_edit",
       "exceptions": [],
-      "interim": "seedance25_edit",
       "ab_candidates": []
     },
     "extend": {
-      "default": "wan3_extend",
+      "default": "seedance25_extend",
       "exceptions": [],
-      "interim": "seedance25_extend",
       "ab_candidates": []
     },
     "still_image": {

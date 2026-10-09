@@ -85,18 +85,22 @@ def check_routing_inventory() -> None:
     assert "ladder" not in POLICY and "premium_targets" not in POLICY
     assert "project_policy" not in POLICY and "flux2_klein4b_t2i" not in TOOL_MAP
     for capability, choice in POLICY["capability_map"].items():
-        assert set(choice) == {"default", "exceptions", "interim", "ab_candidates"}, capability
-        selected = [choice["default"], choice["interim"]] + [row["tool"] for row in choice["exceptions"]]
+        expected_keys = {"default", "exceptions", "ab_candidates"}
+        if capability not in {"v2v_edit", "extend"}:
+            expected_keys.add("interim")
+        assert set(choice) == expected_keys, capability
+        interim = choice.get("interim")
+        selected = [choice["default"], interim] + [row["tool"] for row in choice["exceptions"]]
         for alias in filter(None, selected):
             assert TOOL_MAP[alias]["status"] in {"ready", "pending"}, alias
-        if choice["interim"]:
-            assert TOOL_MAP[choice["interim"]]["status"] == "ready", capability
+        if interim:
+            assert TOOL_MAP[interim]["status"] == "ready", capability
     for path in paths:
         metadata = yaml.safe_load(path.read_text().split("---", 2)[1])["metadata"]
         assert set(metadata["include_tools"].split()) <= DISPATCH_TARGETS.keys(), path
         assert all(TOOL_MAP[alias]["status"] != "retired" for alias in metadata["routing_tools"].split()), path
     cases = json.loads((ROOT / "tests/fixtures/skill_routing.json").read_text())
-    assert len(cases) == 134 and sum(not case["skip_reason"] for case in cases) == 129
+    assert len(cases) == 137 and sum(not case["skip_reason"] for case in cases) == 133
     from agent.deep_agent.continuity_qc_vlm import EVAL_PATH, default_vlm_enabled
 
     if POLICY["continuity_qc"]["vlm_eval_gate"]["result_sha256"]:
@@ -104,7 +108,7 @@ def check_routing_inventory() -> None:
 
         subprocess.run(["git", "ls-files", "--error-unmatch", str(EVAL_PATH.relative_to(ROOT))], check=True, capture_output=True)
         assert default_vlm_enabled(), "Committed VLM evidence does not qualify for promotion."
-    print("ok routing inventory (15 providers, 113 Gateway tools, 24 skills, 129 active routing rows)")
+    print("ok routing inventory (15 providers, 113 Gateway tools, 24 skills, 133 active routing rows)")
 
 
 def _assert_gateway_shape(schema: object) -> None:

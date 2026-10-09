@@ -159,6 +159,8 @@ def elevenlabs_quote(tool: str, arguments: dict[str, Any]) -> GenerationCost:
 # https://docs.byteplus.com/id/docs/modelark/model-pricing?redirect=1
 # BytePlus actual usage.completion_tokens is authoritative. Its video-input minimum
 # floor table is UNVERIFIED, so video-input BytePlus estimates remain unknown.
+# Extension duration is requested output seconds, not an appended increment.
+# Input plus output is billed even when output is shorter than the source.
 SEEDANCE_PRICING_VERIFIED_ON = "2026-10-09"
 SEEDANCE_FAL_PRICING_URL = "https://fal.ai/models/bytedance/seedance-2.5/reference-to-video"
 SEEDANCE_FAL_US_PRICING_URL = "https://fal.ai/models/bytedance/seedance-2.5/us/reference-to-video"
@@ -208,7 +210,11 @@ def seedance_price_cents(tool: str, arguments: dict[str, Any]) -> Decimal:
     if tool in {"edit_video", "extend_video"}:
         if arguments.get("source_duration_seconds") is None:
             raise ValueError("Seedance edit/extend cost requires measured source_duration_seconds.")
-        source_seconds += Decimal(str(arguments["source_duration_seconds"]))
+        measured_source = Decimal(str(arguments["source_duration_seconds"]))
+        minimum, maximum = contracts.SOURCE_DURATION_LIMITS[tool]
+        if not measured_source.is_finite() or not minimum <= measured_source <= maximum:
+            raise ValueError(f"Seedance source_duration_seconds must be measured and from {minimum} to {maximum}.")
+        source_seconds += measured_source
     if host == "byteplus" and has_video:
         raise ValueError("UNVERIFIED BytePlus video-input minimum token floor; cost estimate unknown.")
     output_seconds = source_seconds if tool == "edit_video" else Decimal(str(arguments.get("duration_seconds", 5)))
