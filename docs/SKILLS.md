@@ -202,8 +202,9 @@ Topaz submissions always pause with cost, including autonomous runs. Dry-run pre
 and queued jobs never satisfy final delivery. See [Topaz](TOPAZ.md) for pricing, licence
 sources, unknown-price blockers and the blocked Comet check.
 
-`tests/fixtures/skill_routing.json` contains 129 retained routing rows.
-There are 124 active cases and 5 explicit skips. Seven performance-transfer cases now use built tools. Three Mureka lyrics-video cases
+`tests/fixtures/skill_routing.json` contains 134 retained routing rows.
+There are 129 active cases and 5 explicit skips. Five caption/collage cases cover the
+new templates' renderer selection. Seven performance-transfer cases now use built tools. Three Mureka lyrics-video cases
 now use built tools; music routes use Mureka without an ElevenLabs interim. Five Topaz upscale/interpolation cases
 now use built tools. Seedance reference dialogue and two
 previously licence-skipped edit cases now use built Seedance tools. The extension increment
@@ -249,13 +250,21 @@ and hosted HeyGen exclusions. Attribution remains in [third-party notices](THIRD
 `call_editor_tool`; it is not a deployed Gateway Lambda target. Live rendering returns
 `not_run` until an isolated renderer exists, even if dry-run is disabled.
 
-Remotion remains the motion-graphics default. An explicit HyperFrames or HTML-template
-request selects the optional exception without changing unnamed requests. HyperFrames with
+Remotion remains the motion-graphics default. A request naming HyperFrames
+selects the optional exception. Unnamed HTML templates keep Remotion. HyperFrames with
 ElevenLabs VO uses the existing speech step first. The preview does not execute HTML, fetch
 assets, create frames, mix audio, composite footage, or produce an MP4. Schema validation
 cannot pass artifact/playback checks. Compute cost remains unknown; paid-video approval
 and any active cap still apply. The stored confidential flag creates no HyperFrames restriction.
 HyperFrames outputs remain ineligible for continuity training.
+
+The same skill includes MIT cinematic-caption and tactile-collage
+[template packs](HYPERFRAMES_TEMPLATE_PACKS.md). The resources include two
+standalone HTML examples, a preview catalog, and separate recipes.
+Plain cinematic captions and animated paper collage select `remotion_render`.
+Naming HyperFrames selects `hyperframes_render` only when its flag permits it.
+No top-level skill or provider is added. Proof frames, contact sheets, subject
+matting, live GSAP playback, and exported media remain pending.
 
 ## Provider, model, licence, and region policy
 
@@ -509,7 +518,7 @@ See [performance contracts, prices and limits](PERFORMANCE_TRANSFER.md). Browser
 
 ## Picture-synchronized SFX
 
-The audio-bed skill now exposes `Fal___mirelo_v2a` and reuses `Fal___get_video_task` through the manager/media role. Video input selects Mirelo; text-only effects select ElevenLabs SFX. Explicit requests win. Mirelo returns video with audio and pauses with cost even in autonomous runs under the paid-video policy. Samples 2–4 remain dry-run-only because their billing is unverified. Three SFX rows are activated, leaving 124 active routing cases and 5 skips. No skill directory was added. See [Mirelo](MIRELO.md) for sources, contracts and pending playback/A/B validation.
+The audio-bed skill now exposes `Fal___mirelo_v2a` and reuses `Fal___get_video_task` through the manager/media role. Video input selects Mirelo; text-only effects select ElevenLabs SFX. Explicit requests win. Mirelo returns video with audio and pauses with cost even in autonomous runs under the paid-video policy. Samples 2–4 remain dry-run-only because their billing is unverified. Three SFX rows remain active. The current routing fixture has 129 active cases and 5 skips. No skill directory was added. See [Mirelo](MIRELO.md) for sources, contracts and pending playback/A/B validation.
 
 ## Image specialist activation
 
@@ -518,8 +527,9 @@ The audio-bed skill now exposes `Fal___mirelo_v2a` and reuses `Fal___get_video_t
 `Fal___get_video_task`, default to dry-run, quote verified fal image prices and
 exclude training. SVG content is validated and sanitized before persistence.
 The image-gen, product-images and refinement skills expose their real tool names.
-Six fixture rows activate: 124 active, five skipped of 129. The inventory is
-15 providers, 113 tools and 24 skills. Comet validation and Ideogram quality A/B
+Six specialist fixture rows are active. The current fixture has 129 active rows
+and five skipped of 134. The inventory is 15 providers, 113 tools and 24 skills.
+Comet validation and Ideogram quality A/B
 remain pending. See [Image specialists](IMAGE_SPECIALISTS.md) for contracts,
 official sources read 2026-10-09, licence decisions and configuration.
 
@@ -529,7 +539,7 @@ The continuity skill now includes `Gemini___judge_continuity` and `Gemini___get_
 The canonical `gemini_vlm_judge` alias is built and its retained routing row is active.
 `local_qc` remains default. The VLM is dry-run by default and promotion requires a complete,
 committed, hash-pinned live result above 0.85 on the 420 frozen pairs. No result is committed.
-Current inventory is 15 providers, 113 Gateway tools, 24 skills and 124 active routing rows
+Current inventory is 15 providers, 113 Gateway tools, 24 skills and 129 active routing rows
 with 5 skips. See [Gemini configuration and sources](GEMINI_CONTINUITY_QC.md),
 [benchmark procedure](CONTINUITY_QC_BENCHMARK.md#experimental-gemini-judge-and-eval-gate),
 and [decisions](continuity-qc-vlm-decisions.tsv). Comet E2E remains blocked.
@@ -546,7 +556,7 @@ retained for review. The canvas graph and the legacy flat timeline are separate 
 Import retains opaque source handles without publishing or fetching media. No new
 provider, model, key, secret, or environment variable is needed. `REMOTION_DRY_RUN`
 remains true by default. All existing paid-video approval and spending gates remain.
-There are 15 providers, 113 Gateway tools, 24 skills, 124 active fixture rows, and five
+There are 15 providers, 113 Gateway tools, 24 skills, 129 active fixture rows, and five
 dependency skips. Read [NLE import](NLE_EXPORT.md#import-an-editors-timeline) for the
 parser contract and unsupported edits. Comet and real editor validation remain blocked
 or unverified; offline tests do not establish browser success.

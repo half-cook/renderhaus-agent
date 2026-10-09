@@ -533,12 +533,12 @@ def intent_constraints(prompt: str, *, tier: str | None = None, confidential: bo
         "duration_over_30s": isinstance(supplied_duration, (int, float)) and supplied_duration > 30,
         "presenter": bool(re.search(r"presenter|digital twin", prompt, re.I)),
         "text_only_sfx": not video_sfx,
-        "explicit_html_template": bool(re.search(r"hyperframes|html.*template", prompt, re.I)),
         "linear_fps": bool(re.search(r"linear|simple pan", prompt, re.I)) and not bool(re.search(r"non[ -]?linear|not linear", prompt, re.I)),
     }
     predicates.update({k: bool(args[k]) for k in predicates if k in args})
     predicates["text_only_edit"] = _text_only_image_edit(prompt, args)
     predicates["real_face_refs"] = real_face
+    predicates["explicit_hyperframes"] = bool(re.search(r"\bhyperframes\b", prompt, re.I))
     model = None
     if provider == "fal":
         if re.search(r"vidu", prompt, re.I):

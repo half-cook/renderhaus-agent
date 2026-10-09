@@ -172,7 +172,7 @@ use the act-two skill even for explicit performance requests. Mureka lyrics-vide
 whiteboard-explainer plans Remotion templates without claiming unsupported marker-hand animation.
 
 The deterministic router supplies skill and tool proposals in graph input and Studio context.
-The capability-map fixture contains 129 retained rows, with 124 active and 5 dependency skips.
+The capability-map fixture contains 134 retained rows, with 129 active and 5 dependency skips.
 Archived/confidential routes are dropped. Active rows cover built tools and declared interims;
 pending specialists keep named branch reasons. Editorial overrides retain the safe preparer,
 separate rendering approval, and existing export/HyperFrames narration workflow contracts.
@@ -186,6 +186,13 @@ adds HTML authoring guidance beside Remotion. `HYPERFRAMES_ENABLED=false` and
 editor dispatch, approval, and spending gates; live rendering fails closed until
 an isolated worker exists. The [assessment](HYPERFRAMES_ASSESSMENT.md) documents
 the Apache adaptation, dependencies, and remaining verification.
+
+The existing skill also packages MIT caption and collage
+[recipes and HTML examples](HYPERFRAMES_TEMPLATE_PACKS.md). Manager and editor
+read their catalog, templates, and references through `/skills/hyperframes/`.
+The existing composition input contract and native approval/resume paths apply.
+Plain style requests use Remotion. Named HyperFrames requests retain the optional
+feature gate. No provider dispatch, secret, or top-level skill is added.
 
 Fish Audio is not in the current active provider catalog. Its speech tool is usable only when
 Gateway discovers an available Fish Audio target. Skills explicitly report unavailable tools.
@@ -426,8 +433,9 @@ locally; scripted-model approval/resume tests are offline and do not establish l
 `Fal___get_video_task`, default to dry-run, quote verified fal image prices and
 exclude training. SVG content is validated and sanitized before persistence.
 The image-gen, product-images and refinement skills expose their real tool names.
-Six fixture rows activate: 124 active, five skipped of 129. The inventory is
-15 providers, 113 tools and 24 skills. Comet validation and Ideogram quality A/B
+Six specialist fixture rows are active. The current fixture has 129 active rows
+and five skipped of 134. The inventory is 15 providers, 113 tools and 24 skills.
+Comet validation and Ideogram quality A/B
 remain pending. See [Image specialists](IMAGE_SPECIALISTS.md) for contracts,
 official sources read 2026-10-09, licence decisions and configuration.
 
@@ -437,7 +445,7 @@ The continuity skill now includes `Gemini___judge_continuity` and `Gemini___get_
 The canonical `gemini_vlm_judge` alias is built and its retained routing row is active.
 `local_qc` remains default. The VLM is dry-run by default and promotion requires a complete,
 committed, hash-pinned live result above 0.85 on the 420 frozen pairs. No result is committed.
-Current inventory is 15 providers, 113 Gateway tools, 24 skills and 124 active routing rows
+Current inventory is 15 providers, 113 Gateway tools, 24 skills and 129 active routing rows
 with 5 skips. See [Gemini configuration and sources](GEMINI_CONTINUITY_QC.md),
 [benchmark procedure](CONTINUITY_QC_BENCHMARK.md#experimental-gemini-judge-and-eval-gate),
 and [decisions](continuity-qc-vlm-decisions.tsv). Comet E2E remains blocked.
@@ -454,7 +462,7 @@ retained for review. The canvas graph and the legacy flat timeline are separate 
 Import retains opaque source handles without publishing or fetching media. No new
 provider, model, key, secret, or environment variable is needed. `REMOTION_DRY_RUN`
 remains true by default. All existing paid-video approval and spending gates remain.
-There are 15 providers, 113 Gateway tools, 24 skills, 124 active fixture rows, and five
+There are 15 providers, 113 Gateway tools, 24 skills, 129 active fixture rows, and five
 dependency skips. Read [NLE import](NLE_EXPORT.md#import-an-editors-timeline) for the
 parser contract and unsupported edits. Comet and real editor validation remain blocked
 or unverified; offline tests do not establish browser success.
