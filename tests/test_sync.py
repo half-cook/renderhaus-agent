@@ -24,6 +24,7 @@ DIRECT_GENERATE = "https://api.sync.so/v2/generate"
 VIDEO_URL = "https://media.example.test/source.mp4"
 AUDIO_URL = "https://media.example.test/voice.wav"
 OUTPUT_URL = "https://cdn.example.test/lipsync.mp4"
+MP4_BYTES = (Path(__file__).parent / "fixtures" / "sync-video.mp4").read_bytes()
 ARGUMENTS = {
     "video_url": VIDEO_URL,
     "audio_url": AUDIO_URL,
@@ -33,6 +34,39 @@ ARGUMENTS = {
     "subjects": "Synthetic presenter and synthetic voice",
     "consent_confirmed": True,
 }
+
+
+def marked_mp4(label: bytes) -> bytes:
+    return MP4_BYTES + (8 + len(label)).to_bytes(4, "big") + b"free" + label
+
+
+class MemoryS3:
+    def __init__(self, *, fail_puts=()):
+        self.objects = {}
+        self.put_count = 0
+        self.fail_puts = set(fail_puts)
+        self.uploaded = []
+        self.sign_count = 0
+
+    def put_object(self, *, Bucket, Key, Body, ContentType):
+        self.put_count += 1
+        if self.put_count in self.fail_puts:
+            raise OSError("Synthetic store interruption")
+        self.objects[Key] = Body.encode() if isinstance(Body, str) else Body
+
+    def get_object(self, *, Bucket, Key):
+        return {"Body": io.BytesIO(self.objects[Key])}
+
+    def upload_file(self, *, Filename, Bucket, Key, ExtraArgs):
+        self.objects[Key] = Path(Filename).read_bytes()
+        self.uploaded.append(Key)
+
+    def download_file(self, *, Bucket, Key, Filename):
+        Path(Filename).write_bytes(self.objects[Key])
+
+    def generate_presigned_url(self, operation, *, Params, ExpiresIn):
+        self.sign_count += 1
+        return f"https://objects.example.test/{Params['Key']}?X-Amz-Signature=offline-{self.sign_count}"
 
 
 class SyncProviderTests(unittest.TestCase):
@@ -94,7 +128,7 @@ class SyncProviderTests(unittest.TestCase):
     def route(self, method, url, payload, status=200):
         self.routes.append((method, url, httpx.Response(status, json=payload)))
 
-    def download_route(self, url=OUTPUT_URL, content=b"offline-mp4"):
+    def download_route(self, url=OUTPUT_URL, content=MP4_BYTES):
         self.routes.append(("GET", url, httpx.Response(200, content=content)))
 
     def submit(self, **overrides):
@@ -274,7 +308,7 @@ class SyncProviderTests(unittest.TestCase):
         self.download_route()
         output = self.api.get_video_task(job["job_id"], download=True)
         self.assertEqual(output["status"], "succeeded")
-        self.assertEqual(Path(output["output_path"]).read_bytes(), b"offline-mp4")
+        self.assertEqual(Path(output["output_path"]).read_bytes(), MP4_BYTES)
         self.assertTrue(output["downloaded"])
         metadata = "\n".join(path.read_text() for path in self.sync_metadata())
         self.assertNotIn("input-secret", metadata)
@@ -323,7 +357,7 @@ class SyncProviderTests(unittest.TestCase):
         self.download_route()
         output = self.api.get_video_task(job["job_id"], download=True)
         self.assertEqual(output["status"], "succeeded")
-        self.assertEqual(Path(output["output_path"]).read_bytes(), b"offline-mp4")
+        self.assertEqual(Path(output["output_path"]).read_bytes(), MP4_BYTES)
 
     def test_provider_http_errors_never_echo_urls_keys_or_response_text(self):
         for transport, submit_url in (("fal", FAL_SUBMIT), ("direct", DIRECT_GENERATE)):
@@ -379,6 +413,126 @@ class SyncProviderTests(unittest.TestCase):
             self.api.get_video_task(job["job_id"], download=True)
         self.assertEqual(list(Path(self.directory.name).rglob("*.mp4")), [])
         self.assertEqual(list(Path(self.directory.name).rglob("*.part")), [])
+
+    def test_nonvideo_and_truncated_downloads_never_report_success_without_ffprobe(self):
+        for content in (b"<html>not a video</html>", b"%PDF-1.7", MP4_BYTES[:16], MP4_BYTES[:-10]):
+            with self.subTest(content_length=len(content)):
+                self.fal_submit_route()
+                job = self.submit()
+                self.fal_completed_routes()
+                self.download_route(content=content)
+                with patch.object(self.chunks.shutil, "which", return_value=None):
+                    with self.assertRaisesRegex(RuntimeError, "MP4|container|video"):
+                        self.api.get_video_task(job["job_id"], download=True)
+        self.assertEqual(list(Path(self.directory.name).rglob("*.mp4")), [])
+        self.assertEqual(list(Path(self.directory.name).rglob("*.part")), [])
+
+    def test_original_mp4_fixture_can_download_without_ffprobe(self):
+        self.fal_submit_route()
+        job = self.submit()
+        self.fal_completed_routes()
+        self.download_route()
+        with patch.object(self.chunks.shutil, "which", return_value=None):
+            output = self.api.get_video_task(job["job_id"], download=True)
+        self.assertEqual(Path(output["output_path"]).read_bytes(), MP4_BYTES)
+
+    def test_signed_output_url_is_never_saved_in_sync_or_fal_metadata(self):
+        signed = OUTPUT_URL + "?X-Amz-Signature=synthetic-private-marker"
+        self.fal_submit_route()
+        job = self.submit()
+        self.fal_completed_routes(output_url=signed)
+        self.download_route(signed)
+        self.api.get_video_task(job["job_id"], download=True)
+        saved = "\n".join(path.read_text() for path in Path(self.directory.name).glob("video/.tasks/**/*.json"))
+        self.assertNotIn("synthetic-private-marker", saved)
+        self.assertNotIn("X-Amz-Signature", saved)
+
+    def test_local_manifest_failure_after_acceptance_returns_handle_even_if_fallback_fails(self):
+        original = self.api._write_local
+        calls = 0
+
+        def fail_after_initial(manifest):
+            nonlocal calls
+            calls += 1
+            if calls > 1:
+                raise OSError("Synthetic local failure https://private.test/?token=secret")
+            original(manifest)
+
+        self.fal_submit_route()
+        with patch.object(self.api, "_write_local", side_effect=fail_after_initial):
+            try:
+                output = self.submit()
+            except OSError:
+                self.fail("Accepted Sync work must return its handle when local persistence fails.")
+        self.assertEqual(output["accepted_provider_handle"], f"{FAL_ENDPOINT}:request_1")
+        self.assertTrue(output["persistence_error"])
+        self.assertEqual(len(self.requests), 1)
+        self.assertNotIn("private.test", json.dumps(output))
+
+    def test_accepted_handle_can_persist_remotely_when_local_cache_write_fails(self):
+        os.environ["AWS_S3_BUCKET"] = "offline-sync-store"
+        store = MemoryS3()
+        original = self.api._write_local
+        calls = 0
+
+        def fail_after_initial(manifest):
+            nonlocal calls
+            calls += 1
+            if calls > 1:
+                raise OSError("Synthetic local cache interruption")
+            original(manifest)
+
+        self.fal_submit_route()
+        with (
+            patch.object(self.chunks.boto3, "client", return_value=store),
+            patch.object(self.api, "_write_local", side_effect=fail_after_initial),
+        ):
+            try:
+                output = self.submit()
+            except OSError:
+                self.fail("Remote acceptance must survive a local cache error.")
+        saved = json.loads(next(iter(store.objects.values())))
+        self.assertEqual(saved["request_id"], "request_1")
+        self.assertEqual(output["accepted_provider_handle"], f"{FAL_ENDPOINT}:request_1")
+
+    def test_stale_remote_initial_manifest_does_not_hide_newer_local_accepted_handle(self):
+        os.environ["AWS_S3_BUCKET"] = "offline-sync-store"
+        store = MemoryS3(fail_puts={2})
+        self.fal_submit_route()
+        with patch.object(self.chunks.boto3, "client", return_value=store):
+            output = self.submit()
+            self.assertTrue(output["persistence_error"])
+            self.assertIsNone(json.loads(next(iter(store.objects.values())))["request_id"])
+            self.route("GET", f"{FAL_REQUESTS}/request_1/status", {"status": "IN_PROGRESS"})
+            try:
+                polled = self.api.get_video_task(output["job_id"])
+            except ValueError:
+                self.fail("Polling must retain the newer validated local accepted handle.")
+        self.assertEqual(polled["status"], "running")
+        self.assertEqual(sum(request.method == "POST" for request in self.requests), 1)
+
+    def test_hosted_completed_artifact_has_fresh_url_after_cache_and_cold_worker(self):
+        os.environ.update(AWS_S3_BUCKET="offline-sync-store", AWS_LAMBDA_FUNCTION_NAME="offline-sync-lambda")
+        store = MemoryS3()
+        self.fal_submit_route()
+        with patch.object(self.chunks.boto3, "client", return_value=store):
+            job = self.submit()
+            self.fal_completed_routes()
+            self.download_route()
+            first = self.api.get_video_task(job["job_id"], download=True)
+            self.assertTrue(first["video_url"].startswith("https://objects.example.test/"))
+            second = self.api.get_video_task(job["job_id"], download=True)
+            self.assertIn("video_url", second)
+            self.assertNotEqual(first["video_url"], second["video_url"])
+            shutil.rmtree(Path(self.directory.name) / "video")
+            cold = self.api.get_video_task(job["job_id"], download=True)
+        self.assertEqual(cold["status"], "succeeded")
+        self.assertTrue(cold["video_url"].startswith("https://objects.example.test/"))
+        self.assertNotIn("output_path", cold)
+        self.assertEqual(sum(request.method == "POST" for request in self.requests), 1)
+        self.assertEqual(len(store.uploaded), 1)
+        saved = "\n".join(body.decode() for key, body in store.objects.items() if key.endswith(".json"))
+        self.assertNotIn("X-Amz-Signature", saved)
 
     def test_saved_jobs_respect_sync_and_transport_dry_run_flags(self):
         from providers.fal import api as fal_api
@@ -623,19 +777,19 @@ class SyncProviderTests(unittest.TestCase):
         for index in range(3):
             url = f"https://cdn.example.test/part-{index}.mp4"
             self.fal_completed_routes(f"part_{index}", output_url=url)
-            self.download_route(url, content=f"part-{index}".encode())
+            self.download_route(url, content=marked_mp4(f"part-{index}".encode()))
         merged_inputs = []
 
         def merge(paths, *, output_path):
             merged_inputs.extend(path.read_bytes() for path in paths)
-            output_path.write_bytes(b"".join(merged_inputs))
+            output_path.write_bytes(marked_mp4(b"assembled"))
             return output_path
 
         with patch("server.projects.merge_video_paths", side_effect=merge) as concat:
             output = self.api.get_video_task(job["job_id"], download=True)
             self.assertEqual(output["status"], "succeeded")
-            self.assertEqual(merged_inputs, [b"part-0", b"part-1", b"part-2"])
-            self.assertEqual(Path(output["output_path"]).read_bytes(), b"part-0part-1part-2")
+            self.assertEqual(merged_inputs, [marked_mp4(f"part-{i}".encode()) for i in range(3)])
+            self.assertEqual(Path(output["output_path"]).read_bytes(), marked_mp4(b"assembled"))
             request_count = len(self.requests)
             self.assertEqual(self.api.get_video_task(job["job_id"], download=True)["status"], "succeeded")
             self.assertEqual(concat.call_count, 1)
@@ -649,7 +803,7 @@ class SyncProviderTests(unittest.TestCase):
         for index in range(3):
             url = f"https://cdn.example.test/part-{index}.mp4"
             self.fal_completed_routes(f"part_{index}", output_url=url)
-            self.download_route(url, content=b"child")
+            self.download_route(url, content=MP4_BYTES)
 
         def empty_merge(paths, *, output_path):
             output_path.write_bytes(b"")
@@ -662,6 +816,72 @@ class SyncProviderTests(unittest.TestCase):
             json.loads(next(path for path in self.sync_metadata() if json.loads(path.read_text())["job_id"] == job["job_id"]).read_text())["status"],
             "succeeded",
         )
+
+    def test_aggregate_publishes_final_mp4_and_returns_fresh_url_after_cold_worker(self):
+        os.environ.update(AWS_S3_BUCKET="offline-sync-store", AWS_LAMBDA_FUNCTION_NAME="offline-sync-lambda")
+        store = MemoryS3()
+        for index in range(3):
+            self.fal_submit_route(f"part_{index}")
+
+        def merge(paths, *, output_path):
+            self.assertEqual(len(paths), 3)
+            output_path.write_bytes(marked_mp4(b"assembled"))
+            return output_path
+
+        with (
+            patch.object(self.chunks.boto3, "client", return_value=store),
+            patch("server.projects.merge_video_paths", side_effect=merge) as concat,
+        ):
+            job = self.submit_aggregate()
+            for index in range(3):
+                url = f"https://cdn.example.test/part-{index}.mp4"
+                self.fal_completed_routes(f"part_{index}", output_url=url)
+                self.download_route(url)
+            first = self.api.get_video_task(job["job_id"], download=True)
+            self.assertIn("video_url", first)
+            second = self.api.get_video_task(job["job_id"], download=True)
+            self.assertNotEqual(first["video_url"], second["video_url"])
+            shutil.rmtree(Path(self.directory.name) / "video")
+            cold = self.api.get_video_task(job["job_id"], download=True)
+            self.assertEqual(concat.call_count, 1)
+        self.assertEqual(cold["status"], "succeeded")
+        self.assertTrue(cold["video_url"].startswith("https://objects.example.test/"))
+        self.assertEqual(len(store.uploaded), 4)
+        self.assertEqual(sum(request.method == "POST" for request in self.requests), 3)
+        saved = "\n".join(body.decode() for key, body in store.objects.items() if key.endswith(".json"))
+        self.assertNotIn("X-Amz-Signature", saved)
+
+    def test_aggregate_can_restore_completed_children_after_worker_restart(self):
+        os.environ.update(AWS_S3_BUCKET="offline-sync-store", AWS_LAMBDA_FUNCTION_NAME="offline-sync-lambda")
+        store = MemoryS3()
+        for index in range(3):
+            self.fal_submit_route(f"part_{index}")
+
+        def merge(paths, *, output_path):
+            self.assertEqual([path.read_bytes() for path in paths], [marked_mp4(f"part-{i}".encode()) for i in range(3)])
+            output_path.write_bytes(marked_mp4(b"assembled"))
+            return output_path
+
+        with (
+            patch.object(self.chunks.boto3, "client", return_value=store),
+            patch("server.projects.merge_video_paths", side_effect=merge),
+        ):
+            job = self.submit_aggregate()
+            for index in range(2):
+                url = f"https://cdn.example.test/part-{index}.mp4"
+                self.fal_completed_routes(f"part_{index}", output_url=url)
+                self.download_route(url, marked_mp4(f"part-{index}".encode()))
+            self.route("GET", f"{FAL_REQUESTS}/part_2/status", {"status": "IN_PROGRESS"})
+            self.assertEqual(self.api.get_video_task(job["job_id"], download=True)["status"], "running")
+            shutil.rmtree(Path(self.directory.name) / "video")
+            final_url = "https://cdn.example.test/part-2.mp4"
+            self.fal_completed_routes("part_2", output_url=final_url)
+            self.download_route(final_url, marked_mp4(b"part-2"))
+            output = self.api.get_video_task(job["job_id"], download=True)
+        self.assertEqual(output["status"], "succeeded")
+        self.assertIn("video_url", output)
+        self.assertEqual(sum(request.method == "POST" for request in self.requests), 3)
+        self.assertEqual(sum(request.url.path.endswith("/status") for request in self.requests), 4)
 
     def test_source_probe_mismatch_refuses_before_split_upload_or_paid_requests(self):
         from providers.remotion import local
