@@ -6,10 +6,13 @@ import base64
 import io
 import json
 import math
+import threading
+import time
 import unittest
 from unittest.mock import Mock, patch
 from urllib.error import HTTPError, URLError
 
+from agent.deep_agent import continuity_qc_runpod as runpod_transport
 from agent.deep_agent.continuity_qc import (
     DINO_MODEL,
     DINOV3_MODEL,
@@ -89,7 +92,7 @@ class RunPodBackendTests(unittest.TestCase):
             patcher = patch(target, replacement)
             patcher.start()
             self.addCleanup(patcher.stop)
-        self.http_patcher = patch("agent.deep_agent.continuity_qc_runpod._open")
+        self.http_patcher = patch.object(runpod_transport, "_open")
         self.http = self.http_patcher.start()
         self.addCleanup(self.http_patcher.stop)
         self.shots = [Shot("one", Frame("a")), Shot("two", Frame("b"))]
@@ -338,6 +341,53 @@ class RunPodBackendTests(unittest.TestCase):
         shots = [Shot(str(index), Frame("a")) for index in range(9)]
         self.assert_skipped(self.checker().score(shots))
         self.http.assert_not_called()
+
+    def test_invalid_worker_ids_skip_before_http(self):
+        for value in ("contains spaces", "unicodé", "slash/path"):
+            with self.subTest(value=value):
+                self.assert_skipped(self.checker().score([Shot(value, Frame("a")), self.shots[1]]))
+        self.http.assert_not_called()
+
+    def test_slow_open_or_read_cannot_block_past_total_deadline(self):
+        for phase in ("open", "read"):
+            with self.subTest(phase=phase):
+                release = threading.Event()
+                entered = threading.Event()
+                exited = threading.Event()
+
+                class SlowResponse(io.BytesIO):
+                    def read(stream, size=-1):
+                        if phase == "read":
+                            entered.set()
+                            release.wait(0.5)
+                        return super().read(size)
+
+                    def close(stream):
+                        super().close()
+                        exited.set()
+
+                def slow_open(*args, **kwargs):
+                    if phase == "open":
+                        entered.set()
+                        release.wait(0.5)
+                    return SlowResponse(json.dumps(completed()).encode())
+
+                self.http.side_effect = slow_open
+                self.http.reset_mock()
+                with patch("time.monotonic", time.perf_counter), patch("time.sleep", lambda _: None), patch.dict(
+                    "os.environ", {"CONTINUITY_QC_RUNPOD_TIMEOUT_SECONDS": "0.04"}
+                ):
+                    started = time.perf_counter()
+                    try:
+                        report = self.checker().score(self.shots)
+                        elapsed = time.perf_counter() - started
+                        self.assert_skipped(report)
+                        self.assertTrue(entered.is_set())
+                        self.assertLess(elapsed, 0.2)
+                        self.http.assert_called_once()
+                    finally:
+                        release.set()
+                        self.assertTrue(exited.wait(1.0))
 
     def test_local_backend_never_dispatches_http(self):
         local = ContinuityQC(siglip=Embedder(SIGLIP_MODEL, 0.92),

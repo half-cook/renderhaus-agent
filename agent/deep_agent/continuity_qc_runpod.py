@@ -7,7 +7,9 @@ import io
 import json
 import math
 import os
+import queue
 import re
+import threading
 import time
 import urllib.request
 from dataclasses import dataclass, field
@@ -22,6 +24,7 @@ MAX_JSON_BYTES = 10 * 1024 * 1024
 PENDING = frozenset({"IN_QUEUE", "IN_PROGRESS"})
 TERMINAL_FAILURES = frozenset({"FAILED", "CANCELLED", "TIMED_OUT"})
 IDENTIFIER = re.compile(r"[A-Za-z0-9_-]{1,128}\Z")
+SHOT_IDENTIFIER = re.compile(r"[A-Za-z0-9_.:-]{1,128}\Z")
 
 
 class _NoRedirect(urllib.request.HTTPRedirectHandler):
@@ -93,6 +96,27 @@ class RunPodClient:
         time.sleep(min(seconds, self._remaining()))
         self._remaining()
 
+    def _read(self, request: urllib.request.Request, timeout: float) -> bytes:
+        outcomes: queue.Queue[bytes | Exception] = queue.Queue(maxsize=1)
+
+        def read_response():
+            try:
+                with _open(request, timeout=timeout) as result:
+                    raw = result.read(MAX_JSON_BYTES + 1)
+            except Exception as exc:
+                outcomes.put(exc)
+            else:
+                outcomes.put(raw)
+
+        threading.Thread(target=read_response, daemon=True, name="continuity-qc-runpod").start()
+        try:
+            outcome = outcomes.get(timeout=min(timeout, self._remaining()))
+        except queue.Empty:
+            raise TimeoutError("RunPod request deadline exceeded.") from None
+        if isinstance(outcome, Exception):
+            raise outcome
+        return outcome
+
     def _request(self, path: str, body: bytes | None = None, *, sync: bool = False) -> dict[str, Any]:
         for attempt in range(self.settings.max_retries + 1):
             request = urllib.request.Request(
@@ -103,8 +127,7 @@ class RunPodClient:
             )
             timeout = min(self.settings.request_timeout_seconds, self._remaining())
             try:
-                with _open(request, timeout=timeout) as result:
-                    raw = result.read(MAX_JSON_BYTES + 1)
+                raw = self._read(request, timeout)
                 self._remaining()
                 if len(raw) > MAX_JSON_BYTES:
                     raise RunPodBackendError("RunPod response exceeds the byte limit.")
@@ -148,8 +171,8 @@ class RunPodClient:
         if not 2 <= len(shots) <= MAX_FRAMES:
             raise RunPodBackendError("RunPod continuity QC requires 2 to 8 frames.")
         ids = [shot.shot_id for shot in shots]
-        if not all(isinstance(value, str) and 0 < len(value) <= 128 for value in ids) or len(set(ids)) != len(ids):
-            raise RunPodBackendError("Continuity shot IDs must be unique nonempty strings.")
+        if not all(isinstance(value, str) and SHOT_IDENTIFIER.fullmatch(value) for value in ids) or len(set(ids)) != len(ids):
+            raise RunPodBackendError("Continuity shot IDs must be unique bounded ASCII identifiers.")
         model_key = "dinov3" if dino_model == DINOV3_MODEL else "dinov2"
         models = {"siglip": SIGLIP_MODEL, model_key: dino_model}
         frames = []
