@@ -21,7 +21,7 @@ DEFAULT_ENV = {
     "KLING_API_STYLE": "current",
     "KLING_DRY_RUN": "true",
     "BYTEPLUS_BASE_URL": "https://ark.ap-southeast.bytepluses.com/api/v3",
-    "SEEDANCE_MODEL": "seedance-1-5-pro-251215",
+    "SEEDANCE_MODEL": "dreamina-seedance-2-5-260628",
     "SEEDANCE_DRY_RUN": "true",
     "RUNWAY_DRY_RUN": "true",
     "SEEDREAM_MODEL": "seedream-5-0-lite-260128",

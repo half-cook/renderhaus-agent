@@ -1082,7 +1082,13 @@ def estimate_cost(name: str, arguments: dict, *, list_price: bool = False) -> Co
         except (ValueError, TypeError, KeyError) as exc:
             return CostEstimate(None, str(exc))
     if provider == "openai_images":
-        return CostEstimate(None, "UNVERIFIED pre-call token count for selected size/quality and inputs. Official token rates are verified.")
+        from server.billing_rates import openai_images_estimate_cents
+
+        try:
+            return CostEstimate(openai_images_estimate_cents(tool, arguments),
+                                "Per-image estimate ($0.20 default or operator quote); actual token usage is reported.")
+        except (ValueError, TypeError, KeyError) as exc:
+            return CostEstimate(None, f"OpenAI Images estimate unavailable for these inputs: {exc}")
     if model:
         arguments = {**arguments, "model": model}
     try:

@@ -707,6 +707,11 @@ def _fal_cost(tool: str, arguments: dict[str, Any]) -> GenerationCost:
 
 OPENAI_IMAGES_PRICING_URL = "https://developers.openai.com/api/docs/pricing"
 OPENAI_IMAGES_PRICING_READ_DATE = "2026-10-09"
+# Per-image APPROVAL ESTIMATE used when no operator quote is configured. OpenAI publishes only token
+# rates plus a calculator widget (pricing page and image-generation guide, read 2026-10-09), not a flat
+# per-image price, so this figure is the product-directed list price of $0.20 per image (Satya /
+# parent-agent instruction 2026-10-09), not a verified tariff. Actual token usage is still reported.
+OPENAI_IMAGES_ESTIMATE_CENTS_PER_IMAGE = 20
 OPENAI_IMAGES_USD_PER_M_TOKENS = {"text_tokens": Decimal("5"), "image_tokens": Decimal("8"), "output_tokens": Decimal("30")}
 
 
@@ -725,6 +730,18 @@ def openai_images_usage_cost(usage: dict[str, Any] | None) -> float | None:
                      for field, value in counts.items()) / Decimal(1000000))
 
 
+def openai_images_estimate_cents(tool: str, arguments: dict[str, Any]) -> int:
+    """Approval estimate (fee included): operator quote per image, else the $0.20 default estimate."""
+    count = arguments.get("n", 1)
+    if type(count) is not int or not 1 <= count <= 10:
+        count = 1  # request validation rejects bad n at dispatch; the estimate stays finite
+    quotes = json.loads(os.getenv("OPENAI_IMAGES_TOOL_COST_CENTS_JSON") or "{}")
+    quote = quotes.get(tool) if isinstance(quotes, dict) else None
+    if type(quote) is not int or quote <= 0:
+        quote = OPENAI_IMAGES_ESTIMATE_CENTS_PER_IMAGE
+    return _with_fee(quote * count).total_cents
+
+
 def _openai_images_cost(tool: str, arguments: dict[str, Any]) -> GenerationCost:
     from providers.openai_images import api
     from providers.openai_images.contracts import request_for
@@ -732,11 +749,10 @@ def _openai_images_cost(tool: str, arguments: dict[str, Any]) -> GenerationCost:
     request = request_for(tool, arguments)
     if api.dry_run():
         return GenerationCost(0, 0)
-    # TODO: verified full-request token estimates or observed-usage billing reconciliation.
     quotes = json.loads(os.getenv("OPENAI_IMAGES_TOOL_COST_CENTS_JSON") or "{}")
     quote = quotes.get(tool) if isinstance(quotes, dict) else None
     if type(quote) is not int or quote <= 0:
-        raise ValueError("OpenAI Images cost is unknown. Configure a per-image operator quote in OPENAI_IMAGES_TOOL_COST_CENTS_JSON before billed/manual live calls.")
+        quote = OPENAI_IMAGES_ESTIMATE_CENTS_PER_IMAGE
     return _with_fee(quote * request.n)
 
 
