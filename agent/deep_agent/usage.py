@@ -60,4 +60,6 @@ class ModelUsage:
             logger.info(json.dumps({"event": "agent_model_usage", "entry_point": "deepagents",
                                     "run_scope": self.run_scope, "model": model,
                                     "price_source": "https://platform.claude.com/docs/en/about-claude/pricing",
-                                    "price_read_date": "2026-10-09", **total}, sort_keys=True))
+                                    "price_read_date": "2026-10-09", **total,
+                                    "estimated_cost_usd": None if total["unknown_cost_calls"]
+                                    else total["estimated_cost_usd"]}, sort_keys=True))

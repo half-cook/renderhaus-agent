@@ -27,3 +27,13 @@ class ModelUsageTests(unittest.TestCase):
                     + (10 * .50 + 10 * .625 + 99_981 * .05 + 100 * 2.50)) / 1_000_000
         self.assertAlmostEqual(report["estimated_cost_usd"], expected, places=9)
         self.assertEqual(report["run_scope"], "scope")
+
+    def test_unknown_model_cost_is_unknown(self):
+        meter = ModelUsage("scope")
+        meter.record(AIMessage(content="", id="unknown", response_metadata={"model_name": "other-model"},
+                               usage_metadata={"input_tokens": 10, "output_tokens": 20, "total_tokens": 30}))
+        with self.assertLogs("usage-test", level="INFO") as observed:
+            meter.publish(logging.getLogger("usage-test"))
+        report = json.loads(observed.records[0].message)
+        self.assertEqual(report["unknown_cost_calls"], 1)
+        self.assertIsNone(report["estimated_cost_usd"])
