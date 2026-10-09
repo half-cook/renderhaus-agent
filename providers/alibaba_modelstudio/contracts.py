@@ -13,7 +13,7 @@ from typing import Any
 from urllib.parse import urlsplit
 
 from providers.contracts import ArgumentRule
-from providers.alibaba_modelstudio.config import DEFAULT_MODEL
+from providers.alibaba_modelstudio.config import DEFAULT_MODEL, PREVIEW_TERMS_URL
 
 
 GENERATING_TOOLS = ("edit_wan3_video", "extend_wan3_video")
@@ -28,6 +28,8 @@ TERMS_URL = "https://www.alibabacloud.com/help/en/legal/latest/alibaba-cloud-int
 TRAINING_METADATA = {
     "training_eligible": False, "weights_license": "closed-weights", "license": "service-terms",
     "hosted_terms_url": TERMS_URL, "hosted_terms_section": "4.48",
+    "preview_terms_url": PREVIEW_TERMS_URL, "live_use_blocked": True,
+    "commercial_status": "blocked: preview licence permits internal testing, research and evaluation only",
 }
 DEFAULTS = {
     "duration": -1, "resolution": "1080p", "aspect_ratio": "adaptive", "audio": True,

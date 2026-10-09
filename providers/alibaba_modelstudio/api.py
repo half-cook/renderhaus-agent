@@ -1,5 +1,3 @@
-"""Submit and poll Wan 3 video editing through DashScope's asynchronous API."""
-
 from __future__ import annotations
 
 import hashlib
@@ -159,7 +157,7 @@ def edit_wan3_video(
     reference_audio_urls: list[str] | None = None, reference_audio_durations: list[float] | None = None,
     real_face_refs: bool = False, likeness_consent: bool = False,
 ) -> dict:
-    """Edit one measured source video with Wan 3; returns an asynchronous task or a dry-run preview."""
+    """Preview Wan 3 edits offline; its evaluation-only preview licence blocks live customer use."""
     return _submit("edit_wan3_video", locals())
 
 
@@ -171,7 +169,7 @@ def extend_wan3_video(
     reference_audio_urls: list[str] | None = None, reference_audio_durations: list[float] | None = None,
     real_face_refs: bool = False, likeness_consent: bool = False, direction: str = "forward",
 ) -> dict:
-    """Extend one measured video; duration is total output seconds, not the added extension."""
+    """Preview Wan 3 extensions offline; duration is total output seconds and preview licensing blocks live use."""
     return _submit("extend_wan3_video", locals())
 
 
@@ -240,14 +238,14 @@ def get_task(job_id: str, download: bool = True) -> dict:
     metadata = json.loads(metadata_path.read_text()) if metadata_path.exists() else {}
     if not isinstance(metadata, dict) or metadata.get("job_id", job_id) != job_id:
         raise RuntimeError("Saved Model Studio task metadata is invalid.")
-    if metadata.get("status") == "succeeded" and output_path.exists() and output_path.stat().st_size:
-        return {**metadata, "output_path": str(output_path), "downloaded": True}
     if config.dry_run():
         return {"job_id": job_id, "status": "dry_run", **_base(config.settings())}
     configuration = config.settings(**{field: metadata[field] for field in ("base_url", "region", "model") if field in metadata})
     blocker = config.live_blocker(configuration)
     if blocker:
         raise ValueError(blocker)
+    if metadata.get("status") == "succeeded" and output_path.exists() and output_path.stat().st_size:
+        return {**metadata, **_base(configuration), "output_path": str(output_path), "downloaded": True}
     payload = _request("GET", configuration, f"/api/v1/tasks/{job_id}")
     output, status = _output(payload)
     if output.get("task_id") is not None and _task_id(output["task_id"]) != job_id:

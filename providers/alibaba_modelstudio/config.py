@@ -1,5 +1,3 @@
-"""Regional DashScope configuration without reading API credentials."""
-
 from __future__ import annotations
 
 import os
@@ -9,6 +7,13 @@ from urllib.parse import urlsplit
 
 
 DEFAULT_MODEL = "wan3.0-video"
+PREVIEW_TERMS_URL = "https://www.alibabacloud.com/help/en/legal/latest/alibaba-cloud-international-website-beta-testing-terms"
+PREVIEW_TERMS_READ_DATE = "2026-10-09"
+PREVIEW_LICENSE_BLOCKER = (
+    "Model Studio licence blocked: wan3.0-video is preview; Preview Product Terms 1.1 "
+    "permit only internal testing, research and evaluation. Commercial customer use "
+    "requires verified additional rights before live access can be enabled."
+)
 REGIONAL_HOSTS = {
     "us-east-1": "dashscope-us.aliyuncs.com",
     "ap-southeast-1": "dashscope-intl.aliyuncs.com",
@@ -77,4 +82,4 @@ def live_blocker(configuration: Settings | None = None) -> str | None:
         return configuration.endpoint_verification
     if configuration.model != DEFAULT_MODEL:
         return f"UNVERIFIED Model Studio model {configuration.model}; live submission is disabled."
-    return None
+    return PREVIEW_LICENSE_BLOCKER

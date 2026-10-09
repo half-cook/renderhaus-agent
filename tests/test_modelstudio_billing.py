@@ -70,7 +70,7 @@ class ModelStudioBillingTests(unittest.TestCase):
     def test_live_bill_adds_existing_platform_fee_once(self):
         with patch.dict(os.environ, {
             "MODELSTUDIO_DRY_RUN": "false", "DASHSCOPE_WORKSPACE_ID": "testworkspace",
-        }):
+        }), patch("providers.alibaba_modelstudio.config.live_blocker", return_value=None):
             self.assertEqual(rates.cost_for("alibaba_modelstudio", "extend_wan3_video", BASE).public(), {
                 "provider_cents": 198, "fee_cents": 59, "total_cents": 257,
             })
