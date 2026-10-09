@@ -14,6 +14,8 @@ from unittest.mock import MagicMock, patch
 
 import httpx
 
+from providers.runway import inputs as upload_inputs
+
 from server import runway_inputs as inputs
 from server.billing_rates import cost_for
 from server.studio_state import StudioRepository
@@ -96,7 +98,7 @@ class RunwayInputTests(unittest.TestCase):
             return httpx.Response(204)
 
         real_client = httpx.Client
-        with patch.object(inputs, "_request", return_value={"uploadUrl": "https://storage.example.com/upload?signature=" + "a" * 2100, "fields": {"policy": "offline"}, "runwayUri": "runway://upload-id"}) as create, patch.object(inputs.httpx, "Client", side_effect=lambda **kwargs: real_client(transport=httpx.MockTransport(upload), **kwargs)):
+        with patch.object(inputs, "_request", return_value={"uploadUrl": "https://storage.example.com/upload?signature=" + "a" * 2100, "fields": {"policy": "offline"}, "runwayUri": "runway://upload-id"}) as create, patch.object(upload_inputs.httpx, "Client", side_effect=lambda **kwargs: real_client(transport=httpx.MockTransport(upload), **kwargs)):
             result = inputs._publish_file(path, "opaque", "image/png")
         self.assertEqual(result, "runway://upload-id")
         create.assert_called_once_with("POST", "/uploads", {"type": "ephemeral", "filename": "opaque.png"})
@@ -111,7 +113,7 @@ class RunwayInputTests(unittest.TestCase):
         client = MagicMock()
         client.__enter__.return_value = client
         client.post.return_value = httpx.Response(403)
-        with patch.object(inputs, "_request", return_value={"uploadUrl": "https://storage.example.com/upload", "fields": {}, "runwayUri": "runway://upload-id"}) as request, patch.object(inputs.httpx, "Client", return_value=client):
+        with patch.object(inputs, "_request", return_value={"uploadUrl": "https://storage.example.com/upload", "fields": {}, "runwayUri": "runway://upload-id"}) as request, patch.object(upload_inputs.httpx, "Client", return_value=client):
             with self.assertRaisesRegex(RuntimeError, "No generation was submitted"):
                 inputs._publish_file(path)
         self.assertEqual(request.call_count, 1)
