@@ -79,6 +79,22 @@ class SyncWiringTests(unittest.TestCase):
         self.assertFalse(routing.training_eligible({"provider": "sync", "model": "sync-3",
             "status": "succeeded", "weights_license": "Apache-2.0", "training_eligible": True}))
 
+    def test_mode_output_duration_and_measured_resolution_are_enforced(self):
+        executor = object.__new__(GatewayExecutor)
+        executor.studio = SimpleNamespace(prompt="lipsync this 8 second 1080p interview clip")
+        measured = {**ARGS, "source_width": 1920, "source_height": 1080}
+        route = routing.route_intent(executor.studio.prompt, arguments=measured)
+        self.assertEqual(route.status, "ready")
+        self.assertIsNone(executor.selection_blocker("Sync___lipsync_video", measured, route))
+        self.assertIn("measured", executor.selection_blocker("Sync___lipsync_video", ARGS, route))
+        wrong_duration = {**measured, "audio_duration_seconds": 7.0}
+        self.assertIn("duration", executor.selection_blocker("Sync___lipsync_video", wrong_duration, route).lower())
+        executor.studio.prompt = "use Sync to revoice a 120 second 1080p presenter video"
+        chunked = {**measured, "source_duration_seconds": 120.0, "audio_duration_seconds": 120.0,
+                   "chunk_boundaries_seconds": [60.0]}
+        route = routing.route_intent(executor.studio.prompt, arguments=chunked)
+        self.assertIn("720p", executor.selection_blocker("Sync___lipsync_video", chunked, route))
+
 
 if __name__ == "__main__":
     unittest.main()
