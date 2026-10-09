@@ -66,7 +66,7 @@ MAX_AGENT_PROMPT_CHARS = 64_000
 _GATEWAY_SEARCH_TOOL = "x_amz_bedrock_agentcore_search"
 _VIDEO_DELIVERABLE_PATTERN = re.compile(
     r"\b(create|make|generate|produce|render|assemble|combine|merge|stitch|edit|export|"
-    r"deliver|cut|compose|retry|finish|complete|resume|turn|convert)\b"
+    r"deliver|cut|compose|retry|finish|complete|resume|turn|convert|upscale|interpolate)\b"
     r"(?:\W+\w+){0,12}?\W+"
     r"\b(video|videos|shot|shots|clip|clips|ad|advert|commercial|reel|spot|motion graphic|trailer|promo|montage|mp4)\b",
     re.IGNORECASE,
@@ -1462,7 +1462,9 @@ def _validate_video_delivery(
         assembly_prompt, re.IGNORECASE,
     ))
     standalone_poll = {"sync3_lipsync": "Sync___get_video_task",
-                       "heygen_avatar_v": "HeyGen___get_video_status"}.get(route_intent(request.prompt).alias)
+                       "heygen_avatar_v": "HeyGen___get_video_status",
+                       "topaz_upscale": "Topaz___get_video_task",
+                       "topaz_interpolate": "Topaz___get_video_task"}.get(route_intent(request.prompt).alias)
     if not requires_assembly and standalone_poll:
         if any(
             event.name == standalone_poll

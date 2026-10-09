@@ -608,12 +608,49 @@ def sync_price_cents(arguments: dict[str, Any]) -> Decimal:
     return frames * SYNC_DIRECT_BASE_CENTS_PER_SECOND_25FPS / 25
 
 
+# Official fal pricing examples, read 2026-10-09. Duration scaling is an estimate.
+# https://fal.ai/models/topaz/upscale/video/generative
+# https://fal.ai/models/topaz/interpolate/video
+TOPAZ_UPSCALE_CENTS_PER_10_SECONDS = {"1080p": {30: 120, 60: 240}, "4K": {30: 260, 60: 510}}
+TOPAZ_INTERPOLATE_CENTS_PER_FRAME = {"1080p": Decimal("0.1"), "4K": Decimal("0.2")}
+
+
+def topaz_price_cents(tool: str, arguments: dict[str, Any]) -> Decimal | None:
+    """Estimate fal finishing from documented output examples; unsupported quotes stay unknown."""
+    from providers.topaz.contracts import request_for
+
+    request = request_for(tool, arguments)
+    long_edge, short_edge = sorted((request.output_width, request.output_height), reverse=True)
+    resolution = "1080p" if long_edge <= 1920 and short_edge <= 1080 else "4K" if (long_edge, short_edge) == (3840, 2160) else None
+    if resolution is None:
+        return None
+    duration = Decimal(str(request.source_duration_seconds))
+    if tool == "upscale_video":
+        rate = TOPAZ_UPSCALE_CENTS_PER_10_SECONDS[resolution].get(request.output_fps)
+        return duration * Decimal(rate) / 10 if rate is not None else None
+    if request.slowdown_factor != 1:
+        return None
+    new_fps = Decimal(str(request.output_fps)) - Decimal(str(request.source_fps))
+    return duration * max(new_fps, Decimal(0)) * TOPAZ_INTERPOLATE_CENTS_PER_FRAME[resolution]
+
+
 def cost_for(provider: str, tool: str, arguments: dict[str, Any]) -> GenerationCost:
     """Real cost (provider + disclosed fee) for one call to `provider`/`tool`.
     Called both before dispatch (to check affordability) and after success
     (to charge the same amount), so it must be a pure function of the
     request, not of anything the provider returns.
     """
+    if provider == "topaz":
+        if tool in {"get_video_task", "list_topaz_models"}:
+            return GenerationCost(0, 0)
+        from providers.topaz.api import dry_run
+
+        if dry_run():
+            return GenerationCost(0, 0)
+        cents = topaz_price_cents(tool, arguments)
+        if cents is None:
+            raise ValueError("Topaz price unknown for these dimensions, FPS or slowdown; official quote TODO.")
+        return _with_fee(math.ceil(cents))
     if provider == "heygen":
         if tool in {"get_video_status", "list_avatars", "list_voices"}:
             return GenerationCost(0, 0)

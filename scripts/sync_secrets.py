@@ -4,6 +4,7 @@ OPENAI_API_KEY (shared by planning and Images), OPENAI_IMAGES_MODEL,
 OPENAI_IMAGES_DRY_RUN and optional OPENAI_IMAGES_TOOL_COST_CENTS_JSON,
 RENDERHAUS_AGENT_MODEL, RENDERHAUS_AGENT_EFFORT, their per-role overrides, ELEVENLABS_TTS_MODEL,
 and the existing FAL_KEY/FAL_DRY_RUN settings shared by Wan 3, VACE and Vidu.
+Topaz finishing uses TOPAZ_DRY_RUN=true and the existing FAL_KEY/FAL_DRY_RUN.
 Sync uses SYNC_API_KEY (optional authorized direct), SYNC_DRY_RUN, SYNC_MODEL,
 SYNC_TRANSPORT=fal, SYNC_DIRECT_AUTHORIZED, SYNC_MAX_CHUNK_SECONDS and SYNC_BILLING_PLAN.
 The fal transport reuses FAL_KEY/FAL_DRY_RUN. Chunking uses AWS_S3_BUCKET and

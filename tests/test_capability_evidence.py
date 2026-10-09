@@ -33,7 +33,7 @@ class CapabilityEvidenceTests(unittest.TestCase):
 
     def test_official_evidence_never_enables_pending_tools(self):
         for alias in ['mureka_v95', 'mirelo_v2a',
-                      'recraft_v41_vector', 'ideogram45_edit', 'topaz_upscale']:
+                      'recraft_v41_vector', 'ideogram45_edit']:
             with self.subTest(alias=alias):
                 entry = POLICY['tools'][alias]
                 self.assertEqual(entry['status'], 'pending')

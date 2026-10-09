@@ -143,7 +143,7 @@
     "expected_skill": "upscale",
     "expected_tool": "topaz_upscale",
     "suite": "upscale",
-    "skip_reason": "provider pending: topaz_upscale (feat/finishing-topaz)",
+    "skip_reason": "",
     "note": "SeedVR2 retired",
     "source_status": "updated"
   },
@@ -152,7 +152,7 @@
     "expected_skill": "upscale",
     "expected_tool": "topaz_upscale",
     "suite": "upscale",
-    "skip_reason": "provider pending: topaz_upscale (feat/finishing-topaz)",
+    "skip_reason": "",
     "note": "default",
     "source_status": "updated"
   },
@@ -161,7 +161,7 @@
     "expected_skill": "upscale",
     "expected_tool": "topaz_interpolate",
     "suite": "upscale",
-    "skip_reason": "provider pending: topaz_interpolate (feat/finishing-topaz)",
+    "skip_reason": "",
     "note": "RIFE retired; Apollo",
     "source_status": "updated"
   },
@@ -903,7 +903,7 @@
     "expected_skill": "upscale",
     "expected_tool": "topaz_interpolate",
     "suite": "upscale",
-    "skip_reason": "provider pending: topaz_interpolate (feat/finishing-topaz)",
+    "skip_reason": "",
     "note": "exception: Chronos (linear fps) via model param",
     "source_status": "new"
   },
@@ -912,7 +912,7 @@
     "expected_skill": "upscale",
     "expected_tool": "topaz_interpolate",
     "suite": "upscale",
-    "skip_reason": "provider pending: topaz_interpolate (feat/finishing-topaz)",
+    "skip_reason": "",
     "note": "default Apollo",
     "source_status": "new"
   },
