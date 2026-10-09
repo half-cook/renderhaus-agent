@@ -238,6 +238,96 @@
     }
   },
   {
+    "name": "vidu_q4_i2v",
+    "description": "Animate image_url with Vidu Q4 native audio at 540p through 4K for 3 to 16 seconds. Prompt is optional. Returns job_id; poll get_video_task with download=true until terminal. Hosted service terms apply; outputs are not training eligible.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "image_url": {
+          "type": "string",
+          "description": "Public URL or base64 data URI of the first frame. PNG, JPEG, or WebP up to 50 MB."
+        },
+        "prompt": {
+          "type": "string",
+          "description": "Must contain at most 5000 characters."
+        },
+        "duration": {
+          "type": "integer",
+          "description": "Allowed range: 3 to 16."
+        },
+        "seed": {
+          "type": "integer",
+          "description": "Optional unrestricted integer seed. Omit it to use a random seed."
+        },
+        "resolution": {
+          "type": "string",
+          "description": "Allowed values: 540p, 720p, 1080p, 2K, 4K."
+        },
+        "enable_safety_checker": {
+          "type": "boolean",
+          "description": "Defaults to true. Authorized callers may set false to request relaxed screening."
+        }
+      },
+      "required": [
+        "image_url"
+      ]
+    }
+  },
+  {
+    "name": "vidu_q4_r2v",
+    "description": "Generate Vidu Q4 video using an optional list of up to 12 reference images and 3 MP3 voice clips. Refer to images with [@reference_image_1] and voices with [reference_audio_1]. Audio defaults to false; set audio=true for dialogue and sound effects. Returns job_id; poll get_video_task with download=true until terminal. Outputs are not training eligible.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "prompt": {
+          "type": "string",
+          "description": "Must contain 1 to 5000 characters."
+        },
+        "reference_image_urls": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Optional list of up to 12 reference images. Public URLs or base64 data URIs of PNG, JPEG, or WebP images."
+        },
+        "reference_audio_urls": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Optional list of up to 3 MP3 reference voice clips. Each clip is 3 to 12 seconds and at most 50 MB. Use public URLs or base64 data URIs."
+        },
+        "duration": {
+          "type": "integer",
+          "description": "Allowed range: 3 to 16."
+        },
+        "seed": {
+          "type": "integer",
+          "description": "Optional unrestricted integer seed. Omit it to use a random seed."
+        },
+        "aspect_ratio": {
+          "type": "string",
+          "description": "Allowed values: 16:9, 9:16, 4:3, 3:4, 1:1."
+        },
+        "resolution": {
+          "type": "string",
+          "description": "Allowed values: 540p, 720p, 1080p, 2K, 4K."
+        },
+        "audio": {
+          "type": "boolean",
+          "description": "Generate dialogue and sound effects when true. Defaults to false, which produces silent video."
+        },
+        "enable_safety_checker": {
+          "type": "boolean",
+          "description": "Defaults to true. Authorized callers may set false to request relaxed screening."
+        }
+      },
+      "required": [
+        "prompt"
+      ]
+    }
+  },
+  {
     "name": "get_video_task",
     "description": "Poll an existing fal job_id once. Fetch completed results and optionally download the MP4. Never submits another generation.",
     "inputSchema": {
@@ -257,7 +347,7 @@
   },
   {
     "name": "list_fal_models",
-    "description": "List documented Wan VACE models, endpoints, licences, and published pricing. Static catalog; no network or generation.",
+    "description": "List documented Wan VACE and Vidu Q4 models, endpoints, licences, and published pricing. Static catalog; no network or generation.",
     "inputSchema": {
       "type": "object",
       "properties": {},

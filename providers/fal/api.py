@@ -1,9 +1,9 @@
-"""Wan VACE generation through fal's queue, checked 2026-10-08.
+"""Wan VACE and Vidu Q4 generation through fal's queue, checked 2026-10-08.
 
 https://docs.fal.ai/model-apis/model-endpoints/queue
 https://fal.ai/models/fal-ai/wan-vace-14b/api
 https://fal.ai/models/fal-ai/wan-22-vace-fun-a14b/api
-Per-endpoint contracts and source links live in providers.fal.wan.
+Per-endpoint contracts and source links live in providers.fal.wan and providers.fal.vidu.
 """
 
 from __future__ import annotations
@@ -19,8 +19,12 @@ from urllib.parse import urlsplit
 import httpx
 
 from providers.contracts import validate_tool_arguments
-from providers.fal import queue, wan
+from providers.fal import queue, vidu, wan
 from providers.registry import schema_from_callable
+
+
+TOOL_CONTRACTS = {tool: contract for contract in (wan, vidu) for tool in contract.GENERATING_TOOLS}
+ENDPOINT_CONTRACTS = {endpoint: contract for contract in (wan, vidu) for endpoint in contract.ENDPOINTS}
 
 
 def _validated(tool: str, arguments: dict[str, Any]) -> dict[str, Any]:
@@ -43,7 +47,7 @@ def _job(endpoint_id: str, request_id: str) -> str:
 
 def _parse_job(job_id: str) -> tuple[str, str]:
     endpoint_id, separator, request_id = job_id.partition(":")
-    if not separator or endpoint_id not in wan.ENDPOINTS:
+    if not separator or endpoint_id not in ENDPOINT_CONTRACTS:
         raise ValueError("job_id must be the handle returned by a fal submit tool.")
     queue.request_url(endpoint_id, request_id)
     return endpoint_id, request_id
@@ -60,7 +64,8 @@ def _write_metadata(path: Path, metadata: dict[str, Any]) -> None:
 
 def _submit(tool: str, arguments: dict[str, Any]) -> dict[str, Any]:
     arguments = _validated(tool, arguments)
-    endpoint, body = wan.request_body(tool, arguments)
+    contract = TOOL_CONTRACTS[tool]
+    endpoint, body = contract.request_body(tool, arguments)
     if queue.dry_run():
         return {
             "job_id": _job(endpoint.id, "dry_" + uuid.uuid4().hex),
@@ -69,10 +74,15 @@ def _submit(tool: str, arguments: dict[str, Any]) -> dict[str, Any]:
             "model": endpoint.model,
             "endpoint_id": endpoint.id,
             "mode": tool,
-            **wan.TRAINING_METADATA,
+            **contract.TRAINING_METADATA,
             "note": "No fal request made. Set FAL_DRY_RUN=false for live generation.",
         }
-    estimate = wan.price_cents(endpoint, arguments["resolution"], arguments["num_frames"])
+    if contract is vidu:
+        from server.billing_rates import vidu_q4_price_cents
+
+        estimate = vidu_q4_price_cents(body)
+    else:
+        estimate = wan.price_cents(endpoint, arguments["resolution"], arguments["num_frames"])
     payload = queue.submit(endpoint.id, body)
     request_id = payload.get("request_id")
     if not isinstance(request_id, str) or not request_id:
@@ -89,7 +99,7 @@ def _submit(tool: str, arguments: dict[str, Any]) -> dict[str, Any]:
             "endpoint_id": endpoint.id,
             "mode": tool,
             "arguments": arguments,
-            **wan.TRAINING_METADATA,
+            **contract.TRAINING_METADATA,
         },
     )
     return {
@@ -102,7 +112,7 @@ def _submit(tool: str, arguments: dict[str, Any]) -> dict[str, Any]:
         "estimated_cost_usd": float(estimate / 100),
         "error": payload.get("error"),
         "error_type": payload.get("error_type"),
-        **wan.TRAINING_METADATA,
+        **contract.TRAINING_METADATA,
         "note": "Call get_video_task with this job_id until terminal; use download=true for the MP4.",
     }
 
@@ -184,6 +194,33 @@ def video_to_video(
     return _submit("video_to_video", locals())
 
 
+def vidu_q4_i2v(
+    image_url: str,
+    prompt: str = "",
+    duration: int = 5,
+    seed: int | None = None,
+    resolution: str = "720p",
+    enable_safety_checker: bool = True,
+) -> dict:
+    """Animate a first frame with Vidu Q4 native audio; poll get_video_task."""
+    return _submit("vidu_q4_i2v", locals())
+
+
+def vidu_q4_r2v(
+    prompt: str,
+    reference_image_urls: list[str] | None = None,
+    reference_audio_urls: list[str] | None = None,
+    duration: int = 5,
+    seed: int | None = None,
+    aspect_ratio: str = "16:9",
+    resolution: str = "720p",
+    audio: bool = False,
+    enable_safety_checker: bool = True,
+) -> dict:
+    """Generate Vidu Q4 video using optional image and voice references; poll get_video_task."""
+    return _submit("vidu_q4_r2v", locals())
+
+
 def _download(video_url: str, output_path: Path) -> None:
     temporary = output_path.with_suffix(f".{uuid.uuid4().hex}.part")
     try:
@@ -204,14 +241,28 @@ def get_video_task(job_id: str, download: bool = False) -> dict:
     _validated("get_video_task", locals())
     endpoint_id, request_id = _parse_job(job_id)
     if queue.dry_run():
-        return {"job_id": job_id, "provider": "fal", "status": "dry_run", **wan.TRAINING_METADATA}
-    endpoint = wan.ENDPOINTS[endpoint_id]
+        contract = ENDPOINT_CONTRACTS[endpoint_id]
+        endpoint = contract.ENDPOINTS[endpoint_id]
+        return {
+            "job_id": job_id,
+            "provider": "fal",
+            "model": endpoint.model,
+            "endpoint_id": endpoint_id,
+            "status": "dry_run",
+            **contract.TRAINING_METADATA,
+        }
+    return _poll_video_task(job_id, endpoint_id, request_id, download=download)
+
+
+def _poll_video_task(job_id: str, endpoint_id: str, request_id: str, *, download: bool) -> dict:
+    contract = ENDPOINT_CONTRACTS[endpoint_id]
+    endpoint = contract.ENDPOINTS[endpoint_id]
     base = {
         "job_id": job_id,
         "provider": "fal",
         "model": endpoint.model,
         "endpoint_id": endpoint_id,
-        **wan.TRAINING_METADATA,
+        **contract.TRAINING_METADATA,
     }
     payload = queue.status(endpoint_id, request_id)
     status = queue.mapped_status(payload)
@@ -263,11 +314,22 @@ def get_video_task(job_id: str, download: bool = False) -> dict:
 
 
 def list_fal_models() -> dict:
-    """List the documented Wan VACE endpoint catalog and pricing without calling fal."""
+    """List documented Wan VACE and Vidu Q4 endpoints and pricing without calling fal."""
+    from server.billing_rates import (
+        VIDU_Q4_LIST_CENTS_PER_SECOND,
+        VIDU_Q4_PROMO_EXPIRES_ON,
+        vidu_q4_rates,
+    )
+
+    q4_rates = vidu_q4_rates()
     return {
         "status": "dry_run" if queue.dry_run() else "ok",
         "selected_model": wan.DEFAULT_MODEL,
-        "models": [{"id": model, **wan.TRAINING_METADATA} for model in wan.MODELS],
+        "models": [{"id": model, **wan.TRAINING_METADATA} for model in wan.MODELS]
+        + [
+            {"id": endpoint, "license": "service-terms", **vidu.TRAINING_METADATA}
+            for endpoint in vidu.ENDPOINTS
+        ],
         "endpoints": [
             {
                 "id": endpoint.id,
@@ -285,6 +347,32 @@ def list_fal_models() -> dict:
                 **wan.TRAINING_METADATA,
             }
             for endpoint in wan.ENDPOINTS.values()
+        ]
+        + [
+            {
+                "id": endpoint.id,
+                "model": endpoint.model,
+                "endpoint_id": endpoint.id,
+                "mode": endpoint.tool,
+                "api_url": endpoint.api_url,
+                "pricing_url": endpoint.api_url.removesuffix("/api"),
+                "price_unit": "video_second",
+                "pricing_checked_at": "2026-10-08",
+                "usd_per_unit_by_resolution": {
+                    resolution: str(rate / 100) for resolution, rate in q4_rates.items()
+                },
+                "list_usd_per_unit_by_resolution": {
+                    resolution: str(rate / 100)
+                    for resolution, rate in VIDU_Q4_LIST_CENTS_PER_SECOND.items()
+                },
+                "promo_expires_on": VIDU_Q4_PROMO_EXPIRES_ON.isoformat(),
+                "promo_expiry_basis": "User-confirmed inclusive UTC date; pricing pages omit the year.",
+                "pricing_confirmed": True,
+                "audio_surcharge": False,
+                "license": "service-terms",
+                **vidu.TRAINING_METADATA,
+            }
+            for endpoint in vidu.ENDPOINTS.values()
         ],
         "note": "Static documented catalog. Does not confirm account access. fal hosted Terms of Service apply.",
     }
@@ -295,6 +383,8 @@ TOOL_HANDLERS = {
     "image_to_video": image_to_video,
     "reference_to_video": reference_to_video,
     "video_to_video": video_to_video,
+    "vidu_q4_i2v": vidu_q4_i2v,
+    "vidu_q4_r2v": vidu_q4_r2v,
     "get_video_task": get_video_task,
     "list_fal_models": list_fal_models,
 }

@@ -20,6 +20,7 @@ explicitly before enabling Stripe billing.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import date, datetime, timezone
 from decimal import Decimal
 import json
 import math
@@ -268,6 +269,58 @@ LUMA_EDIT_CENTS = {
 LUMA_EXTEND_CENTS = {"540p": 15, "720p": 30, "1080p": 120}
 
 
+# fal Q4 rates per video second, checked 2026-10-08 on these pricing pages:
+# https://fal.ai/models/fal-ai/vidu/q4/image-to-video
+# https://fal.ai/models/fal-ai/vidu/q4/reference-to-video
+# Both pages list 30% off through November 30 with no R2V audio surcharge.
+# The user bound the omitted year to 2026 and the cutoff to inclusive UTC dates.
+VIDU_Q4_PROMO_EXPIRES_ON = date(2026, 11, 30)
+VIDU_Q4_PROMO_CENTS_PER_SECOND = {
+    "540p": Decimal("3.15"),
+    "720p": Decimal("6.65"),
+    "1080p": Decimal("8.4"),
+    "2K": Decimal("13.3"),
+    "4K": Decimal("27.3"),
+}
+VIDU_Q4_LIST_CENTS_PER_SECOND = {
+    "540p": Decimal("4.5"),
+    "720p": Decimal("9.5"),
+    "1080p": Decimal("12"),
+    "2K": Decimal("19"),
+    "4K": Decimal("39"),
+}
+
+
+def vidu_q4_rates(*, as_of: date | None = None) -> dict[str, Decimal]:
+    """Provider cents per video second, using the inclusive UTC promotion cutoff."""
+    day = as_of if as_of is not None else datetime.now(timezone.utc).date()
+    rates = (
+        VIDU_Q4_PROMO_CENTS_PER_SECOND
+        if day <= VIDU_Q4_PROMO_EXPIRES_ON
+        else VIDU_Q4_LIST_CENTS_PER_SECOND
+    )
+    return dict(rates)
+
+
+def vidu_q4_price_cents(arguments: dict[str, Any], *, as_of: date | None = None) -> Decimal:
+    """Quote Q4 native settings without requiring media for an intent proposal."""
+    from providers.fal.vidu import TOOL_ENDPOINTS
+
+    duration = arguments.get("duration", 5)
+    resolution = arguments.get("resolution", "720p")
+    audio = arguments.get("audio", False)
+    if not isinstance(duration, int) or isinstance(duration, bool) or not 3 <= duration <= 16:
+        raise ValueError("Vidu Q4 duration must be an integer from 3 to 16.")
+    rates = vidu_q4_rates(as_of=as_of)
+    if not isinstance(resolution, str) or resolution not in rates:
+        raise ValueError("Invalid Vidu Q4 resolution.")
+    if not isinstance(audio, bool):
+        raise ValueError("Vidu Q4 audio must be boolean.")
+    if "model" in arguments and arguments["model"] not in TOOL_ENDPOINTS.values():
+        raise ValueError("Unsupported Vidu Q4 model identity.")
+    return rates[resolution] * duration
+
+
 def _luma_cost(tool: str, arguments: dict[str, Any]) -> GenerationCost:
     if tool == "list_luma_models":
         return GenerationCost(0, 0)
@@ -299,19 +352,25 @@ def _luma_cost(tool: str, arguments: dict[str, Any]) -> GenerationCost:
 # (480p $0.05, 580p $0.075, 720p $0.10; same for inpainting/outpainting/reframe).
 # TODO: Confirm Wan 2.2 freeform and pose pricing, and auto/240p/360p rates.
 def _fal_cost(tool: str, arguments: dict[str, Any]) -> GenerationCost:
-    from providers.fal import api, queue, wan
+    from providers.fal import api, queue, vidu, wan
 
     if tool == "list_fal_models":
         return GenerationCost(0, 0)
-    if tool not in wan.GENERATING_TOOLS:
+    if tool not in wan.GENERATING_TOOLS + vidu.GENERATING_TOOLS:
         raise ValueError("Unknown fal generation tool.")
     from providers.registry import schema_from_callable
     from providers.contracts import validate_tool_arguments
 
+    if tool in vidu.TOOL_ENDPOINTS:
+        if "model" in arguments and arguments["model"] != vidu.TOOL_ENDPOINTS[tool]:
+            raise ValueError("Vidu Q4 model must match the tool's fixed endpoint.")
+        arguments = {key: value for key, value in arguments.items() if key != "model"}
     schema = schema_from_callable(tool, api.TOOL_HANDLERS[tool])["inputSchema"]
     cleaned = validate_tool_arguments("fal", tool, arguments, schema)
     if queue.dry_run():
         return GenerationCost(0, 0)
+    if tool in vidu.TOOL_ENDPOINTS:
+        return _with_fee(round(vidu_q4_price_cents(cleaned)))
     endpoint = wan.endpoint_for(tool, cleaned)
     cents = wan.price_cents(endpoint, cleaned.get("resolution", "720p"), cleaned.get("num_frames", 81))
     return _with_fee(round(cents))

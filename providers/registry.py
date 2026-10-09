@@ -57,8 +57,10 @@ TOOL_GUIDANCE: dict[str, dict[str, str]] = {
         "image_to_video": "Animate first_frame_url using Wan VACE. Returns job_id; poll get_video_task with download=true until terminal.",
         "reference_to_video": "Generate a Wan VACE clip guided by ref_image_urls for subject consistency. Returns job_id; poll get_video_task with download=true until terminal.",
         "video_to_video": "Edit video_url with Wan VACE. Choose freeform, inpainting, outpainting, reframe, depth, or pose. Inpainting needs one mask; outpainting needs expansion sides. Returns job_id; poll get_video_task with download=true until terminal.",
+        "vidu_q4_i2v": "Animate image_url with Vidu Q4 native audio at 540p through 4K for 3 to 16 seconds. Prompt is optional. Returns job_id; poll get_video_task with download=true until terminal. Hosted service terms apply; outputs are not training eligible.",
+        "vidu_q4_r2v": "Generate Vidu Q4 video using an optional list of up to 12 reference images and 3 MP3 voice clips. Refer to images with [@reference_image_1] and voices with [reference_audio_1]. Audio defaults to false; set audio=true for dialogue and sound effects. Returns job_id; poll get_video_task with download=true until terminal. Outputs are not training eligible.",
         "get_video_task": "Poll an existing fal job_id once. Fetch completed results and optionally download the MP4. Never submits another generation.",
-        "list_fal_models": "List documented Wan VACE models, endpoints, licences, and published pricing. Static catalog; no network or generation.",
+        "list_fal_models": "List documented Wan VACE and Vidu Q4 models, endpoints, licences, and published pricing. Static catalog; no network or generation.",
     },
     "luma": {
         "text_to_video": "Generate a Ray 3.2 clip from text. Returns a queued job_id; poll get_video_task until terminal. Outputs are not training eligible.",
