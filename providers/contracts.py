@@ -217,7 +217,7 @@ _VISUAL_ITEM_SCHEMA = {
         "crop_box": {
             "type": "object", "required": ["x", "y", "width", "height"],
             "properties": {key: {"type": "integer"} for key in ("x", "y", "width", "height")},
-            "description": "Static even-pixel crop in display-oriented source coordinates. Local/worker only; must fit the measured source.",
+            "description": "Static even-pixel crop in display-oriented source coordinates, each coordinate/dimension up to 16384. Local/worker only; must fit the measured source.",
         },
         "reframe_size": {
             "type": "object", "required": ["width", "height"],
@@ -700,8 +700,8 @@ def validate_crop_box(box: dict[str, Any], path: str) -> None:
     _validate_schema(box, _VISUAL_ITEM_SCHEMA["properties"]["crop_box"], path)
     for name, value in box.items():
         minimum = 0 if name in {"x", "y"} else 2
-        if not minimum <= value <= 7680 or value % 2:
-            raise ValueError(f"{path}.{name} must be an even integer from {minimum} to 7680.")
+        if not minimum <= value <= 16384 or value % 2:
+            raise ValueError(f"{path}.{name} must be an even integer from {minimum} to 16384.")
 
 
 def validate_box(box: dict[str, Any], path: str) -> None:

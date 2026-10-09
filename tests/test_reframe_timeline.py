@@ -49,6 +49,13 @@ class ReframeTimelineContractTests(unittest.TestCase):
             with self.subTest(box=box), self.assertRaises(ValueError):
                 validate_remotion_timeline_arguments({"visuals": [self.visual(crop_box=box)]})
 
+    def test_large_source_crop_limits_are_separate_from_output_canvas_limits(self):
+        box = {"x": 0, "y": 0, "width": 8192, "height": 4096}
+        validate_remotion_timeline_arguments({"visuals": [self.visual(crop_box=box)]})
+        with self.assertRaises(ValueError):
+            validate_remotion_timeline_arguments({"visuals": [self.visual(crop_box=box,
+                reframe_size={"width": 8192, "height": 4096})]})
+
     def test_reframe_canvas_requires_crop_or_blur_and_consistent_primary_size(self):
         for visuals in ([self.visual(reframe_size={"width": 144, "height": 180})],
                         [self.visual(fit="pad_blur", reframe_size={"width": 144, "height": 180}),
@@ -175,6 +182,20 @@ class ReframeTimelineRenderTests(unittest.TestCase):
                                          source_root=self.root, filename="output.mp4")
         self.assertEqual(probes.call_count, 1)
         self.assertEqual(command.count(str(self.source)), 2)
+
+    def test_large_measured_source_accepts_crop_window_and_checks_actual_bounds(self):
+        measured = {"streams": [{"codec_type": "video", "width": 8192, "height": 4608,
+            "sample_aspect_ratio": "1:1", "avg_frame_rate": "24/1", "bit_rate": "1000000"}],
+            "format": {"bit_rate": "1000000"}}
+        visual = self.visual(crop_box={"x": 0, "y": 0, "width": 8192, "height": 4608},
+                             reframe_size={"width": 1920, "height": 1080})
+        with patch.object(local, "_probe", return_value=measured):
+            props = api.build_timeline_props("Large measured", [visual], aspect_ratio="16:9")
+            self.assertEqual(props["renderConfig"]["resolution"]["source_resolution"], "8192x4608")
+            self.assertFalse(props["renderConfig"]["resolution"]["upscaled"])
+            visual["crop_box"]["x"] = 2
+            with self.assertRaisesRegex(ValueError, "crop.*source"):
+                api.build_timeline_props("Outside measured", [visual], aspect_ratio="16:9")
 
     def test_upscale_requires_allowance_and_reports_no_added_detail(self):
         visual = self.visual(crop_box={"x": 0, "y": 0, "width": 180, "height": 180},

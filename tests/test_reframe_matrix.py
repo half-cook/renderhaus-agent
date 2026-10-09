@@ -151,6 +151,14 @@ class ReframeMatrixTests(unittest.TestCase):
         invalid = self.plan(brief={"campaign": "invalid", "reframe_only": True, "fit": "filtergraph"})
         self.assertEqual(invalid["status"], "blocked", invalid)
 
+    def test_invalid_measured_master_frame_rates_are_correctable_errors(self):
+        for rate in ("0/0", "0/1", "241/1", "NaN", "1/0"):
+            with self.subTest(rate=rate), self.assertRaisesRegex(ValueError, "Master fps"):
+                ad_variants._row_arguments({"aspect": "1:1"}, {"campaign": "bad", "reframe_only": True},
+                    self.job, self.job / "master.mp4", {"format": {"duration": "1"}, "streams": [{
+                        "codec_type": "video", "width": 320, "height": 180,
+                        "avg_frame_rate": rate, "r_frame_rate": rate, "sample_aspect_ratio": "1:1"}]})
+
 
 if __name__ == "__main__":
     unittest.main()

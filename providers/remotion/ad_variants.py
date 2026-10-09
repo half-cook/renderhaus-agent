@@ -166,10 +166,17 @@ def _row_arguments(row: dict, brief: dict, job: Path, master: Path, source: dict
         raise ValueError("start_s/end_s must be finite numbers.")
     if not 0 <= start < end <= duration or end - start > 600:
         raise ValueError("start_s/end_s must select at most 600 seconds inside the master.")
-    rate = video.get("avg_frame_rate") or video.get("r_frame_rate")
+    rate = video.get("avg_frame_rate")
+    if rate in {None, "", "N/A", "0/0"}:
+        rate = video.get("r_frame_rate")
     from fractions import Fraction
 
-    fps = float(Fraction(rate))
+    try:
+        fps = float(Fraction(str(rate)))
+    except (ValueError, ZeroDivisionError, OverflowError):
+        raise ValueError("Master fps must be a finite measured rate greater than 0 and at most 240.") from None
+    if not math.isfinite(fps) or not 0 < fps <= 240:
+        raise ValueError("Master fps must be a finite measured rate greater than 0 and at most 240.")
     if brief.get("fps", fps) != fps:
         raise ValueError("Flat-master fps differs from the brief/composition.")
     dimensions = api._media_dimensions(video)
