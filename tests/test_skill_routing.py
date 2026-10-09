@@ -87,15 +87,16 @@ class SkillContracts(unittest.TestCase):
                 "audio",
                 "final-assembly",
                 "refinement",
+                "conversational-edit",
             }
             <= names
         )
         self.assertFalse({"veo-t2v", "act-two", "lipsync", "upscale"} & names)
 
     def test_fixture_retains_all_rows_and_explicit_skips(self):
-        self.assertEqual(len(CASES), 55)
-        self.assertEqual(sum(not c["skip_reason"] for c in CASES), 21)
-        self.assertEqual(sum(bool(c["skip_reason"]) for c in CASES), 34)
+        self.assertEqual(len(CASES), 58)
+        self.assertEqual(sum(not c["skip_reason"] for c in CASES), 22)
+        self.assertEqual(sum(bool(c["skip_reason"]) for c in CASES), 36)
 
     def test_standard_is_default_and_unknown_requests_do_not_invent_tools(self):
         from agent.deep_agent.routing import route_intent
