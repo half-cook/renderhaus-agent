@@ -272,7 +272,8 @@ async def run_with_servers(request, studio, servers, *, model=None):
         ("editor", "Edit existing footage from a word-level transcript after cut-plan confirmation, "
                    "assemble approved assets into a final Remotion MP4 and poll it to completion, "
                    "or preview an explicitly requested HyperFrames HTML composition when enabled, "
-                   "or export an NLE handoff (OTIO/FCPXML/EDL) for DaVinci Resolve.", [dispatch_tools[2]]),
+                   "or export an NLE handoff (OTIO/FCPXML/EDL) for DaVinci Resolve, "
+                   "or import an editor's FCPXML/OTIO onto the existing project assembly.", [dispatch_tools[2]]),
         ("general-purpose", "Plan or research the current project without provider dispatch.", []),
     ]
     role_models = {name: injected_model if injected_model is not None else configured_deep_agent_model(name)

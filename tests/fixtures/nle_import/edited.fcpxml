@@ -1,5 +1,3 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE fcpxml>
 <fcpxml version="1.9">
   <resources>
     <format id="r1" name="Renderhaus" frameDuration="1/24s" width="1920" height="1080" />
@@ -37,27 +35,7 @@
       <project name="Editor handoff">
         <sequence format="r1" duration="2s" tcStart="3600s" tcFormat="NDF" audioLayout="stereo" audioRate="48k">
           <spine>
-            <asset-clip ref="r2" name="Camera" offset="3600s" start="60s" duration="1s" srcEnable="video">
-              <adjust-conform type="fill" />
-              <metadata>
-                <md key="com.renderhaus.assetId" value="camera" />
-                <md key="com.renderhaus.versionId" value="version-camera-1" />
-                <md key="com.renderhaus.checksum" value="e312e17d56711f5ac901eb9e7e33b71055799a1cc3d8ef19b97325e19e94167e" />
-                <md key="com.renderhaus.sourceTimecode" value="00:00:59:00" />
-                <md key="com.renderhaus.reelName" value="CAMERA_A_LONG_REEL" />
-                <md key="com.renderhaus.provenance" value="{&quot;origin&quot;:&quot;upload&quot;}" />
-                <md key="com.renderhaus.generated" value="false" />
-                <md key="com.renderhaus.hasAudio" value="false" />
-                <md key="com.renderhaus.sourceDurationFrames" value="96" />
-                <md key="com.renderhaus.clipId" value="camera-clip" />
-                <md key="com.renderhaus.trackId" value="camera-track" />
-                <md key="com.renderhaus.trackName" value="Camera" />
-                <md key="com.renderhaus.originalTrackId" value="camera-track" />
-                <md key="com.renderhaus.recordStartFrame" value="0" />
-              </metadata>
-            </asset-clip>
-            <gap name="Gap" offset="3601s" start="3601s" duration="1s">
-              <asset-clip ref="r3" name="Generated" offset="3601s" start="59s" duration="1s" srcEnable="video" lane="2">
+            <asset-clip ref="r3" name="Generated" offset="3600s" start="119/2s" duration="1/2s" srcEnable="video">
                 <adjust-conform type="fill" />
                 <metadata>
                   <md key="com.renderhaus.assetId" value="generated" />
@@ -75,13 +53,8 @@
                   <md key="com.renderhaus.originalTrackId" value="camera-track" />
                   <md key="com.renderhaus.recordStartFrame" value="24" />
                 </metadata>
-              </asset-clip>
-            </gap>
-          </spine>
-          <metadata>
-            <md key="com.renderhaus.projectId" value="project-handoff" />
-            <md key="com.renderhaus.tracks" value="[{&quot;clipIds&quot;:[&quot;camera-clip&quot;],&quot;edl&quot;:&quot;edl/V01-Camera.edl&quot;,&quot;generated&quot;:false,&quot;id&quot;:&quot;camera-track&quot;,&quot;kind&quot;:&quot;video&quot;,&quot;locked&quot;:false,&quot;name&quot;:&quot;Camera&quot;,&quot;number&quot;:1,&quot;originalTrackId&quot;:&quot;camera-track&quot;},{&quot;clipIds&quot;:[],&quot;edl&quot;:&quot;edl/V02-Colourist.edl&quot;,&quot;generated&quot;:false,&quot;id&quot;:&quot;grade-track&quot;,&quot;kind&quot;:&quot;video&quot;,&quot;locked&quot;:false,&quot;name&quot;:&quot;Colourist&quot;,&quot;number&quot;:2,&quot;originalTrackId&quot;:&quot;grade-track&quot;},{&quot;clipIds&quot;:[&quot;generated-clip&quot;],&quot;edl&quot;:&quot;edl/V03-Generated---Camera.edl&quot;,&quot;generated&quot;:true,&quot;id&quot;:&quot;renderhaus-generated-d804c07f273fb64d&quot;,&quot;kind&quot;:&quot;video&quot;,&quot;locked&quot;:false,&quot;name&quot;:&quot;Generated - Camera&quot;,&quot;number&quot;:3,&quot;originalTrackId&quot;:&quot;camera-track&quot;}]" />
-          </metadata>
+              <marker start="239/4s" duration="1/24s" value="Review this cut" /></asset-clip>
+            </spine>
         </sequence>
       </project>
     </event>

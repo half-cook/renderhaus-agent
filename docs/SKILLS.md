@@ -48,7 +48,7 @@ exact Gateway names, native arguments, and operational constraints.
 | [product-demo-video](../agent/deep_agent/skills/product-demo-video/SKILL.md) | `call_editor_tool` | `cutaway_record`<br>`remotion_render`<br>`hyperframes_render` |
 | [product-images](../agent/deep_agent/skills/product-images/SKILL.md) | `call_media_tool` | `gpt_image25_t2i`<br>`gpt_image25_edit`<br>`recraft_v41_vector`<br>`ideogram45_edit` |
 | [refinement](../agent/deep_agent/skills/refinement/SKILL.md) | `call_media_tool`<br>`call_audio_tool`<br>`call_editor_tool` | `gpt_image25_edit`<br>`wan3_edit`<br>`seedance25_edit`<br>`remotion_render` |
-| [resolve-handoff](../agent/deep_agent/skills/resolve-handoff/SKILL.md) | `call_editor_tool` | `Remotion___export_nle_timeline` |
+| [resolve-handoff](../agent/deep_agent/skills/resolve-handoff/SKILL.md) | `call_editor_tool` | `Remotion___export_nle_timeline`, `Remotion___import_nle_timeline` |
 | [still-then-video](../agent/deep_agent/skills/still-then-video/SKILL.md) | `call_media_tool` | `gpt_image25_t2i`<br>`gpt_image25_edit`<br>`wan3_i2v`<br>`seedance25_i2v` |
 | [storyboard-shots](../agent/deep_agent/skills/storyboard-shots/SKILL.md) | `call_media_tool` | `gpt_image25_t2i`<br>`gpt_image25_edit`<br>`wan3_i2v`<br>`wan3_r2v`<br>`seedance25_i2v`<br>`seedance25_r2v` |
 | [t2v](../agent/deep_agent/skills/t2v/SKILL.md) | `call_media_tool` | `wan3_t2v`<br>`seedance25_t2v` |
@@ -203,7 +203,7 @@ and queued jobs never satisfy final delivery. See [Topaz](TOPAZ.md) for pricing,
 sources, unknown-price blockers and the blocked Comet check.
 
 `tests/fixtures/skill_routing.json` contains 129 retained routing rows.
-There are 123 active cases and 6 explicit skips. Seven performance-transfer cases now use built tools. Three Mureka lyrics-video cases
+There are 124 active cases and 5 explicit skips. Seven performance-transfer cases now use built tools. Three Mureka lyrics-video cases
 now use built tools; music routes use Mureka without an ElevenLabs interim. Five Topaz upscale/interpolation cases
 now use built tools. Seedance reference dialogue and two
 previously licence-skipped edit cases now use built Seedance tools. The extension increment
@@ -214,8 +214,7 @@ routing input. The read-only workbook and source map are not copied into the rep
 
 Active cases assert the canonical routing choice, selected skill, actual built/interim Gateway
 name, and status. The over-30-second single-shot case asserts a refusal. Pending rows keep
-`provider pending: <tool> (feat/<branch>)` reasons. The NLE import row stays skipped with
-`provider pending: nle import (feat/nle-import-fcpxml)`.
+`provider pending: <tool> (feat/<branch>)` reasons. The NLE import row is active through `Remotion___import_nle_timeline`.
 
 Fixture overrides preserve the existing transcript preparer and cut-plan approval instead of
 routing directly to rendering. Export after an agent cut retains the conversational-edit
@@ -498,7 +497,7 @@ Mureka V9.5 is the music default on fal, with instrumental beds and songs under
 lyrics-video skills now use six `Mureka___` tools; no new skill directory was needed.
 Lyrics video always pauses with cost, including autonomous runs. Raw audio/TTS
 upload preparation remains blocked until the upload and recognition APIs are wired.
-There are 15 providers, 112 Gateway tools and 24 packaged skills. See
+There are 15 providers, 113 Gateway tools and 24 packaged skills. See
 [Mureka](MUREKA.md) for contracts, official dated prices, licences and blocked Comet E2E.
 
 ## Performance transfer
@@ -510,7 +509,7 @@ See [performance contracts, prices and limits](PERFORMANCE_TRANSFER.md). Browser
 
 ## Picture-synchronized SFX
 
-The audio-bed skill now exposes `Fal___mirelo_v2a` and reuses `Fal___get_video_task` through the manager/media role. Video input selects Mirelo; text-only effects select ElevenLabs SFX. Explicit requests win. Mirelo returns video with audio and pauses with cost even in autonomous runs under the paid-video policy. Samples 2–4 remain dry-run-only because their billing is unverified. Three SFX rows are activated, leaving 123 active routing cases and 6 skips. No skill directory was added. See [Mirelo](MIRELO.md) for sources, contracts and pending playback/A/B validation.
+The audio-bed skill now exposes `Fal___mirelo_v2a` and reuses `Fal___get_video_task` through the manager/media role. Video input selects Mirelo; text-only effects select ElevenLabs SFX. Explicit requests win. Mirelo returns video with audio and pauses with cost even in autonomous runs under the paid-video policy. Samples 2–4 remain dry-run-only because their billing is unverified. Three SFX rows are activated, leaving 124 active routing cases and 5 skips. No skill directory was added. See [Mirelo](MIRELO.md) for sources, contracts and pending playback/A/B validation.
 
 ## Image specialist activation
 
@@ -519,8 +518,8 @@ The audio-bed skill now exposes `Fal___mirelo_v2a` and reuses `Fal___get_video_t
 `Fal___get_video_task`, default to dry-run, quote verified fal image prices and
 exclude training. SVG content is validated and sanitized before persistence.
 The image-gen, product-images and refinement skills expose their real tool names.
-Six fixture rows activate: 123 active, six skipped of 129. The inventory is
-15 providers, 112 tools and 24 skills. Comet validation and Ideogram quality A/B
+Six fixture rows activate: 124 active, five skipped of 129. The inventory is
+15 providers, 113 tools and 24 skills. Comet validation and Ideogram quality A/B
 remain pending. See [Image specialists](IMAGE_SPECIALISTS.md) for contracts,
 official sources read 2026-10-09, licence decisions and configuration.
 
@@ -530,7 +529,24 @@ The continuity skill now includes `Gemini___judge_continuity` and `Gemini___get_
 The canonical `gemini_vlm_judge` alias is built and its retained routing row is active.
 `local_qc` remains default. The VLM is dry-run by default and promotion requires a complete,
 committed, hash-pinned live result above 0.85 on the 420 frozen pairs. No result is committed.
-Current inventory is 15 providers, 112 Gateway tools, 24 skills and 123 active routing rows
-with 6 skips. See [Gemini configuration and sources](GEMINI_CONTINUITY_QC.md),
+Current inventory is 15 providers, 113 Gateway tools, 24 skills and 124 active routing rows
+with 5 skips. See [Gemini configuration and sources](GEMINI_CONTINUITY_QC.md),
 [benchmark procedure](CONTINUITY_QC_BENCHMARK.md#experimental-gemini-judge-and-eval-gate),
 and [decisions](continuity-qc-vlm-decisions.tsv). Comet E2E remains blocked.
+
+## NLE re-import
+
+`resolve-handoff` now imports an editor's FCPXML or OTIO through the free local
+`Remotion___import_nle_timeline` tool in the editor role. Import returns a replacement
+Remotion assembly and an asset reconciliation report. A blocked import never replaces
+the current assembly. A dry-run is only a preview. Successful application uses the
+existing project filesystem tools and checkpoint persistence, with the previous assembly
+retained for review. The canvas graph and the legacy flat timeline are separate models.
+
+Import retains opaque source handles without publishing or fetching media. No new
+provider, model, key, secret, or environment variable is needed. `REMOTION_DRY_RUN`
+remains true by default. All existing paid-video approval and spending gates remain.
+There are 15 providers, 113 Gateway tools, 24 skills, 124 active fixture rows, and five
+dependency skips. Read [NLE import](NLE_EXPORT.md#import-an-editors-timeline) for the
+parser contract and unsupported edits. Comet and real editor validation remain blocked
+or unverified; offline tests do not establish browser success.

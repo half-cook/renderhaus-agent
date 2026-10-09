@@ -166,6 +166,7 @@ TOOL_ARGUMENT_RULES: dict[str, dict[str, dict[str, ArgumentRule]]] = {
         ),
     },
     "remotion": {
+        "import_nle_timeline": {"format": ArgumentRule(choices=("fcpxml", "otio"))},
         "render_timeline": {
             "aspect_ratio": ArgumentRule(choices=("16:9", "9:16", "1:1", "2.39:1")),
             "fps": ArgumentRule(minimum=12, maximum=60),
@@ -371,6 +372,10 @@ def enrich_tool_schema(provider_id: str, tool: dict[str, Any]) -> dict[str, Any]
             "Source media must be under Renderhaus media roots or on a configured S3 bucket host."
         )
         properties["output_filename"]["description"] = "ZIP download filename; directory components are removed."
+    if provider_id == "remotion" and tool_name == "import_nle_timeline":
+        properties["interchange_text"]["description"] = "FCPXML 1.9–1.11 text or OTIO JSON, up to 2 MiB. Media URLs are never opened."
+        properties["timeline_json"]["description"] = "Current project document/renderConfig JSON envelope with existing assets (id, kind, url, durationSec) and tracks. Preserve versionId, checksum and sourceTimecode when known."
+        properties["format"]["description"] = "Interchange format. Allowed values: fcpxml, otio. EDL, AAF and FCP7 XML are unsupported."
     if provider_id == "fal":
         from providers.fal import vidu, wan3, motion, mirelo, images
 

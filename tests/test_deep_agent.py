@@ -662,3 +662,58 @@ class DeepAgentTests(unittest.IsolatedAsyncioTestCase):
         read = call("read_file", {"file_path": "/skills/final-assembly/SKILL.md"}, "skill")
         await self.run_graph(self.request(), [read, export, final()], gateway)
         gateway.call_tool.assert_awaited_once_with(tool.name, {"timeline_json": "{}"})
+
+    async def test_nle_import_saves_assembly_in_project_checkpoint_without_spend_approval(self):
+        from providers.catalog import get_provider
+        from providers.registry import dispatch, generate_schemas
+        from test_nle_export import snapshot
+
+        schema = next(s for s in generate_schemas(get_provider("remotion")) if s["name"] == "import_nle_timeline")
+        tool = Tool(name="Remotion___import_nle_timeline", description=schema["description"],
+                    inputSchema=schema["inputSchema"])
+        current = snapshot()
+        current_text = json.dumps(current)
+        args = {"timeline_json": current_text, "format": "otio",
+                "interchange_text": (Path(__file__).parent / "fixtures/nle_import/edited.otio").read_text()}
+        imported = []
+
+        async def local_import(name, arguments):
+            self.assertEqual(name, tool.name)
+            result = dispatch("remotion", "import_nle_timeline", arguments)
+            imported.append(result)
+            return result
+
+        gateway = Gateway(tools=[tool])
+        gateway.call_tool.side_effect = local_import
+        request = self.request().model_copy(update={"prompt": "import editor OTIO back and save the assembly"})
+
+        def save(messages, tools):
+            self.assertEqual(imported[0]["status"], "succeeded")
+            self.assertIn('succeeded', messages[-1].text)
+            return call("edit_file", {"file_path": "/assembly.json", "old_string": current_text,
+                                      "new_string": json.dumps(imported[0]["timeline"])}, "save-import")
+
+        with patch.dict(os.environ, {"REMOTION_DRY_RUN": "false"}):
+            _, studio, _ = await self.run_graph(request, [
+                call("read_file", {"file_path": "/skills/resolve-handoff/SKILL.md"}, "skill"),
+                call("write_file", {"file_path": "/assembly-before-import.json", "content": current_text}, "backup"),
+                call("write_file", {"file_path": "/assembly.json", "content": current_text}, "assembly"),
+                call("call_editor_tool", {"tool_name": tool.name, "arguments": args}, "import"),
+                save, final(),
+            ], gateway)
+        gateway.call_tool.assert_awaited_once_with(tool.name, args)
+
+        def verify_saved(messages, tools):
+            self.assertIn('Review this cut', messages[-1].text)
+            self.assertIn('"duration": 0.5', messages[-1].text)
+            return call("read_file", {"file_path": "/assembly-before-import.json"}, "read-backup")
+
+        def verify_backup(messages, tools):
+            self.assertIn('camera-clip', messages[-1].text)
+            self.assertNotIn('Review this cut', messages[-1].text)
+            return final()
+
+        restored_request = request.model_copy(update={"session_items": json.loads(json.dumps(studio.session_items))})
+        await self.run_graph(restored_request, [
+            call("read_file", {"file_path": "/assembly.json"}, "read-saved"), verify_saved, verify_backup,
+        ], Gateway(tools=[tool]))

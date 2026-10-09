@@ -13,6 +13,7 @@ Kling Motion Control uses the existing FAL_KEY/FAL_DRY_RUN; no direct Kling secr
 Mirelo and the Ideogram/Recraft image specialists reuse FAL_KEY/FAL_DRY_RUN.
 Fal images in Lambda require existing AWS_S3_BUCKET or REMOTION_APP_BUCKET_NAME for sanitized durable outputs.
 No additional image secret or dry-run flag is needed.
+NLE import reuses REMOTION_DRY_RUN and needs no new secret or media credentials.
 Topaz finishing uses TOPAZ_DRY_RUN=true and the existing FAL_KEY/FAL_DRY_RUN.
 Sync uses SYNC_API_KEY (optional authorized direct), SYNC_DRY_RUN, SYNC_MODEL,
 SYNC_TRANSPORT=fal, SYNC_DIRECT_AUTHORIZED, SYNC_MAX_CHUNK_SECONDS and SYNC_BILLING_PLAN.

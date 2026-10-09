@@ -172,7 +172,7 @@ use the act-two skill even for explicit performance requests. Mureka lyrics-vide
 whiteboard-explainer plans Remotion templates without claiming unsupported marker-hand animation.
 
 The deterministic router supplies skill and tool proposals in graph input and Studio context.
-The capability-map fixture contains 129 retained rows, with 123 active and 6 dependency skips.
+The capability-map fixture contains 129 retained rows, with 124 active and 5 dependency skips.
 Archived/confidential routes are dropped. Active rows cover built tools and declared interims;
 pending specialists keep named branch reasons. Editorial overrides retain the safe preparer,
 separate rendering approval, and existing export/HyperFrames narration workflow contracts.
@@ -407,7 +407,7 @@ Mureka music and lyrics-video share the audio role and six Gateway tools. Native
 no dispatch. This includes autonomous lyrics-video requests. Songs pause unless
 autonomous. See [Mureka](MUREKA.md) for transport, pending raw-audio preparation,
 licences and blocked browser validation. The current inventory is 15 providers,
-112 Gateway tools and 24 skills.
+113 Gateway tools and 24 skills.
 
 Performance transfer uses the installed act-two skill with native cost/consent interrupts on
 `call_media_tool`. Long sources process each approved Act-Two chunk sequentially; polls never
@@ -426,8 +426,8 @@ locally; scripted-model approval/resume tests are offline and do not establish l
 `Fal___get_video_task`, default to dry-run, quote verified fal image prices and
 exclude training. SVG content is validated and sanitized before persistence.
 The image-gen, product-images and refinement skills expose their real tool names.
-Six fixture rows activate: 123 active, six skipped of 129. The inventory is
-15 providers, 112 tools and 24 skills. Comet validation and Ideogram quality A/B
+Six fixture rows activate: 124 active, five skipped of 129. The inventory is
+15 providers, 113 tools and 24 skills. Comet validation and Ideogram quality A/B
 remain pending. See [Image specialists](IMAGE_SPECIALISTS.md) for contracts,
 official sources read 2026-10-09, licence decisions and configuration.
 
@@ -437,7 +437,24 @@ The continuity skill now includes `Gemini___judge_continuity` and `Gemini___get_
 The canonical `gemini_vlm_judge` alias is built and its retained routing row is active.
 `local_qc` remains default. The VLM is dry-run by default and promotion requires a complete,
 committed, hash-pinned live result above 0.85 on the 420 frozen pairs. No result is committed.
-Current inventory is 15 providers, 112 Gateway tools, 24 skills and 123 active routing rows
-with 6 skips. See [Gemini configuration and sources](GEMINI_CONTINUITY_QC.md),
+Current inventory is 15 providers, 113 Gateway tools, 24 skills and 124 active routing rows
+with 5 skips. See [Gemini configuration and sources](GEMINI_CONTINUITY_QC.md),
 [benchmark procedure](CONTINUITY_QC_BENCHMARK.md#experimental-gemini-judge-and-eval-gate),
 and [decisions](continuity-qc-vlm-decisions.tsv). Comet E2E remains blocked.
+
+## NLE re-import
+
+`resolve-handoff` now imports an editor's FCPXML or OTIO through the free local
+`Remotion___import_nle_timeline` tool in the editor role. Import returns a replacement
+Remotion assembly and an asset reconciliation report. A blocked import never replaces
+the current assembly. A dry-run is only a preview. Successful application uses the
+existing project filesystem tools and checkpoint persistence, with the previous assembly
+retained for review. The canvas graph and the legacy flat timeline are separate models.
+
+Import retains opaque source handles without publishing or fetching media. No new
+provider, model, key, secret, or environment variable is needed. `REMOTION_DRY_RUN`
+remains true by default. All existing paid-video approval and spending gates remain.
+There are 15 providers, 113 Gateway tools, 24 skills, 124 active fixture rows, and five
+dependency skips. Read [NLE import](NLE_EXPORT.md#import-an-editors-timeline) for the
+parser contract and unsupported edits. Comet and real editor validation remain blocked
+or unverified; offline tests do not establish browser success.

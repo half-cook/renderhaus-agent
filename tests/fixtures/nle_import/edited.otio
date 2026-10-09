@@ -1,0 +1,224 @@
+{
+    "OTIO_SCHEMA": "Timeline.1",
+    "metadata": {
+        "renderhaus": {
+            "dropFrame": false,
+            "durationInFrames": 48,
+            "fps": "24",
+            "height": 1080,
+            "projectId": "project-handoff",
+            "timecode": "01:00:00:00",
+            "warnings": [
+                "CMX3600 uses one EDL per track. Import each at its recorded track number."
+            ],
+            "width": 1920
+        }
+    },
+    "name": "Editor handoff",
+    "global_start_time": {
+        "OTIO_SCHEMA": "RationalTime.1",
+        "rate": 24.0,
+        "value": 86400.0
+    },
+    "tracks": {
+        "OTIO_SCHEMA": "Stack.1",
+        "metadata": {},
+        "name": "tracks",
+        "source_range": null,
+        "effects": [],
+        "markers": [],
+        "enabled": true,
+        "color": null,
+        "children": [
+            {
+                "OTIO_SCHEMA": "Track.1",
+                "metadata": {
+                    "renderhaus": {
+                        "generated": true,
+                        "locked": false,
+                        "originalTrackId": "camera-track",
+                        "trackId": "renderhaus-generated-d804c07f273fb64d"
+                    }
+                },
+                "name": "Generated - Camera",
+                "source_range": null,
+                "effects": [],
+                "markers": [],
+                "enabled": true,
+                "color": null,
+                "children": [
+                    {
+                        "OTIO_SCHEMA": "Clip.2",
+                        "metadata": {
+                            "renderhaus": {
+                                "assetId": "generated",
+                                "checksum": "6c27522e2c2ef5babec036a95b88b67de6d7bcda0e2875c09ff01d50aff75f7d",
+                                "clipId": "generated-clip",
+                                "fit": "cover",
+                                "generated": true,
+                                "hasAudio": false,
+                                "originalTrackId": "camera-track",
+                                "provenance": {
+                                    "origin": "generation",
+                                    "source_version_ids": [
+                                        "version-camera-1"
+                                    ],
+                                    "tool": "seedance.image_to_video"
+                                },
+                                "recordStartFrame": 24,
+                                "reelName": "GEN_001",
+                                "sourceDurationFrames": 96,
+                                "sourceInFrames": 0,
+                                "sourceTimecode": "00:00:59:00",
+                                "versionId": "version-generated-1",
+                                "volume": 1.0
+                            }
+                        },
+                        "name": "Generated",
+                        "source_range": {
+                            "OTIO_SCHEMA": "TimeRange.1",
+                            "duration": {
+                                "OTIO_SCHEMA": "RationalTime.1",
+                                "rate": 24.0,
+                                "value": 12.0
+                            },
+                            "start_time": {
+                                "OTIO_SCHEMA": "RationalTime.1",
+                                "rate": 24.0,
+                                "value": 1428.0
+                            }
+                        },
+                        "effects": [],
+                        "markers": [
+                            {
+                                "OTIO_SCHEMA": "Marker.2",
+                                "metadata": {},
+                                "name": "Review this cut",
+                                "color": "RED",
+                                "marked_range": {
+                                    "OTIO_SCHEMA": "TimeRange.1",
+                                    "duration": {
+                                        "OTIO_SCHEMA": "RationalTime.1",
+                                        "rate": 24.0,
+                                        "value": 1.0
+                                    },
+                                    "start_time": {
+                                        "OTIO_SCHEMA": "RationalTime.1",
+                                        "rate": 24.0,
+                                        "value": 1434.0
+                                    }
+                                },
+                                "comment": ""
+                            }
+                        ],
+                        "enabled": true,
+                        "color": null,
+                        "media_references": {
+                            "DEFAULT_MEDIA": {
+                                "OTIO_SCHEMA": "ExternalReference.1",
+                                "metadata": {
+                                    "renderhaus": {
+                                        "assetId": "generated",
+                                        "checksum": "6c27522e2c2ef5babec036a95b88b67de6d7bcda0e2875c09ff01d50aff75f7d",
+                                        "generated": true,
+                                        "hasAudio": false,
+                                        "provenance": {
+                                            "origin": "generation",
+                                            "source_version_ids": [
+                                                "version-camera-1"
+                                            ],
+                                            "tool": "seedance.image_to_video"
+                                        },
+                                        "reelName": "GEN_001",
+                                        "sourceDurationFrames": 96,
+                                        "sourceTimecode": "00:00:59:00",
+                                        "versionId": "version-generated-1"
+                                    }
+                                },
+                                "name": "",
+                                "available_range": {
+                                    "OTIO_SCHEMA": "TimeRange.1",
+                                    "duration": {
+                                        "OTIO_SCHEMA": "RationalTime.1",
+                                        "rate": 24.0,
+                                        "value": 96.0
+                                    },
+                                    "start_time": {
+                                        "OTIO_SCHEMA": "RationalTime.1",
+                                        "rate": 24.0,
+                                        "value": 1416.0
+                                    }
+                                },
+                                "available_image_bounds": null,
+                                "target_url": "media/version-generated-1/generated-6c27522e2c2ef5ba.mp4"
+                            }
+                        },
+                        "active_media_reference_key": "DEFAULT_MEDIA"
+                    }
+                ],
+                "kind": "Video"
+            },
+            {
+                "OTIO_SCHEMA": "Track.1",
+                "metadata": {
+                    "renderhaus": {
+                        "generated": false,
+                        "locked": false,
+                        "originalTrackId": "camera-track",
+                        "trackId": "camera-track"
+                    }
+                },
+                "name": "Camera",
+                "source_range": null,
+                "effects": [],
+                "markers": [],
+                "enabled": true,
+                "color": null,
+                "children": [],
+                "kind": "Video"
+            },
+            {
+                "OTIO_SCHEMA": "Track.1",
+                "metadata": {
+                    "renderhaus": {
+                        "generated": false,
+                        "locked": false,
+                        "originalTrackId": "grade-track",
+                        "trackId": "grade-track"
+                    }
+                },
+                "name": "Colourist",
+                "source_range": null,
+                "effects": [],
+                "markers": [],
+                "enabled": true,
+                "color": null,
+                "children": [
+                    {
+                        "OTIO_SCHEMA": "Gap.1",
+                        "metadata": {},
+                        "name": "",
+                        "source_range": {
+                            "OTIO_SCHEMA": "TimeRange.1",
+                            "duration": {
+                                "OTIO_SCHEMA": "RationalTime.1",
+                                "rate": 24.0,
+                                "value": 48.0
+                            },
+                            "start_time": {
+                                "OTIO_SCHEMA": "RationalTime.1",
+                                "rate": 24.0,
+                                "value": 0.0
+                            }
+                        },
+                        "effects": [],
+                        "markers": [],
+                        "enabled": true,
+                        "color": null
+                    }
+                ],
+                "kind": "Video"
+            }
+        ]
+    }
+}

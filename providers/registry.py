@@ -131,6 +131,13 @@ TOOL_GUIDANCE: dict[str, dict[str, str]] = {
         "list_seedance_models": "List verified Seedance models, transports, and API sources offline. No credential or network request. BytePlus is unavailable to US customers and requires written platform authorization for live integration.",
     },
     "remotion": {
+        "import_nle_timeline": (
+            "Import editor FCPXML 1.9–1.11 or OTIO JSON onto the current document/renderConfig "
+            "assembly. Free, synchronous, no media retrieval or project writes. Returns a complete "
+            "replacement timeline or a blocked report with unmatched/ambiguous media and unsupported "
+            "edits. Match embedded asset IDs before unique filename/full source duration. "
+            "Review before saving the returned assembly. EDL and AAF import are unsupported."
+        ),
         "prepare_conversational_edit": (
             "Use for conversational transcript edits after proposing the cut, grade, and captions "
             "in plan_summary for required host approval. Always returns a side-effect-free dry_run "

@@ -1,5 +1,30 @@
 [
   {
+    "name": "import_nle_timeline",
+    "description": "Import editor FCPXML 1.9\u20131.11 or OTIO JSON onto the current document/renderConfig assembly. Free, synchronous, no media retrieval or project writes. Returns a complete replacement timeline or a blocked report with unmatched/ambiguous media and unsupported edits. Match embedded asset IDs before unique filename/full source duration. Review before saving the returned assembly. EDL and AAF import are unsupported.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "interchange_text": {
+          "type": "string",
+          "description": "FCPXML 1.9\u20131.11 text or OTIO JSON, up to 2 MiB. Media URLs are never opened."
+        },
+        "timeline_json": {
+          "type": "string",
+          "description": "Current project document/renderConfig JSON envelope with existing assets (id, kind, url, durationSec) and tracks. Preserve versionId, checksum and sourceTimecode when known."
+        },
+        "format": {
+          "type": "string",
+          "description": "Interchange format. Allowed values: fcpxml, otio. EDL, AAF and FCP7 XML are unsupported."
+        }
+      },
+      "required": [
+        "interchange_text",
+        "timeline_json"
+      ]
+    }
+  },
+  {
     "name": "prepare_conversational_edit",
     "description": "Use for conversational transcript edits after proposing the cut, grade, and captions in plan_summary for required host approval. Always returns a side-effect-free dry_run preview with word-safe cuts, output-timed transcript/captions, timeline, render_arguments, and QC expectations. It never fetches media or starts a render. Use the separate paid render_timeline tool with render_arguments after preparation.",
     "inputSchema": {

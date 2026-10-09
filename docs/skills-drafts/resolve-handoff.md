@@ -23,6 +23,6 @@ timeline. When bringing generated clips into a graded timeline, use new destinat
 FCPXML is the Resolve-oriented second export. Premiere compatibility remains unverified.
 
 Do not claim that this tool opens Resolve or protects grades through every import choice.
-AAF is unimplemented and untested, pending a real Resolve round trip. A local bridge using
-Resolve Studio scripting on the editor's machine and Resolve-to-Renderhaus re-import are
-future work only.
+AAF and live Resolve Studio scripting remain unimplemented. File-based FCPXML/OTIO
+re-import is built through `Remotion___import_nle_timeline`; see [NLE import](../NLE_EXPORT.md#import-an-editors-timeline).
+Real Resolve and browser round trips remain unverified.

@@ -47,6 +47,8 @@ def tool_needs_approval(name: str, autonomous: bool) -> bool:
 
     if name in APPROVAL_EXEMPT_TOOLS:
         return False
+    if name == "Remotion___import_nle_timeline":
+        return False
     if name in {"Remotion___prepare_conversational_edit", "Sync___lipsync_video", "sync3_lipsync",
                 "HeyGen___create_avatar_video", "heygen_avatar_v", "Topaz___upscale_video",
                 "Topaz___interpolate_video", "topaz_upscale", "topaz_interpolate",
@@ -201,7 +203,7 @@ class GatewayExecutor:
                 selection_arguments["real_face_refs"] = True
         constraints = intent_constraints(self.studio.prompt, confidential=self.studio.confidential,
                                          arguments=selection_arguments)
-        if job in {"motion_graphics", "nle_handoff"}:
+        if job in {"motion_graphics", "nle_handoff", "nle_import"}:
             constraints["provider"] = constraints["model"] = constraints["named_model"] = None
         rejected_id = self.rejected_reviews.get(job)
         rejected = self.media_jobs.get(rejected_id, {})

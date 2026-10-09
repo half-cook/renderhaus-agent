@@ -1,0 +1,23 @@
+date	topic	decision	evidence_or_source	status
+2026-10-09	scope	Free in-house FCPXML/OTIO importer on existing Remotion target; no model or paid provider	providers/remotion/api.py; providers/nle/importer.py	built offline
+2026-10-09	design	Return one complete document/renderConfig replacement or a blocked report; keep gateway parsing side-effect-free	providers/nle/model.py; remotion/src/Root.tsx; agent/deep_agent/runner.py	chosen over mutation of legacy flat project timeline or canvas graph
+2026-10-09	blocking first steps	Read source map, exporter, agent boundary and installed deepagents 0.7.23 signatures before implementation	local source and .venv introspection	complete
+2026-10-09	independent workstreams	Parser then integration then docs/checks; external model delegation conflicts with offline-only request	user offline-only rule overrides pstack external-model playbook	local work only
+2026-10-09	shared mutable state	Only explicit project-file save applies a succeeded replacement; blocked/dry-run results never apply	resolve-handoff/SKILL.md	no parser writes
+2026-10-09	smallest safe decomposition	One parser module with normalized assembly report plus existing registry, host, skill and billing wiring	providers/nle/importer.py	no new provider or dependencies
+2026-10-09	fcpxml	Accept shared media-edit subset of 1.9–1.11; use rational timing and anchor coordinates; reject unsupported edits	https://developer.apple.com/documentation/professional-video-applications/document-type-definition ; https://developer.apple.com/documentation/professional-video-applications/timing-attributes	1.10 published DTD verified; 1.11-specific constructs UNVERIFIED; real editor compatibility unverified
+2026-10-09	asset identity	Embedded asset/version identity before unique filename and full source duration; ambiguity or contradiction blocks application	exporter metadata and importer negative tests	verified offline
+2026-10-09	track order	Use actual OTIO track order and FCPXML lanes; new exporter track table retains empty lanes; isolated generated tracks are idempotent	https://developer.apple.com/documentation/professional-video-applications/story-elements	verified offline
+2026-10-09	transitions	OTIO gap dissolves map to fades with source handles; clip-to-clip and FCPXML effect transitions block import	OTIO 0.18.1 installed schema and renderer fade support	verified offline; rendered playback unverified
+2026-10-09	markers	Retain clip/track/document annotations; outbound serialization of imported markers remains TODO	OTIO 0.18.1 schema; Apple marker elements	import verified offline
+2026-10-09	xml safety	Harden stdlib ElementTree; no entities/external DTDs; 2 MiB, 64 levels and 20,000 elements	providers/nle/importer.py; hostile XML tests	verified offline; no dependency needed
+2026-10-09	otio licence	Reuse pinned opentimelineio 0.18.1, Apache-2.0; no copied third-party code	https://github.com/AcademySoftwareFoundation/OpenTimelineIO/blob/v0.18.1/LICENSE.txt	verified 2026-10-09
+2026-10-09	training	Importer training_eligible=false; retain existing asset policy; no model or weights	capability-map row 17; asset rights remain with original media	no training grant inferred
+2026-10-09	price	Provider cost $0; local parser, no vendor API or render; infrastructure charges separate	server/billing_rates.py	no vendor pricing page applies
+2026-10-09	approval	Free parser requires no spend approval; APPROVAL_EXEMPT_TOOLS and autonomous cap unchanged	agent/gateway_executor.py; tests/test_nle_import.py	verified offline
+2026-10-09	routing	Activate import editor FCPXML back as resolve-handoff/nle_import; export route remains outbound	tests/fixtures/skill_routing.json	124 active, 5 skipped of 129
+2026-10-09	remaining skips	HyperFrames overlays, three Cutaway capture rows, Seedance extension length semantics remain skipped	tests/fixtures/skill_routing.json	outside NLE import scope
+2026-10-09	secrets	No new keys, env variables or dry-run flags; reuse REMOTION_DRY_RUN=true	providers/catalog.py; scripts/sync_secrets.py	no live calls
+2026-10-09	browser	Comet unavailable, offline-only user instruction; do not substitute another browser or claim E2E success	docs/BROWSER_E2E.md; ignored .renderhaus/e2e/nle-import.json	blocked
+2026-10-09	checks	Ruff, 1348 unittest cases (6 skipped), CI inventory/dry-run/schema checks and Studio TypeScript passed	offline local commands; no provider network	passed; Comet and real editor round trip remain blocked/unverified
+2026-10-09	project persistence	Real installed Deep Agents graph saves imported assembly and backup, then restores both in a fresh worker	tests/test_deep_agent.py; scripted local model and actual local importer dispatch	verified offline; not browser E2E
