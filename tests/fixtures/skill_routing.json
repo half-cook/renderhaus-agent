@@ -383,5 +383,47 @@
     "expected_tool": "recraft_t2i",
     "suite": "motion-graphics",
     "skip_reason": "provider pending: Recraft"
+  },
+  {
+    "prompt": "animate this product photo",
+    "expected_skill": "i2v",
+    "expected_tool": "kling_i2v",
+    "suite": "i2v",
+    "skip_reason": "Seed expectation conflicts with the configured cheapest Standard default (Seedance); this branch preserves that policy."
+  },
+  {
+    "prompt": "image to video Seedance",
+    "expected_skill": "i2v",
+    "expected_tool": "seedance_i2v",
+    "suite": "i2v",
+    "skip_reason": ""
+  },
+  {
+    "prompt": "Wan first last frame morph",
+    "expected_skill": "i2v",
+    "expected_tool": "wan_i2v",
+    "suite": "i2v",
+    "skip_reason": ""
+  },
+  {
+    "prompt": "animate this product still with Vidu Q4 native audio",
+    "expected_skill": "vidu-q4",
+    "expected_tool": "vidu_q4_i2v",
+    "suite": "vidu-q4",
+    "skip_reason": ""
+  },
+  {
+    "prompt": "character locked multi-ref Vidu Q4 with voice clips",
+    "expected_skill": "vidu-q4",
+    "expected_tool": "vidu_q4_r2v",
+    "suite": "vidu-q4",
+    "skip_reason": ""
+  },
+  {
+    "prompt": "cheapest Vidu Q4 preview 540p",
+    "expected_skill": "vidu-q4",
+    "expected_tool": "vidu_q4_i2v",
+    "suite": "vidu-q4",
+    "skip_reason": ""
   }
 ]
