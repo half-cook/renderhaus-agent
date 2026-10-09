@@ -202,6 +202,51 @@ class ConversationalGraphTests(unittest.IsolatedAsyncioTestCase):
         ], gateway)
         gateway.call_tool.assert_not_awaited()
 
+    async def test_approved_plan_compiles_and_renders_only_a_dry_run(self):
+        from providers.catalog import get_provider
+        from providers.registry import dispatch, load_committed_schemas
+
+        tools = [Tool(name=f"Remotion___{tool['name']}", description=tool["description"],
+                      inputSchema=tool["inputSchema"])
+                 for tool in load_committed_schemas(get_provider("remotion"))]
+        gateway = Gateway(tools)
+        compiled = {}
+
+        async def local_dispatch(name, arguments):
+            result = dispatch("remotion", name.split("___", 1)[1], arguments)
+            if name == PREPARE.name:
+                compiled.update(result)
+            return result
+
+        def render(messages, available):
+            self.assertEqual(compiled["transcript"]["text"], "Hello")
+            self.assertEqual(compiled["timeline"]["document"]["tracks"][-1]["name"], "Subtitles")
+            return call("call_editor_tool", {"tool_name": "Remotion___render_timeline",
+                                             "arguments": compiled["render_arguments"]}, "render")
+
+        gateway.call_tool.side_effect = local_dispatch
+        with tempfile.TemporaryDirectory() as directory, patch.dict(os.environ, {
+            "RENDERHAUS_OUTCOME_DIR": directory, "REMOTION_DRY_RUN": "true",
+            "RENDERHAUS_AUTONOMOUS_RUN_CAP_CENTS": "",
+        }), patch("socket.socket.connect", side_effect=AssertionError("No network")):
+            studio = _context_from_request(self.request(autonomous=True))
+            with self.assertRaises(StudioAgentApprovalRequired) as pending:
+                await run_with_servers(self.request(autonomous=True), studio, [gateway],
+                                       model=ScriptedModel([read_edit(), prepare()]))
+            gateway.call_tool.assert_not_awaited()
+            approval = pending.exception.approvals[0]
+            restored = await self.invoke(self.request(
+                autonomous=True, session_items=studio.session_items, resume_state=pending.exception.state,
+                approval_decisions=[StudioApprovalDecision(call_id=approval.call_id, decision="approve")],
+            ), [render, call("call_editor_tool", {
+                "tool_name": "Remotion___get_render_progress", "arguments": {"render_id": "dry-run"},
+            }, "poll"), final()], gateway)
+            self.assertEqual(gateway.call_tool.await_count, 3)
+            self.assertEqual([event.status for event in restored.tool_events], ["dry_run"] * 3)
+            self.assertFalse(restored.session_items[0]["media_jobs"])
+            self.assertFalse(list(Path(directory).glob("*.jsonl")))
+            self.assertTrue(all(not event.assets for event in restored.tool_events))
+
 
 class ConversationalStudioTests(unittest.IsolatedAsyncioTestCase):
     async def test_invoke_pure_plan_does_not_publish_or_ingest_source_media(self):
