@@ -1461,10 +1461,13 @@ def _validate_video_delivery(
         r"\b(?:add|burn|overlay|insert|include|with)\b.*\b(?:captions?|subtitles?|titles?|music|b.?roll|graphics)\b",
         assembly_prompt, re.IGNORECASE,
     ))
-    standalone_poll = {"sync3_lipsync": "Sync___get_video_task",
+    delivery_route = route_intent(request.prompt)
+    delivery_alias = delivery_route.steps[-1].alias if delivery_route.steps else delivery_route.alias
+    standalone_poll = {"mureka_lyrics_video": "Mureka___get_video_task",
+                       "sync3_lipsync": "Sync___get_video_task",
                        "heygen_avatar_v": "HeyGen___get_video_status",
                        "topaz_upscale": "Topaz___get_video_task",
-                       "topaz_interpolate": "Topaz___get_video_task"}.get(route_intent(request.prompt).alias)
+                       "topaz_interpolate": "Topaz___get_video_task"}.get(delivery_alias)
     if not requires_assembly and standalone_poll:
         if any(
             event.name == standalone_poll

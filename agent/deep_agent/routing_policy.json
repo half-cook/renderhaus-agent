@@ -20,7 +20,8 @@
     "get_task",
     "get_video_status",
     "list_avatars",
-    "list_topaz_models"
+    "list_topaz_models",
+    "list_mureka_models"
   ],
   "providers": {
     "kling": {
@@ -693,6 +694,54 @@
       "us_available": "yes",
       "availability_source": "https://fal.ai/legal/api-services",
       "availability_note": "Worldwide customer integrations licensed by fal API terms; account/model access not tested."
+    },
+    "mureka": {
+      "enabled": true,
+      "license": "service-terms",
+      "training_eligible": false,
+      "allowed_regions": [],
+      "models": [
+        "mureka-9.5",
+        "mureka/api/generate/lyrics-video"
+      ],
+      "model_env": "MUREKA_MODEL",
+      "default_model": "mureka-9.5",
+      "fixed_models": {
+        "generate_lyrics_video": "mureka/api/generate/lyrics-video"
+      },
+      "model_policies": {
+        "mureka-9.5": {
+          "enabled": true,
+          "license": "service-terms",
+          "weights_license": "closed-weights",
+          "training_eligible": false,
+          "commercial_status": "Paid API outputs have commercial usage rights; source media rights required.",
+          "license_source": "https://platform.mureka.ai/docs/en/faq.html",
+          "hosted_terms_url": "https://fal.ai/legal/terms-of-service",
+          "consent_requirements": "Input rights and any required likeness/voice consents under fal terms. Voice cloning and vocal-reference inputs are not exposed.",
+          "consent_source": "https://fal.ai/legal/terms-of-service",
+          "training_reason": "No express output-training grant; fal terms restrict competing-model training.",
+          "read_date": "2026-10-09"
+        },
+        "mureka/api/generate/lyrics-video": {
+          "enabled": true,
+          "license": "service-terms",
+          "weights_license": "closed-weights",
+          "training_eligible": false,
+          "commercial_status": "Paid API outputs have commercial usage rights; source media rights required.",
+          "license_source": "https://platform.mureka.ai/docs/en/faq.html",
+          "hosted_terms_url": "https://fal.ai/legal/terms-of-service",
+          "consent_requirements": "Input rights and any required likeness/voice consents under fal terms. Voice cloning and vocal-reference inputs are not exposed.",
+          "consent_source": "https://fal.ai/legal/terms-of-service",
+          "training_reason": "No express output-training grant; fal terms restrict competing-model training.",
+          "read_date": "2026-10-09"
+        }
+      },
+      "explicit_only": false,
+      "host": "fal",
+      "us_available": "yes",
+      "availability_source": "https://fal.ai/legal/api-services",
+      "availability_note": "fal hosted API customer integrations; account/model access not exercised."
     }
   },
   "tools": {
@@ -1315,43 +1364,48 @@
       "consent_requirements": "Require rights to supplied real-face/voice media; verify vendor consent flow before adapter activation."
     },
     "mureka_v95": {
-      "gateway_tool": null,
-      "status": "pending",
+      "gateway_tool": "Mureka___generate_song",
+      "status": "ready",
       "provider": "mureka",
-      "reason": "provider pending: mureka_v95 (feat/provider-mureka)",
-      "verification": "verified ID in official docs JS schema; API branches pending; adapter pending; live use disabled",
+      "reason": "Verified hosted schema; defaults to offline dry-run.",
+      "verification": "Official fal model ID, endpoint and schema verified 2026-10-09; live account access untested.",
       "training_eligible": false,
       "model": "mureka-9.5",
-      "host": "Mureka direct",
+      "host": "fal",
       "us_available": "yes",
-      "availability_source": "https://platform.mureka.ai/privacy_policy.pdf",
-      "read_date": "2026-10-08",
-      "license": "paid API output full usage rights and commercial authorization per FAQ; weights proprietary",
+      "availability_source": "https://fal.ai/legal/api-services",
+      "read_date": "2026-10-09",
+      "license": "service-terms",
       "license_source": "https://platform.mureka.ai/docs/en/faq.html",
       "training_reason": "Commercial distribution permission does not explicitly authorize model training.",
-      "source": "https://platform.mureka.ai/docs/api/operations/post-v1-song-generate.html",
-      "price_source": "https://platform.mureka.ai/pricing",
-      "dry_run": true
+      "source": "https://fal.ai/models/mureka/api/generate/song/api",
+      "price_source": "https://fal.ai/models/mureka/api/generate/song",
+      "dry_run": true,
+      "endpoint": "mureka/api/generate/song",
+      "gateway_variants": [
+        "Mureka___generate_song",
+        "Mureka___generate_instrumental"
+      ]
     },
     "mureka_lyrics_video": {
-      "gateway_tool": null,
-      "status": "pending",
+      "gateway_tool": "Mureka___generate_lyrics_video",
+      "status": "ready",
       "provider": "mureka",
-      "reason": "provider pending: mureka_lyrics_video (feat/provider-mureka)",
-      "verification": "verified ID in official docs JS schema; API branches pending; adapter pending; live use disabled",
+      "reason": "Verified hosted schema; defaults to offline dry-run.",
+      "verification": "Official fal model ID, endpoint and schema verified 2026-10-09; live account access untested.",
       "training_eligible": false,
-      "host": "Mureka direct",
+      "host": "fal",
       "us_available": "yes",
-      "availability_source": "https://platform.mureka.ai/privacy_policy.pdf",
-      "read_date": "2026-10-08",
-      "license": "paid API output full usage rights and commercial authorization per FAQ; weights proprietary",
+      "availability_source": "https://fal.ai/legal/api-services",
+      "read_date": "2026-10-09",
+      "license": "service-terms",
       "license_source": "https://platform.mureka.ai/docs/en/faq.html",
       "training_reason": "Commercial distribution permission does not explicitly authorize model training.",
-      "source": "https://platform.mureka.ai/docs/api/operations/post-v1-song-generate.html",
-      "price_source": "https://platform.mureka.ai/pricing",
+      "source": "https://fal.ai/models/mureka/api/generate/lyrics-video/api",
+      "price_source": "https://fal.ai/models/mureka/api/generate/lyrics-video",
       "dry_run": true,
-      "model": "mureka-9.5",
-      "endpoint": "/v1/lyrics-video/generate"
+      "model": "mureka/api/generate/lyrics-video",
+      "endpoint": "mureka/api/generate/lyrics-video"
     },
     "mirelo_v2a": {
       "gateway_tool": null,
@@ -1743,7 +1797,8 @@
     {
       "pattern": "lyrics.?video|karaoke",
       "skill": "lyrics-video",
-      "abstract_tool": "mureka_lyrics_video"
+      "abstract_tool": "mureka_lyrics_video",
+      "capability": "lyrics_video"
     },
     {
       "pattern": "foley|video to audio|synchroni[sz]ed sfx|mirelo|mmaudio|sound effect|\\bsfx\\b|ambience",
@@ -1752,7 +1807,7 @@
       "capability": "sfx"
     },
     {
-      "pattern": "\\bmusic\\b|ace.step|lofi|chillhop",
+      "pattern": "\\bmusic\\b|\\bsong\\b|\\binstrumental\\b|ace.step|lofi|chillhop",
       "skill": "audio-bed",
       "abstract_tool": "mureka_v95",
       "capability": "music"
@@ -4322,6 +4377,70 @@
         "estimate_note": "Published examples scaled by measured duration/new frames. Other upscale FPS/dimensions and slow-motion quotes remain unknown."
       },
       "native_audio_field": null
+    },
+    {
+      "provider": "mureka",
+      "policy_ref": "mureka",
+      "model": "mureka-9.5",
+      "label": "Mureka V9.5",
+      "tools": {
+        "music": "Mureka___generate_song",
+        "instrumental": "Mureka___generate_instrumental"
+      },
+      "jobs": {},
+      "controls": {
+        "music": [
+          "prompt",
+          "lyrics",
+          "styles",
+          "gender",
+          "model"
+        ],
+        "instrumental": [
+          "prompt",
+          "instrumental_id",
+          "model"
+        ]
+      },
+      "durations": {},
+      "resolutions": [],
+      "price": {
+        "source": "https://fal.ai/models/mureka/api/generate/song",
+        "checked_at": "2026-10-09"
+      },
+      "native_audio_field": null
+    },
+    {
+      "provider": "mureka",
+      "policy_ref": "mureka",
+      "model": "mureka/api/generate/lyrics-video",
+      "label": "Mureka lyrics video",
+      "tools": {
+        "lyrics_video": "Mureka___generate_lyrics_video"
+      },
+      "jobs": {},
+      "controls": {
+        "lyrics_video": [
+          "song_id",
+          "upload_audio_id",
+          "layout",
+          "aspect_ratio",
+          "background_id",
+          "cover_url",
+          "title",
+          "lyrics_start_row",
+          "lyrics_end_row",
+          "selection_start",
+          "selection_end"
+        ]
+      },
+      "durations": {},
+      "resolutions": [],
+      "price": {
+        "source": "https://fal.ai/models/mureka/api/generate/lyrics-video",
+        "checked_at": "2026-10-09"
+      },
+      "native_audio_field": null
     }
   ],
   "image_default_size": "2K",
@@ -4448,7 +4567,7 @@
     "music": {
       "default": "mureka_v95",
       "exceptions": [],
-      "interim": "elevenlabs_music",
+      "interim": null,
       "ab_candidates": []
     },
     "sfx": {
@@ -4508,6 +4627,12 @@
       "ab_candidates": [
         "gemini_vlm_judge"
       ]
+    },
+    "lyrics_video": {
+      "default": "mureka_lyrics_video",
+      "exceptions": [],
+      "interim": null,
+      "ab_candidates": []
     }
   },
   "paid_video_tools": [
@@ -4557,7 +4682,8 @@
     "Sync___lipsync_video",
     "HeyGen___create_avatar_video",
     "Topaz___upscale_video",
-    "Topaz___interpolate_video"
+    "Topaz___interpolate_video",
+    "Mureka___generate_lyrics_video"
   ],
   "explicit_routes": {
     "kling": {
@@ -4626,6 +4752,10 @@
     "topaz": {
       "upscale": "topaz_upscale",
       "interpolate": "topaz_interpolate"
+    },
+    "mureka": {
+      "music": "mureka_v95",
+      "lyrics_video": "mureka_lyrics_video"
     }
   },
   "named_models": {
@@ -4704,7 +4834,8 @@
     "mureka": {
       "pattern": "mureka",
       "aliases": {
-        "music": "mureka_v95"
+        "music": "mureka_v95",
+        "lyrics_video": "mureka_lyrics_video"
       }
     },
     "mirelo": {
@@ -5105,20 +5236,30 @@
       "consent_requirements": "Source subject rights/consent required; vendor-specific flow must be verified before activation."
     },
     "mureka_v95": {
-      "license": "paid API output full usage rights and commercial authorization per FAQ; weights proprietary",
-      "license_source": "https://platform.mureka.ai/docs/en/faq.html",
+      "enabled": true,
+      "license": "service-terms",
+      "weights_license": "closed-weights",
       "training_eligible": false,
-      "training_reason": "Commercial distribution permission does not explicitly authorize model training.",
-      "commercial_status": "commercial service or permissive code; source media rights still required",
-      "read_date": "2026-10-08"
+      "commercial_status": "Paid API outputs have commercial usage rights; source media rights required.",
+      "license_source": "https://platform.mureka.ai/docs/en/faq.html",
+      "hosted_terms_url": "https://fal.ai/legal/terms-of-service",
+      "consent_requirements": "Input rights and any required likeness/voice consents under fal terms. Voice cloning and vocal-reference inputs are not exposed.",
+      "consent_source": "https://fal.ai/legal/terms-of-service",
+      "training_reason": "No express output-training grant; fal terms restrict competing-model training.",
+      "read_date": "2026-10-09"
     },
     "mureka_lyrics_video": {
-      "license": "paid API output full usage rights and commercial authorization per FAQ; weights proprietary",
-      "license_source": "https://platform.mureka.ai/docs/en/faq.html",
+      "enabled": true,
+      "license": "service-terms",
+      "weights_license": "closed-weights",
       "training_eligible": false,
-      "training_reason": "Commercial distribution permission does not explicitly authorize model training.",
-      "commercial_status": "commercial service or permissive code; source media rights still required",
-      "read_date": "2026-10-08"
+      "commercial_status": "Paid API outputs have commercial usage rights; source media rights required.",
+      "license_source": "https://platform.mureka.ai/docs/en/faq.html",
+      "hosted_terms_url": "https://fal.ai/legal/terms-of-service",
+      "consent_requirements": "Input rights and any required likeness/voice consents under fal terms. Voice cloning and vocal-reference inputs are not exposed.",
+      "consent_source": "https://fal.ai/legal/terms-of-service",
+      "training_reason": "No express output-training grant; fal terms restrict competing-model training.",
+      "read_date": "2026-10-09"
     },
     "mirelo_v2a": {
       "license": "commercial fal API model card",

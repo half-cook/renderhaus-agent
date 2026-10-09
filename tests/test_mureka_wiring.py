@@ -61,6 +61,44 @@ class MurekaWiringTests(unittest.TestCase):
             ("lyrics-video", "mureka_v95", SONG), ("lyrics-video", "mureka_lyrics_video", VIDEO),
         ])
 
+    def test_supplied_song_does_not_trigger_paid_music_generation(self):
+        for prompt in ("Create a lyrics video for my song", "Generate a lyrics video from this song",
+                       "Generate a karaoke video using the song I uploaded"):
+            route = routing.route_intent(prompt)
+            self.assertEqual(route.tool, VIDEO)
+            self.assertEqual(route.steps, ())
+
+    def test_video_aspect_and_instrumental_intent_cannot_be_overridden_by_arguments(self):
+        request = StudioAgentRequest(prompt="make a horizontal lyrics video from my song")
+        executor = GatewayExecutor(_context_from_request(request), [])
+        route = executor.media_selection(VIDEO, {"song_id": "song_1", "aspect_ratio": "9:16"})
+        self.assertIn("aspect_ratio", executor.selection_blocker(VIDEO, {"song_id": "song_1"}, route))
+        request = StudioAgentRequest(prompt="generate an instrumental music bed")
+        executor = GatewayExecutor(_context_from_request(request), [])
+        route = executor.media_selection(SONG, {"prompt": "Music"})
+        self.assertEqual(route.tool, INSTRUMENTAL)
+        self.assertIn("selected", executor.selection_blocker(SONG, {"prompt": "Music"}, route))
+
+    def test_requested_video_duration_uses_the_native_millisecond_range(self):
+        for seconds in (5, 10):
+            request = StudioAgentRequest(prompt=f"Make a {seconds} second lyrics video from my song")
+            self.assertEqual(routing.route_intent(request.prompt).required["duration_seconds"], seconds)
+            executor = GatewayExecutor(_context_from_request(request), [])
+            args = {"song_id": "song_1", "selection_start": 2000, "selection_end": 2000 + seconds * 1000}
+            route = executor.media_selection(VIDEO, args)
+            self.assertIsNone(executor.selection_blocker(VIDEO, args, route))
+            self.assertEqual(route.estimated_cost["total_cents"], 19)
+            for invalid in ({"song_id": "song_1"}, {**args, "selection_end": args["selection_end"] + 1000}):
+                self.assertIn("duration", executor.selection_blocker(VIDEO, invalid, route))
+
+    def test_multi_step_provider_names_are_scoped_without_substituting_unsupported_requests(self):
+        prompt = "Mureka lyrics video with TTS narration track first"
+        route = routing.route_intent(prompt)
+        self.assertEqual([step.alias for step in route.steps], ["eleven_v4_turbo", "mureka_lyrics_video"])
+        executor = GatewayExecutor(_context_from_request(StudioAgentRequest(prompt=prompt)), [])
+        self.assertEqual(executor.media_selection("ElevenLabs___text_to_speech_convert", {}).status, "ready")
+        self.assertEqual(routing.route_intent("use Kling for a lyrics video from my song").status, "blocked")
+
     def test_tts_first_then_lyrics_video_retains_speech_default(self):
         route = routing.route_intent("lyrics video with TTS narration track first")
         self.assertEqual([(s.skill, s.alias) for s in route.steps], [
@@ -84,9 +122,9 @@ class MurekaWiringTests(unittest.TestCase):
             self.assertEqual(billing_rates.cost_for("mureka", tool, {}).total_cents, 0)
 
     def test_exact_fal_prices_and_platform_fee_survive_dry_run(self):
-        cases = [("generate_song", {"lyrics": "[Verse]\nSummer sun"}, Decimal("22.5"), 23, 29),
+        cases = [("generate_song", {"lyrics": "[Verse]\nSummer sun"}, Decimal("22.5"), 23, 30),
                  ("generate_song", {"prompt": "An original song about summer"}, Decimal("75"), 75, 97),
-                 ("generate_instrumental", {"prompt": "Gentle piano"}, Decimal("22.5"), 23, 29),
+                 ("generate_instrumental", {"prompt": "Gentle piano"}, Decimal("22.5"), 23, 30),
                  ("generate_lyrics_video", {"song_id": "song_1"}, Decimal("15"), 15, 19)]
         for tool, args, exact, cents, total in cases:
             with self.subTest(tool=tool, args=args):
@@ -105,6 +143,7 @@ class MurekaWiringTests(unittest.TestCase):
 
     def test_unverified_model_configuration_is_preview_only(self):
         with patch.dict(os.environ, {"MUREKA_MODEL": "mureka-future", "MUREKA_DRY_RUN": "true", "FAL_DRY_RUN": "true"}):
+            self.assertEqual(routing.route_intent("write a song about summer").model, "mureka-future")
             self.assertIsNone(routing.policy_blocker(SONG, {"prompt": "Summer"}))
             self.assertIsNone(routing.estimate_cost(SONG, {"prompt": "Summer"}).total_cents)
             os.environ.update(MUREKA_DRY_RUN="false", FAL_DRY_RUN="false")

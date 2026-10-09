@@ -262,7 +262,7 @@ async def run_with_servers(request, studio, servers, *, model=None):
     roles = [
         ("planner", "Plan the routed media steps and editorial decisions without calling paid media tools.", []),
         ("media", "Generate, edit or refine stills and video through the host capability map and explicit provider requests.", [dispatch_tools[0]]),
-        ("audio", "Produce voiceover, music and sound effects using audio providers.", [dispatch_tools[1]]),
+        ("audio", "Produce voiceover, music, sound effects and Mureka lyrics videos using the routed tools and separate video cost approval.", [dispatch_tools[1]]),
         ("editor", "Edit existing footage from a word-level transcript after cut-plan confirmation, "
                    "assemble approved assets into a final Remotion MP4 and poll it to completion, "
                    "or preview an explicitly requested HyperFrames HTML composition when enabled, "

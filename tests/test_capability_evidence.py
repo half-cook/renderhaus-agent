@@ -32,7 +32,7 @@ class CapabilityEvidenceTests(unittest.TestCase):
                                      f'bytedance/seedance-2.5/us/{endpoint}')
 
     def test_official_evidence_never_enables_pending_tools(self):
-        for alias in ['mureka_v95', 'mirelo_v2a',
+        for alias in ['mirelo_v2a',
                       'recraft_v41_vector', 'ideogram45_edit']:
             with self.subTest(alias=alias):
                 entry = POLICY['tools'][alias]

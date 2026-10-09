@@ -65,9 +65,10 @@ class CapabilitySelectionEdges(unittest.TestCase):
                                  ('ElevenLabs___music_compose_detailed', 'music')]:
             with self.subTest(name=name):
                 self.assertEqual(routing.job_type(name), capability)
-                route = routing.select_provider(capability, tool_variant=routing.tool_variant(name))
+                route = routing.select_provider(capability, provider='elevenlabs' if capability == 'music' else None,
+                                                tool_variant=routing.tool_variant(name))
                 self.assertEqual(route.tool, name)
-                self.assertIn('default', route.disclosure)
+                self.assertIn('explicit' if capability == 'music' else 'default', route.disclosure)
         name = 'ElevenLabs___text_to_dialogue_convert'
         route = routing.select_provider('tts', provider='fish_audio', tool_variant=routing.tool_variant(name))
         self.assertEqual(route.tool, 'FishAudio___generate_speech')

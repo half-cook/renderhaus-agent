@@ -11,6 +11,7 @@ from pathlib import Path
 POLICY = json.loads(Path(__file__).with_name("routing_policy.json").read_text())
 TOOL_MAP = POLICY["tools"]
 TARGET_PROVIDERS = {
+    "Mureka": "mureka",
     "Topaz": "topaz",
     "HeyGen": "heygen",
     "Sync": "sync",
@@ -113,6 +114,21 @@ def filter_request_tools(prompt: str, names: set[str]) -> set[str]:
 
 def capability_constraints(constraints: dict, capability: str) -> dict:
     scoped = dict(constraints)
+    if constraints["predicates"].get("lyrics_video"):
+        workflow = {"lyrics_video"}
+        if constraints["predicates"].get("lyrics_tts_first"):
+            workflow.add("tts")
+        if constraints["predicates"].get("lyrics_new_song"):
+            workflow.add("music")
+        routes = POLICY["explicit_routes"].get(scoped.get("provider"), {})
+        if capability not in routes and workflow.intersection(routes):
+            scoped["provider"] = next((p for p in scoped["provider_candidates"]
+                                       if capability in POLICY["explicit_routes"].get(p, {})), None)
+            scoped["model"] = None
+        named = scoped.get("named_model")
+        if named and capability not in POLICY["named_models"][named]["aliases"] and workflow.intersection(POLICY["named_models"][named]["aliases"]):
+            scoped["named_model"] = None
+        return scoped
     if capability == "lipsync" and scoped.get("provider") in {"elevenlabs", "fish_audio"}:
         scoped["provider"] = next((candidate for candidate in scoped["provider_candidates"]
                                    if capability in POLICY["explicit_routes"].get(candidate, {})), None)
@@ -162,6 +178,38 @@ def _delivery_route(prompt: str, constraints: dict, *, region: str | None,
                    reason=incomplete.reason if incomplete else 'Generate video if needed, synthesize voiceover, then assemble the final MP4.')
 
 
+def _lyrics_capabilities(prompt: str) -> list[tuple[str, str]]:
+    if not re.search(r"lyrics?[ -]?video|karaoke", prompt, re.I):
+        return []
+    capabilities = []
+    if re.search(r"\b(?:tts|narration|voiceover)\b.*\bfirst\b", prompt, re.I):
+        capabilities.append(("tts", "audio-bed"))
+    elif re.search(r"\bsong you write\b|\b(?:write|generate|create|make)\s+(?:(?:a|an|new|original)\s+){0,3}song\b", prompt, re.I):
+        capabilities.append(("music", "lyrics-video"))
+    capabilities.append(("lyrics_video", "lyrics-video"))
+    return capabilities
+
+
+def _lyrics_route(prompt: str, constraints: dict, *, region: str | None,
+                  available_tools: set[str] | None, arguments: dict | None) -> Route | None:
+    capabilities = _lyrics_capabilities(prompt)
+    if not capabilities:
+        return None
+    steps = []
+    for capability, skill in capabilities:
+        scoped = capability_constraints(constraints, capability)
+        scoped["required"] = {key: value for key, value in constraints["required"].items()
+                              if capability == "lyrics_video" and key in {"aspect_ratio", "duration_seconds"}}
+        step = select_provider(capability, region=region, available_tools=available_tools,
+                               arguments=arguments, **scoped)
+        steps.append(replace(step, skill=skill))
+    first = steps[0]
+    incomplete = next((step for step in steps if step.status != "ready"), None)
+    return replace(first, steps=tuple(steps) if len(steps) > 1 else (), expected_output="lyrics MP4",
+                   status=incomplete.status if incomplete else first.status,
+                   reason=incomplete.reason if incomplete else first.reason)
+
+
 def _licence_interim(alias: str) -> str | None:
     entry = TOOL_MAP.get(alias, {})
     policy = POLICY["providers"].get(entry.get("provider"), {})
@@ -199,6 +247,8 @@ def route_intent(prompt: str, *, region: str | None = None, tier: str | None = N
         if re.search(pattern, prompt, re.I):
             return Route(alias=alias, status="retired", reason=TOOL_MAP[alias]["reason"],
                          disclosure=TOOL_MAP[alias]["reason"])
+    if lyrics_route := _lyrics_route(prompt, constraints, region=region, available_tools=available_tools, arguments=arguments):
+        return lyrics_route
     lipsync = bool(re.search(_LIPSYNC_REQUEST, prompt, re.I))
     delivery = None if lipsync else _delivery_route(prompt, constraints, region=region, available_tools=available_tools, arguments=arguments)
     if delivery is not None:
@@ -263,7 +313,7 @@ def _dispatch(tool: str | None) -> str | None:
         return None
     if tool.startswith(("Remotion___", "HyperFrames___")):
         return "call_editor_tool"
-    if tool.startswith(("ElevenLabs___", "FishAudio___")):
+    if tool.startswith(("ElevenLabs___", "FishAudio___", "Mureka___")):
         return "call_audio_tool"
     return "call_media_tool"
 
@@ -274,13 +324,18 @@ def job_type(name: str | None) -> str | None:
     for row in POLICY["capabilities"]:
         for job, tool in row["tools"].items():
             if tool == name:
-                return {"image_edit": "image_edit", "reference": "reference_video", "image": "still_image"}.get(job, job)
+                return {"image_edit": "image_edit", "reference": "reference_video", "image": "still_image", "instrumental": "music"}.get(job, job)
     for capability, choice in POLICY["capability_map"].items():
         aliases = [choice["default"], choice["interim"]] + [ex["tool"] for ex in choice["exceptions"]]
         if any(alias and name in [TOOL_MAP.get(alias, {}).get("gateway_tool"), *TOOL_MAP.get(alias, {}).get("gateway_variants", [])] for alias in aliases):
             return capability
     if name == "FishAudio___generate_speech":
         return "tts"
+    for routes in POLICY["explicit_routes"].values():
+        for capability, alias in routes.items():
+            entry = TOOL_MAP[alias]
+            if name in [entry.get("gateway_tool"), *entry.get("gateway_variants", [])]:
+                return capability
     return None
 
 
@@ -316,7 +371,9 @@ def _capability_price(row: dict):
     if price == "unknown":
         return price
     provider, model = row["provider"], row["model"]
-    if provider == "fal":
+    if provider == "mureka":
+        values = {"lyrics_to_song_cents": str(rates.MUREKA_LYRICS_SONG_CENTS), "prompt_to_song_cents": str(rates.MUREKA_PROMPT_SONG_CENTS), "instrumental_cents": str(rates.MUREKA_INSTRUMENTAL_CENTS), "lyrics_video_cents": str(rates.MUREKA_LYRICS_VIDEO_CENTS)}
+    elif provider == "fal":
         if model.startswith("alibaba/wan-3.0/"):
             values = {resolution: str(value) for resolution, value in rates.WAN3_CENTS_PER_SECOND.items()}
         elif model.startswith("fal-ai/vidu/q4/"):
@@ -379,7 +436,7 @@ def intent_constraints(prompt: str, *, tier: str | None = None, confidential: bo
         (r"\bseedream\b", "seedream"), (r"\bkling\b", "kling"),
         (r"\bopenai\b|gpt[ -]image", "openai_images"),
         (r"\brunway\b|\baleph\b|gen.?4", "runway"), (r"\bluma\b|\bray.?3\b", "luma"),
-        (r"\bfish\b", "fish_audio"), (r"\belevenlabs\b", "elevenlabs"),
+        (r"\bmureka\b", "mureka"), (r"\bfish\b", "fish_audio"), (r"\belevenlabs\b", "elevenlabs"),
         (r"\bsync[ -]?3\b|sync\.so|\b(?:use|using|via)\s+sync\b", "sync"),
         (r"\bheygen\b|\bavatar[ -]v\b", "heygen"),
         (r"model[ -]?studio|dashscope|alibaba", "alibaba_modelstudio"),
@@ -410,6 +467,14 @@ def intent_constraints(prompt: str, *, tier: str | None = None, confidential: bo
     if extension:
         added = float(extension[1])
         required["extension_seconds"] = int(added) if added.is_integer() else added
+    if re.search(r"lyrics?[ -]?video|karaoke", prompt, re.I):
+        aspect = re.search(r"\b(16:9|9:16|3:4|4:3)\b", prompt)
+        if aspect:
+            required["aspect_ratio"] = aspect[1]
+        elif re.search(r"vertical|portrait", prompt, re.I):
+            required["aspect_ratio"] = "9:16"
+        elif re.search(r"horizontal|landscape", prompt, re.I):
+            required["aspect_ratio"] = "16:9"
     supplied_duration = next((args[k] for k in ("duration", "duration_seconds", "video_duration_seconds", "source_duration_seconds") if args.get(k) is not None), seconds)
     real_face = bool(args.get("real_face_refs") or args.get("user_supplied_real_person_refs") or re.search(
         r"real[ -](?:person|human|actor)|my (?:ceo|face|selfie)|(?:photo|video).*(?:of me|of my|real person)|(?:user.supplied|uploaded).*(?:person|face)", prompt, re.I))
@@ -420,7 +485,12 @@ def intent_constraints(prompt: str, *, tier: str | None = None, confidential: bo
     video_sfx = bool(args.get("video_url") or args.get("source_video_url") or re.search(r"from (?:the|this).*?(?:video|clip)|video to audio|foley|synchroni[sz]ed|silent clip|picture.synced", prompt, re.I))
     if re.search(r"no video|without video", prompt, re.I):
         video_sfx = False
+    lyrics_capabilities = {capability for capability, _ in _lyrics_capabilities(prompt)}
     predicates = {
+        "lyrics_video": "lyrics_video" in lyrics_capabilities,
+        "lyrics_tts_first": "tts" in lyrics_capabilities,
+        "lyrics_new_song": "music" in lyrics_capabilities,
+        "instrumental_music": bool(re.search(r"music bed|instrumental|no vocals|without vocals", prompt, re.I)),
         "dialogue": dialogue, "real_face_refs": real_face,
         "video_voiceover": _video_voiceover(prompt),
         "vector_output": bool(re.search(r"\bsvg\b|vector|editable.*illustrator", prompt, re.I)),
@@ -608,12 +678,16 @@ def select_provider(job: str, *, tier: str | None = None, required: dict | None 
         basis = (basis + "; " if basis != "default" else "") + f"interim default until {alias} lands"
     if tool_variant in entry.get("gateway_variants", []):
         tool = tool_variant
+    if alias == "mureka_v95" and predicates.get("instrumental_music"):
+        tool = "Mureka___generate_instrumental"
     variant = {"still_image": "image", "reference_video": "reference"}.get(capability, capability)
     row = next((r for r in capability_table() if tool in r["tools"].values() and (model is None or r["model"] == model)), None)
     if model and row is None and any(tool in r["tools"].values() for r in POLICY["capabilities"]):
         return Route(alias=alias, status="blocked", reason=f"Model {model} does not support the selected tool.")
     if row:
         model = row["model"]
+        if row["provider"] == "mureka":
+            model = effective_model("mureka", tool.split("___")[1], args)
         for key, feature in [("generate_audio", "native_audio"), ("audio", "native_audio"), ("multi_shot", "multi_shot"),
                              ("shots", "multi_shot"), ("elements", "reference_elements"), ("reference_image_urls", "reference_elements"),
                              ("ref_image_urls", "reference_elements"), ("reference_video_urls", "reference_elements"),
@@ -635,7 +709,7 @@ def select_provider(job: str, *, tier: str | None = None, required: dict | None 
         limits = row["durations"].get(variant)
         values = row.get("duration_values", {}).get(variant)
         unsupported = any(row["jobs"].get(k, False) < value for k, value in required.items()
-                          if k not in {"duration_seconds", "extension_seconds", "target_fps"})
+                          if k not in {"duration_seconds", "extension_seconds", "target_fps", "aspect_ratio"})
         unsupported |= duration is not None and limits is not None and not limits[0] <= duration <= limits[1]
         unsupported |= bool(duration is not None and values and duration not in values)
         unsupported |= bool(row.get("duration_field") and duration is not None and type(duration) is not int)
@@ -653,8 +727,8 @@ def select_provider(job: str, *, tier: str | None = None, required: dict | None 
         if unsupported:
             reason = f"{basis}. Selected {tool} cannot satisfy {capability} required capabilities {required}; no automatic provider fallback."
             return Route(alias=alias, basis=basis, status="blocked", job_type=capability, required=required, reason=reason, disclosure=reason)
-        quote_args = {**args, "model": model}
-        if duration and row["provider"] not in {"sync", "topaz"}:
+        quote_args = dict(args) if tool == "Mureka___generate_lyrics_video" else {**args, "model": model}
+        if duration and row["provider"] not in {"sync", "topaz", "mureka"}:
             key = row.get("duration_field") or ("source_duration_seconds" if row["provider"] == "sync" or tool.endswith("modify_video") else "video_duration_seconds" if tool.endswith("video_to_video") and row["provider"] == "runway" else "duration_seconds")
             if row["provider"] == "fal" and not row.get("duration_field"):
                 quote_args["num_frames"] = args.get("num_frames", round(duration * args.get("frames_per_second", 16)) + 1)
@@ -723,6 +797,14 @@ def premium_video(name: str) -> bool:
 
 def effective_model(provider: str, tool: str, arguments: dict) -> str | None:
     policy = POLICY["providers"].get(provider, {})
+    if provider == "mureka":
+        if tool == "generate_lyrics_video":
+            return "mureka/api/generate/lyrics-video"
+        if tool not in {"generate_song", "generate_instrumental"}:
+            return None
+        from providers.mureka.contracts import configured_model
+
+        return configured_model(arguments)
     if provider == "topaz":
         if tool not in {"upscale_video", "interpolate_video"}:
             return None
@@ -787,6 +869,10 @@ def policy_blocker(name: str, arguments: dict, *, region: str | None = None) -> 
         return f"Tool {name} has a fixed model {model}."
     if model is not None and not isinstance(model, str):
         return f"Model for {provider} must be a string."
+    if provider == "mureka" and model not in policy["models"]:
+        from providers.mureka.api import dry_run
+
+        return None if dry_run() else "UNVERIFIED Mureka model; live use is blocked and estimate unknown."
     if policy.get("models") and model not in policy["models"]:
         return f"Model {model} is not allowed for {provider}."
     model_policy = policy.get("model_policies", {}).get(model, {})
@@ -880,7 +966,7 @@ def estimate_cost(name: str, arguments: dict, *, list_price: bool = False) -> Co
         return CostEstimate(None, blocker)
     provider, tool = tool_parts(name)
     model = effective_model(provider, tool, arguments)
-    if provider in {"heygen", "topaz"}:
+    if provider in {"heygen", "topaz", "mureka"}:
         try:
             return CostEstimate(_published_cost(provider, tool, arguments).total_cents)
         except (ValueError, TypeError, KeyError) as exc:
@@ -946,6 +1032,11 @@ def _published_cost(provider: str, tool: str, arguments: dict):
     from math import ceil
     from server import billing_rates as rates
 
+    if provider == "mureka":
+        cents = rates.mureka_price_cents(tool, arguments)
+        if cents is None:
+            raise ValueError("Mureka estimate unknown for invalid inputs or UNVERIFIED model.")
+        return rates._with_fee(ceil(cents))
     if provider == "seedance":
         from math import ceil
 

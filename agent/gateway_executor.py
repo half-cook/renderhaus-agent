@@ -49,7 +49,8 @@ def tool_needs_approval(name: str, autonomous: bool) -> bool:
         return False
     if name in {"Remotion___prepare_conversational_edit", "Sync___lipsync_video", "sync3_lipsync",
                 "HeyGen___create_avatar_video", "heygen_avatar_v", "Topaz___upscale_video",
-                "Topaz___interpolate_video", "topaz_upscale", "topaz_interpolate"}:
+                "Topaz___interpolate_video", "topaz_upscale", "topaz_interpolate",
+                "Mureka___generate_lyrics_video", "mureka_lyrics_video"}:
         return True
     return not autonomous or requires_approval(name) or premium_video(name)
 
@@ -252,6 +253,13 @@ class GatewayExecutor:
         provider, tool = tool_parts(name)
         sync_request = None
         topaz_request = None
+        if provider == "mureka":
+            from providers.mureka.contracts import validate_arguments
+
+            try:
+                validate_arguments(tool, arguments)
+            except ValueError as exc:
+                return str(exc)
         if provider == "topaz" and tool in {"upscale_video", "interpolate_video"}:
             from providers.topaz.contracts import request_for
 
@@ -285,6 +293,8 @@ class GatewayExecutor:
             return route.reason
         if name != route.tool or effective_model(provider, tool, arguments) != route.model:
             return f"Capability map selected {route.tool} ({route.model}). Discover its schema and use that route. {route.reason}"
+        if route.required.get("aspect_ratio") and arguments.get("aspect_ratio", "9:16") != route.required["aspect_ratio"]:
+            return "Lyrics video must use the requested aspect_ratio."
         row = next((row for row in POLICY["capabilities"]
                     if row["model"] == route.model and name in row["tools"].values()), {})
         if provider not in {"sync", "heygen"} and route.required.get("real_face_refs") and arguments.get("likeness_consent") is not True:
@@ -327,6 +337,9 @@ class GatewayExecutor:
             actual = (topaz_request.output_duration if topaz_request else sync_request.output_duration if sync_request else
                       arguments.get("duration", arguments.get("duration_seconds", arguments.get("video_duration_seconds",
                       arguments.get("source_duration_seconds", 5)))))
+            if provider == "mureka" and tool == "generate_lyrics_video":
+                start, end = arguments.get("selection_start"), arguments.get("selection_end")
+                actual = (end - start) / 1000 if start is not None and end is not None else None
             if provider == "fal" and not row.get("duration_field"):
                 fps = arguments.get("frames_per_second", 16)
                 actual = (arguments.get("num_frames", 81) - 1) / fps if fps > 0 else 0

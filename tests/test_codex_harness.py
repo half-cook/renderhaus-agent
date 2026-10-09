@@ -150,14 +150,14 @@ class StudioCodexTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(studio.progress_events[0].message, "I found the image.")
 
     async def test_pending_media_waits_in_host_and_keeps_one_tool_step(self):
-        tool = Tool(name="Mureka___query_music_task", description="Poll music",
+        tool = Tool(name="Mureka___get_music_task", description="Poll music",
                     inputSchema={"type": "object", "properties": {"job_id": {"type": "string"}}, "required": ["job_id"]})
         gateway = FakeGateway()
         gateway.list_tools = AsyncMock(return_value=[tool])
-        gateway.call_tool = AsyncMock(side_effect=[{"status": "running", "job_id": "music-1"},
-                                                  {"status": "succeeded", "job_id": "music-1", "audio_url": "https://cdn.example/music.mp3"}])
+        gateway.call_tool = AsyncMock(side_effect=[{"status": "running", "job_id": "mureka:music:song:mureka-9.5:poll_test"},
+                                                  {"status": "succeeded", "job_id": "mureka:music:song:mureka-9.5:poll_test", "audio_url": "https://cdn.example/music.mp3"}])
         harness = FakeHarness([{"callId": "poll-1", "tool": "call_gateway_tool", "arguments": {
-            "tool_name": tool.name, "arguments_json": '{"job_id":"music-1"}'}}])
+            "tool_name": tool.name, "arguments_json": '{"job_id":"mureka:music:song:mureka-9.5:poll_test"}'}}])
         studio = StudioAgentContext(autonomous=True)
         with patch("agent.gateway_executor.asyncio.sleep", new=AsyncMock()):
             await run_studio_agent(StudioAgentRequest(prompt="Check music", autonomous=True), studio=studio,
