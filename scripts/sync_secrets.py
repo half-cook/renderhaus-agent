@@ -8,6 +8,7 @@ Mureka uses MUREKA_DRY_RUN=true, MUREKA_MODEL=mureka-9.5 and the existing FAL_KE
 No direct MUREKA_API_KEY is needed by this fal-only transport.
 Act-Two reuses RUNWAYML_API_SECRET/RUNWAY_DRY_RUN and REMOTION_LOCAL_MEDIA_HOSTS for chunks.
 Kling Motion Control uses the existing FAL_KEY/FAL_DRY_RUN; no direct Kling secret is required.
+Mirelo SFX 1.6 uses the same FAL_KEY/FAL_DRY_RUN; no additional secret or dry-run flag is needed.
 Topaz finishing uses TOPAZ_DRY_RUN=true and the existing FAL_KEY/FAL_DRY_RUN.
 Sync uses SYNC_API_KEY (optional authorized direct), SYNC_DRY_RUN, SYNC_MODEL,
 SYNC_TRANSPORT=fal, SYNC_DIRECT_AUTHORIZED, SYNC_MAX_CHUNK_SECONDS and SYNC_BILLING_PLAN.

@@ -1,5 +1,37 @@
 [
   {
+    "name": "mirelo_v2a",
+    "description": "Video-input SFX default Mirelo SFX 1.6 via fal. Required video_url, optional text_prompt, duration 1-60 seconds, num_samples 1-4, optional seed. Renderhaus defaults to one sample; samples 2-4 are dry-run only with cost unknown. Returns videos with generated audio tracks, not a separate audio file. Paid video requires cost approval even autonomous when premium_video_approval is enabled. Poll get_video_task with download=true and play the saved MP4. Commercial API; outputs are not training eligible.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "video_url": {
+          "type": "string",
+          "description": "Public HTTPS URL or renderhaus-asset:// version handle of a silent or edited video. Resolve authorized Studio handles before live submission. Input rights and required likeness/voice consents must be held."
+        },
+        "text_prompt": {
+          "type": "string",
+          "description": "Optional sound description to guide picture-synchronized foley; describe sounds, not visual changes."
+        },
+        "duration": {
+          "type": "number",
+          "description": "Generated SFX seconds, 1-60. Above 10 uses sliding-window generation. Match the measured clip duration; no automatic duration detection."
+        },
+        "num_samples": {
+          "type": "integer",
+          "description": "Variations, 1-4. Renderhaus defaults to 1; vendor default is 2. Samples 2-4 are dry-run-only until their billing is verified; estimate unknown."
+        },
+        "seed": {
+          "type": "integer",
+          "description": "Optional integer seed. -1 or null selects random generation."
+        }
+      },
+      "required": [
+        "video_url"
+      ]
+    }
+  },
+  {
     "name": "kling_motion_control",
     "description": "Full-body performance transfer exception through fal Kling 3 Pro Motion Control. Require image_url, video_url, measured performance_duration_seconds 3-30, subjects and consent_confirmed=true for every face, voice and body. character_orientation defaults video; image orientation max 10s. keep_original_sound defaults true. Always pause with cost even autonomous. Poll get_video_task with download=true. Dry-run produces no media; outputs never enter training.",
     "inputSchema": {

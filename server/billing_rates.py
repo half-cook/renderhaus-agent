@@ -535,6 +535,23 @@ def _luma_cost(tool: str, arguments: dict[str, Any]) -> GenerationCost:
 # https://fal.ai/models/fal-ai/wan-22-vace-fun-a14b/depth
 # (480p $0.05, 580p $0.075, 720p $0.10; same for inpainting/outpainting/reframe).
 # TODO: Confirm Wan 2.2 freeform and pose pricing, and auto/240p/360p rates.
+MIRELO_PRICING_URL = "https://fal.ai/models/mirelo-ai/sfx1.6/video-to-video"
+MIRELO_PRICING_READ_DATE = "2026-10-09"
+MIRELO_CENTS_PER_SECOND = Decimal("1")
+
+
+def mirelo_price_cents(arguments: dict[str, Any]) -> Decimal | None:
+    """Published $0.01/second; multi-sample billing is UNVERIFIED and stays unknown."""
+    from providers.fal.mirelo import ENDPOINT_ID, request_for
+
+    if "model" in arguments and arguments["model"] != ENDPOINT_ID:
+        raise ValueError("Mirelo model must match its fixed verified endpoint.")
+    request = request_for({key: value for key, value in arguments.items() if key != "model"})
+    if request.num_samples != 1:
+        return None
+    return MIRELO_CENTS_PER_SECOND * Decimal(str(request.duration))
+
+
 def _fal_cost(tool: str, arguments: dict[str, Any]) -> GenerationCost:
     from providers.fal import api, queue, vidu, wan, wan3
 
@@ -750,6 +767,15 @@ def cost_for(provider: str, tool: str, arguments: dict[str, Any]) -> GenerationC
     if provider == "runway":
         return _runway_cost(tool, arguments)
     if provider == "fal":
+        if tool == "mirelo_v2a":
+            from providers.fal.queue import dry_run
+
+            cents = mirelo_price_cents(arguments)
+            if dry_run():
+                return GenerationCost(0, 0)
+            if cents is None:
+                raise ValueError("Mirelo multi-sample cost unknown; official billing TODO.")
+            return _with_fee(math.ceil(cents))
         if tool == "kling_motion_control":
             from providers.fal.queue import dry_run
 
