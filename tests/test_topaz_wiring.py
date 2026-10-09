@@ -82,6 +82,21 @@ class TopazWiringTests(unittest.TestCase):
             self.assertIsNone(routing.estimate_cost(UPSCALE, args).total_cents)
         self.assertIsNone(routing.estimate_cost(INTERPOLATE, {**ARGS, "slowdown_factor": 2}).total_cents)
 
+    def test_route_quote_preserves_valid_fps_multiplier(self):
+        args = {**ARGS, "source_width": 1920, "source_height": 1080, "fps_multiplier": 2.0}
+        route = routing.route_intent("interpolate this clip to 60fps", arguments=args)
+        self.assertEqual(route.status, "ready")
+        self.assertEqual(route.estimated_cost["total_cents"], routing.estimate_cost(INTERPOLATE, args).total_cents)
+        self.assertEqual(route.estimated_cost["total_cents"], 39)
+
+    def test_route_quote_uses_actual_output_instead_of_rewriting_intent(self):
+        args = {**ARGS, "source_width": 1920, "source_height": 1080}
+        route = routing.route_intent("upscale this clip to 1080p", arguments=args)
+        self.assertEqual(route.estimated_cost["total_cents"], routing.estimate_cost(UPSCALE, args).total_cents)
+        self.assertEqual(route.estimated_cost["total_cents"], 338)
+        route = routing.route_intent("interpolate this clip to 120fps", arguments=args)
+        self.assertEqual(route.estimated_cost["total_cents"], routing.estimate_cost(INTERPOLATE, args).total_cents)
+
     def test_native_scale_and_fps_controls_cannot_weaken_selected_route(self):
         executor = object.__new__(GatewayExecutor)
         executor.studio = SimpleNamespace(prompt="upscale to 4K deliverable")
@@ -122,6 +137,46 @@ class TopazWiringTests(unittest.TestCase):
 
 
 class TopazApprovalTests(unittest.IsolatedAsyncioTestCase):
+    async def test_manual_studio_invoke_cannot_bypass_finishing_approval(self):
+        from fastapi import HTTPException
+        from server import studio as studio_api
+
+        for verb in ("upscale_video", "interpolate_video"):
+            body = studio_api.InvokeBody(provider="topaz", tool=verb, arguments=ARGS, project_id="untitled")
+            with patch.object(studio_api.repository, "require_project"), \
+                    patch.object(studio_api, "dispatch") as dispatch, patch.object(studio_api, "cost_for") as quote:
+                with self.assertRaises(HTTPException) as denied:
+                    await studio_api.invoke_tool(body, None)
+                self.assertEqual(denied.exception.status_code, 409)
+                self.assertIn("approval", denied.exception.detail)
+                dispatch.assert_not_called()
+                quote.assert_not_called()
+
+    async def test_approved_native_interrupt_dispatches_exact_quoted_request_once(self):
+        args = {**ARGS, "source_width": 1920, "source_height": 1080}
+        request = StudioAgentRequest(prompt="upscale this clip to 1080p", autonomous=True, job_id="topaz-approved")
+        studio = _context_from_request(request)
+        tools = json.loads(Path("configs/gateway/topaz.tools.json").read_text())
+        gateway = Gateway([Tool(name="Topaz___" + t["name"], description=t["description"],
+                               inputSchema=t["inputSchema"]) for t in tools], result={
+                                   "status": "dry_run", "provider": "topaz", "model": "Starlight Precise 2.6"})
+        with tempfile.TemporaryDirectory() as directory, patch.dict(os.environ, {"RENDERHAUS_OUTCOME_DIR": directory}):
+            with self.assertRaises(StudioAgentApprovalRequired) as paused:
+                await run_with_servers(request, studio, [gateway], model=ScriptedModel([
+                    call("read_file", {"file_path": "/skills/upscale/SKILL.md"}, "skill"),
+                    call("call_media_tool", {"tool_name": UPSCALE, "arguments": args}, "finish-video")]))
+            approval = paused.exception.approvals[0]
+            self.assertIn("$3.38", approval.description)
+            gateway.call_tool.assert_not_awaited()
+            resumed = request.model_copy(update={"session_items": studio.session_items,
+                "resume_state": paused.exception.state, "approval_decisions": [
+                    StudioApprovalDecision(call_id=approval.call_id, decision="approve")]})
+            await run_with_servers(resumed, _context_from_request(resumed), [gateway], model=ScriptedModel([final()]))
+            gateway.call_tool.assert_awaited_once_with(UPSCALE, args)
+            rows = [json.loads(line) for line in (Path(directory) / "outcomes.jsonl").read_text().splitlines()]
+            self.assertEqual((rows[-1]["provider"], rows[-1]["stage"], rows[-1]["outcome"]),
+                             ("topaz", "approval", "accepted"))
+
     async def test_native_interrupt_has_cost_and_rejection_never_submits(self):
         request = StudioAgentRequest(prompt="upscale this clip", autonomous=True, job_id="topaz-approval")
         studio = _context_from_request(request)
