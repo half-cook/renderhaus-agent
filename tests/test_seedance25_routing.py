@@ -25,20 +25,46 @@ ENV = {'SEEDANCE_DRY_RUN': 'true', 'SEEDANCE_TRANSPORT': 'fal', 'SEEDANCE_FAL_RE
 
 
 class SeedanceRoutingTests(unittest.TestCase):
-    def test_licence_interim_and_single_switch_restore_default(self):
+    def test_edit_and_extend_defaults_are_permanent_seedance25_choices(self):
+        policy = routing.POLICY['providers']['alibaba_modelstudio']['model_policies']['wan3.0-video']
         with patch.dict(os.environ, ENV):
-            for capability, alias, tool in [('v2v_edit', 'wan3_edit', EDIT), ('extend', 'wan3_extend', EXTEND)]:
-                route = routing.select_provider(capability)
-                self.assertEqual((route.status, route.alias, route.tool), ('ready', alias, tool))
-                self.assertIn('licence', route.disclosure)
-                self.assertIn('interim', route.disclosure)
-                self.assertEqual(routing.resolve_alias(alias), tool)
-                policy = routing.POLICY['providers']['alibaba_modelstudio']['model_policies']['wan3.0-video']
-                with patch.dict(policy, {'live_enabled': True}):
-                    restored = routing.select_provider(capability)
-                    expected = 'ModelStudio___edit_wan3_video' if capability == 'v2v_edit' else 'ModelStudio___extend_wan3_video'
-                    self.assertEqual(restored.tool, expected)
-                    self.assertEqual(routing.resolve_alias(alias), expected)
+            for capability, alias, tool, wan_alias, wan_tool in [
+                ('v2v_edit', 'seedance25_edit', EDIT, 'wan3_edit', 'ModelStudio___edit_wan3_video'),
+                ('extend', 'seedance25_extend', EXTEND, 'wan3_extend', 'ModelStudio___extend_wan3_video'),
+            ]:
+                for live_enabled in [False, True]:
+                    with self.subTest(capability=capability, live_enabled=live_enabled), patch.dict(
+                        policy, {'live_enabled': live_enabled},
+                    ):
+                        route = routing.select_provider(capability)
+                        self.assertEqual((route.status, route.alias, route.tool, route.provider, route.basis),
+                                         ('ready', alias, tool, 'seedance', 'default'))
+                        self.assertEqual(routing.resolve_alias(alias), tool)
+                        self.assertEqual(routing.resolve_alias(wan_alias), wan_tool)
+                        self.assertNotIn('interim', route.disclosure)
+                        self.assertNotIn('licence-blocked', route.disclosure)
+
+    def test_generic_routes_never_choose_modelstudio_when_flags_or_tools_change(self):
+        model_policy = routing.POLICY['providers']['alibaba_modelstudio']['model_policies']['wan3.0-video']
+        seedance_policy = routing.POLICY['providers']['seedance']
+        for prompt, alias, tool, wan_tool in [
+            ('edit this clip', 'seedance25_edit', EDIT, 'ModelStudio___edit_wan3_video'),
+            ('continue this clip with a generated video lasting 12 seconds', 'seedance25_extend', EXTEND,
+             'ModelStudio___extend_wan3_video'),
+        ]:
+            for live_enabled in [False, True]:
+                for modelstudio_dry_run in ['true', 'false']:
+                    with self.subTest(prompt=prompt, live_enabled=live_enabled, dry_run=modelstudio_dry_run), patch.dict(
+                        os.environ, {**ENV, 'MODELSTUDIO_DRY_RUN': modelstudio_dry_run},
+                    ), patch.dict(model_policy, {'live_enabled': live_enabled}):
+                        route = routing.route_intent(prompt, available_tools={tool, wan_tool})
+                        self.assertEqual((route.status, route.alias, route.tool, route.provider),
+                                         ('ready', alias, tool, 'seedance'))
+                        missing = routing.route_intent(prompt, available_tools={wan_tool})
+                        self.assertEqual((missing.status, missing.alias, missing.tool), ('blocked', alias, None))
+                        with patch.dict(seedance_policy, {'enabled': False}):
+                            disabled = routing.route_intent(prompt, available_tools={tool, wan_tool})
+                        self.assertEqual((disabled.status, disabled.alias, disabled.tool), ('blocked', alias, None))
 
     def test_dialogue_tools_are_ready_and_transport_model_is_consistent(self):
         with patch.dict(os.environ, ENV):
@@ -66,7 +92,7 @@ class SeedanceRoutingTests(unittest.TestCase):
                 self.assertIn('real', route.reason.lower())
                 self.assertIsNone(route.tool)
 
-    def test_explicit_wan_and_missing_interim_never_silently_change_provider(self):
+    def test_explicit_wan_and_missing_default_never_silently_change_provider(self):
         with patch.dict(os.environ, ENV):
             self.assertEqual(routing.route_intent('use Wan 3 to edit this video').tool, 'ModelStudio___edit_wan3_video')
             self.assertEqual(routing.select_provider('v2v_edit', available_tools={'Luma___modify_video'}).status, 'blocked')
@@ -82,6 +108,15 @@ class SeedanceRoutingTests(unittest.TestCase):
             self.assertIn('UNVERIFIED', route.reason)
             explicit = routing.route_intent('extend this clip to a generated output of 7 seconds', arguments=SOURCE)
             self.assertEqual(explicit.tool, EXTEND)
+
+    @unittest.skip(
+        'semantics unverified: Does extension output include source video or only continuation? '
+        'https://fal.ai/models/bytedance/seedance-2.5/us/reference-to-video/api and '
+        'https://docs.byteplus.com/en/docs/modelark/seedance-2-5, both read 2026-10-09, '
+        'do not explicitly answer this question.'
+    )
+    def test_extension_output_includes_source_or_only_continuation(self):
+        self.fail('Resolve the documented extension output semantics before enabling this assertion.')
 
     def test_transport_regions_and_explicit_legacy_model(self):
         with patch.dict(os.environ, {**ENV, 'SEEDANCE_FAL_REGION': 'global'}):
@@ -99,7 +134,7 @@ class SeedanceRoutingTests(unittest.TestCase):
 
 
 class SeedanceGatewayTests(unittest.IsolatedAsyncioTestCase):
-    async def test_actual_graph_interim_autonomous_approval_and_resume(self):
+    async def test_actual_graph_default_autonomous_approval_and_resume(self):
         from agent.deep_agent.runner import run_with_servers
 
         for verb, prompt in [(EDIT, 'restyle this footage'), (EXTEND, 'extend this clip')]:
@@ -134,6 +169,18 @@ class SeedanceGatewayTests(unittest.IsolatedAsyncioTestCase):
                         gateway.call_tool.assert_not_awaited()
                         rows = [json.loads(line) for line in (Path(directory) / 'outcomes.jsonl').read_text().splitlines()]
                         self.assertFalse(rows[-1]['training_eligible'])
+
+    async def test_extension_increment_is_blocked_without_gateway_call_even_when_approved(self):
+        with patch.dict(os.environ, ENV):
+            request = StudioAgentRequest(prompt='extend this clip by 4 seconds', autonomous=True, job_id='increment')
+            gateway = Gateway([Tool(name=EXTEND, inputSchema={'type': 'object'})])
+            result = await GatewayExecutor(_context_from_request(request), [gateway]).execute(
+                {'tool_name': EXTEND, 'arguments': SOURCE, 'call_id': 'increment'}, approved=True,
+            )
+            self.assertEqual(result['status'], 'not_run')
+            self.assertIn('UNVERIFIED', result['reason'])
+            self.assertIn('output duration', result['reason'])
+            gateway.call_tool.assert_not_awaited()
 
     async def test_gateway_rejects_stale_default_and_asset_real_face_metadata(self):
         with patch.dict(os.environ, ENV):

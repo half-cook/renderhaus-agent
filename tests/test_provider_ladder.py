@@ -17,7 +17,7 @@ from test_deep_agent import Gateway, ScriptedModel, call, final
 class CapabilityMapTests(unittest.TestCase):
     def test_defaults_are_opinionated_and_tiers_do_not_select(self):
         expected = {"t2v": "wan3_t2v", "i2v": "wan3_i2v", "reference_video": "wan3_r2v",
-                    "v2v_edit": "wan3_edit", "extend": "wan3_extend", "still_image": "gpt_image25_t2i",
+                    "v2v_edit": "seedance25_edit", "extend": "seedance25_extend", "still_image": "gpt_image25_t2i",
                     "image_edit": "gpt_image25_edit", "lipsync": "sync3_lipsync",
                     "performance_transfer": "runway_act_two", "tts": "eleven_v4_turbo",
                     "voice_clone": "voices_ivc_create", "music": "mureka_v95", "sfx": "mirelo_v2a",
@@ -27,11 +27,30 @@ class CapabilityMapTests(unittest.TestCase):
                     "continuity_qc": "local_qc", "lyrics_video": "mureka_lyrics_video"}
         self.assertEqual({k: v["default"] for k, v in routing.POLICY["capability_map"].items()}, expected)
         self.assertNotIn("ladder", routing.POLICY)
+        for capability in ["v2v_edit", "extend"]:
+            self.assertNotIn("interim", routing.POLICY["capability_map"][capability])
         for tier in [None, "draft", "standard", "premium"]:
             route = routing.select_provider("t2v", tier=tier)
             self.assertEqual(route.tool, "Fal___generate_wan3_t2v")
             self.assertEqual(route.alias, "wan3_t2v")
             self.assertNotIn("interim default until", route.disclosure)
+
+    def test_wan_edit_and_extend_are_explicit_only_and_absent_from_automatic_choices(self):
+        wan_aliases = {"wan3_edit", "wan3_extend"}
+        for choice in routing.POLICY["capability_map"].values():
+            automatic = {choice["default"], choice.get("interim"), *choice["ab_candidates"],
+                         *(exception["tool"] for exception in choice["exceptions"])}
+            self.assertFalse(wan_aliases & automatic)
+        for alias in wan_aliases:
+            self.assertTrue(routing.TOOL_MAP[alias]["explicit_only"])
+            self.assertEqual(routing.TOOL_MAP[alias]["status"], "ready")
+        policy = routing.POLICY["providers"]["alibaba_modelstudio"]
+        self.assertTrue(policy["enabled"])
+        self.assertTrue(policy["explicit_only"])
+        self.assertTrue(policy["model_policies"]["wan3.0-video"]["explicit_only"])
+        capability = next(row for row in routing.capability_table() if row["provider"] == "alibaba_modelstudio")
+        self.assertTrue(capability["enabled"])
+        self.assertTrue(capability["explicit_only"])
 
     def test_plain_video_never_automatically_chooses_demoted_providers(self):
         for prompt in ["generate a video", "cheapest video preview", "highest quality video", "draft video"]:
@@ -91,6 +110,23 @@ class CapabilityMapTests(unittest.TestCase):
         self.assertEqual(routing.select_provider("lipsync").status, "ready")
         self.assertEqual(routing.select_provider("t2v", available_tools={"Kling___text_to_video"}).status, "blocked")
         self.assertEqual(routing.select_provider("t2v").tool, "Fal___generate_wan3_t2v")
+
+    def test_pending_seedance_default_has_no_interim_and_generic_interims_still_work(self):
+        with patch.dict(routing.TOOL_MAP["seedance25_edit"], {
+            "status": "pending", "reason": "provider pending: unavailable Seedance adapter",
+        }):
+            route = routing.select_provider("v2v_edit")
+            self.assertEqual((route.status, route.alias, route.tool), ("pending", "seedance25_edit", None))
+            self.assertIsNone(routing.resolve_alias("seedance25_edit"))
+        self.assertIsNone(routing.job_type("Unknown___future_generation"))
+        with patch.dict(routing.POLICY["capability_map"]["t2v"], {"interim": "wan_t2v"}), patch.dict(
+            routing.TOOL_MAP["wan3_t2v"], {"status": "pending"},
+        ):
+            route = routing.select_provider("t2v")
+            self.assertEqual((route.status, route.alias, route.tool),
+                             ("ready", "wan3_t2v", "Fal___text_to_video"))
+            self.assertIn("interim default until wan3_t2v", route.disclosure)
+            self.assertEqual(routing.resolve_alias("wan3_t2v"), "Fal___text_to_video")
 
     def test_long_generation_refuses_with_split_reason(self):
         route = routing.route_intent("generate a 45 second single shot")

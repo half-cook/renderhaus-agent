@@ -23,21 +23,31 @@ SOURCE = {"video_url": "https://example.invalid/source.mp4", "source_duration_se
 
 
 class ModelStudioRoutingTests(unittest.TestCase):
-    @patch.dict(routing.POLICY["providers"]["alibaba_modelstudio"]["model_policies"]["wan3.0-video"], {"live_enabled": True})
-    def test_defaults_and_explicit_requests_select_real_tools(self):
-        for capability, alias, tool in [("v2v_edit", "wan3_edit", EDIT), ("extend", "wan3_extend", EXTEND)]:
-            for tier in (None, "draft", "standard", "premium"):
-                with self.subTest(capability=capability, tier=tier):
-                    route = routing.select_provider(capability, tier=tier)
-                    self.assertEqual((route.status, route.alias, route.tool, route.provider),
-                                     ("ready", alias, tool, "alibaba_modelstudio"))
-                    self.assertIsNotNone(routing.POLICY["capability_map"][capability]["interim"])
-                    self.assertEqual(routing.POLICY["capability_map"][capability]["exceptions"], [])
-                    self.assertNotIn("interim", route.disclosure)
-        for prompt, tool in [("restyle this footage", EDIT), ("extend this clip by 10 seconds", EXTEND),
-                             ("use Wan 3 to edit this video", EDIT),
-                             ("Model Studio edit this video", EDIT), ("DashScope extend this clip", EXTEND)]:
-            self.assertEqual(routing.route_intent(prompt).tool, tool, prompt)
+    def test_explicit_requests_select_real_modelstudio_tools_with_preview_disclosure(self):
+        with patch.dict(os.environ, {"MODELSTUDIO_DRY_RUN": "true"}):
+            for capability, alias, tool in [("v2v_edit", "wan3_edit", EDIT), ("extend", "wan3_extend", EXTEND)]:
+                for tier in (None, "draft", "standard", "premium"):
+                    with self.subTest(capability=capability, tier=tier):
+                        route = routing.select_provider(capability, provider="alibaba_modelstudio", tier=tier)
+                        self.assertEqual((route.status, route.alias, route.tool, route.provider),
+                                         ("ready", alias, tool, "alibaba_modelstudio"))
+                        self.assertEqual(routing.resolve_alias(alias), tool)
+                        self.assertIn("explicit request", route.basis)
+                        self.assertIn("Alibaba preview terms", route.disclosure)
+                        self.assertIn("internal testing", route.disclosure)
+                        self.assertIn("until GA", route.disclosure)
+            for name in ["Wan", "Wan3.0", "Wan 3", "Model Studio", "DashScope"]:
+                for action, alias, tool in [("edit this clip", "wan3_edit", EDIT),
+                                           ("extend this clip", "wan3_extend", EXTEND)]:
+                    prompt = f"use {name} to {action}"
+                    with self.subTest(prompt=prompt):
+                        route = routing.route_intent(prompt)
+                        self.assertEqual((route.status, route.skill, route.alias, route.tool, route.provider),
+                                         ("ready", "named-provider", alias, tool, "alibaba_modelstudio"))
+                        self.assertIn("explicit request", route.basis)
+                        self.assertIn("Alibaba preview terms", route.disclosure)
+                        self.assertIn("internal testing", route.disclosure)
+                        self.assertIn("until GA", route.disclosure)
 
     def test_named_demoted_tools_and_confidential_field_are_preserved(self):
         for prompt, tool in [("use Runway Aleph to relight this clip", "Runway___video_to_video"),
@@ -91,6 +101,31 @@ class ModelStudioRoutingTests(unittest.TestCase):
 
 
 class ModelStudioGraphTests(unittest.IsolatedAsyncioTestCase):
+    async def test_explicit_preview_live_route_is_blocked_before_provider_or_gateway_calls(self):
+        with patch.dict(os.environ, {
+            "MODELSTUDIO_DRY_RUN": "false",
+            "DASHSCOPE_BASE_URL": "https://testworkspace.us-east-1.maas.aliyuncs.com",
+        }), patch("providers.alibaba_modelstudio.api._request") as provider_request:
+            for action, alias, tool in [("edit this clip", "wan3_edit", EDIT),
+                                       ("extend this clip", "wan3_extend", EXTEND)]:
+                prompt = "use Wan to " + action
+                with self.subTest(prompt=prompt):
+                    route = routing.route_intent(prompt, arguments=SOURCE)
+                    self.assertEqual((route.status, route.skill, route.alias, route.tool),
+                                     ("blocked", "named-provider", alias, None))
+                    self.assertIn("licence blocked", route.reason)
+                    self.assertIn("preview", route.reason)
+                    request = StudioAgentRequest(prompt=prompt, autonomous=True, job_id="preview-guard")
+                    gateway = Gateway([Tool(name=tool, inputSchema={"type": "object"})])
+                    result = await GatewayExecutor(_context_from_request(request), [gateway]).execute(
+                        {"tool_name": tool, "arguments": SOURCE, "call_id": "preview"}, approved=True,
+                    )
+                    self.assertEqual(result["status"], "not_run")
+                    self.assertIn("licence blocked", result["reason"])
+                    self.assertIn("preview", result["reason"])
+                    gateway.call_tool.assert_not_awaited()
+            provider_request.assert_not_called()
+
     async def test_saved_task_polls_to_completion_without_resubmission(self):
         with tempfile.TemporaryDirectory() as directory, patch.dict(os.environ, {
             "MODELSTUDIO_DRY_RUN": "true", "RENDERHAUS_OUTCOME_DIR": directory,

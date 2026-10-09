@@ -34,7 +34,7 @@ def routing_case(case):
         from agent.deep_agent.routing import resolve_alias, route_intent
 
         with patch.dict(os.environ, case.get("env", {})):
-            route = route_intent(case["prompt"])
+            route = route_intent(case["prompt"], arguments=case.get("arguments"))
         skills = case.get("expected_routed_skill", case["expected_skill"]).split(" + ")
         aliases = case.get("expected_routed_alias", case["expected_tool"]).split(" then ")
         steps = list(route.steps) or [route]
@@ -53,6 +53,22 @@ def routing_case(case):
         else:
             self.assertIsNone(route.tool)
             self.assertIn(case["expected_reason"], route.reason)
+        for disclosure in case.get("expected_disclosure", []):
+            self.assertIn(disclosure, route.disclosure)
+        if case.get("verify_provider_contract"):
+            from agent.deep_agent.routing import tool_parts
+            from providers.catalog import get_provider
+            from providers.contracts import validate_tool_arguments
+            from providers.registry import generate_schemas
+
+            self.assertEqual(route.required["duration_seconds"], case["expected_duration_seconds"])
+            provider, verb = tool_parts(route.tool)
+            arguments = {**case["arguments"], "duration_seconds": route.required["duration_seconds"]}
+            with patch.dict(os.environ, case.get("env", {})):
+                schema = next(tool["inputSchema"] for tool in generate_schemas(get_provider(provider))
+                              if tool["name"] == verb)
+                cleaned = validate_tool_arguments(provider, verb, arguments, schema)
+            self.assertEqual(cleaned["duration_seconds"], case["expected_duration_seconds"])
 
     if case["skip_reason"]:
         return unittest.skip(case["skip_reason"])(check)
@@ -110,9 +126,9 @@ class SkillContracts(unittest.TestCase):
         )
 
     def test_fixture_preserves_active_workbook_rows_and_explains_pending_dependencies(self):
-        self.assertEqual(len(CASES), 134)
-        self.assertEqual(sum(not c["skip_reason"] for c in CASES), 129)
-        self.assertEqual(sum(bool(c["skip_reason"]) for c in CASES), 5)
+        self.assertEqual(len(CASES), 137)
+        self.assertEqual(sum(not c["skip_reason"] for c in CASES), 133)
+        self.assertEqual(sum(bool(c["skip_reason"]) for c in CASES), 4)
         self.assertTrue(all(c.get("source_status") != "archived" for c in CASES))
         self.assertTrue(all("[project.confidential=true]" not in c["prompt"] for c in CASES))
         self.assertTrue(all(c["expected_skill"] != "confidential-route" for c in CASES))
