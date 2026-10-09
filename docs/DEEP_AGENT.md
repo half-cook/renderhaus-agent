@@ -198,6 +198,22 @@ use the act-two skill even for explicit performance requests. Mureka lyrics-vide
 whiteboard-explainer plans Remotion templates without claiming unsupported marker-hand animation.
 
 The deterministic router supplies skill and tool proposals in graph input and Studio context.
+For a generated shot with independent narration, `intent_route.execution_groups` puts video
+and TTS in the same group and assembly in the following group. The manager discovers both
+schemas and any authorized voice before launching media/audio tasks or generation calls
+together. TTS dispatch precedes a blocking video poll. Assembly waits for both completed
+artifacts. A brief that requires the generated clip's transcript or synchronized Foley
+retains that dependency. The scripted real-graph regression verifies dispatch ordering
+through the normal approval/resume path; live model compliance remains to be measured.
+
+The executor persists a `cost_ledger` keyed by tool call ID in its session snapshot.
+Paid attempts retain their list-price estimate across approval resumes and failures;
+free tools, rejected approvals and dry runs do not add paid line items. Completion appends
+every recorded media step and an estimated total to the final Markdown in stable call-ID
+order. The short Studio summary also includes per-step costs when they fit its 320-character
+contract; larger runs refer to the complete breakdown. Unknown charges remain explicit,
+with a known subtotal. Model token charges are recorded separately by `ModelUsage`.
+
 The capability-map fixture contains 137 retained rows, with 133 active and 4 dependency skips.
 Archived/confidential routes are dropped. Active rows cover built tools and declared interims;
 pending specialists keep named branch reasons. Editorial overrides retain the safe preparer,

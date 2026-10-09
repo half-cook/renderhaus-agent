@@ -25,6 +25,7 @@ from pydantic import ValidationError
 
 from agent.backend_config import configured_deep_agent_model
 from agent.deep_agent.checkpoints import StudioCheckpointer
+from agent.deep_agent.costs import append_media_costs
 from agent.deep_agent.files import subagent_file_updates
 from agent.deep_agent.memory import ProjectMemory, append_only_middleware
 from agent.deep_agent.usage import ModelUsage
@@ -71,6 +72,14 @@ You use LangChain Deep Agents. Read the relevant /skills/<name>/SKILL.md before 
 Read skills before using call_media_tool, call_audio_tool, or call_editor_tool. Each dispatch tool takes
 an exact discovered Gateway tool_name and an arguments object matching its inputSchema.
 Search before dispatch. Delegate focused work to planner, media, audio, or editor when useful.
+Start independent steps in intent_route.execution_groups in parallel. For an off-screen
+voiceover, discover the video and speech schemas and any authorized voice lookup first.
+Launch media and audio task calls together in one assistant message, or batch the video
+submission and TTS dispatch together. Dispatch TTS before starting a blocking video poll.
+Only assembly waits for both completed assets. Honor explicit dependencies in the brief,
+such as narration that requires a generated clip's transcript or a picture-synchronized Foley.
+Omit timeline fps and bitrate unless the customer sets them. The renderer preserves the primary
+visual's measured frame rate and quality; a cinematic brief does not request 24 fps.
 Remotion remains the default renderer. Explicit HyperFrames requests use the optional local
 tool schema in read_studio_context, through call_editor_tool. If disabled, report the blocker.
 HyperFrames only previews composition inputs, never executes HTML or produces a video here.
@@ -107,6 +116,7 @@ MANAGER_OUTPUT_INSTRUCTIONS = """
 Finish by calling StudioAgentOutput with title, summary, markdown, and filename.
 Do not finish the manager turn with plain text. Use this tool only after all required work
 finishes or after documenting a real blocker. Subagents return their task results to you.
+The host appends the recorded media cost line items and total. Keep costs out of your narrative.
 """
 
 
@@ -460,6 +470,7 @@ async def run_with_servers(request, studio, servers, *, model=None):
                     raise StudioAgentApprovalRequired(state, approvals, studio.session_items, studio.tool_events)
         final.filename = normalize_markdown_filename(final.filename, final.title)
         delivered = _validate_video_delivery(request, studio, final)
+        append_media_costs(final, executor.cost_ledger, executor.run_scope)
         _progress(studio, event_id="run", event_type="RUN_FINISHED" if delivered else "RUN_ERROR",
                   title="Agent finished" if delivered else "Export incomplete",
                   message=f"Completed {final.title}." if delivered else final.summary,

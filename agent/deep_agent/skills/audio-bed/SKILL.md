@@ -15,6 +15,9 @@ on 2026-10-09. Official TTS documentation supports a configured `model_id` on th
 endpoint. `ELEVENLABS_DRY_RUN` controls dry-run behavior. This evidence does not verify other
 model/endpoint combinations, including dialogue variants.
 Use authorized `voice_id` and `text`; never infer a voice ID from its display name.
+For independent narration, look up the authorized voice and dispatch speech while the video
+job is running. Launch audio and media tasks together or batch their generation calls before
+a blocking video status check. Only final assembly waits for both completed artifacts.
 Voice cloning defaults to `voices_ivc_create`, mapped to `ElevenLabs___voices_ivc_create`.
 Require speaker consent and rights to all samples; do not imply the IVC tool provides PVC.
 
