@@ -25,7 +25,7 @@ from agent.backend_config import deep_agent_model
 from agent.deep_agent.checkpoints import StudioCheckpointer
 from agent.deep_agent.files import subagent_file_updates
 from agent.deep_agent.memory import ProjectMemory
-from agent.deep_agent.routing import route_intent, estimate_cost, capability_table
+from agent.deep_agent.routing import route_intent, capability_table
 from agent.gateway_executor import GatewayExecutor, tool_needs_approval
 from agent.errors import AgentRunLimitExceeded
 from agent.studio_agent_next import (
@@ -70,16 +70,19 @@ are virtual and private to this workspace/project/conversation. There is no shel
 provider access. read_studio_context supplies optional canvas references and current assets.
 Use report_progress for customer updates. Never claim to be awaiting approval without calling
 a tool; the host displays native interrupts as approval cards. Return StudioAgentOutput.
-Follow the host intent_route and provider ladder. Finished video defaults to Standard
-(Seedance, Kling or Vidu Q4); Draft/preview and rejected-artifact retries use Wan. Filter required
-features before tier and known price. Confidential context permits only Wan, never escalation.
+Follow the host intent_route and capability map. Selection is an explicit customer request,
+then a named exception, then the capability default. Pending defaults use only their configured
+interim tool. Never select by tier or cheapest price. Confidential project policy overrides
+provider requests. It permits Wan 2.2 VACE video on fal and the pending FLUX.2-klein-4B still
+route. Refused operations require turning off the project's confidential flag.
 If dispatch returns not_run with a route, discover that route's schema and dispatch its exact
 tool/model with all requested controls intact. Do not weaken required features to find a route.
-The host discloses provider/model, filters, tier and estimated list cost before approval or
-dispatch. Unknown means unknown, not free. Keep all existing approval and spending gates.
+The host discloses provider/model, selection reason and estimated list cost before approval or
+dispatch. Unknown means unknown, not free. All paid video requires approval even in autonomous
+runs when premium_video_approval is enabled. Keep all existing approval and spending gates.
 Record explicit customer acceptance/rejection of completed media with record_media_outcome,
 using the saved generation call ID from media_jobs. Provider success is not customer acceptance.
-Artifact rejection proposes one Wan retry through the normal approval/spending gates.
+Artifact rejection proposes one capability-map retry through the normal approval/spending gates.
 Spending-approval rejection does not authorize a retry. Poll pending jobs before review.
 """
 
@@ -129,8 +132,7 @@ async def run_with_servers(request, studio, servers, *, model=None):
     async def read_studio_context() -> dict:
         """Read optional canvas references, managed assets, saved jobs and discovered tool schemas."""
         return {
-            "intent_route": route_intent(request.prompt, tier=studio.quality_tier,
-                                         confidential=studio.confidential).public(),
+            "intent_route": route_intent(request.prompt, confidential=studio.confidential).public(),
             "quality_tier": studio.quality_tier,
             "confidential": studio.confidential,
             "capabilities": capability_table(),
@@ -192,7 +194,7 @@ async def run_with_servers(request, studio, servers, *, model=None):
         except ValidationError:
             return False
         route = executor.media_selection(arguments.tool_name, arguments.arguments)
-        executor.disclose_selection(route, call.tool_call["id"])
+        executor.disclose_selection(route, call.tool_call["id"], arguments.tool_name, arguments.arguments)
         if executor.selection_blocker(arguments.tool_name, arguments.arguments, route):
             return False
         return tool_needs_approval(arguments.tool_name, studio.autonomous)
@@ -202,7 +204,7 @@ async def run_with_servers(request, studio, servers, *, model=None):
         route = executor.media_selection(name, arguments)
         plan = arguments.get("plan_summary", "") if name == "Remotion___prepare_conversational_edit" else ""
         proposal = f"{plan} " if plan else ""
-        return f"Approve {name}. {proposal}{route.disclosure if route else estimate_cost(name, arguments).description}"
+        return f"Approve {name}. {proposal}{executor.dispatch_disclosure(name, arguments, route)}"
 
     interrupt_on = {
         name: {"allowed_decisions": ["approve", "reject"], "when": needs_approval,
@@ -211,7 +213,7 @@ async def run_with_servers(request, studio, servers, *, model=None):
     }
     roles = [
         ("planner", "Plan a brief and still-first storyboard without calling paid media tools.", []),
-        ("media", "Generate, edit or refine stills and video shots with Seedream, Seedance, Kling, Runway, fal Wan VACE, Vidu Q4 and Luma.", [dispatch_tools[0]]),
+        ("media", "Generate, edit or refine stills and video through the host capability map and explicit provider requests.", [dispatch_tools[0]]),
         ("audio", "Produce voiceover, music and sound effects using audio providers.", [dispatch_tools[1]]),
         ("editor", "Edit existing footage from a word-level transcript after cut-plan confirmation, "
                    "assemble approved assets into a final Remotion MP4 and poll it to completion, "
@@ -269,8 +271,7 @@ async def run_with_servers(request, studio, servers, *, model=None):
                     name=name, call_id=call_id, arguments=json.dumps(arguments),
                 ))
                 route = executor.media_selection(name, arguments)
-                if route:
-                    approval.description = route.disclosure
+                approval.description = executor.dispatch_disclosure(name, arguments, route)
                 approvals.append(approval)
                 decisions.append((approval, action))
             groups[interrupt.id] = decisions
@@ -300,7 +301,7 @@ async def run_with_servers(request, studio, servers, *, model=None):
     else:
         prompt = _input_for(request.prompt, list(studio.nodes))
         prompt += "\nIntent route proposal (policy data):\n" + json.dumps(route_intent(
-            request.prompt, tier=studio.quality_tier, confidential=studio.confidential,
+            request.prompt, confidential=studio.confidential,
         ).public())
         prompt += "\nAuthoritative project provider context:\n" + json.dumps({
             "confidential": studio.confidential, "quality_tier": studio.quality_tier,
