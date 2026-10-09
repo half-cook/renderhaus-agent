@@ -29,17 +29,37 @@ class RoutingCases(unittest.TestCase):
     pass
 
 
+SETUP_NOTE = re.compile(r"\s*\[(?:resume|setup):[^\]]*\]\s*$")
+
+
+def runner_prompt(prompt):
+    """Strip a trailing bracketed test-runner setup note; it is not user text."""
+    return SETUP_NOTE.sub("", prompt)
+
+
+def parse_max_calls(value):
+    """Parse 'alias: N; alias: N billable submissions' into {alias: N}."""
+    return {alias: int(count) for alias, count in re.findall(r"([a-z0-9_]+):\s*(\d+)", value or "")}
+
+
 def routing_case(case):
     def check(self):
         from agent.deep_agent.routing import resolve_alias, route_intent
 
         with patch.dict(os.environ, case.get("env", {})):
-            route = route_intent(case["prompt"], arguments=case.get("arguments"))
+            route = route_intent(runner_prompt(case["prompt"]), arguments=case.get("arguments"))
         skills = case.get("expected_routed_skill", case["expected_skill"]).split(" + ")
         aliases = case.get("expected_routed_alias", case["expected_tool"]).split(" then ")
         steps = list(route.steps) or [route]
         self.assertEqual([step.skill for step in steps[:len(skills)]], skills)
         self.assertEqual([step.alias for step in steps[:len(aliases)]], aliases)
+        for alias, limit in parse_max_calls(case.get("max_calls")).items():
+            planned = [step.alias for step in steps if step.alias == alias]
+            if route.status != "ready":
+                planned = []  # a blocked route submits nothing billable
+            self.assertLessEqual(len(planned), limit, (alias, planned))
+            if limit:
+                self.assertEqual(len(planned), limit, (alias, planned))
         forbidden = {alias.strip() for alias in case.get("forbidden_tools", "").split(",") if alias.strip()}
         self.assertFalse(forbidden & {step.alias for step in steps})
         self.assertFalse({resolve_alias(alias) for alias in forbidden} - {None} & {step.tool for step in steps})
@@ -126,8 +146,8 @@ class SkillContracts(unittest.TestCase):
         )
 
     def test_fixture_preserves_active_workbook_rows_and_explains_pending_dependencies(self):
-        self.assertEqual(len(CASES), 137)
-        self.assertEqual(sum(not c["skip_reason"] for c in CASES), 133)
+        self.assertEqual(len(CASES), 139)
+        self.assertEqual(sum(not c["skip_reason"] for c in CASES), 135)
         self.assertEqual(sum(bool(c["skip_reason"]) for c in CASES), 4)
         self.assertTrue(all(c.get("source_status") != "archived" for c in CASES))
         self.assertTrue(all("[project.confidential=true]" not in c["prompt"] for c in CASES))
@@ -208,3 +228,26 @@ class SkillContracts(unittest.TestCase):
         }
         self.assertTrue(required_aliases <= TOOL_MAP.keys())
         self.assertNotIn("flux2_klein4b_t2i", TOOL_MAP)
+
+
+class RoutingRunnerHelpers(unittest.TestCase):
+    def test_setup_note_is_stripped_and_not_user_text(self):
+        self.assertEqual(runner_prompt("make a clip [resume: approvals arrive together]"), "make a clip")
+        self.assertEqual(runner_prompt("make a [5 s] clip"), "make a [5 s] clip")
+        self.assertTrue(all("[resume:" not in c["prompt"] or c["test_id"] == "RT-170" for c in CASES))
+
+    def test_max_calls_column_is_parsed_and_present_only_on_rt_169_and_170(self):
+        self.assertEqual(parse_max_calls("seedance25_extend: 0 billable submissions"), {"seedance25_extend": 0})
+        self.assertEqual(parse_max_calls("wan3_t2v: 1; eleven_v4_turbo: 1"), {"wan3_t2v": 1, "eleven_v4_turbo": 1})
+        self.assertEqual(parse_max_calls(None), {})
+        self.assertEqual({c["test_id"] for c in CASES if c.get("max_calls")}, {"RT-169", "RT-170"})
+
+    def test_rt_169_ambiguous_extend_is_refused_without_a_billable_route(self):
+        from agent.deep_agent.routing import route_intent
+
+        case = next(c for c in CASES if c.get("test_id") == "RT-169")
+        with patch.dict(os.environ, case["env"]):
+            route = route_intent(case["prompt"], arguments=case["arguments"])
+        self.assertEqual(route.status, "blocked")
+        self.assertIsNone(route.tool)
+        self.assertFalse({s.alias for s in route.steps} & {"seedance25_extend", "wan3_extend", "wan3_edit", "seedance25_edit"})

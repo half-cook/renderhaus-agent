@@ -204,8 +204,8 @@ Topaz submissions always pause with cost, including autonomous runs. Dry-run pre
 and queued jobs never satisfy final delivery. See [Topaz](TOPAZ.md) for pricing, licence
 sources, unknown-price blockers and the blocked Comet check.
 
-`tests/fixtures/skill_routing.json` contains 137 retained routing rows.
-There are 133 active cases and 4 explicit skips. Five caption/collage cases cover the
+`tests/fixtures/skill_routing.json` contains 139 retained routing rows.
+There are 135 active cases and 4 explicit skips. Five caption/collage cases cover the
 new templates' renderer selection. Seven performance-transfer cases now use built tools. Three Mureka lyrics-video cases
 now use built tools; music routes use Mureka without an ElevenLabs interim. Five Topaz upscale/interpolation cases
 now use built tools. Seedance reference dialogue and two
@@ -559,7 +559,7 @@ The continuity skill now includes `Gemini___judge_continuity` and `Gemini___get_
 The canonical `gemini_vlm_judge` alias is built and its retained routing row is active.
 `local_qc` remains default. The VLM is dry-run by default and promotion requires a complete,
 committed, hash-pinned live result above 0.85 on the 420 frozen pairs. No result is committed.
-Current inventory is 15 providers, 113 Gateway tools, 24 skills and 133 active routing rows
+Current inventory is 15 providers, 113 Gateway tools, 24 skills and 135 active routing rows
 with 4 skips. See [Gemini configuration and sources](GEMINI_CONTINUITY_QC.md),
 [benchmark procedure](CONTINUITY_QC_BENCHMARK.md#experimental-gemini-judge-and-eval-gate),
 and [decisions](continuity-qc-vlm-decisions.tsv). Comet E2E remains blocked.
@@ -580,3 +580,15 @@ There are 15 providers, 113 Gateway tools, 24 skills, 133 active fixture rows, a
 dependency skips. Read [NLE import](NLE_EXPORT.md#import-an-editors-timeline) for the
 parser contract and unsupported edits. Comet and real editor validation remain blocked
 or unverified; offline tests do not establish browser success.
+
+## Routing gates RT-169 and RT-170 (2026-10-09)
+
+The fixture now has 139 rows (135 active, 4 skipped). RT-091 and RT-167 use explicit output-length wording
+("extend this clip so the result is 15 / 9 seconds long") and still route to `seedance25_extend`. RT-169
+("extend this clip by 4 seconds") must be refused with a clarifying reason and no billable submission, and
+forbids `wan3_extend`, `wan3_edit` and `seedance25_edit`. RT-170 is the plain lighthouse shot with voiceover; its
+trailing bracketed note is a runner setup instruction (stripped before routing, not user text) and expects `wan3_t2v`
+then `eleven_v4_turbo`, each exactly once, ending in an assembled MP4. The new `max_calls` column
+(`alias: N; alias: N`) is read by `tests/test_skill_routing.py` (0 means nothing billable is routed; N means exactly
+N planned calls). The dynamic "approvals arrive together" behaviour is covered by the scripted parallel-approval run
+in `tests/test_e2e_lighthouse.py` (fix in staging 2499e5d).

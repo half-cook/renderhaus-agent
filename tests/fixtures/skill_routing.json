@@ -736,13 +736,13 @@
     "source_status": "new"
   },
   {
-    "prompt": "extend this clip to produce a 15-second output video",
+    "prompt": "extend this clip so the result is 15 seconds long",
     "expected_skill": "edit-v2v",
     "expected_tool": "seedance25_extend",
     "suite": "edit-v2v",
     "test_id": "RT-091",
     "skip_reason": "",
-    "note": "Seedance 2.5 extends with an explicit generated output duration; source inclusion in the output remains unverified.",
+    "note": "Seedance 2.5 extends with an explicit generated output duration; source inclusion in the output remains unverified. Reworded 2026-10-09 to explicit output length (workbook).",
     "source_status": "updated",
     "expected_gateway_tool": "Seedance___extend_video",
     "arguments": {
@@ -1345,7 +1345,7 @@
     "source_status": "new"
   },
   {
-    "prompt": "continue this clip with a generated video lasting 12 seconds",
+    "prompt": "extend this clip so the result is 9 seconds long",
     "expected_skill": "edit-v2v",
     "expected_tool": "seedance25_extend",
     "expected_gateway_tool": "Seedance___extend_video",
@@ -1353,8 +1353,8 @@
     "suite": "edit-v2v",
     "test_id": "RT-167",
     "skip_reason": "",
-    "note": "Explicit generated output duration selects Seedance 2.5 without inferring appended timeline length.",
-    "source_status": "new",
+    "note": "Explicit output length selects Seedance 2.5 without inferring appended timeline length. Reworded 2026-10-09 (workbook).",
+    "source_status": "updated",
     "arguments": {
       "video_url": "https://example.invalid/source.mp4",
       "source_duration_seconds": 5,
@@ -1369,7 +1369,8 @@
       "FAL_DRY_RUN": "true"
     },
     "verify_provider_contract": true,
-    "expected_duration_seconds": 12
+    "expected_duration_seconds": 9,
+    "expected_output": "extended MP4"
   },
   {
     "prompt": "use Wan to edit this clip",
@@ -1390,5 +1391,47 @@
       "internal testing",
       "until GA"
     ]
+  },
+  {
+    "prompt": "extend this clip by 4 seconds",
+    "expected_skill": "edit-v2v",
+    "expected_tool": "seedance25_extend",
+    "forbidden_tools": "wan3_extend, wan3_edit, seedance25_edit",
+    "suite": "edit-v2v",
+    "test_id": "RT-169",
+    "skip_reason": "",
+    "note": "Ambiguous N: the extend tool must refuse / ask whether 4 is added seconds or total length; no billable video call.",
+    "source_status": "new",
+    "expected_status": "blocked",
+    "expected_reason": "Specify a generated output duration",
+    "expected_output": "refusal / clarifying question: is N added seconds or total length?; no billable video call",
+    "max_calls": "seedance25_extend: 0 billable submissions",
+    "arguments": {
+      "video_url": "https://example.invalid/source.mp4",
+      "source_duration_seconds": 5,
+      "source_fps": 24,
+      "source_aspect_ratio": "16:9",
+      "prompt": "Continue the motion naturally."
+    },
+    "env": {
+      "SEEDANCE_DRY_RUN": "true",
+      "SEEDANCE_TRANSPORT": "fal",
+      "SEEDANCE_FAL_REGION": "us",
+      "FAL_DRY_RUN": "true"
+    }
+  },
+  {
+    "prompt": "Make a 5-second shot of a lighthouse at dusk with a calm voiceover [resume: video approval and voiceover approval arrive together]",
+    "expected_skill": "t2v + audio-bed",
+    "expected_tool": "wan3_t2v then eleven_v4_turbo",
+    "suite": "plain-shot-vo",
+    "test_id": "RT-170",
+    "skip_reason": "",
+    "note": "Gate for the parallel-approval bug: both subagent approvals arrive together on resume; each tool call count == 1; no re-issued duplicates. Dynamic check: tests/test_e2e_lighthouse.py parallel-approval run (staging 2499e5d).",
+    "source_status": "new",
+    "forbidden_tools": "gpt_image25_t2i, seedream_t2i",
+    "expected_output": "assembled MP4 (video + VO muxed)",
+    "max_calls": "wan3_t2v: 1; eleven_v4_turbo: 1",
+    "setup": "video approval and voiceover approval arrive together on resume"
   }
 ]
