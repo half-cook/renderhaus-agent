@@ -11,11 +11,13 @@ regardless of the model's proposal, including subagent dispatch and approved res
 
 ## Packaged skills
 
-Eight intent skills were added. The original six names remain compatible. There are 14 live
-skills in total. `metadata.include_tools` is a space-separated string of dispatch wrappers.
+Eight intent skills and an optional HyperFrames skill were added. The original six names
+remain compatible. There are 15 packaged skills in total. `metadata.include_tools` is a
+space-separated string of dispatch wrappers.
 `metadata.gateway_tools` records exact Gateway names separately. Abstract seed aliases never
 replace wrapper names in `include_tools`. Tests parse the actual middleware metadata and
-check every declared or body-referenced Gateway name against `configs/gateway/*.tools.json`.
+check every declared or body-referenced tool name against `configs/gateway/*.tools.json`
+and the optional local HyperFrames schema.
 
 | Skill | Dispatch tools | Gateway tools |
 | --- | --- | --- |
@@ -24,6 +26,7 @@ check every declared or body-referenced Gateway name against `configs/gateway/*.
 | [continuity-qc](../agent/deep_agent/skills/continuity-qc/SKILL.md) | `call_media_tool` | `Fal___text_to_video`<br>`Fal___get_video_task` |
 | [edit-v2v](../agent/deep_agent/skills/edit-v2v/SKILL.md) | `call_media_tool` | `Fal___video_to_video`<br>`Fal___get_video_task`<br>`Fal___list_fal_models`<br>`Runway___video_to_video`<br>`Runway___get_runway_task`<br>`Runway___list_runway_models`<br>`Luma___modify_video`<br>`Luma___get_video_task`<br>`Luma___list_luma_models` |
 | [final-assembly](../agent/deep_agent/skills/final-assembly/SKILL.md) | `call_editor_tool` | `Remotion___export_nle_timeline`<br>`Remotion___get_render_progress`<br>`Remotion___render_timeline` |
+| [hyperframes](../agent/deep_agent/skills/hyperframes/SKILL.md) | `call_editor_tool`<br>`call_audio_tool` | Local `HyperFrames___render_composition`<br>`ElevenLabs___text_to_speech_convert` |
 | [i2v](../agent/deep_agent/skills/i2v/SKILL.md) | `call_media_tool` | `Fal___image_to_video`<br>`Fal___reference_to_video`<br>`Fal___get_video_task`<br>`Kling___image_to_video`<br>`Kling___get_video_task`<br>`Seedance___image_to_video`<br>`Seedance___get_video_task`<br>`Runway___image_to_video`<br>`Runway___get_runway_task`<br>`Seedream___text_to_image`<br>`Seedream___image_to_image`<br>`Luma___image_to_video`<br>`Luma___get_video_task`<br>`Luma___list_luma_models` |
 | [motion-graphics](../agent/deep_agent/skills/motion-graphics/SKILL.md) | `call_editor_tool`<br>`call_media_tool` | `Remotion___render_timeline`<br>`Remotion___get_render_progress`<br>`Remotion___export_nle_timeline`<br>`Seedream___text_to_image`<br>`Seedream___image_to_image`<br>`Runway___text_to_image`<br>`Runway___image_to_image`<br>`Runway___get_runway_task` |
 | [product-images](../agent/deep_agent/skills/product-images/SKILL.md) | `call_media_tool` | `Runway___get_runway_task`<br>`Runway___image_to_image`<br>`Runway___text_to_image`<br>`Seedream___image_to_image`<br>`Seedream___text_to_image` |
@@ -87,8 +90,12 @@ a manifest, and media together; an alias does not imply a separate Gateway tool.
 
 ## Offline routing verification
 
-`tests/fixtures/skill_routing.json` retains all 55 rows exported from the workbook.
-There are **21 active** cases and **34 skipped** cases. Each skip is a generated unittest
+`tests/fixtures/skill_routing.json` retains the original 55 workbook rows and three
+additional HyperFrames rows, for **58 total**, **23 active**, and **35 skipped** cases.
+The HyperFrames CSV's seven motion-graphics rows already exist and are not duplicated.
+HyperFrames cases explicitly enable the dry-run tool. The Ideogram-dependent Remotion
+asset row is skipped because the required generation provider remains unavailable.
+Each skip is a generated unittest
 with its concrete pending-provider or integration reason, not a dropped fixture row.
 An active case asserts the selected skill and proposed exact Gateway name through the same
 router used by the runner. Five Resolve suites need a local bridge or transcription/import
@@ -102,6 +109,48 @@ quotes, concurrent and interrupted spending, and injected continuity embeddings.
 `test_provider_ladder.py` adds capability/tier/cost ordering, confidential project context,
 review provenance, retry recovery, and compiled fake-model approval-interrupt checks. These
 checks make no live or paid provider calls and download no weights.
+
+## Optional HyperFrames compositions
+
+The [HyperFrames skill](../agent/deep_agent/skills/hyperframes/SKILL.md) adapts selected
+Apache-2.0 guidance for faceless explainers, product launches, captions with supplied
+timings, and kinetic titles. There are now 15 packaged skills. The
+[assessment](HYPERFRAMES_ASSESSMENT.md) records all 21 upstream skill decisions,
+runtime requirements, and hosted HeyGen exclusions. Attribution and modifications
+appear in [third-party notices](THIRD_PARTY_NOTICES.md).
+
+| Contract | Behavior |
+| --- | --- |
+| `metadata.include_tools` | `call_editor_tool call_audio_tool` |
+| `metadata.gateway_tools` | `HyperFrames___render_composition ElevenLabs___text_to_speech_convert` |
+| `HYPERFRAMES_ENABLED` | Defaults to `false`. Explicit HyperFrames requests are blocked while disabled. |
+| `HYPERFRAMES_DRY_RUN` | Defaults to `true`. The optional local tool validates input and returns preview metadata. |
+| Live rendering | Returns `not_run` because an isolated renderer is not configured, even when dry-run is disabled. |
+| Compute estimate | Unknown. Non-autonomous dispatch pauses, and an autonomous cap blocks an unknown quote. |
+| Confidential projects | The existing executor allowlist blocks HyperFrames previews. No confidentiality gate is relaxed. |
+
+`HyperFrames___render_composition` is an implemented local tool with an MCP-shaped
+schema in `agent/hyperframes.py`. Deep Agents injects it only when enabled. It is
+not a deployed Gateway Lambda target, so it has no entry in the provider catalog or
+`configs/gateway`. Skill contract checks include this local schema alongside the
+remote Gateway schemas. Discover it through `read_studio_context`; use its exact
+schema and the editor dispatch wrapper. No renderer dependencies enter the Lambda ZIP.
+
+Remotion stays the default for unnamed motion graphics and explicit Remotion requests,
+including "Remotion lower thirds". Explicit HyperFrames requests take priority over
+generic kinetic-title and video rules. A request for HyperFrames with ElevenLabs VO
+selects the HyperFrames skill and the existing speech tool as its first step.
+The feature flag makes HyperFrames available and does not reroute unnamed requests.
+
+The tool previews HTML and output settings without executing scripts, fetching assets,
+producing frames, or creating a media artifact. Schema validation is not HyperFrames
+lint or visual validation. Dry-run and blocked results leave video delivery incomplete.
+The approval exemption set, premium-video policy, provider ladder, and spending cap
+remain unchanged. HyperFrames outputs are never continuity training inputs.
+
+TODOs are the isolated Node/Chromium/FFmpeg worker, local dependency and managed-media
+staging, lint and proof-frame inspection, actual MP4 playback, and any hosted-service
+terms and pricing review. Comet E2E remains blocked in this environment.
 
 ## Provider, model, licence, and region policy
 
@@ -346,4 +395,4 @@ Luma landed on staging after this branch was cut, so it was wired in during the 
 - Policy: `providers.luma` is enabled, licence `service-terms`, model `ray-3.2` only, no region gate, `training_eligible: false`.
 - `Luma` is a premium target (`text_to_video`, `image_to_video`, `extend_video`, `modify_video`), so its paid calls pause for approval with the `cost_for` estimate even in autonomous runs; `list_luma_models` and `get_video_task` are free.
 - Estimates come from the official Ray 3.2 table in `server/billing_rates.py`; settings without a published price (e.g. 360p extend, non-5/10 s modify sources) show as unknown.
-- The routing fixture's Luma case is active: 21 active and 34 skipped routing cases.
+- The routing fixture's Luma case remains active; the current fixture has 23 active and 35 skipped cases.

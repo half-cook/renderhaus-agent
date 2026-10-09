@@ -8,6 +8,9 @@ metadata:
 
 # Motion graphics
 
+Remotion is the default renderer. For an explicit HyperFrames request, read
+[HyperFrames](../hyperframes/SKILL.md) and follow the host's optional-tool route.
+
 Read `read_studio_context` and reuse existing assets. Search Gateway for Remotion's
 exact `render_timeline` schema. `remotion_render` maps to `Remotion___render_timeline`
 through `call_editor_tool`. Build its native `title`, `visuals`, `audio_tracks`,
