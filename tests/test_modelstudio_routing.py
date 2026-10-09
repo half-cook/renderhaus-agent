@@ -134,6 +134,9 @@ class ModelStudioGraphTests(unittest.IsolatedAsyncioTestCase):
                                      ("blocked", "named-provider", alias, None))
                     self.assertIn("licence blocked", route.reason)
                     self.assertIn("preview", route.reason)
+                    self.assertIn("Alibaba preview terms", route.disclosure)
+                    self.assertIn("internal testing", route.disclosure)
+                    self.assertIn("until GA", route.disclosure)
                     request = StudioAgentRequest(prompt=prompt, autonomous=True, job_id="preview-guard")
                     gateway = Gateway([Tool(name=tool, inputSchema={"type": "object"})])
                     result = await GatewayExecutor(_context_from_request(request), [gateway]).execute(
