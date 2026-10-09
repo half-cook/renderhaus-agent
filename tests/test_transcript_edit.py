@@ -266,6 +266,14 @@ class TranscriptEditTests(unittest.TestCase):
         self.assertEqual(subtitles["items"][0]["fadeIn"], 0)
         self.assertEqual(subtitles["items"][0]["fadeOut"], 0)
 
+    def test_one_frame_subtitle_without_fade_fields_is_visible(self) -> None:
+        text = {"text": "Yes", "start_seconds": 0, "duration_seconds": 1 / 30}
+        props = api.build_timeline_props("Cut", [{"kind": "video", "url": "https://example.test/a.mp4",
+                                                   "duration_seconds": 1}], subtitles=[text])
+        caption = props["document"]["tracks"][-1]["items"][0]
+        self.assertEqual(caption["fadeIn"], 0)
+        self.assertEqual(caption["fadeOut"], 0)
+
     def test_render_contract_rejects_invalid_grade_fades_and_subtitles(self) -> None:
         schema = schema_for("render_timeline")
         base = {"title": "Cut", "visuals": [{"kind": "video", "url": "https://example.test/a.mp4",

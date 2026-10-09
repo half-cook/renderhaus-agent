@@ -196,7 +196,9 @@ async def run_with_servers(request, studio, servers, *, model=None):
     def approval_description(tool_call, state, runtime):
         name, arguments = _gateway_action({"name": tool_call["name"], "args": tool_call["args"]})
         route = executor.media_selection(name, arguments)
-        return f"Approve {name}. {route.disclosure if route else estimate_cost(name, arguments).description}"
+        plan = arguments.get("plan_summary", "") if name == "Remotion___prepare_conversational_edit" else ""
+        proposal = f"{plan} " if plan else ""
+        return f"Approve {name}. {proposal}{route.disclosure if route else estimate_cost(name, arguments).description}"
 
     interrupt_on = {
         name: {"allowed_decisions": ["approve", "reject"], "when": needs_approval,
@@ -207,7 +209,8 @@ async def run_with_servers(request, studio, servers, *, model=None):
         ("planner", "Plan a brief and still-first storyboard without calling paid media tools.", []),
         ("media", "Generate, edit or refine stills and video shots with Seedream, Seedance, Kling, Runway, fal Wan VACE and Luma.", [dispatch_tools[0]]),
         ("audio", "Produce voiceover, music and sound effects using audio providers.", [dispatch_tools[1]]),
-        ("editor", "Assemble approved assets into a final Remotion MP4 and poll it to completion, "
+        ("editor", "Edit existing footage from a word-level transcript after cut-plan confirmation, "
+                   "assemble approved assets into a final Remotion MP4 and poll it to completion, "
                    "or export an NLE handoff (OTIO/FCPXML/EDL) for DaVinci Resolve.", [dispatch_tools[2]]),
         ("general-purpose", "Plan or research the current project without provider dispatch.", []),
     ]

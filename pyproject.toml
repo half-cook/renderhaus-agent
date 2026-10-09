@@ -45,6 +45,7 @@ include = ["agent*", "server*", "lambdas*", "providers*"]
 
 [tool.setuptools]
 include-package-data = true
+license-files = ["third_party/video-use/LICENSE"]
 
 [tool.setuptools.package-data]
 "providers.elevenlabs" = ["openapi.json"]

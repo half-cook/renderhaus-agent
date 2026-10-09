@@ -325,7 +325,9 @@ def cost_for(provider: str, tool: str, arguments: dict[str, Any]) -> GenerationC
     """
     if provider == "kling":
         return _kling_cost(tool, arguments)
-    if tool in POLLING_TOOLS or (provider == "remotion" and tool == "export_nle_timeline"):
+    if tool in POLLING_TOOLS or (provider == "remotion" and tool in {
+        "export_nle_timeline", "prepare_conversational_edit",
+    }):
         return GenerationCost(provider_cents=0, fee_cents=0)
     if provider == "runway":
         return _runway_cost(tool, arguments)

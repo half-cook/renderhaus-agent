@@ -315,8 +315,9 @@ def build_timeline_props(
         text_items: list[dict[str, Any]] = []
         for index, overlay in enumerate(items or []):
             duration = float(overlay["duration_seconds"])
-            fade_in = float(overlay.get("fade_in_seconds", 0.2))
-            fade_out = float(overlay.get("fade_out_seconds", 0.2))
+            default_fade = 0.2 if item_prefix == "text" else 0
+            fade_in = float(overlay.get("fade_in_seconds", default_fade))
+            fade_out = float(overlay.get("fade_out_seconds", default_fade))
             if item_prefix == "text":
                 fade_in = fade_in or 0.2
                 fade_out = fade_out or 0.2

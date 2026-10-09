@@ -142,10 +142,10 @@ export function timelineSegments(args: Record<string, unknown>, assets: StudioAs
   const occurrences = new Map<string, number>();
   const trackEnds = new Map<string, number | undefined>();
   let visualEnd: number | undefined = 0;
-  for (const field of ["visuals", "audio_tracks", "text_overlays"] as const) {
+  for (const field of ["visuals", "audio_tracks", "text_overlays", "subtitles"] as const) {
     rows(args[field]).forEach((clip, index) => {
-      const kind = field === "text_overlays" ? "text" : field === "audio_tracks" ? "audio" : clip.kind === "video" ? "video" : "image";
-      const track = field === "visuals" ? `V${Math.max(0, Math.min(Math.trunc(finite(clip.track) ?? 0), 8)) + 1}` : field === "audio_tracks" ? `A${index + 1}` : "T1";
+      const kind = field === "text_overlays" || field === "subtitles" ? "text" : field === "audio_tracks" ? "audio" : clip.kind === "video" ? "video" : "image";
+      const track = field === "visuals" ? `V${Math.max(0, Math.min(Math.trunc(finite(clip.track) ?? 0), 8)) + 1}` : field === "audio_tracks" ? `A${index + 1}` : field === "subtitles" ? "S1" : "T1";
       const sourceKey = safeSource(clip.url);
       const source = kind === "text" ? "" : sourceName(sourceKey, assets);
       const versionId = sourceKey.startsWith("renderhaus-asset://") ? sourceKey.slice("renderhaus-asset://".length) : undefined;
@@ -193,6 +193,7 @@ export function timelineSegments(args: Record<string, unknown>, assets: StudioAs
         textProperty("transition", "cut");
         textProperty("fit", "cover");
         textProperty("motion", "none");
+        textProperty("grade", "none");
       }
       if (kind === "text") {
         textProperty("position", "center");
@@ -209,8 +210,12 @@ export function timelineSegments(args: Record<string, unknown>, assets: StudioAs
       const visualFade = properties.transition && properties.transition !== "cut" ? duration !== undefined ? Math.min(0.35, duration / 3) : undefined : 0;
       // Text fades are normalized before the renderer clips the visible title at the movie end.
       const fadeLimit = kind === "text" ? requestedDuration : duration;
-      numberProperty("fade_in_seconds", kind === "text" ? 0.2 : field === "visuals" ? visualFade : 0, 0, fadeLimit ?? Infinity, kind === "text");
-      numberProperty("fade_out_seconds", kind === "text" ? 0.2 : field === "visuals" ? visualFade : 0.75, 0, fadeLimit ?? Infinity, kind === "text");
+      numberProperty("fade_in_seconds", field === "subtitles" ? 0 : kind === "text" ? 0.2 : field === "visuals" ? visualFade : 0, 0, fadeLimit ?? Infinity, field === "text_overlays");
+      numberProperty("fade_out_seconds", field === "subtitles" ? 0 : kind === "text" ? 0.2 : field === "visuals" ? visualFade : 0.75, 0, fadeLimit ?? Infinity, field === "text_overlays");
+      if (field === "visuals") {
+        numberProperty("audio_fade_in_seconds", properties.fade_in_seconds === "Unknown" ? undefined : Number(properties.fade_in_seconds), 0, duration ?? Infinity);
+        numberProperty("audio_fade_out_seconds", properties.fade_out_seconds === "Unknown" ? undefined : Number(properties.fade_out_seconds), 0, duration ?? Infinity);
+      }
       result.push({ id: `${identity}:${occurrence}`, identity, kind, track, ordinal: result.length + 1, start, end, duration, sourceStart, asset, source, sourceKey, label, properties });
     });
   }

@@ -337,6 +337,8 @@ class StudioAgentContext:
         arguments: dict[str, Any],
     ) -> dict[str, Any]:
         """Resolve opaque Studio asset handles only at the provider boundary."""
+        if _tool_name == "Remotion___prepare_conversational_edit":
+            return dict(arguments)
         if _tool_name.startswith("Runway___"):
             from server.runway_inputs import prepare_runway_arguments
 
@@ -1379,7 +1381,8 @@ def _approval_request(item: Any) -> StudioApprovalRequest:
         arguments=arguments,
         provider=provider.lower() if provider else None,
         estimated_cost=quote.public(),
-        description=quote.description,
+        description=(f"{arguments.get('plan_summary', '')} {quote.description}".strip()
+                     if name == "Remotion___prepare_conversational_edit" else quote.description),
     )
 
 

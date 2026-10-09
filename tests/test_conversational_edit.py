@@ -238,11 +238,9 @@ class ConversationalGraphTests(unittest.IsolatedAsyncioTestCase):
             restored = await self.invoke(self.request(
                 autonomous=True, session_items=studio.session_items, resume_state=pending.exception.state,
                 approval_decisions=[StudioApprovalDecision(call_id=approval.call_id, decision="approve")],
-            ), [render, call("call_editor_tool", {
-                "tool_name": "Remotion___get_render_progress", "arguments": {"render_id": "dry-run"},
-            }, "poll"), final()], gateway)
-            self.assertEqual(gateway.call_tool.await_count, 3)
-            self.assertEqual([event.status for event in restored.tool_events], ["dry_run"] * 3)
+            ), [render, final()], gateway)
+            self.assertEqual(gateway.call_tool.await_count, 2)
+            self.assertEqual([event.status for event in restored.tool_events], ["dry_run"] * 2)
             self.assertFalse(restored.session_items[0]["media_jobs"])
             self.assertFalse(list(Path(directory).glob("*.jsonl")))
             self.assertTrue(all(not event.assets for event in restored.tool_events))
