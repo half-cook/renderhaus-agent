@@ -366,9 +366,9 @@ def enrich_tool_schema(provider_id: str, tool: dict[str, Any]) -> dict[str, Any]
         )
         properties["output_filename"]["description"] = "ZIP download filename; directory components are removed."
     if provider_id == "fal":
-        from providers.fal import vidu, wan3, motion
+        from providers.fal import vidu, wan3, motion, mirelo
 
-        for contract in (vidu, wan3, motion):
+        for contract in (vidu, wan3, motion, mirelo):
             if tool_name in contract.TOOL_ENDPOINTS:
                 for field, description in contract.FIELD_DESCRIPTIONS.items():
                     if field in properties:
@@ -498,8 +498,9 @@ def _validate_cross_fields(provider_id: str, tool_name: str, arguments: dict[str
 
         validate_runway_arguments(tool_name, arguments)
     if provider_id == "fal":
-        from providers.fal import vidu, wan, wan3, motion
+        from providers.fal import vidu, wan, wan3, motion, mirelo
 
+        mirelo.validate_arguments(tool_name, arguments)
         motion.validate_arguments(tool_name, arguments)
         wan3.validate_arguments(tool_name, arguments)
         wan.validate_arguments(tool_name, arguments)
@@ -618,6 +619,10 @@ def validate_tool_arguments(
     input_schema: dict[str, Any],
 ) -> dict[str, Any]:
     """Validate every Gateway call at the last boundary before provider I/O."""
+    if provider_id == "fal" and tool_name == "mirelo_v2a":
+        from providers.fal.mirelo import validate_arguments
+
+        validate_arguments(tool_name, arguments or {})
     if provider_id == "heygen":
         from providers.heygen.contracts import validate_arguments
 
@@ -673,7 +678,7 @@ def argument_rules(provider_id: str, tool_name: str) -> dict[str, ArgumentRule]:
 
         return ARGUMENT_RULES.get(tool_name, {})
     if provider_id == "fal":
-        from providers.fal import vidu, wan, wan3
+        from providers.fal import vidu, wan, wan3, mirelo
 
-        return {**wan.ARGUMENT_RULES, **vidu.ARGUMENT_RULES, **wan3.ARGUMENT_RULES}.get(tool_name, {})
+        return {**wan.ARGUMENT_RULES, **vidu.ARGUMENT_RULES, **wan3.ARGUMENT_RULES, **mirelo.ARGUMENT_RULES}.get(tool_name, {})
     return TOOL_ARGUMENT_RULES.get(provider_id, {}).get(tool_name, {})

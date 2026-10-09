@@ -83,6 +83,7 @@ TOOL_GUIDANCE: dict[str, dict[str, str]] = {
         "list_runway_models": "List locally documented supported Runway models and limits. Free, no API request. This catalog does not verify account access or live model availability.",
     },
     "fal": {
+        "mirelo_v2a": "Video-input SFX default Mirelo SFX 1.6 via fal. Required video_url, optional text_prompt, duration 1-60 seconds, num_samples 1-4, optional seed. Renderhaus defaults to one sample; samples 2-4 are dry-run only with cost unknown. Returns videos with generated audio tracks, not a separate audio file. Paid video requires cost approval even autonomous when premium_video_approval is enabled. Poll get_video_task with download=true and play the saved MP4. Commercial API; outputs are not training eligible.",
         "kling_motion_control": "Full-body performance transfer exception through fal Kling 3 Pro Motion Control. Require image_url, video_url, measured performance_duration_seconds 3-30, subjects and consent_confirmed=true for every face, voice and body. character_orientation defaults video; image orientation max 10s. keep_original_sound defaults true. Always pause with cost even autonomous. Poll get_video_task with download=true. Dry-run produces no media; outputs never enter training.",
         "text_to_video": "Generate a Wan VACE clip from text. Returns job_id; poll get_video_task with download=true until terminal.",
         "image_to_video": "Animate first_frame_url using Wan VACE. Returns job_id; poll get_video_task with download=true until terminal.",

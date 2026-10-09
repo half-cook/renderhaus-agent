@@ -2,6 +2,20 @@ import type { AgentToolEvent, CreativeNodeKind, PortDataType, ToolDefinition } f
 
 const CREATIVE_TOOLS: ToolDefinition[] = [
   {
+    id: "video.mirelo.foley",
+    displayName: "Mirelo video foley",
+    description: "Use chat to approve synchronized SFX with a cost estimate",
+    category: "video",
+    providerId: "fal",
+    toolName: "mirelo_v2a",
+    inputPorts: [{ id: "video", label: "Silent video", dataType: "video", targetField: "video_url", required: true }],
+    outputPorts: [{ id: "video", label: "Video with SFX", dataType: "video" }],
+    primaryFields: ["video_url", "text_prompt", "duration", "num_samples", "seed"],
+    pollTool: "get_video_task",
+    pollIntervalMs: 5000,
+    defaults: { duration: 10, num_samples: 1 },
+  },
+  {
     id: "video.topaz.upscale",
     displayName: "Topaz Starlight upscale",
     description: "Use chat to approve finishing with a cost estimate",

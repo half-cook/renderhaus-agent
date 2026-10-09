@@ -19,7 +19,7 @@ from urllib.parse import urlsplit
 import httpx
 
 from providers.contracts import validate_tool_arguments
-from providers.fal import queue, vidu, wan, wan3, motion
+from providers.fal import queue, vidu, wan, wan3, motion, mirelo
 from providers.registry import schema_from_callable
 from providers.seedance import contracts as seedance_contracts
 from providers.sync import contracts as sync_contracts
@@ -27,8 +27,8 @@ from providers.topaz import contracts as topaz_contracts
 from providers.mureka import contracts as mureka_contracts
 
 
-TOOL_CONTRACTS = {tool: contract for contract in (wan, vidu, wan3, motion) for tool in contract.GENERATING_TOOLS}
-ENDPOINT_CONTRACTS = {endpoint: contract for contract in (wan, vidu, wan3, motion, seedance_contracts, sync_contracts, topaz_contracts, mureka_contracts) for endpoint in contract.ENDPOINTS}
+TOOL_CONTRACTS = {tool: contract for contract in (wan, vidu, wan3, motion, mirelo) for tool in contract.GENERATING_TOOLS}
+ENDPOINT_CONTRACTS = {endpoint: contract for contract in (wan, vidu, wan3, motion, mirelo, seedance_contracts, sync_contracts, topaz_contracts, mureka_contracts) for endpoint in contract.ENDPOINTS}
 
 
 def _validated(tool: str, arguments: dict[str, Any]) -> dict[str, Any]:
@@ -70,7 +70,11 @@ def _submit(tool: str, arguments: dict[str, Any]) -> dict[str, Any]:
     arguments = _validated(tool, arguments)
     contract = TOOL_CONTRACTS[tool]
     endpoint, body = contract.request_body(tool, arguments)
-    if contract is motion:
+    if contract is mirelo:
+        from server.billing_rates import mirelo_price_cents
+
+        estimate = mirelo_price_cents(arguments)
+    elif contract is motion:
         from server.billing_rates import motion_control_price_cents
 
         estimate = motion_control_price_cents(arguments)
@@ -82,12 +86,13 @@ def _submit(tool: str, arguments: dict[str, Any]) -> dict[str, Any]:
         estimate = None
     if queue.dry_run():
         preview = {}
-        if contract in (wan3, motion):
+        if contract in (wan3, motion, mirelo):
             preview = {
                 "request_preview": body,
                 "estimated_cost_usd": float(estimate / 100) if estimate is not None else None,
                 "cost_estimate": (
-                    "unknown (smart duration)" if estimate is None
+                    "unknown (multi-sample billing UNVERIFIED)" if estimate is None and contract is mirelo
+                    else "unknown (smart duration)" if estimate is None
                     else f"${estimate / 100:.2f} provider estimate before Renderhaus fee"
                 ),
             }
@@ -102,7 +107,12 @@ def _submit(tool: str, arguments: dict[str, Any]) -> dict[str, Any]:
             **contract.TRAINING_METADATA,
             "note": "No fal request made. Set FAL_DRY_RUN=false for live generation.",
         }
-    if contract is wan3:
+    if contract is mirelo:
+        if arguments["video_url"].startswith("renderhaus-asset://"):
+            raise ValueError("Studio asset handles must resolve to authorized HTTPS media before live Mirelo submission.")
+        if estimate is None:
+            raise ValueError("Mirelo multi-sample cost unknown; num_samples > 1 is dry-run only until official billing is verified.")
+    elif contract is wan3:
         if estimate is None:
             raise ValueError(
                 "Wan 3 smart duration is dry-run only until actual billing reconciliation "
@@ -160,6 +170,17 @@ def text_to_video(
 ) -> dict:
     """Submit text-only Wan VACE freeform generation; poll get_video_task."""
     return _submit("text_to_video", locals())
+
+
+def mirelo_v2a(
+    video_url: str,
+    text_prompt: str | None = None,
+    duration: float = 10,
+    num_samples: int = 1,
+    seed: int | None = None,
+) -> dict:
+    """Add picture-synced Mirelo SFX to video; cost approval then poll get_video_task."""
+    return _submit("mirelo_v2a", locals())
 
 
 def kling_motion_control(
@@ -401,7 +422,8 @@ def _poll_video_task(job_id: str, endpoint_id: str, request_id: str, *, download
             "error": result.get("error"),
             "error_type": result.get("error_type"),
         }
-    video = result.get("video")
+    videos = mirelo.result_videos(result) if contract is mirelo else None
+    video = videos[0] if videos else result.get("video")
     video_url = video.get("url") if isinstance(video, dict) else None
     if not isinstance(video_url, str):
         raise RuntimeError("Completed fal result did not contain an HTTP(S) video.url.")
@@ -419,6 +441,8 @@ def _poll_video_task(job_id: str, endpoint_id: str, request_id: str, *, download
         "downloaded": output_path.exists(),
         "seed": result.get("seed"),
     }
+    if videos:
+        normalized["videos"] = videos
     if contract is wan3:
         normalized.update(duration=result.get("duration"), actual_prompt=result.get("actual_prompt"))
     if contract not in (sync_contracts, topaz_contracts, mureka_contracts):
@@ -446,7 +470,8 @@ def list_fal_models() -> dict:
             {"id": endpoint, "license": "service-terms", **vidu.TRAINING_METADATA}
             for endpoint in vidu.ENDPOINTS
         ] + [{"id": endpoint, **wan3.TRAINING_METADATA} for endpoint in wan3.ENDPOINTS]
-        + [{"id": endpoint, **motion.TRAINING_METADATA} for endpoint in motion.ENDPOINTS],
+        + [{"id": endpoint, **motion.TRAINING_METADATA} for endpoint in motion.ENDPOINTS]
+        + [{"id": endpoint, **mirelo.TRAINING_METADATA} for endpoint in mirelo.ENDPOINTS],
         "endpoints": [
             {
                 "id": endpoint.id,
@@ -515,12 +540,23 @@ def list_fal_models() -> dict:
              "price_unit": "video_second", "pricing_checked_at": "2026-10-09",
              "usd_per_unit": "0.168", "pricing_confirmed": True,
              **motion.TRAINING_METADATA}
+        ] + [
+            {"id": mirelo.ENDPOINT_ID, "model": mirelo.ENDPOINT_ID,
+             "endpoint_id": mirelo.ENDPOINT_ID, "mode": "mirelo_v2a",
+             "api_url": f"https://fal.ai/models/{mirelo.ENDPOINT_ID}/api",
+             "pricing_url": f"https://fal.ai/models/{mirelo.ENDPOINT_ID}",
+             "price_unit": "generated_second_single_sample", "pricing_checked_at": "2026-10-09",
+             "usd_per_unit": "0.01", "pricing_confirmed": True,
+             "multi_sample_pricing": "UNVERIFIED; dry-run only; estimate unknown",
+             "duration_range": [1, 60], "num_samples_range": [1, 4],
+             **mirelo.TRAINING_METADATA}
         ],
         "note": "Static documented catalog. Does not confirm account access. fal hosted Terms of Service apply.",
     }
 
 
 TOOL_HANDLERS = {
+    "mirelo_v2a": mirelo_v2a,
     "kling_motion_control": kling_motion_control,
     "text_to_video": text_to_video,
     "image_to_video": image_to_video,

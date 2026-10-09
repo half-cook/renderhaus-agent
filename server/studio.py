@@ -717,6 +717,8 @@ async def invoke_tool(body: InvokeBody, auth: AuthUser) -> dict[str, Any]:
         raise HTTPException(status_code=409, detail="Use the agent finishing workflow for required cost approval before Topaz processing.")
     if body.provider == "mureka" and body.tool == "generate_lyrics_video":
         raise HTTPException(status_code=409, detail="Use the agent lyrics-video workflow for required cost approval before Mureka video generation.")
+    if (body.provider, body.tool) == ("fal", "mirelo_v2a"):
+        raise HTTPException(status_code=409, detail="Use the agent SFX workflow for required cost approval before Mirelo video processing.")
     if (body.provider, body.tool) in {("runway", "act_two"), ("fal", "kling_motion_control")}:
         raise HTTPException(status_code=409, detail="Use the agent performance-transfer workflow for required consent and cost approval.")
     cleaned = _tool_arguments(body.provider, body.tool, body.arguments)
@@ -1172,6 +1174,7 @@ _MEDIA_CREATION_TOOLS = frozenset(
         "image_to_video",
         "reference_to_video",
         "video_to_video",
+        "mirelo_v2a",
         "render_timeline",
         "text_to_music",
         "create_instrumental",

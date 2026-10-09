@@ -33,7 +33,7 @@ exact Gateway names, native arguments, and operational constraints.
 | --- | --- | --- |
 | [act-two](../agent/deep_agent/skills/act-two/SKILL.md) | `call_media_tool` | `runway_act_two`<br>`kling_motion_control` |
 | [audio](../agent/deep_agent/skills/audio/SKILL.md) | `call_audio_tool` | `eleven_v4_turbo`<br>`voices_ivc_create`<br>`mureka_v95`<br>`mirelo_v2a`<br>`elevenlabs_sfx_v2` |
-| [audio-bed](../agent/deep_agent/skills/audio-bed/SKILL.md) | `call_audio_tool` | `eleven_v4_turbo`<br>`voices_ivc_create`<br>`mureka_v95`<br>`mirelo_v2a`<br>`elevenlabs_sfx_v2` |
+| [audio-bed](../agent/deep_agent/skills/audio-bed/SKILL.md) | `call_audio_tool`<br>`call_media_tool` | `eleven_v4_turbo`<br>`voices_ivc_create`<br>`mureka_v95`<br>`mirelo_v2a`<br>`elevenlabs_sfx_v2` |
 | [continuity-qc](../agent/deep_agent/skills/continuity-qc/SKILL.md) | `call_media_tool` | `local_qc`<br>`gemini_vlm_judge` |
 | [conversational-edit](../agent/deep_agent/skills/conversational-edit/SKILL.md) | `call_editor_tool`<br>`call_audio_tool` | `remotion_render`<br>`hyperframes_render` |
 | [edit-v2v](../agent/deep_agent/skills/edit-v2v/SKILL.md) | `call_media_tool` | `wan3_edit`<br>`wan3_extend`<br>`seedance25_edit`<br>`seedance25_extend` |
@@ -82,7 +82,7 @@ Dialogue without real-person references selects the Seedance exception. Real-per
 references force Wan and prohibit Seedance or Omni, including the Seedance interim. Real-face Wan 3 dispatch requires an explicit likeness_consent acknowledgement. Vector output selects pending Recraft. Text-only edits
 on an existing image select pending Ideogram; Ideogram generation without an edit image selects
 the GPT generation default. Full-body motion selects built Kling Motion Control on fal; facial and
-upper-body acting select built Act-Two on Runway. Video-synchronized SFX remains pending Mirelo, while
+upper-body acting select built Act-Two on Runway. Video-synchronized SFX uses built Mirelo on fal, while
 text-only effects use built ElevenLabs. Requests over 30 seconds need supported shot splitting
 or a refusal; long presenter/digital-twin videos use the HeyGen exception.
 
@@ -203,7 +203,7 @@ and queued jobs never satisfy final delivery. See [Topaz](TOPAZ.md) for pricing,
 sources, unknown-price blockers and the blocked Comet check.
 
 `tests/fixtures/skill_routing.json` contains 129 retained routing rows.
-There are 113 active cases and 16 explicit skips. Seven performance-transfer cases now use built tools. Three Mureka lyrics-video cases
+There are 116 active cases and 13 explicit skips. Seven performance-transfer cases now use built tools. Three Mureka lyrics-video cases
 now use built tools; music routes use Mureka without an ElevenLabs interim. Five Topaz upscale/interpolation cases
 now use built tools. Seedance reference dialogue and two
 previously licence-skipped edit cases now use built Seedance tools. The extension increment
@@ -391,8 +391,7 @@ distributed billing guarantee. Durability still depends on the host persisting `
 
 Installed skills distinguish a built dispatch tool from a pending routing alias.
 `docs/skills-drafts/` keeps pending adapter references and retired historical guidance.
-Mirelo, Recraft and Ideogram edit await their
-named branches. MMAudio, ACE-Step and Veo references are retired, not future activation plans.
+Recraft and Ideogram edit await their named branches. MMAudio, ACE-Step and Veo references are retired, not future activation plans.
 Transcript cuts, silence removal and captions are folded into conversational-edit. NLE re-import
 still needs feat/nle-import-fcpxml. File export does not control Resolve, establish a graded
 round trip, or provide AAF. Fish discovery remains conditional.
@@ -494,7 +493,7 @@ Mureka V9.5 is the music default on fal, with instrumental beds and songs under
 lyrics-video skills now use six `Mureka___` tools; no new skill directory was needed.
 Lyrics video always pauses with cost, including autonomous runs. Raw audio/TTS
 upload preparation remains blocked until the upload and recognition APIs are wired.
-There are 14 providers, 107 Gateway tools and 24 packaged skills. See
+There are 14 providers, 108 Gateway tools and 24 packaged skills. See
 [Mureka](MUREKA.md) for contracts, official dated prices, licences and blocked Comet E2E.
 
 ## Performance transfer
@@ -503,3 +502,7 @@ The act-two skill now dispatches Runway Act-Two by default and fal Kling 3 Pro M
 for full-body movement. Both require subject consent and cost approval even in autonomous runs.
 Long Act-Two sources use sequential 3-30s shot/silence segments and the existing Remotion assembly.
 See [performance contracts, prices and limits](PERFORMANCE_TRANSFER.md). Browser E2E remains blocked.
+
+## Picture-synchronized SFX
+
+The audio-bed skill now exposes `Fal___mirelo_v2a` and reuses `Fal___get_video_task` through the manager/media role. Video input selects Mirelo; text-only effects select ElevenLabs SFX. Explicit requests win. Mirelo returns video with audio and pauses with cost even in autonomous runs under the paid-video policy. Samples 2–4 remain dry-run-only because their billing is unverified. Three SFX rows are activated, leaving 116 active routing cases and 13 skips. No skill directory was added. See [Mirelo](MIRELO.md) for sources, contracts and pending playback/A/B validation.

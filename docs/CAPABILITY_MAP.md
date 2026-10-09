@@ -41,7 +41,7 @@ licence block remains. BytePlus is optional only for authorized non-US platform 
 - `vector_output`: SVG/vector/logo output → Recraft. Ideogram generation without an existing image uses the GPT Image default; only `text_only_edit` selects Ideogram editing.
 - `full_body_motion`: dance/body motion → Kling Motion Control. `facial_performance`: facial expression/performance → Act-Two. Body motion wins when both apply.
 - `duration_over_30s`: generation/performance single shots over 30 seconds are blocked with a split-into-shots reason. A long presenter/digital twin lipsync request uses pending HeyGen Avatar V.
-- `text_only_sfx`: a sound request without source video → built ElevenLabs SFX v2. Source-video Foley → pending Mirelo. Its verified endpoint returns muxed videos and is included in the paid-video approval gate.
+- `text_only_sfx`: a sound request without source video → built ElevenLabs SFX v2. Source-video Foley → built Mirelo. Its verified endpoint returns muxed videos and is included in the paid-video approval gate.
 - `explicit_html_template`: explicit HTML/CSS/web template request → flag-gated HyperFrames; ordinary motion graphics uses Remotion.
 - `linear_fps`: built Topaz interpolation with Chronos rather than the default Apollo; explicit model requests still win. See [Topaz](TOPAZ.md).
 
@@ -49,7 +49,7 @@ licence block remains. BytePlus is optional only for authorized non-US platform 
 
 Kling generation/Omni, Runway Gen-4.5/Aleph/Gen-4 Image, Luma, Vidu Q4, Seedream, Fish Audio, ElevenLabs music and Wan 2.x VACE remain built. Named requests use their existing tools with “explicit request; not the default for <capability>”. Declared interims can use demoted tools while their replacement is pending. The existing rejected-shot Wan 2.x training retry path and provenance eligibility checks remain unchanged. MiniMax H3 and Hunyuan stay blocked.
 
-All paid video pauses for approval with a cost estimate, including autonomous runs: current Seedance, Fal/Wan/Vidu, Kling, Runway, Luma and Remotion, plus built Sync, HeyGen, Topaz, Act-Two, Kling Motion and Mureka lyrics-video and the future Mirelo alias. Sync, HeyGen, Topaz, Act-Two and Kling Motion always pause even when the general premium-video switch is disabled. `premium_video_approval` / `RENDERHAUS_PREMIUM_VIDEO_APPROVAL` remains the global switch. Approval exemptions and the autonomous spending cap are unchanged; paid non-video behavior follows the existing effect classification. Voice-clone writes retain their existing autonomous behavior. Editorial cut-plan confirmation and final paid rendering remain separate approvals.
+All paid video pauses for approval with a cost estimate, including autonomous runs: current Seedance, Fal/Wan/Vidu, Kling, Runway, Luma and Remotion, plus built Sync, HeyGen, Topaz, Act-Two, Kling Motion and Mureka lyrics-video and Mirelo. Sync, HeyGen, Topaz, Act-Two and Kling Motion always pause even when the general premium-video switch is disabled. `premium_video_approval` / `RENDERHAUS_PREMIUM_VIDEO_APPROVAL` remains the global switch. Approval exemptions and the autonomous spending cap are unchanged; paid non-video behavior follows the existing effect classification. Voice-clone writes retain their existing autonomous behavior. Editorial cut-plan confirmation and final paid rendering remain separate approvals.
 
 Each dispatch publishes MODEL_UPDATE with provider, model, approval estimate and default/exception/explicit/interim reason. Unknown prices stay unknown, including in dry-run mode. The optional `ab_arm` outcome field only records a label; no A/B runner or evaluation harness is activated.
 
@@ -237,15 +237,9 @@ paid API output full usage rights and commercial authorization per FAQ; weights 
 
 ### Mirelo SFX1.6 — fal
 
-Routing IDs: `mirelo_v2a`. Official IDs: `mirelo-ai/sfx1.6/video-to-video`. Status: **verified**.
+`mirelo_v2a` now binds `Fal___mirelo_v2a` at the verified endpoint `mirelo-ai/sfx1.6/video-to-video`. The [API schema](https://fal.ai/models/mirelo-ai/sfx1.6/video-to-video/api), [price](https://fal.ai/models/mirelo-ai/sfx1.6/video-to-video) and [terms](https://fal.ai/legal/terms-of-service) were rechecked **2026-10-09**.
 
-video_url required;text_prompt,duration default10 (sliding windows >10),num_samples default2,seed; result.video[] muxed videos. Advertised up to60s. [Official API source](https://fal.ai/models/mirelo-ai/sfx1.6/video-to-video) [Official API source](https://fal.ai/models/mirelo-ai/sfx1.6/video-to-video/api)
-
-USD 0.01/second; exact per-sample multiplier requires branch schema verification. [Official pricing](https://fal.ai/models/mirelo-ai/sfx1.6/video-to-video)
-
-commercial fal API model card. `training_eligible=false`: fal third-party competing-model training restriction.. [Licence/terms source](https://fal.ai/models/mirelo-ai/sfx1.6/video-to-video)
-
-Canonical mirelo_v2a is a routing alias; verified map endpoint returns muxed videos, not bare audio. Future adapter must handle/extract audio without silently changing endpoint. Explicitly set num_samples to estimate accurately.
+Video input, optional sound prompt, duration 1–60 seconds and seed produce a list of muxed videos. Renderhaus explicitly defaults to one sample. The published rate is $0.01/second; multi-sample billing remains UNVERIFIED and samples 2–4 remain dry-run-only with an unknown quote. Commercial API terms apply, with `training_eligible=false`. Paid video approval includes autonomous runs. See [Mirelo contracts and decisions](MIRELO.md).
 
 ### ElevenLabs Eleven v4 Turbo — ElevenLabs direct
 
@@ -335,16 +329,16 @@ Apache-2.0 weights/model metadata, DINOv2 Apache-2.0 code. `training_eligible=fa
 
 - Eleven v4 Turbo ID is verified, but its public docs describe WebSocket Text-to-Dialogue. Existing HTTP TTS/dialogue compatibility is **UNVERIFIED**. Every existing HTTP speech variant defaults its model via `ELEVENLABS_TTS_MODEL=eleven_v4_turbo` and forces dry-run for that ID even when ELEVENLABS_DRY_RUN=false. A verified HTTP model can be configured explicitly. Its published WebSocket price is not installed as an HTTP billing quote; HTTP estimates remain unknown without operator rates.
 - Future provider branches must enforce typed args before paid requests, submit/poll correctly, add explicit price unit/expiry handling and validate host eligibility/licence/subject consent before live activation. The original capability-map branch required no new credentials. Sync reuses FAL_KEY; its optional authorized direct transport needs SYNC_API_KEY.
-- HeyGen and Mureka direct prices, direct Kling/Topaz prices, some model-specific training rights and direct Sync/HeyGen US eligibility remain TODO/unknown. Mureka n defaults to two songs and Mirelo num_samples defaults to two; estimate the exact requested count before submitting.
+- HeyGen and Mureka direct prices, direct Kling/Topaz prices, some model-specific training rights and direct Sync/HeyGen US eligibility remain TODO/unknown. Mureka n defaults to two songs. Mirelo explicitly defaults to one sample; its multi-sample price remains unknown.
 - New SaaS aliases are not training eligible: commercial output rights alone do not grant competing-model training rights. Existing Wan2 Apache/provenance training-flywheel behavior is preserved; host service terms still need review on any new training host.
 - Continuity remains local_qc. Gemini judge is pending and eval-gated. The research lead requires >0.85 agreement on 420 paired evaluations before replacement; no evaluations are claimed here. Omni/Flash and Vidu motion candidates remain inactive until evidence justifies a decision.
 - Retired aliases: Veo, Hedra Character3, LatentSync, LivePortrait, InfiniteTalk, SeedVR2, RIFE, ACE-Step and MMAudio. MMAudio weights are CC-BY-NC-4.0, blocked for commercial use ([official model](https://huggingface.co/hkchengrex/MMAudio)). No AGPL or non-commercial code/weights are copied or activated. Retired aliases have no dispatch binding.
 
 ## Skills and routing fixtures
 
-There are 24 packaged skills, 13 provider targets and 99 Gateway tools. No deployment is claimed. New packaged skills are image-gen, named-provider, act-two, lipsync, upscale, lyrics-video, product-demo-video and whiteboard-explainer. Vidu’s archived skill is removed; its real tools remain under named-provider. Draft alias include_tools cannot be copied verbatim into this harness: `metadata.include_tools` must contain real dispatch wrappers, `metadata.routing_tools` records the canonical aliases, and `metadata.gateway_tools` contains only built Gateway names.
+There are 24 packaged skills, 14 provider targets and 108 Gateway tools. No deployment is claimed. New packaged skills are image-gen, named-provider, act-two, lipsync, upscale, lyrics-video, product-demo-video and whiteboard-explainer. Vidu’s archived skill is removed; its real tools remain under named-provider. Draft alias include_tools cannot be copied verbatim into this harness: `metadata.include_tools` must contain real dispatch wrappers, `metadata.routing_tools` records the canonical aliases, and `metadata.gateway_tools` contains only built Gateway names.
 
-The original workbook migration retained 122 fixtures; later provider branches expanded the set to 129. There are now 103 active cases and 26 skips, including one unverified extension-semantics case and 25 named dependencies. The 23 archived/confidential rows remain dropped. “Active” includes built interims and the required 45-second single-shot refusal; it does not assert future adapters exist. NLE import remains skipped. Detailed expectation adjustments and retired replacements are in [capability-map-decisions.tsv](capability-map-decisions.tsv).
+The original workbook migration retained 122 fixtures; later provider branches expanded the set to 129. There are now 116 active cases and 13 skips, including one unverified extension-semantics case and 12 named dependencies. The 23 archived/confidential rows remain dropped. “Active” includes built interims and the required 45-second single-shot refusal; it does not assert future adapters exist. NLE import remains skipped. Detailed expectation adjustments and retired replacements are in [capability-map-decisions.tsv](capability-map-decisions.tsv).
 
 | Skipped dependency/reason | Rows |
 | --- | --- |
@@ -352,12 +346,8 @@ The original workbook migration retained 122 fixtures; later provider branches e
 | provider pending: cutaway_record (feat/product-demo-capture) | 3 |
 | provider pending: gemini_vlm_judge (feat/continuity-qc-vlm-judge) | 1 |
 | provider pending: ideogram45_edit (feat/image-specialists) | 2 |
-| provider pending: kling_motion_control (feat/perf-transfer) | 2 |
-| provider pending: mirelo_v2a (feat/sfx-mirelo) | 3 |
-| provider pending: mureka_lyrics_video (feat/provider-mureka) | 3 |
 | provider pending: nle import (feat/nle-import-fcpxml) | 1 |
 | provider pending: recraft_v41_vector (feat/image-specialists) | 4 |
-| provider pending: runway_act_two (feat/perf-transfer) | 5 |
 | semantics unverified: Seedance appended-versus-combined extension length (feat/seedance-2-5); Wan extend remains preview-licence blocked | 1 |
 
 ## Verification

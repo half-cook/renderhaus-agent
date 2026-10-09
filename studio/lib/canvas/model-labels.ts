@@ -1,4 +1,5 @@
 const MODEL_LABELS: Record<string, string> = {
+  "mirelo-ai/sfx1.6/video-to-video": "Mirelo SFX 1.6 video foley",
   "mureka-9.5": "Mureka V9.5",
   "act_two": "Runway Act-Two",
   "fal-ai/kling-video/v3/pro/motion-control": "Kling 3 Pro Motion Control",
