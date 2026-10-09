@@ -499,7 +499,11 @@ def select_provider(job: str, *, tier: str | None = None, required: dict | None 
             reason = str(exc)
             return Route(alias=alias, basis=basis, status="blocked", job_type=capability,
                          reason=reason, disclosure=reason)
-    if entry.get("provider") in {"alibaba_modelstudio", "seedance"} and capability == "extend" and "extension_seconds" in required:
+    if entry.get("provider") == "seedance" and capability == "extend" and "extension_seconds" in required:
+        reason = "Seedance appended-versus-combined extension semantics are UNVERIFIED. Specify a generated output duration of 4-30 seconds instead of an extension increment."
+        return Route(alias=alias, basis=basis, status="blocked", job_type=capability,
+                     reason=reason, disclosure=reason)
+    if entry.get("provider") == "alibaba_modelstudio" and capability == "extend" and "extension_seconds" in required:
         source = args.get("source_duration_seconds")
         if isinstance(source, (int, float)) and not isinstance(source, bool):
             target = source + required["extension_seconds"]

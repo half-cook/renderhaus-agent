@@ -738,8 +738,8 @@
     "expected_skill": "edit-v2v",
     "expected_tool": "wan3_extend",
     "suite": "edit-v2v",
-    "skip_reason": "",
-    "note": "Wan remains the quality-first default; Seedance 2.5 serves the declared interim while Wan preview licensing blocks customer use.",
+    "skip_reason": "semantics unverified: Seedance appended-versus-combined extension length (feat/seedance-2-5); Wan extend remains preview-licence blocked",
+    "note": "Seedance supports extension with explicit generated output duration; this increment request cannot safely infer that duration.",
     "source_status": "new",
     "expected_gateway_tool": "Seedance___extend_video"
   },

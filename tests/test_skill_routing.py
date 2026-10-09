@@ -111,14 +111,14 @@ class SkillContracts(unittest.TestCase):
 
     def test_fixture_preserves_active_workbook_rows_and_explains_pending_dependencies(self):
         self.assertEqual(len(CASES), 129)
-        self.assertEqual(sum(not c["skip_reason"] for c in CASES), 92)
-        self.assertEqual(sum(bool(c["skip_reason"]) for c in CASES), 37)
+        self.assertEqual(sum(not c["skip_reason"] for c in CASES), 91)
+        self.assertEqual(sum(bool(c["skip_reason"]) for c in CASES), 38)
         self.assertTrue(all(c.get("source_status") != "archived" for c in CASES))
         self.assertTrue(all("[project.confidential=true]" not in c["prompt"] for c in CASES))
         self.assertTrue(all(c["expected_skill"] != "confidential-route" for c in CASES))
         for case in CASES:
             if case["skip_reason"]:
-                self.assertTrue(case["skip_reason"].startswith(("provider pending:", "licence blocked:")))
+                self.assertTrue(case["skip_reason"].startswith(("provider pending:", "licence blocked:", "semantics unverified:")))
                 self.assertRegex(case["skip_reason"], r"\(feat/[a-z0-9-]+\)")
         imports = [c for c in CASES if c["prompt"] == "import editor FCPXML back"]
         self.assertEqual(len(imports), 1)

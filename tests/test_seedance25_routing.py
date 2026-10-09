@@ -73,14 +73,15 @@ class SeedanceRoutingTests(unittest.TestCase):
             for tool in [EDIT, EXTEND, 'Seedance___reference_to_video']:
                 self.assertTrue(tool_needs_approval(tool, autonomous=True))
 
-    def test_extension_by_seconds_requires_total_output_duration(self):
+    def test_seedance_extension_by_seconds_refuses_unverified_timeline_semantics(self):
         with patch.dict(os.environ, ENV):
             route = routing.route_intent('extend this clip by 2 seconds', arguments=SOURCE)
-            self.assertEqual(route.tool, EXTEND)
-            self.assertEqual(route.required['duration_seconds'], 7)
-            request = StudioAgentRequest(prompt='extend this clip by 2 seconds', autonomous=True, job_id='duration')
-            executor = GatewayExecutor(_context_from_request(request), [Gateway()])
-            self.assertIn('duration', executor.selection_blocker(EXTEND, {**SOURCE, 'duration_seconds': 2}, route))
+            self.assertEqual(route.status, 'blocked')
+            self.assertIsNone(route.tool)
+            self.assertIn('output duration', route.reason)
+            self.assertIn('UNVERIFIED', route.reason)
+            explicit = routing.route_intent('extend this clip to a generated output of 7 seconds', arguments=SOURCE)
+            self.assertEqual(explicit.tool, EXTEND)
 
     def test_transport_regions_and_explicit_legacy_model(self):
         with patch.dict(os.environ, {**ENV, 'SEEDANCE_FAL_REGION': 'global'}):
