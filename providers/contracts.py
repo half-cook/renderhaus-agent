@@ -189,8 +189,9 @@ _VISUAL_ITEM_SCHEMA = {
         "kind": {"type": "string", "description": "Allowed values: image, video."},
         "url": {
             "type": "string",
-            "description": "HTTPS media URL or renderhaus-asset:// version handle.",
+            "description": "HTTPS media URL, renderhaus-asset:// version handle, or local media path (no file://).",
         },
+        "output_path": {"type": "string", "description": "Existing local media path returned by a provider, under RENDERHAUS_MEDIA_DIR; no file:// prefix. Use instead of url."},
         "duration_seconds": {"type": "number", "description": "Must be greater than 0."},
         "start_seconds": {"type": "number", "description": "Must be at least 0."},
         "source_in_seconds": {"type": "number", "description": "Must be at least 0."},
@@ -220,15 +221,16 @@ _VISUAL_ITEM_SCHEMA = {
             "description": "Allowed values: none, zoom_in, zoom_out, pan_left, pan_right.",
         },
     },
-    "required": ["kind", "url", "duration_seconds"],
+    "required": ["kind", "duration_seconds"],
 }
 _AUDIO_ITEM_SCHEMA = {
     "type": "object",
     "properties": {
         "url": {
             "type": "string",
-            "description": "HTTPS media URL or renderhaus-asset:// version handle.",
+            "description": "HTTPS media URL, renderhaus-asset:// version handle, or local media path (no file://).",
         },
+        "output_path": {"type": "string", "description": "Existing local media path returned by a provider, under RENDERHAUS_MEDIA_DIR; no file:// prefix. Use instead of url."},
         "duration_seconds": {"type": "number", "description": "Must be greater than 0."},
         "start_seconds": {"type": "number", "description": "Position in the final video where this audio begins (0 starts immediately). Must be at least 0."},
         "source_in_seconds": {"type": "number", "description": "Seconds to skip inside the source music, independent of its position in the video. Must be at least 0."},
@@ -236,7 +238,7 @@ _AUDIO_ITEM_SCHEMA = {
         "fade_in_seconds": {"type": "number", "description": "Must be at least 0."},
         "fade_out_seconds": {"type": "number", "description": "Must be at least 0."},
     },
-    "required": ["url", "duration_seconds"],
+    "required": ["duration_seconds"],
 }
 _TEXT_OVERLAY_SCHEMA = {
     "type": "object",
@@ -445,6 +447,10 @@ def _validate_cross_fields(provider_id: str, tool_name: str, arguments: dict[str
 
         build_conversational_edit(**arguments)
     if provider_id == "remotion" and tool_name == "render_timeline":
+        for field in ("visuals", "audio_tracks"):
+            for index, clip in enumerate(arguments.get(field) or []):
+                if bool(clip.get("url")) == bool(clip.get("output_path")):
+                    raise ValueError(f"arguments.{field}[{index}] requires exactly one of url or output_path.")
         if not arguments.get("visuals"):
             raise ValueError("render_timeline requires at least one visual clip.")
         for index, clip in enumerate(arguments.get("visuals") or []):

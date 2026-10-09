@@ -49,6 +49,22 @@ def dry_run() -> bool:
     return os.getenv("REMOTION_DRY_RUN", "true").lower() != "false"
 
 
+def render_backend() -> str:
+    backend = os.getenv("REMOTION_RENDER_BACKEND", "lambda").strip().lower()
+    if backend not in {"lambda", "local"}:
+        raise ValueError("REMOTION_RENDER_BACKEND must be lambda or local.")
+    return backend
+
+
+def _start_render(input_props: dict[str, Any], *, output_filename: str) -> dict[str, Any]:
+    if render_backend() == "local":
+        from providers.remotion.local import start_render
+
+        return start_render(input_props, output_filename=output_filename,
+                            media_roots=_allowed_local_roots(), source_root=ROOT)
+    return _start_lambda_render(input_props, output_filename=output_filename)
+
+
 def _on_lambda() -> bool:
     return bool(os.getenv("AWS_LAMBDA_FUNCTION_NAME"))
 
@@ -178,9 +194,9 @@ def build_timeline_props(
         kind = str(clip.get("kind") or "image")
         if kind not in {"image", "video"}:
             raise ValueError("Each visual clip kind must be image or video.")
-        url = str(clip.get("url") or "").strip()
+        url = str(clip.get("url") or clip.get("output_path") or "").strip()
         if not url:
-            raise ValueError("Each visual clip needs a url (canvas node source or https URL).")
+            raise ValueError("Each visual clip needs a url or output_path.")
         duration = float(clip.get("duration_seconds") or 0)
         if not math.isfinite(duration) or duration <= 0:
             raise ValueError("Each visual clip needs duration_seconds greater than 0.")
@@ -260,9 +276,9 @@ def build_timeline_props(
     ]
     visual_duration = max(track_ends.values())
     for index, clip in enumerate(audio_tracks or []):
-        url = str(clip.get("url") or "").strip()
+        url = str(clip.get("url") or clip.get("output_path") or "").strip()
         if not url:
-            raise ValueError("Each audio clip needs a url (canvas node source or https URL).")
+            raise ValueError("Each audio clip needs a url or output_path.")
         duration = float(clip.get("duration_seconds") or 0)
         if not math.isfinite(duration) or duration <= 0:
             raise ValueError("Each audio clip needs duration_seconds greater than 0.")
@@ -414,7 +430,7 @@ def render_timeline(
             "output_key": "",
             "filename": _safe_output_name(output_filename),
             "progress": 0.0,
-            "note": "Dry run is enabled; set REMOTION_DRY_RUN=false to start a Remotion Lambda render.",
+            "note": "Dry run is enabled; set REMOTION_DRY_RUN=false to start the configured render backend.",
         }
     props = build_timeline_props(
         title,
@@ -425,7 +441,7 @@ def render_timeline(
         fps=int(fps),
         subtitles=subtitles,
     )
-    return _start_lambda_render(props, output_filename=output_filename)
+    return _start_render(props, output_filename=output_filename)
 
 
 def prepare_conversational_edit(
@@ -531,6 +547,10 @@ def get_render_progress(
             "filename": "renderhaus-video.mp4",
             "note": "Dry run is enabled; set REMOTION_DRY_RUN=false to poll a live Remotion render.",
         }
+    if render_id.startswith("local-"):
+        from providers.remotion.local import get_progress
+
+        return get_progress(render_id, media_roots=_allowed_local_roots())
     settings = load_remotion_settings()
     session = boto3.Session(region_name=settings.region)
     client = RemotionClient(
@@ -587,7 +607,7 @@ def render_timeline_and_wait(
             "progress": 1.0,
             "note": "Dry run is enabled; set REMOTION_DRY_RUN=false to render on Remotion Lambda.",
         }
-    started = _start_lambda_render(input_props, output_filename=output_filename)
+    started = _start_render(input_props, output_filename=output_filename)
     timeout = timeout_seconds or float(os.getenv("REMOTION_RENDER_TIMEOUT_SECONDS", "1200"))
     interval = poll_interval_seconds or float(os.getenv("REMOTION_POLL_INTERVAL_SECONDS", "5"))
     deadline = time.monotonic() + max(1.0, timeout)

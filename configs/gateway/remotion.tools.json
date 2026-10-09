@@ -179,7 +179,7 @@
   },
   {
     "name": "render_timeline",
-    "description": "Use after all source assets exist to execute a concrete edit decision list and make one assembled MP4. The caller must choose timing, B-roll layers, crop/motion, transitions, speed, titles, and audio fades, then poll get_render_progress.",
+    "description": "Use after all source assets exist to execute a concrete edit decision list and make one assembled MP4. The caller must choose timing, B-roll layers, crop/motion, transitions, speed, titles, and audio fades, then poll get_render_progress. Sources may use url or output_path (a local provider result, no file:// prefix). Local development selects REMOTION_RENDER_BACKEND=local; Lambda remains the default.",
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -197,7 +197,11 @@
               },
               "url": {
                 "type": "string",
-                "description": "HTTPS media URL or renderhaus-asset:// version handle."
+                "description": "HTTPS media URL, renderhaus-asset:// version handle, or local media path (no file://)."
+              },
+              "output_path": {
+                "type": "string",
+                "description": "Existing local media path returned by a provider, under RENDERHAUS_MEDIA_DIR; no file:// prefix. Use instead of url."
               },
               "duration_seconds": {
                 "type": "number",
@@ -278,7 +282,6 @@
             },
             "required": [
               "kind",
-              "url",
               "duration_seconds"
             ]
           },
@@ -291,7 +294,11 @@
             "properties": {
               "url": {
                 "type": "string",
-                "description": "HTTPS media URL or renderhaus-asset:// version handle."
+                "description": "HTTPS media URL, renderhaus-asset:// version handle, or local media path (no file://)."
+              },
+              "output_path": {
+                "type": "string",
+                "description": "Existing local media path returned by a provider, under RENDERHAUS_MEDIA_DIR; no file:// prefix. Use instead of url."
               },
               "duration_seconds": {
                 "type": "number",
@@ -319,7 +326,6 @@
               }
             },
             "required": [
-              "url",
               "duration_seconds"
             ]
           },
@@ -451,7 +457,7 @@
   },
   {
     "name": "get_render_progress",
-    "description": "Use only after render_timeline returned a render id and bucket name. Poll once per call until succeeded, failed, cancelled, or dry_run; it does not start a new render.",
+    "description": "Use only after render_timeline returned a render id and bucket name (local sentinel for local). Poll once per call until succeeded, failed, cancelled, or dry_run; it does not start a new render.",
     "inputSchema": {
       "type": "object",
       "properties": {
