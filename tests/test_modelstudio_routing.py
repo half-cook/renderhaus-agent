@@ -5,7 +5,7 @@ import os
 import tempfile
 import unittest
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 
 from agent.deep_agent import routing
 from agent.gateway_executor import GatewayExecutor, tool_needs_approval
@@ -82,9 +82,36 @@ class ModelStudioRoutingTests(unittest.TestCase):
         self.assertIsNotNone(routing.policy_blocker(EDIT, {"model": "other-model"}))
         with patch.dict(os.environ, {"MODELSTUDIO_DRY_RUN": "false", "DASHSCOPE_BASE_URL": "https://dashscope-us.aliyuncs.com"}):
             self.assertIn("UNVERIFIED", routing.policy_blocker(EDIT, SOURCE))
+        with patch.dict(os.environ, {"MODELSTUDIO_DRY_RUN": "false",
+            "DASHSCOPE_BASE_URL": "https://testworkspace.us-east-1.maas.aliyuncs.com"}):
+            route = routing.route_intent("restyle this footage", arguments=SOURCE)
+            self.assertEqual(route.status, "blocked")
+            self.assertIn("licence", route.reason)
 
 
 class ModelStudioGraphTests(unittest.IsolatedAsyncioTestCase):
+    async def test_saved_task_polls_to_completion_without_resubmission(self):
+        with tempfile.TemporaryDirectory() as directory, patch.dict(os.environ, {
+            "MODELSTUDIO_DRY_RUN": "true", "RENDERHAUS_OUTCOME_DIR": directory,
+        }):
+            request = StudioAgentRequest(prompt="restyle this footage", autonomous=True, job_id="saved-task")
+            studio = _context_from_request(request)
+            gateway = Gateway([Tool(name=name, inputSchema={"type": "object"}) for name in (EDIT, POLL)])
+            gateway.call_tool.side_effect = [
+                {"status": "queued", "job_id": "saved-task"},
+                {"status": "running", "job_id": "saved-task"},
+                {"status": "succeeded", "job_id": "saved-task", "video_url": "https://example.invalid/result.mp4"},
+            ]
+            executor = GatewayExecutor(studio, [gateway])
+            await executor.execute({"tool_name": EDIT, "arguments": SOURCE, "call_id": "submit"}, approved=True)
+            with patch("agent.gateway_executor.asyncio.sleep", new_callable=AsyncMock) as sleep:
+                result = await executor.execute({"tool_name": POLL, "arguments": {"job_id": "saved-task"},
+                                                 "call_id": "poll"})
+            self.assertEqual(result["status"], "succeeded")
+            sleep.assert_awaited_once_with(15)
+            self.assertEqual([entry.args[0] for entry in gateway.call_tool.await_args_list], [EDIT, POLL, POLL])
+            self.assertEqual(executor.media_jobs["submit"]["status"], "succeeded")
+
     async def test_autonomous_interrupt_approve_reject_and_recovery(self):
         from server.billing_rates import _with_fee
 

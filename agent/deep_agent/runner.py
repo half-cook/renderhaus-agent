@@ -46,7 +46,7 @@ from agent.session_scope import conversation_scope as _conversation_scope, execu
 SESSION_TYPE = "renderhaus_deepagents_session"
 SKILLS_ROOT = Path(__file__).parent / "skills"
 DISPATCH_TARGETS = {
-    "call_media_tool": {"Seedance", "Seedream", "Kling", "Runway", "Fal", "Luma"},
+    "call_media_tool": {"Seedance", "Seedream", "Kling", "Runway", "Fal", "Luma", "ModelStudio"},
     "call_audio_tool": {"ElevenLabs", "FishAudio", "FishAudioProvider", "Fish_Audio", "Mureka"},
     "call_editor_tool": {"Remotion", "HyperFrames"},
 }

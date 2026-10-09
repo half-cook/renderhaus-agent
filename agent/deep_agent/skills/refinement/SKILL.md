@@ -4,6 +4,7 @@ description: Refine retained media or edits through capability defaults without 
 metadata:
   include_tools: call_media_tool call_audio_tool call_editor_tool
   routing_tools: gpt_image25_edit wan3_edit remotion_render
+  gateway_tools: ModelStudio___edit_wan3_video ModelStudio___get_task
 ---
 
 # Refinement
@@ -12,6 +13,7 @@ Identify the exact source version and requested change. Reuse all unaffected ass
 Use image-gen for image changes, edit-v2v for generative footage changes, audio-bed for sound, and
 final-assembly for trim/timing/caption/order changes. Choose the matching capability's default or
 exception and its declared interim. Explicit demoted providers use named-provider with disclosure.
+Wan 3 footage edits use `ModelStudio___edit_wan3_video` and `ModelStudio___get_task`; read edit-v2v for measured source inputs and total-duration billing.
 Keep the original version available and record explicit customer review. The existing registered
 Wan training-retry path remains governed by its host provenance checks.
 

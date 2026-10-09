@@ -24,6 +24,7 @@ TARGET_PROVIDERS = {
     "Fish_Audio": "fish_audio",
     "Veo": "veo",
     "Luma": "luma",
+    "ModelStudio": "alibaba_modelstudio",
     "MiniMaxH3": "minimax_h3",
     "MiniMax": "minimax_h3",
     "Hunyuan": "hunyuan",
@@ -196,6 +197,9 @@ def _capability_price(row: dict):
     elif provider == "luma":
         values = {"generation": rates.LUMA_GENERATION_CENTS, "modify": rates.LUMA_EDIT_CENTS,
                   "extend": rates.LUMA_EXTEND_CENTS}
+    elif provider == "alibaba_modelstudio":
+        values = {region: {resolution: str(value) for resolution, value in table.items()}
+                  for region, table in rates.MODELSTUDIO_CENTS_PER_SECOND.items()}
     else:
         return "unknown"
     return {**price, "rates": values,
@@ -211,6 +215,7 @@ def intent_constraints(prompt: str, *, tier: str | None = None, confidential: bo
         (r"\bseedream\b", "seedream"), (r"\bkling\b", "kling"),
         (r"\brunway\b|\baleph\b|gen.?4", "runway"), (r"\bluma\b|\bray.?3\b", "luma"),
         (r"\bfish\b", "fish_audio"), (r"\belevenlabs\b", "elevenlabs"),
+        (r"model[ -]?studio|dashscope|alibaba", "alibaba_modelstudio"),
         (r"mini.?max", "minimax_h3"), (r"hunyuan", "hunyuan"),
     ] if re.search(pattern, prompt, re.I)]
     provider = next(iter(provider_candidates), None)
@@ -231,6 +236,10 @@ def intent_constraints(prompt: str, *, tier: str | None = None, confidential: bo
     seconds = float(duration[1]) * (60 if duration[2].lower().startswith("m") else 1) if duration else None
     if seconds is not None:
         required["duration_seconds"] = int(seconds) if seconds.is_integer() else seconds
+    extension = re.search(r"(?:extend|continue).*\bby\s+(\d+(?:\.\d+)?)\s*(seconds?|secs?|s)\b", prompt, re.I)
+    if extension:
+        added = float(extension[1])
+        required["extension_seconds"] = int(added) if added.is_integer() else added
     supplied_duration = next((args[k] for k in ("duration", "duration_seconds", "video_duration_seconds", "source_duration_seconds") if args.get(k) is not None), seconds)
     real_face = bool(args.get("real_face_refs") or re.search(
         r"real (?:person|human|actor)|my (?:ceo|face|selfie)|(?:photo|video).*(?:of me|of my|real person)|(?:user.supplied|uploaded).*(?:person|face)", prompt, re.I))
@@ -337,7 +346,19 @@ def select_provider(job: str, *, tier: str | None = None, required: dict | None 
         if exception:
             alias, basis = exception["tool"], "exception: " + exception["reason"]
     entry = TOOL_MAP[alias]
+    if entry.get("provider") == "alibaba_modelstudio":
+        if capability == "extend" and "extension_seconds" in required:
+            source = args.get("source_duration_seconds")
+            if isinstance(source, (int, float)) and not isinstance(source, bool):
+                target = source + required["extension_seconds"]
+                required["duration_seconds"] = int(target) if float(target).is_integer() else target
+            else:
+                required.pop("duration_seconds", None)
+        if model is None:
+            model = effective_model("alibaba_modelstudio", entry["gateway_tool"].split("___")[1], args)
     duration = required.get("duration_seconds") or next((args[k] for k in ("duration", "duration_seconds", "video_duration_seconds", "source_duration_seconds") if args.get(k) is not None), None)
+    if entry.get("provider") == "alibaba_modelstudio" and not required.get("duration_seconds"):
+        duration = args.get("duration")
     if (predicates["duration_over_30s"] or isinstance(duration, (int, float)) and duration > 30) and capability in {"t2v", "i2v", "reference_video", "performance_transfer"}:
         reason = "Duration exceeds 30 seconds; split into shots of at most 30 seconds before generation."
         return Route(alias=alias, basis=basis, status="blocked", job_type=capability, reason=reason, disclosure=reason)
@@ -383,7 +404,8 @@ def select_provider(job: str, *, tier: str | None = None, required: dict | None 
         controls = row["controls"].get(variant, [])
         limits = row["durations"].get(variant)
         values = row.get("duration_values", {}).get(variant)
-        unsupported = any(row["jobs"].get(k, False) < value for k, value in required.items() if k != "duration_seconds")
+        unsupported = any(row["jobs"].get(k, False) < value for k, value in required.items()
+                          if k not in {"duration_seconds", "extension_seconds"})
         unsupported |= duration is not None and limits is not None and not limits[0] <= duration <= limits[1]
         unsupported |= bool(duration is not None and values and duration not in values)
         unsupported |= bool(row.get("duration_field") and duration is not None and type(duration) is not int)
@@ -432,7 +454,9 @@ def select_provider(job: str, *, tier: str | None = None, required: dict | None 
     provider_id = row["provider"] if row else tool_parts(tool)[0] if tool else "local"
     label = row["label"] if row else alias
     disclosure = f"Selected {label}. Provider {provider_id}; model {model or 'none'}. {basis}. {quote.description}"
-    if predicates["real_face_refs"] and alias in {"wan3_t2v", "wan3_i2v", "wan3_r2v"}:
+    if provider_id == "alibaba_modelstudio":
+        disclosure += " Dry-run preview only; live customer use is blocked by the preview licence."
+    if predicates["real_face_refs"] and alias in {"wan3_t2v", "wan3_i2v", "wan3_r2v", "wan3_edit", "wan3_extend"}:
         required["real_face_refs"] = True
         disclosure += " Real-person likeness consent " + (
             "acknowledged." if args.get("likeness_consent") is True else "required before generation."
@@ -513,6 +537,12 @@ def policy_blocker(name: str, arguments: dict, *, region: str | None = None) -> 
         "license", policy["license"]
     ) not in {"Apache-2.0", "service-terms"}:
         return f"Model {model} licence or access is not approved."
+    if provider == "alibaba_modelstudio":
+        from providers.alibaba_modelstudio.config import live_blocker
+
+        blocker = live_blocker()
+        if blocker:
+            return blocker
     if (
         region in model_policy.get("blocked_regions", [])
         or model_policy.get("allowed_regions")
@@ -634,7 +664,9 @@ def _published_cost(provider: str, tool: str, arguments: dict):
         return rates._seedance_cost(arguments)
     if provider == "seedream":
         return rates._seedream_cost(arguments)
-    if provider == "fal" and tool in {"generate_wan3_t2v", "generate_wan3_i2v", "generate_wan3_r2v"}:
+    if provider == "alibaba_modelstudio":
+        cents = rates.modelstudio_price_cents(tool, arguments)
+    elif provider == "fal" and tool in {"generate_wan3_t2v", "generate_wan3_i2v", "generate_wan3_r2v"}:
         cents = rates.wan3_price_cents(arguments)
     elif provider == "fal" and tool in {"vidu_q4_i2v", "vidu_q4_r2v"}:
         cents = rates.vidu_q4_price_cents(arguments)

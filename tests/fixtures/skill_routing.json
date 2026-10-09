@@ -67,9 +67,10 @@
     "expected_skill": "edit-v2v",
     "expected_tool": "wan3_edit",
     "suite": "edit-v2v",
-    "skip_reason": "",
-    "note": "cheapest dropped; default",
-    "source_status": "updated"
+    "skip_reason": "licence blocked: Wan 3.0 preview permits internal evaluation only (feat/provider-alibaba-modelstudio)",
+    "note": "Adapter exists for dry-run contract tests; customer live use remains blocked by Preview Product Terms 1.1.",
+    "source_status": "updated",
+    "expected_gateway_tool": "ModelStudio___edit_wan3_video"
   },
   {
     "prompt": "change look keep performance Luma",
@@ -723,18 +724,20 @@
     "expected_skill": "edit-v2v",
     "expected_tool": "wan3_extend",
     "suite": "edit-v2v",
-    "skip_reason": "",
-    "note": "default extend",
-    "source_status": "new"
+    "skip_reason": "licence blocked: Wan 3.0 preview permits internal evaluation only (feat/provider-alibaba-modelstudio)",
+    "note": "Adapter exists for dry-run contract tests; customer live use remains blocked by Preview Product Terms 1.1.",
+    "source_status": "new",
+    "expected_gateway_tool": "ModelStudio___extend_wan3_video"
   },
   {
     "prompt": "make this footage look like a watercolor painting",
     "expected_skill": "edit-v2v",
     "expected_tool": "wan3_edit",
     "suite": "edit-v2v",
-    "skip_reason": "",
-    "note": "default edit",
-    "source_status": "new"
+    "skip_reason": "licence blocked: Wan 3.0 preview permits internal evaluation only (feat/provider-alibaba-modelstudio)",
+    "note": "Adapter exists for dry-run contract tests; customer live use remains blocked by Preview Product Terms 1.1.",
+    "source_status": "new",
+    "expected_gateway_tool": "ModelStudio___edit_wan3_video"
   },
   {
     "prompt": "generate a 45 second single shot",
