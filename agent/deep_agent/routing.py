@@ -77,6 +77,10 @@ def route_intent(prompt: str, *, region: str | None = None, tier: str | None = N
             continue
         skill, alias = rule["skill"], rule["abstract_tool"]
         capability = rule.get("capability")
+        if capability == "t2v" and re.search(r"\brefs\b|reference[ -]to[ -]video|multi.ref", prompt, re.I):
+            capability, skill = "reference_video", "i2v"
+        elif capability == "t2v" and re.search(r"animat|(?:image|photo|still).*(?:talk|speak)", prompt, re.I):
+            capability, skill = "i2v", "i2v"
         if skill == "hyperframes":
             blocker = policy_blocker("HyperFrames___render_composition", {}, region=region)
             if available_tools is not None and "HyperFrames___render_composition" not in available_tools:
@@ -120,13 +124,15 @@ def _dispatch(tool: str | None) -> str | None:
 
 
 def job_type(name: str | None) -> str | None:
+    if name and name.endswith(("reference_to_video", "vidu_q4_r2v")):
+        return "reference_video"
     for row in POLICY["capabilities"]:
         for job, tool in row["tools"].items():
             if tool == name:
                 return {"image_edit": "image_edit", "reference": "reference_video", "image": "still_image"}.get(job, job)
     for capability, choice in POLICY["capability_map"].items():
         aliases = [choice["default"], choice["interim"]] + [ex["tool"] for ex in choice["exceptions"]]
-        if any(alias and TOOL_MAP.get(alias, {}).get("gateway_tool") == name for alias in aliases):
+        if any(alias and name in [TOOL_MAP.get(alias, {}).get("gateway_tool"), *TOOL_MAP.get(alias, {}).get("gateway_variants", [])] for alias in aliases):
             return capability
     if name == "FishAudio___generate_speech":
         return "tts"
@@ -134,6 +140,8 @@ def job_type(name: str | None) -> str | None:
 
 
 def tool_variant(name: str) -> str | None:
+    if any(name in entry.get("gateway_variants", []) for entry in TOOL_MAP.values()):
+        return name
     if name.endswith(("reference_to_video", "vidu_q4_r2v")):
         return "reference"
     return {"still_image": "image"}.get(job_type(name), job_type(name))
@@ -196,16 +204,14 @@ def _capability_price(row: dict):
 def intent_constraints(prompt: str, *, tier: str | None = None, confidential: bool = False,
                        arguments: dict | None = None) -> dict:
     args = arguments or {}
-    provider = next((p for pattern, p in [
+    provider_candidates = [p for pattern, p in [
         (r"\bvidu\b|\bvace\b|\bfal\b|\bwan[ -]?2", "fal"), (r"\bseedance\b", "seedance"),
         (r"\bseedream\b", "seedream"), (r"\bkling\b", "kling"),
         (r"\brunway\b|\baleph\b|gen.?4", "runway"), (r"\bluma\b|\bray.?3\b", "luma"),
         (r"\bfish\b", "fish_audio"), (r"\belevenlabs\b", "elevenlabs"),
         (r"mini.?max", "minimax_h3"), (r"hunyuan", "hunyuan"),
-    ] if re.search(pattern, prompt, re.I)), None)
-    # Act-Two names a performance tool, not Runway's demoted generation family.
-    if re.search(r"act.two|performance capture", prompt, re.I) and provider == "runway":
-        provider = None
+    ] if re.search(pattern, prompt, re.I)]
+    provider = next(iter(provider_candidates), None)
     required = {}
     for feature, pattern in {
         "native_audio": r"native audio|with audio|needs? audio",
@@ -229,7 +235,7 @@ def intent_constraints(prompt: str, *, tier: str | None = None, confidential: bo
     dialogue = bool(re.search(r'["“][^"”]+["”]|\b(?:says?|saying|talking|talks?|dialogue|speaking)\b', prompt, re.I))
     if re.search(r"\b(?:no|without) dialogue\b|\bnot talking\b|silent scene", prompt, re.I):
         dialogue = False
-    video_sfx = bool(re.search(r"from (?:the|this).*?(?:video|clip)|video to audio|foley|synchroni[sz]ed|silent clip|picture.synced", prompt, re.I))
+    video_sfx = bool(args.get("video_url") or args.get("source_video_url") or re.search(r"from (?:the|this).*?(?:video|clip)|video to audio|foley|synchroni[sz]ed|silent clip|picture.synced", prompt, re.I))
     if re.search(r"no video|without video", prompt, re.I):
         video_sfx = False
     predicates = {
@@ -258,7 +264,7 @@ def intent_constraints(prompt: str, *, tier: str | None = None, confidential: bo
     named_model = next((key for key, entry in POLICY["named_models"].items()
                         if re.search(entry["pattern"], prompt, re.I)), None)
     return {"provider": provider, "model": model, "named_model": named_model,
-            "required": required, "predicates": predicates}
+            "provider_candidates": provider_candidates, "required": required, "predicates": predicates}
 
 
 def resolution_value(value: str) -> int:
@@ -280,7 +286,8 @@ def select_provider(job: str, *, tier: str | None = None, required: dict | None 
                     model: str | None = None, confidential: bool = False, retry: bool = False,
                     faithful: bool = False, region: str | None = None,
                     available_tools: set[str] | None = None, tool_variant: str | None = None,
-                    predicates: dict | None = None, named_model: str | None = None) -> Route:
+                    predicates: dict | None = None, named_model: str | None = None,
+                    provider_candidates: list[str] | None = None) -> Route:
     args, required = dict(arguments or {}), dict(required or {})
     predicates = {**intent_constraints("", arguments=args)["predicates"], **(predicates or {})}
     capability = {"image": "still_image", "reference": "reference_video"}.get(job, job)
@@ -291,6 +298,11 @@ def select_provider(job: str, *, tier: str | None = None, required: dict | None 
     if capability not in POLICY["capability_map"]:
         return Route(status="blocked", reason=f"No capability map for {capability}.")
     choice = POLICY["capability_map"][capability]
+    if provider and capability not in POLICY["explicit_routes"].get(provider, {}):
+        provider = next((p for p in provider_candidates or []
+                         if capability in POLICY["explicit_routes"].get(p, {})), provider)
+    if named_model and capability not in POLICY["named_models"][named_model]["aliases"] and provider:
+        named_model = None
     alias, basis = choice["default"], "default"
     if retry and capability in {"t2v", "i2v", "v2v_edit", "reference_video"}:
         alias = {"t2v": "wan_t2v", "i2v": "wan_i2v", "v2v_edit": "wan_vace_edit", "reference_video": "wan_reference"}[capability]
@@ -326,7 +338,7 @@ def select_provider(job: str, *, tier: str | None = None, required: dict | None 
         return Route(alias=alias, basis=basis, status="blocked", job_type=capability, reason=reason, disclosure=reason)
     tool = entry.get("gateway_tool")
     if entry["status"] == "pending":
-        interim = None if basis.startswith("explicit request") else entry.get("interim_alias") or (choice["interim"] if alias == choice["default"] else None)
+        interim = None if named_model else entry.get("interim_alias") or (choice["interim"] if alias == choice["default"] and not provider else None)
         if predicates["real_face_refs"] and capability in {"t2v", "i2v", "reference_video"}:
             interim = None
         if not interim:
@@ -335,14 +347,16 @@ def select_provider(job: str, *, tier: str | None = None, required: dict | None 
                          provider=entry.get("provider"), model=entry.get("model"), required=required,
                          estimated_cost=CostEstimate(None, "Provider pending; official quote TODO.").public(),
                          disclosure=f"{basis}. {reason} Estimated cost unknown.")
-        tool = TOOL_MAP[interim]["gateway_tool"]
+        entry = TOOL_MAP[interim]
+        tool = entry["gateway_tool"]
         basis = (basis + "; " if basis != "default" else "") + f"interim default until {alias} lands"
+    if tool_variant in entry.get("gateway_variants", []):
+        tool = tool_variant
     variant = {"still_image": "image", "reference_video": "reference"}.get(capability, capability)
     row = next((r for r in capability_table() if tool in r["tools"].values() and (model is None or r["model"] == model)), None)
     if model and row is None and any(tool in r["tools"].values() for r in POLICY["capabilities"]):
         return Route(alias=alias, status="blocked", reason=f"Model {model} does not support the selected tool.")
     if row:
-        # The chosen alias fixes the tool; explicit model picks do not trigger another provider.
         model = row["model"]
         for key, feature in [("generate_audio", "native_audio"), ("audio", "native_audio"), ("multi_shot", "multi_shot"),
                              ("shots", "multi_shot"), ("elements", "reference_elements"), ("reference_image_urls", "reference_elements"),
@@ -442,7 +456,7 @@ def premium_video(name: str) -> bool:
 
 def effective_model(provider: str, tool: str, arguments: dict) -> str | None:
     policy = POLICY["providers"].get(provider, {})
-    if provider == "elevenlabs" and tool in {"text_to_speech_convert", "text_to_dialogue_convert"}:
+    if provider == "elevenlabs" and tool.startswith(("text_to_speech_", "text_to_dialogue_")):
         return arguments.get("model_id") or os.getenv("ELEVENLABS_TTS_MODEL", "eleven_v4_turbo")
     if tool in policy.get("fixed_models", {}):
         return policy["fixed_models"][tool]

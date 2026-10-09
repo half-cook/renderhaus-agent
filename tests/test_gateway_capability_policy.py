@@ -27,7 +27,7 @@ class CapabilityApprovalTests(unittest.TestCase):
             "Fal___vidu_q4_r2v", "Kling___text_to_video", "Runway___video_to_video",
             "Luma___extend_video", "Remotion___render_timeline",
             "wan3_t2v", "wan3_edit", "sync3_lipsync", "heygen_avatar_v",
-            "runway_act_two", "kling_motion_control", "topaz_upscale", "topaz_interpolate",
+            "runway_act_two", "kling_motion_control", "topaz_upscale", "topaz_interpolate", "mirelo_v2a", "mureka_lyrics_video",
         ):
             with self.subTest(name=name):
                 self.assertTrue(tool_needs_approval(name, autonomous=True))

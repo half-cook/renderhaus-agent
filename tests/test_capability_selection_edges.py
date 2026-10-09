@@ -53,3 +53,17 @@ class CapabilitySelectionEdges(unittest.TestCase):
 
     def test_reference_modality_has_priority_over_generic_video(self):
         self.assertEqual(routing.route_intent("use Seedance for reference-to-video").job_type, "reference_video")
+
+    def test_audio_variants_keep_the_same_capability_selection(self):
+        for name, capability in [('ElevenLabs___text_to_dialogue_convert', 'tts'),
+                                 ('ElevenLabs___text_to_speech_stream', 'tts'),
+                                 ('ElevenLabs___music_video_to_music', 'music'),
+                                 ('ElevenLabs___music_compose_detailed', 'music')]:
+            with self.subTest(name=name):
+                self.assertEqual(routing.job_type(name), capability)
+                route = routing.select_provider(capability, tool_variant=routing.tool_variant(name))
+                self.assertEqual(route.tool, name)
+                self.assertIn('default', route.disclosure)
+        name = 'ElevenLabs___text_to_dialogue_convert'
+        route = routing.select_provider('tts', provider='fish_audio', tool_variant=routing.tool_variant(name))
+        self.assertEqual(route.tool, 'FishAudio___generate_speech')
