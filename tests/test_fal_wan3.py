@@ -132,6 +132,18 @@ class Wan3ContractTests(unittest.TestCase):
             ("generate_wan3_r2v", {"reference_video_urls": [12]}, "reference_video_urls"),
             ("generate_wan3_t2v", {"prompt": "p", "audio": "true"}, "audio"),
         ]
+        for kind, url in (("video", VIDEO), ("audio", AUDIO)):
+            for duration in (0, -1, True, float("nan"), float("inf")):
+                cases.append(("generate_wan3_r2v", {
+                    f"reference_{kind}_urls": [url],
+                    f"reference_{kind}_durations": [duration],
+                    **({"reference_video_fps": [24]} if kind == "video" else {}),
+                }, f"reference_{kind}_durations"))
+        for fps in (True, float("nan"), float("inf")):
+            cases.append(("generate_wan3_r2v", {
+                "reference_video_urls": [VIDEO], "reference_video_durations": [3],
+                "reference_video_fps": [fps],
+            }, "reference_video_fps"))
         for duration in (True, 1, 31, 5.0, "5"):
             cases.append(("generate_wan3_t2v", {"prompt": "p", "duration": duration}, "duration"))
         for seed in (-1, 2147483648, True, "1"):

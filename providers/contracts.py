@@ -350,12 +350,13 @@ def enrich_tool_schema(provider_id: str, tool: dict[str, Any]) -> dict[str, Any]
         )
         properties["output_filename"]["description"] = "ZIP download filename; directory components are removed."
     if provider_id == "fal":
-        from providers.fal.vidu import FIELD_DESCRIPTIONS, TOOL_ENDPOINTS
+        from providers.fal import vidu, wan3
 
-        if tool_name in TOOL_ENDPOINTS:
-            for field, description in FIELD_DESCRIPTIONS.items():
-                if field in properties:
-                    properties[field]["description"] = description
+        for contract in (vidu, wan3):
+            if tool_name in contract.TOOL_ENDPOINTS:
+                for field, description in contract.FIELD_DESCRIPTIONS.items():
+                    if field in properties:
+                        properties[field]["description"] = description
     return enriched
 
 
@@ -428,8 +429,9 @@ def _validate_cross_fields(provider_id: str, tool_name: str, arguments: dict[str
 
         validate_runway_arguments(tool_name, arguments)
     if provider_id == "fal":
-        from providers.fal import vidu, wan
+        from providers.fal import vidu, wan, wan3
 
+        wan3.validate_arguments(tool_name, arguments)
         wan.validate_arguments(tool_name, arguments)
         vidu.validate_arguments(tool_name, arguments)
     if provider_id == "luma" and tool_name in {
@@ -549,12 +551,19 @@ def validate_tool_arguments(
         if field in cleaned:
             _validate_rule(f"arguments.{field}", cleaned[field], rule)
     _validate_cross_fields(provider_id, tool_name, cleaned)
+    if provider_id == "fal":
+        from providers.fal import wan3
+
+        if (tool_name in wan3.GENERATING_TOOLS and "duration" in (arguments or {})
+                and arguments["duration"] is None):
+            # Wan smart duration differs from an omitted default duration.
+            cleaned["duration"] = None
     return cleaned
 
 
 def argument_rules(provider_id: str, tool_name: str) -> dict[str, ArgumentRule]:
     if provider_id == "fal":
-        from providers.fal import vidu, wan
+        from providers.fal import vidu, wan, wan3
 
-        return {**wan.ARGUMENT_RULES, **vidu.ARGUMENT_RULES}.get(tool_name, {})
+        return {**wan.ARGUMENT_RULES, **vidu.ARGUMENT_RULES, **wan3.ARGUMENT_RULES}.get(tool_name, {})
     return TOOL_ARGUMENT_RULES.get(provider_id, {}).get(tool_name, {})

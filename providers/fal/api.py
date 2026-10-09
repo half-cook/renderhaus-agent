@@ -1,9 +1,9 @@
-"""Wan VACE and Vidu Q4 generation through fal's queue, checked 2026-10-08.
+"""Wan VACE, Wan 3.0 and Vidu Q4 generation through fal's queue, checked 2026-10-08/09.
 
 https://docs.fal.ai/model-apis/model-endpoints/queue
 https://fal.ai/models/fal-ai/wan-vace-14b/api
 https://fal.ai/models/fal-ai/wan-22-vace-fun-a14b/api
-Per-endpoint contracts and source links live in providers.fal.wan and providers.fal.vidu.
+Per-endpoint contracts and source links live in providers.fal.wan, vidu and wan3.
 """
 
 from __future__ import annotations
@@ -19,12 +19,12 @@ from urllib.parse import urlsplit
 import httpx
 
 from providers.contracts import validate_tool_arguments
-from providers.fal import queue, vidu, wan
+from providers.fal import queue, vidu, wan, wan3
 from providers.registry import schema_from_callable
 
 
-TOOL_CONTRACTS = {tool: contract for contract in (wan, vidu) for tool in contract.GENERATING_TOOLS}
-ENDPOINT_CONTRACTS = {endpoint: contract for contract in (wan, vidu) for endpoint in contract.ENDPOINTS}
+TOOL_CONTRACTS = {tool: contract for contract in (wan, vidu, wan3) for tool in contract.GENERATING_TOOLS}
+ENDPOINT_CONTRACTS = {endpoint: contract for contract in (wan, vidu, wan3) for endpoint in contract.ENDPOINTS}
 
 
 def _validated(tool: str, arguments: dict[str, Any]) -> dict[str, Any]:
@@ -66,8 +66,25 @@ def _submit(tool: str, arguments: dict[str, Any]) -> dict[str, Any]:
     arguments = _validated(tool, arguments)
     contract = TOOL_CONTRACTS[tool]
     endpoint, body = contract.request_body(tool, arguments)
+    if contract is wan3:
+        from server.billing_rates import wan3_price_cents
+
+        estimate = wan3_price_cents(arguments) if body["duration"] is not None else None
+    else:
+        estimate = None
     if queue.dry_run():
+        preview = {}
+        if contract is wan3:
+            preview = {
+                "request_preview": body,
+                "estimated_cost_usd": float(estimate / 100) if estimate is not None else None,
+                "cost_estimate": (
+                    "unknown (smart duration)" if estimate is None
+                    else f"${estimate / 100:.2f} provider estimate before Renderhaus fee"
+                ),
+            }
         return {
+            **preview,
             "job_id": _job(endpoint.id, "dry_" + uuid.uuid4().hex),
             "status": "dry_run",
             "provider": "fal",
@@ -77,7 +94,13 @@ def _submit(tool: str, arguments: dict[str, Any]) -> dict[str, Any]:
             **contract.TRAINING_METADATA,
             "note": "No fal request made. Set FAL_DRY_RUN=false for live generation.",
         }
-    if contract is vidu:
+    if contract is wan3:
+        if estimate is None:
+            raise ValueError(
+                "Wan 3 smart duration is dry-run only until actual billing reconciliation "
+                "is available; cost estimate unknown."
+            )
+    elif contract is vidu:
         from server.billing_rates import vidu_q4_price_cents
 
         estimate = vidu_q4_price_cents(body)
@@ -221,6 +244,67 @@ def vidu_q4_r2v(
     return _submit("vidu_q4_r2v", locals())
 
 
+def generate_wan3_t2v(
+    prompt: str,
+    resolution: str = "1080p",
+    aspect_ratio: str = "adaptive",
+    duration: int | None = 5,
+    audio: bool = True,
+    enable_prompt_expansion: bool = True,
+    enable_thinking: bool = False,
+    seed: int | None = None,
+    enable_safety_checker: bool = True,
+    real_face_refs: bool = False,
+    likeness_consent: bool = False,
+) -> dict:
+    """Submit Wan 3 text-to-video with native audio; approval required, then poll get_video_task."""
+    return _submit("generate_wan3_t2v", locals())
+
+
+def generate_wan3_i2v(
+    start_image_url: str,
+    prompt: str | None = None,
+    end_image_url: str | None = None,
+    resolution: str = "1080p",
+    aspect_ratio: str = "adaptive",
+    duration: int | None = 5,
+    audio: bool = True,
+    enable_prompt_expansion: bool = True,
+    enable_thinking: bool = False,
+    seed: int | None = None,
+    enable_safety_checker: bool = True,
+    real_face_refs: bool = False,
+    likeness_consent: bool = False,
+) -> dict:
+    """Submit Wan 3 animation of first and optional last frames; real likeness requires consent."""
+    return _submit("generate_wan3_i2v", locals())
+
+
+def generate_wan3_r2v(
+    prompt: str | None = None,
+    reference_image_urls: list[str] | None = None,
+    reference_video_urls: list[str] | None = None,
+    reference_audio_urls: list[str] | None = None,
+    reference_video_durations: list[float] | None = None,
+    reference_video_fps: list[float] | None = None,
+    reference_audio_durations: list[float] | None = None,
+    file_url: str | None = None,
+    web_url: str | None = None,
+    resolution: str = "1080p",
+    aspect_ratio: str = "adaptive",
+    duration: int | None = 5,
+    audio: bool = True,
+    enable_prompt_expansion: bool = True,
+    enable_thinking: bool = False,
+    seed: int | None = None,
+    enable_safety_checker: bool = True,
+    real_face_refs: bool = False,
+    likeness_consent: bool = False,
+) -> dict:
+    """Submit Wan 3 using up to 10 images, 5 videos and 5 audio references; measured video/audio seconds required."""
+    return _submit("generate_wan3_r2v", locals())
+
+
 def _download(video_url: str, output_path: Path) -> None:
     temporary = output_path.with_suffix(f".{uuid.uuid4().hex}.part")
     try:
@@ -307,6 +391,8 @@ def _poll_video_task(job_id: str, endpoint_id: str, request_id: str, *, download
         "downloaded": output_path.exists(),
         "seed": result.get("seed"),
     }
+    if contract is wan3:
+        normalized.update(duration=result.get("duration"), actual_prompt=result.get("actual_prompt"))
     metadata = json.loads(metadata_path.read_text()) if metadata_path.exists() else {}
     metadata.update(normalized)
     _write_metadata(metadata_path, metadata)
@@ -314,10 +400,11 @@ def _poll_video_task(job_id: str, endpoint_id: str, request_id: str, *, download
 
 
 def list_fal_models() -> dict:
-    """List documented Wan VACE and Vidu Q4 endpoints and pricing without calling fal."""
+    """List documented Wan VACE, Wan 3.0 and Vidu Q4 endpoints and pricing without calling fal."""
     from server.billing_rates import (
         VIDU_Q4_LIST_CENTS_PER_SECOND,
         VIDU_Q4_PROMO_EXPIRES_ON,
+        WAN3_CENTS_PER_SECOND,
         vidu_q4_rates,
     )
 
@@ -329,7 +416,7 @@ def list_fal_models() -> dict:
         + [
             {"id": endpoint, "license": "service-terms", **vidu.TRAINING_METADATA}
             for endpoint in vidu.ENDPOINTS
-        ],
+        ] + [{"id": endpoint, **wan3.TRAINING_METADATA} for endpoint in wan3.ENDPOINTS],
         "endpoints": [
             {
                 "id": endpoint.id,
@@ -373,6 +460,23 @@ def list_fal_models() -> dict:
                 **vidu.TRAINING_METADATA,
             }
             for endpoint in vidu.ENDPOINTS.values()
+        ] + [
+            {
+                "id": endpoint.id,
+                "model": endpoint.model,
+                "endpoint_id": endpoint.id,
+                "mode": endpoint.tool,
+                "api_url": endpoint.api_url,
+                "pricing_url": endpoint.api_url.removesuffix("/api"),
+                "price_unit": "output_and_reference_video_second",
+                "pricing_checked_at": "2026-10-09",
+                "usd_per_unit_by_resolution": {
+                    resolution: str(rate / 100) for resolution, rate in WAN3_CENTS_PER_SECOND.items()
+                },
+                "pricing_confirmed": True,
+                **wan3.TRAINING_METADATA,
+            }
+            for endpoint in wan3.ENDPOINTS.values()
         ],
         "note": "Static documented catalog. Does not confirm account access. fal hosted Terms of Service apply.",
     }
@@ -385,6 +489,9 @@ TOOL_HANDLERS = {
     "video_to_video": video_to_video,
     "vidu_q4_i2v": vidu_q4_i2v,
     "vidu_q4_r2v": vidu_q4_r2v,
+    "generate_wan3_t2v": generate_wan3_t2v,
+    "generate_wan3_i2v": generate_wan3_i2v,
+    "generate_wan3_r2v": generate_wan3_r2v,
     "get_video_task": get_video_task,
     "list_fal_models": list_fal_models,
 }
