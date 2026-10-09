@@ -20,8 +20,10 @@ from test_deep_agent import Gateway, ScriptedModel, call, final
 T2V = "Fal___generate_wan3_t2v"
 I2V = "Fal___generate_wan3_i2v"
 R2V = "Fal___generate_wan3_r2v"
-TOOLS = [Tool(name=name, description="Generate Wan 3.0 video", inputSchema={"type": "object"})
-         for name in (T2V, I2V, R2V)]
+ROOT = Path(__file__).resolve().parents[1]
+TOOLS = [Tool(name="Fal___" + entry["name"], description=entry["description"], inputSchema=entry["inputSchema"])
+         for entry in json.loads((ROOT / "configs/gateway/fal.tools.json").read_text())
+         if entry["name"].startswith("generate_wan3_")]
 
 
 class Wan3RoutingTests(unittest.TestCase):
@@ -41,6 +43,13 @@ class Wan3RoutingTests(unittest.TestCase):
         route = routing.route_intent('use Seedance with my CEO photo saying "hello"')
         self.assertEqual(route.tool, I2V)
         self.assertIn("consent", route.disclosure.lower())
+
+    def test_named_fal_host_uses_wan3_without_demoting_legacy_requests(self):
+        self.assertEqual(routing.route_intent("use fal for a video").tool, T2V)
+        self.assertEqual(routing.route_intent("fal image to video").tool, I2V)
+        self.assertEqual(routing.route_intent("fal reference video").tool, R2V)
+        self.assertEqual(routing.route_intent("use Wan VACE for video").tool, "Fal___text_to_video")
+        self.assertEqual(routing.route_intent("use Wan 2.2 for video").model, "fal-ai/wan-22-vace-fun-a14b")
 
     def test_reference_controls_and_first_last_frames(self):
         route = routing.select_provider("reference_video", arguments={

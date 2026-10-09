@@ -4,7 +4,7 @@ description: Review a still first, then animate the approved version through the
 metadata:
   include_tools: call_media_tool
   routing_tools: gpt_image25_t2i gpt_image25_edit wan3_i2v seedance25_i2v
-  gateway_tools: Seedance___get_video_task Seedance___image_to_video Seedream___image_to_image Seedream___text_to_image
+  gateway_tools: Fal___generate_wan3_i2v Fal___get_video_task Seedance___get_video_task Seedance___image_to_video Seedream___image_to_image Seedream___text_to_image
 ---
 
 # Still before video
@@ -16,8 +16,10 @@ Show the completed still, obtain visual approval, and pin that immutable version
 An existing approved character/frame can start at the animation step without generating another still.
 
 Animate through `wan3_i2v` by default or `seedance25_i2v` for synthetic dialogue.
-Those aliases use the current `Seedance___image_to_video` interim while pending.
-Real-person references prohibit that interim and remain pending Wan. Do not weaken that constraint.
+Wan uses `Fal___generate_wan3_i2v` with the approved version in `start_image_url` and saved-job
+polling through `Fal___get_video_task`. Only the Seedance dialogue exception uses the current
+`Seedance___image_to_video` interim while 2.5 remains pending.
+Real-person references force Wan and require `real_face_refs=true` plus `likeness_consent=true`.
 Read [image to video](../i2v/SKILL.md) for native inputs and saved-job polling.
 
 Follow `read_studio_context.intent_route`. Selection uses the explicit requested provider/model,

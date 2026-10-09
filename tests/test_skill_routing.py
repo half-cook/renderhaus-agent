@@ -100,8 +100,8 @@ class SkillContracts(unittest.TestCase):
 
     def test_fixture_preserves_active_workbook_rows_and_explains_pending_dependencies(self):
         self.assertEqual(len(CASES), 122)
-        self.assertEqual(sum(not c["skip_reason"] for c in CASES), 80)
-        self.assertEqual(sum(bool(c["skip_reason"]) for c in CASES), 42)
+        self.assertEqual(sum(not c["skip_reason"] for c in CASES), 84)
+        self.assertEqual(sum(bool(c["skip_reason"]) for c in CASES), 38)
         self.assertTrue(all(c["source_status"] != "archived" for c in CASES))
         self.assertTrue(all("[project.confidential=true]" not in c["prompt"] for c in CASES))
         self.assertTrue(all(c["expected_skill"] != "confidential-route" for c in CASES))
@@ -118,11 +118,11 @@ class SkillContracts(unittest.TestCase):
 
         video = route_intent("generate a video of a forest")
         self.assertEqual(video.alias, "wan3_t2v")
-        self.assertEqual(video.tool, "Seedance___text_to_video")
-        self.assertIn("interim default", video.disclosure)
+        self.assertEqual(video.tool, "Fal___generate_wan3_t2v")
+        self.assertNotIn("interim default", video.disclosure)
         image = route_intent("animate an image")
         self.assertEqual(image.alias, "wan3_i2v")
-        self.assertEqual(image.tool, "Seedance___image_to_video")
+        self.assertEqual(image.tool, "Fal___generate_wan3_i2v")
         self.assertEqual(route_intent("tell me a joke").status, "unrouted")
 
     def test_named_pending_specialists_never_dispatch_unrelated_paid_tools(self):

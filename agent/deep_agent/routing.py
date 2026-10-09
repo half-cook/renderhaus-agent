@@ -172,7 +172,9 @@ def _capability_price(row: dict):
         return price
     provider, model = row["provider"], row["model"]
     if provider == "fal":
-        if row.get("duration_field") == "duration":
+        if model.startswith("alibaba/wan-3.0/"):
+            values = {resolution: str(value) for resolution, value in rates.WAN3_CENTS_PER_SECOND.items()}
+        elif model.startswith("fal-ai/vidu/q4/"):
             values = {resolution: str(value) for resolution, value in rates.vidu_q4_rates().items()}
         else:
             from providers.fal.wan import endpoint_for
@@ -257,7 +259,7 @@ def intent_constraints(prompt: str, *, tier: str | None = None, confidential: bo
         if re.search(r"vidu", prompt, re.I):
             reference = required.get("reference_elements") or required.get("voice_references") or args.get("reference_image_urls") or args.get("reference_audio_urls")
             model = POLICY["providers"]["fal"]["default_models"]["vidu_q4_r2v" if reference else "vidu_q4_i2v"]
-        else:
+        elif re.search(r"vace|\bwan[ -]?2", prompt, re.I):
             model = "fal-ai/wan-22-vace-fun-a14b" if re.search(r"wan[ -]?2\.2", prompt, re.I) else POLICY["providers"]["fal"]["default_model"]
     if re.search(r"kling.*(?:turbo|omni)", prompt, re.I):
         model = "kling-3.0-omni" if re.search("omni", prompt, re.I) else "kling-3.0-turbo"
@@ -322,6 +324,9 @@ def select_provider(job: str, *, tier: str | None = None, required: dict | None 
         alias = aliases.get(capability)
         if provider == "fal" and model and "vidu" in model:
             alias = "vidu_q4_r2v" if "reference" in model else "vidu_q4_i2v"
+        elif provider == "fal" and model in {"fal-ai/wan-vace-14b", "fal-ai/wan-22-vace-fun-a14b"}:
+            alias = {"t2v": "wan_t2v", "i2v": "wan_i2v", "reference_video": "wan_reference",
+                     "v2v_edit": "wan_vace_edit"}.get(capability)
         if provider == "kling" and model == "kling-3.0-omni":
             alias = "kling_omni"
         if not alias:
@@ -360,7 +365,9 @@ def select_provider(job: str, *, tier: str | None = None, required: dict | None 
         model = row["model"]
         for key, feature in [("generate_audio", "native_audio"), ("audio", "native_audio"), ("multi_shot", "multi_shot"),
                              ("shots", "multi_shot"), ("elements", "reference_elements"), ("reference_image_urls", "reference_elements"),
-                             ("ref_image_urls", "reference_elements"), ("reference_audio_urls", "voice_references"),
+                             ("ref_image_urls", "reference_elements"), ("reference_video_urls", "reference_elements"),
+                             ("reference_audio_urls", "voice_references"),
+                             ("end_image_url", "start_end_frame"),
                              ("last_frame_url", "start_end_frame"), ("end_image_path_or_url", "start_end_frame"), ("last_frame_path_or_url", "start_end_frame")]:
             if args.get(key):
                 required[feature] = True
@@ -383,8 +390,8 @@ def select_provider(job: str, *, tier: str | None = None, required: dict | None 
         unsupported |= any(args.get(k) and resolution_value(args[k]) not in row["resolutions"] for k in ("resolution", "size") if k in controls and args.get(k) != "auto")
         audio_field = row.get("native_audio_field", "generate_audio")
         unsupported |= bool(required.get("native_audio") and audio_field is not None and audio_field not in controls)
-        unsupported |= bool(required.get("start_end_frame") and not any(k in controls for k in ("last_frame_url", "end_image_path_or_url", "last_frame_path_or_url")))
-        unsupported |= bool(required.get("reference_elements") and not any(k in controls for k in ("elements", "ref_image_urls", "reference_image_urls")))
+        unsupported |= bool(required.get("start_end_frame") and not any(k in controls for k in ("last_frame_url", "end_image_url", "end_image_path_or_url", "last_frame_path_or_url")))
+        unsupported |= bool(required.get("reference_elements") and not any(k in controls for k in ("elements", "ref_image_urls", "reference_image_urls", "reference_video_urls")))
         unsupported |= bool(required.get("voice_references") and "reference_audio_urls" not in controls)
         if row.get("frame_limits"):
             fps = args.get("frames_per_second", 16)
@@ -425,6 +432,11 @@ def select_provider(job: str, *, tier: str | None = None, required: dict | None 
     provider_id = row["provider"] if row else tool_parts(tool)[0] if tool else "local"
     label = row["label"] if row else alias
     disclosure = f"Selected {label}. Provider {provider_id}; model {model or 'none'}. {basis}. {quote.description}"
+    if predicates["real_face_refs"] and alias in {"wan3_t2v", "wan3_i2v", "wan3_r2v"}:
+        required["real_face_refs"] = True
+        disclosure += " Real-person likeness consent " + (
+            "acknowledged." if args.get("likeness_consent") is True else "required before generation."
+        )
     return Route(tool=tool, alias=alias, basis=basis, dispatch_tool=_dispatch(tool), status="ready", reason=basis,
                  provider=provider_id, model=model, job_type=capability, required=required,
                  estimated_cost=quote.public(), disclosure=disclosure)
@@ -580,7 +592,11 @@ def estimate_cost(name: str, arguments: dict, *, list_price: bool = False) -> Co
             and (arguments.get("model") or os.getenv("KLING_MODEL")) == "kling-3.0-turbo"
         ):
             raise ValueError("Kling Turbo audio pricing is unconfirmed.")
-        if provider == "fal" and tool in POLICY["providers"]["fal"].get("fixed_models", {}):
+        if provider == "fal" and tool in {"generate_wan3_t2v", "generate_wan3_i2v", "generate_wan3_r2v"}:
+            from server.billing_rates import wan3_price_cents
+
+            wan3_price_cents(arguments)
+        elif provider == "fal" and tool in {"vidu_q4_i2v", "vidu_q4_r2v"}:
             from server.billing_rates import vidu_q4_price_cents
 
             vidu_q4_price_cents(arguments)
@@ -618,7 +634,9 @@ def _published_cost(provider: str, tool: str, arguments: dict):
         return rates._seedance_cost(arguments)
     if provider == "seedream":
         return rates._seedream_cost(arguments)
-    if provider == "fal" and tool in POLICY["providers"]["fal"].get("fixed_models", {}):
+    if provider == "fal" and tool in {"generate_wan3_t2v", "generate_wan3_i2v", "generate_wan3_r2v"}:
+        cents = rates.wan3_price_cents(arguments)
+    elif provider == "fal" and tool in {"vidu_q4_i2v", "vidu_q4_r2v"}:
         cents = rates.vidu_q4_price_cents(arguments)
     elif provider == "fal":
         from providers.fal.wan import endpoint_for, price_cents

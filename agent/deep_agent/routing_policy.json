@@ -223,7 +223,10 @@
         "fal-ai/wan-vace-14b",
         "fal-ai/wan-22-vace-fun-a14b",
         "fal-ai/vidu/q4/image-to-video",
-        "fal-ai/vidu/q4/reference-to-video"
+        "fal-ai/vidu/q4/reference-to-video",
+        "alibaba/wan-3.0/text-to-video",
+        "alibaba/wan-3.0/image-to-video",
+        "alibaba/wan-3.0/reference-to-video"
       ],
       "default_model": "fal-ai/wan-vace-14b",
       "model_policies": {
@@ -252,15 +255,60 @@
           "allowed_regions": [],
           "notes": "Commercial use is labelled on fal model pages. TODO review Vidu training/output terms before training eligibility.",
           "explicit_only": true
+        },
+        "alibaba/wan-3.0/text-to-video": {
+          "license": "service-terms",
+          "license_description": "closed weights, commercial API via fal",
+          "license_source": "https://fal.ai/legal/terms-of-service",
+          "training_eligible": false,
+          "training_reason": "fal terms 14(c) restrict improving competing third-party products from outputs. No unambiguous model-training grant verified.",
+          "commercial_status": "commercial API; rights to input media required",
+          "consent_requirements": "Real-person likeness references require explicit likeness_consent acknowledgement.",
+          "consent_source": "https://fal.ai/legal/terms-of-service",
+          "allowed_regions": [],
+          "read_date": "2026-10-09",
+          "consent_verification": "fal terms 6(d) require input rights and consents. Alibaba-specific real-face consent flow UNVERIFIED."
+        },
+        "alibaba/wan-3.0/image-to-video": {
+          "license": "service-terms",
+          "license_description": "closed weights, commercial API via fal",
+          "license_source": "https://fal.ai/legal/terms-of-service",
+          "training_eligible": false,
+          "training_reason": "fal terms 14(c) restrict improving competing third-party products from outputs. No unambiguous model-training grant verified.",
+          "commercial_status": "commercial API; rights to input media required",
+          "consent_requirements": "Real-person likeness references require explicit likeness_consent acknowledgement.",
+          "consent_source": "https://fal.ai/legal/terms-of-service",
+          "allowed_regions": [],
+          "read_date": "2026-10-09",
+          "consent_verification": "fal terms 6(d) require input rights and consents. Alibaba-specific real-face consent flow UNVERIFIED."
+        },
+        "alibaba/wan-3.0/reference-to-video": {
+          "license": "service-terms",
+          "license_description": "closed weights, commercial API via fal",
+          "license_source": "https://fal.ai/legal/terms-of-service",
+          "training_eligible": false,
+          "training_reason": "fal terms 14(c) restrict improving competing third-party products from outputs. No unambiguous model-training grant verified.",
+          "commercial_status": "commercial API; rights to input media required",
+          "consent_requirements": "Real-person likeness references require explicit likeness_consent acknowledgement.",
+          "consent_source": "https://fal.ai/legal/terms-of-service",
+          "allowed_regions": [],
+          "read_date": "2026-10-09",
+          "consent_verification": "fal terms 6(d) require input rights and consents. Alibaba-specific real-face consent flow UNVERIFIED."
         }
       },
       "fixed_models": {
         "vidu_q4_i2v": "fal-ai/vidu/q4/image-to-video",
-        "vidu_q4_r2v": "fal-ai/vidu/q4/reference-to-video"
+        "vidu_q4_r2v": "fal-ai/vidu/q4/reference-to-video",
+        "generate_wan3_t2v": "alibaba/wan-3.0/text-to-video",
+        "generate_wan3_i2v": "alibaba/wan-3.0/image-to-video",
+        "generate_wan3_r2v": "alibaba/wan-3.0/reference-to-video"
       },
       "default_models": {
         "vidu_q4_i2v": "fal-ai/vidu/q4/image-to-video",
-        "vidu_q4_r2v": "fal-ai/vidu/q4/reference-to-video"
+        "vidu_q4_r2v": "fal-ai/vidu/q4/reference-to-video",
+        "generate_wan3_t2v": "alibaba/wan-3.0/text-to-video",
+        "generate_wan3_i2v": "alibaba/wan-3.0/image-to-video",
+        "generate_wan3_r2v": "alibaba/wan-3.0/reference-to-video"
       },
       "host": "fal",
       "us_available": "yes",
@@ -630,61 +678,70 @@
       "reason": "provider pending: HyperFrames overlays (feat/hyperframes-overlays)"
     },
     "wan3_t2v": {
-      "gateway_tool": null,
-      "status": "pending",
+      "gateway_tool": "Fal___generate_wan3_t2v",
+      "status": "ready",
       "provider": "fal",
-      "reason": "provider pending: wan3_t2v (feat/provider-fal-wan3)",
-      "verification": "verified; adapter pending; live use disabled",
+      "reason": "Built Wan 3.0 default on fal. FAL_DRY_RUN defaults to true.",
+      "verification": "verified official fal model page and OpenAPI 2026-10-09",
       "training_eligible": false,
       "model": "alibaba/wan-3.0/text-to-video",
       "host": "fal",
       "us_available": "yes",
       "availability_source": "https://fal.ai/legal/terms-of-service",
-      "read_date": "2026-10-08",
-      "license": "commercial API; closed weights; fal model card Commercial use",
-      "license_source": "https://fal.ai/models/alibaba/wan-3.0/reference-to-video",
-      "training_reason": "fal terms 14.3 prohibit improving competing third-party products from outputs",
-      "source": "https://fal.ai/wan-3",
-      "price_source": "https://fal.ai/models/alibaba/wan-3.0/reference-to-video",
-      "dry_run": true
+      "read_date": "2026-10-09",
+      "license": "closed weights, commercial API via fal",
+      "license_source": "https://fal.ai/legal/terms-of-service",
+      "training_reason": "fal terms 14(c) restrict improving competing third-party products from outputs. No unambiguous model-training grant verified.",
+      "source": "https://fal.ai/models/alibaba/wan-3.0/text-to-video/api",
+      "price_source": "https://fal.ai/models/alibaba/wan-3.0/text-to-video",
+      "dry_run": true,
+      "consent_requirements": "Real-person likeness references require explicit likeness_consent acknowledgement.",
+      "consent_source": "https://fal.ai/legal/terms-of-service",
+      "consent_verification": "fal terms 6(d) require input rights and consents. Alibaba-specific real-face consent flow UNVERIFIED."
     },
     "wan3_i2v": {
-      "gateway_tool": null,
-      "status": "pending",
+      "gateway_tool": "Fal___generate_wan3_i2v",
+      "status": "ready",
       "provider": "fal",
-      "reason": "provider pending: wan3_i2v (feat/provider-fal-wan3)",
-      "verification": "verified; adapter pending; live use disabled",
+      "reason": "Built Wan 3.0 default on fal. FAL_DRY_RUN defaults to true.",
+      "verification": "verified official fal model page and OpenAPI 2026-10-09",
       "training_eligible": false,
       "model": "alibaba/wan-3.0/image-to-video",
       "host": "fal",
       "us_available": "yes",
       "availability_source": "https://fal.ai/legal/terms-of-service",
-      "read_date": "2026-10-08",
-      "license": "commercial API; closed weights; fal model card Commercial use",
-      "license_source": "https://fal.ai/models/alibaba/wan-3.0/reference-to-video",
-      "training_reason": "fal terms 14.3 prohibit improving competing third-party products from outputs",
-      "source": "https://fal.ai/wan-3",
-      "price_source": "https://fal.ai/models/alibaba/wan-3.0/reference-to-video",
-      "dry_run": true
+      "read_date": "2026-10-09",
+      "license": "closed weights, commercial API via fal",
+      "license_source": "https://fal.ai/legal/terms-of-service",
+      "training_reason": "fal terms 14(c) restrict improving competing third-party products from outputs. No unambiguous model-training grant verified.",
+      "source": "https://fal.ai/models/alibaba/wan-3.0/image-to-video/api",
+      "price_source": "https://fal.ai/models/alibaba/wan-3.0/image-to-video",
+      "dry_run": true,
+      "consent_requirements": "Real-person likeness references require explicit likeness_consent acknowledgement.",
+      "consent_source": "https://fal.ai/legal/terms-of-service",
+      "consent_verification": "fal terms 6(d) require input rights and consents. Alibaba-specific real-face consent flow UNVERIFIED."
     },
     "wan3_r2v": {
-      "gateway_tool": null,
-      "status": "pending",
+      "gateway_tool": "Fal___generate_wan3_r2v",
+      "status": "ready",
       "provider": "fal",
-      "reason": "provider pending: wan3_r2v (feat/provider-fal-wan3)",
-      "verification": "verified; adapter pending; live use disabled",
+      "reason": "Built Wan 3.0 default on fal. FAL_DRY_RUN defaults to true.",
+      "verification": "verified official fal model page and OpenAPI 2026-10-09",
       "training_eligible": false,
       "model": "alibaba/wan-3.0/reference-to-video",
       "host": "fal",
       "us_available": "yes",
       "availability_source": "https://fal.ai/legal/terms-of-service",
-      "read_date": "2026-10-08",
-      "license": "commercial API; closed weights; fal model card Commercial use",
-      "license_source": "https://fal.ai/models/alibaba/wan-3.0/reference-to-video",
-      "training_reason": "fal terms 14.3 prohibit improving competing third-party products from outputs",
-      "source": "https://fal.ai/wan-3",
+      "read_date": "2026-10-09",
+      "license": "closed weights, commercial API via fal",
+      "license_source": "https://fal.ai/legal/terms-of-service",
+      "training_reason": "fal terms 14(c) restrict improving competing third-party products from outputs. No unambiguous model-training grant verified.",
+      "source": "https://fal.ai/models/alibaba/wan-3.0/reference-to-video/api",
       "price_source": "https://fal.ai/models/alibaba/wan-3.0/reference-to-video",
-      "dry_run": true
+      "dry_run": true,
+      "consent_requirements": "Real-person likeness references require explicit likeness_consent acknowledgement.",
+      "consent_source": "https://fal.ai/legal/terms-of-service",
+      "consent_verification": "fal terms 6(d) require input rights and consents. Alibaba-specific real-face consent flow UNVERIFIED."
     },
     "wan3_edit": {
       "gateway_tool": null,
@@ -2562,6 +2619,230 @@
       "controls": {},
       "durations": {},
       "explicit_only": true
+    },
+    {
+      "provider": "fal",
+      "model": "alibaba/wan-3.0/text-to-video",
+      "label": "Wan 3.0 text to video",
+      "tools": {
+        "t2v": "Fal___generate_wan3_t2v"
+      },
+      "jobs": {
+        "t2v": true,
+        "i2v": false,
+        "start_end_frame": false,
+        "native_audio": true,
+        "multi_shot": true,
+        "v2v_edit": false,
+        "reference_elements": false,
+        "voice_references": false,
+        "lipsync": false,
+        "upscale": false,
+        "image": false,
+        "4k": false,
+        "max_resolution": 1080
+      },
+      "resolutions": [
+        480,
+        720,
+        1080
+      ],
+      "resolution_labels": {
+        "480": "480p",
+        "720": "720p",
+        "1080": "1080p"
+      },
+      "speed_class": "unknown",
+      "policy_ref": "fal",
+      "price": {
+        "unit": "output plus billed reference input seconds",
+        "source": "server.billing_rates.wan3_price_cents",
+        "url": "https://fal.ai/models/alibaba/wan-3.0/text-to-video",
+        "read_date": "2026-10-09"
+      },
+      "notes": "Closed commercial API; output training not permitted by policy. Default 1080p, adaptive aspect ratio, five seconds and native audio. Reference video/audio metadata is required for validation and known-cost estimates.",
+      "controls": {
+        "t2v": [
+          "prompt",
+          "resolution",
+          "aspect_ratio",
+          "duration",
+          "audio",
+          "seed",
+          "enable_thinking",
+          "enable_prompt_expansion",
+          "enable_safety_checker",
+          "real_face_refs",
+          "likeness_consent"
+        ]
+      },
+      "durations": {
+        "t2v": [
+          2,
+          30
+        ]
+      },
+      "duration_field": "duration",
+      "native_audio_field": "audio",
+      "native_audio_default": true,
+      "resolution_default": "1080p",
+      "reference_limits": {},
+      "multi_shot_field": null
+    },
+    {
+      "provider": "fal",
+      "model": "alibaba/wan-3.0/image-to-video",
+      "label": "Wan 3.0 image to video",
+      "tools": {
+        "i2v": "Fal___generate_wan3_i2v"
+      },
+      "jobs": {
+        "t2v": false,
+        "i2v": true,
+        "start_end_frame": true,
+        "native_audio": true,
+        "multi_shot": true,
+        "v2v_edit": false,
+        "reference_elements": false,
+        "voice_references": false,
+        "lipsync": false,
+        "upscale": false,
+        "image": false,
+        "4k": false,
+        "max_resolution": 1080
+      },
+      "resolutions": [
+        480,
+        720,
+        1080
+      ],
+      "resolution_labels": {
+        "480": "480p",
+        "720": "720p",
+        "1080": "1080p"
+      },
+      "speed_class": "unknown",
+      "policy_ref": "fal",
+      "price": {
+        "unit": "output plus billed reference input seconds",
+        "source": "server.billing_rates.wan3_price_cents",
+        "url": "https://fal.ai/models/alibaba/wan-3.0/image-to-video",
+        "read_date": "2026-10-09"
+      },
+      "notes": "Closed commercial API; output training not permitted by policy. Default 1080p, adaptive aspect ratio, five seconds and native audio. Reference video/audio metadata is required for validation and known-cost estimates.",
+      "controls": {
+        "i2v": [
+          "prompt",
+          "resolution",
+          "aspect_ratio",
+          "duration",
+          "audio",
+          "seed",
+          "enable_thinking",
+          "enable_prompt_expansion",
+          "enable_safety_checker",
+          "real_face_refs",
+          "likeness_consent",
+          "start_image_url",
+          "end_image_url"
+        ]
+      },
+      "durations": {
+        "i2v": [
+          2,
+          30
+        ]
+      },
+      "duration_field": "duration",
+      "native_audio_field": "audio",
+      "native_audio_default": true,
+      "resolution_default": "1080p",
+      "reference_limits": {},
+      "multi_shot_field": null
+    },
+    {
+      "provider": "fal",
+      "model": "alibaba/wan-3.0/reference-to-video",
+      "label": "Wan 3.0 reference to video",
+      "tools": {
+        "reference": "Fal___generate_wan3_r2v"
+      },
+      "jobs": {
+        "t2v": false,
+        "i2v": false,
+        "start_end_frame": false,
+        "native_audio": true,
+        "multi_shot": true,
+        "v2v_edit": false,
+        "reference_elements": true,
+        "voice_references": true,
+        "lipsync": false,
+        "upscale": false,
+        "image": false,
+        "4k": false,
+        "max_resolution": 1080
+      },
+      "resolutions": [
+        480,
+        720,
+        1080
+      ],
+      "resolution_labels": {
+        "480": "480p",
+        "720": "720p",
+        "1080": "1080p"
+      },
+      "speed_class": "unknown",
+      "policy_ref": "fal",
+      "price": {
+        "unit": "output plus billed reference input seconds",
+        "source": "server.billing_rates.wan3_price_cents",
+        "url": "https://fal.ai/models/alibaba/wan-3.0/reference-to-video",
+        "read_date": "2026-10-09"
+      },
+      "notes": "Closed commercial API; output training not permitted by policy. Default 1080p, adaptive aspect ratio, five seconds and native audio. Reference video/audio metadata is required for validation and known-cost estimates.",
+      "controls": {
+        "reference": [
+          "prompt",
+          "resolution",
+          "aspect_ratio",
+          "duration",
+          "audio",
+          "seed",
+          "enable_thinking",
+          "enable_prompt_expansion",
+          "enable_safety_checker",
+          "real_face_refs",
+          "likeness_consent",
+          "reference_image_urls",
+          "reference_video_urls",
+          "reference_audio_urls",
+          "reference_video_durations",
+          "reference_video_fps",
+          "reference_audio_durations",
+          "file_url",
+          "web_url"
+        ]
+      },
+      "durations": {
+        "reference": [
+          2,
+          30
+        ]
+      },
+      "duration_field": "duration",
+      "native_audio_field": "audio",
+      "native_audio_default": true,
+      "resolution_default": "1080p",
+      "reference_limits": {
+        "images": 10,
+        "videos": 5,
+        "audio": 5,
+        "video_seconds_total": 15,
+        "audio_seconds_total": 15,
+        "minimum_video_fps": 16
+      },
+      "multi_shot_field": null
     }
   ],
   "image_default_size": "2K",
@@ -2575,7 +2856,7 @@
           "reason": "synthetic dialogue"
         }
       ],
-      "interim": "seedance_t2v",
+      "interim": null,
       "ab_candidates": [
         "gemini_omni_11_flash"
       ]
@@ -2589,7 +2870,7 @@
           "reason": "synthetic dialogue"
         }
       ],
-      "interim": "seedance_i2v",
+      "interim": null,
       "ab_candidates": [
         "gemini_omni_11_flash",
         "vidu_q4_i2v"
@@ -2751,6 +3032,9 @@
     }
   },
   "paid_video_tools": [
+    "Fal___generate_wan3_i2v",
+    "Fal___generate_wan3_r2v",
+    "Fal___generate_wan3_t2v",
     "Fal___image_to_video",
     "Fal___reference_to_video",
     "Fal___text_to_video",
@@ -2809,9 +3093,9 @@
       "v2v_edit": "luma_ray3_modify"
     },
     "fal": {
-      "t2v": "wan_t2v",
-      "i2v": "wan_i2v",
-      "reference_video": "wan_reference",
+      "t2v": "wan3_t2v",
+      "i2v": "wan3_i2v",
+      "reference_video": "wan3_r2v",
       "v2v_edit": "wan_vace_edit"
     },
     "seedance": {
@@ -2835,7 +3119,7 @@
   },
   "named_models": {
     "wan3": {
-      "pattern": "\\bwan(?:[ -]?3(?:\\.0)?|\\b(?!.*(?:2\\.[12]|vace)))",
+      "pattern": "\\bwan(?:[ -]?3(?:\\.0)?\\b|\\b(?![ -]?2(?:\\.\\d+)?\\b)(?!.*vace))",
       "aliases": {
         "t2v": "wan3_t2v",
         "i2v": "wan3_i2v",
@@ -3087,28 +3371,43 @@
   ],
   "model_policies": {
     "wan3_t2v": {
-      "license": "commercial API; closed weights; fal model card Commercial use",
-      "license_source": "https://fal.ai/models/alibaba/wan-3.0/reference-to-video",
+      "license": "service-terms",
+      "license_description": "closed weights, commercial API via fal",
+      "license_source": "https://fal.ai/legal/terms-of-service",
       "training_eligible": false,
-      "training_reason": "fal terms 14.3 prohibit improving competing third-party products from outputs",
-      "commercial_status": "commercial service or permissive code; source media rights still required",
-      "read_date": "2026-10-08"
+      "training_reason": "fal terms 14(c) restrict improving competing third-party products from outputs. No unambiguous model-training grant verified.",
+      "commercial_status": "commercial API; rights to input media required",
+      "consent_requirements": "Real-person likeness references require explicit likeness_consent acknowledgement.",
+      "consent_source": "https://fal.ai/legal/terms-of-service",
+      "allowed_regions": [],
+      "read_date": "2026-10-09",
+      "consent_verification": "fal terms 6(d) require input rights and consents. Alibaba-specific real-face consent flow UNVERIFIED."
     },
     "wan3_i2v": {
-      "license": "commercial API; closed weights; fal model card Commercial use",
-      "license_source": "https://fal.ai/models/alibaba/wan-3.0/reference-to-video",
+      "license": "service-terms",
+      "license_description": "closed weights, commercial API via fal",
+      "license_source": "https://fal.ai/legal/terms-of-service",
       "training_eligible": false,
-      "training_reason": "fal terms 14.3 prohibit improving competing third-party products from outputs",
-      "commercial_status": "commercial service or permissive code; source media rights still required",
-      "read_date": "2026-10-08"
+      "training_reason": "fal terms 14(c) restrict improving competing third-party products from outputs. No unambiguous model-training grant verified.",
+      "commercial_status": "commercial API; rights to input media required",
+      "consent_requirements": "Real-person likeness references require explicit likeness_consent acknowledgement.",
+      "consent_source": "https://fal.ai/legal/terms-of-service",
+      "allowed_regions": [],
+      "read_date": "2026-10-09",
+      "consent_verification": "fal terms 6(d) require input rights and consents. Alibaba-specific real-face consent flow UNVERIFIED."
     },
     "wan3_r2v": {
-      "license": "commercial API; closed weights; fal model card Commercial use",
-      "license_source": "https://fal.ai/models/alibaba/wan-3.0/reference-to-video",
+      "license": "service-terms",
+      "license_description": "closed weights, commercial API via fal",
+      "license_source": "https://fal.ai/legal/terms-of-service",
       "training_eligible": false,
-      "training_reason": "fal terms 14.3 prohibit improving competing third-party products from outputs",
-      "commercial_status": "commercial service or permissive code; source media rights still required",
-      "read_date": "2026-10-08"
+      "training_reason": "fal terms 14(c) restrict improving competing third-party products from outputs. No unambiguous model-training grant verified.",
+      "commercial_status": "commercial API; rights to input media required",
+      "consent_requirements": "Real-person likeness references require explicit likeness_consent acknowledgement.",
+      "consent_source": "https://fal.ai/legal/terms-of-service",
+      "allowed_regions": [],
+      "read_date": "2026-10-09",
+      "consent_verification": "fal terms 6(d) require input rights and consents. Alibaba-specific real-face consent flow UNVERIFIED."
     },
     "wan3_edit": {
       "license": "proprietary API; exact model-specific training rights UNVERIFIED",

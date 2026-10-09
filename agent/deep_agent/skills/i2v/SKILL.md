@@ -4,7 +4,7 @@ description: Animate a supplied start frame or reference set with Wan 3.0; use S
 metadata:
   include_tools: call_media_tool
   routing_tools: wan3_i2v wan3_r2v seedance25_i2v seedance25_r2v
-  gateway_tools: Seedance___get_video_task Seedance___image_to_video
+  gateway_tools: Fal___generate_wan3_i2v Fal___generate_wan3_r2v Fal___get_video_task Seedance___get_video_task Seedance___image_to_video
 ---
 
 # Image to video
@@ -12,16 +12,29 @@ metadata:
 Use `wan3_i2v` for a start frame and `wan3_r2v` for a reference set. Use the matching
 `seedance25_i2v` or `seedance25_r2v` exception for dialogue without real-person references.
 A supplied photo/video of a real person forces Wan and blocks both Seedance and Omni.
-Require consent for real likeness and preserve the approved immutable asset version.
+Set `real_face_refs=true` for real likeness and obtain `likeness_consent=true` before dispatch.
+Preserve the approved immutable asset version. Spending approval cannot replace likeness consent.
 
-Wan 3.0 is pending. Start-frame generation uses only its declared interim
-`Seedance___image_to_video`; synthetic-dialogue i2v uses that same current adapter until 2.5 lands.
-Neither reference-to-video alias has a built interim. Real-face shots also remain pending because
-the Seedance interim is prohibited. Do not replace reference inputs with a single frame to force a route.
+Wan 3.0 uses `Fal___generate_wan3_i2v` for a required `start_image_url` and optional `end_image_url`.
+Use `Fal___generate_wan3_r2v` for reference sets with up to ten `reference_image_urls`, five
+`reference_video_urls` and five `reference_audio_urls`. Supply measured `reference_video_durations`,
+`reference_video_fps` and `reference_audio_durations` alongside the matching references.
+Total input video and audio durations are each at most 15 seconds; input video is at least 16 fps.
+Missing input durations make the price unknown. Video inputs add billed input seconds to output cost.
+Optional document `file_url` and webpage `web_url` inputs require `enable_thinking=true`.
+Never invent these inputs or metadata.
+Common native controls include `prompt`, `resolution`, `aspect_ratio`, `duration`, `audio`, `seed`,
+`enable_thinking`, `enable_prompt_expansion` and `enable_safety_checker`. No negative prompt is supported.
+Defaults are 1080p, adaptive aspect ratio, five seconds and audio enabled. Duration is 2-30 seconds.
+Use prompt instructions for multi-shot generation; no multi_shot boolean is accepted.
+Poll `Fal___get_video_task` with the saved job ID and `download=true`.
+Synthetic-dialogue i2v uses the declared `Seedance___image_to_video` exception interim until 2.5 lands.
+Seedance reference-to-video remains pending without an interim. Do not replace reference inputs with
+a single frame to force a route.
 Future Seedance 2.5 defaults to fal for US/Canada; current BytePlus 1.5 is an interim, not that host upgrade.
 Omni and Vidu are A/B candidates only. An explicit Vidu request belongs in named-provider.
 
-Discover native arguments. Seedance uses `image_path_or_url` and `prompt`; retain
+Discover native arguments. Wan uses `start_image_url`; Seedance uses `image_path_or_url`. Retain
 `renderhaus-asset://` version handles for Studio to resolve. Do not send local paths or invented URLs.
 Poll `Seedance___get_video_task` with the saved ID and `download=true`.
 Inspect the actual result against the approved image and use continuity-qc for comparisons.

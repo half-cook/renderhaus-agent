@@ -4,20 +4,28 @@ description: Generate text-to-video shots using Wan 3.0 by default and Seedance 
 metadata:
   include_tools: call_media_tool
   routing_tools: wan3_t2v seedance25_t2v
-  gateway_tools: Seedance___get_video_task Seedance___text_to_video
+  gateway_tools: Fal___generate_wan3_t2v Fal___get_video_task Seedance___get_video_task Seedance___text_to_video
 ---
 
 # Text to video
 
 Use `wan3_t2v` by default. Use `seedance25_t2v` only for dialogue without real-person references.
 Dialogue includes quoted speech, says, talking and speaking; a silent/no-dialogue request is not the exception.
-Wan 3.0 and Seedance 2.5 remain provider-pending. Their declared current interim is
-`Seedance___text_to_video`, pinned to the existing Seedance adapter. Disclose that interim explicitly.
+Wan 3.0 uses `Fal___generate_wan3_t2v`. Discover its schema before dispatch. Native controls include
+`prompt`, `resolution`, `aspect_ratio`, `duration`, `audio`, `seed`, `enable_thinking`,
+`enable_prompt_expansion` and `enable_safety_checker`. There is no negative-prompt field.
+Defaults are 1080p, adaptive aspect ratio, five seconds and audio enabled. Request 2-30 seconds per shot.
+Multi-shot direction belongs in the prompt, not an invented multi_shot argument.
+Poll `Fal___get_video_task` with the saved job ID and `download=true`.
+Seedance 2.5 remains pending. Its declared exception interim is `Seedance___text_to_video`,
+pinned to the existing Seedance adapter. Disclose that interim explicitly.
 The future Seedance 2.5 host defaults to fal for US and Canadian customers; BytePlus is optional.
 Never claim the current BytePlus 1.5 adapter runs 2.5 or provides US availability.
 
-A real-person photo/video reference forces Wan and prohibits the Seedance interim. Report the pending
-Wan provider instead. Require consent for real likeness. Gemini Omni is an A/B candidate only.
+A real-person photo/video reference forces Wan and prohibits the Seedance interim. Read i2v for
+start-frame or reference-set generation. Set `real_face_refs=true` and require the person's consent,
+acknowledged with `likeness_consent=true`. Spend approval does not supply missing likeness consent.
+Gemini Omni is an A/B candidate only.
 Split a request over 30 seconds into separate shots or refuse a single-shot request with that limit.
 The built interim can have a shorter limit; preserve its actual schema constraints.
 

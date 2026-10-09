@@ -601,10 +601,12 @@ class DeepAgentTests(unittest.IsolatedAsyncioTestCase):
                 agent_backend()
 
     async def test_new_paid_providers_dispatch_through_media_role_with_approval(self):
-        for name in ("Kling___text_to_video", "Runway___video_to_video", "Fal___text_to_video", "Luma___modify_video"):
+        for name in ("Kling___text_to_video", "Runway___video_to_video", "Fal___text_to_video",
+                     "Fal___generate_wan3_t2v", "Luma___modify_video"):
             with self.subTest(tool=name):
                 tool = Tool(name=name, description="Paid video", inputSchema=IMAGE.input_schema)
-                request = self.request().model_copy(update={"prompt": name.split("___")[0] + " video"})
+                prompt = "Wan VACE video" if name == "Fal___text_to_video" else name.split("___")[0] + " video"
+                request = self.request().model_copy(update={"prompt": prompt})
                 studio = _context_from_request(request)
                 gateway = Gateway(tools=[tool], result={"status": "queued", "job_id": "job-1"})
                 media = call("call_media_tool", {"tool_name": name, "arguments": {"prompt": "Hero"}}, "paid")

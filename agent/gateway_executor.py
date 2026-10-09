@@ -180,23 +180,28 @@ class GatewayExecutor:
             return f"Capability map selected {route.tool} ({route.model}). Discover its schema and use that route. {route.reason}"
         row = next((row for row in POLICY["capabilities"]
                     if row["model"] == route.model and name in row["tools"].values()), {})
+        if route.required.get("real_face_refs") and arguments.get("likeness_consent") is not True:
+            return "Real-person likeness references require explicit likeness_consent=true acknowledgement."
         audio_field = row.get("native_audio_field", "generate_audio")
-        for field, feature in [(audio_field, "native_audio"), ("multi_shot", "multi_shot")]:
+        for field, feature in [(audio_field, "native_audio"), (row.get("multi_shot_field", "multi_shot"), "multi_shot")]:
             if field is None:
                 continue
-            if route.required.get(feature) and not arguments.get(field):
+            default = row.get("native_audio_default", False) if feature == "native_audio" else False
+            if route.required.get(feature) and not arguments.get(field, default):
                 return f"Required capability {feature} must be enabled with {field}=true on the selected route."
         if route.required.get("start_end_frame") and not any(arguments.get(key) for key in (
-            "last_frame_url", "end_image_path_or_url", "last_frame_path_or_url",
+            "last_frame_url", "end_image_url", "end_image_path_or_url", "last_frame_path_or_url",
         )):
             return "Required end frame must be supplied using the selected tool's end-frame field."
-        if route.required.get("reference_elements") and not (arguments.get("elements") or arguments.get("ref_image_urls") or arguments.get("reference_image_urls")):
+        if route.required.get("reference_elements") and not any(arguments.get(key) for key in (
+            "elements", "ref_image_urls", "reference_image_urls", "reference_video_urls",
+        )):
             return "Required reference elements must be supplied using the selected tool's reference field."
         if route.required.get("voice_references") and not arguments.get("reference_audio_urls"):
             return "Required voice references must be supplied using reference_audio_urls."
         if route.required.get("max_resolution"):
             value = (arguments.get("ratio", "1280:720") if provider == "runway" else
-                     arguments.get("size", "2K") if provider == "seedream" else arguments.get("resolution", "720p"))
+                     arguments.get("size", "2K") if provider == "seedream" else arguments.get("resolution", row.get("resolution_default", "720p")))
             actual = resolution_value(value)
             if actual < route.required["max_resolution"]:
                 return "Required output resolution must be set in the selected tool's native arguments."
