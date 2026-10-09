@@ -8,6 +8,7 @@ from unittest.mock import MagicMock, Mock, patch
 
 from agent.deep_agent.continuity_qc import (
     DINO_MODEL,
+    DINOV3_MODEL,
     SIGLIP_MODEL,
     ContinuityConfig,
     ContinuityQC,
@@ -106,10 +107,96 @@ class ContinuityQCTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "approved continuity model"):
             LazyImageEmbedder("other-model")
 
-    def test_dinov3_is_off_and_opt_in_requires_gated_adapter(self):
+    def test_dinov3_is_off_by_default_in_config_and_policy(self):
+        from agent.deep_agent.routing import POLICY
+
         self.assertFalse(ContinuityConfig().enable_dinov3)
-        with self.assertRaisesRegex(ValueError, "gated access"):
-            self.checker(config=ContinuityConfig(enable_dinov3=True))
+        self.assertFalse(POLICY["continuity_qc"]["dinov3_enabled"])
+        checker = self.checker()
+        self.assertEqual(checker.dino_model, DINO_MODEL)
+        self.assertEqual(checker.score([Shot("one", "a"), Shot("two", "b")]).dino_model, DINO_MODEL)
+
+    def test_dinov3_opt_in_replaces_the_dino_slot(self):
+        vectors = {"a": [1, 0], "b": [1, 0], "c": [0, 1]}
+        checker = ContinuityQC(
+            siglip=FakeEmbedder(SIGLIP_MODEL, vectors),
+            dino=FakeEmbedder(DINOV3_MODEL, vectors),
+            config=ContinuityConfig(enable_dinov3=True),
+        )
+        report = checker.score([Shot("one", "a"), Shot("two", "b"), Shot("three", "c")])
+        self.assertEqual(report.dino_model, DINOV3_MODEL)
+        self.assertEqual([pair.accepted for pair in report.pairs], [True, False])
+        self.assertEqual(checker.dino.frames, ["a", "b", "c"])
+
+    def test_dino_slot_must_match_the_switch(self):
+        with self.assertRaisesRegex(ValueError, "matching SigLIP/DINO slot"):
+            self.checker(dino={"a": [1, 0]}, config=ContinuityConfig(enable_dinov3=True))
+        with self.assertRaisesRegex(ValueError, "matching SigLIP/DINO slot"):
+            ContinuityQC(
+                siglip=FakeEmbedder(SIGLIP_MODEL, {}), dino=FakeEmbedder(DINOV3_MODEL, {}),
+            )
+
+    def test_dinov3_embedder_requires_explicit_opt_in(self):
+        with self.assertRaisesRegex(ValueError, "opt-in"):
+            LazyImageEmbedder(DINOV3_MODEL)
+        self.assertEqual(LazyImageEmbedder(DINOV3_MODEL, allow_dinov3=True).model_id, DINOV3_MODEL)
+
+    def test_dinov3_default_construction_is_lazy(self):
+        with patch.dict(sys.modules, {"torch": None, "transformers": None}):
+            checker = ContinuityQC(config=ContinuityConfig(enable_dinov3=True))
+            self.assertEqual(checker.dino.model_id, DINOV3_MODEL)
+            with self.assertRaisesRegex(RuntimeError, "optional"):
+                checker.dino.embed("frame")
+
+    def dinov3_loader(self):
+        transformers, torch = MagicMock(), MagicMock()
+        model = transformers.AutoModel.from_pretrained.return_value
+        model.return_value.last_hidden_state.__getitem__.return_value.squeeze.return_value.tolist.return_value = [0, 1]
+        return transformers, torch
+
+    def test_dinov3_loads_from_cache_with_token_only_from_environment(self):
+        fake_token = "hf_fake_test_value"
+        transformers, torch = self.dinov3_loader()
+        with patch.dict(sys.modules, {"transformers": transformers, "torch": torch}), patch.dict(
+            "os.environ", {"HF_TOKEN": fake_token}
+        ):
+            embedder = LazyImageEmbedder(DINOV3_MODEL, allow_dinov3=True)
+            self.assertEqual(embedder.embed("frame"), [0, 1])
+        for loader in (transformers.AutoModel, transformers.AutoImageProcessor):
+            loader.from_pretrained.assert_called_once_with(
+                DINOV3_MODEL, local_files_only=True, token=fake_token,
+            )
+        self.assertNotIn(fake_token, repr(vars(embedder)))
+        model = transformers.AutoModel.from_pretrained.return_value
+        model.return_value.last_hidden_state.__getitem__.assert_called_with((slice(None), 0))
+
+    def test_dinov3_without_token_still_uses_local_cache_only(self):
+        transformers, torch = self.dinov3_loader()
+        with patch.dict(sys.modules, {"transformers": transformers, "torch": torch}), patch.dict(
+            "os.environ", {}, clear=True
+        ):
+            LazyImageEmbedder(DINOV3_MODEL, allow_dinov3=True).embed("frame")
+        transformers.AutoModel.from_pretrained.assert_called_once_with(DINOV3_MODEL, local_files_only=True)
+
+    def test_dinov3_on_old_transformers_explains_version_without_leaking_token(self):
+        transformers = Mock()
+        transformers.AutoImageProcessor.from_pretrained.side_effect = ValueError(
+            "Unrecognized model type dinov3_vit"
+        )
+        with patch.dict(sys.modules, {"transformers": transformers, "torch": MagicMock()}), patch.dict(
+            "os.environ", {"HF_TOKEN": "hf_fake_test_value"}
+        ):
+            with self.assertRaisesRegex(RuntimeError, "transformers>=4.56") as caught:
+                LazyImageEmbedder(DINOV3_MODEL, allow_dinov3=True).embed("frame")
+        self.assertNotIn("hf_fake_test_value", str(caught.exception))
+        self.assertIsNone(caught.exception.__cause__)
+
+    def test_dinov3_missing_from_cache_fails_with_provisioning_message(self):
+        transformers = Mock()
+        transformers.AutoImageProcessor.from_pretrained.side_effect = OSError("not cached")
+        with patch.dict(sys.modules, {"transformers": transformers, "torch": MagicMock()}):
+            with self.assertRaisesRegex(RuntimeError, "QC does not download"):
+                LazyImageEmbedder(DINOV3_MODEL, allow_dinov3=True).embed("frame")
 
     def test_import_and_construction_do_not_load_optional_dependencies(self):
         with patch.dict(sys.modules, {"torch": None, "transformers": None}):
@@ -133,7 +220,9 @@ class ContinuityQCTests(unittest.TestCase):
                     1,
                     0,
                 ]
-                with patch.dict(sys.modules, {"transformers": transformers, "torch": torch}):
+                with patch.dict(sys.modules, {"transformers": transformers, "torch": torch}), patch.dict(
+                    "os.environ", {"HF_TOKEN": "hf_fake_test_value"}
+                ):
                     embedder = LazyImageEmbedder(model_id)
                     self.assertEqual(embedder.embed("frame"), [1, 0])
                     self.assertEqual(embedder.embed("frame"), [1, 0])
@@ -145,6 +234,18 @@ class ContinuityQCTests(unittest.TestCase):
                     model_id,
                     local_files_only=True,
                 )
+
+    def test_siglip_handles_transformers_5_pooled_output(self):
+        from types import SimpleNamespace
+
+        transformers, torch = MagicMock(), MagicMock()
+        pooled = MagicMock()
+        pooled.squeeze.return_value.tolist.return_value = [0.6, 0.8]
+        model = transformers.AutoModel.from_pretrained.return_value
+        model.get_image_features.return_value = SimpleNamespace(pooler_output=pooled)
+        with patch.dict(sys.modules, {"transformers": transformers, "torch": torch}):
+            self.assertEqual(LazyImageEmbedder(SIGLIP_MODEL).embed("frame"), [0.6, 0.8])
+        pooled.squeeze.assert_called_once_with(0)
 
     def test_missing_cached_weights_fail_with_provisioning_message(self):
         transformers = Mock()
