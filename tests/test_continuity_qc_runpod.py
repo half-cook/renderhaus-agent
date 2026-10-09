@@ -389,6 +389,34 @@ class RunPodBackendTests(unittest.TestCase):
                         release.set()
                         self.assertTrue(exited.wait(1.0))
 
+    def test_delayed_daemon_keeps_the_opener_captured_before_start(self):
+        release, exited = threading.Event(), threading.Event()
+        thread_class = threading.Thread
+
+        def delayed_thread(*, target, daemon, name):
+            def delayed():
+                release.wait(1.0)
+                try:
+                    target()
+                finally:
+                    exited.set()
+            return thread_class(target=delayed, daemon=daemon, name=name)
+
+        self.http.return_value = response(completed())
+        with patch("time.monotonic", time.perf_counter), patch.dict(
+            "os.environ", {"CONTINUITY_QC_RUNPOD_TIMEOUT_SECONDS": "0.02"}
+        ), patch.object(runpod_transport.threading, "Thread", side_effect=delayed_thread):
+            try:
+                self.assert_skipped(self.checker().score(self.shots))
+                with patch.object(runpod_transport, "_open") as restored_opener:
+                    release.set()
+                    self.assertTrue(exited.wait(1.0))
+                    restored_opener.assert_not_called()
+                self.http.assert_called_once()
+            finally:
+                release.set()
+                self.assertTrue(exited.wait(1.0))
+
     def test_local_backend_never_dispatches_http(self):
         local = ContinuityQC(siglip=Embedder(SIGLIP_MODEL, 0.92),
                              dino=Embedder(DINO_MODEL, 0.74),

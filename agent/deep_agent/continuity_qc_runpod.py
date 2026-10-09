@@ -98,10 +98,11 @@ class RunPodClient:
 
     def _read(self, request: urllib.request.Request, timeout: float) -> bytes:
         outcomes: queue.Queue[bytes | Exception] = queue.Queue(maxsize=1)
+        opener = _open
 
         def read_response():
             try:
-                with _open(request, timeout=timeout) as result:
+                with opener(request, timeout=timeout) as result:
                     raw = result.read(MAX_JSON_BYTES + 1)
             except Exception as exc:
                 outcomes.put(exc)
