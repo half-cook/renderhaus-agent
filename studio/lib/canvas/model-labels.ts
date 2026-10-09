@@ -1,5 +1,7 @@
 const MODEL_LABELS: Record<string, string> = {
   "mureka-9.5": "Mureka V9.5",
+  "act_two": "Runway Act-Two",
+  "fal-ai/kling-video/v3/pro/motion-control": "Kling 3 Pro Motion Control",
   "mureka/api/generate/lyrics-video": "Mureka lyrics video",
   "Starlight Precise 2.6": "Topaz Starlight Precise 2.6",
   Apollo: "Topaz Apollo",

@@ -10,7 +10,7 @@ This provider reference informs the installed intent skills. Those skills own li
 
 Route to Runway generation/edit/image tools only when the user requests Runway, Gen-4.5,
 Gen-4 Image or Aleph. A generic edit request follows Wan 3.0 and its declared interim.
-Runway Act-Two is a separate pending performance-transfer default. Use Aleph to change the scene,
+Runway Act-Two is the built performance-transfer default. Use Aleph to change the scene,
 objects, appearance, or lighting in a source clip with a text instruction.
 Use the ordinary composition renderer for cuts, titles, audio placement, and assembly.
 

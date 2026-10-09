@@ -1,13 +1,9 @@
-# act-two provider reference
+# Act-Two provider reference
 
-Status: provider pending (feat/perf-transfer).
+Status: built in feat/perf-transfer.
 
-Canonical routing aliases are `runway_act_two, kling_motion_control`. They are not Gateway endpoints.
-
-Runway Act-Two is the facial/upper-body default. Kling Motion Control is the full-body/dance exception. Existing generation tools do not implement performance transfer.
-
-The relevant installed skill explains default/exception selection and pending behavior.
-Read [capability map](../CAPABILITY_MAP.md). Use server billing estimates only; unverified
-prices remain unknown. Every paid video pauses with an estimate even in autonomous runs.
-No adapter is added by the routing branch. Future activation requires verified commercial
-terms, US-host availability, native typed contract, approval, polling and real artifact validation.
+The installed [act-two skill](../../agent/deep_agent/skills/act-two/SKILL.md) uses
+`Runway___act_two` by default and `Fal___kling_motion_control` for full-body motion.
+The canonical aliases remain `runway_act_two` and `kling_motion_control`.
+See [verified contracts, prices, consent and chunking](../PERFORMANCE_TRANSFER.md).
+Browser E2E and live quality remain blocked. No third-party skill code was copied.
