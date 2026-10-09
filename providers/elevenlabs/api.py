@@ -188,13 +188,10 @@ def dispatch_tool(tool_name: str, arguments: dict) -> dict:
     arguments = dict(arguments)
     if tool_name.startswith(("text_to_speech_", "text_to_dialogue_")):
         arguments.setdefault("model_id", os.getenv("ELEVENLABS_TTS_MODEL", "eleven_v4_turbo"))
-    # Model ID is official; HTTP compatibility is UNVERIFIED. Docs read 2026-10-08:
-    # https://elevenlabs.io/docs/eleven-api/guides/how-to/websockets/realtime-tdd
-    unverified_http = arguments.get("model_id") == "eleven_v4_turbo"
     path, params, headers, body = prepare_request(tool_name, arguments)
-    if dry_run() or unverified_http:
+    if dry_run():
         return {"status": "dry_run", "provider": "elevenlabs", "tool": tool_name,
-                "note": "UNVERIFIED HTTP support for eleven_v4_turbo; no request made." if unverified_http else "No ElevenLabs request was made and no media was generated."}
+                "note": "No ElevenLabs request was made and no media was generated."}
     headers["xi-api-key"] = api_key()
     output_format = str(params.get("output_format") or "")
     with httpx.Client(timeout=httpx.Timeout(180, connect=15), follow_redirects=False, trust_env=False) as client:
