@@ -188,6 +188,40 @@ process.stdout.write(JSON.stringify({timelines, registry: sandbox.window.__timel
 
 
 class HyperFramesPackRoutingTests(unittest.TestCase):
+    def test_caption_styles_keep_motion_routing_with_trailing_instructions(self):
+        from agent.deep_agent.routing import route_intent
+
+        for style in ("cinematic captions", "editorial captions"):
+            for suffix in ("", "with hero words", "please", "over product footage"):
+                prompt = f"Add {style} {suffix}".strip()
+                with self.subTest(prompt=prompt):
+                    route = route_intent(prompt)
+                    self.assertEqual((route.skill, route.alias, route.tool, route.status),
+                                     ("motion-graphics", "remotion_render", "Remotion___render_timeline", "ready"))
+
+    def test_still_output_noun_phrases_preserve_image_generation_with_caption_styles(self):
+        from agent.deep_agent.routing import route_intent
+
+        for verb in ("Generate", "Create"):
+            for output in ("an image", "images", "an image collage", "a photo collage poster", "a still poster"):
+                for style in ("cinematic captions", "editorial captions"):
+                    prompt = f"{verb} {output} with {style}"
+                    with self.subTest(prompt=prompt):
+                        route = route_intent(prompt)
+                        self.assertEqual((route.skill, route.alias, route.tool, route.status),
+                                         ("image-gen", "gpt_image25_t2i", "OpenAI___generate_image", "ready"))
+
+    def test_motion_output_noun_phrases_preserve_remotion_with_source_clauses(self):
+        from agent.deep_agent.routing import route_intent
+
+        for output in ("a photo collage video", "an image collage animation", "an animated photo collage"):
+            for source in ("from supplied photos", "using the uploaded image", "with source images"):
+                prompt = f"Create {output} {source}"
+                with self.subTest(prompt=prompt):
+                    route = route_intent(prompt)
+                    self.assertEqual((route.skill, route.alias, route.tool, route.status),
+                                     ("motion-graphics", "remotion_render", "Remotion___render_timeline", "ready"))
+
     def test_compound_photo_collage_output_is_motion(self):
         from agent.deep_agent.routing import route_intent
 
