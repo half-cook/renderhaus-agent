@@ -188,6 +188,21 @@ process.stdout.write(JSON.stringify({timelines, registry: sandbox.window.__timel
 
 
 class HyperFramesPackRoutingTests(unittest.TestCase):
+    def test_html_templates_keep_remotion_without_an_explicit_hyperframes_name(self):
+        from agent.deep_agent.routing import route_intent
+
+        prompts = ["use an HTML template for the title card",
+                   "use an HTML template for cinematic captions",
+                   "use an HTML template for a tactile collage video"]
+        for enabled in ("true", "false"):
+            with patch.dict(os.environ, {"HYPERFRAMES_ENABLED": enabled}):
+                for prompt in prompts:
+                    for arguments in (None, {"explicit_hyperframes": True}, {"explicit_html_template": True}):
+                        with self.subTest(enabled=enabled, prompt=prompt, arguments=arguments):
+                            route = route_intent(prompt, arguments=arguments)
+                            self.assertEqual((route.skill, route.alias, route.tool, route.status),
+                                             ("motion-graphics", "remotion_render", "Remotion___render_timeline", "ready"))
+
     def test_source_images_preserve_caption_and_collage_motion_output(self):
         from agent.deep_agent.routing import route_intent
 
@@ -235,7 +250,8 @@ class HyperFramesPackRoutingTests(unittest.TestCase):
             with patch.dict(os.environ, {"HYPERFRAMES_ENABLED": enabled}):
                 for confidential in (True, False):
                     for prompt in ("HyperFrames cinematic caption over product footage", "HyperFrames tactile collage video",
-                                   "HyperFrames animated paper collage using the uploaded photo"):
+                                   "HyperFrames animated paper collage using the uploaded photo",
+                                   "use an HTML template for the title card with HyperFrames"):
                         with self.subTest(enabled=enabled, confidential=confidential, prompt=prompt):
                             route = route_intent(prompt, confidential=confidential)
                             self.assertEqual(route.skill, "hyperframes")
