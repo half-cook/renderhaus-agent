@@ -178,6 +178,8 @@ def decode_image(data, max_pixels):
     from PIL import Image
 
     with Image.open(io.BytesIO(data)) as image:
+        if image.format not in {"PNG", "JPEG", "WEBP"}:
+            raise ValueError("Frames must be PNG, JPEG, or WebP raster images.")
         width, height = image.size
         if width <= 0 or height <= 0 or width * height > max_pixels:
             raise ValueError("Frame image exceeds the pixel limit.")

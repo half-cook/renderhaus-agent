@@ -101,6 +101,9 @@ from `agent/deep_agent/continuity_qc_calibration.json`. Errors return
 `{"error":{"code":"invalid_input","message":"..."}}` with sanitized messages.
 Errors never include frame URLs, payloads, exception text, or secrets.
 
+Supported frames are still PNG, JPEG, or WebP raster images. The decoder rejects
+other formats before conversion or image loading.
+
 Limits are 8 frames, 8 MiB per decoded frame payload, 24 MiB total payload,
 20 million pixels per still image, 64 pairs, and 128 ASCII characters per unique
 ID. IDs accept letters, digits, `_`, `.`, `:`, and `-`. Requests reject unknown

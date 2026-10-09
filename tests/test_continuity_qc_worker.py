@@ -215,7 +215,7 @@ class WorkerLogicTests(unittest.TestCase):
 
         for size, count in (((2, 2), 1), ((3, 2), 1), ((2, 2), 2), ((0, 2), 1)):
             image = MagicMock()
-            image.size, image.n_frames = size, count
+            image.size, image.n_frames, image.format = size, count, "PNG"
             image.__enter__.return_value = image
             image.convert.return_value = "decoded_rgb"
             with patch.dict(
@@ -229,6 +229,42 @@ class WorkerLogicTests(unittest.TestCase):
                     with self.assertRaises(ValueError):
                         decode_image(b"png", 4)
                     image.convert.assert_not_called()
+
+    def test_decoder_allows_only_safe_raster_formats_before_conversion(self):
+        from worker_logic import decode_image
+
+        for image_format in ("PNG", "JPEG", "WEBP", "EPS", "TIFF", "PDF", None):
+            with self.subTest(format=image_format):
+                image = MagicMock()
+                image.format, image.size, image.n_frames = image_format, (2, 2), 1
+                image.__enter__.return_value = image
+                image.convert.return_value = "decoded_rgb"
+                with patch.dict(
+                    sys.modules,
+                    {"PIL": SimpleNamespace(Image=SimpleNamespace(open=lambda data: image))},
+                ):
+                    if image_format in ("PNG", "JPEG", "WEBP"):
+                        self.assertEqual(decode_image(b"frame", 4), "decoded_rgb")
+                        image.convert.assert_called_once_with("RGB")
+                    else:
+                        with self.assertRaises(ValueError):
+                            decode_image(b"frame", 4)
+                        image.convert.assert_not_called()
+                        image.load.assert_not_called()
+
+    def test_disallowed_image_returns_error_without_model_inference(self):
+        image = MagicMock()
+        image.format, image.size, image.n_frames = "EPS", (2, 2), 1
+        image.__enter__.return_value = image
+        fake = FakeEmbedder()
+        with patch.dict(
+            sys.modules, {"PIL": SimpleNamespace(Image=SimpleNamespace(open=lambda data: image))}
+        ):
+            result = process_request(payload(), fake)
+        self.assertEqual(result["error"]["code"], "image_error")
+        image.convert.assert_not_called()
+        image.load.assert_not_called()
+        self.assertEqual(fake.calls, [])
 
     def test_total_bytes_rejected_before_model_inference(self):
         fake = FakeEmbedder()
