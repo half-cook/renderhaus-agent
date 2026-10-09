@@ -1,4 +1,10 @@
 const MODEL_LABELS: Record<string, string> = {
+  "Starlight Precise 2.6": "Topaz Starlight Precise 2.6",
+  Apollo: "Topaz Apollo",
+  Chronos: "Topaz Chronos",
+  "slp-2.6": "Topaz Starlight Precise 2.6",
+  "apo-8": "Topaz Apollo",
+  "chr-2": "Topaz Chronos",
   avatar_v: "HeyGen Avatar V",
   "sync-3": "sync-3 lip sync",
   "fal-ai/sync-lipsync/v3": "sync-3 lip sync (fal)",

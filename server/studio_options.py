@@ -25,6 +25,10 @@ SEEDREAM_RATIOS = ("1:1", "16:9", "9:16")
 SEEDANCE_RESOLUTIONS = ("480p", "720p", "1080p")
 SEEDREAM_SIZES = ("1K", "2K", "3K")
 STATIC_FIELD_OPTIONS: dict[str, dict[str, list[str | int]]] = {
+    "topaz": {
+        "model": ["Starlight Precise 2.6", "Apollo", "Chronos"],
+        "target_resolution": ["1080p", "4K"],
+    },
     "heygen": {
         "model": ["avatar_v"], "resolution": ["720p", "1080p"],
         "aspect_ratio": ["16:9", "9:16", "4:5", "5:4", "1:1", "auto"],
