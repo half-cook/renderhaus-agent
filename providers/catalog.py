@@ -17,6 +17,12 @@ class ProviderSpec:
 
 PROVIDERS: tuple[ProviderSpec, ...] = (
     ProviderSpec(
+        id="heygen", target_name="HeyGen", function_name="renderhaus-heygen-tools",
+        module_path="providers.heygen.api",
+        env_keys=("HEYGEN_API_KEY", "HEYGEN_DRY_RUN", "HEYGEN_MODEL", "HEYGEN_API_PLAN", "AWS_S3_BUCKET"),
+        default_env={"HEYGEN_DRY_RUN": "true", "HEYGEN_MODEL": "avatar_v", "HEYGEN_API_PLAN": "unknown"},
+    ),
+    ProviderSpec(
         id="sync", target_name="Sync", function_name="renderhaus-sync-tools",
         module_path="providers.sync.api",
         env_keys=("SYNC_API_KEY", "SYNC_DRY_RUN", "SYNC_MODEL", "SYNC_TRANSPORT",

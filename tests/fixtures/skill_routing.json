@@ -829,18 +829,20 @@
     "expected_skill": "lipsync",
     "expected_tool": "heygen_avatar_v",
     "suite": "lipsync",
-    "skip_reason": "provider pending: heygen_avatar_v (feat/provider-heygen-avatar-v)",
+    "skip_reason": "",
     "note": "exception: >30 s presenter (A/B)",
-    "source_status": "new"
+    "source_status": "new",
+    "expected_gateway_tool": "HeyGen___create_avatar_video"
   },
   {
     "prompt": "90 second training video with an avatar presenter in French and German",
     "expected_skill": "lipsync",
     "expected_tool": "heygen_avatar_v",
     "suite": "lipsync",
-    "skip_reason": "provider pending: heygen_avatar_v (feat/provider-heygen-avatar-v)",
+    "skip_reason": "",
     "note": "exception: >30 s presenter (A/B)",
-    "source_status": "new"
+    "source_status": "new",
+    "expected_gateway_tool": "HeyGen___create_avatar_video"
   },
   {
     "prompt": "transfer my facial acting onto this character",

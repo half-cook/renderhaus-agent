@@ -25,6 +25,10 @@ SEEDREAM_RATIOS = ("1:1", "16:9", "9:16")
 SEEDANCE_RESOLUTIONS = ("480p", "720p", "1080p")
 SEEDREAM_SIZES = ("1K", "2K", "3K")
 STATIC_FIELD_OPTIONS: dict[str, dict[str, list[str | int]]] = {
+    "heygen": {
+        "model": ["avatar_v"], "resolution": ["720p", "1080p"],
+        "aspect_ratio": ["16:9", "9:16", "4:5", "5:4", "1:1", "auto"],
+    },
     "sync": {
         "model": ["sync-3"],
         "sync_mode": ["cut_off", "loop", "bounce", "silence", "remap"],
@@ -91,6 +95,8 @@ STATIC_FIELD_OPTIONS: dict[str, dict[str, list[str | int]]] = {
 }
 
 LIVE_CHOICE_TOOLS: tuple[tuple[str, str, str], ...] = (
+    ("heygen", "list_avatars", "avatar_id"),
+    ("heygen", "list_voices", "voice_id"),
     ("kling", "list_kling_models", "model"),
     ("fal", "list_fal_models", "model"),
     ("luma", "list_luma_models", "model"),
@@ -127,7 +133,7 @@ def extract_choice_ids(payload: Any) -> list[str]:
             if isinstance(item, str):
                 add(item)
             elif isinstance(item, dict):
-                add(item.get("id") or item.get("name"))
+                add(item.get("id") or item.get("voice_id") or item.get("name"))
     return found
 
 

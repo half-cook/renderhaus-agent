@@ -370,6 +370,12 @@ def enrich_tool_schema(provider_id: str, tool: dict[str, Any]) -> dict[str, Any]
         for field, description in contracts.FIELD_DESCRIPTIONS.items():
             if field in properties:
                 properties[field]["description"] = description
+    if provider_id == "heygen":
+        from providers.heygen.contracts import FIELD_DESCRIPTIONS
+
+        for field, description in FIELD_DESCRIPTIONS.items():
+            if field in properties:
+                properties[field]["description"] = description
     return enriched
 
 
@@ -437,6 +443,10 @@ def _validate_rule(path: str, value: Any, rule: ArgumentRule) -> None:
 
 
 def _validate_cross_fields(provider_id: str, tool_name: str, arguments: dict[str, Any]) -> None:
+    if provider_id == "heygen":
+        from providers.heygen.contracts import validate_arguments
+
+        validate_arguments(tool_name, arguments)
     if provider_id == "sync":
         from providers.sync.contracts import validate_arguments
 
@@ -577,6 +587,10 @@ def validate_tool_arguments(
     input_schema: dict[str, Any],
 ) -> dict[str, Any]:
     """Validate every Gateway call at the last boundary before provider I/O."""
+    if provider_id == "heygen":
+        from providers.heygen.contracts import validate_arguments
+
+        validate_arguments(tool_name, arguments or {})
     if provider_id == "sync":
         for field, value in (arguments or {}).items():
             if value is None and field not in {"model", "chunk_boundaries_seconds"}:

@@ -1,4 +1,5 @@
 const MODEL_LABELS: Record<string, string> = {
+  avatar_v: "HeyGen Avatar V",
   "sync-3": "sync-3 lip sync",
   "fal-ai/sync-lipsync/v3": "sync-3 lip sync (fal)",
   "gpt-image-2.5-sunburst": "GPT Image 2.5 Sunburst",

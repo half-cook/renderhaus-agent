@@ -84,7 +84,7 @@ on an existing image select pending Ideogram; Ideogram generation without an edi
 the GPT generation default. Full-body motion selects pending Kling Motion Control; facial and
 upper-body acting select pending Act-Two. Video-synchronized SFX remains pending Mirelo, while
 text-only effects use built ElevenLabs. Requests over 30 seconds need supported shot splitting
-or a refusal; long presenter/digital-twin videos use the pending HeyGen exception.
+or a refusal; long presenter/digital-twin videos use the HeyGen exception.
 
 Explicit-only Kling generation, Runway generation/Aleph/images, Luma, Vidu Q4, Seedream,
 Fish Audio, ElevenLabs music, and legacy Wan VACE retain their code, schemas, and billing.
@@ -122,7 +122,7 @@ All paid video pauses with an estimate even in autonomous runs while
 `premium_video_approval` is enabled. That includes current Seedance, Kling, Runway, Luma,
 Vidu and rendering tools, plus future video-producing capabilities when implemented.
 `RENDERHAUS_PREMIUM_VIDEO_APPROVAL=false` disables the additional autonomous video pause
-for existing tools. Sync always pauses, independently of that switch.
+for existing tools. Sync and HeyGen always pause, independently of that switch.
 Paid non-video retains the existing non-autonomous approvals and authorized autonomous mode.
 `APPROVAL_EXEMPT_TOOLS`, free tools, and the autonomous spending cap remain unchanged.
 The free conversational-edit preparer still requires separate cut-plan confirmation.
@@ -194,7 +194,7 @@ See [decisions and verification](conversational-edit-decisions.tsv) and
 ## Offline routing verification
 
 `tests/fixtures/skill_routing.json` contains 129 retained routing rows.
-There are 96 active cases and 33 explicit skips. Seedance reference dialogue and two
+There are 98 active cases and 31 explicit skips. Seedance reference dialogue and two
 previously licence-skipped edit cases now use built Seedance tools. The extension increment
 case stays skipped because appended-versus-combined length semantics are UNVERIFIED.
 The 23 archived rows are dropped,
@@ -215,7 +215,7 @@ generation rule. Retired-provider replacement examples retain `source_prompt`; s
 assert that explicit retired requests dispatch nothing. [Decisions](capability-map-decisions.tsv)
 record these differences from the workbook.
 
-The pending specialists cover HeyGen, Act-Two, Kling Motion Control, Topaz, Mirelo,
+The pending specialists cover Act-Two, Kling Motion Control, Topaz, Mirelo,
 Recraft, Ideogram edit, Mureka lyrics video, VLM judging,
 and cutaway capture. A declared interim activates other pending defaults where supported.
 Wan 3 generation uses its built tools. Model Studio edit/extend retain their default IDs but
@@ -380,7 +380,7 @@ distributed billing guarantee. Durability still depends on the host persisting `
 
 Installed skills distinguish a built dispatch tool from a pending routing alias.
 `docs/skills-drafts/` keeps pending adapter references and retired historical guidance.
-Act-Two/Kling motion control, HeyGen, Topaz, Mirelo, Recraft and Ideogram edit await their
+Act-Two/Kling motion control, Topaz, Mirelo, Recraft and Ideogram edit await their
 named branches. MMAudio, ACE-Step and Veo references are retired, not future activation plans.
 Transcript cuts, silence removal and captions are folded into conversational-edit. NLE re-import
 still needs feat/nle-import-fcpxml. File export does not control Resolve, establish a graded
@@ -408,7 +408,7 @@ The existing t2v, i2v, still-then-video and storyboard-shots skills now name
 `Fal___generate_wan3_t2v`, `Fal___generate_wan3_i2v` and `Fal___generate_wan3_r2v`.
 All three poll `Fal___get_video_task`. Controls, costs, consent and dry-run limits are in
 [the Wan 3 provider reference](FAL_WAN3_PROVIDER.md). There are still 24 packaged skills.
-The Wan branch activated four specific workbook rows; after Sync, 33 dependency rows remain skipped.
+The Wan branch activated four specific workbook rows; after Sync, 31 dependency rows remain skipped.
 
 Plain shot/clip requests with voiceover produce ordered video, TTS and final-assembly steps.
 The router excludes image generation and editing from their discovered tools and dispatches.
@@ -434,9 +434,9 @@ remove the adapter's hard live block or establish commercial rights.
 The edit-v2v and refinement skills discover the built Seedance tools, reuse fal polling,
 require measured source inputs and prohibit real-person references. Explicit Luma, Aleph,
 and VACE requests remain available with disclosure. Paid video pauses in autonomous runs.
-After Sync wiring there are 11 providers, 91 Gateway tools and 24 skills. Seedance reference dialogue and the
+After HeyGen wiring there are 12 providers, 95 Gateway tools and 24 skills. Seedance reference dialogue and the
 two edit fixture rows are active. The extension increment row remains skipped because its
-length semantics are UNVERIFIED; 37 other rows still have dependency blockers.
+length semantics are UNVERIFIED; 30 other rows still have dependency blockers.
 See [Seedance configuration, prices and licence limits](SEEDANCE_2_5.md) and
 [Model Studio's unchanged restriction](ALIBABA_MODELSTUDIO.md).
 
@@ -446,9 +446,9 @@ See [Seedance configuration, prices and licence limits](SEEDANCE_2_5.md) and
 defaults, including text-in-image generation. Edits accept a primary image, up to 15 additional
 references, and an optional mask. Results contain saved images synchronously, without polling.
 Seedream remains explicit-only. Spending approval and visual approval remain separate.
-The OpenAI branch activated eight GPT routing rows. With Sync, 96 routing cases are active
-and 33 remain skipped, including Recraft and Ideogram specialists.
-There are 11 providers, 91 Gateway tools, and 24 packaged skills.
+The OpenAI branch activated eight GPT routing rows. With Sync, 98 routing cases are active
+and 31 remain skipped, including Recraft and Ideogram specialists.
+There are 12 providers, 95 Gateway tools, and 24 packaged skills.
 
 [OpenAI configuration and verified sources](OPENAI_IMAGES.md) describe the default dry-run flag,
 unknown pre-call costs, output training restriction, and blocked Comet validation.
@@ -460,7 +460,18 @@ ElevenLabs TTS for script-only input. It requires existing footage, identified f
 subjects, explicit consent and measured timing. Fal is primary; direct Sync requires
 operator acknowledgement of written vendor permission. Sync always requires cost approval.
 Five routing rows become active: four existing-footage requests select Sync, and the
-image-plus-audio generated talking shot selects Seedance 2.5 i2v. HeyGen stays pending.
-There are 11 providers, 91 Gateway tools and 24 packaged skills. No new skill directory is
+image-plus-audio generated talking shot selects Seedance 2.5 i2v. HeyGen handles the long-presenter exception.
+There are 12 providers, 95 Gateway tools and 24 packaged skills. No new skill directory is
 needed because the existing lipsync draft is converted in place. See [SYNC.md](SYNC.md) and
 [lipsync decisions](lipsync-sync3-decisions.tsv). Browser E2E remains blocked: Comet is unavailable.
+
+
+## HeyGen long presenter exception
+
+The existing lipsync skill now exposes four `HeyGen___` tools for Avatar V presenters.
+It follows explicit request → duration over 30 seconds with presenter/digital-twin intent →
+sync-3 default. Project confidentiality does not change this order. Both matching workbook
+rows are active: 98 routing cases and 31 dependency skips remain. Every HeyGen submission
+requires recorded face/voice consent and pauses with a price estimate, including autonomous
+runs. Preview output is incomplete media. [HeyGen reference](HEYGEN.md) records API contracts,
+commercial restrictions, upload training, pricing and the blocked Comet check.
