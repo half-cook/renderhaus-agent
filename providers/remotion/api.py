@@ -12,7 +12,6 @@ import math
 import mimetypes
 import os
 import re
-import shutil
 import tempfile
 import time
 import uuid
@@ -171,24 +170,40 @@ def _prepare_input_props(
     return prepared
 
 
-def _visual_metadata(clip: dict[str, Any]) -> tuple[float | None, int | None]:
+def _visual_metadata(clip: dict[str, Any], *, measure_remote: bool = False,
+                     measure_local: bool = True) -> tuple[float | None, int | None]:
     source_fps = clip.get("source_fps")
     source_bitrate = clip.get("source_bitrate")
     source = str(clip.get("url") or clip.get("output_path") or "")
-    if not urlparse(source).scheme:
+    probe = None
+    if urlparse(source).scheme and measure_remote and (source_fps is None or source_bitrate is None):
+        from providers.remotion.local import _probe, _source
+
+        _, _, bucket_hosts = _nle_storage()
+        hosts = set(bucket_hosts)
+        source_host = urlparse(source).hostname or ""
+        if source_host == "fal.media" or source_host.endswith(".fal.media"):
+            hosts.add(source_host)
+        hosts.update(set(os.getenv("REMOTION_LOCAL_MEDIA_HOSTS", "").split(",")) - {""})
+        with tempfile.TemporaryDirectory(prefix="renderhaus-probe-") as temporary:
+            path = _source(source, directory=Path(temporary), index=1, media_roots=_allowed_local_roots(),
+                           source_root=ROOT, allowed_hosts=hosts, deadline_seconds=30)
+            probe = _probe(path)
+    if not urlparse(source).scheme and measure_local:
         path = Path(source).expanduser()
         path = (path if path.is_absolute() else ROOT / path).resolve()
-        if _is_allowed_local(path) and path.is_file() and shutil.which("ffprobe"):
+        if _is_allowed_local(path) and path.is_file():
             from providers.remotion.local import _probe
 
             probe = _probe(path)
-            video = next((s for s in probe["streams"] if s.get("codec_type") == "video"), None)
-            if video is None:
-                raise ValueError("A video visual must contain a video stream.")
-            rate = video.get("avg_frame_rate") or video.get("r_frame_rate")
-            if rate and rate != "0/0":
-                source_fps = float(Fraction(rate))
-            source_bitrate = video.get("bit_rate") or source_bitrate
+    if probe is not None:
+        video = next((s for s in probe["streams"] if s.get("codec_type") == "video"), None)
+        if video is None:
+            raise ValueError("A video visual must contain a video stream.")
+        rate = video.get("avg_frame_rate") or video.get("r_frame_rate")
+        if rate and rate != "0/0":
+            source_fps = float(Fraction(rate))
+        source_bitrate = video.get("bit_rate") or probe.get("format", {}).get("bit_rate") or source_bitrate
     if source_fps is not None:
         source_fps = float(source_fps)
         if not math.isfinite(source_fps) or not 0 < source_fps <= 240:
@@ -209,6 +224,7 @@ def build_timeline_props(
     fps: float | None = None,
     subtitles: list[dict[str, Any]] | None = None,
     video_bitrate: int | None = None,
+    *, measure_remote: bool = False, measure_local: bool = True,
 ) -> dict[str, Any]:
     validate_remotion_timeline_arguments({
         "visuals": visuals, "audio_tracks": audio_tracks,
@@ -220,7 +236,8 @@ def build_timeline_props(
         raise ValueError("At least one visual clip is required for a Remotion render.")
     videos = sorted((clip for clip in visuals if clip.get("kind") == "video"),
                     key=lambda clip: (clip.get("track", 0), clip.get("start_seconds", 0)))
-    metadata = [_visual_metadata(clip) for clip in videos]
+    metadata = [_visual_metadata(clip, measure_remote=measure_remote, measure_local=measure_local)
+                for clip in videos]
     if fps is None:
         if metadata and metadata[0][0] is None:
             raise ValueError("Download the primary video for ffprobe or supply measured source_fps; "
@@ -496,6 +513,7 @@ def render_timeline(
         fps=fps,
         subtitles=subtitles,
         video_bitrate=video_bitrate,
+        measure_remote=True,
     )
     return _start_render(props, output_filename=output_filename)
 
@@ -509,14 +527,18 @@ def prepare_conversational_edit(
     grade: Literal["none", "neutral", "warm"] = "none",
     subtitles: bool = True,
     aspect_ratio: Literal["16:9", "9:16", "1:1", "2.39:1"] = "9:16",
-    fps: int = 30,
+    fps: int | None = None,
 ) -> dict[str, Any]:
     """Prepare an approved word-range edit as a pure dry-run preview, without fetching or rendering media."""
     result = build_conversational_edit(
         title, plan_summary, sources, segments, overlays=overlays,
-        grade=grade, subtitles=subtitles, aspect_ratio=aspect_ratio, fps=fps,
+        grade=grade, subtitles=subtitles, aspect_ratio=aspect_ratio, fps=30 if fps is None else fps,
     )
-    result["timeline"] = build_timeline_props(**result["render_arguments"])
+    result["timeline"] = build_timeline_props(**result["render_arguments"], measure_local=False)
+    if fps is None:
+        result["render_arguments"].pop("fps")
+        result["qc_expectations"]["preview_fps"] = 30
+        result["qc_expectations"]["final_fps_policy"] = "primary_source"
     return result
 
 

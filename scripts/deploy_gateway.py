@@ -14,6 +14,7 @@ Writes .env.agentcore.gateway with AGENTCORE_GATEWAY_URL / ids.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import io
 import json
 import os
@@ -45,6 +46,7 @@ GATEWAY_ROLE_NAME = "RenderhausMurekaGatewayRole"
 GATEWAY_NAME = "renderhaus-media-gateway"
 LEGACY_GATEWAY_NAME = "renderhaus-mureka-gateway"
 DEFAULT_SECRET_NAME = "renderhaus/app"
+DIRECT_ZIP_LIMIT = 50 * 1024 * 1024
 GATEWAY_INSTRUCTIONS = (
     "Renderhaus creates and edits media for a visual canvas. Use semantic tool search before "
     "selecting provider tools. Search with the user's concrete intent, the input media already "
@@ -75,6 +77,7 @@ def build_lambda_zip() -> bytes:
                 "httpx",
                 "pydantic",
                 "jsonschema",
+                "av==14.2.0",
                 "remotion-lambda==4.0.515",
                 "opentimelineio==0.18.1",
                 "-t",
@@ -109,6 +112,23 @@ def build_lambda_zip() -> bytes:
                 if path.is_file():
                     zf.write(path, path.relative_to(package).as_posix())
         return buf.getvalue()
+
+
+def lambda_package_code(zip_bytes: bytes, *, env: dict[str, str], region: str) -> dict[str, str | bytes]:
+    if len(zip_bytes) <= DIRECT_ZIP_LIMIT:
+        return {"ZipFile": zip_bytes}
+    bucket = env.get("AWS_S3_BUCKET") or env.get("REMOTION_APP_BUCKET_NAME")
+    if not bucket:
+        raise ValueError("Lambda packages over 50 MiB require AWS_S3_BUCKET or REMOTION_APP_BUCKET_NAME.")
+    s3 = boto3.client("s3", region_name=region)
+    bucket_region = s3.get_bucket_location(Bucket=bucket).get("LocationConstraint") or "us-east-1"
+    if bucket_region == "EU":
+        bucket_region = "eu-west-1"
+    if bucket_region != region:
+        raise ValueError("The Lambda deployment bucket must be in the same region as the function.")
+    key = f"renderhaus/gateway-code/{hashlib.sha256(zip_bytes).hexdigest()}.zip"
+    s3.put_object(Bucket=bucket, Key=key, Body=zip_bytes, ContentType="application/zip")
+    return {"S3Bucket": bucket, "S3Key": key}
 
 
 def _ensure_lambda_role(
@@ -259,7 +279,7 @@ def _upsert_lambda(
     region: str,
     secret_name: str,
     env: dict[str, str],
-    zip_bytes: bytes,
+    code: dict[str, str | bytes],
 ) -> str:
     runtime_env = {
         "RENDERHAUS_PROVIDER": spec.id,
@@ -287,7 +307,7 @@ def _upsert_lambda(
         print(f"Updating Lambda {spec.function_name}")
         lam.update_function_code(
             FunctionName=spec.function_name,
-            ZipFile=zip_bytes,
+            **code,
             Architectures=config["Architectures"],
         )
         time.sleep(3)
@@ -301,7 +321,7 @@ def _upsert_lambda(
         if exc.response["Error"]["Code"] != "ResourceNotFoundException":
             raise
         print(f"Creating Lambda {spec.function_name}")
-        lam.create_function(**config, Code={"ZipFile": zip_bytes}, Publish=True)
+        lam.create_function(**config, Code=code, Publish=True)
         time.sleep(5)
     fn = lam.get_function(FunctionName=spec.function_name)
     return fn["Configuration"]["FunctionArn"]
@@ -553,6 +573,8 @@ def main() -> int:
     lam = session.client("lambda")
     control = session.client("bedrock-agentcore-control", region_name=region)
 
+    zip_bytes = build_lambda_zip()
+    code = lambda_package_code(zip_bytes, env=env, region=region)
     lambda_role = _ensure_lambda_role(
         iam,
         account,
@@ -561,7 +583,6 @@ def main() -> int:
         remotion_bucket=env.get("REMOTION_APP_BUCKET_NAME") or "",
         media_bucket=env.get("AWS_S3_BUCKET") or "",
     )
-    zip_bytes = build_lambda_zip()
     lambda_arns: dict[str, str] = {}
     target_ids: dict[str, str] = {}
     for spec in specs:
@@ -572,7 +593,7 @@ def main() -> int:
             region=region,
             secret_name=secret_name,
             env=env,
-            zip_bytes=zip_bytes,
+            code=code,
         )
     gateway_role = _ensure_gateway_role(iam, account, region)
     gateway_id, gateway_url = _upsert_gateway(control, role_arn=gateway_role)

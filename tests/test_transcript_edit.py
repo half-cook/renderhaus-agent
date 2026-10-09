@@ -56,6 +56,20 @@ class TranscriptEditTests(unittest.TestCase):
         arguments.update(changes)
         return api.prepare_conversational_edit(**arguments)
 
+    def test_unset_preview_fps_does_not_override_measured_final_source_rate(self) -> None:
+        with patch("providers.remotion.local._source", side_effect=AssertionError("preview fetched media")), \
+                patch("providers.remotion.local._probe", side_effect=AssertionError("preview fetched media")), \
+                patch.object(api, "_is_allowed_local", return_value=True), \
+                patch.object(api.Path, "is_file", return_value=True):
+            preview = self.prepare()
+            explicit = self.prepare(fps=24)
+            local_source = source()
+            local_source["url"] = "/tmp/source.mp4"
+            self.prepare(sources=[local_source])
+        self.assertNotIn("fps", preview["render_arguments"])
+        self.assertEqual(preview["timeline"]["renderConfig"]["fps"], 30)
+        self.assertEqual(explicit["render_arguments"]["fps"], 24)
+
     def test_kept_word_ranges_remove_fillers_and_silence(self) -> None:
         result = self.prepare()
         self.assertEqual(result["status"], "dry_run")

@@ -9,7 +9,10 @@ import tempfile
 import unittest
 from unittest.mock import Mock, patch
 
+import httpx
+
 from providers.remotion import api
+from providers.remotion import local
 from providers.registry import dispatch
 
 
@@ -28,6 +31,9 @@ class RemotionQualityTests(unittest.TestCase):
                 "-crf", "10", "-pix_fmt", "yuv420p", str(source),
             ], check=True, timeout=30)
             cls.sources[fps] = source
+        cls.sources["mkv30"] = cls.root / "source-30.mkv"
+        subprocess.run(["ffmpeg", "-v", "error", "-i", str(cls.sources[30]), "-c", "copy",
+                        str(cls.sources["mkv30"])], check=True, timeout=30)
 
     @classmethod
     def tearDownClass(cls) -> None:
@@ -48,6 +54,7 @@ class RemotionQualityTests(unittest.TestCase):
             for source_fps, requested_fps, expected_rate in (
                 (30, None, "30/1"), (24, None, "24/1"), (30, 24, "24/1"),
                 ("30000/1001", None, "30000/1001"),
+                ("mkv30", None, "30/1"),
             ):
                 with self.subTest(source_fps=source_fps, requested_fps=requested_fps):
                     arguments = {
@@ -64,7 +71,8 @@ class RemotionQualityTests(unittest.TestCase):
                     source = self.probe(self.sources[source_fps])
                     output = self.probe(Path(result["output_path"]))
                     self.assertEqual(output["r_frame_rate"], expected_rate)
-                    self.assertGreaterEqual(int(output["bit_rate"]), int(source["bit_rate"]) * .8)
+                    source_rate = source.get("bit_rate") or local._probe(self.sources[source_fps])["format"]["bit_rate"]
+                    self.assertGreaterEqual(int(output["bit_rate"]), int(source_rate) * .8)
 
     def test_lambda_receives_resolved_frame_rate_and_source_bitrate_floor(self) -> None:
         source = self.sources[24]
@@ -113,6 +121,56 @@ class RemotionQualityTests(unittest.TestCase):
             "source_fps": 24, "source_bitrate": 1_000_000}], video_bitrate=100_000)
         self.assertEqual(props["renderConfig"]["fps"], 24)
         self.assertEqual(props["renderConfig"]["videoBitrate"], 1_250_000)
+
+    def test_gateway_lambda_measures_remote_video_without_ffprobe(self) -> None:
+        source = self.sources["mkv30"]
+        client = Mock()
+        client.render_media_on_lambda.return_value = Mock(render_id="render", bucket_name="bucket")
+        transport = httpx.MockTransport(lambda request: httpx.Response(200, content=source.read_bytes()))
+        http_client = httpx.Client
+        with patch.dict(os.environ, {"REMOTION_DRY_RUN": "false", "REMOTION_RENDER_BACKEND": "lambda",
+                                    "AWS_LAMBDA_FUNCTION_NAME": "remotion", "REMOTION_LOCAL_MEDIA_HOSTS": ""}), \
+                patch.object(local.shutil, "which", return_value=None), \
+                patch.object(local.socket, "getaddrinfo", return_value=[(2, 1, 6, "", ("8.8.8.8", 443))]), \
+                patch.object(local.httpx, "Client", side_effect=lambda **kwargs: http_client(
+                    transport=transport, **kwargs)), \
+                patch.object(api, "load_remotion_settings", return_value=api.RemotionSettings(
+                    region="us-east-1", function_name="function", serve_url="https://example/site",
+                    bucket_name="bucket")), \
+                patch.object(api.boto3, "Session"), \
+                patch.object(api, "_prepare_input_props", side_effect=lambda props, **_: props), \
+                patch.object(api, "RemotionClient", return_value=client):
+            result = dispatch("remotion", "render_timeline", {
+                "title": "Remote source", "visuals": [{"kind": "video",
+                    "url": "https://v3b.fal.media/files/test/source.mp4", "duration_seconds": 3}],
+            })
+        self.assertEqual(result["status"], "queued")
+        params = client.render_media_on_lambda.call_args.args[0]
+        self.assertEqual(params.force_fps, 30)
+        self.assertEqual(params.input_props["renderConfig"]["durationInFrames"], 90)
+        self.assertGreaterEqual(params.video_bitrate, int(local._probe(source)["format"]["bit_rate"]))
+
+    def test_remote_probe_failures_never_submit_a_render(self) -> None:
+        http_client = httpx.Client
+        for status, body, address, url, limit in (
+            (302, b"redirect", "8.8.8.8", "https://v3.fal.media/source.mp4", 128 * 1024 * 1024),
+            (200, b"invalid media", "8.8.8.8", "https://v3.fal.media/source.mp4", 128 * 1024 * 1024),
+            (200, self.sources[30].read_bytes(), "8.8.8.8", "https://v3.fal.media/source.mp4", 32),
+            (200, self.sources[30].read_bytes(), "127.0.0.1", "https://v3.fal.media/source.mp4", 128 * 1024 * 1024),
+            (200, self.sources[30].read_bytes(), "8.8.8.8", "https://fal.media.attacker.example/source.mp4", 128 * 1024 * 1024),
+        ):
+            with self.subTest(status=status, address=address, url=url, limit=limit):
+                transport = httpx.MockTransport(lambda request: httpx.Response(status, content=body))
+                with patch.dict(os.environ, {"REMOTION_DRY_RUN": "false", "REMOTION_LOCAL_MEDIA_HOSTS": ""}), \
+                        patch.object(local.shutil, "which", return_value=None), \
+                        patch.object(local.socket, "getaddrinfo", return_value=[(2, 1, 6, "", (address, 443))]), \
+                        patch.object(local, "MAX_MEDIA_BYTES", limit), \
+                        patch.object(local.httpx, "Client", side_effect=lambda **kwargs: http_client(
+                            transport=transport, **kwargs)), \
+                        patch.object(api, "_start_render", side_effect=AssertionError("paid render started")):
+                    with self.assertRaises(ValueError):
+                        api.render_timeline("Blocked probe", [{"kind": "video", "url": url,
+                                                               "duration_seconds": 3}])
 
 
 if __name__ == "__main__":

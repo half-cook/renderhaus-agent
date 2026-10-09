@@ -143,7 +143,8 @@ TOOL_GUIDANCE: dict[str, dict[str, str]] = {
             "in plan_summary for required host approval. Always returns a side-effect-free dry_run "
             "preview with word-safe cuts, output-timed transcript/captions, timeline, render_arguments, "
             "and QC expectations. It never fetches media or starts a render. Use the separate paid "
-            "render_timeline tool with render_arguments after preparation."
+            "render_timeline tool with render_arguments after preparation. Omit fps unless the user "
+            "requests a timeline rate; the preview uses 30 fps while the final render measures its source."
         ),
         "render_timeline": (
             "Use after all source assets exist to execute a concrete edit decision list and make "
@@ -151,8 +152,9 @@ TOOL_GUIDANCE: dict[str, dict[str, str]] = {
             "transitions, speed, titles, and audio fades, then poll get_render_progress. "
             "Sources may use url or output_path (a local provider result, no file:// prefix). "
             "Omit fps to preserve the primary video's measured frame rate; set it only for a "
-            "user-requested timeline rate. Remote videos need measured source_fps and source_bitrate. "
-            "Local ffprobe derives these. video_bitrate is an optional target in bits/s with a source "
+            "user-requested timeline rate. Source metadata is measured before rendering: local media, "
+            "fal.media subdomains, configured S3 bucket hosts, or REMOTION_LOCAL_MEDIA_HOSTS. "
+            "Optional source_fps/source_bitrate carry prior measurements. video_bitrate is a target in bits/s with a source "
             "quality floor; unknown bitrate uses high-quality CRF18. "
             "Local development selects REMOTION_RENDER_BACKEND=local; Lambda remains the default. "
             "Local assembly supports trims, fit, fades, timing, opacity, speed, and audio mixing; "
