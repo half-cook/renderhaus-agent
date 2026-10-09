@@ -14,6 +14,8 @@ GATEWAY_MCP_SERVER_NAME = "agentcore-gateway"
 
 
 DEFAULT_ENV = {
+    "OPENAI_IMAGES_DRY_RUN": "true",
+    "OPENAI_IMAGES_MODEL": "gpt-image-2.5-sunburst",
     "KLING_BASE_URL": "https://api-singapore.klingai.com",
     "KLING_MODEL": "kling-3.0",
     "KLING_API_STYLE": "current",

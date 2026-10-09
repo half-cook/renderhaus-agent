@@ -533,12 +533,49 @@ def _fal_cost(tool: str, arguments: dict[str, Any]) -> GenerationCost:
     return _with_fee(round(cents))
 
 
+OPENAI_IMAGES_PRICING_URL = "https://developers.openai.com/api/docs/pricing"
+OPENAI_IMAGES_PRICING_READ_DATE = "2026-10-09"
+OPENAI_IMAGES_USD_PER_M_TOKENS = {"text_tokens": Decimal("5"), "image_tokens": Decimal("8"), "output_tokens": Decimal("30")}
+
+
+def openai_images_usage_cost(usage: dict[str, Any] | None) -> float | None:
+    """Rate observed direct Images usage; cached discounts apply only to Responses."""
+    if not isinstance(usage, dict):
+        return None
+    details = usage.get("input_tokens_details")
+    if not isinstance(details, dict):
+        return None
+    counts = {field: details.get(field) for field in ("text_tokens", "image_tokens")}
+    counts["output_tokens"] = usage.get("output_tokens")
+    if any(type(value) is not int or value < 0 for value in counts.values()):
+        return None
+    return float(sum(Decimal(value) * OPENAI_IMAGES_USD_PER_M_TOKENS[field]
+                     for field, value in counts.items()) / Decimal(1000000))
+
+
+def _openai_images_cost(tool: str, arguments: dict[str, Any]) -> GenerationCost:
+    from providers.openai_images import api
+    from providers.openai_images.contracts import request_for
+
+    request = request_for(tool, arguments)
+    if api.dry_run():
+        return GenerationCost(0, 0)
+    # TODO: verified full-request token estimates or observed-usage billing reconciliation.
+    quotes = json.loads(os.getenv("OPENAI_IMAGES_TOOL_COST_CENTS_JSON") or "{}")
+    quote = quotes.get(tool) if isinstance(quotes, dict) else None
+    if type(quote) is not int or quote <= 0:
+        raise ValueError("OpenAI Images cost is unknown. Configure a per-image operator quote in OPENAI_IMAGES_TOOL_COST_CENTS_JSON before billed/manual live calls.")
+    return _with_fee(quote * request.n)
+
+
 def cost_for(provider: str, tool: str, arguments: dict[str, Any]) -> GenerationCost:
     """Real cost (provider + disclosed fee) for one call to `provider`/`tool`.
     Called both before dispatch (to check affordability) and after success
     (to charge the same amount), so it must be a pure function of the
     request, not of anything the provider returns.
     """
+    if provider == "openai_images":
+        return _openai_images_cost(tool, arguments)
     if provider == "kling":
         return _kling_cost(tool, arguments)
     if provider == "alibaba_modelstudio":

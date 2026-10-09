@@ -56,9 +56,9 @@ class VideoVoiceoverTests(unittest.TestCase):
 
     def test_generic_still_blocks_seedream_but_named_request_preserves_it(self):
         route = routing.route_intent('Make a still image of a lighthouse')
-        self.assertEqual(route.status, 'pending')
-        self.assertIsNone(route.tool)
-        self.assertIsNone(routing.resolve_alias('gpt_image25_t2i'))
+        self.assertEqual(route.status, 'ready')
+        self.assertEqual(route.tool, 'OpenAI___generate_image')
+        self.assertEqual(routing.resolve_alias('gpt_image25_t2i'), 'OpenAI___generate_image')
         self.assertIsNotNone(routing.request_tool_blocker('Make a still image of a lighthouse', 'Seedream___text_to_image'))
         self.assertEqual(routing.route_intent('Make this still with Seedream: a lighthouse').tool, 'Seedream___text_to_image')
 

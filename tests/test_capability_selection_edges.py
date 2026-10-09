@@ -4,9 +4,9 @@ from agent.deep_agent import routing
 
 
 class CapabilitySelectionEdges(unittest.TestCase):
-    def test_named_pending_model_does_not_run_a_different_interim(self):
+    def test_named_gpt_image_uses_built_adapter(self):
         route = routing.route_intent("generate with GPT Image 2.5")
-        self.assertEqual((route.alias, route.status, route.tool), ("gpt_image25_t2i", "pending", None))
+        self.assertEqual((route.alias, route.status, route.tool), ("gpt_image25_t2i", "ready", "OpenAI___generate_image"))
         self.assertIn("explicit request", route.disclosure)
 
     def test_named_seedance25_uses_the_built_adapter(self):

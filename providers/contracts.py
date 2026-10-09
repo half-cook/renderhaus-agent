@@ -346,6 +346,12 @@ def enrich_tool_schema(provider_id: str, tool: dict[str, Any]) -> dict[str, Any]
                 for field, description in contract.FIELD_DESCRIPTIONS.items():
                     if field in properties:
                         properties[field]["description"] = description
+    if provider_id == "openai_images":
+        from providers.openai_images.contracts import FIELD_DESCRIPTIONS
+
+        for field, description in FIELD_DESCRIPTIONS.items():
+            if field in properties:
+                properties[field]["description"] = description
     if provider_id == "seedance":
         from providers.seedance import contracts
 
@@ -425,6 +431,10 @@ def _validate_rule(path: str, value: Any, rule: ArgumentRule) -> None:
 
 
 def _validate_cross_fields(provider_id: str, tool_name: str, arguments: dict[str, Any]) -> None:
+    if provider_id == "openai_images":
+        from providers.openai_images.contracts import request_for
+
+        request_for(tool_name, arguments)
     if provider_id == "seedance":
         from providers.seedance.contracts import validate_arguments
 
@@ -557,6 +567,10 @@ def validate_tool_arguments(
     input_schema: dict[str, Any],
 ) -> dict[str, Any]:
     """Validate every Gateway call at the last boundary before provider I/O."""
+    if provider_id == "openai_images":
+        for field, value in (arguments or {}).items():
+            if value is None and field not in {"model", "reference_image_urls", "mask_path_or_url", "output_compression"}:
+                raise ValueError(f"arguments.{field} cannot be null.")
     if provider_id == "seedance":
         optional = {"model", "service_tier", "seed", "end_image_path_or_url", "source_aspect_ratio",
                     "reference_image_urls", "reference_video_urls", "reference_audio_urls",

@@ -139,7 +139,7 @@ Proprietary API. Current terms §4.2.3 require written authorization for platfor
 
 ### OpenAI GPT Image 2.5 Sunburst — OpenAI Images API
 
-Routing IDs: `gpt_image25_t2i`, `gpt_image25_edit`. Official IDs: `gpt-image-2.5-sunburst`, `gpt-image-2.5-sunburst-2026-09-08`. Status: **verified**.
+Routing IDs: `gpt_image25_t2i`, `gpt_image25_edit`. Official IDs: `gpt-image-2.5-sunburst`, `gpt-image-2.5-sunburst-2026-09-08`. Status: **verified; adapter built, dry-run by default**. See [provider configuration](OPENAI_IMAGES.md), re-verified on 2026-10-09.
 
 POST /v1/images/generations or /v1/images/edits; model,prompt; edit has input images; size dimensions multiples16, ratio1:3..3:1; quality low/medium/high/xhigh/max/auto. [Official API source](https://developers.openai.com/api/docs/models/gpt-image-2.5-sunburst) [Official API source](https://developers.openai.com/api/docs/guides/image-generation) [Official API source](https://developers.openai.com/api/reference/resources/images/methods/generate)
 

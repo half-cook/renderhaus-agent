@@ -83,8 +83,8 @@ class CapabilityMapTests(unittest.TestCase):
         self.assertEqual(routing.select_provider("i2v", provider="seedance", arguments={"real_face_refs": True}).tool, "Fal___generate_wan3_i2v")
 
     def test_pending_default_only_uses_declared_interim(self):
-        self.assertEqual(routing.select_provider("image").status, "pending")
-        self.assertIsNone(routing.select_provider("image").tool)
+        self.assertEqual(routing.select_provider("image").status, "ready")
+        self.assertEqual(routing.select_provider("image").tool, "OpenAI___generate_image")
         self.assertEqual(routing.select_provider("v2v_edit").tool, "Seedance___edit_video")
         self.assertEqual(routing.select_provider("reference_video").tool, "Fal___generate_wan3_r2v")
         self.assertEqual(routing.select_provider("lipsync").status, "pending")

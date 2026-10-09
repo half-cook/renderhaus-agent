@@ -4,15 +4,26 @@ description: Generate or edit still images with GPT Image 2.5; specialize SVG an
 metadata:
   include_tools: call_media_tool
   routing_tools: gpt_image25_t2i gpt_image25_edit recraft_v41_vector ideogram45_edit
-  gateway_tools: ""
+  gateway_tools: OpenAI___generate_image OpenAI___edit_image
 ---
 
 # Still images
 
-Use `gpt_image25_t2i` for generation and `gpt_image25_edit` for editing. Both are pending
-feat/provider-openai-images, with no automatic interim. Disclose that generation is pending
-and stop before dispatch. Seedream is available only when the user names it explicitly.
-The image default size stays 2K. Its current Seedream price can be unknown; never quote a 1K price for 2K.
+Use `OpenAI___generate_image` for `gpt_image25_t2i` and `OpenAI___edit_image` for
+`gpt_image25_edit`. Both use GPT Image 2.5 Sunburst by default. Seedream stays explicit-only.
+Generation takes `prompt`, `size` (default 2K), `aspect_ratio`, `quality`, `background`,
+`output_format`, `n` and `moderation`. Editing additionally requires `image_path_or_url` and
+accepts up to 15 `reference_image_urls` for character/product consistency and an optional
+`mask_path_or_url` for the first image. Resolve immutable handles at dispatch, preserving order.
+Omit `input_fidelity`: Sunburst support is UNVERIFIED. A mask must match the first image's
+format and dimensions and have an alpha channel. Discover the actual Gateway schema.
+The 2K square preset is 2048x2048 and falls within the vendor's experimental large-size range.
+Pre-call token counts and dollar totals are UNVERIFIED: disclose cost as unknown. Paid images
+pause unless autonomous, under the existing spending cap. Spending approval is not visual approval.
+Calls return completed saved images synchronously. There is no OpenAI polling tool. Open and
+review every returned artifact before using it for animation. Dry-run creates no artifact.
+OpenAI outputs are `training_eligible=false`; API no-training defaults do not grant output training rights.
+
 Use `recraft_v41_vector` only when editable SVG/vector output is required. Raster tools cannot serve
 that pending exception. Use `ideogram45_edit` only for pixel-preserving text-only changes on an
 existing image, such as correcting a typo while keeping the rest. That exception is thin evidence.
@@ -22,6 +33,8 @@ including posters and typography. It cannot create a text-only edit input from n
 A supplied existing Ideogram asset for Remotion rendering does not request image generation.
 Explicit Seedream or Runway image requests belong in named-provider with disclosure.
 
+Require rights to supplied media and review real-person likeness consent before dispatch.
+Nonconsensual uses that confuse authenticity are prohibited by the vendor.
 Reuse immutable references. Discover the selected schema. Explicit image editing uses its native source field; do not generate a replacement for an approved reference without review.
 Review the actual still before any animation. Image spending approval does not approve its visual look.
 
@@ -35,7 +48,7 @@ Paid non-video retains the existing non-autonomous approval and autonomous spend
 
 Search Gateway for the selected built tool and use its exact schema through the matching role.
 Pending aliases are routing identifiers, not Gateway endpoints. Never invent a tool or change a
-DRY_RUN flag to satisfy a request. Submit once, preserve the returned job ID, and poll the same job.
+DRY_RUN flag to satisfy a request. Submit once. Poll only asynchronous providers using the returned job ID.
 A queued job or dry-run is incomplete media. Open/play the actual saved artifact before delivery.
 Record explicit customer visual acceptance/rejection with `record_media_outcome` and the saved call ID.
 A spending approval is not visual acceptance. Training eligibility follows provenance and the existing

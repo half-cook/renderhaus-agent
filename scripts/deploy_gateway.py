@@ -277,7 +277,7 @@ def _upsert_lambda(
         "Runtime": "python3.11",
         "Role": role_arn,
         "Handler": "handler.handler",
-        "Timeout": 240 if spec.id == "elevenlabs" else 120,
+        "Timeout": 240 if spec.id in {"elevenlabs", "openai_images"} else 120,
         "MemorySize": 512,
         "Architectures": ["arm64"],
         "Environment": {"Variables": runtime_env},

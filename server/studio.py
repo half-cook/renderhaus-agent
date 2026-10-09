@@ -391,6 +391,7 @@ async def studio_status() -> dict[str, Any]:
         "mode": "local",
         "agent": agent_configured(),
         "dry_run": {
+            "openai_images": os.getenv("OPENAI_IMAGES_DRY_RUN", "true").lower() != "false",
             "kling": os.getenv("KLING_DRY_RUN", "true").lower() != "false",
             "runway": os.getenv("RUNWAY_DRY_RUN", "true").lower() != "false",
             "fal": os.getenv("FAL_DRY_RUN", "true").lower() != "false",
@@ -1141,6 +1142,8 @@ def _agent_result(outcome: Any) -> dict[str, Any]:
 
 _MEDIA_CREATION_TOOLS = frozenset(
     {
+        "generate_image",
+        "edit_image",
         "text_to_image",
         "image_to_image",
         "text_to_video",

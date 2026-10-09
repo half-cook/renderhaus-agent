@@ -715,8 +715,8 @@ class StudioAgentTests(unittest.IsolatedAsyncioTestCase):
                     id="tool-call-1",
                     name="generate_image",
                     label="Image generation",
-                    status="dry_run",
-                    summary="Dry run complete.",
+                    status="succeeded",
+                    summary="Image generation complete.",
                 )
             ],
             session_items=[

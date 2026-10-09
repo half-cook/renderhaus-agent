@@ -222,9 +222,37 @@ const CREATIVE_TOOLS: ToolDefinition[] = [
     pollTool: "get_video_task",
   },
   {
-    id: "image.generate",
-    displayName: "Image",
+    id: "openai.image.generate",
+    displayName: "GPT Image 2.5",
     description: "Generate a still from a prompt",
+    category: "image",
+    providerId: "openai_images",
+    toolName: "generate_image",
+    inputPorts: [{ id: "prompt", label: "Prompt", dataType: "text", targetField: "prompt", required: true }],
+    outputPorts: [{ id: "image", label: "Image", dataType: "image" }],
+    primaryFields: ["prompt", "model", "aspect_ratio", "size", "quality", "background", "output_format", "n"],
+    defaults: { model: "gpt-image-2.5-sunburst", size: "2K", quality: "high", n: 1 },
+  },
+  {
+    id: "openai.image.edit",
+    displayName: "GPT Image 2.5 edit",
+    description: "Restyle an image from a prompt",
+    category: "image",
+    providerId: "openai_images",
+    toolName: "edit_image",
+    inputPorts: [
+      { id: "image", label: "Image", dataType: "image", targetField: "image_path_or_url", required: true },
+      { id: "mask", label: "Mask", dataType: "image", targetField: "mask_path_or_url" },
+      { id: "prompt", label: "Prompt", dataType: "text", targetField: "prompt", required: true },
+    ],
+    outputPorts: [{ id: "image", label: "Image", dataType: "image" }],
+    primaryFields: ["prompt", "model", "aspect_ratio", "size", "quality", "image_path_or_url", "reference_image_urls", "mask_path_or_url", "background", "output_format", "n"],
+    defaults: { model: "gpt-image-2.5-sunburst", size: "2K", quality: "high", n: 1 },
+  },
+  {
+    id: "image.generate",
+    displayName: "Seedream image",
+    description: "Use Seedream when explicitly requested",
     category: "image",
     providerId: "seedream",
     toolName: "text_to_image",
@@ -234,8 +262,8 @@ const CREATIVE_TOOLS: ToolDefinition[] = [
   },
   {
     id: "image.edit",
-    displayName: "Edit image",
-    description: "Restyle an image from a prompt",
+    displayName: "Seedream edit",
+    description: "Use Seedream editing when explicitly requested",
     category: "image",
     providerId: "seedream",
     toolName: "image_to_image",
@@ -354,7 +382,7 @@ export function defaultToolForRail(
 ): ToolDefinition | undefined {
   switch (rail) {
     case "image":
-      return toolById("image.generate");
+      return toolById("openai.image.generate");
     case "video":
       return toolById("video.wan3.generate");
     case "audio":
@@ -377,7 +405,7 @@ export function toolForAgentArtifact(
   // not create an invisible dependency on another artifact in the run.
   const provider = `${event?.provider || ""} ${event?.name || ""}`.toLowerCase();
   const runway = provider.includes("runway");
-  if (kind === "image") return toolById(runway ? "runway.image.generate" : "image.generate");
+  if (kind === "image") return toolById(runway ? "runway.image.generate" : provider.includes("seedream") ? "image.generate" : "openai.image.generate");
   if (kind === "video") {
     return toolById(
       runway ? "runway.video.generate"

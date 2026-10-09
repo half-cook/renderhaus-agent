@@ -17,6 +17,13 @@ class ProviderSpec:
 
 PROVIDERS: tuple[ProviderSpec, ...] = (
     ProviderSpec(
+        id="openai_images", target_name="OpenAI", function_name="renderhaus-openai-images-tools",
+        module_path="providers.openai_images.api",
+        env_keys=("OPENAI_API_KEY", "OPENAI_IMAGES_DRY_RUN", "OPENAI_IMAGES_MODEL",
+                  "OPENAI_IMAGES_TOOL_COST_CENTS_JSON", "AWS_S3_BUCKET", "REMOTION_APP_BUCKET_NAME"),
+        default_env={"OPENAI_IMAGES_DRY_RUN": "true", "OPENAI_IMAGES_MODEL": "gpt-image-2.5-sunburst"},
+    ),
+    ProviderSpec(
         id="kling",
         target_name="Kling",
         function_name="renderhaus-kling-tools",

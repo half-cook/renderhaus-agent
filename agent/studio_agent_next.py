@@ -486,6 +486,8 @@ _TOOL_TITLES = {
     "get_render_progress": "Poll Remotion render",
     "text_to_image": "Generate image",
     "image_to_image": "Edit image",
+    "generate_image": "Generate image",
+    "edit_image": "Edit image",
     "text_to_video": "Generate video",
     "image_to_video": "Animate image",
     "get_video_task": "Poll video task",

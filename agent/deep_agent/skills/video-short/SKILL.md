@@ -4,6 +4,7 @@ description: Plan a short film/ad using approved stills, capability-map shots, a
 metadata:
   include_tools: call_media_tool call_audio_tool call_editor_tool
   routing_tools: gpt_image25_t2i wan3_t2v wan3_i2v seedance25_t2v seedance25_i2v remotion_render
+  gateway_tools: OpenAI___generate_image OpenAI___edit_image
 ---
 
 # Video short

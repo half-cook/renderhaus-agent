@@ -43,6 +43,7 @@ jobs:
           REMOTION_DRY_RUN: "true"
           KLING_DRY_RUN: "true"
           FAL_DRY_RUN: "true"
+          OPENAI_IMAGES_DRY_RUN: "true"
 
       - name: CI checks
         run: python scripts/ci_check.py
@@ -58,3 +59,4 @@ jobs:
           REMOTION_DRY_RUN: "true"
           KLING_DRY_RUN: "true"
           FAL_DRY_RUN: "true"
+          OPENAI_IMAGES_DRY_RUN: "true"

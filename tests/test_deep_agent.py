@@ -212,6 +212,38 @@ class DeepAgentTests(unittest.IsolatedAsyncioTestCase):
                 await self.run_graph(self.request(session_items=studio.session_items),
                                      [updated_index, updated_tools])
 
+    async def test_openai_image_approval_resumes_or_rejects_exact_request(self):
+        from providers.catalog import get_provider
+        from providers.registry import generate_schemas
+
+        schema = next(schema for schema in generate_schemas(get_provider("openai_images"))
+                      if schema["name"] == "generate_image")
+        tool = Tool(name="OpenAI___generate_image", description="Generate a still",
+                    inputSchema=schema["inputSchema"])
+        for decision in ("approve", "reject"):
+            with self.subTest(decision=decision):
+                request = StudioAgentRequest(prompt="Make a product still", workspace_id="workspace",
+                                             project_id="project", conversation_id=decision, job_id=decision)
+                studio = _context_from_request(request)
+                gateway = Gateway([tool])
+                media = call("call_media_tool", {"tool_name": tool.name,
+                             "arguments": {"prompt": "Product hero", "size": "2K", "n": 1}}, "openai")
+                with self.assertRaises(StudioAgentApprovalRequired) as paused:
+                    await run_with_servers(request, studio, [gateway], model=ScriptedModel([read_skill(), media]))
+                approval = paused.exception.approvals[0]
+                self.assertEqual(approval.tool_name, tool.name)
+                self.assertIn("unknown", approval.description.lower())
+                gateway.call_tool.assert_not_awaited()
+                resumed = request.model_copy(update={"session_items": studio.session_items,
+                    "resume_state": paused.exception.state, "approval_decisions": [
+                        StudioApprovalDecision(call_id=approval.call_id, decision=decision)]})
+                _, restored, _ = await self.run_graph(resumed, [final()], gateway)
+                if decision == "approve":
+                    gateway.call_tool.assert_awaited_once_with(tool.name, {"prompt": "Product hero", "size": "2K", "n": 1})
+                else:
+                    gateway.call_tool.assert_not_awaited()
+                    self.assertEqual(restored.tool_events[0].status, "rejected")
+
     async def test_approval_restores_in_fresh_worker_and_uses_exact_call(self):
         request = self.request()
         studio = _context_from_request(request)
