@@ -13,12 +13,16 @@ import json
 import logging
 import os
 import re
+import shutil
+import subprocess
 import time
 from contextlib import suppress
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from functools import lru_cache
+from pathlib import Path
 from typing import Any, Literal
+from urllib.parse import urlsplit
 
 from agent.codex_harness import CodexHarness
 from agent.backend_config import agent_backend
@@ -64,7 +68,7 @@ _VIDEO_DELIVERABLE_PATTERN = re.compile(
     r"\b(create|make|generate|produce|render|assemble|combine|merge|stitch|edit|export|"
     r"deliver|cut|compose|retry|finish|complete|resume|turn|convert)\b"
     r"(?:\W+\w+){0,12}?\W+"
-    r"\b(video|videos|ad|advert|commercial|reel|spot|motion graphic|trailer|promo|montage|mp4)\b",
+    r"\b(video|videos|shot|shots|clip|clips|ad|advert|commercial|reel|spot|motion graphic|trailer|promo|montage|mp4)\b",
     re.IGNORECASE,
 )
 _NON_VIDEO_DELIVERABLE_PATTERN = re.compile(
@@ -101,18 +105,23 @@ references are already complete, durable media. Use their `source_ref` directly 
 not poll an old provider job, download them again, or regenerate them.
 
 When the customer wants a video, ad, reel, spot, motion graphic, or any edited sequence:
-1. Generate the needed stills, clips, music, and voice first.
+1. Generate only the media required by the routed steps. A plain shot or clip with voiceover
+   needs video generation, speech, and assembly; it does not need a generated still.
 2. Make the editorial decisions yourself: clip order and timing, source in-points, main footage
    versus B-roll layers, cuts or fades, crop/fit, motion, playback speed, titles, music/voice
    levels, and fades. Then call `Remotion___render_timeline` through `call_gateway_tool` with that concrete edit plan. Pass each
    clip's durable public URL in `visuals[].url` and `audio_tracks[].url` (use `image_url`,
-   `video_url`, `audio_url`, or `url` from earlier tool results). Never ask Remotion to invent the
-   edit; it only executes your plan.
+   `video_url`, `audio_url`, or `url` from earlier tool results). For the configured local backend,
+   pass a provider's plain `output_path` in `visuals[].output_path` or `audio_tracks[].output_path`;
+   never add a `file://` prefix. Lambda assembly requires durable URLs. Never ask Remotion to
+   invent the edit; it only executes your plan.
 3. Poll `Remotion___get_render_progress` with the returned `render_id` and `bucket_name` until
    status is succeeded, failed, or cancelled. Do not produce the final response until the assembled
    MP4 succeeds. If rendering fails, explain the failure instead of claiming completion.
 
-Use ElevenLabs for audio: music_compose for scores/songs, text_to_speech_convert for narration,
+Follow the routed audio capability and its pending-provider blockers. For ElevenLabs speech
+or an explicit ElevenLabs request, discover the corresponding feature: music_compose for
+scores/songs, text_to_speech_convert for narration,
 text_to_dialogue_convert for multiple speakers, text_to_sound_effects_convert for Foley/ambience,
 audio_isolation_convert for dialogue cleanup, speech_to_speech_convert for changing a recorded
 voice, speech_to_text_convert for captions/transcripts, forced_alignment_create for timing an
@@ -1447,7 +1456,7 @@ def _validate_video_delivery(
         and event.status.lower() in {"succeeded", "success", "completed"}
         and str(event.result.get("status") or event.status).lower()
         in {"succeeded", "success", "completed"}
-        and (event.assets or event.result.get("url") or event.result.get("output_path"))
+        and _completed_video_artifact(event.result)
         for event in studio.tool_events
     )
     if rendered:
@@ -1468,6 +1477,36 @@ def _validate_video_delivery(
         if notice not in final.markdown:
             final.markdown = f"{final.markdown.rstrip()}\n\n{notice}"[:30_000]
     return False
+
+
+def _completed_video_artifact(result: dict[str, Any]) -> bool:
+    url = result.get("url")
+    if isinstance(url, str):
+        try:
+            parsed = urlsplit(url)
+            if parsed.scheme in {"http", "https"} and parsed.hostname and not parsed.username:
+                return True
+        except ValueError:
+            pass
+    output_path = result.get("output_path")
+    if not isinstance(output_path, str) or output_path.startswith("file://"):
+        return False
+    path = Path(output_path)
+    try:
+        if not path.is_file() or path.stat().st_size == 0:
+            return False
+        if shutil.which("ffprobe"):
+            probe = subprocess.run([
+                "ffprobe", "-v", "error", "-show_entries", "format=duration:stream=codec_type",
+                "-of", "json", str(path.resolve()),
+            ], capture_output=True, text=True, timeout=15, check=True)
+            media = json.loads(probe.stdout)
+            return float(media.get("format", {}).get("duration", 0)) > 0 and any(
+                stream.get("codec_type") == "video" for stream in media.get("streams", [])
+            )
+        return True
+    except (OSError, ValueError, subprocess.SubprocessError):
+        return False
 
 
 async def run_studio_agent(
@@ -1496,6 +1535,7 @@ async def run_studio_agent(
         event_sink=event_sink,
         progress_sink=progress_sink,
     )
+    studio.prompt = request.prompt
     async def run(servers):
         if backend == "codex":
             return await run_with_servers(request, studio, harness or CodexHarness(), servers)

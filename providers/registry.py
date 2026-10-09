@@ -121,10 +121,14 @@ TOOL_GUIDANCE: dict[str, dict[str, str]] = {
         "render_timeline": (
             "Use after all source assets exist to execute a concrete edit decision list and make "
             "one assembled MP4. The caller must choose timing, B-roll layers, crop/motion, "
-            "transitions, speed, titles, and audio fades, then poll get_render_progress."
+            "transitions, speed, titles, and audio fades, then poll get_render_progress. "
+            "Sources may use url or output_path (a local provider result, no file:// prefix). "
+            "Local development selects REMOTION_RENDER_BACKEND=local; Lambda remains the default. "
+            "Local assembly supports trims, fit, fades, timing, opacity, speed, and audio mixing; "
+            "titles/subtitles, motion, grade, scale, and rotation require Lambda."
         ),
         "get_render_progress": (
-            "Use only after render_timeline returned a render id and bucket name. Poll once per call "
+            "Use only after render_timeline returned a render id and bucket name (local sentinel for local). Poll once per call "
             "until succeeded, failed, cancelled, or dry_run; it does not start a new render."
         ),
         "export_nle_timeline": (
@@ -432,6 +436,10 @@ def dummy_arguments(schema: dict[str, Any]) -> dict[str, Any]:
         args["image_path_or_url"] = "ci-smoke"
     if schema.get("name") == "modify_video":
         args["video_path_or_url"] = "ci-smoke"
+    if schema.get("name") == "render_timeline":
+        for field in ("visuals", "audio_tracks"):
+            for clip in args.get(field) or []:
+                clip["url"] = "ci-smoke"
     source_fields = {
         "extend_song": "song_id",
         "region_edit_song": "song_id",

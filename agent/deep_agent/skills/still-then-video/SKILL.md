@@ -4,13 +4,14 @@ description: Review a still first, then animate the approved version through the
 metadata:
   include_tools: call_media_tool
   routing_tools: gpt_image25_t2i gpt_image25_edit wan3_i2v seedance25_i2v
-  gateway_tools: Fal___generate_wan3_i2v Fal___get_video_task Seedance___get_video_task Seedance___image_to_video Seedream___image_to_image Seedream___text_to_image
+  gateway_tools: Fal___generate_wan3_i2v Fal___get_video_task Seedance___get_video_task Seedance___image_to_video
 ---
 
 # Still before video
 
 Generate the first look through `gpt_image25_t2i`; revise it through `gpt_image25_edit`.
-Both pending defaults currently use the declared Seedream interims. Image specialists and exceptions
+Both image defaults are pending with no automatic interim. Explicit Seedream requests use
+named-provider; otherwise disclose the pending image step and stop. Image specialists and exceptions
 are documented in [still images](../image-gen/SKILL.md).
 Show the completed still, obtain visual approval, and pin that immutable version before animation.
 An existing approved character/frame can start at the animation step without generating another still.

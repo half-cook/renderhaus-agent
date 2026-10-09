@@ -88,7 +88,9 @@
     "suite": "still-then-video",
     "skip_reason": "",
     "note": "default still",
-    "source_status": "updated"
+    "source_status": "updated",
+    "expected_status": "pending",
+    "expected_reason": "provider pending"
   },
   {
     "prompt": "lock character then i2v",
@@ -106,7 +108,9 @@
     "suite": "still-then-video",
     "skip_reason": "",
     "note": "GPT Image 2.5 handles typography gen; Ideogram only for text-only edits",
-    "source_status": "updated"
+    "source_status": "updated",
+    "expected_status": "pending",
+    "expected_reason": "provider pending"
   },
   {
     "prompt": "make this avatar say the script",
@@ -214,7 +218,9 @@
     "suite": "motion-graphics",
     "skip_reason": "",
     "note": "Ideogram named \u2192 edit tool; ambiguous if generation intended; binding decision (d): no existing edit image, use generation default",
-    "source_status": "updated"
+    "source_status": "updated",
+    "expected_status": "pending",
+    "expected_reason": "provider pending"
   },
   {
     "prompt": "check face consistency across takes",
@@ -436,7 +442,9 @@
     "suite": "motion-graphics",
     "skip_reason": "",
     "note": "AMBIGUOUS: Ideogram named but generation; Ideogram only routed for text-only edit",
-    "source_status": "updated"
+    "source_status": "updated",
+    "expected_status": "pending",
+    "expected_reason": "provider pending"
   },
   {
     "prompt": "Recraft SVG logo for brand kit",
@@ -757,7 +765,9 @@
     "suite": "image-gen",
     "skip_reason": "",
     "note": "default still",
-    "source_status": "new"
+    "source_status": "new",
+    "expected_status": "pending",
+    "expected_reason": "provider pending"
   },
   {
     "prompt": "give me an editable SVG icon set",
@@ -802,7 +812,9 @@
     "suite": "image-gen",
     "skip_reason": "",
     "note": "default edit",
-    "source_status": "new"
+    "source_status": "new",
+    "expected_status": "pending",
+    "expected_reason": "provider pending"
   },
   {
     "prompt": "dub this interview clip into Spanish",
@@ -1140,6 +1152,92 @@
     "suite": "image-gen",
     "skip_reason": "",
     "note": "still default (added 23:10 ET)",
-    "source_status": "new"
+    "source_status": "new",
+    "expected_status": "pending",
+    "expected_reason": "provider pending"
+  },
+  {
+    "prompt": "Make a 5-second shot of a lighthouse at dusk with a calm voiceover",
+    "expected_skill": "t2v + audio-bed",
+    "expected_tool": "wan3_t2v then eleven_v4_turbo",
+    "suite": "plain-shot-vo",
+    "status": "active",
+    "previous_expected_tool": "",
+    "note": "gate for feat/agent-debug-haiku; plain shot + VO, no image tools (\"shot\", \"5-second\")",
+    "forbidden_tools": "gpt_image25_t2i, gpt_image25_edit, recraft_v41_vector, ideogram45_edit, seedream_t2i",
+    "expected_output": "assembled MP4 (video + VO muxed)",
+    "test_id": "RT-152",
+    "skip_reason": ""
+  },
+  {
+    "prompt": "Make a 5 s clip of a lighthouse at dusk with a calm voiceover",
+    "expected_skill": "t2v + audio-bed",
+    "expected_tool": "wan3_t2v then eleven_v4_turbo",
+    "suite": "plain-shot-vo",
+    "status": "active",
+    "previous_expected_tool": "",
+    "note": "gate for feat/agent-debug-haiku; variant: \"clip\" + \"5 s\"",
+    "forbidden_tools": "gpt_image25_t2i, gpt_image25_edit, recraft_v41_vector, ideogram45_edit, seedream_t2i",
+    "expected_output": "assembled MP4 (video + VO muxed)",
+    "test_id": "RT-153",
+    "skip_reason": ""
+  },
+  {
+    "prompt": "Make a 5-second clip of waves on a rocky shore with a calm voiceover",
+    "expected_skill": "t2v + audio-bed",
+    "expected_tool": "wan3_t2v then eleven_v4_turbo",
+    "suite": "plain-shot-vo",
+    "status": "active",
+    "previous_expected_tool": "",
+    "note": "gate for feat/agent-debug-haiku; variant: \"clip\" + \"5-second\"",
+    "forbidden_tools": "gpt_image25_t2i, gpt_image25_edit, recraft_v41_vector, ideogram45_edit, seedream_t2i",
+    "expected_output": "assembled MP4 (video + VO muxed)",
+    "test_id": "RT-154",
+    "skip_reason": ""
+  },
+  {
+    "prompt": "Make a still image of a lighthouse at dusk",
+    "expected_skill": "image-gen",
+    "expected_tool": "gpt_image25_t2i",
+    "suite": "seedream-named-only",
+    "status": "active",
+    "previous_expected_tool": "",
+    "note": "gate for feat/agent-debug-haiku; negative: generic still never auto-routes to Seedream",
+    "forbidden_tools": "seedream_t2i",
+    "expected_output": "still image",
+    "test_id": "RT-155",
+    "skip_reason": "",
+    "expected_failure": "pending feat/provider-openai-images"
+  },
+  {
+    "prompt": "Make this still with Seedream: a lighthouse at dusk",
+    "expected_skill": "named-provider",
+    "expected_tool": "seedream_t2i",
+    "suite": "seedream-named-only",
+    "status": "active",
+    "previous_expected_tool": "",
+    "note": "gate for feat/agent-debug-haiku; positive: Seedream only when named",
+    "forbidden_tools": "gpt_image25_t2i",
+    "expected_output": "still image",
+    "test_id": "RT-156",
+    "skip_reason": ""
+  },
+  {
+    "prompt": "Make a 5-second cinematic shot: a lighthouse keeper climbing a spiral staircase at dusk, warm lamp light, slow push-in, with a one-line voiceover: 'Every night, someone has to keep the light.'",
+    "expected_skill": "t2v + audio-bed",
+    "expected_tool": "wan3_t2v then eleven_v4_turbo",
+    "suite": "lighthouse-e2e",
+    "skip_reason": "",
+    "expected_output": "assembled MP4",
+    "test_id": "lighthouse-brief"
+  },
+  {
+    "prompt": "Add the one-line voiceover 'Every night, someone has to keep the light.' to the referenced 5-second lighthouse clip. Use ElevenLabs model eleven_v4 with the voice George (JBFqnCBsd6RMkjVDRZzb), starting around 1.0 s. Then assemble and export the final MP4 with the voiceover mixed over the clip.",
+    "expected_skill": "audio-bed",
+    "expected_tool": "eleven_v4_turbo",
+    "suite": "lighthouse-e2e",
+    "skip_reason": "",
+    "expected_output": "assembled MP4",
+    "test_id": "lighthouse-followup"
   }
 ]

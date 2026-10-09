@@ -107,7 +107,8 @@ class GatewayToolSchemaTests(unittest.TestCase):
 
         remotion = {tool["name"]: tool for tool in generate_schemas(get_provider("remotion"))}
         visual = remotion["render_timeline"]["inputSchema"]["properties"]["visuals"]["items"]
-        self.assertEqual(visual["required"], ["kind", "url", "duration_seconds"])
+        self.assertEqual(visual["required"], ["kind", "duration_seconds"])
+        self.assertEqual(visual["properties"]["output_path"]["type"], "string")
         self.assertIn("kind", visual["properties"])
 
     def test_dispatch_rejects_unsupported_seedance_arguments_before_provider_call(self) -> None:

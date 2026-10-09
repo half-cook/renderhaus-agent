@@ -88,8 +88,8 @@ def check_routing_inventory() -> None:
         assert set(metadata["include_tools"].split()) <= DISPATCH_TARGETS.keys(), path
         assert all(TOOL_MAP[alias]["status"] != "retired" for alias in metadata["routing_tools"].split()), path
     cases = json.loads((ROOT / "tests/fixtures/skill_routing.json").read_text())
-    assert len(cases) == 122 and sum(not case["skip_reason"] for case in cases) == 81
-    print("ok routing inventory (9 providers, 84 Gateway tools, 24 skills, 81 active routing rows)")
+    assert len(cases) == 129 and sum(not case["skip_reason"] for case in cases) == 88
+    print("ok routing inventory (9 providers, 84 Gateway tools, 24 skills, 87 active routing rows, 1 expected-failure readiness gate)")
 
 
 def _assert_gateway_shape(schema: object) -> None:

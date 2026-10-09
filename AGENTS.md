@@ -36,3 +36,5 @@ The project hooks reinforce this workflow when loaded and trusted. Follow these 
 in the current task even if newly installed hooks are not active yet. Documentation-only and
 test-only changes do not require unrelated browser tests. Explicit user instructions take
 precedence, including requests to stop, skip a test, or avoid a particular action.
+
+Satya chose `claude-haiku-5-5` as the default Deep Agents manager/planner and every subagent.

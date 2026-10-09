@@ -202,18 +202,20 @@ class HyperFramesGraphTests(unittest.IsolatedAsyncioTestCase):
     def render(self, dispatch="call_editor_tool"):
         return call(dispatch, {"tool_name": TOOL_NAME, "arguments": COMPOSITION}, "preview")
 
-    async def test_skill_read_discloses_editor_and_audio_without_media_role(self):
+    async def test_skill_read_preserves_dispatch_tools_and_previews_with_editor(self):
         from agent.hyperframes import HyperFramesServer
 
+        bound_tools = set()
+
         def before(messages, tools):
-            self.assertNotIn("call_editor_tool", tools)
-            self.assertNotIn("call_audio_tool", tools)
+            self.assertTrue({"call_editor_tool", "call_audio_tool", "call_media_tool"}.issubset(tools))
+            self.assertNotIn("Seedream___text_to_image", tools)
+            bound_tools.update(tools)
             return self.read_skill()
 
         def after(messages, tools):
-            self.assertIn("call_editor_tool", tools)
-            self.assertIn("call_audio_tool", tools)
-            self.assertNotIn("call_media_tool", tools)
+            self.assertEqual(tools, bound_tools)
+            self.assertIn("Preview an HTML composition", messages[-1].text)
             return self.render()
 
         request = self.request(autonomous=True)
@@ -362,7 +364,7 @@ class HyperFramesGraphTests(unittest.IsolatedAsyncioTestCase):
                             summary="No MP4", result={"status": "dry_run"}),
             StudioToolEvent(id="current-remotion", name="Remotion___get_render_progress",
                             label="Completed render", status="succeeded", summary="Current MP4",
-                            result={"status": "succeeded", "output_path": "/tmp/current.mp4"}),
+                            result={"status": "succeeded", "url": "https://cdn.example/current.mp4"}),
         ]
         self.assertTrue(_validate_video_delivery(request, studio))
 
@@ -372,7 +374,7 @@ class HyperFramesGraphTests(unittest.IsolatedAsyncioTestCase):
         studio.tool_events = [
             StudioToolEvent(id="old-remotion", name="Remotion___get_render_progress",
                             label="Previous render", status="succeeded", summary="Previous MP4",
-                            result={"status": "succeeded", "output_path": "/tmp/previous.mp4"}),
+                            result={"status": "succeeded", "url": "https://cdn.example/previous.mp4"}),
         ]
         self.assertFalse(_validate_video_delivery(request, studio))
         studio.tool_events.append(StudioToolEvent(

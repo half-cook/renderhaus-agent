@@ -6,6 +6,7 @@ import unittest
 from unittest.mock import patch
 
 from mcp import Tool
+from agent.deep_agent.routing import CostEstimate
 from agent.gateway_executor import GatewayExecutor
 from agent.studio_agent_next import StudioAgentRequest, _context_from_request
 from test_deep_agent import Gateway
@@ -42,15 +43,16 @@ class SpendingTests(unittest.IsolatedAsyncioTestCase):
             **kwargs,
         )
 
-    async def test_unset_cap_does_not_estimate_or_restrict_existing_dispatch(self):
+    async def test_unset_cap_does_not_restrict_dispatch_and_only_quotes_telemetry(self):
         with (
             patch.dict(os.environ, {"RENDERHAUS_AUTONOMOUS_RUN_CAP_CENTS": ""}),
-            patch("agent.gateway_executor.estimate_cost", side_effect=AssertionError("cap is off")),
+            patch("agent.gateway_executor.estimate_cost", return_value=CostEstimate(None, "unknown")) as estimate,
         ):
             executor, gateway = self.executor()
             await self.paid(executor, approved=True)
             gateway.call_tool.assert_awaited_once()
             self.assertEqual(executor.reservations, {})
+            estimate.assert_called_once_with(PAID.name, {"prompt": "forest"}, list_price=True)
 
     async def test_cap_allows_exact_limit_and_then_stops_paid_tools(self):
         with patch.dict(os.environ, {"RENDERHAUS_AUTONOMOUS_RUN_CAP_CENTS": CAP}):

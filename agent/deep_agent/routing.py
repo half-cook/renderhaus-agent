@@ -46,9 +46,111 @@ class Route:
     required: dict = field(default_factory=dict)
     estimated_cost: dict | None = None
     disclosure: str = ""
+    steps: tuple[Route, ...] = ()
+    expected_output: str | None = None
+    forbidden_tools: tuple[str, ...] = ()
 
     def public(self):
-        return asdict(self)
+        payload = asdict(self)
+        payload.pop("forbidden_tools")
+        payload["steps"] = [step.public() for step in self.steps]
+        return payload
+
+
+_VIDEO_DELIVERABLE = r"\b(?:shots?|clips?|videos?|mp4)\b"
+_VOICEOVER = r"\b(?:voice[ -]?over|narration|narrate|vo)\b"
+_IMAGE_ALIASES = ("gpt_image25_t2i", "gpt_image25_edit", "recraft_v41_vector", "ideogram45_edit", "seedream_t2i")
+
+
+@dataclass(frozen=True)
+class DeliverableDuration:
+    seconds: int | float
+    phrase: str
+
+
+def deliverable_duration(prompt: str) -> DeliverableDuration | None:
+    """Parse a deliverable length, excluding placement and onset times."""
+    words = {"one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6,
+             "seven": 7, "eight": 8, "nine": 9, "ten": 10, "thirty": 30, "sixty": 60}
+    number = r"\d+(?:\.\d+)?|" + "|".join(words)
+    pattern = rf"\b({number})[ -]*(seconds?|secs?|s|minutes?|mins?|m)\b"
+    deliverable = r"(?:shot|clip|video|mp4|presenter|avatar|animation|film|trailer)"
+    for match in re.finditer(pattern, prompt, re.I):
+        before, after = prompt[:match.start()], prompt[match.end():]
+        if re.search(r"\b(?:at|around|starting|start|after|before|from|offset|delay)(?:\s+(?:around|about|approximately|at))?\s*$", before, re.I):
+            continue
+        describes = re.match(rf"[ -]*(?:[\w-]+\s+){{0,4}}{deliverable}\b", after, re.I)
+        describes = describes or re.search(rf"\b{deliverable}\b[^.;:!?]{{0,50}}\b(?:lasting|length(?: of)?|duration(?: of)?|for|long|is)\s*$", before, re.I)
+        if not describes:
+            continue
+        value = words.get(match[1].lower())
+        seconds = float(value if value is not None else match[1]) * (60 if match[2].lower().startswith('m') else 1)
+        return DeliverableDuration(int(seconds) if seconds.is_integer() else seconds, match[0])
+    return None
+
+
+def _video_voiceover(prompt: str) -> bool:
+    return bool(re.search(_VIDEO_DELIVERABLE, prompt, re.I) and re.search(_VOICEOVER, prompt, re.I))
+
+
+def request_tool_blocker(prompt: str, name: str) -> str | None:
+    if _video_voiceover(prompt) and job_type(name) in {"still_image", "image_edit"}:
+        return "A shot or clip with voiceover uses video, TTS and assembly; image tools are excluded."
+    if name.startswith("Seedream___") and not re.search(r"\bseedream\b", prompt, re.I):
+        return "Seedream is explicit-only; request it by name. GPT Image 2.5 is pending feat/provider-openai-images."
+    return None
+
+
+def filter_request_tools(prompt: str, names: set[str]) -> set[str]:
+    return {name for name in names if request_tool_blocker(prompt, name) is None}
+
+
+
+def capability_constraints(constraints: dict, capability: str) -> dict:
+    scoped = dict(constraints)
+    if not constraints["predicates"].get("video_voiceover"):
+        return scoped
+    named = scoped.get("named_model")
+    if named and capability not in POLICY["named_models"][named]["aliases"]:
+        scoped["named_model"] = None
+    if capability not in POLICY["explicit_routes"].get(scoped.get("provider"), {}):
+        scoped["provider"] = next((candidate for candidate in scoped["provider_candidates"]
+                                   if capability in POLICY["explicit_routes"].get(candidate, {})), None)
+        scoped["model"] = None
+    return scoped
+
+
+def _video_capability(prompt: str, constraints: dict) -> tuple[str, str]:
+    if re.search(r"\brefs\b|reference[ -]to[ -]video|multi.ref|\br2v\b", prompt, re.I):
+        return "reference_video", "i2v"
+    if (constraints["predicates"]["real_face_refs"] or constraints["required"].get("start_end_frame")
+            or re.search(r"animat|image[ -]to[ -]video|\bi2v\b|\bstart frame\b|(?:from|using).*\b(?:image|photo|still)\b", prompt, re.I)):
+        return "i2v", "i2v"
+    return "t2v", "t2v"
+
+
+def _delivery_route(prompt: str, constraints: dict, *, region: str | None,
+                    available_tools: set[str] | None, arguments: dict | None) -> Route | None:
+    voiceover = _video_voiceover(prompt)
+    mp4_export = bool(re.search(r"(?:assemble|render|export|final).*\bmp4\b|assemble.*(?:video|clip)", prompt, re.I))
+    if not voiceover and not mp4_export:
+        return None
+    if re.search(r"whiteboard|hyperframes|remotion|\botio\b|\bfcpxml\b|\bedl\b|(?:still|image).*animat", prompt, re.I):
+        return None
+    steps = []
+    creates = bool(re.search(r"\b(?:make|create|generate)\b.*\b(?:shot|clip|video)\b", prompt, re.I))
+    existing = bool(re.search(r"\b(?:referenced|existing|attached|uploaded)\b.*\b(?:clip|video|shot)\b", prompt, re.I))
+    for capability, skill in ([_video_capability(prompt, constraints)] if creates and not existing else []) + ([('tts', 'audio-bed')] if voiceover else []) + [('motion_graphics', 'final-assembly')]:
+        scoped = capability_constraints(constraints, capability)
+        route = select_provider(capability, region=region, available_tools=available_tools,
+                                arguments=arguments, **scoped)
+        steps.append(replace(route, skill=skill))
+    first = steps[0]
+    incomplete = next((step for step in steps if step.status != 'ready'), None)
+    return replace(first, steps=tuple(steps), expected_output='assembled MP4',
+                   forbidden_tools=_IMAGE_ALIASES if voiceover else (),
+                   status=incomplete.status if incomplete else first.status,
+                   reason=incomplete.reason if incomplete else 'Generate video if needed, synthesize voiceover, then assemble the final MP4.')
 
 
 def resolve_alias(alias: str) -> str | None:
@@ -73,6 +175,9 @@ def route_intent(prompt: str, *, region: str | None = None, tier: str | None = N
         if re.search(pattern, prompt, re.I):
             return Route(alias=alias, status="retired", reason=TOOL_MAP[alias]["reason"],
                          disclosure=TOOL_MAP[alias]["reason"])
+    delivery = _delivery_route(prompt, constraints, region=region, available_tools=available_tools, arguments=arguments)
+    if delivery is not None:
+        return delivery
     for rule in POLICY["rules"]:
         if not re.search(rule["pattern"], prompt, re.IGNORECASE):
             continue
@@ -232,10 +337,10 @@ def intent_constraints(prompt: str, *, tier: str | None = None, confidential: bo
     resolution = re.search(r"\b(480p|540p|580p|720p|1080p|2k|4k)\b", prompt, re.I)
     if resolution:
         required["max_resolution"] = resolution_value(resolution[1])
-    duration = re.search(r"\b(\d+(?:\.\d+)?)\s*(seconds?|secs?|s|minutes?|mins?)\b", prompt, re.I)
-    seconds = float(duration[1]) * (60 if duration[2].lower().startswith("m") else 1) if duration else None
+    duration = deliverable_duration(prompt)
+    seconds = duration.seconds if duration else None
     if seconds is not None:
-        required["duration_seconds"] = int(seconds) if seconds.is_integer() else seconds
+        required["duration_seconds"] = seconds
     extension = re.search(r"(?:extend|continue).*\bby\s+(\d+(?:\.\d+)?)\s*(seconds?|secs?|s)\b", prompt, re.I)
     if extension:
         added = float(extension[1])
@@ -243,7 +348,8 @@ def intent_constraints(prompt: str, *, tier: str | None = None, confidential: bo
     supplied_duration = next((args[k] for k in ("duration", "duration_seconds", "video_duration_seconds", "source_duration_seconds") if args.get(k) is not None), seconds)
     real_face = bool(args.get("real_face_refs") or re.search(
         r"real (?:person|human|actor)|my (?:ceo|face|selfie)|(?:photo|video).*(?:of me|of my|real person)|(?:user.supplied|uploaded).*(?:person|face)", prompt, re.I))
-    dialogue = bool(re.search(r'["“][^"”]+["”]|\b(?:says?|saying|talking|talks?|dialogue|speaking)\b', prompt, re.I))
+    dialogue_prompt = re.sub(r"(?:voice[ -]?over|narration|\bvo\b)\s*:?\s*[\'\"“].*?[\'\"”]", "", prompt, flags=re.I)
+    dialogue = bool(re.search(r'["“][^"”]+["”]|\b(?:says?|saying|talking|talks?|dialogue|speaking)\b', dialogue_prompt, re.I))
     if re.search(r"\b(?:no|without) dialogue\b|\bnot talking\b|silent scene", prompt, re.I):
         dialogue = False
     video_sfx = bool(args.get("video_url") or args.get("source_video_url") or re.search(r"from (?:the|this).*?(?:video|clip)|video to audio|foley|synchroni[sz]ed|silent clip|picture.synced", prompt, re.I))
@@ -251,6 +357,7 @@ def intent_constraints(prompt: str, *, tier: str | None = None, confidential: bo
         video_sfx = False
     predicates = {
         "dialogue": dialogue, "real_face_refs": real_face,
+        "video_voiceover": _video_voiceover(prompt),
         "vector_output": bool(re.search(r"\bsvg\b|vector|editable.*illustrator", prompt, re.I)),
         "text_only_edit": bool(re.search(r"(?:change|replace).*only.*(?:text|headline)|fix.*typo|text.only.*edit", prompt, re.I)),
         "full_body_motion": bool(re.search(r"full.body|whole.body|\bdance\b|\bdancing\b", prompt, re.I)),
@@ -306,6 +413,13 @@ def select_provider(job: str, *, tier: str | None = None, required: dict | None 
         capability = "reference_video"
     elif tool_variant == "image_edit":
         capability = "image_edit"
+    if capability in {"still_image", "image_edit"} and predicates.get("video_voiceover"):
+        reason = "A shot or clip with voiceover excludes image tools; use video, TTS and assembly."
+        return Route(status="blocked", job_type=capability, reason=reason, disclosure=reason)
+    if capability in {"tts", "voice_clone", "music", "sfx", "motion_graphics", "nle_handoff"}:
+        required = {}
+        if capability in {"motion_graphics", "nle_handoff"}:
+            provider = model = named_model = None
     if capability not in POLICY["capability_map"]:
         return Route(status="blocked", reason=f"No capability map for {capability}.")
     choice = POLICY["capability_map"][capability]
@@ -614,6 +728,8 @@ def estimate_cost(name: str, arguments: dict, *, list_price: bool = False) -> Co
         if provider == "hyperframes":
             raise ValueError("HyperFrames local compute pricing is unknown; isolated renderer not configured.")
         if provider == "remotion":
+            if os.getenv("REMOTION_RENDER_BACKEND", "lambda") == "local":
+                return CostEstimate(0, "Local ffmpeg uses operator compute; no provider charge.")
             raise ValueError("Remotion compute rate is a TODO placeholder.")
         if provider == "seedream" and arguments.get("size", "2K") != "1K":
             raise ValueError("Seedream Lite larger size tiers are unconfirmed.")
@@ -639,10 +755,8 @@ def estimate_cost(name: str, arguments: dict, *, list_price: bool = False) -> Co
                 arguments.get("num_frames", 81),
             )
         if provider == "elevenlabs":
-            quotes = json.loads(os.getenv("ELEVENLABS_TOOL_COST_CENTS_JSON", "{}"))
-            quote = quotes.get(tool) if isinstance(quotes, dict) else None
-            if not isinstance(quote, int) or isinstance(quote, bool) or quote < 0:
-                raise ValueError("Configure a confirmed ElevenLabs quote first.")
+            from server.billing_rates import elevenlabs_quote
+            return CostEstimate(elevenlabs_quote(tool, arguments).total_cents)
         if provider == "runway" and tool == "video_to_video":
             duration = arguments.get("video_duration_seconds")
             if isinstance(duration, float) and not duration.is_integer():

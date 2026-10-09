@@ -10,8 +10,10 @@ metadata:
 # Audio bed
 
 Narration defaults to `eleven_v4_turbo`, mapped to `ElevenLabs___text_to_speech_convert`.
-The requested v4 Turbo model ID is UNVERIFIED unless listed by official ElevenLabs documentation;
-use the host configuration and validation gate rather than claiming an unverified live model.
+The operator verified `eleven_v4_turbo` through the model listing and a successful TTS HTTP call
+on 2026-10-09. Official TTS documentation supports a configured `model_id` on the conversion
+endpoint. `ELEVENLABS_DRY_RUN` controls dry-run behavior. This evidence does not verify other
+model/endpoint combinations, including dialogue variants.
 Use authorized `voice_id` and `text`; never infer a voice ID from its display name.
 Voice cloning defaults to `voices_ivc_create`, mapped to `ElevenLabs___voices_ivc_create`.
 Require speaker consent and rights to all samples; do not imply the IVC tool provides PVC.

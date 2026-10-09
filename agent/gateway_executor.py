@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import logging
 import os
 import re
 import time
@@ -16,6 +17,8 @@ from agent.deep_agent.routing import (
     resolution_value,
     tool_variant,
     POLICY,
+    request_tool_blocker,
+    capability_constraints,
 )
 from agent.deep_agent.outcomes import OutcomeStore
 from agent.hyperframes import HYPERFRAMES_TOOL
@@ -36,6 +39,7 @@ from agent.studio_agent_next import (
 # create no paid provider work, so they never pause for customer approval.
 APPROVAL_EXEMPT_TOOLS = frozenset({"Remotion___export_nle_timeline"})
 SPENDING_SESSION_TYPE = "renderhaus_run_spending"
+logger = logging.getLogger("renderhaus.gateway_executor")
 
 
 def tool_needs_approval(name: str, autonomous: bool) -> bool:
@@ -118,7 +122,27 @@ class GatewayExecutor:
         return {
             tool.name: (server, tool)
             for server in self.servers for tool in await server.list_tools()
+            if request_tool_blocker(self.studio.prompt, tool.name) is None
         }
+
+    def filter_discovery(self, value):
+        if isinstance(value, list):
+            filtered = [self.filter_discovery(item) for item in value]
+            return [item for item in filtered if item is not None]
+        if isinstance(value, dict):
+            name = value.get("name") or value.get("toolName") or value.get("tool_name")
+            if isinstance(name, str) and request_tool_blocker(self.studio.prompt, name):
+                return None
+            filtered = {key: self.filter_discovery(item) for key, item in value.items()}
+            return {key: item for key, item in filtered.items() if item is not None}
+        if isinstance(value, str):
+            try:
+                decoded = json.loads(value)
+            except ValueError:
+                return value
+            if isinstance(decoded, (list, dict)):
+                return json.dumps(self.filter_discovery(decoded))
+        return value
 
     def snapshot(self):
         return {
@@ -134,6 +158,7 @@ class GatewayExecutor:
                 for server in self.servers
                 for tool in (getattr(server, "_tools_list", None) or [])
                 if tool.name not in {_GATEWAY_SEARCH_TOOL, HYPERFRAMES_TOOL.name}
+                and request_tool_blocker(self.studio.prompt, tool.name) is None
             ],
         }
 
@@ -152,6 +177,7 @@ class GatewayExecutor:
         if retry:
             for key, value in rejected.get("required", {}).items():
                 constraints["required"][key] = max(value, constraints["required"].get(key, 0))
+        constraints = capability_constraints(constraints, job)
         variant = tool_variant(name)
         route = select_provider(job, arguments=arguments, tool_variant=variant, retry=retry, **constraints)
         return route
@@ -171,6 +197,8 @@ class GatewayExecutor:
                       title="Provider choice", message=message, status="completed")
 
     def selection_blocker(self, name, arguments, route):
+        if blocker := request_tool_blocker(self.studio.prompt, name):
+            return blocker
         provider, tool = tool_parts(name)
         if route is None:
             return None
@@ -289,6 +317,8 @@ class GatewayExecutor:
         )
         if previous:
             return previous.result
+        if blocker := request_tool_blocker(studio.prompt, name):
+            return {"status": "not_run", "reason": blocker}
         registry = await self.available()
         if name not in registry:
             return {"status": "failed", "error": "Search for this Gateway tool before invoking it."}
@@ -330,6 +360,7 @@ class GatewayExecutor:
                 self.publish_spending()
             if route:
                 self.rejected_reviews.pop(route.job_type, None)
+            started_at = time.monotonic()
             _record_stream_event(
                 SimpleNamespace(
                     type="run_item_stream_event",
@@ -344,6 +375,8 @@ class GatewayExecutor:
             )
             try:
                 output = await server.call_tool(name, arguments)
+                if name == _GATEWAY_SEARCH_TOOL:
+                    output = self.filter_discovery(_unwrap_tool_output(output))
                 if name.rsplit("___", 1)[-1] in {
                     "query_music_task", "get_music_task", "get_video_task", "get_runway_task",
                     "get_render_progress", "get_task",
@@ -401,6 +434,28 @@ class GatewayExecutor:
             _progress(studio, event_id=f"save-{call_id}", event_type="MEDIA_WAIT", title="Media saved",
                       message="Completed media saved to your project.", status="completed")
         completed = next(event for event in studio.tool_events if event.id == call_id)
+        if name != _GATEWAY_SEARCH_TOOL:
+            provider, raw_tool = tool_parts(name)
+            quote = estimate_cost(name, arguments, list_price=True)
+            provider_cents = fee_cents = None
+            if completed.status in {"rejected", "dry_run"} or is_free_tool(name):
+                provider_cents = fee_cents = 0
+            elif quote.total_cents is not None:
+                from server.billing_rates import cost_for
+                try:
+                    cost = cost_for(provider, raw_tool, arguments)
+                    provider_cents, fee_cents = cost.provider_cents, cost.fee_cents
+                except (ValueError, TypeError, KeyError):
+                    pass
+            logger.info(json.dumps({
+                "event": "provider_call", "entry_point": "gateway_executor",
+                "request_id": self.run_scope, "call_id": call_id, "tool": name,
+                "provider": provider, "model": effective_model(provider, raw_tool, arguments),
+                "status": completed.status,
+                "latency_seconds": 0 if rejection is not None else round(time.monotonic() - started_at, 3),
+                "provider_cost_estimate_cents": provider_cents, "fee_estimate_cents": fee_cents,
+                "total_estimate_cents": quote.total_cents, "currency": "USD",
+            }))
         if route:
             provider, tool_name = tool_parts(name)
             model = effective_model(provider, tool_name, arguments)

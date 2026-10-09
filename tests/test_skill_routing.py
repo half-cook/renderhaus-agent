@@ -35,23 +35,34 @@ def routing_case(case):
 
         with patch.dict(os.environ, case.get("env", {})):
             route = route_intent(case["prompt"])
-        self.assertEqual(route.skill, case.get("expected_routed_skill", case["expected_skill"]))
-        self.assertEqual(route.alias, case.get("expected_routed_alias", case["expected_tool"]))
+        skills = case.get("expected_routed_skill", case["expected_skill"]).split(" + ")
+        aliases = case.get("expected_routed_alias", case["expected_tool"]).split(" then ")
+        steps = list(route.steps) or [route]
+        self.assertEqual([step.skill for step in steps[:len(skills)]], skills)
+        self.assertEqual([step.alias for step in steps[:len(aliases)]], aliases)
+        forbidden = {alias.strip() for alias in case.get("forbidden_tools", "").split(",") if alias.strip()}
+        self.assertFalse(forbidden & {step.alias for step in steps})
+        self.assertFalse({resolve_alias(alias) for alias in forbidden} - {None} & {step.tool for step in steps})
+        if case.get("expected_output", "").startswith("assembled MP4"):
+            self.assertEqual(route.expected_output, "assembled MP4")
+            self.assertEqual(steps[-1].tool, "Remotion___render_timeline")
         status = case.get("expected_status", "ready")
-        self.assertEqual(route.status, status)
+        self.assertEqual(route.status, status, case.get("expected_failure"))
         if status == "ready":
-            self.assertEqual(route.tool, case.get("expected_gateway_tool", resolve_alias(case["expected_tool"])))
+            self.assertEqual(route.tool, case.get("expected_gateway_tool", resolve_alias(aliases[0])))
         else:
             self.assertIsNone(route.tool)
             self.assertIn(case["expected_reason"], route.reason)
 
     if case["skip_reason"]:
         return unittest.skip(case["skip_reason"])(check)
+    if case.get("expected_failure"):
+        return unittest.expectedFailure(check)
     return check
 
 
 for index, case in enumerate(CASES):
-    setattr(RoutingCases, f"test_{index:03d}_{case['suite'].replace('-', '_')}", routing_case(case))
+    setattr(RoutingCases, f"test_{index:03d}_{case.get('test_id', case['suite']).replace('-', '_')}", routing_case(case))
 
 
 class SkillContracts(unittest.TestCase):
@@ -99,10 +110,10 @@ class SkillContracts(unittest.TestCase):
         )
 
     def test_fixture_preserves_active_workbook_rows_and_explains_pending_dependencies(self):
-        self.assertEqual(len(CASES), 122)
-        self.assertEqual(sum(not c["skip_reason"] for c in CASES), 81)
+        self.assertEqual(len(CASES), 129)
+        self.assertEqual(sum(not c["skip_reason"] for c in CASES), 88)
         self.assertEqual(sum(bool(c["skip_reason"]) for c in CASES), 41)
-        self.assertTrue(all(c["source_status"] != "archived" for c in CASES))
+        self.assertTrue(all(c.get("source_status") != "archived" for c in CASES))
         self.assertTrue(all("[project.confidential=true]" not in c["prompt"] for c in CASES))
         self.assertTrue(all(c["expected_skill"] != "confidential-route" for c in CASES))
         for case in CASES:

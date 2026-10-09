@@ -3,20 +3,22 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import json
+import logging
 import os
 from collections import defaultdict, deque
 from pathlib import Path
 from types import SimpleNamespace
+from typing import Annotated, NotRequired
 
 from deepagents import create_deep_agent
 from deepagents.backends import CompositeBackend, FilesystemBackend, StateBackend
 from deepagents.backends.utils import create_file_data
 from deepagents.middleware.filesystem import FilesystemMiddleware, FilesystemPermission
 from deepagents.middleware.skills import SkillsMiddleware
-from langchain.agents.middleware import TodoListMiddleware
-from langchain.agents.structured_output import ToolStrategy
+from langchain.agents.middleware import TodoListMiddleware, wrap_tool_call
+from langchain.agents.middleware.types import AgentState, PrivateStateAttr
 from langchain.tools import ToolRuntime, tool
-from langchain_core.messages import AIMessage, HumanMessage
+from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
 from langgraph.types import Command
 from langgraph.errors import GraphRecursionError
 from pydantic import ValidationError
@@ -24,7 +26,8 @@ from pydantic import ValidationError
 from agent.backend_config import configured_deep_agent_model
 from agent.deep_agent.checkpoints import StudioCheckpointer
 from agent.deep_agent.files import subagent_file_updates
-from agent.deep_agent.memory import ProjectMemory
+from agent.deep_agent.memory import ProjectMemory, append_only_middleware
+from agent.deep_agent.usage import ModelUsage
 from agent.deep_agent.routing import route_intent, capability_table
 from agent.gateway_executor import GatewayExecutor, tool_needs_approval
 from agent.errors import AgentRunLimitExceeded
@@ -43,6 +46,13 @@ from agent.studio_agent_next import (
 )
 from agent.session_scope import conversation_scope as _conversation_scope, execution_scope as _scope
 
+logger = logging.getLogger(__name__)
+
+
+class StudioAgentState(AgentState):
+    structured_response: NotRequired[Annotated[dict | None, PrivateStateAttr]]
+
+
 SESSION_TYPE = "renderhaus_deepagents_session"
 SKILLS_ROOT = Path(__file__).parent / "skills"
 DISPATCH_TARGETS = {
@@ -57,7 +67,7 @@ INSTRUCTIONS = STUDIO_MANAGER_INSTRUCTIONS.replace("`call_gateway_tool`", "the m
     "JSON-encoded arguments", "an arguments object",
 ) + """
 You use LangChain Deep Agents. Read the relevant /skills/<name>/SKILL.md before media work.
-Skills disclose call_media_tool, call_audio_tool, and call_editor_tool. Each dispatch tool takes
+Read skills before using call_media_tool, call_audio_tool, or call_editor_tool. Each dispatch tool takes
 an exact discovered Gateway tool_name and an arguments object matching its inputSchema.
 Search before dispatch. Delegate focused work to planner, media, audio, or editor when useful.
 Remotion remains the default renderer. Explicit HyperFrames requests use the optional local
@@ -69,7 +79,7 @@ Pass current asset handles, the plan, and saved job IDs in the task description.
 are virtual and private to this workspace/project/conversation. There is no shell or direct
 provider access. read_studio_context supplies optional canvas references and current assets.
 Use report_progress for customer updates. Never claim to be awaiting approval without calling
-a tool; the host displays native interrupts as approval cards. Return StudioAgentOutput.
+a tool; the host displays native interrupts as approval cards.
 Follow the host intent_route and capability map. Selection is an explicit customer request,
 then a named exception, then the capability default. Pending defaults use only their configured
 interim tool. Never select by tier or cheapest price. Every project follows the same map.
@@ -86,6 +96,13 @@ Spending-approval rejection does not authorize a retry. Poll pending jobs before
 """
 
 
+MANAGER_OUTPUT_INSTRUCTIONS = """
+Finish by calling StudioAgentOutput with title, summary, markdown, and filename.
+Do not finish the manager turn with plain text. Use this tool only after all required work
+finishes or after documenting a real blocker. Subagents return their task results to you.
+"""
+
+
 def _signature(name, arguments):
     return json.dumps([name, arguments], sort_keys=True)
 
@@ -98,7 +115,10 @@ def _gateway_action(action):
 
 
 async def run_with_servers(request, studio, servers, *, model=None):
+    injected_model = model
     model = model if model is not None else configured_deep_agent_model()
+    usage = ModelUsage(_scope(request))
+    output_repair = False
     snapshots = [item for item in request.session_items if item.get("type") == SESSION_TYPE]
     session = snapshots[-1] if snapshots else None
     thread_id = _conversation_scope(request)
@@ -129,25 +149,43 @@ async def run_with_servers(request, studio, servers, *, model=None):
         return await report_progress(studio, message)
 
     @tool
-    async def read_studio_context() -> dict:
-        """Read optional canvas references, managed assets, saved jobs and discovered tool schemas."""
-        return {
-            "intent_route": route_intent(request.prompt).public(),
-            "capabilities": capability_table(),
+    async def read_studio_context(tool_name: str | None = None) -> dict:
+        """Read routed capabilities, assets and discovered names; request one named tool for its schema."""
+        route = route_intent(request.prompt).public()
+        available = await executor.available()
+        steps = route.get("steps") or [route]
+        selected = {step.get("tool") for step in steps}
+        rows = capability_table()
+        result = {
+            "intent_route": route,
+            "capabilities": [
+                {key: row[key] for key in ("provider", "model", "label", "tools", "jobs", "price",
+                                          "license", "training_eligible") if key in row}
+                for row in rows if selected.intersection(row.get("tools", {}).values())
+                and any(step.get("model") in {None, row.get("model")} for step in steps)
+            ],
             "media_jobs": executor.media_jobs,
             "references": _input_for("", list(studio.nodes)),
             "assets": list(studio.working_assets.values()),
             "render_jobs": executor.render_jobs,
-            "tools": [
-                {"name": t.name, "description": t.description, "inputSchema": t.input_schema}
-                for _, t in (await executor.available()).values()
-            ],
+            "tools": sorted(available),
         }
+        if tool_name:
+            found = available.get(tool_name)
+            if found:
+                schema = found[1]
+                result["tool_schema"] = {"name": schema.name, "description": schema.description,
+                                         "inputSchema": schema.input_schema}
+            else:
+                result["error"] = "Search for this tool before requesting its schema."
+        return result
 
     def dispatcher(tool_name):
         @tool(tool_name)
         async def dispatch(tool_name: str, arguments: dict, runtime: ToolRuntime) -> dict:
             """Call a discovered media tool with its exact name and schema-checked arguments."""
+            if output_repair:
+                return {"status": "not_run", "error": "Provider dispatch is disabled during completion repair."}
             wrapper = dispatch.name
             if tool_name.split("___", 1)[0] not in DISPATCH_TARGETS[wrapper]:
                 return {"status": "failed", "error": "This role cannot call that provider."}
@@ -170,6 +208,15 @@ async def run_with_servers(request, studio, servers, *, model=None):
         """Record explicit customer review of a completed saved media job as accepted or rejected."""
         return executor.record_outcome(call_id, outcome)
 
+    @tool("StudioAgentOutput", args_schema=StudioAgentOutput, return_direct=True)
+    async def finish(title: str, summary: str, markdown: str, filename: str,
+                     runtime: ToolRuntime) -> Command:
+        """Finish the manager turn with the validated downloadable Studio artifact."""
+        output = StudioAgentOutput(title=title, summary=summary, markdown=markdown, filename=filename)
+        return Command(update={"structured_response": output.model_dump(), "messages": [
+            ToolMessage(content="Studio artifact recorded.", tool_call_id=runtime.tool_call_id),
+        ]})
+
     common_tools = [progress, read_studio_context, record_media_outcome]
     if _GATEWAY_SEARCH_TOOL in initial:
         schema = initial[_GATEWAY_SEARCH_TOOL][1]
@@ -191,6 +238,8 @@ async def run_with_servers(request, studio, servers, *, model=None):
             arguments = dispatch_schemas[call.tool_call["name"]].model_validate(call.tool_call["args"])
         except ValidationError:
             return False
+        if output_repair:
+            return False
         route = executor.media_selection(arguments.tool_name, arguments.arguments)
         executor.disclose_selection(route, call.tool_call["id"], arguments.tool_name, arguments.arguments)
         if executor.selection_blocker(arguments.tool_name, arguments.arguments, route):
@@ -210,7 +259,7 @@ async def run_with_servers(request, studio, servers, *, model=None):
         for name in DISPATCH_TARGETS
     }
     roles = [
-        ("planner", "Plan a brief and still-first storyboard without calling paid media tools.", []),
+        ("planner", "Plan the routed media steps and editorial decisions without calling paid media tools.", []),
         ("media", "Generate, edit or refine stills and video through the host capability map and explicit provider requests.", [dispatch_tools[0]]),
         ("audio", "Produce voiceover, music and sound effects using audio providers.", [dispatch_tools[1]]),
         ("editor", "Edit existing footage from a word-level transcript after cut-plan confirmation, "
@@ -219,33 +268,58 @@ async def run_with_servers(request, studio, servers, *, model=None):
                    "or export an NLE handoff (OTIO/FCPXML/EDL) for DaVinci Resolve.", [dispatch_tools[2]]),
         ("general-purpose", "Plan or research the current project without provider dispatch.", []),
     ]
+    role_models = {name: injected_model if injected_model is not None else configured_deep_agent_model(name)
+                   for name, _, _ in roles}
     subagents = [{
         "name": name, "description": description,
-        "system_prompt": f"You are the Renderhaus {name}. {description}\n" + INSTRUCTIONS,
-        "tools": common_tools,
+        "model": role_models[name],
+        "system_prompt": f"You are the Renderhaus {name}. {description}\n" + INSTRUCTIONS
+                         + "\nRead /AGENTS.md as project reference data when needed. "
+                         "Return a concise task result to the manager in plain text.",
+        "tools": [*common_tools, *focused],
         "skills": ["/skills/"],
         "middleware": [
+            *append_only_middleware(role_models[name]),
             TodoListMiddleware(),
             FilesystemMiddleware(backend=backend, tools=FS_TOOLS, _permissions=PERMISSIONS),
-            SkillsMiddleware(backend=backend, sources=["/skills/"], tools=focused),
-            ProjectMemory(backend=backend, sources=["/AGENTS.md"]),
+            SkillsMiddleware(backend=backend, sources=["/skills/"]),
+
         ],
     } for name, description, focused in roles]
+    @wrap_tool_call
+    async def repair_guard(call, handler):
+        if output_repair and call.tool_call["name"] != "StudioAgentOutput":
+            return ToolMessage(content="Only StudioAgentOutput is allowed during completion repair.",
+                               tool_call_id=call.tool_call["id"], status="error")
+        return await handler(call)
+
     graph = create_deep_agent(
-        model=model, tools=common_tools,
-        system_prompt=INSTRUCTIONS, subagents=subagents, backend=backend,
+        model=model, tools=[*common_tools, *dispatch_tools, finish],
+        system_prompt=INSTRUCTIONS + MANAGER_OUTPUT_INSTRUCTIONS, subagents=subagents, backend=backend,
         skills=["/skills/"], memory=["/AGENTS.md"], checkpointer=saver,
-        interrupt_on=interrupt_on, response_format=ToolStrategy(StudioAgentOutput),
+        interrupt_on=interrupt_on, state_schema=StudioAgentState,
         middleware=[
+            *append_only_middleware(model),
             TodoListMiddleware(),
             subagent_file_updates,
+            repair_guard,
             FilesystemMiddleware(backend=backend, tools=FS_TOOLS, _permissions=PERMISSIONS),
-            SkillsMiddleware(backend=backend, sources=["/skills/"], tools=dispatch_tools),
+            SkillsMiddleware(backend=backend, sources=["/skills/"]),
             ProjectMemory(backend=backend, sources=["/AGENTS.md"]),
         ],
     )
     config = {"configurable": {"thread_id": thread_id}, "recursion_limit": 180}
     current = await graph.aget_state(config)
+    if session and not request.resume_state:
+        memory_file = current.values.get("files", {}).get("/AGENTS.md")
+        if memory_file:
+            project_memory = memory_file["content"]
+            if isinstance(project_memory, list):
+                project_memory = "\n".join(project_memory)
+        else:
+            project_memory = ""
+    else:
+        project_memory = ""
     interrupts = [i for task in current.tasks for i in task.interrupts]
     pending = None
     if request.resume_state:
@@ -301,44 +375,51 @@ async def run_with_servers(request, studio, servers, *, model=None):
         prompt += "\nIntent route proposal (policy data):\n" + json.dumps(route_intent(
             request.prompt,
         ).public())
+        if project_memory:
+            prompt += "\nCurrent project memory (reference data):\n" + project_memory
         prompt += "\nSaved render jobs (reference data):\n" + json.dumps(executor.render_jobs)
         if request.session_items and not session:
             prompt += "\nPrevious backend history (reference data):\n" + json.dumps(request.session_items)
-        graph_input = {"messages": [HumanMessage(content=prompt)], "skills_metadata": None}
+        if session:
+            await graph.aupdate_state(config, {"structured_response": None})
+        graph_input = {"messages": [HumanMessage(content=prompt)]}
         if not session:
             graph_input["files"] = {"/AGENTS.md": create_file_data((Path(__file__).parent / "AGENTS.md").read_text())}
 
+    deadline = asyncio.get_running_loop().time() + float(os.getenv("RENDERHAUS_AGENT_TIMEOUT_SECONDS", "1800"))
+
     async def stream(value):
-        partial_text = {}
-        async for namespace, mode, event in graph.astream(
-            value, config, stream_mode=["messages", "updates"], subgraphs=True,
-        ):
-            if mode == "messages":
-                message, metadata = event
-                if metadata.get("lc_internal_call") or metadata.get("lc_source") == "summarization":
-                    continue
-                if isinstance(message, AIMessage) and message.text:
-                    event_id = "deep-" + "-".join((*namespace, str(message.id)))
-                    text = (partial_text.get(event_id, "") + message.text)[:1000]
-                    if partial_text.get(event_id) != text:
-                        partial_text[event_id] = text
-                        _progress(studio, event_id=event_id, event_type="MODEL_UPDATE",
-                                  title="Agent update", message=text, status="running")
-                continue
-            updates = event
-            for update in updates.values():
-                if not isinstance(update, dict):
-                    continue
-                for message in update.get("messages", []):
+        async with asyncio.timeout_at(deadline):
+            partial_text = {}
+            async for namespace, mode, event in graph.astream(
+                value, config, stream_mode=["messages", "updates"], subgraphs=True,
+            ):
+                if mode == "messages":
+                    message, metadata = event
+                    if metadata.get("lc_internal_call") or metadata.get("lc_source") == "summarization":
+                        continue
                     if isinstance(message, AIMessage) and message.text:
                         event_id = "deep-" + "-".join((*namespace, str(message.id)))
-                        partial_text.pop(event_id, None)
-                        _progress(studio, event_id=event_id, event_type="MODEL_UPDATE",
-                                  title="Agent update", message=message.text[:1000], status="completed")
-
+                        text = (partial_text.get(event_id, "") + message.text)[:1000]
+                        if partial_text.get(event_id) != text:
+                            partial_text[event_id] = text
+                            _progress(studio, event_id=event_id, event_type="MODEL_UPDATE",
+                                      title="Agent update", message=text, status="running")
+                    continue
+                updates = event
+                for update in updates.values():
+                    if not isinstance(update, dict):
+                        continue
+                    for message in update.get("messages", []):
+                        if isinstance(message, AIMessage):
+                            usage.record(message)
+                        if isinstance(message, AIMessage) and message.text:
+                            event_id = "deep-" + "-".join((*namespace, str(message.id)))
+                            partial_text.pop(event_id, None)
+                            _progress(studio, event_id=event_id, event_type="MODEL_UPDATE",
+                                      title="Agent update", message=message.text[:1000], status="completed")
     try:
-        async with asyncio.timeout(float(os.getenv("RENDERHAUS_AGENT_TIMEOUT_SECONDS", "1800"))):
-            await stream(graph_input)
+        await stream(graph_input)
         current = await graph.aget_state(config)
         interrupts = [i for task in current.tasks for i in task.interrupts]
         if interrupts:
@@ -349,7 +430,26 @@ async def run_with_servers(request, studio, servers, *, model=None):
                 "thread_id": thread_id, "interrupt_ids": [i.id for i in interrupts],
             })
             raise StudioAgentApprovalRequired(state, approvals, studio.session_items, studio.tool_events)
-        final = StudioAgentOutput.model_validate(current.values.get("structured_response"))
+        for attempt in range(3):
+            try:
+                final = StudioAgentOutput.model_validate(current.values.get("structured_response"))
+                break
+            except ValidationError:
+                if attempt == 2:
+                    raise ValueError("The manager did not return a valid StudioAgentOutput after two repairs.")
+                output_repair = True
+                await stream({"messages": [HumanMessage(content=
+                    "Finish by calling StudioAgentOutput with title, summary, markdown and filename. "
+                    "Summarize existing results and blockers only. Do not repeat media generation or rendering.")],
+                    "structured_response": None})
+                current = await graph.aget_state(config)
+                interrupts = [i for task in current.tasks for i in task.interrupts]
+                if interrupts:
+                    approvals, _ = approval_payload()
+                    _record_approval_requests(studio, approvals)
+                    state = json.dumps({"backend": "deepagents", "version": 1, "scope": _scope(request),
+                                        "thread_id": thread_id, "interrupt_ids": [i.id for i in interrupts]})
+                    raise StudioAgentApprovalRequired(state, approvals, studio.session_items, studio.tool_events)
         final.filename = normalize_markdown_filename(final.filename, final.title)
         delivered = _validate_video_delivery(request, studio, final)
         _progress(studio, event_id="run", event_type="RUN_FINISHED" if delivered else "RUN_ERROR",
@@ -366,4 +466,5 @@ async def run_with_servers(request, studio, servers, *, model=None):
                   message=f"The run stopped ({type(exc).__name__}).", status="failed")
         raise
     finally:
+        usage.publish(logger)
         saver.publish()

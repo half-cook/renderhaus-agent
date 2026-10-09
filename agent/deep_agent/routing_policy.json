@@ -1162,7 +1162,7 @@
       "skill": "audio-bed",
       "model": "eleven_v4_turbo",
       "model_env": "ELEVENLABS_TTS_MODEL",
-      "verification": "verified ID; existing REST TTS transport UNVERIFIED",
+      "verification": "official generic HTTP TTS schema verified 2026-10-09; operator confirmed eleven_v4_turbo HTTP TTS; other gateway variants UNVERIFIED",
       "source": "https://elevenlabs.io/docs/overview/models",
       "read_date": "2026-10-08",
       "host": "ElevenLabs direct",
@@ -1510,7 +1510,7 @@
       "capability": "i2v"
     },
     {
-      "pattern": "video|\\bt2v\\b|generate.*clip|cinematic|drone shot|seedance|kling|runway|luma|ray.?3|veo|\\bdialogue\\b|\\bsays?\\b|\\btalking\\b|prompt adherence|make it with|generate.*shot",
+      "pattern": "video|\\bt2v\\b|(?:make|create|generate).*clip|cinematic|drone shot|seedance|kling|runway|luma|ray.?3|veo|\\bdialogue\\b|\\bsays?\\b|\\btalking\\b|prompt adherence|make it with|(?:make|create|generate).*shot",
       "skill": "t2v",
       "abstract_tool": "wan3_t2v",
       "capability": "t2v"
@@ -3042,7 +3042,7 @@
           "reason": "editable vector output"
         }
       ],
-      "interim": "seedream_t2i",
+      "interim": null,
       "ab_candidates": []
     },
     "image_edit": {
@@ -3054,7 +3054,7 @@
           "reason": "pixel-preserving text-only edit"
         }
       ],
-      "interim": "seedream_edit",
+      "interim": null,
       "ab_candidates": [
         "ideogram45_edit"
       ]

@@ -108,7 +108,7 @@ class Gateway:
 
 class DeepAgentTests(unittest.IsolatedAsyncioTestCase):
     def request(self, **kwargs):
-        return StudioAgentRequest(prompt="Make a product still", workspace_id="workspace",
+        return StudioAgentRequest(prompt="Make a product still with Seedream", workspace_id="workspace",
                                   project_id="project", conversation_id="conversation",
                                   job_id="job", **kwargs)
 
@@ -161,10 +161,10 @@ class DeepAgentTests(unittest.IsolatedAsyncioTestCase):
         )
         self.assertEqual(state.checkpoint["channel_values"]["todos"], todos)
 
-    async def test_skills_disclose_tools_only_after_relevant_read(self):
+    async def test_dispatch_wrappers_stay_bound_while_skill_bodies_load_on_demand(self):
         def before(messages, tools):
-            self.assertNotIn("call_media_tool", tools)
-            self.assertNotIn("call_audio_tool", tools)
+            self.assertIn("call_media_tool", tools)
+            self.assertIn("call_audio_tool", tools)
             self.assertNotIn("execute", tools)
             prompt = messages[0].text
             self.assertIn("product-images", prompt)
@@ -173,7 +173,7 @@ class DeepAgentTests(unittest.IsolatedAsyncioTestCase):
 
         def after(messages, tools):
             self.assertIn("call_media_tool", tools)
-            self.assertNotIn("call_audio_tool", tools)
+            self.assertIn("call_audio_tool", tools)
             self.assertIn("# Product images", messages[-1].text)
             return image()
 
@@ -185,7 +185,7 @@ class DeepAgentTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(studio.session_items[0]["type"], SESSION_TYPE)
         self.assertEqual(studio.progress_events[-1].type, "RUN_FINISHED")
 
-    async def test_new_turn_reloads_changed_skill_metadata_and_tools(self):
+    async def test_new_turn_keeps_skill_metadata_prefix_and_reads_latest_body(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             skill = root / "product-images" / "SKILL.md"
@@ -198,14 +198,14 @@ class DeepAgentTests(unittest.IsolatedAsyncioTestCase):
                                  "metadata:\n  include_tools: call_editor_tool\n---\nAssemble an edit.\n")
 
                 def updated_index(messages, tools):
-                    self.assertIn("Updated assembly workflow", messages[0].text)
-                    self.assertNotIn("Old image workflow", messages[0].text)
-                    self.assertNotIn("call_editor_tool", tools)
+                    self.assertNotIn("Updated assembly workflow", messages[0].text)
+                    self.assertIn("Old image workflow", messages[0].text)
+                    self.assertIn("call_editor_tool", tools)
                     return read_skill()
 
                 def updated_tools(messages, tools):
                     self.assertIn("call_editor_tool", tools)
-                    self.assertNotIn("call_media_tool", tools)
+                    self.assertIn("call_media_tool", tools)
                     self.assertIn("Assemble an edit.", messages[-1].text)
                     return final()
 
@@ -249,7 +249,8 @@ class DeepAgentTests(unittest.IsolatedAsyncioTestCase):
             call("write_file", {"file_path": "/brief.md", "content": "Quiet product reveal"}, "brief"), final(),
         ])
         def verify(messages, tools):
-            self.assertIn("Use a blue background.", messages[0].text)
+            self.assertNotIn("Use a blue background.", messages[0].text)
+            self.assertIn("Use a blue background.", messages[-1].text)
             self.assertGreater(len(messages), 3)
             return call("read_file", {"file_path": "/brief.md"}, "read-brief")
 
@@ -595,7 +596,7 @@ class DeepAgentTests(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(deep_agent_model(), "anthropic:test")
             self.assertTrue(agent_configured())
         with patch.dict(os.environ, {"RENDERHAUS_AGENT_MODEL": "  ", "AGENT_MODEL": "  "}):
-            self.assertEqual(deep_agent_model(), "anthropic:claude-opus-5-5")
+            self.assertEqual(deep_agent_model(), "anthropic:claude-haiku-5-5")
         with patch.dict(os.environ, {"RENDERHAUS_AGENT_BACKEND": "invalid"}):
             with self.assertRaises(ValueError):
                 agent_backend()
