@@ -2909,7 +2909,7 @@
           "reason": "editable vector output"
         }
       ],
-      "interim": "seedream_t2i",
+      "interim": null,
       "ab_candidates": []
     },
     "image_edit": {
@@ -2921,7 +2921,7 @@
           "reason": "pixel-preserving text-only edit"
         }
       ],
-      "interim": "seedream_edit",
+      "interim": null,
       "ab_candidates": [
         "ideogram45_edit"
       ]
