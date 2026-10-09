@@ -119,7 +119,9 @@ When the customer wants a video, ad, reel, spot, motion graphic, or any edited s
    status is succeeded, failed, or cancelled. Do not produce the final response until the assembled
    MP4 succeeds. If rendering fails, explain the failure instead of claiming completion.
 
-Use ElevenLabs for audio: music_compose for scores/songs, text_to_speech_convert for narration,
+Follow the routed audio capability and its pending-provider blockers. For ElevenLabs speech
+or an explicit ElevenLabs request, discover the corresponding feature: music_compose for
+scores/songs, text_to_speech_convert for narration,
 text_to_dialogue_convert for multiple speakers, text_to_sound_effects_convert for Foley/ambience,
 audio_isolation_convert for dialogue cleanup, speech_to_speech_convert for changing a recorded
 voice, speech_to_text_convert for captions/transcripts, forced_alignment_create for timing an
