@@ -81,6 +81,14 @@ env file, then keep only bootstrap keys locally:
 then loads the JSON secret into the process environment. AgentCore Runtime uses the same secret
 via its execution role.
 
+Deep Agents defaults to `anthropic:claude-opus-5-5` with
+`RENDERHAUS_AGENT_EFFORT=high`. Add `ANTHROPIC_API_KEY` to that application secret before using
+the default. Keep credentials out of runtime bootstrap and Docker configuration.
+`RENDERHAUS_AGENT_MODEL=openai:gpt-5.6-luna` selects the previous model with `OPENAI_API_KEY`.
+An explicitly stored legacy `AGENT_MODEL` remains a fallback, so set the new model variable
+to override it. Studio and AgentCore must use matching settings; provider Gateway Lambdas
+need no Anthropic key for planning. See [model selection and pricing](docs/DEEP_AGENT.md#configuration).
+
 ### AgentCore (cloud agent + MCPs)
 
 The Deep Agents backend runs inside Amazon Bedrock AgentCore Runtime. Generation tools

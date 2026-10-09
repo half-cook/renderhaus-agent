@@ -92,7 +92,7 @@ the additional skill or module named in a row supplies the relevant contract.
 
 | Parameter | Current value and behavior | Installed capability | Gap impact | Decision |
 | --- | --- | --- | --- | --- |
-| `model` | Injected test model or `backend_config.deep_agent_model()`. Provider strings normalize OpenAI names. | String or `BaseChatModel`. `None` defaults to Anthropic and is deprecated; OpenAI strings use Responses API. | none | Defer changes. Explicit configuration avoids the deprecated default. |
+| `model` | Injected test model or `backend_config.configured_deep_agent_model()`. Defaults to Opus 5.5 with high effort; validates supported prefixes and selected-provider credentials. | String or `BaseChatModel`. `None` defaults to Anthropic and is deprecated; OpenAI strings use Responses API. | live behavior unverified | Anthropic instance sets adaptive thinking and effort; other strings retain native profiles. See [model configuration](DEEP_AGENT.md#configuration). |
 | `tools` | Progress, read-only Studio context, and Gateway search. Provider dispatch exists only in skill middleware. | Adds tools to middleware tools, rather than replacing built-ins. | none | Defer changes. Do not expose dispatch eagerly or direct provider access. |
 | `system_prompt` | Existing Studio manager rules plus Deep Agents routing, files, and approval instructions. | String or `SystemMessage`; model profile content may append to it. | low | Fix now F1 only for explicit multi-step todo guidance. |
 | `middleware` | Replacement filesystem, skill disclosure, and `ProjectMemory` middleware. | Name-based replacements preserve default ordering. New entries precede the tail. | high | Fix now F1 adds todos. Retain built-in summarization and caching. |
