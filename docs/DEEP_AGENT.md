@@ -529,6 +529,20 @@ with 4 skips. See [Gemini configuration and sources](GEMINI_CONTINUITY_QC.md),
 [benchmark procedure](CONTINUITY_QC_BENCHMARK.md#experimental-gemini-judge-and-eval-gate),
 and [decisions](continuity-qc-vlm-decisions.tsv). Comet E2E remains blocked.
 
+## Priced ElevenLabs TTS models
+
+The four TTS variants expose only `eleven_v4_turbo` and `eleven_v4`, derived from
+`ELEVENLABS_CHARACTER_MULTIPLIERS`. Omitted `model_id` uses `ELEVENLABS_TTS_MODEL`,
+defaulting to `eleven_v4_turbo`. Invalid IDs or configured defaults fail with the allowed IDs.
+The native Deep Agents 0.7.23 approval predicate and the shared Gateway executor validate TTS
+before routing disclosure or interruption. Invalid requests return a normal failed tool result,
+so the agent can correct them without an unknown-cost approval card or provider dispatch.
+Operator quotes cannot bypass the model allowlist; missing Stripe quotes fail before approval.
+HTTP transport, autonomous spend caps, and approval exemptions retain their existing behavior.
+See [ElevenLabs](ELEVENLABS.md) and [decisions](fix-tts-model-pin-decisions.tsv).
+Scripted lighthouse tests cover correction and known-cost approval offline. Comet E2E and live
+audio playback remain blocked by unavailable Comet control and the offline-only task constraint.
+
 ## NLE re-import
 
 `resolve-handoff` now imports an editor's FCPXML or OTIO through the free local
