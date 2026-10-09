@@ -336,6 +336,36 @@ class HyperFramesGraphTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn("disabled", result["reason"].lower())
         gateway.call_tool.assert_not_awaited()
 
+    async def test_local_schema_is_not_saved_or_restored_as_a_remote_gateway_tool(self):
+        from agent.hyperframes import HYPERFRAMES_TOOL, HyperFramesServer
+        from agent.gateway_executor import GatewayExecutor
+        from agent.studio_agent_next import GatewayMCPServer
+
+        studio = _context_from_request(self.request())
+        local = HyperFramesServer()
+        executor = GatewayExecutor(studio, [local])
+        await executor.connect_tools()
+        self.assertEqual(executor.snapshot()["gateway_tools"], [])
+        remote = GatewayMCPServer({"url": "https://unused.invalid"}, name="gateway")
+        remote._tools_list = []
+        restored = GatewayExecutor(studio, [remote, local])
+        with patch.dict(os.environ, {"HYPERFRAMES_ENABLED": "false"}):
+            await restored.connect_tools({"gateway_tools": [HYPERFRAMES_TOOL.model_dump(by_alias=True)]})
+            self.assertNotIn(TOOL_NAME, await restored.available())
+        self.assertNotIn(TOOL_NAME, remote._discovered_tool_names)
+
+    def test_prior_preview_does_not_invalidate_a_later_default_remotion_video(self):
+        request = self.request().model_copy(update={"prompt": "Make a 5 second video of a red car"})
+        studio = _context_from_request(request)
+        studio.tool_events = [
+            StudioToolEvent(id="old-preview", name=TOOL_NAME, label="Previous preview", status="dry_run",
+                            summary="No MP4", result={"status": "dry_run"}),
+            StudioToolEvent(id="current-remotion", name="Remotion___get_render_progress",
+                            label="Completed render", status="succeeded", summary="Current MP4",
+                            result={"status": "succeeded", "output_path": "/tmp/current.mp4"}),
+        ]
+        self.assertTrue(_validate_video_delivery(request, studio))
+
     def test_saved_remotion_artifact_cannot_complete_a_hyperframes_export(self):
         request = self.request().model_copy(update={"prompt": "Make a HyperFrames video"})
         studio = _context_from_request(request)
