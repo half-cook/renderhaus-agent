@@ -59,6 +59,15 @@ PROVIDERS: tuple[ProviderSpec, ...] = (
         default_env={"LUMA_DRY_RUN": "true"},
     ),
     ProviderSpec(
+        id="alibaba_modelstudio",
+        target_name="ModelStudio",
+        function_name="renderhaus-modelstudio-tools",
+        module_path="providers.alibaba_modelstudio.api",
+        env_keys=("DASHSCOPE_API_KEY", "DASHSCOPE_BASE_URL", "DASHSCOPE_WORKSPACE_ID",
+                  "DASHSCOPE_REGION", "DASHSCOPE_MODEL", "MODELSTUDIO_DRY_RUN"),
+        default_env={"MODELSTUDIO_DRY_RUN": "true"},
+    ),
+    ProviderSpec(
         id="seedance",
         target_name="Seedance",
         function_name="renderhaus-seedance-tools",

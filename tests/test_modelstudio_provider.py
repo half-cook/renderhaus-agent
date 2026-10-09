@@ -83,6 +83,7 @@ class ModelStudioTests(unittest.TestCase):
         self.assertEqual(parameters["resolution"], "1080P")
         self.assertEqual(parameters["ratio"], "adaptive")
         self.assertTrue(parameters["audio"])
+        self.assertEqual(parameters["seed"], -1)
 
     def test_edit_and_extension_intent_are_guaranteed_in_prompt_only(self):
         for tool, prefix in (("edit_wan3_video", "Edit Video 1"),
@@ -129,7 +130,7 @@ class ModelStudioTests(unittest.TestCase):
         for field in ("source_duration_seconds", "source_fps"):
             for value in (True, 0, -1, float("nan"), float("inf"), "5"):
                 cases.append({field: value})
-        cases.extend([{"source_duration_seconds": 15.1}, {"source_fps": 15},
+        cases.extend([{"source_duration_seconds": 0.5}, {"source_duration_seconds": 15.1}, {"source_fps": 15},
                       {"source_duration_seconds": 15, "duration": 16}])
         for value in (True, 0, float("nan"), float("inf")):
             cases.append({"reference_audio_urls": [AUDIO], "reference_audio_durations": [value],
@@ -155,6 +156,16 @@ class ModelStudioTests(unittest.TestCase):
         self.assertIsNone(result["estimated_cost_usd"])
         result = self.api().extend_wan3_video(**BASE_ARGUMENTS, duration=7)
         self.assertEqual(result["request_preview"]["parameters"]["duration"], 7)
+
+    def test_edit_supports_documented_wide_ratio_and_one_second_source(self):
+        result = self.api().edit_wan3_video(**{**BASE_ARGUMENTS, "source_duration_seconds": 1},
+                                          duration=2, aspect_ratio="21:9")
+        self.assertEqual(result["request_preview"]["parameters"]["ratio"], "21:9")
+
+    def test_payload_builder_never_serializes_null_seed(self):
+        contract = importlib.import_module("providers.alibaba_modelstudio.contracts")
+        body = contract.request_body("edit_wan3_video", {**BASE_ARGUMENTS, "seed": None}, "wan3.0-video")
+        self.assertEqual(body["parameters"]["seed"], -1)
 
     def test_settings_precedence_and_region_consistency(self):
         config = self.config()
@@ -306,4 +317,3 @@ class ModelStudioTests(unittest.TestCase):
             with self.subTest(payload=payload), self.mock_http(lambda request: httpx.Response(200, json=payload)):
                 with self.assertRaises((ValueError, RuntimeError)):
                     self.api().edit_wan3_video(**BASE_ARGUMENTS, duration=7)
-

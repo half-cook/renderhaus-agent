@@ -20,6 +20,11 @@ FORBIDDEN_TOOL_RE = re.compile(r"^(wait_for_.*|.*_and_wait)$")
 
 
 TOOL_GUIDANCE: dict[str, dict[str, str]] = {
+    "alibaba_modelstudio": {
+        "edit_wan3_video": "Edit one measured video through Alibaba Model Studio Wan 3. Requires video_url, prompt, source_duration_seconds and source_fps. Default duration=-1 is an unknown-cost dry-run preview; choose explicit total output seconds for live work. All paid video requires approval with input plus output cost. Poll get_task to save the actual MP4. Outputs are not training eligible.",
+        "extend_wan3_video": "Extend one measured video through Alibaba Model Studio Wan 3. duration is TOTAL output length, so extending a 5s source by 2s uses duration=7 and bills 12s. Default -1 is unknown-cost dry-run only. Uses adaptive ratio and prompt-based direction. All paid video requires approval. Poll get_task to save the actual MP4; outputs are not training eligible.",
+        "get_task": "Poll an existing Model Studio job_id once without submitting paid work. Download defaults to true and persists the completed MP4 and provenance. Reuse saved jobs instead of resubmitting; previews are not generated media.",
+    },
     "kling": {
         "text_to_video": (
             "Use for a new Kling video from text, including native audio and multi-shot prompts. "

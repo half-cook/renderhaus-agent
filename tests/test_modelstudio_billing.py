@@ -79,3 +79,7 @@ class ModelStudioBillingTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             rates.modelstudio_price_cents("edit_wan3_video", BASE, region="elsewhere")
 
+    def test_published_rate_sources_are_dated(self):
+        self.assertEqual(rates.MODELSTUDIO_PRICING_READ_DATE, "2026-10-09")
+        self.assertEqual(rates.MODELSTUDIO_PRICING_URL,
+                         "https://www.alibabacloud.com/help/en/model-studio/wan3-0-video")
