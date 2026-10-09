@@ -98,6 +98,10 @@ def build_lambda_zip() -> bytes:
             ignore=shutil.ignore_patterns("__pycache__", "*.pyc"),
         )
         shutil.copy2(HANDLER_PATH, package / "handler.py")
+        billing_package = package / "server"
+        billing_package.mkdir()
+        for filename in ("__init__.py", "billing_rates.py"):
+            shutil.copy2(ROOT / "server" / filename, billing_package / filename)
 
         buf = io.BytesIO()
         with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:

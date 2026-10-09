@@ -298,6 +298,13 @@ def enrich_tool_schema(provider_id: str, tool: dict[str, Any]) -> dict[str, Any]
             "Source media must be under Renderhaus media roots or on a configured S3 bucket host."
         )
         properties["output_filename"]["description"] = "ZIP download filename; directory components are removed."
+    if provider_id == "fal":
+        from providers.fal.vidu import FIELD_DESCRIPTIONS, TOOL_ENDPOINTS
+
+        if tool_name in TOOL_ENDPOINTS:
+            for field, description in FIELD_DESCRIPTIONS.items():
+                if field in properties:
+                    properties[field]["description"] = description
     return enriched
 
 
@@ -365,9 +372,10 @@ def _validate_cross_fields(provider_id: str, tool_name: str, arguments: dict[str
 
         validate_runway_arguments(tool_name, arguments)
     if provider_id == "fal":
-        from providers.fal.wan import validate_arguments
+        from providers.fal import vidu, wan
 
-        validate_arguments(tool_name, arguments)
+        wan.validate_arguments(tool_name, arguments)
+        vidu.validate_arguments(tool_name, arguments)
     if provider_id == "luma" and tool_name in {
         "text_to_video", "image_to_video", "extend_video", "modify_video"
     }:
@@ -467,7 +475,7 @@ def validate_tool_arguments(
 
 def argument_rules(provider_id: str, tool_name: str) -> dict[str, ArgumentRule]:
     if provider_id == "fal":
-        from providers.fal.wan import ARGUMENT_RULES
+        from providers.fal import vidu, wan
 
-        return ARGUMENT_RULES.get(tool_name, {})
+        return {**wan.ARGUMENT_RULES, **vidu.ARGUMENT_RULES}.get(tool_name, {})
     return TOOL_ARGUMENT_RULES.get(provider_id, {}).get(tool_name, {})

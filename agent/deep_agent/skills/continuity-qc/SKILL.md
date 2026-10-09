@@ -32,7 +32,7 @@ substitute DINOv3 for the configured DINOv2 model; the report names the DINO mod
 Before training, enforce `agent/deep_agent/routing_policy.json` through the continuity
 training hook. Accept only approved Wan provenance with both `training_eligible=true` and
 `weights_license=Apache-2.0`. Reject forged flags, missing provenance, other models, and
-outputs from Kling, Runway, Seedance, Seedream, Veo, Luma, MiniMax H3, or Hunyuan.
+outputs from Vidu Q4, Kling, Runway, Seedance, Seedream, Veo, Luma, MiniMax H3, or Hunyuan.
 MiniMax H3 and Hunyuan are blocked or geo-gated and never training-eligible.
 
 For authorized synthetic training previews, `wan_t2v` maps to `Fal___text_to_video`

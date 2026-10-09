@@ -589,10 +589,14 @@ class FalProviderTests(unittest.TestCase):
         del os.environ["FAL_KEY"]
         catalog = api.list_fal_models()
         self.assertEqual(catalog["status"], "ok")
-        self.assertEqual(len(catalog["models"]), 2)
-        self.assertEqual(len(catalog["endpoints"]), 12)
+        self.assertEqual(len(catalog["models"]), 4)
+        self.assertEqual(len(catalog["endpoints"]), 14)
         for item in catalog["models"] + catalog["endpoints"]:
-            self.assert_licensed(item)
+            if item["id"].startswith("fal-ai/vidu/q4/"):
+                self.assertIs(item["training_eligible"], False)
+                self.assertNotEqual(item["weights_license"], "Apache-2.0")
+            else:
+                self.assert_licensed(item)
         endpoints = {item["id"]: item for item in catalog["endpoints"]}
         self.assertFalse(endpoints[MODEL_22]["pricing_confirmed"])
         self.assertFalse(endpoints[MODEL_22 + "/pose"]["pricing_confirmed"])

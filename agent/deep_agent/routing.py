@@ -66,12 +66,14 @@ def route_intent(prompt: str, *, region: str | None = None, tier: str | None = N
         tool = entry["gateway_tool"]
         job = job_type(tool) if tool else None
         if job:
-            constraints = intent_constraints(prompt, tier=tier, confidential=confidential)
+            constraints = intent_constraints(prompt, tier=tier, confidential=confidential, arguments=arguments)
             if job == "t2v" and constraints["required"].get("start_end_frame"):
                 job, skill = "i2v", "i2v"
+            variant = tool_variant(tool)
             selection = select_provider(
                 job, arguments=arguments, available_tools=available_tools, region=region,
-                retry=retry, **constraints,
+                retry=retry, tool_variant=variant if variant in {"reference", "image_edit"} else job,
+                **constraints,
             )
             return replace(selection, skill=skill)
         if tool:
@@ -107,6 +109,14 @@ def job_type(name: str | None) -> str | None:
     return None
 
 
+def tool_variant(name: str) -> str | None:
+    if name.endswith(("reference_to_video", "vidu_q4_r2v")):
+        return "reference"
+    if name.endswith("image_to_image"):
+        return "image_edit"
+    return job_type(name)
+
+
 def capability_table() -> list[dict]:
     rows = []
     for row in POLICY["capabilities"]:
@@ -132,12 +142,15 @@ def _capability_price(row: dict):
         return price
     provider, model = row["provider"], row["model"]
     if provider == "fal":
-        from providers.fal.wan import endpoint_for
-        values = {}
-        for mode in ("freeform", "depth", "pose", "inpainting", "outpainting", "reframe"):
-            endpoint = endpoint_for("video_to_video", {"model": model, "edit_mode": mode})
-            values[mode] = {resolution: str(value) for resolution, value in
-                            (endpoint.price_cents_per_video_second or {}).items()} or "unknown"
+        if row.get("duration_field") == "duration":
+            values = {resolution: str(value) for resolution, value in rates.vidu_q4_rates().items()}
+        else:
+            from providers.fal.wan import endpoint_for
+            values = {}
+            for mode in ("freeform", "depth", "pose", "inpainting", "outpainting", "reframe"):
+                endpoint = endpoint_for("video_to_video", {"model": model, "edit_mode": mode})
+                values[mode] = {resolution: str(value) for resolution, value in
+                                (endpoint.price_cents_per_video_second or {}).items()} or "unknown"
     elif provider == "kling":
         values = {"audio" if audio else "silent": dict(table) for (rate_model, audio), table in
                   rates.KLING_RATES_USD_PER_SECOND.items() if rate_model == model}
@@ -158,9 +171,10 @@ def _capability_price(row: dict):
             "fee": "server.billing_rates._with_fee"}
 
 
-def intent_constraints(prompt: str, *, tier: str | None = None, confidential: bool = False) -> dict:
+def intent_constraints(prompt: str, *, tier: str | None = None, confidential: bool = False,
+                       arguments: dict | None = None) -> dict:
     provider = next((p for pattern, p in [
-        (r"\bwan\b|\bfal\b|vace", "fal"), (r"seedance", "seedance"),
+        (r"\bwan\b|\bfal\b|vace|\bvidu\b", "fal"), (r"seedance", "seedance"),
         (r"seedream", "seedream"), (r"kling", "kling"), (r"runway|aleph|gen.?4", "runway"),
         (r"luma|ray.?3", "luma"), (r"\bveo\b", "veo"),
         (r"mini.?max", "minimax_h3"), (r"hunyuan", "hunyuan"),
@@ -176,18 +190,29 @@ def intent_constraints(prompt: str, *, tier: str | None = None, confidential: bo
         "native_audio": r"native audio|with audio|needs? audio",
         "start_end_frame": r"end frame|last frame|start.end.frame|first.*last frame",
         "multi_shot": r"multi.shot",
-        "reference_elements": r"reference elements|element library",
+        "reference_elements": r"reference elements|element library|multi.ref|ref(?:erence)?[ -]to[ -]video|image ref(?:erences?)?",
+        "voice_references": r"voice (?:clips?|ref(?:erences?)?)|audio ref(?:erences?)?",
     }.items():
         if re.search(pattern, prompt, re.I):
             required[feature] = True
-    resolution = re.search(r"\b(480p|580p|720p|1080p|4k)\b", prompt, re.I)
+    resolution = re.search(r"\b(480p|540p|580p|720p|1080p|2k|4k)\b", prompt, re.I)
     if resolution:
         required["max_resolution"] = resolution_value(resolution[1])
     duration = re.search(r"\b(\d+)\s*(?:second|seconds|s)\b", prompt, re.I)
     if duration:
         required["duration_seconds"] = int(duration[1])
     faithful = bool(re.search(r"faithful|keep performance|plate edit|multi.shot", prompt, re.I))
-    return {"provider": provider, "tier": requested_tier or tier, "required": required,
+    model = None
+    if re.search(r"\bvidu\b", prompt, re.I):
+        args = arguments or {}
+        reference = (required.get("reference_elements") or required.get("voice_references")
+                     or args.get("reference_image_urls") or args.get("reference_audio_urls")
+                     or re.search(r"\br2v\b|\bvoice\b", prompt, re.I))
+        tool = "vidu_q4_r2v" if reference else "vidu_q4_i2v"
+        model = POLICY["providers"]["fal"]["default_models"][tool]
+    elif re.search(r"\bwan\b|vace", prompt, re.I):
+        model = POLICY["providers"]["fal"]["default_model"]
+    return {"provider": provider, "model": model, "tier": requested_tier or tier, "required": required,
             "confidential": confidential or bool(re.search(r"\bconfidential\b", prompt, re.I)),
             "faithful": faithful}
 
@@ -218,12 +243,16 @@ def select_provider(job: str, *, tier: str | None = None, required: dict | None 
         model = None
     elif job == "v2v_edit" and faithful and provider is None and tier != "draft":
         provider, tier = POLICY["ladder"]["faithful_edit_provider"], "premium"
-    for key, feature in [("generate_audio", "native_audio"), ("multi_shot", "multi_shot"),
+    for key, feature in [("generate_audio", "native_audio"), ("audio", "native_audio"), ("multi_shot", "multi_shot"),
                          ("shots", "multi_shot"), ("elements", "reference_elements"),
+                         ("reference_image_urls", "reference_elements"), ("ref_image_urls", "reference_elements"),
+                         ("reference_audio_urls", "voice_references"),
                          ("last_frame_url", "start_end_frame"), ("end_image_path_or_url", "start_end_frame"),
                          ("last_frame_path_or_url", "start_end_frame")]:
         if args.get(key):
             required[feature] = True
+    if required.get("voice_references"):
+        required["native_audio"] = True
     resolution = args.get("resolution") or args.get("size") or args.get("ratio")
     if resolution:
         required["max_resolution"] = max(required.get("max_resolution", 0), resolution_value(resolution))
@@ -231,11 +260,18 @@ def select_provider(job: str, *, tier: str | None = None, required: dict | None 
         required["max_resolution"] = max(required.get("max_resolution", 0), resolution_value(POLICY["ladder"]["image_default_size"]))
     if job == "v2v_edit":
         required.pop("multi_shot", None)
-    duration = required.get("duration_seconds") or args.get("duration_seconds") or args.get("video_duration_seconds") or args.get("source_duration_seconds")
+    duration = required.get("duration_seconds") or args.get("duration") or args.get("duration_seconds") or args.get("video_duration_seconds") or args.get("source_duration_seconds")
+    if "duration" in args:
+        duration = required.get("duration_seconds", args["duration"])
+        required["duration_seconds"] = duration
     candidates, refusals = [], []
     variant = tool_variant or job
     for row in capability_table():
         if provider and row["provider"] != provider or model and row["model"] != model:
+            continue
+        if (confidential or retry) and row["model"] not in POLICY["ladder"]["wan_models"]:
+            continue
+        if provider == "fal" and model is None and tier == "draft" and row["model"] not in POLICY["ladder"]["wan_models"]:
             continue
         tool = row["tools"].get(variant)
         if tool is None:
@@ -245,7 +281,9 @@ def select_provider(job: str, *, tier: str | None = None, required: dict | None 
         if any(row["jobs"].get(key, False) < value for key, value in required.items() if key != "duration_seconds"):
             continue
         limits = row["durations"].get(variant)
-        if duration and limits and not limits[0] <= duration <= limits[1]:
+        if row.get("duration_field") and duration is not None and type(duration) is not int:
+            continue
+        if duration is not None and limits and not limits[0] <= duration <= limits[1]:
             continue
         values = row.get("duration_values", {}).get(variant)
         if duration and values and duration not in values:
@@ -262,13 +300,16 @@ def select_provider(job: str, *, tier: str | None = None, required: dict | None 
         if any(args.get(key) and resolution_value(args[key]) not in row["resolutions"]
                for key in ("resolution", "size") if key in controls and args.get(key) != "auto"):
             continue
-        if required.get("native_audio") and "generate_audio" not in controls:
+        audio_field = row.get("native_audio_field", "generate_audio")
+        if required.get("native_audio") and audio_field is not None and audio_field not in controls:
             continue
         if required.get("start_end_frame") and not any(key in controls for key in (
             "last_frame_url", "end_image_path_or_url", "last_frame_path_or_url",
         )):
             continue
-        if required.get("reference_elements") and not any(key in controls for key in ("elements", "ref_image_urls")):
+        if required.get("reference_elements") and not any(key in controls for key in ("elements", "ref_image_urls", "reference_image_urls")):
+            continue
+        if required.get("voice_references") and "reference_audio_urls" not in controls:
             continue
         if not provider:
             eligible = (POLICY["ladder"]["v2v_tiers"][tier] if job == "v2v_edit" else
@@ -278,19 +319,21 @@ def select_provider(job: str, *, tier: str | None = None, required: dict | None 
         quote_args = {**args, "model": row["model"]}
         if duration:
             key = "source_duration_seconds" if tool.endswith("modify_video") else "video_duration_seconds" if tool.endswith("video_to_video") and row["provider"] == "runway" else "duration_seconds"
-            if row["provider"] == "fal":
+            if row.get("duration_field"):
+                quote_args[row["duration_field"]] = duration
+            elif row["provider"] == "fal":
                 quote_args["num_frames"] = args.get("num_frames", round(duration * args.get("frames_per_second", 16)) + 1)
             else:
                 quote_args[key] = duration
-        if required.get("native_audio"):
-            quote_args["generate_audio"] = True
+        if required.get("native_audio") and audio_field:
+            quote_args[audio_field] = True
         if required.get("max_resolution"):
             native = (args.get("size", "2K") if "size" in controls else
                       args.get("ratio", "1280:720") if "ratio" in controls else args.get("resolution", "720p"))
             minimum = max(required["max_resolution"], resolution_value(native))
             value = min(value for value in row["resolutions"] if value >= minimum)
             if "resolution" in controls:
-                quote_args["resolution"] = "4k" if value == 2160 else f"{value}p"
+                quote_args["resolution"] = row.get("resolution_labels", {}).get(str(value), "4k" if value == 2160 else f"{value}p")
             elif "size" in controls:
                 quote_args["size"] = f"{value // 1024}K"
             elif "ratio" in controls:
@@ -319,7 +362,9 @@ def select_provider(job: str, *, tier: str | None = None, required: dict | None 
         reason += " Confidential project, Wan only."
     if retry:
         reason += " Automatic Wan retry after artifact rejection."
-    disclosure = f"Selected {row['label']} ({row['model']}). {reason} {quote.description} Speed class {row['speed_class']} is typical, not a measured SLA."
+    speed = ("Speed is unverified; no measured SLA." if row["speed_class"] == "unknown" else
+             f"Speed class {row['speed_class']} is typical, not a measured SLA.")
+    disclosure = f"Selected {row['label']} ({row['model']}). {reason} {quote.description} {speed}"
     return Route(tool=tool, dispatch_tool="call_media_tool", status="ready", reason=reason,
                  provider=row["provider"], model=row["model"], tier=tier, job_type=job,
                  required=required, estimated_cost=quote.public(), disclosure=disclosure)
@@ -352,6 +397,8 @@ def premium_video(name: str) -> bool:
 
 def effective_model(provider: str, tool: str, arguments: dict) -> str | None:
     policy = POLICY["providers"].get(provider, {})
+    if tool in policy.get("fixed_models", {}):
+        return policy["fixed_models"][tool]
     model_env = policy.get("model_env", "") if tool != "omni_video" else ""
     return (
         arguments.get("model")
@@ -377,6 +424,8 @@ def policy_blocker(name: str, arguments: dict, *, region: str | None = None) -> 
     if policy["allowed_regions"] and region not in policy["allowed_regions"]:
         return f"Provider {provider} needs an allowed customer region before dispatch."
     model = effective_model(provider, tool, arguments)
+    if tool in policy.get("fixed_models", {}) and arguments.get("model", model) != model:
+        return f"Tool {name} has a fixed model {model}."
     if model is not None and not isinstance(model, str):
         return f"Model for {provider} must be a string."
     if policy.get("models") and model not in policy["models"]:
@@ -463,7 +512,11 @@ def estimate_cost(name: str, arguments: dict, *, list_price: bool = False) -> Co
             and (arguments.get("model") or os.getenv("KLING_MODEL")) == "kling-3.0-turbo"
         ):
             raise ValueError("Kling Turbo audio pricing is unconfirmed.")
-        if provider == "fal":
+        if provider == "fal" and tool in POLICY["providers"]["fal"].get("fixed_models", {}):
+            from server.billing_rates import vidu_q4_price_cents
+
+            vidu_q4_price_cents(arguments)
+        elif provider == "fal":
             from providers.fal.wan import endpoint_for, price_cents
 
             price_cents(
@@ -497,7 +550,9 @@ def _published_cost(provider: str, tool: str, arguments: dict):
         return rates._seedance_cost(arguments)
     if provider == "seedream":
         return rates._seedream_cost(arguments)
-    if provider == "fal":
+    if provider == "fal" and tool in POLICY["providers"]["fal"].get("fixed_models", {}):
+        cents = rates.vidu_q4_price_cents(arguments)
+    elif provider == "fal":
         from providers.fal.wan import endpoint_for, price_cents
         cents = price_cents(endpoint_for(tool, arguments), arguments.get("resolution", "720p"),
                             arguments.get("num_frames", 81))

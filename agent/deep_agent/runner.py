@@ -67,7 +67,7 @@ provider access. read_studio_context supplies optional canvas references and cur
 Use report_progress for customer updates. Never claim to be awaiting approval without calling
 a tool; the host displays native interrupts as approval cards. Return StudioAgentOutput.
 Follow the host intent_route and provider ladder. Finished video defaults to Standard
-(Seedance or Kling); Draft/preview and rejected-artifact retries use Wan. Filter required
+(Seedance, Kling or Vidu Q4); Draft/preview and rejected-artifact retries use Wan. Filter required
 features before tier and known price. Confidential context permits only Wan, never escalation.
 If dispatch returns not_run with a route, discover that route's schema and dispatch its exact
 tool/model with all requested controls intact. Do not weaken required features to find a route.
@@ -205,7 +205,7 @@ async def run_with_servers(request, studio, servers, *, model=None):
     }
     roles = [
         ("planner", "Plan a brief and still-first storyboard without calling paid media tools.", []),
-        ("media", "Generate, edit or refine stills and video shots with Seedream, Seedance, Kling, Runway, fal Wan VACE and Luma.", [dispatch_tools[0]]),
+        ("media", "Generate, edit or refine stills and video shots with Seedream, Seedance, Kling, Runway, fal Wan VACE, Vidu Q4 and Luma.", [dispatch_tools[0]]),
         ("audio", "Produce voiceover, music and sound effects using audio providers.", [dispatch_tools[1]]),
         ("editor", "Assemble approved assets into a final Remotion MP4 and poll it to completion, "
                    "or export an NLE handoff (OTIO/FCPXML/EDL) for DaVinci Resolve.", [dispatch_tools[2]]),

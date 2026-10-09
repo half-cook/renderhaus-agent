@@ -11,7 +11,7 @@ regardless of the model's proposal, including subagent dispatch and approved res
 
 ## Packaged skills
 
-Eight intent skills were added. The original six names remain compatible. There are 14 live
+Nine intent skills were added. The original six names remain compatible. There are 15 live
 skills in total. `metadata.include_tools` is a space-separated string of dispatch wrappers.
 `metadata.gateway_tools` records exact Gateway names separately. Abstract seed aliases never
 replace wrapper names in `include_tools`. Tests parse the actual middleware metadata and
@@ -24,15 +24,16 @@ check every declared or body-referenced Gateway name against `configs/gateway/*.
 | [continuity-qc](../agent/deep_agent/skills/continuity-qc/SKILL.md) | `call_media_tool` | `Fal___text_to_video`<br>`Fal___get_video_task` |
 | [edit-v2v](../agent/deep_agent/skills/edit-v2v/SKILL.md) | `call_media_tool` | `Fal___video_to_video`<br>`Fal___get_video_task`<br>`Fal___list_fal_models`<br>`Runway___video_to_video`<br>`Runway___get_runway_task`<br>`Runway___list_runway_models`<br>`Luma___modify_video`<br>`Luma___get_video_task`<br>`Luma___list_luma_models` |
 | [final-assembly](../agent/deep_agent/skills/final-assembly/SKILL.md) | `call_editor_tool` | `Remotion___export_nle_timeline`<br>`Remotion___get_render_progress`<br>`Remotion___render_timeline` |
-| [i2v](../agent/deep_agent/skills/i2v/SKILL.md) | `call_media_tool` | `Fal___image_to_video`<br>`Fal___reference_to_video`<br>`Fal___get_video_task`<br>`Kling___image_to_video`<br>`Kling___get_video_task`<br>`Seedance___image_to_video`<br>`Seedance___get_video_task`<br>`Runway___image_to_video`<br>`Runway___get_runway_task`<br>`Seedream___text_to_image`<br>`Seedream___image_to_image`<br>`Luma___image_to_video`<br>`Luma___get_video_task`<br>`Luma___list_luma_models` |
+| [i2v](../agent/deep_agent/skills/i2v/SKILL.md) | `call_media_tool` | `Fal___image_to_video`<br>`Fal___reference_to_video`<br>`Fal___get_video_task`<br>`Kling___image_to_video`<br>`Kling___get_video_task`<br>`Seedance___image_to_video`<br>`Seedance___get_video_task`<br>`Runway___image_to_video`<br>`Runway___get_runway_task`<br>`Seedream___text_to_image`<br>`Seedream___image_to_image`<br>`Luma___image_to_video`<br>`Luma___get_video_task`<br>`Luma___list_luma_models`<br>`Fal___vidu_q4_i2v`<br>`Fal___vidu_q4_r2v` |
 | [motion-graphics](../agent/deep_agent/skills/motion-graphics/SKILL.md) | `call_editor_tool`<br>`call_media_tool` | `Remotion___render_timeline`<br>`Remotion___get_render_progress`<br>`Remotion___export_nle_timeline`<br>`Seedream___text_to_image`<br>`Seedream___image_to_image`<br>`Runway___text_to_image`<br>`Runway___image_to_image`<br>`Runway___get_runway_task` |
 | [product-images](../agent/deep_agent/skills/product-images/SKILL.md) | `call_media_tool` | `Runway___get_runway_task`<br>`Runway___image_to_image`<br>`Runway___text_to_image`<br>`Seedream___image_to_image`<br>`Seedream___text_to_image` |
 | [refinement](../agent/deep_agent/skills/refinement/SKILL.md) | `call_media_tool`<br>`call_audio_tool`<br>`call_editor_tool` | `Fal___video_to_video`<br>`Luma___modify_video`<br>`Runway___video_to_video`<br>`Seedream___image_to_image` |
 | [resolve-handoff](../agent/deep_agent/skills/resolve-handoff/SKILL.md) | `call_editor_tool` | `Remotion___export_nle_timeline` |
-| [still-then-video](../agent/deep_agent/skills/still-then-video/SKILL.md) | `call_media_tool` | `Seedream___text_to_image`<br>`Seedream___image_to_image`<br>`Runway___text_to_image`<br>`Runway___image_to_image`<br>`Runway___get_runway_task`<br>`Fal___image_to_video`<br>`Fal___get_video_task`<br>`Kling___image_to_video`<br>`Kling___get_video_task`<br>`Seedance___image_to_video`<br>`Seedance___get_video_task` |
-| [storyboard-shots](../agent/deep_agent/skills/storyboard-shots/SKILL.md) | `call_media_tool` | `Fal___get_video_task`<br>`Fal___image_to_video`<br>`Seedance___get_video_task`<br>`Seedance___image_to_video`<br>`Seedream___image_to_image` |
+| [still-then-video](../agent/deep_agent/skills/still-then-video/SKILL.md) | `call_media_tool` | `Seedream___text_to_image`<br>`Seedream___image_to_image`<br>`Runway___text_to_image`<br>`Runway___image_to_image`<br>`Runway___get_runway_task`<br>`Fal___image_to_video`<br>`Fal___get_video_task`<br>`Kling___image_to_video`<br>`Kling___get_video_task`<br>`Seedance___image_to_video`<br>`Seedance___get_video_task`<br>`Fal___vidu_q4_i2v`<br>`Fal___vidu_q4_r2v` |
+| [storyboard-shots](../agent/deep_agent/skills/storyboard-shots/SKILL.md) | `call_media_tool` | `Fal___get_video_task`<br>`Fal___image_to_video`<br>`Seedance___get_video_task`<br>`Seedance___image_to_video`<br>`Seedream___image_to_image`<br>`Fal___vidu_q4_i2v`<br>`Fal___vidu_q4_r2v` |
 | [t2v](../agent/deep_agent/skills/t2v/SKILL.md) | `call_media_tool` | `Fal___text_to_video`<br>`Fal___get_video_task`<br>`Fal___list_fal_models`<br>`Kling___text_to_video`<br>`Kling___omni_video`<br>`Kling___get_video_task`<br>`Kling___list_kling_models`<br>`Runway___text_to_video`<br>`Runway___get_runway_task`<br>`Runway___list_runway_models`<br>`Seedance___text_to_video`<br>`Seedance___get_video_task`<br>`Seedance___list_seedance_models`<br>`Luma___text_to_video`<br>`Luma___extend_video`<br>`Luma___get_video_task`<br>`Luma___list_luma_models` |
 | [video-short](../agent/deep_agent/skills/video-short/SKILL.md) | `call_media_tool`<br>`call_audio_tool`<br>`call_editor_tool` | `Fal___get_video_task`<br>`Fal___image_to_video`<br>`Fal___text_to_video`<br>`Seedance___get_video_task`<br>`Seedance___image_to_video`<br>`Seedance___text_to_video`<br>`Seedream___text_to_image` |
+| [vidu-q4](../agent/deep_agent/skills/vidu-q4/SKILL.md) | `call_media_tool` | `Fal___vidu_q4_i2v`<br>`Fal___vidu_q4_r2v`<br>`Fal___get_video_task`<br>`Fal___list_fal_models` |
 
 Fish Audio has built API code and a committed schema, but it is not in the active provider
 catalog. `FishAudio___generate_speech` requires a discovered target. An absent target is an
@@ -57,6 +58,8 @@ a manifest, and media together; an alias does not imply a separate Gateway tool.
 | `wan_t2v` | `Fal___text_to_video` |
 | `wan_i2v` | `Fal___image_to_video` |
 | `wan_vace_edit` | `Fal___video_to_video` |
+| `vidu_q4_i2v` | `Fal___vidu_q4_i2v` |
+| `vidu_q4_r2v` | `Fal___vidu_q4_r2v` |
 | `seedance_t2v` | `Seedance___text_to_video` |
 | `seedance_i2v` | `Seedance___image_to_video` |
 | `seedream_t2i` | `Seedream___text_to_image` |
@@ -87,9 +90,10 @@ a manifest, and media together; an alias does not imply a separate Gateway tool.
 
 ## Offline routing verification
 
-`tests/fixtures/skill_routing.json` retains all 55 rows exported from the workbook.
-There are **21 active** cases and **34 skipped** cases. Each skip is a generated unittest
-with its concrete pending-provider or integration reason, not a dropped fixture row.
+`tests/fixtures/skill_routing.json` retains all 55 original workbook rows and the 6 supplied Vidu Q4 CSV rows.
+There are **26 active** cases and **35 skipped** cases. Each skip is a generated unittest
+with its concrete reason, not a dropped fixture row. The new unqualified product-photo
+row expects Kling and is skipped because the existing cheapest Standard route uses Seedance.
 An active case asserts the selected skill and proposed exact Gateway name through the same
 router used by the runner. Five Resolve suites need a local bridge or transcription/import
 integration even though the final packaging tool exists. TTS-only lipsync rows are skipped
@@ -115,7 +119,9 @@ apply even when a dispatch has already been approved.
 
 `service-terms` is an internal hosted-service classification, not an open-weight licence
 or a claim about legal rights. Approved built hosted APIs can generate but cannot train QC.
-Fal supports only the two declared Wan VACE models with Apache-2.0 policy. Seedance and
+Fal supports the two declared Wan VACE models with Apache-2.0 policy and the two fixed
+Vidu Q4 endpoints under `service-terms`. Vidu training and output terms remain a TODO.
+Their model policies set `training_eligible=false`, with no new region blocks. Seedance and
 Seedream initially allow their current configured default models only. Add a reviewed model
 to the policy before changing those defaults. Kling, Runway, and Fish allow their declared
 built models. Policy resolves `KLING_MODEL`, `SEEDANCE_MODEL`, `SEEDREAM_MODEL`, and
@@ -137,17 +143,19 @@ cryptographically authenticate arbitrary dictionaries submitted by a caller.
 and duration limits. `routing.capability_table()` resolves each row's `policy_ref` against
 existing provider/model licence, region and training policy. It derives price grids from
 `server/billing_rates.py` and its Fal price helper. No copied rate numbers are stored in the
-config. `jobs` records t2v, i2v, start_end_frame, native_audio, max_resolution, 4k, multi_shot,
+config. `jobs` records t2v, i2v, start_end_frame, native_audio, max_resolution, 4k, voice_references, multi_shot,
 v2v_edit, reference_elements, lipsync, upscale, and image. Unclear capabilities are false
 with a note. The `controls` map narrows a capability to the actual job schema.
 
-This table summarizes all 15 configured rows. All rows have lipsync=false and upscale=false.
+This table summarizes all 17 configured rows. All rows have lipsync=false and upscale=false.
 Resolutions describe supported output presets, not inferred provider marketing claims.
 
 | Provider/model | Built jobs | Extra supported controls | Maximum output | Pricing status |
 | --- | --- | --- | --- | --- |
 | Fal Wan VACE 14B | t2v, i2v, reference, v2v | End frame, reference images | 720p | Published endpoint/resolution rates |
 | Fal Wan 2.2 VACE | t2v, i2v, reference, v2v | End frame, reference images | 720p | Depth/inpaint/outpaint/reframe known; freeform/pose unknown |
+| Fal Vidu Q4 I2V | i2v | Implicit native audio, 3 through 16 seconds | 4K | Published per-second promo and list rates |
+| Fal Vidu Q4 R2V | i2v, reference | Audio toggle, up to 12 images and 3 voice clips | 4K | Same rates, no audio surcharge |
 | Seedance 1.5 Pro | t2v, i2v | Native audio | 1080p | Published token formula |
 | Seedream 5.0 Lite | Image, image edit | Image references | 3K | 1K known; 2K/3K unknown |
 | Kling 3.0 | t2v, i2v | Audio, end frame, multi-shot, i2v elements | 4K | Published per-second grids |
@@ -177,7 +185,7 @@ never silently substitutes the action after an approval.
 | Tier | New finished video | Video edit |
 | --- | --- | --- |
 | Draft | Fal Wan | Fal Wan VACE |
-| Standard, default | Seedance or Kling | Luma Modify, `Luma___modify_video` |
+| Standard, default | Seedance, Kling or Vidu Q4 by cost | Luma Modify, `Luma___modify_video` |
 | Premium | Built, enabled Kling or Runway Gen-4.5; Veo unavailable | Runway Aleph |
 
 Faithful plate and multi-shot edits prefer Aleph unless Draft or confidential. This is an
@@ -212,10 +220,11 @@ blocked. Polling and assembly of existing media remain available.
 
 Before dispatch, the host emits a chat `MODEL_UPDATE` with provider/model, tier, capability
 filters, estimated cost including the existing platform fee, and typical speed class.
-Unpublished rates render as **unknown**. List-price disclosure ignores dry-run discounts
-without changing any provider setting. Dispatch/cap accounting continues to use billing's
+Unpublished rates render as **unknown**. Published-price disclosure ignores dry-run zero charges
+without changing any provider setting. Q4 uses the promotional schedule through 2026-11-30
+and the published list schedule afterward. Dispatch/cap accounting continues to use billing's
 actual dry-run charge. Both quote paths keep billing validation. Missing measured edit
-durations stay unknown. No rate or TODO in `server/billing_rates.py` was changed.
+durations stay unknown. Q4 pricing and its dated expiry are encoded in `server/billing_rates.py`.
 
 Paid tools still pause in non-autonomous runs. The existing premium video target rule for
 Kling, Runway, Luma and future Veo still pauses autonomous runs, with the estimate in the
@@ -327,8 +336,8 @@ use this branch's `Remotion___render_timeline` snapshot contract rather than arb
 
 ## Validation limits
 
-The starting suite had 330 passing tests. Final checks ran 433 tests, with 398 passed and
-35 explicit skips. Ruff passed for `agent lambdas scripts server providers`, and
+Vidu Q4 validation results are recorded in [vidu-q4-decisions.tsv](vidu-q4-decisions.tsv).
+The suite ran 551 tests: 516 passed and 35 skipped. Ruff passed for `agent lambdas scripts server providers`, and
 `scripts/ci_check.py` passed with every provider DRY_RUN flag enabled and secrets loading
 disabled. Current offline checks cover routing proposals,
 actual skill parsing/schema names, both approval paths, spending, and QC boundaries. They
@@ -352,3 +361,36 @@ Luma landed on staging after this branch was cut, so it was wired in during the 
 - `Luma` is a premium target (`text_to_video`, `image_to_video`, `extend_video`, `modify_video`), so its paid calls pause for approval with the `cost_for` estimate even in autonomous runs; `list_luma_models` and `get_video_task` are free.
 - Estimates come from the official Ray 3.2 table in `server/billing_rates.py`; settings without a published price (e.g. 360p extend, non-5/10 s modify sources) show as unknown.
 - The routing fixture's Luma case is active: 21 active and 34 skipped routing cases.
+
+## Vidu Q4 on fal
+
+The fixed endpoint tools use the radar names with the existing `Fal___` target prefix.
+Separate schemas avoid mixing Wan frame controls with Q4 seconds and audio controls.
+The [I2V API](https://fal.ai/models/fal-ai/vidu/q4/image-to-video/api) requires `image_url`
+and has an optional `prompt`. The [R2V API](https://fal.ai/models/fal-ai/vidu/q4/reference-to-video/api)
+requires `prompt`, accepts optional `reference_image_urls` and `reference_audio_urls`,
+and defaults to silent `audio=false`. I2V audio is implicit and has no toggle.
+Both tools use integer `duration` from 3 through 16, default 5, and exact resolution enums
+`540p`, `720p`, `1080p`, `2K`, and `4K`, default `720p`. `2K` uses the existing nominal
+comparison rank 2048 in policy. That rank does not assert the artifact's pixel dimensions.
+
+Official [I2V pricing](https://fal.ai/models/fal-ai/vidu/q4/image-to-video) and
+[R2V pricing](https://fal.ai/models/fal-ai/vidu/q4/reference-to-video), accessed 2026-10-08,
+list a promotion until November 30 and the later list rates. This branch binds the cutoff
+to the requested 2026-11-30, inclusive in UTC. `vidu_q4_rates()` uses list rates from
+2026-12-01. The platform fee uses the existing `_with_fee`. Audio does not increase
+R2V pricing. Estimates remain unknown for undocumented settings.
+
+Q4 is Standard because these are general still and reference generation endpoints with
+published per-second prices and no requested premium step-up. Standard cost ordering is
+unchanged; Seedance remains the unqualified default. Q4 is outside `premium_targets` and
+`free_tools`. Non-autonomous paid calls pause with a native cost preview and chat disclosure.
+Autonomous Q4 keeps the existing spend cap. Premium approvals and exempt tools are unchanged.
+Confidential projects and rejected-artifact retries restrict fal to the Wan model allowlist.
+Q4 polling retains non-training provenance from the endpoint handle, including after restart.
+
+There are still eight provider targets. Fal grows from six tools to eight. CI derives tool
+counts from generated schemas, so it has no numeric threshold to update. The deploy workflow's
+eight-provider threshold remains correct. The Docker skill-count check changes to 15.
+Billing-only edits rebuild both the Gateway ZIP and agent runtime so their shared rates stay current.
+No AGPL code or source workbook/ledger files were copied into this repository.

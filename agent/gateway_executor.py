@@ -14,6 +14,8 @@ from agent.deep_agent.routing import (
     is_free_tool, premium_video, policy_blocker, estimate_cost, job_type,
     select_provider, intent_constraints, effective_model, tool_parts,
     resolution_value,
+    tool_variant,
+    POLICY,
 )
 from agent.deep_agent.outcomes import OutcomeStore
 
@@ -135,7 +137,7 @@ class GatewayExecutor:
         if not job or is_free_tool(name):
             return None
         constraints = intent_constraints(self.studio.prompt, tier=self.studio.quality_tier,
-                                         confidential=self.studio.confidential)
+                                         confidential=self.studio.confidential, arguments=arguments)
         rejected_id = self.rejected_reviews.get(job)
         rejected = self.media_jobs.get(rejected_id, {})
         retry = bool(rejected_id and (rejected.get("retry_scope") == self.run_scope or
@@ -143,7 +145,7 @@ class GatewayExecutor:
         if retry:
             for key, value in rejected.get("required", {}).items():
                 constraints["required"][key] = max(value, constraints["required"].get(key, 0))
-        variant = "image_edit" if name.endswith("image_to_image") else "reference" if name.endswith("reference_to_video") else job
+        variant = tool_variant(name)
         route = select_provider(job, arguments=arguments, tool_variant=variant, retry=retry, **constraints)
         return route
 
@@ -157,21 +159,32 @@ class GatewayExecutor:
         provider, tool = tool_parts(name)
         if self.studio.confidential and provider not in {"fal", "remotion"} and not is_free_tool(name):
             return "Confidential projects permit Wan generation only. Reuse existing media for assembly."
+        if self.studio.confidential and provider == "fal" and not is_free_tool(name) and effective_model(
+            provider, tool, arguments
+        ) not in POLICY["ladder"]["wan_models"]:
+            return "Confidential projects permit Wan generation only. Vidu Q4 is excluded."
         if route is None:
             return None
         if route.status != "ready":
             return route.reason
         if name != route.tool or effective_model(provider, tool, arguments) != route.model:
             return f"Provider ladder selected {route.tool} ({route.model}). Discover its schema and use that route. {route.reason}"
-        for field, feature in [("generate_audio", "native_audio"), ("multi_shot", "multi_shot")]:
+        row = next(row for row in POLICY["capabilities"]
+                   if row["model"] == route.model and name in row["tools"].values())
+        audio_field = row.get("native_audio_field", "generate_audio")
+        for field, feature in [(audio_field, "native_audio"), ("multi_shot", "multi_shot")]:
+            if field is None:
+                continue
             if route.required.get(feature) and not arguments.get(field):
                 return f"Required capability {feature} must be enabled with {field}=true on the selected route."
         if route.required.get("start_end_frame") and not any(arguments.get(key) for key in (
             "last_frame_url", "end_image_path_or_url", "last_frame_path_or_url",
         )):
             return "Required end frame must be supplied using the selected tool's end-frame field."
-        if route.required.get("reference_elements") and not (arguments.get("elements") or arguments.get("ref_image_urls")):
+        if route.required.get("reference_elements") and not (arguments.get("elements") or arguments.get("ref_image_urls") or arguments.get("reference_image_urls")):
             return "Required reference elements must be supplied using the selected tool's reference field."
+        if route.required.get("voice_references") and not arguments.get("reference_audio_urls"):
+            return "Required voice references must be supplied using reference_audio_urls."
         if route.required.get("max_resolution"):
             value = (arguments.get("ratio", "1280:720") if provider == "runway" else
                      arguments.get("size", "2K") if provider == "seedream" else arguments.get("resolution", "720p"))
@@ -179,9 +192,9 @@ class GatewayExecutor:
             if actual < route.required["max_resolution"]:
                 return "Required output resolution must be set in the selected tool's native arguments."
         if route.required.get("duration_seconds"):
-            actual = arguments.get("duration_seconds", arguments.get("video_duration_seconds",
-                     arguments.get("source_duration_seconds", 5)))
-            if provider == "fal":
+            actual = arguments.get("duration", arguments.get("duration_seconds", arguments.get("video_duration_seconds",
+                     arguments.get("source_duration_seconds", 5))))
+            if provider == "fal" and not row.get("duration_field"):
                 fps = arguments.get("frames_per_second", 16)
                 actual = (arguments.get("num_frames", 81) - 1) / fps if fps > 0 else 0
             if actual != route.required["duration_seconds"]:

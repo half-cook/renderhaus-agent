@@ -3,7 +3,7 @@ name: i2v
 description: Animate an approved still using the configured capability and tier ladder.
 metadata:
   include_tools: call_media_tool
-  gateway_tools: Fal___image_to_video Fal___reference_to_video Fal___get_video_task Kling___image_to_video Kling___get_video_task Seedance___image_to_video Seedance___get_video_task Runway___image_to_video Runway___get_runway_task Seedream___text_to_image Seedream___image_to_image Luma___image_to_video Luma___get_video_task Luma___list_luma_models
+  gateway_tools: Fal___vidu_q4_i2v Fal___vidu_q4_r2v Fal___image_to_video Fal___reference_to_video Fal___get_video_task Kling___image_to_video Kling___get_video_task Seedance___image_to_video Seedance___get_video_task Runway___image_to_video Runway___get_runway_task Seedream___text_to_image Seedream___image_to_image Luma___image_to_video Luma___get_video_task Luma___list_luma_models
 ---
 
 # Image to video
@@ -57,6 +57,13 @@ Record explicit customer acceptance/rejection of a completed saved generation ca
 its Wan retry route once, retain required features, and obtain any required spending approval.
 Only registered, successful, accepted, non-dry-run Wan assets with approved Apache provenance
 may enter continuity training. Hosted-provider outputs never become training inputs.
+
+For a Vidu Q4 route, read [Vidu Q4](../vidu-q4/SKILL.md). Use
+`Fal___vidu_q4_i2v` with `image_url` for a first frame, or `Fal___vidu_q4_r2v` with
+`reference_image_urls` and optional `reference_audio_urls` for subject and voice references.
+Use native `duration` (3 through 16), case-sensitive resolutions through `4K`, and
+`audio=true` on R2V when sound is required. I2V audio is implicit. Q4 is Standard,
+never confidential, and never training-eligible. Poll the saved `Fal___get_video_task` job.
 
 Report progress before provider work. Respect DRY_RUN. Never change it to obtain an artifact.
 A preview or queued job is not finished media. Required approval appears in the existing chat.

@@ -99,9 +99,9 @@ jobs:
             else
               CHANGED=$(git diff --name-only "$BEFORE" "${{ github.sha }}" || true)
               echo "$CHANGED"
-              if echo "$CHANGED" | grep -E '^(providers/|lambdas/|configs/gateway/|scripts/deploy_gateway\.py)' >/dev/null; then
+              if echo "$CHANGED" | grep -E '^(providers/|lambdas/|configs/gateway/|scripts/deploy_gateway\.py|server/billing_rates\.py)' >/dev/null; then
                 GW=true
-                if echo "$CHANGED" | grep -E '^(lambdas/handler\.py|providers/catalog\.py|providers/registry\.py|scripts/deploy_gateway\.py)' >/dev/null; then
+                if echo "$CHANGED" | grep -E '^(lambdas/handler\.py|providers/catalog\.py|providers/registry\.py|scripts/deploy_gateway\.py|server/billing_rates\.py)' >/dev/null; then
                   PROVIDER=all
                 else
                   SELECTED=()
@@ -121,7 +121,7 @@ jobs:
                   fi
                 fi
               fi
-              if echo "$CHANGED" | grep -E '^(agent/|Dockerfile\.agentcore|scripts/deploy_agentcore\.py|pyproject\.toml)' >/dev/null; then
+              if echo "$CHANGED" | grep -E '^(agent/|Dockerfile\.agentcore|scripts/deploy_agentcore\.py|pyproject\.toml|server/billing_rates\.py)' >/dev/null; then
                 RT=true
               fi
             fi

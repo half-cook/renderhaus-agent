@@ -198,7 +198,9 @@
       "training_eligible": true,
       "models": [
         "fal-ai/wan-vace-14b",
-        "fal-ai/wan-22-vace-fun-a14b"
+        "fal-ai/wan-22-vace-fun-a14b",
+        "fal-ai/vidu/q4/image-to-video",
+        "fal-ai/vidu/q4/reference-to-video"
       ],
       "default_model": "fal-ai/wan-vace-14b",
       "model_policies": {
@@ -211,7 +213,27 @@
           "license": "Apache-2.0",
           "training_eligible": true,
           "allowed_regions": []
+        },
+        "fal-ai/vidu/q4/image-to-video": {
+          "license": "service-terms",
+          "training_eligible": false,
+          "allowed_regions": [],
+          "notes": "Commercial use is labelled on fal model pages. TODO review Vidu training/output terms before training eligibility."
+        },
+        "fal-ai/vidu/q4/reference-to-video": {
+          "license": "service-terms",
+          "training_eligible": false,
+          "allowed_regions": [],
+          "notes": "Commercial use is labelled on fal model pages. TODO review Vidu training/output terms before training eligibility."
         }
+      },
+      "fixed_models": {
+        "vidu_q4_i2v": "fal-ai/vidu/q4/image-to-video",
+        "vidu_q4_r2v": "fal-ai/vidu/q4/reference-to-video"
+      },
+      "default_models": {
+        "vidu_q4_i2v": "fal-ai/vidu/q4/image-to-video",
+        "vidu_q4_r2v": "fal-ai/vidu/q4/reference-to-video"
       }
     },
     "minimax_h3": {
@@ -459,9 +481,29 @@
       "gateway_tool": "Luma___extend_video",
       "skill": "t2v",
       "status": "ready"
+    },
+    "vidu_q4_i2v": {
+      "gateway_tool": "Fal___vidu_q4_i2v",
+      "skill": "vidu-q4",
+      "status": "ready"
+    },
+    "vidu_q4_r2v": {
+      "gateway_tool": "Fal___vidu_q4_r2v",
+      "skill": "vidu-q4",
+      "status": "ready"
     }
   },
   "rules": [
+    {
+      "pattern": "\\bvidu\\b.*(multi.ref|ref(?:erence)?[ -]to[ -]video|voice|audio ref|image ref|\\br2v\\b)|(multi.ref|ref(?:erence)?[ -]to[ -]video|voice|audio ref|image ref|\\br2v\\b).*\\bvidu\\b",
+      "skill": "vidu-q4",
+      "abstract_tool": "vidu_q4_r2v"
+    },
+    {
+      "pattern": "\\bvidu\\b",
+      "skill": "vidu-q4",
+      "abstract_tool": "vidu_q4_i2v"
+    },
     {
       "pattern": "\\bhunyuan\\b",
       "skill": "t2v",
@@ -717,14 +759,19 @@
       ],
       "standard": [
         "seedance",
-        "kling"
+        "kling",
+        "fal"
       ],
       "premium": [
         "kling",
         "veo",
         "runway"
       ]
-    }
+    },
+    "wan_models": [
+      "fal-ai/wan-vace-14b",
+      "fal-ai/wan-22-vace-fun-a14b"
+    ]
   },
   "capabilities": [
     {
@@ -966,6 +1013,157 @@
           30
         ]
       }
+    },
+    {
+      "provider": "fal",
+      "model": "fal-ai/vidu/q4/image-to-video",
+      "label": "Vidu Q4 image to video",
+      "tools": {
+        "i2v": "Fal___vidu_q4_i2v"
+      },
+      "tiers": [
+        "standard"
+      ],
+      "jobs": {
+        "t2v": false,
+        "i2v": true,
+        "start_end_frame": false,
+        "native_audio": true,
+        "multi_shot": false,
+        "v2v_edit": false,
+        "reference_elements": false,
+        "voice_references": false,
+        "lipsync": false,
+        "upscale": false,
+        "image": false,
+        "4k": true,
+        "max_resolution": 2160
+      },
+      "resolutions": [
+        540,
+        720,
+        1080,
+        2048,
+        2160
+      ],
+      "resolution_labels": {
+        "540": "540p",
+        "720": "720p",
+        "1080": "1080p",
+        "2048": "2K",
+        "2160": "4K"
+      },
+      "speed_class": "unknown",
+      "policy_ref": "fal",
+      "price": {
+        "unit": "second",
+        "source": "server.billing_rates.vidu_q4_price_cents",
+        "promo_expires": "2026-11-30"
+      },
+      "notes": "Native audio is implicit; no audio toggle, aspect ratio or end frame. Standard hosted service. TODO review Vidu training/output terms. No speed SLA published.",
+      "controls": {
+        "i2v": [
+          "image_url",
+          "prompt",
+          "duration",
+          "seed",
+          "resolution",
+          "enable_safety_checker"
+        ]
+      },
+      "durations": {
+        "i2v": [
+          3,
+          16
+        ]
+      },
+      "duration_field": "duration",
+      "native_audio_field": null
+    },
+    {
+      "provider": "fal",
+      "model": "fal-ai/vidu/q4/reference-to-video",
+      "label": "Vidu Q4 reference to video",
+      "tools": {
+        "i2v": "Fal___vidu_q4_r2v",
+        "reference": "Fal___vidu_q4_r2v"
+      },
+      "tiers": [
+        "standard"
+      ],
+      "jobs": {
+        "t2v": false,
+        "i2v": true,
+        "start_end_frame": false,
+        "native_audio": true,
+        "multi_shot": false,
+        "v2v_edit": false,
+        "reference_elements": true,
+        "voice_references": true,
+        "lipsync": false,
+        "upscale": false,
+        "image": false,
+        "4k": true,
+        "max_resolution": 2160
+      },
+      "resolutions": [
+        540,
+        720,
+        1080,
+        2048,
+        2160
+      ],
+      "resolution_labels": {
+        "540": "540p",
+        "720": "720p",
+        "1080": "1080p",
+        "2048": "2K",
+        "2160": "4K"
+      },
+      "speed_class": "unknown",
+      "policy_ref": "fal",
+      "price": {
+        "unit": "second",
+        "source": "server.billing_rates.vidu_q4_price_cents",
+        "promo_expires": "2026-11-30"
+      },
+      "notes": "Native audio is controlled by audio (default false); up to 12 images and 3 voice clips. Standard hosted service. TODO review Vidu training/output terms. No speed SLA published.",
+      "controls": {
+        "i2v": [
+          "prompt",
+          "reference_image_urls",
+          "reference_audio_urls",
+          "duration",
+          "seed",
+          "aspect_ratio",
+          "resolution",
+          "audio",
+          "enable_safety_checker"
+        ],
+        "reference": [
+          "prompt",
+          "reference_image_urls",
+          "reference_audio_urls",
+          "duration",
+          "seed",
+          "aspect_ratio",
+          "resolution",
+          "audio",
+          "enable_safety_checker"
+        ]
+      },
+      "durations": {
+        "i2v": [
+          3,
+          16
+        ],
+        "reference": [
+          3,
+          16
+        ]
+      },
+      "duration_field": "duration",
+      "native_audio_field": "audio"
     },
     {
       "provider": "seedance",

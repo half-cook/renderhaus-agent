@@ -100,6 +100,8 @@ def check_dry_run_dispatch() -> None:
             if spec.id == "fal":
                 if name == "get_video_task":
                     arguments["job_id"] = "fal-ai/wan-vace-14b:ci-smoke"
+                elif name == "vidu_q4_i2v":
+                    arguments["image_url"] = "https://example.test/frame.png"
                 elif name == "video_to_video":
                     arguments["prompt"] = "A small offline smoke test"
             result = dispatch(spec.id, name, arguments)
@@ -133,6 +135,7 @@ def check_lambda_zip() -> None:
     assert zip_bytes[:2] == b"PK", "lambda zip is not a zip archive"
     with zipfile.ZipFile(io.BytesIO(zip_bytes)) as archive:
         names = archive.namelist()
+    assert "server/billing_rates.py" in names, "lambda zip is missing shared Q4 billing rates"
     linux_native = [
         name
         for name in names
