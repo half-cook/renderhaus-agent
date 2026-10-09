@@ -18,6 +18,18 @@ from providers.fal import queue
 from providers.mureka import contracts
 
 MUSIC_JOB = re.compile(r'mureka:music:(song|instrumental):([A-Za-z0-9_.-]{1,128}):([A-Za-z0-9_-]+)')
+AUDIO_FORMATS = {
+    '.mp3': ('audio/mpeg', {'mp3'}),
+    '.wav': ('audio/wav', {'wav'}),
+    '.flac': ('audio/flac', {'flac'}),
+    '.ogg': ('audio/ogg', {'ogg'}),
+    '.m4a': ('audio/mp4', {'mov', 'mp4', 'm4a', '3gp', '3g2', 'mj2'}),
+}
+AUDIO_MIME_EXTENSIONS = {
+    'audio/mpeg': '.mp3', 'audio/mp3': '.mp3', 'audio/wav': '.wav', 'audio/x-wav': '.wav',
+    'audio/wave': '.wav', 'audio/flac': '.flac', 'audio/x-flac': '.flac',
+    'audio/ogg': '.ogg', 'application/ogg': '.ogg', 'audio/mp4': '.m4a', 'audio/x-m4a': '.m4a',
+}
 
 
 def dry_run() -> bool:
@@ -43,7 +55,7 @@ def _submit(tool: str, arguments: dict[str, Any]) -> dict[str, Any]:
     body = request.fal_body()
     model = contracts.VIDEO_MODEL if tool == 'generate_lyrics_video' else body['model']
     verified = tool == 'generate_lyrics_video' or model == contracts.DEFAULT_MODEL
-    cents = mureka_price_cents(tool, body) if verified else None
+    cents = mureka_price_cents(tool, arguments) if verified else None
     quote = {'estimated_cost_usd': float(cents / 100) if cents is not None else None,
              'cost_estimate': 'unknown' if cents is None else f'${cents / 100:.3f} provider estimate before Renderhaus fee'}
     if dry_run() or not verified:
@@ -89,22 +101,51 @@ def generate_lyrics_video(song_id: str | None = None, upload_audio_id: str | Non
     return _submit('generate_lyrics_video', locals())
 
 
-def _audio_path(job_id: str) -> Path:
-    return Path(os.getenv('RENDERHAUS_MEDIA_DIR', '.renderhaus/media')).expanduser() / 'audio' / 'mureka' / (hashlib.sha256(job_id.encode()).hexdigest() + '.mp3')
+def _audio_format(audio: dict[str, Any]) -> tuple[str, str]:
+    mime, filename = audio.get('content_type'), audio.get('file_name')
+    extension = None
+    if mime is not None:
+        if not isinstance(mime, str):
+            raise RuntimeError('Mureka audio content_type must identify a supported audio format.')
+        extension = AUDIO_MIME_EXTENSIONS.get(mime.split(';', 1)[0].strip().lower())
+        if extension is None:
+            raise RuntimeError('Mureka audio content_type is unsupported or unknown.')
+    if filename is not None:
+        if not isinstance(filename, str):
+            raise RuntimeError('Mureka audio file_name must be a string.')
+        named_extension = Path(filename).suffix.lower()
+        if named_extension not in AUDIO_FORMATS:
+            raise RuntimeError('Mureka audio file_name has an unsupported or unknown extension.')
+        if extension is not None and named_extension != extension:
+            raise RuntimeError('Mureka audio MIME type and filename contradict one another.')
+        extension = named_extension
+    if extension is None:
+        raise RuntimeError('Mureka audio format is unknown; supply documented content_type or file_name metadata.')
+    return extension, AUDIO_FORMATS[extension][0]
 
 
-def _validate_mp3(path: Path) -> None:
+def _audio_path(job_id: str, extension: str) -> Path:
+    return Path(os.getenv('RENDERHAUS_MEDIA_DIR', '.renderhaus/media')).expanduser() / 'audio' / 'mureka' / (hashlib.sha256(job_id.encode()).hexdigest() + extension)
+
+
+def _validate_audio(path: Path, extension: str) -> None:
     error = RuntimeError('Mureka returned invalid or truncated audio.')
     if shutil.which('ffprobe'):
         try:
             result = subprocess.run(['ffprobe', '-v', 'error', '-show_format', '-show_streams', '-of', 'json', str(path)], capture_output=True, text=True, timeout=30, check=True)
             probe = json.loads(result.stdout)
             duration = float(probe['format']['duration'])
-            if not math.isfinite(duration) or duration <= 0 or not any(stream.get('codec_type') == 'audio' for stream in probe['streams']):
+            formats = set(probe['format']['format_name'].split(','))
+            streams = probe['streams']
+            if (not math.isfinite(duration) or duration <= 0
+                    or not formats & AUDIO_FORMATS[extension][1]
+                    or not any(stream.get('codec_type') == 'audio' for stream in streams)):
                 raise error
             return
         except (OSError, subprocess.SubprocessError, ValueError, KeyError, TypeError):
             raise error from None
+    if extension != '.mp3':
+        raise RuntimeError('ffprobe is required to validate non-MP3 Mureka audio.')
     data = path.read_bytes()
     offset = 0
     if data.startswith(b'ID3'):
@@ -130,7 +171,7 @@ def _validate_mp3(path: Path) -> None:
         raise error
 
 
-def _download_audio(url: str, path: Path) -> None:
+def _download_audio(url: str, path: Path, extension: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary = None
     try:
@@ -140,7 +181,7 @@ def _download_audio(url: str, path: Path) -> None:
                 response.raise_for_status()
                 for chunk in response.iter_bytes():
                     file.write(chunk)
-        _validate_mp3(temporary)
+        _validate_audio(temporary, extension)
         temporary.replace(path)
     except httpx.HTTPError:
         raise RuntimeError('Mureka audio download failed at the HTTP boundary.') from None
@@ -191,13 +232,16 @@ def get_music_task(job_id: str, download: bool = False) -> dict:
         raise RuntimeError('Mureka song_id must be a nonempty string.')
     if lyrics_sections is not None and not isinstance(lyrics_sections, list):
         raise RuntimeError('Mureka lyrics_sections must be an array.')
-    path = _audio_path(job_id)
+    extension, content_type = _audio_format(audio)
+    path = _audio_path(job_id, extension)
     if download:
+        if extension != '.mp3' and not shutil.which('ffprobe'):
+            raise RuntimeError('ffprobe is required to validate non-MP3 Mureka audio.')
         if path.exists():
-            _validate_mp3(path)
+            _validate_audio(path, extension)
         else:
-            _download_audio(url, path)
-    return {**identity, 'status': 'succeeded', 'audio_url': url, 'song_id': song_id,
+            _download_audio(url, path, extension)
+    return {**identity, 'status': 'succeeded', 'audio_url': url, 'audio_content_type': content_type, 'song_id': song_id,
             'duration': duration, 'duration_ms': duration, 'duration_seconds': duration / 1000 if duration is not None else None,
             'lyrics_sections': lyrics_sections, 'downloaded': bool(download and path.exists()),
             'output_path': str(path) if download and path.exists() else None}
