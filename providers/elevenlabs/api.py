@@ -26,7 +26,7 @@ MAX_MEDIA_BYTES = 100 * 1024 * 1024
 
 
 def dry_run() -> bool:
-    return os.getenv("ELEVENLABS_DRY_RUN", "false").lower() == "true"
+    return os.getenv("ELEVENLABS_DRY_RUN", "true").lower() == "true"
 
 
 @lru_cache(maxsize=1)
@@ -185,10 +185,16 @@ def _response_payload(data: bytes, content_type: str, output_format: str) -> Any
 
 def dispatch_tool(tool_name: str, arguments: dict) -> dict:
     entry = CATALOG[tool_name]
+    arguments = dict(arguments)
+    if tool_name.startswith(("text_to_speech_", "text_to_dialogue_")):
+        arguments.setdefault("model_id", os.getenv("ELEVENLABS_TTS_MODEL", "eleven_v4_turbo"))
+    # Model ID is official; HTTP compatibility is UNVERIFIED. Docs read 2026-10-08:
+    # https://elevenlabs.io/docs/eleven-api/guides/how-to/websockets/realtime-tdd
+    unverified_http = arguments.get("model_id") == "eleven_v4_turbo"
     path, params, headers, body = prepare_request(tool_name, arguments)
-    if dry_run():
+    if dry_run() or unverified_http:
         return {"status": "dry_run", "provider": "elevenlabs", "tool": tool_name,
-                "note": "No ElevenLabs request was made and no media was generated."}
+                "note": "UNVERIFIED HTTP support for eleven_v4_turbo; no request made." if unverified_http else "No ElevenLabs request was made and no media was generated."}
     headers["xi-api-key"] = api_key()
     output_format = str(params.get("output_format") or "")
     with httpx.Client(timeout=httpx.Timeout(180, connect=15), follow_redirects=False, trust_env=False) as client:

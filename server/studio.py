@@ -396,7 +396,7 @@ async def studio_status() -> dict[str, Any]:
             "seedance": os.getenv("SEEDANCE_DRY_RUN", "true").lower() != "false",
             "seedream": os.getenv("SEEDREAM_DRY_RUN", os.getenv("SEEDANCE_DRY_RUN", "true")).lower()
             != "false",
-            "elevenlabs": os.getenv("ELEVENLABS_DRY_RUN", "false").lower() == "true",
+            "elevenlabs": os.getenv("ELEVENLABS_DRY_RUN", "true").lower() == "true",
             "fish_audio": os.getenv("FISH_AUDIO_DRY_RUN", "true").lower() != "false",
         },
     }

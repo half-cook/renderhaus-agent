@@ -46,7 +46,7 @@ class RemotionSettings:
 
 
 def dry_run() -> bool:
-    return os.getenv("REMOTION_DRY_RUN", "false").lower() != "false"
+    return os.getenv("REMOTION_DRY_RUN", "true").lower() != "false"
 
 
 def _on_lambda() -> bool:

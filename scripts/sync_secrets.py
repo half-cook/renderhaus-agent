@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Sync non-empty .env.local values into AWS Secrets Manager."""
+"""Sync non-empty secrets and runtime config, including ELEVENLABS_TTS_MODEL."""
 
 from __future__ import annotations
 

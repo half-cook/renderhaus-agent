@@ -32,6 +32,7 @@ RUNTIME_BOOTSTRAP_KEYS = [
     "SEEDREAM_MODEL",
     "SEEDREAM_DRY_RUN",
     "ELEVENLABS_DRY_RUN",
+    "ELEVENLABS_TTS_MODEL",
     "FISH_AUDIO_MODEL",
     "FISH_AUDIO_DRY_RUN",
     "AWS_S3_BUCKET",
@@ -64,7 +65,7 @@ def load_bootstrap_env(*, secret_name: str) -> dict[str, str]:
             env[key] = value.strip()
     env.setdefault("SEEDANCE_DRY_RUN", "true")
     env.setdefault("SEEDREAM_DRY_RUN", "true")
-    env.setdefault("ELEVENLABS_DRY_RUN", "false")
+    env.setdefault("ELEVENLABS_DRY_RUN", "true")
     return env
 
 
