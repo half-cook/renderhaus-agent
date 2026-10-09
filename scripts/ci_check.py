@@ -60,6 +60,37 @@ def check_gateway_tools_schema() -> None:
         print(f"ok {spec.id} gateway schema ({len(names)} tools)")
 
 
+def check_routing_inventory() -> None:
+    import json
+    import yaml
+
+    from agent.deep_agent.routing import POLICY, TOOL_MAP
+    from agent.deep_agent.runner import DISPATCH_TARGETS, SKILLS_ROOT
+    from providers.catalog import PROVIDERS
+    from providers.registry import load_committed_schemas
+
+    assert len(PROVIDERS) == 8, "This routing branch adds no provider adapters."
+    assert sum(len(load_committed_schemas(spec)) for spec in PROVIDERS) == 78
+    paths = list(SKILLS_ROOT.glob("*/SKILL.md"))
+    assert len(paths) == 24
+    assert "ladder" not in POLICY and "premium_targets" not in POLICY
+    assert "project_policy" not in POLICY and "flux2_klein4b_t2i" not in TOOL_MAP
+    for capability, choice in POLICY["capability_map"].items():
+        assert set(choice) == {"default", "exceptions", "interim", "ab_candidates"}, capability
+        selected = [choice["default"], choice["interim"]] + [row["tool"] for row in choice["exceptions"]]
+        for alias in filter(None, selected):
+            assert TOOL_MAP[alias]["status"] in {"ready", "pending"}, alias
+        if choice["interim"]:
+            assert TOOL_MAP[choice["interim"]]["status"] == "ready", capability
+    for path in paths:
+        metadata = yaml.safe_load(path.read_text().split("---", 2)[1])["metadata"]
+        assert set(metadata["include_tools"].split()) <= DISPATCH_TARGETS.keys(), path
+        assert all(TOOL_MAP[alias]["status"] != "retired" for alias in metadata["routing_tools"].split()), path
+    cases = json.loads((ROOT / "tests/fixtures/skill_routing.json").read_text())
+    assert len(cases) == 122 and sum(not case["skip_reason"] for case in cases) == 80
+    print("ok routing inventory (8 providers, 78 Gateway tools, 24 skills, 80 active routing rows)")
+
+
 def _assert_gateway_shape(schema: object) -> None:
     if not isinstance(schema, dict):
         return
@@ -186,6 +217,7 @@ def check_lambda_zip() -> None:
 
 def main() -> int:
     check_gateway_tools_schema()
+    check_routing_inventory()
     check_imports()
     check_dry_run_dispatch()
     check_hyperframes_preview()

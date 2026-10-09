@@ -113,7 +113,7 @@ jobs:
                   echo "$CHANGED" | grep -E '^providers/seedream/|^lambdas/seedream/' >/dev/null && SELECTED+=(seedream)
                   echo "$CHANGED" | grep -E '^providers/elevenlabs/|^configs/gateway/elevenlabs\.tools\.json' >/dev/null && SELECTED+=(elevenlabs)
                   echo "$CHANGED" | grep -E '^providers/remotion/' >/dev/null && SELECTED+=(remotion)
-                  if [ "${#SELECTED[@]}" -eq 0 ] || [ "${#SELECTED[@]}" -ge 8 ]; then
+                          if [ "${#SELECTED[@]}" -eq 0 ] || [ "${#SELECTED[@]}" -ge 8 ]; then
                     PROVIDER=all
                   else
                     IFS=,
@@ -153,6 +153,9 @@ jobs:
           python -m pip install --upgrade pip
           pip install -e .
 
+      - name: Check provider, tool and skill inventories
+        run: python -c "from scripts.ci_check import check_routing_inventory; check_routing_inventory()"
+
       - name: Configure AWS (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -190,6 +193,9 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -e .
+
+      - name: Check provider, tool and skill inventories
+        run: python -c "from scripts.ci_check import check_routing_inventory; check_routing_inventory()"
 
       - name: Configure AWS (OIDC)
         uses: aws-actions/configure-aws-credentials@v4

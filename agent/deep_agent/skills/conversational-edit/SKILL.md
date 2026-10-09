@@ -3,7 +3,8 @@ name: conversational-edit
 description: Edit existing interview, talking-head or tutorial footage from verbatim timed words after generation. Propose and confirm cuts, remove fillers and pauses, grade, add lower thirds, burn subtitles last, then render or hand off to an NLE.
 metadata:
   include_tools: call_editor_tool call_audio_tool
-  gateway_tools: Remotion___prepare_conversational_edit Remotion___render_timeline Remotion___get_render_progress Remotion___export_nle_timeline ElevenLabs___speech_to_text_convert ElevenLabs___speech_to_text_transcripts_get
+  gateway_tools: Remotion___prepare_conversational_edit Remotion___render_timeline Remotion___get_render_progress Remotion___export_nle_timeline ElevenLabs___speech_to_text_convert ElevenLabs___speech_to_text_transcripts_get HyperFrames___render_composition
+  routing_tools: remotion_render hyperframes_render
 ---
 
 # Conversational edit
@@ -30,7 +31,7 @@ Use the discovered model ID and source_ref in `file`, `timestamps_granularity="w
 `no_verbatim=false`, `diarize=true`, and `webhook=false`. Avoid transcript rewriting that
 removes fillers. Retrieve a saved transcript with `ElevenLabs___speech_to_text_transcripts_get`
 only when its real ID exists. A dry-run or pending response is not a transcript.
-Scribe is a paid operation. Keep existing approval, confidential-project and spend-cap gates.
+Scribe is a paid operation. Keep existing approval and spend-cap gates.
 Use the host estimate. An unconfigured ElevenLabs quote is unknown, never free.
 
 ## Propose and confirm
@@ -80,7 +81,9 @@ For an optional NLE finish, use `Remotion___export_nle_timeline` after reading R
 Enrich the pinned snapshot with real source version IDs, checksums, provenance, whole-source
 durations, reel names, source timecodes and audio presence. Bake effects, audio fades, overlays
 and subtitles before exporting; the exporter supports cuts and gaps. Its ZIP is not an MP4.
-HyperFrames and fframes are unavailable; explain the dependency instead of inventing tools.
+An explicit HyperFrames overlay request selects its optional dry-run composition preview through
+`HyperFrames___render_composition`; read the HyperFrames skill. That preview cannot composite
+existing footage or replace a completed Remotion edit. fframes is retired.
 
 Do not submit transcripts, plans or edits as training data. Source lineage retains the
 existing host eligibility policy. Only accepted, registered, successful, non-dry-run Apache

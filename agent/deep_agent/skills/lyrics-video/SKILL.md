@@ -1,24 +1,19 @@
 ---
-name: still-then-video
-description: Review a still first, then animate the approved version through the capability map.
+name: lyrics-video
+description: Make timed lyric/karaoke video from supplied music, or generate the song with Mureka first.
 metadata:
-  include_tools: call_media_tool
-  routing_tools: gpt_image25_t2i gpt_image25_edit wan3_i2v seedance25_i2v
-  gateway_tools: Seedance___get_video_task Seedance___image_to_video Seedream___image_to_image Seedream___text_to_image
+  include_tools: call_audio_tool call_editor_tool
+  routing_tools: mureka_lyrics_video mureka_v95
+  gateway_tools: ElevenLabs___music_compose
 ---
 
-# Still before video
+# Lyrics video
 
-Generate the first look through `gpt_image25_t2i`; revise it through `gpt_image25_edit`.
-Both pending defaults currently use the declared Seedream interims. Image specialists and exceptions
-are documented in [still images](../image-gen/SKILL.md).
-Show the completed still, obtain visual approval, and pin that immutable version before animation.
-An existing approved character/frame can start at the animation step without generating another still.
-
-Animate through `wan3_i2v` by default or `seedance25_i2v` for synthetic dialogue.
-Those aliases use the current `Seedance___image_to_video` interim while pending.
-Real-person references prohibit that interim and remain pending Wan. Do not weaken that constraint.
-Read [image to video](../i2v/SKILL.md) for native inputs and saved-job polling.
+Use `mureka_lyrics_video` for supplied music. Its provider is pending with no built lyrics-video
+interim. When the user asks for a new song, select `mureka_v95` first; its declared current music
+interim is ElevenLabs. Preparing a song does not create a lyrics video. Keep these two steps and
+approvals distinct. Evidence of timing and playback remains pending until the video provider lands.
+Mureka commercial/training terms need verification before enabling the future adapter.
 
 Follow `read_studio_context.intent_route`. Selection uses the explicit requested provider/model,
 then a named exception, then the capability default. Cost estimates support approval and disclosure;

@@ -4,9 +4,14 @@ description: Compare shots with SigLIP and DINOv2 and gate synthetic continuity 
 metadata:
   include_tools: call_media_tool
   gateway_tools: Fal___text_to_video Fal___get_video_task
+  routing_tools: local_qc gemini_vlm_judge
 ---
 
 # Continuity QC
+
+`local_qc` remains the default for every project. `gemini_vlm_judge` is a pending,
+eval-gated alternative; it must beat 0.85 on the 420 labelled pairs before promotion.
+A project confidentiality field has no routing or approval effect.
 
 Read `read_studio_context` and identify ordered shot versions and the approved reference.
 `local_qc` maps to the local continuity module, not a Gateway tool. Use the offline-testable

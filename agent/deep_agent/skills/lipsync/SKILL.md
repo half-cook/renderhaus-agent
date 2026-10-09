@@ -1,24 +1,19 @@
 ---
-name: still-then-video
-description: Review a still first, then animate the approved version through the capability map.
+name: lipsync
+description: Put new audio on existing footage with sync-3; use HeyGen Avatar V for long presenters.
 metadata:
   include_tools: call_media_tool
-  routing_tools: gpt_image25_t2i gpt_image25_edit wan3_i2v seedance25_i2v
-  gateway_tools: Seedance___get_video_task Seedance___image_to_video Seedream___image_to_image Seedream___text_to_image
+  routing_tools: sync3_lipsync heygen_avatar_v
 ---
 
-# Still before video
+# Lip sync
 
-Generate the first look through `gpt_image25_t2i`; revise it through `gpt_image25_edit`.
-Both pending defaults currently use the declared Seedream interims. Image specialists and exceptions
-are documented in [still images](../image-gen/SKILL.md).
-Show the completed still, obtain visual approval, and pin that immutable version before animation.
-An existing approved character/frame can start at the animation step without generating another still.
-
-Animate through `wan3_i2v` by default or `seedance25_i2v` for synthetic dialogue.
-Those aliases use the current `Seedance___image_to_video` interim while pending.
-Real-person references prohibit that interim and remain pending Wan. Do not weaken that constraint.
-Read [image to video](../i2v/SKILL.md) for native inputs and saved-job polling.
+Use `sync3_lipsync` for re-voicing/dubbing existing footage. Use `heygen_avatar_v` for presenter or
+digital-twin videos over 30 seconds. Both providers are pending, with no built interim. Require consent
+for real faces and voices. Speech creation alone cannot animate a face. Synthetic generated dialogue
+belongs in t2v/i2v instead. Prepare user audio or authorized TTS before the pending video step.
+Retired LivePortrait/LatentSync require non-commercial InsightFace weights; never load them.
+Evidence is thin. Inspect lip timing and actual playback once the provider is built.
 
 Follow `read_studio_context.intent_route`. Selection uses the explicit requested provider/model,
 then a named exception, then the capability default. Cost estimates support approval and disclosure;

@@ -31,13 +31,19 @@ class RoutingCases(unittest.TestCase):
 
 def routing_case(case):
     def check(self):
-        from agent.deep_agent.routing import route_intent, TOOL_MAP
+        from agent.deep_agent.routing import resolve_alias, route_intent
 
         with patch.dict(os.environ, case.get("env", {})):
             route = route_intent(case["prompt"])
-        self.assertEqual(route.skill, case["expected_skill"])
-        self.assertEqual(route.tool, TOOL_MAP[case["expected_tool"]]["gateway_tool"])
-        self.assertEqual(route.status, "ready")
+        self.assertEqual(route.skill, case.get("expected_routed_skill", case["expected_skill"]))
+        self.assertEqual(route.alias, case.get("expected_routed_alias", case["expected_tool"]))
+        status = case.get("expected_status", "ready")
+        self.assertEqual(route.status, status)
+        if status == "ready":
+            self.assertEqual(route.tool, case.get("expected_gateway_tool", resolve_alias(case["expected_tool"])))
+        else:
+            self.assertIsNone(route.tool)
+            self.assertIn(case["expected_reason"], route.reason)
 
     if case["skip_reason"]:
         return unittest.skip(case["skip_reason"])(check)
@@ -45,29 +51,32 @@ def routing_case(case):
 
 
 for index, case in enumerate(CASES):
-    setattr(RoutingCases, f"test_{index:02d}_{case['suite'].replace('-', '_')}", routing_case(case))
+    setattr(RoutingCases, f"test_{index:03d}_{case['suite'].replace('-', '_')}", routing_case(case))
 
 
 class SkillContracts(unittest.TestCase):
     def test_every_gateway_reference_exists_and_dispatches_through_correct_role(self):
+        from agent.deep_agent.routing import TOOL_MAP
         from agent.deep_agent.runner import DISPATCH_TARGETS
+        from deepagents.middleware.skills import _parse_skill_metadata
 
         known = gateway_names()
         skills = list((ROOT / "agent/deep_agent/skills").glob("*/SKILL.md"))
         names = set()
         for path in skills:
-            from deepagents.middleware.skills import _parse_skill_metadata
-
             body = path.read_text()
-            parsed = _parse_skill_metadata(body, str(path), path.parent.name)
-            self.assertIsNotNone(parsed, path)
+            self.assertIsNotNone(_parse_skill_metadata(body, str(path), path.parent.name), path)
             front = yaml.safe_load(body.split("---", 2)[1])
             names.add(front["name"])
             self.assertEqual(front["name"], path.parent.name)
             self.assertIsInstance(front["description"], str)
-            dispatch = front["metadata"]["include_tools"].split()
+            metadata = front["metadata"]
+            dispatch = metadata["include_tools"].split()
             self.assertTrue(set(dispatch) <= DISPATCH_TARGETS.keys())
-            gateway = set(front["metadata"].get("gateway_tools", "").split())
+            aliases = metadata["routing_tools"].split()
+            self.assertTrue(set(aliases) <= TOOL_MAP.keys(), (path, aliases))
+            self.assertFalse(any(TOOL_MAP[alias]["status"] == "retired" for alias in aliases), path)
+            gateway = set(metadata.get("gateway_tools", "").split())
             references = set(re.findall(r"\b[A-Za-z_]+___[a-z_]+\b", body))
             self.assertTrue(references <= gateway, (path, references - gateway))
             self.assertTrue(gateway <= known, (path, gateway - known))
@@ -75,114 +84,101 @@ class SkillContracts(unittest.TestCase):
                 self.assertTrue(
                     any(name.split("___")[0] in DISPATCH_TARGETS[d] for d in dispatch), name
                 )
+        self.assertEqual(len(names), 24)
         self.assertTrue(
             {
-                "t2v",
-                "i2v",
-                "edit-v2v",
-                "still-then-video",
-                "audio-bed",
-                "motion-graphics",
-                "hyperframes",
-                "continuity-qc",
-                "resolve-handoff",
-                "video-short",
-                "product-images",
-                "storyboard-shots",
-                "audio",
-                "final-assembly",
-                "refinement",
-                "conversational-edit",
-            }
-            <= names
+                "t2v", "i2v", "edit-v2v", "still-then-video", "image-gen", "named-provider",
+                "audio-bed", "motion-graphics", "hyperframes", "continuity-qc", "resolve-handoff",
+                "video-short", "product-images", "storyboard-shots", "audio", "final-assembly",
+                "refinement", "conversational-edit", "act-two", "lipsync", "upscale",
+                "lyrics-video", "product-demo-video", "whiteboard-explainer",
+            } <= names
         )
-        self.assertFalse({"veo-t2v", "act-two", "lipsync", "upscale"} & names)
+        self.assertFalse(
+            {"veo-t2v", "vidu-q4", "confidential-route", "fframes", "heygen-video", "kandinsky-t2v"} & names
+        )
 
-    def test_fixture_retains_all_rows_and_explicit_skips(self):
-        self.assertEqual(len(CASES), 67)
-        self.assertEqual(sum(not c["skip_reason"] for c in CASES), 29)
-        self.assertEqual(sum(bool(c["skip_reason"]) for c in CASES), 38)
+    def test_fixture_preserves_active_workbook_rows_and_explains_pending_dependencies(self):
+        self.assertEqual(len(CASES), 122)
+        self.assertEqual(sum(not c["skip_reason"] for c in CASES), 80)
+        self.assertEqual(sum(bool(c["skip_reason"]) for c in CASES), 42)
+        self.assertTrue(all(c["source_status"] != "archived" for c in CASES))
+        self.assertTrue(all("[project.confidential=true]" not in c["prompt"] for c in CASES))
+        self.assertTrue(all(c["expected_skill"] != "confidential-route" for c in CASES))
+        for case in CASES:
+            if case["skip_reason"]:
+                self.assertIn("provider pending:", case["skip_reason"])
+                self.assertRegex(case["skip_reason"], r"\(feat/[a-z0-9-]+\)")
+        imports = [c for c in CASES if c["prompt"] == "import editor FCPXML back"]
+        self.assertEqual(len(imports), 1)
+        self.assertEqual(imports[0]["skip_reason"], "provider pending: nle import (feat/nle-import-fcpxml)")
 
-    def test_standard_is_default_and_unknown_requests_do_not_invent_tools(self):
+    def test_quality_default_and_unknown_requests_do_not_invent_tools(self):
         from agent.deep_agent.routing import route_intent
 
-        self.assertEqual(route_intent("generate a video of a forest").tool, "Seedance___text_to_video")
-        self.assertEqual(route_intent("animate an image").tool, "Seedance___image_to_video")
+        video = route_intent("generate a video of a forest")
+        self.assertEqual(video.alias, "wan3_t2v")
+        self.assertEqual(video.tool, "Seedance___text_to_video")
+        self.assertIn("interim default", video.disclosure)
+        image = route_intent("animate an image")
+        self.assertEqual(image.alias, "wan3_i2v")
+        self.assertEqual(image.tool, "Seedance___image_to_video")
         self.assertEqual(route_intent("tell me a joke").status, "unrouted")
 
-    def test_pending_provider_never_falls_back_to_a_paid_alternative(self):
+    def test_named_pending_specialists_never_dispatch_unrelated_paid_tools(self):
         from agent.deep_agent.routing import route_intent
 
-        self.assertEqual(
-            route_intent("generate with Veo 3.1 native audio dialogue").status, "pending"
-        )
-        self.assertIsNone(route_intent("generate with Veo 3.1 native audio dialogue").tool)
+        for prompt, alias in [
+            ("Act-Two performance capture onto character image", "runway_act_two"),
+            ("make this character do my full-body dance", "kling_motion_control"),
+            ("upscale to 1080p deliverable", "topaz_upscale"),
+            ("dub this interview clip into Spanish", "sync3_lipsync"),
+        ]:
+            with self.subTest(prompt=prompt):
+                route = route_intent(prompt)
+                self.assertEqual(route.alias, alias)
+                self.assertEqual(route.status, "pending")
+                self.assertIsNone(route.tool)
         for provider in ["MiniMax H3", "Hunyuan"]:
             route = route_intent(f"generate a video with {provider}")
             self.assertEqual(route.status, "blocked")
             self.assertIsNone(route.tool)
 
+    def test_explicit_retired_provider_requests_do_not_dispatch_replacements(self):
+        from agent.deep_agent.routing import route_intent
+
+        for prompt in ["use Veo 3.1 for this shot", "make a HeyGen generative video clip"]:
+            with self.subTest(prompt=prompt):
+                route = route_intent(prompt)
+                self.assertEqual(route.status, "retired")
+                self.assertIsNone(route.tool)
+                self.assertIn("retired", route.reason)
+
     def test_explicit_runway_modality_is_preserved(self):
         from agent.deep_agent.routing import route_intent
 
-        self.assertEqual(
-            route_intent("Runway Gen-4 image of a product").tool, "Runway___text_to_image"
-        )
+        self.assertEqual(route_intent("Runway Gen-4 image of a product").tool, "Runway___text_to_image")
         self.assertEqual(route_intent("runway image to video").tool, "Runway___image_to_video")
 
-    def test_every_seed_alias_is_mapped_or_explicitly_pending(self):
+    def test_pending_and_retired_aliases_are_not_gateway_tools(self):
         from agent.deep_agent.routing import TOOL_MAP
 
         known = gateway_names() | {None}
-        for entry in TOOL_MAP.values():
-            if entry["status"] == "pending":
-                self.assertIsNone(entry["gateway_tool"])
-                self.assertIn("provider pending", entry["reason"])
-            elif entry["status"] == "blocked":
-                self.assertIsNone(entry["gateway_tool"])
-                self.assertIn("blocked", entry["reason"])
-            else:
-                self.assertTrue(entry["gateway_tool"] in known)
-        self.assertEqual(
-            sum(
-                k in TOOL_MAP
-                for k in [
-                    "kling_t2v",
-                    "kling_i2v",
-                    "runway_gen45_t2v",
-                    "runway_aleph_edit",
-                    "runway_act_two",
-                    "wan_t2v",
-                    "wan_i2v",
-                    "wan_vace_edit",
-                    "luma_ray3_t2v",
-                    "luma_ray3_modify",
-                    "hedra_character3",
-                    "liveportrait_lipsync",
-                    "infinitetalk_lipsync",
-                    "seedvr2_upscale",
-                    "rife_interpolate",
-                    "topaz_upscale",
-                    "seedance_t2v",
-                    "seedance_i2v",
-                    "seedream_t2i",
-                    "elevenlabs_tts",
-                    "fish_audio_tts",
-                    "mmaudio_sfx",
-                    "ace_step_music",
-                    "remotion_render",
-                    "hyperframes_render",
-                    "veo_t2v",
-                    "veo_i2v",
-                    "veo_extend",
-                    "ideogram_t2i",
-                    "recraft_t2i",
-                    "otio_export",
-                    "fcpxml_export",
-                    "edl_export",
-                    "media_package",
-                    "local_qc",
-                ]
-            ),
-            35,
-        )
+        for alias, entry in TOOL_MAP.items():
+            with self.subTest(alias=alias):
+                if entry["status"] in {"pending", "blocked", "retired"}:
+                    self.assertIsNone(entry["gateway_tool"])
+                    required = "provider pending" if entry["status"] == "pending" else entry["status"]
+                    self.assertIn(required, entry["reason"])
+                else:
+                    self.assertIn(entry["gateway_tool"], known)
+        required_aliases = {
+            "wan3_t2v", "wan3_i2v", "wan3_r2v", "wan3_edit", "wan3_extend",
+            "seedance25_t2v", "seedance25_i2v", "seedance25_r2v",
+            "gpt_image25_t2i", "gpt_image25_edit", "recraft_v41_vector", "ideogram45_edit",
+            "gemini_vlm_judge", "sync3_lipsync", "heygen_avatar_v", "runway_act_two",
+            "kling_motion_control", "mureka_v95", "mureka_lyrics_video", "mirelo_v2a",
+            "elevenlabs_sfx_v2", "eleven_v4_turbo", "topaz_upscale", "topaz_interpolate",
+        }
+        self.assertTrue(required_aliases <= TOOL_MAP.keys())
+        self.assertNotIn("flux2_klein4b_t2i", TOOL_MAP)

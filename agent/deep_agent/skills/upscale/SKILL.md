@@ -1,24 +1,19 @@
 ---
-name: still-then-video
-description: Review a still first, then animate the approved version through the capability map.
+name: upscale
+description: Finish a saved clip with Topaz Starlight upscale or Apollo/Chronos interpolation.
 metadata:
   include_tools: call_media_tool
-  routing_tools: gpt_image25_t2i gpt_image25_edit wan3_i2v seedance25_i2v
-  gateway_tools: Seedance___get_video_task Seedance___image_to_video Seedream___image_to_image Seedream___text_to_image
+  routing_tools: topaz_upscale topaz_interpolate
 ---
 
-# Still before video
+# Finishing
 
-Generate the first look through `gpt_image25_t2i`; revise it through `gpt_image25_edit`.
-Both pending defaults currently use the declared Seedream interims. Image specialists and exceptions
-are documented in [still images](../image-gen/SKILL.md).
-Show the completed still, obtain visual approval, and pin that immutable version before animation.
-An existing approved character/frame can start at the animation step without generating another still.
-
-Animate through `wan3_i2v` by default or `seedance25_i2v` for synthetic dialogue.
-Those aliases use the current `Seedance___image_to_video` interim while pending.
-Real-person references prohibit that interim and remain pending Wan. Do not weaken that constraint.
-Read [image to video](../i2v/SKILL.md) for native inputs and saved-job polling.
+Use `topaz_upscale` for upscaling and `topaz_interpolate` for frame interpolation. Topaz Starlight
+Precise is the planned upscale default. Apollo is the interpolation default; select Chronos through
+the same future tool only for simple linear-motion FPS conversion. Both aliases are provider-pending
+with no built interim. A larger new generation does not upscale the supplied asset. SeedVR2/RIFE
+are retired. Prices/model identifiers need official verification in feat/finishing-topaz.
+Run continuity-QC on the input before any paid finishing job. Evidence is vendor-only; A/B is pending.
 
 Follow `read_studio_context.intent_route`. Selection uses the explicit requested provider/model,
 then a named exception, then the capability default. Cost estimates support approval and disclosure;

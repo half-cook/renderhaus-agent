@@ -1,32 +1,31 @@
 ---
 name: storyboard-shots
-description: Turn a storyboard into consistent shots using still-first image-to-video generation.
+description: Turn approved storyboard frames into consistent shots with the capability map.
 metadata:
   include_tools: call_media_tool
-  gateway_tools: Fal___vidu_q4_i2v Fal___vidu_q4_r2v Fal___get_video_task Fal___image_to_video Seedance___get_video_task Seedance___image_to_video Seedream___image_to_image
+  routing_tools: gpt_image25_t2i gpt_image25_edit wan3_i2v wan3_r2v seedance25_i2v seedance25_r2v
 ---
 
 # Storyboard shots
 
-Read read_studio_context. Ask planner for shot durations, framing, product continuity, and
-one concise action per shot. Save the storyboard to a project file.
-Search x_amz_bedrock_agentcore_search for Seedream text_to_image/image_to_image.
-Use call_media_tool to create one cheap keyframe per shot. Reuse the approved product reference
-through Seedream___image_to_image. Preview these stills and apply requested corrections before
-video. Read [image to video](../i2v/SKILL.md). Animate approved still asset handles with
-the host-selected Standard route, usually Seedance___image_to_video with image_path_or_url,
-then poll Seedance___get_video_task using saved job IDs. Draft uses Fal___image_to_video
-with first_frame_url. Read product-images for still routing and confidentiality limits.
-Preserve capability filters, disclose the choice and cost, and record explicit shot reviews.
-Reuse successful shots. Read final-assembly to assemble the resulting clips, not the previews.
+Read Studio context and save ordered shot durations, framing and product references.
+Use image-gen for missing keyframes, preserving the approved product version. Review and pin
+stills before animation. Use i2v for a start frame or reference set. Real-face references force Wan
+and prohibit the Seedance interim. Reference-video providers have no built interim yet.
+Reuse accepted shots and read final-assembly to render the clips rather than still previews.
 
-For a Vidu Q4 route, read [Vidu Q4](../vidu-q4/SKILL.md). Use
-`Fal___vidu_q4_i2v` with `image_url` for a first frame, or `Fal___vidu_q4_r2v` with
-`reference_image_urls` and optional `reference_audio_urls` for subject and voice references.
-Use native `duration` (3 through 16), case-sensitive resolutions through `4K`, and
-`audio=true` on R2V when sound is required. I2V audio is implicit. Q4 is Standard,
-never confidential, and never training-eligible. Poll the saved `Fal___get_video_task` job.
+Follow `read_studio_context.intent_route`. Selection uses the explicit requested provider/model,
+then a named exception, then the capability default. Cost estimates support approval and disclosure;
+they never select a provider. Pending defaults use only the policy's declared interim tool.
+Disclose provider, model, estimated cost and `default`, `exception: <reason>`, `explicit request`,
+or `interim default until <provider> lands` before each dispatch. Unknown prices stay unknown.
+All paid video pauses for approval even in autonomous runs when `premium_video_approval` is enabled.
+Paid non-video retains the existing non-autonomous approval and autonomous spend cap.
 
-Report progress before provider work. Respect DRY_RUN. Never change it to obtain an artifact.
-A preview or queued job is not finished media. Required approval appears in the existing chat.
-Use the smallest useful request and avoid redundant paid variants.
+Search Gateway for the selected built tool and use its exact schema through the matching role.
+Pending aliases are routing identifiers, not Gateway endpoints. Never invent a tool or change a
+DRY_RUN flag to satisfy a request. Submit once, preserve the returned job ID, and poll the same job.
+A queued job or dry-run is incomplete media. Open/play the actual saved artifact before delivery.
+Record explicit customer visual acceptance/rejection with `record_media_outcome` and the saved call ID.
+A spending approval is not visual acceptance. Training eligibility follows provenance and the existing
+Wan training hook; these routing instructions cannot grant training rights.

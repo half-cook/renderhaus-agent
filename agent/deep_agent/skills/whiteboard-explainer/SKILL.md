@@ -1,24 +1,20 @@
 ---
-name: still-then-video
-description: Review a still first, then animate the approved version through the capability map.
+name: whiteboard-explainer
+description: Plan a whiteboard explainer with Remotion by default and explicit HyperFrames templates.
 metadata:
-  include_tools: call_media_tool
-  routing_tools: gpt_image25_t2i gpt_image25_edit wan3_i2v seedance25_i2v
-  gateway_tools: Seedance___get_video_task Seedance___image_to_video Seedream___image_to_image Seedream___text_to_image
+  include_tools: call_editor_tool
+  routing_tools: remotion_render hyperframes_render
+  gateway_tools: HyperFrames___render_composition Remotion___get_render_progress Remotion___render_timeline
 ---
 
-# Still before video
+# Whiteboard explainer
 
-Generate the first look through `gpt_image25_t2i`; revise it through `gpt_image25_edit`.
-Both pending defaults currently use the declared Seedream interims. Image specialists and exceptions
-are documented in [still images](../image-gen/SKILL.md).
-Show the completed still, obtain visual approval, and pin that immutable version before animation.
-An existing approved character/frame can start at the animation step without generating another still.
-
-Animate through `wan3_i2v` by default or `seedance25_i2v` for synthetic dialogue.
-Those aliases use the current `Seedance___image_to_video` interim while pending.
-Real-person references prohibit that interim and remain pending Wan. Do not weaken that constraint.
-Read [image to video](../i2v/SKILL.md) for native inputs and saved-job polling.
+Use `remotion_render` for the assembled explainer. Use `hyperframes_render` only for an explicit
+HyperFrames/HTML-template request, subject to its feature flag and dry-run-only implementation.
+Prepare requested narration first through audio-bed. The current Remotion schema renders supplied
+assets, simple supported motion and overlays; it does not implement a marker-hand animation or
+arbitrary template code. Report missing template/assets rather than claiming that rendering creates
+them. Never copy AGPL whiteboard/product-video code. Inspect a real artifact before claiming delivery.
 
 Follow `read_studio_context.intent_route`. Selection uses the explicit requested provider/model,
 then a named exception, then the capability default. Cost estimates support approval and disclosure;

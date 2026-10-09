@@ -1,24 +1,18 @@
 ---
-name: still-then-video
-description: Review a still first, then animate the approved version through the capability map.
+name: act-two
+description: Transfer facial/upper-body acting with Runway Act-Two or full-body motion with Kling.
 metadata:
   include_tools: call_media_tool
-  routing_tools: gpt_image25_t2i gpt_image25_edit wan3_i2v seedance25_i2v
-  gateway_tools: Seedance___get_video_task Seedance___image_to_video Seedream___image_to_image Seedream___text_to_image
+  routing_tools: runway_act_two kling_motion_control
 ---
 
-# Still before video
+# Performance transfer
 
-Generate the first look through `gpt_image25_t2i`; revise it through `gpt_image25_edit`.
-Both pending defaults currently use the declared Seedream interims. Image specialists and exceptions
-are documented in [still images](../image-gen/SKILL.md).
-Show the completed still, obtain visual approval, and pin that immutable version before animation.
-An existing approved character/frame can start at the animation step without generating another still.
-
-Animate through `wan3_i2v` by default or `seedance25_i2v` for synthetic dialogue.
-Those aliases use the current `Seedance___image_to_video` interim while pending.
-Real-person references prohibit that interim and remain pending Wan. Do not weaken that constraint.
-Read [image to video](../i2v/SKILL.md) for native inputs and saved-job polling.
+Use `runway_act_two` for facial/upper-body acting. Use `kling_motion_control` for full-body motion,
+whole-body motion or dance. Both endpoints remain pending; Gen-4.5/ordinary Kling generation is not
+performance transfer and cannot serve as an interim. Require real performer consent. Chunk the
+supplied driving clip into supported shots of at most 30 seconds. No neutral benchmark establishes
+these picks; A/B evidence remains pending. Check pose, face and temporal continuity on the artifact.
 
 Follow `read_studio_context.intent_route`. Selection uses the explicit requested provider/model,
 then a named exception, then the capability default. Cost estimates support approval and disclosure;

@@ -1,35 +1,46 @@
 ---
 name: audio-bed
-description: Add narration, music, or sound effects with built ElevenLabs tools or available Fish Audio speech.
+description: Create narration, voice clones, music or SFX with capability defaults and text-only SFX exceptions.
 metadata:
   include_tools: call_audio_tool
-  gateway_tools: ElevenLabs___text_to_speech_convert ElevenLabs___music_compose ElevenLabs___text_to_sound_effects_convert FishAudio___generate_speech
+  routing_tools: eleven_v4_turbo voices_ivc_create mureka_v95 mirelo_v2a elevenlabs_sfx_v2
+  gateway_tools: ElevenLabs___music_compose ElevenLabs___text_to_sound_effects_convert ElevenLabs___text_to_speech_convert ElevenLabs___voices_ivc_create
 ---
 
 # Audio bed
 
-Read `read_studio_context` and the planned shot durations.
-Search Gateway for the concrete operation and use `call_audio_tool` with the exact schema.
-`elevenlabs_tts` maps to `ElevenLabs___text_to_speech_convert`. Use authorized `voice_id`
-and `text`; do not infer a voice ID from its display name.
-`fish_audio_tts` maps to `FishAudio___generate_speech` only when Gateway exposes that
-conditional target. It requires `text` and optionally accepts `voice`, `output_format`,
-and `model`. Fish Audio is not in the active provider catalog. Report an absent target
-and use available speech only within the user's provider preferences.
+Narration defaults to `eleven_v4_turbo`, mapped to `ElevenLabs___text_to_speech_convert`.
+The requested v4 Turbo model ID is UNVERIFIED unless listed by official ElevenLabs documentation;
+use the host configuration and validation gate rather than claiming an unverified live model.
+Use authorized `voice_id` and `text`; never infer a voice ID from its display name.
+Voice cloning defaults to `voices_ivc_create`, mapped to `ElevenLabs___voices_ivc_create`.
+Require speaker consent and rights to all samples; do not imply the IVC tool provides PVC.
 
-For a generic music bed, use `ElevenLabs___music_compose` with `prompt` and
-`music_length_ms`. For sound effects, use `ElevenLabs___text_to_sound_effects_convert`
-with `text` and supported `duration_seconds`. MMAudio video-synchronized effects and
-ACE-Step music are provider-pending drafts. Never reinterpret a named pending provider
-as built ElevenLabs support. A separate video-to-audio model is not installed.
+Music defaults to pending `mureka_v95`. Its declared interim is `ElevenLabs___music_compose`
+with `prompt` and `music_length_ms`. Disclose that ElevenLabs is temporary, or explicit-only by name.
+Video-synchronized foley defaults to `mirelo_v2a`, pending with no interim. A text-only sound effect
+uses the built `elevenlabs_sfx_v2` exception through `ElevenLabs___text_to_sound_effects_convert`.
+Use native `text` and supported `duration_seconds`. Text-only SFX cannot synchronize to source picture.
+For a TTS-then-avatar/lyrics/whiteboard workflow, prepare authorized speech first and disclose the
+remaining pending video step. Speech alone is not a lipsync video.
 
-Create a short speech sample before a long recording. Match approved audio to picture.
-Preserve successful audio handles and use [final assembly](../final-assembly/SKILL.md)
-for fades, timing, and mixing rather than regenerating sound for an edit-only change.
-Use authorized voices and input rights. Fish Audio API availability does not grant rights
-to self-host Fish Speech weights. Audio-provider outputs are not continuity training inputs.
-Report unconfirmed billing as unknown using `server.billing_rates.cost_for`.
+Fish Audio is named-only. MMAudio is retired because its weights are non-commercial; ACE-Step is
+retired from the quality-first map. Do not install or load their weights as a workaround.
+Create a short speech sample before a long recording. Match approved audio to picture and preserve
+successful handles. Use final-assembly for fades/timing/mixing instead of paid regeneration.
 
-Report progress before provider work. Respect DRY_RUN. Never change it to obtain an artifact.
-A preview or queued job is not finished media. Required approval appears in the existing chat.
-Use the smallest useful request and avoid redundant paid variants.
+Follow `read_studio_context.intent_route`. Selection uses the explicit requested provider/model,
+then a named exception, then the capability default. Cost estimates support approval and disclosure;
+they never select a provider. Pending defaults use only the policy's declared interim tool.
+Disclose provider, model, estimated cost and `default`, `exception: <reason>`, `explicit request`,
+or `interim default until <provider> lands` before each dispatch. Unknown prices stay unknown.
+All paid video pauses for approval even in autonomous runs when `premium_video_approval` is enabled.
+Paid non-video retains the existing non-autonomous approval and autonomous spend cap.
+
+Search Gateway for the selected built tool and use its exact schema through the matching role.
+Pending aliases are routing identifiers, not Gateway endpoints. Never invent a tool or change a
+DRY_RUN flag to satisfy a request. Submit once, preserve the returned job ID, and poll the same job.
+A queued job or dry-run is incomplete media. Open/play the actual saved artifact before delivery.
+Record explicit customer visual acceptance/rejection with `record_media_outcome` and the saved call ID.
+A spending approval is not visual acceptance. Training eligibility follows provenance and the existing
+Wan training hook; these routing instructions cannot grant training rights.

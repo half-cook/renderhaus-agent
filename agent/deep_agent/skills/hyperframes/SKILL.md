@@ -5,6 +5,7 @@ license: Apache-2.0
 metadata:
   include_tools: call_editor_tool call_audio_tool
   gateway_tools: HyperFrames___render_composition ElevenLabs___text_to_speech_convert
+  routing_tools: hyperframes_render
 ---
 
 # HyperFrames
