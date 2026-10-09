@@ -395,6 +395,25 @@ class SyncProviderTests(unittest.TestCase):
         self.assertEqual(self.api.get_video_task(job["job_id"])["status"], "dry_run")
         self.assertEqual(len(self.requests), count)
 
+    def test_saved_dry_run_poll_never_reads_the_remote_store(self):
+        self.fal_submit_route()
+        job = self.submit()
+        os.environ["AWS_S3_BUCKET"] = "offline-sync-store"
+        for flags in (
+            {"SYNC_DRY_RUN": "true", "FAL_DRY_RUN": "false"},
+            {"SYNC_DRY_RUN": "false", "FAL_DRY_RUN": "true"},
+        ):
+            with (
+                self.subTest(flags=flags), patch.dict(os.environ, flags),
+                patch.object(self.chunks.boto3, "client", side_effect=AssertionError("Remote store accessed during dry-run")),
+            ):
+                try:
+                    output = self.api.get_video_task(job["job_id"], download=True)
+                except RuntimeError:
+                    self.fail("Dry-run polling must not access the remote store.")
+                self.assertEqual(output["status"], "dry_run")
+        self.assertEqual(len(self.requests), 1)
+
     def test_unknown_and_tampered_saved_handles_refuse_before_http(self):
         for handle in ("request_1", "sync:direct:../escape", "sync:fal:missing", "sync:chunks:missing"):
             with self.subTest(handle=handle), self.assertRaises(ValueError):
