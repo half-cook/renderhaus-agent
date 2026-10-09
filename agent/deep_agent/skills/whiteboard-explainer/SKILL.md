@@ -1,10 +1,10 @@
 ---
 name: whiteboard-explainer
-description: Plan a whiteboard explainer with Remotion by default and explicit HyperFrames templates.
+description: Plan a whiteboard explainer with requested voiceover, Remotion by default and explicit HyperFrames templates. Silent graphic explainers use knowledge-explainer.
 metadata:
-  include_tools: call_editor_tool
-  routing_tools: remotion_render hyperframes_render
-  gateway_tools: HyperFrames___render_composition Remotion___get_render_progress Remotion___render_timeline
+  include_tools: call_editor_tool call_audio_tool
+  routing_tools: remotion_render hyperframes_render eleven_v4_turbo
+  gateway_tools: HyperFrames___render_composition Remotion___get_render_progress Remotion___render_timeline ElevenLabs___text_to_speech_convert
 ---
 
 # Whiteboard explainer
@@ -15,6 +15,7 @@ Prepare requested narration first through audio-bed. The current Remotion schema
 assets, simple supported motion and overlays; it does not implement a marker-hand animation or
 arbitrary template code. Report missing template/assets rather than claiming that rendering creates
 them. Never copy AGPL whiteboard/product-video code. Inspect a real artifact before claiming delivery.
+For silent graphics with event sound effects, read [knowledge-explainer](../knowledge-explainer/SKILL.md).
 
 Follow `read_studio_context.intent_route`. Selection uses the explicit requested provider/model,
 then a named exception, then the capability default. Cost estimates support approval and disclosure;

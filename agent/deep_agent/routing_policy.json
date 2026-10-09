@@ -1910,14 +1910,20 @@
       "abstract_tool": "conversational_hyperframes_overlay"
     },
     {
+      "pattern": "\\bknowledge[ -]explainer\\b|知识大赏|\\bexplainer\\b|\\b(?:knowledge|science|graphic|cognitive|vibe)(?:[ -]\\w+){0,3}[ -](?:short|video)\\b",
+      "skill": "knowledge-explainer",
+      "abstract_tool": "remotion_render",
+      "capability": "motion_graphics"
+    },
+    {
       "pattern": "\\bhyperframes\\b.*\\belevenlabs\\b|\\belevenlabs\\b.*\\bhyperframes\\b",
       "skill": "hyperframes",
       "abstract_tool": "eleven_v4_turbo",
       "capability": "tts"
     },
     {
-      "pattern": "whiteboard.*(?:voiceover|narrat)",
-      "skill": "audio-bed",
+      "pattern": "whiteboard.*(?:voice[ -]?over|narrat)",
+      "skill": "whiteboard-explainer",
       "abstract_tool": "eleven_v4_turbo",
       "capability": "tts"
     },

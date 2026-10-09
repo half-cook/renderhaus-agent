@@ -1,0 +1,64 @@
+{
+  "description": "Original eight-second Lambda sample at 24 fps with an embedded SVG. Local rendering requires an approved PNG or local media path instead. Replace illustrative labels with approved source text. Loading this file generates no SFX.",
+  "arguments": {
+    "title": "Silent graphic explainer",
+    "aspect_ratio": "16:9",
+    "fps": 24,
+    "visuals": [
+      {
+        "kind": "image",
+        "url": "data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%221920%22%20height%3D%221080%22%20viewBox%3D%220%200%201920%201080%22%3E%3Crect%20width%3D%221920%22%20height%3D%221080%22%20fill%3D%22%230c1724%22%2F%3E%3Cpath%20d%3D%22M530%20590H1390%22%20stroke%3D%22%2357718a%22%20stroke-width%3D%228%22%2F%3E%3Ccircle%20cx%3D%22620%22%20cy%3D%22590%22%20r%3D%22100%22%20fill%3D%22%2378c8dc%22%2F%3E%3Ccircle%20cx%3D%221300%22%20cy%3D%22590%22%20r%3D%22100%22%20fill%3D%22%23ecc788%22%2F%3E%3C%2Fsvg%3E",
+        "duration_seconds": 8,
+        "fit": "contain",
+        "motion": "none"
+      }
+    ],
+    "audio_tracks": [],
+    "text_overlays": [
+      {
+        "text": "Notice the change",
+        "start_seconds": 1.25,
+        "duration_seconds": 1.75,
+        "position": "top",
+        "font_size": 64,
+        "color": "#ffffff"
+      },
+      {
+        "text": "Compare the outcomes",
+        "start_seconds": 3,
+        "duration_seconds": 5,
+        "position": "top",
+        "font_size": 64,
+        "color": "#ffffff"
+      }
+    ]
+  },
+  "events": [
+    {
+      "event_id": "label-appears",
+      "start_seconds": 1.25,
+      "duration_seconds": 1.75,
+      "graphic_action": "First label appears above the diagram.",
+      "on_screen_text": "Notice the change",
+      "source": "Illustrative layout only; replace with supplied source.",
+      "sfx": {
+        "routing_id": "elevenlabs_sfx_v2",
+        "text": "Soft single pop, no speech or music",
+        "duration_seconds": 0.5
+      }
+    },
+    {
+      "event_id": "comparison-appears",
+      "start_seconds": 3,
+      "duration_seconds": 5,
+      "graphic_action": "Comparison label replaces the first label.",
+      "on_screen_text": "Compare the outcomes",
+      "source": "Illustrative layout only; replace with supplied source.",
+      "sfx": {
+        "routing_id": "elevenlabs_sfx_v2",
+        "text": "Gentle short whoosh, no speech or music",
+        "duration_seconds": 1
+      }
+    }
+  ]
+}

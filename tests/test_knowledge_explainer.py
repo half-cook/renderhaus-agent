@@ -18,6 +18,8 @@ class KnowledgeExplainerRoutingTests(unittest.TestCase):
             "no voiceover graphic science explainer with event foley",
             "make a graphic science explainer without a voiceover",
             "make a science explainer video without a narrator",
+            "make a no-spoken-narration science explainer video with synced sound effects",
+            "make a science explainer without spoken narration",
             "graphic explainer with sound effects synced to on-screen events",
             "export a silent knowledge explainer as an MP4",
             "make a knowledge-explainer about the control illusion",
@@ -82,20 +84,31 @@ class KnowledgeExplainerRoutingTests(unittest.TestCase):
             "can you add foley to this existing silent knowledge explainer",
             "use Mirelo to add foley to this existing silent knowledge explainer",
             "score the rendered silent knowledge explainer with event foley",
+            "create sound effects for my existing silent knowledge explainer",
+            "add foley to a silent knowledge explainer",
         ]:
             with self.subTest(prompt=prompt):
                 route = route_intent(prompt, arguments={"video_url": "https://example.invalid/silent.mp4"})
                 self.assertEqual((route.skill, route.alias, route.tool),
                                  ("audio-bed", "mirelo_v2a", "Fal___mirelo_v2a"))
+        self.assertEqual(route_intent("make a silent knowledge explainer, then add foley to the rendered video").skill,
+                         "knowledge-explainer")
 
     def test_no_narration_blocks_tts_but_allows_graphic_assets_and_sfx(self):
-        allowed = {"OpenAI___generate_image", "Fal___mirelo_v2a", "ElevenLabs___text_to_sound_effects_convert"}
+        allowed = {"OpenAI___generate_image", "Fal___mirelo_v2a", "ElevenLabs___text_to_sound_effects_convert",
+                   "ElevenLabs___speech_to_text_convert", "ElevenLabs___voices_search"}
         speech = {"ElevenLabs___text_to_speech_convert", "ElevenLabs___text_to_speech_convert_with_timestamps",
-                  "ElevenLabs___text_to_dialogue_convert", "FishAudio___generate_speech"}
+                  "ElevenLabs___text_to_dialogue_convert", "FishAudio___generate_speech",
+                  "ElevenLabs___voices_ivc_create", "ElevenLabs___speech_to_speech_convert",
+                  "ElevenLabs___text_to_voice_create", "ElevenLabs___text_to_voice_design",
+                  "ElevenLabs___text_to_voice_remix", "ElevenLabs___dubbing_create",
+                  "ElevenLabs___dubbing_project_create", "ElevenLabs___dubbing_project_language_create"}
         for prompt in [
             "make a silent graphic explainer video with no narration and synced sound effects",
             "make a graphic science explainer without a voiceover",
             "make a science explainer video without a narrator",
+            "make a no-spoken-narration science explainer video with synced sound effects",
+            "make a science explainer without spoken narration",
         ]:
             with self.subTest(prompt=prompt):
                 self.assertEqual(filter_request_tools(prompt, allowed | speech), allowed)
@@ -112,18 +125,32 @@ class KnowledgeExplainerRoutingTests(unittest.TestCase):
                 self.assertEqual((route.skill, route.alias, route.tool), ("audio-bed", alias, tool))
 
     def test_explicit_video_provider_is_preserved_with_disclosure_and_no_speech(self):
+        from agent.gateway_executor import GatewayExecutor
+        from agent.studio_agent_next import StudioAgentRequest, _context_from_request
+
         for provider, alias, tool in [
             ("Kling", "kling_t2v", "Kling___text_to_video"),
             ("Runway", "runway_gen45_t2v", "Runway___text_to_video"),
             ("Luma", "luma_ray3_t2v", "Luma___text_to_video"),
         ]:
-            with self.subTest(provider=provider):
-                prompt = f"use {provider} to make a silent knowledge explainer video"
-                route = route_intent(prompt)
-                self.assertEqual((route.skill, route.alias, route.tool), ("named-provider", alias, tool))
-                self.assertEqual(route.basis, "explicit")
-                self.assertTrue(route.disclosure)
-                self.assertEqual(filter_request_tools(prompt, {"ElevenLabs___text_to_speech_convert"}), set())
+            for ending in ["video", "with sound effects synced to events",
+                           "with sound effects synchronized to on-screen events"]:
+                with self.subTest(provider=provider, ending=ending):
+                    prompt = f"use {provider} to make a silent knowledge explainer {ending}"
+                    route = route_intent(prompt)
+                    self.assertEqual((route.skill, route.alias, route.tool), ("named-provider", alias, tool))
+                    self.assertIn("explicit request", route.basis)
+                    self.assertTrue(route.disclosure)
+                    self.assertEqual(filter_request_tools(prompt, {"ElevenLabs___text_to_speech_convert"}), set())
+                    executor = GatewayExecutor(_context_from_request(StudioAgentRequest(prompt=prompt)), [])
+                    generation = executor.media_selection(tool, {"prompt": "A graphic diagram"})
+                    self.assertEqual((generation.status, generation.alias), ("ready", alias))
+                    picture_sfx = executor.media_selection("Fal___mirelo_v2a", {
+                        "video_url": "https://example.invalid/silent.mp4", "duration": 8, "num_samples": 1})
+                    self.assertEqual((picture_sfx.status, picture_sfx.alias), ("ready", "mirelo_v2a"))
+                    text_sfx = executor.media_selection("ElevenLabs___text_to_sound_effects_convert", {
+                        "text": "A soft single pop", "duration_seconds": 0.5})
+                    self.assertEqual((text_sfx.status, text_sfx.alias), ("ready", "elevenlabs_sfx_v2"))
 
     def test_confidential_metadata_and_price_words_do_not_change_renderer(self):
         for tier in [None, "draft", "premium"]:
