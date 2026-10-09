@@ -4926,9 +4926,9 @@
       "default": "remotion_render",
       "exceptions": [
         {
-          "when": "explicit_html_template",
+          "when": "explicit_hyperframes",
           "tool": "hyperframes_render",
-          "reason": "explicit HTML template request"
+          "reason": "explicit HyperFrames request"
         }
       ],
       "interim": null,

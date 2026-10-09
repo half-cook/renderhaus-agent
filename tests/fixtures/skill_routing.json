@@ -946,10 +946,10 @@
   {
     "prompt": "use an HTML template for the title card",
     "expected_skill": "motion-graphics",
-    "expected_tool": "hyperframes_render",
+    "expected_tool": "remotion_render",
     "suite": "motion-graphics",
     "skip_reason": "",
-    "note": "exception: explicit HTML template",
+    "note": "HTML templates keep Remotion default; HyperFrames must be named",
     "source_status": "new",
     "env": {
       "HYPERFRAMES_ENABLED": "true",

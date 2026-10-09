@@ -9,8 +9,8 @@ Modified by Renderhaus on 2026-10-09 for the existing gated, dry-run skill.
 
 # Plan cinematic captions
 
-Use this recipe only after the customer names HyperFrames or explicitly requests
-an HTML template. Unnamed caption requests use the `motion-graphics` skill and
+Use this recipe only after the customer names HyperFrames.
+Unnamed caption and HTML-template requests use the `motion-graphics` skill and
 `remotion_render`. Keep the original edit, narration, approved copy, and brand.
 
 Read supplied transcript and measured word timings before editing an actual clip.
@@ -87,7 +87,7 @@ new tool, loader, runtime installation, or automatic renderer selection.
 
 Preserve approved local asset versions if a future worker adds footage. Use
 clean white support by default and a restrained contrast treatment on bright
-frames. The sample hero uses a neutral silver-white fill at 48 percent opacity
+frames. Both sample heroes use a neutral silver-white fill at 48 percent opacity
 and a 1 px rim. The source recipe permits 32 to 55 percent fill opacity and
 a 0.75 to 1.25 px rim. The sample has no footage beneath the glyphs; visible
 source detail requires actual supplied footage and a future worker. Keep the
