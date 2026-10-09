@@ -54,6 +54,14 @@ class SyncWiringTests(unittest.TestCase):
         self.assertFalse(tool_needs_approval("Sync___get_video_task", True))
         self.assertEqual(routing.estimate_cost("Sync___get_video_task", {}).total_cents, 0)
 
+    def test_retired_noncommercial_face_dependencies_cannot_route_to_sync(self):
+        for provider in ("LatentSync", "Latent Sync", "LivePortrait", "Live Portrait"):
+            with self.subTest(provider=provider):
+                route = routing.route_intent(f"use {provider} to lipsync this existing video")
+                self.assertEqual(route.status, "retired")
+                self.assertIsNone(route.tool)
+                self.assertIn("non-commercial InsightFace", route.reason)
+
     def test_quotes_use_host_rate_duration_mode_and_fps(self):
         from server.billing_rates import cost_for
 
