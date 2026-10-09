@@ -257,6 +257,8 @@ async def run_with_servers(request, studio, servers, *, model=None):
             return False
         if output_repair:
             return False
+        if executor.tts_argument_error(arguments.tool_name, arguments.arguments):
+            return False
         route = executor.media_selection(arguments.tool_name, arguments.arguments)
         executor.disclose_selection(route, call.tool_call["id"], arguments.tool_name, arguments.arguments)
         if executor.selection_blocker(arguments.tool_name, arguments.arguments, route):

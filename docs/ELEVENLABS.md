@@ -87,19 +87,41 @@ TTS approvals now estimate characters from the [official API price page](https:/
 read 2026-10-09. The v4 list rate is $0.08 per 1,000 characters. The Turbo multiplier is 0.5,
 so its list rate is $0.04. The promotion is $0.022 for v4 and $0.011 for Turbo through
 2026-10-12. The estimator returns to list price on 2026-10-13 and rounds provider cost up
-to integer cents before the existing platform fee. Unverified models and unrelated operations
+to integer cents before the existing platform fee. The priced TTS allowlist contains only
+`eleven_v4_turbo` and `eleven_v4`; this fix adds no models or rates. Unrelated operations
 keep an unknown estimate unless an operator quote exists.
 When Stripe billing is enabled, write operations require explicit per-tool integer-cent quotes
 in `ELEVENLABS_TOOL_COST_CENTS_JSON`; there is no invented blanket generation price. Read-only
 lookups do not debit the Renderhaus wallet. Quotes are operator-controlled fixed per-call prices,
 not invoice reconciliation; set them for the allowed workload before enabling customer billing.
+Missing Stripe quotes fail TTS dispatch before approval; the billing requirement remains in force.
+
+All four TTS Gateway tools expose the same priced choices. They require `voice_id` and `text`;
+`model_id` is optional. An explicit allowed ID takes precedence over `ELEVENLABS_TTS_MODEL`.
+When `model_id` is omitted, that setting defaults to `eleven_v4_turbo`. An unpriced or empty
+configured default fails clearly at estimate time. The resolver in `server/billing_rates.py`
+uses `ELEVENLABS_CHARACTER_MULTIPLIERS` as the allowlist for discovery, estimates and HTTP requests.
+An unpriced model fails before native approval, spending reservation, credentials or provider I/O,
+including when an operator quote exists. A stale schema produces a normal failed tool result
+with `Allowed model_ids: eleven_v4, eleven_v4_turbo` so the agent can correct the request.
+
+AgentCore's schema dialect cannot store JSON Schema `enum`, so the generated model description
+contains the allowed values. `providers/elevenlabs/catalog.py` overrides the upstream TTS model
+description and default before projecting the schema. Regenerating Gateway schemas retains the pin.
+The pinned upstream OpenAPI remains an intact vendor reference and is not agent-facing discovery.
+See [the decisions record](fix-tts-model-pin-decisions.tsv) for evidence and validation limits.
 
 `ELEVENLABS_DRY_RUN` defaults to `true` and alone controls whether the dispatcher sends HTTP
 requests. The operator's 2026-10-09 run confirmed `eleven_v4_turbo` supports HTTP TTS.
-The [HTTP reference](https://elevenlabs.io/docs/api-reference/text-to-speech/convert), read
-2026-10-09, accepts `model_id` and requires `can_do_text_to_speech` from the models endpoint.
+The [HTTP conversion](https://elevenlabs.io/docs/api-reference/text-to-speech/convert),
+[timestamps](https://elevenlabs.io/docs/api-reference/text-to-speech/convert-with-timestamps),
+[streaming](https://elevenlabs.io/docs/api-reference/text-to-speech/stream), and
+[streaming timestamps](https://elevenlabs.io/docs/api-reference/text-to-speech/stream-with-timestamps)
+references, read 2026-10-09, accept `model_id` and require `can_do_text_to_speech` from the models endpoint.
 The public model overview still emphasizes the websocket transport. No live request was made
 during this fix. Other HTTP speech variants remain subject to vendor model compatibility.
+Comet browser validation is blocked because Comet control is unavailable in this workspace.
+Offline scripted approval tests do not verify live speech generation or artifact playback.
 
 Without an output bucket, generated audio has an absolute `result.output_path` under
 `RENDERHAUS_MEDIA_DIR`. Pass that plain path as `audio_tracks[].output_path` to the local

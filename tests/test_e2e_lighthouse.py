@@ -17,6 +17,51 @@ from langchain_core.outputs import ChatGeneration, LLMResult
 
 
 class LighthouseSafetyTests(unittest.IsolatedAsyncioTestCase):
+    async def test_scripted_lighthouse_corrects_unpriced_tts_without_unknown_cost_approval(self):
+        from agent.studio_agent_next import run_studio_agent
+        from scripts.e2e_lighthouse import LighthouseOptions, run_lighthouse
+        from test_deep_agent import ScriptedModel, call
+        from test_deep_agent_execution import FINAL, TTS, TTS_ARGS, VIDEO, VIDEO_ARGS, dispatch
+
+        corrected = {key: value for key, value in TTS_ARGS.items() if key != "model_id"}
+
+        def correct_model(messages, tools):
+            self.assertIn("Allowed model_ids:", messages[-1].text)
+            result = json.loads(messages[-1].text)
+            self.assertEqual(result["status"], "failed")
+            self.assertIn("Allowed model_ids:", result["error"])
+            self.assertIn("eleven_v4_turbo", result["error"])
+            return dispatch(TTS, corrected, "good-tts")
+
+        model = ScriptedModel([
+            call("x_amz_bedrock_agentcore_search", {"query": f"{VIDEO.name} {TTS.name}", "limit": 2}, "search"),
+            dispatch(VIDEO, VIDEO_ARGS, "video"),
+            dispatch(TTS, {**TTS_ARGS, "model_id": "eleven_multilingual_v2"}, "bad-tts"),
+            correct_model, call("StudioAgentOutput", FINAL, "finish"),
+        ])
+
+        async def agent(request, **kwargs):
+            with patch("agent.deep_agent.runner.configured_deep_agent_model", return_value=model):
+                return await run_studio_agent(request, **kwargs)
+
+        with tempfile.TemporaryDirectory() as directory, patch.dict("os.environ", {
+            "RENDERHAUS_OUTCOME_DIR": directory, "STRIPE_SECRET_KEY": "",
+            "ELEVENLABS_TTS_MODEL": "eleven_v4_turbo", "ELEVENLABS_TOOL_COST_CENTS_JSON": "{}",
+        }), patch("scripts.local_gateway.dispatch", return_value={"status": "succeeded"}) as provider, \
+                patch("scripts.e2e_lighthouse.probe_artifact", return_value={}):
+            out = Path(directory) / "out"
+            summary = await run_lighthouse(LighthouseOptions(out=out, live=True), agent_run=agent)
+            rows = [json.loads(line) for line in (out / "agent_events.jsonl").read_text().splitlines()]
+        self.assertEqual(summary["status"], "completed", summary)
+        approvals = [row for row in rows if row["kind"] == "approval"]
+        self.assertCountEqual([row["tool"] for row in approvals], [VIDEO.name, TTS.name])
+        self.assertTrue(all(row["decision"] == "approve" for row in approvals))
+        self.assertFalse(any("unknown" in row.get("reason", "").lower() for row in approvals))
+        self.assertCountEqual([item.args for item in provider.call_args_list], [
+            ("fal", "generate_wan3_t2v", VIDEO_ARGS), ("elevenlabs", "text_to_speech_convert", corrected),
+        ])
+        self.assertFalse(model._steps)
+
     async def test_parallel_subagent_approvals_use_discovered_schemas_and_never_retry(self):
         from agent.studio_agent_next import run_studio_agent
         from scripts.e2e_lighthouse import LighthouseOptions, run_lighthouse

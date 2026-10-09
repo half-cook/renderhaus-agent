@@ -442,6 +442,9 @@ blocking video poll; assembly waits for both. The audio-bed and final-assembly i
 carry this rule. Customer dependencies, such as narration based on the generated video's
 transcript, remain sequential. Final assembly omits fps and bitrate unless the customer
 requests them, allowing the renderer to preserve measured source settings.
+TTS discovery offers only the priced `eleven_v4_turbo` and `eleven_v4` model IDs. Omitted
+`model_id` uses `ELEVENLABS_TTS_MODEL`, defaulting to `eleven_v4_turbo`. Invalid models or
+missing billing quotes return a failed tool result before approval. See [ElevenLabs](ELEVENLABS.md).
 The router excludes image generation and editing from their discovered tools and dispatches.
 MP4 export uses final-assembly; OTIO, FCPXML and EDL export uses resolve-handoff.
 Deliverable duration describes the shot/clip length, never audio placement such as starting at 1 s.

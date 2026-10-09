@@ -10,6 +10,12 @@ metadata:
 # Audio bed
 
 Narration defaults to `eleven_v4_turbo`, mapped to `ElevenLabs___text_to_speech_convert`.
+TTS accepts only priced `model_id` values `eleven_v4_turbo` and `eleven_v4` across conversion,
+timestamps and HTTP streaming. Prefer `eleven_v4_turbo`; omit `model_id` to use the configured
+`ELEVENLABS_TTS_MODEL` default, which is `eleven_v4_turbo` when unset. An unpriced model returns
+a failed tool result naming allowed IDs before approval or provider access. Correct the model
+from that list and discover the schema again if needed. An invalid configured default must
+be corrected by the operator; never change provider configuration yourself.
 The operator verified `eleven_v4_turbo` through the model listing and a successful TTS HTTP call
 on 2026-10-09. Official TTS documentation supports a configured `model_id` on the conversion
 endpoint. `ELEVENLABS_DRY_RUN` controls dry-run behavior. This evidence does not verify other

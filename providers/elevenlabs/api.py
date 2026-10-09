@@ -19,6 +19,7 @@ import httpx
 from jsonschema import Draft202012Validator, ValidationError
 
 from providers.elevenlabs.catalog import CATALOG, SPEC
+from server.billing_rates import elevenlabs_tts_model
 
 GATEWAY_TOOLS = tuple(CATALOG)
 GATEWAY_SCHEMAS = [item["tool"] for item in CATALOG.values()]
@@ -51,6 +52,8 @@ def _validate(value: Any, schema: dict, field: str) -> None:
 
 def prepare_request(tool_name: str, arguments: dict) -> tuple[str, dict, dict, Any]:
     entry = CATALOG[tool_name]
+    if tool_name.startswith("text_to_speech_"):
+        arguments = {**arguments, "model_id": elevenlabs_tts_model(arguments)}
     unknown = set(arguments) - set(entry["bindings"])
     if unknown:
         raise ValueError("Unsupported ElevenLabs arguments: " + ", ".join(sorted(unknown)))
@@ -186,7 +189,7 @@ def _response_payload(data: bytes, content_type: str, output_format: str) -> Any
 def dispatch_tool(tool_name: str, arguments: dict) -> dict:
     entry = CATALOG[tool_name]
     arguments = dict(arguments)
-    if tool_name.startswith(("text_to_speech_", "text_to_dialogue_")):
+    if tool_name.startswith("text_to_dialogue_"):
         arguments.setdefault("model_id", os.getenv("ELEVENLABS_TTS_MODEL", "eleven_v4_turbo"))
     path, params, headers, body = prepare_request(tool_name, arguments)
     if dry_run():

@@ -23,7 +23,8 @@ class ElevenLabsCostEstimateTests(unittest.TestCase):
                 clock.today.return_value = date(2026, 10, 13)
                 full = rates.cost_for('elevenlabs', 'text_to_speech_convert', {'text': 'a' * 10000, 'model_id': 'eleven_v4'})
                 self.assertEqual(full.provider_cents, 80)
-            self.assertIsNone(estimate_cost('ElevenLabs___text_to_speech_convert', {'text': 'Hi', 'model_id': 'unknown'}).total_cents)
+            with self.assertRaisesRegex(ValueError, 'Allowed model_ids:'):
+                estimate_cost('ElevenLabs___text_to_speech_convert', {'text': 'Hi', 'model_id': 'unknown'})
             self.assertIsNone(estimate_cost('ElevenLabs___music_compose', {'prompt': 'Piano'}).total_cents)
         with patch.dict(os.environ, {'STRIPE_SECRET_KEY': 'test-only', 'ELEVENLABS_TOOL_COST_CENTS_JSON': '{}'}, clear=True):
             self.assertIsNone(estimate_cost('ElevenLabs___text_to_speech_convert', {'text': 'Hi'}).total_cents)

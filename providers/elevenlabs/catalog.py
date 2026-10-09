@@ -12,6 +12,8 @@ import re
 from pathlib import Path
 from typing import Any
 
+from server.billing_rates import ELEVENLABS_CHARACTER_MULTIPLIERS
+
 SOURCE_URL = "https://api.elevenlabs.io/openapi.json"
 SPEC = json.loads(Path(__file__).with_name("openapi.json").read_text())
 
@@ -167,6 +169,11 @@ def build_catalog() -> dict[str, dict]:
             resolved_body = nonnull(body_schema)
             if resolved_body.get("type") == "object" and "properties" in resolved_body:
                 for field, raw in resolved_body["properties"].items():
+                    if name.startswith("text_to_speech_") and field == "model_id":
+                        raw = {**nonnull(raw), "enum": list(ELEVENLABS_CHARACTER_MULTIPLIERS),
+                               "default": "eleven_v4_turbo",
+                               "description": "Priced TTS model_id. Prefer eleven_v4_turbo. Omit model_id to use "
+                                              "ELEVENLABS_TTS_MODEL (default eleven_v4_turbo)."}
                     add(field, raw, "body", field in resolved_body.get("required", []))
             elif content:
                 add("body", body_schema, "whole_body", body.get("required", False))

@@ -892,7 +892,11 @@ def effective_model(provider: str, tool: str, arguments: dict) -> str | None:
         from providers.seedance.contracts import effective_model as seedance_model
 
         return seedance_model(tool, arguments)
-    if provider == "elevenlabs" and tool.startswith(("text_to_speech_", "text_to_dialogue_")):
+    if provider == "elevenlabs" and tool.startswith("text_to_speech_"):
+        from server.billing_rates import elevenlabs_tts_model
+
+        return elevenlabs_tts_model(arguments)
+    if provider == "elevenlabs" and tool.startswith("text_to_dialogue_"):
         return arguments.get("model_id") or os.getenv("ELEVENLABS_TTS_MODEL", "eleven_v4_turbo")
     if tool in policy.get("fixed_models", {}):
         return policy["fixed_models"][tool]
@@ -1031,10 +1035,12 @@ def estimate_cost(name: str, arguments: dict, *, list_price: bool = False) -> Co
 
     if is_free_tool(name):
         return CostEstimate(0)
+    provider, tool = tool_parts(name)
+    if provider == "elevenlabs" and tool.startswith("text_to_speech_"):
+        effective_model(provider, tool, arguments)
     blocker = policy_blocker(name, arguments)
     if blocker:
         return CostEstimate(None, blocker)
-    provider, tool = tool_parts(name)
     model = effective_model(provider, tool, arguments)
     if provider == "gemini":
         try:
