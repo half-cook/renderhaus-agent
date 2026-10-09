@@ -101,9 +101,8 @@ calls, deployment, push or PR are authorized. Comet browser E2E is blocked
 because no controllable Comet session exists in this environment. Offline
 checks do not establish Studio delivery through the browser.
 
-All 15 providers, 113 Gateway tools, 24 skills and 137 routing fixtures remain
-unchanged. There are 133 active routing fixtures and four skips. One awaits
-HyperFrames overlays; three await `cutaway_record` product-demo capture.
+The parser change required no provider, tool, skill or fixture additions.
+Current inventory and routing totals are in [Skill routing](SKILLS.md#offline-routing-verification).
 No pricing, model licence, consent requirement or `training_eligible` decision
 changes in this branch.
 

@@ -100,10 +100,8 @@ and `FAL_DRY_RUN` default true. Runway uses `RUNWAYML_API_SECRET`; Motion Contro
 Chunk preprocessing reuses `REMOTION_LOCAL_MEDIA_HOSTS`; provider deployment
 configuration and `sync_secrets` retain these keys without printing values.
 
-Seven routing rows are activated, giving 113 active of 129 retained rows, with 16 skipped.
-The remaining rows depend on image specialists, Mirelo, cutaway capture, Gemini QC evaluation,
-NLE import, HyperFrames overlays, or commercially blocked/unverified extension behavior. Exact reasons stay
-in `tests/fixtures/skill_routing.json`. Provider/tool/skill inventory is 14/107/24.
+Seven performance-transfer routing rows are active. Current inventory and routing totals are in [Skill routing](SKILLS.md#offline-routing-verification).
+Exact remaining skip reasons stay in `tests/fixtures/skill_routing.json`.
 
 Offline tests cover requests, consent failures, default/exception/explicit routing, native
 Deep Agents approve/reject resume, no hidden poll submissions, real local segment trimming

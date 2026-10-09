@@ -122,6 +122,5 @@ Trim only empty dark gaps without on-screen text. If requested, choose a cover
 and write publishing copy from finished frames. Keep the cover outside the timeline.
 
 The MIT-licensed [vibe knowledge video skill](https://github.com/LuZhong-Li/vibe-knowledge-video-skill)
-and Apache-2.0 [explainery-core](https://github.com/mbackschat/explainery-core) are
-pattern references only. No upstream text, code, runtime, dependencies, or
+is a pattern reference only. No upstream text, code, runtime, dependencies, or
 weights are included. Renderer and SFX terms remain those of the existing tools.

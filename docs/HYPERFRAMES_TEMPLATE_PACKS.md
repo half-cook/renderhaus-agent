@@ -98,10 +98,9 @@ An actual wheel contains the five nested resources and both complete MIT notices
 each identical to the checkout bytes.
 
 The fixture adds five active routing rows, including capability-map seed row 149.
-It now has 129 active rows of 134. The five existing skips remain: one HyperFrames
-overlay flow needs footage compositing, three Cutaway flows need browser capture,
-and clip extension needs verified appended-versus-combined length semantics.
-Wan extension also retains its preview-licence block. No skipped row is activated
+Current inventory and routing totals are in [Skill routing](SKILLS.md#offline-routing-verification).
+HyperFrames footage compositing and Cutaway capture remain pending. Ambiguous extension
+length semantics and named Wan's preview licence retain their existing blocks. No skipped row is activated
 by these template packs. The existing unnamed HTML-template row now uses Remotion.
 
 These checks establish static structure and input-preview behavior. They do not

@@ -120,11 +120,9 @@ recognized lyrics. The skill names this blocker instead of inventing an endpoint
 TTS still uses ElevenLabs when requested. Existing-ID supplied-song and generated
 Mureka-song workflows are wired; external account access and live output remain untested.
 
-Three previously skipped lyrics-video routing rows are activated. The fixture now
-has 106 active rows and 23 dependency skips. Other providers' skipped rows retain
-their existing reasons; the source map/workbooks were not copied into the repo.
-The existing audio-bed and lyrics-video skills were extended, so the packaged
-inventory is 14 providers, 105 Gateway tools and 24 skills.
+Three previously skipped lyrics-video routing rows are active. The source map/workbooks
+were not copied into the repo. The existing audio-bed and lyrics-video skills were extended.
+Current inventory and routing totals are in [Skill routing](SKILLS.md#offline-routing-verification).
 
 Browser E2E is **blocked**: Comet is unavailable in this environment, as specified by
 the user. Real Studio approval, live song playback and lyric-video timing/playback
@@ -147,20 +145,7 @@ Row 116 keeps song preparation then adds video. Row 65 keeps ElevenLabs narratio
 first, then adds the video step; the raw-file upload preparation remains incomplete.
 Routing readiness proves tool selection, not a real artifact or completed raw-upload flow.
 
-The other 23 routing rows retain these dependency reasons:
-
-| Rows | Skip reason |
-| --- | --- |
-| 3 | provider pending: mirelo_v2a (feat/sfx-mirelo) |
-| 1 | provider pending: nle import (feat/nle-import-fcpxml) |
-| 5 | provider pending: runway_act_two (feat/perf-transfer) |
-| 4 | provider pending: recraft_v41_vector (feat/image-specialists) |
-| 1 | provider pending: HyperFrames overlays (feat/hyperframes-overlays) |
-| 3 | provider pending: cutaway_record (feat/product-demo-capture) |
-| 1 | semantics unverified: Seedance appended-versus-combined extension length (feat/seedance-2-5); Wan extend remains preview-licence blocked |
-| 2 | provider pending: ideogram45_edit (feat/image-specialists) |
-| 2 | provider pending: kling_motion_control (feat/perf-transfer) |
-| 1 | provider pending: gemini_vlm_judge (feat/continuity-qc-vlm-judge) |
+Current skip reasons are listed in [the capability map](CAPABILITY_MAP.md#skills-and-routing-fixtures).
 
 ## Offline validation
 
@@ -168,8 +153,8 @@ The final full suite ran 1205 tests with 25 skips (1180 passed), including 59 ne
 Mureka provider/integration checks. The routing fixture accounts for 23 of the
 skips. Ruff, `scripts/ci_check.py`, Studio TypeScript checking and the 13-case
 `studio/scripts/verify-mureka.cjs` readiness check passed. The temporary Studio
-node_modules symlink was removed. CI inventory is 14 providers, 105 tools,
-24 skills, 106 active routing rows. No live API, push, PR or deployment occurred.
+node_modules symlink was removed. No live API, push, PR or deployment occurred.
+Current inventory and routing totals are in [Skill routing](SKILLS.md#offline-routing-verification).
 
 For verification set `RENDERHAUS_SECRETS_NAME=""` and all provider dry-run flags
 to true, including the new `MUREKA_DRY_RUN`. New configuration is

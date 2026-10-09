@@ -292,5 +292,5 @@ cannot claim those checks until the real operations run and the actual artifacts
 
 The routing fixture preserves RT-E001..RT-E079. Thirty-eight rows are active and forty-one
 are deferred to named branches or unverified candidate semantics. Including the earlier
-fixture, there are 218 rows, 173 active and 45 skipped. Current inventory is 16 providers,
-115 Gateway tools and 25 packaged skills. No secrets are added.
+fixture, there are 220 rows, 175 active and 45 skipped. Current inventory is 16 providers,
+115 Gateway tools and 26 packaged skills. No secrets are added.

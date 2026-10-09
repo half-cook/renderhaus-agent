@@ -46,7 +46,7 @@ Reuse `FAL_KEY` through env/Secrets Manager and `FAL_DRY_RUN`, default `true`. `
 
 ## Validation and quality follow-up
 
-Mocked HTTP tests cover schema boundaries, exact queue bodies, polling/error states, primary artifact saving, unknown multi-sample cost, routing, Studio asset context and native Deep Agents approval/resume/rejection. They use installed deepagents 0.7.23 and no provider keys or network calls. The three Mirelo fixture rows are active; 116 total routing cases are active and 13 retain their dependency or unverified-semantics skips. Inventory is 14 providers, 108 Gateway tools and 24 skills.
+Mocked HTTP tests cover schema boundaries, exact queue bodies, polling/error states, primary artifact saving, unknown multi-sample cost, routing, Studio asset context and native Deep Agents approval/resume/rejection. They use installed deepagents 0.7.23 and no provider keys or network calls. The three Mirelo fixture rows are active; 175 total routing cases are active and 45 retain their dependency or unverified-semantics skips. Inventory is 16 providers, 115 Gateway tools and 26 skills. The silent graphic workflow is documented in [Knowledge explainers](KNOWLEDGE_EXPLAINER.md).
 
 Comet browser E2E is **blocked** because no controllable Comet browser is available here. The task also prohibits live provider calls. Generated playback and real synchronization quality remain untested. The ignored `.renderhaus/e2e/` report records the blocker through `scripts/browser_e2e_hook.py`; offline tests are not browser evidence.
 

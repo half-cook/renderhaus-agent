@@ -655,8 +655,9 @@
     "expected_tool": "eleven_v4_turbo",
     "suite": "whiteboard-explainer",
     "skip_reason": "",
-    "note": "VO step",
-    "source_status": "updated"
+    "note": "VO step; narrated workflow belongs to whiteboard-explainer",
+    "source_status": "updated",
+    "expected_routed_skill": "whiteboard-explainer"
   },
   {
     "prompt": "a robot character says \"welcome to the future\" to camera",
@@ -4005,5 +4006,27 @@
       "FFMPEG_DRY_RUN": "true"
     },
     "note": "Router checks skill/tool proposal only. Table, sandbox, artifact and approval semantics have dedicated provider/executor tests."
+  },
+  {
+    "prompt": "make a no-narration Vibe-style knowledge short about the control illusion",
+    "expected_skill": "knowledge-explainer",
+    "expected_tool": "remotion_render",
+    "suite": "knowledge-explainer",
+    "note": "silent graphic explainer (added 23:50 ET)",
+    "skip_reason": "",
+    "source_status": "new"
+  },
+  {
+    "prompt": "HyperFrames silent science explainer with event foley only",
+    "expected_skill": "knowledge-explainer",
+    "expected_tool": "hyperframes_render",
+    "suite": "knowledge-explainer",
+    "note": "explicit HyperFrames exception",
+    "skip_reason": "",
+    "source_status": "new",
+    "env": {
+      "HYPERFRAMES_ENABLED": "true",
+      "HYPERFRAMES_DRY_RUN": "true"
+    }
   }
 ]
