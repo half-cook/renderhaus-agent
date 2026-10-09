@@ -24,6 +24,9 @@ DEFAULT_SECRET_NAME = "renderhaus/app"
 
 # Non-secret runtime bootstrap only. Application secrets come from Secrets Manager.
 RUNTIME_BOOTSTRAP_KEYS = [
+    "RENDERHAUS_AGENT_BACKEND",
+    "RENDERHAUS_AGENT_MODEL",
+    "RENDERHAUS_AGENT_EFFORT",
     "AGENT_MODEL",
     "CODEX_RUN_TIMEOUT_SECONDS",
     "BYTEPLUS_BASE_URL",
@@ -370,9 +373,11 @@ def main() -> int:
             file=sys.stderr,
         )
         return 1
-    if not os.getenv("OPENAI_API_KEY"):
+    from agent.backend_config import agent_configured
+
+    if not agent_configured():
         print(
-            "OPENAI_API_KEY must be present in Secrets Manager before deploy.",
+            "The selected agent model provider must be configured in Secrets Manager before deploy.",
             file=sys.stderr,
         )
         return 1

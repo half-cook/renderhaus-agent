@@ -9,17 +9,68 @@ request, job, approval, progress, asset, and conversation contracts remain in pl
 | Variable | Behavior |
 | --- | --- |
 | `RENDERHAUS_AGENT_BACKEND` | `deepagents` by default; `codex` selects the retained app-server backend. Other values fail explicitly. |
-| `RENDERHAUS_AGENT_MODEL` | LangChain `provider:model`, such as `openai:gpt-5.6-luna`, `anthropic:claude-sonnet-4-6`, or `bedrock_converse:<model-id>`. |
-| `AGENT_MODEL` | Fallback when the new model variable is absent. Unqualified names and `openai/` names select OpenAI. Codex still uses this variable. |
+| `RENDERHAUS_AGENT_MODEL` | LangChain `provider:model`, default `anthropic:claude-opus-5-5`. Supported prefixes are `anthropic`, `openai`, `bedrock`, and `bedrock_converse`. Unknown prefixes and empty model IDs fail explicitly. |
+| `RENDERHAUS_AGENT_EFFORT` | Anthropic effort, default `high`. Accepts `low`, `medium`, `high`, `xhigh`, or `max`; maps to `output_config.effort`. Ignored for OpenAI, Bedrock, Codex, and injected test models. |
+| `AGENT_MODEL` | Explicit legacy fallback when the new model variable is absent or blank. Unqualified names and `openai/` names select OpenAI. Codex still uses this variable and defaults to `gpt-5.6-luna`. |
 | `RENDERHAUS_AGENT_TIMEOUT_SECONDS` | Graph execution deadline, default 1800 seconds. |
 | `STUDIO_MEDIA_WAIT_SECONDS` | Host polling deadline per provider job, default 600 seconds. |
 | Provider `*_DRY_RUN` variables | Keep their existing provider behavior. The agent cannot change configuration. Dry runs never satisfy video delivery. |
 
-The default model remains `openai:gpt-5.6-luna`. OpenAI uses `OPENAI_API_KEY`; Anthropic uses
-`ANTHROPIC_API_KEY`. Bedrock uses the deployment's IAM credential chain and configured AWS
-region. No keys appear in source or prompts. Studio readiness checks the selected provider;
-Bedrock readiness does not probe AWS and is not proof that credentials or model access work.
-The backend and model configuration must agree between the Studio server and AgentCore worker.
+The planning default is Claude Opus 5.5 at high effort. Set
+`RENDERHAUS_AGENT_MODEL=openai:gpt-5.6-luna` to select the previous default. Selection reads the
+first nonblank value of `RENDERHAUS_AGENT_MODEL`, then `AGENT_MODEL`, then the Opus default.
+Studio no longer injects a legacy `AGENT_MODEL` value that would mask this default.
+
+Anthropic uses `ANTHROPIC_API_KEY`; OpenAI uses `OPENAI_API_KEY`. A missing selected-provider
+key prevents model construction with an error naming the required environment variable.
+Importing configuration and injecting a fake chat model require no keys. Provider media
+dry-run flags do not make a real planning-model invocation free or offline. Bedrock uses the
+deployment's IAM credential chain and configured AWS region. Studio readiness checks the
+selected provider; Bedrock readiness does not probe AWS or prove model access. The Studio
+server and AgentCore worker must use matching backend, model, and effort configuration.
+
+### Verified model contract and pricing
+
+Anthropic's [Opus 5.5 overview](https://platform.claude.com/docs/en/models/opus-5-5/overview)
+and [models overview](https://platform.claude.com/docs/en/models/overview) list
+`claude-opus-5-5`. The [effort reference](https://platform.claude.com/docs/en/build-with-claude/effort)
+documents `output_config.effort` and all five supported levels. These sources were read
+2026-10-08. The requested high setting overrides Anthropic's medium default for this model.
+
+Base API pricing is **$4 per million input tokens and $20 per million output tokens**, from
+Anthropic's [official pricing page](https://platform.claude.com/docs/en/about-claude/pricing),
+read 2026-10-08. Thinking counts toward output usage. Cache writes, cache reads, batch,
+and fast mode have separate rates; this configuration does not select fast mode or batch.
+No creative Gateway billing rate is added for the planning model.
+
+The capability-map choice uses the Arena Agent board as supporting evidence. That board
+measures coding and tool sessions, so its ranking does not establish creative-planning quality.
+The offline regression suite verifies the integration with fakes, not Opus judgment or latency.
+
+Claude is a proprietary commercial API under the
+[Anthropic Commercial Terms](https://www.anthropic.com/legal/commercial-terms), read 2026-10-08.
+The terms assign output rights to the customer and restrict training competing models.
+Renderhaus treats planning output as `training_eligible=false`; it does not enter media
+continuity training. No model weights, AGPL code, or non-commercial code are added.
+
+### AgentCore and Lambda configuration
+
+Store `ANTHROPIC_API_KEY` in the existing `renderhaus/app` Secrets Manager JSON secret, or
+provide it through the local process environment. `scripts/sync_secrets.py` accepts this key
+and the non-secret model and effort settings through its existing generic payload filter.
+The runtime's execution role already reads that application secret. No key belongs in
+Docker build arguments, a workflow default, tool schemas, prompts, or logs.
+
+AgentCore bootstrap configuration forwards `RENDERHAUS_AGENT_BACKEND`,
+`RENDERHAUS_AGENT_MODEL`, and `RENDERHAUS_AGENT_EFFORT` when supplied. The deployment preflight
+checks the selected provider instead of requiring an OpenAI key for every model. Its code is
+validated offline; no deployment is performed by this change. Existing Secrets Manager values
+override bootstrap settings, so a stored `AGENT_MODEL` continues to select the legacy model
+until an explicit `RENDERHAUS_AGENT_MODEL` overrides it or that legacy value is removed.
+
+Provider Gateway Lambdas do not run the planning model and need no new model setting or
+Anthropic credential for this feature. Their schemas, dry-run flags, tool counts, and approvals
+remain governed by the existing creative-provider configuration.
 
 ## Reasoning and tool execution
 
@@ -29,6 +80,18 @@ the backend. An explicitly injected Codex harness selects Codex for existing cal
 `agent/deep_agent/runner.py` compiles `create_deep_agent` with the configured model, native
 skills, role-specific subagents, memory, virtual files, checkpointer, and HITL middleware.
 `ToolStrategy(StudioAgentOutput)` enforces the existing downloadable Markdown result schema.
+
+The configured Anthropic model is constructed lazily with LangChain `init_chat_model` before
+Gateway discovery. It receives `thinking={"type": "adaptive"}` and `output_config.effort`.
+Other provider strings retain Deep Agents' native initialization, including OpenAI Responses
+API defaults. `langchain-anthropic==1.7.5` is already a pinned project dependency.
+
+Opus 5.5 rejects forced tool choice, as documented in the
+[migration guide](https://platform.claude.com/docs/en/models/opus-5-5/migration-guide), read
+2026-10-08. The installed Anthropic adapter drops `ToolStrategy`'s forced choice when adaptive
+thinking is configured. The graph still validates `StudioAgentOutput`; a schema tool call is
+model-selected rather than forced. Between-tool notes can arrive as thinking blocks and are
+not displayed as customer text. Explicit `report_progress` calls remain the update path.
 
 `GatewayExecutor` is shared by both backends. It validates the discovered MCP schema, reuses
 completed call IDs, refuses replacement renders while a saved render is active, restores exact
@@ -103,6 +166,9 @@ only packages existing project media, so it is exempt from approval (`APPROVAL_E
 `agent/gateway_executor.py`); every paid tool still follows the native approval policy. The overridden
 `general-purpose` subagent also has no provider dispatch. All roles share project files and
 read-only Studio context. They inherit native approval policy and have no shell tool.
+All five roles inherit the manager's selected model and effort. There are no per-role model
+environment variables in this clone. Deep Agents' native role `model` field remains available
+to declarative subagents; this change adds no override or cheaper role-model selection.
 The pure `Remotion___prepare_conversational_edit` requires cut-plan approval even when
 autonomous. Its estimate is zero and its preview preserves asset handles. The editor receives
 word timestamps from the manager/audio role, which alone can dispatch paid transcription.

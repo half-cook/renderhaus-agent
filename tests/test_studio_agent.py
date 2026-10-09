@@ -731,7 +731,8 @@ class StudioAgentTests(unittest.IsolatedAsyncioTestCase):
             )
             test_repository.create_project("user:local", "local", "Untitled", project_id="untitled")
             with (
-                patch.dict(os.environ, {"OPENAI_API_KEY": "test-only"}),
+                patch.dict(os.environ, {"OPENAI_API_KEY": "test-only",
+                                        "RENDERHAUS_AGENT_MODEL": "openai:gpt-5.6-luna"}),
                 patch("server.studio.repository", test_repository),
                 patch("server.studio.run_studio_agent", new=AsyncMock(return_value=outcome)),
             ):
@@ -806,7 +807,8 @@ class StudioAgentTests(unittest.IsolatedAsyncioTestCase):
             )
             test_repository.create_project("user:local", "local", "Untitled", project_id="untitled")
             with (
-                patch.dict(os.environ, {"OPENAI_API_KEY": "test-only"}),
+                patch.dict(os.environ, {"OPENAI_API_KEY": "test-only",
+                                        "RENDERHAUS_AGENT_MODEL": "openai:gpt-5.6-luna"}),
                 patch("server.studio.repository", test_repository),
                 patch("server.studio.run_studio_agent", new=runner),
             ):
