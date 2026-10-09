@@ -60,3 +60,16 @@ jobs:
           KLING_DRY_RUN: "true"
           FAL_DRY_RUN: "true"
           OPENAI_IMAGES_DRY_RUN: "true"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: studio/package-lock.json
+
+      - name: Studio upload contracts and typecheck
+        working-directory: studio
+        run: |
+          npm ci
+          node --test tests/*.test.cjs
+          ./node_modules/.bin/tsc --noEmit -p .

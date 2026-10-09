@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { proxyUploadLimitBytes } from "./lib/upload-limits";
 
 const studioApiOrigin = (process.env.STUDIO_API_ORIGIN || "http://127.0.0.1:8000").replace(
   /\/$/,
@@ -6,6 +7,9 @@ const studioApiOrigin = (process.env.STUDIO_API_ORIGIN || "http://127.0.0.1:8000
 );
 
 const nextConfig: NextConfig = {
+  experimental: {
+    middlewareClientMaxBodySize: proxyUploadLimitBytes(process.env),
+  },
   async rewrites() {
     return [
       {

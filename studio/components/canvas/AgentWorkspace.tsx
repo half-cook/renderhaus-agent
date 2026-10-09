@@ -58,11 +58,11 @@ export function AgentWorkspace({ busy, onBusyChange }: { busy: boolean; onBusyCh
     return () => { cancelled = true; };
   }, [open, projects.length, projectId]);
 
-  const navigate = async (action: () => Promise<void>) => {
+  const navigate = async (action: () => Promise<void | boolean>) => {
     if (busy) return;
     onBusyChange(true);
     setError(null);
-    try { await action(); setSection(null); if (window.innerWidth <= 800) setSidebarOpen(false); }
+    try { if (await action() === false) return; setSection(null); if (window.innerWidth <= 800) setSidebarOpen(false); }
     catch (cause) { setError(cause instanceof Error ? cause.message : "Could not complete the action."); }
     finally { onBusyChange(false); }
   };

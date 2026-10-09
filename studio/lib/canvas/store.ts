@@ -91,6 +91,8 @@ type CanvasStore = {
   conversations: StudioConversation[];
   conversationId: string | null;
   loadError: string | null;
+  uploadError: string | null;
+  dismissUploadError: () => void;
   hydrated: boolean;
   past: Snapshot[];
   future: Snapshot[];
@@ -132,7 +134,7 @@ type CanvasStore = {
     prompt?: string;
     toolEvent?: AgentToolEvent;
   }) => string;
-  addUploadNode: (file: File, position: { x: number; y: number }) => Promise<void>;
+  addUploadNode: (file: File, position: { x: number; y: number }) => Promise<boolean>;
   updateNodeData: (id: string, patch: Partial<CanvasNode["data"]>) => void;
   updateNodeConfig: (id: string, name: string, value: unknown) => void;
   duplicateSelected: () => void;
@@ -403,6 +405,8 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
   conversations: [],
   conversationId: null,
   loadError: null,
+  uploadError: null,
+  dismissUploadError: () => set({ uploadError: null }),
   hydrated: false,
   past: [],
   future: [],
@@ -636,6 +640,7 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
         past: [],
         future: [],
         loadError: null,
+        uploadError: null,
       });
       await get().refreshConversations();
       if (migratedAgentPresentation) {
@@ -665,6 +670,7 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
         past: [],
         future: [],
         loadError: null,
+        uploadError: null,
       });
       await get().refreshConversations();
     } catch (error) {
@@ -866,15 +872,21 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
   },
 
   addUploadNode: async (file, position) => {
-    const uploaded = await uploadStudioFile(file, get().projectId);
-    const kind = uploaded.kind;
-    get().addCreativeNode({
-      kind,
-      position,
-      title: uploaded.filename.replace(/\.[^.]+$/, ""),
-      output: uploaded,
-      config: {},
-    });
+    set({ uploadError: null });
+    try {
+      const uploaded = await uploadStudioFile(file, get().projectId);
+      get().addCreativeNode({
+        kind: uploaded.kind,
+        position,
+        title: uploaded.filename.replace(/\.[^.]+$/, ""),
+        output: uploaded,
+        config: {},
+      });
+      return true;
+    } catch (error) {
+      set({ uploadError: error instanceof Error ? error.message : "Upload failed. Please try again." });
+      return false;
+    }
   },
 
   updateNodeData: (id, patch) => {

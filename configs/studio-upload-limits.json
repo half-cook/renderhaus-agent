@@ -1,0 +1,8 @@
+{
+  "max_upload_mb_by_kind": {
+    "image": 15,
+    "video": 100,
+    "audio": 50
+  },
+  "multipart_overhead_mb": 1
+}
