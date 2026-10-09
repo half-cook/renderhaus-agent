@@ -442,6 +442,9 @@ blocking video poll; assembly waits for both. The audio-bed and final-assembly i
 carry this rule. Customer dependencies, such as narration based on the generated video's
 transcript, remain sequential. Final assembly omits fps and bitrate unless the customer
 requests them, allowing the renderer to preserve measured source settings.
+Without ffprobe, source measurement uses the [stdlib MP4/MOV parser](DROP_PYAV.md).
+WebM/MKV requires ffprobe or measured `source_fps`; fragmented MP4 is unsupported
+by that fallback.
 The router excludes image generation and editing from their discovered tools and dispatches.
 MP4 export uses final-assembly; OTIO, FCPXML and EDL export uses resolve-handoff.
 Deliverable duration describes the shot/clip length, never audio placement such as starting at 1 s.

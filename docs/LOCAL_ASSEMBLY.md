@@ -13,7 +13,11 @@ Lambda can upload the same local sources using its existing S3 preparation.
 Omit `fps` unless the customer requests a timeline frame rate. The primary video
 supplies its measured frame rate, including fractional rates such as 30000/1001;
 image-only timelines default to 30 fps. Sources are inspected with ffprobe when
-available and pinned PyAV 14.2.0 otherwise, including Python Gateway Lambda.
+available and the stdlib-only ISO-BMFF parser otherwise, including Python Gateway
+Lambda. The fallback supports unfragmented MP4/MOV, including video and audio
+tracks. WebM/MKV requires ffprobe or caller-supplied measured `source_fps`;
+measured `source_bitrate` is optional. Fragmented MP4 is unsupported by the
+fallback. [DROP_PYAV.md](DROP_PYAV.md) records the parser limits.
 Trusted HTTPS video is measured automatically before submitting a render:
 `fal.media` and its subdomains, configured S3 bucket hosts, and existing
 `REMOTION_LOCAL_MEDIA_HOSTS` overrides. Downloads reject redirects/private DNS,
@@ -23,7 +27,7 @@ download. Unavailable source metadata blocks submission rather than guessing fps
 
 `video_bitrate` is an optional positive integer target in bits per second. Both
 backends use at least 1.25 times the highest measured source-video bitrate to
-allow for assembly overhead. Containers such as Matroska may omit stream
+allow for assembly overhead. With ffprobe, containers such as Matroska may omit stream
 bitrate; the measured container bitrate supplies a conservative fallback.
 Without a measured bitrate or explicit target,
 they use CRF18. Lambda receives the same frame rate and quality settings, with
@@ -90,20 +94,18 @@ operator's live lighthouse rerun are still required. Comet is unavailable in
 this workspace, so browser validation remains blocked.
 
 No new model, training policy, secret or paid endpoint is introduced.
-Local rendering uses a system ffmpeg binary. Metadata probing additionally uses
-PyAV 14.2.0 under BSD-3-Clause; its selected wheels bundle FFmpeg reporting
-GPL-3.0-or-later, with no AGPL or non-commercial dependency added. The wheel's
-BSD notice is retained by pip packaging. The bundled FFmpeg's licence and source
-obligations also apply to redistribution.
+Local rendering uses a system ffmpeg binary. Metadata probing uses ffprobe or
+original Renderhaus code using the Python standard library. The Gateway Lambda
+package contains no PyAV package or bundled FFmpeg libraries.
 Renderhaus's existing Remotion licence obligations remain.
 
-The pinned CPython 3.11 arm64 wheel targets manylinux2014/GLIBC 2.17, compatible
-with Lambda's Python 3.11 Amazon Linux 2 runtime. The measured Gateway package
-is about 62.75 MB zipped and 155.15 MB expanded. Both deployment entrypoints use
-a content-hashed S3 ZIP when the package exceeds Lambda's 50 MiB direct-upload
+Both deployment entrypoints use a content-hashed S3 ZIP when the package exceeds
+Lambda's 50 MiB direct-upload
 limit, and check that the existing `AWS_S3_BUCKET` or `REMOTION_APP_BUCKET_NAME`
-is in the function's region. CI verifies the arm64 module and 250 MiB expanded
-limit. No deployment was performed here.
+is in the function's region. CI checks the remaining arm64 modules, a 50 MiB
+compressed limit, the 250 MiB expanded limit and the absence of PyAV and
+FFmpeg shared libraries. [DROP_PYAV.md](DROP_PYAV.md) records package measurements.
+No deployment was performed here.
 
 Official references read 2026-10-09: [FFmpeg filters](https://ffmpeg.org/ffmpeg-filters.html),
 [FFmpeg encoding options](https://ffmpeg.org/ffmpeg-codecs.html),
@@ -111,10 +113,6 @@ Official references read 2026-10-09: [FFmpeg filters](https://ffmpeg.org/ffmpeg-
 [FFmpeg licence](https://ffmpeg.org/legal.html), and
 [Remotion licence](https://www.remotion.dev/docs/license).
 Additional sources read 2026-10-09:
-[PyAV 14.2 release](https://pypi.org/project/av/14.2.0/),
-[PyAV container API](https://pyav.basswood.io/docs/14.2/api/container.html),
-[PyAV licence](https://github.com/PyAV-Org/PyAV/blob/v14.2.0/LICENSE.txt),
-[bundled FFmpeg build](https://github.com/PyAV-Org/PyAV/blob/v14.2.0/scripts/build-deps),
 [Lambda limits](https://docs.aws.amazon.com/lambda/latest/dg/gettingstarted-limits.html),
 [S3 function-code contract](https://docs.aws.amazon.com/lambda/latest/api/API_UpdateFunctionCode.html),
 and [Lambda Python runtimes](https://docs.aws.amazon.com/lambda/latest/dg/python-image.html).
