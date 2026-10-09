@@ -1471,7 +1471,7 @@
       "capability": "i2v"
     },
     {
-      "pattern": "video|\\bt2v\\b|generate.*clip|cinematic|drone shot|seedance|kling|runway|luma|ray.?3|veo|\\bdialogue\\b|\\bsays?\\b|\\btalking\\b|prompt adherence|make it with|generate.*shot",
+      "pattern": "video|\\bt2v\\b|(?:make|create|generate).*clip|cinematic|drone shot|seedance|kling|runway|luma|ray.?3|veo|\\bdialogue\\b|\\bsays?\\b|\\btalking\\b|prompt adherence|make it with|(?:make|create|generate).*shot",
       "skill": "t2v",
       "abstract_tool": "wan3_t2v",
       "capability": "t2v"

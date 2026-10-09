@@ -29,6 +29,9 @@ class DeliverableDurationTests(unittest.TestCase):
 
 class VideoVoiceoverTests(unittest.TestCase):
     def test_shot_voiceover_routes_ordered_steps_and_blocks_image_tools(self):
+        for plain in ['Make a 5-second shot', 'Make a 5s clip']:
+            with self.subTest(plain=plain):
+                self.assertEqual(routing.route_intent(plain).alias, 'wan3_t2v')
         prompt = 'Make a 5-second cinematic shot with a voiceover: "Keep the light."'
         route = routing.route_intent(prompt)
         self.assertEqual(route.alias, 'wan3_t2v')
