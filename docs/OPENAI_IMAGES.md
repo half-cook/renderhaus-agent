@@ -50,19 +50,20 @@ Mask guidance is not a promise of pixel-exact preservation.
 | `OPENAI_IMAGES_TOOL_COST_CENTS_JSON` | unset | Optional operator quote per output image, keyed by `generate_image` or `edit_image` |
 
 The provider catalogue includes these variables for the existing `scripts/sync_secrets.py` path.
-No separate image key is needed. Unknown quotes block billed/manual live calls until an operator
-supplies one. Operator quotes are not official per-image prices and do not replace the agent's
-unknown-cost disclosure. Actual token usage is reported; wallet reconciliation to actual usage
+No separate image key is needed. Operator quotes are not official per-image prices; without one the $0.20 estimate below applies. Actual token usage is reported; wallet reconciliation to actual usage
 remains TODO. API access and organization verification have not been tested.
 
 ## Pricing and approval
 
 Official standard token rates, read **2026-10-09**, are $5/M text input, $8/M image input,
 and $30/M image output. Complete observed usage is rated without Responses cached discounts.
-Dry-run costs zero. A verified per-size/quality output-token matrix and complete input-token
-estimate were not established. Pre-call estimates remain **unknown / UNVERIFIED**, including 2K;
-legacy model token counts are not borrowed. TODO: verify full-request estimation or implement
-usage reconciliation before relying on automated wallet quotes.
+Dry-run costs zero. OpenAI publishes only token rates and a calculator widget (pricing page and
+image-generation guide, read **2026-10-09**), not a flat per-image price, so the approval card uses a
+per-image **estimate of $0.20** (the product-directed list price; not a verified tariff) plus the 30 %
+platform fee, i.e. **$0.26 per image** (`n` images multiply it). An operator quote in
+`OPENAI_IMAGES_TOOL_COST_CENTS_JSON` replaces the $0.20 for its tool. Actual token usage is still
+reported and rated at the token rates above; higher quality (`xhigh`/`max`) or large sizes can cost
+more than the estimate. TODO: reconcile the wallet to observed usage.
 
 Paid image calls pause unless autonomous. Existing exempt tools and the autonomous spend cap
 are unchanged. Every paid video step still pauses, including autonomous runs. An unknown price

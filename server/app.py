@@ -503,7 +503,7 @@ async def config() -> dict[str, Any]:
         "langfuse_ready": False,
         "clerk_enabled": clerk_enabled(),
         "clerk_publishable_key": publishable_key(),
-        "video_model": os.getenv("SEEDANCE_MODEL", "seedance-1-5-pro-251215"),
+        "video_model": os.getenv("SEEDANCE_MODEL", "dreamina-seedance-2-5-260628"),
         "image_model": os.getenv("SEEDREAM_MODEL", "seedream-5-0-lite-260128"),
         "music_model": "music_v2_5",
         "max_upload_mb": limits["image"],

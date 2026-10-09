@@ -232,7 +232,8 @@ class DeepAgentTests(unittest.IsolatedAsyncioTestCase):
                     await run_with_servers(request, studio, [gateway], model=ScriptedModel([read_skill(), media]))
                 approval = paused.exception.approvals[0]
                 self.assertEqual(approval.tool_name, tool.name)
-                self.assertIn("unknown", approval.description.lower())
+                self.assertIn("$0.26", approval.description)
+                self.assertNotIn("unknown", approval.description.lower())
                 gateway.call_tool.assert_not_awaited()
                 resumed = request.model_copy(update={"session_items": studio.session_items,
                     "resume_state": paused.exception.state, "approval_decisions": [

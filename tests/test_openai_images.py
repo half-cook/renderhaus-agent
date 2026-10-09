@@ -171,15 +171,18 @@ class OpenAIImagesTests(unittest.TestCase):
                 self.assertNotIn('test-key', str(error.exception))
                 self.assertFalse(list(self.root.glob('images/*')))
 
-    def test_billing_has_unknown_pre_call_quote_and_rated_usage(self):
+    def test_billing_has_per_image_estimate_and_rated_usage(self):
         for name in ['generate_image', 'edit_image']:
             quote = routing.estimate_cost('OpenAI___' + name, {}, list_price=True)
-            self.assertIsNone(quote.total_cents)
-            self.assertIn('UNVERIFIED', quote.description)
+            self.assertEqual(quote.total_cents, 26)  # $0.20 estimate + 30 % platform fee
+            self.assertNotIn('unknown', quote.description)
+            self.assertEqual(routing.estimate_cost('OpenAI___' + name, {'n': 3}).total_cents, 78)
             self.assertEqual(cost_for('openai_images', name, {'prompt': 'Hero', **({'image_path_or_url': 'https://example.test/a.png'} if name == 'edit_image' else {})}).total_cents, 0)
         with patch.dict(os.environ, {'OPENAI_IMAGES_DRY_RUN': 'false'}):
-            with self.assertRaisesRegex(ValueError, 'unknown'):
-                cost_for('openai_images', 'generate_image', {'prompt': 'Hero'})
+            self.assertEqual(cost_for('openai_images', 'generate_image', {'prompt': 'Hero'}).total_cents, 26)
+            with patch.dict(os.environ, {'OPENAI_IMAGES_TOOL_COST_CENTS_JSON': '{"generate_image": 10}'}):
+                self.assertEqual(cost_for('openai_images', 'generate_image', {'prompt': 'Hero'}).total_cents, 13)
+                self.assertEqual(routing.estimate_cost('OpenAI___generate_image', {}).total_cents, 13)
         self.assertIsNone(openai_images_usage_cost({}))
 
     def test_default_explicit_and_specialist_routing(self):
@@ -190,7 +193,8 @@ class OpenAIImagesTests(unittest.TestCase):
             self.assertEqual(route.tool, 'OpenAI___' + tool)
             self.assertEqual(route.provider, 'openai_images')
             self.assertEqual(route.model, MODEL)
-            self.assertIn('unknown', route.disclosure)
+            self.assertIn('$0.26', route.disclosure)
+            self.assertNotIn('unknown', route.disclosure)
         self.assertEqual(routing.route_intent('use Seedream for a still').tool, 'Seedream___text_to_image')
         self.assertEqual(routing.route_intent('editable SVG logo').tool, 'Fal___recraft_text_to_vector')
         self.assertEqual(routing.route_intent('fix the typo in this banner').tool, 'Fal___ideogram_edit')
