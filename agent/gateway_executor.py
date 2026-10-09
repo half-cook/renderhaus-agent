@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import logging
 import os
 import re
 import time
@@ -36,6 +37,7 @@ from agent.studio_agent_next import (
 # create no paid provider work, so they never pause for customer approval.
 APPROVAL_EXEMPT_TOOLS = frozenset({"Remotion___export_nle_timeline"})
 SPENDING_SESSION_TYPE = "renderhaus_run_spending"
+logger = logging.getLogger("renderhaus.gateway_executor")
 
 
 def tool_needs_approval(name: str, autonomous: bool) -> bool:
@@ -330,6 +332,7 @@ class GatewayExecutor:
                 self.publish_spending()
             if route:
                 self.rejected_reviews.pop(route.job_type, None)
+            started_at = time.monotonic()
             _record_stream_event(
                 SimpleNamespace(
                     type="run_item_stream_event",
@@ -400,6 +403,28 @@ class GatewayExecutor:
             _progress(studio, event_id=f"save-{call_id}", event_type="MEDIA_WAIT", title="Media saved",
                       message="Completed media saved to your project.", status="completed")
         completed = next(event for event in studio.tool_events if event.id == call_id)
+        if name != _GATEWAY_SEARCH_TOOL:
+            provider, raw_tool = tool_parts(name)
+            quote = estimate_cost(name, arguments, list_price=True)
+            provider_cents = fee_cents = None
+            if completed.status in {"rejected", "dry_run"} or is_free_tool(name):
+                provider_cents = fee_cents = 0
+            elif quote.total_cents is not None:
+                from server.billing_rates import cost_for
+                try:
+                    cost = cost_for(provider, raw_tool, arguments)
+                    provider_cents, fee_cents = cost.provider_cents, cost.fee_cents
+                except (ValueError, TypeError, KeyError):
+                    pass
+            logger.info(json.dumps({
+                "event": "provider_call", "entry_point": "gateway_executor",
+                "request_id": self.run_scope, "call_id": call_id, "tool": name,
+                "provider": provider, "model": effective_model(provider, raw_tool, arguments),
+                "status": completed.status,
+                "latency_seconds": 0 if rejection is not None else round(time.monotonic() - started_at, 3),
+                "provider_cost_estimate_cents": provider_cents, "fee_estimate_cents": fee_cents,
+                "total_estimate_cents": quote.total_cents, "currency": "USD",
+            }))
         if route:
             provider, tool_name = tool_parts(name)
             model = effective_model(provider, tool_name, arguments)
