@@ -183,6 +183,17 @@ class GatewayExecutor:
             ],
         }
 
+    def tts_argument_error(self, name, arguments):
+        provider, tool = tool_parts(name)
+        if provider == "elevenlabs" and tool.startswith("text_to_speech_"):
+            from server.billing_rates import elevenlabs_quote
+
+            try:
+                elevenlabs_quote(tool, arguments)
+            except (ValueError, TypeError, KeyError) as exc:
+                return str(exc)
+        return None
+
     def media_selection(self, name, arguments):
         job = job_type(name)
         if not job or is_free_tool(name):
@@ -475,6 +486,8 @@ class GatewayExecutor:
             return previous.result
         if blocker := request_tool_blocker(studio.prompt, name):
             return {"status": "not_run", "reason": blocker}
+        if error := self.tts_argument_error(name, arguments):
+            return {"status": "failed", "error": error}
         registry = await self.available()
         if name not in registry:
             return {"status": "failed", "error": "Search for this Gateway tool before invoking it."}

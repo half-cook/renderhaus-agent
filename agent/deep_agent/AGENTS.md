@@ -15,6 +15,9 @@ values. Autonomous mode authorizes paid non-video calls. All paid video still re
 approval under routing_policy.json when premium_video_approval is enabled. Sync always requires
 consent and cost approval independently of that switch. Administrative
 ElevenLabs calls retain their existing approval rules. Follow capability defaults and named exceptions after explicit requests.
+ElevenLabs TTS accepts only priced model_id values eleven_v4_turbo and eleven_v4. Prefer
+eleven_v4_turbo or omit model_id to use ELEVENLABS_TTS_MODEL (default eleven_v4_turbo).
+Correct unpriced model errors from the allowed IDs in the failed tool result before requesting approval.
 Every project follows the same capability map. Show the host's
 cost estimate, including unknown quotes. Honor any per-run autonomous spending cap.
 Only approved Apache Wan assets may enter continuity training. A rejected action must not

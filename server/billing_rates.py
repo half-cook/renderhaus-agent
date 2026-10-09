@@ -125,8 +125,20 @@ ELEVENLABS_V4_PROMO_END = date(2026, 10, 12)
 ELEVENLABS_CHARACTER_MULTIPLIERS = {'eleven_v4': Decimal('1'), 'eleven_v4_turbo': Decimal('0.5')}
 
 
+def elevenlabs_tts_model(arguments: dict[str, Any]) -> str:
+    """Resolve only priced TTS models, including the configured default."""
+    field = "model_id" if "model_id" in arguments else "ELEVENLABS_TTS_MODEL"
+    model = arguments.get("model_id") if field == "model_id" else os.getenv("ELEVENLABS_TTS_MODEL", "eleven_v4_turbo")
+    if not isinstance(model, str) or model not in ELEVENLABS_CHARACTER_MULTIPLIERS:
+        raise ValueError(f"Invalid ElevenLabs TTS {field}. Allowed model_ids: "
+                         + ", ".join(ELEVENLABS_CHARACTER_MULTIPLIERS) + ". Omit model_id to use "
+                         "ELEVENLABS_TTS_MODEL (default eleven_v4_turbo).")
+    return model
+
+
 def elevenlabs_quote(tool: str, arguments: dict[str, Any]) -> GenerationCost:
     """Use operator quotes for billed calls, or official TTS list rates without Stripe."""
+    model = elevenlabs_tts_model(arguments) if tool.startswith("text_to_speech_") else None
     quotes = json.loads(os.getenv("ELEVENLABS_TOOL_COST_CENTS_JSON", "{}"))
     quote = quotes.get(tool) if isinstance(quotes, dict) else None
     if isinstance(quote, int) and not isinstance(quote, bool) and quote >= 0:
@@ -135,7 +147,7 @@ def elevenlabs_quote(tool: str, arguments: dict[str, Any]) -> GenerationCost:
         raise ValueError("Configure an ElevenLabs tool quote in ELEVENLABS_TOOL_COST_CENTS_JSON before enabling billed calls.")
     if not tool.startswith(("text_to_speech_", "text_to_dialogue_")):
         raise ValueError("No official ElevenLabs per-call estimate for this operation; configure an operator quote.")
-    model = arguments.get("model_id") or os.getenv("ELEVENLABS_TTS_MODEL", "eleven_v4_turbo")
+    model = model or arguments.get("model_id") or os.getenv("ELEVENLABS_TTS_MODEL", "eleven_v4_turbo")
     multiplier = ELEVENLABS_CHARACTER_MULTIPLIERS.get(model)
     if multiplier is None:
         raise ValueError("No verified character multiplier for this ElevenLabs model.")
