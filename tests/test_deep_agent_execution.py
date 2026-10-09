@@ -6,7 +6,7 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from langchain_core.messages import AIMessage
+from langchain_core.messages import AIMessage, ToolMessage
 from mcp import Tool
 
 from agent.deep_agent.runner import SESSION_TYPE, run_with_servers
@@ -21,6 +21,7 @@ from test_deep_agent import Gateway, ScriptedModel, call
 VIDEO = Tool(name="Fal___generate_wan3_t2v", description="Generate video", inputSchema={"type": "object"})
 POLL = Tool(name="Fal___get_video_task", description="Poll video", inputSchema={"type": "object"})
 TTS = Tool(name="ElevenLabs___text_to_speech_convert", description="Narrate", inputSchema={"type": "object"})
+VOICES = Tool(name="ElevenLabs___voices_search", description="Find a voice", inputSchema={"type": "object"})
 RENDER = Tool(name="Remotion___render_timeline", description="Assemble", inputSchema={"type": "object"})
 VIDEO_ARGS = {"prompt": "A lighthouse", "duration": 5, "resolution": "1080p", "audio": False}
 TTS_ARGS = {"voice_id": "authorized-voice", "text": "Every night, someone has to keep the light.",
@@ -31,11 +32,53 @@ FINAL = {"title": "Lighthouse", "summary": "The lighthouse shot is ready.",
 
 
 def dispatch(tool, arguments, call_id):
-    wrapper = "call_audio_tool" if tool == TTS else "call_editor_tool" if tool == RENDER else "call_media_tool"
+    wrapper = "call_audio_tool" if tool in (TTS, VOICES) else "call_editor_tool" if tool == RENDER else "call_media_tool"
     return call(wrapper, {"tool_name": tool.name, "arguments": arguments}, call_id)
 
 
 class DeepAgentExecutionTests(unittest.IsolatedAsyncioTestCase):
+    async def test_parallel_subagent_approvals_dispatch_once_without_model_replay(self):
+        gateway = Gateway([VIDEO, VOICES])
+        voice_args = {"search": "narrator"}
+        tasks = AIMessage(content="", tool_calls=[
+            call("task", {"subagent_type": "media", "description": "Generate the lighthouse"}, "media-task").tool_calls[0],
+            call("task", {"subagent_type": "audio", "description": "Find a narrator"}, "audio-task").tool_calls[0],
+        ])
+
+        def propose(messages, tools):
+            if "call_media_tool" in tools:
+                return dispatch(VIDEO, VIDEO_ARGS, "wan-call")
+            return dispatch(VOICES, voice_args, "voices-call")
+
+        def completed(messages, tools):
+            self.assertIsInstance(messages[-1], ToolMessage, "Approval resume re-invoked the subagent model before dispatch")
+            expected_id = "wan-call" if "call_media_tool" in tools else "voices-call"
+            self.assertEqual(messages[-1].tool_call_id, expected_id)
+            return AIMessage(content="Task completed.")
+
+        request = self.request()
+        studio = _context_from_request(request)
+        with tempfile.TemporaryDirectory() as directory, patch.dict("os.environ", {"RENDERHAUS_OUTCOME_DIR": directory}):
+            with self.assertRaises(StudioAgentApprovalRequired) as paused:
+                await run_with_servers(request, studio, [gateway], model=ScriptedModel([tasks, propose, propose]))
+            approvals = paused.exception.approvals
+            self.assertCountEqual([item.tool_name for item in approvals], [VIDEO.name, VOICES.name])
+            gateway.call_tool.assert_not_awaited()
+            resumed = request.model_copy(update={
+                "session_items": json.loads(json.dumps(studio.session_items)),
+                "resume_state": paused.exception.state,
+                "prior_tool_events": [event.public() for event in studio.tool_events],
+                "approval_decisions": [StudioApprovalDecision(call_id=item.call_id, decision="approve")
+                                       for item in reversed(approvals)],
+            })
+            output = await run_with_servers(
+                resumed, _context_from_request(resumed), [gateway],
+                model=ScriptedModel([completed, completed, call("StudioAgentOutput", FINAL, "finish")]),
+            )
+            self.assertEqual(output.title, FINAL["title"])
+        self.assertCountEqual([(item.args[0], item.args[1]) for item in gateway.call_tool.await_args_list],
+                              [(VIDEO.name, VIDEO_ARGS), (VOICES.name, voice_args)])
+
     async def drive(self, request, model, gateway):
         for _ in range(10):
             studio = _context_from_request(request)
