@@ -35,8 +35,8 @@ import uvicorn
 from agent.backend_config import configured_deep_agent_model, deep_agent_model
 from agent.deep_agent.routing import POLICY, estimate_cost, is_free_tool
 from agent.deep_agent.usage import MODEL_RATES, ModelUsage
-from agent.gateway_client import GatewayClient
 from agent.studio_agent_next import (
+    GatewayMCPServer,
     StudioAgentApprovalRequired, StudioAgentRequest, StudioApprovalDecision, run_studio_agent,
 )
 from scripts.local_gateway import LocalGateway, SEARCH_NAME
@@ -296,8 +296,8 @@ async def loopback_gateway(gateway):
                         await task
                         raise RuntimeError('Loopback Gateway failed to start.')
                     await asyncio.sleep(0.01)
-            async with GatewayClient({'url': f'http://127.0.0.1:{port}/mcp', 'allow_loopback_http': True},
-                                     name='lighthouse-local-gateway') as client:
+            async with GatewayMCPServer({'url': f'http://127.0.0.1:{port}/mcp', 'allow_loopback_http': True},
+                                        name='lighthouse-local-gateway') as client:
                 yield client
         finally:
             server.should_exit = True
