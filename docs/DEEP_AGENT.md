@@ -285,3 +285,12 @@ export LUMA_DRY_RUN=true HYPERFRAMES_DRY_RUN=true
 
 Comet browser E2E is blocked in this environment. There is no controllable Comet session, and this task prohibits paid/live provider calls. The blocker is recorded under ignored
 `.renderhaus/e2e/` using `scripts/browser_e2e_hook.py`. No live E2E pass is claimed.
+
+## Wan 3 generation on fal
+
+The existing media role and `DISPATCH_TARGETS` already admit Fal tools.
+The t2v, i2v and reference_video defaults bind to the three Wan 3 tools.
+The existing native `interrupt_on` callbacks pause them before dispatch, with list costs,
+including autonomous runs. Approval exemptions and the autonomous spend cap are unchanged.
+Real-face consent is checked against both the current prompt and native tool arguments.
+See [Wan 3 provider contracts](FAL_WAN3_PROVIDER.md) for schemas and offline validation limits.

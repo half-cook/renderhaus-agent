@@ -1,13 +1,13 @@
 # Renderhaus capability map
 
-One quality-first default serves each capability. Selection order is **explicit provider/model request > named exception > default > declared interim while the default is pending**. Prices inform approval and disclosure; they never order models. This branch adds no provider adapters or Gateway tools.
+One quality-first default serves each capability. Selection order is **explicit provider/model request > named exception > default > declared interim while the default is pending**. Prices inform approval and disclosure; they never order models. Wan 3 adds three Gateway tools on the existing fal provider. See [Wan 3 provider contracts](FAL_WAN3_PROVIDER.md).
 
 ## Capability choices
 
 | Capability | Default routing ID | Exception predicate → routing ID | Built interim | A/B candidates (inactive) |
 | --- | --- | --- | --- | --- |
-| t2v | `wan3_t2v` | `dialogue && !real_face_refs` → `seedance25_t2v` (synthetic dialogue) | `seedance_t2v` | gemini_omni_11_flash |
-| i2v | `wan3_i2v` | `dialogue && !real_face_refs` → `seedance25_i2v` (synthetic dialogue) | `seedance_i2v` | gemini_omni_11_flash, vidu_q4_i2v |
+| t2v | `wan3_t2v` | `dialogue && !real_face_refs` → `seedance25_t2v` (synthetic dialogue) | None; Wan 3 built | gemini_omni_11_flash |
+| i2v | `wan3_i2v` | `dialogue && !real_face_refs` → `seedance25_i2v` (synthetic dialogue) | None; Wan 3 built | gemini_omni_11_flash, vidu_q4_i2v |
 | reference_video | `wan3_r2v` | `dialogue && !real_face_refs` → `seedance25_r2v` (synthetic dialogue references) | — | — |
 | v2v_edit | `wan3_edit` | — | `luma_ray3_modify` | — |
 | extend | `wan3_extend` | — | `luma_ray3_extend` | — |
@@ -27,12 +27,12 @@ One quality-first default serves each capability. Selection order is **explicit 
 
 Canonical aliases remain stable even when an official endpoint differs from the research lead. A pending alias has no Gateway binding and cannot perform a request. Plain default requests can use only the listed interim and disclose “interim default until <alias> lands”. A named exact future model stays pending rather than silently running a different model. Bare “Seedance” uses the current adapter until its declared upgrade lands. Exception defaults do not receive unrelated capability interims.
 
-The current t2v/i2v interims still use Seedance 1.5 on BytePlus. The future Seedance 2.5 default host is fal US, with BytePlus optional. This policy branch does not switch the existing adapter host. BytePlus excludes US customers; US-ready generation requires the Seedance/Wan provider branches. Real-person references never fall back to Seedance or Kling Omni.
+The t2v, i2v and reference_video defaults now use Wan 3 on fal. Only synthetic-dialogue t2v/i2v exceptions retain the declared Seedance 1.5 BytePlus interim. The future Seedance 2.5 default host is fal US, with BytePlus optional. This policy branch does not switch the existing adapter host. BytePlus excludes US customers; Wan 3 default generation uses fal; Seedance 2.5 still requires its provider branch. Real-person references never fall back to Seedance or Kling Omni.
 
 ## Deterministic intent predicates
 
 - `dialogue`: quoted speech or says/talking/dialogue/speaking, with explicit “no dialogue” and “not talking” negation.
-- `real_face_refs`: a real-person/actor reference, a described user photo/video, a CEO/selfie/face reference, or authoritative reference metadata. An argument set to false cannot erase prompt evidence. Video generation forces Wan and blocks Seedance/Omni until Wan 3.0 exists.
+- `real_face_refs`: a real-person/actor reference, a described user photo/video, a CEO/selfie/face reference, or authoritative reference metadata. An argument set to false cannot erase prompt evidence. Video generation forces Wan 3 and requires explicit likeness consent.
 - `vector_output`: SVG/vector/logo output → Recraft. Ideogram generation without an existing image uses the GPT Image default; only `text_only_edit` selects Ideogram editing.
 - `full_body_motion`: dance/body motion → Kling Motion Control. `facial_performance`: facial expression/performance → Act-Two. Body motion wins when both apply.
 - `duration_over_30s`: generation/performance single shots over 30 seconds are blocked with a split-into-shots reason. A long presenter/digital twin lipsync request uses pending HeyGen Avatar V.
@@ -90,11 +90,11 @@ These are documented future-adapter inputs, not active billing entries. Existing
 
 Routing IDs: `wan3_t2v`, `wan3_i2v`, `wan3_r2v`. Official IDs: `alibaba/wan-3.0/text-to-video`, `alibaba/wan-3.0/image-to-video`, `alibaba/wan-3.0/reference-to-video`. Status: **verified**.
 
-fal queue submit/status/result; prompt, resolution, duration 2-30s, audio; image_url for i2v; refs capped at 10 images, 5 videos and 5 audio, each video/audio total <=15s. [Official API source](https://fal.ai/wan-3) [Official API source](https://fal.ai/models/alibaba/wan-3.0/reference-to-video/api) [Official API source](https://fal.ai/models/alibaba/wan-3.0/image-to-video)
+fal queue submit/status/result; prompt, resolution, duration 2-30s, audio; start_image_url and optional end_image_url for i2v; refs capped at 10 images, 5 videos and 5 audio, each video/audio total <=15s. [Official API source](https://fal.ai/wan-3) [Official API source](https://fal.ai/models/alibaba/wan-3.0/reference-to-video/api) [Official API source](https://fal.ai/models/alibaba/wan-3.0/image-to-video)
 
-USD/s 480p=0.05, 720p=0.10, 1080p=0.20. Reference input seconds require branch-specific estimate review. [Official pricing](https://fal.ai/models/alibaba/wan-3.0/reference-to-video)
+USD/s 480p=0.05, 720p=0.10, 1080p=0.20. Measured reference-video input seconds add to output seconds at the same resolution rate. Audio/image reference surcharges are not published and are not invented. Read 2026-10-09. [Official pricing](https://fal.ai/models/alibaba/wan-3.0/reference-to-video)
 
-commercial API; closed weights; fal model card Commercial use. `training_eligible=false`: fal terms 14.3 prohibit improving competing third-party products from outputs. [Licence/terms source](https://fal.ai/models/alibaba/wan-3.0/reference-to-video)
+commercial API; closed weights; fal model card Commercial use. `training_eligible=false`: fal terms 14(c) restrict improving competing third-party products from outputs. Read 2026-10-09. [Licence/terms source](https://fal.ai/legal/terms-of-service)
 
 Fal reference schema does not document edit-preserve-duration or explicit extend mode.
 
@@ -325,9 +325,9 @@ Apache-2.0 weights/model metadata, DINOv2 Apache-2.0 code. `training_eligible=fa
 
 ## Skills and routing fixtures
 
-There are 24 packaged skills, 8 deployed provider targets and 78 Gateway tools. New packaged skills are image-gen, named-provider, act-two, lipsync, upscale, lyrics-video, product-demo-video and whiteboard-explainer. Vidu’s archived skill is removed; its real tools remain under named-provider. Draft alias include_tools cannot be copied verbatim into this harness: `metadata.include_tools` must contain real dispatch wrappers, `metadata.routing_tools` records the canonical aliases, and `metadata.gateway_tools` contains only built Gateway names.
+There are 24 packaged skills, 8 provider targets and 81 Gateway tools. No deployment is claimed. New packaged skills are image-gen, named-provider, act-two, lipsync, upscale, lyrics-video, product-demo-video and whiteboard-explainer. Vidu’s archived skill is removed; its real tools remain under named-provider. Draft alias include_tools cannot be copied verbatim into this harness: `metadata.include_tools` must contain real dispatch wrappers, `metadata.routing_tools` records the canonical aliases, and `metadata.gateway_tools` contains only built Gateway names.
 
-The 145-row workbook becomes 122 fixtures: 23 archived/confidential rows are dropped, 80 active checks pass and 42 remain skipped for named dependencies. “Active” includes built interims and the required 45-second single-shot refusal; it does not assert future adapters exist. NLE import remains skipped. Detailed expectation adjustments and retired replacements are in [capability-map-decisions.tsv](capability-map-decisions.tsv).
+The 145-row workbook becomes 122 fixtures: 23 archived/confidential rows are dropped, 84 active checks pass and 38 remain skipped for named dependencies. “Active” includes built interims and the required 45-second single-shot refusal; it does not assert future adapters exist. NLE import remains skipped. Detailed expectation adjustments and retired replacements are in [capability-map-decisions.tsv](capability-map-decisions.tsv).
 
 | Skipped dependency/reason | Rows |
 | --- | --- |
@@ -346,9 +346,6 @@ The 145-row workbook becomes 122 fixtures: 23 archived/confidential rows are dro
 | provider pending: sync3_lipsync (feat/lipsync-sync3) | 5 |
 | provider pending: topaz_interpolate (feat/finishing-topaz) | 3 |
 | provider pending: topaz_upscale (feat/finishing-topaz) | 2 |
-| provider pending: wan3_i2v (feat/provider-fal-wan3); explicit Wan request does not substitute Seedance | 1 |
-| provider pending: wan3_i2v (feat/provider-fal-wan3); real_face_refs prohibits Seedance interim | 1 |
-| provider pending: wan3_r2v (feat/provider-fal-wan3) | 2 |
 
 ## Verification
 

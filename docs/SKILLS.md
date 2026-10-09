@@ -69,15 +69,14 @@ Selection uses an explicit requested provider/model, then a matching exception, 
 capability default. A pending default uses only its declared interim. Cost and stored quality
 tiers do not order models. Prices support disclosure and spending controls.
 
-The current Seedance tools provide the declared generation interims while Wan 3.0 is pending.
+Wan 3.0 on fal now provides t2v, i2v and reference_video defaults. The synthetic-dialogue exceptions retain their declared Seedance interims until 2.5 is built.
 Current Seedream tools provide the still-image interims. Luma preserves the existing edit
 and extend behavior through explicit interim entries. ElevenLabs music is the music interim.
 These entries expire when their capability default becomes built; they do not create permanent
 exceptions for demoted providers. An exact named pending model has no substitute interim.
 
 Dialogue without real-person references selects the Seedance exception. Real-person photo/video
-references force Wan and prohibit Seedance or Omni, including the Seedance interim. A pending
-real-face route therefore stays pending. Vector output selects pending Recraft. Text-only edits
+references force Wan and prohibit Seedance or Omni, including the Seedance interim. Real-face Wan 3 dispatch requires an explicit likeness_consent acknowledgement. Vector output selects pending Recraft. Text-only edits
 on an existing image select pending Ideogram; Ideogram generation without an edit image selects
 the GPT generation default. Full-body motion selects pending Kling Motion Control; facial and
 upper-body acting select pending Act-Two. Video-synchronized SFX remains pending Mirelo, while
@@ -191,7 +190,7 @@ See [decisions and verification](conversational-edit-decisions.tsv) and
 ## Offline routing verification
 
 `tests/fixtures/skill_routing.json` contains 122 retained capability-map workbook rows.
-There are 80 active cases and 42 explicit dependency skips. The 23 archived rows are dropped,
+There are 84 active cases and 38 explicit dependency skips. The 23 archived rows are dropped,
 including confidential-route and `[project.confidential=true]` rows. A false prefix is ordinary
 routing input. The read-only workbook and source map are not copied into the repository.
 
@@ -393,3 +392,11 @@ This task also prohibits paid/live provider calls. Browser validation remains pe
 ignored `.renderhaus/e2e/` records the blocker through `scripts/browser_e2e_hook.py`.
 No dry-run, scripted model or accepted job is a browser E2E pass. The branch's decisions file
 records the final offline checks without retaining superseded historical suite totals here.
+
+## Wan 3 generation
+
+The existing t2v, i2v, still-then-video and storyboard-shots skills now name
+`Fal___generate_wan3_t2v`, `Fal___generate_wan3_i2v` and `Fal___generate_wan3_r2v`.
+All three poll `Fal___get_video_task`. Controls, costs, consent and dry-run limits are in
+[the Wan 3 provider reference](FAL_WAN3_PROVIDER.md). There are still 24 packaged skills.
+Four Wan-specific workbook rows are active; 38 other dependency rows remain skipped.
