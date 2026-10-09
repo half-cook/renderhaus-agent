@@ -149,6 +149,8 @@ exception, then the capability default. Pending or commercially blocked defaults
 Cost estimates support disclosure and approvals, never tier or price ordering. Stored
 `confidential` and `quality_tier` project fields do not affect selection or approvals.
 The shared executor enforces the same choice on both backends, including approved resumes.
+Edit and extend use Seedance 2.5 as permanent defaults through fal US. Neither capability
+has an interim or fallback; Wan 3 edit/extend are named-only and retain their preview block.
 
 Demoted generation/edit/image providers remain built and explicit-only through named-provider.
 Vidu's archived skill is removed while its Fal tools remain. All paid video pauses with an
@@ -172,7 +174,7 @@ use the act-two skill even for explicit performance requests. Mureka lyrics-vide
 whiteboard-explainer plans Remotion templates without claiming unsupported marker-hand animation.
 
 The deterministic router supplies skill and tool proposals in graph input and Studio context.
-The capability-map fixture contains 134 retained rows, with 129 active and 5 dependency skips.
+The capability-map fixture contains 137 retained rows, with 133 active and 4 dependency skips.
 Archived/confidential routes are dropped. Active rows cover built tools and declared interims;
 pending specialists keep named branch reasons. Editorial overrides retain the safe preparer,
 separate rendering approval, and existing export/HyperFrames narration workflow contracts.
@@ -339,10 +341,11 @@ See [Wan 3 provider contracts](FAL_WAN3_PROVIDER.md) for schemas and offline val
 
 ## Wan 3 edit and extend on Model Studio
 
-`call_media_tool` dispatches the `ModelStudio` target. The edit-v2v and refinement skills
-discover its real Gateway names. `wan3_edit` and `wan3_extend` are built capability defaults
-with declared Seedance 2.5 edit/extend interims while the Wan model commercial policy is
-blocked. Explicit Luma, Aleph, and VACE remain available.
+`call_media_tool` dispatches the `ModelStudio` target only for named Wan 3.0 or Model Studio
+edit/extend requests. The named-provider skill exposes its real Gateway names and warns that
+Alibaba preview terms permit internal testing only until GA. `wan3_edit` and `wan3_extend`
+never appear as capability defaults, exceptions or interims. Seedance 2.5 is the permanent
+default regardless of Wan's model licence flag. Explicit Luma, Aleph, and VACE remain available.
 
 Paid edit/extend interrupts retain the installed deepagents 0.7.23 checkpointer and
 `Command(resume=...)` behavior. Cost descriptions use regional input plus output seconds,
@@ -355,7 +358,7 @@ Preview licensing also blocks customer live use on workspace hosts. Configuratio
 smart-duration limits, the licence restriction, and blocked Comet E2E are documented
 in [the Model Studio provider reference](ALIBABA_MODELSTUDIO.md).
 
-## Seedance 2.5 dialogue and edit interims
+## Seedance 2.5 dialogue exceptions and permanent edit defaults
 
 The Seedance target remains in `DISPATCH_TARGETS.call_media_tool`. Its five generation tools
 use the existing callable `interrupt_on` cost descriptions and checkpointer/resume protocol in
@@ -363,10 +366,13 @@ installed deepagents 0.7.23. No manager or subagent model changes are part of th
 The host defaults to fal US and reuses fal polling; saved endpoint provenance survives a
 transport configuration change. All Seedance outputs are ineligible for continuity training.
 
-Synthetic dialogue uses the Seedance 2.5 exception for t2v/i2v/reference video. Real-person
-references force Wan generation with consent and refuse the Seedance edit/extend interim.
-Changing Wan's `live_enabled` policy flag restores default selection; the unchanged hard
-Model Studio adapter restriction still blocks commercial live work. See
+Synthetic dialogue uses the Seedance 2.5 exception for t2v/i2v/reference video. Edit-v2v and
+refinement expose the permanent Seedance edit/extend defaults. Extension requires explicit
+generated output seconds, integer 4–30, with a measured 2–30 second, 24–60 fps source.
+Fal bills input plus requested output seconds, without timeline arithmetic. “Extend by N
+seconds” remains refused because source inclusion in the output is UNVERIFIED. Real-person
+references force Wan generation with consent and refuse Seedance editing/extension.
+Model Studio remains preview-blocked when explicitly named. See
 [Seedance contracts, pricing and unresolved limits](SEEDANCE_2_5.md).
 
 ## OpenAI still images
@@ -433,8 +439,8 @@ locally; scripted-model approval/resume tests are offline and do not establish l
 `Fal___get_video_task`, default to dry-run, quote verified fal image prices and
 exclude training. SVG content is validated and sanitized before persistence.
 The image-gen, product-images and refinement skills expose their real tool names.
-Six specialist fixture rows are active. The current fixture has 129 active rows
-and five skipped of 134. The inventory is 15 providers, 113 tools and 24 skills.
+Six specialist fixture rows are active. The current fixture has 133 active rows
+and four skipped of 137. The inventory is 15 providers, 113 tools and 24 skills.
 Comet validation and Ideogram quality A/B
 remain pending. See [Image specialists](IMAGE_SPECIALISTS.md) for contracts,
 official sources read 2026-10-09, licence decisions and configuration.
@@ -445,8 +451,8 @@ The continuity skill now includes `Gemini___judge_continuity` and `Gemini___get_
 The canonical `gemini_vlm_judge` alias is built and its retained routing row is active.
 `local_qc` remains default. The VLM is dry-run by default and promotion requires a complete,
 committed, hash-pinned live result above 0.85 on the 420 frozen pairs. No result is committed.
-Current inventory is 15 providers, 113 Gateway tools, 24 skills and 129 active routing rows
-with 5 skips. See [Gemini configuration and sources](GEMINI_CONTINUITY_QC.md),
+Current inventory is 15 providers, 113 Gateway tools, 24 skills and 133 active routing rows
+with 4 skips. See [Gemini configuration and sources](GEMINI_CONTINUITY_QC.md),
 [benchmark procedure](CONTINUITY_QC_BENCHMARK.md#experimental-gemini-judge-and-eval-gate),
 and [decisions](continuity-qc-vlm-decisions.tsv). Comet E2E remains blocked.
 
@@ -462,7 +468,7 @@ retained for review. The canvas graph and the legacy flat timeline are separate 
 Import retains opaque source handles without publishing or fetching media. No new
 provider, model, key, secret, or environment variable is needed. `REMOTION_DRY_RUN`
 remains true by default. All existing paid-video approval and spending gates remain.
-There are 15 providers, 113 Gateway tools, 24 skills, 129 active fixture rows, and five
+There are 15 providers, 113 Gateway tools, 24 skills, 133 active fixture rows, and four
 dependency skips. Read [NLE import](NLE_EXPORT.md#import-an-editors-timeline) for the
 parser contract and unsupported edits. Comet and real editor validation remain blocked
 or unverified; offline tests do not establish browser success.

@@ -1,8 +1,8 @@
 # Seedance 2.5 provider reference
 
 Seedance 2.5 is the synthetic-character dialogue exception for text, image and reference video.
-Wan 3.0 remains the capability default. Seedance also supplies the declared edit and extend
-interims while Wan's Model Studio preview licence blocks commercial use.
+Wan 3.0 remains the generation default. Satya chose Seedance 2.5 as the permanent edit and
+extend default on 2026-10-09. Wan 3 edit/extend remain named-only, preview-blocked options.
 
 The adapter keeps the `Seedance` Gateway target and reuses fal's queue client and poll implementation.
 There are no new provider targets or new dry-run flags. All documented source reads below are
@@ -39,6 +39,27 @@ or that the output contains the entire original source. Artifact inspection rema
 Requests to "extend by N seconds" are refused until appended-versus-combined semantics are
 verified. Specify the desired generated output duration instead; generic extension remains available.
 
+### Extension length, resolution and billing
+
+| Constraint | Verified behavior / adapter choice |
+| --- | --- |
+| Source clip | 2–30 seconds, maximum 30 seconds. The adapter uses this strict range on both hosts; fal's generic reference tolerance is 1.8–30.2 seconds. |
+| Output per call | Integer 4–30 seconds via `duration_seconds`. Both vendors also offer automatic duration; the adapter refuses automatic extension duration because billing needs a known output request. |
+| Output composition | **UNVERIFIED:** neither checked official page clearly says whether the returned extension includes the source or only continuation. Never infer a final stitched length. |
+| Output resolution/aspect | 480p, 720p or 1080p, adaptive source aspect. No fixed extension aspect override. |
+| FPS | Source 24–60 fps. ModelArk documents output duration/frame calculations at 24 fps; fal's token pricing uses 24 fps. The adapter has no output-fps override. Inspect the actual artifact. |
+| Source dimensions/files | Official reference limits: 300–6000 pixels per side, aspect 0.4–2.5, at most 200 MB per video. BytePlus additionally documents 407696–8295044 pixels total. These file/pixel limits require source inspection; the existing contract does not fetch files or measure dimensions. |
+| Seconds billed | fal: input plus requested output seconds, with the video-input discount. BytePlus: input plus output token estimate; actual completion tokens and an unresolved minimum floor apply. |
+
+“Extend this clip to produce a 15-second output video” requests `duration_seconds=15`.
+“Continue this clip with a generated video lasting 12 seconds” requests 12. The source length
+is neither added nor subtracted. “Extend this clip by 4 seconds” is refused before approval
+or provider dispatch. This avoids guessing whether a user meant appended or combined length.
+These constraints were rechecked on 2026-10-09 against the
+[fal US reference schema](https://fal.ai/models/bytedance/seedance-2.5/us/reference-to-video/api),
+[BytePlus 2.5 tutorial](https://docs.byteplus.com/en/docs/modelark/seedance-2-5) and
+[BytePlus task schema](https://docs.byteplus.com/en/docs/modelark/create-video-generation-task-api).
+
 Fal request fields are `image_url`/`end_image_url` for image video and
 `image_urls`/`video_urls`/`audio_urls` for references. The reference endpoint's `task` is
 `reference`, `editing` or `extension`. Editing uses automatic duration and aspect ratio.
@@ -47,7 +68,7 @@ BytePlus uses `content` items with `first_frame`, `last_frame`, `reference_image
 Its edit requests use `duration=-1` and `ratio=adaptive`.
 Seedance 2.5 image generation also uses adaptive output aspect on both hosts. BytePlus 1.5
 still accepts a fixed output ratio, which is used for its quote. The
-[current BytePlus task schema](https://docs.byteplus.com/zh-CN/docs/modelark/create-video-generation-task-api?redirect=1)
+[current BytePlus task schema](https://docs.byteplus.com/en/docs/modelark/create-video-generation-task-api)
 confirms both this distinction and 1.5 support for 1080p.
 
 Verified official model and schema sources are the
@@ -55,10 +76,10 @@ Verified official model and schema sources are the
 [fal image API](https://fal.ai/models/bytedance/seedance-2.5/image-to-video/api),
 [fal reference API](https://fal.ai/models/bytedance/seedance-2.5/reference-to-video/api),
 [fal US reference API](https://fal.ai/models/bytedance/seedance-2.5/us/reference-to-video/api),
-and [BytePlus task API](https://docs.byteplus.com/ja/docs/modelark/create-video-generation-task-api).
-The [BytePlus 2.5 tutorial](https://docs.byteplus.com/zh-TW/docs/modelark/seedance-2-5)
-documents editing and extension constraints. Public localized BytePlus pages are used where
-the English renderer only returned a JavaScript shell.
+and [BytePlus task API](https://docs.byteplus.com/en/docs/modelark/create-video-generation-task-api).
+The [BytePlus 2.5 tutorial](https://docs.byteplus.com/en/docs/modelark/seedance-2-5)
+documents editing and extension constraints. Its public server-rendered document data was
+read when the text browser returned only a JavaScript shell; no authenticated request was used.
 
 ## Transport and credentials
 
@@ -106,7 +127,7 @@ The following are list rates in USD per million video tokens, read 2026-10-09.
 
 Official pricing sources are the [fal global reference model](https://fal.ai/models/bytedance/seedance-2.5/reference-to-video),
 [fal US reference model](https://fal.ai/models/bytedance/seedance-2.5/us/reference-to-video),
-and [BytePlus pricing](https://docs.byteplus.com/id/docs/modelark/model-pricing?redirect=1).
+and [BytePlus pricing](https://docs.byteplus.com/en/docs/modelark/model-pricing).
 The US markup is 20%. No map lead or expired promotion overrides the verified host rate.
 
 The documented estimated token formula is
@@ -139,8 +160,8 @@ an operator/legal TODO. No AGPL or non-commercial model code or weights were add
 
 Seedance never receives references flagged as real-person images/video, even with consent.
 The router sends generation to Wan with disclosure and requires Wan likeness consent.
-Edit/extend refuse such references while Wan's preview restriction applies. Other retained
-editors are explicit-only, so there is no unauthorized automatic substitute.
+Automatic edit/extend refuse such references. Other retained editors require explicit requests;
+named Wan remains preview-blocked, so there is no automatic substitute.
 The [BytePlus real-person verification rules](https://docs.byteplus.com/en/docs/ModelArk/BytePlus_Real_Person_Verification_H5_and_API_Usage_Rules)
 describe a separate authorized-asset flow; this adapter does not implement it.
 Detection uses prompt, supplied policy flags and asset provenance. Image classification is not implemented.
@@ -155,17 +176,22 @@ is disclosed as unknown. Approval exemptions and the autonomous spend cap are un
 
 ## Routing and validation limits
 
-`capability_map.v2v_edit.default` and `.extend.default` remain `wan3_edit` and `wan3_extend`.
-Their interims are `seedance25_edit` and `seedance25_extend`. Automatic selection consults the
-Wan model's existing `live_enabled=false` commercial policy flag before model-specific setup.
-Flipping that one flag restores Wan selection without changing the capability map. It does
-not remove the unchanged Model Studio adapter's hard preview licence block or prove live
-commercial access. That block remains exactly as it was.
+`capability_map.v2v_edit.default` is `seedance25_edit`; `.extend.default` is `seedance25_extend`.
+Neither capability has an interim or exception. Wan edit/extend are absent from every automatic
+capability-map choice and are explicit-only under named-provider. The route warns that Alibaba
+preview terms permit internal testing only until GA and retains the hard live customer-use block.
+Changing Wan's `live_enabled` flag cannot change these permanent defaults.
 
 Offline tests cover transport bodies, guards, reference limits, host-specific cost estimates,
-licence-based selection in both states, gateway execution, autonomous approval/rejection and
+permanent-default selection in both Wan licence states, named-only preview blocking,
+gateway execution, autonomous approval/rejection and
 saved-job polling with fakes. Comet E2E is blocked because Comet is unavailable in this environment.
+The complete suite ran 1,384 tests with six skips; Ruff, dry-run CI packaging and Studio
+TypeScript passed. The blocked browser receipt is `.renderhaus/e2e/seedance-edit-extend-default.json`,
+recorded through `scripts/browser_e2e_hook.py` under the ignored evidence directory.
 No browser action, generated artifact or live provider access is claimed. Remaining verification
 requires the real Studio/Comet session and separately authorized provider generation.
 
-See [decisions](seedance-2-5-decisions.tsv) for evidence and unresolved limits.
+See [the permanent-default decisions](seedance-edit-extend-default-decisions.tsv) for current
+evidence and unresolved limits. The [earlier adapter decisions](seedance-2-5-decisions.tsv)
+retain history; their interim/flag-restoration decisions are superseded.
