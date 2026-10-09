@@ -704,6 +704,8 @@ async def invoke_tool(body: InvokeBody, auth: AuthUser) -> dict[str, Any]:
         await asyncio.to_thread(repository.require_project, workspace_id, body.project_id)
     except KeyError as exc:
         raise HTTPException(status_code=404, detail="Project not found.") from exc
+    if (body.provider, body.tool) in {("ffmpeg", "ffmpeg_tool"), ("remotion", "render_ad_variants")}:
+        raise HTTPException(status_code=409, detail="Use the agent local-media workflow with its owned Studio job directory and stage approvals.")
     if (body.provider, body.tool) == ("sync", "lipsync_video"):
         raise HTTPException(
             status_code=409,

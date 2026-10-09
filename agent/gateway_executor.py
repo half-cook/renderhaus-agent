@@ -42,9 +42,13 @@ SPENDING_SESSION_TYPE = "renderhaus_run_spending"
 logger = logging.getLogger("renderhaus.gateway_executor")
 
 
-def tool_needs_approval(name: str, autonomous: bool) -> bool:
+def tool_needs_approval(name: str, autonomous: bool, arguments: dict | None = None) -> bool:
     from providers.elevenlabs.catalog import requires_approval
 
+    if name in {"Remotion___render_ad_variants", "ad_variant_matrix"}:
+        return (arguments or {}).get("stage") != "plan"
+    if name in {"Ffmpeg___ffmpeg_tool", "ffmpeg_tool"}:
+        return False
     if name in APPROVAL_EXEMPT_TOOLS:
         return False
     if name == "Remotion___import_nle_timeline":
@@ -139,11 +143,24 @@ class GatewayExecutor:
                 server._tools_list = list(cached.values())
 
     async def available(self):
-        return {
+        available = {
             tool.name: (server, tool)
             for server in self.servers for tool in await server.list_tools()
             if request_tool_blocker(self.studio.prompt, tool.name) is None
         }
+        from providers.catalog import get_provider
+        from providers.registry import generate_schemas
+
+        for provider in ("ffmpeg", "remotion"):
+            spec = get_provider(provider)
+            for schema in generate_schemas(spec):
+                if schema["name"] not in {"ffmpeg_tool", "render_ad_variants"}:
+                    continue
+                name = f"{spec.target_name}___{schema['name']}"
+                if request_tool_blocker(self.studio.prompt, name) is None:
+                    available[name] = (None, Tool(name=name, description=schema["description"],
+                                                  inputSchema=schema["inputSchema"]))
+        return available
 
     def filter_discovery(self, value):
         if isinstance(value, list):
@@ -195,6 +212,8 @@ class GatewayExecutor:
         return None
 
     def media_selection(self, name, arguments):
+        if name in {"Remotion___render_ad_variants", "Ffmpeg___ffmpeg_tool"}:
+            return None
         job = job_type(name)
         if not job or is_free_tool(name):
             return None
@@ -237,6 +256,10 @@ class GatewayExecutor:
         return route
 
     def dispatch_disclosure(self, name, arguments, route):
+        if name == "Remotion___render_ad_variants":
+            from providers.remotion.ad_variants import approval_description
+
+            return approval_description(arguments)
         if name in {"Runway___act_two", "Fal___kling_motion_control"}:
             provider, tool = tool_parts(name)
             segment = (f" Sequential source segment at {arguments.get('performance_start_seconds', 0)}s, "
@@ -285,6 +308,18 @@ class GatewayExecutor:
         if blocker := request_tool_blocker(self.studio.prompt, name):
             return blocker
         provider, tool = tool_parts(name)
+        if name in {"Remotion___render_ad_variants", "Ffmpeg___ffmpeg_tool"}:
+            from providers.contracts import validate_tool_arguments
+            from server.billing_rates import ad_matrix_estimate
+
+            try:
+                validate_tool_arguments(provider, tool, arguments, {})
+                if name == "Remotion___render_ad_variants":
+                    ad_matrix_estimate(arguments)
+                    if arguments.get("stage") != "plan" and not arguments.get("plan_hash"):
+                        return "Run plan first and provide its exact plan_hash for human approval."
+            except ValueError as exc:
+                return str(exc)
         if provider == "fal" and tool in {"ideogram_edit", "recraft_text_to_vector"}:
             from providers.fal.images import request_for
 
@@ -484,6 +519,10 @@ class GatewayExecutor:
         )
         if previous:
             return previous.result
+        if name in {"Remotion___render_ad_variants", "Ffmpeg___ffmpeg_tool"} and (
+            not studio.job_id or arguments.get("job_id") != studio.job_id
+        ):
+            return {"status": "not_run", "reason": "Local media tools must use the trusted current Studio job_id. Stage inputs inside that job directory; another Studio job cannot be read."}
         if blocker := request_tool_blocker(studio.prompt, name):
             return {"status": "not_run", "reason": blocker}
         if error := self.tts_argument_error(name, arguments):
@@ -502,11 +541,11 @@ class GatewayExecutor:
             }
         blocker = policy_blocker(name, arguments)
         route = self.media_selection(name, arguments)
-        self.disclose_selection(route, call_id, name, arguments)
         blocker = self.selection_blocker(name, arguments, route) or blocker
         if blocker and rejection is None:
             return {"status": "not_run", "reason": blocker, "route": route.public() if route else None}
-        if tool_needs_approval(name, studio.autonomous) and not approved and rejection is None:
+        self.disclose_selection(route, call_id, name, arguments)
+        if tool_needs_approval(name, studio.autonomous, arguments) and not approved and rejection is None:
             raise ToolApprovalPending(call)
         if rejection is not None:
             output = {"status": "rejected", "message": rejection}
@@ -543,7 +582,16 @@ class GatewayExecutor:
                 {},
             )
             try:
-                output = await server.call_tool(name, arguments)
+                if name in {"Remotion___render_ad_variants", "Ffmpeg___ffmpeg_tool"}:
+                    from providers.registry import dispatch
+                    from providers.remotion.ad_variants import authorize
+
+                    provider, verb = tool_parts(name)
+                    with authorize(arguments.get("stage", "plan"), arguments.get("plan_hash", ""),
+                                   f"human:{call_id}" if approved else ""):
+                        output = await asyncio.to_thread(dispatch, provider, verb, arguments)
+                else:
+                    output = await server.call_tool(name, arguments)
                 if name == _GATEWAY_SEARCH_TOOL:
                     output = self.filter_discovery(_unwrap_tool_output(output))
                 if name.rsplit("___", 1)[-1] in {

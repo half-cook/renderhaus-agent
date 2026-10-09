@@ -22,7 +22,8 @@
     "list_avatars",
     "list_topaz_models",
     "list_mureka_models",
-    "import_nle_timeline"
+    "import_nle_timeline",
+    "ffmpeg_tool"
   ],
   "providers": {
     "kling": {
@@ -354,7 +355,20 @@
       "enabled": true,
       "license": "service-terms",
       "allowed_regions": [],
-      "training_eligible": false
+      "training_eligible": false,
+      "model_policies": {
+        "ad-variant-timeline": {
+          "license": "service-terms",
+          "license_id": "Remotion-custom-license",
+          "license_source": "https://www.remotion.dev/docs/license/faq",
+          "read_date": "2026-10-09",
+          "training_eligible": false,
+          "commercial_status": "requires applicable Remotion licence; local ffmpeg metering unverified"
+        }
+      },
+      "fixed_models": {
+        "render_ad_variants": "ad-variant-timeline"
+      }
     },
     "fal": {
       "enabled": true,
@@ -842,6 +856,32 @@
           "read_date": "2026-10-09",
           "training_reason": "Gemini terms prohibit developing competing models; no clear Renderhaus continuity-training grant.",
           "consent_requirements": "Input media rights and applicable personal-data permissions required. No Gemini-specific recorded likeness consent workflow verified."
+        }
+      }
+    },
+    "ffmpeg": {
+      "enabled": true,
+      "license": "service-terms",
+      "license_id": "FFmpeg-installed-build-LGPL-or-GPL",
+      "license_source": "https://ffmpeg.org/legal.html",
+      "read_date": "2026-10-09",
+      "allowed_regions": [],
+      "training_eligible": false,
+      "default_model": "ffmpeg-local",
+      "models": [
+        "ffmpeg-local"
+      ],
+      "fixed_models": {
+        "ffmpeg_tool": "ffmpeg-local"
+      },
+      "model_policies": {
+        "ffmpeg-local": {
+          "license": "service-terms",
+          "license_id": "FFmpeg-installed-build-LGPL-or-GPL",
+          "license_source": "https://ffmpeg.org/legal.html",
+          "read_date": "2026-10-09",
+          "commercial_status": "installed command-line binary; no binary redistribution",
+          "training_eligible": false
         }
       }
     }
@@ -1808,9 +1848,62 @@
       "source": "https://fal.ai/models/bytedance/seedance-2.5/us/reference-to-video/api",
       "price_source": "https://fal.ai/models/bytedance/seedance-2.5/us/reference-to-video",
       "availability_source": "https://fal.ai/models/bytedance/seedance-2.5/us/reference-to-video"
+    },
+    "ffmpeg_tool": {
+      "gateway_tool": "Ffmpeg___ffmpeg_tool",
+      "provider": "ffmpeg",
+      "model": "ffmpeg-local",
+      "skill": "remotion-ad-variant-matrix",
+      "status": "ready",
+      "host": "local worker with the job directory",
+      "us_available": "yes",
+      "availability_source": "https://ffmpeg.org/legal.html",
+      "read_date": "2026-10-09",
+      "training_eligible": false,
+      "license": "installed FFmpeg LGPL/GPL by build; in-house wrapper",
+      "license_source": "https://ffmpeg.org/legal.html",
+      "training_reason": "Editing retains source rights; no new model or weight licence grants training rights.",
+      "source": "https://ffmpeg.org/legal.html",
+      "price_source": "https://ffmpeg.org/legal.html",
+      "verification": "local real-binary verification; browser validation blocked; no live Lambda tests"
+    },
+    "ad_variant_matrix": {
+      "gateway_tool": "Remotion___render_ad_variants",
+      "provider": "remotion",
+      "model": "ad-variant-timeline",
+      "skill": "remotion-ad-variant-matrix",
+      "status": "ready",
+      "host": "local worker with the job directory",
+      "us_available": "yes",
+      "availability_source": "https://www.remotion.dev/docs/license/faq",
+      "read_date": "2026-10-09",
+      "training_eligible": false,
+      "license": "Remotion custom licence; in-house timeline compiler",
+      "license_source": "https://www.remotion.dev/docs/license/faq",
+      "training_reason": "Editing retains source rights; no new model or weight licence grants training rights.",
+      "source": "https://www.remotion.dev/docs/license/faq",
+      "price_source": "https://www.remotion.dev/docs/license/faq",
+      "verification": "local real-binary verification; browser validation blocked; no live Lambda tests"
     }
   },
   "rules": [
+    {
+      "pattern": "\\bad[ -]variant[ -]matrix\\b|\\bad_variant_matrix\\b|(?=.*\\bskus?\\b)(?=.*\\b(?:prices?|ctas?|logos?|font|colour|color)\\b)|\\b(?:run(?:\\s+all)?|render|re-render|batch)\\b.*\\bvariants?\\b|\\ball\\s+(?:\\d+\\s+)?variants\\b|\\bprice\\b.*\\b(?:logo|ad|retailer)\\b|\\b(?:localise|localize)\\b.*\\bend card\\b|\\blegal line\\b.*\\bbrief\\b|\\blogo path\\b|\\bad[ -]variants?\\b|\\b(?:table|sheet|csv)\\b.*\\bsku[ -]variants?\\b",
+      "skill": "remotion-ad-variant-matrix",
+      "abstract_tool": "ad_variant_matrix",
+      "capability": "ad_variant_matrix"
+    },
+    {
+      "pattern": "\\bffmpeg_tool\\b|\\b(?:extract_frames|contact_sheet|check_faststart|volume_stats)\\b|\\bprobe\\b.*\\b(?:master|local|media)\\b",
+      "skill": "remotion-ad-variant-matrix",
+      "abstract_tool": "ffmpeg_tool",
+      "capability": "media_inspection"
+    },
+    {
+      "pattern": "\\bburn captions\\b",
+      "skill": "conversational-edit",
+      "abstract_tool": "transcript_edit"
+    },
     {
       "pattern": "(?:conversational[ -]edit|transcript[ -](?:driven|based)|cut filler|remove filler|cut.*\\bums\\b).*hyperframes|hyperframes.*(?:conversational[ -]edit|transcript[ -](?:driven|based))",
       "skill": "conversational-edit",
@@ -4772,6 +4865,69 @@
       },
       "durations": {},
       "explicit_only": false
+    },
+    {
+      "provider": "ffmpeg",
+      "policy_ref": "ffmpeg",
+      "model": "ffmpeg-local",
+      "label": "Local fixed media inspection",
+      "tools": {
+        "media_inspection": "Ffmpeg___ffmpeg_tool"
+      },
+      "jobs": {
+        "media_inspection": true
+      },
+      "resolutions": [],
+      "speed_class": "local-worker",
+      "price": {
+        "source": "https://ffmpeg.org/legal.html",
+        "read_date": "2026-10-09",
+        "unit": "call"
+      },
+      "notes": "Fixed ops only. Binary ops require installed ffmpeg/ffprobe; no network.",
+      "controls": {
+        "media_inspection": [
+          "op",
+          "job_id",
+          "input_path",
+          "params"
+        ]
+      },
+      "durations": {},
+      "explicit_only": false
+    },
+    {
+      "provider": "remotion",
+      "policy_ref": "remotion",
+      "model": "ad-variant-timeline",
+      "label": "Remotion ad variant matrix",
+      "tools": {
+        "ad_variant_matrix": "Remotion___render_ad_variants"
+      },
+      "jobs": {
+        "ad_variant_matrix": true
+      },
+      "resolutions": [],
+      "speed_class": "local-worker",
+      "price": {
+        "source": "https://www.remotion.dev/docs/license/faq",
+        "read_date": "2026-10-09",
+        "unit": "render"
+      },
+      "notes": "No model or weights. Local worker only; source rights unchanged. Lambda matrix job directory is unavailable and explicitly refused.",
+      "controls": {
+        "ad_variant_matrix": [
+          "stage",
+          "job_id",
+          "brief",
+          "rows",
+          "master_asset",
+          "plan_hash",
+          "concurrency"
+        ]
+      },
+      "durations": {},
+      "explicit_only": false
     }
   ],
   "image_default_size": "2K",
@@ -4968,6 +5124,18 @@
       "exceptions": [],
       "interim": null,
       "ab_candidates": []
+    },
+    "media_inspection": {
+      "default": "ffmpeg_tool",
+      "exceptions": [],
+      "interim": null,
+      "ab_candidates": []
+    },
+    "ad_variant_matrix": {
+      "default": "ad_variant_matrix",
+      "exceptions": [],
+      "interim": null,
+      "ab_candidates": []
     }
   },
   "paid_video_tools": [
@@ -5021,7 +5189,8 @@
     "Mureka___generate_lyrics_video",
     "Runway___act_two",
     "Fal___kling_motion_control",
-    "Fal___mirelo_v2a"
+    "Fal___mirelo_v2a",
+    "Remotion___render_ad_variants"
   ],
   "explicit_routes": {
     "kling": {
@@ -5405,6 +5574,14 @@
       "availability_source": "https://fal.ai/legal/api-services",
       "availability_note": "fal customer integration licence is worldwide; direct Sync competitor permission required.",
       "read_date": "2026-10-09"
+    },
+    {
+      "provider": "ffmpeg",
+      "host": "local worker with its confined job directory",
+      "us_available": "yes",
+      "availability_source": "https://ffmpeg.org/legal.html",
+      "read_date": "2026-10-09",
+      "availability_note": "No network or hosted provider API; Gateway hosts without ffmpeg refuse binary operations."
     }
   ],
   "model_policies": {
@@ -5773,6 +5950,37 @@
       "training_reason": "No generated output; source media rights are unchanged.",
       "commercial_status": "Local interchange code; source media rights required.",
       "read_date": "2026-10-09"
+    },
+    "ffmpeg_tool": {
+      "license": "installed FFmpeg LGPL/GPL by build; in-house wrapper",
+      "license_source": "https://ffmpeg.org/legal.html",
+      "read_date": "2026-10-09",
+      "training_eligible": false,
+      "training_reason": "Editing retains source rights; no new model or weight licence grants training rights.",
+      "commercial_status": "commercial use with source rights and operator licence compliance; no model or weights",
+      "consent_requirements": "No face or voice synthesis. Caller must have rights to supplied media."
+    },
+    "ad_variant_matrix": {
+      "license": "Remotion custom licence; in-house timeline compiler",
+      "license_source": "https://www.remotion.dev/docs/license/faq",
+      "read_date": "2026-10-09",
+      "training_eligible": false,
+      "training_reason": "Editing retains source rights; no new model or weight licence grants training rights.",
+      "commercial_status": "commercial use with source rights and operator licence compliance; no model or weights",
+      "consent_requirements": "No face or voice synthesis. Caller must have rights to supplied media."
     }
-  }
+  },
+  "editing_refusals": [
+    {
+      "pattern": "\\bmagic mask\\b|\\b(?:colour|color) node tree\\b|\\bskin qualifier\\b|\\bpower window\\b|\\bfairlight\\b|\\bavid\\s+aaf\\b|\\.drp\\b|\\b(?:run|use|switch to|open)\\b.*\\bresolve\\b|\\bresolve\\b.*\\b(?:python script|voice isolation|smart reframe)\\b|\\bneural engine\\b|\\baces\\b|\\bpowergrade\\b|\\bsmart bin\\b",
+      "reason": "Resolve is parked by Satya (2026-10-09). No Resolve tool or skill is called. Supply a flat approved master for Remotion overlays; unsupported grading or AI operations remain parked."
+    },
+    {
+      "pattern": "\\b(?:ffmpeg|ffprobe)\\s+-|\\bbash\\s+-c\\b|\\brm\\s+-rf\\b|\\bpip\\s+install\\b|\\brun_script(?:_unsafe)?\\b|\\bshell\\b.*\\brender box\\b|\\bextra args\\b.*ffmpeg|\\b(?:filter_complex|ffmpeg-executable|ffmpegOverride)\\b|\\b(?:read|using|probe)\\b.*(?:/etc/|/proc/|/dev/)|\\b(?:run|execute)\\b.*\\.py\\b",
+      "reason": "Refuse arbitrary shell commands, scripts, executable overrides and out-of-job paths. Use only allow-listed ffmpeg_tool ops; nearest inspection op is probe."
+    }
+  ],
+  "non_dispatch_requests": [
+    "\\bremotion\\b.*\\b(?:still free|licen[cs]e|licensing|headcount)\\b|\\b(?:people|team)\\b.*\\bremotion\\b.*\\bfree\\b"
+  ]
 }

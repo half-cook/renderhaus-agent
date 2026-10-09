@@ -36,6 +36,7 @@ def _force_dry_run() -> None:
     os.environ["HEYGEN_DRY_RUN"] = "true"
     os.environ["TOPAZ_DRY_RUN"] = "true"
     os.environ["MUREKA_DRY_RUN"] = "true"
+    os.environ["FFMPEG_DRY_RUN"] = "true"
     os.environ["MUREKA_MODEL"] = "mureka-9.5"
 
 
@@ -80,10 +81,10 @@ def check_routing_inventory() -> None:
     from providers.catalog import PROVIDERS
     from providers.registry import load_committed_schemas
 
-    assert len(PROVIDERS) == 15
-    assert sum(len(load_committed_schemas(spec)) for spec in PROVIDERS) == 113
+    assert len(PROVIDERS) == 16
+    assert sum(len(load_committed_schemas(spec)) for spec in PROVIDERS) == 115
     paths = list(SKILLS_ROOT.glob("*/SKILL.md"))
-    assert len(paths) == 24
+    assert len(paths) == 25
     assert "ladder" not in POLICY and "premium_targets" not in POLICY
     assert "project_policy" not in POLICY and "flux2_klein4b_t2i" not in TOOL_MAP
     for capability, choice in POLICY["capability_map"].items():
@@ -102,7 +103,7 @@ def check_routing_inventory() -> None:
         assert set(metadata["include_tools"].split()) <= DISPATCH_TARGETS.keys(), path
         assert all(TOOL_MAP[alias]["status"] != "retired" for alias in metadata["routing_tools"].split()), path
     cases = json.loads((ROOT / "tests/fixtures/skill_routing.json").read_text())
-    assert len(cases) == 139 and sum(not case["skip_reason"] for case in cases) == 135
+    assert len(cases) == 218 and sum(not case["skip_reason"] for case in cases) == 173
     from agent.deep_agent.continuity_qc_vlm import EVAL_PATH, default_vlm_enabled
 
     if POLICY["continuity_qc"]["vlm_eval_gate"]["result_sha256"]:
@@ -110,7 +111,7 @@ def check_routing_inventory() -> None:
 
         subprocess.run(["git", "ls-files", "--error-unmatch", str(EVAL_PATH.relative_to(ROOT))], check=True, capture_output=True)
         assert default_vlm_enabled(), "Committed VLM evidence does not qualify for promotion."
-    print("ok routing inventory (15 providers, 113 Gateway tools, 24 skills, 135 active routing rows)")
+    print("ok routing inventory (16 providers, 115 Gateway tools, 25 skills, 173 active routing rows)")
 
 
 def _assert_gateway_shape(schema: object) -> None:
@@ -143,6 +144,15 @@ def check_dry_run_dispatch() -> None:
         for schema in load_committed_schemas(spec):
             name = schema["name"]
             arguments = dummy_arguments(schema)
+            if spec.id == "ffmpeg":
+                arguments = {"op": "probe", "job_id": "ci-smoke", "input_path": "master.mp4", "params": {}}
+            if spec.id == "remotion" and name == "render_ad_variants":
+                arguments = {
+                    "stage": "plan", "job_id": "ci-smoke", "brief": {"campaign": "ci-smoke"},
+                    "rows": [{"variant_key": "ci", "sku": "ci", "price_text": "$1", "cta_text": "Buy",
+                              "logo_asset": "logo.png", "legal_text": "Terms", "locale": "en", "aspect": "1:1"}],
+                    "master_asset": "master.mp4",
+                }
             if spec.id == "remotion" and name == "import_nle_timeline":
                 arguments = {
                     "format": "fcpxml",
@@ -243,6 +253,11 @@ def check_dry_run_dispatch() -> None:
                     "segments": [{"source_id": "source", "first_word": 0, "last_word": 0}],
                 }
             result = dispatch(spec.id, name, arguments)
+            if spec.id == "remotion" and name == "render_ad_variants":
+                assert result.get("status") == "blocked", "CI matrix must refuse missing local job media"
+                assert "local" in str(result).lower() or "job" in str(result).lower(), result
+                print("ok dry-run remotion.render_ad_variants blocked without local job media")
+                continue
             if spec.id == "gemini" and name == "judge_continuity":
                 gemini_job_id = result["job_id"]
             if spec.id == "mureka" and name.startswith("generate_"):

@@ -35,6 +35,14 @@ The evidence-backed product, architecture, continuity, evaluation, and six-sprin
 for evolving Renderhaus into a durable 60–180 second video-production agent starts at
 [docs/README.md](docs/README.md).
 
+## Local retail ad variants
+
+A brief and a table of SKUs, prices, CTAs and logos produce aspect-specific review renders
+through Remotion. The matrix plans first, pauses for sample-render approval, then requires
+explicit sample review before a batch. Free ffmpeg inspection uses fixed operations in the
+local job directory. [Remotion editing](docs/REMOTION_EDITING.md) documents the real local
+demo, backend limits, licence allowance and pending delivery/loudness certification.
+
 ## Development workflow
 
 Day-to-day local + CI/CD map: [docs/development.md](docs/development.md).

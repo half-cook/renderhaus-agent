@@ -1460,6 +1460,20 @@ def _validate_video_delivery(
     delivery_alias = delivery_route.steps[-1].alias if delivery_route.steps else delivery_route.alias
     prior_events = {event["id"]: event for event in request.prior_tool_events}
     current_events = [event for event in studio.tool_events if event.public() != prior_events.get(event.id)]
+    if delivery_alias == "ad_variant_matrix" or any(event.name == "Remotion___render_ad_variants" for event in current_events):
+        matrix_events = [event for event in current_events if event.name == "Remotion___render_ad_variants"]
+        last = matrix_events[-1] if matrix_events else None
+        latest = last.result if last and last.arguments.get("stage") == "render_batch" else {}
+        outputs = latest.get("rendered") or []
+        complete = (latest.get("status") == "succeeded" and not latest.get("failed")
+                    and not latest.get("blocked") and bool(outputs)
+                    and len(outputs) == latest.get("planned")
+                    and all(_completed_video_artifact({"output_path": row.get("file")}) for row in outputs))
+        if complete:
+            return True
+        if final is not None:
+            final.summary = "Ad matrix is incomplete. First-aspect review or batch artifacts are still pending."
+        return False
     mirelo_submissions = [event for event in current_events if event.name == "Fal___mirelo_v2a"]
     mirelo_job = None
     if mirelo_submissions:

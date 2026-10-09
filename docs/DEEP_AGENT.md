@@ -188,7 +188,7 @@ See [the capability map](CAPABILITY_MAP.md) and [routing policy](SKILLS.md#capab
 
 ## Skills and delegation
 
-There are 24 packaged `SKILL.md` files under `agent/deep_agent/skills/`.
+There are 25 packaged `SKILL.md` files under `agent/deep_agent/skills/`.
 Deep Agents reads metadata first. Full instructions enter context when a relevant skill is read.
 `metadata.include_tools` documents real dispatch wrappers, which are stably bound per role. `metadata.routing_tools` holds
 canonical capability/workflow IDs, while `metadata.gateway_tools` lists built names only.
@@ -572,3 +572,30 @@ There are 15 providers, 113 Gateway tools, 24 skills, 133 active fixture rows, a
 dependency skips. Read [NLE import](NLE_EXPORT.md#import-an-editors-timeline) for the
 parser contract and unsupported edits. Comet and real editor validation remain blocked
 or unverified; offline tests do not establish browser success.
+
+## Matrix editing on a local worker
+
+The manager and editor discover `Remotion___render_ad_variants` and `Ffmpeg___ffmpeg_tool`
+through `call_editor_tool`. Their aliases are `ad_variant_matrix` and `ffmpeg_tool`.
+The [matrix skill](../agent/deep_agent/skills/remotion-ad-variant-matrix/SKILL.md) requires
+`plan` before `render_first`, first-output visual review, and approval of that exact plan hash
+before `render_batch`. The first and batch calls pause in autonomous mode as well. Planning
+is free; approval descriptions disclose render count, aspects, plan hash and a configured
+compute/licence estimate. The trusted executor records approval; the agent cannot create
+an approval by passing fields in the tool arguments.
+
+Media inspection is free. It runs on the machine owning the confined local job directory,
+with fixed ffmpeg/ffprobe executables and a six-op registry. No arbitrary scripts, paths or
+arguments enter subprocess commands. Resolve-only requests return a parked refusal before
+generic generation or NLE-handoff matching. Existing interchange export remains available
+for supported requests. The stored confidential field does not change these routes.
+
+Local timelines now include measured allow-listed text and positioned image/video overlays.
+Lambda receives the same document/renderConfig props, but new font/box fields are refused
+unless `REMOTION_OVERLAY_CONTRACT_VERSION=2` confirms a separately deployed compatible
+composition. This task makes no deployment or Lambda call. Matrix jobs refuse the Lambda
+backend until the same job directory exists on its worker. See
+[Remotion editing](REMOTION_EDITING.md) for the supported backend table and demo commands.
+
+Inventory is 16 providers, 115 Gateway tools and 25 skills. The fixture has 173 active and
+45 deferred cases among 218 rows. Browser validation through Comet remains blocked here.

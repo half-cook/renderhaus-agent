@@ -17,6 +17,12 @@ class ProviderSpec:
 
 PROVIDERS: tuple[ProviderSpec, ...] = (
     ProviderSpec(
+        id="ffmpeg", target_name="Ffmpeg", function_name="renderhaus-ffmpeg-tools",
+        module_path="providers.ffmpeg.api",
+        env_keys=("FFMPEG_DRY_RUN", "RENDERHAUS_MEDIA_DIR"),
+        default_env={"FFMPEG_DRY_RUN": "true"},
+    ),
+    ProviderSpec(
         id="gemini", target_name="Gemini", function_name="renderhaus-gemini-tools",
         module_path="providers.gemini.tools",
         env_keys=("GEMINI_API_KEY", "GEMINI_DRY_RUN", "GEMINI_VLM_MODEL",
@@ -183,6 +189,13 @@ PROVIDERS: tuple[ProviderSpec, ...] = (
             "REMOTION_APP_SERVE_URL",
             "REMOTION_APP_BUCKET_NAME",
             "REMOTION_DRY_RUN",
+            "REMOTION_RENDER_BACKEND",
+            "REMOTION_LICENSE_RENDER_USD",
+            "REMOTION_MATRIX_LAMBDA_MEMORY_MB",
+            "REMOTION_MATRIX_LAMBDA_COMPUTE_SECONDS",
+            "REMOTION_MATRIX_LAMBDA_REQUESTS",
+            "REMOTION_MATRIX_LAMBDA_RENDER_USD",
+            "REMOTION_OVERLAY_CONTRACT_VERSION",
             "REMOTION_FRAMES_PER_LAMBDA",
             "REMOTION_LOCAL_MEDIA_HOSTS",
             "PROVIDER_INPUT_BUCKET",
