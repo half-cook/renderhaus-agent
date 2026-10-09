@@ -1432,7 +1432,9 @@ def _record_approval_requests(
 def _requests_video_deliverable(prompt: str) -> bool:
     """Identify an explicit request for a video file, not merely video-related work."""
     for match in _VIDEO_DELIVERABLE_PATTERN.finditer(prompt):
-        surrounding = prompt[match.start() : match.end() + 24]
+        suffix = re.split(r"\b(?:with|without|and|include|add)\b", prompt[match.end():match.end() + 24],
+                          maxsplit=1, flags=re.IGNORECASE)[0]
+        surrounding = prompt[match.start():match.end()] + suffix
         if not _NON_VIDEO_DELIVERABLE_PATTERN.search(surrounding):
             return True
     return False
@@ -1459,9 +1461,11 @@ def _validate_video_delivery(
         r"\b(?:add|burn|overlay|insert|include|with)\b.*\b(?:captions?|subtitles?|titles?|music|b.?roll|graphics)\b",
         assembly_prompt, re.IGNORECASE,
     ))
-    if not requires_assembly and route_intent(request.prompt).alias == "sync3_lipsync":
+    standalone_poll = {"sync3_lipsync": "Sync___get_video_task",
+                       "heygen_avatar_v": "HeyGen___get_video_status"}.get(route_intent(request.prompt).alias)
+    if not requires_assembly and standalone_poll:
         if any(
-            event.name == "Sync___get_video_task"
+            event.name == standalone_poll
             and event.status.lower() in {"succeeded", "success", "completed"}
             and event.result.get("status") == "succeeded"
             and event.result.get("downloaded") is True

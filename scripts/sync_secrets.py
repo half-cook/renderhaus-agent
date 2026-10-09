@@ -8,6 +8,9 @@ Sync uses SYNC_API_KEY (optional authorized direct), SYNC_DRY_RUN, SYNC_MODEL,
 SYNC_TRANSPORT=fal, SYNC_DIRECT_AUTHORIZED, SYNC_MAX_CHUNK_SECONDS and SYNC_BILLING_PLAN.
 The fal transport reuses FAL_KEY/FAL_DRY_RUN. Chunking uses AWS_S3_BUCKET and
 REMOTION_LOCAL_MEDIA_HOSTS. All settings are synced without printing values.
+HeyGen uses HEYGEN_API_KEY, HEYGEN_DRY_RUN=true, HEYGEN_MODEL=avatar_v and
+HEYGEN_API_PLAN=unknown (paid_self_serve or enterprise for commercial live use).
+Hosted HeyGen jobs reuse AWS_S3_BUCKET for durable consent and job manifests.
 Model Studio uses DASHSCOPE_API_KEY, DASHSCOPE_REGION, DASHSCOPE_BASE_URL,
 DASHSCOPE_WORKSPACE_ID, DASHSCOPE_MODEL and MODELSTUDIO_DRY_RUN.
 Seedance 2.5 defaults to FAL_KEY with SEEDANCE_TRANSPORT=fal and SEEDANCE_FAL_REGION=us.

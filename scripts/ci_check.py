@@ -29,6 +29,7 @@ def _force_dry_run() -> None:
     os.environ["HYPERFRAMES_DRY_RUN"] = "true"
     os.environ["MODELSTUDIO_DRY_RUN"] = "true"
     os.environ["SYNC_DRY_RUN"] = "true"
+    os.environ["HEYGEN_DRY_RUN"] = "true"
 
 
 _force_dry_run()
@@ -72,8 +73,8 @@ def check_routing_inventory() -> None:
     from providers.catalog import PROVIDERS
     from providers.registry import load_committed_schemas
 
-    assert len(PROVIDERS) == 11
-    assert sum(len(load_committed_schemas(spec)) for spec in PROVIDERS) == 91
+    assert len(PROVIDERS) == 12
+    assert sum(len(load_committed_schemas(spec)) for spec in PROVIDERS) == 95
     paths = list(SKILLS_ROOT.glob("*/SKILL.md"))
     assert len(paths) == 24
     assert "ladder" not in POLICY and "premium_targets" not in POLICY
@@ -90,8 +91,8 @@ def check_routing_inventory() -> None:
         assert set(metadata["include_tools"].split()) <= DISPATCH_TARGETS.keys(), path
         assert all(TOOL_MAP[alias]["status"] != "retired" for alias in metadata["routing_tools"].split()), path
     cases = json.loads((ROOT / "tests/fixtures/skill_routing.json").read_text())
-    assert len(cases) == 129 and sum(not case["skip_reason"] for case in cases) == 96
-    print("ok routing inventory (11 providers, 91 Gateway tools, 24 skills, 96 active routing rows)")
+    assert len(cases) == 129 and sum(not case["skip_reason"] for case in cases) == 98
+    print("ok routing inventory (12 providers, 95 Gateway tools, 24 skills, 98 active routing rows)")
 
 
 def _assert_gateway_shape(schema: object) -> None:
@@ -117,9 +118,17 @@ def check_dry_run_dispatch() -> None:
             result = dispatch(spec.id, "music_compose", {"prompt": "Warm piano", "music_length_ms": 3000})
             assert result["status"] == "dry_run"
             continue
+        heygen_job_id = None
         for schema in load_committed_schemas(spec):
             name = schema["name"]
             arguments = dummy_arguments(schema)
+            if spec.id == "heygen" and name == "create_avatar_video":
+                arguments.update(avatar_id="lk_ci", voice_id="voice_ci", script="Offline presenter preview",
+                                 duration_seconds=90.0, subjects="Authorized test presenter and voice",
+                                 consent_confirmed=True, consent_record_id="ci-consent")
+            if spec.id == "heygen" and name == "get_video_status":
+                assert heygen_job_id, "HeyGen poll must reuse the created dry-run handle"
+                arguments["job_id"] = heygen_job_id
             if spec.id == "sync" and name == "lipsync_video":
                 arguments.update(video_url="https://example.test/source.mp4",
                                  audio_url="https://example.test/voice.wav",
@@ -170,6 +179,8 @@ def check_dry_run_dispatch() -> None:
                 }
             result = dispatch(spec.id, name, arguments)
             assert isinstance(result, dict), f"{spec.id}.{name} did not return a dict"
+            if spec.id == "heygen" and name == "create_avatar_video":
+                heygen_job_id = result["job_id"]
             if "error" in result and result.get("error_type"):
                 raise AssertionError(f"{spec.id}.{name} dispatch error: {result}")
             print(f"ok dry-run {spec.id}.{name} status={result.get('status', 'ok')}")

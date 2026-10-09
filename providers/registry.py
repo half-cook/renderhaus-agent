@@ -20,6 +20,12 @@ FORBIDDEN_TOOL_RE = re.compile(r"^(wait_for_.*|.*_and_wait)$")
 
 
 TOOL_GUIDANCE: dict[str, dict[str, str]] = {
+    "heygen": {
+        "create_avatar_video": "Make a presenter video using official HeyGen Avatar V and an existing eligible digital-twin look avatar_id. Require subjects, consent_confirmed=true and recorded consent_record_id for every face and voice. Supply script with voice_id or audio_url, language locale, resolution and aspect_ratio. duration_seconds is a measured audio length or script duration estimate, not a vendor render control. All paid video pauses with cost even in autonomous runs. API billing is separate from app plans; self-serve list price is $0.12/s; enterprise estimates remain unknown. Default dry-run produces no media. Live checks engine eligibility and accepted vendor consent. Poll get_video_status with download=true; completion requires the saved MP4. Outputs are not training eligible.",
+        "get_video_status": "Poll the exact saved HeyGen job_id once. download=true saves completed MP4 media. Never submits another generation. Dry-run jobs stay previews even after configuration changes.",
+        "list_avatars": "List one page of digital-twin looks for avatar_id discovery. Inspect supported_api_engines for avatar_v eligibility. Default dry-run returns no invented avatar IDs. No generation.",
+        "list_voices": "List one page of HeyGen voice IDs and language metadata. Default dry-run returns no invented voice IDs. No generation or voice cloning.",
+    },
     "sync": {
         "lipsync_video": "Put replacement audio on existing footage using sync-3 via fal by default. Requires measured video/audio durations, source fps, every face/voice subject and explicit consent_confirmed=true. Script only: create authorized ElevenLabs TTS first. All paid requests pause with a cost estimate even in autonomous runs. Large equal-length cut_off inputs require supplied silence/shot chunk boundaries plus ffmpeg and S3. Dry-run is an input preview. Poll get_video_task with download=true; never claim completion until the saved MP4 plays. No training eligibility.",
         "get_video_task": "Poll a saved Sync job or chunk manifest once; download=true persists completed MP4 media and provenance. Reuse the exact job_id, never submit another lip-sync job to check status. No paid generation. Dry-run never produces an artifact.",

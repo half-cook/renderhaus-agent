@@ -1,0 +1,126 @@
+[
+  {
+    "name": "create_avatar_video",
+    "description": "Make a presenter video using official HeyGen Avatar V and an existing eligible digital-twin look avatar_id. Require subjects, consent_confirmed=true and recorded consent_record_id for every face and voice. Supply script with voice_id or audio_url, language locale, resolution and aspect_ratio. duration_seconds is a measured audio length or script duration estimate, not a vendor render control. All paid video pauses with cost even in autonomous runs. API billing is separate from app plans; self-serve list price is $0.12/s; enterprise estimates remain unknown. Default dry-run produces no media. Live checks engine eligibility and accepted vendor consent. Poll get_video_status with download=true; completion requires the saved MP4. Outputs are not training eligible.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "avatar_id": {
+          "type": "string",
+          "description": "Existing HeyGen LOOK id, not an avatar group id. Live Avatar V requires a completed digital_twin look explicitly listing avatar_v in supported_api_engines and accepted consent on its group."
+        },
+        "duration_seconds": {
+          "type": "number",
+          "description": "Measured audio length or requested script-video length used for the cost estimate, not a vendor duration control. Maximum audio 600 seconds; script-video 1800 seconds. Actual duration is returned after completion."
+        },
+        "subjects": {
+          "type": "string",
+          "description": "Identify every real person whose likeness or voice is used. The record must cover all subjects, including a cloned voice."
+        },
+        "consent_confirmed": {
+          "type": "boolean",
+          "description": "Required boolean true confirming explicit permission for every supplied likeness and voice. Spending approval does not replace consent."
+        },
+        "consent_record_id": {
+          "type": "string",
+          "description": "Opaque id of the recorded source rights and consent. Do not supply a signed URL, credentials, or a consent video here."
+        },
+        "script": {
+          "type": "string",
+          "description": "1 to 5000 nonblank characters. Requires an authorized voice_id. Supply script or audio_url, never both."
+        },
+        "voice_id": {
+          "type": "string",
+          "description": "Existing authorized HeyGen voice id for script speech. Voice creation and cloning are outside this tool."
+        },
+        "audio_url": {
+          "type": "string",
+          "description": "Existing HTTPS speech audio or an authorized renderhaus-asset:// version handle, maximum 600 seconds. Replaces script plus voice_id."
+        },
+        "language": {
+          "type": "string",
+          "description": "Optional speech locale, for example fr-CA, sent as voice_settings.locale for script speech. It is not a translation operation."
+        },
+        "resolution": {
+          "type": "string",
+          "description": "Allowed values: 720p, 1080p. Avatar V 4K output is not verified."
+        },
+        "aspect_ratio": {
+          "type": "string",
+          "description": "Allowed values: 16:9, 9:16, 4:5, 5:4, 1:1, auto."
+        },
+        "motion_prompt": {
+          "type": "string",
+          "description": "Optional natural-language body motion and gesture direction for the eligible digital twin."
+        },
+        "model": {
+          "type": "string",
+          "description": "avatar_v is verified. Unsupported or unverified engines always produce a dry-run preview, even when HEYGEN_DRY_RUN=false."
+        }
+      },
+      "required": [
+        "avatar_id",
+        "duration_seconds",
+        "subjects",
+        "consent_confirmed",
+        "consent_record_id"
+      ]
+    }
+  },
+  {
+    "name": "get_video_status",
+    "description": "Poll the exact saved HeyGen job_id once. download=true saves completed MP4 media. Never submits another generation. Dry-run jobs stay previews even after configuration changes.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "job_id": {
+          "type": "string",
+          "description": "Exact saved HeyGen handle returned by create_avatar_video. Polling never submits work. Dry handles remain dry after configuration changes."
+        },
+        "download": {
+          "type": "boolean",
+          "description": "Atomically save and validate a completed MP4. A queued job or a dry-run preview is not produced media."
+        }
+      },
+      "required": [
+        "job_id"
+      ]
+    }
+  },
+  {
+    "name": "list_avatars",
+    "description": "List one page of digital-twin looks for avatar_id discovery. Inspect supported_api_engines for avatar_v eligibility. Default dry-run returns no invented avatar IDs. No generation.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "limit": {
+          "type": "integer",
+          "description": "Page size: 1-50 for avatars, 1-100 for voices. Default 20."
+        },
+        "next_token": {
+          "type": "string",
+          "description": "Opaque next_token from the previous list response, sent as the official API token query parameter."
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "list_voices",
+    "description": "List one page of HeyGen voice IDs and language metadata. Default dry-run returns no invented voice IDs. No generation or voice cloning.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "limit": {
+          "type": "integer",
+          "description": "Page size: 1-50 for avatars, 1-100 for voices. Default 20."
+        },
+        "next_token": {
+          "type": "string",
+          "description": "Opaque next_token from the previous list response, sent as the official API token query parameter."
+        }
+      },
+      "required": []
+    }
+  }
+]

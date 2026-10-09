@@ -2,6 +2,21 @@ import type { AgentToolEvent, CreativeNodeKind, PortDataType, ToolDefinition } f
 
 const CREATIVE_TOOLS: ToolDefinition[] = [
   {
+    id: "video.heygen.presenter",
+    displayName: "HeyGen Avatar V presenter",
+    description: "Use chat to approve a presenter video with recorded face and voice consent",
+    category: "video",
+    providerId: "heygen",
+    toolName: "create_avatar_video",
+    inputPorts: [{ id: "script", label: "Script", dataType: "text", targetField: "script" }],
+    outputPorts: [{ id: "video", label: "Video", dataType: "video" }],
+    primaryFields: ["avatar_id", "voice_id", "script", "audio_url", "language", "duration_seconds",
+      "subjects", "consent_confirmed", "consent_record_id", "resolution", "aspect_ratio"],
+    pollTool: "get_video_status",
+    pollIntervalMs: 10000,
+    defaults: { model: "avatar_v", resolution: "1080p", aspect_ratio: "16:9" },
+  },
+  {
     id: "runway.video.generate",
     displayName: "Runway video",
     category: "video",
@@ -408,7 +423,8 @@ export function toolForAgentArtifact(
   if (kind === "image") return toolById(runway ? "runway.image.generate" : provider.includes("seedream") ? "image.generate" : "openai.image.generate");
   if (kind === "video") {
     return toolById(
-      runway ? "runway.video.generate"
+      provider.includes("heygen") ? "video.heygen.presenter"
+        : runway ? "runway.video.generate"
         : provider.includes("luma") ? "video.luma.generate"
         : provider.includes("generate_wan3") ? "video.wan3.generate"
         : provider.includes("fal") ? "video.falGenerate"

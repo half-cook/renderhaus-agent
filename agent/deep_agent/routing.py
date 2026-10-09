@@ -11,6 +11,7 @@ from pathlib import Path
 POLICY = json.loads(Path(__file__).with_name("routing_policy.json").read_text())
 TOOL_MAP = POLICY["tools"]
 TARGET_PROVIDERS = {
+    "HeyGen": "heygen",
     "Sync": "sync",
     "OpenAI": "openai_images",
     "Kling": "kling",
@@ -345,6 +346,9 @@ def _capability_price(row: dict):
     elif provider == "alibaba_modelstudio":
         values = {region: {resolution: str(value) for resolution, value in table.items()}
                   for region, table in rates.MODELSTUDIO_CENTS_PER_SECOND.items()}
+    elif provider == "heygen":
+        values = {"self_serve_cents_per_second": str(rates.HEYGEN_AVATAR_V_CENTS_PER_SECOND),
+                  "enterprise": "unknown"}
     elif provider == "sync":
         values = {"fal_cents_per_minute": str(rates.SYNC_FAL_CENTS_PER_MINUTE),
                   "direct_legacy_base_cents_per_second_at_25fps": str(rates.SYNC_DIRECT_BASE_CENTS_PER_SECOND_25FPS)}
@@ -358,6 +362,13 @@ def _capability_price(row: dict):
 def intent_constraints(prompt: str, *, tier: str | None = None, confidential: bool = False,
                        arguments: dict | None = None) -> dict:
     args = arguments or {}
+    excluded_names = re.compile(
+        r"\b(?:not|no|avoid|without|never|don't|do not)(?:\s+use)?\s+"
+        r"(heygen(?:\s+avatar\s+v)?|avatar[ -]v|sync(?:[ -]?3|\.so)?)\b", re.IGNORECASE,
+    )
+    excluded_providers = sorted({"heygen" if match[1].lower().startswith(("heygen", "avatar")) else "sync"
+                                 for match in excluded_names.finditer(prompt)})
+    provider_prompt = excluded_names.sub("", prompt)
     provider_candidates = [p for pattern, p in [
         (r"\bvidu\b|\bvace\b|\bfal\b|\bwan[ -]?2", "fal"), (r"\bseedance\b", "seedance"),
         (r"\bseedream\b", "seedream"), (r"\bkling\b", "kling"),
@@ -365,9 +376,10 @@ def intent_constraints(prompt: str, *, tier: str | None = None, confidential: bo
         (r"\brunway\b|\baleph\b|gen.?4", "runway"), (r"\bluma\b|\bray.?3\b", "luma"),
         (r"\bfish\b", "fish_audio"), (r"\belevenlabs\b", "elevenlabs"),
         (r"\bsync[ -]?3\b|sync\.so|\b(?:use|using|via)\s+sync\b", "sync"),
+        (r"\bheygen\b|\bavatar[ -]v\b", "heygen"),
         (r"model[ -]?studio|dashscope|alibaba", "alibaba_modelstudio"),
         (r"mini.?max", "minimax_h3"), (r"hunyuan", "hunyuan"),
-    ] if re.search(pattern, prompt, re.I)]
+    ] if re.search(pattern, provider_prompt, re.I)]
     provider = next(iter(provider_candidates), None)
     required = {}
     for feature, pattern in {
@@ -425,9 +437,10 @@ def intent_constraints(prompt: str, *, tier: str | None = None, confidential: bo
     if re.search(r"kling.*(?:turbo|omni)", prompt, re.I):
         model = "kling-3.0-omni" if re.search("omni", prompt, re.I) else "kling-3.0-turbo"
     named_model = next((key for key, entry in POLICY["named_models"].items()
-                        if re.search(entry["pattern"], prompt, re.I)), None)
+                        if re.search(entry["pattern"], provider_prompt, re.I)), None)
     return {"provider": provider, "model": model, "named_model": named_model,
-            "provider_candidates": provider_candidates, "required": required, "predicates": predicates}
+            "provider_candidates": provider_candidates, "excluded_providers": excluded_providers,
+            "required": required, "predicates": predicates}
 
 
 def resolution_value(value: str) -> int:
@@ -453,7 +466,8 @@ def select_provider(job: str, *, tier: str | None = None, required: dict | None 
                     faithful: bool = False, region: str | None = None,
                     available_tools: set[str] | None = None, tool_variant: str | None = None,
                     predicates: dict | None = None, named_model: str | None = None,
-                    provider_candidates: list[str] | None = None) -> Route:
+                    provider_candidates: list[str] | None = None,
+                    excluded_providers: list[str] | None = None) -> Route:
     args, required = dict(arguments or {}), dict(required or {})
     detected = intent_constraints("", arguments=args)["predicates"]
     predicates = {**detected, **(predicates or {})}
@@ -510,6 +524,9 @@ def select_provider(job: str, *, tier: str | None = None, required: dict | None 
         if exception:
             alias, basis = exception["tool"], "exception: " + exception["reason"]
     entry = TOOL_MAP[alias]
+    if entry.get("provider") in (excluded_providers or []):
+        reason = f"Requested provider exclusion blocks {entry['provider']} for {capability}; no substitute was selected."
+        return Route(alias=alias, status="blocked", job_type=capability, reason=reason, disclosure=reason)
     if basis == "default" and not provider and not model and not named_model:
         if interim := _licence_interim(alias):
             entry = TOOL_MAP[interim]
@@ -680,6 +697,12 @@ def premium_video(name: str) -> bool:
 
 def effective_model(provider: str, tool: str, arguments: dict) -> str | None:
     policy = POLICY["providers"].get(provider, {})
+    if provider == "heygen":
+        if tool != "create_avatar_video":
+            return None
+        from providers.heygen.contracts import configured_model
+
+        return configured_model(arguments)
     if provider == "seedance":
         if tool == "get_video_task":
             endpoint = str(arguments.get("job_id", "")).partition(":")[0]
@@ -759,6 +782,13 @@ def policy_blocker(name: str, arguments: dict, *, region: str | None = None) -> 
         if not dry_run():
             if blocker := live_blocker(arguments):
                 return blocker
+    if provider == "heygen":
+        from providers.heygen.api import dry_run
+        from providers.heygen.contracts import live_blocker
+
+        if not dry_run(arguments):
+            if blocker := live_blocker(arguments):
+                return blocker
     if (
         region in model_policy.get("blocked_regions", [])
         or model_policy.get("allowed_regions")
@@ -818,6 +848,11 @@ def estimate_cost(name: str, arguments: dict, *, list_price: bool = False) -> Co
         return CostEstimate(None, blocker)
     provider, tool = tool_parts(name)
     model = effective_model(provider, tool, arguments)
+    if provider == "heygen":
+        try:
+            return CostEstimate(_published_cost(provider, tool, arguments).total_cents)
+        except (ValueError, TypeError, KeyError) as exc:
+            return CostEstimate(None, str(exc))
     if provider == "openai_images":
         return CostEstimate(None, "UNVERIFIED pre-call token count for selected size/quality and inputs. Official token rates are verified.")
     if model:
@@ -885,6 +920,8 @@ def _published_cost(provider: str, tool: str, arguments: dict):
         return rates._with_fee(ceil(rates.seedance_price_cents(tool, arguments)))
     if provider == "seedream":
         return rates._seedream_cost(arguments)
+    if provider == "heygen":
+        return rates._with_fee(ceil(rates.heygen_price_cents(arguments)))
     if provider == "sync":
         cents = rates.sync_price_cents(arguments)
         return rates._with_fee(ceil(cents))

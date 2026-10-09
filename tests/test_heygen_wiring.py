@@ -19,6 +19,7 @@ from agent.studio_agent_next import (
     StudioToolEvent, _context_from_request, _validate_video_delivery,
 )
 from server.billing_rates import cost_for, HEYGEN_AVATAR_V_CENTS_PER_SECOND
+from server.studio_options import extract_choice_ids
 import server.studio as studio_api
 from test_deep_agent import Gateway, ScriptedModel, call, final
 
@@ -48,6 +49,13 @@ class HeyGenWiringTests(unittest.TestCase):
             route = routing.route_intent(prompt)
             self.assertEqual(route.tool, NAME)
             self.assertIn("explicit", route.basis)
+        self.assertEqual(routing.route_intent("use HeyGen, not sync-3, for this 90 second presenter video").tool, NAME)
+        self.assertEqual(routing.route_intent("use sync-3, not HeyGen, for this 90 second presenter video").alias, "sync3_lipsync")
+        self.assertEqual(routing.route_intent("use Avatar V for this 20 second presenter video").tool, NAME)
+        self.assertEqual(routing.route_intent("use Avatar V for this 20 second video").tool, NAME)
+        denied = routing.route_intent("Do not use HeyGen for this 90 second presenter video")
+        self.assertEqual(denied.status, "blocked")
+        self.assertIsNone(denied.tool)
         self.assertEqual(routing.route_intent("30 second presenter video").alias, "sync3_lipsync")
         self.assertEqual(routing.route_intent("dub a 90 second interview clip").alias, "sync3_lipsync")
         self.assertEqual(routing.route_intent("make a HeyGen generative video clip").status, "retired")
@@ -60,6 +68,10 @@ class HeyGenWiringTests(unittest.TestCase):
         for name in ("get_video_status", "list_avatars", "list_voices"):
             self.assertTrue(routing.is_free_tool(f"HeyGen___{name}"))
             self.assertEqual(cost_for("heygen", name, {}).total_cents, 0)
+
+    def test_studio_voice_options_keep_real_ids(self):
+        self.assertEqual(extract_choice_ids({"data": [{"voice_id": "voice_alice", "name": "Alice"}]}),
+                         ["voice_alice"])
 
     def test_verified_self_serve_quote_and_unknown_enterprise(self):
         self.assertEqual(HEYGEN_AVATAR_V_CENTS_PER_SECOND, 12)

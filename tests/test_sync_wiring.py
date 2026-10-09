@@ -37,12 +37,12 @@ class SyncWiringTests(unittest.TestCase):
                 self.assertEqual(route.dispatch_tool, "call_media_tool")
                 self.assertEqual(route.status, "ready")
 
-    def test_generated_talking_shots_keep_seedance_and_long_presenters_stay_pending(self):
+    def test_generated_talking_shots_keep_seedance_and_long_presenters_use_heygen(self):
         self.assertEqual(routing.route_intent("generate a cartoon talking shot").alias, "seedance25_t2v")
         self.assertEqual(routing.route_intent("talking avatar from a cartoon image and audio").alias, "seedance25_i2v")
         long = routing.route_intent("90 second multilingual avatar presenter")
         self.assertEqual(long.alias, "heygen_avatar_v")
-        self.assertEqual(long.status, "pending")
+        self.assertEqual(long.status, "ready")
         self.assertEqual(routing.route_intent("use sync-3 to dub a 90 second presenter video").alias,
                          "sync3_lipsync")
 

@@ -47,7 +47,8 @@ def tool_needs_approval(name: str, autonomous: bool) -> bool:
 
     if name in APPROVAL_EXEMPT_TOOLS:
         return False
-    if name in {"Remotion___prepare_conversational_edit", "Sync___lipsync_video", "sync3_lipsync"}:
+    if name in {"Remotion___prepare_conversational_edit", "Sync___lipsync_video", "sync3_lipsync",
+                "HeyGen___create_avatar_video", "heygen_avatar_v"}:
         return True
     return not autonomous or requires_approval(name) or premium_video(name)
 
@@ -211,6 +212,14 @@ class GatewayExecutor:
         return route
 
     def dispatch_disclosure(self, name, arguments, route):
+        if name == "HeyGen___create_avatar_video":
+            consent = "confirmed with a recorded acknowledgement" if arguments.get("consent_confirmed") is True else "required"
+            return (f"Provider HeyGen direct; model {effective_model('heygen', 'create_avatar_video', arguments)}. "
+                    f"{route.basis if route else 'exception for long presenters'}. {estimate_cost(name, arguments).description} "
+                    f"Faces and voices: {arguments.get('subjects') or 'identify every subject'}. Consent {consent}. "
+                    "API billing is separate from HeyGen app plans. Non-enterprise uploads may train HeyGen models "
+                    "unless the account has opted out; Enterprise data is excluded under vendor terms. "
+                    "Outputs are not training eligible. Script duration is an estimate, not a render-length control.")
         if name == "Sync___lipsync_video":
             from providers.sync.contracts import configured_transport
 
@@ -241,6 +250,13 @@ class GatewayExecutor:
             return blocker
         provider, tool = tool_parts(name)
         sync_request = None
+        if name == "HeyGen___create_avatar_video":
+            from providers.heygen.contracts import request_for
+
+            try:
+                request_for(arguments)
+            except ValueError as exc:
+                return str(exc)
         if name == "Sync___lipsync_video" and (
             arguments.get("consent_confirmed") is not True
             or not isinstance(arguments.get("subjects"), str)
@@ -262,7 +278,7 @@ class GatewayExecutor:
             return f"Capability map selected {route.tool} ({route.model}). Discover its schema and use that route. {route.reason}"
         row = next((row for row in POLICY["capabilities"]
                     if row["model"] == route.model and name in row["tools"].values()), {})
-        if provider != "sync" and route.required.get("real_face_refs") and arguments.get("likeness_consent") is not True:
+        if provider not in {"sync", "heygen"} and route.required.get("real_face_refs") and arguments.get("likeness_consent") is not True:
             return "Real-person likeness references require explicit likeness_consent=true acknowledgement."
         audio_field = row.get("native_audio_field", "generate_audio")
         for field, feature in [(audio_field, "native_audio"), (row.get("multi_shot_field", "multi_shot"), "multi_shot")]:

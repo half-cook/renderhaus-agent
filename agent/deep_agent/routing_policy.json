@@ -17,7 +17,9 @@
     "estimate_tts_cost",
     "export_nle_timeline",
     "prepare_conversational_edit",
-    "get_task"
+    "get_task",
+    "get_video_status",
+    "list_avatars"
   ],
   "providers": {
     "kling": {
@@ -596,6 +598,42 @@
         }
       },
       "explicit_only": false
+    },
+    "heygen": {
+      "enabled": true,
+      "license": "service-terms",
+      "training_eligible": false,
+      "allowed_regions": [],
+      "models": [
+        "avatar_v"
+      ],
+      "default_model": "avatar_v",
+      "model_env": "HEYGEN_MODEL",
+      "default_models": {
+        "create_avatar_video": "avatar_v"
+      },
+      "model_policies": {
+        "avatar_v": {
+          "license": "service-terms",
+          "weights_license": "closed-weights",
+          "license_source": "https://www.heygen.com/terms",
+          "enabled": true,
+          "training_eligible": false,
+          "training_reason": "Renderhaus continuity training only accepts approved Apache Wan assets. No model-specific training grant is relied on.",
+          "commercial_status": "Paid API account required; Free Plan outputs are non-commercial and blocked live.",
+          "consent_requirements": "subjects, consent_confirmed=true and opaque consent_record_id required for every face and voice. Live digital-twin group must have accepted HeyGen recorded consent.",
+          "consent_source": "https://developers.heygen.com/docs/avatar-consent",
+          "vendor_trains_on_uploads": "Non-enterprise may train unless opted out; enterprise data excluded per trust-and-safety.",
+          "training_source": "https://www.heygen.com/privacy",
+          "read_date": "2026-10-09"
+        }
+      },
+      "explicit_only": false,
+      "host": "HeyGen direct",
+      "us_available": "yes",
+      "availability_source": "https://www.heygen.com/terms",
+      "availability_note": "US-hosted company; no US exclusion in published service terms. Account access not tested.",
+      "read_date": "2026-10-09"
     }
   },
   "tools": {
@@ -1172,24 +1210,30 @@
       "dry_run": true
     },
     "heygen_avatar_v": {
-      "gateway_tool": null,
-      "status": "pending",
+      "gateway_tool": "HeyGen___create_avatar_video",
+      "status": "ready",
       "provider": "heygen",
-      "reason": "provider pending: heygen_avatar_v (feat/provider-heygen-avatar-v)",
-      "verification": "verified; adapter pending; live use disabled",
-      "training_eligible": false,
+      "reason": "Long presenter or digital-twin exception; explicit requests take precedence.",
+      "verification": "Official v3 engine and self-serve $0.12/s verified 2026-10-09; enterprise price unknown; live untested.",
       "model": "avatar_v",
       "host": "HeyGen direct",
-      "us_available": "unclear",
-      "availability_source": "https://help.heygen.com/en/articles/11187873-heygen-privacy-and-security-standards",
-      "read_date": "2026-10-08",
-      "license": "proprietary API; exact terms require future adapter branch verification",
-      "license_source": "https://developers.heygen.com/avatar-v",
-      "training_reason": "No clear output-training permission verified.",
+      "us_available": "yes",
+      "availability_source": "https://www.heygen.com/terms",
       "source": "https://developers.heygen.com/avatar-v",
-      "price_source": "https://developers.heygen.com/llms.txt",
+      "price_source": "https://help.heygen.com/en/articles/10060327-heygen-api-pricing-explained",
       "dry_run": true,
-      "consent_requirements": "Require rights to supplied real-face/voice media; verify vendor consent flow before adapter activation."
+      "license": "service-terms",
+      "weights_license": "closed-weights",
+      "license_source": "https://www.heygen.com/terms",
+      "enabled": true,
+      "training_eligible": false,
+      "training_reason": "Renderhaus continuity training only accepts approved Apache Wan assets. No model-specific training grant is relied on.",
+      "commercial_status": "Paid API account required; Free Plan outputs are non-commercial and blocked live.",
+      "consent_requirements": "subjects, consent_confirmed=true and opaque consent_record_id required for every face and voice. Live digital-twin group must have accepted HeyGen recorded consent.",
+      "consent_source": "https://developers.heygen.com/docs/avatar-consent",
+      "vendor_trains_on_uploads": "Non-enterprise may train unless opted out; enterprise data excluded per trust-and-safety.",
+      "training_source": "https://www.heygen.com/privacy",
+      "read_date": "2026-10-09"
     },
     "kling_motion_control": {
       "gateway_tool": null,
@@ -1614,7 +1658,7 @@
       "capability": "nle_handoff"
     },
     {
-      "pattern": "lipsync|lip.sync|talking head|talking avatar|spokesperson|avatar.*(?:say|script|presenter)|presenter|digital twin|dub.*(?:interview|clip|footage|video)|hedra|infinitetalk|re[ -]?voic|replace.*(?:voice|dialogue).*(?:footage|video|clip)|sync[ -]?3|sync\\.so",
+      "pattern": "lipsync|lip.sync|talking head|talking avatar|spokesperson|avatar.*(?:say|script|presenter)|presenter|digital twin|dub.*(?:interview|clip|footage|video)|hedra|infinitetalk|re[ -]?voic|replace.*(?:voice|dialogue).*(?:footage|video|clip)|sync[ -]?3|sync\\.so|heygen\\s+avatar\\s+v|\\bavatar[ -]v\\b",
       "skill": "lipsync",
       "abstract_tool": "sync3_lipsync",
       "capability": "lipsync"
@@ -4045,6 +4089,53 @@
       },
       "native_audio_field": null,
       "native_audio_default": true
+    },
+    {
+      "provider": "heygen",
+      "policy_ref": "heygen",
+      "model": "avatar_v",
+      "label": "HeyGen Avatar V",
+      "tools": {
+        "lipsync": "HeyGen___create_avatar_video"
+      },
+      "jobs": {
+        "native_audio": true,
+        "max_resolution": 1080
+      },
+      "controls": {
+        "lipsync": [
+          "avatar_id",
+          "voice_id",
+          "script",
+          "audio_url",
+          "duration_seconds",
+          "subjects",
+          "consent_confirmed",
+          "consent_record_id",
+          "language",
+          "resolution",
+          "aspect_ratio",
+          "motion_prompt",
+          "model"
+        ]
+      },
+      "durations": {
+        "lipsync": [
+          0.001,
+          1800
+        ]
+      },
+      "resolutions": [
+        720,
+        1080
+      ],
+      "price": {
+        "source": "https://help.heygen.com/en/articles/10060327-heygen-api-pricing-explained",
+        "checked_at": "2026-10-09",
+        "verification": "Verified self-serve $0.12/s; enterprise unknown"
+      },
+      "native_audio_field": null,
+      "native_audio_default": true
     }
   ],
   "image_default_size": "2K",
@@ -4277,7 +4368,8 @@
     "Seedance___reference_to_video",
     "Seedance___edit_video",
     "Seedance___extend_video",
-    "Sync___lipsync_video"
+    "Sync___lipsync_video",
+    "HeyGen___create_avatar_video"
   ],
   "explicit_routes": {
     "kling": {
@@ -4337,6 +4429,9 @@
     },
     "sync": {
       "lipsync": "sync3_lipsync"
+    },
+    "heygen": {
+      "lipsync": "heygen_avatar_v"
     }
   },
   "named_models": {
@@ -4386,7 +4481,7 @@
       }
     },
     "heygen_avatar": {
-      "pattern": "heygen.*avatar(?:[ -]?v)?",
+      "pattern": "heygen.*avatar(?:[ -]?v)?|\\bavatar[ -]v\\b",
       "aliases": {
         "lipsync": "heygen_avatar_v"
       }
@@ -4761,13 +4856,18 @@
       "read_date": "2026-10-09"
     },
     "heygen_avatar_v": {
-      "license": "proprietary API; exact terms require future adapter branch verification",
-      "license_source": "https://developers.heygen.com/avatar-v",
+      "license": "service-terms",
+      "weights_license": "closed-weights",
+      "license_source": "https://www.heygen.com/terms",
+      "enabled": true,
       "training_eligible": false,
-      "training_reason": "No clear output-training permission verified.",
-      "commercial_status": "UNVERIFIED: model-specific terms pending",
-      "read_date": "2026-10-08",
-      "consent_requirements": "Source subject rights/consent required; vendor-specific flow must be verified before activation."
+      "training_reason": "Renderhaus continuity training only accepts approved Apache Wan assets. No model-specific training grant is relied on.",
+      "commercial_status": "Paid API account required; Free Plan outputs are non-commercial and blocked live.",
+      "consent_requirements": "subjects, consent_confirmed=true and opaque consent_record_id required for every face and voice. Live digital-twin group must have accepted HeyGen recorded consent.",
+      "consent_source": "https://developers.heygen.com/docs/avatar-consent",
+      "vendor_trains_on_uploads": "Non-enterprise may train unless opted out; enterprise data excluded per trust-and-safety.",
+      "training_source": "https://www.heygen.com/privacy",
+      "read_date": "2026-10-09"
     },
     "runway_act_two": {
       "license": "Runway Terms proprietary API; commercial use allowed; competing product training restricted.",
