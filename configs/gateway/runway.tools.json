@@ -1,5 +1,69 @@
 [
   {
+    "name": "act_two",
+    "description": "Performance transfer default Act-Two. Require character_uri (image/video), performance_uri, measured performance_duration_seconds 3-30, subjects and consent_confirmed=true for every face, voice and body. body_control and expression_intensity 1-5 are optional; character video requires body_control=false. Always pause with cost even autonomous. For long sources use approved shot/silence segments with source_duration_seconds, performance_start_seconds and boundary_kind; process sequentially then assemble through Remotion. Poll get_runway_task with download=true. Dry-run produces no media; outputs never enter training.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "character_uri": {
+          "type": "string"
+        },
+        "performance_uri": {
+          "type": "string"
+        },
+        "performance_duration_seconds": {
+          "type": "number",
+          "description": "Allowed range: 3 to 30."
+        },
+        "subjects": {
+          "type": "string"
+        },
+        "consent_confirmed": {
+          "type": "boolean"
+        },
+        "character_type": {
+          "type": "string",
+          "description": "One of: image, video."
+        },
+        "ratio": {
+          "type": "string",
+          "description": "Allowed values: 1280:720, 720:1280, 1104:832, 960:960, 832:1104, 1584:672."
+        },
+        "body_control": {
+          "type": "boolean",
+          "description": "Gesture transfer requires a character image; false is required for character video."
+        },
+        "expression_intensity": {
+          "type": "integer",
+          "description": "Allowed range: 1 to 5."
+        },
+        "seed": {
+          "type": "integer",
+          "description": "Allowed range: 0 to 4.29497e+09."
+        },
+        "source_duration_seconds": {
+          "type": "number",
+          "description": "Must be at least 3."
+        },
+        "performance_start_seconds": {
+          "type": "number",
+          "description": "Must be at least 0."
+        },
+        "boundary_kind": {
+          "type": "string",
+          "description": "One of: shot, silence."
+        }
+      },
+      "required": [
+        "character_uri",
+        "performance_uri",
+        "performance_duration_seconds",
+        "subjects",
+        "consent_confirmed"
+      ]
+    }
+  },
+  {
     "name": "text_to_video",
     "description": "Create a Gen-4.5 video from text. Starts paid work unless dry-run. Poll get_runway_task with the returned job_id at least five seconds apart.",
     "inputSchema": {

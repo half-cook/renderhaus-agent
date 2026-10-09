@@ -81,8 +81,8 @@ exceptions for demoted providers. An exact named pending model has no substitute
 Dialogue without real-person references selects the Seedance exception. Real-person photo/video
 references force Wan and prohibit Seedance or Omni, including the Seedance interim. Real-face Wan 3 dispatch requires an explicit likeness_consent acknowledgement. Vector output selects pending Recraft. Text-only edits
 on an existing image select pending Ideogram; Ideogram generation without an edit image selects
-the GPT generation default. Full-body motion selects pending Kling Motion Control; facial and
-upper-body acting select pending Act-Two. Video-synchronized SFX remains pending Mirelo, while
+the GPT generation default. Full-body motion selects built Kling Motion Control on fal; facial and
+upper-body acting select built Act-Two on Runway. Video-synchronized SFX remains pending Mirelo, while
 text-only effects use built ElevenLabs. Requests over 30 seconds need supported shot splitting
 or a refusal; long presenter/digital-twin videos use the HeyGen exception.
 
@@ -203,7 +203,7 @@ and queued jobs never satisfy final delivery. See [Topaz](TOPAZ.md) for pricing,
 sources, unknown-price blockers and the blocked Comet check.
 
 `tests/fixtures/skill_routing.json` contains 129 retained routing rows.
-There are 106 active cases and 23 explicit skips. Three Mureka lyrics-video cases
+There are 113 active cases and 16 explicit skips. Seven performance-transfer cases now use built tools. Three Mureka lyrics-video cases
 now use built tools; music routes use Mureka without an ElevenLabs interim. Five Topaz upscale/interpolation cases
 now use built tools. Seedance reference dialogue and two
 previously licence-skipped edit cases now use built Seedance tools. The extension increment
@@ -226,7 +226,7 @@ generation rule. Retired-provider replacement examples retain `source_prompt`; s
 assert that explicit retired requests dispatch nothing. [Decisions](capability-map-decisions.tsv)
 record these differences from the workbook.
 
-The pending specialists cover Act-Two, Kling Motion Control, Mirelo,
+The pending specialists cover Mirelo,
 Recraft, Ideogram edit, VLM judging,
 and cutaway capture. A declared interim activates other pending defaults where supported.
 Wan 3 generation uses its built tools. Model Studio edit/extend retain their default IDs but
@@ -391,7 +391,7 @@ distributed billing guarantee. Durability still depends on the host persisting `
 
 Installed skills distinguish a built dispatch tool from a pending routing alias.
 `docs/skills-drafts/` keeps pending adapter references and retired historical guidance.
-Act-Two/Kling motion control, Mirelo, Recraft and Ideogram edit await their
+Mirelo, Recraft and Ideogram edit await their
 named branches. MMAudio, ACE-Step and Veo references are retired, not future activation plans.
 Transcript cuts, silence removal and captions are folded into conversational-edit. NLE re-import
 still needs feat/nle-import-fcpxml. File export does not control Resolve, establish a graded
@@ -494,5 +494,12 @@ Mureka V9.5 is the music default on fal, with instrumental beds and songs under
 lyrics-video skills now use six `Mureka___` tools; no new skill directory was needed.
 Lyrics video always pauses with cost, including autonomous runs. Raw audio/TTS
 upload preparation remains blocked until the upload and recognition APIs are wired.
-There are 14 providers, 105 Gateway tools and 24 packaged skills. See
+There are 14 providers, 107 Gateway tools and 24 packaged skills. See
 [Mureka](MUREKA.md) for contracts, official dated prices, licences and blocked Comet E2E.
+
+## Performance transfer
+
+The act-two skill now dispatches Runway Act-Two by default and fal Kling 3 Pro Motion Control
+for full-body movement. Both require subject consent and cost approval even in autonomous runs.
+Long Act-Two sources use sequential 3-30s shot/silence segments and the existing Remotion assembly.
+See [performance contracts, prices and limits](PERFORMANCE_TRANSFER.md). Browser E2E remains blocked.

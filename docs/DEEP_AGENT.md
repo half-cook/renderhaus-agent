@@ -167,12 +167,12 @@ Pending aliases cannot dispatch as Gateway tools. The generated inventory is in
 
 The original video-short, product-images, storyboard-shots, audio, final-assembly and refinement
 skills remain. Image-gen applies GPT still defaults and Recraft/Ideogram exceptions.
-Named-provider honors explicit demoted providers. Pending specialists include
-act-two and Kling Motion Control. Mureka lyrics-video and Topaz finishing are built. Product-demo-video keeps the pending cutaway capture utility;
+Named-provider honors explicit demoted generation providers. Act-Two and Kling Motion Control
+use the act-two skill even for explicit performance requests. Mureka lyrics-video and Topaz finishing are built. Product-demo-video keeps the pending cutaway capture utility;
 whiteboard-explainer plans Remotion templates without claiming unsupported marker-hand animation.
 
 The deterministic router supplies skill and tool proposals in graph input and Studio context.
-The capability-map fixture contains 129 retained rows, with 106 active and 23 dependency skips.
+The capability-map fixture contains 129 retained rows, with 113 active and 16 dependency skips.
 Archived/confidential routes are dropped. Active rows cover built tools and declared interims;
 pending specialists keep named branch reasons. Editorial overrides retain the safe preparer,
 separate rendering approval, and existing export/HyperFrames narration workflow contracts.
@@ -407,4 +407,10 @@ Mureka music and lyrics-video share the audio role and six Gateway tools. Native
 no dispatch. This includes autonomous lyrics-video requests. Songs pause unless
 autonomous. See [Mureka](MUREKA.md) for transport, pending raw-audio preparation,
 licences and blocked browser validation. The current inventory is 14 providers,
-105 Gateway tools and 24 skills.
+107 Gateway tools and 24 skills.
+
+Performance transfer uses the installed act-two skill with native cost/consent interrupts on
+`call_media_tool`. Long sources process each approved Act-Two chunk sequentially; polls never
+submit paid children. The editor uses the existing Remotion concat path. See
+[performance transfer](PERFORMANCE_TRANSFER.md). Deep Agents 0.7.23 signatures were inspected
+locally; scripted-model approval/resume tests are offline and do not establish live quality.

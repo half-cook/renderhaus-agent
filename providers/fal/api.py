@@ -13,13 +13,13 @@ import json
 import os
 import uuid
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 from urllib.parse import urlsplit
 
 import httpx
 
 from providers.contracts import validate_tool_arguments
-from providers.fal import queue, vidu, wan, wan3
+from providers.fal import queue, vidu, wan, wan3, motion
 from providers.registry import schema_from_callable
 from providers.seedance import contracts as seedance_contracts
 from providers.sync import contracts as sync_contracts
@@ -27,8 +27,8 @@ from providers.topaz import contracts as topaz_contracts
 from providers.mureka import contracts as mureka_contracts
 
 
-TOOL_CONTRACTS = {tool: contract for contract in (wan, vidu, wan3) for tool in contract.GENERATING_TOOLS}
-ENDPOINT_CONTRACTS = {endpoint: contract for contract in (wan, vidu, wan3, seedance_contracts, sync_contracts, topaz_contracts, mureka_contracts) for endpoint in contract.ENDPOINTS}
+TOOL_CONTRACTS = {tool: contract for contract in (wan, vidu, wan3, motion) for tool in contract.GENERATING_TOOLS}
+ENDPOINT_CONTRACTS = {endpoint: contract for contract in (wan, vidu, wan3, motion, seedance_contracts, sync_contracts, topaz_contracts, mureka_contracts) for endpoint in contract.ENDPOINTS}
 
 
 def _validated(tool: str, arguments: dict[str, Any]) -> dict[str, Any]:
@@ -70,7 +70,11 @@ def _submit(tool: str, arguments: dict[str, Any]) -> dict[str, Any]:
     arguments = _validated(tool, arguments)
     contract = TOOL_CONTRACTS[tool]
     endpoint, body = contract.request_body(tool, arguments)
-    if contract is wan3:
+    if contract is motion:
+        from server.billing_rates import motion_control_price_cents
+
+        estimate = motion_control_price_cents(arguments)
+    elif contract is wan3:
         from server.billing_rates import wan3_price_cents
 
         estimate = wan3_price_cents(arguments) if body["duration"] is not None else None
@@ -78,7 +82,7 @@ def _submit(tool: str, arguments: dict[str, Any]) -> dict[str, Any]:
         estimate = None
     if queue.dry_run():
         preview = {}
-        if contract is wan3:
+        if contract in (wan3, motion):
             preview = {
                 "request_preview": body,
                 "estimated_cost_usd": float(estimate / 100) if estimate is not None else None,
@@ -108,7 +112,7 @@ def _submit(tool: str, arguments: dict[str, Any]) -> dict[str, Any]:
         from server.billing_rates import vidu_q4_price_cents
 
         estimate = vidu_q4_price_cents(body)
-    else:
+    elif contract is not motion:
         estimate = wan.price_cents(endpoint, arguments["resolution"], arguments["num_frames"])
     payload = queue.submit(endpoint.id, body)
     request_id = payload.get("request_id")
@@ -156,6 +160,20 @@ def text_to_video(
 ) -> dict:
     """Submit text-only Wan VACE freeform generation; poll get_video_task."""
     return _submit("text_to_video", locals())
+
+
+def kling_motion_control(
+    image_url: str,
+    video_url: str,
+    performance_duration_seconds: float,
+    subjects: str,
+    consent_confirmed: bool,
+    character_orientation: Literal["image", "video"] = "video",
+    keep_original_sound: bool = True,
+    prompt: str = "",
+) -> dict:
+    """Transfer consented full-body motion with Kling 3 Pro via fal; poll get_video_task."""
+    return _submit("kling_motion_control", locals())
 
 
 def image_to_video(
@@ -411,7 +429,7 @@ def _poll_video_task(job_id: str, endpoint_id: str, request_id: str, *, download
 
 
 def list_fal_models() -> dict:
-    """List documented Wan VACE, Wan 3.0 and Vidu Q4 endpoints and pricing without calling fal."""
+    """List documented fal endpoints and pricing without calling fal."""
     from server.billing_rates import (
         VIDU_Q4_LIST_CENTS_PER_SECOND,
         VIDU_Q4_PROMO_EXPIRES_ON,
@@ -427,7 +445,8 @@ def list_fal_models() -> dict:
         + [
             {"id": endpoint, "license": "service-terms", **vidu.TRAINING_METADATA}
             for endpoint in vidu.ENDPOINTS
-        ] + [{"id": endpoint, **wan3.TRAINING_METADATA} for endpoint in wan3.ENDPOINTS],
+        ] + [{"id": endpoint, **wan3.TRAINING_METADATA} for endpoint in wan3.ENDPOINTS]
+        + [{"id": endpoint, **motion.TRAINING_METADATA} for endpoint in motion.ENDPOINTS],
         "endpoints": [
             {
                 "id": endpoint.id,
@@ -488,12 +507,21 @@ def list_fal_models() -> dict:
                 **wan3.TRAINING_METADATA,
             }
             for endpoint in wan3.ENDPOINTS.values()
+        ] + [
+            {"id": motion.ENDPOINT_ID, "model": motion.ENDPOINT_ID,
+             "endpoint_id": motion.ENDPOINT_ID, "mode": "kling_motion_control",
+             "api_url": f"https://fal.ai/models/{motion.ENDPOINT_ID}/api",
+             "pricing_url": f"https://fal.ai/models/{motion.ENDPOINT_ID}",
+             "price_unit": "video_second", "pricing_checked_at": "2026-10-09",
+             "usd_per_unit": "0.168", "pricing_confirmed": True,
+             **motion.TRAINING_METADATA}
         ],
         "note": "Static documented catalog. Does not confirm account access. fal hosted Terms of Service apply.",
     }
 
 
 TOOL_HANDLERS = {
+    "kling_motion_control": kling_motion_control,
     "text_to_video": text_to_video,
     "image_to_video": image_to_video,
     "reference_to_video": reference_to_video,

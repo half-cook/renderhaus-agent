@@ -83,6 +83,7 @@ class RunwayProviderTests(unittest.TestCase):
                 "video_to_video",
                 "text_to_image",
                 "image_to_image",
+                "act_two",
                 "get_runway_task",
                 "list_runway_models",
             },
@@ -239,7 +240,7 @@ class RunwayProviderTests(unittest.TestCase):
         self.assertEqual(result["verified_on"], "2026-10-08")
         self.assertEqual(
             {item["id"] for item in result["models"]},
-            {"gen4.5", "aleph2", "gen4_image", "gen4_image_turbo"},
+            {"gen4.5", "aleph2", "gen4_image", "gen4_image_turbo", "act_two"},
         )
         self.blocker.assert_not_called()
 

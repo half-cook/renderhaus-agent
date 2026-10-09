@@ -56,12 +56,14 @@ STATIC_FIELD_OPTIONS: dict[str, dict[str, list[str | int]]] = {
         "model": ["kling-3.0", "kling-3.0-turbo", "kling-3.0-omni"],
     },
     "runway": {
-        "model": ["gen4.5", "aleph2", "gen4_image", "gen4_image_turbo"],
+        "model": ["gen4.5", "aleph2", "gen4_image", "gen4_image_turbo", "act_two"],
+        "character_type": ["image", "video"], "boundary_kind": ["shot", "silence"],
         "ratio": list(dict.fromkeys(I2V_RATIOS + IMAGE_RATIOS)),
         "duration_seconds": list(range(2, 11)),
     },
     "fal": {
-        "model": list(FAL_MODELS) + list(wan3.ENDPOINTS),
+        "character_orientation": ["video", "image"],
+        "model": list(FAL_MODELS) + list(wan3.ENDPOINTS) + ["fal-ai/kling-video/v3/pro/motion-control"],
         "aspect_ratio": list(dict.fromkeys((*ASPECT_RATIOS, *wan3.ASPECT_RATIOS))),
         "resolution": list(dict.fromkeys((*RESOLUTIONS, *wan3.RESOLUTIONS))),
         "duration": list(range(2, 31)),

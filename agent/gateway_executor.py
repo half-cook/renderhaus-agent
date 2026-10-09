@@ -52,6 +52,8 @@ def tool_needs_approval(name: str, autonomous: bool) -> bool:
                 "Topaz___interpolate_video", "topaz_upscale", "topaz_interpolate",
                 "Mureka___generate_lyrics_video", "mureka_lyrics_video"}:
         return True
+    if name in {"Runway___act_two", "Fal___kling_motion_control", "runway_act_two", "kling_motion_control"}:
+        return True
     return not autonomous or requires_approval(name) or premium_video(name)
 
 
@@ -209,11 +211,27 @@ class GatewayExecutor:
             for key, value in rejected.get("required", {}).items():
                 constraints["required"][key] = max(value, constraints["required"].get(key, 0))
         constraints = capability_constraints(constraints, job)
+        if job == "performance_transfer" and name == "Runway___act_two" and arguments.get("source_duration_seconds") is not None:
+            duration = arguments.get("performance_duration_seconds")
+            if isinstance(duration, (int, float)) and not isinstance(duration, bool) and 3 <= duration <= 30:
+                constraints["required"]["duration_seconds"] = duration
+                constraints["predicates"]["duration_over_30s"] = False
         variant = tool_variant(name)
         route = select_provider(job, arguments=selection_arguments, tool_variant=variant, retry=retry, **constraints)
         return route
 
     def dispatch_disclosure(self, name, arguments, route):
+        if name in {"Runway___act_two", "Fal___kling_motion_control"}:
+            provider, tool = tool_parts(name)
+            segment = (f" Sequential source segment at {arguments.get('performance_start_seconds', 0)}s, "
+                       f"length {arguments.get('performance_duration_seconds')}s of {arguments['source_duration_seconds']}s. "
+                       "Each segment requires approval. Assemble completed chunks in order through Remotion."
+                       if arguments.get("source_duration_seconds") is not None else "")
+            return (f"Provider {provider}; model {effective_model(provider, tool, arguments)}. "
+                    f"{route.basis if route else 'performance transfer'}. {estimate_cost(name, arguments).description} "
+                    f"Faces, voices and bodies: {arguments.get('subjects') or 'identify every subject'}. "
+                    f"Consent {'confirmed' if arguments.get('consent_confirmed') is True else 'required'}. "
+                    "Outputs are not training eligible." + segment)
         if name == "HeyGen___create_avatar_video":
             consent = "confirmed with a recorded acknowledgement" if arguments.get("consent_confirmed") is True else "required"
             return (f"Provider HeyGen direct; model {effective_model('heygen', 'create_avatar_video', arguments)}. "
@@ -251,6 +269,19 @@ class GatewayExecutor:
         if blocker := request_tool_blocker(self.studio.prompt, name):
             return blocker
         provider, tool = tool_parts(name)
+        if name in {"Runway___act_two", "Fal___kling_motion_control"}:
+            from providers.runway.performance import request_for as act_request
+            from providers.fal.motion import request_for as motion_request
+
+            try:
+                (act_request if name == "Runway___act_two" else motion_request)(arguments)
+            except ValueError as exc:
+                return str(exc)
+            if name == "Runway___act_two" and arguments.get("source_duration_seconds") is not None:
+                if any(job.get("provider") == "runway" and job.get("model") == "act_two"
+                       and job.get("status") in {"queued", "running", "preparing"}
+                       for job in self.media_jobs.values()):
+                    return "Process Act-Two chunks sequentially. Poll the accepted chunk to completion before submitting another."
         sync_request = None
         topaz_request = None
         if provider == "mureka":
@@ -335,12 +366,12 @@ class GatewayExecutor:
                 return "Required output resolution must be set in the selected tool's native arguments."
         if route.required.get("duration_seconds"):
             actual = (topaz_request.output_duration if topaz_request else sync_request.output_duration if sync_request else
-                      arguments.get("duration", arguments.get("duration_seconds", arguments.get("video_duration_seconds",
-                      arguments.get("source_duration_seconds", 5)))))
+                      arguments.get("performance_duration_seconds", arguments.get("duration", arguments.get("duration_seconds", arguments.get("video_duration_seconds",
+                      arguments.get("source_duration_seconds", 5))))))
             if provider == "mureka" and tool == "generate_lyrics_video":
                 start, end = arguments.get("selection_start"), arguments.get("selection_end")
                 actual = (end - start) / 1000 if start is not None and end is not None else None
-            if provider == "fal" and not row.get("duration_field"):
+            if provider == "fal" and not row.get("duration_field") and route.job_type != "performance_transfer":
                 fps = arguments.get("frames_per_second", 16)
                 actual = (arguments.get("num_frames", 81) - 1) / fps if fps > 0 else 0
             if actual != route.required["duration_seconds"]:

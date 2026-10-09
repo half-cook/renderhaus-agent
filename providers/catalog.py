@@ -74,7 +74,7 @@ PROVIDERS: tuple[ProviderSpec, ...] = (
         target_name="Runway",
         function_name="renderhaus-runway-tools",
         module_path="providers.runway.api",
-        env_keys=("RUNWAYML_API_SECRET", "RUNWAY_DRY_RUN"),
+        env_keys=("RUNWAYML_API_SECRET", "RUNWAY_DRY_RUN", "REMOTION_LOCAL_MEDIA_HOSTS"),
         default_env={"RUNWAY_DRY_RUN": "true"},
     ),
     ProviderSpec(

@@ -76,14 +76,16 @@
         "gen4.5",
         "aleph2",
         "gen4_image",
-        "gen4_image_turbo"
+        "gen4_image_turbo",
+        "act_two"
       ],
       "default_models": {
         "text_to_video": "gen4.5",
         "image_to_video": "gen4.5",
         "video_to_video": "aleph2",
         "text_to_image": "gen4_image",
-        "image_to_image": "gen4_image"
+        "image_to_image": "gen4_image",
+        "act_two": "act_two"
       },
       "model_policies": {
         "gen4.5": {
@@ -109,6 +111,17 @@
           "training_eligible": false,
           "allowed_regions": [],
           "explicit_only": true
+        },
+        "act_two": {
+          "license": "service-terms",
+          "license_source": "https://runway.com/terms-of-use",
+          "training_eligible": false,
+          "training_reason": "Runway Terms section 5(viii) restricts using outputs to train similar or competitive products.",
+          "commercial_status": "commercial API; input rights and likeness consent required",
+          "read_date": "2026-10-09",
+          "consent_requirements": "subjects and consent_confirmed=true for every face, voice and body",
+          "weights_license": "closed-weights",
+          "enabled": true
         }
       },
       "explicit_only": true,
@@ -354,7 +367,8 @@
         "fal-ai/vidu/q4/reference-to-video",
         "alibaba/wan-3.0/text-to-video",
         "alibaba/wan-3.0/image-to-video",
-        "alibaba/wan-3.0/reference-to-video"
+        "alibaba/wan-3.0/reference-to-video",
+        "fal-ai/kling-video/v3/pro/motion-control"
       ],
       "default_model": "fal-ai/wan-vace-14b",
       "model_policies": {
@@ -422,6 +436,17 @@
           "allowed_regions": [],
           "read_date": "2026-10-09",
           "consent_verification": "fal terms 6(d) require input rights and consents. Alibaba-specific real-face consent flow UNVERIFIED."
+        },
+        "fal-ai/kling-video/v3/pro/motion-control": {
+          "license": "service-terms",
+          "license_source": "https://fal.ai/models/fal-ai/kling-video/v3/pro/motion-control",
+          "training_eligible": false,
+          "training_reason": "fal third-party competing-model training restriction.",
+          "commercial_status": "commercial API; input rights and likeness consent required",
+          "read_date": "2026-10-09",
+          "consent_requirements": "subjects and consent_confirmed=true for every face, voice and body",
+          "weights_license": "closed-weights",
+          "enabled": true
         }
       },
       "fixed_models": {
@@ -429,14 +454,16 @@
         "vidu_q4_r2v": "fal-ai/vidu/q4/reference-to-video",
         "generate_wan3_t2v": "alibaba/wan-3.0/text-to-video",
         "generate_wan3_i2v": "alibaba/wan-3.0/image-to-video",
-        "generate_wan3_r2v": "alibaba/wan-3.0/reference-to-video"
+        "generate_wan3_r2v": "alibaba/wan-3.0/reference-to-video",
+        "kling_motion_control": "fal-ai/kling-video/v3/pro/motion-control"
       },
       "default_models": {
         "vidu_q4_i2v": "fal-ai/vidu/q4/image-to-video",
         "vidu_q4_r2v": "fal-ai/vidu/q4/reference-to-video",
         "generate_wan3_t2v": "alibaba/wan-3.0/text-to-video",
         "generate_wan3_i2v": "alibaba/wan-3.0/image-to-video",
-        "generate_wan3_r2v": "alibaba/wan-3.0/reference-to-video"
+        "generate_wan3_r2v": "alibaba/wan-3.0/reference-to-video",
+        "kling_motion_control": "fal-ai/kling-video/v3/pro/motion-control"
       },
       "host": "fal",
       "us_available": "yes",
@@ -873,24 +900,24 @@
       "verification": "official upstream model families verified; deployed config unchanged"
     },
     "runway_act_two": {
-      "gateway_tool": null,
-      "status": "pending",
+      "gateway_tool": "Runway___act_two",
+      "status": "ready",
       "provider": "runway",
-      "reason": "provider pending: runway_act_two (feat/perf-transfer)",
-      "verification": "verified; adapter pending; live use disabled",
+      "reason": "Built performance transfer; dry-run by default",
+      "verification": "Official endpoint and schema verified; live account/API and browser behavior unverified",
       "training_eligible": false,
       "model": "act_two",
       "host": "Runway direct",
       "us_available": "yes",
       "availability_source": "https://runway.com/terms-of-use",
-      "read_date": "2026-10-08",
+      "read_date": "2026-10-09",
       "license": "Runway Terms proprietary API; commercial use allowed; competing product training restricted.",
       "license_source": "https://runway.com/terms-of-use",
-      "training_reason": "Runway Terms5.2(viii) restricts using outputs to train similar/competitive products.",
-      "source": "https://docs.dev.runwayml.com/guides/models/",
-      "price_source": "https://docs.dev.runwayml.com/guides/models/",
+      "training_reason": "Runway Terms section 5(viii) restricts using outputs to train similar or competitive products.",
+      "source": "https://docs.dev.runwayml.com/api/",
+      "price_source": "https://docs.dev.runwayml.com/guides/pricing/",
       "dry_run": true,
-      "consent_requirements": "Require rights to supplied real-face/voice media; verify vendor consent flow before adapter activation."
+      "consent_requirements": "subjects and consent_confirmed=true for every face, voice and body"
     },
     "luma_ray3_t2v": {
       "gateway_tool": "Luma___text_to_video",
@@ -1344,24 +1371,24 @@
       "read_date": "2026-10-09"
     },
     "kling_motion_control": {
-      "gateway_tool": null,
-      "status": "pending",
-      "provider": "kling",
-      "reason": "provider pending: kling_motion_control (feat/perf-transfer)",
-      "verification": "verified fal; direct UNVERIFIED; adapter pending; live use disabled",
+      "gateway_tool": "Fal___kling_motion_control",
+      "status": "ready",
+      "provider": "fal",
+      "reason": "Built performance transfer; dry-run by default",
+      "verification": "Official endpoint and schema verified; live account/API and browser behavior unverified",
       "training_eligible": false,
       "model": "fal-ai/kling-video/v3/pro/motion-control",
-      "host": "fal; direct Kling optional",
+      "host": "fal; direct Kling Motion Control UNVERIFIED and not exposed",
       "us_available": "yes",
       "availability_source": "https://fal.ai/legal/terms-of-service",
-      "read_date": "2026-10-08",
+      "read_date": "2026-10-09",
       "license": "commercial fal API, Commercial use model label",
       "license_source": "https://fal.ai/models/fal-ai/kling-video/v3/pro/motion-control",
       "training_reason": "fal third-party competing-model training restriction.",
-      "source": "https://fal.ai/models/fal-ai/kling-video/v3/pro/motion-control",
+      "source": "https://fal.ai/models/fal-ai/kling-video/v3/pro/motion-control/api",
       "price_source": "https://fal.ai/models/fal-ai/kling-video/v3/pro/motion-control",
       "dry_run": true,
-      "consent_requirements": "Require rights to supplied real-face/voice media; verify vendor consent flow before adapter activation."
+      "consent_requirements": "subjects and consent_confirmed=true for every face, voice and body"
     },
     "mureka_v95": {
       "gateway_tool": "Mureka___generate_song",
@@ -1771,6 +1798,12 @@
       "capability": "nle_handoff"
     },
     {
+      "pattern": "performance capture|acting take|act.two|facial acting|full.body|whole.body|driving video|\\bdance\\b|copy.*motion|motion.control|upper.body.*acting",
+      "skill": "act-two",
+      "abstract_tool": "runway_act_two",
+      "capability": "performance_transfer"
+    },
+    {
       "pattern": "lipsync|lip.sync|talking head|talking avatar|spokesperson|avatar.*(?:say|script|presenter)|presenter|digital twin|dub.*(?:interview|clip|footage|video)|hedra|infinitetalk|re[ -]?voic|replace.*(?:voice|dialogue).*(?:footage|video|clip)|sync[ -]?3|sync\\.so|heygen\\s+avatar\\s+v|\\bavatar[ -]v\\b",
       "skill": "lipsync",
       "abstract_tool": "sync3_lipsync",
@@ -1811,12 +1844,6 @@
       "skill": "audio-bed",
       "abstract_tool": "mureka_v95",
       "capability": "music"
-    },
-    {
-      "pattern": "performance capture|acting take|act.two|facial acting|full.body|whole.body|driving video|\\bdance\\b|copy.*motion",
-      "skill": "act-two",
-      "abstract_tool": "runway_act_two",
-      "capability": "performance_transfer"
     },
     {
       "pattern": "(?:cartoon|synthetic|fictional|foxes|mascot|illustrated).*(?:talk|say|dialogue|speak)(?!.*(?:existing footage|dub|revoice))",
@@ -4441,6 +4468,92 @@
         "checked_at": "2026-10-09"
       },
       "native_audio_field": null
+    },
+    {
+      "provider": "runway",
+      "model": "act_two",
+      "label": "Runway Act-Two",
+      "tools": {
+        "performance_transfer": "Runway___act_two"
+      },
+      "jobs": {
+        "performance_transfer": true,
+        "max_resolution": 960
+      },
+      "resolutions": [
+        672,
+        720,
+        832,
+        960
+      ],
+      "policy_ref": "runway",
+      "price": {
+        "unit": "driving second",
+        "source": "https://docs.dev.runwayml.com/guides/pricing/",
+        "read_date": "2026-10-09"
+      },
+      "controls": {
+        "performance_transfer": [
+          "character_uri",
+          "performance_uri",
+          "performance_duration_seconds",
+          "subjects",
+          "consent_confirmed",
+          "character_type",
+          "ratio",
+          "body_control",
+          "expression_intensity",
+          "source_duration_seconds",
+          "performance_start_seconds",
+          "boundary_kind",
+          "seed"
+        ]
+      },
+      "durations": {
+        "performance_transfer": [
+          3,
+          30
+        ]
+      },
+      "notes": "Measured 3-30s driving clips; gestures require character images. Consent required. No training eligibility."
+    },
+    {
+      "provider": "fal",
+      "model": "fal-ai/kling-video/v3/pro/motion-control",
+      "label": "Kling 3 Pro Motion Control via fal",
+      "tools": {
+        "performance_transfer": "Fal___kling_motion_control"
+      },
+      "jobs": {
+        "performance_transfer": true,
+        "max_resolution": 0
+      },
+      "resolutions": [],
+      "policy_ref": "fal",
+      "price": {
+        "unit": "driving second",
+        "source": "https://fal.ai/models/fal-ai/kling-video/v3/pro/motion-control",
+        "read_date": "2026-10-09"
+      },
+      "controls": {
+        "performance_transfer": [
+          "image_url",
+          "video_url",
+          "performance_duration_seconds",
+          "subjects",
+          "consent_confirmed",
+          "character_orientation",
+          "keep_original_sound",
+          "prompt"
+        ]
+      },
+      "durations": {
+        "performance_transfer": [
+          3,
+          30
+        ]
+      },
+      "notes": "Measured 3-30s driving clips. Kling image orientation max 10s. Consent required. No training eligibility."
     }
   ],
   "image_default_size": "2K",
@@ -4683,7 +4796,9 @@
     "HeyGen___create_avatar_video",
     "Topaz___upscale_video",
     "Topaz___interpolate_video",
-    "Mureka___generate_lyrics_video"
+    "Mureka___generate_lyrics_video",
+    "Runway___act_two",
+    "Fal___kling_motion_control"
   ],
   "explicit_routes": {
     "kling": {
@@ -4713,7 +4828,8 @@
       "v2v_edit": "wan_vace_edit",
       "lipsync": "sync3_lipsync",
       "upscale": "topaz_upscale",
-      "interpolate": "topaz_interpolate"
+      "interpolate": "topaz_interpolate",
+      "performance_transfer": "kling_motion_control"
     },
     "seedance": {
       "t2v": "seedance25_t2v",
@@ -5218,22 +5334,26 @@
       "read_date": "2026-10-09"
     },
     "runway_act_two": {
-      "license": "Runway Terms proprietary API; commercial use allowed; competing product training restricted.",
+      "license": "service-terms",
       "license_source": "https://runway.com/terms-of-use",
       "training_eligible": false,
-      "training_reason": "Runway Terms5.2(viii) restricts using outputs to train similar/competitive products.",
-      "commercial_status": "commercial service or permissive code; source media rights still required",
-      "read_date": "2026-10-08",
-      "consent_requirements": "Source subject rights/consent required; vendor-specific flow must be verified before activation."
+      "training_reason": "Runway Terms section 5(viii) restricts using outputs to train similar or competitive products.",
+      "commercial_status": "commercial API; input rights and likeness consent required",
+      "read_date": "2026-10-09",
+      "consent_requirements": "subjects and consent_confirmed=true for every face, voice and body",
+      "weights_license": "closed-weights",
+      "enabled": true
     },
     "kling_motion_control": {
-      "license": "commercial fal API, Commercial use model label",
+      "license": "service-terms",
       "license_source": "https://fal.ai/models/fal-ai/kling-video/v3/pro/motion-control",
       "training_eligible": false,
       "training_reason": "fal third-party competing-model training restriction.",
-      "commercial_status": "commercial service or permissive code; source media rights still required",
-      "read_date": "2026-10-08",
-      "consent_requirements": "Source subject rights/consent required; vendor-specific flow must be verified before activation."
+      "commercial_status": "commercial API; input rights and likeness consent required",
+      "read_date": "2026-10-09",
+      "consent_requirements": "subjects and consent_confirmed=true for every face, voice and body",
+      "weights_license": "closed-weights",
+      "enabled": true
     },
     "mureka_v95": {
       "enabled": true,

@@ -111,8 +111,8 @@ class SkillContracts(unittest.TestCase):
 
     def test_fixture_preserves_active_workbook_rows_and_explains_pending_dependencies(self):
         self.assertEqual(len(CASES), 129)
-        self.assertEqual(sum(not c["skip_reason"] for c in CASES), 106)
-        self.assertEqual(sum(bool(c["skip_reason"]) for c in CASES), 23)
+        self.assertEqual(sum(not c["skip_reason"] for c in CASES), 113)
+        self.assertEqual(sum(bool(c["skip_reason"]) for c in CASES), 16)
         self.assertTrue(all(c.get("source_status") != "archived" for c in CASES))
         self.assertTrue(all("[project.confidential=true]" not in c["prompt"] for c in CASES))
         self.assertTrue(all(c["expected_skill"] != "confidential-route" for c in CASES))
@@ -136,7 +136,7 @@ class SkillContracts(unittest.TestCase):
         self.assertEqual(image.tool, "Fal___generate_wan3_i2v")
         self.assertEqual(route_intent("tell me a joke").status, "unrouted")
 
-    def test_named_pending_specialists_never_dispatch_unrelated_paid_tools(self):
+    def test_built_performance_specialists_never_dispatch_generation_tools(self):
         from agent.deep_agent.routing import route_intent
 
         for prompt, alias in [
@@ -146,8 +146,8 @@ class SkillContracts(unittest.TestCase):
             with self.subTest(prompt=prompt):
                 route = route_intent(prompt)
                 self.assertEqual(route.alias, alias)
-                self.assertEqual(route.status, "pending")
-                self.assertIsNone(route.tool)
+                self.assertEqual(route.status, "ready")
+                self.assertEqual(route.tool, "Runway___act_two" if alias == "runway_act_two" else "Fal___kling_motion_control")
         for provider in ["MiniMax H3", "Hunyuan"]:
             route = route_intent(f"generate a video with {provider}")
             self.assertEqual(route.status, "blocked")

@@ -589,16 +589,17 @@ class FalProviderTests(unittest.TestCase):
         del os.environ["FAL_KEY"]
         catalog = api.list_fal_models()
         self.assertEqual(catalog["status"], "ok")
-        self.assertEqual(len(catalog["models"]), 7)
-        self.assertEqual(len(catalog["endpoints"]), 17)
+        self.assertEqual(len(catalog["models"]), 8)
+        self.assertEqual(len(catalog["endpoints"]), 18)
         self.assertEqual(catalog["selected_model"], "alibaba/wan-3.0/text-to-video")
         for item in catalog["models"] + catalog["endpoints"]:
-            if item["id"].startswith(("fal-ai/vidu/q4/", "alibaba/wan-3.0/")):
+            if item["id"].startswith(("fal-ai/vidu/q4/", "alibaba/wan-3.0/", "fal-ai/kling-video/v3/")):
                 self.assertIs(item["training_eligible"], False)
                 self.assertNotEqual(item["weights_license"], "Apache-2.0")
             else:
                 self.assert_licensed(item)
         endpoints = {item["id"]: item for item in catalog["endpoints"]}
+        self.assertEqual(endpoints["fal-ai/kling-video/v3/pro/motion-control"]["usd_per_unit"], "0.168")
         self.assertFalse(endpoints[MODEL_22]["pricing_confirmed"])
         self.assertFalse(endpoints[MODEL_22 + "/pose"]["pricing_confirmed"])
         self.assertEqual(

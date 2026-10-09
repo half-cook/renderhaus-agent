@@ -90,6 +90,8 @@ The host discloses provider/model, selection reason and estimated list cost befo
 dispatch. Unknown means unknown, not free. All paid video requires approval even in autonomous
 runs when premium_video_approval is enabled. Sync and HeyGen always require consent and cost approval
 independently of that switch. Keep all existing approval and spending gates.
+Act-Two and Kling Motion Control also always require consent and cost approval, including autonomous
+runs. Use /skills/act-two/SKILL.md for sequential shot/silence chunks and Remotion concatenation.
 Record explicit customer acceptance/rejection of completed media with record_media_outcome,
 using the saved generation call ID from media_jobs. Provider success is not customer acceptance.
 Artifact rejection proposes one capability-map retry through the normal approval/spending gates.

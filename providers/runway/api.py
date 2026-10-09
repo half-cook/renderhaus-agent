@@ -23,7 +23,7 @@ import time
 import uuid
 from copy import deepcopy
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 from urllib.parse import urlsplit
 
 import httpx
@@ -50,6 +50,7 @@ STATE_MAP = {
     "CANCELLED": "cancelled",
 }
 _ENDPOINTS = {
+    "act_two": "/character_performance",
     "text_to_video": "/text_to_video",
     "image_to_video": "/image_to_video",
     "video_to_video": "/video_to_video",
@@ -211,6 +212,37 @@ def _seed(body: dict[str, Any], seed: int | None) -> dict[str, Any]:
     if seed is not None:
         body["seed"] = seed
     return body
+
+
+def act_two(
+    character_uri: str,
+    performance_uri: str,
+    performance_duration_seconds: float,
+    subjects: str,
+    consent_confirmed: bool,
+    character_type: Literal["image", "video"] = "image",
+    ratio: str = "1280:720",
+    body_control: bool = True,
+    expression_intensity: int = 3,
+    seed: int | None = None,
+    source_duration_seconds: float | None = None,
+    performance_start_seconds: float = 0,
+    boundary_kind: Literal["shot", "silence"] | None = None,
+) -> dict[str, Any]:
+    """Transfer one consented 3-30s acting performance, then poll get_runway_task."""
+    arguments = locals()
+    from providers.runway.performance import TRAINING_METADATA, request_for
+
+    request = request_for(arguments)
+    uri = None
+    if request.source_duration_seconds is not None and not dry_run():
+        from providers.runway.segments import prepare
+
+        uri = prepare(request)
+    return _create_task("act_two", request.body(uri), {
+        "performance_duration_seconds": request.performance_duration_seconds,
+        "ratio": request.ratio, "consent_confirmed": True, **TRAINING_METADATA,
+    })
 
 
 def text_to_video(
@@ -467,6 +499,10 @@ def get_runway_task(job_id: str, download: bool = False) -> dict[str, Any]:
         "model": model,
         "media_kind": media_kind,
     }
+    if model == "act_two":
+        from providers.runway.performance import TRAINING_METADATA
+
+        result.update(TRAINING_METADATA)
     if job_id.startswith("runway_dry_") or metadata.get("status") == "dry_run" or dry_run():
         return {
             **result,
@@ -533,6 +569,7 @@ def list_runway_models() -> dict[str, Any]:
 
 
 TOOL_HANDLERS = {
+    "act_two": act_two,
     "text_to_video": text_to_video,
     "image_to_video": image_to_video,
     "video_to_video": video_to_video,

@@ -33,6 +33,13 @@ IMAGE_1080_RATIOS = ("1920:1080", "1080:1920", "1080:1080", "1440:1080", "1080:1
 IMAGE_RATIOS = IMAGE_720_RATIOS + IMAGE_1080_RATIOS
 
 MODEL_CONSTRAINTS: dict[str, dict[str, Any]] = {
+    "act_two": {
+        "media_kind": "video", "tools": ("act_two",),
+        "performance_duration_seconds": {"minimum": 3, "maximum": 30},
+        "ratios": I2V_RATIOS, "character_types": ("image", "video"),
+        "expression_intensity": {"minimum": 1, "maximum": 5},
+        "consent_required": True, "training_eligible": False,
+    },
     "gen4.5": {
         "media_kind": "video",
         "tools": ("text_to_video", "image_to_video"),
@@ -233,6 +240,11 @@ def _reference_images(value: Any) -> None:
 
 def validate_runway_arguments(tool_name: str, arguments: dict[str, Any]) -> dict[str, Any]:
     """Validate before either a direct tool or Gateway call can perform provider I/O."""
+    if tool_name == "act_two":
+        from providers.runway.performance import request_for
+
+        request_for(arguments)
+        return {key: value for key, value in arguments.items() if value is not None}
     if tool_name not in _TOOL_FIELDS:
         raise ValueError(f"Unknown Runway tool: {tool_name}")
     if not isinstance(arguments, dict):

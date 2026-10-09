@@ -85,6 +85,15 @@ TOOL_ARGUMENT_RULES: dict[str, dict[str, dict[str, ArgumentRule]]] = {
         },
     },
     "runway": {
+        "act_two": {
+            "performance_duration_seconds": ArgumentRule(minimum=3, maximum=30),
+            "ratio": ArgumentRule(choices=I2V_RATIOS),
+            "expression_intensity": ArgumentRule(minimum=1, maximum=5),
+            "seed": ArgumentRule(minimum=0, maximum=4294967295),
+            "performance_start_seconds": ArgumentRule(minimum=0),
+            "source_duration_seconds": ArgumentRule(minimum=3),
+            "body_control": ArgumentRule(pattern_hint="Gesture transfer requires a character image; false is required for character video"),
+        },
         "text_to_video": {
             "model": ArgumentRule(choices=("gen4.5",)),
             "duration_seconds": ArgumentRule(minimum=2, maximum=10),
@@ -357,9 +366,9 @@ def enrich_tool_schema(provider_id: str, tool: dict[str, Any]) -> dict[str, Any]
         )
         properties["output_filename"]["description"] = "ZIP download filename; directory components are removed."
     if provider_id == "fal":
-        from providers.fal import vidu, wan3
+        from providers.fal import vidu, wan3, motion
 
-        for contract in (vidu, wan3):
+        for contract in (vidu, wan3, motion):
             if tool_name in contract.TOOL_ENDPOINTS:
                 for field, description in contract.FIELD_DESCRIPTIONS.items():
                     if field in properties:
@@ -489,8 +498,9 @@ def _validate_cross_fields(provider_id: str, tool_name: str, arguments: dict[str
 
         validate_runway_arguments(tool_name, arguments)
     if provider_id == "fal":
-        from providers.fal import vidu, wan, wan3
+        from providers.fal import vidu, wan, wan3, motion
 
+        motion.validate_arguments(tool_name, arguments)
         wan3.validate_arguments(tool_name, arguments)
         wan.validate_arguments(tool_name, arguments)
         vidu.validate_arguments(tool_name, arguments)
