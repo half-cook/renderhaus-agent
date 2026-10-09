@@ -60,7 +60,7 @@ SKILLS_ROOT = Path(__file__).parent / "skills"
 DISPATCH_TARGETS = {
     "call_media_tool": {"Gemini", "OpenAI", "Seedance", "Seedream", "Kling", "Runway", "Fal", "Luma", "ModelStudio", "Sync", "HeyGen", "Topaz"},
     "call_audio_tool": {"ElevenLabs", "FishAudio", "FishAudioProvider", "Fish_Audio", "Mureka"},
-    "call_editor_tool": {"Remotion", "HyperFrames"},
+    "call_editor_tool": {"Remotion", "HyperFrames", "Ffmpeg"},
 }
 FS_TOOLS = ["ls", "read_file", "write_file", "edit_file", "glob", "grep"]
 PERMISSIONS = [FilesystemPermission(operations=["write"], paths=["/skills/**"], mode="deny")]
@@ -108,6 +108,12 @@ Mirelo paid video needs cost approval even autonomous when premium_video_approva
 Record explicit customer acceptance/rejection of completed media with record_media_outcome,
 using the saved generation call ID from media_jobs. Provider success is not customer acceptance.
 Artifact rejection proposes one capability-map retry through the normal approval/spending gates.
+Ad matrices use Remotion___render_ad_variants plan -> render_first -> render_batch. Planning is
+free. Both render stages always pause for human approval, including autonomous runs. Bind every
+render to the returned plan_hash. Inspect first-aspect frames against expected verbatim strings
+before requesting batch approval. Never assert OCR matched without a vision comparison. Ffmpeg
+inspection runs on this worker with its job directory. Resolve editing stays parked. Delivery and
+loudness QC are pending feat/remotion-delivery-qc; a matrix render is not a delivery QC pass.
 Spending-approval rejection does not authorize a retry. Poll pending jobs before review.
 """
 
@@ -260,10 +266,10 @@ async def run_with_servers(request, studio, servers, *, model=None):
         if executor.tts_argument_error(arguments.tool_name, arguments.arguments):
             return False
         route = executor.media_selection(arguments.tool_name, arguments.arguments)
-        executor.disclose_selection(route, call.tool_call["id"], arguments.tool_name, arguments.arguments)
         if executor.selection_blocker(arguments.tool_name, arguments.arguments, route):
             return False
-        return tool_needs_approval(arguments.tool_name, studio.autonomous)
+        executor.disclose_selection(route, call.tool_call["id"], arguments.tool_name, arguments.arguments)
+        return tool_needs_approval(arguments.tool_name, studio.autonomous, arguments.arguments)
 
     def approval_description(tool_call, state, runtime):
         name, arguments = _gateway_action({"name": tool_call["name"], "args": tool_call["args"]})

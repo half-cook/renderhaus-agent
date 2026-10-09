@@ -12,7 +12,7 @@ def run(directory: Path) -> None:
     try:
         with (directory / 'stderr.txt').open('wb') as stderr:
             completed = subprocess.run(job['command'], stdout=subprocess.DEVNULL, stderr=stderr,
-                                       timeout=job['timeout'], check=False)
+                                       timeout=job['timeout'], check=False, cwd=directory)
         terminal = {'exit_code': completed.returncode}
     except subprocess.TimeoutExpired:
         terminal['error'] = 'Local ffmpeg assembly timed out.'

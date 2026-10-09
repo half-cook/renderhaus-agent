@@ -131,6 +131,13 @@ TOOL_GUIDANCE: dict[str, dict[str, str]] = {
         "list_seedance_models": "List verified Seedance models, transports, and API sources offline. No credential or network request. BytePlus is unavailable to US customers and requires written platform authorization for live integration.",
     },
     "remotion": {
+        "render_ad_variants": (
+            "Local ad matrix from job_id, master_asset, brief and rows. Use stage=plan first, "
+            "then render_first with returned plan_hash, inspect frames and expected strings, "
+            "then human-approved render_batch bound to that hash. First/batch pause with count, "
+            "aspects and cost even autonomous. No agent-supplied authorization. Lambda matrix "
+            "orchestration is refused. Copy stays verbatim; outputs include checksum manifest."
+        ),
         "import_nle_timeline": (
             "Import editor FCPXML 1.9–1.11 or OTIO JSON onto the current document/renderConfig "
             "assembly. Free, synchronous, no media retrieval or project writes. Returns a complete "
@@ -162,8 +169,10 @@ TOOL_GUIDANCE: dict[str, dict[str, str]] = {
             "upscaled, and warnings, including enlargement from fit, clip scale, and motion. "
             "Upscaling adds no detail; use the Topaz upscale skill before assembly for added detail. "
             "Local development selects REMOTION_RENDER_BACKEND=local; Lambda remains the default. "
-            "Local assembly supports trims, fit, fades, timing, opacity, speed, and audio mixing; "
-            "titles/subtitles, motion, grade, scale, and rotation require Lambda."
+            "Local assembly supports trims, fit, fades, timing, opacity, speed, audio mixing, "
+            "allow-listed fitted text and positioned/scaled overlays. Motion, video grade and rotation "
+            "require Lambda. New font/box props require overlay contract version 2 on Lambda; "
+            "otherwise use the local backend or return the explicit unsupported-backend refusal."
         ),
         "get_render_progress": (
             "Use only after render_timeline returned a render id and bucket name (local sentinel for local). Poll once per call "

@@ -13,7 +13,7 @@ refusals return `blocked`, retired requests return `retired`, and unknown intent
 
 ## Packaged skills
 
-The backend packages 24 skills. Some explain pending capabilities; installing their
+The backend packages 25 skills. Some explain pending capabilities; installing their
 instructions does not install a provider adapter. The original execution skills remain
 available. `image-gen` and `named-provider` cover the new still-image policy and explicit
 requests for providers retained outside automatic selection. The archived `vidu-q4` skill
@@ -48,6 +48,7 @@ exact Gateway names, native arguments, and operational constraints.
 | [product-demo-video](../agent/deep_agent/skills/product-demo-video/SKILL.md) | `call_editor_tool` | `cutaway_record`<br>`remotion_render`<br>`hyperframes_render` |
 | [product-images](../agent/deep_agent/skills/product-images/SKILL.md) | `call_media_tool` | `gpt_image25_t2i`<br>`gpt_image25_edit`<br>`recraft_v41_vector`<br>`ideogram45_edit` |
 | [refinement](../agent/deep_agent/skills/refinement/SKILL.md) | `call_media_tool`<br>`call_audio_tool`<br>`call_editor_tool` | `gpt_image25_edit`<br>`wan3_edit`<br>`seedance25_edit`<br>`remotion_render` |
+| [remotion-ad-variant-matrix](../agent/deep_agent/skills/remotion-ad-variant-matrix/SKILL.md) | `call_editor_tool` | `ad_variant_matrix`<br>`remotion_render`<br>`ffmpeg_tool` |
 | [resolve-handoff](../agent/deep_agent/skills/resolve-handoff/SKILL.md) | `call_editor_tool` | `Remotion___export_nle_timeline`, `Remotion___import_nle_timeline` |
 | [still-then-video](../agent/deep_agent/skills/still-then-video/SKILL.md) | `call_media_tool` | `gpt_image25_t2i`<br>`gpt_image25_edit`<br>`wan3_i2v`<br>`seedance25_i2v` |
 | [storyboard-shots](../agent/deep_agent/skills/storyboard-shots/SKILL.md) | `call_media_tool` | `gpt_image25_t2i`<br>`gpt_image25_edit`<br>`wan3_i2v`<br>`wan3_r2v`<br>`seedance25_i2v`<br>`seedance25_r2v` |
@@ -204,8 +205,8 @@ Topaz submissions always pause with cost, including autonomous runs. Dry-run pre
 and queued jobs never satisfy final delivery. See [Topaz](TOPAZ.md) for pricing, licence
 sources, unknown-price blockers and the blocked Comet check.
 
-`tests/fixtures/skill_routing.json` contains 139 retained routing rows.
-There are 135 active cases and 4 explicit skips. Five caption/collage cases cover the
+`tests/fixtures/skill_routing.json` contains 218 retained routing rows.
+There are 173 active cases and 45 explicit skips. Five caption/collage cases cover the
 new templates' renderer selection. Seven performance-transfer cases now use built tools. Three Mureka lyrics-video cases
 now use built tools; music routes use Mureka without an ElevenLabs interim. Five Topaz upscale/interpolation cases
 now use built tools. Seedance reference dialogue and two
@@ -598,3 +599,33 @@ then `eleven_v4_turbo`, each exactly once, ending in an assembled MP4. The new `
 (`alias: N; alias: N`) is read by `tests/test_skill_routing.py` (0 means nothing billable is routed; N means exactly
 N planned calls). The dynamic "approvals arrive together" behaviour is covered by the scripted parallel-approval run
 in `tests/test_e2e_lighthouse.py` (fix in staging 2499e5d).
+
+## Remotion ad variant matrix
+
+One brief and an immutable local table produce per-SKU price, CTA, logo and legal overlays.
+The workflow uses `Remotion___render_ad_variants` through `call_editor_tool` with stages
+`plan`, `render_first` and `render_batch`. Planning is free. Both render stages require human
+approval, including autonomous runs. A stale table or asset hash invalidates sample approval.
+The manager and final-assembly role follow the [matrix skill](../agent/deep_agent/skills/remotion-ad-variant-matrix/SKILL.md);
+they do not bypass its sample gate with standalone timeline calls.
+
+The free `Ffmpeg___ffmpeg_tool` supports `probe`, `extract_frames`, `contact_sheet`, `sha256`,
+`check_faststart` and `volume_stats` on the worker owning the job directory. It accepts validated
+parameters for fixed operations, never command lines or network paths. Resolve operations remain parked.
+The matrix explicitly refuses Lambda until a worker can access its local job directory.
+Overlay timeline parity uses the same document/renderConfig contract, with an explicit Lambda
+composition-version refusal for newly added font and box fields.
+
+All 79 Remotion workbook rows are preserved with source prompts, behavioural expectations and
+source tool aliases. Thirty-eight rows are active. RT-E001 through RT-E010 cover matrix
+selection; RT-E056 through RT-E075 cover parked Resolve and shell refusal. Existing built
+flows activate RT-E047, RT-E049 and RT-E053 through RT-E055. RT-E076 through RT-E078 cover
+licensing, consent and matrix face-swap scope. Forty-one rows remain deferred. Aspect work
+names `feat/remotion-aspect-ratio-variants`; delivery/loudness/QC work names
+`feat/remotion-delivery-qc`. Candidate LUT and multicam semantics remain unverified.
+Routing checks do not establish OCR equality or artifact completion. Dedicated provider and
+executor tests cover validation, file rendering and approval.
+
+Current inventory is 16 providers, 115 Gateway tools, 25 packaged skills and 218 fixture rows,
+with 173 active and 45 skipped. The original four dependency skips remain. See
+[Remotion editing](REMOTION_EDITING.md) for licensing, real local verification and pending checks.

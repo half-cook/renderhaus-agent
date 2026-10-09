@@ -3,11 +3,17 @@ name: final-assembly
 description: Assemble existing assets into a final Remotion video and verify the rendered MP4 result.
 metadata:
   include_tools: call_editor_tool
-  gateway_tools: Remotion___export_nle_timeline Remotion___get_render_progress Remotion___render_timeline
-  routing_tools: remotion_render
+  gateway_tools: Remotion___export_nle_timeline Remotion___get_render_progress Remotion___render_timeline Remotion___render_ad_variants Ffmpeg___ffmpeg_tool
+  routing_tools: remotion_render ad_variant_matrix ffmpeg_tool
 ---
 
 # Final assembly
+
+For a SKU/price/CTA/logo table, read [ad variant matrix](../remotion-ad-variant-matrix/SKILL.md).
+Use Remotion___render_ad_variants with plan, render_first and render_batch stages.
+Both render stages pause for human approval even in autonomous mode. Review the first
+outputs before batch approval. Never bypass the sample hash gate with individual renders.
+Ffmpeg___ffmpeg_tool supplies fixed free inspection operations on the local job directory.
 
 Read read_studio_context and project shot plans. Reuse existing managed asset versions.
 Search x_amz_bedrock_agentcore_search for Remotion render_timeline and get_render_progress.
@@ -26,9 +32,11 @@ cost approval. Choosing a lower Wan resolution produces a lower-resolution deliv
 unless the customer requests upscaling. Keep the capability defaults and cost policy.
 Omit `fps` and `video_bitrate` unless the customer sets them. The renderer uses the primary
 video's measured frame rate and preserves its quality. A cinematic brief alone does not set fps.
-Lambda supports captions and motion effects;
-the local ffmpeg backend supports trims, fit, fades, and audio timing/volume/fades. Unsupported
-effects require Lambda. Use durable URLs for Lambda; for local assembly use provider-returned
+Lambda supports captions and motion effects. The local ffmpeg backend supports trims, fit,
+fades, audio timing/volume/fades, allow-listed text fonts with fit guards, and positioned/scaled
+overlays. Video grade/motion/rotation remain unsupported locally. New font/box props need a
+compatible Lambda composition version or return a clear refusal. Use durable URLs for Lambda;
+for local assembly use provider-returned
 plain `output_path` fields in visuals/audio_tracks, without a `file://` prefix. Call call_editor_tool with
 Remotion___render_timeline once. Save render_id, bucket_name, and output_key unchanged.
 Call Remotion___get_render_progress with those identifiers. The host polls the same render.

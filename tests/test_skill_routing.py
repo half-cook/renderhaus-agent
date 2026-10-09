@@ -48,8 +48,10 @@ def routing_case(case):
 
         with patch.dict(os.environ, case.get("env", {})):
             route = route_intent(runner_prompt(case["prompt"]), arguments=case.get("arguments"))
-        skills = case.get("expected_routed_skill", case["expected_skill"]).split(" + ")
-        aliases = case.get("expected_routed_alias", case["expected_tool"]).split(" then ")
+        skill = case.get("expected_routed_skill", case["expected_skill"])
+        alias = case.get("expected_routed_alias", case["expected_tool"])
+        skills = skill.split(" + ") if skill else [None]
+        aliases = alias.split(" then ") if alias else [None]
         steps = list(route.steps) or [route]
         self.assertEqual([step.skill for step in steps[:len(skills)]], skills)
         self.assertEqual([step.alias for step in steps[:len(aliases)]], aliases)
@@ -63,6 +65,9 @@ def routing_case(case):
         forbidden = {alias.strip() for alias in case.get("forbidden_tools", "").split(",") if alias.strip()}
         self.assertFalse(forbidden & {step.alias for step in steps})
         self.assertFalse({resolve_alias(alias) for alias in forbidden} - {None} & {step.tool for step in steps})
+        if case.get("forbidden_gateway_prefixes"):
+            self.assertFalse(any(step.tool and step.tool.startswith(tuple(case["forbidden_gateway_prefixes"])) for step in steps))
+        self.assertFalse(set(case.get("forbidden_skills", [])) & {step.skill for step in steps})
         if case.get("expected_output", "").startswith("assembled MP4"):
             self.assertEqual(route.expected_output, "assembled MP4")
             self.assertEqual(steps[-1].tool, "Remotion___render_timeline")
@@ -131,14 +136,14 @@ class SkillContracts(unittest.TestCase):
                 self.assertTrue(
                     any(name.split("___")[0] in DISPATCH_TARGETS[d] for d in dispatch), name
                 )
-        self.assertEqual(len(names), 24)
+        self.assertEqual(len(names), 25)
         self.assertTrue(
             {
                 "t2v", "i2v", "edit-v2v", "still-then-video", "image-gen", "named-provider",
                 "audio-bed", "motion-graphics", "hyperframes", "continuity-qc", "resolve-handoff",
                 "video-short", "product-images", "storyboard-shots", "audio", "final-assembly",
                 "refinement", "conversational-edit", "act-two", "lipsync", "upscale",
-                "lyrics-video", "product-demo-video", "whiteboard-explainer",
+                "lyrics-video", "product-demo-video", "whiteboard-explainer", "remotion-ad-variant-matrix",
             } <= names
         )
         self.assertFalse(
@@ -146,9 +151,9 @@ class SkillContracts(unittest.TestCase):
         )
 
     def test_fixture_preserves_active_workbook_rows_and_explains_pending_dependencies(self):
-        self.assertEqual(len(CASES), 139)
-        self.assertEqual(sum(not c["skip_reason"] for c in CASES), 135)
-        self.assertEqual(sum(bool(c["skip_reason"]) for c in CASES), 4)
+        self.assertEqual(len(CASES), 218)
+        self.assertEqual(sum(not c["skip_reason"] for c in CASES), 173)
+        self.assertEqual(sum(bool(c["skip_reason"]) for c in CASES), 45)
         self.assertTrue(all(c.get("source_status") != "archived" for c in CASES))
         self.assertTrue(all("[project.confidential=true]" not in c["prompt"] for c in CASES))
         self.assertTrue(all(c["expected_skill"] != "confidential-route" for c in CASES))

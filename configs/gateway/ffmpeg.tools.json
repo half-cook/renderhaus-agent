@@ -1,0 +1,61 @@
+[
+  {
+    "name": "ffmpeg_tool",
+    "description": "Free local/worker media inspection. Fixed operations only; no commands, filtergraphs, URLs or network access. Always execute on the machine containing job_id. Missing binaries fail softly; Lambda hosts without ffmpeg cannot run binary ops.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "op": {
+          "type": "string",
+          "description": "Allowed values: probe, extract_frames, contact_sheet, sha256, check_faststart, volume_stats. One of: probe, extract_frames, contact_sheet, sha256, check_faststart, volume_stats."
+        },
+        "job_id": {
+          "type": "string",
+          "description": "Existing job directory under RENDERHAUS_MEDIA_DIR. ASCII id, 1 to 80 characters."
+        },
+        "input_path": {
+          "type": "string",
+          "description": "Readable regular file inside this job. Relative path or confined absolute path. No URLs, traversal or option prefixes."
+        },
+        "params": {
+          "type": "object",
+          "properties": {
+            "times": {
+              "type": "array",
+              "description": "extract_frames: 1 to 20 frame times, each 0 to 600 seconds. Default [0]. ",
+              "items": {
+                "type": "number"
+              }
+            },
+            "width": {
+              "type": "integer",
+              "description": "extract_frames: Allowed range: 16 to 1920. Default 640. contact_sheet: Allowed range: 16 to 640. Default 320. "
+            },
+            "every_s": {
+              "type": "number",
+              "description": "contact_sheet: Allowed range: 0.1 to 600. Default 1. "
+            },
+            "cols": {
+              "type": "integer",
+              "description": "contact_sheet: Allowed range: 1 to 10. Default 3. "
+            },
+            "rows": {
+              "type": "integer",
+              "description": "contact_sheet: Allowed range: 1 to 10. Default 1. "
+            },
+            "height": {
+              "type": "integer",
+              "description": "contact_sheet: Allowed range: 16 to 640. Default 180. "
+            }
+          },
+          "description": "Per-op parameters only. probe, sha256, check_faststart, volume_stats take no params. extract_frames uses times,width. contact_sheet uses every_s,cols,rows,width,height. Outputs never overwrite existing files."
+        }
+      },
+      "required": [
+        "op",
+        "job_id",
+        "input_path"
+      ]
+    }
+  }
+]

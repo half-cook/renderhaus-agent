@@ -1,5 +1,98 @@
 [
   {
+    "name": "render_ad_variants",
+    "description": "Local ad matrix from job_id, master_asset, brief and rows. Use stage=plan first, then render_first with returned plan_hash, inspect frames and expected strings, then human-approved render_batch bound to that hash. First/batch pause with count, aspects and cost even autonomous. No agent-supplied authorization. Lambda matrix orchestration is refused. Copy stays verbatim; outputs include checksum manifest.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "stage": {
+          "type": "string",
+          "description": "Allowed values: plan, render_first, render_batch. Plan is free. First and batch always need human approval, including autonomous runs."
+        },
+        "job_id": {
+          "type": "string"
+        },
+        "brief": {
+          "type": "object",
+          "description": "campaign ASCII identifier; optional logo_alpha_required (default true), legal_locales, legal_by_locale, fps, source_width/source_height, output_resolution source or 720p/1080p/1440p/2160p, fit cover/contain. No custom shell or template code."
+        },
+        "rows": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "variant_key": {
+                "type": "string"
+              },
+              "sku": {
+                "type": "string"
+              },
+              "price_text": {
+                "type": "string"
+              },
+              "cta_text": {
+                "type": "string"
+              },
+              "logo_asset": {
+                "type": "string"
+              },
+              "legal_text": {
+                "type": "string"
+              },
+              "locale": {
+                "type": "string"
+              },
+              "aspect": {
+                "type": "string"
+              },
+              "product_asset": {
+                "type": "string"
+              },
+              "vo_asset": {
+                "type": "string"
+              },
+              "start_s": {
+                "type": "number"
+              },
+              "end_s": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "variant_key",
+              "sku",
+              "price_text",
+              "cta_text",
+              "logo_asset",
+              "legal_text",
+              "locale",
+              "aspect"
+            ]
+          },
+          "description": "1-100 rows. Nonempty required strings; verbatim price/CTA/legal. Unique sku/locale/aspect and variant_key. Assets confined to job directory."
+        },
+        "master_asset": {
+          "type": "string"
+        },
+        "plan_hash": {
+          "type": "string",
+          "description": "Exact immutable SHA-256 returned by plan. Required for render stages; changes to copy/media invalidate approval. Approval is trusted host context, never an argument."
+        },
+        "concurrency": {
+          "type": "integer",
+          "description": "Integer 1-2 local renders. A failed variant does not stop the others."
+        }
+      },
+      "required": [
+        "stage",
+        "job_id",
+        "brief",
+        "rows",
+        "master_asset"
+      ]
+    }
+  },
+  {
     "name": "import_nle_timeline",
     "description": "Import editor FCPXML 1.9\u20131.11 or OTIO JSON onto the current document/renderConfig assembly. Free, synchronous, no media retrieval or project writes. Returns a complete replacement timeline or a blocked report with unmatched/ambiguous media and unsupported edits. Match embedded asset IDs before unique filename/full source duration. Review before saving the returned assembly. EDL and AAF import are unsupported.",
     "inputSchema": {
@@ -153,6 +246,46 @@
                 "type": "integer",
                 "description": "Allowed range: 100 to 900."
               },
+              "box": {
+                "type": "object",
+                "properties": {
+                  "x": {
+                    "type": "number"
+                  },
+                  "y": {
+                    "type": "number"
+                  },
+                  "width": {
+                    "type": "number"
+                  },
+                  "height": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "x",
+                  "y",
+                  "width",
+                  "height"
+                ],
+                "description": "Canvas pixel box. x/y nonnegative, width/height positive and at most 7680; must fit canvas."
+              },
+              "min_font_size": {
+                "type": "integer",
+                "description": "Allowed range: 16 to 180."
+              },
+              "max_font_size": {
+                "type": "integer",
+                "description": "Allowed range: 16 to 180."
+              },
+              "font_family": {
+                "type": "string",
+                "description": "Allowed values: dejavu-sans, dejavu-sans-bold."
+              },
+              "opacity": {
+                "type": "number",
+                "description": "Allowed range: 0 to 1."
+              },
               "color": {
                 "type": "string",
                 "description": "CSS color."
@@ -187,7 +320,7 @@
         },
         "aspect_ratio": {
           "type": "string",
-          "description": "One of: 16:9, 9:16, 1:1, 2.39:1. Allowed values: 16:9, 9:16, 1:1, 2.39:1."
+          "description": "One of: 16:9, 9:16, 1:1, 4:5, 2.39:1. Allowed values: 16:9, 9:16, 1:1, 4:5, 2.39:1."
         },
         "fps": {
           "type": "integer",
@@ -204,7 +337,7 @@
   },
   {
     "name": "render_timeline",
-    "description": "Use after all source assets exist to execute a concrete edit decision list and make one assembled MP4. The caller must choose timing, B-roll layers, crop/motion, transitions, speed, titles, and audio fades, then poll get_render_progress. Sources may use url or output_path (a local provider result, no file:// prefix). Omit fps to preserve the primary video's measured frame rate; set it only for a user-requested timeline rate. Source metadata is measured before rendering: local media, fal.media subdomains, configured S3 bucket hosts, or REMOTION_LOCAL_MEDIA_HOSTS. Optional source_fps/source_bitrate carry prior measurements. video_bitrate is a target in bits/s with a source quality floor; automatic bitrate does not exceed the measured source maximum on smaller canvases, and unknown bitrate uses high-quality CRF18. Omit output_resolution to use the largest measured video short edge, capped at the aspect table. Explicit 720p/1080p/1440p/2160p scale that table; images-only or no measured video dimensions use the table. Results include width, height, source_resolution, upscaled, and warnings, including enlargement from fit, clip scale, and motion. Upscaling adds no detail; use the Topaz upscale skill before assembly for added detail. Local development selects REMOTION_RENDER_BACKEND=local; Lambda remains the default. Local assembly supports trims, fit, fades, timing, opacity, speed, and audio mixing; titles/subtitles, motion, grade, scale, and rotation require Lambda.",
+    "description": "Use after all source assets exist to execute a concrete edit decision list and make one assembled MP4. The caller must choose timing, B-roll layers, crop/motion, transitions, speed, titles, and audio fades, then poll get_render_progress. Sources may use url or output_path (a local provider result, no file:// prefix). Omit fps to preserve the primary video's measured frame rate; set it only for a user-requested timeline rate. Source metadata is measured before rendering: local media, fal.media subdomains, configured S3 bucket hosts, or REMOTION_LOCAL_MEDIA_HOSTS. Optional source_fps/source_bitrate carry prior measurements. video_bitrate is a target in bits/s with a source quality floor; automatic bitrate does not exceed the measured source maximum on smaller canvases, and unknown bitrate uses high-quality CRF18. Omit output_resolution to use the largest measured video short edge, capped at the aspect table. Explicit 720p/1080p/1440p/2160p scale that table; images-only or no measured video dimensions use the table. Results include width, height, source_resolution, upscaled, and warnings, including enlargement from fit, clip scale, and motion. Upscaling adds no detail; use the Topaz upscale skill before assembly for added detail. Local development selects REMOTION_RENDER_BACKEND=local; Lambda remains the default. Local assembly supports trims, fit, fades, timing, opacity, speed, audio mixing, allow-listed fitted text and positioned/scaled overlays. Motion, video grade and rotation require Lambda. New font/box props require overlay contract version 2 on Lambda; otherwise use the local backend or return the explicit unsupported-backend refusal.",
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -271,6 +404,30 @@
               "scale": {
                 "type": "number",
                 "description": "Allowed range: 0.1 to 4."
+              },
+              "box": {
+                "type": "object",
+                "properties": {
+                  "x": {
+                    "type": "number"
+                  },
+                  "y": {
+                    "type": "number"
+                  },
+                  "width": {
+                    "type": "number"
+                  },
+                  "height": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "x",
+                  "y",
+                  "width",
+                  "height"
+                ],
+                "description": "Canvas pixel box. x/y nonnegative, width/height positive and at most 7680; must fit canvas."
               },
               "opacity": {
                 "type": "number",
@@ -392,6 +549,46 @@
                 "type": "integer",
                 "description": "Allowed range: 100 to 900."
               },
+              "box": {
+                "type": "object",
+                "properties": {
+                  "x": {
+                    "type": "number"
+                  },
+                  "y": {
+                    "type": "number"
+                  },
+                  "width": {
+                    "type": "number"
+                  },
+                  "height": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "x",
+                  "y",
+                  "width",
+                  "height"
+                ],
+                "description": "Canvas pixel box. x/y nonnegative, width/height positive and at most 7680; must fit canvas."
+              },
+              "min_font_size": {
+                "type": "integer",
+                "description": "Allowed range: 16 to 180."
+              },
+              "max_font_size": {
+                "type": "integer",
+                "description": "Allowed range: 16 to 180."
+              },
+              "font_family": {
+                "type": "string",
+                "description": "Allowed values: dejavu-sans, dejavu-sans-bold."
+              },
+              "opacity": {
+                "type": "number",
+                "description": "Allowed range: 0 to 1."
+              },
               "color": {
                 "type": "string",
                 "description": "CSS color."
@@ -419,7 +616,7 @@
         },
         "aspect_ratio": {
           "type": "string",
-          "description": "One of: 16:9, 9:16, 1:1, 2.39:1. Allowed values: 16:9, 9:16, 1:1, 2.39:1."
+          "description": "One of: 16:9, 9:16, 1:1, 4:5, 2.39:1. Allowed values: 16:9, 9:16, 1:1, 4:5, 2.39:1."
         },
         "fps": {
           "type": "number",
@@ -455,6 +652,46 @@
               "font_weight": {
                 "type": "integer",
                 "description": "Allowed range: 100 to 900."
+              },
+              "box": {
+                "type": "object",
+                "properties": {
+                  "x": {
+                    "type": "number"
+                  },
+                  "y": {
+                    "type": "number"
+                  },
+                  "width": {
+                    "type": "number"
+                  },
+                  "height": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "x",
+                  "y",
+                  "width",
+                  "height"
+                ],
+                "description": "Canvas pixel box. x/y nonnegative, width/height positive and at most 7680; must fit canvas."
+              },
+              "min_font_size": {
+                "type": "integer",
+                "description": "Allowed range: 16 to 180."
+              },
+              "max_font_size": {
+                "type": "integer",
+                "description": "Allowed range: 16 to 180."
+              },
+              "font_family": {
+                "type": "string",
+                "description": "Allowed values: dejavu-sans, dejavu-sans-bold."
+              },
+              "opacity": {
+                "type": "number",
+                "description": "Allowed range: 0 to 1."
               },
               "color": {
                 "type": "string",

@@ -24,6 +24,7 @@ TARGET_PROVIDERS = {
     "Seedream": "seedream",
     "ElevenLabs": "elevenlabs",
     "Remotion": "remotion",
+    "Ffmpeg": "ffmpeg",
     "HyperFrames": "hyperframes",
     "FishAudio": "fish_audio",
     "FishAudioProvider": "fish_audio",
@@ -106,10 +107,19 @@ def _video_voiceover(prompt: str) -> bool:
 
 
 def request_tool_blocker(prompt: str, name: str) -> str | None:
+    if refusal := editing_request_refusal(prompt):
+        return refusal
     if _video_voiceover(prompt) and job_type(name) in {"still_image", "image_edit"}:
         return "A shot or clip with voiceover uses video, TTS and assembly; image tools are excluded."
     if name.startswith("Seedream___") and not re.search(r"\bseedream\b", prompt, re.I):
         return "Seedream is explicit-only; request it by name. GPT Image 2.5 is the still-image default."
+    return None
+
+
+def editing_request_refusal(prompt: str) -> str | None:
+    for refusal in POLICY.get("editing_refusals", []):
+        if re.search(refusal["pattern"], prompt, re.IGNORECASE):
+            return refusal["reason"]
     return None
 
 
@@ -162,6 +172,9 @@ def _video_capability(prompt: str, constraints: dict) -> tuple[str, str]:
 
 def _delivery_route(prompt: str, constraints: dict, *, region: str | None,
                     available_tools: set[str] | None, arguments: dict | None) -> Route | None:
+    if any(rule.get("capability") == "ad_variant_matrix" and re.search(rule["pattern"], prompt, re.I)
+           for rule in POLICY["rules"]):
+        return None
     voiceover = _video_voiceover(prompt)
     mp4_export = bool(re.search(r"(?:assemble|render|export|final).*\bmp4\b|assemble.*(?:video|clip)", prompt, re.I))
     if not voiceover and not mp4_export:
@@ -255,6 +268,10 @@ def resolve_alias(alias: str) -> str | None:
 def route_intent(prompt: str, *, region: str | None = None, tier: str | None = None,
                  confidential: bool = False, arguments: dict | None = None,
                  available_tools: set[str] | None = None, retry: bool = False) -> Route:
+    if refusal := editing_request_refusal(prompt):
+        return Route(skill="remotion-ad-variant-matrix", status="blocked", reason=refusal, disclosure=refusal)
+    if any(re.search(pattern, prompt, re.I) for pattern in POLICY.get("non_dispatch_requests", [])):
+        return Route(reason="No media intent matched; answer the Remotion licensing question from the editing skill.")
     constraints = intent_constraints(prompt, tier=tier, confidential=confidential, arguments=arguments)
     for pattern, alias in POLICY["retired_requests"].items():
         if re.search(pattern, prompt, re.I):
@@ -325,7 +342,7 @@ def route_intent(prompt: str, *, region: str | None = None, tier: str | None = N
 def _dispatch(tool: str | None) -> str | None:
     if not tool:
         return None
-    if tool.startswith(("Remotion___", "HyperFrames___")):
+    if tool.startswith(("Remotion___", "HyperFrames___", "Ffmpeg___")):
         return "call_editor_tool"
     if tool.startswith(("ElevenLabs___", "FishAudio___", "Mureka___")):
         return "call_audio_tool"
@@ -387,6 +404,14 @@ def _capability_price(row: dict):
     if price == "unknown":
         return price
     provider, model = row["provider"], row["model"]
+    if provider == "ffmpeg":
+        return {**price, "rates": {"cents_per_call": 0}, "currency_unit": "USD cents"}
+    if provider == "remotion" and model == "ad-variant-timeline":
+        try:
+            quote = rates.ad_matrix_estimate({"rows": [{}]})
+        except ValueError as exc:
+            return {**price, "configuration_error": str(exc)}
+        return {**price, "rates": quote, "currency_unit": "USD"}
     if provider == "mureka":
         values = {"lyrics_to_song_cents": str(rates.MUREKA_LYRICS_SONG_CENTS), "prompt_to_song_cents": str(rates.MUREKA_PROMPT_SONG_CENTS), "instrumental_cents": str(rates.MUREKA_INSTRUMENTAL_CENTS), "lyrics_video_cents": str(rates.MUREKA_LYRICS_VIDEO_CENTS)}
     elif provider == "fal":
@@ -605,9 +630,9 @@ def select_provider(job: str, *, tier: str | None = None, required: dict | None 
     if capability in {"still_image", "image_edit"} and predicates.get("video_voiceover"):
         reason = "A shot or clip with voiceover excludes image tools; use video, TTS and assembly."
         return Route(status="blocked", job_type=capability, reason=reason, disclosure=reason)
-    if capability in {"tts", "voice_clone", "music", "sfx", "motion_graphics", "nle_handoff", "nle_import"}:
+    if capability in {"tts", "voice_clone", "music", "sfx", "motion_graphics", "nle_handoff", "nle_import", "ad_variant_matrix", "media_inspection"}:
         required = {}
-        if capability in {"motion_graphics", "nle_handoff", "nle_import"}:
+        if capability in {"motion_graphics", "nle_handoff", "nle_import", "ad_variant_matrix", "media_inspection"}:
             provider = model = named_model = None
     if capability not in POLICY["capability_map"]:
         return Route(status="blocked", reason=f"No capability map for {capability}.")
@@ -1033,6 +1058,8 @@ class CostEstimate:
 def estimate_cost(name: str, arguments: dict, *, list_price: bool = False) -> CostEstimate:
     from server.billing_rates import cost_for
 
+    if name in {"Remotion___render_ad_variants", "ad_variant_matrix"}:
+        return CostEstimate(cost_for("remotion", "render_ad_variants", arguments).total_cents)
     if is_free_tool(name):
         return CostEstimate(0)
     provider, tool = tool_parts(name)

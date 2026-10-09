@@ -100,8 +100,12 @@ The backend renders the shared timeline document: source trims, playback speed,
 ordered visual layers and start times, cover/contain fitting, crop positions,
 opacity and fades; source-video audio and independent audio tracks with source
 trims, start, duration, volume and fades. Audio never extends the visual length.
-Titles/subtitles, motion presets, grading, scaling and rotation require Lambda
-and fail explicitly in local mode. This is a development assembly backend, not
+Local titles/subtitles use allow-listed DejaVu fonts, measured fit and safe text files.
+Positioned/scaled image or video overlays, opacity and fades are supported. Motion presets,
+video grading and rotation still require Lambda and fail explicitly in local mode. New
+font/box props require a compatible Lambda composition or return a clear refusal. See
+[the ad matrix contract](REMOTION_EDITING.md) for capabilities, font licences and real demo
+commands. This is a local assembly backend, not
 a replacement for the full Remotion renderer.
 
 Local render downloads require HTTPS on exact hosts listed in the comma-separated

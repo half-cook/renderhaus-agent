@@ -1,7 +1,9 @@
-import {AbsoluteFill, Audio, Composition, Img, OffthreadVideo, Sequence, useCurrentFrame, useVideoConfig} from 'remotion';
+import {AbsoluteFill, Audio, cancelRender, Composition, continueRender, delayRender, Img, OffthreadVideo, Sequence, staticFile, useCurrentFrame, useVideoConfig} from 'remotion';
+import {useEffect, useState} from 'react';
 import type {CSSProperties} from 'react';
 
 type Asset = {id: string; kind: 'image' | 'video' | 'audio'; url: string};
+type Box = {x: number; y: number; width: number; height: number};
 type ItemTiming = {id: string; start: number; duration: number; fadeIn?: number; fadeOut?: number; opacity?: number};
 type ClipItem = ItemTiming & {
   type: 'clip'; assetId: string;
@@ -9,11 +11,14 @@ type ClipItem = ItemTiming & {
   audioFadeIn?: number; audioFadeOut?: number; grade?: 'none' | 'neutral' | 'warm';
   fit?: 'cover' | 'contain';
   positionX?: number; positionY?: number; scale?: number; rotation?: number;
-  motion?: string;
+  motion?: string; box?: Box;
 };
 type TextItem = ItemTiming & {
   type: 'text'; text: string; position?: 'top' | 'center' | 'bottom';
   fontSize?: number; fontWeight?: number; color?: string; backgroundColor?: string;
+  box?: Box; fontFamily?: 'dejavu-sans' | 'dejavu-sans-bold';
+  minFontSize?: number; maxFontSize?: number;
+  textFit?: {width: number; height: number; fontSize: number; overflow: boolean};
 };
 type Item = ClipItem | TextItem;
 type Track = {id: string; kind: string; items: Item[]};
@@ -40,15 +45,56 @@ const audioGain = (frame: number, item: ClipItem, fps: number, frames: number) =
   return Math.min(fadeIn ? clamp(inFrame / fadeIn) : 1, fadeOut ? clamp(outFrame / fadeOut) : 1);
 };
 
+const fontFiles = {
+  'dejavu-sans': 'DejaVuSans.ttf',
+  'dejavu-sans-bold': 'DejaVuSans-Bold.ttf',
+} satisfies Record<NonNullable<TextItem['fontFamily']>, string>;
+const fontLoads = new Map<string, Promise<FontFace>>();
+
+function TextLayer({item, opacity}: {item: TextItem; opacity: number}) {
+  const [handle] = useState(() => item.fontFamily ? delayRender('Loading allow-listed overlay font') : null);
+  useEffect(() => {
+    if (!item.fontFamily || handle === null) return;
+    const family = item.fontFamily;
+    let font = fontLoads.get(family);
+    if (!font) {
+      font = new FontFace(family, `url("${staticFile(`fonts/${fontFiles[family]}`)}")`).load();
+      fontLoads.set(family, font);
+    }
+    let active = true;
+    font.then((face) => {
+      globalThis.document.fonts.add(face);
+      if (active) continueRender(handle);
+    }).catch((error: unknown) => {
+      if (active) cancelRender(error instanceof Error ? error : new Error('Overlay font unavailable'));
+    });
+    return () => { active = false; };
+  }, [handle, item.fontFamily]);
+  if (item.box) {
+    if (!item.textFit || item.textFit.overflow || typeof item.fontSize !== 'number' || item.fontSize < (item.minFontSize ?? 16)) {
+      throw new Error('text_overflow or missing fitted text geometry');
+    }
+    const box = item.box;
+    return <div style={{position: 'absolute', left: box.x, top: box.y, width: box.width, height: box.height,
+      display: 'flex', justifyContent: 'center', alignItems: 'center', opacity,
+      backgroundColor: item.backgroundColor ?? 'transparent'}}>
+      <div style={{fontFamily: item.fontFamily, fontSize: item.fontSize,
+        fontWeight: item.fontFamily === 'dejavu-sans-bold' ? 700 : 400, color: item.color ?? 'white',
+        textAlign: 'center', whiteSpace: 'pre', lineHeight: `${item.textFit.height / item.text.split('\n').length}px`}}>{item.text}</div>
+    </div>;
+  }
+  return <AbsoluteFill style={{justifyContent: item.position === 'top' ? 'flex-start' : item.position === 'bottom' ? 'flex-end' : 'center', alignItems: 'center', padding: '6%', opacity}}>
+    <div style={{fontFamily: 'Arial, sans-serif', fontSize: item.fontSize ?? 64, fontWeight: item.fontWeight ?? 700, color: item.color ?? 'white', background: item.backgroundColor ?? 'transparent', textAlign: 'center', whiteSpace: 'pre-wrap', padding: '12px 24px'}}>{item.text}</div>
+  </AbsoluteFill>;
+}
+
 function Layer({item, asset, frames}: {item: Item; asset?: Asset; frames: number}) {
   const frame = useCurrentFrame();
   const {fps} = useVideoConfig();
   const progress = clamp(frame / Math.max(1, frames - 1));
   const opacity = gain(frame, item, fps, frames) * (item.opacity ?? 1);
   if (item.type === 'text') {
-    return <AbsoluteFill style={{justifyContent: item.position === 'top' ? 'flex-start' : item.position === 'bottom' ? 'flex-end' : 'center', alignItems: 'center', padding: '6%', opacity}}>
-      <div style={{fontFamily: 'Arial, sans-serif', fontSize: item.fontSize ?? 64, fontWeight: item.fontWeight ?? 700, color: item.color ?? 'white', background: item.backgroundColor ?? 'transparent', textAlign: 'center', whiteSpace: 'pre-wrap', padding: '12px 24px'}}>{item.text}</div>
-    </AbsoluteFill>;
+    return <TextLayer item={item} opacity={opacity}/>;
   }
   if (!asset) throw new Error(`Missing source asset for clip ${item.id}`);
   if (!asset.url) throw new Error(`Missing media URL for ${asset.id}`);
@@ -60,7 +106,8 @@ function Layer({item, asset, frames}: {item: Item; asset?: Asset; frames: number
   const zoom = item.motion === 'zoom_in' ? 1 + progress * 0.08 : item.motion === 'zoom_out' ? 1.08 - progress * 0.08 : item.motion?.startsWith('pan_') ? 1.08 : 1;
   const pan = item.motion === 'pan_left' ? 4 - progress * 8 : item.motion === 'pan_right' ? -4 + progress * 8 : 0;
   const style: CSSProperties = {width: '100%', height: '100%', objectFit: item.fit ?? 'cover', objectPosition: `${(item.positionX ?? 0.5) * 100}% ${(item.positionY ?? 0.5) * 100}%`, filter: gradeFilters[item.grade ?? 'none'], transform: `translateX(${pan}%) scale(${(item.scale ?? 1) * zoom}) rotate(${item.rotation ?? 0}deg)`};
-  return <AbsoluteFill style={{opacity, overflow: 'hidden'}}>
+  const boxStyle: CSSProperties = item.box ? {left: item.box.x, top: item.box.y, width: item.box.width, height: item.box.height} : {};
+  return <AbsoluteFill style={{opacity, overflow: 'hidden', ...boxStyle}}>
     {asset.kind === 'image' ? <Img src={asset.url} style={style}/> : <OffthreadVideo src={asset.url} trimBefore={trimBefore} trimAfter={trimAfter} playbackRate={item.playbackRate ?? 1} style={style} volume={(f) => (item.volume ?? 1) * audioGain(f, item, fps, frames)}/>}
   </AbsoluteFill>;
 }

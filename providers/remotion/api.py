@@ -36,7 +36,7 @@ ROOT = Path(__file__).resolve().parents[2]
 DEPLOYMENT_PATH = ROOT / ".renderhaus" / "remotion" / "deployment.json"
 OUTPUT_DIR = ROOT / ".renderhaus" / "media" / "remotion"
 COMPOSITION_ID = "RenderhausTimeline"
-ASPECT_SIZES = {"16:9": (1920, 1080), "9:16": (1080, 1920), "1:1": (1080, 1080), "2.39:1": (1920, 804)}
+ASPECT_SIZES = {"16:9": (1920, 1080), "9:16": (1080, 1920), "1:1": (1080, 1080), "4:5": (1080, 1350), "2.39:1": (1920, 804)}
 DEFAULT_FRAMES_PER_LAMBDA = 100
 OutputResolution = Literal["source", "720p", "1080p", "1440p", "2160p"]
 _RESOLUTION_TIERS = {"720p": 720, "1080p": 1080, "1440p": 1440, "2160p": 2160}
@@ -308,6 +308,12 @@ def _visual_metadata(clip: dict[str, Any], *, measure_remote: bool = False,
     return _VisualMetadata(source_fps, source_bitrate, size, container_bitrate)
 
 
+def _overlay_box(value: Any, width: int, height: int) -> dict[str, float]:
+    from providers.remotion.text import box_geometry
+
+    return box_geometry(value, width, height)
+
+
 def build_timeline_props(
     title: str,
     visuals: list[dict[str, Any]],
@@ -444,6 +450,7 @@ def build_timeline_props(
                 "motion": motion,
                 "transition": transition,
                 "grade": clip.get("grade", "none"),
+                **({"box": _overlay_box(clip["box"], width, height)} if "box" in clip else {}),
                 **({"audioFadeIn": float(clip["audio_fade_in_seconds"])}
                    if "audio_fade_in_seconds" in clip else {}),
                 **({"audioFadeOut": float(clip["audio_fade_out_seconds"])}
@@ -520,12 +527,13 @@ def build_timeline_props(
             default_fade = 0.2 if item_prefix == "text" else 0
             fade_in = float(overlay.get("fade_in_seconds", default_fade))
             fade_out = float(overlay.get("fade_out_seconds", default_fade))
-            if item_prefix == "text":
+            fitted_contract = any(key in overlay for key in ("box", "min_font_size", "max_font_size", "font_family"))
+            if item_prefix == "text" and not fitted_contract:
                 fade_in = fade_in or 0.2
                 fade_out = fade_out or 0.2
             text_items.append({
                 "id": f"{item_prefix}-{index + 1}", "type": "text",
-                "text": overlay["text"].strip()[:500],
+                "text": overlay["text"],
                 "start": float(overlay["start_seconds"]), "duration": duration,
                 "position": overlay.get("position", "center"),
                 "fontSize": int(overlay.get("font_size", 64)),
@@ -534,7 +542,17 @@ def build_timeline_props(
                 "fontWeight": int(overlay.get("font_weight", 700)),
                 "fadeIn": min(fade_in, duration),
                 "fadeOut": min(fade_out, duration),
+                **({"opacity": overlay["opacity"]} if "opacity" in overlay else {}),
             })
+            if fitted_contract:
+                from providers.remotion.text import fit_text
+
+                fitted = dict(text_items[-1])
+                for public, normalized in (("box", "box"), ("min_font_size", "minFontSize"),
+                                           ("max_font_size", "maxFontSize"), ("font_family", "fontFamily")):
+                    if public in overlay:
+                        fitted[normalized] = overlay[public]
+                text_items[-1].update(fit_text(fitted, width, height))
         if text_items:
             tracks.append({"id": track_id, "kind": "caption", "name": name, "items": text_items})
     return {
@@ -561,6 +579,13 @@ def _start_lambda_render(
     *,
     output_filename: str,
 ) -> dict[str, Any]:
+    new_fields = {"box", "fontFamily", "textFit", "minFontSize", "maxFontSize"}
+    needs_v2 = any(new_fields.intersection(item)
+                   for track in input_props.get("document", {}).get("tracks", [])
+                   for item in track.get("items", []))
+    if needs_v2 and os.getenv("REMOTION_OVERLAY_CONTRACT_VERSION", "1") != "2":
+        raise ValueError("Lambda requires overlay contract version 2 with matching font assets; "
+                         "use REMOTION_RENDER_BACKEND=local until that composition is deployed.")
     settings = load_remotion_settings()
     session = boto3.Session(region_name=settings.region)
     prepared = _prepare_input_props(input_props, settings=settings, session=session)
@@ -619,7 +644,7 @@ def render_timeline(
     visuals: list[dict[str, Any]],
     audio_tracks: list[dict[str, Any]] | None = None,
     text_overlays: list[dict[str, Any]] | None = None,
-    aspect_ratio: Literal["16:9", "9:16", "1:1", "2.39:1"] = "9:16",
+    aspect_ratio: Literal["16:9", "9:16", "1:1", "4:5", "2.39:1"] = "9:16",
     fps: float | None = None,
     output_filename: str = "renderhaus-video.mp4",
     subtitles: list[dict[str, Any]] | None = None,
@@ -638,6 +663,12 @@ def render_timeline(
             "progress": 0.0,
             "note": "Dry run is enabled; set REMOTION_DRY_RUN=false to start the configured render backend.",
         }
+    fitted_fields = {"box", "font_family", "min_font_size", "max_font_size"}
+    needs_v2 = (any("box" in clip for clip in visuals)
+                or any(fitted_fields.intersection(item) for item in [*(text_overlays or []), *(subtitles or [])]))
+    if needs_v2 and render_backend() == "lambda" and os.getenv("REMOTION_OVERLAY_CONTRACT_VERSION", "1") != "2":
+        raise ValueError("Lambda requires overlay contract version 2 with matching worker fonts and font assets; "
+                         "use REMOTION_RENDER_BACKEND=local until that composition is deployed.")
     props = build_timeline_props(
         title,
         visuals,
@@ -661,7 +692,7 @@ def prepare_conversational_edit(
     overlays: list[dict[str, Any]] | None = None,
     grade: Literal["none", "neutral", "warm"] = "none",
     subtitles: bool = True,
-    aspect_ratio: Literal["16:9", "9:16", "1:1", "2.39:1"] = "9:16",
+    aspect_ratio: Literal["16:9", "9:16", "1:1", "4:5", "2.39:1"] = "9:16",
     fps: int | None = None,
 ) -> dict[str, Any]:
     """Prepare an approved word-range edit as a pure dry-run preview, without fetching or rendering media."""
@@ -946,7 +977,17 @@ def import_nle_timeline(
     return result
 
 
+def render_ad_variants(stage: Literal["plan", "render_first", "render_batch"], job_id: str,
+                       brief: dict, rows: list[dict], master_asset: str,
+                       plan_hash: str = "", concurrency: int = 2) -> dict[str, Any]:
+    """Plan retail variants for free; first/batch need human approval of the exact plan hash."""
+    from providers.remotion.ad_variants import render_ad_variants as run_matrix
+
+    return run_matrix(stage, job_id, brief, rows, master_asset, plan_hash, concurrency)
+
+
 TOOL_HANDLERS = {
+    "render_ad_variants": render_ad_variants,
     "import_nle_timeline": import_nle_timeline,
     "prepare_conversational_edit": prepare_conversational_edit,
     "render_timeline": render_timeline,
@@ -955,6 +996,7 @@ TOOL_HANDLERS = {
 }
 
 GATEWAY_TOOLS = (
+    "render_ad_variants",
     "import_nle_timeline",
     "prepare_conversational_edit",
     "render_timeline",

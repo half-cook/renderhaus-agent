@@ -34,6 +34,7 @@ on:
           - seedream
           - elevenlabs
           - remotion
+          - ffmpeg
         default: all
       region:
         description: AWS region
@@ -127,7 +128,8 @@ jobs:
                   echo "$CHANGED" | grep -E '^providers/seedream/|^lambdas/seedream/' >/dev/null && SELECTED+=(seedream)
                   echo "$CHANGED" | grep -E '^providers/elevenlabs/|^configs/gateway/elevenlabs\.tools\.json' >/dev/null && SELECTED+=(elevenlabs)
                   echo "$CHANGED" | grep -E '^providers/remotion/' >/dev/null && SELECTED+=(remotion)
-                  if [ "${#SELECTED[@]}" -eq 0 ] || [ "${#SELECTED[@]}" -ge 11 ]; then
+                  echo "$CHANGED" | grep -E '^providers/ffmpeg/|^configs/gateway/ffmpeg\.tools\.json' >/dev/null && SELECTED+=(ffmpeg)
+                  if [ "${#SELECTED[@]}" -eq 0 ] || [ "${#SELECTED[@]}" -ge 12 ]; then
                     PROVIDER=all
                   else
                     IFS=,
@@ -167,7 +169,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install -e .
 
-      - name: Check inventories (15 providers, 113 tools, 24 skills)
+      - name: Check inventories (16 providers, 115 tools, 25 skills)
         run: python -c "from scripts.ci_check import check_routing_inventory; check_routing_inventory()"
 
       - name: Configure AWS (OIDC)
