@@ -203,7 +203,8 @@ class HyperFramesPackRoutingTests(unittest.TestCase):
         from agent.deep_agent.routing import route_intent
 
         for verb in ("Generate", "Create"):
-            for output in ("an image", "images", "an image collage", "a photo collage poster", "a still poster"):
+            for output in ("an image", "images", "an image collage", "a photo collage poster",
+                           "a collage image poster", "a photo poster", "a still poster"):
                 for style in ("cinematic captions", "editorial captions"):
                     prompt = f"{verb} {output} with {style}"
                     with self.subTest(prompt=prompt):

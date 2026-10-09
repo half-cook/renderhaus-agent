@@ -1964,7 +1964,7 @@
       "capability": "still_image"
     },
     {
-      "pattern": "\\b(?:generate|create|design|make)\\s+(?:(?:an?|the|some|new|still|captioned|cinematic|editorial|tactile|paper|collage)\\s+)*(?:(?:images?|photos?)\\s+collage(?:\\s+posters?)?|images?|photos?|posters?|stills?)\\b(?=\\s*(?:$|[,.;!?]|\\b(?:with|for|of|using|from|showing|featuring)\\b))",
+      "pattern": "\\b(?:generate|create|design|make)\\s+(?:(?:an?|the|some|new|still|captioned|cinematic|editorial|tactile|paper|collage)\\s+)*(?:(?:images?|photos?)(?:\\s+collage)?(?:\\s+posters?)?|posters?|stills?)\\b(?=\\s*(?:$|[,.;!?]|\\b(?:with|for|of|using|from|showing|featuring)\\b))",
       "skill": "image-gen",
       "abstract_tool": "gpt_image25_t2i",
       "capability": "still_image"
