@@ -1,5 +1,3 @@
-"""Bounded MP4 container checks before a Sync output becomes an artifact."""
-
 from __future__ import annotations
 
 import math

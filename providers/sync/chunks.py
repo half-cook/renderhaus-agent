@@ -1,5 +1,3 @@
-"""Paired, measured clipping at caller-supplied silence or shot boundaries."""
-
 from __future__ import annotations
 
 import math

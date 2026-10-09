@@ -1,5 +1,3 @@
-"""Consent-gated Sync 3 lip synchronization with recoverable, ordered chunk jobs."""
-
 from __future__ import annotations
 
 import hashlib
