@@ -114,7 +114,7 @@ The optional `RENDERHAUS_AUTONOMOUS_RUN_CAP_CENTS` caps estimated paid spend for
 job. It is off when unset and requires a stable job ID when enabled. Reservations persist
 before submission, share one executor across subagents, and stop unknown-priced or excessive
 paid dispatch while allowing job recovery polls. See [Skills and routing](SKILLS.md) for the
-policy schema, cached/lazy SigLIP and DINOv2 QC, unconfigured face interface, DINOv3 gating,
+policy schema, cached/lazy SigLIP and DINOv2 QC, unconfigured face interface, DINOv3 opt-in DINO slot (off by default; see docs/CONTINUITY_QC_BENCHMARK.md),
 and all pending-provider drafts.
 
 ## Memory and durable threads

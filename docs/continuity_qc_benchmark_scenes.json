@@ -1,0 +1,36 @@
+{
+  "note": "Hand-labelled scenes over PySceneDetect shot indices (ContentDetector threshold 27, min_scene_len 12 frames, auto-downscale) produced by scripts/continuity_qc_benchmark.py detect. A scene is one continuous location/lighting set-up; ranges are inclusive shot indices and a scene may recur (e.g. Sintel's snow opening is revisited later). Characters are principal on-screen characters; cross-scene pairs that share a character are positives (same_character_other_scene), pairs that share none are negatives. Shots outside every range (titles, credits, montages, mixed holograms) are excluded. Labelled by viewing contact sheets of mid-shot frames on 2026-10-08.",
+  "films": {
+    "sintel": [
+      {"id": "snow_mountain", "shots": [[0, 22], [112, 114]], "characters": ["sintel", "hunter"]},
+      {"id": "shaman_hut", "shots": [[25, 35], [115, 125]], "characters": ["sintel", "shaman"]},
+      {"id": "city_rooftops", "shots": [[37, 50]], "characters": ["sintel", "scales"]},
+      {"id": "home_interior", "shots": [[51, 55]], "characters": ["sintel", "scales"]},
+      {"id": "town_market", "shots": [[57, 71]], "characters": ["sintel", "scales"]},
+      {"id": "sunset_rooftops", "shots": [[72, 101]], "characters": ["sintel", "scales"]},
+      {"id": "dragon_cave", "shots": [[128, 215]], "characters": ["sintel", "scales"]}
+    ],
+    "bbb": [
+      {"id": "meadow_tree", "shots": [[4, 51]], "characters": ["bunny", "rodents", "butterfly"]},
+      {"id": "forest_traps", "shots": [[52, 74]], "characters": ["bunny"]},
+      {"id": "squirrel_glide", "shots": [[100, 109], [111, 119]], "characters": ["rodents"]}
+    ],
+    "ed": [
+      {"id": "cyan_cables", "shots": [[2, 9]], "characters": ["proog", "emo"]},
+      {"id": "dark_wires", "shots": [[10, 17]], "characters": ["proog", "emo"]},
+      {"id": "red_room", "shots": [[19, 34]], "characters": ["proog", "emo"]},
+      {"id": "green_stage", "shots": [[37, 51]], "characters": ["proog", "emo"]},
+      {"id": "machine_tunnels", "shots": [[57, 73]], "characters": ["proog", "emo"]},
+      {"id": "hologram_void", "shots": [[74, 86]], "characters": ["proog", "emo"]},
+      {"id": "sepia_room", "shots": [[89, 98]], "characters": ["proog", "emo"]},
+      {"id": "tiled_room", "shots": [[99, 117]], "characters": ["proog", "emo"]},
+      {"id": "orange_cables", "shots": [[118, 124]], "characters": ["proog", "emo"]}
+    ],
+    "tos": [
+      {"id": "sniper_house", "shots": [[15, 31]], "characters": ["soldiers", "scientists"]},
+      {"id": "lab", "shots": [[32, 37], [45, 48]], "characters": ["scientists"]},
+      {"id": "canal_bridge", "shots": [[61, 62], [64, 65], [67, 67], [72, 73], [75, 77], [88, 93]], "characters": ["celia", "thom"]},
+      {"id": "church_battle", "shots": [[110, 129]], "characters": ["soldiers", "scientists"]}
+    ]
+  }
+}

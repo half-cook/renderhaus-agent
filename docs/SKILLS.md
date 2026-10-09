@@ -269,9 +269,14 @@ Optional torch/transformers imports and model loading happen on the first embedd
 No heavy required dependency is added to pyproject. Loading uses `local_files_only=True`;
 the host must separately provision approved cached weights. Tests inject embedders and mock
 loading, with no downloads. Missing packages or caches produce an explicit incomplete check.
-`continuity_qc.dinov3_enabled` and `ContinuityConfig.enable_dinov3` default OFF. Enabling DINOv3
-currently raises a gated-access/licence-review error; a separately reviewed adapter is still
-required. No DINOv3 model silently replaces the two supported models.
+`continuity_qc.dinov3_enabled` and `ContinuityConfig.enable_dinov3` default OFF. When turned on,
+`facebook/dinov3-vitb16-pretrain-lvd1689m` replaces DINOv2 in the DINO slot (same CLS pooling,
+same `min(siglip, dino) >= threshold` rule, `ContinuityReport.dino_model` records which model
+scored). It loads from the local cache only (transformers>=4.56); `HF_TOKEN` is read from the
+environment only. The DINOv3 Licence permits commercial use with conditions, so legal review is
+required before enabling it in production. Benchmark and recommendation:
+[CONTINUITY_QC_BENCHMARK.md](CONTINUITY_QC_BENCHMARK.md). No DINOv3 model silently replaces
+the two supported models.
 
 `training_loop_hook(assets, consume)` validates the entire batch through policy before
 calling a training consumer. One ineligible asset rejects the batch with no consumer side

@@ -24,8 +24,10 @@ An appearance match is not proof of face identity.
 Face identity uses a pluggable interface. The default implementation returns
 `not configured`, which must remain visible in the QC result. Never load InsightFace or
 another face-recognition package as an implicit substitute.
-DINOv3 is an optional switch, off by default, with gated access and a separate licence
-review requirement. Never silently substitute DINOv3 for the configured DINOv2 model.
+DINOv3 (`facebook/dinov3-vitb16-pretrain-lvd1689m`) can replace DINOv2 in the DINO slot only
+when `continuity_qc.dinov3_enabled` is on (default off). It is gated, ships under the DINOv3
+Licence (not Apache-2.0) and needs legal review before production use. Never silently
+substitute DINOv3 for the configured DINOv2 model; the report names the DINO model used.
 
 Before training, enforce `agent/deep_agent/routing_policy.json` through the continuity
 training hook. Accept only approved Wan provenance with both `training_eligible=true` and
