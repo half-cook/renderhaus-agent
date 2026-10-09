@@ -118,7 +118,9 @@ TOOL_GUIDANCE: dict[str, dict[str, str]] = {
             "one assembled MP4. The caller must choose timing, B-roll layers, crop/motion, "
             "transitions, speed, titles, and audio fades, then poll get_render_progress. "
             "Sources may use url or output_path (a local provider result, no file:// prefix). "
-            "Local development selects REMOTION_RENDER_BACKEND=local; Lambda remains the default."
+            "Local development selects REMOTION_RENDER_BACKEND=local; Lambda remains the default. "
+            "Local assembly supports trims, fit, fades, timing, opacity, speed, and audio mixing; "
+            "titles/subtitles, motion, grade, scale, and rotation require Lambda."
         ),
         "get_render_progress": (
             "Use only after render_timeline returned a render id and bucket name (local sentinel for local). Poll once per call "
