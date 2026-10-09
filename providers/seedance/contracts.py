@@ -196,17 +196,24 @@ def validate_arguments(tool: str, arguments: dict[str, Any]) -> None:
             raise ValueError("BytePlus audio references require image or video references.")
 
 
+def byteplus_platform_blocker() -> str | None:
+    region = os.getenv("RENDERHAUS_CUSTOMER_REGION", "").strip().lower()
+    if region in {"us", "usa", "united states", "united-states", "united_states"}:
+        return "BytePlus Seedance is unavailable to US customers or end users; use fal US-hosted endpoints."
+    if not region:
+        return "BytePlus customer region is unknown. Set RENDERHAUS_CUSTOMER_REGION to a permitted non-US region before live use."
+    if os.getenv("SEEDANCE_BYTEPLUS_PLATFORM_AUTHORIZED", "false").lower() != "true":
+        return "BytePlus requires written platform authorization for UGC integration or API resale."
+    return None
+
+
 def live_blocker(tool: str, arguments: dict[str, Any]) -> str | None:
     if not verified_model(tool, arguments):
         return "UNVERIFIED Seedance model/API identifier; dry-run only."
     if transport() == "byteplus":
-        region = os.getenv("RENDERHAUS_CUSTOMER_REGION", "").strip().lower()
-        if region in {"us", "usa", "united states", "united-states", "united_states"}:
-            return "BytePlus Seedance is unavailable to US customers or end users; use fal US-hosted endpoints."
-        if not region:
-            return "BytePlus customer region is unknown. Set RENDERHAUS_CUSTOMER_REGION to a permitted non-US region before live use."
-        if os.getenv("SEEDANCE_BYTEPLUS_PLATFORM_AUTHORIZED", "false").lower() != "true":
-            return "BytePlus requires written platform authorization for UGC integration or API resale."
+        blocker = byteplus_platform_blocker()
+        if blocker:
+            return blocker
         if arguments.get("reference_video_urls") or tool in {"edit_video", "extend_video"}:
             return "UNVERIFIED BytePlus reference-video minimum billing floor; cost estimate unknown, dry-run only."
     return None

@@ -134,10 +134,12 @@ def _submit(tool: str, arguments: dict[str, Any]) -> dict[str, Any]:
     model, body = contracts.request_body(tool, arguments)
     host = contracts.transport()
     verified = contracts.verified_model(tool, arguments)
+    estimate_reason = None
     try:
         estimate = seedance_price_cents(tool, arguments)
-    except ValueError:
+    except ValueError as exc:
         estimate = None
+        estimate_reason = str(exc)
     dry = dry_run() or not verified
     metadata = {
         "provider": "seedance", "transport": host, "mode": tool, "model": model,
@@ -147,6 +149,7 @@ def _submit(tool: str, arguments: dict[str, Any]) -> dict[str, Any]:
         "resolution": arguments.get("resolution", "720p"),
         "estimated_cost_usd": float(estimate / 100) if estimate is not None else None,
         "cost_estimate": f"${estimate / 100:.2f} provider estimate before Renderhaus fee" if estimate is not None else "unknown",
+        "cost_estimate_reason": estimate_reason,
         "pricing_verified_on": "2026-10-09", "verification_status": "verified" if verified else "UNVERIFIED",
         **contracts.TRAINING_METADATA,
         "hosted_terms_url": contracts.BYTEPLUS_TERMS_URL if host == "byteplus" else contracts.TRAINING_METADATA["hosted_terms_url"],
@@ -288,8 +291,9 @@ def _retrieve_task(job_id: str, download: bool) -> dict:
     metadata = _read_task_meta(job_id)
     if _dry_run() or job_id.startswith("seedance_dry_"):
         return {"job_id": job_id, "status": "dry_run", "provider": "seedance", **contracts.TRAINING_METADATA}
-    if os.getenv("SEEDANCE_BYTEPLUS_PLATFORM_AUTHORIZED", "false").lower() != "true":
-        raise ValueError("BytePlus platform authorization is required for live task retrieval.")
+    blocker = contracts.byteplus_platform_blocker()
+    if blocker:
+        raise ValueError(blocker)
     with httpx.Client(timeout=60) as client:
         response = client.get(f"{_base_url()}/contents/generations/tasks/{job_id}", headers=_headers())
         _raise_for_status(response)
@@ -304,7 +308,8 @@ def _retrieve_task(job_id: str, download: bool) -> dict:
     result = {"job_id": job_id, "status": status, "provider": "seedance", "transport": "byteplus",
               "model": payload.get("model") or metadata.get("model"), "video_url": video_url,
               "output_path": str(output) if output.exists() else None, "downloaded": output.exists(),
-              "usage": payload.get("usage"), "error": payload.get("error"), **contracts.TRAINING_METADATA}
+              "usage": payload.get("usage"), "error": payload.get("error"), **contracts.TRAINING_METADATA,
+              "hosted_terms_url": contracts.BYTEPLUS_TERMS_URL}
     _write_task_meta(job_id, {**metadata, **result})
     return result
 
@@ -345,7 +350,8 @@ def list_seedance_models() -> dict:
         "models": [{"id": endpoint, "api_url": spec.api_url, **contracts.TRAINING_METADATA}
                    for endpoint, spec in contracts.ENDPOINTS.items()]
         + [{"id": model, "transport": "byteplus", "requires_platform_authorization": True,
-            **contracts.TRAINING_METADATA} for model in (contracts.MODEL_25, contracts.MODEL_15)],
+            **contracts.TRAINING_METADATA, "hosted_terms_url": contracts.BYTEPLUS_TERMS_URL}
+           for model in (contracts.MODEL_25, contracts.MODEL_15)],
         "note": "Static documented catalog. BytePlus is unavailable to US customers and requires written platform authorization. fal US-hosted endpoints are the default. Account access is not verified.",
     }
 

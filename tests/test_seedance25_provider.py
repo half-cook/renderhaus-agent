@@ -307,6 +307,23 @@ class Seedance25ProviderTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "does not support"):
             api.text_to_video("robot", model="bytedance/seedance-2.5/us/text-to-video", service_tier="flex")
 
+    def test_byteplus_poll_enforces_customer_region_after_transport_change(self) -> None:
+        settings = {"SEEDANCE_DRY_RUN": "false", "SEEDANCE_BYTEPLUS_PLATFORM_AUTHORIZED": "true", "RENDERHAUS_CUSTOMER_REGION": "US"}
+        with patch.dict(os.environ, settings), patch("providers.seedance.api.httpx.Client") as client, self.assertRaisesRegex(ValueError, "US customers"):
+            api.get_video_task("existing-byteplus-job")
+        client.assert_not_called()
+
+    def test_unknown_byteplus_floor_is_disclosed_in_dry_receipt(self) -> None:
+        with patch.dict(os.environ, {"SEEDANCE_TRANSPORT": "byteplus"}):
+            result = api.reference_to_video("robot", reference_video_urls=["https://example.test/a.mp4"], reference_video_durations=[5], reference_video_fps=[24])
+        self.assertIn("UNVERIFIED", result["cost_estimate_reason"])
+        self.assertIn("floor", result["cost_estimate_reason"])
+
+    def test_source_dimensions_unknown_reason_is_disclosed(self) -> None:
+        result = api.image_to_video("https://example.test/start.png", "robot")
+        self.assertEqual(result["cost_estimate"], "unknown")
+        self.assertIn("aspect ratio", result["cost_estimate_reason"])
+
 
 if __name__ == "__main__":
     unittest.main()
