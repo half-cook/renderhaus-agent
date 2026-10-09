@@ -23,7 +23,7 @@ class CapabilityMapTests(unittest.TestCase):
                     "voice_clone": "voices_ivc_create", "music": "mureka_v95", "sfx": "mirelo_v2a",
                     "upscale": "topaz_upscale", "interpolate": "topaz_interpolate",
                     "motion_graphics": "remotion_render", "nle_handoff": "Remotion___export_nle_timeline",
-                    "continuity_qc": "local_qc"}
+                    "continuity_qc": "local_qc", "lyrics_video": "mureka_lyrics_video"}
         self.assertEqual({k: v["default"] for k, v in routing.POLICY["capability_map"].items()}, expected)
         self.assertNotIn("ladder", routing.POLICY)
         for tier in [None, "draft", "standard", "premium"]:

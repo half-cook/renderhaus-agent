@@ -48,7 +48,7 @@ class ElevenLabsTests(unittest.TestCase):
             self.assertEqual(set(build_catalog()), FEATURE_TOOLS)
         with patch.dict(SPEC, {"paths": {}}), self.assertRaisesRegex(ValueError, "Missing ElevenLabs feature"):
             build_catalog()
-        self.assertNotIn("mureka", [p.id for p in PROVIDERS])
+        self.assertIn("mureka", [p.id for p in PROVIDERS])
         self.assertEqual(load_committed_schemas(get_provider("elevenlabs")), generate_schemas(get_provider("elevenlabs")))
         for entry in CATALOG.values():
             self.assertNotEqual(entry["effect"], "administration")

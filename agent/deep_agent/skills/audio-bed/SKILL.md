@@ -4,7 +4,7 @@ description: Create narration, voice clones, music or SFX with capability defaul
 metadata:
   include_tools: call_audio_tool
   routing_tools: eleven_v4_turbo voices_ivc_create mureka_v95 mirelo_v2a elevenlabs_sfx_v2
-  gateway_tools: ElevenLabs___music_compose ElevenLabs___text_to_sound_effects_convert ElevenLabs___text_to_speech_convert ElevenLabs___voices_ivc_create
+  gateway_tools: Mureka___generate_song Mureka___generate_instrumental Mureka___get_music_task Mureka___list_mureka_models ElevenLabs___music_compose ElevenLabs___text_to_sound_effects_convert ElevenLabs___text_to_speech_convert ElevenLabs___voices_ivc_create
 ---
 
 # Audio bed
@@ -18,13 +18,20 @@ Use authorized `voice_id` and `text`; never infer a voice ID from its display na
 Voice cloning defaults to `voices_ivc_create`, mapped to `ElevenLabs___voices_ivc_create`.
 Require speaker consent and rights to all samples; do not imply the IVC tool provides PVC.
 
-Music defaults to pending `mureka_v95`. Its declared interim is `ElevenLabs___music_compose`
-with `prompt` and `music_length_ms`. Disclose that ElevenLabs is temporary, or explicit-only by name.
+Music defaults to `mureka_v95` through Mureka V9.5 on fal. Use `Mureka___generate_instrumental`
+for beds, instrumentals and requests without vocals; use `Mureka___generate_song` for songs.
+Supply `lyrics` for lyrics-to-song or `prompt` for prompt-to-song; `prompt` with lyrics controls style.
+`styles` is prompt-only and `gender` is lyrics-only. Discover the exact schema before dispatch.
+Poll `Mureka___get_music_task` with the saved handle and `download=true`. Preserve `song_id`,
+`duration_ms` and timed `lyrics_sections` for a later lyrics video. Dry-run creates no media.
+`ElevenLabs___music_compose` remains explicit-only when requested by name.
+Paid audio pauses unless autonomous; the existing spend cap still applies. Outputs have commercial
+API usage rights but no verified training grant. MUREKA_DRY_RUN and FAL_DRY_RUN default true.
 Video-synchronized foley defaults to `mirelo_v2a`, pending with no interim. A text-only sound effect
 uses the built `elevenlabs_sfx_v2` exception through `ElevenLabs___text_to_sound_effects_convert`.
 Use native `text` and supported `duration_seconds`. Text-only SFX cannot synchronize to source picture.
 For script-only lip sync, prepare authorized ElevenLabs speech, then follow the lipsync skill
-for consented sync-3 on existing footage. Long HeyGen presenters and lyrics-video remain pending.
+for consented sync-3 on existing footage. Use the lyrics-video skill for Mureka lyric/karaoke videos. Long presenters use the HeyGen skill.
 Speech alone is not a lipsync video.
 
 Fish Audio is named-only. MMAudio is retired because its weights are non-commercial; ACE-Step is

@@ -24,10 +24,11 @@ from providers.registry import schema_from_callable
 from providers.seedance import contracts as seedance_contracts
 from providers.sync import contracts as sync_contracts
 from providers.topaz import contracts as topaz_contracts
+from providers.mureka import contracts as mureka_contracts
 
 
 TOOL_CONTRACTS = {tool: contract for contract in (wan, vidu, wan3) for tool in contract.GENERATING_TOOLS}
-ENDPOINT_CONTRACTS = {endpoint: contract for contract in (wan, vidu, wan3, seedance_contracts, sync_contracts, topaz_contracts) for endpoint in contract.ENDPOINTS}
+ENDPOINT_CONTRACTS = {endpoint: contract for contract in (wan, vidu, wan3, seedance_contracts, sync_contracts, topaz_contracts, mureka_contracts) for endpoint in contract.ENDPOINTS}
 
 
 def _validated(tool: str, arguments: dict[str, Any]) -> dict[str, Any]:
@@ -332,6 +333,7 @@ def get_video_task(job_id: str, download: bool = False) -> dict:
         or (endpoint_id in seedance_contracts.ENDPOINTS and os.getenv("SEEDANCE_DRY_RUN", "true").lower() != "false")
         or (endpoint_id in sync_contracts.ENDPOINTS and os.getenv("SYNC_DRY_RUN", "true").lower() != "false")
         or (endpoint_id in topaz_contracts.ENDPOINTS and os.getenv("TOPAZ_DRY_RUN", "true").lower() != "false")
+        or (endpoint_id in mureka_contracts.ENDPOINTS and os.getenv("MUREKA_DRY_RUN", "true").lower() != "false")
     ):
         contract = ENDPOINT_CONTRACTS[endpoint_id]
         endpoint = contract.ENDPOINTS[endpoint_id]
@@ -401,7 +403,7 @@ def _poll_video_task(job_id: str, endpoint_id: str, request_id: str, *, download
     }
     if contract is wan3:
         normalized.update(duration=result.get("duration"), actual_prompt=result.get("actual_prompt"))
-    if contract not in (sync_contracts, topaz_contracts):
+    if contract not in (sync_contracts, topaz_contracts, mureka_contracts):
         metadata = json.loads(metadata_path.read_text()) if metadata_path.exists() else {}
         metadata.update(normalized)
         _write_metadata(metadata_path, metadata)

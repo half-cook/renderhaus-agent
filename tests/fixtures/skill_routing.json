@@ -181,7 +181,8 @@
     "suite": "audio-bed",
     "skip_reason": "",
     "note": "default music",
-    "source_status": "updated"
+    "source_status": "updated",
+    "expected_gateway_tool": "Mureka___generate_instrumental"
   },
   {
     "prompt": "narrate with ElevenLabs",
@@ -423,7 +424,8 @@
     "suite": "audio-bed",
     "skip_reason": "",
     "note": "ACE-Step retired",
-    "source_status": "updated"
+    "source_status": "updated",
+    "expected_gateway_tool": "Mureka___generate_instrumental"
   },
   {
     "prompt": "video to audio synchronized SFX",
@@ -603,7 +605,7 @@
     "expected_skill": "lyrics-video",
     "expected_tool": "mureka_lyrics_video",
     "suite": "lyrics-video",
-    "skip_reason": "provider pending: mureka_lyrics_video (feat/provider-mureka)",
+    "skip_reason": "",
     "note": "",
     "source_status": "unchanged"
   },
@@ -612,7 +614,7 @@
     "expected_skill": "lyrics-video",
     "expected_tool": "mureka_lyrics_video",
     "suite": "lyrics-video",
-    "skip_reason": "provider pending: mureka_lyrics_video (feat/provider-mureka)",
+    "skip_reason": "",
     "note": "",
     "source_status": "unchanged"
   },
@@ -1124,7 +1126,7 @@
     "expected_skill": "lyrics-video",
     "expected_tool": "mureka_lyrics_video",
     "suite": "lyrics-video",
-    "skip_reason": "provider pending: mureka_lyrics_video (feat/provider-mureka)",
+    "skip_reason": "",
     "note": "default",
     "source_status": "new"
   },

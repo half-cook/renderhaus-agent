@@ -285,6 +285,12 @@ def enrich_tool_schema(provider_id: str, tool: dict[str, Any]) -> dict[str, Any]
     enriched = deepcopy(tool)
     tool_name = str(enriched.get("name") or "")
     properties = (enriched.get("inputSchema") or {}).get("properties") or {}
+    if provider_id == "mureka":
+        from providers.mureka.contracts import FIELD_DESCRIPTIONS
+
+        for field, description in FIELD_DESCRIPTIONS.items():
+            if field in properties:
+                properties[field]["description"] = description
     if provider_id == "topaz":
         from providers.topaz.contracts import FIELD_DESCRIPTIONS
 
@@ -449,6 +455,11 @@ def _validate_rule(path: str, value: Any, rule: ArgumentRule) -> None:
 
 
 def _validate_cross_fields(provider_id: str, tool_name: str, arguments: dict[str, Any]) -> None:
+    if provider_id == "mureka":
+        from providers.mureka.contracts import validate_arguments
+
+        validate_arguments(tool_name, arguments)
+        return
     if provider_id == "topaz":
         from providers.topaz.contracts import validate_arguments
 

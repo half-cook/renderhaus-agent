@@ -20,6 +20,14 @@ FORBIDDEN_TOOL_RE = re.compile(r"^(wait_for_.*|.*_and_wait)$")
 
 
 TOOL_GUIDANCE: dict[str, dict[str, str]] = {
+    "mureka": {
+        "generate_song": "Music default Mureka V9.5 via fal. Use lyrics for lyrics-to-song, or prompt for prompt-to-song; prompt with lyrics supplies style. Paid audio requires approval unless autonomous. Poll get_music_task; save song_id and timed lyrics for lyrics-video. Dry-run is a preview; no training eligibility.",
+        "generate_instrumental": "Music-bed default: Mureka V9.5 instrumental via fal. Exactly one of prompt or existing instrumental_id. Paid audio approval unless autonomous. Poll get_music_task with download=true; dry-run never produces audio.",
+        "generate_lyrics_video": "Paid lyrics video via fal: exactly one of completed song_id or existing upload_audio_id. Song/upload IDs must belong to this transport. Layout/aspect and paired row or millisecond selection follow the schema. Always pause with cost approval, even autonomous. Poll get_video_task with download=true and verify saved MP4. No training eligibility.",
+        "get_music_task": "Poll one saved Mureka music handle. Preserve song_id, duration_ms and timed lyrics_sections. download=true validates and persists completed audio; dry-run never creates artifacts.",
+        "get_video_task": "Poll saved Mureka lyrics-video job via the shared fal queue. download=true validates saved MP4; no new generation. Dry-run handles stay previews.",
+        "list_mureka_models": "Offline verified model and endpoint catalog; no generation or paid request.",
+    },
     "topaz": {
         "upscale_video": "Finish existing video with Starlight Precise 2.6 through fal. Requires video_url and measured source_duration_seconds, source_fps, source_width and source_height. Choose target_resolution 1080p/4K or upscale_factor 1–4; default is 2x. Optional target_fps 16–60. H264_output defaults true. All paid submissions pause with cost, including autonomous runs. Unknown quotes block live submission. Default dry-run is a preview, not media. Poll get_video_task with download=true and inspect the saved MP4. Outputs are not training eligible.",
         "interpolate_video": "Finish existing video with Apollo by default; use Chronos for plain linear-motion FPS conversion unless the user names a model. Requires video_url and measured source_duration_seconds, source_fps, source_width and source_height. Choose target_fps 16–120 or fps_multiplier; default is 60 FPS. slowdown_factor 1–8 defaults 1; slow-motion prices remain unknown and live submission is blocked. All paid submissions pause with cost even in autonomous runs. Poll get_video_task with download=true. Dry-run previews are not media; outputs are not training eligible.",

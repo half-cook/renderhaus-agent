@@ -4,6 +4,11 @@ import type { CanvasNodeData } from "./types";
 import type { ToolSchema } from "@/lib/types";
 
 const PROMPT_KEYS = ["prompt", "text", "script", "lyrics"] as const;
+const MUREKA_SOURCES: Partial<Record<string, readonly string[]>> = {
+  generate_song: ["lyrics", "prompt"],
+  generate_instrumental: ["prompt", "instrumental_id"],
+  generate_lyrics_video: ["song_id", "upload_audio_id"],
+};
 
 export function generateBlockers(
   data: CanvasNodeData,
@@ -14,8 +19,22 @@ export function generateBlockers(
   const required = new Set(schema?.inputSchema.required || []);
   const properties = schema?.inputSchema.properties || {};
   const tool = toolById(data.toolId);
+  const operation = data.toolName || tool?.toolName;
+  const sources = data.providerId === "mureka" && operation ? MUREKA_SOURCES[operation] : undefined;
+  if (sources) {
+    const count = sources.filter(key => connectedFields.includes(key)
+      || (typeof data.config[key] === "string" && data.config[key].trim().length > 0)).length;
+    if (!count || (operation !== "generate_song" && count !== 1)) {
+      blockers.push(operation === "generate_song" ? "Add lyrics or a prompt first."
+        : operation === "generate_instrumental" ? "Choose a prompt or an instrumental upload ID."
+        : "Choose a song ID or an audio upload ID.");
+    }
+  }
 
   for (const key of PROMPT_KEYS) {
+    if (sources?.includes(key)) {
+      continue;
+    }
     if (connectedFields.includes(key)) {
       continue;
     }
