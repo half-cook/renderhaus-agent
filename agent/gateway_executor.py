@@ -42,6 +42,8 @@ def tool_needs_approval(name: str, autonomous: bool) -> bool:
 
     if name in APPROVAL_EXEMPT_TOOLS:
         return False
+    if name == "Remotion___prepare_conversational_edit":
+        return True
     return not autonomous or requires_approval(name) or premium_video(name)
 
 

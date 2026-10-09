@@ -7,6 +7,7 @@ the model, and enforce the same rules immediately before the paid provider reque
 
 from __future__ import annotations
 
+import math
 import re
 from copy import deepcopy
 from dataclasses import dataclass
@@ -172,7 +173,12 @@ TOOL_ARGUMENT_RULES: dict[str, dict[str, dict[str, ArgumentRule]]] = {
         "render_timeline": {
             "aspect_ratio": ArgumentRule(choices=("16:9", "9:16", "1:1", "2.39:1")),
             "fps": ArgumentRule(minimum=12, maximum=60),
-        }
+        },
+        "prepare_conversational_edit": {
+            "aspect_ratio": ArgumentRule(choices=("16:9", "9:16", "1:1", "2.39:1")),
+            "fps": ArgumentRule(minimum=12, maximum=60),
+            "grade": ArgumentRule(choices=("none", "neutral", "warm")),
+        },
     },
 }
 
@@ -206,6 +212,9 @@ _VISUAL_ITEM_SCHEMA = {
         "volume": {"type": "number", "description": "Source video audio volume. Allowed range: 0 to 1. Use 0 when replacing the soundtrack."},
         "fade_in_seconds": {"type": "number", "description": "Must be at least 0."},
         "fade_out_seconds": {"type": "number", "description": "Must be at least 0."},
+        "audio_fade_in_seconds": {"type": "number", "description": "Audio-only fade, independent of opacity. Must fit inside the clip duration."},
+        "audio_fade_out_seconds": {"type": "number", "description": "Audio-only fade, independent of opacity. Must fit inside the clip duration."},
+        "grade": {"type": "string", "description": "Media-only fixed color filter. Allowed values: none, neutral, warm."},
         "motion": {
             "type": "string",
             "description": "Allowed values: none, zoom_in, zoom_out, pan_left, pan_right.",
@@ -248,6 +257,38 @@ _TEXT_OVERLAY_SCHEMA = {
     },
     "required": ["text", "start_seconds", "duration_seconds"],
 }
+_TRANSCRIPT_WORD_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "text": {"type": "string"},
+        "start": {"type": "number", "description": "Finite source start in seconds, at least 0."},
+        "end": {"type": "number", "description": "Finite source end in seconds. Words require end greater than start."},
+        "type": {"type": "string", "description": "Allowed values: word, spacing, silence, audio_event. Defaults to word."},
+    },
+    "required": ["text", "start", "end"],
+}
+_TRANSCRIPT_SOURCE_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "id": {"type": "string", "description": "Unique immutable source identifier."},
+        "url": {"type": "string", "description": "Existing media URL, local source, or renderhaus-asset:// version handle. Preparation never fetches media."},
+        "duration_seconds": {"type": "number", "description": "Finite whole-source duration, greater than 0."},
+        "words": {"type": "array", "items": _TRANSCRIPT_WORD_SCHEMA,
+                  "description": "Ordered source transcript tokens. Timing must not overlap or extend past the source."},
+        "metadata": {"type": "object", "description": "Optional original source metadata. It is not copied to the new output."},
+    },
+    "required": ["id", "url", "duration_seconds", "words"],
+}
+_TRANSCRIPT_SEGMENT_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "source_id": {"type": "string"},
+        "first_word": {"type": "integer", "description": "Inclusive zero-based index into type=word tokens, with missing type treated as word."},
+        "last_word": {"type": "integer", "description": "Inclusive zero-based index into type=word tokens."},
+        "padding_seconds": {"type": "number", "description": "Desired boundary padding, 0.03 to 0.2 seconds. Defaults to 0.05. Snaps within safe frame boundaries."},
+    },
+    "required": ["source_id", "first_word", "last_word"],
+}
 
 
 def enrich_tool_schema(provider_id: str, tool: dict[str, Any]) -> dict[str, Any]:
@@ -284,7 +325,17 @@ def enrich_tool_schema(provider_id: str, tool: dict[str, Any]) -> dict[str, Any]
             )
         if isinstance(properties.get("text_overlays"), dict):
             properties["text_overlays"]["items"] = deepcopy(_TEXT_OVERLAY_SCHEMA)
-            properties["text_overlays"]["description"] = "Optional titles and captions."
+            properties["text_overlays"]["description"] = "Optional titles and graphics, rendered before subtitles."
+        if isinstance(properties.get("subtitles"), dict):
+            properties["subtitles"]["items"] = deepcopy(_TEXT_OVERLAY_SCHEMA)
+            properties["subtitles"]["description"] = "Output-timed burn-in captions, rendered as the final track above all overlays."
+    if provider_id == "remotion" and tool_name == "prepare_conversational_edit":
+        properties["plan_summary"]["description"] = "Plain English cut, grade, and caption proposal shown in the required host approval card."
+        properties["sources"]["items"] = deepcopy(_TRANSCRIPT_SOURCE_SCHEMA)
+        properties["segments"]["items"] = deepcopy(_TRANSCRIPT_SEGMENT_SCHEMA)
+        properties["segments"]["description"] = "Ordered kept ranges using inclusive indices into each source's filtered type=word tokens. Split ranges to discard fillers or silence. No arbitrary time cuts."
+        properties["overlays"]["items"] = deepcopy(_TEXT_OVERLAY_SCHEMA)
+        properties["overlays"]["description"] = "Optional output-timed titles and graphics, below subtitles."
     if provider_id == "remotion" and tool_name == "export_nle_timeline":
         properties["timeline_json"]["description"] = (
             "JSON Remotion envelope with document {id, name, assets, tracks} and renderConfig "
@@ -324,28 +375,33 @@ def _matches_type(value: Any, json_type: str) -> bool:
     return True
 
 
-def _validate_schema(value: Any, schema: dict[str, Any], path: str) -> None:
+def _validate_schema(
+    value: Any, schema: dict[str, Any], path: str, *, allow_empty_strings: bool = False
+) -> None:
     json_type = str(schema.get("type") or "")
     if json_type and not _matches_type(value, json_type):
         raise ValueError(f"{path} must be {json_type}.")
+    if json_type in {"number", "integer"} and not math.isfinite(value):
+        raise ValueError(f"{path} must be finite.")
     if json_type == "object" and isinstance(value, dict):
         properties = schema.get("properties") or {}
         required = schema.get("required") or []
-        unknown = sorted(set(value) - set(properties))
+        unknown = sorted(set(value) - set(properties)) if "properties" in schema else []
         if unknown:
             raise ValueError(f"{path} contains unsupported fields: {', '.join(unknown)}.")
-        missing = [name for name in required if name not in value or value[name] in (None, "")]
+        missing = [name for name in required if name not in value or value[name] is None
+                   or (value[name] == "" and not allow_empty_strings)]
         if missing:
             raise ValueError(f"{path} is missing required fields: {', '.join(missing)}.")
         for name, item in value.items():
             child = properties.get(name)
             if isinstance(child, dict):
-                _validate_schema(item, child, f"{path}.{name}")
+                _validate_schema(item, child, f"{path}.{name}", allow_empty_strings=allow_empty_strings)
     elif json_type == "array" and isinstance(value, list):
         item_schema = schema.get("items")
         if isinstance(item_schema, dict):
             for index, item in enumerate(value):
-                _validate_schema(item, item_schema, f"{path}[{index}]")
+                _validate_schema(item, item_schema, f"{path}[{index}]", allow_empty_strings=allow_empty_strings)
 
 
 def _validate_rule(path: str, value: Any, rule: ArgumentRule) -> None:
@@ -382,6 +438,10 @@ def _validate_cross_fields(provider_id: str, tool_name: str, arguments: dict[str
         from providers.luma.api import validate_generation_arguments
 
         validate_generation_arguments(tool_name, arguments)
+    if provider_id == "remotion" and tool_name == "prepare_conversational_edit":
+        from providers.remotion.transcript import build_conversational_edit
+
+        build_conversational_edit(**arguments)
     if provider_id == "remotion" and tool_name == "render_timeline":
         if not arguments.get("visuals"):
             raise ValueError("render_timeline requires at least one visual clip.")
@@ -399,6 +459,7 @@ def _validate_cross_fields(provider_id: str, tool_name: str, arguments: dict[str
                 "transition": {"cut", "fade", "dip_to_black"},
                 "fit": {"cover", "contain"},
                 "motion": {"none", "zoom_in", "zoom_out", "pan_left", "pan_right"},
+                "grade": {"none", "neutral", "warm"},
             }
             for field, allowed in choices.items():
                 if field in clip and clip[field] not in allowed:
@@ -422,7 +483,7 @@ def _validate_cross_fields(provider_id: str, tool_name: str, arguments: dict[str
                         f"arguments.visuals[{index}].{field} must be between "
                         f"{minimum:g} and {maximum:g}."
                     )
-            for field in ("fade_in_seconds", "fade_out_seconds"):
+            for field in ("fade_in_seconds", "fade_out_seconds", "audio_fade_in_seconds", "audio_fade_out_seconds"):
                 if field in clip and not 0 <= float(clip[field]) <= float(clip["duration_seconds"]):
                     raise ValueError(
                         f"arguments.visuals[{index}].{field} must fit inside the clip duration."
@@ -442,19 +503,36 @@ def _validate_cross_fields(provider_id: str, tool_name: str, arguments: dict[str
                     raise ValueError(
                         f"arguments.audio_tracks[{index}].{field} must fit inside the clip duration."
                     )
-        for index, overlay in enumerate(arguments.get("text_overlays") or []):
-            if float(overlay["start_seconds"]) < 0:
-                raise ValueError(
-                    f"arguments.text_overlays[{index}].start_seconds must be at least 0."
-                )
-            if float(overlay["duration_seconds"]) <= 0:
-                raise ValueError(
-                    f"arguments.text_overlays[{index}].duration_seconds must be greater than 0."
-                )
-            if "position" in overlay and overlay["position"] not in {"top", "center", "bottom"}:
-                raise ValueError(
-                    f"arguments.text_overlays[{index}].position must be top, center, or bottom."
-                )
+        for field in ("text_overlays", "subtitles"):
+            validate_remotion_text_items(arguments.get(field) or [], f"arguments.{field}")
+
+
+def validate_remotion_text_items(items: list[dict[str, Any]], path: str) -> None:
+    _validate_schema(items, {"type": "array", "items": _TEXT_OVERLAY_SCHEMA}, path)
+    for index, item in enumerate(items):
+        item_path = f"{path}[{index}]"
+        if not item["text"].strip():
+            raise ValueError(f"{item_path}.text must be non-empty.")
+        if item["start_seconds"] < 0:
+            raise ValueError(f"{item_path}.start_seconds must be at least 0.")
+        duration = item["duration_seconds"]
+        if duration <= 0:
+            raise ValueError(f"{item_path}.duration_seconds must be greater than 0.")
+        if "position" in item and item["position"] not in {"top", "center", "bottom"}:
+            raise ValueError(f"{item_path}.position must be top, center, or bottom.")
+        for field, (minimum, maximum) in {"font_size": (16, 180), "font_weight": (100, 900)}.items():
+            if field in item and not minimum <= item[field] <= maximum:
+                raise ValueError(f"{item_path}.{field} must be between {minimum} and {maximum}.")
+        for field in ("fade_in_seconds", "fade_out_seconds"):
+            if field in item and not 0 <= item[field] <= duration:
+                raise ValueError(f"{item_path}.{field} must fit inside the text duration.")
+
+
+def validate_remotion_timeline_arguments(arguments: dict[str, Any]) -> None:
+    for field, item_schema in (("visuals", _VISUAL_ITEM_SCHEMA), ("audio_tracks", _AUDIO_ITEM_SCHEMA)):
+        if arguments.get(field) is not None:
+            _validate_schema(arguments[field], {"type": "array", "items": item_schema}, f"arguments.{field}")
+    _validate_cross_fields("remotion", "render_timeline", arguments)
 
 
 def validate_tool_arguments(
@@ -465,7 +543,8 @@ def validate_tool_arguments(
 ) -> dict[str, Any]:
     """Validate every Gateway call at the last boundary before provider I/O."""
     cleaned = {key: value for key, value in (arguments or {}).items() if value is not None}
-    _validate_schema(cleaned, input_schema, "arguments")
+    _validate_schema(cleaned, input_schema, "arguments",
+                     allow_empty_strings=provider_id == "remotion" and tool_name == "prepare_conversational_edit")
     for field, rule in argument_rules(provider_id, tool_name).items():
         if field in cleaned:
             _validate_rule(f"arguments.{field}", cleaned[field], rule)

@@ -695,6 +695,7 @@ async def invoke_tool(body: InvokeBody, auth: AuthUser) -> dict[str, Any]:
         raise HTTPException(status_code=404, detail="Project not found.") from exc
     cleaned = _tool_arguments(body.provider, body.tool, body.arguments)
     source_version_ids = list(dict.fromkeys([*body.source_version_ids, *_source_version_ids(cleaned)]))
+    preparing_edit = (body.provider, body.tool) == ("remotion", "prepare_conversational_edit")
     if body.provider == "runway":
         from server.runway_inputs import prepare_runway_arguments
 
@@ -706,7 +707,7 @@ async def invoke_tool(body: InvokeBody, auth: AuthUser) -> dict[str, Any]:
             )
         except (ValueError, KeyError, FileNotFoundError) as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
-    else:
+    elif not preparing_edit:
         cleaned = _resolve_asset_handles(cleaned, workspace_id)
     try:
         cost = cost_for(body.provider, body.tool, cleaned)
@@ -765,6 +766,8 @@ async def invoke_tool(body: InvokeBody, auth: AuthUser) -> dict[str, Any]:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
     if body.provider == "runway" and body.tool != "get_runway_task" and result.get("job_id"):
         await asyncio.to_thread(repository.record_provider_task, workspace_id, body.project_id, "runway", result["job_id"])
+    if preparing_edit:
+        return {"provider": body.provider, "tool": body.tool, "result": result, "assets": [], "cost": cost.public()}
     try:
         assets = await asyncio.to_thread(
             _register_payload_assets,

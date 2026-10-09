@@ -425,5 +425,26 @@
     "expected_tool": "vidu_q4_i2v",
     "suite": "vidu-q4",
     "skip_reason": ""
+  },
+  {
+    "prompt": "cut filler ums and burn bold captions on this interview",
+    "expected_skill": "conversational-edit",
+    "expected_tool": "local_qc",
+    "suite": "conversational-edit",
+    "skip_reason": "integration pending: local_qc has no editor Gateway endpoint; transcript edits do not establish continuity QC"
+  },
+  {
+    "prompt": "conversational edit talking head with HyperFrames overlays",
+    "expected_skill": "conversational-edit",
+    "expected_tool": "hyperframes_render",
+    "suite": "conversational-edit",
+    "skip_reason": "provider pending: HyperFrames overlays are not built on this branch"
+  },
+  {
+    "prompt": "export the edit to OTIO after agent cut",
+    "expected_skill": "conversational-edit",
+    "expected_tool": "otio_export",
+    "suite": "conversational-edit",
+    "skip_reason": ""
   }
 ]

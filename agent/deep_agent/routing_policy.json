@@ -29,7 +29,8 @@
     "list_seedream_models",
     "list_voices",
     "estimate_tts_cost",
-    "export_nle_timeline"
+    "export_nle_timeline",
+    "prepare_conversational_edit"
   ],
   "providers": {
     "kling": {
@@ -491,6 +492,16 @@
       "gateway_tool": "Fal___vidu_q4_r2v",
       "skill": "vidu-q4",
       "status": "ready"
+    },
+    "transcript_edit": {
+      "gateway_tool": "Remotion___prepare_conversational_edit",
+      "skill": "conversational-edit",
+      "status": "ready"
+    },
+    "hyperframes_render": {
+      "gateway_tool": null,
+      "status": "pending",
+      "reason": "provider pending: HyperFrames overlays are not built on this branch."
     }
   },
   "rules": [
@@ -513,6 +524,21 @@
       "pattern": "mini.?max(?:\\s*h3)?",
       "skill": "t2v",
       "abstract_tool": "minimax_h3_t2v"
+    },
+    {
+      "pattern": "(?:conversational[ -]edit|transcript[ -](?:driven|based)|cut filler|remove filler|cut.*\\bums\\b).*hyperframes|hyperframes.*(?:conversational[ -]edit|transcript[ -](?:driven|based))",
+      "skill": "conversational-edit",
+      "abstract_tool": "hyperframes_render"
+    },
+    {
+      "pattern": "(?:export|handoff).*(?:after (?:the )?agent cut|conversational[ -]edit|transcript[ -](?:driven|based) cut)",
+      "skill": "conversational-edit",
+      "abstract_tool": "otio_export"
+    },
+    {
+      "pattern": "\\bconversational[ -]edit\\b|transcript[ -](?:driven|based)\\s+(?:cut|edit)|\\b(?:cut|remove|trim)\\s+(?:the\\s+)?filler(?:\\s+(?:words|ums))?|\\bcut\\b.*\\bums\\b",
+      "skill": "conversational-edit",
+      "abstract_tool": "transcript_edit"
     },
     {
       "pattern": "still.*approval.*animat|still.*then.*animat",

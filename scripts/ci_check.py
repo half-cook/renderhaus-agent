@@ -104,6 +104,14 @@ def check_dry_run_dispatch() -> None:
                     arguments["image_url"] = "https://example.test/frame.png"
                 elif name == "video_to_video":
                     arguments["prompt"] = "A small offline smoke test"
+            if spec.id == "remotion" and name == "prepare_conversational_edit":
+                arguments = {
+                    "title": "Offline interview cut", "plan_summary": "Keep the greeting with subtitles.",
+                    "sources": [{"id": "source", "url": "https://example.test/source.mp4",
+                                 "duration_seconds": 1,
+                                 "words": [{"text": "Hello", "start": 0.1, "end": 0.5}]}],
+                    "segments": [{"source_id": "source", "first_word": 0, "last_word": 0}],
+                }
             result = dispatch(spec.id, name, arguments)
             assert isinstance(result, dict), f"{spec.id}.{name} did not return a dict"
             if "error" in result and result.get("error_type"):

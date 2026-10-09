@@ -119,6 +119,19 @@ assert.deepEqual(changeTypes(changes(segments([clip("A")],{audio_tracks:[clip("m
 assert.doesNotMatch(JSON.stringify(segments([clip("A",4,{url:"https://name:password@media.example/A.mp4?secret=token#private"})])),/password|secret|token|private/,"Structured source data also strips URL credentials and signatures");
 assert.deepEqual(changeTypes(diffTimelineSegments(undefined,oldCut)),["context","context"]);
 
+const captioned = segments([clip("talk", 4)], {
+  text_overlays: [{text: "Speaker", start_seconds: 0, duration_seconds: 4}],
+  subtitles: [{text: "HELLO", start_seconds: 1.25, duration_seconds: 0.4}],
+});
+assert.deepEqual(captioned.map((segment) => segment.track), ["V1", "T1", "S1"], "Subtitles have a separate final review track");
+assert.equal(captioned.at(-1).start, 1.25, "Subtitle review uses output timing");
+assert.equal(captioned.at(-1).properties.fade_in_seconds, "0", "Short subtitles have no implicit title fade");
+const editorialBefore = segments([clip("talk", 4)]);
+const editorialAfter = segments([clip("talk", 4, {grade: "warm", audio_fade_in_seconds: 0.03, audio_fade_out_seconds: 0.03})]);
+assert.deepEqual(changes(editorialBefore, editorialAfter)[0].changedFields.sort(), ["audio_fade_in_seconds", "audio_fade_out_seconds", "grade"], "Grade and dialogue fades remain reviewable");
+assert.equal(editorialAfter[0].properties.fade_in_seconds, "0", "Audio fades do not add picture fades");
+assert.deepEqual(changeTypes(changes(editorialBefore, segments([clip("talk", 4, {grade: "none", audio_fade_in_seconds: 0, audio_fade_out_seconds: 0})]))), ["context"], "Explicit editorial defaults compare equal");
+
 const namedEvent=(title,status="queued",extra={})=>({...event(4,status),id:`event-${title}`,arguments:{...event(4).arguments,title},...extra});
 const output=(id,version)=>({...generated,assetId:id,versionId:version});
 const namedRun=(n,title,primary=undefined,status="completed",toolStatus="queued")=>({...run(n,[namedEvent(title,toolStatus)],status),jobId:`run-${n}`,primaryAsset:primary,assets:primary?[primary]:[]});

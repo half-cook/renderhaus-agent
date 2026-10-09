@@ -11,8 +11,9 @@ regardless of the model's proposal, including subagent dispatch and approved res
 
 ## Packaged skills
 
-Nine intent skills were added. The original six names remain compatible. There are 15 live
-skills in total. `metadata.include_tools` is a space-separated string of dispatch wrappers.
+The backend packages 16 live skills, including vidu-q4 and conversational-edit. The original
+six names remain compatible.
+`metadata.include_tools` is a space-separated string of dispatch wrappers.
 `metadata.gateway_tools` records exact Gateway names separately. Abstract seed aliases never
 replace wrapper names in `include_tools`. Tests parse the actual middleware metadata and
 check every declared or body-referenced Gateway name against `configs/gateway/*.tools.json`.
@@ -22,6 +23,7 @@ check every declared or body-referenced Gateway name against `configs/gateway/*.
 | [audio](../agent/deep_agent/skills/audio/SKILL.md) | `call_audio_tool` | `ElevenLabs___music_compose`<br>`ElevenLabs___text_to_sound_effects_convert`<br>`ElevenLabs___text_to_speech_convert`<br>`FishAudio___generate_speech` |
 | [audio-bed](../agent/deep_agent/skills/audio-bed/SKILL.md) | `call_audio_tool` | `ElevenLabs___text_to_speech_convert`<br>`ElevenLabs___music_compose`<br>`ElevenLabs___text_to_sound_effects_convert`<br>`FishAudio___generate_speech` |
 | [continuity-qc](../agent/deep_agent/skills/continuity-qc/SKILL.md) | `call_media_tool` | `Fal___text_to_video`<br>`Fal___get_video_task` |
+| [conversational-edit](../agent/deep_agent/skills/conversational-edit/SKILL.md) | `call_editor_tool`<br>`call_audio_tool` | `Remotion___prepare_conversational_edit`<br>`Remotion___render_timeline`<br>`Remotion___get_render_progress`<br>`Remotion___export_nle_timeline`<br>`ElevenLabs___speech_to_text_convert`<br>`ElevenLabs___speech_to_text_transcripts_get` |
 | [edit-v2v](../agent/deep_agent/skills/edit-v2v/SKILL.md) | `call_media_tool` | `Fal___video_to_video`<br>`Fal___get_video_task`<br>`Fal___list_fal_models`<br>`Runway___video_to_video`<br>`Runway___get_runway_task`<br>`Runway___list_runway_models`<br>`Luma___modify_video`<br>`Luma___get_video_task`<br>`Luma___list_luma_models` |
 | [final-assembly](../agent/deep_agent/skills/final-assembly/SKILL.md) | `call_editor_tool` | `Remotion___export_nle_timeline`<br>`Remotion___get_render_progress`<br>`Remotion___render_timeline` |
 | [i2v](../agent/deep_agent/skills/i2v/SKILL.md) | `call_media_tool` | `Fal___image_to_video`<br>`Fal___reference_to_video`<br>`Fal___get_video_task`<br>`Kling___image_to_video`<br>`Kling___get_video_task`<br>`Seedance___image_to_video`<br>`Seedance___get_video_task`<br>`Runway___image_to_video`<br>`Runway___get_runway_task`<br>`Seedream___text_to_image`<br>`Seedream___image_to_image`<br>`Luma___image_to_video`<br>`Luma___get_video_task`<br>`Luma___list_luma_models`<br>`Fal___vidu_q4_i2v`<br>`Fal___vidu_q4_r2v` |
@@ -87,17 +89,81 @@ a manifest, and media together; an alias does not imply a separate Gateway tool.
 | `recraft_t2i` | provider pending: Recraft |
 | `runway_gen4_t2i` | `Runway___text_to_image` |
 | `runway_i2v` | `Runway___image_to_video` |
+| `transcript_edit` | `Remotion___prepare_conversational_edit` |
+| `hyperframes_render` | provider pending: HyperFrames |
+
+## Conversational editing after generation
+
+The editor compiles cuts from existing footage and word-level transcripts. It does not select
+the generative V2V ladder. Explicit restyling still selects `edit-v2v`; an existing approved
+timeline export still selects `resolve-handoff`. An OTIO request after an agent cut selects
+`conversational-edit` and the existing exporter. A requested HyperFrames edit returns pending
+instead of silently substituting a different overlay provider.
+
+`Remotion___prepare_conversational_edit` is a pure local tool in the existing Remotion target,
+available through `DISPATCH_TARGETS["call_editor_tool"]`. It always returns `status="dry_run"`
+with canonical `render_arguments`, `timeline`, output-timed `transcript`, `captions`, `cuts`
+and `qc_expectations`. It reads no media, contacts no provider, creates no artifact and changes
+no source. No new dry-run flag or provider/deployment threshold is needed.
+
+Each source has `id`, immutable `url`, measured `duration_seconds` and verbatim `words`.
+Each word has `text`, `start` and `end`, optionally `type`. Spoken-word indices omit spacing
+and audio-event records. Each segment names `source_id`, inclusive `first_word` and
+`last_word`, optionally short `padding_seconds`. Separate segments remove an internal filler
+or silence. The compiler protects kept words and neighboring discarded speech/events,
+quantizes cuts to safe frame boundaries and rejects ranges that cannot satisfy those bounds.
+The source-to-output map controls captions even when takes are reordered.
+
+The required `plan_summary` is a plain-English proposal. The host requests cut-plan approval
+before preparation, including autonomous runs. Approve resumes the exact saved call; reject
+never reaches Gateway. The pure tool has zero provider cost and does not reserve paid spend.
+`APPROVAL_EXEMPT_TOOLS` stays unchanged. The free-tools list and free billing branch add only
+this preparer. Rendering retains its separate approval and cap behavior; premium-generation
+rules are unchanged. A plan approval never authorizes new transcription or video generation.
+
+The manager or audio role uses the existing paid ElevenLabs `speech_to_text_convert`, with
+verbatim word timestamps, and supplies its result to the editor. Transcripts are cached by
+immutable source version in private conversation files. Operator-configured Scribe quotes
+remain required for a known estimate; otherwise the cost is unknown. Confidential-project
+and autonomous-cap rules still apply. No new price is asserted. Transcripts and plans do not
+enter the outcome training hook, and preparation preserves asset handles until render dispatch.
+
+The renderer adds independent dialogue fade fields so a short audio fade does not blacken
+the picture. Grading uses bounded `none`, `neutral` or `warm` choices on media only. Timed
+text overlays precede the separate final subtitle track. Studio's existing render review
+shows subtitle timing, grade and audio fades. Audio fades are evaluated at render FPS;
+sample-accurate 30 ms fades require future audio preprocessing and audible verification.
+At 12–16 fps the 30 ms envelope can produce no attenuation; at 30 fps it only attenuates
+the boundary frames. These fields do not prove pop-free audio.
+
+Preparation preserves source handles, but automatic output lineage through rendering/polling
+is unverified. The preexisting executor recovers source IDs by `job_id`, while Remotion polls
+use `render_id`. Keep source metadata in the plan and NLE snapshot; automatic poll association
+is an open follow-up. Existing Remotion training restrictions remain in force.
+
+NLE export requires actual pinned source metadata and baked effects. A preparation snapshot
+alone lacks the checksums/timecodes/provenance needed for export. Local ffmpeg merge/probe
+utilities live in `server/projects.py`; Aleph input probing lives in `server/runway_inputs.py`.
+Neither exposes an editor QC Gateway tool. Cut, playback and loudness inspection therefore
+remain incomplete without host inspection. HyperFrames, fframes, local-QC dispatch, live
+model judgment and real NLE round trips remain unverified or unavailable.
+See [decisions and verification](conversational-edit-decisions.tsv) and
+[third-party notices](THIRD_PARTY_NOTICES.md) for the adaptation and its MIT notice.
 
 ## Offline routing verification
 
-`tests/fixtures/skill_routing.json` retains all 55 original workbook rows and the 6 supplied Vidu Q4 CSV rows.
-There are **26 active** cases and **35 skipped** cases. Each skip is a generated unittest
-with its concrete reason, not a dropped fixture row. The new unqualified product-photo
-row expects Kling and is skipped because the existing cheapest Standard route uses Seedance.
+`tests/fixtures/skill_routing.json` retains all 55 original workbook rows, the 6 supplied Vidu Q4 CSV rows
+and the three conversational-edit CSV rows (64 rows). There are **27 active** cases and **37 skipped**
+cases. Each skip is a generated unittest with its concrete reason, not a dropped fixture row.
+The unqualified product-photo row expects Kling and is skipped because the existing cheapest
+Standard route uses Seedance. The Vidu CSV re-states three i2v workbook prompts, so those
+prompts appear twice.
 An active case asserts the selected skill and proposed exact Gateway name through the same
 router used by the runner. Five Resolve suites need a local bridge or transcription/import
 integration even though the final packaging tool exists. TTS-only lipsync rows are skipped
 because speech alone does not animate a character.
+The conversational OTIO row is active. The local-QC and HyperFrames rows keep their exact
+seed aliases and explicit dependency skips; they do not claim working QC or overlays.
 
 Run `.venv/bin/python -m unittest discover -s tests -p test_skill_routing.py -v` to see each
 case and skip reason. Other offline tests exercise the compiled graph with `ScriptedModel`
@@ -230,7 +296,8 @@ Paid tools still pause in non-autonomous runs. The existing premium video target
 Kling, Runway, Luma and future Veo still pauses autonomous runs, with the estimate in the
 native interrupt description. Kling requires this approval even when selected at Standard.
 `premium_video_approval` and `RENDERHAUS_PREMIUM_VIDEO_APPROVAL` retain their previous semantics.
-`APPROVAL_EXEMPT_TOOLS`, free-tool policy and the optional autonomous spend cap are unchanged.
+`APPROVAL_EXEMPT_TOOLS`, existing free tools and the optional autonomous spend cap are unchanged.
+The new free conversational-edit preparer requires separate cut-plan confirmation.
 The Codex fallback uses the same executor and retains its approval/checkpoint protocol.
 
 Unknown combinations include Kling Turbo, Wan 2.2 freeform/pose and unpriced resolutions,
@@ -338,8 +405,13 @@ use this branch's `Remotion___render_timeline` snapshot contract rather than arb
 
 Vidu Q4 validation results are recorded in [vidu-q4-decisions.tsv](vidu-q4-decisions.tsv).
 The suite ran 551 tests: 516 passed and 35 skipped. Ruff passed for `agent lambdas scripts server providers`, and
+
+Conversational-edit branch: final checks ran 552 tests, with 516 passed and 36 explicit skips.
 `scripts/ci_check.py` passed with every provider DRY_RUN flag enabled and secrets loading
-disabled. Current offline checks cover routing proposals,
+disabled. Its Lambda packaging used the existing local wheelhouse with pip network access
+disabled. Studio's `tsc --noEmit -p .` and the timeline-review checks passed; the temporary
+`node_modules` link was removed. The Remotion renderer's separate typecheck remains blocked
+because its npm package/types are unavailable locally. Current offline checks cover routing proposals,
 actual skill parsing/schema names, both approval paths, spending, and QC boundaries. They
 do not prove live model judgment, legal review, provider/account access, model-weight quality,
 generated playback, or an editor import. Comet cannot be controlled here, and the task forbids
@@ -360,7 +432,7 @@ Luma landed on staging after this branch was cut, so it was wired in during the 
 - Policy: `providers.luma` is enabled, licence `service-terms`, model `ray-3.2` only, no region gate, `training_eligible: false`.
 - `Luma` is a premium target (`text_to_video`, `image_to_video`, `extend_video`, `modify_video`), so its paid calls pause for approval with the `cost_for` estimate even in autonomous runs; `list_luma_models` and `get_video_task` are free.
 - Estimates come from the official Ray 3.2 table in `server/billing_rates.py`; settings without a published price (e.g. 360p extend, non-5/10 s modify sources) show as unknown.
-- The routing fixture's Luma case is active: 21 active and 34 skipped routing cases.
+- The routing fixture's Luma case is active (see the counts above).
 
 ## Vidu Q4 on fal
 

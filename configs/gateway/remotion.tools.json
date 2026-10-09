@@ -1,5 +1,183 @@
 [
   {
+    "name": "prepare_conversational_edit",
+    "description": "Use for conversational transcript edits after proposing the cut, grade, and captions in plan_summary for required host approval. Always returns a side-effect-free dry_run preview with word-safe cuts, output-timed transcript/captions, timeline, render_arguments, and QC expectations. It never fetches media or starts a render. Use the separate paid render_timeline tool with render_arguments after preparation.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string"
+        },
+        "plan_summary": {
+          "type": "string",
+          "description": "Plain English cut, grade, and caption proposal shown in the required host approval card."
+        },
+        "sources": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "Unique immutable source identifier."
+              },
+              "url": {
+                "type": "string",
+                "description": "Existing media URL, local source, or renderhaus-asset:// version handle. Preparation never fetches media."
+              },
+              "duration_seconds": {
+                "type": "number",
+                "description": "Finite whole-source duration, greater than 0."
+              },
+              "words": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "text": {
+                      "type": "string"
+                    },
+                    "start": {
+                      "type": "number",
+                      "description": "Finite source start in seconds, at least 0."
+                    },
+                    "end": {
+                      "type": "number",
+                      "description": "Finite source end in seconds. Words require end greater than start."
+                    },
+                    "type": {
+                      "type": "string",
+                      "description": "Allowed values: word, spacing, silence, audio_event. Defaults to word."
+                    }
+                  },
+                  "required": [
+                    "text",
+                    "start",
+                    "end"
+                  ]
+                },
+                "description": "Ordered source transcript tokens. Timing must not overlap or extend past the source."
+              },
+              "metadata": {
+                "type": "object",
+                "description": "Optional original source metadata. It is not copied to the new output."
+              }
+            },
+            "required": [
+              "id",
+              "url",
+              "duration_seconds",
+              "words"
+            ]
+          }
+        },
+        "segments": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "source_id": {
+                "type": "string"
+              },
+              "first_word": {
+                "type": "integer",
+                "description": "Inclusive zero-based index into type=word tokens, with missing type treated as word."
+              },
+              "last_word": {
+                "type": "integer",
+                "description": "Inclusive zero-based index into type=word tokens."
+              },
+              "padding_seconds": {
+                "type": "number",
+                "description": "Desired boundary padding, 0.03 to 0.2 seconds. Defaults to 0.05. Snaps within safe frame boundaries."
+              }
+            },
+            "required": [
+              "source_id",
+              "first_word",
+              "last_word"
+            ]
+          },
+          "description": "Ordered kept ranges using inclusive indices into each source's filtered type=word tokens. Split ranges to discard fillers or silence. No arbitrary time cuts."
+        },
+        "overlays": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "text": {
+                "type": "string"
+              },
+              "start_seconds": {
+                "type": "number",
+                "description": "Must be at least 0."
+              },
+              "duration_seconds": {
+                "type": "number",
+                "description": "Must be greater than 0."
+              },
+              "position": {
+                "type": "string",
+                "description": "Allowed values: top, center, bottom."
+              },
+              "font_size": {
+                "type": "integer",
+                "description": "Allowed range: 16 to 180."
+              },
+              "font_weight": {
+                "type": "integer",
+                "description": "Allowed range: 100 to 900."
+              },
+              "color": {
+                "type": "string",
+                "description": "CSS color."
+              },
+              "background_color": {
+                "type": "string",
+                "description": "CSS color or transparent."
+              },
+              "fade_in_seconds": {
+                "type": "number",
+                "description": "Must be at least 0."
+              },
+              "fade_out_seconds": {
+                "type": "number",
+                "description": "Must be at least 0."
+              }
+            },
+            "required": [
+              "text",
+              "start_seconds",
+              "duration_seconds"
+            ]
+          },
+          "description": "Optional output-timed titles and graphics, below subtitles."
+        },
+        "grade": {
+          "type": "string",
+          "description": "One of: none, neutral, warm. Allowed values: none, neutral, warm."
+        },
+        "subtitles": {
+          "type": "boolean"
+        },
+        "aspect_ratio": {
+          "type": "string",
+          "description": "One of: 16:9, 9:16, 1:1, 2.39:1. Allowed values: 16:9, 9:16, 1:1, 2.39:1."
+        },
+        "fps": {
+          "type": "integer",
+          "description": "Allowed range: 12 to 60."
+        }
+      },
+      "required": [
+        "title",
+        "plan_summary",
+        "sources",
+        "segments"
+      ]
+    }
+  },
+  {
     "name": "render_timeline",
     "description": "Use after all source assets exist to execute a concrete edit decision list and make one assembled MP4. The caller must choose timing, B-roll layers, crop/motion, transitions, speed, titles, and audio fades, then poll get_render_progress.",
     "inputSchema": {
@@ -80,6 +258,18 @@
               "fade_out_seconds": {
                 "type": "number",
                 "description": "Must be at least 0."
+              },
+              "audio_fade_in_seconds": {
+                "type": "number",
+                "description": "Audio-only fade, independent of opacity. Must fit inside the clip duration."
+              },
+              "audio_fade_out_seconds": {
+                "type": "number",
+                "description": "Audio-only fade, independent of opacity. Must fit inside the clip duration."
+              },
+              "grade": {
+                "type": "string",
+                "description": "Media-only fixed color filter. Allowed values: none, neutral, warm."
               },
               "motion": {
                 "type": "string",
@@ -186,7 +376,7 @@
               "duration_seconds"
             ]
           },
-          "description": "Optional titles and captions."
+          "description": "Optional titles and graphics, rendered before subtitles."
         },
         "aspect_ratio": {
           "type": "string",
@@ -198,6 +388,59 @@
         },
         "output_filename": {
           "type": "string"
+        },
+        "subtitles": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "text": {
+                "type": "string"
+              },
+              "start_seconds": {
+                "type": "number",
+                "description": "Must be at least 0."
+              },
+              "duration_seconds": {
+                "type": "number",
+                "description": "Must be greater than 0."
+              },
+              "position": {
+                "type": "string",
+                "description": "Allowed values: top, center, bottom."
+              },
+              "font_size": {
+                "type": "integer",
+                "description": "Allowed range: 16 to 180."
+              },
+              "font_weight": {
+                "type": "integer",
+                "description": "Allowed range: 100 to 900."
+              },
+              "color": {
+                "type": "string",
+                "description": "CSS color."
+              },
+              "background_color": {
+                "type": "string",
+                "description": "CSS color or transparent."
+              },
+              "fade_in_seconds": {
+                "type": "number",
+                "description": "Must be at least 0."
+              },
+              "fade_out_seconds": {
+                "type": "number",
+                "description": "Must be at least 0."
+              }
+            },
+            "required": [
+              "text",
+              "start_seconds",
+              "duration_seconds"
+            ]
+          },
+          "description": "Output-timed burn-in captions, rendered as the final track above all overlays."
         }
       },
       "required": [

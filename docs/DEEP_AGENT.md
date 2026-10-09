@@ -69,6 +69,7 @@ skill is read. `metadata.include_tools` discloses the corresponding dispatch too
 | `audio` | ElevenLabs voiceover/music/SFX or Fish Audio speech if that target is available. |
 | `final-assembly` | Existing asset handles into a typed Remotion timeline, saved identifiers, poll the final MP4. |
 | `refinement` | Edit the referenced version and reuse unaffected media; prefer timeline edits for timing changes. |
+| `conversational-edit` | Confirm a transcript-driven cut plan for existing footage, compile safe word ranges, grade, overlay, burn subtitles last and render or export. |
 
 Nine additional intent skills are `t2v`, `i2v`, `edit-v2v`, `still-then-video`, `audio-bed`,
 `motion-graphics`, `continuity-qc`, `resolve-handoff`, and `vidu-q4`. The six original names remain.
@@ -76,7 +77,9 @@ Nine additional intent skills are `t2v`, `i2v`, `edit-v2v`, `still-then-video`, 
 Their wrapper and exact Gateway tool mappings are listed in [Skills and routing](SKILLS.md).
 The deterministic policy router proposes the selected skill and tool in the graph input and
 Studio context. Unsupported providers and local Resolve workflows remain explicit pending
-routes, with all 55 original workbook cases and 6 Q4 CSV rows retained in offline tests, 26 active and 35 skipped.
+routes, with all 55 original workbook cases, 6 Vidu Q4 CSV rows and 3 conversational-edit CSV rows retained in offline tests (64 rows), 27 active and 37 skipped.
+See [conversational editing](SKILLS.md#conversational-editing-after-generation) for the new
+editor preparer, the existing paid transcription path, plan confirmation, and QC limitations.
 
 Fish Audio is not in the current active provider catalog. Its speech tool is usable only when
 Gateway discovers an available Fish Audio target. Skills explicitly report unavailable tools.
@@ -89,6 +92,9 @@ only packages existing project media, so it is exempt from approval (`APPROVAL_E
 `agent/gateway_executor.py`); every paid tool still follows the native approval policy. The overridden
 `general-purpose` subagent also has no provider dispatch. All roles share project files and
 read-only Studio context. They inherit native approval policy and have no shell tool.
+The pure `Remotion___prepare_conversational_edit` requires cut-plan approval even when
+autonomous. Its estimate is zero and its preview preserves asset handles. The editor receives
+word timestamps from the manager/audio role, which alone can dispatch paid transcription.
 
 The manager and each role explicitly install `TodoListMiddleware`. The installed 0.7.23
 graph does not add it automatically. Multi-shot and multi-step requests can track `write_todos`
@@ -180,7 +186,8 @@ reconciliation. Neither backend supplies an exactly-once distributed execution g
 `Dockerfile.agentcore` defaults to Deep Agents and retains Codex for explicit fallback.
 It installs pinned dependencies and verifies the Deep Agents version and all fifteen packaged
 skills during the build. The entrypoint remains `python -m agent.studio_agent_next`.
-No Studio UI or database schema change is required.
+The existing Studio approval/review surfaces display the edit plan, subtitles, grade and
+audio fades. The database schema stays compatible.
 
 Offline checks use the compiled graph with a scripted chat model, the existing Codex localhost
 fixtures, provider dry runs, and Studio/AgentCore contract tests. They exercise tool disclosure,
@@ -193,6 +200,7 @@ export RENDERHAUS_SECRETS_NAME=''
 export SEEDANCE_DRY_RUN=true SEEDREAM_DRY_RUN=true ELEVENLABS_DRY_RUN=true
 export FISH_AUDIO_DRY_RUN=true REMOTION_DRY_RUN=true
 export KLING_DRY_RUN=true RUNWAY_DRY_RUN=true FAL_DRY_RUN=true
+export LUMA_DRY_RUN=true
 .venv/bin/python -m unittest discover -s tests -q
 .venv/bin/ruff check agent lambdas scripts server providers
 .venv/bin/python scripts/ci_check.py
