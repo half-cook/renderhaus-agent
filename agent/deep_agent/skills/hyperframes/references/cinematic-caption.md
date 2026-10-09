@@ -87,8 +87,11 @@ new tool, loader, runtime installation, or automatic renderer selection.
 
 Preserve approved local asset versions if a future worker adds footage. Use
 clean white support by default and a restrained contrast treatment on bright
-frames. A neutral translucent hero requires actual footage and clear letter
-edges. Glow settles to sharp text within 0.4 seconds. Sound accents remain optional,
+frames. The sample hero uses a neutral silver-white fill at 48 percent opacity
+and a 1 px rim. The source recipe permits 32 to 55 percent fill opacity and
+a 0.75 to 1.25 px rim. The sample has no footage beneath the glyphs; visible
+source detail requires actual supplied footage and a future worker. Keep the
+letter edges clear. Glow settles to sharp text within 0.4 seconds. Sound accents remain optional,
 sparse, separately authorized, and subordinate to narration.
 
 ## Record verification limits

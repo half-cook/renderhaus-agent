@@ -1970,7 +1970,7 @@
       "capability": "motion_graphics"
     },
     {
-      "pattern": "^(?!.*\\b(?:image|photo|poster|still)\\b).*(?:\\b(?:cinematic|editorial)\\s+captions?\\b|\\bcaptions?\\b.*\\b(?:clip|footage|video)\\b|\\b(?:tactile(?:\\s+paper)?|paper)\\s+collage\\b.*\\b(?:video|animation|motion)\\b|\\banimated\\s+(?:paper\\s+)?(?:collage|scrapbook)\\b|\\bcollage\\s+(?:video|animation)\\b)",
+      "pattern": "^(?!.*\\b(?:generate|create|design|make)\\s+(?:(?:an?|the|some|new|still|captioned|cinematic|editorial|tactile|paper|collage)\\s+)*(?:images?|photos?|posters?|stills?)\\b)(?:(?=.*\\b(?:videos?|clips?|footage|animated|animation|motion)\\b)|(?!.*\\b(?:images?|photos?|posters?|stills?)\\b)).*(?:\\b(?:cinematic|editorial)\\s+captions?\\b|\\bcaptions?\\b.*\\b(?:clip|footage|video)\\b|\\b(?:tactile(?:\\s+paper)?|paper)\\s+collage\\b.*\\b(?:video|animation|motion)\\b|\\banimated\\s+(?:paper\\s+)?(?:collage|scrapbook)\\b|\\bcollage\\s+(?:video|animation)\\b|\\bvideo\\s+collage\\b)",
       "skill": "motion-graphics",
       "abstract_tool": "remotion_render",
       "capability": "motion_graphics"
