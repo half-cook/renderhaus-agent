@@ -488,5 +488,7 @@ def cost_for(provider: str, tool: str, arguments: dict[str, Any]) -> GenerationC
     if provider == "fish_audio":
         return _fish_audio_cost(arguments)
     if provider == "remotion":
+        if os.getenv("REMOTION_RENDER_BACKEND", "lambda") == "local":
+            return GenerationCost(0, 0)
         return _with_fee(REMOTION_COST_CENTS)
     return _with_fee(5)

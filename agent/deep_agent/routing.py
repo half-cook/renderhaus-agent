@@ -683,6 +683,8 @@ def estimate_cost(name: str, arguments: dict, *, list_price: bool = False) -> Co
         if provider == "hyperframes":
             raise ValueError("HyperFrames local compute pricing is unknown; isolated renderer not configured.")
         if provider == "remotion":
+            if os.getenv("REMOTION_RENDER_BACKEND", "lambda") == "local":
+                return CostEstimate(0, "Local ffmpeg uses operator compute; no provider charge.")
             raise ValueError("Remotion compute rate is a TODO placeholder.")
         if provider == "seedream" and arguments.get("size", "2K") != "1K":
             raise ValueError("Seedream Lite larger size tiers are unconfirmed.")
