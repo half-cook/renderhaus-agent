@@ -9,16 +9,23 @@ request, job, approval, progress, asset, and conversation contracts remain in pl
 | Variable | Behavior |
 | --- | --- |
 | `RENDERHAUS_AGENT_BACKEND` | `deepagents` by default; `codex` selects the retained app-server backend. Other values fail explicitly. |
-| `RENDERHAUS_AGENT_MODEL` | LangChain `provider:model`, default `anthropic:claude-opus-5-5`. Supported prefixes are `anthropic`, `openai`, `bedrock`, and `bedrock_converse`. Unknown prefixes and empty model IDs fail explicitly. |
-| `RENDERHAUS_AGENT_EFFORT` | Anthropic effort, default `high`. Accepts `low`, `medium`, `high`, `xhigh`, or `max`; maps to `output_config.effort`. Ignored for OpenAI, Bedrock, Codex, and injected test models. |
+| `RENDERHAUS_AGENT_MODEL` | LangChain `provider:model`, default `anthropic:claude-haiku-5-5`. Supported prefixes are `anthropic`, `openai`, `bedrock`, and `bedrock_converse`. Unknown prefixes and empty model IDs fail explicitly. |
+| `RENDERHAUS_AGENT_EFFORT` | Anthropic effort, default `medium` for manager/planner/general-purpose and `low` for media/audio/editor. Accepts `low`, `medium`, `high`, `xhigh`, or `max`; maps to `output_config.effort`. Ignored for OpenAI, Bedrock, Codex, and injected test models. |
+| `RENDERHAUS_AGENT_MODEL_<ROLE>` | Optional override for `PLANNER`, `MEDIA`, `AUDIO`, `EDITOR`, or `GENERAL_PURPOSE`; falls back to the global model. |
+| `RENDERHAUS_AGENT_EFFORT_<ROLE>` | Optional matching effort override; falls back to the global effort, then the role default. |
 | `AGENT_MODEL` | Explicit legacy fallback when the new model variable is absent or blank. Unqualified names and `openai/` names select OpenAI. Codex still uses this variable and defaults to `gpt-5.6-luna`. |
 | `RENDERHAUS_AGENT_TIMEOUT_SECONDS` | Graph execution deadline, default 1800 seconds. |
 | `STUDIO_MEDIA_WAIT_SECONDS` | Host polling deadline per provider job, default 600 seconds. |
 | Provider `*_DRY_RUN` variables | Keep their existing provider behavior. The agent cannot change configuration. Dry runs never satisfy video delivery. |
 
-The planning default is Claude Opus 5.5 at high effort. Set
+Satya chose Claude Haiku 5.5 for the manager and every subagent. Manager, planner and
+research roles use medium effort for decisions across multiple steps. Media, audio and editor
+roles use low effort for focused dispatch. Set a role override such as
+`RENDERHAUS_AGENT_MODEL_PLANNER=anthropic:claude-opus-5-5` to change the planner independently.
+Set `RENDERHAUS_AGENT_MODEL=anthropic:claude-sonnet-5-5` to change the manager and inherited
+role models. The global effort overrides every role default unless that role has its own setting. Set
 `RENDERHAUS_AGENT_MODEL=openai:gpt-5.6-luna` to select the previous default. Selection reads the
-first nonblank value of `RENDERHAUS_AGENT_MODEL`, then `AGENT_MODEL`, then the Opus default.
+first nonblank value of `RENDERHAUS_AGENT_MODEL`, then `AGENT_MODEL`, then the Haiku default.
 Studio no longer injects a legacy `AGENT_MODEL` value that would mask this default.
 
 Anthropic uses `ANTHROPIC_API_KEY`; OpenAI uses `OPENAI_API_KEY`. A missing selected-provider
@@ -31,24 +38,35 @@ server and AgentCore worker must use matching backend, model, and effort configu
 
 ### Verified model contract and pricing
 
-Anthropic's [Opus 5.5 overview](https://platform.claude.com/docs/en/models/opus-5-5/overview)
-and [models overview](https://platform.claude.com/docs/en/models/overview) list
-`claude-opus-5-5`. The [effort reference](https://platform.claude.com/docs/en/build-with-claude/effort)
-documents `output_config.effort` and all five supported levels. These sources were read
-2026-10-08. The requested high setting overrides Anthropic's medium default for this model.
+Anthropic's [Haiku 5.5 overview](https://platform.claude.com/docs/en/models/haiku-5-5/overview)
+and [migration guide](https://platform.claude.com/docs/en/models/haiku-5-5/migration-guide),
+read 2026-10-09, verify `claude-haiku-5-5`, adaptive thinking, effort (default medium),
+and the 1M context window. Fixed thinking budgets and assistant prefill are rejected.
+The integration omits temperature, top_p and top_k for every Anthropic model. Adaptive thinking
+and effort are sent only to models in the supported adaptive allowlist; older overrides keep
+native parameters. Haiku accepts forced tools but omits thinking on that response. Automatic
+tool choice retains thinking and also permits Opus/Sonnet 5.5 overrides.
 
-Base API pricing is **$4 per million input tokens and $20 per million output tokens**, from
-Anthropic's [official pricing page](https://platform.claude.com/docs/en/about-claude/pricing),
-read 2026-10-08. Thinking counts toward output usage. Cache writes, cache reads, batch,
-and fast mode have separate rates; this configuration does not select fast mode or batch.
-No creative Gateway billing rate is added for the planning model.
+First-party list prices per million tokens come from Anthropic's
+[official pricing page](https://platform.claude.com/docs/en/about-claude/pricing), read 2026-10-09.
 
-The capability-map choice uses the Arena Agent board as supporting evidence. That board
-measures coding and tool sessions, so its ranking does not establish creative-planning quality.
-The offline regression suite verifies the integration with fakes, not Opus judgment or latency.
+| Model / prompt length | Input | Output | 5m cache write | Cache read |
+| --- | --- | --- | --- | --- |
+| Haiku 5.5, <=100k | $0.10 | $0.50 | $0.125 | $0.01 |
+| Haiku 5.5, >100k | $0.50 | $2.50 | $0.625 | $0.05 |
+| Opus 5.5 | $4.00 | $20.00 | $5.00 | $0.20 |
+| Sonnet 5.5 | $2.00 | $10.00 | $2.50 | $0.10 |
+
+Haiku's threshold counts uncached input, cache reads and cache writes for each call, rather
+than the aggregate turn total. Thinking tokens are already included in output usage.
+`agent.deep_agent.usage` emits `agent_model_usage` JSON records with the run scope, model,
+call count, token totals, estimated list cost and unknown-cost call count, including subagents
+and approval resumes. It records completed messages once by message ID. These estimates use
+5-minute writes and first-party rates; partner hosts, discounts, taxes and 1-hour caches require
+separate pricing. Unknown models have no invented rate. No live model invocation was performed.
 
 Claude is a proprietary commercial API under the
-[Anthropic Commercial Terms](https://www.anthropic.com/legal/commercial-terms), read 2026-10-08.
+[Anthropic Commercial Terms](https://www.anthropic.com/legal/commercial-terms), read 2026-10-09.
 The terms assign output rights to the customer and restrict training competing models.
 Renderhaus treats planning output as `training_eligible=false`; it does not enter media
 continuity training. No model weights, AGPL code, or non-commercial code are added.
@@ -62,7 +80,7 @@ The runtime's execution role already reads that application secret. No key belon
 Docker build arguments, a workflow default, tool schemas, prompts, or logs.
 
 AgentCore bootstrap configuration forwards `RENDERHAUS_AGENT_BACKEND`,
-`RENDERHAUS_AGENT_MODEL`, and `RENDERHAUS_AGENT_EFFORT` when supplied. The deployment preflight
+`RENDERHAUS_AGENT_MODEL`, `RENDERHAUS_AGENT_EFFORT`, and both settings for all five roles when supplied. The deployment preflight
 checks the selected provider instead of requiring an OpenAI key for every model. Its code is
 validated offline; no deployment is performed by this change. Existing Secrets Manager values
 override bootstrap settings, so a stored `AGENT_MODEL` continues to select the legacy model
@@ -79,19 +97,30 @@ asset handles, output validation, and the AgentCore SSE entrypoint. `run_studio_
 the backend. An explicitly injected Codex harness selects Codex for existing callers and tests.
 `agent/deep_agent/runner.py` compiles `create_deep_agent` with the configured model, native
 skills, role-specific subagents, memory, virtual files, checkpointer, and HITL middleware.
-`ToolStrategy(StudioAgentOutput)` enforces the existing downloadable Markdown result schema.
+The explicit `StudioAgentOutput` completion tool validates the existing downloadable Markdown
+schema and ends the manager turn. Automatic tool choice avoids the framework's forced-tool
+warning. If the model ends without valid output, the host appends at most two repair requests.
+During repair, only the completion tool can execute, so no paid action or delegation repeats.
 
 The configured Anthropic model is constructed lazily with LangChain `init_chat_model` before
-Gateway discovery. It receives `thinking={"type": "adaptive"}` and `output_config.effort`.
+Gateway discovery. Supported adaptive models receive `thinking={"type": "adaptive"}` and `output_config.effort`.
 Other provider strings retain Deep Agents' native initialization, including OpenAI Responses
 API defaults. `langchain-anthropic==1.7.5` is already a pinned project dependency.
 
-Opus 5.5 rejects forced tool choice, as documented in the
-[migration guide](https://platform.claude.com/docs/en/models/opus-5-5/migration-guide), read
-2026-10-08. The installed Anthropic adapter drops `ToolStrategy`'s forced choice when adaptive
-thinking is configured. The graph still validates `StudioAgentOutput`; a schema tool call is
-model-selected rather than forced. Between-tool notes can arrive as thinking blocks and are
-not displayed as customer text. Explicit `report_progress` calls remain the update path.
+Manager and subagent prompts have stable prefixes. Routes, render jobs and changed project
+memory enter appended user messages. Skills metadata is cached for a conversation and bodies
+are read on demand. The small role dispatch wrappers remain bound in a fixed order; exact
+Gateway provider tools still require discovery and policy validation. For preserved-thinking
+Anthropic models, the host replaces client summarization by name with append-only history.
+Long conversations can therefore reach a provider context limit; start a new conversation
+rather than editing signed history. Other models retain native summarization.
+
+Installed Deep Agents 0.7.23 orders `SkillsMiddleware`, `AnthropicPromptCachingMiddleware`,
+then memory in the manager stack. Child stacks put caching after skills; they read project
+memory as file data rather than injecting changing memory into their system prompt. The
+integration preserves native cache controls. The offline approval-resume regression compares
+serialized system messages, full tool schema lists and the previous message prefix. It proves
+prefix stability, while live cache savings remain for the operator's rerun.
 
 `GatewayExecutor` is shared by both backends. It validates the discovered MCP schema, reuses
 completed call IDs, refuses replacement renders while a saved render is active, restores exact
@@ -100,8 +129,11 @@ progress. `GatewayMCPServer` remains the only remote provider boundary. It resol
 handles, charges/refunds usage, and preserves the existing authenticated HTTPS MCP transport.
 
 Deep Agents exposes `report_progress`, `read_studio_context`, `record_media_outcome`, and Gateway semantic search.
-Reading a relevant skill discloses `call_media_tool`, `call_audio_tool`, or `call_editor_tool`.
-These tools accept the exact discovered Gateway name and an argument object. Discovery returns
+The manager binds `call_media_tool`, `call_audio_tool`, and `call_editor_tool` in a stable order.
+Roles bind only their allowed wrapper. Read the relevant skill before using it.
+These tools accept the exact discovered Gateway name and an argument object.
+`read_studio_context` returns routed capability rows and discovered names. Its optional
+`tool_name` argument returns one already discovered schema; it never dumps the full catalog. Discovery returns
 actual schemas, including tools hidden from the initial catalog behind semantic search. Unsupported or
 undiscovered tools fail without dispatch. Discovery itself does not need a spending approval.
 
@@ -128,7 +160,7 @@ See [the capability map](CAPABILITY_MAP.md) and [routing policy](SKILLS.md#capab
 
 There are 24 packaged `SKILL.md` files under `agent/deep_agent/skills/`.
 Deep Agents reads metadata first. Full instructions enter context when a relevant skill is read.
-`metadata.include_tools` discloses real dispatch wrappers. `metadata.routing_tools` holds
+`metadata.include_tools` documents real dispatch wrappers, which are stably bound per role. `metadata.routing_tools` holds
 canonical capability/workflow IDs, while `metadata.gateway_tools` lists built names only.
 Pending aliases cannot dispatch as Gateway tools. The generated inventory is in
 [packaged skills](SKILLS.md#packaged-skills).
@@ -166,9 +198,8 @@ only packages existing project media, so it is exempt from approval (`APPROVAL_E
 `agent/gateway_executor.py`); every paid tool still follows the native approval policy. The overridden
 `general-purpose` subagent also has no provider dispatch. All roles share project files and
 read-only Studio context. They inherit native approval policy and have no shell tool.
-All five roles inherit the manager's selected model and effort. There are no per-role model
-environment variables in this clone. Deep Agents' native role `model` field remains available
-to declarative subagents; this change adds no override or cheaper role-model selection.
+Each role explicitly receives its configured model and effort. Per-role settings override the
+global settings. Injected test models are reused across roles without credentials.
 The pure `Remotion___prepare_conversational_edit` requires cut-plan approval even when
 autonomous. Its estimate is zero and its preview preserves asset handles. The editor receives
 word timestamps from the manager/audio role, which alone can dispatch paid transcription.
@@ -179,9 +210,9 @@ state across turns, while child todo lists remain separate from the manager plan
 task results merge only changed files, preventing unchanged sibling snapshots from replacing
 another role's edits. Concurrent intentional edits to the same file still need task ownership.
 
-Packaged skill metadata reloads on each ordinary turn, so skill descriptions and
-`metadata.include_tools` updates reach existing conversations. Approval resumes retain their
-checkpointed state. Dispatch wrapper validation runs before the approval predicate; malformed
+Packaged skill metadata stays frozen for the manager conversation. Start a new conversation
+to load changed descriptions or wrapper metadata. Skill bodies remain readable on demand.
+Approval resumes retain their checkpointed state. Dispatch wrapper validation runs before the approval predicate; malformed
 calls produce normal tool validation feedback, and valid calls keep the same approval policy.
 
 Model text streams into the existing Studio `MODEL_UPDATE` progress events before each
@@ -207,7 +238,7 @@ The `CompositeBackend` routes `/skills/` to a virtual, protected filesystem root
 packaged skills directory. Everything else uses `StateBackend`. Model file tools cannot write
 shipped skills, execute commands, or access host files. The initial `/AGENTS.md` records the
 production rules. It can then hold project direction, plans, asset versions, and job IDs.
-`ProjectMemory` reloads it on each invocation because the upstream memory middleware caches its
+`ProjectMemory` retains its initial system prefix. Changed memory enters the next user turn; the upstream middleware caches its
 loaded content in checkpoint state.
 
 The thread ID hashes workspace, project, and conversation identity. Execution approval scope

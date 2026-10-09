@@ -30,6 +30,8 @@ DEFAULT_ENV = {
     "ELEVENLABS_DRY_RUN": "true",
     "ELEVENLABS_TTS_MODEL": "eleven_v4_turbo",
     "REMOTION_DRY_RUN": "true",
+    "REMOTION_RENDER_BACKEND": "lambda",
+    "REMOTION_LOCAL_MEDIA_HOSTS": "",
     "TIME_OUT_SECONDS": "300",
     "RENDERHAUS_MEDIA_DIR": ".renderhaus/media",
 }
@@ -40,6 +42,10 @@ def load_local_env() -> None:
     load_dotenv(ENV_FILE, override=False)
     if secrets_locator():
         load_secrets_from_manager(override=True)
+    from agent.backend_config import DEFAULT_DEEP_AGENT_MODEL
+
+    if not os.getenv("RENDERHAUS_AGENT_MODEL") and not os.getenv("AGENT_MODEL"):
+        os.environ["RENDERHAUS_AGENT_MODEL"] = DEFAULT_DEEP_AGENT_MODEL
     for key, value in DEFAULT_ENV.items():
         if not os.getenv(key):
             os.environ[key] = value

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Sync non-empty application secrets and config, including ANTHROPIC_API_KEY,
-RENDERHAUS_AGENT_MODEL, RENDERHAUS_AGENT_EFFORT, ELEVENLABS_TTS_MODEL,
+RENDERHAUS_AGENT_MODEL, RENDERHAUS_AGENT_EFFORT, their per-role overrides, ELEVENLABS_TTS_MODEL,
 and the existing FAL_KEY/FAL_DRY_RUN settings shared by Wan 3, VACE and Vidu.
 """
 

@@ -7,8 +7,12 @@ if TYPE_CHECKING:
     from langchain_core.language_models.chat_models import BaseChatModel
 
 
-DEFAULT_DEEP_AGENT_MODEL = "anthropic:claude-opus-5-5"
+DEFAULT_DEEP_AGENT_MODEL = "anthropic:claude-haiku-5-5"
 SUPPORTED_MODEL_PROVIDERS = ("openai", "anthropic", "bedrock", "bedrock_converse")
+AGENT_ROLES = ("planner", "media", "audio", "editor", "general-purpose")
+ADAPTIVE_MODELS = {"claude-haiku-5-5", "claude-opus-5-5", "claude-sonnet-5-5",
+                   "claude-opus-5", "claude-sonnet-5", "claude-opus-4-8", "claude-opus-4-7",
+                   "claude-opus-4-6", "claude-sonnet-4-6", "claude-fable-5", "claude-fable-5-1"}
 ANTHROPIC_EFFORTS = ("low", "medium", "high", "xhigh", "max")
 
 
@@ -19,8 +23,15 @@ def agent_backend() -> str:
     return backend
 
 
-def deep_agent_model() -> str:
-    model = (os.getenv("RENDERHAUS_AGENT_MODEL", "").strip()
+def _role_variable(prefix: str, role: str | None) -> str:
+    if role is not None and role not in AGENT_ROLES:
+        raise ValueError("Unknown Deep Agent role.")
+    return prefix + ("_" + role.upper().replace("-", "_") if role else "")
+
+
+def deep_agent_model(role: str | None = None) -> str:
+    model = (os.getenv(_role_variable("RENDERHAUS_AGENT_MODEL", role), "").strip()
+             or os.getenv("RENDERHAUS_AGENT_MODEL", "").strip()
              or os.getenv("AGENT_MODEL", "").strip() or DEFAULT_DEEP_AGENT_MODEL)
     if ":" in model:
         provider, model_id = model.split(":", 1)
@@ -36,22 +47,28 @@ def deep_agent_model() -> str:
     return provider + ":" + model_id.strip()
 
 
-def configured_deep_agent_model() -> str | BaseChatModel:
+def configured_deep_agent_model(role: str | None = None) -> str | BaseChatModel:
     """Construct Anthropic with effort settings; retain Deep Agents profiles for other providers."""
-    model = deep_agent_model()
+    model = deep_agent_model(role)
     if not model.startswith("anthropic:"):
         return model
-    effort = os.getenv("RENDERHAUS_AGENT_EFFORT", "").strip().lower() or "high"
+    effort_var = _role_variable("RENDERHAUS_AGENT_EFFORT", role)
+    effort = (os.getenv(effort_var, "").strip().lower()
+              or os.getenv("RENDERHAUS_AGENT_EFFORT", "").strip().lower()
+              or ("low" if role in {"media", "audio", "editor"} else "medium"))
     if effort not in ANTHROPIC_EFFORTS:
-        raise ValueError("RENDERHAUS_AGENT_EFFORT must be " + ", ".join(ANTHROPIC_EFFORTS) + ".")
+        raise ValueError(effort_var + " must be " + ", ".join(ANTHROPIC_EFFORTS) + ".")
     if not os.getenv("ANTHROPIC_API_KEY", "").strip():
         raise RuntimeError("ANTHROPIC_API_KEY is required when an Anthropic agent model is selected.")
     from langchain.chat_models import init_chat_model
 
-    # Official Opus 5.5 and effort docs verified 2026-10-08:
-    # https://platform.claude.com/docs/en/models/opus-5-5/overview
-    # https://platform.claude.com/docs/en/build-with-claude/effort
-    return init_chat_model(model, thinking={"type": "adaptive"}, output_config={"effort": effort})
+    # Haiku migration and effort contract read 2026-10-09:
+    # https://platform.claude.com/docs/en/models/haiku-5-5/migration-guide
+    settings = {}
+    if model.split(":", 1)[1] in ADAPTIVE_MODELS:
+        settings = {"thinking": {"type": "adaptive"}, "output_config": {"effort": effort}}
+    return init_chat_model(model, **settings)
+
 
 
 def agent_configured() -> bool:

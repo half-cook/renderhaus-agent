@@ -27,7 +27,7 @@ class DeepAgentContractTests(unittest.IsolatedAsyncioTestCase):
         self.conversation = self.repo.create_conversation("user:local", "project", "local")["id"]
         self.job = self.repo.create_execution(
             workspace_id="user:local", project_id="project", user_id="local",
-            prompt="Make a product still", conversation_id=self.conversation,
+            prompt="Make a product still with Seedream", conversation_id=self.conversation,
             request={"prompt": "Make a product still", "conversation_id": self.conversation,
                      "workspace_id": "user:local", "project_id": "project", "user_id": "local"},
         )["job_id"]
@@ -41,7 +41,7 @@ class DeepAgentContractTests(unittest.IsolatedAsyncioTestCase):
         for p in [
             patch.object(studio, "repository", self.repo),
             patch("agent.studio_agent_next.gateway_mcp_server", gateway),
-            patch("agent.deep_agent.runner.configured_deep_agent_model", side_effect=lambda: ScriptedModel(self.steps)),
+            patch("agent.deep_agent.runner.configured_deep_agent_model", side_effect=lambda role=None: ScriptedModel(self.steps)),
             patch.dict(os.environ, {"RENDERHAUS_AGENT_BACKEND": "deepagents", "AGENTCORE_DEV_URL": ""}),
         ]:
             p.start()
@@ -213,7 +213,7 @@ class DeepAgentContractTests(unittest.IsolatedAsyncioTestCase):
             if index:
                 self.job = self.repo.create_execution(
                     workspace_id="user:local", project_id="project", user_id="local",
-                    prompt="Make a product still", conversation_id=self.conversation,
+                    prompt="Make a product still with Seedream", conversation_id=self.conversation,
                 )["job_id"]
             await self.run_job()
         first = self.repo.get_execution("user:local", first_job)
