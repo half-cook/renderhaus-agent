@@ -155,8 +155,151 @@ and actual Resolve or Premiere round trips have not been performed for this chan
 
 AAF is unimplemented and untested. AAF support is pending a real Resolve round trip.
 A future local bridge could use Resolve Studio scripting on the editor's machine to import
-the handoff onto new tracks. Resolve-to-Renderhaus re-import is future work only.
+the handoff onto new tracks. File-based re-import is implemented below; live editor control remains future work.
 
 The design was informed by FilmCraft's interchange implementation at
 `/workspace/filmcraft/crates/interchange`, especially its EDL, FCP7 XML, FCPXML, and OTIO modules.
 No reference source code was copied verbatim.
+
+## Import an editor's timeline
+
+`Remotion___import_nle_timeline` is the inverse file-based path. It imports one project
+sequence from FCPXML 1.9, 1.10, or 1.11, or one OpenTimelineIO JSON Timeline. Supply the
+XML text itself, including `Info.fcpxml` from an `.fcpxmld` bundle. ZIP, AAF, CMX3600 EDL,
+and Final Cut Pro 7 `xmeml` import are unsupported.
+
+| Argument | Type | Meaning |
+| --- | --- | --- |
+| `interchange_text` | string, required | Editor's FCPXML or OTIO JSON contents, at most 2 MiB UTF-8. |
+| `timeline_json` | string, required | Current Renderhaus `document`/`renderConfig` assembly envelope, at most 2 MiB. |
+| `format` | string | `fcpxml` by default, or `otio`. |
+
+Current assets need unique `id`, `kind`, `url`, and full source `durationSec`. Preserve
+`versionId`, `checksum`, `sourceTimecode`, audio metadata, and provenance when available.
+The result retains the complete current asset objects, including their URLs or opaque
+`renderhaus-asset://` handles. It never opens, downloads, publishes, or probes media.
+No remote endpoint, model, key, secret, or additional environment variable is involved.
+The parser is synchronous; there is no submit/poll job.
+
+Media matching uses embedded asset ID first, embedded version ID if no asset ID exists,
+and unique filename plus whole source duration only when identity metadata is absent.
+A missing explicit ID or conflicting identity blocks import instead of falling back.
+Filename matching considers source basenames and the exporter's packaged media basename,
+with percent-decoded paths. Duplicate filename/duration candidates are ambiguous.
+Unmatched reports contain basenames, not signed media URLs. Media reference timing,
+not stale `recordStartFrame` or `sourceInFrames` metadata, determines the edited windows.
+
+`status=succeeded` returns `timeline`, a replacement Remotion assembly, plus
+`unmatched_media`, `unsupported`, `warnings`, and `matched_by` counts.
+`status=blocked` returns `timeline=null` and the reconciliation errors. It never returns
+a partial replacement that could silently delete unmatched footage.
+Malformed structure, invalid times, inconsistent frame rates, and out-of-source trims
+raise validation errors. Deleting all clips is a valid empty edit.
+`REMOTION_DRY_RUN=true`, the default, returns a validated `status=dry_run` preview.
+A preview is not an applied import. Import itself performs no project or filesystem writes.
+
+To apply a successful import through Deep Agents, read the existing assembly from project
+files, submit the file contents and current assembly, and review the report. Retain the
+previous assembly in a separate project file, save `result.timeline` to the assembly path,
+and read it back. The resolve-handoff skill gives this guidance to the editor role.
+Project files persist with the existing conversation checkpoint. This does not rewrite
+Studio canvas nodes or the older flat `server/projects.py` timeline model. No new upload
+control or timeline editor UI is included.
+
+The returned assembly retains track order, empty tracks when represented, clip source in
+and exclusive out timing, gaps, markers, static fit, and gain. OTIO track order comes from
+the edited Stack; FCPXML compositing order comes from lane numbers. Nested connected
+clips use their anchor's source coordinates. The exporter now includes a sequence track
+table so new FCPXML exports can retain empty tracks. Older FCPXML without that table reports
+that empty tracks cannot be recovered. Generated tracks retain their isolation and do not
+split again on re-export. Existing asset identities and provenance remain unchanged.
+
+Markers use `name`, `start`, and `duration` in seconds. Clip marker starts are relative to
+the trimmed clip; track and document marker starts are relative to the timeline. FCPXML
+marker notes and chapter type, and OTIO marker colors, are retained. These annotations do
+not render on-screen. The outbound exporter does not yet serialize these imported markers.
+
+OTIO SMPTE dissolves between a clip and a gap map to `fadeIn` or `fadeOut`, with the
+required source handles included. Clip-to-clip dissolves and custom transitions block
+application. FCPXML effect transitions, retimes, nested/multicam clips, J/L cuts, animated
+volume, and unsupported adjustment/effect elements require baking or simplification.
+The importer does not claim grade preservation. Fade and marker fields survive the returned
+assembly; the existing cut-only exporter still requires baking fades before another handoff.
+
+### Parsing and source verification
+
+The stdlib ElementTree parser rejects entity declarations and external DOCTYPEs. The
+exporter's bare `<!DOCTYPE fcpxml>` is allowed. XML depth is limited to 64 and elements to
+20,000. JSON rejects duplicate keys, nonfinite numbers, depth above 64, and more than
+20,000 values. OTIO decoding uses `otio.core.deserialize_json_from_string`, bypassing
+adapter plugins and media retrieval. Frame times must be on the current project rate;
+conform mixed-rate or subframe edits before import.
+
+Official references read 2026-10-09:
+
+- [Apple FCPXML reference](https://developer.apple.com/documentation/professional-video-applications/fcpxml-reference).
+- [Apple FCPXML timing attributes](https://developer.apple.com/documentation/professional-video-applications/timing-attributes).
+- [Apple story elements and compositing lanes](https://developer.apple.com/documentation/professional-video-applications/story-elements).
+- [Apple DTD](https://developer.apple.com/documentation/professional-video-applications/document-type-definition). The public page publishes 1.10. The shared media-edit subset is accepted for 1.9–1.11; full 1.11-specific constructs and actual editor compatibility remain UNVERIFIED.
+- [Apple FCPXML bundles](https://developer.apple.com/documentation/professional-video-applications/fcpxml-bundle-reference).
+- [OTIO 0.18.1 serialized schema](https://github.com/AcademySoftwareFoundation/OpenTimelineIO/blob/v0.18.1/docs/tutorials/otio-serialized-schema.md).
+- [OTIO 0.18.1 Apache-2.0 licence](https://github.com/AcademySoftwareFoundation/OpenTimelineIO/blob/v0.18.1/LICENSE.txt).
+
+The project already pins `opentimelineio==0.18.1`; no dependency was added. Its permissive
+code licence does not grant rights to source media. There is no new model or weights
+licence, and import has `training_eligible=false`. Existing asset eligibility is preserved,
+not expanded by an editor's metadata. Provider price is $0 because this is our own local
+parser, not a billed Remotion render or hosted model. Cloud infrastructure charges are separate.
+
+Run `.venv/bin/python -m unittest discover -s tests -p 'test_nle_*.py' -q` for offline
+export/import tests. Fixtures include editor trim, reorder, delete, and added markers.
+Tests cover fractional/drop-frame timing, ambiguous relinks, source bounds, unsupported
+transitions/effects, hostile XML, dry-run flags, Lambda dispatch with offline stubs, routing,
+and the Studio asset-handle boundary. These checks do not establish a real NLE or browser
+round trip. Comet is unavailable in this environment, so browser E2E is blocked.
+
+### Implementation and verification record (2026-10-09)
+
+Offline checks passed: Ruff, 1,348 unittest cases (6 skipped), `scripts/ci_check.py`,
+and the Studio TypeScript check. The offline Deep Agents graph imported the edited OTIO,
+saved the replacement and backup in project files, then restored and read both in a fresh
+worker. No provider or model network request was made. Browser E2E remains blocked; the
+ignored report is `.renderhaus/e2e/nle-import.json`.
+
+Changed files for this feature:
+
+```text
+.github/workflows/deploy.yml
+Dockerfile.agentcore
+agent/deep_agent/routing.py
+agent/deep_agent/routing_policy.json
+agent/deep_agent/runner.py
+agent/deep_agent/skills/resolve-handoff/SKILL.md
+agent/gateway_executor.py
+agent/studio_agent_next.py
+configs/gateway/remotion.tools.json
+docs/DEEP_AGENT.md
+docs/NLE_EXPORT.md
+docs/SKILLS.md
+docs/nle-import-decisions.tsv
+docs/provider-ladder-decisions.tsv
+docs/skills-drafts/resolve-handoff.md
+docs/skills-drafts/resolve-roundtrip.md
+providers/contracts.py
+providers/nle/formats.py
+providers/nle/importer.py
+providers/nle/model.py
+providers/registry.py
+providers/remotion/api.py
+scripts/ci_check.py
+scripts/sync_secrets.py
+server/billing_rates.py
+tests/fixtures/nle_import/edited.fcpxml
+tests/fixtures/nle_import/edited.otio
+tests/fixtures/skill_routing.json
+tests/golden/nle/timeline.fcpxml
+tests/test_deep_agent.py
+tests/test_nle_import.py
+tests/test_provider_ladder.py
+tests/test_skill_routing.py
+```
