@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib
+import asyncio
 import os
 import sqlite3
 import tempfile
@@ -10,11 +11,13 @@ from types import SimpleNamespace
 from unittest.mock import patch
 
 from fastapi.testclient import TestClient
+from fastapi import HTTPException
 from starlette.datastructures import UploadFile
 
 from server.studio_state import StudioRepository
 
-app_module = importlib.import_module("server.app")
+with patch.dict(os.environ):
+    app_module = importlib.import_module("server.app")
 studio_module = importlib.import_module("server.studio")
 MB = 1024 * 1024
 PNG = b"\x89PNG\r\n\x1a\n"
@@ -129,6 +132,21 @@ class ServerUploadTests(unittest.TestCase):
             response = self.upload("frame.png", PNG)
         self.assertEqual(response.status_code, 401)
 
+    def test_failed_registration_cleans_up_the_temporary_file(self) -> None:
+        paths = []
+
+        def failed_registration(**kwargs):
+            path = kwargs["path"]
+            self.assertTrue(path.is_file())
+            paths.append(path)
+            raise RuntimeError("storage failed")
+
+        with patch.object(self.repository, "register_file", side_effect=failed_registration):
+            with self.assertRaisesRegex(RuntimeError, "storage failed"):
+                self.upload("clip.mp4", b"media")
+        self.assertEqual(len(paths), 1)
+        self.assertFalse(paths[0].exists())
+
 
 class UploadLimitConfigurationTests(unittest.TestCase):
     def test_defaults_and_overrides(self) -> None:
@@ -142,7 +160,51 @@ class UploadLimitConfigurationTests(unittest.TestCase):
     def test_invalid_limits_fail_instead_of_removing_the_bound(self) -> None:
         from server.uploads import upload_limits_mb
 
-        for value in ("0", "-1", "NaN", "1.5", "unlimited"):
+        for value in ("0", "-1", "NaN", "1.5", "unlimited", "9007199254740992"):
             with self.subTest(value=value), patch.dict(os.environ, {"STUDIO_MAX_UPLOAD_MB": value}, clear=True):
                 with self.assertRaises(ValueError):
                     upload_limits_mb()
+
+    def test_empty_env_values_keep_defaults(self) -> None:
+        from server.uploads import upload_limits_mb
+
+        with patch.dict(os.environ, {"STUDIO_MAX_UPLOAD_MB": " ", "STUDIO_MAX_VIDEO_UPLOAD_MB": ""}, clear=True):
+            self.assertEqual(upload_limits_mb(), {"image": 15, "video": 100, "audio": 50})
+
+
+class BoundedUploadTests(unittest.IsolatedAsyncioTestCase):
+    async def test_unknown_size_is_counted_and_rejected_with_no_temporary_file_left(self) -> None:
+        from server.uploads import bounded_upload_path
+
+        with tempfile.TemporaryDirectory() as directory:
+            temporary_directory = tempfile.TemporaryDirectory
+            with tempfile.SpooledTemporaryFile(max_size=64) as source:
+                source.write(b"x" * (MB + 1))
+                source.seek(0)
+                upload = UploadFile(source, filename="clip.mp4", size=None)
+                with patch("server.uploads.tempfile.TemporaryDirectory", side_effect=lambda **kwargs: temporary_directory(dir=directory, **kwargs)):
+                    with self.assertRaises(HTTPException) as raised:
+                        async with bounded_upload_path(upload, limit_mb=1):
+                            self.fail("Oversized content must not be registered")
+                self.assertEqual(raised.exception.status_code, 413)
+                self.assertEqual(raised.exception.detail, "File is larger than 1 MB.")
+                self.assertEqual(list(Path(directory).iterdir()), [])
+
+    async def test_success_and_cancellation_remove_the_temporary_path(self) -> None:
+        from server.uploads import bounded_upload_path
+
+        for cancelled in (False, True):
+            with self.subTest(cancelled=cancelled), tempfile.SpooledTemporaryFile(max_size=64) as source:
+                source.write(b"media")
+                source.seek(0)
+                upload = UploadFile(source, filename="clip.mp4", size=None)
+                path = None
+                try:
+                    async with bounded_upload_path(upload, limit_mb=1) as path:
+                        self.assertEqual(path.read_bytes(), b"media")
+                        if cancelled:
+                            raise asyncio.CancelledError()
+                except asyncio.CancelledError:
+                    self.assertTrue(cancelled)
+                self.assertIsNotNone(path)
+                self.assertFalse(path.exists())

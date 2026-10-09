@@ -49,6 +49,7 @@ from server.billing_rates import cost_for
 from server.config import ROOT
 from server.studio_state import ACTIVE_EXECUTION_STATUSES, CanvasConflictError, InsufficientBalanceError, StudioAssetKind, repository
 from server.studio_options import LIVE_CHOICE_TOOLS, extract_choice_ids, static_field_options
+from server.uploads import bounded_upload_path, upload_limits_mb
 
 
 router = APIRouter(prefix="/api/studio", tags=["studio"])
@@ -838,19 +839,16 @@ async def studio_upload(
     kind = _kind_from_suffix(filename)
     if kind is None:
         raise HTTPException(status_code=415, detail="Use an image, video, or audio file.")
-    payload = await file.read()
-    if not payload:
-        raise HTTPException(status_code=400, detail="The file was empty.")
-    reference = await asyncio.to_thread(
-        repository.register_bytes,
-        workspace_id=workspace_id,
-        project_id=project_id,
-        user_id=user_id,
-        content=payload,
-        filename=filename,
-        kind=kind,
-        mime_type=file.content_type,
-    )
+    async with bounded_upload_path(file, limit_mb=upload_limits_mb()[kind]) as path:
+        reference = await asyncio.to_thread(
+            repository.register_file,
+            workspace_id=workspace_id,
+            project_id=project_id,
+            user_id=user_id,
+            path=path,
+            filename=filename,
+            kind=kind,
+        )
     return reference.public()
 
 

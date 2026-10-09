@@ -31,6 +31,7 @@ from server.config import ROOT, load_local_env
 from server.billing import router as billing_router
 from server.studio import router as studio_router
 from server.studio_state import repository as studio_repository
+from server.uploads import bounded_upload_path, upload_limits_mb
 from server.productions import ProductionStore, public_production
 from server.projects import (
     ProjectStore,
@@ -48,7 +49,6 @@ load_local_env()
 
 STATE_DIR = ROOT / ".renderhaus" / "web-jobs"
 MEDIA_DIR = (ROOT / os.getenv("RENDERHAUS_MEDIA_DIR", ".renderhaus/media")).resolve()
-MAX_UPLOAD_BYTES = 15 * 1024 * 1024
 MIN_VIDEO_SECONDS = 4
 MAX_VIDEO_SECONDS = 12
 TERMINAL_STATES = {"complete", "planned", "failed"}
@@ -492,6 +492,7 @@ async def not_found(request: Request, exc: HTTPException) -> Response:
 
 @app.get("/api/config")
 async def config() -> dict[str, Any]:
+    limits = upload_limits_mb()
     return {
         "live_generation": os.getenv("SEEDANCE_DRY_RUN", "true").lower() == "false",
         "live_image_generation": (
@@ -505,7 +506,18 @@ async def config() -> dict[str, Any]:
         "video_model": os.getenv("SEEDANCE_MODEL", "seedance-1-5-pro-251215"),
         "image_model": os.getenv("SEEDREAM_MODEL", "seedream-5-0-lite-260128"),
         "music_model": "music_v2_5",
-        "max_upload_mb": MAX_UPLOAD_BYTES // (1024 * 1024),
+        "max_upload_mb": limits["image"],
+        "max_upload_mb_by_kind": limits,
+    }
+
+
+@app.get("/api/health")
+async def health() -> dict[str, Any]:
+    limits = upload_limits_mb()
+    return {
+        "status": "ok",
+        "max_upload_mb": max(limits.values()),
+        "max_upload_mb_by_kind": limits,
     }
 
 
@@ -527,22 +539,22 @@ async def upload_reference(
     file: UploadFile = File(...),
 ) -> dict[str, str]:
     user_id = current_user_id(auth)
-    content = await file.read(MAX_UPLOAD_BYTES + 1)
-    if len(content) > MAX_UPLOAD_BYTES:
-        raise HTTPException(status_code=413, detail="Reference image is larger than 15 MB.")
-    image_type = _detect_image(content)
-    if not image_type:
-        raise HTTPException(
-            status_code=415, detail="Use a valid PNG, JPEG, or WebP reference image."
+    async with bounded_upload_path(file, limit_mb=upload_limits_mb()["image"]) as path:
+        with path.open("rb") as source:
+            image_type = _detect_image(source.read(12))
+        if not image_type:
+            raise HTTPException(
+                status_code=415, detail="Use a valid PNG, JPEG, or WebP reference image."
+            )
+        suffix, mime_type = image_type
+        asset = await asyncio.to_thread(
+            register_upload,
+            user_id=user_id,
+            path=path,
+            suffix=suffix,
+            mime_type=mime_type,
+            filename=file.filename or f"reference{suffix}",
         )
-    suffix, mime_type = image_type
-    asset = register_upload(
-        user_id=user_id,
-        content=content,
-        suffix=suffix,
-        mime_type=mime_type,
-        filename=file.filename or f"reference{suffix}",
-    )
     return {"asset_id": asset.id, "name": asset.filename}
 
 

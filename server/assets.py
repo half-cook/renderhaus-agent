@@ -241,10 +241,6 @@ def _sha256_file(path: Path) -> str:
     return digest.hexdigest()
 
 
-def _sha256_bytes(content: bytes) -> str:
-    return hashlib.sha256(content).hexdigest()
-
-
 def _put_asset_record(
     *,
     asset_id: str,
@@ -274,15 +270,6 @@ def _put_asset_record(
     return _item_to_asset(item)
 
 
-def _upload_bytes(*, storage_key: str, content: bytes, mime_type: str) -> None:
-    _s3().put_object(
-        Bucket=_require_bucket(),
-        Key=storage_key,
-        Body=content,
-        ContentType=mime_type,
-    )
-
-
 def _upload_file(*, storage_key: str, path: Path, mime_type: str) -> None:
     extra = {"ContentType": mime_type}
     _s3().upload_file(
@@ -296,7 +283,7 @@ def _upload_file(*, storage_key: str, path: Path, mime_type: str) -> None:
 def register_upload(
     *,
     user_id: str,
-    content: bytes,
+    path: Path,
     suffix: str,
     mime_type: str,
     filename: str | None = None,
@@ -304,14 +291,14 @@ def register_upload(
     asset_id = uuid.uuid4().hex
     safe_name = filename or f"reference{suffix}"
     storage_key = f"users/{user_id}/uploads/{asset_id}/{asset_id}{suffix}"
-    _upload_bytes(storage_key=storage_key, content=content, mime_type=mime_type)
+    _upload_file(storage_key=storage_key, path=path, mime_type=mime_type)
     return _put_asset_record(
         asset_id=asset_id,
         user_id=user_id,
         kind="upload",
         mime_type=mime_type,
-        size_bytes=len(content),
-        checksum=_sha256_bytes(content),
+        size_bytes=path.stat().st_size,
+        checksum=_sha256_file(path),
         storage_key=storage_key,
         filename=safe_name,
     )
