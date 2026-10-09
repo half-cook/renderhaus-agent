@@ -23,7 +23,7 @@ import uvicorn
 
 from providers.catalog import PROVIDERS
 from providers.registry import dispatch, load_committed_schemas
-from server.billing_rates import cost_for
+from agent.deep_agent.routing import estimate_cost
 
 SEARCH_NAME = 'x_amz_bedrock_agentcore_search'
 SEARCH_TOOL = types.Tool(name=SEARCH_NAME, description=(
@@ -99,7 +99,10 @@ class LocalGateway:
             blocked = ''
             if self.max_spend_cents is not None:
                 try:
-                    estimate = cost_for(provider, verb, arguments).total_cents
+                    quote = estimate_cost(name, arguments, list_price=True)
+                    if quote.total_cents is None:
+                        raise ValueError("Unknown list-price estimate.")
+                    estimate = quote.total_cents
                 except (ValueError, TypeError, KeyError):
                     blocked = 'Local spend guard requires a known cost estimate.'
                 async with self._spend_lock:

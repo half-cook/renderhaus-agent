@@ -4,6 +4,7 @@ import asyncio
 import threading
 import unittest
 from unittest.mock import patch
+import os
 
 import mcp_types as types
 
@@ -30,20 +31,23 @@ class LocalGatewayTests(unittest.IsolatedAsyncioTestCase):
     async def test_optional_spend_cap_blocks_unknown_estimates_and_reserves_in_flight_calls(self) -> None:
         from scripts.local_gateway import LocalGateway
         gateway = LocalGateway(max_spend_cents=100)
-        with patch('scripts.local_gateway.cost_for', side_effect=ValueError('unknown')), \
+        with patch.dict(os.environ, {'STRIPE_SECRET_KEY': '', 'ELEVENLABS_TOOL_COST_CENTS_JSON': '{}',
+                                     'REMOTION_RENDER_BACKEND': 'lambda'}), \
                 patch('scripts.local_gateway.dispatch') as dispatch:
-            result = await gateway.call_tool(None, types.CallToolRequestParams(
-                name='Remotion___render_timeline', arguments={}))
-        self.assertTrue(result.is_error)
+            for name in ('Remotion___render_timeline', 'ElevenLabs___music_compose'):
+                with self.subTest(name=name):
+                    result = await gateway.call_tool(None, types.CallToolRequestParams(name=name, arguments={}))
+                    self.assertTrue(result.is_error)
+                    self.assertIn('known cost estimate', result.structured_content['error'])
         dispatch.assert_not_called()
-        from server.billing_rates import GenerationCost
+        from agent.deep_agent.routing import CostEstimate
         started, release = threading.Event(), threading.Event()
         def provider_call(*args):
             started.set()
             release.wait(2)
             return {'status': 'queued'}
         request = types.CallToolRequestParams(name='Remotion___render_timeline', arguments={})
-        with patch('scripts.local_gateway.cost_for', return_value=GenerationCost(60, 0)), \
+        with patch('scripts.local_gateway.estimate_cost', return_value=CostEstimate(60)), \
                 patch('scripts.local_gateway.dispatch', side_effect=provider_call) as dispatch:
             first = asyncio.create_task(gateway.call_tool(None, request))
             try:
