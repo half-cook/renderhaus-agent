@@ -81,10 +81,32 @@ composition returns completed audio; it is not a Mureka-style asynchronous job t
 Dubbing has its own returned IDs and status/retrieval operations.
 
 With Stripe disabled, provider charges go directly to the configured ElevenLabs account.
+TTS approvals now estimate characters from the [official API price page](https://elevenlabs.io/pricing/api),
+read 2026-10-09. The v4 list rate is $0.08 per 1,000 characters. The Turbo multiplier is 0.5,
+so its list rate is $0.04. The promotion is $0.022 for v4 and $0.011 for Turbo through
+2026-10-12. The estimator returns to list price on 2026-10-13 and rounds provider cost up
+to integer cents before the existing platform fee. Unverified models and unrelated operations
+keep an unknown estimate unless an operator quote exists.
 When Stripe billing is enabled, write operations require explicit per-tool integer-cent quotes
 in `ELEVENLABS_TOOL_COST_CENTS_JSON`; there is no invented blanket generation price. Read-only
 lookups do not debit the Renderhaus wallet. Quotes are operator-controlled fixed per-call prices,
 not invoice reconciliation; set them for the allowed workload before enabling customer billing.
+
+`ELEVENLABS_DRY_RUN` defaults to `true` and alone controls whether the dispatcher sends HTTP
+requests. The operator's 2026-10-09 run confirmed `eleven_v4_turbo` supports HTTP TTS.
+The [HTTP reference](https://elevenlabs.io/docs/api-reference/text-to-speech/convert), read
+2026-10-09, accepts `model_id` and requires `can_do_text_to_speech` from the models endpoint.
+The public model overview still emphasizes the websocket transport. No live request was made
+during this fix. Other HTTP speech variants remain subject to vendor model compatibility.
+
+Without an output bucket, generated audio has an absolute `result.output_path` under
+`RENDERHAUS_MEDIA_DIR`. Pass that plain path as `audio_tracks[].output_path` to the local
+Remotion renderer. With a bucket, the existing signed URL handoff remains available.
+Never convert the path to a `file://` URL.
+
+The [terms](https://elevenlabs.io/terms-of-use), read 2026-10-09, permit commercial output
+for paid users and require rights to supplied voices. Training eligibility stays false because
+we have not verified a clear grant to train competing models on that output.
 
 ## Refresh and deploy
 
