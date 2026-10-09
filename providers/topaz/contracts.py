@@ -26,6 +26,7 @@ UPSCALE_ENDPOINT = "topaz/upscale/video/generative"
 INTERPOLATE_ENDPOINT = "topaz/interpolate/video"
 GENERATING_TOOLS = ("upscale_video", "interpolate_video")
 MODEL_ALIASES = {"slp-2.6": DEFAULT_UPSCALE_MODEL, "apo-8": "Apollo", "chr-2": "Chronos"}
+RESOLUTION_SHORT_EDGES = {"1080p": 1080, "4K": 2160}
 TRAINING_METADATA = {
     "training_eligible": False,
     "weights_license": "closed-weights",
@@ -135,7 +136,7 @@ class UpscaleRequest(SourceRequest):
         if self.model != DEFAULT_UPSCALE_MODEL:
             raise ValueError("Only Starlight Precise 2.6 is supported for upscale.")
         if self.target_resolution:
-            factor = (1080 if self.target_resolution == "1080p" else 2160) / min(self.source_width, self.source_height)
+            factor = RESOLUTION_SHORT_EDGES[self.target_resolution] / min(self.source_width, self.source_height)
             if not 1 <= factor <= 4:
                 raise ValueError("target_resolution requires an upscale_factor between 1 and 4.")
             if self.upscale_factor is not None and not math.isclose(self.upscale_factor, factor):
@@ -148,11 +149,18 @@ class UpscaleRequest(SourceRequest):
 
     @property
     def output_width(self) -> int:
-        return math.ceil(self.source_width * self.upscale_factor)
+        return self._scaled_dimension(self.source_width)
 
     @property
     def output_height(self) -> int:
-        return math.ceil(self.source_height * self.upscale_factor)
+        return self._scaled_dimension(self.source_height)
+
+    def _scaled_dimension(self, dimension: int) -> int:
+        if self.target_resolution:
+            short_edge = min(self.source_width, self.source_height)
+            target = RESOLUTION_SHORT_EDGES[self.target_resolution]
+            return (dimension * target + short_edge - 1) // short_edge
+        return math.ceil(dimension * self.upscale_factor)
 
     @property
     def output_fps(self) -> float:

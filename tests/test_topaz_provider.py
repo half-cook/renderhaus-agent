@@ -42,6 +42,12 @@ class TopazContractTests(unittest.TestCase):
         self.assertEqual((request.output_width, request.output_height), (2160, 3840))
         self.assertEqual(request.fal_body()["upscale_factor"], 2)
 
+    def test_target_resolution_ignores_float_roundoff_at_pixel_boundary(self):
+        request = self.contracts.request_for("upscale_video", {
+            **SOURCE, "source_width": 1064, "source_height": 1064, "target_resolution": "4K",
+        })
+        self.assertEqual((request.output_width, request.output_height), (2160, 2160))
+
     def test_optional_fal_upscale_fields_are_sent(self):
         request = self.contracts.request_for("upscale_video", {**SOURCE, "target_fps": 60, "softness": 1.5})
         self.assertEqual(request.output_fps, 60)
