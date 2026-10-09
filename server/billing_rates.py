@@ -380,6 +380,54 @@ def _fish_audio_cost(arguments: dict[str, Any]) -> GenerationCost:
 # to cite. Flat placeholder pending real Lambda billing data.
 REMOTION_COST_CENTS = 8
 
+REMOTION_LICENSE_PRICING_URL = "https://www.remotion.dev/docs/license-pricing-compliance/faq"
+AWS_LAMBDA_PRICING_URL = "https://aws.amazon.com/lambda/pricing/"
+REMOTION_MATRIX_PRICING_READ_DATE = "2026-10-09"
+
+
+def _matrix_setting(name: str, default: str, maximum: float) -> float:
+    try:
+        value = float(os.getenv(name, default))
+    except ValueError:
+        raise ValueError(f"{name} must be a finite nonnegative allowance.") from None
+    if not math.isfinite(value) or not 0 <= value <= maximum:
+        raise ValueError(f"{name} must be between 0 and {maximum:g}.")
+    return value
+
+
+def ad_matrix_estimate(arguments: dict[str, Any]) -> dict[str, Any]:
+    """Disclose operator allowances separately from media charges; never invent a bill."""
+    rows = arguments.get("rows") or []
+    count = len(rows)
+    first = sum(1 for row in rows if isinstance(row, dict) and isinstance(rows[0], dict)
+                and (row.get("sku"), row.get("locale")) ==
+                (rows[0].get("sku"), rows[0].get("locale"))) if rows else 0
+    stage = arguments.get("stage", "plan")
+    count = first if stage == "render_first" else count - first if stage == "render_batch" else count
+    allowance = _matrix_setting("REMOTION_LICENSE_RENDER_USD", "0.01", 1000)
+    backend = os.getenv("REMOTION_RENDER_BACKEND", "lambda")
+    if backend == "local":
+        media = 0.0
+        assumptions = "Local operator compute excluded; licence allowance is not a verified charge."
+    else:
+        # AWS x86 on-demand list rates, without free tier, S3 or network charges.
+        # Total GB-seconds is estimated across workers, not one invocation's wall time.
+        memory = _matrix_setting("REMOTION_MATRIX_LAMBDA_MEMORY_MB", "3008", 10240)
+        seconds = _matrix_setting("REMOTION_MATRIX_LAMBDA_COMPUTE_SECONDS", "120", 86400)
+        requests = _matrix_setting("REMOTION_MATRIX_LAMBDA_REQUESTS", "10", 10000)
+        per_render = memory / 1024 * seconds * 0.0000166667 + requests * 0.0000002
+        per_render = _matrix_setting("REMOTION_MATRIX_LAMBDA_RENDER_USD", str(per_render), 1000)
+        media = count * per_render
+        assumptions = (f"Configured estimate {memory:g} MB, {seconds:g} aggregate worker seconds, "
+                       f"{requests:g} requests per render; excludes S3/network. No Lambda call made.")
+    return {"render_count": count, "estimated_media_usd": round(media, 6),
+            "estimated_license_usd": round(count * allowance, 6),
+            "estimated_total_usd": round(media + count * allowance, 6),
+            "backend": backend, "assumptions": assumptions,
+            "pricing_source": REMOTION_LICENSE_PRICING_URL,
+            "compute_pricing_source": AWS_LAMBDA_PRICING_URL,
+            "read_date": REMOTION_MATRIX_PRICING_READ_DATE}
+
 # Official API list prices, USD/second, checked 2026-10-08.
 # https://kling.ai/document-api/pricing/base/video
 # Native audio prices exclude voice control; Omni prices exclude reference videos.
@@ -792,6 +840,13 @@ def cost_for(provider: str, tool: str, arguments: dict[str, Any]) -> GenerationC
     (to charge the same amount), so it must be a pure function of the
     request, not of anything the provider returns.
     """
+    if provider == "ffmpeg":
+        return GenerationCost(0, 0)
+    if provider == "remotion" and tool == "render_ad_variants":
+        if arguments.get("stage") == "plan":
+            return GenerationCost(0, 0)
+        estimate = ad_matrix_estimate(arguments)
+        return GenerationCost(math.ceil(estimate["estimated_total_usd"] * 100), 0)
     if provider == "gemini":
         from providers.gemini.api import dry_run
 

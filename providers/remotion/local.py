@@ -23,6 +23,7 @@ import uuid
 import httpx
 
 from providers.remotion import mp4_probe
+from providers.remotion.text import box_geometry, fit_text, font_path, number
 
 MAX_MEDIA_BYTES = 128 * 1024 * 1024
 MAX_TOTAL_BYTES = 384 * 1024 * 1024
@@ -113,6 +114,55 @@ def _audio_filter(label: str, item: dict[str, Any], *, rate: float = 1,
     return f'[{label}]' + ','.join(filters)
 
 
+def _colour(value: str) -> str:
+    names = {'white', 'black', 'red', 'green', 'blue', 'yellow', 'gray', 'grey', 'transparent'}
+    if value in names:
+        return 'black@0' if value == 'transparent' else value
+    if re.fullmatch(r'#[0-9a-fA-F]{3}', value):
+        return '0x' + ''.join(character * 2 for character in value[1:])
+    if re.fullmatch(r'#[0-9a-fA-F]{6}(?:[0-9a-fA-F]{2})?', value):
+        return '0x' + value[1:]
+    raise ValueError('Local text colors require a hex color or an allow-listed color name.')
+
+
+def _visual_layer(label: str, item: dict[str, Any], *, duration: float, fps: float) -> list[str]:
+    opacity = number(item.get('opacity', 1), 'opacity', 0, 1)
+    chain = [] if opacity == 1 else [f'colorchannelmixer=aa={opacity:g}']
+    for field, direction in [('fadeIn', 'in'), ('fadeOut', 'out')]:
+        length = number(item.get(field, 0), field, 0, duration)
+        if length:
+            frames = max(1, round((item['start'] + duration) * fps) - round(item['start'] * fps))
+            when = 0 if direction == 'in' else max(0, (frames - 1) / fps - length)
+            chain.append(f'fade=t={direction}:st={when:g}:d={length:g}:alpha=1')
+    start = number(item['start'], 'start', 0, 600)
+    chain.append(f'setpts=PTS+{start:g}/TB[{label}]')
+    return chain
+
+
+def _text_layer(item: dict[str, Any], directory: Path, index: int, *, width: int,
+                height: int, frame_rate: str) -> tuple[str, dict[str, float]]:
+    layout = fit_text(item, width, height)
+    _, path = font_path(layout)
+    font_name = f'font-{path.name}'
+    if not (directory / font_name).exists():
+        shutil.copyfile(path, directory / font_name)
+    text_name = f'text-{index}.txt'
+    (directory / text_name).write_text(item['text'], encoding='utf-8')
+    box = layout['box']
+    box_width, box_height = round(box['width']), round(box['height'])
+    duration = number(item['duration'], 'text duration', 1 / 240, 600)
+    chain = [f'color=c=black@0:s={box_width}x{box_height}:r={frame_rate}:d={duration:g}',
+             'format=rgba']
+    background = _colour(item.get('backgroundColor', 'transparent'))
+    if background != 'black@0':
+        chain.append(f'drawbox=x=0:y=0:w=iw:h=ih:color={background}:t=fill:replace=1')
+    chain.append(f'drawtext=fontfile={font_name}:textfile={text_name}:expansion=none:'
+                 f'fontsize={layout["fontSize"]}:fontcolor={_colour(item.get("color", "#ffffff"))}:'
+                 'x=(w-text_w)/2:y=(h-text_h)/2:text_shaping=1')
+    chain += _visual_layer(f'text{index}', item, duration=duration, fps=float(Fraction(frame_rate)))
+    return ','.join(chain), box
+
+
 def _command(props: dict[str, Any], directory: Path, *, media_roots: tuple[Path, ...],
              source_root: Path, filename: str) -> tuple[list[str], float]:
     config, document = props['renderConfig'], props['document']
@@ -129,14 +179,26 @@ def _command(props: dict[str, Any], directory: Path, *, media_roots: tuple[Path,
     visual = '0:v'
     audio: list[str] = []
     count = 0
+    text_count = 0
     total_bytes = 0
     for track in document['tracks']:
         for item in track['items']:
+            if item['type'] == 'text':
+                text_count += 1
+                chain, box = _text_layer(item, directory, text_count, width=width,
+                                        height=height, frame_rate=frame_rate)
+                filters.append(chain)
+                filters.append(f'[{visual}][text{text_count}]overlay=x={box["x"]:g}:y={box["y"]:g}'
+                               ':eof_action=pass:repeatlast=0'
+                               f':enable=between(t\\,{item["start"]:g}\\,'
+                               f'{item["start"]+item["duration"]:g})[textout{text_count}]')
+                visual = f'textout{text_count}'
+                continue
             if item['type'] != 'clip':
-                raise ValueError('Local assembly does not support titles/subtitles; use the Lambda backend.')
+                raise ValueError('Unsupported timeline item type; local supports clip and text items.')
             if (item.get('motion', 'none') != 'none' or item.get('grade', 'none') != 'none'
-                    or item.get('scale', 1) != 1 or item.get('rotation', 0) != 0):
-                raise ValueError('Local assembly does not support motion/grade/scale/rotation; use Lambda.')
+                    or item.get('rotation', 0) != 0):
+                raise ValueError('Local assembly does not support motion/grade/rotation; use Lambda.')
             count += 1
             asset = assets[item['assetId']]
             source = _source(asset['url'], directory=directory, index=count,
@@ -155,25 +217,32 @@ def _command(props: dict[str, Any], directory: Path, *, media_roots: tuple[Path,
             command += ['-t', str(float(item['duration']) * rate), '-i', str(source)]
             if kind != 'audio':
                 fit = item.get('fit', 'cover')
-                px, py = float(item.get('positionX', .5)), float(item.get('positionY', .5))
-                resize = (f'scale={width}:{height}:force_original_aspect_ratio=increase:flags=lanczos,'
-                          f'crop={width}:{height}:x=(iw-ow)*{px:g}:y=(ih-oh)*{py:g}'
-                          if fit == 'cover' else
-                          f'scale={width}:{height}:force_original_aspect_ratio=decrease:flags=lanczos,'
-                          f'pad={width}:{height}:x=(ow-iw)*{px:g}:y=(oh-ih)*{py:g}:color=black')
+                if fit not in {'cover', 'contain'}:
+                    raise ValueError('Visual fit must be cover or contain.')
+                px = number(item.get('positionX', .5), 'positionX', 0, 1)
+                py = number(item.get('positionY', .5), 'positionY', 0, 1)
+                box = box_geometry(item['box'], width, height) if 'box' in item else {
+                    'x': 0, 'y': 0, 'width': width, 'height': height}
+                scale = number(item.get('scale', 1), 'scale', .1, 4)
+                target_width = max(2, round(box['width'] * scale / 2) * 2)
+                target_height = max(2, round(box['height'] * scale / 2) * 2)
+                x = box['x'] + (box['width'] - target_width) / 2
+                y = box['y'] + (box['height'] - target_height) / 2
                 chain = [f'[{count}:v]setpts=(PTS-STARTPTS)/{rate:g}',
-                         f'fps={frame_rate}', resize, 'setsar=1', 'format=rgba']
-                opacity = float(item.get('opacity', 1))
-                if opacity != 1:
-                    chain += [f'colorchannelmixer=aa={opacity:g}']
-                for field, direction in [('fadeIn', 'in'), ('fadeOut', 'out')]:
-                    length = float(item.get(field, 0))
-                    if length:
-                        when = 0 if direction == 'in' else max(0, float(item['duration']) - length)
-                        chain += [f'fade=t={direction}:st={when:g}:d={length:g}:alpha=1']
-                chain += [f'setpts=PTS+{item["start"]:g}/TB[v{count}]']
+                         f'fps={frame_rate}', 'format=rgba']
+                if fit == 'cover':
+                    chain += [f'scale={target_width}:{target_height}:force_original_aspect_ratio=increase:flags=lanczos',
+                              f'crop={target_width}:{target_height}:x=(iw-ow)*{px:g}:y=(ih-oh)*{py:g}']
+                else:
+                    padding = 'black@0'
+                    chain += [f'scale={target_width}:{target_height}:force_original_aspect_ratio=decrease:flags=lanczos',
+                              f'pad={target_width}:{target_height}:x=(ow-iw)*{px:g}:y=(oh-ih)*{py:g}:color={padding}']
+                if scale > 1 and 'box' in item:
+                    chain += [f'crop={max(2, round(box["width"] / 2) * 2)}:{max(2, round(box["height"] / 2) * 2)}']
+                    x, y = box['x'], box['y']
+                chain += ['setsar=1', *_visual_layer(f'v{count}', item, duration=float(item['duration']), fps=fps)]
                 filters.append(','.join(chain))
-                filters.append(f'[{visual}][v{count}]overlay=eof_action=pass:repeatlast=0'
+                filters.append(f'[{visual}][v{count}]overlay=x={x:g}:y={y:g}:eof_action=pass:repeatlast=0'
                                f':enable=between(t\\,{item["start"]:g}\\,'
                                f'{item["start"]+item["duration"]:g})[out{count}]')
                 visual = f'out{count}'

@@ -168,16 +168,24 @@ TOOL_ARGUMENT_RULES: dict[str, dict[str, dict[str, ArgumentRule]]] = {
     "remotion": {
         "import_nle_timeline": {"format": ArgumentRule(choices=("fcpxml", "otio"))},
         "render_timeline": {
-            "aspect_ratio": ArgumentRule(choices=("16:9", "9:16", "1:1", "2.39:1")),
+            "aspect_ratio": ArgumentRule(choices=("16:9", "9:16", "1:1", "4:5", "2.39:1")),
             "fps": ArgumentRule(minimum=12, maximum=60),
             "video_bitrate": ArgumentRule(minimum=1),
         },
         "prepare_conversational_edit": {
-            "aspect_ratio": ArgumentRule(choices=("16:9", "9:16", "1:1", "2.39:1")),
+            "aspect_ratio": ArgumentRule(choices=("16:9", "9:16", "1:1", "4:5", "2.39:1")),
             "fps": ArgumentRule(minimum=12, maximum=60),
             "grade": ArgumentRule(choices=("none", "neutral", "warm")),
         },
     },
+}
+
+
+_BOX_SCHEMA = {
+    "type": "object",
+    "properties": {name: {"type": "number"} for name in ("x", "y", "width", "height")},
+    "required": ["x", "y", "width", "height"],
+    "description": "Canvas pixel box. x/y nonnegative, width/height positive and at most 7680; must fit canvas.",
 }
 
 
@@ -204,6 +212,7 @@ _VISUAL_ITEM_SCHEMA = {
         "position_x": {"type": "number", "description": "Allowed range: 0 to 1."},
         "position_y": {"type": "number", "description": "Allowed range: 0 to 1."},
         "scale": {"type": "number", "description": "Allowed range: 0.1 to 4."},
+        "box": _BOX_SCHEMA,
         "opacity": {"type": "number", "description": "Allowed range: 0 to 1."},
         "rotation_degrees": {
             "type": "number",
@@ -252,6 +261,11 @@ _TEXT_OVERLAY_SCHEMA = {
         },
         "font_size": {"type": "integer", "description": "Allowed range: 16 to 180."},
         "font_weight": {"type": "integer", "description": "Allowed range: 100 to 900."},
+        "box": _BOX_SCHEMA,
+        "min_font_size": {"type": "integer", "description": "Allowed range: 16 to 180."},
+        "max_font_size": {"type": "integer", "description": "Allowed range: 16 to 180."},
+        "font_family": {"type": "string", "description": "Allowed values: dejavu-sans, dejavu-sans-bold."},
+        "opacity": {"type": "number", "description": "Allowed range: 0 to 1."},
         "color": {"type": "string", "description": "CSS color."},
         "background_color": {"type": "string", "description": "CSS color or transparent."},
         "fade_in_seconds": {"type": "number", "description": "Must be at least 0."},
@@ -362,6 +376,20 @@ def enrich_tool_schema(provider_id: str, tool: dict[str, Any]) -> dict[str, Any]
         if isinstance(properties.get("subtitles"), dict):
             properties["subtitles"]["items"] = deepcopy(_TEXT_OVERLAY_SCHEMA)
             properties["subtitles"]["description"] = "Output-timed burn-in captions, rendered as the final track above all overlays."
+    if provider_id == "remotion" and tool_name == "render_ad_variants":
+        required = ("variant_key", "sku", "price_text", "cta_text", "logo_asset", "legal_text", "locale", "aspect")
+        properties["rows"]["items"] = {
+            "type": "object", "properties": {
+                **{field: {"type": "string"} for field in required},
+                "product_asset": {"type": "string"}, "vo_asset": {"type": "string"},
+                "start_s": {"type": "number"}, "end_s": {"type": "number"}},
+            "required": list(required),
+        }
+        properties["stage"]["description"] = "Allowed values: plan, render_first, render_batch. Plan is free. First and batch always need human approval, including autonomous runs."
+        properties["rows"]["description"] = "1-100 rows. Nonempty required strings; verbatim price/CTA/legal. Unique sku/locale/aspect and variant_key. Assets confined to job directory."
+        properties["brief"]["description"] = "campaign ASCII identifier; optional logo_alpha_required (default true), legal_locales, legal_by_locale, fps, source_width/source_height, output_resolution source or 720p/1080p/1440p/2160p, fit cover/contain. No custom shell or template code."
+        properties["plan_hash"]["description"] = "Exact immutable SHA-256 returned by plan. Required for render stages; changes to copy/media invalidate approval. Approval is trusted host context, never an argument."
+        properties["concurrency"]["description"] = "Integer 1-2 local renders. A failed variant does not stop the others."
     if provider_id == "remotion" and tool_name == "prepare_conversational_edit":
         properties["plan_summary"]["description"] = "Plain English cut, grade, and caption proposal shown in the required host approval card."
         properties["sources"]["items"] = deepcopy(_TRANSCRIPT_SOURCE_SCHEMA)
@@ -491,6 +519,14 @@ def _validate_rule(path: str, value: Any, rule: ArgumentRule) -> None:
 
 
 def _validate_cross_fields(provider_id: str, tool_name: str, arguments: dict[str, Any]) -> None:
+    if provider_id == "ffmpeg":
+        from providers.ffmpeg.api import validate_arguments
+
+        validate_arguments(arguments)
+    if provider_id == "remotion" and tool_name == "render_ad_variants":
+        from providers.remotion.ad_variants import validate_arguments
+
+        validate_arguments(arguments)
     if provider_id == "gemini":
         from providers.gemini.contracts import validate_arguments
 
@@ -555,6 +591,8 @@ def _validate_cross_fields(provider_id: str, tool_name: str, arguments: dict[str
         if not arguments.get("visuals"):
             raise ValueError("render_timeline requires at least one visual clip.")
         for index, clip in enumerate(arguments.get("visuals") or []):
+            if "box" in clip:
+                validate_box(clip["box"], f"arguments.visuals[{index}].box")
             if clip["kind"] not in {"image", "video"}:
                 raise ValueError(f"arguments.visuals[{index}].kind must be image or video.")
             if float(clip["duration_seconds"]) <= 0:
@@ -620,12 +658,33 @@ def _validate_cross_fields(provider_id: str, tool_name: str, arguments: dict[str
             validate_remotion_text_items(arguments.get(field) or [], f"arguments.{field}")
 
 
+def validate_box(box: dict[str, Any], path: str) -> None:
+    _validate_schema(box, _BOX_SCHEMA, path)
+    if any(not 0 <= box[key] <= 7680 for key in ("x", "y")) or any(
+        not 0 < box[key] <= 7680 for key in ("width", "height")
+    ):
+        raise ValueError(f"{path} requires nonnegative coordinates and positive dimensions up to 7680.")
+
+
 def validate_remotion_text_items(items: list[dict[str, Any]], path: str) -> None:
     _validate_schema(items, {"type": "array", "items": _TEXT_OVERLAY_SCHEMA}, path)
     for index, item in enumerate(items):
         item_path = f"{path}[{index}]"
         if not item["text"].strip():
             raise ValueError(f"{item_path}.text must be non-empty.")
+        if len(item["text"]) > 500 or "\x00" in item["text"]:
+            raise ValueError(f"{item_path}.text allows at most 500 characters and no NUL.")
+        if "box" in item:
+            validate_box(item["box"], item_path + ".box")
+        if item.get("font_family", "dejavu-sans") not in {"dejavu-sans", "dejavu-sans-bold"}:
+            raise ValueError(f"{item_path}.font_family is not allow-listed.")
+        for field in ("min_font_size", "max_font_size"):
+            if field in item and not 16 <= item[field] <= 180:
+                raise ValueError(f"{item_path}.{field} must be between 16 and 180.")
+        if item.get("min_font_size", 16) > item.get("max_font_size", 180):
+            raise ValueError(f"{item_path} minimum font size exceeds maximum.")
+        if "opacity" in item and not 0 <= item["opacity"] <= 1:
+            raise ValueError(f"{item_path}.opacity must be between 0 and 1.")
         if item["start_seconds"] < 0:
             raise ValueError(f"{item_path}.start_seconds must be at least 0.")
         duration = item["duration_seconds"]
