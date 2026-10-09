@@ -1,0 +1,28 @@
+HyperFrames skill adaptations in Renderhaus
+
+Upstream project: https://github.com/heygen-com/hyperframes
+Assessed source commit: 3aa68869f7d4cec8b37cdfcb9cd539389b63abed
+Assessment date: 2026-10-08
+Copyright 2026 HeyGen, Inc.
+Licensed under the Apache License, Version 2.0. See LICENSE in this directory.
+
+The assessed upstream distribution contains no root NOTICE file. This NOTICE
+is a Renderhaus attribution record, not a copy of an upstream root NOTICE.
+
+Renderhaus adapts guidance from the upstream skills/hyperframes,
+skills/hyperframes-core, skills/hyperframes-animation,
+skills/hyperframes-creative, skills/hyperframes-cli,
+skills/faceless-explainer, skills/product-launch-video,
+skills/motion-graphics, and skills/embedded-captions SKILL.md files.
+
+Modifications: the guidance is consolidated into Renderhaus Deep Agents skill
+format and its real gateway tool names. Remotion remains the default renderer.
+Shell installation, credential, hosted API, catalog, telemetry, publishing,
+and upstream subagent-script instructions are removed. The optional renderer
+contract provides dry-run previews only. Live rendering remains disabled until
+an isolated renderer worker is provisioned. Caption guidance excludes the
+upstream matting and transcription pipeline.
+
+Upstream runtime code, assets, fonts, and skipped skills are not vendored.
+The separate upstream talking-head-recut attribution and asset/fixture notices
+do not apply to these skill-prose adaptations because those files are not copied.
