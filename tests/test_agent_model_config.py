@@ -8,7 +8,7 @@ import unittest
 import warnings
 from contextlib import redirect_stderr
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 
 from agent import backend_config
 
@@ -221,6 +221,18 @@ class AgentModelGraphTests(unittest.IsolatedAsyncioTestCase):
         env.start()
         self.addCleanup(env.stop)
 
+    async def test_missing_anthropic_credentials_fail_before_gateway_discovery(self):
+        from agent.deep_agent.runner import run_with_servers
+        from agent.studio_agent_next import StudioAgentRequest, _context_from_request
+        from test_deep_agent import IMAGE, Gateway
+
+        request = StudioAgentRequest(prompt="Make an outline")
+        gateway = Gateway()
+        with patch.object(gateway, "list_tools", new=AsyncMock(return_value=[IMAGE])) as discover:
+            with self.assertRaisesRegex(RuntimeError, "ANTHROPIC_API_KEY"):
+                await run_with_servers(request, _context_from_request(request), [gateway])
+        discover.assert_not_awaited()
+
     async def test_explicit_fake_bypasses_model_factory_and_credentials(self):
         from agent.deep_agent.runner import run_with_servers
         from agent.studio_agent_next import StudioAgentRequest, _context_from_request
@@ -255,7 +267,7 @@ class AgentModelGraphTests(unittest.IsolatedAsyncioTestCase):
         import json
 
         import anthropic
-        import httpx
+        import httpx2 as httpx
 
         from agent.deep_agent.runner import run_with_servers
         from agent.studio_agent_next import StudioAgentRequest, _context_from_request
@@ -265,16 +277,28 @@ class AgentModelGraphTests(unittest.IsolatedAsyncioTestCase):
 
         def response(request):
             payloads.append(json.loads(request.content))
-            return httpx.Response(200, json={
-                "id": "msg_test", "type": "message", "role": "assistant", "model": "claude-opus-5-5",
-                "content": [{"type": "tool_use", "id": "finish", "name": "StudioAgentOutput", "input": FINAL}],
-                "stop_reason": "tool_use", "stop_sequence": None,
-                "usage": {"input_tokens": 10, "output_tokens": 10},
-            })
+            events = [
+                {"type": "message_start", "message": {
+                    "id": "msg_test", "type": "message", "role": "assistant", "model": "claude-opus-5-5",
+                    "content": [], "stop_reason": None, "stop_sequence": None,
+                    "usage": {"input_tokens": 10, "output_tokens": 0},
+                }},
+                {"type": "content_block_start", "index": 0, "content_block": {
+                    "type": "tool_use", "id": "finish", "name": "StudioAgentOutput", "input": {},
+                }},
+                {"type": "content_block_delta", "index": 0, "delta": {
+                    "type": "input_json_delta", "partial_json": json.dumps(FINAL),
+                }},
+                {"type": "content_block_stop", "index": 0},
+                {"type": "message_delta", "delta": {"stop_reason": "tool_use", "stop_sequence": None},
+                 "usage": {"output_tokens": 10}},
+                {"type": "message_stop"},
+            ]
+            stream = "".join(f"event: {event['type']}\ndata: {json.dumps(event)}\n\n" for event in events)
+            return httpx.Response(200, content=stream, headers={"content-type": "text/event-stream"})
 
         with patch.dict(os.environ, {"ANTHROPIC_API_KEY": "test-only"}):
             model = backend_config.configured_deep_agent_model()
-        model.disable_streaming = True
         async with httpx.AsyncClient(transport=httpx.MockTransport(response)) as http:
             model.__dict__["_async_client"] = anthropic.AsyncClient(
                 api_key="test-only", http_client=http, max_retries=0,

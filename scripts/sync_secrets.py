@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
-"""Sync non-empty secrets and runtime config, including ELEVENLABS_TTS_MODEL."""
+"""Sync non-empty application secrets and config, including ANTHROPIC_API_KEY,
+RENDERHAUS_AGENT_MODEL, RENDERHAUS_AGENT_EFFORT, and ELEVENLABS_TTS_MODEL.
+"""
 
 from __future__ import annotations
 

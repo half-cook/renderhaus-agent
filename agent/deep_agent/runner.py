@@ -21,7 +21,7 @@ from langgraph.types import Command
 from langgraph.errors import GraphRecursionError
 from pydantic import ValidationError
 
-from agent.backend_config import deep_agent_model
+from agent.backend_config import configured_deep_agent_model
 from agent.deep_agent.checkpoints import StudioCheckpointer
 from agent.deep_agent.files import subagent_file_updates
 from agent.deep_agent.memory import ProjectMemory
@@ -98,6 +98,7 @@ def _gateway_action(action):
 
 
 async def run_with_servers(request, studio, servers, *, model=None):
+    model = model if model is not None else configured_deep_agent_model()
     snapshots = [item for item in request.session_items if item.get("type") == SESSION_TYPE]
     session = snapshots[-1] if snapshots else None
     thread_id = _conversation_scope(request)
@@ -231,7 +232,7 @@ async def run_with_servers(request, studio, servers, *, model=None):
         ],
     } for name, description, focused in roles]
     graph = create_deep_agent(
-        model=model if model is not None else deep_agent_model(), tools=common_tools,
+        model=model, tools=common_tools,
         system_prompt=INSTRUCTIONS, subagents=subagents, backend=backend,
         skills=["/skills/"], memory=["/AGENTS.md"], checkpointer=saver,
         interrupt_on=interrupt_on, response_format=ToolStrategy(StudioAgentOutput),

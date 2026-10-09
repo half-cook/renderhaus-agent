@@ -41,7 +41,7 @@ class DeepAgentContractTests(unittest.IsolatedAsyncioTestCase):
         for p in [
             patch.object(studio, "repository", self.repo),
             patch("agent.studio_agent_next.gateway_mcp_server", gateway),
-            patch("agent.deep_agent.runner.deep_agent_model", side_effect=lambda: ScriptedModel(self.steps)),
+            patch("agent.deep_agent.runner.configured_deep_agent_model", side_effect=lambda: ScriptedModel(self.steps)),
             patch.dict(os.environ, {"RENDERHAUS_AGENT_BACKEND": "deepagents", "AGENTCORE_DEV_URL": ""}),
         ]:
             p.start()
