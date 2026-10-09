@@ -2,8 +2,10 @@ from __future__ import annotations
 
 import importlib
 import importlib.util
+import io
 import json
 import os
+import shutil
 import tempfile
 import unittest
 from contextlib import contextmanager
@@ -28,7 +30,7 @@ ARGUMENTS = {
     "source_duration_seconds": 12.0,
     "audio_duration_seconds": 12.0,
     "source_fps": 25.0,
-    "subjects": ["Synthetic presenter and synthetic voice"],
+    "subjects": "Synthetic presenter and synthetic voice",
     "consent_confirmed": True,
 }
 
@@ -122,7 +124,7 @@ class SyncProviderTests(unittest.TestCase):
             ("source_duration_seconds", "12"),
             ("audio_duration_seconds", True),
             ("source_fps", "25"),
-            ("subjects", "Synthetic"),
+            ("subjects", ["Synthetic"]),
             ("options", {"sync_mode": "loop"}),
             ("ignored_field", "anything"),
         ):
@@ -133,7 +135,7 @@ class SyncProviderTests(unittest.TestCase):
     def test_invalid_inputs_refuse_before_http_or_file_writes(self):
         cases = [
             {"consent_confirmed": value} for value in (False, "true", 1, None)
-        ] + [{"subjects": value} for value in ([], [""], ["  "], [3], None)]
+        ] + [{"subjects": value} for value in ("", "  ", [], ["Synthetic"], [3], None)]
         cases += [
             {field: value}
             for field in ("source_duration_seconds", "audio_duration_seconds", "source_fps")
@@ -171,6 +173,26 @@ class SyncProviderTests(unittest.TestCase):
                     "audio_duration_seconds": 8.0, "sync_mode": mode,
                 })
                 self.assertEqual(request.output_duration, expected)
+
+    def test_optional_measured_dimensions_are_paired_positive_and_local_only(self):
+        try:
+            request = self.contracts.request_for({**ARGUMENTS, "source_width": 1920, "source_height": 1080})
+        except ValueError:
+            self.fail("Valid measured dimensions must be accepted.")
+        self.assertEqual((request.source_width, request.source_height), (1920, 1080))
+        for values in (
+            {"source_width": 1920}, {"source_height": 1080},
+            {"source_width": 0, "source_height": 1080},
+            {"source_width": True, "source_height": 1080},
+            {"source_width": "1920", "source_height": 1080},
+        ):
+            with self.subTest(values=values), self.assertRaises(ValueError):
+                self.contracts.request_for({**ARGUMENTS, **values})
+        self.fal_submit_route()
+        self.submit(source_width=1920, source_height=1080)
+        body = json.loads(self.requests[0].content)
+        self.assertNotIn("source_width", body)
+        self.assertNotIn("source_height", body)
 
     def test_dry_run_defaults_to_true_and_needs_no_keys_or_files(self):
         os.environ.pop("SYNC_DRY_RUN")
@@ -421,6 +443,54 @@ class SyncProviderTests(unittest.TestCase):
                 })
         self.assertEqual(self.requests, [])
 
+    def test_long_inputs_cannot_bypass_cap_by_cutting_off_to_short_audio(self):
+        with self.assertRaisesRegex(ValueError, "equal-length|long input"):
+            self.contracts.request_for({
+                **ARGUMENTS, "source_duration_seconds": 500.0,
+                "audio_duration_seconds": 10.0,
+            })
+        self.assertEqual(self.requests, [])
+
+    def test_hosted_live_requires_a_durable_job_store(self):
+        os.environ["AWS_LAMBDA_FUNCTION_NAME"] = "offline-sync-lambda"
+        with self.assertRaisesRegex(ValueError, "AWS_S3_BUCKET"):
+            self.submit()
+        self.assertEqual(self.requests, [])
+
+    def test_saved_manifest_survives_another_worker_without_local_metadata(self):
+        os.environ["AWS_S3_BUCKET"] = "offline-sync-store"
+        objects = {}
+
+        class S3:
+            def put_object(s3, *, Bucket, Key, Body, ContentType):
+                objects[Key] = Body.encode() if isinstance(Body, str) else Body
+
+            def get_object(s3, *, Bucket, Key):
+                return {"Body": io.BytesIO(objects[Key])}
+
+        with patch.object(self.chunks.boto3, "client", return_value=S3()):
+            self.fal_submit_route()
+            output = self.submit()
+            self.assertTrue(objects)
+            shutil.rmtree(Path(self.directory.name) / "video" / ".tasks" / "sync")
+            self.route("GET", f"{FAL_REQUESTS}/request_1/status", {"status": "IN_PROGRESS"})
+            self.assertEqual(self.api.get_video_task(output["job_id"])["status"], "running")
+        self.assertEqual(sum(request.method == "POST" for request in self.requests), 1)
+
+    def test_unavailable_durable_job_store_refuses_before_paid_submission(self):
+        os.environ["AWS_S3_BUCKET"] = "offline-sync-store"
+
+        class S3:
+            def put_object(s3, **kwargs):
+                raise RuntimeError("store failure https://private.test/?token=secret")
+
+        with patch.object(self.chunks.boto3, "client", return_value=S3()):
+            with self.assertRaisesRegex(RuntimeError, "store") as failure:
+                self.submit()
+        self.assertNotIn("private.test", str(failure.exception))
+        self.assertNotIn("token=secret", str(failure.exception))
+        self.assertEqual(self.requests, [])
+
     def test_invalid_operational_cap_refuses_before_submission(self):
         for value in ("0", "-1", "nan", "inf", "1801", "not-a-number"):
             with self.subTest(value=value), patch.dict(os.environ, {"SYNC_MAX_CHUNK_SECONDS": value}):
@@ -446,6 +516,27 @@ class SyncProviderTests(unittest.TestCase):
         with patch.object(self.chunks.shutil, "which", return_value=None):
             with self.assertRaisesRegex(ValueError, "ffmpeg"):
                 self.submit(**arguments)
+        self.assertEqual(self.requests, [])
+
+    def test_missing_concat_dependency_refuses_before_sources_or_paid_submission(self):
+        import builtins
+        from providers.remotion import local
+
+        original_import = builtins.__import__
+        os.environ.update(AWS_S3_BUCKET="offline-chunks", REMOTION_LOCAL_MEDIA_HOSTS="media.example.test")
+
+        def missing_concat(name, *args, **kwargs):
+            if name == "server.projects":
+                raise ImportError("Not packaged in this Lambda")
+            return original_import(name, *args, **kwargs)
+
+        with (
+            patch.object(self.chunks.shutil, "which", return_value="/usr/bin/tool"),
+            patch.object(builtins, "__import__", side_effect=missing_concat),
+            patch.object(local, "_source", side_effect=AssertionError("Source fetched before dependency check")),
+        ):
+            with self.assertRaisesRegex(ValueError, "concat|merge"):
+                self.submit_aggregate_without_patch()
         self.assertEqual(self.requests, [])
 
     def prepared_parts(self, *args, **kwargs):
@@ -607,6 +698,9 @@ class SyncProviderTests(unittest.TestCase):
             return SimpleNamespace(returncode=0)
 
         class S3:
+            def put_object(s3, **kwargs):
+                pass
+
             def upload_file(s3, *, Filename, Bucket, Key, ExtraArgs):
                 self.assertEqual(self.requests, [])
                 self.assertEqual(Bucket, "offline-chunks")
