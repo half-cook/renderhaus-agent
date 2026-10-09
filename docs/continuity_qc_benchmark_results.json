@@ -1,0 +1,323 @@
+{
+  "pairs": 420,
+  "counts": {
+    "same_shot": 70,
+    "cross_shot_same_scene": 70,
+    "same_character_other_scene": 70,
+    "perturbed": 70,
+    "different_scene": 70,
+    "hard_negative": 70
+  },
+  "models": {
+    "siglip": {
+      "auroc": 0.9315561224489796,
+      "auroc_ci95": [
+        0.9086989795918368,
+        0.9515051020408163
+      ],
+      "best_threshold": 0.646141758953042,
+      "best_threshold_accuracy": 0.8690476190476191,
+      "cv5_accuracy": 0.8642857142857143,
+      "accuracy_at_0.8": 0.7071428571428572,
+      "per_category_auroc": {
+        "same_shot": 0.9989795918367347,
+        "cross_shot_same_scene": 0.898673469387755,
+        "same_character_other_scene": 0.8331632653061225,
+        "perturbed": 0.9954081632653061,
+        "different_scene": 0.938469387755102,
+        "hard_negative": 0.9246428571428571
+      },
+      "accept_rate_at_0.8": {
+        "same_shot": 0.9,
+        "cross_shot_same_scene": 0.3,
+        "same_character_other_scene": 0.11428571428571428,
+        "perturbed": 0.9285714285714286,
+        "different_scene": 0.0,
+        "hard_negative": 0.0
+      },
+      "mean_score": {
+        "same_shot": 0.9144441361114403,
+        "cross_shot_same_scene": 0.736840138630751,
+        "same_character_other_scene": 0.6937256838396718,
+        "perturbed": 0.910384379550216,
+        "different_scene": 0.551814575156458,
+        "hard_negative": 0.5749769639772425
+      }
+    },
+    "dinov2": {
+      "auroc": 0.8895918367346939,
+      "auroc_ci95": [
+        0.8559948979591837,
+        0.9178316326530612
+      ],
+      "best_threshold": 0.18067427714435158,
+      "best_threshold_accuracy": 0.8142857142857143,
+      "cv5_accuracy": 0.8,
+      "accuracy_at_0.8": 0.5238095238095238,
+      "per_category_auroc": {
+        "same_shot": 1.0,
+        "cross_shot_same_scene": 0.8206122448979591,
+        "same_character_other_scene": 0.7393877551020408,
+        "perturbed": 0.9983673469387755,
+        "different_scene": 0.9158163265306123,
+        "hard_negative": 0.8633673469387755
+      },
+      "accept_rate_at_0.8": {
+        "same_shot": 0.42857142857142855,
+        "cross_shot_same_scene": 0.02857142857142857,
+        "same_character_other_scene": 0.0,
+        "perturbed": 0.6857142857142857,
+        "different_scene": 0.0,
+        "hard_negative": 0.0
+      },
+      "mean_score": {
+        "same_shot": 0.7376800530942976,
+        "cross_shot_same_scene": 0.3256804482448058,
+        "same_character_other_scene": 0.24447223965082077,
+        "perturbed": 0.831712884894062,
+        "different_scene": 0.10804675844158558,
+        "hard_negative": 0.15897610839932003
+      }
+    },
+    "dinov3": {
+      "auroc": 0.8981377551020409,
+      "auroc_ci95": [
+        0.8679846938775511,
+        0.9248469387755102
+      ],
+      "best_threshold": 0.309698366161534,
+      "best_threshold_accuracy": 0.8238095238095238,
+      "cv5_accuracy": 0.8166666666666667,
+      "accuracy_at_0.8": 0.5928571428571429,
+      "per_category_auroc": {
+        "same_shot": 0.9996938775510205,
+        "cross_shot_same_scene": 0.8460204081632653,
+        "same_character_other_scene": 0.7468367346938776,
+        "perturbed": 1.0,
+        "different_scene": 0.9211224489795918,
+        "hard_negative": 0.8751530612244898
+      },
+      "accept_rate_at_0.8": {
+        "same_shot": 0.5857142857142857,
+        "cross_shot_same_scene": 0.04285714285714286,
+        "same_character_other_scene": 0.0,
+        "perturbed": 0.9285714285714286,
+        "different_scene": 0.0,
+        "hard_negative": 0.0
+      },
+      "mean_score": {
+        "same_shot": 0.8157015285134244,
+        "cross_shot_same_scene": 0.41992189839693,
+        "same_character_other_scene": 0.3073249128649315,
+        "perturbed": 0.905313110975689,
+        "different_scene": 0.15311312664659468,
+        "hard_negative": 0.21166727962249982
+      }
+    },
+    "siglip+dinov2 (min)": {
+      "auroc": 0.8895918367346939,
+      "auroc_ci95": [
+        0.8559948979591837,
+        0.9178316326530612
+      ],
+      "best_threshold": 0.18067427714435158,
+      "best_threshold_accuracy": 0.8142857142857143,
+      "cv5_accuracy": 0.8,
+      "accuracy_at_0.8": 0.5190476190476191,
+      "per_category_auroc": {
+        "same_shot": 1.0,
+        "cross_shot_same_scene": 0.8206122448979591,
+        "same_character_other_scene": 0.7393877551020408,
+        "perturbed": 0.9983673469387755,
+        "different_scene": 0.9158163265306123,
+        "hard_negative": 0.8633673469387755
+      },
+      "accept_rate_at_0.8": {
+        "same_shot": 0.42857142857142855,
+        "cross_shot_same_scene": 0.02857142857142857,
+        "same_character_other_scene": 0.0,
+        "perturbed": 0.6571428571428571,
+        "different_scene": 0.0,
+        "hard_negative": 0.0
+      },
+      "mean_score": {
+        "same_shot": 0.7374240008382266,
+        "cross_shot_same_scene": 0.3256804482448058,
+        "same_character_other_scene": 0.24447223965082077,
+        "perturbed": 0.8263305954571982,
+        "different_scene": 0.10804675844158558,
+        "hard_negative": 0.15897610839932003
+      }
+    },
+    "siglip+dinov2 (mean)": {
+      "auroc": 0.9220408163265306,
+      "auroc_ci95": [
+        0.8944642857142857,
+        0.9442602040816327
+      ],
+      "best_threshold": 0.3949031653687831,
+      "best_threshold_accuracy": 0.8523809523809524,
+      "cv5_accuracy": 0.8452380952380952,
+      "accuracy_at_0.8": 0.580952380952381,
+      "per_category_auroc": {
+        "same_shot": 1.0,
+        "cross_shot_same_scene": 0.8781632653061224,
+        "same_character_other_scene": 0.81,
+        "perturbed": 1.0,
+        "different_scene": 0.9402551020408163,
+        "hard_negative": 0.9038265306122449
+      },
+      "accept_rate_at_0.8": {
+        "same_shot": 0.6285714285714286,
+        "cross_shot_same_scene": 0.02857142857142857,
+        "same_character_other_scene": 0.0,
+        "perturbed": 0.8285714285714286,
+        "different_scene": 0.0,
+        "hard_negative": 0.0
+      },
+      "mean_score": {
+        "same_shot": 0.8260620946028691,
+        "cross_shot_same_scene": 0.5312602934377785,
+        "same_character_other_scene": 0.4690989617452463,
+        "perturbed": 0.871048632222139,
+        "different_scene": 0.32993066679902183,
+        "hard_negative": 0.3669765361882813
+      }
+    },
+    "siglip+dinov3 (min)": {
+      "auroc": 0.8981377551020409,
+      "auroc_ci95": [
+        0.8679846938775511,
+        0.9248469387755102
+      ],
+      "best_threshold": 0.309698366161534,
+      "best_threshold_accuracy": 0.8238095238095238,
+      "cv5_accuracy": 0.8166666666666667,
+      "accuracy_at_0.8": 0.5833333333333334,
+      "per_category_auroc": {
+        "same_shot": 0.9996938775510205,
+        "cross_shot_same_scene": 0.8460204081632653,
+        "same_character_other_scene": 0.7468367346938776,
+        "perturbed": 1.0,
+        "different_scene": 0.9211224489795918,
+        "hard_negative": 0.8751530612244898
+      },
+      "accept_rate_at_0.8": {
+        "same_shot": 0.5714285714285714,
+        "cross_shot_same_scene": 0.04285714285714286,
+        "same_character_other_scene": 0.0,
+        "perturbed": 0.8857142857142857,
+        "different_scene": 0.0,
+        "hard_negative": 0.0
+      },
+      "mean_score": {
+        "same_shot": 0.8140687751158616,
+        "cross_shot_same_scene": 0.41909270718795394,
+        "same_character_other_scene": 0.3073249128649315,
+        "perturbed": 0.8844137269071447,
+        "different_scene": 0.15311312664659468,
+        "hard_negative": 0.21166727962249982
+      }
+    },
+    "siglip+dinov3 (mean)": {
+      "auroc": 0.9235969387755102,
+      "auroc_ci95": [
+        0.8985204081632653,
+        0.9457908163265306
+      ],
+      "best_threshold": 0.4716558021045247,
+      "best_threshold_accuracy": 0.8571428571428571,
+      "cv5_accuracy": 0.8523809523809524,
+      "accuracy_at_0.8": 0.6285714285714286,
+      "per_category_auroc": {
+        "same_shot": 1.0,
+        "cross_shot_same_scene": 0.8844897959183673,
+        "same_character_other_scene": 0.8098979591836735,
+        "perturbed": 1.0,
+        "different_scene": 0.9422959183673469,
+        "hard_negative": 0.9048979591836734
+      },
+      "accept_rate_at_0.8": {
+        "same_shot": 0.7857142857142857,
+        "cross_shot_same_scene": 0.04285714285714286,
+        "same_character_other_scene": 0.0,
+        "perturbed": 0.9428571428571428,
+        "different_scene": 0.0,
+        "hard_negative": 0.0
+      },
+      "mean_score": {
+        "same_shot": 0.8650728323124324,
+        "cross_shot_same_scene": 0.5783810185138406,
+        "same_character_other_scene": 0.5005252983523016,
+        "perturbed": 0.9078487452629526,
+        "different_scene": 0.3524638509015264,
+        "hard_negative": 0.3933221217998712
+      }
+    }
+  },
+  "latency": {
+    "siglip": {
+      "median": 1.5404970279996633,
+      "mean": 1.5546010237407957,
+      "p90": 1.6220331789954798,
+      "threads": 4,
+      "frames": 506
+    },
+    "dinov2": {
+      "median": 0.1038305065012537,
+      "mean": 0.10524195166357163,
+      "p90": 0.11580794600013178,
+      "threads": 4,
+      "frames": 506
+    },
+    "dinov3": {
+      "median": 0.08686172049783636,
+      "mean": 0.08943475936178262,
+      "p90": 0.09704556499491446,
+      "threads": 4,
+      "frames": 506
+    }
+  },
+  "paired_deltas": {
+    "dinov3 vs dinov2": {
+      "delta": 0.008545918367346972,
+      "ci95": [
+        -0.013724489795918449,
+        0.031938775510204076
+      ],
+      "p_left_better": 0.778
+    },
+    "siglip+dinov3 (min) vs siglip+dinov2 (min)": {
+      "delta": 0.008545918367346972,
+      "ci95": [
+        -0.013724489795918449,
+        0.031938775510204076
+      ],
+      "p_left_better": 0.778
+    },
+    "siglip+dinov3 (mean) vs siglip+dinov2 (mean)": {
+      "delta": 0.0015561224489796244,
+      "ci95": [
+        -0.010867346938775446,
+        0.01494897959183683
+      ],
+      "p_left_better": 0.597
+    },
+    "siglip+dinov2 (mean) vs siglip+dinov2 (min)": {
+      "delta": 0.03244897959183668,
+      "ci95": [
+        0.02183673469387759,
+        0.044489795918367325
+      ],
+      "p_left_better": 1.0
+    },
+    "siglip vs siglip+dinov2 (min)": {
+      "delta": 0.041964285714285676,
+      "ci95": [
+        0.020586734693877506,
+        0.06436224489795916
+      ],
+      "p_left_better": 1.0
+    }
+  }
+}
