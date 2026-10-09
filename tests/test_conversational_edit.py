@@ -6,6 +6,7 @@ import os
 import tempfile
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
 from mcp import Tool
@@ -200,3 +201,34 @@ class ConversationalGraphTests(unittest.IsolatedAsyncioTestCase):
             read_edit(), call("call_audio_tool", {"tool_name": scribe.name, "arguments": {}}, "scribe"), final(),
         ], gateway)
         gateway.call_tool.assert_not_awaited()
+
+
+class ConversationalStudioTests(unittest.IsolatedAsyncioTestCase):
+    async def test_invoke_pure_plan_does_not_publish_or_ingest_source_media(self):
+        from server.studio import InvokeBody, invoke_tool
+        from server.studio_state import StudioRepository
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            repository = StudioRepository(root / "studio.sqlite3", root / "media")
+            repository.create_project("workspace", "user", "Interview", project_id="project")
+            preview = {"status": "dry_run", "render_arguments": {
+                "visuals": [{"url": "https://example.test/take.mp4", "kind": "video"}],
+            }}
+            with (
+                patch("server.studio.repository", repository),
+                patch("server.studio.current_workspace_id", return_value="workspace"),
+                patch("server.studio.current_user_id", return_value="user"),
+                patch("server.studio.stripe_enabled", return_value=False),
+                patch("server.studio.publish_provider_input_url", side_effect=AssertionError("No publishing")),
+                patch.object(repository, "register_source", side_effect=AssertionError("No media ingestion")),
+                patch("server.studio.dispatch", return_value=preview) as dispatch,
+            ):
+                result = await invoke_tool(InvokeBody(
+                    provider="remotion", tool="prepare_conversational_edit", project_id="project",
+                    arguments=copy.deepcopy(ARGS),
+                ), SimpleNamespace())
+            dispatch.assert_called_once_with("remotion", "prepare_conversational_edit", ARGS)
+            self.assertEqual(result["assets"], [])
+            self.assertEqual(result["cost"]["total_cents"], 0)
+            self.assertEqual(result["result"], preview)
