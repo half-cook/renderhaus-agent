@@ -19,15 +19,15 @@ class AgentModelConfigTests(unittest.TestCase):
         env.start()
         self.addCleanup(env.stop)
 
-    def test_default_is_haiku_with_medium_adaptive_thinking(self):
+    def test_default_is_sonnet_with_medium_adaptive_thinking(self):
         fake = object()
         with patch.dict(os.environ, {"ANTHROPIC_API_KEY": "test-only"}), patch(
             "langchain.chat_models.init_chat_model", return_value=fake,
         ) as initialize:
-            self.assertEqual(backend_config.deep_agent_model(), "anthropic:claude-haiku-5-5")
+            self.assertEqual(backend_config.deep_agent_model(), "anthropic:claude-sonnet-5-5")
             self.assertIs(backend_config.configured_deep_agent_model(), fake)
         initialize.assert_called_once_with(
-            "anthropic:claude-haiku-5-5", thinking={"type": "adaptive"},
+            "anthropic:claude-sonnet-5-5", thinking={"type": "adaptive"},
             output_config={"effort": "medium"},
         )
 
@@ -38,7 +38,7 @@ class AgentModelConfigTests(unittest.TestCase):
             for role in ["planner", "media", "audio", "editor", "general-purpose"]:
                 with self.subTest(role=role):
                     backend_config.configured_deep_agent_model(role)
-                    self.assertEqual(initialize.call_args.args, ("anthropic:claude-haiku-5-5",))
+                    self.assertEqual(initialize.call_args.args, ("anthropic:claude-sonnet-5-5",))
                     expected = "medium" if role in {"planner", "general-purpose"} else "low"
                     self.assertEqual(initialize.call_args.kwargs["output_config"], {"effort": expected})
             with patch.dict(os.environ, {
@@ -60,15 +60,15 @@ class AgentModelConfigTests(unittest.TestCase):
     def test_legacy_model_fallback_and_explicit_model_precedence(self):
         with patch.dict(os.environ, {"AGENT_MODEL": "gpt-5.6-luna"}):
             self.assertEqual(backend_config.deep_agent_model(), "openai:gpt-5.6-luna")
-            with patch.dict(os.environ, {"RENDERHAUS_AGENT_MODEL": "anthropic:claude-haiku-5-5"}):
-                self.assertEqual(backend_config.deep_agent_model(), "anthropic:claude-haiku-5-5")
+            with patch.dict(os.environ, {"RENDERHAUS_AGENT_MODEL": "anthropic:claude-sonnet-5-5"}):
+                self.assertEqual(backend_config.deep_agent_model(), "anthropic:claude-sonnet-5-5")
 
-    def test_blank_model_values_fall_back_to_legacy_or_haiku(self):
+    def test_blank_model_values_fall_back_to_legacy_or_sonnet(self):
         for empty in ["", "  "]:
             with self.subTest(value=empty), patch.dict(os.environ, {
                 "RENDERHAUS_AGENT_MODEL": empty, "AGENT_MODEL": empty,
             }):
-                self.assertEqual(backend_config.deep_agent_model(), "anthropic:claude-haiku-5-5")
+                self.assertEqual(backend_config.deep_agent_model(), "anthropic:claude-sonnet-5-5")
             with patch.dict(os.environ, {"RENDERHAUS_AGENT_MODEL": empty, "AGENT_MODEL": "gpt-5.6-luna"}):
                 self.assertEqual(backend_config.deep_agent_model(), "openai:gpt-5.6-luna")
 
@@ -125,7 +125,7 @@ class AgentModelConfigTests(unittest.TestCase):
 
     def test_configuration_and_import_do_not_require_anthropic_credentials(self):
         importlib.reload(backend_config)
-        self.assertEqual(backend_config.deep_agent_model(), "anthropic:claude-haiku-5-5")
+        self.assertEqual(backend_config.deep_agent_model(), "anthropic:claude-sonnet-5-5")
         self.assertFalse(backend_config.agent_configured())
 
     def test_other_providers_preserve_deepagents_model_initialization(self):
@@ -152,10 +152,10 @@ class AgentModelConfigTests(unittest.TestCase):
             with self.subTest(env=list(env)), patch.dict(os.environ, env, clear=True):
                 self.assertEqual(backend_config.agent_configured(), expected)
 
-    def test_studio_env_loading_keeps_haiku_default_and_explicit_legacy_selection(self):
+    def test_studio_env_loading_keeps_sonnet_default_and_explicit_legacy_selection(self):
         from server import config
 
-        for env, expected in [({}, "anthropic:claude-haiku-5-5"), ({"AGENT_MODEL": "gpt-5.6-luna"}, "openai:gpt-5.6-luna")]:
+        for env, expected in [({}, "anthropic:claude-sonnet-5-5"), ({"AGENT_MODEL": "gpt-5.6-luna"}, "openai:gpt-5.6-luna")]:
             with self.subTest(env=env), patch.dict(os.environ, env, clear=True), patch.object(
                 config, "load_dotenv",
             ), patch.object(config, "secrets_locator", return_value=None), patch.object(
@@ -168,7 +168,7 @@ class AgentModelConfigTests(unittest.TestCase):
     def test_secret_payload_and_application_preserve_anthropic_config_without_output(self):
         from server.secrets import apply_secret_map, secret_payload_from_mapping
 
-        values = {"ANTHROPIC_API_KEY": "test-only", "RENDERHAUS_AGENT_MODEL": "anthropic:claude-haiku-5-5",
+        values = {"ANTHROPIC_API_KEY": "test-only", "RENDERHAUS_AGENT_MODEL": "anthropic:claude-sonnet-5-5",
                   "RENDERHAUS_AGENT_EFFORT": "high", "AWS_SECRET_ACCESS_KEY": "excluded-test-only"}
         payload = secret_payload_from_mapping(values)
         self.assertNotIn("AWS_SECRET_ACCESS_KEY", payload)
@@ -182,12 +182,12 @@ class AgentModelConfigTests(unittest.TestCase):
         from scripts import deploy_agentcore
 
         with patch.dict(os.environ, {
-            "RENDERHAUS_AGENT_BACKEND": "deepagents", "RENDERHAUS_AGENT_MODEL": "anthropic:claude-haiku-5-5",
+            "RENDERHAUS_AGENT_BACKEND": "deepagents", "RENDERHAUS_AGENT_MODEL": "anthropic:claude-sonnet-5-5",
             "RENDERHAUS_AGENT_EFFORT": "high", "ANTHROPIC_API_KEY": "test-only", "OPENAI_API_KEY": "test-only",
         }), patch("server.config.load_local_env"):
             env = deploy_agentcore.load_bootstrap_env(secret_name="test-config")
         self.assertEqual(env["RENDERHAUS_AGENT_BACKEND"], "deepagents")
-        self.assertEqual(env["RENDERHAUS_AGENT_MODEL"], "anthropic:claude-haiku-5-5")
+        self.assertEqual(env["RENDERHAUS_AGENT_MODEL"], "anthropic:claude-sonnet-5-5")
         self.assertEqual(env["RENDERHAUS_AGENT_EFFORT"], "high")
         self.assertNotIn("ANTHROPIC_API_KEY", env)
         self.assertNotIn("OPENAI_API_KEY", env)
@@ -223,7 +223,7 @@ class AgentModelConfigTests(unittest.TestCase):
         from langchain_core.messages import HumanMessage
 
         with patch.dict(os.environ, {"ANTHROPIC_API_KEY": "test-only"}):
-            model = ChatAnthropic(model="claude-haiku-5-5", thinking={"type": "adaptive"}, output_config={"effort": "medium"})
+            model = ChatAnthropic(model="claude-sonnet-5-5", thinking={"type": "adaptive"}, output_config={"effort": "medium"})
         with warnings.catch_warnings(record=True) as observed:
             warnings.simplefilter("always")
             bound = model.bind_tools([{"name": "finish", "description": "Finish", "input_schema": {"type": "object"}}], tool_choice="auto")
@@ -395,7 +395,7 @@ class AgentModelGraphTests(unittest.IsolatedAsyncioTestCase):
             payloads.append(json.loads(request.content))
             events = [
                 {"type": "message_start", "message": {
-                    "id": "msg_test", "type": "message", "role": "assistant", "model": "claude-opus-5-5",
+                    "id": "msg_test", "type": "message", "role": "assistant", "model": "claude-sonnet-5-5",
                     "content": [], "stop_reason": None, "stop_sequence": None,
                     "usage": {"input_tokens": 10, "output_tokens": 0},
                 }},
@@ -427,7 +427,10 @@ class AgentModelGraphTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(len(payloads), 1)
         self.assertEqual(payloads[0]["thinking"], {"type": "adaptive"})
         self.assertEqual(payloads[0]["output_config"], {"effort": "medium"})
-        self.assertEqual(payloads[0]["model"], "claude-haiku-5-5")
+        self.assertEqual(payloads[0]["model"], "claude-sonnet-5-5")
         self.assertGreater(payloads[0]["max_tokens"], 0)
+        for parameter in ("temperature", "top_p", "top_k"):
+            self.assertNotIn(parameter, payloads[0])
+        self.assertEqual(payloads[0]["messages"][-1]["role"], "user")
         self.assertNotIn("tool_choice", payloads[0])
         self.assertIn("StudioAgentOutput", {tool["name"] for tool in payloads[0]["tools"]})

@@ -4,7 +4,7 @@ GEMINI_API_KEY, GEMINI_DRY_RUN=true, GEMINI_VLM_MODEL=gemini-3.8-flash,
 GEMINI_VLM_TIMEOUT_SECONDS, GEMINI_VLM_MAX_RETRIES and GEMINI_TOOL_COST_CENTS_JSON.
 OPENAI_API_KEY (shared by planning and Images), OPENAI_IMAGES_MODEL,
 OPENAI_IMAGES_DRY_RUN and optional OPENAI_IMAGES_TOOL_COST_CENTS_JSON,
-RENDERHAUS_AGENT_MODEL, RENDERHAUS_AGENT_EFFORT, their per-role overrides, ELEVENLABS_TTS_MODEL,
+RENDERHAUS_AGENT_MODEL (Sonnet 5.5 default), RENDERHAUS_AGENT_EFFORT, their per-role overrides, ELEVENLABS_TTS_MODEL,
 and the existing FAL_KEY/FAL_DRY_RUN settings shared by Wan 3, VACE and Vidu.
 Mureka uses MUREKA_DRY_RUN=true, MUREKA_MODEL=mureka-9.5 and the existing FAL_KEY/FAL_DRY_RUN.
 No direct MUREKA_API_KEY is needed by this fal-only transport.

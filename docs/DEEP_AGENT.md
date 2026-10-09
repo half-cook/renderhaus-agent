@@ -9,7 +9,7 @@ request, job, approval, progress, asset, and conversation contracts remain in pl
 | Variable | Behavior |
 | --- | --- |
 | `RENDERHAUS_AGENT_BACKEND` | `deepagents` by default; `codex` selects the retained app-server backend. Other values fail explicitly. |
-| `RENDERHAUS_AGENT_MODEL` | LangChain `provider:model`, default `anthropic:claude-haiku-5-5`. Supported prefixes are `anthropic`, `openai`, `bedrock`, and `bedrock_converse`. Unknown prefixes and empty model IDs fail explicitly. |
+| `RENDERHAUS_AGENT_MODEL` | LangChain `provider:model`, default `anthropic:claude-sonnet-5-5`. Supported prefixes are `anthropic`, `openai`, `bedrock`, and `bedrock_converse`. Unknown prefixes and empty model IDs fail explicitly. |
 | `RENDERHAUS_AGENT_EFFORT` | Anthropic effort, default `medium` for manager/planner/general-purpose and `low` for media/audio/editor. Accepts `low`, `medium`, `high`, `xhigh`, or `max`; maps to `output_config.effort`. Ignored for OpenAI, Bedrock, Codex, and injected test models. |
 | `RENDERHAUS_AGENT_MODEL_<ROLE>` | Optional override for `PLANNER`, `MEDIA`, `AUDIO`, `EDITOR`, or `GENERAL_PURPOSE`; falls back to the global model. |
 | `RENDERHAUS_AGENT_EFFORT_<ROLE>` | Optional matching effort override; falls back to the global effort, then the role default. |
@@ -18,15 +18,22 @@ request, job, approval, progress, asset, and conversation contracts remain in pl
 | `STUDIO_MEDIA_WAIT_SECONDS` | Host polling deadline per provider job, default 600 seconds. |
 | Provider `*_DRY_RUN` variables | Keep their existing provider behavior. The agent cannot change configuration. Dry runs never satisfy video delivery. |
 
-Satya chose Claude Haiku 5.5 for the manager and every subagent. Manager, planner and
+Satya chose Claude Sonnet 5.5 after Haiku 5.5 for the manager and every subagent. Manager, planner and
 research roles use medium effort for decisions across multiple steps. Media, audio and editor
 roles use low effort for focused dispatch. Set a role override such as
 `RENDERHAUS_AGENT_MODEL_PLANNER=anthropic:claude-opus-5-5` to change the planner independently.
-Set `RENDERHAUS_AGENT_MODEL=anthropic:claude-sonnet-5-5` to change the manager and inherited
-role models. The global effort overrides every role default unless that role has its own setting. Set
+The global model applies to the manager and inherited role models.
+The global effort overrides every role default unless that role has its own setting. Set
 `RENDERHAUS_AGENT_MODEL=openai:gpt-5.6-luna` to select the previous default. Selection reads the
-first nonblank value of `RENDERHAUS_AGENT_MODEL`, then `AGENT_MODEL`, then the Haiku default.
+first nonblank value of `RENDERHAUS_AGENT_MODEL`, then `AGENT_MODEL`, then the Sonnet default.
 Studio no longer injects a legacy `AGENT_MODEL` value that would mask this default.
+
+These effort choices are workload defaults, not measured Sonnet quality claims.
+Medium leaves the manager and planner room for dependency and approval decisions.
+Low keeps focused media, audio and editor dispatch responsive. Both retain adaptive thinking.
+Anthropic recommends medium for multistep tool use and low for scoped work on its
+[effort page](https://platform.claude.com/docs/en/build-with-claude/effort), read 2026-10-09.
+Live effort calibration remains pending because this branch was tested offline.
 
 Anthropic uses `ANTHROPIC_API_KEY`; OpenAI uses `OPENAI_API_KEY`. A missing selected-provider
 key prevents model construction with an error naming the required environment variable.
@@ -38,32 +45,49 @@ server and AgentCore worker must use matching backend, model, and effort configu
 
 ### Verified model contract and pricing
 
-Anthropic's [Haiku 5.5 overview](https://platform.claude.com/docs/en/models/haiku-5-5/overview)
-and [migration guide](https://platform.claude.com/docs/en/models/haiku-5-5/migration-guide),
-read 2026-10-09, verify `claude-haiku-5-5`, adaptive thinking, effort (default medium),
-and the 1M context window. Fixed thinking budgets and assistant prefill are rejected.
-The integration omits temperature, top_p and top_k for every Anthropic model. Adaptive thinking
-and effort are sent only to models in the supported adaptive allowlist; older overrides keep
-native parameters. Haiku accepts forced tools but omits thinking on that response. Automatic
-tool choice retains thinking and also permits Opus/Sonnet 5.5 overrides.
+Anthropic's [Sonnet 5.5 overview](https://platform.claude.com/docs/en/models/sonnet-5-5/overview),
+read 2026-10-09, verifies `claude-sonnet-5-5`, a 1M context window and 128K output limit.
+Adaptive thinking runs by default. The API effort default is high; Renderhaus sets medium or low explicitly.
+
+The [migration guide](https://platform.claude.com/docs/en/models/sonnet-5-5/migration-guide),
+read 2026-10-09, rejects manual `thinking: {type: enabled, budget_tokens: ...}` and assistant
+prefill with HTTP 400. Sonnet accepts `adaptive` and `between_tools`; `disabled` is rejected.
+`between_tools` accepts only low, medium or high effort and no additional thinking fields.
+Renderhaus uses `adaptive`. The supported efforts are low, medium, high, xhigh and max.
+The [legacy thinking guide](https://platform.claude.com/docs/en/build-with-claude/extended-thinking)
+and [thinking steering guide](https://platform.claude.com/docs/en/build-with-claude/thinking-steering-and-cost)
+were also read 2026-10-09.
+
+Non-default temperature, top_p and top_k return HTTP 400 on Sonnet 5.5. The integration omits
+all three. Adaptive thinking and effort are sent only to the supported adaptive allowlist.
+Sonnet 5.5 rejects forced `tool_choice` of `any` or a named `tool`, including without up-front
+thinking. Opus 5.5 also rejects both, as confirmed by its
+[migration guide](https://platform.claude.com/docs/en/models/opus-5-5/migration-guide), read 2026-10-09.
+The manager exposes `StudioAgentOutput` as a normal tool and keeps automatic choice, following
+the [tool-choice contract](https://platform.claude.com/docs/en/agents-and-tools/tool-use/define-tools),
+read 2026-10-09. Mocked SDK HTTP verifies the complete graph sends supported settings and
+finishes without forced-choice warnings. The existing append-only middleware retains signed thinking history.
 
 First-party list prices per million tokens come from Anthropic's
 [official pricing page](https://platform.claude.com/docs/en/about-claude/pricing), read 2026-10-09.
 
-| Model / prompt length | Input | Output | 5m cache write | Cache read |
-| --- | --- | --- | --- | --- |
-| Haiku 5.5, <=100k | $0.10 | $0.50 | $0.125 | $0.01 |
-| Haiku 5.5, >100k | $0.50 | $2.50 | $0.625 | $0.05 |
-| Opus 5.5 | $4.00 | $20.00 | $5.00 | $0.20 |
-| Sonnet 5.5 | $2.00 | $10.00 | $2.50 | $0.10 |
+| Model / prompt length | Input | Output | 5m cache write | 1h cache write | Cache read |
+| --- | --- | --- | --- | --- | --- |
+| Haiku 5.5, <=100k | $0.10 | $0.50 | $0.125 | $0.20 | $0.01 |
+| Haiku 5.5, >100k | $0.50 | $2.50 | $0.625 | $1.00 | $0.05 |
+| Opus 5.5 | $4.00 | $20.00 | $5.00 | $8.00 | $0.20 |
+| Sonnet 5.5 | $2.00 | $10.00 | $2.50 | $4.00 | $0.10 |
 
 Haiku's threshold counts uncached input, cache reads and cache writes for each call, rather
 than the aggregate turn total. Thinking tokens are already included in output usage.
 `agent.deep_agent.usage` emits `agent_model_usage` JSON records with the run scope, model,
 call count, token totals, estimated list cost and unknown-cost call count, including subagents
 and approval resumes. It records completed messages once by message ID. These estimates use
-5-minute writes and first-party rates; partner hosts, discounts, taxes and 1-hour caches require
-separate pricing. Unknown models have no invented rate. No live model invocation was performed.
+duration-specific cache writes and first-party rates. Sonnet has no long-context price tier.
+Batch input/output receive a 50% discount; US-only inference has a 1.1 multiplier.
+Renderhaus's standard Messages requests use global routing, without those modifiers.
+Partner hosts, discounts and taxes require separate pricing. Unknown models have no invented rate.
+No live model invocation was performed.
 
 Claude is a proprietary commercial API under the
 [Anthropic Commercial Terms](https://www.anthropic.com/legal/commercial-terms), read 2026-10-09.
@@ -392,7 +416,7 @@ unknown pre-call costs, output training restriction, and blocked Comet validatio
 
 `Sync` is a media-role dispatch target. The converted lipsync skill exposes the media and
 audio wrappers for the ElevenLabs TTS → existing-footage sync-3 chain. Manager and subagent
-models remain `claude-haiku-5-5`. The installed deepagents 0.7.23 signatures govern native
+models default to `claude-sonnet-5-5`. The installed deepagents 0.7.23 signatures govern native
 `interrupt_on` configuration and `Command(resume=...)`; no custom approval middleware or
 provider-side bypass is introduced. `Sync___lipsync_video` always requires native approval,
 including autonomous runs with the generic premium-video flag disabled. Approval descriptions
