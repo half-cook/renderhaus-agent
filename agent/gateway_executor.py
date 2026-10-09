@@ -585,11 +585,28 @@ class GatewayExecutor:
                 if name in {"Remotion___render_ad_variants", "Ffmpeg___ffmpeg_tool"}:
                     from providers.registry import dispatch
                     from providers.remotion.ad_variants import authorize
+                    from server.billing import stripe_enabled
+                    from server.billing_rates import cost_for
+                    from server.beta_credits import beta_billing_enabled
+                    from server.studio_state import repository
 
                     provider, verb = tool_parts(name)
-                    with authorize(arguments.get("stage", "plan"), arguments.get("plan_hash", ""),
-                                   f"human:{call_id}" if approved else ""):
-                        output = await asyncio.to_thread(dispatch, provider, verb, arguments)
+                    charge = None
+                    if studio.user_id and (stripe_enabled() or beta_billing_enabled(repository, studio.user_id)):
+                        cost = cost_for(provider, verb, arguments)
+                        if cost.total_cents > 0:
+                            charge = await asyncio.to_thread(repository.charge_usage, studio.user_id, cost.total_cents, "generation")
+                    try:
+                        with authorize(arguments.get("stage", "plan"), arguments.get("plan_hash", ""),
+                                       f"human:{call_id}" if approved else ""):
+                            output = await asyncio.to_thread(dispatch, provider, verb, arguments)
+                        payload = _unwrap_tool_output(output)
+                        if payload.get("error") or payload.get("status") in {"failed", "error"}:
+                            raise RuntimeError(payload.get("error") or payload.get("message") or "Local render failed.")
+                    except Exception:
+                        if charge is not None:
+                            await asyncio.to_thread(repository.refund_usage, studio.user_id, charge, "refund: local agent dispatch failed")
+                        raise
                 else:
                     output = await server.call_tool(name, arguments)
                 if name == _GATEWAY_SEARCH_TOOL:

@@ -18,7 +18,7 @@ import sqlite3
 import threading
 import time
 import uuid
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Literal
 
@@ -56,6 +56,8 @@ class UsageCharge:
     daily_cents: int
     wallet_cents: int
     charge_date: str  # UTC 'YYYY-MM-DD' the daily_cents portion was deducted against
+    beta_cents: int = 0  # Included in wallet_cents.
+    charge_id: str | None = field(default=None, compare=False)
 
     @property
     def total_cents(self) -> int:
@@ -437,6 +439,19 @@ class StudioRepository:
                     );
                     """
                 )
+                from server.beta_credits import init_beta_schema
+
+                init_beta_schema(connection)
+                connection.execute("BEGIN IMMEDIATE")
+                for table, columns in {
+                    "usage_events": {"beta_cents": "INTEGER NOT NULL DEFAULT 0", "refunded_at": "INTEGER",
+                                     "charge_date": "TEXT NOT NULL DEFAULT ''"},
+                    "pending_refunds": {"beta_cents": "INTEGER NOT NULL DEFAULT 0", "charge_id": "TEXT"},
+                }.items():
+                    present = {str(row[1]) for row in connection.execute(f"PRAGMA table_info({table})")}
+                    for column, declaration in columns.items():
+                        if column not in present:
+                            connection.execute(f"ALTER TABLE {table} ADD COLUMN {column} {declaration}")
                 execution_columns = {
                     str(row[1]) for row in connection.execute("PRAGMA table_info(executions)")
                 }
@@ -1775,6 +1790,27 @@ class StudioRepository:
             ).fetchone()
         return int(row["balance_cents"]) if row else 0
 
+    def get_beta_credit(self, user_id: str) -> dict[str, int] | None:
+        with self._connect() as connection:
+            row = connection.execute(
+                "SELECT amount_cents, remaining_cents, spent_cents FROM beta_grants WHERE user_id = ?", (user_id,)
+            ).fetchone()
+        if row is None:
+            return None
+        return {"granted_cents": row["amount_cents"], "remaining_cents": row["remaining_cents"],
+                "spent_cents": row["spent_cents"]}
+
+    def _debit_beta_credit(self, connection: sqlite3.Connection, user_id: str, wallet_cents: int) -> int:
+        row = connection.execute("SELECT remaining_cents FROM beta_grants WHERE user_id = ?", (user_id,)).fetchone()
+        beta_cents = min(wallet_cents, row["remaining_cents"]) if row else 0
+        if beta_cents:
+            connection.execute(
+                "UPDATE beta_grants SET remaining_cents = remaining_cents - ?, spent_cents = spent_cents + ?, "
+                "gross_spent_cents = gross_spent_cents + ? WHERE user_id = ?",
+                (beta_cents, beta_cents, beta_cents, user_id),
+            )
+        return beta_cents
+
     def _apply_balance_delta(self, connection: sqlite3.Connection, user_id: str, delta: int, now: int) -> None:
         """The atomic check-and-apply at the heart of adjust_balance and
         charge_usage's wallet leg. The UPDATE's WHERE clause makes it
@@ -1811,7 +1847,10 @@ class StudioRepository:
         now = _now()
         try:
             with self._connect() as connection:
+                connection.execute("BEGIN IMMEDIATE")
                 self._apply_balance_delta(connection, user_id, delta, now)
+                if delta < 0:
+                    self._debit_beta_credit(connection, user_id, -delta)
                 connection.execute(
                     "INSERT INTO credit_ledger(id, user_id, delta, reason, reference_id, created_at) "
                     "VALUES (?, ?, ?, ?, ?, ?)",
@@ -1825,98 +1864,56 @@ class StudioRepository:
             return self.get_balance(user_id)
 
     def charge_usage(self, user_id: str, cost_cents: int, reason: str) -> UsageCharge:
-        """Debit `cost_cents`, drawing first from today's subscription daily
-        allowance (if any active subscription), then covering any remainder
-        from the top-up wallet. Raises InsufficientBalanceError if neither
-        bucket can fully cover the cost -- nothing is written in that case.
-        With no active subscription this degenerates to exactly
-        adjust_balance(-cost_cents)'s existing behavior (same ValueError,
-        same ledger row) -- the compatibility guarantee for every current
-        top-up-only user.
-
-        The daily-allowance leg uses optimistic compare-and-swap rather than
-        a lock: this database is shared by two separate OS processes (the
-        FastAPI server and the AgentCore agent runtime), so only a CAS retry
-        against the stored row -- the same pattern save_canvas already uses
-        for its `revision` column -- protects the read-compute-write
-        sequence below from a concurrent charge on the same subscription.
-        """
+        """Atomically debit daily allowance, then beta credit, then purchased credit."""
+        if type(cost_cents) is not int or cost_cents < 0:
+            raise ValueError("Usage cost must be non-negative integer cents.")
         self.ensure_account(user_id)
         self.flush_pending_refunds(user_id)
         today = _today_utc()
+        now = _now()
+        charge_id = uuid.uuid4().hex
         with self._connect() as connection:
-            sub = connection.execute(
-                "SELECT status FROM subscriptions WHERE user_id = ?", (user_id,)
-            ).fetchone()
-        if not sub or sub["status"] != "active":
-            self.adjust_balance(user_id, -cost_cents, reason)
-            now = _now()
-            with self._connect() as connection:
-                connection.execute(
-                    "INSERT INTO usage_events(id, user_id, daily_cents, wallet_cents, reason, created_at) "
-                    "VALUES (?, ?, 0, ?, ?, ?)",
-                    (uuid.uuid4().hex, user_id, -cost_cents, reason, now),
+            connection.execute("BEGIN IMMEDIATE")
+            sub = connection.execute("SELECT * FROM subscriptions WHERE user_id = ?", (user_id,)).fetchone()
+            used_today = 0
+            daily_remaining = 0
+            if sub and sub["status"] == "active":
+                used_today = sub["daily_allowance_used_cents"] if sub["daily_allowance_reset_date"] == today else 0
+                daily_remaining = max(0, sub["daily_allowance_cents"] - used_today)
+            daily_portion = min(cost_cents, daily_remaining)
+            wallet_portion = cost_cents - daily_portion
+            wallet_balance = connection.execute("SELECT balance_cents FROM accounts WHERE user_id = ?", (user_id,)).fetchone()[0]
+            if wallet_portion > wallet_balance:
+                grant = connection.execute("SELECT remaining_cents FROM beta_grants WHERE user_id = ?", (user_id,)).fetchone()
+                message = (
+                    f"Not enough balance: this generation costs ${cost_cents / 100:.2f}, "
+                    f"you have ${daily_remaining / 100:.2f} left in today's plan allowance "
+                    f"and ${wallet_balance / 100:.2f} in your wallet."
                 )
-            return UsageCharge(daily_cents=0, wallet_cents=cost_cents, charge_date=today)
-
-        for _ in range(5):
-            with self._connect() as connection:
-                row = connection.execute(
-                    "SELECT daily_allowance_cents, daily_allowance_used_cents, daily_allowance_reset_date "
-                    "FROM subscriptions WHERE user_id = ?",
-                    (user_id,),
-                ).fetchone()
-                used_today = row["daily_allowance_used_cents"] if row["daily_allowance_reset_date"] == today else 0
-                daily_remaining = max(0, row["daily_allowance_cents"] - used_today)
-                daily_portion = min(cost_cents, daily_remaining)
-                wallet_portion = cost_cents - daily_portion
-
-                account = connection.execute(
-                    "SELECT balance_cents FROM accounts WHERE user_id = ?", (user_id,)
-                ).fetchone()
-                wallet_balance = int(account["balance_cents"]) if account else 0
-                if wallet_portion > wallet_balance:
-                    raise InsufficientBalanceError(
-                        f"Not enough balance: this generation costs ${cost_cents / 100:.2f}, "
-                        f"you have ${daily_remaining / 100:.2f} left in today's plan allowance "
-                        f"and ${wallet_balance / 100:.2f} in your wallet.",
-                        daily_remaining_cents=daily_remaining,
-                        wallet_cents=wallet_balance,
-                    )
-
-                now = _now()
-                cursor = connection.execute(
+                if grant and grant["remaining_cents"] == 0:
+                    message += " Your free beta credit is used up. Top up to keep creating."
+                elif wallet_balance == 0:
+                    message += " Your wallet is empty. Top up to keep creating."
+                raise InsufficientBalanceError(message, daily_remaining_cents=daily_remaining, wallet_cents=wallet_balance)
+            if sub and sub["status"] == "active":
+                connection.execute(
                     "UPDATE subscriptions SET daily_allowance_used_cents = ?, daily_allowance_reset_date = ?, "
-                    "updated_at = ? WHERE user_id = ? AND daily_allowance_used_cents = ? AND daily_allowance_reset_date = ?",
-                    (
-                        used_today + daily_portion,
-                        today,
-                        now,
-                        user_id,
-                        row["daily_allowance_used_cents"],
-                        row["daily_allowance_reset_date"],
-                    ),
+                    "updated_at = ? WHERE user_id = ?",
+                    (used_today + daily_portion, today, now, user_id),
                 )
-                if cursor.rowcount == 0:
-                    # Lost a race with a concurrent charge on this same
-                    # subscription (possibly from the other process) --
-                    # retry with freshly-read state rather than fail the
-                    # generation over a benign race.
-                    continue
-                if wallet_portion > 0:
-                    self._apply_balance_delta(connection, user_id, -wallet_portion, now)
-                    connection.execute(
-                        "INSERT INTO credit_ledger(id, user_id, delta, reason, reference_id, created_at) "
-                        "VALUES (?, ?, ?, ?, NULL, ?)",
-                        (uuid.uuid4().hex, user_id, -wallet_portion, reason, now),
-                    )
+            beta_portion = self._debit_beta_credit(connection, user_id, wallet_portion)
+            if wallet_portion:
+                self._apply_balance_delta(connection, user_id, -wallet_portion, now)
                 connection.execute(
-                    "INSERT INTO usage_events(id, user_id, daily_cents, wallet_cents, reason, created_at) "
-                    "VALUES (?, ?, ?, ?, ?, ?)",
-                    (uuid.uuid4().hex, user_id, daily_portion, wallet_portion, reason, now),
+                    "INSERT INTO credit_ledger(id, user_id, delta, reason, reference_id, created_at) "
+                    "VALUES (?, ?, ?, ?, NULL, ?)", (uuid.uuid4().hex, user_id, -wallet_portion, reason, now),
                 )
-            return UsageCharge(daily_cents=daily_portion, wallet_cents=wallet_portion, charge_date=today)
-        raise RuntimeError("charge_usage: too much contention on this account's daily allowance.")
+            connection.execute(
+                "INSERT INTO usage_events(id, user_id, daily_cents, wallet_cents, beta_cents, reason, created_at, charge_date) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                (charge_id, user_id, daily_portion, wallet_portion, beta_portion, reason, now, today),
+            )
+        return UsageCharge(daily_portion, wallet_portion, today, beta_portion, charge_id)
 
     def _apply_refund(
         self, connection: sqlite3.Connection, user_id: str, charge: UsageCharge, reason: str, now: int
@@ -1938,6 +1935,14 @@ class StudioRepository:
         got a full fresh allowance for the new day.
         """
         if charge.wallet_cents > 0:
+            if charge.beta_cents:
+                cursor = connection.execute(
+                    "UPDATE beta_grants SET remaining_cents = remaining_cents + ?, spent_cents = spent_cents - ? "
+                    "WHERE user_id = ? AND spent_cents >= ?",
+                    (charge.beta_cents, charge.beta_cents, user_id, charge.beta_cents),
+                )
+                if cursor.rowcount != 1:
+                    raise ValueError("Beta refund exceeds the original grant spend.")
             self._apply_balance_delta(connection, user_id, charge.wallet_cents, now)
             connection.execute(
                 "INSERT INTO credit_ledger(id, user_id, delta, reason, reference_id, created_at) "
@@ -1963,11 +1968,22 @@ class StudioRepository:
         it. Returns the new pending_refunds row id."""
         refund_id = uuid.uuid4().hex
         with self._connect() as connection:
+            grant = connection.execute("SELECT 1 FROM beta_grants WHERE user_id = ?", (user_id,)).fetchone()
+            if (charge.beta_cents or grant) and not charge.charge_id:
+                raise ValueError("Beta account refunds require an original usage charge.")
+            if charge.charge_id:
+                original = connection.execute(
+                    "SELECT daily_cents, wallet_cents, beta_cents, charge_date FROM usage_events WHERE id = ? AND user_id = ?",
+                    (charge.charge_id, user_id),
+                ).fetchone()
+                if not original or tuple(original) != (charge.daily_cents, charge.wallet_cents, charge.beta_cents, charge.charge_date):
+                    raise ValueError("Refund does not match the original usage charge.")
             connection.execute(
                 "INSERT INTO pending_refunds"
-                "(id, user_id, daily_cents, wallet_cents, charge_date, reason, created_at) "
-                "VALUES (?, ?, ?, ?, ?, ?, ?)",
-                (refund_id, user_id, charge.daily_cents, charge.wallet_cents, charge.charge_date, reason, _now()),
+                "(id, user_id, daily_cents, wallet_cents, charge_date, reason, created_at, beta_cents, charge_id) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                (refund_id, user_id, charge.daily_cents, charge.wallet_cents, charge.charge_date, reason,
+                 _now(), charge.beta_cents, charge.charge_id),
             )
         return refund_id
 
@@ -1997,6 +2013,13 @@ class StudioRepository:
                 )
                 if cursor.rowcount == 0:
                     return  # already claimed (and applied, or being applied) elsewhere
+                if charge.charge_id:
+                    cursor = connection.execute(
+                        "UPDATE usage_events SET refunded_at = ? WHERE id = ? AND user_id = ? AND refunded_at IS NULL",
+                        (now, charge.charge_id, user_id),
+                    )
+                    if cursor.rowcount == 0:
+                        return
                 self._apply_refund(connection, user_id, charge, reason, now)
         except Exception:
             logger.exception("Could not apply pending refund %s for %s; left pending for later flush", refund_id, user_id)
@@ -2010,13 +2033,14 @@ class StudioRepository:
         instead of staying lost until someone happens to notice."""
         with self._connect() as connection:
             rows = connection.execute(
-                "SELECT id, daily_cents, wallet_cents, charge_date, reason FROM pending_refunds "
+                "SELECT id, daily_cents, wallet_cents, charge_date, reason, beta_cents, charge_id FROM pending_refunds "
                 "WHERE user_id = ? AND resolved_at IS NULL",
                 (user_id,),
             ).fetchall()
         for row in rows:
             charge = UsageCharge(
-                daily_cents=row["daily_cents"], wallet_cents=row["wallet_cents"], charge_date=row["charge_date"]
+                daily_cents=row["daily_cents"], wallet_cents=row["wallet_cents"], charge_date=row["charge_date"],
+                beta_cents=row["beta_cents"], charge_id=row["charge_id"],
             )
             self._claim_and_apply_pending_refund(user_id, row["id"], charge, row["reason"])
 

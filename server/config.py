@@ -14,6 +14,13 @@ GATEWAY_MCP_SERVER_NAME = "agentcore-gateway"
 
 
 DEFAULT_ENV = {
+    "BETA_CREDITS_ENABLED": "false",
+    "BETA_GRANT_CENTS": "1000",
+    "BETA_GLOBAL_CAP_CENTS": "0",
+    "BETA_WAVE_SIZE": "0",
+    "BETA_WAVE_INDEX": "1",
+    "BETA_DAILY_GRANT_LIMIT": "0",
+    "BETA_VERIFICATION_DRY_RUN": "true",
     "OPENAI_IMAGES_DRY_RUN": "true",
     "OPENAI_IMAGES_MODEL": "gpt-image-2.5-sunburst",
     "KLING_BASE_URL": "https://api-singapore.klingai.com",
@@ -49,7 +56,7 @@ def load_local_env() -> None:
     if not os.getenv("RENDERHAUS_AGENT_MODEL") and not os.getenv("AGENT_MODEL"):
         os.environ["RENDERHAUS_AGENT_MODEL"] = DEFAULT_DEEP_AGENT_MODEL
     for key, value in DEFAULT_ENV.items():
-        if not os.getenv(key):
+        if key not in os.environ or (not key.startswith("BETA_") and not os.getenv(key)):
             os.environ[key] = value
 
 

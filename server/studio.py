@@ -45,6 +45,7 @@ from providers.registry import dispatch, load_committed_schemas
 from server.assets import publish_provider_input_url
 from server.auth import AuthUser, OptionalAuthUser, current_user_id, current_workspace_id
 from server.billing import stripe_enabled
+from server.beta_credits import beta_billing_enabled
 from server.billing_rates import cost_for
 from server.config import ROOT
 from server.studio_state import ACTIVE_EXECUTION_STATUSES, CanvasConflictError, InsufficientBalanceError, StudioAssetKind, repository
@@ -532,12 +533,13 @@ def _normalize_canvas_document(
 @router.get("/account")
 async def studio_account(auth: AuthUser) -> dict[str, Any]:
     user_id = current_user_id(auth)
-    balance, ledger, subscription = await asyncio.gather(
-        asyncio.to_thread(repository.get_balance, user_id),
+    balance = await asyncio.to_thread(repository.get_balance, user_id)
+    ledger, subscription, beta_credit = await asyncio.gather(
         asyncio.to_thread(repository.list_ledger, user_id, limit=20),
         asyncio.to_thread(repository.get_subscription_state, user_id),
+        asyncio.to_thread(repository.get_beta_credit, user_id),
     )
-    return {"balance_cents": balance, "recent_ledger": ledger, "subscription": subscription}
+    return {"balance_cents": balance, "recent_ledger": ledger, "subscription": subscription, "beta_credit": beta_credit}
 
 
 @router.get("/projects")
@@ -745,10 +747,7 @@ async def invoke_tool(body: InvokeBody, auth: AuthUser) -> dict[str, Any]:
         cost = cost_for(body.provider, body.tool, cleaned)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
-    # No billing enforcement at all when Stripe isn't configured (local/dry-run
-    # dev, per the README) -- every account starts at $0 with no way to top up
-    # in that mode, so charging here would 402 every single generation.
-    billed = stripe_enabled() and cost.total_cents > 0
+    billed = cost.total_cents > 0 and (stripe_enabled() or beta_billing_enabled(repository, user_id))
     charge = None
     if billed:
         # Debit *before* dispatch, not after: charge_usage's daily-allowance
