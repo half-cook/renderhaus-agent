@@ -205,6 +205,16 @@ class ModelStudioTests(unittest.TestCase):
         ):
             self.assertEqual(self.api().get_task(job_id)["status"], "dry_run")
 
+    def test_preview_licence_blocks_workspace_live_use_before_http(self):
+        with patch.dict(os.environ, {"MODELSTUDIO_DRY_RUN": "false", "DASHSCOPE_BASE_URL": WORKSPACE_HOST}), patch.object(
+            self.api().httpx, "Client", side_effect=AssertionError("HTTP called")
+        ):
+            for tool in TOOLS[:2]:
+                with self.subTest(tool=tool), self.assertRaisesRegex(ValueError, "licence.*preview"):
+                    dispatch("alibaba_modelstudio", tool, {**BASE_ARGUMENTS, "duration": 7})
+            with self.assertRaisesRegex(ValueError, "licence.*preview"):
+                self.api().get_task(TASK_ID)
+
     def test_malformed_task_ids_fail_before_http(self):
         with patch.object(self.api().httpx, "Client", side_effect=AssertionError("HTTP called")):
             for job_id in ("", "../task", "https://example.test/task", TASK_ID + "/", "not-a-task", True):

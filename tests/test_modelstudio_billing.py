@@ -79,6 +79,11 @@ class ModelStudioBillingTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             rates.modelstudio_price_cents("edit_wan3_video", BASE, region="elsewhere")
 
+    def test_preview_licence_blocks_live_charge(self):
+        with patch.dict(os.environ, {"MODELSTUDIO_DRY_RUN": "false", "DASHSCOPE_WORKSPACE_ID": "testworkspace"}):
+            with self.assertRaisesRegex(ValueError, "licence.*preview"):
+                rates.cost_for("alibaba_modelstudio", "edit_wan3_video", BASE)
+
     def test_published_rate_sources_are_dated(self):
         self.assertEqual(rates.MODELSTUDIO_PRICING_READ_DATE, "2026-10-09")
         self.assertEqual(rates.MODELSTUDIO_PRICING_URL,
