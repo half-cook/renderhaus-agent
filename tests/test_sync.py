@@ -436,6 +436,27 @@ class SyncProviderTests(unittest.TestCase):
             output = self.api.get_video_task(job["job_id"], download=True)
         self.assertEqual(Path(output["output_path"]).read_bytes(), MP4_BYTES)
 
+    def test_corrupt_or_legacy_nonvideo_cache_cannot_report_success(self):
+        self.fal_submit_route()
+        job = self.submit()
+        self.fal_completed_routes()
+        self.download_route()
+        output = self.api.get_video_task(job["job_id"], download=True)
+        Path(output["output_path"]).write_bytes(b"<html>old invalid cached output</html>")
+        with self.assertRaisesRegex(RuntimeError, "MP4|container|video"):
+            self.api.get_video_task(job["job_id"], download=True)
+
+    def test_saved_artifact_key_cannot_reference_another_object(self):
+        self.fal_submit_route()
+        output = self.submit()
+        path = self.sync_metadata()[0]
+        saved = json.loads(path.read_text())
+        saved["artifact_key"] = "another-job/private.mp4"
+        path.write_text(json.dumps(saved))
+        with self.assertRaises(ValueError):
+            self.api.get_video_task(output["job_id"])
+        self.assertEqual(len(self.requests), 1)
+
     def test_signed_output_url_is_never_saved_in_sync_or_fal_metadata(self):
         signed = OUTPUT_URL + "?X-Amz-Signature=synthetic-private-marker"
         self.fal_submit_route()
