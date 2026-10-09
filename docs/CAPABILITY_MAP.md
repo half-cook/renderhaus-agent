@@ -49,7 +49,7 @@ licence block remains. BytePlus is optional only for authorized non-US platform 
 
 Kling generation/Omni, Runway Gen-4.5/Aleph/Gen-4 Image, Luma, Vidu Q4, Seedream, Fish Audio, ElevenLabs music and Wan 2.x VACE remain built. Named requests use their existing tools with “explicit request; not the default for <capability>”. Declared interims can use demoted tools while their replacement is pending. The existing rejected-shot Wan 2.x training retry path and provenance eligibility checks remain unchanged. MiniMax H3 and Hunyuan stay blocked.
 
-All paid video pauses for approval with a cost estimate, including autonomous runs: current Seedance, Fal/Wan/Vidu, Kling, Runway, Luma and Remotion, plus the future Wan3, Seedance25, Act-Two, Kling Motion, sync, HeyGen, Topaz, Mureka lyrics-video and Mirelo aliases. `premium_video_approval` / `RENDERHAUS_PREMIUM_VIDEO_APPROVAL` remains the global switch. Approval exemptions and the autonomous spending cap are unchanged; paid non-video behavior follows the existing effect classification. Voice-clone writes retain their existing autonomous behavior. Editorial cut-plan confirmation and final paid rendering remain separate approvals.
+All paid video pauses for approval with a cost estimate, including autonomous runs: current Seedance, Fal/Wan/Vidu, Kling, Runway, Luma and Remotion, plus the future Act-Two, Kling Motion, HeyGen, Topaz, Mureka lyrics-video and Mirelo aliases. Sync is built and always pauses, even when the general premium-video switch is disabled. `premium_video_approval` / `RENDERHAUS_PREMIUM_VIDEO_APPROVAL` remains the global switch. Approval exemptions and the autonomous spending cap are unchanged; paid non-video behavior follows the existing effect classification. Voice-clone writes retain their existing autonomous behavior. Editorial cut-plan confirmation and final paid rendering remain separate approvals.
 
 Each dispatch publishes MODEL_UPDATE with provider, model, approval estimate and default/exception/explicit/interim reason. Unknown prices stay unknown, including in dry-run mode. The optional `ab_arm` outcome field only records a label; no A/B runner or evaluation harness is activated.
 
@@ -59,7 +59,7 @@ Each dispatch publishes MODEL_UPDATE with provider, model, approval estimate and
 
 ## US availability
 
-All sources below were read on **2026-10-08**. “yes” with an inference note describes ordinary service access, not a model-specific region guarantee. Unclear eligibility remains a future activation check. No paid API request was made.
+Sources below were read on **2026-10-08**, except Sync transport evidence rechecked on **2026-10-09**. “yes” with an inference note describes ordinary service access, not a model-specific region guarantee. Unclear eligibility remains a future activation check. No paid API request was made.
 
 | Provider | Host | US available | Official source | Read date | Notes |
 | --- | --- | --- | --- | --- | --- |
@@ -70,7 +70,8 @@ All sources below were read on **2026-10-08**. “yes” with an inference note 
 | OpenAI GPT Image 2.5 Sunburst | OpenAI Images API | yes | [Official source](https://help.openai.com/en/articles/5347006-openai-api-supported-countries-and-territories) | 2026-10-08 | United States explicitly listed. Organization verification may be required. |
 | Recraft V4.1 Pro vector | fal | yes | [Official source](https://fal.ai/legal/terms-of-service) | 2026-10-08 | US fal service eligibility inferred from terms; model-specific region guarantee not published. |
 | Ideogram 4.5 edit | fal | yes | [Official source](https://fal.ai/legal/terms-of-service) | 2026-10-08 | US fal eligibility inferred from terms; no model-specific region guarantee. |
-| sync-3 | sync.so | unclear | [Official source](https://sync.so/terms) | 2026-10-08 | Public docs expose API; no explicit country eligibility list located. Do not equate US governing law with guaranteed access. |
+| sync-3 | fal primary | yes | [Official source](https://fal.ai/legal/terms-of-service) | 2026-10-09 | US service access inferred from fal terms and commercial model listing; model-specific geographic guarantee not published. |
+| sync-3 | sync.so optional | unclear | [Official source](https://sync.so/terms) | 2026-10-09 | Direct integration needs express written permission; no explicit country eligibility list located. |
 | HeyGen Avatar V | HeyGen direct | unclear | [Official source](https://help.heygen.com/en/articles/11187873-heygen-privacy-and-security-standards) | 2026-10-08 | Official help confirms US AWS hosting; no explicit customer-country eligibility table verified. |
 | Runway Act-Two | Runway direct | yes | [Official source](https://runway.com/terms-of-use) | 2026-10-08 | Section15 says services controlled and offered from US facilities. |
 | Kling 3.0 Motion Control Pro | fal; direct Kling optional | yes | [Official source](https://fal.ai/legal/terms-of-service) | 2026-10-08 | US fal eligibility inferred from terms. Direct Kling US eligibility unclear. |
@@ -171,15 +172,26 @@ commercial API, fal Commercial use. `training_eligible=false`: fal third-party c
 
 Only edit requests select specialist; generation remains GPT Image default.
 
-### sync-3 — sync.so
+### sync-3 — fal primary, authorized Sync direct
 
-Routing IDs: `sync3_lipsync`. Official IDs: `sync-3`. Status: **verified**.
+Routing ID: `sync3_lipsync`; Gateway: `Sync___lipsync_video`. Verified models/endpoints:
+`sync-3` direct and `fal-ai/sync-lipsync/v3` on fal. Fal is the US-accessible default;
+Sync direct requires written permission under its competitor/integration terms.
+[Official fal API](https://fal.ai/models/fal-ai/sync-lipsync/v3/api),
+[direct API](https://sync.so/docs/api-reference/api/generate-api/create).
 
-POST https://api.sync.so/v2/generate; model=sync-3,input[] typed video/image and audio URLs; API key header; poll generations. [Official API source](https://sync.so/docs/api-reference/api/generate-api/create) [Official API source](https://sync.so/docs/models/lipsync)
+Fal: $8/minute. Direct legacy Base: $0.133/s at 25 fps, charged per output frame;
+credit-plan rates are unknown. Read **2026-10-09**. Existing platform fees apply.
+[fal price](https://fal.ai/models/fal-ai/sync-lipsync/v3),
+[Sync billing](https://sync.so/docs/product/billing).
 
-USD/frame base=0.00534; 25fps USD/s base=0.13340,Growth=0.12660,Scale=0.10660; subscription separate. [Official pricing](https://sync.so/pricing)
-
-proprietary commercial API, Sync Labs Terms. `training_eligible=false`: No unambiguous public output-training grant verified.. [Licence/terms source](https://sync.so/terms)
+Closed proprietary service, `service-terms`, `training_eligible=false`. Fal advertises
+commercial use and permits customer API integrations. Direct Sync permits upload reuse
+for improvement and has additional competitor/redistribution restrictions. Face/voice
+consent is mandatory. Fal's hard duration ceiling is **UNVERIFIED**; the adapter uses a
+configurable operational cap, not a claimed vendor limit. [fal terms](https://fal.ai/legal/terms-of-service),
+[fal data terms](https://fal.ai/legal/api-services), [Sync terms](https://sync.so/terms).
+See [SYNC.md](SYNC.md) for chunking limits, guardrails and evidence.
 
 ### HeyGen Avatar V — HeyGen direct
 
@@ -322,21 +334,20 @@ Apache-2.0 weights/model metadata, DINOv2 Apache-2.0 code. `training_eligible=fa
 ## Thin evidence and activation TODOs
 
 - Eleven v4 Turbo ID is verified, but its public docs describe WebSocket Text-to-Dialogue. Existing HTTP TTS/dialogue compatibility is **UNVERIFIED**. Every existing HTTP speech variant defaults its model via `ELEVENLABS_TTS_MODEL=eleven_v4_turbo` and forces dry-run for that ID even when ELEVENLABS_DRY_RUN=false. A verified HTTP model can be configured explicitly. Its published WebSocket price is not installed as an HTTP billing quote; HTTP estimates remain unknown without operator rates.
-- Future provider branches must enforce typed args before paid requests, submit/poll correctly, add explicit price unit/expiry handling and validate host eligibility/licence/subject consent before live activation. No new credentials are required by this branch.
-- HeyGen and Mureka direct prices, direct Kling/Topaz prices, some model-specific training rights and sync/HeyGen US eligibility remain TODO/unknown. Mureka n defaults to two songs and Mirelo num_samples defaults to two; estimate the exact requested count before submitting.
+- Future provider branches must enforce typed args before paid requests, submit/poll correctly, add explicit price unit/expiry handling and validate host eligibility/licence/subject consent before live activation. The original capability-map branch required no new credentials. Sync reuses FAL_KEY; its optional authorized direct transport needs SYNC_API_KEY.
+- HeyGen and Mureka direct prices, direct Kling/Topaz prices, some model-specific training rights and direct Sync/HeyGen US eligibility remain TODO/unknown. Mureka n defaults to two songs and Mirelo num_samples defaults to two; estimate the exact requested count before submitting.
 - New SaaS aliases are not training eligible: commercial output rights alone do not grant competing-model training rights. Existing Wan2 Apache/provenance training-flywheel behavior is preserved; host service terms still need review on any new training host.
 - Continuity remains local_qc. Gemini judge is pending and eval-gated. The research lead requires >0.85 agreement on 420 paired evaluations before replacement; no evaluations are claimed here. Omni/Flash and Vidu motion candidates remain inactive until evidence justifies a decision.
-- Retired aliases: Veo, Hedra Character3, LivePortrait, InfiniteTalk, SeedVR2, RIFE, ACE-Step and MMAudio. MMAudio weights are CC-BY-NC-4.0, blocked for commercial use ([official model](https://huggingface.co/hkchengrex/MMAudio)). No AGPL or non-commercial code/weights are copied or activated. Retired aliases have no dispatch binding.
+- Retired aliases: Veo, Hedra Character3, LatentSync, LivePortrait, InfiniteTalk, SeedVR2, RIFE, ACE-Step and MMAudio. MMAudio weights are CC-BY-NC-4.0, blocked for commercial use ([official model](https://huggingface.co/hkchengrex/MMAudio)). No AGPL or non-commercial code/weights are copied or activated. Retired aliases have no dispatch binding.
 
 ## Skills and routing fixtures
 
-There are 24 packaged skills, 9 provider targets and 84 Gateway tools. No deployment is claimed. New packaged skills are image-gen, named-provider, act-two, lipsync, upscale, lyrics-video, product-demo-video and whiteboard-explainer. Vidu’s archived skill is removed; its real tools remain under named-provider. Draft alias include_tools cannot be copied verbatim into this harness: `metadata.include_tools` must contain real dispatch wrappers, `metadata.routing_tools` records the canonical aliases, and `metadata.gateway_tools` contains only built Gateway names.
+There are 24 packaged skills, 11 provider targets and 91 Gateway tools. No deployment is claimed. New packaged skills are image-gen, named-provider, act-two, lipsync, upscale, lyrics-video, product-demo-video and whiteboard-explainer. Vidu’s archived skill is removed; its real tools remain under named-provider. Draft alias include_tools cannot be copied verbatim into this harness: `metadata.include_tools` must contain real dispatch wrappers, `metadata.routing_tools` records the canonical aliases, and `metadata.gateway_tools` contains only built Gateway names.
 
-The 145-row workbook becomes 122 fixtures: 23 archived/confidential rows are dropped, 81 active checks pass and 41 remain skipped, including three Model Studio preview-licence blocks and 38 named dependencies. “Active” includes built interims and the required 45-second single-shot refusal; it does not assert future adapters exist. NLE import remains skipped. Detailed expectation adjustments and retired replacements are in [capability-map-decisions.tsv](capability-map-decisions.tsv).
+The original workbook migration retained 122 fixtures; later provider branches expanded the set to 129. There are now 96 active cases and 33 skips, including one unverified extension-semantics case and 32 named dependencies. The 23 archived/confidential rows remain dropped. “Active” includes built interims and the required 45-second single-shot refusal; it does not assert future adapters exist. NLE import remains skipped. Detailed expectation adjustments and retired replacements are in [capability-map-decisions.tsv](capability-map-decisions.tsv).
 
 | Skipped dependency/reason | Rows |
 | --- | --- |
-| licence blocked: Wan 3.0 preview internal evaluation only | 3 |
 | provider pending: HyperFrames overlays (feat/hyperframes-overlays) | 1 |
 | provider pending: cutaway_record (feat/product-demo-capture) | 3 |
 | provider pending: gemini_vlm_judge (feat/continuity-qc-vlm-judge) | 1 |
@@ -348,9 +359,9 @@ The 145-row workbook becomes 122 fixtures: 23 archived/confidential rows are dro
 | provider pending: nle import (feat/nle-import-fcpxml) | 1 |
 | provider pending: recraft_v41_vector (feat/image-specialists) | 4 |
 | provider pending: runway_act_two (feat/perf-transfer) | 5 |
-| provider pending: sync3_lipsync (feat/lipsync-sync3) | 5 |
 | provider pending: topaz_interpolate (feat/finishing-topaz) | 3 |
 | provider pending: topaz_upscale (feat/finishing-topaz) | 2 |
+| semantics unverified: Seedance appended-versus-combined extension length (feat/seedance-2-5); Wan extend remains preview-licence blocked | 1 |
 
 ## Verification
 

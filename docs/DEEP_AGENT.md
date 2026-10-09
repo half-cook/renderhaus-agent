@@ -167,12 +167,12 @@ Pending aliases cannot dispatch as Gateway tools. The generated inventory is in
 
 The original video-short, product-images, storyboard-shots, audio, final-assembly and refinement
 skills remain. Image-gen applies GPT still defaults and Recraft/Ideogram exceptions.
-Named-provider honors explicit demoted providers. Pending specialists include lipsync,
+Named-provider honors explicit demoted providers. Pending specialists include long-presenter HeyGen,
 act-two, upscale and lyrics-video. Product-demo-video keeps the pending cutaway capture utility;
 whiteboard-explainer plans Remotion templates without claiming unsupported marker-hand animation.
 
 The deterministic router supplies skill and tool proposals in graph input and Studio context.
-The capability-map fixture contains 122 retained rows, with 80 active and 42 dependency skips.
+The capability-map fixture contains 129 retained rows, with 96 active and 33 dependency skips.
 Archived/confidential routes are dropped. Active rows cover built tools and declared interims;
 pending specialists keep named branch reasons. Editorial overrides retain the safe preparer,
 separate rendering approval, and existing export/HyperFrames narration workflow contracts.
@@ -364,9 +364,21 @@ Model Studio adapter restriction still blocks commercial live work. See
 defaults, including text-in-image generation. Edits accept a primary image, up to 15 additional
 references, and an optional mask. Results contain saved images synchronously, without polling.
 Seedream remains explicit-only. Spending approval and visual approval remain separate.
-Eight GPT routing readiness rows now assert built tools; all 91 active cases pass their routing
-expectations. The 38 dependency skips remain, including Recraft and Ideogram specialists.
-There are 10 providers, 89 Gateway tools, and 24 packaged skills.
+The OpenAI branch activated eight GPT routing rows. With Sync, 96 routing cases are active
+and 33 remain skipped, including Recraft and Ideogram specialists.
+There are 11 providers, 91 Gateway tools, and 24 packaged skills.
 
 [OpenAI configuration and verified sources](OPENAI_IMAGES.md) describe the default dry-run flag,
 unknown pre-call costs, output training restriction, and blocked Comet validation.
+
+## Sync dispatch and approval
+
+`Sync` is a media-role dispatch target. The converted lipsync skill exposes the media and
+audio wrappers for the ElevenLabs TTS → existing-footage sync-3 chain. Manager and subagent
+models remain `claude-haiku-5-5`. The installed deepagents 0.7.23 signatures govern native
+`interrupt_on` configuration and `Command(resume=...)`; no custom approval middleware or
+provider-side bypass is introduced. `Sync___lipsync_video` always requires native approval,
+including autonomous runs with the generic premium-video flag disabled. Approval descriptions
+and progress disclosure include host, model, consent subjects and the host-specific quote.
+Polling is free. Consent and vendor-policy failures remain refusals after spending approval.
+See [SYNC.md](SYNC.md) for terms, pricing and verification limits.
