@@ -1242,5 +1242,76 @@
     "skip_reason": "",
     "expected_output": "assembled MP4",
     "test_id": "lighthouse-followup"
+  },
+  {
+    "prompt": "premium cinematic captions over product footage with HyperFrames",
+    "expected_skill": "hyperframes",
+    "expected_tool": "hyperframes_render",
+    "suite": "hyperframes-caption-collage-packs",
+    "test_id": "workbook-cinematic-caption",
+    "skip_reason": "",
+    "note": "audrey cinematic-caption pack; capability-map.routing.csv row 149, read 2026-10-09",
+    "source_status": "new",
+    "env": {
+      "HYPERFRAMES_ENABLED": "true",
+      "HYPERFRAMES_DRY_RUN": "true"
+    },
+    "source_file": "/workspace/rh-runs/inputs/capability-map.routing.csv",
+    "source_row": 149,
+    "source_read_date": "2026-10-09"
+  },
+  {
+    "prompt": "HyperFrames cinematic caption over product footage",
+    "expected_skill": "hyperframes",
+    "expected_tool": "hyperframes_render",
+    "suite": "hyperframes-caption-collage-packs",
+    "test_id": "explicit-cinematic-caption",
+    "skip_reason": "",
+    "note": "explicit HyperFrames caption recipe",
+    "source_status": "new",
+    "env": {
+      "HYPERFRAMES_ENABLED": "true",
+      "HYPERFRAMES_DRY_RUN": "true"
+    }
+  },
+  {
+    "prompt": "HyperFrames tactile collage video",
+    "expected_skill": "hyperframes",
+    "expected_tool": "hyperframes_render",
+    "suite": "hyperframes-caption-collage-packs",
+    "test_id": "explicit-tactile-collage",
+    "skip_reason": "",
+    "note": "explicit HyperFrames collage recipe",
+    "source_status": "new",
+    "env": {
+      "HYPERFRAMES_ENABLED": "true",
+      "HYPERFRAMES_DRY_RUN": "true"
+    }
+  },
+  {
+    "prompt": "add captions over product footage",
+    "expected_skill": "motion-graphics",
+    "expected_tool": "remotion_render",
+    "suite": "hyperframes-caption-collage-packs",
+    "test_id": "plain-caption-default",
+    "skip_reason": "",
+    "note": "unnamed caption motion keeps Remotion default",
+    "source_status": "new",
+    "env": {
+      "HYPERFRAMES_ENABLED": "true"
+    }
+  },
+  {
+    "prompt": "make a collage video",
+    "expected_skill": "motion-graphics",
+    "expected_tool": "remotion_render",
+    "suite": "hyperframes-caption-collage-packs",
+    "test_id": "plain-collage-default",
+    "skip_reason": "",
+    "note": "unnamed collage motion keeps Remotion default",
+    "source_status": "new",
+    "env": {
+      "HYPERFRAMES_ENABLED": "true"
+    }
   }
 ]

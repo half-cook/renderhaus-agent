@@ -1,6 +1,6 @@
 ---
 name: hyperframes
-description: Plan HTML/CSS motion compositions and dry-run inputs for explicit HyperFrames requests, including faceless explainers, product launches, caption overlays, and kinetic titles. Remotion remains the default renderer.
+description: Plan HTML/CSS motion compositions and dry-run inputs for explicit HyperFrames requests, including faceless explainers, product launches, cinematic captions, tactile paper collage, and kinetic titles. Remotion remains the default renderer.
 license: Apache-2.0
 metadata:
   include_tools: call_editor_tool call_audio_tool
@@ -18,6 +18,15 @@ hyperframes-cli, faceless-explainer, product-launch-video, embedded-captions, an
 motion-graphics SKILL.md files. It replaces upstream shell, hosted API, installation,
 publishing, and script-dispatch steps with the Renderhaus tool contract.
 The distribution retains the complete LICENSE and the Renderhaus attribution NOTICE.
+
+The cinematic-caption and tactile-collage recipes and templates adapt
+[audrey-560/hyperframes-cinematic-caption](https://github.com/audrey-560/hyperframes-cinematic-caption/tree/6cdb01d74949cab379e048e9092709adbb3b203b)
+and [audrey-560/hyperframes-tactile-collage](https://github.com/audrey-560/hyperframes-tactile-collage/tree/ef6a49f5a250e6b3b1a0839cafc7a2d43872e619).
+Both are copyright 2026 Audrey, licensed under MIT, and modified by Renderhaus
+on 2026-10-09. Their complete copyright and permission notices remain in
+`third_party/hyperframes-cinematic-caption/LICENSE` and
+`third_party/hyperframes-tactile-collage/LICENSE`. Those adapted resources retain
+MIT licensing; this existing owning skill retains its Apache-2.0 attribution.
 
 ## Select the workflow
 
@@ -40,7 +49,18 @@ Choose a pattern from the supplied brief:
 | Faceless explainer | Turn supplied notes, an article, or a changelog into a teaching sequence. Use typography, diagrams, and supplied data. Keep claims traceable to the source. No website capture or invented product screenshots. |
 | Product launch | Preserve supplied brand colors, fonts, screenshots, and approved copy. Plan a hook, the product benefit, evidence, and a final call to action. A supplied screenshot is the source of truth for a site tour. Report missing source material. |
 | Captions overlay | Use supplied transcript and measured word timings. Preserve the source footage. Default to a readable caption rail, with emphasis on a few words. Keep text inside safe areas and away from faces. Transcription, subject matting, and text behind a subject are unavailable. |
+| Cinematic captions | Read [the cinematic recipe](references/cinematic-caption.md) before planning ordered support, hero, and CTA cues. Use supplied speech timings. Depth requires a future worker and a supplied clean, frame-locked matte. |
+| Tactile paper collage | Read [the collage recipe](references/tactile-collage.md) before choosing a physical metaphor, full-frame or overlay mode, and a stable caption lane. Source footage and matte handling require the future worker. |
 | Kinetic titles | Plan a short, unnarrated title, lower third, logo reveal, or numeric callout. Use the approved brand kit and supplied logo or data. Hold text long enough to read and leave a clear final frame. |
+
+For either pack, read [the template catalog](templates/catalog.json), then its
+listed HTML file through the skill filesystem. Copy the entry's `arguments` and
+add `html` containing the actual file contents. Templates are asset-free,
+full-frame samples with invented copy and illustrative timings. They require
+host-provided GSAP and create no source footage, subject matte, or proof frames.
+Keep the envelope consistent with the root after changes. The catalog adds no
+tool or top-level skill. Unnamed caption and collage animation requests stay on
+Remotion even when HyperFrames is enabled.
 
 ## Plan and author
 
@@ -70,7 +90,8 @@ If requested, discover `ElevenLabs___text_to_speech_convert` and use `call_audio
 with the exact schema, authorized voice ID, and approved text. Preserve its result.
 Speech generation follows the existing approval and spending gates. It does not make
 the HyperFrames export complete. Do not call HeyGen TTS, avatars, music, or hosted renders.
-Ideogram and Recraft are unavailable integrations; do not invent tools for them.
+If separately authorized assets are needed, use the `image-gen` skill and its
+current discovered schemas. Asset generation does not complete a HyperFrames export.
 
 ## Preview through the editor
 

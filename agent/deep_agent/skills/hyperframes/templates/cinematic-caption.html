@@ -1,0 +1,55 @@
+<!doctype html>
+<!--
+Adapted from audrey-560/hyperframes-cinematic-caption, commit
+6cdb01d74949cab379e048e9092709adbb3b203b, references/style-system.md and
+references/dynamic-layout-recipes.md. Copyright (c) 2026 Audrey. MIT License.
+Full copyright and permission notice: third_party/hyperframes-cinematic-caption/LICENSE.
+Modified by Renderhaus on 2026-10-09 into an asset-free, full-frame sample.
+The host must provision GSAP and the isolated renderer. Dry-run never executes this HTML.
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Cinematic caption recipe</title>
+    <style>
+      * { box-sizing: border-box; }
+      html, body { margin: 0; width: 100%; height: 100%; }
+      #cc-root { position: relative; width: 100%; height: 100%; overflow: hidden; background: #10151b; color: #f2f5f7; font-family: Arial, sans-serif; font-synthesis: none; }
+      .clip { position: absolute; left: 120px; width: 840px; }
+      .cc-motion { opacity: 0; }
+      #cc-support { top: 390px; font-size: 64px; line-height: 1.1; }
+      #cc-hero { top: 478px; font-size: 172px; font-weight: 700; line-height: 1; letter-spacing: -2px; }
+      #cc-qualifier { top: 692px; font-size: 54px; line-height: 1.1; }
+      #cc-cta-setup { top: 940px; font-size: 46px; line-height: 1.1; }
+      #cc-cta-action { top: 1012px; font-family: Georgia, serif; font-size: 60px; line-height: 1.1; }
+      #cc-cta-keyword { top: 1094px; font-size: 120px; font-weight: 700; line-height: 1; }
+      #cc-cta-tail { top: 1252px; font-size: 46px; line-height: 1.1; }
+    </style>
+  </head>
+  <body>
+    <div id="cc-root" data-composition-id="cinematic-caption" data-width="1080" data-height="1920" data-fps="30" data-duration="8">
+      <div id="cc-support" class="clip" data-start="0.3" data-duration="4.1"><div id="cc-support-motion" class="cc-motion">Make room for</div></div>
+      <div id="cc-hero" class="clip" data-start="1.2" data-duration="3.2"><div id="cc-hero-motion" class="cc-motion">ideas.</div></div>
+      <div id="cc-qualifier" class="clip" data-start="2.2" data-duration="2.2"><div id="cc-qualifier-motion" class="cc-motion">One thought at a time.</div></div>
+      <div id="cc-cta-setup" class="clip" data-start="4.8" data-duration="3"><div id="cc-cta-setup-motion" class="cc-motion">Start with a thought.</div></div>
+      <div id="cc-cta-action" class="clip" data-start="5.5" data-duration="2.3"><div id="cc-cta-action-motion" class="cc-motion">Give it</div></div>
+      <div id="cc-cta-keyword" class="clip" data-start="6.1" data-duration="1.7"><div id="cc-cta-keyword-motion" class="cc-motion">space.</div></div>
+      <div id="cc-cta-tail" class="clip" data-start="6.7" data-duration="1.1"><div id="cc-cta-tail-motion" class="cc-motion">See where it leads.</div></div>
+    </div>
+    <script>
+      const timeline = gsap.timeline({ paused: true });
+      timeline.fromTo("#cc-support-motion", { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: 0.22, ease: "power2.out" }, 0.3);
+      timeline.fromTo("#cc-hero-motion", { opacity: 0, scale: 0.94 }, { opacity: 1, scale: 1, duration: 0.32, ease: "power3.out" }, 1.2);
+      timeline.fromTo("#cc-qualifier-motion", { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.22, ease: "power2.out" }, 2.2);
+      timeline.to("#cc-support-motion", { opacity: 0, duration: 0.2 }, 4.2);
+      timeline.to("#cc-hero-motion", { opacity: 0, duration: 0.2 }, 4.2);
+      timeline.to("#cc-qualifier-motion", { opacity: 0, duration: 0.2 }, 4.2);
+      timeline.fromTo("#cc-cta-setup-motion", { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.22, ease: "power2.out" }, 4.8);
+      timeline.fromTo("#cc-cta-action-motion", { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.22, ease: "power2.out" }, 5.5);
+      timeline.fromTo("#cc-cta-keyword-motion", { opacity: 0, scale: 0.96 }, { opacity: 1, scale: 1, duration: 0.3, ease: "power3.out" }, 6.1);
+      timeline.fromTo("#cc-cta-tail-motion", { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.22, ease: "power2.out" }, 6.7);
+      window.__timelines = window.__timelines || {};
+      window.__timelines["cinematic-caption"] = timeline;
+    </script>
+  </body>
+</html>

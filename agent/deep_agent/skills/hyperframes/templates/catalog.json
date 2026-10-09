@@ -1,0 +1,20 @@
+{
+  "cinematic-caption": {
+    "html_file": "cinematic-caption.html",
+    "arguments": {
+      "duration_seconds": 8,
+      "width": 1080,
+      "height": 1920,
+      "fps": 30
+    }
+  },
+  "tactile-collage": {
+    "html_file": "tactile-collage.html",
+    "arguments": {
+      "duration_seconds": 8,
+      "width": 1080,
+      "height": 1920,
+      "fps": 30
+    }
+  }
+}

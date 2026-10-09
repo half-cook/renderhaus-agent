@@ -212,9 +212,13 @@ class HyperFramesPackRoutingTests(unittest.TestCase):
                     for prompt in ("HyperFrames cinematic caption over product footage", "HyperFrames tactile collage video"):
                         with self.subTest(enabled=enabled, confidential=confidential, prompt=prompt):
                             route = route_intent(prompt, confidential=confidential)
-                            self.assertEqual((route.skill, route.alias), ("hyperframes", "hyperframes_render"))
+                            self.assertEqual(route.skill, "hyperframes")
                             self.assertEqual(route.status, "ready" if enabled == "true" else "blocked")
                             self.assertEqual(route.tool, HYPERFRAMES_TOOL.name if enabled == "true" else None)
+                            if enabled == "true":
+                                self.assertEqual(route.alias, "hyperframes_render")
+                            else:
+                                self.assertIn("disabled", route.reason.lower())
 
     def test_style_requests_preserve_specialized_edits_and_still_images(self):
         from agent.deep_agent.routing import route_intent

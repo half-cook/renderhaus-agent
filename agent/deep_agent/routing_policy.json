@@ -1970,6 +1970,12 @@
       "capability": "motion_graphics"
     },
     {
+      "pattern": "^(?!.*\\b(?:image|photo|poster|still)\\b).*(?:\\b(?:cinematic|editorial)\\s+captions?\\b|\\bcaptions?\\b.*\\b(?:clip|footage|video)\\b|\\b(?:tactile(?:\\s+paper)?|paper)\\s+collage\\b.*\\b(?:video|animation|motion)\\b|\\banimated\\s+(?:paper\\s+)?(?:collage|scrapbook)\\b|\\bcollage\\s+(?:video|animation)\\b)",
+      "skill": "motion-graphics",
+      "abstract_tool": "remotion_render",
+      "capability": "motion_graphics"
+    },
+    {
       "pattern": "\\b(?:change|fix|edit|remove|replace)\\b.*(?:headline|typo|text|banner|poster|background person|photo|image)|ideogram.*\\b(?:edit|inpaint)\\b",
       "skill": "image-gen",
       "abstract_tool": "gpt_image25_edit",
