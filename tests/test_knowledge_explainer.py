@@ -16,6 +16,8 @@ class KnowledgeExplainerRoutingTests(unittest.TestCase):
             "make a silent explainer video about probability",
             "make an explainer video with no narration and sound effects synced to events",
             "no voiceover graphic science explainer with event foley",
+            "make a graphic science explainer without a voiceover",
+            "make a science explainer video without a narrator",
             "graphic explainer with sound effects synced to on-screen events",
             "export a silent knowledge explainer as an MP4",
             "make a knowledge-explainer about the control illusion",
@@ -75,17 +77,28 @@ class KnowledgeExplainerRoutingTests(unittest.TestCase):
                     prompt, {"ElevenLabs___text_to_speech_convert"}))
 
     def test_audio_postprocessing_keeps_the_sfx_route(self):
-        route = route_intent("add foley to this existing silent knowledge explainer",
-                             arguments={"video_url": "https://example.invalid/silent.mp4"})
-        self.assertEqual((route.skill, route.alias, route.tool),
-                         ("audio-bed", "mirelo_v2a", "Fal___mirelo_v2a"))
+        for prompt in [
+            "add foley to this existing silent knowledge explainer",
+            "can you add foley to this existing silent knowledge explainer",
+            "use Mirelo to add foley to this existing silent knowledge explainer",
+            "score the rendered silent knowledge explainer with event foley",
+        ]:
+            with self.subTest(prompt=prompt):
+                route = route_intent(prompt, arguments={"video_url": "https://example.invalid/silent.mp4"})
+                self.assertEqual((route.skill, route.alias, route.tool),
+                                 ("audio-bed", "mirelo_v2a", "Fal___mirelo_v2a"))
 
     def test_no_narration_blocks_tts_but_allows_graphic_assets_and_sfx(self):
         allowed = {"OpenAI___generate_image", "Fal___mirelo_v2a", "ElevenLabs___text_to_sound_effects_convert"}
         speech = {"ElevenLabs___text_to_speech_convert", "ElevenLabs___text_to_speech_convert_with_timestamps",
                   "ElevenLabs___text_to_dialogue_convert", "FishAudio___generate_speech"}
-        prompt = "make a silent graphic explainer video with no narration and synced sound effects"
-        self.assertEqual(filter_request_tools(prompt, allowed | speech), allowed)
+        for prompt in [
+            "make a silent graphic explainer video with no narration and synced sound effects",
+            "make a graphic science explainer without a voiceover",
+            "make a science explainer video without a narrator",
+        ]:
+            with self.subTest(prompt=prompt):
+                self.assertEqual(filter_request_tools(prompt, allowed | speech), allowed)
         self.assertEqual(filter_request_tools("whiteboard explainer with voiceover narration", speech), speech)
 
     def test_sfx_requests_remain_on_audio_bed_and_choose_by_input(self):
@@ -97,6 +110,20 @@ class KnowledgeExplainerRoutingTests(unittest.TestCase):
             with self.subTest(prompt=prompt):
                 route = route_intent(prompt, arguments=arguments)
                 self.assertEqual((route.skill, route.alias, route.tool), ("audio-bed", alias, tool))
+
+    def test_explicit_video_provider_is_preserved_with_disclosure_and_no_speech(self):
+        for provider, alias, tool in [
+            ("Kling", "kling_t2v", "Kling___text_to_video"),
+            ("Runway", "runway_gen45_t2v", "Runway___text_to_video"),
+            ("Luma", "luma_ray3_t2v", "Luma___text_to_video"),
+        ]:
+            with self.subTest(provider=provider):
+                prompt = f"use {provider} to make a silent knowledge explainer video"
+                route = route_intent(prompt)
+                self.assertEqual((route.skill, route.alias, route.tool), ("named-provider", alias, tool))
+                self.assertEqual(route.basis, "explicit")
+                self.assertTrue(route.disclosure)
+                self.assertEqual(filter_request_tools(prompt, {"ElevenLabs___text_to_speech_convert"}), set())
 
     def test_confidential_metadata_and_price_words_do_not_change_renderer(self):
         for tier in [None, "draft", "premium"]:
