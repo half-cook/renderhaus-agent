@@ -1,8 +1,7 @@
-"""Consent-gated, asynchronous HeyGen Avatar V jobs with saved provenance."""
-
 from __future__ import annotations
 
 import ipaddress
+import math
 import os
 import re
 import socket
@@ -38,6 +37,7 @@ class JobManifest(BaseModel):
     group_id: str | None = None
     provider_video_id: str | None = None
     duration_seconds: float = Field(gt=0, le=1800)
+    estimated_cost_usd: float | None = Field(default=None, ge=0)
     actual_duration_seconds: float | None = Field(default=None, gt=0)
     subjects: str = Field(min_length=1)
     consent_confirmed: Literal[True]
@@ -146,7 +146,7 @@ def _read(job_id: str) -> JobManifest:
 
 def _summary(manifest: JobManifest) -> dict[str, Any]:
     return {**manifest.model_dump(exclude={"artifact_key", "audio_reference"}),
-            **contracts.TRAINING_METADATA, "estimated_cost_usd": None, "downloaded": False}
+            **contracts.TRAINING_METADATA, "downloaded": False}
 
 
 def _request(method: str, path: str, *, body: dict[str, Any] | None = None,
@@ -195,6 +195,15 @@ def _preflight(request: contracts.AvatarRequest) -> str:
     return group_id
 
 
+def _cost_estimate(request: contracts.AvatarRequest) -> float | None:
+    from server.billing_rates import _with_fee, heygen_price_cents
+
+    try:
+        return _with_fee(math.ceil(heygen_price_cents(request.model_dump()))).total_cents / 100
+    except ValueError:
+        return None
+
+
 def create_avatar_video(
     avatar_id: str, duration_seconds: float, subjects: str, consent_confirmed: bool,
     consent_record_id: str, script: str | None = None, voice_id: str | None = None,
@@ -208,6 +217,7 @@ def create_avatar_video(
     job_id = f"heygen:{'dry' if is_dry else 'live'}:{uuid.uuid4().hex}"
     manifest = JobManifest(job_id=job_id, model=request.model, status="dry_run" if is_dry else "submitting",
                            avatar_id=request.avatar_id, duration_seconds=request.duration_seconds,
+                           estimated_cost_usd=_cost_estimate(request),
                            subjects=request.subjects, consent_confirmed=request.consent_confirmed,
                            consent_record_id=request.consent_record_id, voice_id=request.voice_id,
                            audio_reference=contracts.reference_for_metadata(request.audio_url) if request.audio_url else None)
@@ -296,7 +306,17 @@ def _download(url: str, output: Path) -> None:
 
 
 def _completed(manifest: JobManifest, output: Path) -> dict[str, Any]:
-    return {**_summary(manifest), "downloaded": True, "output_path": str(output)}
+    result = {**_summary(manifest), "downloaded": True, "output_path": str(output)}
+    if manifest.artifact_key and _bucket():
+        try:
+            url = _store_client().generate_presigned_url(
+                "get_object", Params={"Bucket": _bucket(), "Key": manifest.artifact_key}, ExpiresIn=3600,
+            )
+            contracts.validate_media_reference(url, allow_asset=False)
+        except Exception:
+            raise RuntimeError("Saved HeyGen artifact URL could not be issued; reuse the accepted job.") from None
+        result["video_url"] = url
+    return result
 
 
 def get_video_status(job_id: str, download: bool = False) -> dict[str, Any]:
@@ -357,6 +377,8 @@ def get_video_status(job_id: str, download: bool = False) -> dict[str, Any]:
         if isinstance(code, str) and re.fullmatch(r"[A-Za-z0-9_.-]{1,100}", code):
             result["failure_code"] = code
     _save(manifest)
+    if result.get("downloaded"):
+        return {**result, **_completed(manifest, output)}
     return {**_summary(manifest), **result}
 
 

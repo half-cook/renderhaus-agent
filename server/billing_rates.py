@@ -574,6 +574,23 @@ SYNC_PRICING_READ_DATE = "2026-10-09"
 SYNC_FAL_PRICING_URL = "https://fal.ai/models/fal-ai/sync-lipsync/v3"
 SYNC_DIRECT_PRICING_URL = "https://sync.so/docs/product/billing"
 
+HEYGEN_PRICING_URL = "https://help.heygen.com/en/articles/10060327-heygen-api-pricing-explained"
+HEYGEN_PRICING_READ_DATE = "2026-10-09"
+# Official Avatar V Digital Twin API PAYG rate: $7.20/min, charged per actual second.
+HEYGEN_AVATAR_V_CENTS_PER_SECOND = Decimal("12")
+
+
+def heygen_price_cents(arguments: dict[str, Any]) -> Decimal:
+    """Self-serve list quote; script duration is an estimate, not a render control."""
+    from providers.heygen.contracts import request_for
+
+    request = request_for(arguments)
+    if request.model != "avatar_v":
+        raise ValueError("UNVERIFIED HeyGen model; estimate unknown.")
+    if os.getenv("HEYGEN_API_PLAN", "unknown") == "enterprise":
+        raise ValueError("HeyGen enterprise negotiated price is unknown.")
+    return Decimal(str(request.duration_seconds)) * HEYGEN_AVATAR_V_CENTS_PER_SECOND
+
 
 def sync_price_cents(arguments: dict[str, Any]) -> Decimal:
     """Published usage estimate; subscriptions, storage and concat compute are excluded."""
@@ -597,6 +614,17 @@ def cost_for(provider: str, tool: str, arguments: dict[str, Any]) -> GenerationC
     (to charge the same amount), so it must be a pure function of the
     request, not of anything the provider returns.
     """
+    if provider == "heygen":
+        if tool in {"get_video_status", "list_avatars", "list_voices"}:
+            return GenerationCost(0, 0)
+        if tool != "create_avatar_video":
+            raise ValueError("Unknown HeyGen tool.")
+        from providers.heygen.api import dry_run
+
+        cents = heygen_price_cents(arguments) if not dry_run(arguments) else None
+        if cents is None:
+            return GenerationCost(0, 0)
+        return _with_fee(math.ceil(cents))
     if provider == "sync":
         if tool == "get_video_task":
             return GenerationCost(0, 0)

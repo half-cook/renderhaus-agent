@@ -47,6 +47,10 @@ class MemoryS3:
     def upload_file(self, *, Filename, Bucket, Key, ExtraArgs):
         self.objects[Key] = Path(Filename).read_bytes()
 
+    def generate_presigned_url(self, method, *, Params, ExpiresIn):
+        assert method == "get_object" and Params["Key"] in self.objects
+        return "https://offline-bucket.s3.amazonaws.com/" + Params["Key"] + "?signature=offline-only"
+
     def download_file(self, *, Bucket, Key, Filename):
         Path(Filename).write_bytes(self.objects[Key])
 
@@ -130,7 +134,7 @@ class HeyGenProviderTests(unittest.TestCase):
         self.assertTrue(result["job_id"].startswith("heygen:dry:"))
         self.assertEqual(result["request_preview"]["engine"], {"type": "avatar_v"})
         self.assertFalse(result["training_eligible"])
-        self.assertIsNone(result["estimated_cost_usd"])
+        self.assertEqual(result["estimated_cost_usd"], 7.02)
         self.assertEqual(self.requests, [])
 
     def test_dry_handle_never_polls_live_after_configuration_changes(self):
@@ -354,6 +358,9 @@ class HeyGenProviderTests(unittest.TestCase):
                 os.environ["RENDERHAUS_MEDIA_DIR"] = cold
                 restored = self.api.get_video_status(result["job_id"], download=True)
                 self.assertTrue(restored["downloaded"])
+                self.assertTrue(restored["video_url"].startswith("https://offline-bucket.s3.amazonaws.com/"))
+                self.assertTrue(completed["video_url"].startswith("https://offline-bucket.s3.amazonaws.com/"))
+                self.assertNotIn("signature", json.dumps({k: v for k, v in storage.objects.items() if k.endswith(".json")}, default=str))
                 self.assertEqual(Path(restored["output_path"]).read_bytes(), MP4_BYTES)
                 self.assertNotEqual(completed["output_path"], restored["output_path"])
                 self.assertEqual(restored["consent_record_id"], "consent_record_123")
