@@ -291,6 +291,8 @@ def _visual_metadata(clip: dict[str, Any], *, measure_remote: bool = False,
         video = next((s for s in probe["streams"] if s.get("codec_type") == "video"), None)
         if video is None:
             raise ValueError("A video visual must contain a video stream.")
+        if "crop_box" in clip or clip.get("fit") == "pad_blur":
+            _require_square_reframe_source(video)
         size = _media_dimensions(video)
         rate = video.get("avg_frame_rate") or video.get("r_frame_rate")
         if rate and rate != "0/0":
@@ -318,6 +320,18 @@ def _refuse_lambda_reframe(items: list[dict[str, Any]]) -> None:
     if any({"crop_box", "cropBox", "pad_box", "padBox", "reframe_size", "reframeSize", "allow_upscale", "allowUpscale"}.intersection(item)
            or item.get("fit") == "pad_blur" for item in items):
         raise ValueError("Lambda reframing is not deployed; use the local/worker backend for crop_box and pad_blur.")
+
+
+def _require_square_reframe_source(video: dict[str, Any]) -> None:
+    sar = video.get("sample_aspect_ratio")
+    if sar in {None, "", "N/A", "0:1"}:
+        return
+    try:
+        square = Fraction(str(sar).replace(":", "/")) == 1
+    except (ValueError, ZeroDivisionError):
+        square = False
+    if not square:
+        raise ValueError("Reframing requires square source pixels (SAR 1:1); normalize anamorphic media first.")
 
 
 def _reframe_canvas(videos: list[dict[str, Any]], metadata: list[_VisualMetadata],

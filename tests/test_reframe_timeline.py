@@ -64,6 +64,19 @@ class ReframeTimelineContractTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             validate_remotion_timeline_arguments({"visuals": [self.visual(pad_box=box)]})
 
+    def test_even_rounded_crop_plan_can_be_used_as_the_timeline_canvas(self):
+        from providers.ffmpeg.reframe import crop_plan
+
+        for source, aspect in (((1920, 804), "16:9"), ((1081, 1921), "16:9"),
+                               ((320, 180), "2.39:1")):
+            with self.subTest(source=source, aspect=aspect):
+                plan = crop_plan(*source, aspect, target_size=api.choose_canvas(aspect, [source]))
+                props = api.build_timeline_props("Even crop", [self.visual(crop_box=plan["crop_box"],
+                    reframe_size={"width": plan["width"], "height": plan["height"]})],
+                    aspect_ratio=aspect, measure_local=False)
+                config = props["renderConfig"]
+                self.assertEqual((config["width"], config["height"]), (plan["width"], plan["height"]))
+
 
 @unittest.skipUnless(shutil.which("ffmpeg") and shutil.which("ffprobe"), "ffmpeg/ffprobe absent")
 class ReframeTimelineRenderTests(unittest.TestCase):
@@ -172,6 +185,22 @@ class ReframeTimelineRenderTests(unittest.TestCase):
         _, _, result = self.render([visual])
         self.assertTrue(result["upscaled"])
         self.assertTrue(any("no added detail" in warning for warning in result["warnings"]))
+
+    def test_anamorphic_source_is_refused_by_planner_and_normalized_worker_contract(self):
+        source = self.root / "anamorphic.mp4"
+        subprocess.run(["ffmpeg", "-nostdin", "-hide_banner", "-v", "error", "-n", "-i", str(self.source),
+            "-vf", "setsar=2/1", "-c:v", "libx264", "-threads", "1", "-c:a", "copy", str(source)],
+            check=True, capture_output=True, timeout=30)
+        self.addCleanup(source.unlink)
+        visual = self.visual(output_path=str(source), source_fps=24,
+            crop_box={"x": 0, "y": 0, "width": 180, "height": 180},
+            reframe_size={"width": 180, "height": 180})
+        with self.assertRaisesRegex(ValueError, "square.*SAR"):
+            api.build_timeline_props("Anamorphic", [visual], aspect_ratio="1:1")
+        props = api.build_timeline_props("Unmeasured", [visual], aspect_ratio="1:1", measure_local=False)
+        with tempfile.TemporaryDirectory(dir=self.root) as temporary, self.assertRaisesRegex(ValueError, "square.*SAR"):
+            local._command(props, Path(temporary), media_roots=(self.root,),
+                           source_root=self.root, filename="output.mp4")
 
 
 if __name__ == "__main__":

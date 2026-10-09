@@ -214,6 +214,10 @@ def _command(props: dict[str, Any], directory: Path, *, media_roots: tuple[Path,
                 sources[asset['url']] = source, _probe(source)
             source, probe = sources[asset['url']]
             kind = asset['kind']
+            if 'cropBox' in item or item.get('fit') == 'pad_blur':
+                from providers.remotion.api import _require_square_reframe_source
+
+                _require_square_reframe_source(next(s for s in probe['streams'] if s.get('codec_type') == 'video'))
             rate = float(item.get('playbackRate', 1))
             command += ['-protocol_whitelist', 'file,pipe', '-format_whitelist', FORMATS]
             if kind == 'image':

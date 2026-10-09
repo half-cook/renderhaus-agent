@@ -158,6 +158,7 @@ def reframe_shots(master: str, source_width: int, source_height: int, aspect: st
 
 def _row_arguments(row: dict, brief: dict, job: Path, master: Path, source: dict) -> tuple[dict, list[dict]]:
     video = next(s for s in source["streams"] if s["codec_type"] == "video")
+    api._require_square_reframe_source(video)
     duration = float(source["format"]["duration"])
     start, end = row.get("start_s", 0), row.get("end_s", duration)
     if any(isinstance(v, bool) or not isinstance(v, (int, float)) or abs(v) > 600
