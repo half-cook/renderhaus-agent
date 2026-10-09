@@ -89,6 +89,10 @@ Renderhaus's standard Messages requests use global routing, without those modifi
 Partner hosts, discounts and taxes require separate pricing. Unknown models have no invented rate.
 No live model invocation was performed.
 
+The [lighthouse operator driver](E2E_LIGHTHOUSE.md) defaults to a plan-only run and
+supports a $5 cap shared by model and media calls for an explicitly authorized live run.
+It was tested with fake models and provider dispatch only.
+
 Claude is a proprietary commercial API under the
 [Anthropic Commercial Terms](https://www.anthropic.com/legal/commercial-terms), read 2026-10-09.
 The terms assign output rights to the customer and restrict training competing models.

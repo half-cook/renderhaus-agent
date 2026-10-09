@@ -11,7 +11,7 @@ from pathlib import Path
 import re
 import sys
 import time
-from typing import Any
+from typing import Any, Protocol
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
@@ -36,8 +36,15 @@ SEARCH_TOOL = types.Tool(name=SEARCH_NAME, description=(
 logger = logging.getLogger(__name__)
 
 
+class LocalSpendGuard(Protocol):
+    def reserve_media(self, tool_name: str, estimate_cents: int) -> str | None: ...
+
+    def settle_media(self, tool_name: str, estimate_cents: int, *, charged: bool) -> None: ...
+
+
 class LocalGateway:
-    def __init__(self, *, max_spend_cents: int | None = None, ledger: Path | None = None) -> None:
+    def __init__(self, *, max_spend_cents: int | None = None, ledger: Path | None = None,
+                 spend_guard: LocalSpendGuard | None = None) -> None:
         if max_spend_cents is not None and max_spend_cents < 0:
             raise ValueError('max_spend_cents must be nonnegative.')
         self.tools: dict[str, tuple[str, str, dict[str, Any]]] = {}
@@ -46,6 +53,9 @@ class LocalGateway:
                 name = f'{provider.target_name}___{schema["name"]}'
                 self.tools[name] = (provider.id, schema['name'], {**schema, 'name': name})
         self.max_spend_cents = max_spend_cents
+        if spend_guard is not None and max_spend_cents is None:
+            raise ValueError('A shared spend guard requires max_spend_cents.')
+        self.spend_guard = spend_guard
         self.ledger = ledger
         self.spent_cents = 0
         self.reserved_cents = 0
@@ -84,6 +94,7 @@ class LocalGateway:
         started = time.monotonic()
         estimate = 0
         attempted = False
+        cancellation: asyncio.CancelledError | None = None
         payload: dict[str, Any]
         if name == SEARCH_NAME:
             try:
@@ -108,6 +119,8 @@ class LocalGateway:
                 async with self._spend_lock:
                     if not blocked and self.spent_cents + self.reserved_cents + estimate > self.max_spend_cents:
                         blocked = 'Local spend cap would be exceeded.'
+                    if not blocked and self.spend_guard:
+                        blocked = self.spend_guard.reserve_media(name, estimate) or ''
                     if not blocked:
                         self.reserved_cents += estimate
             if blocked:
@@ -117,6 +130,10 @@ class LocalGateway:
                 try:
                     result = await asyncio.to_thread(dispatch, provider, verb, arguments)
                     payload = result if isinstance(result, dict) else {'result': result}
+                except asyncio.CancelledError as exc:
+                    cancellation = exc
+                    payload = {'status': 'unknown', 'error': 'Cancelled provider call; reconcile provider history.',
+                               'error_type': 'CancelledError'}
                 except Exception as exc:
                     payload = {'error': 'Local provider dispatch failed.', 'error_type': type(exc).__name__}
                 if self.max_spend_cents is not None:
@@ -125,7 +142,10 @@ class LocalGateway:
                         # A timeout/error after dispatch may still incur provider charges.
                         if payload.get('status') != 'dry_run':
                             self.spent_cents += estimate
+                        if self.spend_guard:
+                            self.spend_guard.settle_media(name, estimate, charged=payload.get('status') != 'dry_run')
         record = {'event': 'local_gateway_call', 'tool': name,
+                  'attempted': attempted,
                   'status': payload.get('status', 'error' if payload.get('error') else 'succeeded'),
                   'error_type': payload.get('error_type'),
                   'latency_ms': round((time.monotonic() - started) * 1000),
@@ -136,6 +156,8 @@ class LocalGateway:
             self.ledger.parent.mkdir(parents=True, exist_ok=True)
             with self.ledger.open('a') as file:
                 file.write(json.dumps(record, sort_keys=True) + '\n')
+        if cancellation:
+            raise cancellation
         return types.CallToolResult(content=[types.TextContent(type='text', text=json.dumps(payload, default=str))],
                                     structured_content=payload, is_error=bool(payload.get('error')))
 
