@@ -188,7 +188,30 @@ def _read(job_id: str, kind: str) -> JobManifest:
         raise ValueError("Saved Sync job metadata was not found; no provider request was made.")
     try:
         manifest = JobManifest.model_validate_json(content)
-        if not manifest.request_id and kind != "chunks" and path.is_file():
+        if kind == "chunks" and path.is_file():
+            local_manifest = JobManifest.model_validate_json(path.read_text())
+            identity_fields = (
+                "job_id", "transport", "model", "endpoint_id", "request_id", "endpoint_handle",
+                "subjects", "consent_confirmed", "source_duration_seconds", "audio_duration_seconds",
+                "source_fps", "source_width", "source_height", "output_duration_seconds", "sync_mode",
+                "video_reference", "audio_reference", "created_at",
+            )
+            if any(getattr(manifest, field) != getattr(local_manifest, field) for field in identity_fields):
+                raise ValueError("Saved Sync aggregate identities conflict.")
+            remote_plan = [(child.index, child.start_seconds, child.end_seconds, child.duration_seconds) for child in manifest.chunks]
+            local_plan = [(child.index, child.start_seconds, child.end_seconds, child.duration_seconds) for child in local_manifest.chunks]
+            if remote_plan != local_plan:
+                raise ValueError("Saved Sync chunk plans conflict.")
+            for remote_child, local_child in zip(manifest.chunks, local_manifest.chunks):
+                if remote_child.job_id and local_child.job_id and (
+                    remote_child.job_id, remote_child.provider_handle
+                ) != (local_child.job_id, local_child.provider_handle):
+                    raise ValueError("Saved Sync accepted chunk identities conflict.")
+            if sum(child.job_id is not None for child in local_manifest.chunks) > sum(child.job_id is not None for child in manifest.chunks):
+                if any(remote.job_id and not local.job_id for remote, local in zip(manifest.chunks, local_manifest.chunks)):
+                    raise ValueError("Saved Sync accepted chunks conflict.")
+                manifest = local_manifest
+        elif not manifest.request_id and path.is_file():
             local_manifest = JobManifest.model_validate_json(path.read_text())
             if local_manifest.request_id and local_manifest.job_id == manifest.job_id:
                 manifest = local_manifest
