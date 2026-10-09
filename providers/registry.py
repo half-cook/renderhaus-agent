@@ -93,22 +93,13 @@ TOOL_GUIDANCE: dict[str, dict[str, str]] = {
         ),
     },
     "seedance": {
-        "text_to_video": (
-            "Use when the user needs a new video clip from text and no source image must be "
-            "preserved. Returns a queued task id; follow with get_video_task until terminal."
-        ),
-        "image_to_video": (
-            "Use when the user wants an existing image animated into a video clip. Requires an "
-            "image URL and returns a queued task id; follow with get_video_task until terminal."
-        ),
-        "get_video_task": (
-            "Use only after text_to_video or image_to_video returned a task id. Poll once per call "
-            "until succeeded, failed, cancelled, or dry_run; it does not create a new video."
-        ),
-        "list_seedance_models": (
-            "Use only when model selection or availability is relevant; it does not generate media. "
-            "Prefer the configured default for ordinary video requests."
-        ),
+        "text_to_video": "Submit Seedance 2.5 synthetic dialogue video through fal US-hosted endpoints by default. Paid video requires cost approval, including autonomous runs. Returns job_id; poll get_video_task with download=true until terminal. Outputs are not training eligible.",
+        "image_to_video": "Animate a synthetic image with Seedance 2.5 and optional end frame. Real-person references are forbidden. A measured source_aspect_ratio is needed for a known cost estimate. Paid video requires approval; poll get_video_task for the finished MP4.",
+        "reference_to_video": "Generate Seedance 2.5 synthetic-character video using up to 30 image, 10 video and 10 audio references. Require measured video durations/fps and audio durations. Real-person references are forbidden. Paid video requires approval with cost, including autonomous runs.",
+        "edit_video": "Edit a synthetic source video using Seedance 2.5 via fal reference-to-video task=editing. Requires measured source duration/fps; source_aspect_ratio is needed for known cost. Source timing is preserved. Real-person inputs are forbidden. Paid video requires approval with cost, including autonomous runs.",
+        "extend_video": "Continue a synthetic source clip using Seedance 2.5 via fal task=extension. Requires measured source duration/fps; source_aspect_ratio is needed for known cost. duration_seconds requests generated output duration, not a promised stitched timeline length. Real-person inputs are forbidden. Paid video requires cost approval, including autonomous runs.",
+        "get_video_task": "Poll an existing Seedance task once. fal job handles reuse the fal queue poller. Never submits a generation. Call download=true after success to obtain the MP4.",
+        "list_seedance_models": "List verified Seedance models, transports, and API sources offline. No credential or network request. BytePlus is unavailable to US customers and requires written platform authorization for live integration.",
     },
     "remotion": {
         "prepare_conversational_edit": (

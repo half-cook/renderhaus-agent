@@ -94,53 +94,96 @@ def elevenlabs_quote(tool: str, arguments: dict[str, Any]) -> GenerationCost:
     return _with_fee(math.ceil(characters * multiplier * rate / 1000))
 
 
-# -- Seedance (video) ---------------------------------------------------
-# BytePlus's own worked example (1080p 16:9, 5s = $0.612, 10s = $1.224)
-# reverse-engineers almost exactly to $0.0025 per 1,000 tokens at 24fps,
-# tokens = width * height * fps * duration_seconds / 1024. Verified this
-# formula against both of BytePlus's published numbers before using it --
-# see the conversation this shipped in for the arithmetic.
-# https://www.byteplus.com/en/blog/seedance-1-0-pro-guide-api-pricing
-SEEDANCE_TOKEN_RATE_CENTS_PER_1K = 0.25  # $0.0025 = 0.25 cents
-SEEDANCE_FPS = 24
-
-# Matches studio/lib/canvas/story.ts's RESOLUTION_SHORT_SIDE -- same short
-# side, so a node's on-canvas size and its billed cost agree on what
-# "1080p" etc. actually mean.
-RESOLUTION_SHORT_SIDE = {
-    "480p": 480,
-    "720p": 720,
-    "1080p": 1080,
-    "1K": 1024,
-    "2K": 2048,
-    "3K": 3072,
+# Official Seedance token pricing, read 2026-10-09.
+# https://fal.ai/models/bytedance/seedance-2.5/reference-to-video
+# https://fal.ai/models/bytedance/seedance-2.5/us/reference-to-video
+# https://docs.byteplus.com/id/docs/modelark/model-pricing?redirect=1
+# BytePlus actual usage.completion_tokens is authoritative. Its video-input minimum
+# floor table is UNVERIFIED, so video-input BytePlus estimates remain unknown.
+SEEDANCE_PRICING_VERIFIED_ON = "2026-10-09"
+SEEDANCE_FAL_PRICING_URL = "https://fal.ai/models/bytedance/seedance-2.5/reference-to-video"
+SEEDANCE_FAL_US_PRICING_URL = "https://fal.ai/models/bytedance/seedance-2.5/us/reference-to-video"
+SEEDANCE_BYTEPLUS_PRICING_URL = "https://docs.byteplus.com/id/docs/modelark/model-pricing?redirect=1"
+SEEDANCE_FAL_USD_PER_M_TOKENS = {
+    "global": {"480p": Decimal("21.4"), "720p": Decimal("21.4"), "1080p": Decimal("23.4")},
+    "us": {"480p": Decimal("25.68"), "720p": Decimal("25.68"), "1080p": Decimal("28.08")},
 }
+SEEDANCE_BYTEPLUS_USD_PER_M_TOKENS = {
+    False: {"480p": Decimal("10.7"), "720p": Decimal("10.7"), "1080p": Decimal("11.7")},
+    True: {"480p": Decimal("6.4"), "720p": Decimal("6.4"), "1080p": Decimal("7.0")},
+}
+SEEDANCE_FPS = 24
+RESOLUTION_SHORT_SIDE = {"480p": 480, "720p": 720, "1080p": 1080, "1K": 1024, "2K": 2048, "3K": 3072}
 
 
 def _video_dimensions(resolution: str, aspect_ratio: str) -> tuple[int, int]:
-    short_side = RESOLUTION_SHORT_SIDE.get(resolution, 720)
+    short_side = RESOLUTION_SHORT_SIDE[resolution]
     try:
-        rw_s, rh_s = aspect_ratio.split(":")
-        rw, rh = float(rw_s), float(rh_s)
-    except (ValueError, AttributeError):
-        rw, rh = 16.0, 9.0  # "adaptive" or unrecognized -- assume 16:9
-    is_portrait = rh > rw
-    if is_portrait:
-        width, height = short_side, round(short_side * rh / rw)
+        width_ratio, height_ratio = (Decimal(part) for part in aspect_ratio.split(":"))
+        if not width_ratio.is_finite() or not height_ratio.is_finite() or width_ratio <= 0 or height_ratio <= 0:
+            raise ValueError("Invalid aspect ratio.")
+    except (ValueError, AttributeError, ArithmeticError) as exc:
+        raise ValueError("Seedance cost estimate unknown without a concrete measured aspect ratio.") from exc
+    if height_ratio > width_ratio:
+        return short_side, round(short_side * height_ratio / width_ratio)
+    return round(short_side * width_ratio / height_ratio), short_side
+
+
+def seedance_price_cents(tool: str, arguments: dict[str, Any]) -> Decimal:
+    """Estimate provider cents from documented output dimensions and input/output tokens."""
+    from providers.seedance import contracts
+
+    if tool not in contracts.GENERATING_TOOLS:
+        raise ValueError("Unknown Seedance generation tool.")
+    if not contracts.verified_model(tool, arguments):
+        raise ValueError("UNVERIFIED Seedance model; cost estimate unknown.")
+    host = contracts.transport()
+    model = contracts.effective_model(tool, arguments)
+    resolution = arguments.get("resolution", "720p")
+    if resolution not in contracts.RESOLUTIONS:
+        raise ValueError("Unknown Seedance resolution.")
+    source_seconds = sum(Decimal(str(value)) for value in (arguments.get("reference_video_durations") or []))
+    if len(arguments.get("reference_video_urls") or []) != len(arguments.get("reference_video_durations") or []):
+        raise ValueError("Seedance video reference cost requires measured input durations.")
+    has_video = bool(arguments.get("reference_video_urls")) or tool in {"edit_video", "extend_video"}
+    if tool in {"edit_video", "extend_video"}:
+        if arguments.get("source_duration_seconds") is None:
+            raise ValueError("Seedance edit/extend cost requires measured source_duration_seconds.")
+        source_seconds += Decimal(str(arguments["source_duration_seconds"]))
+    if host == "byteplus" and has_video:
+        raise ValueError("UNVERIFIED BytePlus video-input minimum token floor; cost estimate unknown.")
+    output_seconds = source_seconds if tool == "edit_video" else Decimal(str(arguments.get("duration_seconds", 5)))
+    if not output_seconds.is_finite() or output_seconds < 4 or output_seconds > 30:
+        raise ValueError("Seedance output duration must be known and from 4 to 30 seconds.")
+    ratio = arguments.get("aspect_ratio", "16:9")
+    if tool in {"image_to_video", "edit_video", "extend_video"}:
+        ratio = arguments.get("source_aspect_ratio")
+    width, height = _video_dimensions(resolution, ratio)
+    tokens = Decimal(width * height * SEEDANCE_FPS) * (output_seconds + source_seconds) / Decimal(1024)
+    if host == "fal":
+        region = "us" if "/us/" in model else "global"
+        rate = SEEDANCE_FAL_USD_PER_M_TOKENS[region][resolution]
+        if has_video:
+            rate *= Decimal("0.6")
+    elif model == contracts.MODEL_15:
+        rate = Decimal("2.4") if arguments.get("generate_audio", True) else Decimal("1.2")
     else:
-        width, height = round(short_side * rw / rh), short_side
-    return width, height
+        rate = SEEDANCE_BYTEPLUS_USD_PER_M_TOKENS[False][resolution]
+    return tokens * rate * 100 / Decimal(1_000_000)
 
 
-def _seedance_cost(arguments: dict[str, Any]) -> GenerationCost:
-    resolution = str(arguments.get("resolution") or "720p")
-    aspect_ratio = str(arguments.get("aspect_ratio") or "16:9")
-    duration = arguments.get("duration_seconds")
-    duration_seconds = float(duration) if isinstance(duration, (int, float)) and duration else 5.0
-    width, height = _video_dimensions(resolution, aspect_ratio)
-    tokens = width * height * SEEDANCE_FPS * duration_seconds / 1024
-    provider_cents = round(tokens / 1000 * SEEDANCE_TOKEN_RATE_CENTS_PER_1K)
-    return _with_fee(provider_cents)
+def _seedance_cost(arguments: dict[str, Any], tool: str = "text_to_video") -> GenerationCost:
+    from providers.seedance import api
+
+    if tool == "list_seedance_models":
+        return GenerationCost(0, 0)
+    cleaned = api._validated(tool, arguments)
+    if api.dry_run():
+        return GenerationCost(0, 0)
+    blocker = api.contracts.live_blocker(tool, cleaned)
+    if blocker:
+        raise ValueError(blocker)
+    return _with_fee(math.ceil(seedance_price_cents(tool, cleaned)))
 
 
 # -- Seedream (image) ----------------------------------------------------
@@ -511,7 +554,7 @@ def cost_for(provider: str, tool: str, arguments: dict[str, Any]) -> GenerationC
     if provider == "luma":
         return _luma_cost(tool, arguments)
     if provider == "seedance":
-        return _seedance_cost(arguments)
+        return _seedance_cost(arguments, tool)
     if provider == "seedream":
         return _seedream_cost(arguments)
     if provider == "elevenlabs":

@@ -47,8 +47,6 @@ class ArgumentRule:
         return " ".join(parts)
 
 
-SEEDANCE_RATIOS = ("adaptive", "16:9", "9:16", "1:1", "4:3", "3:4", "21:9")
-SEEDANCE_RESOLUTIONS = ("480p", "720p", "1080p")
 SEEDREAM_RATIOS = ("1:1", "16:9", "9:16")
 SEEDREAM_SIZES = ("1K", "2K", "3K")
 
@@ -143,17 +141,6 @@ TOOL_ARGUMENT_RULES: dict[str, dict[str, dict[str, ArgumentRule]]] = {
         "get_video_task": {
             "job_id": ArgumentRule(pattern=r"[a-fA-F0-9]{8}(?:-[a-fA-F0-9]{4}){3}-[a-fA-F0-9]{12}", pattern_hint="Must be a generation UUID"),
         },
-    },
-    "seedance": {
-        **_rules_for_fields(
-            ("text_to_video", "image_to_video"),
-            {
-                "duration_seconds": ArgumentRule(minimum=4, maximum=12),
-                "aspect_ratio": ArgumentRule(choices=SEEDANCE_RATIOS),
-                "resolution": ArgumentRule(choices=SEEDANCE_RESOLUTIONS),
-                "service_tier": ArgumentRule(choices=("default", "flex")),
-            },
-        ),
     },
     "seedream": {
         **_rules_for_fields(
@@ -359,6 +346,12 @@ def enrich_tool_schema(provider_id: str, tool: dict[str, Any]) -> dict[str, Any]
                 for field, description in contract.FIELD_DESCRIPTIONS.items():
                     if field in properties:
                         properties[field]["description"] = description
+    if provider_id == "seedance":
+        from providers.seedance import contracts
+
+        for field, description in contracts.FIELD_DESCRIPTIONS.items():
+            if field in properties:
+                properties[field]["description"] = description
     if provider_id == "alibaba_modelstudio":
         from providers.alibaba_modelstudio import contracts
 
@@ -432,6 +425,10 @@ def _validate_rule(path: str, value: Any, rule: ArgumentRule) -> None:
 
 
 def _validate_cross_fields(provider_id: str, tool_name: str, arguments: dict[str, Any]) -> None:
+    if provider_id == "seedance":
+        from providers.seedance.contracts import validate_arguments
+
+        validate_arguments(tool_name, arguments)
     if provider_id == "alibaba_modelstudio":
         from providers.alibaba_modelstudio.contracts import validate_arguments
 
@@ -560,6 +557,13 @@ def validate_tool_arguments(
     input_schema: dict[str, Any],
 ) -> dict[str, Any]:
     """Validate every Gateway call at the last boundary before provider I/O."""
+    if provider_id == "seedance":
+        optional = {"model", "service_tier", "seed", "end_image_path_or_url", "source_aspect_ratio",
+                    "reference_image_urls", "reference_video_urls", "reference_audio_urls",
+                    "reference_video_durations", "reference_video_fps", "reference_audio_durations"}
+        for field, value in (arguments or {}).items():
+            if value is None and field not in optional:
+                raise ValueError(f"arguments.{field} cannot be null.")
     if provider_id == "alibaba_modelstudio":
         optional = {"seed", "reference_image_urls", "reference_audio_urls", "reference_audio_durations"}
         for field, value in (arguments or {}).items():
@@ -583,6 +587,10 @@ def validate_tool_arguments(
 
 
 def argument_rules(provider_id: str, tool_name: str) -> dict[str, ArgumentRule]:
+    if provider_id == "seedance":
+        from providers.seedance.contracts import ARGUMENT_RULES
+
+        return ARGUMENT_RULES.get(tool_name, {})
     if provider_id == "alibaba_modelstudio":
         from providers.alibaba_modelstudio.contracts import ARGUMENT_RULES
 

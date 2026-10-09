@@ -1,37 +1,52 @@
 [
   {
     "name": "text_to_video",
-    "description": "Use when the user needs a new video clip from text and no source image must be preserved. Returns a queued task id; follow with get_video_task until terminal.",
+    "description": "Submit Seedance 2.5 synthetic dialogue video through fal US-hosted endpoints by default. Paid video requires cost approval, including autonomous runs. Returns job_id; poll get_video_task with download=true until terminal. Outputs are not training eligible.",
     "inputSchema": {
       "type": "object",
       "properties": {
         "prompt": {
-          "type": "string"
+          "type": "string",
+          "description": "1 to 20000 characters."
         },
         "duration_seconds": {
           "type": "integer",
-          "description": "Allowed range: 4 to 12."
+          "description": "Output duration from 4 to 30 seconds. Edit uses -1 to preserve the measured source duration. Extension requests generated output seconds, not a promised combined timeline length."
         },
         "aspect_ratio": {
           "type": "string",
-          "description": "Allowed values: adaptive, 16:9, 9:16, 1:1, 4:3, 3:4, 21:9."
+          "description": "Allowed values: 16:9, 9:16, 1:1, 4:3, 3:4, 21:9, adaptive."
         },
         "resolution": {
           "type": "string",
           "description": "Allowed values: 480p, 720p, 1080p."
         },
         "model": {
-          "type": "string"
+          "type": "string",
+          "description": "Optional configured model override. Seedance 1.5 is BytePlus only. Unknown models remain UNVERIFIED and dry-run only."
         },
         "watermark": {
-          "type": "boolean"
+          "type": "boolean",
+          "description": "BytePlus visible watermark, enabled by default. fal has no watermark request field; this argument is not sent to fal and does not guarantee a fal watermark."
         },
         "generate_audio": {
           "type": "boolean"
         },
         "service_tier": {
           "type": "string",
-          "description": "One of: default, flex. Allowed values: default, flex."
+          "description": "BytePlus default or flex for 1.5. Seedance 2.5 rejects flex. Not sent to fal."
+        },
+        "seed": {
+          "type": "integer",
+          "description": "Allowed range: 0 to 2.14748e+09."
+        },
+        "real_face_refs": {
+          "type": "boolean",
+          "description": "True when a reference contains a real person's likeness. Seedance rejects these inputs; route generation to Wan with consent."
+        },
+        "user_supplied_real_person_refs": {
+          "type": "boolean",
+          "description": "True for user-supplied real-person photos or videos. These inputs are forbidden for Seedance, even with consent."
         }
       },
       "required": [
@@ -41,7 +56,7 @@
   },
   {
     "name": "image_to_video",
-    "description": "Use when the user wants an existing image animated into a video clip. Requires an image URL and returns a queued task id; follow with get_video_task until terminal.",
+    "description": "Animate a synthetic image with Seedance 2.5 and optional end frame. Real-person references are forbidden. A measured source_aspect_ratio is needed for a known cost estimate. Paid video requires approval; poll get_video_task for the finished MP4.",
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -49,32 +64,54 @@
           "type": "string"
         },
         "prompt": {
-          "type": "string"
+          "type": "string",
+          "description": "1 to 20000 characters."
         },
         "duration_seconds": {
           "type": "integer",
-          "description": "Allowed range: 4 to 12."
+          "description": "Output duration from 4 to 30 seconds. Edit uses -1 to preserve the measured source duration. Extension requests generated output seconds, not a promised combined timeline length."
         },
         "aspect_ratio": {
           "type": "string",
-          "description": "Allowed values: adaptive, 16:9, 9:16, 1:1, 4:3, 3:4, 21:9."
+          "description": "Allowed values: 16:9, 9:16, 1:1, 4:3, 3:4, 21:9, adaptive."
         },
         "resolution": {
           "type": "string",
           "description": "Allowed values: 480p, 720p, 1080p."
         },
         "model": {
-          "type": "string"
+          "type": "string",
+          "description": "Optional configured model override. Seedance 1.5 is BytePlus only. Unknown models remain UNVERIFIED and dry-run only."
         },
         "watermark": {
-          "type": "boolean"
+          "type": "boolean",
+          "description": "BytePlus visible watermark, enabled by default. fal has no watermark request field; this argument is not sent to fal and does not guarantee a fal watermark."
         },
         "generate_audio": {
           "type": "boolean"
         },
         "service_tier": {
           "type": "string",
-          "description": "One of: default, flex. Allowed values: default, flex."
+          "description": "BytePlus default or flex for 1.5. Seedance 2.5 rejects flex. Not sent to fal."
+        },
+        "end_image_path_or_url": {
+          "type": "string"
+        },
+        "source_aspect_ratio": {
+          "type": "string",
+          "description": "Measured input aspect ratio, such as 16:9 or 1280:720. Required for a known cost estimate when the provider derives output aspect from the source; local only."
+        },
+        "seed": {
+          "type": "integer",
+          "description": "Allowed range: 0 to 2.14748e+09."
+        },
+        "real_face_refs": {
+          "type": "boolean",
+          "description": "True when a reference contains a real person's likeness. Seedance rejects these inputs; route generation to Wan with consent."
+        },
+        "user_supplied_real_person_refs": {
+          "type": "boolean",
+          "description": "True for user-supplied real-person photos or videos. These inputs are forbidden for Seedance, even with consent."
         }
       },
       "required": [
@@ -84,8 +121,293 @@
     }
   },
   {
+    "name": "reference_to_video",
+    "description": "Generate Seedance 2.5 synthetic-character video using up to 30 image, 10 video and 10 audio references. Require measured video durations/fps and audio durations. Real-person references are forbidden. Paid video requires approval with cost, including autonomous runs.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "prompt": {
+          "type": "string",
+          "description": "1 to 20000 characters."
+        },
+        "reference_image_urls": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Up to 30 reference images. Refer to them as @Image1, @Image2 in the prompt."
+        },
+        "reference_video_urls": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Up to 10 reference videos, 1.8 to 30.2 seconds each and at most 30.2 seconds combined on fal."
+        },
+        "reference_audio_urls": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Up to 10 reference audio clips, 1.8 to 30.2 seconds each and at most 30.2 seconds combined on fal."
+        },
+        "reference_video_durations": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "description": "Measured seconds for each video URL. Required with video references; local validation and billing only."
+        },
+        "reference_video_fps": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "description": "Measured fps for each video URL. Each fal reference must be 24 to 60 fps; local only."
+        },
+        "reference_audio_durations": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "description": "Measured seconds for each audio URL. Required with audio references; local only."
+        },
+        "duration_seconds": {
+          "type": "integer",
+          "description": "Output duration from 4 to 30 seconds. Edit uses -1 to preserve the measured source duration. Extension requests generated output seconds, not a promised combined timeline length."
+        },
+        "aspect_ratio": {
+          "type": "string",
+          "description": "Allowed values: 16:9, 9:16, 1:1, 4:3, 3:4, 21:9, adaptive."
+        },
+        "resolution": {
+          "type": "string",
+          "description": "Allowed values: 480p, 720p, 1080p."
+        },
+        "model": {
+          "type": "string",
+          "description": "Optional configured model override. Seedance 1.5 is BytePlus only. Unknown models remain UNVERIFIED and dry-run only."
+        },
+        "watermark": {
+          "type": "boolean",
+          "description": "BytePlus visible watermark, enabled by default. fal has no watermark request field; this argument is not sent to fal and does not guarantee a fal watermark."
+        },
+        "generate_audio": {
+          "type": "boolean"
+        },
+        "service_tier": {
+          "type": "string",
+          "description": "BytePlus default or flex for 1.5. Seedance 2.5 rejects flex. Not sent to fal."
+        },
+        "seed": {
+          "type": "integer",
+          "description": "Allowed range: 0 to 2.14748e+09."
+        },
+        "real_face_refs": {
+          "type": "boolean",
+          "description": "True when a reference contains a real person's likeness. Seedance rejects these inputs; route generation to Wan with consent."
+        },
+        "user_supplied_real_person_refs": {
+          "type": "boolean",
+          "description": "True for user-supplied real-person photos or videos. These inputs are forbidden for Seedance, even with consent."
+        }
+      },
+      "required": [
+        "prompt"
+      ]
+    }
+  },
+  {
+    "name": "edit_video",
+    "description": "Edit a synthetic source video using Seedance 2.5 via fal reference-to-video task=editing. Requires measured source duration/fps; source_aspect_ratio is needed for known cost. Source timing is preserved. Real-person inputs are forbidden. Paid video requires approval with cost, including autonomous runs.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "video_url": {
+          "type": "string"
+        },
+        "prompt": {
+          "type": "string",
+          "description": "1 to 20000 characters."
+        },
+        "source_duration_seconds": {
+          "type": "number",
+          "description": "Measured source seconds, from 4 to 30 for editing or 2 to 30 for extension. Used to quote editing or extension; local only."
+        },
+        "source_fps": {
+          "type": "number",
+          "description": "Measured source fps, from 24 to 60 on fal; local only."
+        },
+        "source_aspect_ratio": {
+          "type": "string",
+          "description": "Measured input aspect ratio, such as 16:9 or 1280:720. Required for a known cost estimate when the provider derives output aspect from the source; local only."
+        },
+        "duration_seconds": {
+          "type": "integer",
+          "description": "Output duration from 4 to 30 seconds. Edit uses -1 to preserve the measured source duration. Extension requests generated output seconds, not a promised combined timeline length."
+        },
+        "aspect_ratio": {
+          "type": "string",
+          "description": "Allowed values: 16:9, 9:16, 1:1, 4:3, 3:4, 21:9, adaptive."
+        },
+        "resolution": {
+          "type": "string",
+          "description": "Allowed values: 480p, 720p, 1080p."
+        },
+        "model": {
+          "type": "string",
+          "description": "Optional configured model override. Seedance 1.5 is BytePlus only. Unknown models remain UNVERIFIED and dry-run only."
+        },
+        "reference_image_urls": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Up to 30 reference images. Refer to them as @Image1, @Image2 in the prompt."
+        },
+        "reference_audio_urls": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Up to 10 reference audio clips, 1.8 to 30.2 seconds each and at most 30.2 seconds combined on fal."
+        },
+        "reference_audio_durations": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "description": "Measured seconds for each audio URL. Required with audio references; local only."
+        },
+        "watermark": {
+          "type": "boolean",
+          "description": "BytePlus visible watermark, enabled by default. fal has no watermark request field; this argument is not sent to fal and does not guarantee a fal watermark."
+        },
+        "generate_audio": {
+          "type": "boolean"
+        },
+        "service_tier": {
+          "type": "string",
+          "description": "BytePlus default or flex for 1.5. Seedance 2.5 rejects flex. Not sent to fal."
+        },
+        "seed": {
+          "type": "integer",
+          "description": "Allowed range: 0 to 2.14748e+09."
+        },
+        "real_face_refs": {
+          "type": "boolean",
+          "description": "True when a reference contains a real person's likeness. Seedance rejects these inputs; route generation to Wan with consent."
+        },
+        "user_supplied_real_person_refs": {
+          "type": "boolean",
+          "description": "True for user-supplied real-person photos or videos. These inputs are forbidden for Seedance, even with consent."
+        }
+      },
+      "required": [
+        "video_url",
+        "prompt",
+        "source_duration_seconds",
+        "source_fps"
+      ]
+    }
+  },
+  {
+    "name": "extend_video",
+    "description": "Continue a synthetic source clip using Seedance 2.5 via fal task=extension. Requires measured source duration/fps; source_aspect_ratio is needed for known cost. duration_seconds requests generated output duration, not a promised stitched timeline length. Real-person inputs are forbidden. Paid video requires cost approval, including autonomous runs.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "video_url": {
+          "type": "string"
+        },
+        "prompt": {
+          "type": "string",
+          "description": "1 to 20000 characters."
+        },
+        "source_duration_seconds": {
+          "type": "number",
+          "description": "Measured source seconds, from 4 to 30 for editing or 2 to 30 for extension. Used to quote editing or extension; local only."
+        },
+        "source_fps": {
+          "type": "number",
+          "description": "Measured source fps, from 24 to 60 on fal; local only."
+        },
+        "source_aspect_ratio": {
+          "type": "string",
+          "description": "Measured input aspect ratio, such as 16:9 or 1280:720. Required for a known cost estimate when the provider derives output aspect from the source; local only."
+        },
+        "duration_seconds": {
+          "type": "integer",
+          "description": "Output duration from 4 to 30 seconds. Edit uses -1 to preserve the measured source duration. Extension requests generated output seconds, not a promised combined timeline length."
+        },
+        "aspect_ratio": {
+          "type": "string",
+          "description": "Allowed values: 16:9, 9:16, 1:1, 4:3, 3:4, 21:9, adaptive."
+        },
+        "resolution": {
+          "type": "string",
+          "description": "Allowed values: 480p, 720p, 1080p."
+        },
+        "model": {
+          "type": "string",
+          "description": "Optional configured model override. Seedance 1.5 is BytePlus only. Unknown models remain UNVERIFIED and dry-run only."
+        },
+        "reference_image_urls": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Up to 30 reference images. Refer to them as @Image1, @Image2 in the prompt."
+        },
+        "reference_audio_urls": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Up to 10 reference audio clips, 1.8 to 30.2 seconds each and at most 30.2 seconds combined on fal."
+        },
+        "reference_audio_durations": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "description": "Measured seconds for each audio URL. Required with audio references; local only."
+        },
+        "watermark": {
+          "type": "boolean",
+          "description": "BytePlus visible watermark, enabled by default. fal has no watermark request field; this argument is not sent to fal and does not guarantee a fal watermark."
+        },
+        "generate_audio": {
+          "type": "boolean"
+        },
+        "service_tier": {
+          "type": "string",
+          "description": "BytePlus default or flex for 1.5. Seedance 2.5 rejects flex. Not sent to fal."
+        },
+        "seed": {
+          "type": "integer",
+          "description": "Allowed range: 0 to 2.14748e+09."
+        },
+        "real_face_refs": {
+          "type": "boolean",
+          "description": "True when a reference contains a real person's likeness. Seedance rejects these inputs; route generation to Wan with consent."
+        },
+        "user_supplied_real_person_refs": {
+          "type": "boolean",
+          "description": "True for user-supplied real-person photos or videos. These inputs are forbidden for Seedance, even with consent."
+        }
+      },
+      "required": [
+        "video_url",
+        "prompt",
+        "source_duration_seconds",
+        "source_fps"
+      ]
+    }
+  },
+  {
     "name": "get_video_task",
-    "description": "Use only after text_to_video or image_to_video returned a task id. Poll once per call until succeeded, failed, cancelled, or dry_run; it does not create a new video.",
+    "description": "Poll an existing Seedance task once. fal job handles reuse the fal queue poller. Never submits a generation. Call download=true after success to obtain the MP4.",
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -103,7 +425,7 @@
   },
   {
     "name": "list_seedance_models",
-    "description": "Use only when model selection or availability is relevant; it does not generate media. Prefer the configured default for ordinary video requests.",
+    "description": "List verified Seedance models, transports, and API sources offline. No credential or network request. BytePlus is unavailable to US customers and requires written platform authorization for live integration.",
     "inputSchema": {
       "type": "object",
       "properties": {},
