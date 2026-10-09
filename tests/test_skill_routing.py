@@ -97,11 +97,11 @@ class SkillContracts(unittest.TestCase):
         self.assertEqual(sum(not c["skip_reason"] for c in CASES), 21)
         self.assertEqual(sum(bool(c["skip_reason"]) for c in CASES), 34)
 
-    def test_wan_is_default_and_unknown_requests_do_not_invent_tools(self):
+    def test_standard_is_default_and_unknown_requests_do_not_invent_tools(self):
         from agent.deep_agent.routing import route_intent
 
-        self.assertEqual(route_intent("generate a video of a forest").tool, "Fal___text_to_video")
-        self.assertEqual(route_intent("animate an image").tool, "Fal___image_to_video")
+        self.assertEqual(route_intent("generate a video of a forest").tool, "Seedance___text_to_video")
+        self.assertEqual(route_intent("animate an image").tool, "Seedance___image_to_video")
         self.assertEqual(route_intent("tell me a joke").status, "unrouted")
 
     def test_pending_provider_never_falls_back_to_a_paid_alternative(self):

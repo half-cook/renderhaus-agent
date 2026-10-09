@@ -18,7 +18,7 @@ from contextlib import suppress
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from functools import lru_cache
-from typing import Any
+from typing import Any, Literal
 
 from agent.codex_harness import CodexHarness
 from agent.backend_config import agent_backend
@@ -174,6 +174,8 @@ class StudioAgentRequest(BaseModel):
     project_id: str | None = Field(default=None, max_length=120)
     user_id: str | None = Field(default=None, max_length=160)
     autonomous: bool = False
+    confidential: bool = False
+    quality_tier: Literal["draft", "standard", "premium"] = "standard"
     resume_state: str | None = None
     approval_decisions: list["StudioApprovalDecision"] = Field(default_factory=list, max_length=32)
     resume_tool_names: list[str] = Field(default_factory=list, max_length=64)
@@ -219,6 +221,7 @@ class StudioToolEvent:
     provider_job_id: str | None = None
     arguments: dict[str, Any] = field(default_factory=dict)
     assets: list[dict[str, Any]] = field(default_factory=list)
+    source_version_ids: list[str] = field(default_factory=list)
     result: dict[str, Any] = field(default_factory=dict)
     created_at: int = field(default_factory=lambda: int(time.time()))
     completed_at: int = field(default_factory=lambda: int(time.time()))
@@ -234,6 +237,7 @@ class StudioToolEvent:
             "provider_job_id": self.provider_job_id,
             "arguments": self.arguments,
             "assets": self.assets,
+            "source_version_ids": self.source_version_ids,
             "result": self.result,
             "created_at": self.created_at,
             "completed_at": self.completed_at,
@@ -286,6 +290,9 @@ class StudioAgentContext:
     session_sink: Callable[[list[dict[str, Any]]], None] | None = None
     progress_events: list[StudioProgressEvent] = field(default_factory=list)
     autonomous: bool = False
+    confidential: bool = False
+    quality_tier: str = "standard"
+    prompt: str = ""
 
     def add_assets(self, assets: list[dict[str, Any]]) -> None:
         for asset in assets:
@@ -1099,12 +1106,14 @@ def _append_harvested_event(
     name: str,
     arguments: dict[str, Any],
     output: Any,
+    source_version_ids: list[str] | None = None,
 ) -> None:
     payload = _compact_tool_result(_unwrap_tool_output(output))
     if not payload:
         payload = {"status": "completed"}
     provider, _tool, label = _gateway_tool_parts(name)
     status = _tool_event_status(payload)
+    source_version_ids = _asset_version_ids(arguments) if source_version_ids is None else source_version_ids
     if name == _GATEWAY_SEARCH_TOOL:
         discovered = sorted(_tool_names_from_search_result(output))
         payload = {"status": status, "tools": discovered}
@@ -1119,9 +1128,10 @@ def _append_harvested_event(
         try:
             assets = studio.asset_registrar(
                 result=payload,
+                provider=provider.lower() if provider else None,
                 label=label,
                 tool_call_id=call_id or None,
-                source_version_ids=_asset_version_ids(arguments),
+                source_version_ids=source_version_ids,
             )
         except Exception:  # noqa: BLE001 - keep the provider result visible for recovery
             logger.exception("Could not durably register output from %s", name)
@@ -1140,6 +1150,7 @@ def _append_harvested_event(
             arguments=arguments,
             assets=assets,
             result=payload,
+            source_version_ids=source_version_ids,
         )
     )
 
@@ -1300,6 +1311,9 @@ def _context_from_request(
         session_id=session_id,
         session_items=list(request.session_items),
         autonomous=request.autonomous,
+        confidential=request.confidential,
+        quality_tier=request.quality_tier,
+        prompt=request.prompt,
     )
     studio.add_assets(
         [

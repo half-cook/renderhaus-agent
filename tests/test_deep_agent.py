@@ -564,7 +564,7 @@ class DeepAgentTests(unittest.IsolatedAsyncioTestCase):
         for name in ("Kling___text_to_video", "Runway___video_to_video", "Fal___text_to_video", "Luma___modify_video"):
             with self.subTest(tool=name):
                 tool = Tool(name=name, description="Paid video", inputSchema=IMAGE.input_schema)
-                request = self.request()
+                request = self.request().model_copy(update={"prompt": name.split("___")[0] + " video"})
                 studio = _context_from_request(request)
                 gateway = Gateway(tools=[tool], result={"status": "queued", "job_id": "job-1"})
                 media = call("call_media_tool", {"tool_name": name, "arguments": {"prompt": "Hero"}}, "paid")
@@ -573,8 +573,8 @@ class DeepAgentTests(unittest.IsolatedAsyncioTestCase):
                 self.assertEqual(paused.exception.approvals[0].tool_name, name)
                 gateway.call_tool.assert_not_awaited()
                 approval = paused.exception.approvals[0]
-                resumed = self.request(session_items=studio.session_items, resume_state=paused.exception.state,
-                                       approval_decisions=[StudioApprovalDecision(call_id=approval.call_id, decision="approve")])
+                resumed = request.model_copy(update={"session_items": studio.session_items, "resume_state": paused.exception.state,
+                                       "approval_decisions": [StudioApprovalDecision(call_id=approval.call_id, decision="approve")]})
                 await self.run_graph(resumed, [final()], gateway)
                 gateway.call_tool.assert_awaited_once_with(name, {"prompt": "Hero"})
 

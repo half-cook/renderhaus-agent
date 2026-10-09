@@ -37,7 +37,7 @@ def generate(name=PREMIUM.name, call_id="video"):
 class IntentGraphTests(unittest.IsolatedAsyncioTestCase):
     def request(self, **kwargs):
         return StudioAgentRequest(
-            prompt="make a 5 second cinematic drone shot",
+            prompt="make a 5 second cinematic drone shot with Kling",
             autonomous=True,
             workspace_id="workspace",
             project_id="project",
@@ -123,7 +123,7 @@ class IntentGraphTests(unittest.IsolatedAsyncioTestCase):
         tool = Tool(name=name, inputSchema=PREMIUM.input_schema)
         cents = cost_for("seedance", "text_to_video", {"prompt": "forest"}).total_cents
         with patch.dict(os.environ, {"RENDERHAUS_AUTONOMOUS_RUN_CAP_CENTS": str(cents)}):
-            request = self.request()
+            request = self.request().model_copy(update={"prompt": "make a video with Seedance"})
             studio = _context_from_request(request)
             gateway = Gateway([tool])
 

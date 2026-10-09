@@ -1,0 +1,8 @@
+ts	phase	decision	why	evidence	result
+2026-10-08T21:39:02+00:00	architecture	Enforce the ladder in the shared executor without retargeting approved calls	Preserve approval identity and the Codex fallback	agent/gateway_executor.py	verified offline
+2026-10-08T21:39:02+00:00	routing	Keep capability and tier membership in one policy table; derive prices from billing	Avoid invented prices and unsupported tools	agent/deep_agent/routing_policy.json; tests/test_provider_ladder.py	verified offline
+2026-10-08T21:39:02+00:00	review	Preserve source lineage through polls and bind reviews to registered versions	Prevent proprietary-derived Wan output from entering training	tests/test_provider_ladder.py; server/studio.py	verified offline
+2026-10-08T21:39:02+00:00	quotes	Use billing validation before calculating published list-price quotes	Missing durations and invalid settings must remain unknown	tests/test_provider_ladder.py; agent/deep_agent/routing.py	verified offline
+2026-10-08T21:39:02+00:00	validation	Retain blocked Comet status and prohibit live generation	No Comet control or live-call authorization is available	docs/BROWSER_E2E.md; .renderhaus/e2e/provider-ladder-browser.json	browser E2E blocked
+2026-10-08T21:39:02+00:00	review-lanes	Use native offline review; skip external model-family calls	The user requires offline work	tests/test_provider_ladder.py	external cross-family review unverified
+2026-10-08T21:43:05+00:00	verification	Completed final offline suite, Ruff, dry-run packaging and Studio typecheck	Verify routing, approval, confidentiality and outcome behavior without provider calls	.renderhaus/e2e/ladder-final-suite.log; .renderhaus/e2e/ladder-final-ci.log; .renderhaus/e2e/ladder-typecheck.log	516 run; 482 passed; 34 skipped; all checks green

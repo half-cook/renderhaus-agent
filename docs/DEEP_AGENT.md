@@ -36,7 +36,7 @@ bucket/output identifiers, polls a single accepted job, registers media, and pub
 progress. `GatewayMCPServer` remains the only remote provider boundary. It resolves asset
 handles, charges/refunds usage, and preserves the existing authenticated HTTPS MCP transport.
 
-Deep Agents exposes `report_progress`, `read_studio_context`, and Gateway semantic search.
+Deep Agents exposes `report_progress`, `read_studio_context`, `record_media_outcome`, and Gateway semantic search.
 Reading a relevant skill discloses `call_media_tool`, `call_audio_tool`, or `call_editor_tool`.
 These tools accept the exact discovered Gateway name and an argument object. Discovery returns
 actual schemas, including tools hidden from the initial catalog behind semantic search. Unsupported or
@@ -47,6 +47,14 @@ installed MCP 2.3.0 has no such module. The backend therefore builds LangChain t
 existing MCP client rather than downgrading MCP or bypassing Studio policy. Adapters can replace
 this conversion when they support the project's MCP version.
 
+## Provider ladder
+
+The config capability table filters required features before quality tier and cost. Finished
+shots default to Standard. Draft previews and rejected-shot retries use Wan; confidential
+projects stay Wan. The shared executor discloses the provider/model and estimated cost in
+chat, retains existing approval/spend rules, and logs provider outcomes locally with Wan-only
+training eligibility. See [capabilities, tiers, project policy and outcomes](SKILLS.md#provider-capability-table-and-ladder).
+
 ## Skills and delegation
 
 Fourteen packaged `SKILL.md` files live under `agent/deep_agent/skills/`.
@@ -55,9 +63,9 @@ skill is read. `metadata.include_tools` discloses the corresponding dispatch too
 
 | Skill | Workflow |
 | --- | --- |
-| `video-short` | Brief, inexpensive still preview, short Wan clips, explicit Seedance overrides, audio if needed, Remotion export. |
+| `video-short` | Brief, inexpensive still preview, Standard clips from the provider ladder, audio if needed, Remotion export. |
 | `product-images` | Seedream generation or reference-based editing, one still before additional variants. |
-| `storyboard-shots` | Shot plan, consistent Seedream keyframes, approved stills into Wan image-to-video with explicit provider overrides. |
+| `storyboard-shots` | Shot plan, consistent Seedream keyframes, approved stills into the selected Standard image-to-video route. |
 | `audio` | ElevenLabs voiceover/music/SFX or Fish Audio speech if that target is available. |
 | `final-assembly` | Existing asset handles into a typed Remotion timeline, saved identifiers, poll the final MP4. |
 | `refinement` | Edit the referenced version and reuse unaffected media; prefer timeline edits for timing changes. |

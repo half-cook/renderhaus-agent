@@ -22,16 +22,16 @@ check every declared or body-referenced Gateway name against `configs/gateway/*.
 | [audio](../agent/deep_agent/skills/audio/SKILL.md) | `call_audio_tool` | `ElevenLabs___music_compose`<br>`ElevenLabs___text_to_sound_effects_convert`<br>`ElevenLabs___text_to_speech_convert`<br>`FishAudio___generate_speech` |
 | [audio-bed](../agent/deep_agent/skills/audio-bed/SKILL.md) | `call_audio_tool` | `ElevenLabs___text_to_speech_convert`<br>`ElevenLabs___music_compose`<br>`ElevenLabs___text_to_sound_effects_convert`<br>`FishAudio___generate_speech` |
 | [continuity-qc](../agent/deep_agent/skills/continuity-qc/SKILL.md) | `call_media_tool` | `Fal___text_to_video`<br>`Fal___get_video_task` |
-| [edit-v2v](../agent/deep_agent/skills/edit-v2v/SKILL.md) | `call_media_tool` | `Fal___video_to_video`<br>`Fal___get_video_task`<br>`Fal___list_fal_models`<br>`Runway___video_to_video`<br>`Runway___get_runway_task`<br>`Runway___list_runway_models` |
+| [edit-v2v](../agent/deep_agent/skills/edit-v2v/SKILL.md) | `call_media_tool` | `Fal___video_to_video`<br>`Fal___get_video_task`<br>`Fal___list_fal_models`<br>`Runway___video_to_video`<br>`Runway___get_runway_task`<br>`Runway___list_runway_models`<br>`Luma___modify_video`<br>`Luma___get_video_task`<br>`Luma___list_luma_models` |
 | [final-assembly](../agent/deep_agent/skills/final-assembly/SKILL.md) | `call_editor_tool` | `Remotion___export_nle_timeline`<br>`Remotion___get_render_progress`<br>`Remotion___render_timeline` |
-| [i2v](../agent/deep_agent/skills/i2v/SKILL.md) | `call_media_tool` | `Fal___image_to_video`<br>`Fal___reference_to_video`<br>`Fal___get_video_task`<br>`Kling___image_to_video`<br>`Kling___get_video_task`<br>`Seedance___image_to_video`<br>`Seedance___get_video_task`<br>`Runway___image_to_video`<br>`Runway___get_runway_task`<br>`Seedream___text_to_image`<br>`Seedream___image_to_image` |
+| [i2v](../agent/deep_agent/skills/i2v/SKILL.md) | `call_media_tool` | `Fal___image_to_video`<br>`Fal___reference_to_video`<br>`Fal___get_video_task`<br>`Kling___image_to_video`<br>`Kling___get_video_task`<br>`Seedance___image_to_video`<br>`Seedance___get_video_task`<br>`Runway___image_to_video`<br>`Runway___get_runway_task`<br>`Seedream___text_to_image`<br>`Seedream___image_to_image`<br>`Luma___image_to_video`<br>`Luma___get_video_task`<br>`Luma___list_luma_models` |
 | [motion-graphics](../agent/deep_agent/skills/motion-graphics/SKILL.md) | `call_editor_tool`<br>`call_media_tool` | `Remotion___render_timeline`<br>`Remotion___get_render_progress`<br>`Remotion___export_nle_timeline`<br>`Seedream___text_to_image`<br>`Seedream___image_to_image`<br>`Runway___text_to_image`<br>`Runway___image_to_image`<br>`Runway___get_runway_task` |
 | [product-images](../agent/deep_agent/skills/product-images/SKILL.md) | `call_media_tool` | `Runway___get_runway_task`<br>`Runway___image_to_image`<br>`Runway___text_to_image`<br>`Seedream___image_to_image`<br>`Seedream___text_to_image` |
-| [refinement](../agent/deep_agent/skills/refinement/SKILL.md) | `call_media_tool`<br>`call_audio_tool`<br>`call_editor_tool` | `Fal___video_to_video`<br>`Runway___video_to_video`<br>`Seedream___image_to_image` |
+| [refinement](../agent/deep_agent/skills/refinement/SKILL.md) | `call_media_tool`<br>`call_audio_tool`<br>`call_editor_tool` | `Fal___video_to_video`<br>`Luma___modify_video`<br>`Runway___video_to_video`<br>`Seedream___image_to_image` |
 | [resolve-handoff](../agent/deep_agent/skills/resolve-handoff/SKILL.md) | `call_editor_tool` | `Remotion___export_nle_timeline` |
 | [still-then-video](../agent/deep_agent/skills/still-then-video/SKILL.md) | `call_media_tool` | `Seedream___text_to_image`<br>`Seedream___image_to_image`<br>`Runway___text_to_image`<br>`Runway___image_to_image`<br>`Runway___get_runway_task`<br>`Fal___image_to_video`<br>`Fal___get_video_task`<br>`Kling___image_to_video`<br>`Kling___get_video_task`<br>`Seedance___image_to_video`<br>`Seedance___get_video_task` |
 | [storyboard-shots](../agent/deep_agent/skills/storyboard-shots/SKILL.md) | `call_media_tool` | `Fal___get_video_task`<br>`Fal___image_to_video`<br>`Seedance___get_video_task`<br>`Seedance___image_to_video`<br>`Seedream___image_to_image` |
-| [t2v](../agent/deep_agent/skills/t2v/SKILL.md) | `call_media_tool` | `Fal___text_to_video`<br>`Fal___get_video_task`<br>`Fal___list_fal_models`<br>`Kling___text_to_video`<br>`Kling___omni_video`<br>`Kling___get_video_task`<br>`Kling___list_kling_models`<br>`Runway___text_to_video`<br>`Runway___get_runway_task`<br>`Runway___list_runway_models`<br>`Seedance___text_to_video`<br>`Seedance___get_video_task`<br>`Seedance___list_seedance_models` |
+| [t2v](../agent/deep_agent/skills/t2v/SKILL.md) | `call_media_tool` | `Fal___text_to_video`<br>`Fal___get_video_task`<br>`Fal___list_fal_models`<br>`Kling___text_to_video`<br>`Kling___omni_video`<br>`Kling___get_video_task`<br>`Kling___list_kling_models`<br>`Runway___text_to_video`<br>`Runway___get_runway_task`<br>`Runway___list_runway_models`<br>`Seedance___text_to_video`<br>`Seedance___get_video_task`<br>`Seedance___list_seedance_models`<br>`Luma___text_to_video`<br>`Luma___extend_video`<br>`Luma___get_video_task`<br>`Luma___list_luma_models` |
 | [video-short](../agent/deep_agent/skills/video-short/SKILL.md) | `call_media_tool`<br>`call_audio_tool`<br>`call_editor_tool` | `Fal___get_video_task`<br>`Fal___image_to_video`<br>`Fal___text_to_video`<br>`Seedance___get_video_task`<br>`Seedance___image_to_video`<br>`Seedance___text_to_video`<br>`Seedream___text_to_image` |
 
 Fish Audio has built API code and a committed schema, but it is not in the active provider
@@ -98,7 +98,9 @@ because speech alone does not animate a character.
 Run `.venv/bin/python -m unittest discover -s tests -p test_skill_routing.py -v` to see each
 case and skip reason. Other offline tests exercise the compiled graph with `ScriptedModel`
 and fake Gateway, premium approve/reject resumes, model/environment/region gates, unknown
-quotes, concurrent and interrupted spending, and injected continuity embeddings. These
+quotes, concurrent and interrupted spending, and injected continuity embeddings.
+`test_provider_ladder.py` adds capability/tier/cost ordering, confidential project context,
+review provenance, retry recovery, and compiled fake-model approval-interrupt checks. These
 checks make no live or paid provider calls and download no weights.
 
 ## Provider, model, licence, and region policy
@@ -129,32 +131,126 @@ Runway, Luma, Seedance, Seedream, and Veo outputs cannot enter training, even wi
 eligibility flags. This validation trusts host-supplied provider provenance; it does not
 cryptographically authenticate arbitrary dictionaries submitted by a caller.
 
-## Wan-first video and premium approval
+## Provider capability table and ladder
 
-Wan/Fal is the configured default text, image, and edit video tier. Explicit supported
-provider requests and configured premium intent rules can propose another tier. Every
-premium video generation on Kling or Runway requires approval, including autonomous runs.
-Veo is included in the step-up target policy for future support but currently cannot dispatch.
-The conservative rule pauses even if no Wan job has yet run, rather than waiting for a paid
-Wan attempt to fail. Premium still images do not trigger this video-only tightening.
+`routing_policy.json` is the single source for capabilities, tier membership, native controls,
+and duration limits. `routing.capability_table()` resolves each row's `policy_ref` against
+existing provider/model licence, region and training policy. It derives price grids from
+`server/billing_rates.py` and its Fal price helper. No copied rate numbers are stored in the
+config. `jobs` records t2v, i2v, start_end_frame, native_audio, max_resolution, 4k, multi_shot,
+v2v_edit, reference_elements, lipsync, upscale, and image. Unclear capabilities are false
+with a note. The `controls` map narrows a capability to the actual job schema.
 
-The switch `premium_video_approval` defaults ON. Set
-`RENDERHAUS_PREMIUM_VIDEO_APPROVAL=false` to disable that additional autonomous pause.
-Non-autonomous approval behavior remains as before, apart from a cost estimate in the
-approval payload and visible label. ElevenLabs administrative approvals remain enforced.
-Polling, listing, search, and free packaging do not trigger the premium rule. Existing
-non-autonomous approval rules still apply to those calls; Remotion NLE packaging retains
-its unconditional exemption. The Deep runner's native interrupt predicate and shared
-`tool_needs_approval` use the same policy.
+This table summarizes all 15 configured rows. All rows have lipsync=false and upscale=false.
+Resolutions describe supported output presets, not inferred provider marketing claims.
 
-`estimate_cost` uses only `server.billing_rates.cost_for` for amounts and exposes USD totals
-including the existing platform fee. Known dry-run requests use billing's zero charge.
-Unconfirmed combinations are detected before billing's dry-run shortcuts and shown as
-**unknown**, never a guessed amount. Examples include Kling Turbo audio semantics, Wan 2.2
-freeform/pose and unpriced resolutions, fractional Aleph billing, Seedream Lite larger size
-tiers, missing/invalid ElevenLabs operator quotes, and Remotion's compute placeholder.
-No new rates are introduced. Unknown estimates remain visible in approval descriptions and
-labels. The runner never manufactures approval or changes provider DRY_RUN settings.
+| Provider/model | Built jobs | Extra supported controls | Maximum output | Pricing status |
+| --- | --- | --- | --- | --- |
+| Fal Wan VACE 14B | t2v, i2v, reference, v2v | End frame, reference images | 720p | Published endpoint/resolution rates |
+| Fal Wan 2.2 VACE | t2v, i2v, reference, v2v | End frame, reference images | 720p | Depth/inpaint/outpaint/reframe known; freeform/pose unknown |
+| Seedance 1.5 Pro | t2v, i2v | Native audio | 1080p | Published token formula |
+| Seedream 5.0 Lite | Image, image edit | Image references | 3K | 1K known; 2K/3K unknown |
+| Kling 3.0 | t2v, i2v | Audio, end frame, multi-shot, i2v elements | 4K | Published per-second grids |
+| Kling 3.0 Turbo | t2v, i2v | Multi-shot | 1080p | Unknown |
+| Kling 3.0 Omni | t2v, i2v | Audio, end frame, multi-shot, elements | 4K | Published per-second grids |
+| Runway Gen-4.5 | t2v, i2v | No audio/end frame/multi-shot control | 720 class | Published per-second rate |
+| Runway Aleph 2 | v2v | Single reference image | Unspecified, input up to 1080p | Integer measured duration known; fractional unknown |
+| Runway gen4_image | Image, image edit | Image references | 1080 class | Published per-image rates |
+| Runway gen4_image_turbo | Image edit only | Source image required | 1080 class | Published per-image rate |
+| Luma Ray 3.2 | t2v, i2v, modify, extend | End frame on i2v | 1080p | Published duration/resolution tiers only |
+| Veo | Unavailable | All capabilities false | Unspecified | Unknown |
+| MiniMax H3 | Unavailable | All capabilities false; existing US block | Unspecified | Unknown |
+| Hunyuan | Unavailable | All capabilities false; existing US block | Unspecified | Unknown |
+
+Speed classes are typical labels, not measured SLAs. Only the two approved Wan models
+are training-eligible. Hosted models retain their service-terms restrictions. MiniMax H3
+and Hunyuan retain their US blocks even if an operator later enables them.
+
+Selection filters required capabilities, native controls, duration, availability, licence,
+and region before considering tier. Within the tier, the cheapest known total price wins;
+unknown prices sort after known prices. An explicit provider wins only when all policy and
+capability checks pass. A failed request returns its refusal reason in chat. Tool arguments
+must actually enable the required audio/end-frame/reference controls and meet the requested
+resolution and duration. A wrong tool/model returns the selected route for rediscovery,
+never silently substitutes the action after an approval.
+
+| Tier | New finished video | Video edit |
+| --- | --- | --- |
+| Draft | Fal Wan | Fal Wan VACE |
+| Standard, default | Seedance or Kling | Luma Modify, `Luma___modify_video` |
+| Premium | Built, enabled Kling or Runway Gen-4.5; Veo unavailable | Runway Aleph |
+
+Faithful plate and multi-shot edits prefer Aleph unless Draft or confidential. This is an
+editing preference, not a native multi-shot capability. Draft previews and an automatic
+retry after an explicit artifact rejection use Wan only, retaining the rejected job's
+requirements. If Wan cannot meet them, the retry is blocked instead of weakening the brief
+or escalating. Approval rejection never starts a retry. A saved review/retry transition is
+idempotent across a resume. Unrelated new shots retain their chosen tier.
+
+The default still requirement is 2K, selecting Seedream with an unknown quote. At a compatible
+lower resolution, cost ordering can select Runway images. Draft still previews can reuse an
+approved image or show a Wan video frame. There is no built Wan image-generation tool;
+Draft/confidential image generation and image reject retries fail with a clear capability
+refusal. Building a Wan image tool is an open dependency, not an invented capability.
+
+### Confidential project source
+
+Projects persist `provider_policy` in `projects.provider_policy_json`. Project creation
+accepts `{"provider_policy":{"confidential":true,"quality_tier":"standard"}}`.
+Authenticated, workspace-scoped `GET` and `PUT /api/studio/projects/{project_id}/provider-policy`
+read/update that policy. The Studio host populates `StudioAgentRequest.confidential` and
+`quality_tier` from it, for both local and remote workers. The executor uses that host context
+for both Deep Agents and Codex. Mentioning confidential in chat also tightens the policy;
+a prompt cannot relax a confidential project. There is no new Studio settings control yet.
+
+Confidential video/image projects use Wan at every tier and on rejection. Unsupported
+capabilities refuse generation. This rule never permits escalation to another image/video
+provider, including a previously approved call. New audio generation on other providers is also
+blocked. Polling and assembly of existing media remain available.
+
+### Chat disclosure and approval
+
+Before dispatch, the host emits a chat `MODEL_UPDATE` with provider/model, tier, capability
+filters, estimated cost including the existing platform fee, and typical speed class.
+Unpublished rates render as **unknown**. List-price disclosure ignores dry-run discounts
+without changing any provider setting. Dispatch/cap accounting continues to use billing's
+actual dry-run charge. Both quote paths keep billing validation. Missing measured edit
+durations stay unknown. No rate or TODO in `server/billing_rates.py` was changed.
+
+Paid tools still pause in non-autonomous runs. The existing premium video target rule for
+Kling, Runway, Luma and future Veo still pauses autonomous runs, with the estimate in the
+native interrupt description. Kling requires this approval even when selected at Standard.
+`premium_video_approval` and `RENDERHAUS_PREMIUM_VIDEO_APPROVAL` retain their previous semantics.
+`APPROVAL_EXEMPT_TOOLS`, free-tool policy and the optional autonomous spend cap are unchanged.
+The Codex fallback uses the same executor and retains its approval/checkpoint protocol.
+
+Unknown combinations include Kling Turbo, Wan 2.2 freeform/pose and unpriced resolutions,
+fractional Aleph billing, unpriced Luma lengths, Seedream larger sizes, invalid ElevenLabs
+operator quotes, and Remotion's compute placeholder. Unknown is never a guessed amount or
+a dry-run zero. A spending cap blocks an unknown-cost paid call as before.
+
+### Provider outcomes and training
+
+`record_media_outcome(call_id, outcome)` records an explicit customer acceptance or rejection
+of a saved completed generation call. The host checks for a verdict in the current request,
+uses saved provider/job provenance, and refuses queued or dry-run reviews. The conservative
+English verdict recognizer can refuse unfamiliar wording; the model cannot create acceptance.
+
+`agent/deep_agent/outcomes.py` appends JSONL to `.renderhaus/provider-outcomes/outcomes.jsonl`,
+or `RENDERHAUS_OUTCOME_DIR/outcomes.jsonl`. Each row includes event ID, provider/model, job type,
+provider job ID when available, workspace/project/execution scope, verdict, and stage.
+Approval-stage rows distinguish spending authorization/rejection from artifact review.
+Offline dry-run authorizations can be logged but never become training rows. A lock serializes
+appends, and event IDs deduplicate replays within workspace/project scope. The store contains
+no prompts, generated media, credentials or media URLs. It remains local, append-only audit;
+operators must provide durable storage for workers when retention across restarts is needed.
+
+An accepted review may be marked training-eligible only for a registered immutable asset
+version with approved Wan Apache provenance, success, no dry-run, and eligible source lineage.
+Polls carry the original generation's source version IDs through local/remote registration.
+Owned lineage restrictions survive session recovery. Hosted-provider outcomes always remain
+ineligible, even with forged flags. Logging does not itself emit a dataset or run training.
+The continuity training hook below remains Wan-only.
 
 ## Continuity QC
 

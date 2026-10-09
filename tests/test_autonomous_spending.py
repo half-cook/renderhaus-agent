@@ -27,7 +27,7 @@ FREE = Tool(name="Seedance___get_video_task", inputSchema={"type": "object"})
 class SpendingTests(unittest.IsolatedAsyncioTestCase):
     def context(self, autonomous=True):
         return _context_from_request(
-            StudioAgentRequest(prompt="preview", autonomous=autonomous, job_id="job")
+            StudioAgentRequest(prompt="Seedance video", autonomous=autonomous, job_id="job")
         )
 
     def executor(self, studio=None, session=None, scope="run-one", gateway=None):

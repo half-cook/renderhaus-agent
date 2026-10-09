@@ -443,6 +443,9 @@ class StudioRepository:
                 version_columns = {
                     str(row[1]) for row in connection.execute("PRAGMA table_info(asset_versions)")
                 }
+                project_columns = {str(row[1]) for row in connection.execute("PRAGMA table_info(projects)")}
+                if "provider_policy_json" not in project_columns:
+                    connection.execute("ALTER TABLE projects ADD COLUMN provider_policy_json TEXT NOT NULL DEFAULT '{}'")
                 if "training_eligible" not in version_columns:
                     connection.execute(
                         "ALTER TABLE asset_versions ADD COLUMN training_eligible INTEGER "
@@ -498,6 +501,7 @@ class StudioRepository:
         name: str,
         *,
         project_id: str | None = None,
+        provider_policy: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         self.ensure_workspace(workspace_id, user_id)
         resolved_id = project_id or uuid.uuid4().hex
@@ -522,6 +526,8 @@ class StudioRepository:
                 "VALUES (?, ?, ?, ?, ?, ?)",
                 (resolved_id, workspace_id, name or "Untitled", user_id, now, now),
             )
+            connection.execute("UPDATE projects SET provider_policy_json = ? WHERE id = ? AND workspace_id = ?",
+                               (json.dumps(provider_policy or {}), resolved_id, workspace_id))
             connection.execute(
                 "INSERT OR IGNORE INTO canvas_documents(project_id, workspace_id, revision, document_json, "
                 "updated_by, updated_at) VALUES (?, ?, 1, ?, ?, ?)",
@@ -535,6 +541,16 @@ class StudioRepository:
         if created is None:  # pragma: no cover - SQLite would have raised first
             raise RuntimeError("Project creation did not produce a project row")
         return dict(created)
+
+    def set_project_provider_policy(self, workspace_id: str, project_id: str, policy: dict[str, Any]) -> dict[str, Any]:
+        self.require_project(workspace_id, project_id)
+        with self._connect() as connection:
+            connection.execute("UPDATE projects SET provider_policy_json = ?, updated_at = ? WHERE workspace_id = ? AND id = ?",
+                               (json.dumps(policy), _now(), workspace_id, project_id))
+        return policy
+
+    def project_provider_policy(self, workspace_id: str, project_id: str) -> dict[str, Any]:
+        return json.loads(self.require_project(workspace_id, project_id)["provider_policy_json"])
 
     def require_project(self, workspace_id: str, project_id: str) -> sqlite3.Row:
         with self._connect() as connection:
