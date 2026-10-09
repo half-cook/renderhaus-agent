@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from contextvars import ContextVar
 import os
 from pathlib import Path
 import re
@@ -19,6 +20,7 @@ from providers.ffmpeg.sandbox import (input_file, job_directory, output_records,
 _PROCESS_LIMIT = threading.BoundedSemaphore(2)
 _STDOUT_BYTES = 1024 * 1024
 _STDERR_BYTES = 8192
+_EXECUTION_DEADLINE: ContextVar[float | None] = ContextVar("ffmpeg_execution_deadline", default=None)
 
 
 @dataclass(frozen=True)
@@ -27,14 +29,15 @@ class ProcessResult:
     stdout: bytes
     stderr: bytes
     stdout_truncated: bool = False
+    stderr_truncated: bool = False
 
 
-def _bounded_run(argv: list[str], directory: Path, timeout: float) -> ProcessResult:
+def _bounded_run(argv: list[str], directory: Path, timeout: float, *, stderr_bytes: int = _STDERR_BYTES) -> ProcessResult:
     deadline = time.monotonic() + timeout
     if not _PROCESS_LIMIT.acquire(timeout=max(0, timeout)):
         raise subprocess.TimeoutExpired(argv[0], timeout)
     streams = []
-    for limit, keep_tail in ((_STDOUT_BYTES, False), (_STDERR_BYTES, True)):
+    for limit, keep_tail in ((_STDOUT_BYTES, False), (stderr_bytes, True)):
         reader, writer = os.pipe()
         capture = bytearray()
         state = {"truncated": False}
@@ -69,7 +72,7 @@ def _bounded_run(argv: list[str], directory: Path, timeout: float) -> ProcessRes
             worker.join(timeout=5)
         _PROCESS_LIMIT.release()
     return ProcessResult(result.returncode, bytes(streams[0][1]), bytes(streams[1][1]),
-                         streams[0][2]["truncated"])
+                         streams[0][2]["truncated"], streams[1][2]["truncated"])
 
 
 def _redact(text: str, directory: Path | None = None) -> str:
@@ -103,48 +106,91 @@ def _version(directory: Path) -> str | None:
     if not binary:
         return None
     try:
-        result = _bounded_run([binary, "-hide_banner", "-version"], directory, 5)
+        deadline = _EXECUTION_DEADLINE.get()
+        remaining = min(5, deadline - time.monotonic()) if deadline is not None else 5
+        if remaining <= 0:
+            return None
+        result = _bounded_run([binary, "-hide_banner", "-version"], directory, remaining)
         return result.stdout.decode("utf-8", errors="replace").splitlines()[0][:200]
     except (OSError, subprocess.SubprocessError, IndexError):
         return None
+
+
+def _verify_reframe(directory: Path, output: Path, expected: dict) -> None:
+    from fractions import Fraction
+
+    probe = execute("probe", directory, output.name)
+    if not probe["ok"]:
+        raise ValueError("Reframed output is unreadable.")
+    streams = probe["metrics"]["streams"]
+    video = next((s for s in streams if s.get("codec_type") == "video"), {})
+    duration = float(probe["metrics"].get("format", {}).get("duration", 0))
+    fps = float(Fraction(expected["source_fps"]))
+    if ((video.get("width"), video.get("height")) != (expected["width"], expected["height"])
+            or video.get("sample_aspect_ratio") != "1:1"
+            or abs(duration - expected["source_duration"]) > max(.1, 2 / fps)
+            or (expected["source_audio"] and not any(s.get("codec_type") == "audio" for s in streams))):
+        raise ValueError("Reframed output is incomplete or violates dimensions, SAR, duration or audio preservation.")
 
 
 def execute(op: str, job_dir: Path, input_path: str, params: dict | None = None) -> dict:
     """Run a validated free operation internally, including when Gateway dry-run is enabled."""
     result = _base(op)
     outputs = []
+    token = None
     directory = Path(job_dir).resolve()
     try:
         spec, parsed = validate_params(op, params)
+        deadline = time.monotonic() + spec.timeout_s
+        parent_deadline = _EXECUTION_DEADLINE.get()
+        if parent_deadline is not None:
+            deadline = min(deadline, parent_deadline)
+        token = _EXECUTION_DEADLINE.set(deadline)
         if not directory.is_dir():
             raise ValueError("The local job directory is missing.")
-        source = input_file(directory, input_path)
-        if spec.pure is not None:
+        if spec.compute is not None:
+            validate_input_path(directory, input_path, must_exist=False)
+            metrics = spec.compute(parsed)
+        elif spec.pure is not None:
+            source = input_file(directory, input_path)
             metrics = spec.pure(source)
         else:
+            source = input_file(directory, input_path)
             binary = shutil.which(spec.binary)
             if not binary:
                 raise ValueError(f"{spec.binary} is not installed. This op requires the local/worker host "
                                  "containing the job directory; the Gateway Lambda zip has no ffmpeg.")
             commands = spec.builder(directory, source, parsed)
-            deadline = time.monotonic() + spec.timeout_s
             processes = []
+            metrics = {}
             for command in commands:
                 outputs.extend(command.outputs)
                 remaining = deadline - time.monotonic()
                 if remaining <= 0:
                     raise ValueError("Operation exceeded its hard timeout.")
                 command.argv[0] = binary
-                process = _bounded_run(command.argv, directory, remaining)
+                process = _bounded_run(command.argv, directory, remaining, stderr_bytes=command.stderr_bytes)
                 if process.returncode:
                     result["error_tail"] = _redact(process.stderr.decode("utf-8", errors="replace"), directory)
                     raise ValueError("Media operation failed. The file may lack the required stream or be invalid.")
                 if process.stdout_truncated:
                     raise ValueError("Media inspection exceeded the bounded stdout capture limit.")
                 processes.append(process)
-            metrics = spec.parse(processes) if spec.parse is not None else {}
-        result.update(ok=True, status="succeeded", metrics=metrics, outputs=output_records(outputs),
-                      ffmpeg_version=None if spec.pure is not None else _version(directory))
+                metrics.update(command.metrics)
+            if spec.parse is not None:
+                metrics.update(spec.parse(processes))
+            if op == "detect_scenes":
+                from providers.ffmpeg.reframe import shots_from_scenes
+
+                metrics["shots"] = shots_from_scenes(metrics["scene_times"], metrics["source_duration"])
+            if op in {"reframe_crop", "reframe_pad_blur"}:
+                _verify_reframe(directory, outputs[0], metrics)
+        result["warnings"].extend(metrics.get("warnings", []))
+        records = output_records(outputs)
+        version = None if spec.pure is not None or spec.compute is not None else _version(directory)
+        if time.monotonic() >= deadline:
+            raise ValueError("Operation exceeded its hard timeout.")
+        result.update(ok=True, status="succeeded", metrics=metrics, outputs=records, ffmpeg_version=version)
         if op == "check_faststart" and not metrics["faststart"]:
             result["warnings"].append("MP4 moov follows mdat; faststart is absent.")
         if op == "volume_stats" and metrics.get("mean_volume_db") is None:
@@ -156,6 +202,9 @@ def execute(op: str, job_dir: Path, input_path: str, params: dict | None = None)
         error = "Operation exceeded its hard timeout." if isinstance(exc, subprocess.TimeoutExpired) else str(exc)
         result.update(status="failed", error=_redact(error, directory))
         return result
+    finally:
+        if token is not None:
+            _EXECUTION_DEADLINE.reset(token)
 
 
 def ffmpeg_tool(op: str, job_id: str, input_path: str, params: dict | None = None) -> dict:
