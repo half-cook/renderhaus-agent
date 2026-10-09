@@ -208,11 +208,23 @@ _VISUAL_ITEM_SCHEMA = {
             "type": "string",
             "description": "Allowed values: cut, fade, dip_to_black.",
         },
-        "fit": {"type": "string", "description": "Allowed values: cover, contain."},
+        "fit": {"type": "string", "description": "Allowed values: cover, contain, pad_blur. Reframing is local/worker only; Lambda refuses pad_blur."},
         "position_x": {"type": "number", "description": "Allowed range: 0 to 1."},
         "position_y": {"type": "number", "description": "Allowed range: 0 to 1."},
         "scale": {"type": "number", "description": "Allowed range: 0.1 to 4."},
         "box": _BOX_SCHEMA,
+        "pad_box": {**_BOX_SCHEMA, "description": "Foreground canvas box from a safe-zone crop plan. Requires fit=pad_blur; local/worker only."},
+        "crop_box": {
+            "type": "object", "required": ["x", "y", "width", "height"],
+            "properties": {key: {"type": "integer"} for key in ("x", "y", "width", "height")},
+            "description": "Static even-pixel crop in display-oriented source coordinates. Local/worker only; must fit the measured source.",
+        },
+        "reframe_size": {
+            "type": "object", "required": ["width", "height"],
+            "properties": {key: {"type": "integer"} for key in ("width", "height")},
+            "description": "Validated crop-plan canvas in even pixels, 2..7680. Requires crop_box or pad_blur. Primary clips must agree.",
+        },
+        "allow_upscale": {"type": "boolean", "description": "Explicit permission to resample a reframe beyond available source pixels; reports no added detail. Default false."},
         "opacity": {"type": "number", "description": "Allowed range: 0 to 1."},
         "rotation_degrees": {
             "type": "number",
@@ -593,6 +605,23 @@ def _validate_cross_fields(provider_id: str, tool_name: str, arguments: dict[str
         for index, clip in enumerate(arguments.get("visuals") or []):
             if "box" in clip:
                 validate_box(clip["box"], f"arguments.visuals[{index}].box")
+            if "pad_box" in clip:
+                validate_box(clip["pad_box"], f"arguments.visuals[{index}].pad_box")
+                if clip.get("fit") != "pad_blur":
+                    raise ValueError("pad_box requires fit=pad_blur.")
+            if "crop_box" in clip:
+                validate_crop_box(clip["crop_box"], f"arguments.visuals[{index}].crop_box")
+                if clip.get("fit", "cover") != "cover":
+                    raise ValueError("crop_box requires fit=cover; use pad_blur without a crop to preserve the frame.")
+            if "reframe_size" in clip:
+                for name, value in clip["reframe_size"].items():
+                    if not 2 <= value <= 7680 or value % 2:
+                        raise ValueError(f"reframe_size.{name} must be an even integer from 2 to 7680.")
+                if "crop_box" not in clip and clip.get("fit") != "pad_blur":
+                    raise ValueError("reframe_size requires crop_box or fit=pad_blur.")
+            if "crop_box" in clip or clip.get("fit") == "pad_blur":
+                if clip["kind"] != "video" or clip.get("motion", "none") != "none" or clip.get("rotation_degrees", 0) != 0 or clip.get("scale", 1) != 1:
+                    raise ValueError("Reframing requires video with static scale, motion and editorial rotation.")
             if clip["kind"] not in {"image", "video"}:
                 raise ValueError(f"arguments.visuals[{index}].kind must be image or video.")
             if float(clip["duration_seconds"]) <= 0:
@@ -608,7 +637,7 @@ def _validate_cross_fields(provider_id: str, tool_name: str, arguments: dict[str
                 raise ValueError(f"arguments.visuals[{index}].source_bitrate must be positive.")
             choices = {
                 "transition": {"cut", "fade", "dip_to_black"},
-                "fit": {"cover", "contain"},
+                "fit": {"cover", "contain", "pad_blur"},
                 "motion": {"none", "zoom_in", "zoom_out", "pan_left", "pan_right"},
                 "grade": {"none", "neutral", "warm"},
             }
@@ -656,6 +685,14 @@ def _validate_cross_fields(provider_id: str, tool_name: str, arguments: dict[str
                     )
         for field in ("text_overlays", "subtitles"):
             validate_remotion_text_items(arguments.get(field) or [], f"arguments.{field}")
+
+
+def validate_crop_box(box: dict[str, Any], path: str) -> None:
+    _validate_schema(box, _VISUAL_ITEM_SCHEMA["properties"]["crop_box"], path)
+    for name, value in box.items():
+        minimum = 0 if name in {"x", "y"} else 2
+        if not minimum <= value <= 7680 or value % 2:
+            raise ValueError(f"{path}.{name} must be an even integer from {minimum} to 7680.")
 
 
 def validate_box(box: dict[str, Any], path: str) -> None:
