@@ -12,6 +12,7 @@ import { NodeInspector } from "./NodeInspector";
 import { SceneList } from "./SceneList";
 import { StudioCanvas } from "./StudioCanvas";
 import { ToolRail } from "./ToolRail";
+import { UploadError } from "./UploadError";
 import "@xyflow/react/dist/style.css";
 
 const DOCK_STORAGE_KEY = "renderhaus.studio.dock.v2";
@@ -31,6 +32,8 @@ function Workspace() {
   const hydrated = useCanvasStore((state) => state.hydrated);
   const addCreativeNode = useCanvasStore((state) => state.addCreativeNode);
   const addUploadNode = useCanvasStore((state) => state.addUploadNode);
+  const uploadError = useCanvasStore((state) => state.uploadError);
+  const dismissUploadError = useCanvasStore((state) => state.dismissUploadError);
   const undo = useCanvasStore((state) => state.undo);
   const redo = useCanvasStore((state) => state.redo);
   const setActiveTool = useCanvasStore((state) => state.setActiveTool);
@@ -192,6 +195,7 @@ function Workspace() {
         Skip to {agentOpen ? "agent" : "canvas"}
       </a>
       <CanvasHeader navigationBusy={agentBusy} onBusyChange={setAgentBusy} />
+      <UploadError message={uploadError} onDismiss={dismissUploadError} />
       <div className="canvas-surface" hidden={agentOpen}>
       <SceneList />
       <ToolRail

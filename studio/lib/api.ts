@@ -14,6 +14,7 @@ import type {
   CreativeNodeKind,
 } from "./canvas/types";
 import { studioFetch } from "./authenticated-fetch";
+import { checkUploadSize, parseUploadLimits, uploadKind, uploadSizeError } from "./upload-limits";
 
 function studioAsset(value: unknown): StudioAsset | null {
   if (!value || typeof value !== "object") {
@@ -62,7 +63,8 @@ function studioAssets(value: unknown): StudioAsset[] {
 // of a real message. Fall back to {} so the existing `payload.detail ||
 // fallback` logic still produces something readable.
 async function readJson(response: Response): Promise<Record<string, unknown>> {
-  return response.json().catch(() => ({}));
+  const payload: unknown = await response.json().catch(() => null);
+  return payload && typeof payload === "object" && !Array.isArray(payload) ? { ...payload } : {};
 }
 
 export async function fetchStatus(): Promise<StudioStatus> {
@@ -201,19 +203,41 @@ export async function uploadStudioFile(
   file: File,
   projectId: string,
 ): Promise<StudioAsset> {
+  const kind = uploadKind(file.name);
+  if (!kind) throw new Error("Use an image, video, or audio file.");
+  let limits;
+  try {
+    const health = await studioFetch("/api/health", { cache: "no-store" });
+    if (!health.ok) throw new Error("Could not check upload limits. Please try again.");
+    limits = parseUploadLimits(await health.json());
+  } catch {
+    throw new Error("Could not check upload limits. Please try again.");
+  }
+  checkUploadSize(file.size, limits[kind]);
   const body = new FormData();
-  body.append("file", file);
-  const response = await studioFetch(
-    `/api/studio/upload?project_id=${encodeURIComponent(projectId)}`,
-    { method: "POST", body },
-  );
+  body.append("file", file, file.name);
+  let response;
+  try {
+    response = await studioFetch(
+      `/api/studio/upload?project_id=${encodeURIComponent(projectId)}`,
+      { method: "POST", body },
+    );
+  } catch {
+    throw new Error("Upload was interrupted. Check your connection and try again.");
+  }
   const payload = await readJson(response);
   if (!response.ok) {
-    throw new Error(String(payload.detail || `upload ${response.status}`));
+    const detail = typeof payload.detail === "string" ? payload.detail : null;
+    if (response.status === 413) throw new Error(detail || uploadSizeError(limits[kind]));
+    if (response.status === 415) throw new Error(detail || "Use an image, video, or audio file.");
+    if (response.status === 400 || response.status === 422) {
+      throw new Error(detail && !detail.includes("parsing the body") ? detail : "Upload was interrupted. Please try again.");
+    }
+    throw new Error(detail || "Upload failed. Please try again.");
   }
   const asset = studioAsset(payload);
   if (!asset) {
-    throw new Error("The upload did not return an asset version.");
+    throw new Error("Upload was interrupted. Please try again.");
   }
   return asset;
 }

@@ -26,10 +26,10 @@ function elements(tree) {
   return [tree, ...elements(tree.props?.children)];
 }
 
-for (const [field, type, value] of [
-  ["reference_image_urls", "string", "https://example.invalid/frame.png"],
-  ["reference_video_durations", "number", 5.25],
-  ["reference_video_fps", "number", 24],
+for (const [field, type, value, label] of [
+  ["reference_image_urls", "string", "https://example.invalid/frame.png", "Additional image references"],
+  ["reference_video_durations", "number", 5.25, "reference video durations"],
+  ["reference_video_fps", "number", 24, "reference video fps"],
 ]) {
   test(`reference form edits ${field} as a typed array`, () => {
     const values = {};
@@ -37,7 +37,6 @@ for (const [field, type, value] of [
       schema: { type: "object", properties: { [field]: { type: "array", items: { type } } } },
       values, onChange: (name, next) => { values[name] = next; },
     }));
-    const label = field.replaceAll("_", " ");
     const add = render().find((element) => element.type === "button" && element.props["aria-label"] === `Add ${label}`);
     assert.ok(add, "array editor offers an add control");
     add.props.onClick();

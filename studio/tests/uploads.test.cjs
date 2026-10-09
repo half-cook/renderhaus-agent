@@ -82,6 +82,7 @@ test("unsupported extension has a readable preflight error", async () => {
 for (const [status, body, expected] of [
   [413, JSON.stringify({ detail: "File is larger than 2 MB." }), /File is larger than 2 MB\./],
   [413, "<html>Too large</html>", /File is larger than 100 MB\./],
+  [413, "null", /File is larger than 100 MB\./],
   [415, "", /Use an image, video, or audio file\./],
   [500, "Internal Server Error", /Upload failed\. Please try again\./],
   [400, JSON.stringify({ detail: "There was an error parsing the body" }), /Upload was interrupted\. Please try again\./],
@@ -148,7 +149,9 @@ test("a successful retry clears the upload alert and adds the asset", async () =
 for (const env of [{}, { STUDIO_MAX_UPLOAD_MB: "8", STUDIO_MAX_VIDEO_UPLOAD_MB: "20" }, { STUDIO_MAX_AUDIO_UPLOAD_MB: "120" }]) {
   test(`Next proxy and Python limits agree for ${JSON.stringify(env)}`, async () => {
     const config = harness(undefined, env).load("next.config.ts").default;
-    const backend = JSON.parse(execFileSync(path.join(root, "../.venv/bin/python"), ["-c", "import json; from server.uploads import upload_limits_mb; print(json.dumps(upload_limits_mb()))"], { cwd: path.join(root, ".."), env: { PATH: process.env.PATH, ...env } }).toString());
+    const venvPython = path.join(root, "../.venv/bin/python");
+    const python = fs.existsSync(venvPython) ? venvPython : "python3";
+    const backend = JSON.parse(execFileSync(python, ["-c", "import json; from server.uploads import upload_limits_mb; print(json.dumps(upload_limits_mb()))"], { cwd: path.join(root, ".."), env: { PATH: process.env.PATH, ...env } }).toString());
     assert.equal(config.experimental?.middlewareClientMaxBodySize, (Math.max(...Object.values(backend)) + 1) * MB);
     const rewrites = await config.rewrites();
     assert.equal(rewrites[0].source, "/api/:path*");
@@ -156,7 +159,7 @@ for (const env of [{}, { STUDIO_MAX_UPLOAD_MB: "8", STUDIO_MAX_VIDEO_UPLOAD_MB: 
 }
 
 test("invalid proxy limits fail configuration", () => {
-  for (const value of ["0", "-1", "NaN", "1.5", "unlimited"]) {
+  for (const value of ["0", "-1", "NaN", "1.5", "unlimited", "9007199254740992"]) {
     assert.throws(() => harness(undefined, { STUDIO_MAX_UPLOAD_MB: value }).load("next.config.ts"), /STUDIO_MAX_UPLOAD_MB/);
   }
 });

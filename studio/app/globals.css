@@ -1699,6 +1699,22 @@ audio.agent-artifact-media {
   box-shadow: var(--shadow);
 }
 
+.connection-hint.upload-error {
+  top: 76px;
+  bottom: auto;
+  max-width: min(560px, calc(100vw - 32px));
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.upload-error button {
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+}
+
 .quick-add {
   width: 200px;
   padding: 8px;
