@@ -321,6 +321,45 @@ def vidu_q4_price_cents(arguments: dict[str, Any], *, as_of: date | None = None)
     return rates[resolution] * duration
 
 
+# Official fal Wan 3 pricing and reference-video billing, read 2026-10-09:
+# https://fal.ai/wan-3
+# https://fal.ai/models/alibaba/wan-3.0/reference-to-video/api
+WAN3_CENTS_PER_SECOND = {"480p": Decimal("5"), "720p": Decimal("10"), "1080p": Decimal("20")}
+WAN3_PRICING_URL = "https://fal.ai/wan-3"
+WAN3_PRICING_READ_DATE = "2026-10-09"
+
+
+def wan3_price_cents(arguments: dict[str, Any]) -> Decimal:
+    """Quote output plus measured reference-video seconds without fetching media."""
+    duration = arguments.get("duration", 5)
+    if duration is None:
+        raise ValueError("Wan 3 smart duration billing is unknown; choose an explicit duration.")
+    if type(duration) is not int or not 2 <= duration <= 30:
+        raise ValueError("Wan 3 duration must be an integer from 2 to 30.")
+    resolution = arguments.get("resolution", "1080p")
+    if not isinstance(resolution, str) or resolution not in WAN3_CENTS_PER_SECOND:
+        raise ValueError("Invalid Wan 3 resolution.")
+    if not isinstance(arguments.get("audio", True), bool):
+        raise ValueError("Wan 3 audio must be boolean.")
+    model = arguments.get("model")
+    if model is not None and model not in {
+        "alibaba/wan-3.0/text-to-video", "alibaba/wan-3.0/image-to-video",
+        "alibaba/wan-3.0/reference-to-video",
+    }:
+        raise ValueError("Unsupported Wan 3 model identity.")
+    videos = arguments.get("reference_video_urls") or []
+    measurements = arguments.get("reference_video_durations") or []
+    if not isinstance(videos, list) or not isinstance(measurements, list) or len(videos) > 5 or len(videos) != len(measurements):
+        raise ValueError("Wan 3 reference video durations must match the reference videos.")
+    if any(isinstance(value, bool) or not isinstance(value, (int, float)) or
+           not math.isfinite(value) or value <= 0 for value in measurements):
+        raise ValueError("Wan 3 reference video durations must be finite positive seconds.")
+    input_seconds = sum(Decimal(str(value)) for value in measurements)
+    if input_seconds > 15:
+        raise ValueError("Wan 3 reference videos must total at most 15 seconds.")
+    return WAN3_CENTS_PER_SECOND[resolution] * (duration + input_seconds)
+
+
 def _luma_cost(tool: str, arguments: dict[str, Any]) -> GenerationCost:
     if tool == "list_luma_models":
         return GenerationCost(0, 0)
@@ -352,18 +391,19 @@ def _luma_cost(tool: str, arguments: dict[str, Any]) -> GenerationCost:
 # (480p $0.05, 580p $0.075, 720p $0.10; same for inpainting/outpainting/reframe).
 # TODO: Confirm Wan 2.2 freeform and pose pricing, and auto/240p/360p rates.
 def _fal_cost(tool: str, arguments: dict[str, Any]) -> GenerationCost:
-    from providers.fal import api, queue, vidu, wan
+    from providers.fal import api, queue, vidu, wan, wan3
 
     if tool == "list_fal_models":
         return GenerationCost(0, 0)
-    if tool not in wan.GENERATING_TOOLS + vidu.GENERATING_TOOLS:
+    if tool not in wan.GENERATING_TOOLS + vidu.GENERATING_TOOLS + wan3.GENERATING_TOOLS:
         raise ValueError("Unknown fal generation tool.")
     from providers.registry import schema_from_callable
     from providers.contracts import validate_tool_arguments
 
-    if tool in vidu.TOOL_ENDPOINTS:
-        if "model" in arguments and arguments["model"] != vidu.TOOL_ENDPOINTS[tool]:
-            raise ValueError("Vidu Q4 model must match the tool's fixed endpoint.")
+    fixed_endpoints = {**vidu.TOOL_ENDPOINTS, **wan3.TOOL_ENDPOINTS}
+    if tool in fixed_endpoints:
+        if "model" in arguments and arguments["model"] != fixed_endpoints[tool]:
+            raise ValueError("fal model must match the tool's fixed endpoint.")
         arguments = {key: value for key, value in arguments.items() if key != "model"}
     schema = schema_from_callable(tool, api.TOOL_HANDLERS[tool])["inputSchema"]
     cleaned = validate_tool_arguments("fal", tool, arguments, schema)
@@ -371,6 +411,8 @@ def _fal_cost(tool: str, arguments: dict[str, Any]) -> GenerationCost:
         return GenerationCost(0, 0)
     if tool in vidu.TOOL_ENDPOINTS:
         return _with_fee(round(vidu_q4_price_cents(cleaned)))
+    if tool in wan3.TOOL_ENDPOINTS:
+        return _with_fee(round(wan3_price_cents(cleaned)))
     endpoint = wan.endpoint_for(tool, cleaned)
     cents = wan.price_cents(endpoint, cleaned.get("resolution", "720p"), cleaned.get("num_frames", 81))
     return _with_fee(round(cents))
