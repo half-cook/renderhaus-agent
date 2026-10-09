@@ -257,6 +257,12 @@
         "US"
       ],
       "training_eligible": false
+    },
+    "hyperframes": {
+      "enabled": true,
+      "license": "Apache-2.0",
+      "allowed_regions": [],
+      "training_eligible": false
     }
   },
   "tools": {
@@ -459,9 +465,24 @@
       "gateway_tool": "Luma___extend_video",
       "skill": "t2v",
       "status": "ready"
+    },
+    "hyperframes_render": {
+      "gateway_tool": "HyperFrames___render_composition",
+      "skill": "hyperframes",
+      "status": "ready"
     }
   },
   "rules": [
+    {
+      "pattern": "\\bhyperframes\\b.*\\belevenlabs\\b|\\belevenlabs\\b.*\\bhyperframes\\b",
+      "skill": "hyperframes",
+      "abstract_tool": "elevenlabs_tts"
+    },
+    {
+      "pattern": "\\bhyperframes\\b",
+      "skill": "hyperframes",
+      "abstract_tool": "hyperframes_render"
+    },
     {
       "pattern": "\\bhunyuan\\b",
       "skill": "t2v",

@@ -7,6 +7,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import AsyncMock, patch
 
+from langchain_core.messages import AIMessage
 from agent.deep_agent.runner import run_with_servers
 from agent.studio_agent_next import (
     StudioAgentApprovalRequired,
@@ -123,6 +124,10 @@ class HyperFramesRoutingTests(unittest.TestCase):
             self.assertEqual(route.status, "blocked")
             self.assertIsNone(route.tool)
             self.assertIn("unavailable", route.reason.lower())
+            compound = route_intent("HyperFrames plus ElevenLabs voiceover",
+                                    available_tools={"ElevenLabs___text_to_speech_convert"})
+            self.assertEqual(compound.status, "blocked")
+            self.assertIsNone(compound.tool)
 
     def test_requested_voiceover_keeps_hyperframes_workflow_and_audio_role(self):
         from agent.deep_agent.routing import route_intent
@@ -233,6 +238,40 @@ class HyperFramesGraphTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(restored.tool_events[0].id, paused.approvals[0].call_id)
         self.assertEqual(restored.tool_events[0].status, "dry_run")
 
+    async def test_editor_subagent_retains_role_restrictions_and_native_approval(self):
+        from agent.hyperframes import HyperFramesServer
+
+        server = HyperFramesServer()
+        server.call_tool = AsyncMock(wraps=server.call_tool)
+        request = self.request()
+        studio = _context_from_request(request)
+
+        def editor_render(messages, tools):
+            self.assertIn("Renderhaus editor", messages[0].text)
+            self.assertIn("call_editor_tool", tools)
+            self.assertNotIn("call_audio_tool", tools)
+            self.assertNotIn("call_media_tool", tools)
+            return self.render()
+
+        with self.assertRaises(StudioAgentApprovalRequired) as raised:
+            await run_with_servers(request, studio, [server], model=ScriptedModel([
+                call("task", {"subagent_type": "editor", "description": "Preview the explicit HyperFrames composition"}, "editor"),
+                self.read_skill(), editor_render,
+            ]))
+        approval = raised.exception.approvals[0]
+        server.call_tool.assert_not_awaited()
+        self.assertEqual(approval.tool_name, TOOL_NAME)
+        self.assertIsNone(approval.estimated_cost["total_cents"])
+        resumed = self.request(session_items=json.loads(json.dumps(studio.session_items)),
+                               resume_state=raised.exception.state,
+                               approval_decisions=[StudioApprovalDecision(call_id=approval.call_id, decision="approve")])
+        restored = _context_from_request(resumed)
+        await run_with_servers(resumed, restored, [server], model=ScriptedModel([
+            AIMessage(content="Composition preview only. No rendered MP4 is available."), final(),
+        ]))
+        server.call_tool.assert_awaited_once_with(TOOL_NAME, COMPOSITION)
+        self.assertEqual(restored.tool_events[0].status, "dry_run")
+
     async def test_rejection_never_calls_local_renderer(self):
         from agent.hyperframes import HyperFramesServer
 
@@ -268,7 +307,7 @@ class HyperFramesGraphTests(unittest.IsolatedAsyncioTestCase):
         with patch.dict(os.environ, {"RENDERHAUS_AUTONOMOUS_RUN_CAP_CENTS": "100"}):
             await run_with_servers(request, studio, [server], model=ScriptedModel([self.read_skill(), self.render(), final()]))
         server.call_tool.assert_not_awaited()
-        spending = next(item["spending"] for item in studio.session_items if item["type"] == "renderhaus_run_spending")
+        spending = next(item["spending"] for item in studio.session_items if "spending" in item)
         self.assertTrue(spending["stopped"])
         self.assertEqual(spending["reservations"], {})
 
@@ -304,3 +343,12 @@ class HyperFramesGraphTests(unittest.IsolatedAsyncioTestCase):
                 servers = run.await_args.args[2]
                 names = [tool.name for server in servers for tool in await server.list_tools()]
                 self.assertEqual(TOOL_NAME in names, enabled == "true")
+
+    async def test_codex_entrypoint_keeps_optional_tool_outside_its_catalog(self):
+        from agent.studio_agent_next import run_studio_agent
+
+        with patch("agent.studio_codex_runner.run_with_servers", new=AsyncMock()) as run:
+            await run_studio_agent(self.request(), harness=object(), mcp_servers=[Gateway([])])
+            servers = run.await_args.args[3]
+            names = [tool.name for server in servers for tool in await server.list_tools()]
+        self.assertNotIn(TOOL_NAME, names)

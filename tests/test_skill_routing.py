@@ -83,6 +83,7 @@ class SkillContracts(unittest.TestCase):
                 "still-then-video",
                 "audio-bed",
                 "motion-graphics",
+                "hyperframes",
                 "continuity-qc",
                 "resolve-handoff",
                 "video-short",
