@@ -157,7 +157,8 @@ def _clip(raw: Any, track_id: str, assets: dict[str, Asset], rate: FrameRate) ->
     volume = item.get("volume", 1)
     if isinstance(volume, bool) or not isinstance(volume, (int, float)) or not 0 <= volume <= 1:
         raise ValueError(f"Clip {clip_id} volume must be between 0 and 1.")
-    return Clip(clip_id, asset_id, start, duration, source_in, track_id, fit, float(volume))
+    return Clip(clip_id, asset_id, start, duration, source_in,
+                item.get("originalTrackId", track_id), fit, float(volume))
 
 
 def parse_snapshot(snapshot: dict[str, Any]) -> Timeline:
@@ -269,6 +270,13 @@ def parse_snapshot(snapshot: dict[str, Any]) -> Timeline:
             if clip.volume != 1:
                 warnings.append("CMX3600 omits audio gain. FCPXML carries gain and OTIO stores it in metadata.")
         track_name = _text(raw.get("name", track_id), "track.name")
+        if raw.get("generated") is True:
+            if any(not assets[clip.asset_id].generated for clip in clips):
+                raise ValueError("An isolated generated track cannot contain original media.")
+            tracks.append(Track(track_id, track_name, "audio" if kind == "audio" else "video",
+                                tuple(clips), True, raw.get("originalTrackId", track_id),
+                                bool(raw.get("locked", False))))
+            continue
         normal = tuple(clip for clip in clips if not assets[clip.asset_id].generated)
         generated = tuple(clip for clip in clips if assets[clip.asset_id].generated)
         track_kind = "audio" if kind == "audio" else "video"

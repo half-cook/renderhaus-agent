@@ -78,6 +78,10 @@
               </asset-clip>
             </gap>
           </spine>
+          <metadata>
+            <md key="com.renderhaus.projectId" value="project-handoff" />
+            <md key="com.renderhaus.tracks" value="[{&quot;clipIds&quot;:[&quot;camera-clip&quot;],&quot;edl&quot;:&quot;edl/V01-Camera.edl&quot;,&quot;generated&quot;:false,&quot;id&quot;:&quot;camera-track&quot;,&quot;kind&quot;:&quot;video&quot;,&quot;locked&quot;:false,&quot;name&quot;:&quot;Camera&quot;,&quot;number&quot;:1,&quot;originalTrackId&quot;:&quot;camera-track&quot;},{&quot;clipIds&quot;:[],&quot;edl&quot;:&quot;edl/V02-Colourist.edl&quot;,&quot;generated&quot;:false,&quot;id&quot;:&quot;grade-track&quot;,&quot;kind&quot;:&quot;video&quot;,&quot;locked&quot;:false,&quot;name&quot;:&quot;Colourist&quot;,&quot;number&quot;:2,&quot;originalTrackId&quot;:&quot;grade-track&quot;},{&quot;clipIds&quot;:[&quot;generated-clip&quot;],&quot;edl&quot;:&quot;edl/V03-Generated---Camera.edl&quot;,&quot;generated&quot;:true,&quot;id&quot;:&quot;renderhaus-generated-d804c07f273fb64d&quot;,&quot;kind&quot;:&quot;video&quot;,&quot;locked&quot;:false,&quot;name&quot;:&quot;Generated - Camera&quot;,&quot;number&quot;:3,&quot;originalTrackId&quot;:&quot;camera-track&quot;}]" />
+          </metadata>
         </sequence>
       </project>
     </event>

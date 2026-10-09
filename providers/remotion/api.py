@@ -689,7 +689,23 @@ def export_nle_timeline(
         return result
 
 
+def import_nle_timeline(
+    interchange_text: str,
+    timeline_json: str,
+    format: str = "fcpxml",
+) -> dict[str, Any]:
+    """Import an editor's FCPXML or OTIO JSON onto existing project assets without media I/O."""
+    from providers.nle.importer import import_arguments
+
+    result = import_arguments(interchange_text, timeline_json, format)
+    if dry_run() and result["status"] == "succeeded":
+        result["status"] = "dry_run"
+    result["note"] = "Replacement assembly only. Review the report before saving; no project or media was modified."
+    return result
+
+
 TOOL_HANDLERS = {
+    "import_nle_timeline": import_nle_timeline,
     "prepare_conversational_edit": prepare_conversational_edit,
     "render_timeline": render_timeline,
     "get_render_progress": get_render_progress,
@@ -697,6 +713,7 @@ TOOL_HANDLERS = {
 }
 
 GATEWAY_TOOLS = (
+    "import_nle_timeline",
     "prepare_conversational_edit",
     "render_timeline",
     "get_render_progress",

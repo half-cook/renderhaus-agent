@@ -77,7 +77,8 @@ class NleImportTests(unittest.TestCase):
         current['document']['assets'][1]['generated'] = False
         timeline = otio.adapters.read_from_string(exported(current, 'otio'), 'otio_json')
         first, second = timeline.tracks[0][:2]
-        timeline.tracks[0][0], timeline.tracks[0][1] = second, first
+        timeline.tracks[0].clear()
+        timeline.tracks[0].extend([second, first])
         result = import_edit(otio.adapters.write_to_string(timeline, 'otio_json'), current, 'otio')
         clips = result['timeline']['document']['tracks'][0]['items']
         self.assertEqual([c['assetId'] for c in clips], ['generated', 'camera'])
@@ -172,6 +173,38 @@ class NleImportTests(unittest.TestCase):
         self.assertEqual(result['status'], 'succeeded')
         self.assertTrue(all(not t['items'] for t in result['timeline']['document']['tracks']))
 
+    def test_otio_fade_from_black_maps_source_handles_and_fade(self):
+        current = snapshot()
+        current['document']['tracks'][0]['items'][0]['start'] = 0.5
+        current['document']['tracks'][0]['items'].pop()
+        timeline = otio.adapters.read_from_string(exported(current, 'otio'), 'otio_json')
+        timeline.tracks[0].insert(1, otio.schema.Transition(
+            transition_type=otio.schema.TransitionTypes.SMPTE_Dissolve,
+            in_offset=otio.opentime.RationalTime(3, 24),
+            out_offset=otio.opentime.RationalTime(3, 24),
+        ))
+        result = import_edit(otio.adapters.write_to_string(timeline, 'otio_json'), current, 'otio')
+        self.assertEqual(result['status'], 'succeeded')
+        clip = result['timeline']['document']['tracks'][0]['items'][0]
+        self.assertEqual(clip['start'], 0.375)
+        self.assertEqual(clip['sourceIn'], 0.875)
+        self.assertEqual(clip['duration'], 1.125)
+        self.assertEqual(clip['fadeIn'], 0.25)
+
+    def test_clip_to_clip_dissolve_blocks_without_silent_cut(self):
+        current = snapshot()
+        current['document']['assets'][1]['generated'] = False
+        timeline = otio.adapters.read_from_string(exported(current, 'otio'), 'otio_json')
+        timeline.tracks[0].insert(1, otio.schema.Transition(
+            transition_type=otio.schema.TransitionTypes.SMPTE_Dissolve,
+            in_offset=otio.opentime.RationalTime(3, 24),
+            out_offset=otio.opentime.RationalTime(3, 24),
+        ))
+        result = import_edit(otio.adapters.write_to_string(timeline, 'otio_json'), current, 'otio')
+        self.assertEqual(result['status'], 'blocked')
+        self.assertIsNone(result['timeline'])
+        self.assertTrue(result['unsupported'])
+
     def test_gateway_dry_run_contract_local_lambda_and_cost(self):
         from lambdas.handler import handler
         from server.billing_rates import cost_for
@@ -211,3 +244,35 @@ class NleImportTests(unittest.TestCase):
             self.assertEqual(route.status, 'ready')
         self.assertEqual(resolve_alias('nle_import'), 'Remotion___import_nle_timeline')
         self.assertEqual(route_intent('export FCPXML').tool, 'Remotion___export_nle_timeline')
+
+    def test_import_boundary_retains_asset_handles_without_publishing(self):
+        from agent.studio_agent_next import StudioAgentContext
+
+        context = StudioAgentContext(prompt='import OTIO', nodes=[])
+        context.source_publisher = lambda _: self.fail('Importer must not publish media')
+        current = snapshot()
+        current['document']['assets'][0]['url'] = 'renderhaus-asset://version-camera-1'
+        args = {'timeline_json': json.dumps(current), 'interchange_text': exported(current, 'otio'), 'format': 'otio'}
+        self.assertEqual(context.prepare_gateway_arguments('Remotion___import_nle_timeline', args), args)
+
+    def test_clip_and_resource_identity_conflict_blocks(self):
+        current = snapshot()
+        root = ET.fromstring(exported(current, 'fcpxml'))
+        clip = root.find('.//asset-clip')
+        for md in clip.findall('./metadata/md'):
+            if md.get('key') == 'com.renderhaus.assetId':
+                md.set('value', 'generated')
+            if md.get('key') == 'com.renderhaus.versionId':
+                md.set('value', 'version-generated-1')
+        result = import_edit(ET.tostring(root, encoding='unicode'), current, 'fcpxml')
+        self.assertEqual(result['status'], 'blocked')
+        self.assertIsNone(result['timeline'])
+
+    def test_gap_markers_survive_as_sequence_markers(self):
+        current = snapshot()
+        root = ET.fromstring(exported(current, 'fcpxml'))
+        gap = root.find('.//gap')
+        ET.SubElement(gap, 'marker', {'start': '3601s', 'duration': '1/24s', 'value': 'Picture gap'})
+        result = import_edit(ET.tostring(root, encoding='unicode'), current, 'fcpxml')
+        self.assertEqual(result['timeline']['document']['markers'][0]['name'], 'Picture gap')
+        self.assertEqual(result['timeline']['document']['markers'][0]['start'], 1)

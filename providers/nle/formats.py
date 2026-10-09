@@ -42,6 +42,7 @@ def track_entries(timeline: Timeline) -> list[dict[str, Any]]:
         entries.append({
             "id": track.id, "name": track.name, "kind": track.kind, "number": number,
             "generated": track.generated, "originalTrackId": track.original_track_id,
+            "locked": track.locked,
             "edl": f"edl/{prefix}{number:02}-{_safe_name(track.name)}.edl",
             "clipIds": [clip.id for clip in track.clips],
         })
@@ -210,6 +211,7 @@ def fcpxml_text(timeline: Timeline, paths: dict[str, str]) -> str:
             "trackName": track.name, "originalTrackId": track.original_track_id,
             "recordStartFrame": clip.start,
         })
+    _metadata(sequence, {"projectId": timeline.id, "tracks": track_entries(timeline)})
     ET.indent(root, space="  ")
     return '<?xml version="1.0" encoding="UTF-8"?>\n<!DOCTYPE fcpxml>\n' + ET.tostring(
         root, encoding="unicode", short_empty_elements=True,
