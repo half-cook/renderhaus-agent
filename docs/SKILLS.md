@@ -459,6 +459,9 @@ Local final assembly uses the same `Remotion___render_timeline` and
 plain `output_path` fields can supply visuals and audio without S3. Trims, fit, fades, and
 audio timing/volume/fades are supported; captions and motion effects require Lambda. See
 [local assembly and gateway setup](LOCAL_ASSEMBLY.md). The default backend remains Lambda.
+The final-assembly skill defaults `output_resolution` to `source` and reports the measured
+delivered dimensions. Explicit enlargement includes the source resolution and a warning
+that resampling adds no detail. The existing upscale skill handles Topaz enhancement.
 
 ## Permanent Seedance edit/extend defaults and named Wan
 

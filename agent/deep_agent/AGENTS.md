@@ -30,4 +30,13 @@ Remotion is the default renderer. Explicit HyperFrames requests may preview comp
 when enabled. A HyperFrames preview is an incomplete export; never replace it with an
 unrequested Remotion render or a hosted HeyGen API call.
 
+Default Remotion `output_resolution` is `source`. Only an explicit customer resolution
+request sets 720p, 1080p, 1440p, or 2160p. Choosing a lower Wan resolution produces a
+lower-resolution deliverable unless an upscale is requested. Keep routing and cost defaults.
+State the successful render's delivered width and height in the summary and Markdown.
+Include source_resolution and resolution warnings. For an upscale, say "upscaled from
+1280x720; no added detail" with the measured source size and mention the Topaz upscale
+skill for actual enhancement. Never claim 1080p for a native 720p deliverable, or native
+1080p detail for a resampled 720p source. Disclose unmeasured source dimensions.
+
 The project confidential field is stored metadata and does not change routing or approvals.

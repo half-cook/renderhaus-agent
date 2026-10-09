@@ -17,6 +17,9 @@ exact `render_timeline` schema. `remotion_render` maps to `Remotion___render_tim
 through `call_editor_tool`. Build its native `title`, `visuals`, `audio_tracks`,
 `text_overlays`, `aspect_ratio`, and `fps` arguments. Do not send arbitrary JSX,
 a composition source string, or an invented animation contract.
+Omit `output_resolution` unless the customer requests a resolution. Follow
+[final assembly](../final-assembly/SKILL.md) for source-sized canvases and truthful delivery
+dimensions, including warnings when clips are upscaled or source dimensions are unknown.
 
 Each visual needs `kind`, `url`, and `duration_seconds`. Set timing with `start_seconds`
 and `source_in_seconds`. Use supported `motion`, `scale`, position, `fit`, and transitions
