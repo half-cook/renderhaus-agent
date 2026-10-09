@@ -167,12 +167,12 @@ Pending aliases cannot dispatch as Gateway tools. The generated inventory is in
 
 The original video-short, product-images, storyboard-shots, audio, final-assembly and refinement
 skills remain. Image-gen applies GPT still defaults and Recraft/Ideogram exceptions.
-Named-provider honors explicit demoted providers. Pending specialists include long-presenter HeyGen,
+Named-provider honors explicit demoted providers. Pending specialists include
 act-two, upscale and lyrics-video. Product-demo-video keeps the pending cutaway capture utility;
 whiteboard-explainer plans Remotion templates without claiming unsupported marker-hand animation.
 
 The deterministic router supplies skill and tool proposals in graph input and Studio context.
-The capability-map fixture contains 129 retained rows, with 96 active and 33 dependency skips.
+The capability-map fixture contains 129 retained rows, with 98 active and 31 dependency skips.
 Archived/confidential routes are dropped. Active rows cover built tools and declared interims;
 pending specialists keep named branch reasons. Editorial overrides retain the safe preparer,
 separate rendering approval, and existing export/HyperFrames narration workflow contracts.
@@ -364,9 +364,9 @@ Model Studio adapter restriction still blocks commercial live work. See
 defaults, including text-in-image generation. Edits accept a primary image, up to 15 additional
 references, and an optional mask. Results contain saved images synchronously, without polling.
 Seedream remains explicit-only. Spending approval and visual approval remain separate.
-The OpenAI branch activated eight GPT routing rows. With Sync, 96 routing cases are active
-and 33 remain skipped, including Recraft and Ideogram specialists.
-There are 11 providers, 91 Gateway tools, and 24 packaged skills.
+The OpenAI branch activated eight GPT routing rows. With Sync, 98 routing cases are active
+and 31 remain skipped, including Recraft and Ideogram specialists.
+There are 12 providers, 95 Gateway tools, and 24 packaged skills.
 
 [OpenAI configuration and verified sources](OPENAI_IMAGES.md) describe the default dry-run flag,
 unknown pre-call costs, output training restriction, and blocked Comet validation.
@@ -382,3 +382,18 @@ including autonomous runs with the generic premium-video flag disabled. Approval
 and progress disclosure include host, model, consent subjects and the host-specific quote.
 Polling is free. Consent and vendor-policy failures remain refusals after spending approval.
 See [SYNC.md](SYNC.md) for terms, pricing and verification limits.
+
+
+## HeyGen dispatch and consent
+
+`HeyGen` is a media dispatch target. `HeyGen___create_avatar_video` always pauses for native
+approval, including autonomous runs and when the premium-video switch is disabled. The existing
+0.7.23 Deep Agents `interrupt_on` description includes engine, routing basis, subjects, consent,
+cost and upload-use disclosure. Approval/rejection persists through the existing checkpointer
+and resumes the original tool arguments on a fresh worker. The shared executor rejects missing
+recorded consent before interruption; the provider checks accepted HeyGen consent before POST.
+
+The direct Studio invoke endpoint refuses HeyGen generation so it cannot bypass approval.
+Saved poll artifacts finish standalone presenters; captions or assembly require rendering.
+`training_eligible=false` follows the model policy even when an outcome claims otherwise.
+Inventory is 12 providers, 95 Gateway tools and 24 skills. See [HeyGen](HEYGEN.md).
