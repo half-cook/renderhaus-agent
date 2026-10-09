@@ -38,7 +38,7 @@ class CapabilityApprovalTests(unittest.TestCase):
     def test_nonvideo_and_exempt_behavior_is_preserved(self):
         self.assertFalse(tool_needs_approval("ElevenLabs___text_to_speech_convert", True))
         self.assertTrue(tool_needs_approval("ElevenLabs___text_to_speech_convert", False))
-        self.assertTrue(tool_needs_approval("ElevenLabs___voices_ivc_create", True))
+        self.assertFalse(tool_needs_approval("ElevenLabs___voices_ivc_create", True))
         for autonomous in (False, True):
             self.assertFalse(tool_needs_approval("Remotion___export_nle_timeline", autonomous))
         self.assertFalse(tool_needs_approval("Fal___get_video_task", True))
@@ -75,31 +75,26 @@ class CapabilityExecutorTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn("unknown", event.message.lower())
         self.assertIn("default", event.message)
 
-    async def test_approved_confidential_calls_cannot_bypass_project_policy(self):
-        refused = (
-            ("Runway___text_to_video", "use Runway for a video"),
-            ("Seedream___image_to_image", "edit this confidential image"),
-            ("ElevenLabs___text_to_speech_convert", "make a voiceover"),
-            ("ElevenLabs___music_compose", "compose music"),
-            ("ElevenLabs___text_to_sound_effects_convert", "make sound effects"),
-            ("UnknownProvider___generate_audio", "make audio"),
-        )
-        for name, prompt in refused:
-            with self.subTest(name=name):
-                executor, gateway = self.executor(name, prompt, confidential=True)
-                result = await executor.execute({"tool_name": name, "arguments": {}, "call_id": "forbidden"}, approved=True)
-                self.assertEqual(result["status"], "not_run")
-                self.assertIn("confidential", result["reason"].lower())
-                self.assertIn("flag", result["reason"].lower())
-                gateway.call_tool.assert_not_awaited()
 
-    async def test_confidential_still_is_pending_and_never_uses_image_provider(self):
-        name = "Seedream___text_to_image"
-        executor, gateway = self.executor(name, "generate a confidential still image", confidential=True)
-        result = await executor.execute({"tool_name": name, "arguments": {}, "call_id": "still"}, approved=True)
-        self.assertEqual(result["status"], "not_run")
-        self.assertIn("provider pending: flux2_klein4b_t2i", result["reason"])
-        gateway.call_tool.assert_not_awaited()
+
+
+class ConfidentialMetadataTests(unittest.IsolatedAsyncioTestCase):
+    async def test_confidential_metadata_does_not_change_dispatch_or_approval(self):
+        for confidential in [False, True]:
+            with self.subTest(confidential=confidential):
+                studio = _context_from_request(StudioAgentRequest(
+                    prompt="use Runway for a video", confidential=confidential,
+                    autonomous=True, job_id="metadata-test",
+                ))
+                name = "Runway___text_to_video"
+                gateway = Gateway([Tool(name=name, inputSchema={"type": "object"})])
+                executor = GatewayExecutor(studio, [gateway])
+                with self.assertRaises(ToolApprovalPending):
+                    await executor.execute({"tool_name": name, "arguments": {}, "call_id": "video"})
+                gateway.call_tool.assert_not_awaited()
+                self.assertIn("explicit request", studio.progress_events[-1].message)
+                await executor.execute({"tool_name": name, "arguments": {}, "call_id": "video"}, approved=True)
+                gateway.call_tool.assert_awaited_once()
 
 
 class CapabilityNativeInterruptTests(unittest.IsolatedAsyncioTestCase):

@@ -96,23 +96,18 @@ class CapabilityMapTests(unittest.TestCase):
         self.assertEqual(route.status, "blocked")
         self.assertIn("split", route.reason)
 
-    def test_confidential_project_policy_overrides_explicit_and_exception(self):
-        for prompt, tool in [("make a video", "Fal___text_to_video"), ("animate this photo", "Fal___image_to_video"),
-                             ("restyle this footage", "Fal___video_to_video"), ("use Runway for a video", "Fal___text_to_video")]:
-            route = routing.route_intent(prompt, confidential=True)
-            self.assertEqual((route.skill, route.tool), ("confidential-route", tool))
-            self.assertEqual(route.model, "fal-ai/wan-22-vace-fun-a14b")
-        for prompt in ["generate a still image", "use Seedream to make a poster"]:
-            route = routing.route_intent(prompt, confidential=True)
-            self.assertEqual(route.alias, "flux2_klein4b_t2i")
-            self.assertEqual(route.status, "pending")
-            self.assertIsNone(route.tool)
-            self.assertIn("feat/provider-fal-flux2-klein4b", route.reason)
-        for prompt in ["edit this image", "lipsync this footage", "narrate", "generate music", "add sound effects",
-                       "upscale clip", "interpolate frames", "transfer facial acting", "clone my voice"]:
-            route = routing.route_intent(prompt, confidential=True)
-            self.assertEqual(route.status, "blocked", prompt)
-            self.assertIn("turn off", route.reason)
+
+    def test_project_confidential_flag_has_no_routing_effect(self):
+        for prompt in ["make a video", "use Runway for a video", 'mascot says "hi"',
+                       "generate a still image", "edit this image", "lipsync this footage",
+                       "narrate", "generate music", "add sound effects", "upscale clip",
+                       "interpolate frames", "transfer facial acting", "clone my voice"]:
+            with self.subTest(prompt=prompt):
+                self.assertEqual(routing.route_intent(prompt, confidential=True).public(),
+                                 routing.route_intent(prompt, confidential=False).public())
+        self.assertNotIn("project_policy", routing.POLICY)
+        self.assertNotIn("flux2_klein4b_t2i", routing.TOOL_MAP)
+        self.assertNotIn("confidential-route", routing.POLICY["pending_skills"])
 
     def test_every_paid_video_pauses_in_autonomous_runs(self):
         from agent.gateway_executor import tool_needs_approval
@@ -255,7 +250,7 @@ class LadderGraphTests(unittest.IsolatedAsyncioTestCase):
                           {"status": "queued", "job_id": "saved"})
         with tempfile.TemporaryDirectory() as directory, patch.dict(os.environ, {"RENDERHAUS_OUTCOME_DIR": directory}):
             executor = GatewayExecutor(studio, [gateway])
-            await executor.execute({"tool_name": "Seedance___text_to_video", "arguments": {"prompt": "Shot"}, "call_id": "generate"})
+            await executor.execute({"tool_name": "Seedance___text_to_video", "arguments": {"prompt": "Shot"}, "call_id": "generate"}, approved=True)
             self.assertEqual(executor.record_outcome("generate", "accepted")["status"], "not_run")
             gateway.call_tool.return_value = {"status": "succeeded", "job_id": "saved", "training_eligible": True,
                                               "weights_license": "Apache-2.0"}
@@ -315,16 +310,6 @@ class LadderGraphTests(unittest.IsolatedAsyncioTestCase):
         restricted = {**asset, "version_id": "owned-restricted", "training_eligible": False}
         self.assertFalse(GatewayExecutor.review_asset(completed, "fal", "fal-ai/wan-vace-14b", restricted)["training_eligible"])
 
-    async def test_confidential_cannot_send_new_media_to_audio_provider(self):
-        from agent.gateway_executor import GatewayExecutor
-        from mcp import Tool
-        studio = _context_from_request(StudioAgentRequest(prompt="voiceover", confidential=True, autonomous=True))
-        gateway = Gateway([Tool(name="ElevenLabs___text_to_speech_convert", inputSchema={"type": "object"})])
-        result = await GatewayExecutor(studio, [gateway]).execute({"tool_name": "ElevenLabs___text_to_speech_convert",
-            "arguments": {}, "call_id": "voice"}, approved=True)
-        self.assertEqual(result["status"], "not_run")
-        self.assertIn("Wan", result["reason"])
-        gateway.call_tool.assert_not_awaited()
 
     async def test_premium_interrupt_has_cost_disclosure_and_reject_logs_without_dispatch(self):
         from agent.deep_agent.runner import run_with_servers
@@ -343,7 +328,7 @@ class LadderGraphTests(unittest.IsolatedAsyncioTestCase):
                     call("read_file", {"file_path": "/skills/t2v/SKILL.md"}, "skill"), step]))
             approval = paused.exception.approvals[0]
             self.assertIn("Estimated cost", approval.description)
-            self.assertTrue(any("kling-3.0" in event.message and "standard" in event.message
+            self.assertTrue(any("kling-3.0" in event.message and "explicit request" in event.message
                                 for event in studio.progress_events))
             gateway.call_tool.assert_not_awaited()
             resumed = request.model_copy(update={"session_items": studio.session_items,
@@ -355,17 +340,6 @@ class LadderGraphTests(unittest.IsolatedAsyncioTestCase):
             self.assertEqual((rows[-1]["provider"], rows[-1]["outcome"], rows[-1]["stage"]),
                              ("kling", "rejected", "approval"))
 
-    async def test_confidential_context_cannot_be_bypassed_by_approved_tool(self):
-        from agent.gateway_executor import GatewayExecutor
-        from mcp import Tool
-        request = StudioAgentRequest(prompt="video", confidential=True, autonomous=True, job_id="private")
-        studio = _context_from_request(request)
-        gateway = Gateway([Tool(name="Runway___text_to_video", description="Video", inputSchema={"type": "object"})])
-        result = await GatewayExecutor(studio, [gateway]).execute({"tool_name": "Runway___text_to_video",
-            "arguments": {"prompt": "Hero"}, "call_id": "bypass"}, approved=True)
-        self.assertEqual(result["status"], "not_run")
-        self.assertIn("confidential", result["reason"].lower())
-        gateway.call_tool.assert_not_awaited()
 
 
 class ProjectPolicyTests(unittest.TestCase):
@@ -383,7 +357,7 @@ class ProjectPolicyTests(unittest.TestCase):
                 self.assertTrue(_context_from_request(request).confidential)
                 with self.assertRaises(KeyError):
                     studio._studio_agent_request("video", [], workspace_id="other", project_id="private")
-                self.assertEqual(routing.route_intent(request.prompt + " video", confidential=request.confidential).status, "blocked")
+                self.assertEqual(routing.route_intent(request.prompt + " video", confidential=request.confidential).provider, "runway")
             restored = StudioRepository(repo.database_path, repo.media_root)
             self.assertTrue(restored.project_provider_policy("workspace", "private")["confidential"])
 
