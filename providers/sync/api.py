@@ -16,7 +16,7 @@ from botocore.exceptions import ClientError
 from pydantic import BaseModel, ConfigDict, Field
 
 from providers.fal import queue
-from providers.sync import chunks, contracts
+from providers.sync import chunks, contracts, media
 
 
 DIRECT_URL = "https://api.sync.so/v2/generate"
@@ -65,6 +65,7 @@ class JobManifest(BaseModel):
     video_reference: str
     audio_reference: str
     output_reference: str | None = None
+    artifact_key: str | None = None
     chunks: list[ChunkRecord] = Field(default_factory=list)
     submission_complete: bool = False
     output_path: str | None = None
@@ -110,6 +111,10 @@ def _store_key(job_id: str) -> str:
     return "renderhaus-sync-jobs/" + hashlib.sha256(job_id.encode()).hexdigest() + ".json"
 
 
+def _artifact_key(job_id: str) -> str:
+    return "renderhaus-sync-outputs/" + hashlib.sha256(job_id.encode()).hexdigest() + ".mp4"
+
+
 def _write_local(manifest: JobManifest) -> None:
     path, _ = _paths(manifest.job_id)
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -122,7 +127,11 @@ def _write_local(manifest: JobManifest) -> None:
 
 
 def _write(manifest: JobManifest) -> None:
-    _write_local(manifest)
+    local_error = False
+    try:
+        _write_local(manifest)
+    except OSError:
+        local_error = True
     if _store_bucket():
         try:
             _store_client().put_object(
@@ -131,6 +140,16 @@ def _write(manifest: JobManifest) -> None:
             )
         except Exception:
             raise SyncStoreError("Durable Sync job store is unavailable; no automatic retry was made.") from None
+    if local_error:
+        raise SyncStoreError("Sync local job store is unavailable; no automatic retry was made.")
+
+
+def _preserve_accepted(manifest: JobManifest) -> None:
+    manifest.persistence_error = True
+    try:
+        _write_local(manifest)
+    except OSError:
+        pass
 
 
 def _storage_gate() -> None:
@@ -171,6 +190,10 @@ def _read(job_id: str, kind: str) -> JobManifest:
         raise ValueError("Saved Sync job metadata was not found; no provider request was made.")
     try:
         manifest = JobManifest.model_validate_json(content)
+        if not manifest.request_id and kind != "chunks" and path.is_file():
+            local_manifest = JobManifest.model_validate_json(path.read_text())
+            if local_manifest.request_id and local_manifest.job_id == manifest.job_id:
+                manifest = local_manifest
     except (ValueError, OSError):
         raise ValueError("Saved Sync job metadata is invalid.") from None
     if (
@@ -179,6 +202,7 @@ def _read(job_id: str, kind: str) -> JobManifest:
         or manifest.model != contracts.DEFAULT_MODEL
         or manifest.endpoint_id != (contracts.FAL_ENDPOINT if manifest.transport == "fal" else None)
         or (manifest.output_path is not None and manifest.output_path != str(output))
+        or (manifest.artifact_key is not None and manifest.artifact_key != _artifact_key(job_id))
     ):
         raise ValueError("Saved Sync job transport, model, consent or output path is invalid.")
     if kind == "chunks":
@@ -251,15 +275,62 @@ def _summary(manifest: JobManifest) -> dict[str, Any]:
         result["accepted_provider_handle"] = manifest.endpoint_handle or manifest.request_id
     if manifest.persistence_error:
         result["persistence_error"] = True
-        result["note"] = "The provider accepted work but durable metadata could not be updated. Retain accepted handles and never blindly resubmit."
+        result["note"] = "The provider accepted work but job metadata could not be updated. Retain accepted handles and never blindly resubmit."
     if manifest.chunks:
         result["chunks"] = [child.model_dump() for child in manifest.chunks]
         result["accepted_job_ids"] = [child.job_id for child in manifest.chunks if child.job_id]
         result["accepted_provider_handles"] = [child.provider_handle for child in manifest.chunks if child.provider_handle]
         result["submission_complete"] = manifest.submission_complete
-    if manifest.downloaded:
+    if manifest.downloaded and manifest.output_path and Path(manifest.output_path).is_file():
         result.update(output_path=manifest.output_path, downloaded=True)
     return result
+
+
+def _published_url(manifest: JobManifest) -> str:
+    try:
+        url = _store_client().generate_presigned_url(
+            "get_object", Params={"Bucket": _store_bucket(), "Key": manifest.artifact_key},
+            ExpiresIn=chunks.INPUT_URL_TTL_SECONDS,
+        )
+        contracts.validate_media_reference(url, allow_asset=False)
+    except Exception:
+        raise RuntimeError("Sync saved artifact URL could not be issued; reuse the accepted job.") from None
+    return url
+
+
+def _completed_summary(manifest: JobManifest) -> dict[str, Any]:
+    result = _summary(manifest)
+    if manifest.artifact_key and _store_bucket():
+        result["video_url"] = _published_url(manifest)
+        result["downloaded"] = True
+    return result
+
+
+def _publish_artifact(manifest: JobManifest, path: Path) -> None:
+    if not _store_bucket() or manifest.artifact_key:
+        return
+    key = _artifact_key(manifest.job_id)
+    try:
+        _store_client().upload_file(
+            Filename=str(path), Bucket=_store_bucket(), Key=key,
+            ExtraArgs={"ContentType": "video/mp4"},
+        )
+    except Exception:
+        raise RuntimeError("Sync artifact could not be saved to durable storage; poll the accepted job again.") from None
+    manifest.artifact_key = key
+
+
+def _restore_artifact(manifest: JobManifest, output: Path) -> None:
+    output.parent.mkdir(parents=True, exist_ok=True)
+    temporary = output.with_suffix(f".{uuid.uuid4().hex}.part")
+    try:
+        _store_client().download_file(Bucket=_store_bucket(), Key=manifest.artifact_key, Filename=str(temporary))
+        media.validate_mp4(temporary)
+        temporary.replace(output)
+    except Exception:
+        raise RuntimeError("Sync saved child artifact could not be restored; reuse the accepted jobs.") from None
+    finally:
+        temporary.unlink(missing_ok=True)
 
 
 def _request_id(value: Any) -> str:
@@ -322,8 +393,7 @@ def _submit_single(request: contracts.SyncRequest, transport: str) -> JobManifes
     try:
         _write(manifest)
     except SyncStoreError:
-        manifest.persistence_error = True
-        _write_local(manifest)
+        _preserve_accepted(manifest)
     return manifest
 
 
@@ -367,8 +437,7 @@ def _submit_chunks(request: contracts.SyncRequest, transport: str, plan: tuple[c
     try:
         _write(manifest)
     except SyncStoreError:
-        manifest.persistence_error = True
-        _write_local(manifest)
+        _preserve_accepted(manifest)
     return _summary(manifest)
 
 
@@ -450,6 +519,7 @@ def _download(video_url: str, output: Path) -> None:
                     target.write(data)
         if not temporary.is_file() or not temporary.stat().st_size:
             raise RuntimeError("Sync returned an empty video.")
+        media.validate_mp4(temporary)
         temporary.replace(output)
     except httpx.HTTPError:
         raise RuntimeError("Sync video download failed; the saved job can be polled again.") from None
@@ -476,13 +546,19 @@ def _poll_single(manifest: JobManifest, *, download: bool) -> dict[str, Any]:
             raise RuntimeError("Completed Sync result did not contain a valid HTTPS video URL.") from None
         _, output = _paths(manifest.job_id)
         if download:
-            _download(video_url, output)
+            if not output.is_file() or not output.stat().st_size:
+                _download(video_url, output)
+            else:
+                media.validate_mp4(output)
             manifest.output_path, manifest.downloaded = str(output), True
+            _publish_artifact(manifest, output)
         manifest.output_reference = contracts.reference_for_metadata(video_url)
     manifest.status = status
     manifest.error = "Sync generation failed." if status == "failed" else None
     _write(manifest)
-    return {**_summary(manifest), **({"video_url": video_url} if status == "succeeded" else {})}
+    if status == "succeeded":
+        return {"video_url": video_url, **_completed_summary(manifest)}
+    return _summary(manifest)
 
 
 def _poll_chunks(manifest: JobManifest) -> dict[str, Any]:
@@ -493,7 +569,12 @@ def _poll_chunks(manifest: JobManifest) -> dict[str, Any]:
         child = get_video_task(record.job_id, download=True)
         record.status = child["status"]
         if child["status"] == "succeeded":
-            path = Path(child["output_path"])
+            _, path = _paths(record.job_id)
+            if not path.is_file():
+                saved_child = _read(record.job_id, _kind(record.job_id))
+                if not saved_child.artifact_key or not _store_bucket():
+                    raise RuntimeError("Completed Sync child has no durable or local video.")
+                _restore_artifact(saved_child, path)
             if not path.is_file() or not path.stat().st_size:
                 raise RuntimeError("Completed Sync child did not produce a nonempty local video.")
             outputs.append(path)
@@ -506,12 +587,14 @@ def _poll_chunks(manifest: JobManifest) -> dict[str, Any]:
         chunks.merge(outputs, output_path=output)
         if not output.is_file() or not output.stat().st_size:
             raise RuntimeError("Sync concatenation produced an empty final video.")
+        media.validate_mp4(output)
+        _publish_artifact(manifest, output)
         manifest.status = "succeeded"
         manifest.output_path, manifest.downloaded, manifest.error = str(output), True, None
     else:
         manifest.status = "queued" if all(record.status == "queued" for record in manifest.chunks) else "running"
     _write(manifest)
-    return _summary(manifest)
+    return _completed_summary(manifest) if manifest.status == "succeeded" else _summary(manifest)
 
 
 def get_video_task(job_id: str, download: bool = False) -> dict:
@@ -531,8 +614,12 @@ def get_video_task(job_id: str, download: bool = False) -> dict:
         if blocker:
             raise ValueError(blocker)
         _, output = _paths(job_id)
+        if manifest.status == "succeeded" and manifest.artifact_key and _store_bucket():
+            return _completed_summary(manifest)
         if manifest.status == "succeeded" and manifest.downloaded and output.is_file() and output.stat().st_size:
-            return _summary(manifest)
+            media.validate_mp4(output)
+            if not os.getenv("AWS_LAMBDA_FUNCTION_NAME") or kind == "chunks":
+                return _completed_summary(manifest)
         if kind == "chunks":
             return _poll_chunks(manifest)
         return _poll_single(manifest, download=request.download)

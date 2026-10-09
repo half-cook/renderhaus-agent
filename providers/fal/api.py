@@ -399,9 +399,10 @@ def _poll_video_task(job_id: str, endpoint_id: str, request_id: str, *, download
     }
     if contract is wan3:
         normalized.update(duration=result.get("duration"), actual_prompt=result.get("actual_prompt"))
-    metadata = json.loads(metadata_path.read_text()) if metadata_path.exists() else {}
-    metadata.update(normalized)
-    _write_metadata(metadata_path, metadata)
+    if contract is not sync_contracts:
+        metadata = json.loads(metadata_path.read_text()) if metadata_path.exists() else {}
+        metadata.update(normalized)
+        _write_metadata(metadata_path, metadata)
     return normalized
 
 
