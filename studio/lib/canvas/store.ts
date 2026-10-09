@@ -34,7 +34,7 @@ import {
 } from "./connection-validation";
 import { pollCreativeNode, runCreativeNode } from "./graph-execution";
 import { approvedSequence, isSceneKind, SCENE_CARD_GAP, SCENE_CARD_WIDTH } from "./story";
-import { defaultToolForRail, toolById, toolForAgentArtifact } from "./tool-registry";
+import { toolById, toolForAgentArtifact } from "./tool-registry";
 import {
   schemaFor,
   type AgentToolEvent,
@@ -165,6 +165,9 @@ function cloneGraph(nodes: CanvasNode[], edges: CanvasEdge[]): Snapshot {
 }
 
 function defaultsFor(tool: ToolDefinition, fieldOptions: FieldOptions): Record<string, unknown> {
+  if (tool.providerId === "fal" && tool.toolName.startsWith("generate_wan3_")) {
+    return { ...tool.defaults };
+  }
   const preferred = PREFERRED[tool.providerId] || {};
   const catalog = fieldOptions[tool.providerId] || {};
   const args: Record<string, unknown> = {};
@@ -935,8 +938,7 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
     if (!source) {
       return;
     }
-    const tool = defaultToolForRail("video");
-    const fromImage = toolById("video.fromImage") || tool;
+    const fromImage = toolById("video.wan3.animate");
     const id = get().addCreativeNode({
       kind: "video",
       position: { x: source.position.x + 440, y: source.position.y },

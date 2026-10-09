@@ -93,6 +93,49 @@ const CREATIVE_TOOLS: ToolDefinition[] = [
     pollTool: "get_video_task",
   },
   {
+    id: "video.wan3.generate",
+    displayName: "Wan 3.0 video",
+    description: "Generate a video with native audio from a prompt",
+    category: "video",
+    providerId: "fal",
+    toolName: "generate_wan3_t2v",
+    inputPorts: [{ id: "prompt", label: "Prompt", dataType: "text", targetField: "prompt", required: true }],
+    outputPorts: [{ id: "video", label: "Video", dataType: "video" }],
+    primaryFields: ["prompt", "aspect_ratio", "duration", "resolution", "audio"],
+    pollTool: "get_video_task",
+    defaults: { resolution: "1080p", aspect_ratio: "adaptive", duration: 5, audio: true },
+  },
+  {
+    id: "video.wan3.animate",
+    displayName: "Wan 3.0 animation",
+    description: "Animate a start frame with an optional end frame",
+    category: "video",
+    providerId: "fal",
+    toolName: "generate_wan3_i2v",
+    inputPorts: [
+      { id: "image", label: "Start frame", dataType: "image", targetField: "start_image_url", required: true },
+      { id: "end_image", label: "End frame", dataType: "image", targetField: "end_image_url" },
+      { id: "prompt", label: "Prompt", dataType: "text", targetField: "prompt" },
+    ],
+    outputPorts: [{ id: "video", label: "Video", dataType: "video" }],
+    primaryFields: ["prompt", "start_image_url", "end_image_url", "duration", "resolution", "audio", "real_face_refs", "likeness_consent"],
+    pollTool: "get_video_task",
+    defaults: { resolution: "1080p", aspect_ratio: "adaptive", duration: 5, audio: true },
+  },
+  {
+    id: "video.wan3.reference",
+    displayName: "Wan 3.0 reference video",
+    description: "Generate a shot from image, video, or audio references",
+    category: "video",
+    providerId: "fal",
+    toolName: "generate_wan3_r2v",
+    inputPorts: [{ id: "prompt", label: "Prompt", dataType: "text", targetField: "prompt" }],
+    outputPorts: [{ id: "video", label: "Video", dataType: "video" }],
+    primaryFields: ["prompt", "reference_image_urls", "reference_video_urls", "reference_audio_urls", "duration", "resolution", "audio", "real_face_refs", "likeness_consent"],
+    pollTool: "get_video_task",
+    defaults: { resolution: "1080p", aspect_ratio: "adaptive", duration: 5, audio: true },
+  },
+  {
     id: "video.luma.generate",
     displayName: "Luma video",
     description: "Generate a Ray 3.2 clip from a prompt",
@@ -234,7 +277,7 @@ export function defaultToolForRail(
     case "image":
       return toolById("image.generate");
     case "video":
-      return toolById("video.generate");
+      return toolById("video.wan3.generate");
     case "audio":
       return toolById("music.generate");
     case "voice":
@@ -260,8 +303,10 @@ export function toolForAgentArtifact(
     return toolById(
       runway ? "runway.video.generate"
         : provider.includes("luma") ? "video.luma.generate"
+        : provider.includes("generate_wan3") ? "video.wan3.generate"
         : provider.includes("fal") ? "video.falGenerate"
-        : "video.generate",
+        : provider.includes("seedance") ? "video.generate"
+        : "video.wan3.generate",
     );
   }
   const source = `${event?.provider || ""} ${event?.name || ""}`.toLowerCase();
