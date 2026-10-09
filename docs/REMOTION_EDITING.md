@@ -111,7 +111,7 @@ cost approval. Unknown source dimensions stay unknown.
 Metadata FPS alone does not prove constant cadence. FFmpeg reframe operations preserve
 frame timing; the timeline renderer uses the measured nominal FPS and produces CFR. Inspect
 VFR metadata and disclose conversion/cadence warnings rather than claiming cadence preservation.
-New crop/pad timeline paths require a square-pixel source (SAR `1:1`); supply a
+Reframe ops and new crop/pad timeline paths require a square-pixel source (SAR `1:1`); supply a
 normalized square-pixel master if the source is anamorphic. No normalization op is available
 here. Probe actual outputs for dimensions, SAR `1:1`, FPS, duration and audio. Rendering cannot
 move a price, logo or legal line baked into the master; request an approved layered source

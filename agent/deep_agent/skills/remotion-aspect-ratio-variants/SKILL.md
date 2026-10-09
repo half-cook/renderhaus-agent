@@ -27,6 +27,7 @@ Read `read_studio_context` and discover the actual Gateway schema before each op
   existing Remotion path. No price, logo or CTA overlay is added in this mode.
 - Flat master, one static crop: use `ffmpeg_tool` (`Ffmpeg___ffmpeg_tool`) with
   `op="reframe_crop"`; use `reframe_pad_blur` to retain the whole foreground frame.
+  Call `contact_sheet` on the resulting MP4 to create its editorial review artifact.
 - Copy, price and logo variants: read [ad variant matrix](../remotion-ad-variant-matrix/SKILL.md).
 - Generating missing background pixels is a paid generative edit. Read
   [edit-v2v](../edit-v2v/SKILL.md), disclose the cost and obtain approval. Blurred padding
@@ -78,7 +79,7 @@ warnings for a person to approve. Check burned-in legal lines, price, logo and c
 at the beginning, middle and end. Request an approved clean/layered source if those pixels
 cannot fit, rather than cropping them away. Clarify logo ownership before removing a mark.
 
-New timeline crop/pad fields require a square-pixel (SAR `1:1`) source; ask for a normalized
+The reframe ops and new timeline crop/pad fields require a square-pixel (SAR `1:1`) source; ask for a normalized
 master rather than silently distorting anamorphic footage. No normalization op exists here.
 Probe each completed file. Report delivered width and height, `source_resolution`, FPS,
 audio, SAR `1:1`, crop/pad method and every resolution warning. Preserve the measured FPS
