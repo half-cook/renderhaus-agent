@@ -13,7 +13,6 @@ import { SceneList } from "./SceneList";
 import { StudioCanvas } from "./StudioCanvas";
 import { ToolRail } from "./ToolRail";
 import { UploadError } from "./UploadError";
-import "@xyflow/react/dist/style.css";
 
 const DOCK_STORAGE_KEY = "renderhaus.studio.dock.v2";
 

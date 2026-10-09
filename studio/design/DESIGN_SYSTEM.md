@@ -212,3 +212,51 @@ whether one of the patterns above already covers it. If it's genuinely new
 same style — cite the real file and class name, don't describe a rule that
 isn't shipped yet — rather than letting a one-off style live undocumented in
 a component's own CSS module.
+
+
+## Tailwind token bridge
+
+`app/globals.css` maps Studio variables into Tailwind v4 with `@theme inline`.
+Use `bg-background`, `text-foreground`, `border-border`, and the direct Studio
+colors (`bg-chrome`, `text-muted`, `border-selected`). The existing port and
+status colors keep their names and hues. Amber `accent` remains for spend and
+credits only. Menu hover uses `chrome` or `line`, never `accent`.
+
+The cascade order is `theme, base, xyflow, legacy, components, utilities`.
+The xyflow import belongs to its own layer before Studio's legacy rules.
+Legacy selectors keep their specificity and order within `legacy`; utilities
+win normal declarations. Important declarations reverse the layer order.
+Keep third-party CSS out of the unlayered cascade when Studio overrides it.
+Clerk's appearance and CSS modules remain as shipped.
+
+Tailwind's radius and shadow scales are reset with `--radius-*: initial` and
+`--shadow-*: initial`. Square and flat is the default. The only named radius
+utility is `rounded-pill` (9999px), reserved for status chips, a toolbar capsule,
+and avatars. Existing screens retain their shipped shapes. Do not use
+`rounded-full`, numeric or arbitrary radii, or shadow utilities for new UI.
+
+Use semantic tokens, no `dark:` utilities. In CSS modules use `var(--token)`,
+never `@apply`. Fonts are `font-sans` (Geist), `font-mono` (Geist Mono), and
+`font-silkscreen` (Silkscreen, wordmark only). Icons remain Lucide.
+`duration-base` uses `--duration-base: 160ms`; `ease-studio` uses the existing
+`--ease` curve. Hover, focus, and state changes stay on these CSS tokens.
+Motion's `m` components live under the unmounted `MotionProvider` with
+`LazyMotion`/`domAnimation` and user reduced-motion settings. No new spring
+or easing token is introduced. Never animate xyflow node wrappers.
+
+Portals reuse the existing z-index scale: flow 1, controls 5, inspector 25,
+rail 30, header 40, menu 50. Use `z-(--z-menu)` for overlay content and
+`z-(--z-header)` for a dialog backdrop. Do not invent larger magic numbers.
+A portal from a scoped theme must target a container inside that scope
+with its `container` prop, or it inherits the document theme instead.
+
+## Opt-in dark beta palette
+
+`[data-surface="beta"]` overrides the same semantic variables and declares
+`color-scheme: dark`, including inside a light-theme app. The near-black
+background (#090909), chrome (#111110), warm charcoal card (#191918), and
+border (#30302c) frame ivory text (#f5f5ef) with secondary text (#a3a39a).
+Amber remains reserved for spend and credits. Port and status identity colors
+stay inherited. The token parity test guards every root variable.
+No existing page opts in. The current marketing page keeps its scoped light
+palette until its design is approved.

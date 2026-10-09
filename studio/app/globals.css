@@ -1,4 +1,7 @@
+@layer theme, base, xyflow, legacy, components, utilities;
+
 @import "tailwindcss";
+@import "@xyflow/react/dist/style.css" layer(xyflow);
 
 @theme {
   /* Port colours -- referenced from handle, edge, and node-tag icon; must agree. */
@@ -12,6 +15,55 @@
   --color-status-running: var(--color-indigo-400);
   --color-status-succeeded: var(--color-emerald-400);
   --color-status-failed: var(--color-red-400);
+}
+
+
+@theme {
+  --radius-*: initial;
+  --shadow-*: initial;
+  --radius-pill: 9999px;
+  --duration-base: 160ms;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-chrome: var(--chrome);
+  --color-node: var(--node);
+  --color-line: var(--line);
+  --color-grid: var(--grid);
+  --color-text: var(--text);
+  --color-muted: var(--muted);
+  --color-active: var(--active);
+  --color-selected: var(--selected);
+  --color-accent: var(--accent);
+  --color-danger: var(--danger);
+  --color-ok: var(--ok);
+  --color-warn: var(--warn);
+  --color-background: var(--bg);
+  --color-foreground: var(--text);
+  --color-card: var(--node);
+  --color-card-foreground: var(--text);
+  --color-popover: var(--node);
+  --color-popover-foreground: var(--text);
+  --color-border: var(--line);
+  --color-input: var(--line);
+  --color-ring: var(--active);
+  --color-primary: var(--active);
+  --color-primary-foreground: var(--bg);
+  --color-secondary: var(--chrome);
+  --color-secondary-foreground: var(--text);
+  --color-muted-foreground: var(--muted);
+  --color-accent-foreground: var(--bg);
+  --color-destructive: var(--danger);
+  --color-destructive-foreground: var(--bg);
+  --font-sans: var(--font-geist), "Segoe UI", system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), monospace;
+  --font-silkscreen: var(--font-pixel), monospace;
+  --ease-studio: var(--ease);
+}
+
+@utility duration-base {
+  transition-duration: var(--duration-base);
 }
 
 :root {
@@ -78,6 +130,36 @@
   --ok: var(--color-emerald-500);
   --warn: var(--color-amber-500);
 }
+
+
+[data-surface="beta"] {
+  color-scheme: dark;
+  --bg: #090909;
+  --chrome: #111110;
+  --node: #191918;
+  --line: #30302c;
+  --grid: #565650;
+  --text: #f5f5ef;
+  --muted: #a3a39a;
+  --accent: var(--color-amber-400);
+  --active: #f5f5ef;
+  --selected: var(--color-indigo-400);
+  --danger: var(--color-red-400);
+  --ok: var(--color-emerald-400);
+  --warn: var(--color-amber-400);
+  --shadow: none;
+  --radius: 0;
+  --ease: cubic-bezier(0.32, 0.72, 0, 1);
+  --inspector-width: 320px;
+  --z-flow: 1;
+  --z-controls: 5;
+  --z-inspector: 25;
+  --z-rail: 30;
+  --z-header: 40;
+  --z-menu: 50;
+}
+
+@layer legacy {
 
 * {
   box-sizing: border-box;
@@ -2539,3 +2621,5 @@ input[type="range"] {
 .agent-conversation-controls select { padding:0 4px; line-height:28px; }
 .agent-approval-record { border:1px solid var(--line); border-radius:7px; padding:10px; font-size:11px; color:var(--muted); }
 .agent-approval-record summary { cursor:pointer; line-height:17px; }
+
+}
