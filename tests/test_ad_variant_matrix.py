@@ -21,6 +21,16 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class MatrixApprovalTests(unittest.TestCase):
+    def test_reframe_only_quote_matches_normalized_first_group(self):
+        from server.billing_rates import ad_matrix_estimate
+
+        with patch.dict(os.environ, {"REMOTION_RENDER_BACKEND": "local", "REMOTION_LICENSE_RENDER_USD": "0.01"}):
+            quote = ad_matrix_estimate({"stage": "render_first", "brief": {"reframe_only": True}, "rows": [
+                {"variant_key": "a", "aspect": "9:16"},
+                {"variant_key": "b", "sku": "master", "locale": "und", "aspect": "1:1"}]})
+        self.assertEqual(quote["render_count"], 2)
+        self.assertEqual(quote["estimated_license_usd"], .02)
+
     def test_plan_and_ffmpeg_are_free_and_render_stages_always_pause(self):
         for autonomous in (False, True):
             self.assertFalse(tool_needs_approval("Ffmpeg___ffmpeg_tool", autonomous))
@@ -176,7 +186,8 @@ class MatrixContractTests(unittest.TestCase):
         rows = copy.deepcopy(self.rows)
         for i, row in enumerate(rows):
             row.update(variant_key="v" * 39 + str(i), sku="s" * 39 + str(i // 2), locale="l" * 40)
-        result = self.plan(rows=rows, brief={"campaign": "c" * 40, "output_resolution": "1080p"})
+        result = self.plan(rows=rows, brief={"campaign": "c" * 40, "output_resolution": "1080p",
+                                            "allow_upscale": True})
         self.assertFalse(result["blocked"], result)
         names = [row["filename"] for row in result["planned"]]
         self.assertEqual(len(set(names)), 6)
@@ -257,7 +268,7 @@ class MatrixContractTests(unittest.TestCase):
                 "ffprobe", "-v", "error", "-show_streams", "-show_format", "-of", "json", str(path)],
                 check=True, capture_output=True, timeout=30).stdout)
             video = next(s for s in measured["streams"] if s["codec_type"] == "video")
-            expected = (240, 240) if entry["aspect"] == "1:1" else (240, 300)
+            expected = (240, 240) if entry["aspect"] == "1:1" else (192, 240)
             self.assertEqual((video["width"], video["height"]), expected)
             self.assertEqual(video["avg_frame_rate"], "24/1")
             self.assertAlmostEqual(float(measured["format"]["duration"]), 0.75, delta=1/24)

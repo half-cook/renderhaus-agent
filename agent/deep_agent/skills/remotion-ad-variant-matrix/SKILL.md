@@ -20,7 +20,11 @@ Do not bypass the matrix gates by issuing individual timeline renders for a batc
 
 The required columns are `variant_key`, `sku`, `price_text`, `cta_text`, `logo_asset`,
 `legal_text`, `locale` and `aspect`. Optional columns are `product_asset`, `vo_asset`,
-`start_s` and `end_s`. The allowed aspects are `9:16`, `1:1`, `4:5` and `16:9`.
+`start_s`, `end_s`, `subject_box`, `crop_box`, `safe_zone`, `anchor`, `allow_upscale`,
+`shots` and `scene_times`. The aspects are `9:16`, `1:1`, `4:5`, `16:9` and `2.39:1`.
+For a finished master without retail overlays, `brief.reframe_only=true` permits only
+`variant_key` and `aspect` as required columns. Read
+[aspect variants](../remotion-aspect-ratio-variants/SKILL.md) for crop/pad planning.
 
 Every required cell must contain a value. The table has 1-100 rows. Reject duplicate
 `(sku, locale, aspect)` rows and duplicate `variant_key` values. `variant_key`, `sku` and
@@ -87,7 +91,13 @@ The layout config is `providers/remotion/ad_layouts.json`. Its safe zones are pl
 to confirm per destination. For `9:16`, top/bottom/side margins are 14%/22%/6%. The other
 aspects use 8%/12%/6%. Text shrinks only between each field's configured minimum and maximum
 font sizes. A field that cannot fit at the minimum fails with `text_overflow`.
-This branch uses the render path's simple centre-crop/pad handling. It does not track subjects.
+Flat masters use one static centre or safe-zone crop per shot, with an optional validated
+planner-supplied subject box. If subject and margins cannot fit, the shot uses blurred
+padding with the whole foreground frame. No detector or tracking runs. Rows may supply
+contiguous `shots` or cut-time `scene_times`. Native crops stay within available pixels
+unless `allow_upscale=true` explicitly permits resampling. The aspect skill describes these
+fields and their bounds. Each output has a contact sheet and `editorial_review="pending"`.
+The matrix returns `candidate_set=true`; render authorization does not approve framing.
 
 The local backend renders this matrix with real ffmpeg. The matrix tool explicitly refuses
 the Lambda backend until a worker can access the same job directory. Ordinary timeline
@@ -99,19 +109,21 @@ passing parity check. Do not switch backends silently or change a dry-run flag.
 The free `ffmpeg_tool` alias maps to `Ffmpeg___ffmpeg_tool` through `call_editor_tool`.
 Arguments are `op`, `job_id`, `input_path` and `params`. Use only the discovered parameters.
 The available ops are `probe`, `extract_frames`, `contact_sheet`, `sha256`, `check_faststart`
-and `volume_stats`. The tool runs on the machine owning the job directory. Binary operations
+and `volume_stats`, plus `crop_plan_preview`, `reframe_crop`, `reframe_pad_blur` and
+`detect_scenes`. Read the aspect skill for the four reframe-op contracts. The tool runs
+on the machine owning the job directory. Binary operations
 refuse a host without ffmpeg/ffprobe. It never fetches network media.
 `extract_frames` accepts `params.times`, 1 to 20 finite seconds within 0 to 600, and
 `params.width`, an integer within 16 to 1920. `contact_sheet` accepts `every_s`, 0.1 to 600,
 `cols` and `rows`, integers within 1 to 10, and `width` and `height`, integers within 16 to
-640. The other ops accept only empty `params`. Never invent an output filename or overwrite
+640. `probe`, `sha256`, `check_faststart` and `volume_stats` accept only empty `params`.
+Never invent an output filename or overwrite
 flag. The tool generates version-safe names and reports output hashes.
 `volume_stats` reports mean/sample peak. It does not certify LUFS or true peak.
 
 ## Not yet available
 
-`remotion-aspect-ratio-variants` and subject-aware reframe ops arrive in
-`feat/remotion-aspect-ratio-variants`. Delivery presets, two-pass loudness measurement and
+Delivery presets, two-pass loudness measurement and
 normalisation, black/freeze detection, and per-output delivery certification arrive in
 `feat/remotion-delivery-qc`. Its skills are `remotion-delivery-render`, `remotion-loudness-qc`
 and `remotion-deliverable-qc`. Do not invoke those absent skills or their future ops.

@@ -1888,6 +1888,29 @@
   },
   "rules": [
     {
+      "pattern": "\\boutpaint(?:ing)?\\b|\\b(?:extend|fill|generate)\\b.*\\b(?:sides|missing background|missing pixels)\\b",
+      "skill": "edit-v2v",
+      "abstract_tool": "seedance25_edit",
+      "capability": "v2v_edit"
+    },
+    {
+      "pattern": "\\b(?:reframe|reformat)\\b.*\\bremotion\\b.*\\b(?:composition|template)\\b",
+      "skill": "remotion-aspect-ratio-variants",
+      "abstract_tool": "remotion_render"
+    },
+    {
+      "pattern": "\\b(?:crop_plan_preview|reframe_crop|reframe_pad_blur|detect_scenes)\\b|\\b(?:centre|center)\\s+crop\\b|\\breframe\\b.*\\b(?:phone|rotate flag|rotation)\\b",
+      "skill": "remotion-aspect-ratio-variants",
+      "abstract_tool": "ffmpeg_tool",
+      "capability": "media_inspection"
+    },
+    {
+      "pattern": "\\b(?:aspect[ -]ratio[ -]variants|reframe|reformat)\\b|\\bvertical\\s+cut\\b|\\b(?:9:16|1:1|4:5|16:9|2\\.39:1)\\b.*\\bversions?\\b.*\\b(?:this|master|spot|clip|video)\\b",
+      "skill": "remotion-aspect-ratio-variants",
+      "abstract_tool": "ad_variant_matrix",
+      "capability": "ad_variant_matrix"
+    },
+    {
       "pattern": "\\bad[ -]variant[ -]matrix\\b|\\bad_variant_matrix\\b|(?=.*\\bskus?\\b)(?=.*\\b(?:prices?|ctas?|logos?|font|colour|color)\\b)|\\b(?:run(?:\\s+all)?|render|re-render|batch)\\b.*\\bvariants?\\b|\\ball\\s+(?:\\d+\\s+)?variants\\b|\\bprice\\b.*\\b(?:logo|ad|retailer)\\b|\\b(?:localise|localize)\\b.*\\bend card\\b|\\blegal line\\b.*\\bbrief\\b|\\blogo path\\b|\\bad[ -]variants?\\b|\\b(?:table|sheet|csv)\\b.*\\bsku[ -]variants?\\b",
       "skill": "remotion-ad-variant-matrix",
       "abstract_tool": "ad_variant_matrix",
@@ -5978,12 +6001,27 @@
   },
   "editing_refusals": [
     {
+      "pattern": "\\bresolve\\b.*\\bsmart reframe\\b",
+      "skill": "remotion-aspect-ratio-variants",
+      "reason": "Resolve is parked by Satya (2026-10-09). Use centre/safe-zone crops or blurred padding with an optional planner-supplied box; no detector runs."
+    },
+    {
       "pattern": "\\bmagic mask\\b|\\b(?:colour|color) node tree\\b|\\bskin qualifier\\b|\\bpower window\\b|\\bfairlight\\b|\\bavid\\s+aaf\\b|\\.drp\\b|\\b(?:run|use|switch to|open)\\b.*\\bresolve\\b|\\bresolve\\b.*\\b(?:python script|voice isolation|smart reframe)\\b|\\bneural engine\\b|\\baces\\b|\\bpowergrade\\b|\\bsmart bin\\b",
       "reason": "Resolve is parked by Satya (2026-10-09). No Resolve tool or skill is called. Supply a flat approved master for Remotion overlays; unsupported grading or AI operations remain parked."
     },
     {
       "pattern": "\\b(?:ffmpeg|ffprobe)\\s+-|\\bbash\\s+-c\\b|\\brm\\s+-rf\\b|\\bpip\\s+install\\b|\\brun_script(?:_unsafe)?\\b|\\bshell\\b.*\\brender box\\b|\\bextra args\\b.*ffmpeg|\\b(?:filter_complex|ffmpeg-executable|ffmpegOverride)\\b|\\b(?:read|using|probe)\\b.*(?:/etc/|/proc/|/dev/)|\\b(?:run|execute)\\b.*\\.py\\b",
       "reason": "Refuse arbitrary shell commands, scripts, executable overrides and out-of-job paths. Use only allow-listed ffmpeg_tool ops; nearest inspection op is probe."
+    },
+    {
+      "pattern": "\\b(?:yolov?\\d*|ultralytics|mediapipe|opencv)\\b",
+      "skill": "remotion-aspect-ratio-variants",
+      "reason": "No detector is available in this branch. Ultralytics/YOLO and GPL/AGPL detector dependencies are blocked. Use centre framing or a validated planner-supplied subject box."
+    },
+    {
+      "pattern": "\\bcrop\\b.*\\b(?:logo|watermark)\\b.*\\b(?:disappears?|remove|hide|out)\\b",
+      "skill": "remotion-aspect-ratio-variants",
+      "reason": "Clarify ownership of the logo and obtain an approved clean or layered source before cropping. Preserve legal, price and branding content in the review set."
     }
   ],
   "non_dispatch_requests": [

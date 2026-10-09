@@ -291,6 +291,8 @@ def _visual_metadata(clip: dict[str, Any], *, measure_remote: bool = False,
         video = next((s for s in probe["streams"] if s.get("codec_type") == "video"), None)
         if video is None:
             raise ValueError("A video visual must contain a video stream.")
+        if "crop_box" in clip or clip.get("fit") == "pad_blur":
+            _require_square_reframe_source(video)
         size = _media_dimensions(video)
         rate = video.get("avg_frame_rate") or video.get("r_frame_rate")
         if rate and rate != "0/0":
@@ -312,6 +314,60 @@ def _overlay_box(value: Any, width: int, height: int) -> dict[str, float]:
     from providers.remotion.text import box_geometry
 
     return box_geometry(value, width, height)
+
+
+def _refuse_lambda_reframe(items: list[dict[str, Any]]) -> None:
+    if any({"crop_box", "cropBox", "pad_box", "padBox", "reframe_size", "reframeSize", "allow_upscale", "allowUpscale"}.intersection(item)
+           or item.get("fit") == "pad_blur" for item in items):
+        raise ValueError("Lambda reframing is not deployed; use the local/worker backend for crop_box and pad_blur.")
+
+
+def _require_square_reframe_source(video: dict[str, Any]) -> None:
+    sar = video.get("sample_aspect_ratio")
+    if sar in {None, "", "N/A", "0:1"}:
+        return
+    try:
+        square = Fraction(str(sar).replace(":", "/")) == 1
+    except (ValueError, ZeroDivisionError):
+        square = False
+    if not square:
+        raise ValueError("Reframing requires square source pixels (SAR 1:1); normalize anamorphic media first.")
+
+
+def _reframe_canvas(videos: list[dict[str, Any]], metadata: list[_VisualMetadata],
+                    width: int, height: int, aspect: str) -> tuple[int, int]:
+    primary = [clip for clip in videos if clip.get("track", 0) == 0]
+    requested = [clip["reframe_size"] for clip in primary if "reframe_size" in clip]
+    if requested:
+        if len(requested) != len(primary) or any(size != requested[0] for size in requested):
+            raise ValueError("All primary clips must use the same reframe_size canvas.")
+        width, height = requested[0]["width"], requested[0]["height"]
+        base_width, base_height = ASPECT_SIZES[aspect]
+        if abs(width - height * base_width / base_height) > 2 + 2 * base_width / base_height:
+            raise ValueError("reframe_size must match aspect_ratio after even-pixel rounding.")
+    crop_scales = []
+    for clip, measured in zip(videos, metadata, strict=True):
+        crop = clip.get("crop_box")
+        if crop and measured.size and (crop["x"] + crop["width"] > measured.size[0]
+                                     or crop["y"] + crop["height"] > measured.size[1]):
+            raise ValueError("crop_box must fit inside the measured display-oriented source.")
+        if not crop and clip.get("fit") != "pad_blur":
+            continue
+        available = (crop["width"], crop["height"]) if crop else measured.size
+        if available is None or clip.get("allow_upscale", False):
+            continue
+        pad = clip.get("pad_box")
+        target = (pad["width"], pad["height"]) if pad else (width, height)
+        ratios = (target[0] / available[0], target[1] / available[1])
+        scale = max(ratios) if crop or pad else min(ratios)
+        if scale > 1 + 1e-9:
+            if requested:
+                raise ValueError("reframe_size needs allow_upscale=true to exceed available source pixels.")
+            crop_scales.append(1 / scale)
+    if crop_scales:
+        scale = min(crop_scales)
+        width, height = (max(2, int(dimension * scale) // 2 * 2) for dimension in (width, height))
+    return width, height
 
 
 def build_timeline_props(
@@ -349,6 +405,7 @@ def build_timeline_props(
         raise ValueError("video_bitrate must be a positive integer in bits per second.")
     sizes = [measured.size for measured in metadata if measured.size is not None]
     width, height = choose_canvas(aspect_ratio, sizes, output_resolution)
+    width, height = _reframe_canvas(videos, metadata, width, height, aspect_ratio)
     source_floor = max((measured.bitrate for measured in metadata if measured.bitrate is not None), default=0)
     base_width, base_height = ASPECT_SIZES[aspect_ratio]
     automatic_bitrate = math.ceil(source_floor * 1.25)
@@ -368,8 +425,12 @@ def build_timeline_props(
             warning = _UNKNOWN_DIMENSIONS_WARNING
         else:
             source_width, source_height = measured.size
-            ratios = (width / source_width, height / source_height)
-            fit_scale = min(ratios) if clip.get("fit") == "contain" else max(ratios)
+            crop = clip.get("crop_box")
+            available_width, available_height = (crop["width"], crop["height"]) if crop else measured.size
+            pad = clip.get("pad_box")
+            target = (pad["width"], pad["height"]) if pad else (width, height)
+            ratios = (target[0] / available_width, target[1] / available_height)
+            fit_scale = min(ratios) if clip.get("fit") in {"contain", "pad_blur"} and not pad else max(ratios)
             clip_scale = max(0.1, min(float(clip.get("scale", 1)), 4.0))
             motion_scale = 1.08 if clip.get("motion") in {"zoom_in", "zoom_out", "pan_left", "pan_right"} else 1
             if fit_scale * clip_scale * motion_scale <= 1 + 1e-9:
@@ -405,8 +466,8 @@ def build_timeline_props(
         if transition not in {"cut", "fade", "dip_to_black"}:
             raise ValueError("Visual transition must be cut, fade, or dip_to_black.")
         fit = str(clip.get("fit") or "cover")
-        if fit not in {"cover", "contain"}:
-            raise ValueError("Visual fit must be cover or contain.")
+        if fit not in {"cover", "contain", "pad_blur"}:
+            raise ValueError("Visual fit must be cover, contain or pad_blur.")
         motion = str(clip.get("motion") or "none")
         if motion not in {"none", "zoom_in", "zoom_out", "pan_left", "pan_right"}:
             raise ValueError(
@@ -451,6 +512,10 @@ def build_timeline_props(
                 "transition": transition,
                 "grade": clip.get("grade", "none"),
                 **({"box": _overlay_box(clip["box"], width, height)} if "box" in clip else {}),
+                **({"cropBox": copy.deepcopy(clip["crop_box"])} if "crop_box" in clip else {}),
+                **({"padBox": _overlay_box(clip["pad_box"], width, height)} if "pad_box" in clip else {}),
+                **({"reframeSize": copy.deepcopy(clip["reframe_size"])} if "reframe_size" in clip else {}),
+                **({"allowUpscale": clip["allow_upscale"]} if "allow_upscale" in clip else {}),
                 **({"audioFadeIn": float(clip["audio_fade_in_seconds"])}
                    if "audio_fade_in_seconds" in clip else {}),
                 **({"audioFadeOut": float(clip["audio_fade_out_seconds"])}
@@ -579,6 +644,8 @@ def _start_lambda_render(
     *,
     output_filename: str,
 ) -> dict[str, Any]:
+    _refuse_lambda_reframe([item for track in input_props.get("document", {}).get("tracks", [])
+                           for item in track.get("items", [])])
     new_fields = {"box", "fontFamily", "textFit", "minFontSize", "maxFontSize"}
     needs_v2 = any(new_fields.intersection(item)
                    for track in input_props.get("document", {}).get("tracks", [])
@@ -653,6 +720,8 @@ def render_timeline(
 ) -> dict[str, Any]:
     """Compose generated image, video, and audio clips into one final MP4, then poll get_render_progress."""
     choose_canvas(str(aspect_ratio), [], output_resolution)
+    if render_backend() == "lambda":
+        _refuse_lambda_reframe(visuals)
     if dry_run():
         return {
             "status": "dry_run",

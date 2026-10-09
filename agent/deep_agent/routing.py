@@ -327,8 +327,10 @@ def resolve_alias(alias: str) -> str | None:
 def route_intent(prompt: str, *, region: str | None = None, tier: str | None = None,
                  confidential: bool = False, arguments: dict | None = None,
                  available_tools: set[str] | None = None, retry: bool = False) -> Route:
-    if refusal := editing_request_refusal(prompt):
-        return Route(skill="remotion-ad-variant-matrix", status="blocked", reason=refusal, disclosure=refusal)
+    for refusal in POLICY.get("editing_refusals", []):
+        if re.search(refusal["pattern"], prompt, re.IGNORECASE):
+            return Route(skill=refusal.get("skill", "remotion-ad-variant-matrix"), status="blocked",
+                         reason=refusal["reason"], disclosure=refusal["reason"])
     if any(re.search(pattern, prompt, re.I) for pattern in POLICY.get("non_dispatch_requests", [])):
         return Route(reason="No media intent matched; answer the Remotion licensing question from the editing skill.")
     constraints = intent_constraints(prompt, tier=tier, confidential=confidential, arguments=arguments)
