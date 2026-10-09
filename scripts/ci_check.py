@@ -100,7 +100,7 @@ def check_routing_inventory() -> None:
         assert set(metadata["include_tools"].split()) <= DISPATCH_TARGETS.keys(), path
         assert all(TOOL_MAP[alias]["status"] != "retired" for alias in metadata["routing_tools"].split()), path
     cases = json.loads((ROOT / "tests/fixtures/skill_routing.json").read_text())
-    assert len(cases) == 137 and sum(not case["skip_reason"] for case in cases) == 133
+    assert len(cases) == 139 and sum(not case["skip_reason"] for case in cases) == 135
     from agent.deep_agent.continuity_qc_vlm import EVAL_PATH, default_vlm_enabled
 
     if POLICY["continuity_qc"]["vlm_eval_gate"]["result_sha256"]:
@@ -108,7 +108,7 @@ def check_routing_inventory() -> None:
 
         subprocess.run(["git", "ls-files", "--error-unmatch", str(EVAL_PATH.relative_to(ROOT))], check=True, capture_output=True)
         assert default_vlm_enabled(), "Committed VLM evidence does not qualify for promotion."
-    print("ok routing inventory (15 providers, 113 Gateway tools, 24 skills, 133 active routing rows)")
+    print("ok routing inventory (15 providers, 113 Gateway tools, 24 skills, 135 active routing rows)")
 
 
 def _assert_gateway_shape(schema: object) -> None:
