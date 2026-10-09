@@ -763,6 +763,14 @@
       "status": "retired",
       "reason": "retired: hedra_character3; not adopted by quality-first capability map"
     },
+    "latentsync_lipsync": {
+      "gateway_tool": null,
+      "status": "retired",
+      "reason": "retired: latentsync_lipsync; non-commercial InsightFace dependency",
+      "license_source": "https://github.com/deepinsight/insightface",
+      "read_date": "2026-10-09",
+      "training_eligible": false
+    },
     "liveportrait_lipsync": {
       "gateway_tool": null,
       "status": "retired",
@@ -4417,6 +4425,8 @@
     }
   },
   "retired_requests": {
+    "\\b(?:use|using|via)\\s+latent[ -]?sync\\b": "latentsync_lipsync",
+    "\\b(?:use|using|via)\\s+live[ -]?portrait\\b": "liveportrait_lipsync",
     "\\bveo\\b": "veo_t2v",
     "\\bkandinsky\\b": "kandinsky6_t2v",
     "\\bfframes\\b": "fframes_render",

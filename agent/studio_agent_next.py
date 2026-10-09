@@ -1449,10 +1449,15 @@ def _validate_video_delivery(
         return True
     from agent.deep_agent.routing import route_intent
 
+    assembly_prompt = re.sub(
+        r"\b(?:without|no|do not|don['’]t|never)\s+"
+        r"(?:(?:add|burn(?: in)?|overlay|insert|include)\s+)?"
+        r"(?:captions?|subtitles?|titles?|music|b.?roll|graphics)\b", "", request.prompt, flags=re.IGNORECASE,
+    )
     requires_assembly = render_started or bool(re.search(
-        r"assemble|montage|combine|merge|stitch|"
-        r"(?:add|burn|overlay|insert|include|with).*\b(?:captions?|subtitles?|titles?|music|b.?roll|graphics)\b",
-        request.prompt, re.IGNORECASE,
+        r"\b(?:assemble|montage|combine|merge|stitch)\b|"
+        r"\b(?:add|burn|overlay|insert|include|with)\b.*\b(?:captions?|subtitles?|titles?|music|b.?roll|graphics)\b",
+        assembly_prompt, re.IGNORECASE,
     ))
     if not requires_assembly and route_intent(request.prompt).alias == "sync3_lipsync":
         if any(
