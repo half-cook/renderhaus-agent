@@ -1,5 +1,3 @@
-"""Offline Wan 3 contracts and queue lifecycle checks."""
-
 from __future__ import annotations
 
 import importlib

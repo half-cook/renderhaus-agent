@@ -40,7 +40,7 @@ class ViduRoutingTests(unittest.TestCase):
                 self.assertIn("Estimated cost $", route.disclosure)
                 self.assertIn("explicit request; not the default", route.disclosure)
         self.assertEqual(routing.route_intent("Wan 2.2 VACE first last frame morph").tool, "Fal___image_to_video")
-        self.assertEqual(routing.route_intent("animate an image").tool, "Seedance___image_to_video")
+        self.assertEqual(routing.route_intent("animate an image").tool, "Fal___generate_wan3_i2v")
 
     def test_paid_video_approval_and_fixed_identity(self):
         for name, model in [(I2V, I2V_MODEL), (R2V, R2V_MODEL)]:

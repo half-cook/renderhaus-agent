@@ -69,8 +69,8 @@ def check_routing_inventory() -> None:
     from providers.catalog import PROVIDERS
     from providers.registry import load_committed_schemas
 
-    assert len(PROVIDERS) == 8, "This routing branch adds no provider adapters."
-    assert sum(len(load_committed_schemas(spec)) for spec in PROVIDERS) == 78
+    assert len(PROVIDERS) == 8, "Wan 3 reuses the existing fal provider."
+    assert sum(len(load_committed_schemas(spec)) for spec in PROVIDERS) == 81
     paths = list(SKILLS_ROOT.glob("*/SKILL.md"))
     assert len(paths) == 24
     assert "ladder" not in POLICY and "premium_targets" not in POLICY
@@ -87,8 +87,8 @@ def check_routing_inventory() -> None:
         assert set(metadata["include_tools"].split()) <= DISPATCH_TARGETS.keys(), path
         assert all(TOOL_MAP[alias]["status"] != "retired" for alias in metadata["routing_tools"].split()), path
     cases = json.loads((ROOT / "tests/fixtures/skill_routing.json").read_text())
-    assert len(cases) == 122 and sum(not case["skip_reason"] for case in cases) == 80
-    print("ok routing inventory (8 providers, 78 Gateway tools, 24 skills, 80 active routing rows)")
+    assert len(cases) == 122 and sum(not case["skip_reason"] for case in cases) == 84
+    print("ok routing inventory (8 providers, 81 Gateway tools, 24 skills, 84 active routing rows)")
 
 
 def _assert_gateway_shape(schema: object) -> None:
@@ -133,8 +133,8 @@ def check_dry_run_dispatch() -> None:
             if spec.id == "fal":
                 if name == "get_video_task":
                     arguments["job_id"] = "fal-ai/wan-vace-14b:ci-smoke"
-                elif name == "vidu_q4_i2v":
-                    arguments["image_url"] = "https://example.test/frame.png"
+                elif name in {"vidu_q4_i2v", "generate_wan3_i2v"}:
+                    arguments["start_image_url" if name == "generate_wan3_i2v" else "image_url"] = "https://example.test/frame.png"
                 elif name == "video_to_video":
                     arguments["prompt"] = "A small offline smoke test"
             if spec.id == "remotion" and name == "prepare_conversational_edit":

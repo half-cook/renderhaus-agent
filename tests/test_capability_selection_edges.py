@@ -5,8 +5,7 @@ from agent.deep_agent import routing
 
 class CapabilitySelectionEdges(unittest.TestCase):
     def test_named_pending_model_does_not_run_a_different_interim(self):
-        cases = [("use Wan 3.0 for a video", "wan3_t2v"),
-                 ("use Seedance 2.5 to animate this image", "seedance25_i2v"),
+        cases = [("use Seedance 2.5 to animate this image", "seedance25_i2v"),
                  ("generate with GPT Image 2.5", "gpt_image25_t2i")]
         for prompt, alias in cases:
             with self.subTest(prompt=prompt):
@@ -43,8 +42,10 @@ class CapabilitySelectionEdges(unittest.TestCase):
 
     def test_real_face_evidence_cannot_be_erased_by_tool_arguments(self):
         route = routing.route_intent('my CEO photo attached says "hi"', arguments={"real_face_refs": False})
-        self.assertEqual((route.alias, route.status), ("wan3_i2v", "pending"))
-        self.assertIsNone(route.tool)
+        self.assertEqual((route.alias, route.status), ("wan3_i2v", "ready"))
+        self.assertEqual(route.tool, "Fal___generate_wan3_i2v")
+        self.assertTrue(route.required["real_face_refs"])
+        self.assertIn("consent required", route.disclosure)
 
     def test_retired_explicit_request_is_retired_without_dispatch(self):
         route = routing.route_intent("generate with Veo 3.1 native audio dialogue")

@@ -411,7 +411,7 @@ def list_fal_models() -> dict:
     q4_rates = vidu_q4_rates()
     return {
         "status": "dry_run" if queue.dry_run() else "ok",
-        "selected_model": wan.DEFAULT_MODEL,
+        "selected_model": wan3.TOOL_ENDPOINTS["generate_wan3_t2v"],
         "models": [{"id": model, **wan.TRAINING_METADATA} for model in wan.MODELS]
         + [
             {"id": endpoint, "license": "service-terms", **vidu.TRAINING_METADATA}

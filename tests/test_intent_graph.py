@@ -111,9 +111,9 @@ class IntentGraphTests(unittest.IsolatedAsyncioTestCase):
 
         def check_route(messages, tools):
             self.assertIn('"skill": "t2v"', messages[-1].text)
-            self.assertIn("Seedance___text_to_video", messages[-1].text)
+            self.assertIn("Fal___generate_wan3_t2v", messages[-1].text)
             self.assertIn('"alias": "wan3_t2v"', messages[-1].text)
-            self.assertIn('"basis": "interim default until', messages[-1].text)
+            self.assertIn('"basis": "default"', messages[-1].text)
             self.assertNotIn('"tier":', messages[-1].text)
             return final()
 
