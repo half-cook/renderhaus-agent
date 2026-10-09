@@ -379,10 +379,17 @@ The continuity training hook below remains Wan-only.
 
 `agent/deep_agent/continuity_qc.py` compares adjacent caller-decoded shot frames with only
 `google/siglip-so400m-patch14-384` and `facebook/dinov2-base` embeddings. It caches one
-embedding per model per shot. Each pair returns both cosine similarities and an average
-summary score. Both similarities must meet `ContinuityConfig.similarity_threshold`, default
-0.8. The threshold is a configurable engineering default, not an empirically validated
-identity or continuity accuracy guarantee. The report also returns per-pair acceptance.
+embedding per model per shot. Each pair returns both cosine similarities, each model's
+calibrated probability (`siglip_score`, `dino_score`) and their mean (`score`). The default
+`calibrated_mean` rule accepts when the mean probability is at least 0.5 and neither model is
+below the 0.2 drift veto. Per-model Platt calibration lives in
+`agent/deep_agent/continuity_qc_calibration.json`, fitted by
+`scripts/continuity_qc_benchmark.py calibrate` from `docs/continuity_qc_benchmark_scores.json`.
+The old `min(siglip, dino) >= 0.8` rule remains as `rule="legacy_min"` for comparison only:
+DINO cosines run far lower than SigLIP's, so it rejected 57% of same-shot and 97% of same-scene
+true pairs. The calibration was fitted on film frames and must be recalibrated on labelled
+Renderhaus generations; it is not an identity or accuracy guarantee. See
+[CONTINUITY_QC_BENCHMARK.md](CONTINUITY_QC_BENCHMARK.md#calibrated-scoring).
 
 The `FaceIdentity` Protocol permits a separately licensed host adapter. Its default returns
 `not configured`. Visual similarity does not establish face identity. No InsightFace or
@@ -394,7 +401,7 @@ the host must separately provision approved cached weights. Tests inject embedde
 loading, with no downloads. Missing packages or caches produce an explicit incomplete check.
 `continuity_qc.dinov3_enabled` and `ContinuityConfig.enable_dinov3` default OFF. When turned on,
 `facebook/dinov3-vitb16-pretrain-lvd1689m` replaces DINOv2 in the DINO slot (same CLS pooling,
-same `min(siglip, dino) >= threshold` rule, `ContinuityReport.dino_model` records which model
+its own calibration entry in the same rule, `ContinuityReport.dino_model` records which model
 scored). It loads from the local cache only (transformers>=4.56); `HF_TOKEN` is read from the
 environment only. The DINOv3 Licence permits commercial use with conditions, so legal review is
 required before enabling it in production. Benchmark and recommendation:

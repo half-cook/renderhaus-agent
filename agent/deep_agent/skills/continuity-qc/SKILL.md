@@ -18,7 +18,9 @@ Compare shot appearance using only `google/siglip-so400m-patch14-384` and
 `facebook/dinov2-base` embeddings. Models load lazily through optional host dependencies.
 Do not download weights, install a heavy package, or call a hosted model to complete a check
 without the user's authorization. Tests inject fake embedders and run without downloads.
-Report individual similarity scores, the configured acceptance threshold, and shot versions.
+Report each model's cosine similarity and calibrated probability, the acceptance rule and
+threshold from the report, and shot versions. The committed calibration was fitted on film
+frames, not Renderhaus generations, so say that the scores are provisional.
 An appearance match is not proof of face identity.
 
 Face identity uses a pluggable interface. The default implementation returns
