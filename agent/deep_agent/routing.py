@@ -11,6 +11,7 @@ from pathlib import Path
 POLICY = json.loads(Path(__file__).with_name("routing_policy.json").read_text())
 TOOL_MAP = POLICY["tools"]
 TARGET_PROVIDERS = {
+    "OpenAI": "openai_images",
     "Kling": "kling",
     "Runway": "runway",
     "Fal": "fal",
@@ -97,7 +98,7 @@ def request_tool_blocker(prompt: str, name: str) -> str | None:
     if _video_voiceover(prompt) and job_type(name) in {"still_image", "image_edit"}:
         return "A shot or clip with voiceover uses video, TTS and assembly; image tools are excluded."
     if name.startswith("Seedream___") and not re.search(r"\bseedream\b", prompt, re.I):
-        return "Seedream is explicit-only; request it by name. GPT Image 2.5 is pending feat/provider-openai-images."
+        return "Seedream is explicit-only; request it by name. GPT Image 2.5 is the still-image default."
     return None
 
 
@@ -336,6 +337,7 @@ def intent_constraints(prompt: str, *, tier: str | None = None, confidential: bo
     provider_candidates = [p for pattern, p in [
         (r"\bvidu\b|\bvace\b|\bfal\b|\bwan[ -]?2", "fal"), (r"\bseedance\b", "seedance"),
         (r"\bseedream\b", "seedream"), (r"\bkling\b", "kling"),
+        (r"\bopenai\b|gpt[ -]image", "openai_images"),
         (r"\brunway\b|\baleph\b|gen.?4", "runway"), (r"\bluma\b|\bray.?3\b", "luma"),
         (r"\bfish\b", "fish_audio"), (r"\belevenlabs\b", "elevenlabs"),
         (r"model[ -]?studio|dashscope|alibaba", "alibaba_modelstudio"),
@@ -404,6 +406,9 @@ def intent_constraints(prompt: str, *, tier: str | None = None, confidential: bo
 
 
 def resolution_value(value: str) -> int:
+    if "x" in value:
+        parts = value.split("x")
+        return max(int(part) for part in parts) if len(parts) == 2 and all(part.isdigit() for part in parts) else 0
     if ":" in value:
         parts = value.split(":")
         return min(int(part) for part in parts) if len(parts) == 2 and all(part.isdigit() for part in parts) else 0
@@ -566,7 +571,8 @@ def select_provider(job: str, *, tier: str | None = None, required: dict | None 
         unsupported |= duration is not None and limits is not None and not limits[0] <= duration <= limits[1]
         unsupported |= bool(duration is not None and values and duration not in values)
         unsupported |= bool(row.get("duration_field") and duration is not None and type(duration) is not int)
-        unsupported |= any(args.get(k) and resolution_value(args[k]) not in row["resolutions"] for k in ("resolution", "size") if k in controls and args.get(k) != "auto")
+        unsupported |= any(args.get(k) and resolution_value(args[k]) not in row["resolutions"] for k in ("resolution", "size") if k in controls and args.get(k) != "auto"
+                           and not (row["provider"] == "openai_images" and k == "size"))
         audio_field = row.get("native_audio_field", "generate_audio")
         unsupported |= bool(required.get("native_audio") and audio_field is not None and audio_field not in controls)
         unsupported |= bool(required.get("start_end_frame") and not any(k in controls for k in ("last_frame_url", "end_image_url", "end_image_path_or_url", "last_frame_path_or_url")))
@@ -780,6 +786,8 @@ def estimate_cost(name: str, arguments: dict, *, list_price: bool = False) -> Co
         return CostEstimate(None, blocker)
     provider, tool = tool_parts(name)
     model = effective_model(provider, tool, arguments)
+    if provider == "openai_images":
+        return CostEstimate(None, "UNVERIFIED pre-call token count for selected size/quality and inputs. Official token rates are verified.")
     if model:
         arguments = {**arguments, "model": model}
     try:

@@ -25,6 +25,7 @@ def _force_dry_run() -> None:
     os.environ["FISH_AUDIO_DRY_RUN"] = "true"
     os.environ["REMOTION_DRY_RUN"] = "true"
     os.environ["FAL_DRY_RUN"] = "true"
+    os.environ["OPENAI_IMAGES_DRY_RUN"] = "true"
     os.environ["HYPERFRAMES_DRY_RUN"] = "true"
     os.environ["MODELSTUDIO_DRY_RUN"] = "true"
 
@@ -70,8 +71,8 @@ def check_routing_inventory() -> None:
     from providers.catalog import PROVIDERS
     from providers.registry import load_committed_schemas
 
-    assert len(PROVIDERS) == 9
-    assert sum(len(load_committed_schemas(spec)) for spec in PROVIDERS) == 87
+    assert len(PROVIDERS) == 10
+    assert sum(len(load_committed_schemas(spec)) for spec in PROVIDERS) == 89
     paths = list(SKILLS_ROOT.glob("*/SKILL.md"))
     assert len(paths) == 24
     assert "ladder" not in POLICY and "premium_targets" not in POLICY
@@ -89,7 +90,7 @@ def check_routing_inventory() -> None:
         assert all(TOOL_MAP[alias]["status"] != "retired" for alias in metadata["routing_tools"].split()), path
     cases = json.loads((ROOT / "tests/fixtures/skill_routing.json").read_text())
     assert len(cases) == 129 and sum(not case["skip_reason"] for case in cases) == 91
-    print("ok routing inventory (9 providers, 87 Gateway tools, 24 skills, 90 active routing rows, 1 expected-failure readiness gate)")
+    print("ok routing inventory (10 providers, 89 Gateway tools, 24 skills, 91 active routing rows)")
 
 
 def _assert_gateway_shape(schema: object) -> None:

@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 """Sync non-empty application secrets and config, including ANTHROPIC_API_KEY,
+OPENAI_API_KEY (shared by planning and Images), OPENAI_IMAGES_MODEL,
+OPENAI_IMAGES_DRY_RUN and optional OPENAI_IMAGES_TOOL_COST_CENTS_JSON,
 RENDERHAUS_AGENT_MODEL, RENDERHAUS_AGENT_EFFORT, their per-role overrides, ELEVENLABS_TTS_MODEL,
 and the existing FAL_KEY/FAL_DRY_RUN settings shared by Wan 3, VACE and Vidu.
 Model Studio uses DASHSCOPE_API_KEY, DASHSCOPE_REGION, DASHSCOPE_BASE_URL,

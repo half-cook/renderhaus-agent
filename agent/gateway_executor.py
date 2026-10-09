@@ -257,7 +257,7 @@ class GatewayExecutor:
             return "Required voice references must be supplied using reference_audio_urls."
         if route.required.get("max_resolution"):
             value = (arguments.get("ratio", "1280:720") if provider == "runway" else
-                     arguments.get("size", "2K") if provider == "seedream" else arguments.get("resolution", row.get("resolution_default", "720p")))
+                     arguments.get("size", "2K") if provider in {"seedream", "openai_images"} else arguments.get("resolution", row.get("resolution_default", "720p")))
             actual = resolution_value(value)
             if actual < route.required["max_resolution"]:
                 return "Required output resolution must be set in the selected tool's native arguments."

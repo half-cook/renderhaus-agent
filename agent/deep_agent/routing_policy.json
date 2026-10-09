@@ -525,6 +525,48 @@
           "live_block_reason": "Preview licence does not permit customer production use; additional commercial rights unverified."
         }
       }
+    },
+    "openai_images": {
+      "enabled": true,
+      "license": "service-terms",
+      "allowed_regions": [],
+      "training_eligible": false,
+      "models": [
+        "gpt-image-2.5-sunburst",
+        "gpt-image-2.5-sunburst-2026-09-08"
+      ],
+      "default_model": "gpt-image-2.5-sunburst",
+      "model_env": "OPENAI_IMAGES_MODEL",
+      "model_policies": {
+        "gpt-image-2.5-sunburst": {
+          "license": "service-terms",
+          "weights_license": "closed-weights",
+          "license_source": "https://openai.com/policies/services-agreement/",
+          "training_eligible": false,
+          "training_reason": "Services Agreement 3.3(e) restricts competing AI training; no accepted grant for the Renderhaus continuity-training use case. API no-training by default describes vendor data use, not output training rights.",
+          "commercial_status": "commercial API; customer owns outputs, input rights required",
+          "consent_requirements": "Rights to input likenesses required. No deceptive nonconsensual real-person likeness use.",
+          "consent_source": "https://openai.com/policies/usage-policies/",
+          "read_date": "2026-10-09",
+          "verification": "Verified official model ID and JSON generation/edit schema; input_fidelity support UNVERIFIED and omitted."
+        },
+        "gpt-image-2.5-sunburst-2026-09-08": {
+          "license": "service-terms",
+          "weights_license": "closed-weights",
+          "license_source": "https://openai.com/policies/services-agreement/",
+          "training_eligible": false,
+          "training_reason": "Services Agreement 3.3(e) restricts competing AI training; no accepted grant for the Renderhaus continuity-training use case. API no-training by default describes vendor data use, not output training rights.",
+          "commercial_status": "commercial API; customer owns outputs, input rights required",
+          "consent_requirements": "Rights to input likenesses required. No deceptive nonconsensual real-person likeness use.",
+          "consent_source": "https://openai.com/policies/usage-policies/",
+          "read_date": "2026-10-09",
+          "verification": "Verified official model ID and JSON generation/edit schema; input_fidelity support UNVERIFIED and omitted."
+        }
+      },
+      "host": "OpenAI Images API",
+      "us_available": "yes",
+      "availability_source": "https://developers.openai.com/api/docs/supported-countries",
+      "read_date": "2026-10-09"
     }
   },
   "tools": {
@@ -1034,42 +1076,44 @@
       }
     },
     "gpt_image25_t2i": {
-      "gateway_tool": null,
-      "status": "pending",
-      "provider": "openai",
-      "reason": "provider pending: gpt_image25_t2i (feat/provider-openai-images)",
-      "verification": "verified; adapter pending; live use disabled",
+      "gateway_tool": "OpenAI___generate_image",
+      "status": "ready",
+      "provider": "openai_images",
+      "reason": "Capability default; official OpenAI Images API",
+      "verification": "Verified official model ID and JSON generation/edit schema; input_fidelity support UNVERIFIED and omitted.",
       "training_eligible": false,
       "model": "gpt-image-2.5-sunburst",
       "host": "OpenAI Images API",
       "us_available": "yes",
       "availability_source": "https://help.openai.com/en/articles/5347006-openai-api-supported-countries-and-territories",
-      "read_date": "2026-10-08",
+      "read_date": "2026-10-09",
       "license": "OpenAI Services Agreement proprietary API; commercial applications and output ownership",
       "license_source": "https://openai.com/policies/services-agreement/",
       "training_reason": "Services Agreement 3.3(e) restricts developing competing AI with outputs except defined permitted exceptions.",
       "source": "https://developers.openai.com/api/docs/models/gpt-image-2.5-sunburst",
-      "price_source": "https://developers.openai.com/api/docs/models/gpt-image-2.5-sunburst",
-      "dry_run": true
+      "price_source": "https://developers.openai.com/api/docs/pricing",
+      "dry_run": true,
+      "skill": "image-gen"
     },
     "gpt_image25_edit": {
-      "gateway_tool": null,
-      "status": "pending",
-      "provider": "openai",
-      "reason": "provider pending: gpt_image25_edit (feat/provider-openai-images)",
-      "verification": "verified; adapter pending; live use disabled",
+      "gateway_tool": "OpenAI___edit_image",
+      "status": "ready",
+      "provider": "openai_images",
+      "reason": "Capability default; official OpenAI Images API",
+      "verification": "Verified official model ID and JSON generation/edit schema; input_fidelity support UNVERIFIED and omitted.",
       "training_eligible": false,
-      "model": "gpt-image-2.5-sunburst-2026-09-08",
+      "model": "gpt-image-2.5-sunburst",
       "host": "OpenAI Images API",
       "us_available": "yes",
       "availability_source": "https://help.openai.com/en/articles/5347006-openai-api-supported-countries-and-territories",
-      "read_date": "2026-10-08",
+      "read_date": "2026-10-09",
       "license": "OpenAI Services Agreement proprietary API; commercial applications and output ownership",
       "license_source": "https://openai.com/policies/services-agreement/",
       "training_reason": "Services Agreement 3.3(e) restricts developing competing AI with outputs except defined permitted exceptions.",
       "source": "https://developers.openai.com/api/docs/models/gpt-image-2.5-sunburst",
-      "price_source": "https://developers.openai.com/api/docs/models/gpt-image-2.5-sunburst",
-      "dry_run": true
+      "price_source": "https://developers.openai.com/api/docs/pricing",
+      "dry_run": true,
+      "skill": "image-gen"
     },
     "sync3_lipsync": {
       "gateway_tool": null,
@@ -3781,6 +3825,148 @@
           -1
         ]
       }
+    },
+    {
+      "provider": "openai_images",
+      "model": "gpt-image-2.5-sunburst",
+      "label": "GPT Image 2.5 Sunburst",
+      "tools": {
+        "image": "OpenAI___generate_image",
+        "image_edit": "OpenAI___edit_image"
+      },
+      "jobs": {
+        "t2v": false,
+        "i2v": false,
+        "start_end_frame": false,
+        "native_audio": false,
+        "multi_shot": false,
+        "v2v_edit": false,
+        "reference_elements": true,
+        "lipsync": false,
+        "upscale": false,
+        "image": true,
+        "max_resolution": 3840,
+        "4k": false,
+        "image_edit": true
+      },
+      "resolutions": [
+        864,
+        1024,
+        1152,
+        1440,
+        1536,
+        2048,
+        2160,
+        2560,
+        3072,
+        3840
+      ],
+      "speed_class": "standard",
+      "policy_ref": "openai_images",
+      "price": "unknown",
+      "notes": "2K default; custom dimensions above 2560x1440 experimental. Pre-call cost UNVERIFIED. No output training.",
+      "controls": {
+        "image": [
+          "prompt",
+          "aspect_ratio",
+          "size",
+          "model",
+          "quality",
+          "background",
+          "output_format",
+          "n",
+          "moderation",
+          "output_compression"
+        ],
+        "image_edit": [
+          "prompt",
+          "aspect_ratio",
+          "size",
+          "model",
+          "quality",
+          "background",
+          "output_format",
+          "n",
+          "moderation",
+          "output_compression",
+          "image_path_or_url",
+          "reference_image_urls",
+          "mask_path_or_url"
+        ]
+      },
+      "durations": {},
+      "explicit_only": false
+    },
+    {
+      "provider": "openai_images",
+      "model": "gpt-image-2.5-sunburst-2026-09-08",
+      "label": "GPT Image 2.5 Sunburst",
+      "tools": {
+        "image": "OpenAI___generate_image",
+        "image_edit": "OpenAI___edit_image"
+      },
+      "jobs": {
+        "t2v": false,
+        "i2v": false,
+        "start_end_frame": false,
+        "native_audio": false,
+        "multi_shot": false,
+        "v2v_edit": false,
+        "reference_elements": true,
+        "lipsync": false,
+        "upscale": false,
+        "image": true,
+        "max_resolution": 3840,
+        "4k": false,
+        "image_edit": true
+      },
+      "resolutions": [
+        864,
+        1024,
+        1152,
+        1440,
+        1536,
+        2048,
+        2160,
+        2560,
+        3072,
+        3840
+      ],
+      "speed_class": "standard",
+      "policy_ref": "openai_images",
+      "price": "unknown",
+      "notes": "2K default; custom dimensions above 2560x1440 experimental. Pre-call cost UNVERIFIED. No output training.",
+      "controls": {
+        "image": [
+          "prompt",
+          "aspect_ratio",
+          "size",
+          "model",
+          "quality",
+          "background",
+          "output_format",
+          "n",
+          "moderation",
+          "output_compression"
+        ],
+        "image_edit": [
+          "prompt",
+          "aspect_ratio",
+          "size",
+          "model",
+          "quality",
+          "background",
+          "output_format",
+          "n",
+          "moderation",
+          "output_compression",
+          "image_path_or_url",
+          "reference_image_urls",
+          "mask_path_or_url"
+        ]
+      },
+      "durations": {},
+      "explicit_only": false
     }
   ],
   "image_default_size": "2K",
@@ -4064,6 +4250,10 @@
     "alibaba_modelstudio": {
       "v2v_edit": "wan3_edit",
       "extend": "wan3_extend"
+    },
+    "openai_images": {
+      "still_image": "gpt_image25_t2i",
+      "image_edit": "gpt_image25_edit"
     }
   },
   "named_models": {
@@ -4426,20 +4616,28 @@
       "consent_requirements": "Real-face photo/video references are prohibited; consent does not override this restriction."
     },
     "gpt_image25_t2i": {
-      "license": "OpenAI Services Agreement proprietary API; commercial applications and output ownership",
+      "license": "service-terms",
+      "weights_license": "closed-weights",
       "license_source": "https://openai.com/policies/services-agreement/",
       "training_eligible": false,
-      "training_reason": "Services Agreement 3.3(e) restricts developing competing AI with outputs except defined permitted exceptions.",
-      "commercial_status": "commercial service or permissive code; source media rights still required",
-      "read_date": "2026-10-08"
+      "training_reason": "Services Agreement 3.3(e) restricts competing AI training; no accepted grant for the Renderhaus continuity-training use case. API no-training by default describes vendor data use, not output training rights.",
+      "commercial_status": "commercial API; customer owns outputs, input rights required",
+      "consent_requirements": "Rights to input likenesses required. No deceptive nonconsensual real-person likeness use.",
+      "consent_source": "https://openai.com/policies/usage-policies/",
+      "read_date": "2026-10-09",
+      "verification": "Verified official model ID and JSON generation/edit schema; input_fidelity support UNVERIFIED and omitted."
     },
     "gpt_image25_edit": {
-      "license": "OpenAI Services Agreement proprietary API; commercial applications and output ownership",
+      "license": "service-terms",
+      "weights_license": "closed-weights",
       "license_source": "https://openai.com/policies/services-agreement/",
       "training_eligible": false,
-      "training_reason": "Services Agreement 3.3(e) restricts developing competing AI with outputs except defined permitted exceptions.",
-      "commercial_status": "commercial service or permissive code; source media rights still required",
-      "read_date": "2026-10-08"
+      "training_reason": "Services Agreement 3.3(e) restricts competing AI training; no accepted grant for the Renderhaus continuity-training use case. API no-training by default describes vendor data use, not output training rights.",
+      "commercial_status": "commercial API; customer owns outputs, input rights required",
+      "consent_requirements": "Rights to input likenesses required. No deceptive nonconsensual real-person likeness use.",
+      "consent_source": "https://openai.com/policies/usage-policies/",
+      "read_date": "2026-10-09",
+      "verification": "Verified official model ID and JSON generation/edit schema; input_fidelity support UNVERIFIED and omitted."
     },
     "recraft_v41_vector": {
       "license": "commercial API, fal Commercial use",
