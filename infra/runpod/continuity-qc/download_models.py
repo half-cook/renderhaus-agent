@@ -13,7 +13,6 @@ from huggingface_hub.utils import disable_progress_bars
 
 from worker_logic import MODEL_IDS
 
-# These are the benchmark's snapshots, also verified against public HF metadata.
 MODEL_REVISIONS = {
     "siglip": "9fdffc58afc957d1a03a25b10dba0329ab15c2a3",
     "dinov2": "f9e44c814b77203eaa57a6bdbbd535f21ede1415",

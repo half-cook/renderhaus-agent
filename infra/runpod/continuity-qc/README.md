@@ -104,7 +104,7 @@ Errors never include frame URLs, payloads, exception text, or secrets.
 Limits are 8 frames, 8 MiB per decoded frame payload, 24 MiB total payload,
 20 million pixels per still image, 64 pairs, and 128 ASCII characters per unique
 ID. IDs accept letters, digits, `_`, `.`, `:`, and `-`. Requests reject unknown
-fields, duplicate model/output names, invalid base64, missing pairs, and unknown
+fields, duplicate model/output names, invalid base64, invalid pair IDs, and unknown
 models. HTTPS fetches allow only port 443, validate all resolved addresses as
 public, pin the approved IP for TLS, reject redirects, limit streamed bytes,
 and enforce a 10-second deadline. Private DNS answers and mixed public/private

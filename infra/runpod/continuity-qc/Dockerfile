@@ -4,7 +4,6 @@ WORKDIR /app
 COPY infra/runpod/continuity-qc/requirements.txt /app/requirements.txt
 RUN pip install --no-cache-dir -r /app/requirements.txt
 RUN mkdir -p /app/agent/deep_agent && touch /app/agent/__init__.py /app/agent/deep_agent/__init__.py
-# Copy the production maths and calibration unchanged, without app dependencies.
 COPY agent/deep_agent/continuity_qc.py agent/deep_agent/continuity_qc_calibration.json /app/agent/deep_agent/
 COPY infra/runpod/continuity-qc/worker_logic.py infra/runpod/continuity-qc/download_models.py infra/runpod/continuity-qc/handler.py infra/runpod/continuity-qc/test_input.json /app/
 ARG INCLUDE_DINOV3=0
