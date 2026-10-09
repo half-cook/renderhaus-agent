@@ -792,6 +792,60 @@ class SyncProviderTests(unittest.TestCase):
         self.assertEqual(sum(request.method == "GET" for request in self.requests), 1)
         self.assertEqual(list(Path(self.directory.name).rglob("*.mp4")), [])
 
+    def test_stale_remote_aggregate_retains_newer_local_accepted_chunk(self):
+        os.environ["AWS_S3_BUCKET"] = "offline-sync-store"
+        store = MemoryS3(fail_puts={4, 5})
+        self.fal_submit_route("part_0")
+        with patch.object(self.chunks.boto3, "client", return_value=store):
+            output = self.submit_aggregate()
+            self.assertEqual(len(output["accepted_job_ids"]), 1)
+            self.assertTrue(output["persistence_error"])
+            remote = json.loads(store.objects[self.api._store_key(output["job_id"])])
+            self.assertTrue(all(child["job_id"] is None for child in remote["chunks"]))
+            self.route("GET", f"{FAL_REQUESTS}/part_0/status", {"status": "IN_PROGRESS"})
+            polled = self.api.get_video_task(output["job_id"])
+        self.assertEqual(polled["status"], "failed")
+        self.assertEqual(polled["accepted_job_ids"], output["accepted_job_ids"])
+        self.assertEqual(polled["accepted_provider_handles"], output["accepted_provider_handles"])
+        self.assertTrue(polled["persistence_error"])
+        self.assertEqual(sum(request.method == "POST" for request in self.requests), 1)
+        self.assertEqual(sum(request.method == "GET" for request in self.requests), 1)
+        saved = json.loads(store.objects[self.api._store_key(output["job_id"])])
+        self.assertEqual(saved["chunks"][0]["job_id"], output["accepted_job_ids"][0])
+
+    def test_aggregate_recovery_refuses_conflicting_source_plan_or_accepted_child(self):
+        os.environ["AWS_S3_BUCKET"] = "offline-sync-store"
+        for mismatch in ("source", "plan", "accepted_child"):
+            with self.subTest(mismatch=mismatch):
+                store = MemoryS3(fail_puts={4, 5})
+                self.fal_submit_route("part_0")
+                with patch.object(self.chunks.boto3, "client", return_value=store):
+                    output = self.submit_aggregate()
+                    path, _ = self.api._paths(output["job_id"])
+                    local = json.loads(path.read_text())
+                    if mismatch == "source":
+                        local["video_reference"] = "https://media.example.test/other.mp4"
+                        path.write_text(json.dumps(local))
+                    elif mismatch == "plan":
+                        local["chunks"][0]["end_seconds"] = 40.0
+                        local["chunks"][0]["duration_seconds"] = 40.0
+                        local["chunks"][1]["start_seconds"] = 40.0
+                        local["chunks"][1]["duration_seconds"] = 50.0
+                        path.write_text(json.dumps(local))
+                    else:
+                        key = self.api._store_key(output["job_id"])
+                        remote = json.loads(store.objects[key])
+                        remote["chunks"][0].update(
+                            job_id="sync:fal:" + "f" * 32,
+                            provider_handle=f"{FAL_ENDPOINT}:foreign_part",
+                            status="queued",
+                        )
+                        store.objects[key] = json.dumps(remote).encode()
+                    request_count = len(self.requests)
+                    with self.assertRaisesRegex(ValueError, "invalid|conflicting"):
+                        self.api.get_video_task(output["job_id"])
+                    self.assertEqual(len(self.requests), request_count)
+
     def test_aggregate_polls_once_per_child_then_concats_in_order_and_reuses_artifact(self):
         for index in range(3):
             self.fal_submit_route(f"part_{index}")
