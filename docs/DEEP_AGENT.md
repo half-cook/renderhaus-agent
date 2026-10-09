@@ -145,7 +145,7 @@ this conversion when they support the project's MCP version.
 ## Capability routing
 
 The quality-first capability map selects an explicit requested provider/model, then a named
-exception, then the capability default. Pending defaults use only declared interims.
+exception, then the capability default. Pending or commercially blocked defaults use only declared interims.
 Cost estimates support disclosure and approvals, never tier or price ordering. Stored
 `confidential` and `quality_tier` project fields do not affect selection or approvals.
 The shared executor enforces the same choice on both backends, including approved resumes.
@@ -330,7 +330,8 @@ See [Wan 3 provider contracts](FAL_WAN3_PROVIDER.md) for schemas and offline val
 
 `call_media_tool` dispatches the `ModelStudio` target. The edit-v2v and refinement skills
 discover its real Gateway names. `wan3_edit` and `wan3_extend` are built capability defaults
-without exceptions or interims. Explicit Luma, Aleph, and VACE remain available.
+with declared Seedance 2.5 edit/extend interims while the Wan model commercial policy is
+blocked. Explicit Luma, Aleph, and VACE remain available.
 
 Paid edit/extend interrupts retain the installed deepagents 0.7.23 checkpointer and
 `Command(resume=...)` behavior. Cost descriptions use regional input plus output seconds,
@@ -342,3 +343,17 @@ The default legacy US base URL remains UNVERIFIED for generation and blocked liv
 Preview licensing also blocks customer live use on workspace hosts. Configuration,
 smart-duration limits, the licence restriction, and blocked Comet E2E are documented
 in [the Model Studio provider reference](ALIBABA_MODELSTUDIO.md).
+
+## Seedance 2.5 dialogue and edit interims
+
+The Seedance target remains in `DISPATCH_TARGETS.call_media_tool`. Its five generation tools
+use the existing callable `interrupt_on` cost descriptions and checkpointer/resume protocol in
+installed deepagents 0.7.23. No manager or subagent model changes are part of this upgrade.
+The host defaults to fal US and reuses fal polling; saved endpoint provenance survives a
+transport configuration change. All Seedance outputs are ineligible for continuity training.
+
+Synthetic dialogue uses the Seedance 2.5 exception for t2v/i2v/reference video. Real-person
+references force Wan generation with consent and refuse the Seedance edit/extend interim.
+Changing Wan's `live_enabled` policy flag restores default selection; the unchanged hard
+Model Studio adapter restriction still blocks commercial live work. See
+[Seedance contracts, pricing and unresolved limits](SEEDANCE_2_5.md).

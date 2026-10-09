@@ -4,7 +4,7 @@ description: Animate a supplied start frame or reference set with Wan 3.0; use S
 metadata:
   include_tools: call_media_tool
   routing_tools: wan3_i2v wan3_r2v seedance25_i2v seedance25_r2v
-  gateway_tools: Fal___generate_wan3_i2v Fal___generate_wan3_r2v Fal___get_video_task Seedance___get_video_task Seedance___image_to_video
+  gateway_tools: Fal___generate_wan3_i2v Fal___generate_wan3_r2v Fal___get_video_task Seedance___get_video_task Seedance___image_to_video Seedance___reference_to_video
 ---
 
 # Image to video
@@ -28,10 +28,18 @@ Common native controls include `prompt`, `resolution`, `aspect_ratio`, `duration
 Defaults are 1080p, adaptive aspect ratio, five seconds and audio enabled. Duration is 2-30 seconds.
 Use prompt instructions for multi-shot generation; no multi_shot boolean is accepted.
 Poll `Fal___get_video_task` with the saved job ID and `download=true`.
-Synthetic-dialogue i2v uses the declared `Seedance___image_to_video` exception interim until 2.5 lands.
-Seedance reference-to-video remains pending without an interim. Do not replace reference inputs with
-a single frame to force a route.
-Future Seedance 2.5 defaults to fal for US/Canada; current BytePlus 1.5 is an interim, not that host upgrade.
+Synthetic-dialogue i2v uses `Seedance___image_to_video`; reference sets use
+`Seedance___reference_to_video`. Both run Seedance 2.5 through fal US by default.
+The image tool accepts `image_path_or_url` and optional `end_image_path_or_url`.
+For references, supply `reference_image_urls`, `reference_video_urls`, `reference_audio_urls`,
+and the matching measured durations and video fps. The limit is 30 images, 10 videos and
+10 audio files, with at most 50 total inputs. Input video and audio each total at most 30 seconds.
+Seedance never accepts real-person photo or video references, even with consent. If asset
+provenance indicates a real person, set `user_supplied_real_person_refs=true` and use Wan.
+For adaptive image output, supply measured `source_aspect_ratio` for a numeric cost estimate.
+Do not invent a source measurement. Unknown remains unknown. Source aspect controls output.
+BytePlus is optional for non-US customers. Vendor watermark and AUP rules apply.
+All Seedance outputs are ineligible for training.
 Omni and Vidu are A/B candidates only. An explicit Vidu request belongs in named-provider.
 
 Discover native arguments. Wan uses `start_image_url`; Seedance uses `image_path_or_url`. Retain
@@ -41,7 +49,7 @@ Inspect the actual result against the approved image and use continuity-qc for c
 
 Follow `read_studio_context.intent_route`. Selection uses the explicit requested provider/model,
 then a named exception, then the capability default. Cost estimates support approval and disclosure;
-they never select a provider. Pending defaults use only the policy's declared interim tool.
+they never select a provider. Pending or commercially blocked defaults use only the policy's declared interim tool.
 Disclose provider, model, estimated cost and `default`, `exception: <reason>`, `explicit request`,
 or `interim default until <provider> lands` before each dispatch. Unknown prices stay unknown.
 All paid video pauses for approval even in autonomous runs when `premium_video_approval` is enabled.

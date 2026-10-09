@@ -21,17 +21,18 @@ Wan 3.0 uses `Fal___generate_wan3_t2v`. Discover its schema before dispatch. Nat
 Defaults are 1080p, adaptive aspect ratio, five seconds and audio enabled. Request 2-30 seconds per shot.
 Multi-shot direction belongs in the prompt, not an invented multi_shot argument.
 Poll `Fal___get_video_task` with the saved job ID and `download=true`.
-Seedance 2.5 remains pending. Its declared exception interim is `Seedance___text_to_video`,
-pinned to the existing Seedance adapter. Disclose that interim explicitly.
-The future Seedance 2.5 host defaults to fal for US and Canadian customers; BytePlus is optional.
-Never claim the current BytePlus 1.5 adapter runs 2.5 or provides US availability.
+Seedance 2.5 uses `Seedance___text_to_video` through fal's US host by default.
+Use `duration_seconds` from 4 through 30, `aspect_ratio`, `resolution`, and `generate_audio`.
+Audio defaults true. The BytePlus host is optional for non-US customers. The operator selects
+transport and region. Never change provider flags or hosts. Preserve the vendor watermark and
+follow its AUP. Neither Seedance 2.5 nor the selectable BytePlus 1.5 model is training eligible.
 
-A real-person photo/video reference forces Wan and prohibits the Seedance interim. Read i2v for
+A real-person photo/video reference forces Wan and prohibits Seedance. Read i2v for
 start-frame or reference-set generation. Set `real_face_refs=true` and require the person's consent,
 acknowledged with `likeness_consent=true`. Spend approval does not supply missing likeness consent.
 Gemini Omni is an A/B candidate only.
 Split a request over 30 seconds into separate shots or refuse a single-shot request with that limit.
-The built interim can have a shorter limit; preserve its actual schema constraints.
+The explicitly selected BytePlus 1.5 model accepts only 4-12 seconds.
 
 For Kling, Runway, Luma, Vidu or Wan VACE by name, read [named provider](../named-provider/SKILL.md).
 Retired Veo and HeyGen generative-video requests disclose retirement and offer the default.
@@ -41,7 +42,7 @@ For a final assembled MP4, read [final assembly](../final-assembly/SKILL.md).
 
 Follow `read_studio_context.intent_route`. Selection uses the explicit requested provider/model,
 then a named exception, then the capability default. Cost estimates support approval and disclosure;
-they never select a provider. Pending defaults use only the policy's declared interim tool.
+they never select a provider. Pending or commercially blocked defaults use only the policy's declared interim tool.
 Disclose provider, model, estimated cost and `default`, `exception: <reason>`, `explicit request`,
 or `interim default until <provider> lands` before each dispatch. Unknown prices stay unknown.
 All paid video pauses for approval even in autonomous runs when `premium_video_approval` is enabled.

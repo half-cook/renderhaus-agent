@@ -1,6 +1,6 @@
 # Renderhaus capability map
 
-One quality-first default serves each capability. Selection order is **explicit provider/model request > named exception > default > declared interim while the default is pending**. Prices inform approval and disclosure; they never order models. Wan 3 generation uses fal; edit and extend use Alibaba Model Studio. See [fal contracts](FAL_WAN3_PROVIDER.md) and [Model Studio contracts](ALIBABA_MODELSTUDIO.md).
+One quality-first default serves each capability. Selection order is **explicit provider/model request > named exception > default > declared interim while the default is pending or commercially blocked**. Prices inform approval and disclosure; they never order models. Wan 3 generation uses fal; its edit and extend defaults use Alibaba Model Studio. See [fal contracts](FAL_WAN3_PROVIDER.md) and [Model Studio contracts](ALIBABA_MODELSTUDIO.md).
 
 ## Capability choices
 
@@ -9,8 +9,8 @@ One quality-first default serves each capability. Selection order is **explicit 
 | t2v | `wan3_t2v` | `dialogue && !real_face_refs` → `seedance25_t2v` (synthetic dialogue) | None; Wan 3 built | gemini_omni_11_flash |
 | i2v | `wan3_i2v` | `dialogue && !real_face_refs` → `seedance25_i2v` (synthetic dialogue) | None; Wan 3 built | gemini_omni_11_flash, vidu_q4_i2v |
 | reference_video | `wan3_r2v` | `dialogue && !real_face_refs` → `seedance25_r2v` (synthetic dialogue references) | — | — |
-| v2v_edit | `wan3_edit` | — | None; Model Studio dry-run only | — |
-| extend | `wan3_extend` | — | None; Model Studio dry-run only | — |
+| v2v_edit | `wan3_edit` | — | `seedance25_edit` while Wan commercial policy is blocked | — |
+| extend | `wan3_extend` | — | `seedance25_extend` while Wan commercial policy is blocked | — |
 | still_image | `gpt_image25_t2i` | `vector_output` → `recraft_v41_vector` (editable vector output) | `seedream_t2i` | — |
 | image_edit | `gpt_image25_edit` | `text_only_edit` → `ideogram45_edit` (pixel-preserving text-only edit) | `seedream_edit` | ideogram45_edit |
 | lipsync | `sync3_lipsync` | `duration_over_30s && presenter` → `heygen_avatar_v` (long presenter or digital twin) | — | heygen_avatar_v |
@@ -25,9 +25,14 @@ One quality-first default serves each capability. Selection order is **explicit 
 | nle_handoff | `Remotion___export_nle_timeline` | — | — | — |
 | continuity_qc | `local_qc` | — | — | gemini_vlm_judge |
 
-Canonical aliases remain stable even when an official endpoint differs from the research lead. A pending alias has no Gateway binding and cannot perform a request. Plain default requests can use only the listed interim and disclose “interim default until <alias> lands”. A named exact future model stays pending rather than silently running a different model. Bare “Seedance” uses the current adapter until its declared upgrade lands. Exception defaults do not receive unrelated capability interims.
+Canonical aliases remain stable even when an official endpoint differs from the research lead. A pending alias has no Gateway binding and cannot perform a request. Plain default requests can use only the listed interim and disclose “interim default until <alias> lands”. A named exact future model stays pending rather than silently running a different model. Bare “Seedance” uses the upgraded 2.5 adapter. Exception defaults do not receive unrelated capability interims.
 
-The t2v, i2v and reference_video defaults now use Wan 3 on fal. Only synthetic-dialogue t2v/i2v exceptions retain the declared Seedance 1.5 BytePlus interim. The future Seedance 2.5 default host is fal US, with BytePlus optional. This policy branch does not switch the existing adapter host. BytePlus excludes US customers; Wan 3 default generation uses fal; Seedance 2.5 still requires its provider branch. Real-person references never fall back to Seedance or Kling Omni.
+The t2v, i2v and reference_video defaults use Wan 3 on fal. The synthetic-dialogue exceptions
+now use Seedance 2.5 through fal US. Real-person references force Wan generation with consent.
+Wan edit/extend remain defaults but their preview licence selects the declared Seedance 2.5
+interims for synthetic sources. Real-person edit/extend refuse that interim. The single Wan
+model `live_enabled` policy switch restores its selection, while the unchanged adapter hard
+licence block remains. BytePlus is optional only for authorized non-US platform use.
 
 ## Deterministic intent predicates
 
@@ -112,25 +117,25 @@ Model is preview. `duration=-1` means smart duration and remains dry-run with un
 
 ### ByteDance Seedance 2.5 — fal US default
 
-Routing IDs: `seedance25_t2v`, `seedance25_i2v`, `seedance25_r2v`. Official IDs: `bytedance/seedance-2.5/us/text-to-video`, `bytedance/seedance-2.5/us/image-to-video`, `bytedance/seedance-2.5/us/reference-to-video`. Status: **verified**.
+Routing IDs: `seedance25_t2v`, `seedance25_i2v`, `seedance25_r2v`, `seedance25_edit`, `seedance25_extend`. Official IDs: `bytedance/seedance-2.5/us/text-to-video`, `bytedance/seedance-2.5/us/image-to-video`, `bytedance/seedance-2.5/us/reference-to-video`. Status: **verified**.
 
 fal queue; prompt for t2v, image_url/end_image_url for i2v, image_urls/video_urls/audio_urls for refs; resolution 480p/720p/1080p, duration to 30s, generate_audio,end_user_id. [Official API source](https://fal.ai/models/bytedance/seedance-2.5/us/text-to-video/api) [Official API source](https://fal.ai/models/bytedance/seedance-2.5/us/image-to-video/api) [Official API source](https://fal.ai/models/bytedance/seedance-2.5/us/reference-to-video)
 
-US USD/s approx 480p=0.2646,720p=0.5676,1080p=1.396278; USD/1K tokens 0.02568 at 480p/720p,0.02808 at1080p; video reference price multiplier 0.6 on input+output duration. [Official pricing](https://fal.ai/models/bytedance/seedance-2.5/us/text-to-video)
+US USD/M tokens: 25.68 at 480p/720p and 28.08 at 1080p. Global rates are 21.40 and 23.40 respectively. Video references multiply the full input-plus-output token cost by 0.6. Use the documented token formula rather than per-second approximations. [US pricing](https://fal.ai/models/bytedance/seedance-2.5/us/reference-to-video), [global pricing](https://fal.ai/models/bytedance/seedance-2.5/reference-to-video), read 2026-10-09.
 
-commercial API, proprietary weights, fal Commercial use. `training_eligible=false`: fal third-party competing-model training restriction.. [Licence/terms source](https://fal.ai/models/bytedance/seedance-2.5/us/text-to-video)
+Commercial hosted API with proprietary weights. `training_eligible=false`: fal terms section 14.3 restrict competing-model training. [Licence/terms source](https://fal.ai/legal/terms-of-service), read 2026-10-09.
 
 US endpoint rates exceed map's non-US fal leads. Real-person references remain blocked by routing.
 
 ### ByteDance Seedance 2.5 — BytePlus optional
 
-Routing IDs: `seedance25_t2v`, `seedance25_i2v`, `seedance25_r2v`. Official IDs: `dreamina-seedance-2-5-260628`. Status: **verified ID and async endpoint; optional direct host**.
+Routing IDs: `seedance25_t2v`, `seedance25_i2v`, `seedance25_r2v`, `seedance25_edit`, `seedance25_extend`. Official IDs: `dreamina-seedance-2-5-260628`. Status: **verified ID and async endpoint; optional direct host**.
 
-ModelArk POST https://ark.ap-southeast.bytepluses.com/api/v3/contents/generations/tasks; model,content[{type:text,text}|{type:image_url,image_url:{url}}],generate_audio,ratio,duration. Poll GET /contents/generations/tasks/{id}. LAS is a separate v1 operator surface. [Official API source](https://docs.byteplus.com/en/docs/ModelArk/availability) [Official API source](https://docs.byteplus.com/en/docs/Byteplus_LAS/video_gen_enhanced) [Official API source](https://docs.byteplus.com/id/docs/modelark/video-generation-tutorial) [Official API source](https://docs.byteplus.com/id/docs/modelark/model-pricing?redirect=1)
+ModelArk POST `https://ark.ap-southeast.bytepluses.com/api/v3/contents/generations/tasks` with model, text/image/video/audio content and reference roles, generate_audio, ratio and duration. Poll GET `/contents/generations/tasks/{id}`. Editing and extension use `omni_reference_task_type`. [Official task API](https://docs.byteplus.com/en/docs/modelark/create-video-generation-task-api), [2.5 tutorial](https://docs.byteplus.com/zh-TW/docs/modelark/seedance-2-5), read 2026-10-09.
 
-Official direct pricing displays 480p/720p list USD3.5/M tokens without video and2.1/M with video plus time-limited discounts. Exact current promo/1080p row TODO unknown; don't use as US default. [Official pricing](https://docs.byteplus.com/id/docs/modelark/model-pricing?redirect=1)
+Official indexed direct pricing, read 2026-10-09, lists USD 10.70/M without video and 6.40/M with video at 480p/720p; 1080p is 11.70/M without video and 7.00/M with video. The video-input minimum-token floor is UNVERIFIED, so those estimates remain unknown and dry-run. [Official pricing](https://docs.byteplus.com/id/docs/modelark/model-pricing?redirect=1)
 
-proprietary API; direct model-specific terms require upgrade-branch verification. `training_eligible=false`: No output-training grant verified.. [Licence/terms source](https://docs.byteplus.com/en/docs/ModelArk/availability)
+Proprietary API. Current terms §4.2.3 require written authorization for platform reintegration/resale and exclude US end users. Direct live platform use is blocked without operator authorization. `training_eligible=false`; no continuity-training grant accepted. [Licence/terms source](https://docs.byteplus.com/en/docs/legal/docs-service-specific-terms), read 2026-10-09.
 
 ### OpenAI GPT Image 2.5 Sunburst — OpenAI Images API
 
@@ -343,7 +348,6 @@ The 145-row workbook becomes 122 fixtures: 23 archived/confidential rows are dro
 | provider pending: nle import (feat/nle-import-fcpxml) | 1 |
 | provider pending: recraft_v41_vector (feat/image-specialists) | 4 |
 | provider pending: runway_act_two (feat/perf-transfer) | 5 |
-| provider pending: seedance25_r2v (feat/seedance-2-5) | 1 |
 | provider pending: sync3_lipsync (feat/lipsync-sync3) | 5 |
 | provider pending: topaz_interpolate (feat/finishing-topaz) | 3 |
 | provider pending: topaz_upscale (feat/finishing-topaz) | 2 |
@@ -355,3 +359,13 @@ The original capability-map branch recorded **792 tests run, 748 passed, 44 skip
 Offline tests exercise deterministic routing, native Deep Agents interrupt/resume/reject in fresh workers, disclosure and billing guards, training provenance, fixture expectations, schema/inventory checks and dry-run provider dispatch. Comet browser E2E is **blocked**: user reports Comet is unavailable in this environment. No browser actions, live generation, artifact playback or authenticated paid provider calls are claimed.
 
 Read [SKILLS.md](SKILLS.md), [DEEP_AGENT.md](DEEP_AGENT.md) and the [decision trail](capability-map-decisions.tsv) for the runtime and migration details.
+
+## Seedance 2.5 upgrade evidence
+
+The three dialogue exceptions and both edit/extend interims now bind built Seedance Gateway
+tools. Fal's reference endpoint explicitly supports `task=editing` and `task=extension`.
+The default host is fal US; global endpoints retain separate verified rates. Adaptive prices
+need measured source aspect and never assume unknown dimensions. BytePlus video-input
+estimates remain UNVERIFIED until its minimum-token floor is available.
+See [the provider reference](SEEDANCE_2_5.md) and [decisions](seedance-2-5-decisions.tsv)
+for official URLs read 2026-10-09, authorization, watermark limits and blocked Comet E2E.
