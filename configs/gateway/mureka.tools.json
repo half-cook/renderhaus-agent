@@ -1,0 +1,159 @@
+[
+  {
+    "name": "generate_song",
+    "description": "Music default Mureka V9.5 via fal. Use lyrics for lyrics-to-song, or prompt for prompt-to-song; prompt with lyrics supplies style. Paid audio requires approval unless autonomous. Poll get_music_task; save song_id and timed lyrics for lyrics-video. Dry-run is a preview; no training eligibility.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "prompt": {
+          "type": "string",
+          "description": "Music description. Song accepts up to 2000 characters; instrumental up to 1024. With lyrics, song prompt controls musical style."
+        },
+        "lyrics": {
+          "type": "string",
+          "description": "Lyrics to sing, 1 to 5000 characters. Omit for prompt-to-song."
+        },
+        "styles": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Prompt-to-song genres only. Cannot accompany lyrics. Allowed values: pop, rock, jazz, r&b, edm, ambient, folk, latin, k-pop, j-pop, house, gospel, lo-fi."
+        },
+        "gender": {
+          "type": "string",
+          "description": "Optional female or male vocal preference for lyrics-to-song."
+        },
+        "model": {
+          "type": "string",
+          "description": "Configured default MUREKA_MODEL=mureka-9.5. Other IDs are UNVERIFIED, preview-only and cannot submit live."
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "generate_instrumental",
+    "description": "Music-bed default: Mureka V9.5 instrumental via fal. Exactly one of prompt or existing instrumental_id. Paid audio approval unless autonomous. Poll get_music_task with download=true; dry-run never produces audio.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "prompt": {
+          "type": "string",
+          "description": "Music description. Song accepts up to 2000 characters; instrumental up to 1024. With lyrics, song prompt controls musical style."
+        },
+        "instrumental_id": {
+          "type": "string",
+          "description": "Existing fal-hosted Mureka upload ID with purpose instrumental. Supply exactly one of this or prompt."
+        },
+        "model": {
+          "type": "string",
+          "description": "Configured default MUREKA_MODEL=mureka-9.5. Other IDs are UNVERIFIED, preview-only and cannot submit live."
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "generate_lyrics_video",
+    "description": "Paid lyrics video via fal: exactly one of completed song_id or existing upload_audio_id. Song/upload IDs must belong to this transport. Layout/aspect and paired row or millisecond selection follow the schema. Always pause with cost approval, even autonomous. Poll get_video_task with download=true and verify saved MP4. No training eligibility.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "song_id": {
+          "type": "string",
+          "description": "Song ID from a completed Mureka fal music task. Lyrics video requires exactly one of song_id or upload_audio_id."
+        },
+        "upload_audio_id": {
+          "type": "string",
+          "description": "Existing fal-hosted Mureka upload ID with purpose audio. Arbitrary audio URLs are not supported by this endpoint."
+        },
+        "layout": {
+          "type": "string",
+          "description": "Allowed values: layout_1, layout_2, layout_3, layout_4, layout_5, layout_6, layout_7."
+        },
+        "aspect_ratio": {
+          "type": "string",
+          "description": "Allowed values: 16:9, 9:16, 3:4, 4:3."
+        },
+        "background_id": {
+          "type": "string",
+          "description": "Existing Mureka upload ID with purpose lyrics-video."
+        },
+        "cover_url": {
+          "type": "string",
+          "description": "Public HTTPS URL or image data URI for JPG, PNG or WebP. Forbidden for layout_1."
+        },
+        "title": {
+          "type": "string"
+        },
+        "lyrics_start_row": {
+          "type": "integer",
+          "description": "First included lyric row, starting at 1. Must pair with lyrics_end_row, without time selection."
+        },
+        "lyrics_end_row": {
+          "type": "integer",
+          "description": "Last included lyric row, at least lyrics_start_row. Must pair with lyrics_start_row."
+        },
+        "selection_start": {
+          "type": "integer",
+          "description": "Included audio range start in milliseconds, at least 0. Must pair with selection_end, without row selection."
+        },
+        "selection_end": {
+          "type": "integer",
+          "description": "Included audio range end in milliseconds, strictly greater than selection_start."
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "get_music_task",
+    "description": "Poll one saved Mureka music handle. Preserve song_id, duration_ms and timed lyrics_sections. download=true validates and persists completed audio; dry-run never creates artifacts.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "job_id": {
+          "type": "string",
+          "description": "Exact saved handle returned by a Mureka submit tool. Never invent IDs or submit again to poll."
+        },
+        "download": {
+          "type": "boolean",
+          "description": "Persist and validate the completed audio or MP4. Dry-run handles never produce artifacts."
+        }
+      },
+      "required": [
+        "job_id"
+      ]
+    }
+  },
+  {
+    "name": "get_video_task",
+    "description": "Poll saved Mureka lyrics-video job via the shared fal queue. download=true validates saved MP4; no new generation. Dry-run handles stay previews.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "job_id": {
+          "type": "string",
+          "description": "Exact saved handle returned by a Mureka submit tool. Never invent IDs or submit again to poll."
+        },
+        "download": {
+          "type": "boolean",
+          "description": "Persist and validate the completed audio or MP4. Dry-run handles never produce artifacts."
+        }
+      },
+      "required": [
+        "job_id"
+      ]
+    }
+  },
+  {
+    "name": "list_mureka_models",
+    "description": "Offline verified model and endpoint catalog; no generation or paid request.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": []
+    }
+  }
+]

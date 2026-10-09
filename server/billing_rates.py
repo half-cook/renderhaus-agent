@@ -634,12 +634,51 @@ def topaz_price_cents(tool: str, arguments: dict[str, Any]) -> Decimal | None:
     return duration * max(new_fps, Decimal(0)) * TOPAZ_INTERPOLATE_CENTS_PER_FRAME[resolution]
 
 
+# Official fal pricing, read 2026-10-09:
+# https://fal.ai/models/mureka/api/generate/song
+# https://fal.ai/models/mureka/api/generate/instrumental
+# https://fal.ai/models/mureka/api/generate/lyrics-video
+MUREKA_PRICING_READ_DATE = "2026-10-09"
+MUREKA_LYRICS_SONG_CENTS = Decimal("22.5")
+MUREKA_PROMPT_SONG_CENTS = Decimal("75")
+MUREKA_INSTRUMENTAL_CENTS = Decimal("22.5")
+MUREKA_LYRICS_VIDEO_CENTS = Decimal("15")
+
+
+def mureka_price_cents(tool: str, arguments: dict[str, Any]) -> Decimal | None:
+    """Exact provider cents; invalid inputs and UNVERIFIED models have no quote."""
+    from providers.mureka import contracts
+
+    try:
+        request = contracts.request_for(tool, arguments)
+    except ValueError:
+        return None
+    if tool == "generate_lyrics_video":
+        return MUREKA_LYRICS_VIDEO_CENTS
+    if request.model != contracts.DEFAULT_MODEL:
+        return None
+    if tool == "generate_song":
+        return MUREKA_LYRICS_SONG_CENTS if request.lyrics else MUREKA_PROMPT_SONG_CENTS
+    return MUREKA_INSTRUMENTAL_CENTS
+
+
 def cost_for(provider: str, tool: str, arguments: dict[str, Any]) -> GenerationCost:
     """Real cost (provider + disclosed fee) for one call to `provider`/`tool`.
     Called both before dispatch (to check affordability) and after success
     (to charge the same amount), so it must be a pure function of the
     request, not of anything the provider returns.
     """
+    if provider == "mureka":
+        if tool in {"get_music_task", "get_video_task", "list_mureka_models"}:
+            return GenerationCost(0, 0)
+        from providers.mureka.api import dry_run
+
+        if dry_run():
+            return GenerationCost(0, 0)
+        cents = mureka_price_cents(tool, arguments)
+        if cents is None:
+            raise ValueError("Mureka estimate unknown for invalid inputs or UNVERIFIED model.")
+        return _with_fee(math.ceil(cents))
     if provider == "topaz":
         if tool in {"get_video_task", "list_topaz_models"}:
             return GenerationCost(0, 0)

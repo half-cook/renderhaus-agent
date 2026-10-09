@@ -17,6 +17,12 @@ class ProviderSpec:
 
 PROVIDERS: tuple[ProviderSpec, ...] = (
     ProviderSpec(
+        id="mureka", target_name="Mureka", function_name="renderhaus-mureka-tools",
+        module_path="providers.mureka.api",
+        env_keys=("MUREKA_DRY_RUN", "MUREKA_MODEL", "FAL_KEY", "FAL_DRY_RUN"),
+        default_env={"MUREKA_DRY_RUN": "true", "MUREKA_MODEL": "mureka-9.5", "FAL_DRY_RUN": "true"},
+    ),
+    ProviderSpec(
         id="topaz", target_name="Topaz", function_name="renderhaus-topaz-tools",
         module_path="providers.topaz.api",
         env_keys=("TOPAZ_DRY_RUN", "FAL_KEY", "FAL_DRY_RUN"),

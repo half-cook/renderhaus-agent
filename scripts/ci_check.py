@@ -31,6 +31,8 @@ def _force_dry_run() -> None:
     os.environ["SYNC_DRY_RUN"] = "true"
     os.environ["HEYGEN_DRY_RUN"] = "true"
     os.environ["TOPAZ_DRY_RUN"] = "true"
+    os.environ["MUREKA_DRY_RUN"] = "true"
+    os.environ["MUREKA_MODEL"] = "mureka-9.5"
 
 
 _force_dry_run()
@@ -74,8 +76,8 @@ def check_routing_inventory() -> None:
     from providers.catalog import PROVIDERS
     from providers.registry import load_committed_schemas
 
-    assert len(PROVIDERS) == 13
-    assert sum(len(load_committed_schemas(spec)) for spec in PROVIDERS) == 99
+    assert len(PROVIDERS) == 14
+    assert sum(len(load_committed_schemas(spec)) for spec in PROVIDERS) == 105
     paths = list(SKILLS_ROOT.glob("*/SKILL.md"))
     assert len(paths) == 24
     assert "ladder" not in POLICY and "premium_targets" not in POLICY
@@ -92,8 +94,8 @@ def check_routing_inventory() -> None:
         assert set(metadata["include_tools"].split()) <= DISPATCH_TARGETS.keys(), path
         assert all(TOOL_MAP[alias]["status"] != "retired" for alias in metadata["routing_tools"].split()), path
     cases = json.loads((ROOT / "tests/fixtures/skill_routing.json").read_text())
-    assert len(cases) == 129 and sum(not case["skip_reason"] for case in cases) == 103
-    print("ok routing inventory (13 providers, 99 Gateway tools, 24 skills, 103 active routing rows)")
+    assert len(cases) == 129 and sum(not case["skip_reason"] for case in cases) == 106
+    print("ok routing inventory (14 providers, 105 Gateway tools, 24 skills, 106 active routing rows)")
 
 
 def _assert_gateway_shape(schema: object) -> None:
@@ -119,11 +121,19 @@ def check_dry_run_dispatch() -> None:
             result = dispatch(spec.id, "music_compose", {"prompt": "Warm piano", "music_length_ms": 3000})
             assert result["status"] == "dry_run"
             continue
+        mureka_jobs = {}
         heygen_job_id = None
         topaz_job_id = None
         for schema in load_committed_schemas(spec):
             name = schema["name"]
             arguments = dummy_arguments(schema)
+            if spec.id == "mureka":
+                arguments = {"generate_song": {"lyrics": "[Verse]\nOffline song"},
+                             "generate_instrumental": {"prompt": "Gentle piano"},
+                             "generate_lyrics_video": {"song_id": "song_ci"},
+                             "get_music_task": {"job_id": mureka_jobs.get("generate_song", "")},
+                             "get_video_task": {"job_id": mureka_jobs.get("generate_lyrics_video", "")},
+                             "list_mureka_models": {}}[name]
             if spec.id == "topaz" and name in {"upscale_video", "interpolate_video"}:
                 arguments.update(video_url="https://example.test/source.mp4", source_duration_seconds=10.0,
                                  source_fps=30.0, source_width=960, source_height=540)
@@ -186,6 +196,8 @@ def check_dry_run_dispatch() -> None:
                     "segments": [{"source_id": "source", "first_word": 0, "last_word": 0}],
                 }
             result = dispatch(spec.id, name, arguments)
+            if spec.id == "mureka" and name.startswith("generate_"):
+                mureka_jobs[name] = result["job_id"]
             assert isinstance(result, dict), f"{spec.id}.{name} did not return a dict"
             if spec.id == "heygen" and name == "create_avatar_video":
                 heygen_job_id = result["job_id"]

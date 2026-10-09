@@ -25,6 +25,11 @@ SEEDREAM_RATIOS = ("1:1", "16:9", "9:16")
 SEEDANCE_RESOLUTIONS = ("480p", "720p", "1080p")
 SEEDREAM_SIZES = ("1K", "2K", "3K")
 STATIC_FIELD_OPTIONS: dict[str, dict[str, list[str | int]]] = {
+    "mureka": {
+        "model": ["mureka-9.5"], "aspect_ratio": ["16:9", "9:16", "3:4", "4:3"],
+        "layout": [f"layout_{i}" for i in range(1, 8)], "gender": ["female", "male"],
+        "styles": ["pop", "rock", "jazz", "r&b", "edm", "ambient", "folk", "latin", "k-pop", "j-pop", "house", "gospel", "lo-fi"],
+    },
     "topaz": {
         "model": ["Starlight Precise 2.6", "Apollo", "Chronos"],
         "target_resolution": ["1080p", "4K"],
