@@ -1,4 +1,6 @@
 const MODEL_LABELS: Record<string, string> = {
+  "mureka-9.5": "Mureka V9.5",
+  "mureka/api/generate/lyrics-video": "Mureka lyrics video",
   "Starlight Precise 2.6": "Topaz Starlight Precise 2.6",
   Apollo: "Topaz Apollo",
   Chronos: "Topaz Chronos",
