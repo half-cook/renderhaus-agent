@@ -170,9 +170,10 @@
     "expected_skill": "audio-bed",
     "expected_tool": "mirelo_v2a",
     "suite": "audio-bed",
-    "skip_reason": "provider pending: mirelo_v2a (feat/sfx-mirelo)",
+    "skip_reason": "",
     "note": "default SFX (video input)",
-    "source_status": "updated"
+    "source_status": "updated",
+    "expected_gateway_tool": "Fal___mirelo_v2a"
   },
   {
     "prompt": "generate a music bed",
@@ -404,9 +405,10 @@
     "expected_skill": "audio-bed",
     "expected_tool": "mirelo_v2a",
     "suite": "audio-bed",
-    "skip_reason": "provider pending: mirelo_v2a (feat/sfx-mirelo)",
+    "skip_reason": "",
     "note": "MMAudio retired (CC-BY-NC)",
-    "source_status": "updated"
+    "source_status": "updated",
+    "expected_gateway_tool": "Fal___mirelo_v2a"
   },
   {
     "prompt": "ACE-Step lofi track with lyrics",
@@ -432,9 +434,10 @@
     "expected_skill": "audio-bed",
     "expected_tool": "mirelo_v2a",
     "suite": "audio-bed",
-    "skip_reason": "provider pending: mirelo_v2a (feat/sfx-mirelo)",
+    "skip_reason": "",
     "note": "default",
-    "source_status": "updated"
+    "source_status": "updated",
+    "expected_gateway_tool": "Fal___mirelo_v2a"
   },
   {
     "prompt": "Ideogram poster with readable headline text",

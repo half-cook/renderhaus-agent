@@ -2,9 +2,9 @@
 name: audio-bed
 description: Create narration, voice clones, music or SFX with capability defaults and text-only SFX exceptions.
 metadata:
-  include_tools: call_audio_tool
+  include_tools: call_audio_tool call_media_tool
   routing_tools: eleven_v4_turbo voices_ivc_create mureka_v95 mirelo_v2a elevenlabs_sfx_v2
-  gateway_tools: Mureka___generate_song Mureka___generate_instrumental Mureka___get_music_task Mureka___list_mureka_models ElevenLabs___music_compose ElevenLabs___text_to_sound_effects_convert ElevenLabs___text_to_speech_convert ElevenLabs___voices_ivc_create
+  gateway_tools: Fal___mirelo_v2a Fal___get_video_task Mureka___generate_song Mureka___generate_instrumental Mureka___get_music_task Mureka___list_mureka_models ElevenLabs___music_compose ElevenLabs___text_to_sound_effects_convert ElevenLabs___text_to_speech_convert ElevenLabs___voices_ivc_create
 ---
 
 # Audio bed
@@ -27,7 +27,25 @@ Poll `Mureka___get_music_task` with the saved handle and `download=true`. Preser
 `ElevenLabs___music_compose` remains explicit-only when requested by name.
 Paid audio pauses unless autonomous; the existing spend cap still applies. Outputs have commercial
 API usage rights but no verified training grant. MUREKA_DRY_RUN and FAL_DRY_RUN default true.
-Video-synchronized foley defaults to `mirelo_v2a`, pending with no interim. A text-only sound effect
+Video-synchronized foley defaults to `mirelo_v2a` through `Fal___mirelo_v2a` on fal.
+The manager or media role uses `call_media_tool` for this video operation and `Fal___get_video_task`.
+The audio role returns this step to the manager; it handles text-only SFX through `call_audio_tool`.
+Use a silent, edited or assembled source clip. Generated Wan/Seedance shots already have native audio.
+Supply `video_url` as authorized HTTPS media or a current Studio asset handle and match `duration`
+to the measured clip length, 1-60 seconds. Above 10 seconds fal uses sliding-window generation.
+Use optional `text_prompt` to describe sounds such as footsteps, impacts or ambience, not visual edits.
+Renderhaus defaults `num_samples` to 1, while fal defaults to 2. Samples 2-4 are dry-run-only;
+their billing is UNVERIFIED, so disclose cost unknown and never promise a live result.
+Optional `seed` controls repeatability; -1 or null selects random generation.
+The official endpoint returns videos with audio tracks, not a separate audio file.
+Submit once after cost approval, save `job_id`, then poll with `download=true`.
+The poll exposes all `videos` and the first variant as `video_url` and `output_path`.
+Play the saved MP4 and check synchronization before delivery. A preview or queued job is incomplete.
+FAL_DRY_RUN defaults true. Commercial fal API terms apply; outputs are not training eligible.
+All paid Mirelo video pauses with cost even autonomous under the paid-video approval policy.
+SFX evidence is thin. A/B Mirelo against ElevenLabs text-described SFX on the same clips before
+relying on picture synchronization quality; obtain normal approvals for each paid comparison.
+A text-only sound effect
 uses the built `elevenlabs_sfx_v2` exception through `ElevenLabs___text_to_sound_effects_convert`.
 Use native `text` and supported `duration_seconds`. Text-only SFX cannot synchronize to source picture.
 For script-only lip sync, prepare authorized ElevenLabs speech, then follow the lipsync skill

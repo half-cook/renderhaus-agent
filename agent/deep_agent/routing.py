@@ -376,7 +376,10 @@ def _capability_price(row: dict):
     if provider == "mureka":
         values = {"lyrics_to_song_cents": str(rates.MUREKA_LYRICS_SONG_CENTS), "prompt_to_song_cents": str(rates.MUREKA_PROMPT_SONG_CENTS), "instrumental_cents": str(rates.MUREKA_INSTRUMENTAL_CENTS), "lyrics_video_cents": str(rates.MUREKA_LYRICS_VIDEO_CENTS)}
     elif provider == "fal":
-        if model.startswith("alibaba/wan-3.0/"):
+        if model == "mirelo-ai/sfx1.6/video-to-video":
+            values = {"single_sample_cents_per_second": str(rates.MIRELO_CENTS_PER_SECOND),
+                      "multi_sample": "unknown"}
+        elif model.startswith("alibaba/wan-3.0/"):
             values = {resolution: str(value) for resolution, value in rates.WAN3_CENTS_PER_SECOND.items()}
         elif model.startswith("fal-ai/vidu/q4/"):
             values = {resolution: str(value) for resolution, value in rates.vidu_q4_rates().items()}
@@ -484,8 +487,8 @@ def intent_constraints(prompt: str, *, tier: str | None = None, confidential: bo
     dialogue = bool(re.search(r'["“][^"”]+["”]|\b(?:says?|saying|talking|talks?|dialogue|speaking)\b', dialogue_prompt, re.I))
     if re.search(r"\b(?:no|without) dialogue\b|\bnot talking\b|silent scene", prompt, re.I):
         dialogue = False
-    video_sfx = bool(args.get("video_url") or args.get("source_video_url") or re.search(r"from (?:the|this).*?(?:video|clip)|video to audio|foley|synchroni[sz]ed|silent clip|picture.synced", prompt, re.I))
-    if re.search(r"no video|without video", prompt, re.I):
+    video_sfx = bool(args.get("video_url") or args.get("source_video_url") or re.search(r"(?:from|to|for|on) (?:the |this |my |an? )?(?:attached |uploaded )?(?:video|clip)|video to audio|foley|synchroni[sz]ed|silent clip|picture.synced", prompt, re.I))
+    if not (args.get("video_url") or args.get("source_video_url")) and re.search(r"no video|without video", prompt, re.I):
         video_sfx = False
     lyrics_capabilities = {capability for capability, _ in _lyrics_capabilities(prompt)}
     predicates = {
@@ -714,7 +717,8 @@ def select_provider(job: str, *, tier: str | None = None, required: dict | None 
                           if k not in {"duration_seconds", "extension_seconds", "target_fps", "aspect_ratio"})
         unsupported |= duration is not None and limits is not None and not limits[0] <= duration <= limits[1]
         unsupported |= bool(duration is not None and values and duration not in values)
-        unsupported |= bool(row.get("duration_field") and duration is not None and type(duration) is not int)
+        unsupported |= bool(row.get("duration_field") and row.get("duration_integer", True)
+                            and duration is not None and type(duration) is not int)
         unsupported |= any(args.get(k) and resolution_value(args[k]) not in row["resolutions"] for k in ("resolution", "size") if k in controls and args.get(k) != "auto"
                            and not (row["provider"] == "openai_images" and k == "size"))
         audio_field = row.get("native_audio_field", "generate_audio")
@@ -968,7 +972,7 @@ def estimate_cost(name: str, arguments: dict, *, list_price: bool = False) -> Co
         return CostEstimate(None, blocker)
     provider, tool = tool_parts(name)
     model = effective_model(provider, tool, arguments)
-    if provider in {"heygen", "topaz", "mureka"} or name in {"Runway___act_two", "Fal___kling_motion_control"}:
+    if provider in {"heygen", "topaz", "mureka"} or name in {"Runway___act_two", "Fal___kling_motion_control", "Fal___mirelo_v2a"}:
         try:
             return CostEstimate(_published_cost(provider, tool, arguments).total_cents)
         except (ValueError, TypeError, KeyError) as exc:
@@ -1043,6 +1047,11 @@ def _published_cost(provider: str, tool: str, arguments: dict):
         return rates._with_fee(ceil(rates.performance_price_cents(arguments)))
     if provider == "fal" and tool == "kling_motion_control":
         return rates._with_fee(ceil(rates.motion_control_price_cents(arguments)))
+    if provider == "fal" and tool == "mirelo_v2a":
+        cents = rates.mirelo_price_cents(arguments)
+        if cents is None:
+            raise ValueError("Mirelo multi-sample cost unknown; official billing TODO.")
+        return rates._with_fee(ceil(cents))
     if provider == "seedance":
         from math import ceil
 

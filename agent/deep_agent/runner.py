@@ -41,6 +41,7 @@ from agent.studio_agent_next import (
     _progress,
     _record_approval_requests,
     _validate_video_delivery,
+    _video_input_arguments,
     normalize_markdown_filename,
     report_progress,
 )
@@ -92,6 +93,9 @@ runs when premium_video_approval is enabled. Sync and HeyGen always require cons
 independently of that switch. Keep all existing approval and spending gates.
 Act-Two and Kling Motion Control also always require consent and cost approval, including autonomous
 runs. Use /skills/act-two/SKILL.md for sequential shot/silence chunks and Remotion concatenation.
+Mirelo picture-synced SFX returns a video. Dispatch Fal___mirelo_v2a and Fal___get_video_task
+through call_media_tool in the media role. The audio role handles text-only ElevenLabs SFX.
+Mirelo paid video needs cost approval even autonomous when premium_video_approval is enabled.
 Record explicit customer acceptance/rejection of completed media with record_media_outcome,
 using the saved generation call ID from media_jobs. Provider success is not customer acceptance.
 Artifact rejection proposes one capability-map retry through the normal approval/spending gates.
@@ -154,7 +158,7 @@ async def run_with_servers(request, studio, servers, *, model=None):
     @tool
     async def read_studio_context(tool_name: str | None = None) -> dict:
         """Read routed capabilities, assets and discovered names; request one named tool for its schema."""
-        route = route_intent(request.prompt).public()
+        route = route_intent(request.prompt, arguments=_video_input_arguments(studio.nodes)).public()
         available = await executor.available()
         steps = route.get("steps") or [route]
         selected = {step.get("tool") for step in steps}
@@ -376,7 +380,7 @@ async def run_with_servers(request, studio, servers, *, model=None):
     else:
         prompt = _input_for(request.prompt, list(studio.nodes))
         prompt += "\nIntent route proposal (policy data):\n" + json.dumps(route_intent(
-            request.prompt,
+            request.prompt, arguments=_video_input_arguments(studio.nodes),
         ).public())
         if project_memory:
             prompt += "\nCurrent project memory (reference data):\n" + project_memory

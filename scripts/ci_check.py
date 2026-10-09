@@ -77,7 +77,7 @@ def check_routing_inventory() -> None:
     from providers.registry import load_committed_schemas
 
     assert len(PROVIDERS) == 14
-    assert sum(len(load_committed_schemas(spec)) for spec in PROVIDERS) == 107
+    assert sum(len(load_committed_schemas(spec)) for spec in PROVIDERS) == 108
     paths = list(SKILLS_ROOT.glob("*/SKILL.md"))
     assert len(paths) == 24
     assert "ladder" not in POLICY and "premium_targets" not in POLICY
@@ -94,8 +94,8 @@ def check_routing_inventory() -> None:
         assert set(metadata["include_tools"].split()) <= DISPATCH_TARGETS.keys(), path
         assert all(TOOL_MAP[alias]["status"] != "retired" for alias in metadata["routing_tools"].split()), path
     cases = json.loads((ROOT / "tests/fixtures/skill_routing.json").read_text())
-    assert len(cases) == 129 and sum(not case["skip_reason"] for case in cases) == 113
-    print("ok routing inventory (14 providers, 107 Gateway tools, 24 skills, 113 active routing rows)")
+    assert len(cases) == 129 and sum(not case["skip_reason"] for case in cases) == 116
+    print("ok routing inventory (14 providers, 108 Gateway tools, 24 skills, 116 active routing rows)")
 
 
 def _assert_gateway_shape(schema: object) -> None:

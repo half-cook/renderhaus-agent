@@ -1440,17 +1440,41 @@ def _requests_video_deliverable(prompt: str) -> bool:
     return False
 
 
+def _video_input_arguments(nodes: list[StudioNode]) -> dict[str, str]:
+    for node in nodes:
+        if node.kind == "video" and (node.version_id or node.source):
+            return {"video_url": f"renderhaus-asset://{node.version_id}" if node.version_id else node.source}
+    return {}
+
+
 def _validate_video_delivery(
     request: StudioAgentRequest,
     studio: StudioAgentContext,
     final: StudioAgentOutput | None = None,
 ) -> bool:
-    render_started = any(event.name.endswith(("render_timeline", "render_composition")) for event in studio.tool_events)
-    wants_video = _requests_video_deliverable(request.prompt) or render_started
-    if not wants_video:
-        return True
     from agent.deep_agent.routing import route_intent
 
+    delivery_route = route_intent(request.prompt, arguments=_video_input_arguments(studio.nodes))
+    delivery_alias = delivery_route.steps[-1].alias if delivery_route.steps else delivery_route.alias
+    prior_events = {event["id"]: event for event in request.prior_tool_events}
+    current_events = [event for event in studio.tool_events if event.public() != prior_events.get(event.id)]
+    mirelo_submissions = [event for event in current_events if event.name == "Fal___mirelo_v2a"]
+    mirelo_job = None
+    if mirelo_submissions:
+        latest = mirelo_submissions[-1]
+        mirelo_job = latest.provider_job_id or latest.result.get("job_id")
+    mirelo_started = any(event.name == "Fal___mirelo_v2a" or (
+        event.name == "Fal___get_video_task" and event.result.get("model") == "mirelo-ai/sfx1.6/video-to-video"
+    ) for event in current_events)
+    if delivery_alias == "elevenlabs_sfx_v2" and delivery_route.basis.startswith("explicit request"):
+        mirelo_started = False
+    if mirelo_started and delivery_alias in {"mirelo_v2a", "elevenlabs_sfx_v2"}:
+        delivery_alias = "mirelo_v2a"
+    delivery_events = current_events if delivery_alias == "mirelo_v2a" or mirelo_started else studio.tool_events
+    render_started = any(event.name.endswith(("render_timeline", "render_composition")) for event in delivery_events)
+    wants_video = _requests_video_deliverable(request.prompt) or render_started or delivery_alias == "mirelo_v2a" or mirelo_started
+    if not wants_video:
+        return True
     assembly_prompt = re.sub(
         r"\b(?:without|no|do not|don['’]t|never)\s+"
         r"(?:(?:add|burn(?: in)?|overlay|insert|include)\s+)?"
@@ -1461,9 +1485,8 @@ def _validate_video_delivery(
         r"\b(?:add|burn|overlay|insert|include|with)\b.*\b(?:captions?|subtitles?|titles?|music|b.?roll|graphics)\b",
         assembly_prompt, re.IGNORECASE,
     ))
-    delivery_route = route_intent(request.prompt)
-    delivery_alias = delivery_route.steps[-1].alias if delivery_route.steps else delivery_route.alias
     standalone_poll = {"mureka_lyrics_video": "Mureka___get_video_task",
+                       "mirelo_v2a": "Fal___get_video_task",
                        "sync3_lipsync": "Sync___get_video_task",
                        "heygen_avatar_v": "HeyGen___get_video_status",
                        "topaz_upscale": "Topaz___get_video_task",
@@ -1474,8 +1497,18 @@ def _validate_video_delivery(
             and event.status.lower() in {"succeeded", "success", "completed"}
             and event.result.get("status") == "succeeded"
             and event.result.get("downloaded") is True
-            and _completed_video_artifact({"url": event.result.get("video_url"),
-                                           "output_path": event.result.get("output_path")})
+            and (delivery_alias != "mirelo_v2a" or (
+                event in current_events
+                and event.result.get("model") == "mirelo-ai/sfx1.6/video-to-video"
+                and (not mirelo_submissions or mirelo_job and (
+                    event.provider_job_id or event.arguments.get("job_id") or event.result.get("job_id")
+                ) == mirelo_job)
+            ))
+            and (any(asset.get("kind") == "video" and asset.get("version_id") for asset in event.assets)
+                 or _completed_video_artifact({
+                     "url": event.result.get("video_url") if delivery_alias != "mirelo_v2a" else None,
+                     "output_path": event.result.get("output_path"),
+                 }))
             for event in studio.tool_events
         ):
             return True
@@ -1489,7 +1522,7 @@ def _validate_video_delivery(
         and str(event.result.get("status") or event.status).lower()
         in {"succeeded", "success", "completed"}
         and _completed_video_artifact(event.result)
-        for event in studio.tool_events
+        for event in delivery_events
     )
     if rendered:
         return True
