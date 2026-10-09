@@ -19,3 +19,6 @@ be retried unless the customer asks.
 
 Finish video requests only after a successful Remotion get_render_progress result provides
 an MP4. Report partial progress and saved job IDs if a provider fails or times out.
+Remotion is the default renderer. Explicit HyperFrames requests may preview compositions
+when enabled. A HyperFrames preview is an incomplete export; never replace it with an
+unrequested Remotion render or a hosted HeyGen API call.

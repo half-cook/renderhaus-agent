@@ -11,12 +11,13 @@ regardless of the model's proposal, including subagent dispatch and approved res
 
 ## Packaged skills
 
-The backend packages 16 live skills, including vidu-q4 and conversational-edit. The original
-six names remain compatible.
+The backend packages 17 live skills, including vidu-q4, conversational-edit and the optional
+hyperframes skill. The original six names remain compatible.
 `metadata.include_tools` is a space-separated string of dispatch wrappers.
 `metadata.gateway_tools` records exact Gateway names separately. Abstract seed aliases never
 replace wrapper names in `include_tools`. Tests parse the actual middleware metadata and
-check every declared or body-referenced Gateway name against `configs/gateway/*.tools.json`.
+check every declared or body-referenced tool name against `configs/gateway/*.tools.json`
+and the optional local HyperFrames schema.
 
 | Skill | Dispatch tools | Gateway tools |
 | --- | --- | --- |
@@ -26,6 +27,7 @@ check every declared or body-referenced Gateway name against `configs/gateway/*.
 | [conversational-edit](../agent/deep_agent/skills/conversational-edit/SKILL.md) | `call_editor_tool`<br>`call_audio_tool` | `Remotion___prepare_conversational_edit`<br>`Remotion___render_timeline`<br>`Remotion___get_render_progress`<br>`Remotion___export_nle_timeline`<br>`ElevenLabs___speech_to_text_convert`<br>`ElevenLabs___speech_to_text_transcripts_get` |
 | [edit-v2v](../agent/deep_agent/skills/edit-v2v/SKILL.md) | `call_media_tool` | `Fal___video_to_video`<br>`Fal___get_video_task`<br>`Fal___list_fal_models`<br>`Runway___video_to_video`<br>`Runway___get_runway_task`<br>`Runway___list_runway_models`<br>`Luma___modify_video`<br>`Luma___get_video_task`<br>`Luma___list_luma_models` |
 | [final-assembly](../agent/deep_agent/skills/final-assembly/SKILL.md) | `call_editor_tool` | `Remotion___export_nle_timeline`<br>`Remotion___get_render_progress`<br>`Remotion___render_timeline` |
+| [hyperframes](../agent/deep_agent/skills/hyperframes/SKILL.md) | `call_editor_tool`<br>`call_audio_tool` | Local `HyperFrames___render_composition`<br>`ElevenLabs___text_to_speech_convert` |
 | [i2v](../agent/deep_agent/skills/i2v/SKILL.md) | `call_media_tool` | `Fal___image_to_video`<br>`Fal___reference_to_video`<br>`Fal___get_video_task`<br>`Kling___image_to_video`<br>`Kling___get_video_task`<br>`Seedance___image_to_video`<br>`Seedance___get_video_task`<br>`Runway___image_to_video`<br>`Runway___get_runway_task`<br>`Seedream___text_to_image`<br>`Seedream___image_to_image`<br>`Luma___image_to_video`<br>`Luma___get_video_task`<br>`Luma___list_luma_models`<br>`Fal___vidu_q4_i2v`<br>`Fal___vidu_q4_r2v` |
 | [motion-graphics](../agent/deep_agent/skills/motion-graphics/SKILL.md) | `call_editor_tool`<br>`call_media_tool` | `Remotion___render_timeline`<br>`Remotion___get_render_progress`<br>`Remotion___export_nle_timeline`<br>`Seedream___text_to_image`<br>`Seedream___image_to_image`<br>`Runway___text_to_image`<br>`Runway___image_to_image`<br>`Runway___get_runway_task` |
 | [product-images](../agent/deep_agent/skills/product-images/SKILL.md) | `call_media_tool` | `Runway___get_runway_task`<br>`Runway___image_to_image`<br>`Runway___text_to_image`<br>`Seedream___image_to_image`<br>`Seedream___text_to_image` |
@@ -152,12 +154,15 @@ See [decisions and verification](conversational-edit-decisions.tsv) and
 
 ## Offline routing verification
 
-`tests/fixtures/skill_routing.json` retains all 55 original workbook rows, the 6 supplied Vidu Q4 CSV rows
-and the three conversational-edit CSV rows (64 rows). There are **27 active** cases and **37 skipped**
-cases. Each skip is a generated unittest with its concrete reason, not a dropped fixture row.
+`tests/fixtures/skill_routing.json` retains all 55 original workbook rows plus the Vidu Q4 (6),
+conversational-edit (3) and HyperFrames (3) CSV rows, for **67 total**, **29 active** and
+**38 skipped** cases. The Vidu CSV re-states three i2v workbook prompts, so those prompts appear
+twice; the HyperFrames CSV's seven motion-graphics rows already existed and are not duplicated.
 The unqualified product-photo row expects Kling and is skipped because the existing cheapest
-Standard route uses Seedance. The Vidu CSV re-states three i2v workbook prompts, so those
-prompts appear twice.
+Standard route uses Seedance. HyperFrames cases explicitly enable the dry-run tool. The
+conversational-edit HyperFrames-overlay row stays skipped: overlays inside conversational edits
+are not wired, even though the standalone hyperframes skill now exists.
+Each skip is a generated unittest with its concrete reason, not a dropped fixture row.
 An active case asserts the selected skill and proposed exact Gateway name through the same
 router used by the runner. Five Resolve suites need a local bridge or transcription/import
 integration even though the final packaging tool exists. TTS-only lipsync rows are skipped
@@ -172,6 +177,48 @@ quotes, concurrent and interrupted spending, and injected continuity embeddings.
 `test_provider_ladder.py` adds capability/tier/cost ordering, confidential project context,
 review provenance, retry recovery, and compiled fake-model approval-interrupt checks. These
 checks make no live or paid provider calls and download no weights.
+
+## Optional HyperFrames compositions
+
+The [HyperFrames skill](../agent/deep_agent/skills/hyperframes/SKILL.md) adapts selected
+Apache-2.0 guidance for faceless explainers, product launches, captions with supplied
+timings, and kinetic titles. There are now 15 packaged skills. The
+[assessment](HYPERFRAMES_ASSESSMENT.md) records all 21 upstream skill decisions,
+runtime requirements, and hosted HeyGen exclusions. Attribution and modifications
+appear in [third-party notices](THIRD_PARTY_NOTICES.md).
+
+| Contract | Behavior |
+| --- | --- |
+| `metadata.include_tools` | `call_editor_tool call_audio_tool` |
+| `metadata.gateway_tools` | `HyperFrames___render_composition ElevenLabs___text_to_speech_convert` |
+| `HYPERFRAMES_ENABLED` | Defaults to `false`. Explicit HyperFrames requests are blocked while disabled. |
+| `HYPERFRAMES_DRY_RUN` | Defaults to `true`. The optional local tool validates input and returns preview metadata. |
+| Live rendering | Returns `not_run` because an isolated renderer is not configured, even when dry-run is disabled. |
+| Compute estimate | Unknown. Non-autonomous dispatch pauses, and an autonomous cap blocks an unknown quote. |
+| Confidential projects | The existing executor allowlist blocks HyperFrames previews. No confidentiality gate is relaxed. |
+
+`HyperFrames___render_composition` is an implemented local tool with an MCP-shaped
+schema in `agent/hyperframes.py`. Deep Agents injects it only when enabled. It is
+not a deployed Gateway Lambda target, so it has no entry in the provider catalog or
+`configs/gateway`. Skill contract checks include this local schema alongside the
+remote Gateway schemas. Discover it through `read_studio_context`; use its exact
+schema and the editor dispatch wrapper. No renderer dependencies enter the Lambda ZIP.
+
+Remotion stays the default for unnamed motion graphics and explicit Remotion requests,
+including "Remotion lower thirds". Explicit HyperFrames requests take priority over
+generic kinetic-title and video rules. A request for HyperFrames with ElevenLabs VO
+selects the HyperFrames skill and the existing speech tool as its first step.
+The feature flag makes HyperFrames available and does not reroute unnamed requests.
+
+The tool previews HTML and output settings without executing scripts, fetching assets,
+producing frames, or creating a media artifact. Schema validation is not HyperFrames
+lint or visual validation. Dry-run and blocked results leave video delivery incomplete.
+The approval exemption set, premium-video policy, provider ladder, and spending cap
+remain unchanged. HyperFrames outputs are never continuity training inputs.
+
+TODOs are the isolated Node/Chromium/FFmpeg worker, local dependency and managed-media
+staging, lint and proof-frame inspection, actual MP4 playback, and any hosted-service
+terms and pricing review. Comet E2E remains blocked in this environment.
 
 ## Provider, model, licence, and region policy
 

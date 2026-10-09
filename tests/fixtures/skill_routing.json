@@ -375,7 +375,7 @@
     "expected_skill": "motion-graphics",
     "expected_tool": "remotion_render",
     "suite": "motion-graphics",
-    "skip_reason": ""
+    "skip_reason": "provider pending: Ideogram asset creation is not built; reuse supplied existing assets separately"
   },
   {
     "prompt": "vector brand mark then animate in Remotion",
@@ -383,6 +383,39 @@
     "expected_tool": "recraft_t2i",
     "suite": "motion-graphics",
     "skip_reason": "provider pending: Recraft"
+  },
+  {
+    "prompt": "HTML CSS kinetic titles with HyperFrames",
+    "expected_skill": "hyperframes",
+    "expected_tool": "hyperframes_render",
+    "suite": "hyperframes",
+    "skip_reason": "",
+    "env": {
+      "HYPERFRAMES_ENABLED": "true",
+      "HYPERFRAMES_DRY_RUN": "true"
+    }
+  },
+  {
+    "prompt": "faceless explainer from changelog with HyperFrames",
+    "expected_skill": "hyperframes",
+    "expected_tool": "hyperframes_render",
+    "suite": "hyperframes",
+    "skip_reason": "",
+    "env": {
+      "HYPERFRAMES_ENABLED": "true",
+      "HYPERFRAMES_DRY_RUN": "true"
+    }
+  },
+  {
+    "prompt": "product launch video HyperFrames plus ElevenLabs VO",
+    "expected_skill": "hyperframes",
+    "expected_tool": "elevenlabs_tts",
+    "suite": "hyperframes",
+    "skip_reason": "",
+    "env": {
+      "HYPERFRAMES_ENABLED": "true",
+      "HYPERFRAMES_DRY_RUN": "true"
+    }
   },
   {
     "prompt": "animate this product photo",
@@ -438,7 +471,7 @@
     "expected_skill": "conversational-edit",
     "expected_tool": "hyperframes_render",
     "suite": "conversational-edit",
-    "skip_reason": "provider pending: HyperFrames overlays are not built on this branch"
+    "skip_reason": "integration pending: HyperFrames overlays inside conversational edits are not wired (the standalone hyperframes skill is separate)"
   },
   {
     "prompt": "export the edit to OTIO after agent cut",

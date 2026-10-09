@@ -48,7 +48,7 @@ SKILLS_ROOT = Path(__file__).parent / "skills"
 DISPATCH_TARGETS = {
     "call_media_tool": {"Seedance", "Seedream", "Kling", "Runway", "Fal", "Luma"},
     "call_audio_tool": {"ElevenLabs", "FishAudio", "FishAudioProvider", "Fish_Audio", "Mureka"},
-    "call_editor_tool": {"Remotion"},
+    "call_editor_tool": {"Remotion", "HyperFrames"},
 }
 FS_TOOLS = ["ls", "read_file", "write_file", "edit_file", "glob", "grep"]
 PERMISSIONS = [FilesystemPermission(operations=["write"], paths=["/skills/**"], mode="deny")]
@@ -60,6 +60,10 @@ You use LangChain Deep Agents. Read the relevant /skills/<name>/SKILL.md before 
 Skills disclose call_media_tool, call_audio_tool, and call_editor_tool. Each dispatch tool takes
 an exact discovered Gateway tool_name and an arguments object matching its inputSchema.
 Search before dispatch. Delegate focused work to planner, media, audio, or editor when useful.
+Remotion remains the default renderer. Explicit HyperFrames requests use the optional local
+tool schema in read_studio_context, through call_editor_tool. If disabled, report the blocker.
+HyperFrames only previews composition inputs, never executes HTML or produces a video here.
+Do not silently replace a requested HyperFrames workflow with Remotion or a hosted HeyGen API.
 Use write_todos to track multi-shot or multi-step work and update the plan as steps finish.
 Pass current asset handles, the plan, and saved job IDs in the task description. Project files
 are virtual and private to this workspace/project/conversation. There is no shell or direct
@@ -211,6 +215,7 @@ async def run_with_servers(request, studio, servers, *, model=None):
         ("audio", "Produce voiceover, music and sound effects using audio providers.", [dispatch_tools[1]]),
         ("editor", "Edit existing footage from a word-level transcript after cut-plan confirmation, "
                    "assemble approved assets into a final Remotion MP4 and poll it to completion, "
+                   "or preview an explicitly requested HyperFrames HTML composition when enabled, "
                    "or export an NLE handoff (OTIO/FCPXML/EDL) for DaVinci Resolve.", [dispatch_tools[2]]),
         ("general-purpose", "Plan or research the current project without provider dispatch.", []),
     ]

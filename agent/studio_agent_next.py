@@ -1432,11 +1432,17 @@ def _validate_video_delivery(
     studio: StudioAgentContext,
     final: StudioAgentOutput | None = None,
 ) -> bool:
-    render_started = any(event.name.endswith("render_timeline") for event in studio.tool_events)
+    render_started = any(event.name.endswith(("render_timeline", "render_composition")) for event in studio.tool_events)
     wants_video = _requests_video_deliverable(request.prompt) or render_started
     if not wants_video:
         return True
-    rendered = any(
+    hyperframes_export = bool(re.search(r"\bhyperframes\b", request.prompt, re.IGNORECASE))
+    if hyperframes_export:
+        from agent.deep_agent.routing import route_intent
+
+        route = route_intent(request.prompt)
+        hyperframes_export = route.skill == "hyperframes"
+    rendered = not hyperframes_export and any(
         event.name.endswith("get_render_progress")
         and event.status.lower() in {"succeeded", "success", "completed"}
         and str(event.result.get("status") or event.status).lower()
@@ -1447,7 +1453,7 @@ def _validate_video_delivery(
     if rendered:
         return True
 
-    message = "The requested video is incomplete because no successful Remotion MP4 was produced."
+    message = "The requested video is incomplete because no completed MP4 artifact was produced."
     _progress(
         studio,
         event_id="video-delivery",
@@ -1493,6 +1499,10 @@ async def run_studio_agent(
     async def run(servers):
         if backend == "codex":
             return await run_with_servers(request, studio, harness or CodexHarness(), servers)
+        from agent.hyperframes import HyperFramesServer, enabled
+
+        if enabled():
+            servers = [*servers, HyperFramesServer()]
         return await run_deep_agent(request, studio, servers)
 
     if mcp_servers is not None:

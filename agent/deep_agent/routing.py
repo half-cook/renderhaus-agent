@@ -18,6 +18,7 @@ TARGET_PROVIDERS = {
     "Seedream": "seedream",
     "ElevenLabs": "elevenlabs",
     "Remotion": "remotion",
+    "HyperFrames": "hyperframes",
     "FishAudio": "fish_audio",
     "FishAudioProvider": "fish_audio",
     "Fish_Audio": "fish_audio",
@@ -63,6 +64,12 @@ def route_intent(prompt: str, *, region: str | None = None, tier: str | None = N
                 status=entry["status"] if entry["status"] != "ready" else "pending",
                 reason=pending,
             )
+        if skill == "hyperframes":
+            blocker = policy_blocker("HyperFrames___render_composition", {})
+            if blocker:
+                return Route(skill=skill, status="blocked", reason=blocker)
+            if available_tools is not None and "HyperFrames___render_composition" not in available_tools:
+                return Route(skill=skill, status="blocked", reason="Requested HyperFrames renderer tool is unavailable in this session.")
         tool = entry["gateway_tool"]
         job = job_type(tool) if tool else None
         if job:
@@ -77,6 +84,8 @@ def route_intent(prompt: str, *, region: str | None = None, tier: str | None = N
             )
             return replace(selection, skill=skill)
         if tool:
+            if skill == "hyperframes" and available_tools is not None and tool not in available_tools:
+                return Route(skill=skill, status="blocked", reason="Requested HyperFrames workflow tool is unavailable in this session.")
             blocker = policy_blocker(tool, {}, region=region)
             if blocker:
                 return Route(skill=skill, status="blocked", reason=blocker)
@@ -84,7 +93,7 @@ def route_intent(prompt: str, *, region: str | None = None, tier: str | None = N
             None
             if not tool
             else "call_editor_tool"
-            if tool.startswith("Remotion___")
+            if tool.startswith(("Remotion___", "HyperFrames___"))
             else (
                 "call_audio_tool"
                 if tool.startswith(("ElevenLabs___", "FishAudio___"))
@@ -415,6 +424,11 @@ def policy_blocker(name: str, arguments: dict, *, region: str | None = None) -> 
     policy = POLICY["providers"].get(provider)
     if policy is None or not policy["enabled"]:
         return f"Provider {provider} is blocked or pending in routing_policy.json."
+    if provider == "hyperframes":
+        from agent.hyperframes import enabled
+
+        if not enabled():
+            return "HyperFrames is disabled. Enable HYPERFRAMES_ENABLED for composition previews."
     if policy["license"] not in {"Apache-2.0", "service-terms"}:
         return f"Provider {provider} licence is not approved for generation."
     region = region or os.getenv("RENDERHAUS_CUSTOMER_REGION")
@@ -503,6 +517,8 @@ def estimate_cost(name: str, arguments: dict, *, list_price: bool = False) -> Co
             "hunyuan",
         }:
             raise ValueError("No confirmed provider rate.")
+        if provider == "hyperframes":
+            raise ValueError("HyperFrames local compute pricing is unknown; isolated renderer not configured.")
         if provider == "remotion":
             raise ValueError("Remotion compute rate is a TODO placeholder.")
         if provider == "seedream" and arguments.get("size", "2K") != "1K":

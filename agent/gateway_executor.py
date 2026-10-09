@@ -18,6 +18,7 @@ from agent.deep_agent.routing import (
     POLICY,
 )
 from agent.deep_agent.outcomes import OutcomeStore
+from agent.hyperframes import HYPERFRAMES_TOOL
 
 from agent.codex_harness import ToolApprovalPending
 from agent.studio_agent_next import (
@@ -107,6 +108,8 @@ class GatewayExecutor:
                 cached = {tool.name: tool for tool in (server._tools_list or [])}
                 for item in session.get("gateway_tools", []):
                     tool = Tool.model_validate(item)
+                    if tool.name == HYPERFRAMES_TOOL.name:
+                        continue
                     cached.setdefault(tool.name, tool)
                     server._discovered_tool_names.add(tool.name)
                 server._tools_list = list(cached.values())
@@ -130,7 +133,7 @@ class GatewayExecutor:
                 tool.model_dump(by_alias=True, exclude_none=True)
                 for server in self.servers
                 for tool in (getattr(server, "_tools_list", None) or [])
-                if tool.name != _GATEWAY_SEARCH_TOOL
+                if tool.name not in {_GATEWAY_SEARCH_TOOL, HYPERFRAMES_TOOL.name}
             ],
         }
 

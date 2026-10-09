@@ -280,6 +280,12 @@
         "US"
       ],
       "training_eligible": false
+    },
+    "hyperframes": {
+      "enabled": true,
+      "license": "Apache-2.0",
+      "allowed_regions": [],
+      "training_eligible": false
     }
   },
   "tools": {
@@ -499,12 +505,32 @@
       "status": "ready"
     },
     "hyperframes_render": {
+      "gateway_tool": "HyperFrames___render_composition",
+      "skill": "hyperframes",
+      "status": "ready"
+    },
+    "conversational_hyperframes_overlay": {
       "gateway_tool": null,
       "status": "pending",
-      "reason": "provider pending: HyperFrames overlays are not built on this branch."
+      "reason": "provider pending: HyperFrames overlays inside conversational edits are not wired; use the hyperframes skill for standalone compositions."
     }
   },
   "rules": [
+    {
+      "pattern": "(?:conversational[ -]edit|transcript[ -](?:driven|based)|cut filler|remove filler|cut.*\\bums\\b).*hyperframes|hyperframes.*(?:conversational[ -]edit|transcript[ -](?:driven|based))",
+      "skill": "conversational-edit",
+      "abstract_tool": "conversational_hyperframes_overlay"
+    },
+    {
+      "pattern": "\\bhyperframes\\b.*\\belevenlabs\\b|\\belevenlabs\\b.*\\bhyperframes\\b",
+      "skill": "hyperframes",
+      "abstract_tool": "elevenlabs_tts"
+    },
+    {
+      "pattern": "\\bhyperframes\\b",
+      "skill": "hyperframes",
+      "abstract_tool": "hyperframes_render"
+    },
     {
       "pattern": "\\bvidu\\b.*(multi.ref|ref(?:erence)?[ -]to[ -]video|voice|audio ref|image ref|\\br2v\\b)|(multi.ref|ref(?:erence)?[ -]to[ -]video|voice|audio ref|image ref|\\br2v\\b).*\\bvidu\\b",
       "skill": "vidu-q4",
@@ -524,11 +550,6 @@
       "pattern": "mini.?max(?:\\s*h3)?",
       "skill": "t2v",
       "abstract_tool": "minimax_h3_t2v"
-    },
-    {
-      "pattern": "(?:conversational[ -]edit|transcript[ -](?:driven|based)|cut filler|remove filler|cut.*\\bums\\b).*hyperframes|hyperframes.*(?:conversational[ -]edit|transcript[ -](?:driven|based))",
-      "skill": "conversational-edit",
-      "abstract_tool": "hyperframes_render"
     },
     {
       "pattern": "(?:export|handoff).*(?:after (?:the )?agent cut|conversational[ -]edit|transcript[ -](?:driven|based) cut)",

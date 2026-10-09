@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import io
+import asyncio
 import os
 import sys
 import zipfile
@@ -24,6 +25,7 @@ def _force_dry_run() -> None:
     os.environ["FISH_AUDIO_DRY_RUN"] = "true"
     os.environ["REMOTION_DRY_RUN"] = "true"
     os.environ["FAL_DRY_RUN"] = "true"
+    os.environ["HYPERFRAMES_DRY_RUN"] = "true"
 
 
 _force_dry_run()
@@ -119,6 +121,27 @@ def check_dry_run_dispatch() -> None:
             print(f"ok dry-run {spec.id}.{name} status={result.get('status', 'ok')}")
 
 
+def check_hyperframes_preview() -> None:
+    from agent.hyperframes import HYPERFRAMES_TOOL, HyperFramesServer
+
+    server = HyperFramesServer()
+    os.environ["HYPERFRAMES_ENABLED"] = "false"
+    assert asyncio.run(server.list_tools()) == []
+    os.environ["HYPERFRAMES_ENABLED"] = "true"
+    try:
+        tools = asyncio.run(server.list_tools())
+        assert [tool.name for tool in tools] == [HYPERFRAMES_TOOL.name]
+        result = asyncio.run(server.call_tool(HYPERFRAMES_TOOL.name, {
+            "html": "<!doctype html><html><body>Offline title</body></html>",
+            "duration_seconds": 2, "width": 1280, "height": 720, "fps": 30,
+        }))
+        assert result["status"] == "dry_run"
+        assert not {"url", "output_path", "job_id", "render_id"} & result.keys()
+    finally:
+        os.environ["HYPERFRAMES_ENABLED"] = "false"
+    print("ok local HyperFrames schema and dry-run composition preview")
+
+
 def check_imports() -> None:
     from lambdas import handler as generic_handler
     from providers.elevenlabs import api as elevenlabs_api
@@ -165,6 +188,7 @@ def main() -> int:
     check_gateway_tools_schema()
     check_imports()
     check_dry_run_dispatch()
+    check_hyperframes_preview()
     check_lambda_zip()
     print("ci_check passed")
     return 0

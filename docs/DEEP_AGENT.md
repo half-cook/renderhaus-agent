@@ -77,16 +77,25 @@ Nine additional intent skills are `t2v`, `i2v`, `edit-v2v`, `still-then-video`, 
 Their wrapper and exact Gateway tool mappings are listed in [Skills and routing](SKILLS.md).
 The deterministic policy router proposes the selected skill and tool in the graph input and
 Studio context. Unsupported providers and local Resolve workflows remain explicit pending
-routes, with all 55 original workbook cases, 6 Vidu Q4 CSV rows and 3 conversational-edit CSV rows retained in offline tests (64 rows), 27 active and 37 skipped.
+routes, with all 55 original workbook cases plus the Vidu Q4, conversational-edit and HyperFrames
+CSV rows retained in offline tests (67 rows), 29 active and 38 skipped.
 See [conversational editing](SKILLS.md#conversational-editing-after-generation) for the new
 editor preparer, the existing paid transcription path, plan confirmation, and QC limitations.
+
+The optional [HyperFrames composition skill](SKILLS.md#optional-hyperframes-compositions)
+adds HTML authoring guidance beside Remotion. `HYPERFRAMES_ENABLED=false` and
+`HYPERFRAMES_DRY_RUN=true` are its defaults. Deep Agents injects the local
+`HyperFrames___render_composition` preview tool only when enabled. It uses the same
+editor dispatch, approval, and spending gates; live rendering fails closed until
+an isolated worker exists. The [assessment](HYPERFRAMES_ASSESSMENT.md) documents
+the Apache adaptation, dependencies, and remaining verification.
 
 Fish Audio is not in the current active provider catalog. Its speech tool is usable only when
 Gateway discovers an available Fish Audio target. Skills explicitly report unavailable tools.
 The model cannot invent a target or call a provider directly.
 
 The `planner` subagent has no provider dispatch. `media` can dispatch only Seedance/Seedream/Kling/Runway/Fal/Luma;
-`audio` can dispatch only audio providers; `editor` can dispatch only Remotion,
+`audio` can dispatch only audio providers; `editor` can dispatch Remotion and the optional HyperFrames tool,
 including `Remotion___export_nle_timeline` for the DaVinci Resolve handoff. That export is free and
 only packages existing project media, so it is exempt from approval (`APPROVAL_EXEMPT_TOOLS` in
 `agent/gateway_executor.py`); every paid tool still follows the native approval policy. The overridden
@@ -200,7 +209,7 @@ export RENDERHAUS_SECRETS_NAME=''
 export SEEDANCE_DRY_RUN=true SEEDREAM_DRY_RUN=true ELEVENLABS_DRY_RUN=true
 export FISH_AUDIO_DRY_RUN=true REMOTION_DRY_RUN=true
 export KLING_DRY_RUN=true RUNWAY_DRY_RUN=true FAL_DRY_RUN=true
-export LUMA_DRY_RUN=true
+export LUMA_DRY_RUN=true HYPERFRAMES_DRY_RUN=true
 .venv/bin/python -m unittest discover -s tests -q
 .venv/bin/ruff check agent lambdas scripts server providers
 .venv/bin/python scripts/ci_check.py
