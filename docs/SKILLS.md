@@ -377,6 +377,15 @@ The continuity training hook below remains Wan-only.
 
 ## Continuity QC
 
+`CONTINUITY_QC_BACKEND=local` remains the default. The optional `runpod` backend sends a
+batch to a separate RunPod Serverless worker with baked SigLIP and DINO weights. It uses
+the same calibration and acceptance rule. Configure `RUNPOD_API_KEY` and
+`CONTINUITY_QC_RUNPOD_ENDPOINT_ID` on the host only after endpoint setup. A remote failure
+returns `status="skipped"`, a reason, and `accepted=False`; it never authorizes generation.
+The current runner's `local_qc` alias still needs a host integration, not Gateway dispatch.
+See [CONTINUITY_QC_RUNPOD.md](CONTINUITY_QC_RUNPOD.md) for the contract, build commands,
+operator requirements, and validation limits.
+
 `agent/deep_agent/continuity_qc.py` compares adjacent caller-decoded shot frames with only
 `google/siglip-so400m-patch14-384` and `facebook/dinov2-base` embeddings. It caches one
 embedding per model per shot. Each pair returns both cosine similarities, each model's

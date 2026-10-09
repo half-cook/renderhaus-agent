@@ -14,6 +14,13 @@ Read `read_studio_context` and identify ordered shot versions and the approved r
 Gateway does not expose an invented `local_qc` endpoint. If embeddings are not configured,
 report the check as incomplete rather than making up scores or dispatching QC as generation.
 
+The host can select `CONTINUITY_QC_BACKEND=runpod`; `local` remains the default.
+RunPod uses a separate preconfigured Serverless endpoint with baked weights and the same
+calibration. Do not create an endpoint, change host settings, or request credentials to
+complete QC. Report `status="skipped"` and its reason as an incomplete check, even though
+`accepted=False`. A skipped check is not evidence of drift. See
+`docs/CONTINUITY_QC_RUNPOD.md` for operator setup and verification limits.
+
 Compare shot appearance using only `google/siglip-so400m-patch14-384` and
 `facebook/dinov2-base` embeddings. Models load lazily through optional host dependencies.
 Do not download weights, install a heavy package, or call a hosted model to complete a check

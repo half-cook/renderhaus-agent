@@ -1,0 +1,16 @@
+date	decision	choice	reason	evidence_or_limit
+2026-10-08	Backend default	local	Preserve existing in-process behavior	ContinuityConfig and local regression tests
+2026-10-08	Remote execution	RunPod Serverless queue-based endpoint	Satya selected RunPod; separate GPU worker	User task scope
+2026-10-08	Backend boundary	One sequence request returning adjacent-pair cosines	Smaller response and less refactoring than remote embedding batches	Design alternatives reviewed in native agent; external pstack CLIs absent so model diversity reduced
+2026-10-08	Calibration ownership	Copy repository QC source and calibration into image; client recomputes	Prevent a silently forked decision rule; honor custom host thresholds	Parity tests cover acceptance, rejection, and drift veto
+2026-10-08	Runner integration	Preserve host API seam	No executable local_qc tool exists in current runner	Repository search and runner tracing
+2026-10-08	Failure behavior	Skipped report with sanitized reason and accepted=False	Empty pairs must never imply successful QC	Report status gating and negative-path tests
+2026-10-08	Polling	Reuse runsync job ID; run fallback only without usable ID	Avoid duplicate submissions when job identity is known	RunPod operation reference checked 2026-10-08; unknown-ID timeout can duplicate work
+2026-10-08	Deadlines	One total monotonic deadline across requests and backoff	Bound remote QC latency during rendering	Mocked deadline tests; no live endpoint calls
+2026-10-08	Default weights	SigLIP and DINOv2	Preserve calibrated baseline and licence posture	CONTINUITY_QC_BENCHMARK.md
+2026-10-08	DINOv3	Opt-in build and host policy; BuildKit secret only	Gated weights and Meta licence require legal review	Off by default; DINOv3 build unverified
+2026-10-08	Worker inference	Load once; configurable batches; CUDA FP16 autocast and CPU FP32	Reuse models and permit local CPU validation	CPU and GPU validation results documented separately
+2026-10-08	Dependencies	Keep ML and RunPod dependencies in worker only	No heavy required host dependencies	Project pyproject.toml unchanged
+2026-10-08	Deployment isolation	Worker Dockerfile only; no deployment workflow integration	User forbids deployment and changes to AgentCore image or deploy workflow	Dockerfile.agentcore and .github/workflows/deploy.yml unchanged
+2026-10-08	Pricing	Official hourly equivalents with labelled estimates	Do not present latency assumptions or estimated costs as measurements	RunPod official pricing and billing pages checked 2026-10-08
+2026-10-08	Verification	Tests first with mocked HTTP plus optional real CPU SDK test	No key or live RunPod request is available or authorized	Docker unavailable; Comet control tools unavailable; browser E2E pending
