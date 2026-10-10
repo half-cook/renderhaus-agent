@@ -32,6 +32,7 @@ class OpSpec:
     validate: Callable[[dict[str, Any]], None] | None = None
     compute: Callable[[dict[str, Any]], dict[str, Any]] | None = None
     finalize: Callable[[Path, Path, dict, list[Path], dict], dict] | None = None
+    export: Callable[[Path, dict, list[Path]], dict] | None = None
 
 
 def number(default, minimum, maximum, *, integer=False):
@@ -298,7 +299,7 @@ _REFRAME_PARAMS = {
 }
 
 
-from providers.ffmpeg import delivery
+from providers.ffmpeg import delivery, finishing
 
 
 _LOUDNESS_PARAMS = {"I": number(-14, -30, -5), "TP": number(-1.5, -9, 0), "LRA": number(11, 1, 20)}
@@ -308,6 +309,70 @@ _MEASURED_PARAMS = {
            "description": f"Required pass-one {name} from this source at these targets; finite {lower} to {upper}."}
     for name, lower, upper in (("measured_I", -99, 0), ("measured_TP", -99, 99),
                                ("measured_LRA", 0, 99), ("measured_thresh", -99, 0), ("offset", -99, 99))
+}
+
+_LOCAL_PATH = {"type": "string", "pattern": PATH_PATTERN, "maxLength": 1024, "format": "job-path",
+               "description": "A confined regular local file inside the same job; no URLs, traversal or options."}
+_CUE_PARAMS = {
+    "type": "array", "minItems": 1, "maxItems": 1000,
+    "items": {"type": "object", "additionalProperties": False, "required": ["start", "end", "text"],
+              "properties": {
+                  "start": {"type": "number", "minimum": 0, "maximum": 600},
+                  "end": {"type": "number", "minimum": 0, "maximum": 600},
+                  "text": {"type": "string", "minLength": 1, "maxLength": 2000},
+              }},
+    "description": "1 to 1000 UTF-8 timed-text cues. Finite sorted non-overlapping seconds, at least 1 ms apart; no control characters or blank lines.",
+}
+_SUBTITLE_PARAMS = {
+    "subtitle_path": _LOCAL_PATH,
+    "subtitle_batch": {"type": "array", "minItems": 0, "maxItems": 4, "default": [],
+                       "items": {"type": "object", "additionalProperties": False,
+                                 "required": ["input_path", "subtitle_path"],
+                                 "properties": {"input_path": _LOCAL_PATH, "subtitle_path": _LOCAL_PATH}},
+                       "description": "Up to four additional video/subtitle pairs, five total. Shared validated style; atomic cleanup on failure."},
+    "font_id": {"type": "string", "enum": list(finishing.FONTS), "default": "dejavu_sans",
+                "description": "An approved installed DejaVu font. Missing fonts fail softly; imported ASS styles are replaced."},
+    "font_size": number(36, 12, 96, integer=True),
+    "colour": {"type": "string", "pattern": r"^#[0-9A-Fa-f]{6}(?![\s\S])", "maxLength": 7,
+               "default": "#FFFFFF", "description": "Fixed RGB subtitle colour as #RRGGBB."},
+    "outline": number(2, 0, 5),
+    "margin": number(24, 0, 200, integer=True),
+}
+_EXPORT_PARAMS = {
+    "cues": _CUE_PARAMS,
+    "export_batch": {"type": "array", "minItems": 0, "maxItems": 4, "default": [],
+                     "items": {"type": "object", "additionalProperties": False, "required": ["cues"],
+                               "properties": {"cues": _CUE_PARAMS}},
+                     "description": "Up to four additional cue lists, five exports total. No transcription or provider calls."},
+}
+_GRADE_PARAMS = {
+    "lut_path": {**_LOCAL_PATH, "type": ["string", "null"], "default": None,
+                 "description": "Optional confined .cube LUT with size 2 to 33 and exact bounded finite RGB data. No LUT is bundled."},
+    "intensity": number(1, 0, 1),
+    "grade_preset": {"type": "string", "enum": list(finishing.GRADE_PRESETS), "default": "none",
+                     "description": "Fixed grade table; applies after an optional LUT. Intensity blends the entire grade with the original."},
+    "brightness": number(0, -.2, .2),
+    "contrast": number(1, .5, 1.5),
+    "saturation": number(1, 0, 2),
+}
+_CLEANUP_PARAMS = {
+    "cleanup_preset": {"type": "string", "enum": list(finishing.CLEANUP_PRESETS), "default": "dialogue",
+                       "description": "Fixed FFT noise-floor profile. This is spectral cleanup, not voice isolation."},
+    "eq_preset": {"type": "string", "enum": list(finishing.EQ_PRESETS), "default": "neutral",
+                  "description": "Fixed bounded equalizer bands, never an arbitrary filter string."},
+    "highpass_hz": number(80, 20, 300),
+    "denoise_db": number(12, 1, 30),
+    "compressor": {"type": "boolean", "default": False,
+                   "description": "Enable the bounded compressor after highpass, FFT denoise and EQ. Normalize loudness afterwards."},
+    "compressor_threshold_db": number(-18, -40, -6),
+    "compressor_ratio": number(2, 1, 8),
+}
+_PROXY_PARAMS = {
+    "height": {**number(540, 480, 540, integer=True), "enum": [480, 540],
+               "description": "480 or 540 pixel height bound, fit native aspect and never upscale. Actual dimensions are reported."},
+    "crf": number(28, 18, 35, integer=True),
+    "proxy_preset": {"type": "string", "enum": ["fast", "veryfast", "ultrafast"], "default": "veryfast",
+                     "description": "Fixed H.264 editing-proxy encoding preset. Output names derive from the source and never overwrite."},
 }
 
 
@@ -336,6 +401,7 @@ OPS = {
                              delivery.silence, delivery.interval_metrics, binary="ffmpeg", timeout_s=120,
                              finalize=delivery.finish_intervals, description="Detect complete silence intervals, including EOF tails."),
     "ssim": OpSpec({"reference_path": {"type": "string", "pattern": PATH_PATTERN, "maxLength": 1024,
+                                       "format": "job-path",
                                        "description": "Required readable reference video confined to the same job directory."}},
                     delivery.ssim, delivery.ssim_metrics, binary="ffmpeg", timeout_s=180,
                     description="Compare first and last actual matching frames with equal dimensions; never scale."),
@@ -368,6 +434,20 @@ OPS = {
     "check_faststart": OpSpec({}, pure=_faststart, description="Read MP4 atoms and check moov before mdat."),
     "volume_stats": OpSpec({}, _volume, _volume_metrics, binary="ffmpeg", timeout_s=120,
                           description="Measure mean and maximum audio volume in dB."),
+    "burn_subtitles": OpSpec(_SUBTITLE_PARAMS, finishing.burn_subtitles, binary="ffmpeg", timeout_s=180,
+                             finalize=finishing.finish_video,
+                             description="Burn confined SRT or restricted ASS cues with validated DejaVu styling, at most five videos."),
+    "export_srt": OpSpec(_EXPORT_PARAMS, export=finishing.export_srt, validate=finishing.validate_exports,
+                         description="Export validated timed text as up to five hashed UTF-8 SRT files without a binary or media read."),
+    "color_match_lut": OpSpec(_GRADE_PARAMS, finishing.color_match_lut, binary="ffmpeg", timeout_s=180,
+                              finalize=finishing.finish_video,
+                              description="Apply a validated local .cube LUT and fixed grade with a bounded original/grade intensity blend."),
+    "audio_cleanup": OpSpec(_CLEANUP_PARAMS, finishing.audio_cleanup, binary="ffmpeg", timeout_s=180,
+                            finalize=finishing.finish_audio,
+                            description="Highpass, FFT denoise, fixed EQ and optional compressor, before separate loudness normalization."),
+    "make_proxy": OpSpec(_PROXY_PARAMS, finishing.make_proxy, binary="ffmpeg", timeout_s=180,
+                         finalize=finishing.finish_video,
+                         description="Create a hashed and probed 480/540-bound H.264 editing proxy with native cadence and no upscaling."),
 }
 
 
@@ -381,7 +461,7 @@ def _validate_value(field: str, value: Any, schema: dict[str, Any]) -> None:
         if not isinstance(value, dict) or set(value) - schema["properties"].keys():
             raise ValueError(f"params.{field} requires only the documented object fields.")
         if set(schema.get("required", [])) - value.keys():
-            raise ValueError(f"params.{field} is missing required box fields.")
+            raise ValueError(f"params.{field} is missing required object fields.")
         for key, item in value.items():
             _validate_value(f"{field}.{key}", item, schema["properties"][key])
         return
@@ -394,21 +474,25 @@ def _validate_value(field: str, value: Any, schema: dict[str, Any]) -> None:
                              f"{schema['minimum']} and {schema['maximum']}.")
     elif kind == "array":
         if not isinstance(value, list) or not schema["minItems"] <= len(value) <= schema["maxItems"]:
-            raise ValueError(f"params.{field} requires 1 to 20 numeric times.")
+            raise ValueError(f"params.{field} requires {schema['minItems']} to {schema['maxItems']} items.")
         for index, item in enumerate(value):
             _validate_value(f"{field}[{index}]", item, schema["items"])
     elif kind == "string":
-        if not isinstance(value, str) or not ("enum" in schema or "pattern" in schema):
+        if not isinstance(value, str) or not ("enum" in schema or "pattern" in schema or "maxLength" in schema):
             raise ValueError(f"params.{field} must use an allow-listed enum or identifier.")
         if "enum" in schema and value not in schema["enum"]:
             raise ValueError(f"params.{field} must use an allow-listed enum value.")
         if "pattern" in schema and not re.fullmatch(schema["pattern"], value):
             raise ValueError(f"params.{field} must use an allow-listed identifier.")
+        if not schema.get("minLength", 0) <= len(value) <= schema.get("maxLength", 1024):
+            raise ValueError(f"params.{field} exceeds its documented string length bounds.")
     elif kind == "boolean":
         if not isinstance(value, bool):
             raise ValueError(f"params.{field} must be a boolean.")
     else:
         raise ValueError("Op registry has an unsupported parameter type.")
+    if "enum" in schema and value not in schema["enum"]:
+        raise ValueError(f"params.{field} must use an allow-listed enum value.")
 
 
 def validate_params(op: str, params: dict | None) -> tuple[OpSpec, dict]:

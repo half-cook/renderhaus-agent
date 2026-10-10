@@ -7,7 +7,7 @@
       "properties": {
         "op": {
           "type": "string",
-          "description": "Allowed values: measure_loudness, loudnorm_mux_aac, mux_aac, transcode_h264, frame_cadence, detect_black, detect_freeze, detect_silence, ssim, crop_plan_preview, reframe_crop, reframe_pad_blur, detect_scenes, probe, extract_frames, contact_sheet, sha256, check_faststart, volume_stats. One of: measure_loudness, loudnorm_mux_aac, mux_aac, transcode_h264, frame_cadence, detect_black, detect_freeze, detect_silence, ssim, crop_plan_preview, reframe_crop, reframe_pad_blur, detect_scenes, probe, extract_frames, contact_sheet, sha256, check_faststart, volume_stats."
+          "description": "Allowed values: measure_loudness, loudnorm_mux_aac, mux_aac, transcode_h264, frame_cadence, detect_black, detect_freeze, detect_silence, ssim, crop_plan_preview, reframe_crop, reframe_pad_blur, detect_scenes, probe, extract_frames, contact_sheet, sha256, check_faststart, volume_stats, burn_subtitles, export_srt, color_match_lut, audio_cleanup, make_proxy. One of: measure_loudness, loudnorm_mux_aac, mux_aac, transcode_h264, frame_cadence, detect_black, detect_freeze, detect_silence, ssim, crop_plan_preview, reframe_crop, reframe_pad_blur, detect_scenes, probe, extract_frames, contact_sheet, sha256, check_faststart, volume_stats, burn_subtitles, export_srt, color_match_lut, audio_cleanup, make_proxy."
         },
         "job_id": {
           "type": "string",
@@ -221,7 +221,173 @@
             },
             "height": {
               "type": "integer",
-              "description": "contact_sheet: Allowed range: 16 to 640. Default 180. "
+              "description": "contact_sheet: Allowed range: 16 to 640. Default 180. make_proxy: 480 or 540 pixel height bound, fit native aspect and never upscale. Actual dimensions are reported. "
+            },
+            "subtitle_path": {
+              "type": "string",
+              "description": "burn_subtitles: A confined regular local file inside the same job; no URLs, traversal or options. "
+            },
+            "subtitle_batch": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": [
+                  "input_path",
+                  "subtitle_path"
+                ],
+                "properties": {
+                  "input_path": {
+                    "type": "string",
+                    "description": "A confined regular local file inside the same job; no URLs, traversal or options."
+                  },
+                  "subtitle_path": {
+                    "type": "string",
+                    "description": "A confined regular local file inside the same job; no URLs, traversal or options."
+                  }
+                }
+              },
+              "description": "burn_subtitles: Up to four additional video/subtitle pairs, five total. Shared validated style; atomic cleanup on failure. "
+            },
+            "font_id": {
+              "type": "string",
+              "description": "burn_subtitles: An approved installed DejaVu font. Missing fonts fail softly; imported ASS styles are replaced. One of: dejavu_sans, dejavu_serif, dejavu_mono."
+            },
+            "font_size": {
+              "type": "integer",
+              "description": "burn_subtitles: Allowed range: 12 to 96. Default 36. "
+            },
+            "colour": {
+              "type": "string",
+              "description": "burn_subtitles: Fixed RGB subtitle colour as #RRGGBB. "
+            },
+            "outline": {
+              "type": "number",
+              "description": "burn_subtitles: Allowed range: 0 to 5. Default 2. "
+            },
+            "margin": {
+              "type": "integer",
+              "description": "burn_subtitles: Allowed range: 0 to 200. Default 24. "
+            },
+            "cues": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": [
+                  "start",
+                  "end",
+                  "text"
+                ],
+                "properties": {
+                  "start": {
+                    "type": "number"
+                  },
+                  "end": {
+                    "type": "number"
+                  },
+                  "text": {
+                    "type": "string"
+                  }
+                }
+              },
+              "description": "export_srt: 1 to 1000 UTF-8 timed-text cues. Finite sorted non-overlapping seconds, at least 1 ms apart; no control characters or blank lines. "
+            },
+            "export_batch": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": [
+                  "cues"
+                ],
+                "properties": {
+                  "cues": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "start",
+                        "end",
+                        "text"
+                      ],
+                      "properties": {
+                        "start": {
+                          "type": "number"
+                        },
+                        "end": {
+                          "type": "number"
+                        },
+                        "text": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "description": "1 to 1000 UTF-8 timed-text cues. Finite sorted non-overlapping seconds, at least 1 ms apart; no control characters or blank lines."
+                  }
+                }
+              },
+              "description": "export_srt: Up to four additional cue lists, five exports total. No transcription or provider calls. "
+            },
+            "lut_path": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "color_match_lut: Optional confined .cube LUT with size 2 to 33 and exact bounded finite RGB data. No LUT is bundled. "
+            },
+            "intensity": {
+              "type": "number",
+              "description": "color_match_lut: Allowed range: 0 to 1. Default 1. "
+            },
+            "grade_preset": {
+              "type": "string",
+              "description": "color_match_lut: Fixed grade table; applies after an optional LUT. Intensity blends the entire grade with the original. One of: none, warm, cool, contrast."
+            },
+            "brightness": {
+              "type": "number",
+              "description": "color_match_lut: Allowed range: -0.2 to 0.2. Default 0. "
+            },
+            "contrast": {
+              "type": "number",
+              "description": "color_match_lut: Allowed range: 0.5 to 1.5. Default 1. "
+            },
+            "saturation": {
+              "type": "number",
+              "description": "color_match_lut: Allowed range: 0 to 2. Default 1. "
+            },
+            "cleanup_preset": {
+              "type": "string",
+              "description": "audio_cleanup: Fixed FFT noise-floor profile. This is spectral cleanup, not voice isolation. One of: dialogue, gentle, music."
+            },
+            "eq_preset": {
+              "type": "string",
+              "description": "audio_cleanup: Fixed bounded equalizer bands, never an arbitrary filter string. One of: neutral, dialogue, warm."
+            },
+            "highpass_hz": {
+              "type": "number",
+              "description": "audio_cleanup: Allowed range: 20 to 300. Default 80. "
+            },
+            "denoise_db": {
+              "type": "number",
+              "description": "audio_cleanup: Allowed range: 1 to 30. Default 12. "
+            },
+            "compressor": {
+              "type": "boolean",
+              "description": "audio_cleanup: Enable the bounded compressor after highpass, FFT denoise and EQ. Normalize loudness afterwards. "
+            },
+            "compressor_threshold_db": {
+              "type": "number",
+              "description": "audio_cleanup: Allowed range: -40 to -6. Default -18. "
+            },
+            "compressor_ratio": {
+              "type": "number",
+              "description": "audio_cleanup: Allowed range: 1 to 8. Default 2. "
+            },
+            "crf": {
+              "type": "integer",
+              "description": "make_proxy: Allowed range: 18 to 35. Default 28. "
+            },
+            "proxy_preset": {
+              "type": "string",
+              "description": "make_proxy: Fixed H.264 editing-proxy encoding preset. Output names derive from the source and never overwrite. One of: fast, veryfast, ultrafast."
             }
           },
           "description": "Per-op parameters only. probe, sha256, check_faststart, volume_stats take no params. extract_frames uses times,width. contact_sheet uses every_s,cols,rows,width,height. Outputs never overwrite existing files."

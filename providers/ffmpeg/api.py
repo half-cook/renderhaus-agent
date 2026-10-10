@@ -8,6 +8,7 @@ from pathlib import Path
 import re
 import shutil
 import subprocess
+import tempfile
 import threading
 import time
 from typing import Any
@@ -92,16 +93,28 @@ def _base(op: str) -> dict[str, Any]:
 
 def validate_arguments(arguments: dict[str, Any]) -> None:
     """Enforce op and lexical path contracts before dispatch, without reading media."""
-    validate_params(arguments.get("op"), arguments.get("params"))
+    spec, params = validate_params(arguments.get("op"), arguments.get("params"))
     job_id = validate_job_id(arguments.get("job_id"))
     root = Path(os.getenv("RENDERHAUS_MEDIA_DIR", ".renderhaus/media")).expanduser().resolve()
     directory = (root / job_id).resolve()
     if directory == root or not directory.is_relative_to(root):
         raise ValueError("The job directory must stay inside the local media root.")
     validate_input_path(directory, arguments.get("input_path"), must_exist=False)
-    params = arguments.get("params") or {}
-    if "reference_path" in params:
-        validate_input_path(directory, params["reference_path"], must_exist=False)
+    for name, schema in spec.params.items():
+        _validate_param_paths(directory, params[name], schema)
+
+
+def _validate_param_paths(directory: Path, value: Any, schema: dict) -> None:
+    if value is None:
+        return
+    if schema.get("format") == "job-path":
+        validate_input_path(directory, value, must_exist=False)
+    elif schema["type"] == "object":
+        for name, item in value.items():
+            _validate_param_paths(directory, item, schema["properties"][name])
+    elif schema["type"] == "array":
+        for item in value:
+            _validate_param_paths(directory, item, schema["items"])
 
 
 def _version(directory: Path) -> str | None:
@@ -140,6 +153,9 @@ def execute(op: str, job_dir: Path, input_path: str, params: dict | None = None)
     """Run a validated free operation internally, including when Gateway dry-run is enabled."""
     result = _base(op)
     outputs = []
+    owned_outputs = []
+    owned_sidecars = []
+    staging = None
     token = None
     directory = Path(job_dir).resolve()
     try:
@@ -151,7 +167,11 @@ def execute(op: str, job_dir: Path, input_path: str, params: dict | None = None)
         token = _EXECUTION_DEADLINE.set(deadline)
         if not directory.is_dir():
             raise ValueError("The local job directory is missing.")
-        if spec.compute is not None:
+        if spec.export is not None:
+            validate_input_path(directory, input_path, must_exist=False)
+            metrics = spec.export(directory, parsed, owned_outputs)
+            outputs = owned_outputs
+        elif spec.compute is not None:
             validate_input_path(directory, input_path, must_exist=False)
             metrics = spec.compute(parsed)
         elif spec.pure is not None:
@@ -164,20 +184,35 @@ def execute(op: str, job_dir: Path, input_path: str, params: dict | None = None)
                 raise ValueError(f"{spec.binary} is not installed. This op requires the local/worker host "
                                  "containing the job directory; the Gateway Lambda zip has no ffmpeg.")
             commands = spec.builder(directory, source, parsed)
+            outputs = [output for command in commands for output in command.outputs]
+            sidecars = {path: content for command in commands for path, content in command.sidecars.items()}
+            for path, content in sidecars.items():
+                if not path.is_relative_to(directory) or len(content) > 2 * 1024 * 1024:
+                    raise ValueError("Temporary finishing assets must stay inside the job and fit within 2 MiB.")
+                with path.open("xb") as handle:
+                    owned_sidecars.append(path)
+                    handle.write(content)
+            if outputs:
+                staging = Path(tempfile.mkdtemp(prefix="ffmpeg-output-", dir=directory))
             processes = []
             metrics = {}
             for command in commands:
-                outputs.extend(command.outputs)
                 remaining = deadline - time.monotonic()
                 if remaining <= 0:
                     raise ValueError("Operation exceeded its hard timeout.")
-                command.argv[0] = binary
-                process = _bounded_run(command.argv, directory, remaining, stderr_bytes=command.stderr_bytes)
+                argv = [binary, *command.argv[1:]]
+                targets = {"./" + output.relative_to(directory).as_posix(): "./" + (staging / output.name).relative_to(directory).as_posix()
+                           for output in command.outputs}
+                argv = [targets.get(argument, argument) for argument in argv]
+                process = _bounded_run(argv, directory, remaining, stderr_bytes=command.stderr_bytes)
                 if process.returncode:
                     result["error_tail"] = _redact(process.stderr.decode("utf-8", errors="replace"), directory)
                     raise ValueError("Media operation failed. The file may lack the required stream or be invalid.")
                 if process.stdout_truncated:
                     raise ValueError("Media inspection exceeded the bounded stdout capture limit.")
+                for output in command.outputs:
+                    os.link(staging / output.name, output, follow_symlinks=False)
+                    owned_outputs.append(output)
                 processes.append(process)
                 metrics.update(command.metrics)
             if spec.parse is not None:
@@ -192,7 +227,7 @@ def execute(op: str, job_dir: Path, input_path: str, params: dict | None = None)
                 _verify_reframe(directory, outputs[0], metrics)
         result["warnings"].extend(metrics.get("warnings", []))
         records = output_records(outputs)
-        version = None if spec.pure is not None or spec.compute is not None else _version(directory)
+        version = None if spec.pure is not None or spec.compute is not None or spec.export is not None else _version(directory)
         if time.monotonic() >= deadline:
             raise ValueError("Operation exceeded its hard timeout.")
         result.update(ok=True, status="succeeded", metrics=metrics, outputs=records, ffmpeg_version=version)
@@ -202,12 +237,16 @@ def execute(op: str, job_dir: Path, input_path: str, params: dict | None = None)
             result["warnings"].append("Audio is silent; non-finite dB levels are reported as null.")
         return result
     except (ValueError, OSError, TypeError, subprocess.SubprocessError) as exc:
-        for output in outputs:
+        for output in owned_outputs:
             output.unlink(missing_ok=True)
         error = "Operation exceeded its hard timeout." if isinstance(exc, subprocess.TimeoutExpired) else str(exc)
         result.update(status="failed", error=_redact(error, directory))
         return result
     finally:
+        for path in owned_sidecars:
+            path.unlink(missing_ok=True)
+        if staging is not None:
+            shutil.rmtree(staging, ignore_errors=True)
         if token is not None:
             _EXECUTION_DEADLINE.reset(token)
 

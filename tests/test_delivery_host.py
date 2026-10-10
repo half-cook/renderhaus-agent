@@ -363,7 +363,11 @@ class DeliveryCompletionTests(unittest.TestCase):
     def test_new_render_or_finishing_work_invalidates_an_earlier_delivery(self):
         passed = tool_event(DELIVERY, self.report(), event_id="passed")
         for name, arguments in (("Remotion___render_timeline", {}),
-                                ("Ffmpeg___ffmpeg_tool", {"op": "transcode_h264"})):
+                                ("Ffmpeg___ffmpeg_tool", {"op": "transcode_h264"}),
+                                ("Ffmpeg___ffmpeg_tool", {"op": "burn_subtitles"}),
+                                ("Ffmpeg___ffmpeg_tool", {"op": "color_match_lut"}),
+                                ("Ffmpeg___ffmpeg_tool", {"op": "audio_cleanup"}),
+                                ("Ffmpeg___ffmpeg_tool", {"op": "make_proxy"})):
             with self.subTest(name=name):
                 newer = tool_event(name, {"status": "succeeded"}, event_id="newer", arguments=arguments)
                 self.assertFalse(_validate_video_delivery(self.request, self.context(passed, newer)))
@@ -372,6 +376,45 @@ class DeliveryCompletionTests(unittest.TestCase):
         delivered = tool_event(DELIVERY, self.report("delivery"), event_id="delivered")
         inspected = tool_event(QC, self.report("other"), event_id="inspected")
         self.assertFalse(_validate_video_delivery(self.request, self.context(delivered, inspected)))
+
+    def test_new_finishing_turn_cannot_reuse_prior_delivery_qc(self):
+        passed = tool_event(DELIVERY, self.report(), event_id="passed")
+        self.request.prior_tool_events = [passed.public()]
+        for op in ("burn_subtitles", "color_match_lut", "audio_cleanup", "make_proxy"):
+            with self.subTest(op=op):
+                self.request.prompt = op + " on the local master"
+                newer = tool_event("Ffmpeg___ffmpeg_tool", {"status": "succeeded"},
+                                   event_id="newer", arguments={"op": op})
+                final = StudioAgentOutput(title="Finished export", summary="The video is delivered.",
+                                          markdown="# Finished export", filename="export.md")
+                self.assertFalse(_validate_video_delivery(self.request, self.context(newer), final))
+                self.assertNotIn("delivered", final.summary.lower())
+
+    def test_qc_after_finishing_must_match_every_new_output(self):
+        for prior, match in ((False, False), (False, True), (True, False), (True, True)):
+            with self.subTest(prior=prior, match=match):
+                old = self.report("old")
+                current = self.report("current")
+                current["files"].extend(self.report("current-second")["files"])
+                Path(current["report_path"]).write_text(json.dumps(current))
+                self.assertTrue(validate_delivery_report(current))
+                delivery = tool_event(DELIVERY, old, event_id="delivery")
+                self.request.prior_tool_events = [delivery.public()] if prior else []
+                self.request.prompt = "color_match_lut on the local master"
+                outputs = [{"path": row["output_path"], "sha256": row["sha256"]}
+                           for row in current["files"]]
+                finishing = tool_event("Ffmpeg___ffmpeg_tool", {"status": "succeeded", "outputs": outputs},
+                                       event_id="finishing", arguments={"op": "color_match_lut"})
+                qc = tool_event(QC, current if match else old, event_id="qc")
+                context = self.context(finishing, qc) if prior else self.context(delivery, finishing, qc)
+                self.assertEqual(_validate_video_delivery(self.request, context), match)
+
+    def test_qc_cannot_certify_finishing_without_output_checksums(self):
+        delivery = tool_event(DELIVERY, self.report("old"), event_id="delivery")
+        finishing = tool_event("Ffmpeg___ffmpeg_tool", {"status": "succeeded", "outputs": []},
+                               event_id="finishing", arguments={"op": "burn_subtitles"})
+        qc = tool_event(QC, self.report("old"), event_id="qc")
+        self.assertFalse(_validate_video_delivery(self.request, self.context(delivery, finishing, qc)))
 
     def test_malformed_failed_report_still_discloses_the_worker_reason(self):
         failed = tool_event(DELIVERY, {"status": "failed", "passed": False, "files": None,

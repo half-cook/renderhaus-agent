@@ -1513,7 +1513,13 @@ def _validate_video_delivery(
     workflow_events = [event for event in current_events if event.name in {
         "Remotion___deliver_render", "Remotion___qc_deliverable",
     }]
-    if workflow_events or delivery_alias in {"delivery_render", "deliverable_qc"}:
+    finishing_ops = {"transcode_h264", "mux_aac", "loudnorm_mux_aac", "reframe_crop", "reframe_pad_blur",
+                     "burn_subtitles", "color_match_lut", "audio_cleanup", "make_proxy"}
+    finishing_events = [event for event in current_events if event.name == "Ffmpeg___ffmpeg_tool"
+                        and event.arguments.get("op") in finishing_ops]
+    prior_delivery = any(event["name"] in {"Remotion___deliver_render", "Remotion___qc_deliverable"}
+                         for event in request.prior_tool_events)
+    if workflow_events or delivery_alias in {"delivery_render", "deliverable_qc"} or (finishing_events and prior_delivery):
         last = workflow_events[-1] if workflow_events else None
         latest = last.result if last else {}
         complete = False
@@ -1521,15 +1527,25 @@ def _validate_video_delivery(
         if last:
             newer_work = [event for event in current_events[current_events.index(last) + 1:] if
                           event.name in {"Remotion___render_timeline", "Remotion___render_ad_variants"} or
-                          event.name == "Ffmpeg___ffmpeg_tool" and event.arguments.get("op") in {
-                              "transcode_h264", "mux_aac", "loudnorm_mux_aac", "reframe_crop", "reframe_pad_blur",
-                          }]
+                          event in finishing_events]
         if last and last.status == "succeeded":
             from providers.remotion.delivery import validate_delivery_report
 
             complete = validate_delivery_report(latest)
             deliveries = [event for event in workflow_events if event.name == "Remotion___deliver_render"]
-            if complete and (deliveries or delivery_alias == "delivery_render") and last.name != "Remotion___deliver_render":
+            delivery_index = current_events.index(deliveries[-1]) if deliveries else -1
+            preceding_finishing = [event for event in finishing_events
+                                   if delivery_index < current_events.index(event) < current_events.index(last)]
+            if complete and last.name == "Remotion___qc_deliverable" and preceding_finishing:
+                finishing = preceding_finishing[-1]
+                outputs = finishing.result.get("outputs")
+                bound_outputs = {(row["path"], row["sha256"]) for row in outputs
+                                 if isinstance(row, dict) and isinstance(row.get("path"), str)
+                                 and isinstance(row.get("sha256"), str)} if isinstance(outputs, list) else set()
+                completed_files = {(row["output_path"], row["sha256"]) for row in latest["files"]}
+                complete = (finishing.status == "succeeded" and bool(bound_outputs)
+                            and len(bound_outputs) == len(outputs) and completed_files == bound_outputs)
+            elif complete and (deliveries or delivery_alias == "delivery_render") and last.name != "Remotion___deliver_render":
                 delivery = deliveries[-1] if deliveries else None
                 complete = bool(delivery and delivery.status == "succeeded"
                                 and validate_delivery_report(delivery.result))

@@ -216,7 +216,6 @@ class RemotionEditingRoutingTests(unittest.TestCase):
             ("Run this exact filter chain: loudnorm=I=-9:TP=2 and tell me if it clips.", "remotion-loudness-qc", "allow-listed"),
             ("Use Resolve's Fairlight loudness meter.", "remotion-loudness-qc", "Resolve is parked"),
             ("Run ffprobe -show_streams on the file and pipe it to a script I paste.", "remotion-deliverable-qc", "allow-listed"),
-            ("Apply this .cube LUT to the clip.", "remotion-delivery-render", "LUT"),
             ("Sync the two camera angles by audio and switch to whoever is talking.", "final-assembly", "multicam"),
         ]:
             with self.subTest(prompt=prompt):

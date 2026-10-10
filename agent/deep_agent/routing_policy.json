@@ -2163,6 +2163,41 @@
       "capability": "motion_graphics"
     },
     {
+      "pattern": "^(?![\\s\\S]*\\b(?:generate|create|make)\\s+(?:(?!proxy\\b)[\\w-]+\\s+){0,8}(?:videos?|clips?|shots?|voiceover|music|songs?)\\b)[\\s\\S]*?(?:\\bburn_subtitles\\b|\\bburn\\s+(?:these|provided|existing)\\s+captions\\b|\\bburn(?:[ -]in)?\\b.*\\b(?:subtitles?|srt|ass)\\b)",
+      "skill": "remotion-delivery-render",
+      "abstract_tool": "ffmpeg_tool",
+      "capability": "local_finishing",
+      "op": "burn_subtitles"
+    },
+    {
+      "pattern": "^(?![\\s\\S]*\\b(?:generate|create|make)\\s+(?:(?!proxy\\b)[\\w-]+\\s+){0,8}(?:videos?|clips?|shots?|voiceover|music|songs?)\\b)[\\s\\S]*?(?:\\bexport_srt\\b|\\b(?:export|write|save)\\b(?=[^.;!?\\n]*\\bsrt\\b)(?=[^.;!?\\n]*\\b(?:cues?|subtitles?|captions?)\\b))",
+      "skill": "remotion-delivery-render",
+      "abstract_tool": "ffmpeg_tool",
+      "capability": "local_finishing",
+      "op": "export_srt"
+    },
+    {
+      "pattern": "^(?![\\s\\S]*\\b(?:generate|create|make)\\s+(?:(?!proxy\\b)[\\w-]+\\s+){0,8}(?:videos?|clips?|shots?|voiceover|music|songs?)\\b)[\\s\\S]*?(?:\\bcolor_match_lut\\b|\\b(?:apply|match)\\b.*(?:\\.cube\\b|\\blut\\b)|\\b(?:apply|use)\\b.*\\b(?:warm|cool|contrast)\\b.*\\bgrade\\b)",
+      "skill": "remotion-delivery-render",
+      "abstract_tool": "ffmpeg_tool",
+      "capability": "local_finishing",
+      "op": "color_match_lut"
+    },
+    {
+      "pattern": "^(?![\\s\\S]*\\b(?:generate|create|make)\\s+(?:(?!proxy\\b)[\\w-]+\\s+){0,8}(?:videos?|clips?|shots?|voiceover|music|songs?)\\b)[\\s\\S]*?(?:\\baudio_cleanup\\b|\\b(?:clean\\s*up|denoise)\\s+(?:(?:the|this|my|existing|noisy|background)\\s+){0,4}(?:dialogue|audio)\\b|\\bremove\\s+(?:the\\s+)?(?:background\\s+)?(?:hum|hiss|noise)\\b)",
+      "skill": "remotion-loudness-qc",
+      "abstract_tool": "ffmpeg_tool",
+      "capability": "local_finishing",
+      "op": "audio_cleanup"
+    },
+    {
+      "pattern": "^(?![\\s\\S]*\\b(?:generate|create|make)\\s+(?:(?!proxy\\b)[\\w-]+\\s+){0,8}(?:videos?|clips?|shots?|voiceover|music|songs?)\\b)[\\s\\S]*?(?:\\bmake_proxy\\b|\\b(?:make|create)\\b.*\\b(?:small\\s+)?preview\\s+proxy\\b)",
+      "skill": "remotion-delivery-render",
+      "abstract_tool": "ffmpeg_tool",
+      "capability": "local_finishing",
+      "op": "make_proxy"
+    },
+    {
       "pattern": "\\b(?:deliver|export)\\b.*\\b(?:finished\\s+mp4|(?:9:16\\s+)?ad|master|cut)\\b.*\\b(?:tiktok|reels|meta|youtube|social|web)\\b|\\b(?:export|make|create)\\b.*\\b(?:review[ -]?proxy|540p\\s+proxy)\\b|\\b(?:convert|transcode)\\b.*\\b(?:existing\\s+mp4|rendered\\s+(?:file|video)|master)\\b.*\\b(?:h\\.?264|aac|email|delivery)\\b|\\b(?:delivery_render|deliver_render|remotion-delivery-render)\\b",
       "skill": "remotion-delivery-render",
       "abstract_tool": "delivery_render",
@@ -5769,6 +5804,12 @@
       "exceptions": [],
       "ab_candidates": [],
       "interim": null
+    },
+    "local_finishing": {
+      "default": "ffmpeg_tool",
+      "exceptions": [],
+      "ab_candidates": [],
+      "interim": null
     }
   },
   "paid_video_tools": [
@@ -6673,7 +6714,7 @@
       "reason": "Resolve is parked by Satya (2026-10-09). Fairlight metering is unavailable. Offer fixed ffmpeg measure_loudness without calling Resolve."
     },
     {
-      "pattern": "\\bffprobe\\s+-[^.;!?]*\\b(?:pipe|script)\\b",
+      "pattern": "\\bffprobe\\s+-[^.;!?]*\\b(?:pipe|script)\\b|\\bfree[ -]form\\s+filtergraph\\b",
       "skill": "remotion-deliverable-qc",
       "reason": "Refuse shell pipes and pasted scripts. Use only allow-listed ffmpeg_tool ops; the fixed probe op returns structured data."
     },
@@ -6721,11 +6762,6 @@
       "pattern": "\\bwhat\\s+loudness\\s+should\\b",
       "skill": "remotion-loudness-qc",
       "reason": "A loudness target needs a channel or spec. Ask for that target before measuring or normalising to a guessed value."
-    },
-    {
-      "pattern": "\\bapply\\b.*(?:\\.cube\\b|\\blut\\b)",
-      "skill": "remotion-delivery-render",
-      "reason": "LUT application is unavailable because no LUT op is on the installed allow-list. Supply an already approved master or defer to feat/remotion-lut-apply."
     },
     {
       "pattern": "\\bsync\\b.*\\b(?:two|multiple|camera)\\b.*\\b(?:camera angles|by audio)\\b",

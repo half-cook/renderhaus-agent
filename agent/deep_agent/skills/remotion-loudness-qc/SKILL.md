@@ -23,6 +23,18 @@ These are programme measurements. Dialogue-gated loudness certification is unava
 
 ## Measure, decide, finish and re-measure
 
+For requested dialogue denoise or hum removal, run `audio_cleanup` before step 2 on the
+staged source. `cleanup_preset` is `dialogue`, `gentle` or `music`; `eq_preset` is
+`neutral`, `dialogue` or `warm`. The fixed chain runs highpass, FFT denoise, EQ and an
+optional compressor. `highpass_hz` is 20 to 300 and `denoise_db` is 1 to 30.
+`compressor` defaults false; its threshold is -40 to -6 dB and its ratio is 1 to 8.
+The op supports audio-only inputs and video with audio. It refuses missing audio.
+
+Listen to the cleaned output and use that returned file for `measure_loudness` and
+`loudnorm_mux_aac`. Measurements from the original file are stale after cleanup.
+Cleanup does not apply loudness gain, separate voices from music, clone a voice or
+certify a target. Further cleanup invalidates the earlier measurements and QC report.
+
 1. Call `probe` on the job-relative file. Require an audio stream before checking a target
    that needs audio. A silent mix or non-finite integrated value cannot pass that target.
 2. Call `measure_loudness` with numeric `I`, `TP` and `LRA` parameters. Their validated

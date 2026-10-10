@@ -247,7 +247,7 @@ order. The short Studio summary also includes per-step costs when they fit its 3
 contract; larger runs refer to the complete breakdown. Unknown charges remain explicit,
 with a known subtotal. Model token charges are recorded separately by `ModelUsage`.
 
-The capability-map fixture contains 248 retained rows, with 243 active and 5 dependency skips.
+The capability-map fixture contains 256 retained rows, with 251 active and 5 dependency skips.
 Archived/confidential routes are dropped. Active rows cover built tools and declared interims;
 pending specialists keep named branch reasons. Editorial overrides retain the safe preparer,
 separate rendering approval, and existing export/HyperFrames narration workflow contracts.
@@ -618,8 +618,15 @@ presets, centre rotation and literal SRT captions share the timeline contract. C
 structured skill backend/feature claims against the executable capability table. Lambda
 parity is payload-level only; deployed rendering and Comet validation remain unverified.
 
-Inventory is 16 providers, 128 Gateway tools and 34 skills. The fixture has 246 active and
-5 deferred cases among 251 rows. Browser validation through Comet remains blocked here.
+Inventory is 16 providers, 128 Gateway tools and 34 skills. The fixture has 251 active and
+5 deferred cases among 256 rows. Browser validation through Comet remains blocked here.
+
+The free local `ffmpeg_tool` adds subtitle burning, SRT export, supplied LUT grading,
+audio cleanup and preview proxies. `local_finishing` routes these through the existing
+editor dispatcher and delivery or loudness skill. The host validates parameters and every
+secondary path before dispatch. No approval exemption, spending cap, paid-video policy or
+planner model changes. Run cleanup before loudness measurement and retain final-file QC
+for delivery claims. See [local finishing](providers/ffmpeg-finishing.md).
 
 ## Per-shot static reframing
 
@@ -650,8 +657,8 @@ or incomplete checks, and prevents a previous successful render from overriding 
 failed QC, including turn-limit recovery. Failure summaries preserve worker reasons
 verbatim. Existing ordinary assembly validation remains compatible.
 
-The three guides add delivery, loudness and deliverable QC routing. The 248 retained rows
-now contain 243 active cases and 5 skips. RT-E043 awaits exact OCR verification; the other
+The three guides add delivery, loudness and deliverable QC routing. The 256 retained rows
+now contain 251 active cases and 5 skips. RT-E043 awaits exact OCR verification; the other
 four are existing provider dependencies. `project.confidential` never changes these routes.
 See [contracts and operator commands](REMOTION_EDITING.md). Offline real-binary verification
 is supporting evidence; Comet Studio E2E is blocked by unavailable browser control here.
@@ -664,7 +671,7 @@ reuse `Fal___get_video_task`, shared fal credentials and dry-run guard. They are
 defaults or exceptions; unnamed executor calls and direct Studio invokes are blocked.
 Both always interrupt with cost even in autonomous mode and with premium approval disabled.
 Measured VibeMV source duration stays local; consent flags never enter the provider payload.
-Inventory is 16 providers, 119 tools, 33 skills, 233 active fixtures and 5 dependency skips.
+Inventory is 16 providers, 128 tools, 34 skills, 251 active fixtures and 5 dependency skips.
 See [named fal video](providers/named-fal-video.md) for contracts, dated official prices,
 commercial hosted terms and training exclusion. Comet E2E remains blocked here.
 
@@ -683,5 +690,5 @@ recovery. A failure is quoted verbatim with timestamped fixes and an offered
 re-render through Remotion, or HyperFrames only if explicitly requested.
 Dry-run/skipped measurements are incomplete QC and preserve the existing render.
 Generative continuity remains `local_qc`. All thresholds are PROVISIONAL.
-Current inventory is 16 providers, 123 tools, 32 skills, 245 routing rows with
-240 active and five existing skips. See [motion carry QC](MOTION_CARRY_QC.md).
+Current inventory is 16 providers, 128 tools, 34 skills, 256 routing rows with
+251 active and five existing skips. See [motion carry QC](MOTION_CARRY_QC.md).
