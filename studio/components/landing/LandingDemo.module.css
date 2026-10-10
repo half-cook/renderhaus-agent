@@ -1,3 +1,6 @@
+@layer theme, base, xyflow, legacy, components, utilities;
+
+@layer legacy {
 /* The demo panel -- a padded, rounded, shadowed frame sitting on the
    light page (unlike the rest of the page, which stays flat/sharp), so
    it visually reads as "a window onto the real product" rather than more
@@ -442,4 +445,6 @@
   .demo-video-card-fill {
     animation: none;
   }
+}
+
 }

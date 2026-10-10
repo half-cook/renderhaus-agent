@@ -224,10 +224,12 @@ credits only. Menu hover uses `chrome` or `line`, never `accent`.
 
 The cascade order is `theme, base, xyflow, legacy, components, utilities`.
 The xyflow import belongs to its own layer before Studio's legacy rules.
-Legacy selectors keep their specificity and order within `legacy`; utilities
-win normal declarations. Important declarations reverse the layer order.
+Existing CSS modules also declare this order and belong to `legacy`, preserving
+their original specificity and order against global overrides. Next can load a
+module before globals, so each module must declare the order first. Utilities win
+normal declarations. Important declarations reverse the layer order.
 Keep third-party CSS out of the unlayered cascade when Studio overrides it.
-Clerk's appearance and CSS modules remain as shipped.
+Clerk's appearance remains as shipped.
 
 Tailwind's radius and shadow scales are reset with `--radius-*: initial` and
 `--shadow-*: initial`. Square and flat is the default. The only named radius
@@ -237,7 +239,8 @@ and avatars. Existing screens retain their shipped shapes. Do not use
 
 Use semantic tokens, no `dark:` utilities. In CSS modules use `var(--token)`,
 never `@apply`. Fonts are `font-sans` (Geist), `font-mono` (Geist Mono), and
-`font-silkscreen` (Silkscreen, wordmark only). Icons remain Lucide.
+`font-silkscreen` (Silkscreen, wordmark only). The preflight mono fallback stays
+unchanged so existing unstyled keyboard hints keep their font. Icons remain Lucide.
 `duration-base` uses `--duration-base: 160ms`; `ease-studio` uses the existing
 `--ease` curve. Hover, focus, and state changes stay on these CSS tokens.
 Motion's `m` components live under the unmounted `MotionProvider` with
@@ -253,7 +256,8 @@ with its `container` prop, or it inherits the document theme instead.
 ## Opt-in dark beta palette
 
 `[data-surface="beta"]` overrides the same semantic variables and declares
-`color-scheme: dark`, including inside a light-theme app. The near-black
+`color-scheme: dark`, including inside a light-theme app or on the document root.
+The root selector matches the light-theme selector's specificity. The near-black
 background (#090909), chrome (#111110), warm charcoal card (#191918), and
 border (#30302c) frame ivory text (#f5f5ef) with secondary text (#a3a39a).
 Amber remains reserved for spend and credits. Port and status identity colors

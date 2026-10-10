@@ -23,6 +23,7 @@
   --shadow-*: initial;
   --radius-pill: 9999px;
   --duration-base: 160ms;
+  --default-mono-font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 }
 
 @theme inline {
@@ -132,6 +133,7 @@
 }
 
 
+:root[data-surface="beta"],
 [data-surface="beta"] {
   color-scheme: dark;
   --bg: #090909;

@@ -1,3 +1,6 @@
+@layer theme, base, xyflow, legacy, components, utilities;
+
+@layer legacy {
 /* The marketing page is a deliberate, scoped exception to the app's flat/
    no-blur/no-shadow canvas system (see the :root comment above) -- it's a
    sales surface, not the tool, and stays light regardless of the visitor's
@@ -97,4 +100,6 @@
   .landing-eyebrow {
     align-items: flex-start;
   }
+}
+
 }

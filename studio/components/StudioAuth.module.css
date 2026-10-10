@@ -1,3 +1,6 @@
+@layer theme, base, xyflow, legacy, components, utilities;
+
+@layer legacy {
 /* Clerk account controls sit in the shared top chrome without entering canvas state. */
 
 .studio-account-controls {
@@ -56,4 +59,6 @@
   border-color: var(--active);
   background: var(--active);
   color: var(--bg);
+}
+
 }

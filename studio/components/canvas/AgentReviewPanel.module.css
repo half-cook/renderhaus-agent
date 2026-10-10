@@ -1,3 +1,6 @@
+@layer theme, base, xyflow, legacy, components, utilities;
+
+@layer legacy {
 .panel { height:100%; min-width:0; display:flex; flex-direction:column; background:var(--bg); color:var(--text); border-left:1px solid var(--line); container-type:inline-size; }
 .tabs { display:flex; flex:none; gap:20px; padding:0 20px; border-bottom:1px solid var(--line); min-height:57px; }
 .tabs button { display:flex; gap:7px; align-items:center; border:0; border-bottom:2px solid transparent; background:none; color:var(--muted); padding:0 2px; font-size:12px; cursor:pointer; }
@@ -118,3 +121,5 @@ audio.media { height:42px; margin:12px; width:calc(100% - 24px); }
 @container (max-width:380px) { .diffHead, .segmentLine { grid-template-columns:39px 39px 16px minmax(0,1fr); } .thumbnail { width:48px; height:34px; } .segmentContent { gap:6px; } .properties { padding-left:94px; } .properties dl > div { grid-template-columns:1fr; gap:2px; } .timelineTitle { gap:6px; padding-inline:9px; } .timelineTitle small { max-width:60px; white-space:normal; text-align:right; } }
 @media (pointer:coarse) { .panel summary, .openOutput, .comparisonSelector select { min-height:44px; } }
 @container (min-width:560px) { .viewers { grid-template-columns:1fr 1fr; } .screen { min-height:130px; } }
+
+}
