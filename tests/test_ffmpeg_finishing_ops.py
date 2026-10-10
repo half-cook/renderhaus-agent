@@ -1,4 +1,3 @@
-"""Real artifacts and confinement contracts for free local finishing operations."""
 from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor
@@ -93,6 +92,13 @@ class FinishingContractTests(FinishingFixture, unittest.TestCase):
         self.assertFalse(result["ok"], result)
         self.assertEqual(list(self.job.glob("*.srt")), [self.subtitle])
 
+    def test_export_refuses_whitespace_blank_lines(self):
+        for whitespace in (" ", "\t", "\u00a0"):
+            with self.subTest(whitespace=repr(whitespace)):
+                result = self.call("export_srt", {"cues": [
+                    {"start": 0, "end": 1, "text": "first\n" + whitespace + "\nsecond"}]})
+                self.assertFalse(result["ok"], result)
+
     def test_dry_run_validates_new_operations_without_reading_files_or_running_binaries(self):
         cases = [("burn_subtitles", {"subtitle_path": "missing.srt"}),
                  ("export_srt", {"cues": self.cues}),
@@ -163,6 +169,12 @@ class FinishingContractTests(FinishingFixture, unittest.TestCase):
                 api.validate_arguments({**base, "op": op, "params": params})
         with self.assertRaises(ValidationError):
             validate({**base, "op": "make_proxy", "params": {"height": 481}}, schema)
+
+    def test_proxy_height_contract_keeps_existing_contact_sheet_schema_valid(self):
+        from jsonschema import validate
+
+        validate({"op": "contact_sheet", "job_id": "finishing", "input_path": "source.mp4",
+                  "params": {"width": 320, "height": 180}}, ops.tool_schema()["inputSchema"])
 
 
 @unittest.skipUnless(shutil.which("ffmpeg") and shutil.which("ffprobe"), "ffmpeg/ffprobe absent")
@@ -271,7 +283,7 @@ class FinishingRealBinaryTests(FinishingFixture, unittest.TestCase):
             output = self.exported(self.call("burn_subtitles", {"subtitle_path": ass.name,
                 "font_size": size, "colour": "#00FF00", "outline": 0}))[0]
             counts.append(sum(green > 180 and red < 80 and blue < 80
-                              for red, green, blue in self.frame(output).getdata()))
+                              for red, green, blue in self.frame(output).get_flattened_data()))
         self.assertGreater(counts[0], 10)
         self.assertGreater(counts[1], counts[0] * 4)
 
@@ -361,6 +373,11 @@ class FinishingRealBinaryTests(FinishingFixture, unittest.TestCase):
         self.assertEqual(metadata["source_fps"], "24/1")
         self.assertTrue(metadata["faststart"])
         self.assertFalse(metadata["upscaled"])
+        probe = metadata.get("output_probe")
+        self.assertIsInstance(probe, dict, "The actual structured proxy probe must be reported")
+        video = next(stream for stream in probe["streams"] if stream["codec_type"] == "video")
+        self.assertEqual((video["width"], video["height"]), (320, 180))
+        self.assertEqual(video["avg_frame_rate"], "24/1")
         self.assertTrue(output.name.startswith("source-proxy-"), output.name)
         self.assertTrue(metadata["is_proxy"])
 

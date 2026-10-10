@@ -14,6 +14,7 @@ class Command:
     outputs: list[Path] = field(default_factory=list)
     metrics: dict[str, Any] = field(default_factory=dict)
     stderr_bytes: int = 8192
+    sidecars: dict[Path, bytes] = field(default_factory=dict)
 
 
 def _input(directory: Path, source: Path) -> str:
@@ -25,5 +26,4 @@ def _ffmpeg_input(directory: Path, source: Path) -> list[str]:
             "-filter_threads", str(THREADS), "-filter_complex_threads", str(THREADS),
             "-threads", str(THREADS), "-protocol_whitelist", "file,pipe",
             "-format_whitelist", FORMATS, "-i", _input(directory, source)]
-
 
