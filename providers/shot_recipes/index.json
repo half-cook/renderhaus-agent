@@ -1,0 +1,3569 @@
+{
+  "metadata_notice": "Renderhaus-authored derivative metadata: neutral English summaries, lexical aliases, typical duration defaults and implementation hints written from reading all 157 original Chinese cards. Imported card text is unmodified. Neutral public id ground-skim maps to source ui-entrance/runway-ground-skim.md; source filename and frontmatter name remain intact.",
+  "source": {
+    "repository": "https://github.com/Vincentwei1021/video-shotcraft",
+    "commit": "5ddbf521038b0a7accfb6dc1e0a9eb29c67277ab",
+    "licence": "Apache-2.0"
+  },
+  "brand_terms": [
+    "1amanly",
+    "ACME",
+    "Acme",
+    "Acme Studio",
+    "aizal",
+    "aizal_mp4",
+    "amirdzm",
+    "anime.js",
+    "animejs.com",
+    "Apple",
+    "Bear",
+    "bear-app",
+    "bohdanmotion",
+    "C4D",
+    "CapCut",
+    "Chromium",
+    "ClickUp",
+    "clickup",
+    "clickup-30",
+    "clickup11",
+    "Didot",
+    "Disney",
+    "disney",
+    "Edgar Wright",
+    "ElevenLabs",
+    "Figma",
+    "figma",
+    "figma-devmode",
+    "Firecrawl",
+    "Firefox",
+    "Fish",
+    "Framer",
+    "framer",
+    "framer-ai",
+    "Futura",
+    "GitHub",
+    "github.com",
+    "Helvetica",
+    "Honor",
+    "impress.js",
+    "Jarvis",
+    "Jerrythe2d",
+    "Jianying",
+    "juliangarnier/anime",
+    "Kling",
+    "Linear",
+    "Linear Agent",
+    "Linear Releases",
+    "Loom",
+    "loom-ai",
+    "Luma",
+    "Menlo",
+    "Miro",
+    "miro-promo",
+    "Mixkit",
+    "Mureka",
+    "Notion",
+    "notion-ai",
+    "Perplexity",
+    "perplexity-promo",
+    "Pitch",
+    "pitch-app",
+    "pixel2motion",
+    "Raycast",
+    "raycast",
+    "raycast-teams",
+    "remotion-bits.dev",
+    "Rube Goldberg",
+    "Runway",
+    "runway",
+    "Safari",
+    "Saul Bass",
+    "Scott Pilgrim",
+    "Seedance",
+    "Seedream",
+    "SF Mono",
+    "shapelayer",
+    "Slack",
+    "slack",
+    "slack-promo",
+    "Spline",
+    "Stranger Things",
+    "Stripe",
+    "Stripe Sessions",
+    "SUPERHUMAN",
+    "Superhuman",
+    "superhuman-promo",
+    "Territory",
+    "thiswillblossom",
+    "Topaz",
+    "tvnxty",
+    "Vercel",
+    "Vercel Ship",
+    "Vidu",
+    "Vlambeer",
+    "Wan",
+    "WebKit",
+    "Wes Anderson",
+    "Willow Voice",
+    "x.com",
+    "剪映",
+    "反恐王国",
+    "异形",
+    "抖音",
+    "江经怜",
+    "苹果",
+    "荣耀",
+    "观机社",
+    "迪士尼",
+    "韦斯·安德森"
+  ],
+  "cards": [
+    {
+      "id": "ai-stream-response",
+      "category": "interaction",
+      "source_path": "references/shots/interaction/ai-stream-response.md",
+      "duration_s": 4.5,
+      "energy": "high",
+      "summary": "Reveal a readable answer first, then add evidence rows and delayed status icons before one completion pulse.",
+      "keywords": [
+        "streaming response",
+        "answer first",
+        "evidence rows",
+        "assistant result",
+        "completion"
+      ],
+      "camera_move": "front-facing with subtle pullback",
+      "easing": "staggered cubic bezier",
+      "component_hint": "ResponseEvidence",
+      "sfx_cue": "ui",
+      "tags": [],
+      "sha256": "a44dc2f57dcc3e367e21ecd71669f6550262e5746be0af87e95309ed40308e65"
+    },
+    {
+      "id": "assemble-then-type-flyin",
+      "category": "effects",
+      "source_path": "references/shots/effects/assemble-then-type-flyin.md",
+      "duration_s": 5.2,
+      "energy": "high",
+      "summary": "Assemble an empty page from flying structural pieces, then rotate individual letters into their final layout.",
+      "keywords": [
+        "page assembly",
+        "skeleton then text",
+        "flying letters",
+        "three dimensional typography"
+      ],
+      "camera_move": "fixed layout view",
+      "easing": "out-back structure and out cubic text",
+      "component_hint": "PageTypeAssembly",
+      "sfx_cue": "text",
+      "tags": [],
+      "sha256": "9595dc6c901098dc40863346b38c452eb79db316fb78f2b50da7edbc59bb9c55"
+    },
+    {
+      "id": "aurora-bloom-bg-flip",
+      "category": "effects",
+      "source_path": "references/shots/effects/aurora-bloom-bg-flip.md",
+      "duration_s": 5.2,
+      "energy": "high",
+      "summary": "Raise soft colored light on a pale background, then darken the scene sharply before a new sentence appears.",
+      "keywords": [
+        "aurora",
+        "bloom",
+        "light to dark",
+        "narrative turn",
+        "background flip"
+      ],
+      "camera_move": "fixed centered view",
+      "easing": "out cubic rise and in-out quadratic flip",
+      "component_hint": "AuroraSceneFlip",
+      "sfx_cue": "riser",
+      "tags": [],
+      "sha256": "1f07bb3cf98476d7703be50ae78e8949a47fa8d745972b1a38c064cb8f7ee365"
+    },
+    {
+      "id": "autolayout-gap-dial",
+      "category": "interaction",
+      "source_path": "references/shots/interaction/autolayout-gap-dial.md",
+      "duration_s": 4.0,
+      "energy": "medium",
+      "summary": "Drive block spacing, measurement lines, and a stepped numeric badge from one shared gap value.",
+      "keywords": [
+        "layout dial",
+        "spacing",
+        "auto layout",
+        "parameter control",
+        "measurement"
+      ],
+      "camera_move": "fixed layout closeup",
+      "easing": "in-out cubic then underdamped spring",
+      "component_hint": "LayoutGapDial",
+      "sfx_cue": "ui",
+      "tags": [],
+      "sha256": "35a594da44e545d2b265433f97c43541e96ed1a97409edcd6acae0f574fd4b88"
+    },
+    {
+      "id": "avatar-bracket-carousel",
+      "category": "ui-entrance",
+      "source_path": "references/shots/ui-entrance/avatar-bracket-carousel.md",
+      "duration_s": 5.2,
+      "energy": "medium",
+      "summary": "Rotate a queue of role avatars through a fixed focus bracket inside a stationary sentence.",
+      "keywords": [
+        "avatar carousel",
+        "role list",
+        "focus bracket",
+        "teammates",
+        "identity slot"
+      ],
+      "camera_move": "fixed sentence and avatar slot",
+      "easing": "distance-driven spring transitions",
+      "component_hint": "RoleAvatarSlot",
+      "sfx_cue": "ui",
+      "tags": [],
+      "sha256": "5665c2cb46373728323e206255f9a41c52420d9a8144c4aba03f713c93774a0e"
+    },
+    {
+      "id": "avatar-grid-radial-build-colorize",
+      "category": "data",
+      "source_path": "references/shots/data/avatar-grid-radial-build-colorize.md",
+      "duration_s": 5.6,
+      "energy": "medium",
+      "summary": "Grow a card grid outward from its center, then reveal a minority of changing status cells.",
+      "keywords": [
+        "radial grid",
+        "anomaly detection",
+        "status overview",
+        "population",
+        "colorize"
+      ],
+      "camera_move": "fixed overview",
+      "easing": "out quadratic with stagger",
+      "component_hint": "RadialStatusGrid",
+      "sfx_cue": "data",
+      "tags": [],
+      "sha256": "d63d83204608f29f8798726efa3e97800bc04fb15e98a23a2abe14a04d0ed033"
+    },
+    {
+      "id": "basic-3d-scene",
+      "category": "camera",
+      "source_path": "references/shots/camera/basic-3d-scene.md",
+      "duration_s": 6.0,
+      "energy": "medium",
+      "summary": "Fly between tilted cards in a shared three dimensional space, then pull out to an overview.",
+      "keywords": [
+        "spatial journey",
+        "roadmap",
+        "overview",
+        "inverse camera",
+        "rotating cards"
+      ],
+      "camera_move": "inverse-pose flight",
+      "easing": "in-out cubic",
+      "component_hint": "SpatialCardTour",
+      "sfx_cue": "transition",
+      "tags": [],
+      "sha256": "5783a05d2081d94e7d4b382615d6d7c369e700bdd0947dc02dfded61661af298"
+    },
+    {
+      "id": "beat-cut-moves",
+      "category": "rhythm",
+      "source_path": "references/shots/rhythm/beat-cut-moves.md",
+      "duration_s": 4.3,
+      "energy": "high",
+      "summary": "Use progressively tighter hard cuts or three flash-linked crops, then give the final view a long hold.",
+      "keywords": [
+        "beat cut",
+        "accelerando",
+        "hard cuts",
+        "flash crops",
+        "rhythmic edit",
+        "punchy cuts"
+      ],
+      "camera_move": "successive crops with final small push",
+      "easing": "hard cuts and restrained ease-out settle",
+      "component_hint": "BeatCutSequence",
+      "sfx_cue": "impact",
+      "tags": [
+        "transition"
+      ],
+      "sha256": "8ddffa6bffa58ce9bd7573211e0decd7182e4719b3772a48e9b27085b325d8e7"
+    },
+    {
+      "id": "beat-step-list-theme-cycle",
+      "category": "rhythm",
+      "source_path": "references/shots/rhythm/beat-step-list-theme-cycle.md",
+      "duration_s": 3.5,
+      "energy": "high",
+      "summary": "Step a list through a fixed pill while its selection color and the scene color change on the same beat.",
+      "keywords": [
+        "beat step",
+        "theme cycle",
+        "synchronized color",
+        "rhythmic list",
+        "word selection"
+      ],
+      "camera_move": "fixed centered list",
+      "easing": "steep six-frame ease-out then hold",
+      "component_hint": "BeatThemeList",
+      "sfx_cue": "ui",
+      "tags": [
+        "typography"
+      ],
+      "sha256": "47f30ecbdc393a7a2b3dae63ffe516d5c0c93bdfc015ecc68dd70ba3077fdce6"
+    },
+    {
+      "id": "before-after-slider-scrub",
+      "category": "data",
+      "source_path": "references/shots/data/before-after-slider-scrub.md",
+      "duration_s": 4.5,
+      "energy": "medium",
+      "summary": "Reveal aligned before and after states with a fast slider throw followed by a slower comparison sweep.",
+      "keywords": [
+        "before after",
+        "comparison slider",
+        "scrub reveal",
+        "split view",
+        "improvement"
+      ],
+      "camera_move": "fixed aligned view",
+      "easing": "out cubic with rebound and slow sweep",
+      "component_hint": "ComparisonSlider",
+      "sfx_cue": "transition",
+      "tags": [
+        "interaction"
+      ],
+      "sha256": "32b23cedd2529e9b51ea2061f1eecfbee391bb4dc56bcd420fc48426af54d278"
+    },
+    {
+      "id": "bezier-source-converge-merge",
+      "category": "ui-entrance",
+      "source_path": "references/shots/ui-entrance/bezier-source-converge-merge.md",
+      "duration_s": 5.6,
+      "energy": "medium",
+      "summary": "Connect several sources to one hub, move them along their paths into it, and retract the emptied paths.",
+      "keywords": [
+        "source merge",
+        "integration",
+        "convergence",
+        "curved paths",
+        "data packets"
+      ],
+      "camera_move": "fixed mechanism view",
+      "easing": "out quadratic lines and in-out cubic convergence",
+      "component_hint": "SourceConvergence",
+      "sfx_cue": "data",
+      "tags": [],
+      "sha256": "8b4c94782209e2026e00c3ca4ee802aba1dd0a44d8e8f88e5073caa3f1c986a5"
+    },
+    {
+      "id": "blur-slide",
+      "category": "typography",
+      "source_path": "references/shots/typography/blur-slide.md",
+      "duration_s": 3.8,
+      "energy": "low",
+      "summary": "Reveal title words with one shared movement, blur, and opacity curve, letting the subtitle overlap their arrival.",
+      "keywords": [
+        "blur slide",
+        "word reveal",
+        "soft title",
+        "subtitle",
+        "typography"
+      ],
+      "camera_move": "fixed title view",
+      "easing": "out cubic shared reveal",
+      "component_hint": "SoftWordReveal",
+      "sfx_cue": "text",
+      "tags": [],
+      "sha256": "5744aad82a6424a74252381a9c452cbe829478e5ada354a73d8f5a35daa997ab"
+    },
+    {
+      "id": "bottom-push-stack-wipe",
+      "category": "transition",
+      "source_path": "references/shots/transition/bottom-push-stack-wipe.md",
+      "duration_s": 4.7,
+      "energy": "medium",
+      "summary": "Push each new colored chapter upward as one rigid layer that displaces the previous chapter.",
+      "keywords": [
+        "bottom push",
+        "chapter stack",
+        "rigid screen push",
+        "upward transition"
+      ],
+      "camera_move": "fixed chapter view",
+      "easing": "heavy ease-out push",
+      "component_hint": "ChapterStackPush",
+      "sfx_cue": "transition",
+      "tags": [],
+      "sha256": "f6bbe2e5462b55c354dd6843918c3a981ef3fed5281053d556593ce4f8c282f4"
+    },
+    {
+      "id": "brace-expand",
+      "category": "typography",
+      "source_path": "references/shots/typography/brace-expand.md",
+      "duration_s": 3.8,
+      "energy": "medium",
+      "summary": "Expand a pair of braces to reveal a title whose visible width follows their separation.",
+      "keywords": [
+        "braces",
+        "developer title",
+        "curtain reveal",
+        "bracket expansion",
+        "code title"
+      ],
+      "camera_move": "fixed centered view",
+      "easing": "out-back opening and in-out quadratic spacing settle",
+      "component_hint": "BraceTitleReveal",
+      "sfx_cue": "text",
+      "tags": [],
+      "sha256": "a3d0c00d16ff3b61c80055626d8e615fbaeb941af7d2f32ff0b00a67bad49a71"
+    },
+    {
+      "id": "brand-frame-snap",
+      "category": "effects",
+      "source_path": "references/shots/effects/brand-frame-snap.md",
+      "duration_s": 4.3,
+      "energy": "medium",
+      "summary": "Build a colored frame around interface footage and switch its chapter color with the enclosed layout on one frame.",
+      "keywords": [
+        "colored frame",
+        "chapter switch",
+        "mode change",
+        "framing",
+        "synchronized hard cut"
+      ],
+      "camera_move": "fixed framed view",
+      "easing": "ease-out frame growth and damped spring",
+      "component_hint": "ChapterFrameSnap",
+      "sfx_cue": "impact",
+      "tags": [
+        "transition"
+      ],
+      "sha256": "76df6e490212f838a2c613b4ba28a32ae3149d9c5fec3cd3a51a64768e65b3c0"
+    },
+    {
+      "id": "brand-ink-open",
+      "category": "opening",
+      "source_path": "references/shots/opening/brand-ink-open.md",
+      "duration_s": 2.8,
+      "energy": "low",
+      "summary": "Draw a thin crosshair, press in a wordmark letter by letter, type a subtitle, and hold before lifting away.",
+      "keywords": [
+        "ink press",
+        "ink-press",
+        "letterpress",
+        "ink stamp",
+        "pressed wordmark",
+        "paper ink",
+        "product reveal"
+      ],
+      "camera_move": "fixed title view",
+      "easing": "letterpress compression with fast upward exit",
+      "component_hint": "InkWordmarkReveal",
+      "sfx_cue": "text",
+      "tags": [
+        "typography"
+      ],
+      "sha256": "3fce12ba7ff5c8dcdf59f8c4a7add5ae52f9f29e38c82a6c95ffe34626458de8"
+    },
+    {
+      "id": "bubble-swarm-takeover",
+      "category": "transition",
+      "source_path": "references/shots/transition/bubble-swarm-takeover.md",
+      "duration_s": 4.3,
+      "energy": "high",
+      "summary": "Let a layered group of bubbles cover the frame, hide a scene change at full coverage, and disperse outward.",
+      "keywords": [
+        "bubble swarm",
+        "curtain transition",
+        "pearlescent bubbles",
+        "full coverage",
+        "takeover"
+      ],
+      "camera_move": "fixed view through layered foreground",
+      "easing": "ease-out arrivals and accelerating dispersal",
+      "component_hint": "BubbleCurtain",
+      "sfx_cue": "transition",
+      "tags": [],
+      "sha256": "767d3e1d6828c22e2c2ca1270ab54f14046ab19be2d06f1c84461ca333f8c5f8"
+    },
+    {
+      "id": "canvas-materialize-moves",
+      "category": "interaction",
+      "source_path": "references/shots/interaction/canvas-materialize-moves.md",
+      "duration_s": 4.8,
+      "energy": "medium",
+      "summary": "Turn selected list rows into canvas cards or grow a connected diagram from a typed prompt.",
+      "keywords": [
+        "row to card",
+        "canvas import",
+        "materialize",
+        "diagram generation",
+        "cascading tree"
+      ],
+      "camera_move": "fixed canvas view",
+      "easing": "staggered springs along curved paths",
+      "component_hint": "CanvasMaterialize",
+      "sfx_cue": "ui",
+      "tags": [
+        "ui-entrance"
+      ],
+      "sha256": "8f62da7fc1ffcfa904f35c42ca68464632e62cd0178878868cf53926d3346045"
+    },
+    {
+      "id": "card-flip-reveal",
+      "category": "transition",
+      "source_path": "references/shots/transition/card-flip-reveal.md",
+      "duration_s": 4.9,
+      "energy": "high",
+      "summary": "Flip feature cards one by one to reveal paired result metrics with a highlight at each thin edge.",
+      "keywords": [
+        "card flip",
+        "feature to result",
+        "double sided",
+        "metric reveal",
+        "semantic flip"
+      ],
+      "camera_move": "fixed card row",
+      "easing": "cubic bezier with brief angular overshoot",
+      "component_hint": "ResultCardFlip",
+      "sfx_cue": "data",
+      "tags": [
+        "data"
+      ],
+      "sha256": "02c3e077d64c5eabb31d1b62be542a95c4c8d9b65d58139eba365a26a29e5911"
+    },
+    {
+      "id": "card-flock-tumble",
+      "category": "transition",
+      "source_path": "references/shots/transition/card-flock-tumble.md",
+      "duration_s": 4.5,
+      "energy": "high",
+      "summary": "Tumble three clear page cards into a stepped group, draw them inward, and release one textured ring behind a large slogan.",
+      "keywords": [
+        "card tumble",
+        "page flock",
+        "energy collapse",
+        "smoke ring",
+        "slogan burst"
+      ],
+      "camera_move": "fixed spatial view",
+      "easing": "continuous spline and accelerating collapse",
+      "component_hint": "CardFlockRing",
+      "sfx_cue": "impact",
+      "tags": [],
+      "sha256": "3e9766a79c9e85f364687ba3578ebe0477038722752586befdf97a148e0f7f0b"
+    },
+    {
+      "id": "card-stack",
+      "category": "ui-entrance",
+      "source_path": "references/shots/ui-entrance/card-stack.md",
+      "duration_s": 4.2,
+      "energy": "high",
+      "summary": "Spring cards upward into one stack, then open the complete stack into a shared three dimensional fan.",
+      "keywords": [
+        "card stack",
+        "fan out",
+        "collection",
+        "staggered cards",
+        "grouped reveal"
+      ],
+      "camera_move": "fixed card-stack view",
+      "easing": "staggered springs then shared in-out cubic fan",
+      "component_hint": "StackToFan",
+      "sfx_cue": "ui",
+      "tags": [],
+      "sha256": "9a9a417fc1021cb0182b38f9cec3e32521eb2fe0ca632c27aae85b2d2e833ecf"
+    },
+    {
+      "id": "carousel-3d",
+      "category": "ui-entrance",
+      "source_path": "references/shots/ui-entrance/carousel-3d.md",
+      "duration_s": 5.6,
+      "energy": "medium",
+      "summary": "Rotate a ring of upright double-sided cards through one seamless cycle under a fixed shallow viewing angle.",
+      "keywords": [
+        "three dimensional carousel",
+        "card ring",
+        "looping gallery",
+        "upright cards"
+      ],
+      "camera_move": "fixed shallow overhead view",
+      "easing": "linear integer-cycle rotation",
+      "component_hint": "UprightCardCarousel",
+      "sfx_cue": "transition",
+      "tags": [],
+      "sha256": "57f72b4c9d783e9523753f399837322cab98b47120375ab34b4a17d1922524ef"
+    },
+    {
+      "id": "cel-flash-stomp",
+      "category": "typography",
+      "source_path": "references/shots/typography/cel-flash-stomp.md",
+      "duration_s": 4.8,
+      "energy": "high",
+      "summary": "Stamp large words onto successive beats while only the background flashes at each landing.",
+      "keywords": [
+        "stomp words",
+        "slogan",
+        "stamp typography",
+        "background flash",
+        "beat words"
+      ],
+      "camera_move": "fixed full-frame title",
+      "easing": "out quintic landing with stepped background",
+      "component_hint": "WordStomp",
+      "sfx_cue": "impact",
+      "tags": [
+        "rhythm"
+      ],
+      "sha256": "1d70addd39663c7670e25ecf7a9f2bb1889a93074a7e01a588a1ffc0c2dd9dcb"
+    },
+    {
+      "id": "chart-live-moves",
+      "category": "data",
+      "source_path": "references/shots/data/chart-live-moves.md",
+      "duration_s": 5.0,
+      "energy": "high",
+      "summary": "Tell a data story through a streaming spike, regrouping dots, or a chart that forces its axis to rescale.",
+      "keywords": [
+        "live chart",
+        "oscilloscope",
+        "swarm regroup",
+        "axis rescale",
+        "growth",
+        "realtime data"
+      ],
+      "camera_move": "fixed chart view",
+      "easing": "streaming linear motion and staggered springs",
+      "component_hint": "LiveDataStory",
+      "sfx_cue": "data",
+      "tags": [],
+      "sha256": "a24e5d3711e75d00670d0cb7595f684cf02fd7ddebadafd2fc12974e273359b9"
+    },
+    {
+      "id": "chip-grid-single-select-blackout",
+      "category": "interaction",
+      "source_path": "references/shots/interaction/chip-grid-single-select-blackout.md",
+      "duration_s": 5.0,
+      "energy": "low",
+      "summary": "Press and invert one option while the others remain still, then lift the selected chip above its result.",
+      "keywords": [
+        "single select",
+        "option chips",
+        "selected state",
+        "blackout",
+        "result reveal"
+      ],
+      "camera_move": "fixed option grid",
+      "easing": "linear press, sine rebound, in-out cubic lift",
+      "component_hint": "ChipSelection",
+      "sfx_cue": "ui",
+      "tags": [],
+      "sha256": "566389d19c29cd07713470b0fa2fe66c6a0480d567248abd5e3aa342a06282ac"
+    },
+    {
+      "id": "chip-lift-to-user-pill",
+      "category": "interaction",
+      "source_path": "references/shots/interaction/chip-lift-to-user-pill.md",
+      "duration_s": 5.0,
+      "energy": "medium",
+      "summary": "Select a grid chip, clear neighboring options by distance, and grow it into a connected detail pill.",
+      "keywords": [
+        "chip expansion",
+        "user pill",
+        "selection",
+        "contact detail",
+        "anchored growth"
+      ],
+      "camera_move": "fixed grid view",
+      "easing": "stepped inversion and out cubic growth",
+      "component_hint": "ChipDetailPill",
+      "sfx_cue": "ui",
+      "tags": [],
+      "sha256": "70877c76fb0fbf049eefbcc9dc2cea4265c00219847b93fab34e7f3b31825a0c"
+    },
+    {
+      "id": "circle-match-iris",
+      "category": "transition",
+      "source_path": "references/shots/transition/circle-match-iris.md",
+      "duration_s": 4.7,
+      "energy": "high",
+      "summary": "Expand an iris from a real circular element into a new scene whose circular chart shares the same center.",
+      "keywords": [
+        "circle match",
+        "iris",
+        "shared circle",
+        "avatar to chart",
+        "concentric transition"
+      ],
+      "camera_move": "fixed shared circular anchor",
+      "easing": "in-out cubic iris expansion",
+      "component_hint": "CircularMatchReveal",
+      "sfx_cue": "transition",
+      "tags": [],
+      "sha256": "5c5e46f211f90fdb437865a863144abba7867eea34d7c19b34d5bc0e5e063f14"
+    },
+    {
+      "id": "cloner-depth-echo",
+      "category": "ui-entrance",
+      "source_path": "references/shots/ui-entrance/cloner-depth-echo.md",
+      "duration_s": 4.5,
+      "energy": "medium",
+      "summary": "Spread copies of one card diagonally into depth, hold their scale, and draw them back into one subject.",
+      "keywords": [
+        "clone echo",
+        "copies",
+        "scale",
+        "multi tenant",
+        "depth queue",
+        "batch"
+      ],
+      "camera_move": "fixed angled view",
+      "easing": "staggered springs and accelerating merge",
+      "component_hint": "CardCloneEcho",
+      "sfx_cue": "ui",
+      "tags": [],
+      "sha256": "370a3add4d937dbf3d91e9a677f35843b16bade3b0ee3cbbaad9b4e4d892cd10"
+    },
+    {
+      "id": "collab-cursor-moves",
+      "category": "interaction",
+      "source_path": "references/shots/interaction/collab-cursor-moves.md",
+      "duration_s": 4.7,
+      "energy": "medium",
+      "summary": "Let named cursors exchange focus in a duet or gather around shared content as an ensemble.",
+      "keywords": [
+        "collaboration",
+        "cursor duet",
+        "team presence",
+        "handoff",
+        "shared canvas"
+      ],
+      "camera_move": "fixed stage with cursor foreground wipe",
+      "easing": "curved cubic motion and staggered springs",
+      "component_hint": "CollaborativeCursors",
+      "sfx_cue": "ui",
+      "tags": [],
+      "sha256": "5573e13795e0f0080c9a7e56d217c508d0b12d3474095f6069763e9a92338305"
+    },
+    {
+      "id": "color-block-step-wipe",
+      "category": "transition",
+      "source_path": "references/shots/transition/color-block-step-wipe.md",
+      "duration_s": 2.5,
+      "energy": "high",
+      "summary": "Grow a hard-edged color block in discrete jumps until it takes over, optionally carrying a card on the same steps.",
+      "keywords": [
+        "step wipe",
+        "color block",
+        "discrete jumps",
+        "corner takeover",
+        "stepped transition"
+      ],
+      "camera_move": "fixed chapter view",
+      "easing": "discrete frame-threshold steps",
+      "component_hint": "SteppedColorWipe",
+      "sfx_cue": "impact",
+      "tags": [],
+      "sha256": "f8e028eb284e91fb77c882280dfe83ec57057837b972068c1418356f0c76067c"
+    },
+    {
+      "id": "command-palette-summon",
+      "category": "interaction",
+      "source_path": "references/shots/interaction/command-palette-summon.md",
+      "duration_s": 4.5,
+      "energy": "medium",
+      "summary": "Dim the interface, drop in a command panel, and narrow its candidates as the user types.",
+      "keywords": [
+        "command palette",
+        "keyboard shortcut",
+        "search panel",
+        "candidate filter"
+      ],
+      "camera_move": "fixed front-facing view",
+      "easing": "single panel overshoot and staggered rows",
+      "component_hint": "CommandPalette",
+      "sfx_cue": "ui",
+      "tags": [
+        "ui-entrance"
+      ],
+      "sha256": "5ddb0ab973fba05682f66b0fe1c873a24e274de465a20ace30311b6830d9957d"
+    },
+    {
+      "id": "countdown-arc-scatter",
+      "category": "typography",
+      "source_path": "references/shots/typography/countdown-arc-scatter.md",
+      "duration_s": 1.1,
+      "energy": "high",
+      "summary": "Sweep a numbered arc to a focal value and move that same number into the first position of a title.",
+      "keywords": [
+        "countdown arc",
+        "dial sweep",
+        "number to title",
+        "duration promise",
+        "arc scatter"
+      ],
+      "camera_move": "fixed dial view",
+      "easing": "out cubic stop and in-out cubic number handoff",
+      "component_hint": "ArcNumberTitle",
+      "sfx_cue": "data",
+      "tags": [],
+      "sha256": "03e5dd4e3e16aed8c81e29ddce109c0c1d88ef8dac8d3497cd38025ebd5c7a14"
+    },
+    {
+      "id": "counter-confetti",
+      "category": "data",
+      "source_path": "references/shots/data/counter-confetti.md",
+      "duration_s": 4.6,
+      "energy": "high",
+      "summary": "Race a large count toward its final value as confetti bursts just before the number locks.",
+      "keywords": [
+        "milestone",
+        "count up",
+        "confetti",
+        "celebration",
+        "number reveal"
+      ],
+      "camera_move": "fixed centered view",
+      "easing": "out quartic with restrained scale overshoot",
+      "component_hint": "CelebrationCounter",
+      "sfx_cue": "impact",
+      "tags": [],
+      "sha256": "9a05ad8cb6b0c43b5457b5dc6012b44103fde5094ac016f61dd5bfe1c13e74fa"
+    },
+    {
+      "id": "crane-rise-reveal",
+      "category": "opening",
+      "source_path": "references/shots/opening/crane-rise-reveal.md",
+      "duration_s": 5.0,
+      "energy": "high",
+      "summary": "Rise and pull back from a readable data-row closeup until the complete dashboard fills the frame.",
+      "keywords": [
+        "crane reveal",
+        "crane rise",
+        "crane-rise",
+        "detail to overview",
+        "dashboard reveal",
+        "rising camera"
+      ],
+      "camera_move": "rising pullback",
+      "easing": "out quadratic shared camera progress",
+      "component_hint": "CraneReveal",
+      "sfx_cue": "transition",
+      "tags": [
+        "camera",
+        "data"
+      ],
+      "sha256": "4d3b7e5b49d12034d511e4cc9035861b9e7a8b46a605d8e6c5483a6de8a6f4f5"
+    },
+    {
+      "id": "crash-zoom-punch",
+      "category": "camera",
+      "source_path": "references/shots/camera/crash-zoom-punch.md",
+      "duration_s": 0.5,
+      "energy": "high",
+      "summary": "Rush from a wide view into a focal detail with a single rebound or impact stop.",
+      "keywords": [
+        "crash zoom",
+        "punch in",
+        "impact stop",
+        "sudden closeup",
+        "fast zoom"
+      ],
+      "camera_move": "rapid push-in",
+      "easing": "ease-in with brief settle",
+      "component_hint": "CrashZoom",
+      "sfx_cue": "impact",
+      "tags": [
+        "effects"
+      ],
+      "sha256": "7ff7214d17dc305718683ae15b308ab6704a2cc82ee82a6afe9db5cbe7a417f4"
+    },
+    {
+      "id": "cube-navigation",
+      "category": "transition",
+      "source_path": "references/shots/transition/cube-navigation.md",
+      "duration_s": 6.0,
+      "energy": "medium",
+      "summary": "Navigate the faces of a content cube by alternating readable closeups with wider views of its structure.",
+      "keywords": [
+        "cube navigation",
+        "six faces",
+        "module tour",
+        "spatial overview",
+        "cube"
+      ],
+      "camera_move": "face turns with alternating push and pull",
+      "easing": "in-out cubic pose interpolation",
+      "component_hint": "ContentCubeTour",
+      "sfx_cue": "transition",
+      "tags": [],
+      "sha256": "898bd23e7d1a54e4e02b1b9ce4c43142a86a6b9e5dc512a800808f0340c14e38"
+    },
+    {
+      "id": "cursor-flyover",
+      "category": "camera",
+      "source_path": "references/shots/camera/cursor-flyover.md",
+      "duration_s": 6.0,
+      "energy": "medium",
+      "summary": "Tour four interface regions with synchronized camera travel and cursor click ripples.",
+      "keywords": [
+        "guided tour",
+        "cursor pointer",
+        "feature overview",
+        "four corners",
+        "click ripple"
+      ],
+      "camera_move": "corner-to-corner flyover",
+      "easing": "in-out cubic",
+      "component_hint": "CursorTour",
+      "sfx_cue": "ui",
+      "tags": [],
+      "sha256": "811e8864bc9ab325ec2699d3945edadf9b5a07191356e14b35d92d7adf5783f5"
+    },
+    {
+      "id": "cycle-glass-node-morph",
+      "category": "data",
+      "source_path": "references/shots/data/cycle-glass-node-morph.md",
+      "duration_s": 8.6,
+      "energy": "high",
+      "summary": "Shrink one subject into a cycle diagram, then raise glass nodes under its labels during a continuous push.",
+      "keywords": [
+        "cycle diagram",
+        "mechanism",
+        "glass nodes",
+        "automation loop",
+        "process explanation"
+      ],
+      "camera_move": "continuous push-in",
+      "easing": "in-out cubic and single out-back rise",
+      "component_hint": "CycleNodeMorph",
+      "sfx_cue": "ui",
+      "tags": [
+        "interaction",
+        "camera"
+      ],
+      "sha256": "3844ed591b51daa5957c98c86bfe25f3007a9dfcbdc4c8c60aae19ec8349cd67"
+    },
+    {
+      "id": "dashboard-glow-highlight-pill",
+      "category": "effects",
+      "source_path": "references/shots/effects/dashboard-glow-highlight-pill.md",
+      "duration_s": 2.0,
+      "energy": "high",
+      "summary": "Raise a tilted dashboard as a moving glow becomes a pill and draws a focused popup outline.",
+      "keywords": [
+        "dashboard reveal",
+        "light relay",
+        "glowing pill",
+        "popup outline",
+        "highlight"
+      ],
+      "camera_move": "tilted rise and gentle spatial drift",
+      "easing": "in-out quadratic pose interpolation",
+      "component_hint": "DashboardLightRelay",
+      "sfx_cue": "ui",
+      "tags": [],
+      "sha256": "1c67ede74198d0eced8ffe7e14cc929f803d0a05a8102cd7d1762c1991675176"
+    },
+    {
+      "id": "dataviz-landscape-open",
+      "category": "opening",
+      "source_path": "references/shots/opening/dataviz-landscape-open.md",
+      "duration_s": 6.5,
+      "energy": "low",
+      "summary": "Fly slowly above layered streams and readable fictional labels that converge into one data landscape.",
+      "keywords": [
+        "data landscape",
+        "branching streams",
+        "abstract opening",
+        "layered depth",
+        "data universe"
+      ],
+      "camera_move": "slow parallax flyover",
+      "easing": "out cubic line growth and steady travel",
+      "component_hint": "DataLandscape",
+      "sfx_cue": "ambience",
+      "tags": [
+        "data",
+        "camera"
+      ],
+      "sha256": "40318d4903ce1aecf1b39a0beb7738e7ec9b41f35ce49978eafe875efa402439"
+    },
+    {
+      "id": "deck-deal-flyin",
+      "category": "ui-entrance",
+      "source_path": "references/shots/ui-entrance/deck-deal-flyin.md",
+      "duration_s": 2.6,
+      "energy": "high",
+      "summary": "Deal a card stack into real grid slots on an accelerating cadence while the camera follows the filling page.",
+      "keywords": [
+        "deck deal",
+        "dealing cards",
+        "content volume",
+        "accelerating arrivals",
+        "card grid"
+      ],
+      "camera_move": "optional stack orbit then chasing scroll",
+      "easing": "accelerating cues and overshooting cubic-bezier landings",
+      "component_hint": "CardDealGrid",
+      "sfx_cue": "ui",
+      "tags": [],
+      "sha256": "1341d0ae4728efa49ee47ee5715eb11c19155ba695d15b79ac5f986c180f71ad"
+    },
+    {
+      "id": "depth-layer-moves",
+      "category": "camera",
+      "source_path": "references/shots/camera/depth-layer-moves.md",
+      "duration_s": 4.5,
+      "energy": "medium",
+      "summary": "Add depth with layered parallax or a fixed subject against an expanding background.",
+      "keywords": [
+        "parallax",
+        "multiplane",
+        "dolly zoom",
+        "depth layers",
+        "background expansion"
+      ],
+      "camera_move": "parallax track or dolly zoom",
+      "easing": "smooth shared drive",
+      "component_hint": "DepthLayerMove",
+      "sfx_cue": "transition",
+      "tags": [],
+      "sha256": "3caa8ebc9c5ae5af8dfe3932f43bc88c1f1bd5d4e6980a0c0461be121bcf1acc"
+    },
+    {
+      "id": "doc-park-left-pill-deal",
+      "category": "ui-entrance",
+      "source_path": "references/shots/ui-entrance/doc-park-left-pill-deal.md",
+      "duration_s": 5.8,
+      "energy": "low",
+      "summary": "Keep a slowly scrolling source document at the left while conclusion pills and their spoken explanations arrive on the right.",
+      "keywords": [
+        "document conclusions",
+        "source retained",
+        "pill deal",
+        "analysis result",
+        "voice pacing"
+      ],
+      "camera_move": "fixed view after leftward document park",
+      "easing": "in-out cubic park and out-back pills",
+      "component_hint": "DocumentConclusionPills",
+      "sfx_cue": "ui",
+      "tags": [],
+      "sha256": "301561810b31b96af7e8de5c58172bad6d5366dfe01e74795db79ef5a68e2007"
+    },
+    {
+      "id": "document-typewriter-reveal",
+      "category": "typography",
+      "source_path": "references/shots/typography/document-typewriter-reveal.md",
+      "duration_s": 3.7,
+      "energy": "medium",
+      "summary": "Write a properly laid-out document in blocks, reveal its sidebars, and stack history entries into their real slots.",
+      "keywords": [
+        "document writing",
+        "typewriter reveal",
+        "note taking",
+        "report",
+        "history list"
+      ],
+      "camera_move": "title closeup to full page pullback",
+      "easing": "cubic-bezier block wipes and lightly overshooting rows",
+      "component_hint": "DocumentWriteReveal",
+      "sfx_cue": "text",
+      "tags": [
+        "ui-entrance"
+      ],
+      "sha256": "a40cdd16dd88ce4e868f3f247fe4c6c85e246521d93f7e837a81f87bec9c60fe"
+    },
+    {
+      "id": "draw-svg-trace",
+      "category": "ui-entrance",
+      "source_path": "references/shots/ui-entrance/draw-svg-trace.md",
+      "duration_s": 3.5,
+      "energy": "medium",
+      "summary": "Draw a subject's contour with a visible pen tip, confirm its closure, and reveal the content inside.",
+      "keywords": [
+        "svg trace",
+        "draw outline",
+        "pen tip",
+        "contour reveal",
+        "line drawing"
+      ],
+      "camera_move": "fixed subject closeup",
+      "easing": "in-out cubic trace",
+      "component_hint": "ContourDrawReveal",
+      "sfx_cue": "text",
+      "tags": [
+        "typography"
+      ],
+      "sha256": "efafcc9abd8cd7dee3e22036b98dc7fcc1c5d122ba7630af622f0714675a335d"
+    },
+    {
+      "id": "edit-hook-moves",
+      "category": "outro",
+      "source_path": "references/shots/outro/edit-hook-moves.md",
+      "duration_s": 5.0,
+      "energy": "low",
+      "summary": "Hold a finished logo, insert one brief unseen interface closeup, and return to the identical final logo frame.",
+      "keywords": [
+        "button ending",
+        "final hook",
+        "logo sting",
+        "surprise insert",
+        "outro"
+      ],
+      "camera_move": "fixed logo with brief interface closeup",
+      "easing": "hard cuts with clamped final logo",
+      "component_hint": "EndingHook",
+      "sfx_cue": "impact",
+      "tags": [],
+      "sha256": "1baf040246f537057fa7ef22a3fcb1607a6d297c1495e1808d071e6564720263"
+    },
+    {
+      "id": "element-body-moves",
+      "category": "ui-entrance",
+      "source_path": "references/shots/ui-entrance/element-body-moves.md",
+      "duration_s": 5.0,
+      "energy": "medium",
+      "summary": "Give a moving element visible axial stretch or lift one card above a stationary contact shadow.",
+      "keywords": [
+        "squash stretch",
+        "axial stretch",
+        "contact shadow",
+        "card lift",
+        "physical motion"
+      ],
+      "camera_move": "fixed element view",
+      "easing": "velocity-driven stretch or cubic lift",
+      "component_hint": "PhysicalElementMove",
+      "sfx_cue": "ui",
+      "tags": [],
+      "sha256": "d3cbcb1401dcfc8f6206d8a332b3092e212dc146d8ee1d7655c0619c0c0e0317"
+    },
+    {
+      "id": "floating-glossy-label-pills",
+      "category": "ui-entrance",
+      "source_path": "references/shots/ui-entrance/floating-glossy-label-pills.md",
+      "duration_s": 4.0,
+      "energy": "medium",
+      "summary": "Cycle interface panels through a central corridor with glossy feature pills and a cursor handoff at the end.",
+      "keywords": [
+        "glossy pills",
+        "feature corridor",
+        "panel carousel",
+        "center focus",
+        "cursor handoff"
+      ],
+      "camera_move": "fixed corridor view",
+      "easing": "in-out cubic steps with a longer first tail",
+      "component_hint": "FeaturePillCorridor",
+      "sfx_cue": "ui",
+      "tags": [],
+      "sha256": "8c49ec6f221f331f09a53aea5baf9a54779f9da0900c5428150270fc69b43b1c"
+    },
+    {
+      "id": "flying-words",
+      "category": "typography",
+      "source_path": "references/shots/typography/flying-words.md",
+      "duration_s": 6.0,
+      "energy": "high",
+      "summary": "Send a looping field of keywords through depth past the viewer while leaving the foreground readable.",
+      "keywords": [
+        "word tunnel",
+        "keyword cloud",
+        "flying words",
+        "depth",
+        "looping background"
+      ],
+      "camera_move": "fixed with words traveling through depth",
+      "easing": "linear depth travel and shaped opacity envelope",
+      "component_hint": "KeywordTunnel",
+      "sfx_cue": "text",
+      "tags": [],
+      "sha256": "0f56645a905dbb90d0fc9f220e6ddda9a4732d574f75571176d6b89a838375bf"
+    },
+    {
+      "id": "fracture",
+      "category": "opening",
+      "source_path": "references/shots/opening/fracture.md",
+      "duration_s": 5.2,
+      "energy": "high",
+      "summary": "Gather rotated tiles from depth into a complete poster, hold it, then accelerate the tiles out of frame.",
+      "keywords": [
+        "tile assembly",
+        "fragments",
+        "reassemble",
+        "poster reveal",
+        "scatter exit"
+      ],
+      "camera_move": "fixed spatial view",
+      "easing": "in-out cubic assembly and in cubic departure",
+      "component_hint": "TileReassembly",
+      "sfx_cue": "transition",
+      "tags": [],
+      "sha256": "4d0b2a76c2bd4a65eec3dd8e586e8ce841d3887ba8eeaffdca9d44fc64a1413b"
+    },
+    {
+      "id": "fui-hud-moves",
+      "category": "effects",
+      "source_path": "references/shots/effects/fui-hud-moves.md",
+      "duration_s": 3.0,
+      "energy": "medium",
+      "summary": "Open a panel from a thin line or fly four corner brackets inward to lock onto a moving target.",
+      "keywords": [
+        "line unfold",
+        "panel startup",
+        "target lock",
+        "reticle",
+        "corner brackets"
+      ],
+      "camera_move": "fixed target view",
+      "easing": "out cubic with bracket overshoot",
+      "component_hint": "PanelOrTargetLock",
+      "sfx_cue": "ui",
+      "tags": [
+        "ui-entrance"
+      ],
+      "sha256": "480e920e376e8f18529142d06c4de84544406b0e5f2dd37062dfe274b3f51305"
+    },
+    {
+      "id": "gauge-readout-moves",
+      "category": "data",
+      "source_path": "references/shots/data/gauge-readout-moves.md",
+      "duration_s": 4.5,
+      "energy": "high",
+      "summary": "Reveal a metric with a full-arc needle self-test or a scrolling scale beneath a fixed pointer.",
+      "keywords": [
+        "gauge",
+        "needle sweep",
+        "instrument panel",
+        "self test",
+        "rolling scale",
+        "fixed pointer"
+      ],
+      "camera_move": "fixed instrument view",
+      "easing": "ease-out with single mechanical rebound",
+      "component_hint": "GaugeReadout",
+      "sfx_cue": "data",
+      "tags": [],
+      "sha256": "dbd2801aa6ce647725230216e8d4bc593e6ad91f097ad3e4d3555211d7966698"
+    },
+    {
+      "id": "glass-pill-dictation-typing",
+      "category": "interaction",
+      "source_path": "references/shots/interaction/glass-pill-dictation-typing.md",
+      "duration_s": 1.7,
+      "energy": "low",
+      "summary": "Introduce a fixed-width glass input pill whose inner light recedes as typed words take over.",
+      "keywords": [
+        "dictation input",
+        "glass pill",
+        "typing",
+        "standby light",
+        "quiet pause"
+      ],
+      "camera_move": "fixed closeup",
+      "easing": "out cubic settle and in-out quadratic light fade",
+      "component_hint": "DictationPill",
+      "sfx_cue": "text",
+      "tags": [],
+      "sha256": "fd41dce82df9de936d958fee0640d0b411f13a5e0f71711280076a848e639036"
+    },
+    {
+      "id": "glitch-cycle",
+      "category": "typography",
+      "source_path": "references/shots/typography/glitch-cycle.md",
+      "duration_s": 5.6,
+      "energy": "high",
+      "summary": "Cycle status phrases in fixed character slots, scrambling each boundary and resolving the final phrase cleanly.",
+      "keywords": [
+        "glitch status",
+        "system phrases",
+        "loading",
+        "fixed slots",
+        "status cycle"
+      ],
+      "camera_move": "fixed phrase view",
+      "easing": "deterministic stepped noise with clean final lock",
+      "component_hint": "StatusGlitchCycle",
+      "sfx_cue": "text",
+      "tags": [],
+      "sha256": "e0ad73950c1d56b9fad5c737b981765201a13a93ef44ae02fec2deec885c6b5c"
+    },
+    {
+      "id": "glow-flyline-moves",
+      "category": "effects",
+      "source_path": "references/shots/effects/glow-flyline-moves.md",
+      "duration_s": 5.0,
+      "energy": "medium",
+      "summary": "Connect dark-scene cards with glowing arcs and synchronized ambient light pulses.",
+      "keywords": [
+        "glow orb",
+        "data flow",
+        "arc connection",
+        "light relay",
+        "dark ambience"
+      ],
+      "camera_move": "fixed card view",
+      "easing": "out cubic paths and out sine settle",
+      "component_hint": "GlowArcRelay",
+      "sfx_cue": "data",
+      "tags": [
+        "data"
+      ],
+      "sha256": "e6e11ac3659debfc8918c956c4a3c5ccb202c76f89d5d3b09717fb240be6f8be"
+    },
+    {
+      "id": "gradient-transition",
+      "category": "transition",
+      "source_path": "references/shots/transition/gradient-transition.md",
+      "duration_s": 6.0,
+      "energy": "low",
+      "summary": "Move through linear, radial, and conic background gradients with continuous parameter changes and narrow blends.",
+      "keywords": [
+        "gradient background",
+        "radial drift",
+        "conic rotation",
+        "color ambience"
+      ],
+      "camera_move": "fixed background view",
+      "easing": "smooth parameter interpolation",
+      "component_hint": "GradientBackdrop",
+      "sfx_cue": "ambience",
+      "tags": [],
+      "sha256": "0fb74f2a64807b4855aa55d223ad088e06a25b235a8e8737eb5f8dffbc6d432f"
+    },
+    {
+      "id": "gradient-word-sweep",
+      "category": "typography",
+      "source_path": "references/shots/typography/gradient-word-sweep.md",
+      "duration_s": 3.0,
+      "energy": "high",
+      "summary": "Charge one static keyword with a fast gradient wave and sparse fine light arcs between its letters.",
+      "keywords": [
+        "keyword charge",
+        "gradient sweep",
+        "word energy",
+        "restrained glow",
+        "text highlight"
+      ],
+      "camera_move": "fixed sentence view",
+      "easing": "fast directional fill with decaying wave-front glow",
+      "component_hint": "KeywordCharge",
+      "sfx_cue": "text",
+      "tags": [
+        "effects"
+      ],
+      "sha256": "595f023015843f6446c1d4e9d29bbf3a1dc0cf331b2f8fe08ccdc95a6f716e88"
+    },
+    {
+      "id": "grain-dissolve",
+      "category": "outro",
+      "source_path": "references/shots/outro/grain-dissolve.md",
+      "duration_s": 2.0,
+      "energy": "high",
+      "summary": "Dissolve a sentence into fine moving grain and condense it into a larger clear short wordmark.",
+      "keywords": [
+        "grain dissolve",
+        "sand text",
+        "sentence to wordmark",
+        "energy condensation"
+      ],
+      "camera_move": "fixed centered view",
+      "easing": "out cubic burst and in-out cubic condensation",
+      "component_hint": "GrainWordmark",
+      "sfx_cue": "text",
+      "tags": [],
+      "sha256": "62eb469fe414c08e5807e2d13b481e84b39f043904744668a0ed9594114fe89b"
+    },
+    {
+      "id": "graze-face-tour",
+      "category": "camera",
+      "source_path": "references/shots/camera/graze-face-tour.md",
+      "duration_s": 4.5,
+      "energy": "high",
+      "summary": "Glide close above an interface while raised elements settle onto its surface.",
+      "keywords": [
+        "surface flyover",
+        "low angle",
+        "floating text",
+        "soft shadow",
+        "interface terrain"
+      ],
+      "camera_move": "low surface glide",
+      "easing": "accelerating fall with soft landing",
+      "component_hint": "SurfaceTour",
+      "sfx_cue": "ui",
+      "tags": [
+        "ui-entrance"
+      ],
+      "sha256": "5ce46610dee7fbdd5d07679353d71c464ba8797273351bc8dbaac5182db5b9a3"
+    },
+    {
+      "id": "ground-skim",
+      "category": "ui-entrance",
+      "source_path": "references/shots/ui-entrance/runway-ground-skim.md",
+      "duration_s": 4.0,
+      "energy": "high",
+      "summary": "Drop hovering interface cards onto a low viewing plane, then raise the entire page upright as the view pulls back.",
+      "keywords": [
+        "low angle",
+        "interface rain",
+        "overlapping drops",
+        "page upright",
+        "surface landing"
+      ],
+      "camera_move": "low surface view to front-facing pullback",
+      "easing": "gravity drops without rebound and smooth page rise",
+      "component_hint": "GroundPlaneLanding",
+      "sfx_cue": "ui",
+      "tags": [
+        "camera"
+      ],
+      "sha256": "f236a0d24d05e58f44ceb6680085daf99dd4da864fa7b6fec287b610b4af05a2"
+    },
+    {
+      "id": "hashtag-to-pill-materialize",
+      "category": "interaction",
+      "source_path": "references/shots/interaction/hashtag-to-pill-materialize.md",
+      "duration_s": 3.5,
+      "energy": "medium",
+      "summary": "Type a keyword, hard-cut it into a pill, slide it into position, and hard-cut to the finished page.",
+      "keywords": [
+        "hashtag",
+        "tag creation",
+        "keyword pill",
+        "hard cut",
+        "text materialize"
+      ],
+      "camera_move": "fixed closeup then layout return",
+      "easing": "one-frame cuts around shared cubic-bezier movement",
+      "component_hint": "TagMaterialize",
+      "sfx_cue": "text",
+      "tags": [
+        "typography"
+      ],
+      "sha256": "c2376c04e432f54f7b24c9975d3d69741a38ed14be382582cef6f040351dff80"
+    },
+    {
+      "id": "hatch-depth",
+      "category": "data",
+      "source_path": "references/shots/data/hatch-depth.md",
+      "duration_s": 4.4,
+      "energy": "medium",
+      "summary": "Grow hatched placeholder bars, then replace their surface with solid data and readable values.",
+      "keywords": [
+        "placeholder to data",
+        "hatched bars",
+        "chart reveal",
+        "bar growth",
+        "live report"
+      ],
+      "camera_move": "fixed chart view",
+      "easing": "out cubic with staggered crossfade",
+      "component_hint": "HatchedBarReveal",
+      "sfx_cue": "data",
+      "tags": [],
+      "sha256": "92d1b1a213ee077a7fb9c4615da26d90543d2e22c26888c61f7a15f51ff534ca"
+    },
+    {
+      "id": "icon-field-colorize",
+      "category": "opening",
+      "source_path": "references/shots/opening/icon-field-colorize.md",
+      "duration_s": 3.5,
+      "energy": "medium",
+      "summary": "Populate a neutral icon grid, pause, and sweep several fast color waves downward through it.",
+      "keywords": [
+        "icon field",
+        "capability grid",
+        "color wave",
+        "ecosystem",
+        "grayscale to color"
+      ],
+      "camera_move": "fixed wide view",
+      "easing": "staggered ease-out growth and short wave pulses",
+      "component_hint": "IconFieldColorWave",
+      "sfx_cue": "ui",
+      "tags": [
+        "ui-entrance",
+        "outro"
+      ],
+      "sha256": "987a9354ef9f933965c5bea27c6aa9b8e22b9150114b2c7dd85052f2c692b6a4"
+    },
+    {
+      "id": "icon-performance-moves",
+      "category": "effects",
+      "source_path": "references/shots/effects/icon-performance-moves.md",
+      "duration_s": 4.0,
+      "energy": "high",
+      "summary": "Give a large icon a confirmation burst or escalating bounces that draw the camera toward it.",
+      "keywords": [
+        "icon bounce",
+        "confirmation",
+        "check mark",
+        "pop burst",
+        "attention"
+      ],
+      "camera_move": "fixed closeup with brief push-in",
+      "easing": "spring burst and escalating bounce",
+      "component_hint": "IconPerformance",
+      "sfx_cue": "impact",
+      "tags": [
+        "interaction"
+      ],
+      "sha256": "e643217134fe454c5049a4bf02ece3a2c0d066a4bf7f2c92e3d2c17daed351fe"
+    },
+    {
+      "id": "impact-feedback",
+      "category": "effects",
+      "source_path": "references/shots/effects/impact-feedback.md",
+      "duration_s": 0.1,
+      "energy": "high",
+      "summary": "Emphasize an impact with a brief global freeze and counting pulse or a tightly bounded inverted flash.",
+      "keywords": [
+        "hit stop",
+        "impact frame",
+        "combo counter",
+        "freeze",
+        "concentrated lines"
+      ],
+      "camera_move": "inherits the landing shot",
+      "easing": "instant freeze with exponential settle",
+      "component_hint": "ImpactFeedback",
+      "sfx_cue": "impact",
+      "tags": [],
+      "sha256": "823876ebd6b955693ce6665db33cbb9fb07f6c5ab5ca6f2da9212b0bb16b94d6"
+    },
+    {
+      "id": "input-trigger-moves",
+      "category": "interaction",
+      "source_path": "references/shots/interaction/input-trigger-moves.md",
+      "duration_s": 5.0,
+      "energy": "high",
+      "summary": "Use a cursor click to trigger a focused push or a pressed keycap to unleash a burst followed by a hard stop.",
+      "keywords": [
+        "cursor click",
+        "keycap press",
+        "interaction trigger",
+        "button",
+        "smash cut"
+      ],
+      "camera_move": "click-anchored push or fixed keycap closeup",
+      "easing": "curved ease-out input and accelerating burst",
+      "component_hint": "InputTrigger",
+      "sfx_cue": "impact",
+      "tags": [
+        "opening"
+      ],
+      "sha256": "4ad36f963da66a7b1c9315da7f80ff75fe3e44d687036c876aebdc1b7484a992"
+    },
+    {
+      "id": "integration-hub-map",
+      "category": "ui-entrance",
+      "source_path": "references/shots/ui-entrance/integration-hub-map.md",
+      "duration_s": 4.8,
+      "energy": "high",
+      "summary": "Flip into a hub page, reveal all source icons together, then connect them together with flowing transport pulses.",
+      "keywords": [
+        "integration hub",
+        "source icons",
+        "simultaneous connections",
+        "ecosystem map",
+        "data transport"
+      ],
+      "camera_move": "fixed spatial page view",
+      "easing": "monotonic out cubic flip and synchronized path growth",
+      "component_hint": "IntegrationHub",
+      "sfx_cue": "data",
+      "tags": [
+        "effects"
+      ],
+      "sha256": "ebaec72ec69d2bbf5a94d4a10d95300b4710db4cc815fe04c1ac881281c711e1"
+    },
+    {
+      "id": "lead-word-zoom-assemble",
+      "category": "typography",
+      "source_path": "references/shots/typography/lead-word-zoom-assemble.md",
+      "duration_s": 2.8,
+      "energy": "high",
+      "summary": "Start with one oversized word, shrink it around a stable baseline, and push the remaining words into their slots.",
+      "keywords": [
+        "lead word",
+        "sentence assembly",
+        "introducing title",
+        "large word",
+        "baseline anchor"
+      ],
+      "camera_move": "large-word closeup then full line",
+      "easing": "shared cubic-bezier shrink and slide",
+      "component_hint": "LeadWordAssemble",
+      "sfx_cue": "text",
+      "tags": [
+        "opening"
+      ],
+      "sha256": "f3ef1f01e2a719699ab9153dde285576a72eaf324226eecbb119f80dbac60355"
+    },
+    {
+      "id": "letterspace-materialize",
+      "category": "opening",
+      "source_path": "references/shots/opening/letterspace-materialize.md",
+      "duration_s": 3.5,
+      "energy": "low",
+      "summary": "Draw every stroke of a widely spaced wordmark continuously and simultaneously over a quiet background.",
+      "keywords": [
+        "wide letter spacing",
+        "wordmark drawing",
+        "simultaneous letters",
+        "crystallize",
+        "quiet reveal"
+      ],
+      "camera_move": "fixed title view",
+      "easing": "shared ease-in-out drawing progress",
+      "component_hint": "WordmarkTrace",
+      "sfx_cue": "text",
+      "tags": [
+        "typography",
+        "outro"
+      ],
+      "sha256": "f6632e8da2ab2bef13248514617e3e636c79d9140de4605997312b01060ddd4a"
+    },
+    {
+      "id": "light-play-moves",
+      "category": "effects",
+      "source_path": "references/shots/effects/light-play-moves.md",
+      "duration_s": 5.0,
+      "energy": "medium",
+      "summary": "Reveal a dark title with moving light, sweep one sheen over a hero card, or bloom its landing highlight.",
+      "keywords": [
+        "spotlight text",
+        "sheen",
+        "halation",
+        "bloom",
+        "light sweep"
+      ],
+      "camera_move": "fixed title or card view",
+      "easing": "in-out cubic sweep and linear fade",
+      "component_hint": "LightAccent",
+      "sfx_cue": "ambience",
+      "tags": [
+        "typography"
+      ],
+      "sha256": "e45f10c67bca8d9bf20af879f60328182ba71a67fa0f90c082f8c8feedb42328"
+    },
+    {
+      "id": "line-boil",
+      "category": "effects",
+      "source_path": "references/shots/effects/line-boil.md",
+      "duration_s": 2.3,
+      "energy": "low",
+      "summary": "Keep a held title alive by redrawing its contour in small deterministic steps.",
+      "keywords": [
+        "hand drawn",
+        "line boil",
+        "living hold",
+        "contour wobble",
+        "redraw"
+      ],
+      "camera_move": "fixed held view",
+      "easing": "stepped three-frame redraw",
+      "component_hint": "ContourBoil",
+      "sfx_cue": "none",
+      "tags": [
+        "typography"
+      ],
+      "sha256": "751b96babc027ee5e8f3c45267e0374fbc2c94386c7d57a2eed1b918092bc734"
+    },
+    {
+      "id": "line-carry-transition",
+      "category": "transition",
+      "source_path": "references/shots/transition/line-carry-transition.md",
+      "duration_s": 5.3,
+      "energy": "medium",
+      "summary": "Extend a progress line out of its card and follow it across the scene as it becomes the next card's frame.",
+      "keywords": [
+        "line relay",
+        "progress to frame",
+        "continuous transition",
+        "follow line",
+        "graphic carry"
+      ],
+      "camera_move": "line-following horizontal track",
+      "easing": "in-out cubic with line-camera synchronization",
+      "component_hint": "LineCarry",
+      "sfx_cue": "transition",
+      "tags": [
+        "camera"
+      ],
+      "sha256": "fd032128329b222c8769911fe5419c9ee0aad4411055c26bd5f7a238bbf59c97"
+    },
+    {
+      "id": "list-reveal",
+      "category": "ui-entrance",
+      "source_path": "references/shots/ui-entrance/list-reveal.md",
+      "duration_s": 3.6,
+      "energy": "low",
+      "summary": "Introduce readable menu entries with staggered small growth while the container drifts gently upward.",
+      "keywords": [
+        "list reveal",
+        "menu",
+        "sidebar",
+        "settings",
+        "staggered entries"
+      ],
+      "camera_move": "fixed view with slow list drift",
+      "easing": "out-back entries and linear container drift",
+      "component_hint": "ReadableListReveal",
+      "sfx_cue": "ui",
+      "tags": [],
+      "sha256": "de1633dc78cfdf4d16e5b538640b63e60163df82d9098c469e1794e6a4e5dc68"
+    },
+    {
+      "id": "list-stack-press",
+      "category": "ui-entrance",
+      "source_path": "references/shots/ui-entrance/list-stack-press.md",
+      "duration_s": 3.0,
+      "energy": "medium",
+      "summary": "Raise cards into a shared stack so each arrival briefly presses the stack down while a synchronized counter increments.",
+      "keywords": [
+        "stack press",
+        "accumulating list",
+        "counter roll",
+        "layered cards",
+        "collection count"
+      ],
+      "camera_move": "downward stack follow and gradual pullback",
+      "easing": "quick upward entries with a short press and rebound",
+      "component_hint": "StackCountReveal",
+      "sfx_cue": "ui",
+      "tags": [],
+      "sha256": "fcf031f506570e4838c9313e4957c8c290a048a35321156ed61874685e8110ba"
+    },
+    {
+      "id": "logo-shrink-wordmark-lockup",
+      "category": "outro",
+      "source_path": "references/shots/outro/logo-shrink-wordmark-lockup.md",
+      "duration_s": 4.4,
+      "energy": "medium",
+      "summary": "Contract a large glowing mark into its clean final icon, shift it aside, and introduce the wordmark and tagline.",
+      "keywords": [
+        "logo shrink",
+        "wordmark lockup",
+        "icon settle",
+        "tagline",
+        "brand ending"
+      ],
+      "camera_move": "fixed centered view",
+      "easing": "in-out cubic contraction and small sine overshoot",
+      "component_hint": "MarkLockup",
+      "sfx_cue": "text",
+      "tags": [],
+      "sha256": "1f76c5434a85bf2e5b8867142419577348adfe265fb215e460ec2b7e239b189b"
+    },
+    {
+      "id": "magician-card-flourish",
+      "category": "opening",
+      "source_path": "references/shots/opening/magician-card-flourish.md",
+      "duration_s": 4.2,
+      "energy": "high",
+      "summary": "Flash a rotating star of light, eject a spinning card toward the viewer, and freeze it nearly full-frame.",
+      "keywords": [
+        "magic card",
+        "star flash",
+        "spinning reveal",
+        "card flourish",
+        "hard freeze"
+      ],
+      "camera_move": "fixed with card approaching camera",
+      "easing": "slow start, burst, cubic deceleration",
+      "component_hint": "MagicCardReveal",
+      "sfx_cue": "impact",
+      "tags": [
+        "ui-entrance",
+        "effects"
+      ],
+      "sha256": "9a92ef4e4c2b1256abbec0e0ec9b6dd94d46131d4b83f2e0937c10af2e3c27fd"
+    },
+    {
+      "id": "marker-underline-title",
+      "category": "typography",
+      "source_path": "references/shots/typography/marker-underline-title.md",
+      "duration_s": 1.3,
+      "energy": "low",
+      "summary": "Emphasize one settled keyword with a fast rough-edged marker line close to its baseline.",
+      "keywords": [
+        "marker underline",
+        "hand drawn emphasis",
+        "keyword",
+        "brush stroke",
+        "title highlight"
+      ],
+      "camera_move": "fixed title view",
+      "easing": "quick ease-out stroke",
+      "component_hint": "MarkerUnderline",
+      "sfx_cue": "text",
+      "tags": [],
+      "sha256": "89d3f168f347c742913b7cb18e5730d1809b51a6c346f4dafc3727a25c3e6212"
+    },
+    {
+      "id": "montage-rhythm-moves",
+      "category": "rhythm",
+      "source_path": "references/shots/rhythm/montage-rhythm-moves.md",
+      "duration_s": 4.5,
+      "energy": "high",
+      "summary": "Build a rhythmic passage with a silent blackout before impact, three operation closeups, or a chain of triggered arrivals.",
+      "keywords": [
+        "montage",
+        "blackout slam",
+        "triple closeup",
+        "domino cascade",
+        "momentum chain"
+      ],
+      "camera_move": "closeup sequence or fixed ensemble",
+      "easing": "hard cuts and accelerating impact",
+      "component_hint": "RhythmicMontage",
+      "sfx_cue": "impact",
+      "tags": [],
+      "sha256": "d573edbbc8198ec29391784ea4f1720df930684ed51b92c7b3b8babf5383f5ea"
+    },
+    {
+      "id": "morph-from-primitive",
+      "category": "ui-entrance",
+      "source_path": "references/shots/ui-entrance/morph-from-primitive.md",
+      "duration_s": 4.7,
+      "energy": "low",
+      "summary": "Let a simple circle breathe, reshape it into a rounded card, and reveal its content only after the new outline settles.",
+      "keywords": [
+        "primitive morph",
+        "circle to card",
+        "simple to detailed",
+        "progressive reveal"
+      ],
+      "camera_move": "fixed centered view",
+      "easing": "in-out cubic outline morph and soft content reveal",
+      "component_hint": "PrimitiveCardMorph",
+      "sfx_cue": "ui",
+      "tags": [
+        "opening"
+      ],
+      "sha256": "c338f6d3639b65bea1edff3c5749e530daa9a6ce70c8f44e6bbffbcfe86a6456"
+    },
+    {
+      "id": "mosaic-reframe",
+      "category": "transition",
+      "source_path": "references/shots/transition/mosaic-reframe.md",
+      "duration_s": 6.0,
+      "energy": "medium",
+      "summary": "Rearrange the same tiles from a grid to a featured mosaic and then a diagonal cascade.",
+      "keywords": [
+        "mosaic",
+        "tile reframe",
+        "layout morph",
+        "portfolio",
+        "content collection"
+      ],
+      "camera_move": "fixed layout view",
+      "easing": "smoothstep with small stagger",
+      "component_hint": "MosaicReframe",
+      "sfx_cue": "ui",
+      "tags": [],
+      "sha256": "c39427cb8c3f931da5f63ae72265865334d3f28dd2832eacbd8d55ab034c95f5"
+    },
+    {
+      "id": "neon-frame-forerun",
+      "category": "ui-entrance",
+      "source_path": "references/shots/ui-entrance/neon-frame-forerun.md",
+      "duration_s": 4.3,
+      "energy": "high",
+      "summary": "Trace a perspective frame first, then let raised page elements fall in an overlapping sequence while the frame lights fade.",
+      "keywords": [
+        "frame first",
+        "neon outline",
+        "page landing",
+        "layered interface",
+        "staggered drop"
+      ],
+      "camera_move": "fixed perspective page view",
+      "easing": "accelerating falls with soft landings and staggered light decay",
+      "component_hint": "FrameFirstReveal",
+      "sfx_cue": "ui",
+      "tags": [
+        "effects"
+      ],
+      "sha256": "a504f1a81137042a939ed1a50352023e9fa24f235398086d56132aee32013e71"
+    },
+    {
+      "id": "neon-frame-orbit-drop",
+      "category": "ui-entrance",
+      "source_path": "references/shots/ui-entrance/neon-frame-orbit-drop.md",
+      "duration_s": 4.3,
+      "energy": "high",
+      "summary": "Trace a page frame, orbit from one side to the other, and let all raised page elements land together.",
+      "keywords": [
+        "frame orbit",
+        "simultaneous landing",
+        "perspective sweep",
+        "interface drop"
+      ],
+      "camera_move": "side to side orbit around a perspective page",
+      "easing": "smooth orbit with synchronized accelerating drops",
+      "component_hint": "OrbitPageLanding",
+      "sfx_cue": "ui",
+      "tags": [
+        "effects",
+        "camera"
+      ],
+      "sha256": "0e33057834bfb86adf2e4e298d008c9efac5bdb6736b4161ca6b96d1d6db4355"
+    },
+    {
+      "id": "neon-triple-marquee",
+      "category": "outro",
+      "source_path": "references/shots/outro/neon-triple-marquee.md",
+      "duration_s": 4.5,
+      "energy": "high",
+      "summary": "Scroll three outlined word rows in alternating directions while their illumination takes turns.",
+      "keywords": [
+        "triple marquee",
+        "neon words",
+        "recap",
+        "opposing scroll",
+        "three word slogan"
+      ],
+      "camera_move": "fixed full-frame typography",
+      "easing": "linear scroll and phased cosine pulses",
+      "component_hint": "TripleWordMarquee",
+      "sfx_cue": "ambience",
+      "tags": [
+        "typography"
+      ],
+      "sha256": "5e15f43be56a4f3dc9e784c9cc45e42823a859c45a0065e5141be1e843450b2a"
+    },
+    {
+      "id": "odometer-digit-roll",
+      "category": "data",
+      "source_path": "references/shots/data/odometer-digit-roll.md",
+      "duration_s": 5.0,
+      "energy": "high",
+      "summary": "Roll each digit vertically and lock them from left to right before a final confirmation pulse.",
+      "keywords": [
+        "odometer",
+        "rolling digits",
+        "mechanical counter",
+        "number reel",
+        "metric reveal",
+        "digit roll"
+      ],
+      "camera_move": "fixed centered view",
+      "easing": "out cubic with half-row overshoot",
+      "component_hint": "OdometerCounter",
+      "sfx_cue": "data",
+      "tags": [
+        "typography"
+      ],
+      "sha256": "8f8b356fc57d914d4b324244fe437b232fe10030d212482a31b19a932c56513c"
+    },
+    {
+      "id": "orbit-ring-title-open",
+      "category": "opening",
+      "source_path": "references/shots/opening/orbit-ring-title-open.md",
+      "duration_s": 4.3,
+      "energy": "medium",
+      "summary": "Orbit upright content cards around a steady title, starting their playback together after the ring opens.",
+      "keywords": [
+        "orbit ring",
+        "content collection",
+        "upright cards",
+        "title opening",
+        "elliptical carousel"
+      ],
+      "camera_move": "fixed view of elliptical orbit",
+      "easing": "linear orbit and out cubic ring growth",
+      "component_hint": "OrbitTitleScene",
+      "sfx_cue": "transition",
+      "tags": [
+        "ui-entrance"
+      ],
+      "sha256": "c38909e6c19ee107ca1a2ef2940b8140e33b1cf0aece816670140dd8f2f42edb"
+    },
+    {
+      "id": "outline-word-fill",
+      "category": "typography",
+      "source_path": "references/shots/typography/outline-word-fill.md",
+      "duration_s": 2.5,
+      "energy": "high",
+      "summary": "Shrink an outlined word into place, aim framing guides around it, and switch its fill on almost instantly.",
+      "keywords": [
+        "outline fill",
+        "word confirmation",
+        "target circle",
+        "instant fill",
+        "emphasis"
+      ],
+      "camera_move": "fixed word closeup",
+      "easing": "out cubic shrink and one-frame fill",
+      "component_hint": "OutlineWordConfirm",
+      "sfx_cue": "impact",
+      "tags": [],
+      "sha256": "691fa3796bd7e20b70b1d5391fc4d44924831d71cef5ea38f7ec9436da9f01d5"
+    },
+    {
+      "id": "outro-group-photo-launch",
+      "category": "outro",
+      "source_path": "references/shots/outro/outro-group-photo-launch.md",
+      "duration_s": 4.8,
+      "energy": "high",
+      "summary": "Gather representative interface elements around the final wordmark with a small crane settle and stage lighting.",
+      "keywords": [
+        "group photo",
+        "launch ending",
+        "ensemble",
+        "feature reunion",
+        "stage light"
+      ],
+      "camera_move": "small crane settle then gentle push",
+      "easing": "overshooting cubic-bezier arrivals",
+      "component_hint": "FeatureEnsembleEnding",
+      "sfx_cue": "impact",
+      "tags": [],
+      "sha256": "6cb64b674b8bded5f08a39aceac73de2b957c7a6fdaf559921c4421b6c27d46f"
+    },
+    {
+      "id": "overhead-camera-moves",
+      "category": "camera",
+      "source_path": "references/shots/camera/overhead-camera-moves.md",
+      "duration_s": 4.8,
+      "energy": "medium",
+      "summary": "Reveal a flat page by tilting upright, or survey a tabletop card array before diving in.",
+      "keywords": [
+        "overhead reveal",
+        "tilt reveal",
+        "tabletop drop",
+        "overhead survey",
+        "camera tilt"
+      ],
+      "camera_move": "overhead tilt or tabletop dive",
+      "easing": "out cubic with restrained overshoot",
+      "component_hint": "OverheadReveal",
+      "sfx_cue": "transition",
+      "tags": [
+        "opening",
+        "transition"
+      ],
+      "sha256": "3ae9c44dbaae7ff0bef4e6d3ea5357985e88f9813f8720f62127900d0bd4d7ce"
+    },
+    {
+      "id": "page-turn-transitions",
+      "category": "transition",
+      "source_path": "references/shots/transition/page-turn-transitions.md",
+      "duration_s": 4.5,
+      "energy": "high",
+      "summary": "Turn two pages as adjacent cube faces or split the old page like doors to reveal its replacement.",
+      "keywords": [
+        "page turn",
+        "cube rotate",
+        "barn doors",
+        "chapter change",
+        "split reveal"
+      ],
+      "camera_move": "fixed page view",
+      "easing": "in-out cubic turn or accelerating outward split",
+      "component_hint": "PageBlockTransition",
+      "sfx_cue": "transition",
+      "tags": [],
+      "sha256": "7604612d8fe0af814da0b3b34e7b108a897ce994663180ad6a827c8ee664a2ff"
+    },
+    {
+      "id": "page-waterfall-wall",
+      "category": "ui-entrance",
+      "source_path": "references/shots/ui-entrance/page-waterfall-wall.md",
+      "duration_s": 5.0,
+      "energy": "medium",
+      "summary": "Loop page columns in alternating directions across a backward-tilted wall while the view slowly approaches.",
+      "keywords": [
+        "page waterfall",
+        "page wall",
+        "alternating columns",
+        "flowing content",
+        "document grid"
+      ],
+      "camera_move": "slow forward push toward a tilted wall",
+      "easing": "linear column loops and gradual camera push",
+      "component_hint": "PageWaterfall",
+      "sfx_cue": "ui",
+      "tags": [],
+      "sha256": "7f5691a48c167a52e2a6dc6d0472cdc35dca03270e5040d8942a296f54c056ca"
+    },
+    {
+      "id": "panel-grid-moves",
+      "category": "rhythm",
+      "source_path": "references/shots/rhythm/panel-grid-moves.md",
+      "duration_s": 4.8,
+      "energy": "high",
+      "summary": "Fill a mosaic on beats, reflow cards together, or split one subject into angled views before a panel takes over.",
+      "keywords": [
+        "beat grid",
+        "mosaic",
+        "reflow",
+        "comic split",
+        "panel takeover"
+      ],
+      "camera_move": "fixed multiview grid",
+      "easing": "hard arrivals and in-out cubic reflow",
+      "component_hint": "BeatPanelGrid",
+      "sfx_cue": "impact",
+      "tags": [
+        "ui-entrance"
+      ],
+      "sha256": "6294ff8de084ac4256a72e9fdded233996e9c91147198f0ff5e4fd8cc063a75a"
+    },
+    {
+      "id": "paper-craft-moves",
+      "category": "ui-entrance",
+      "source_path": "references/shots/ui-entrance/paper-craft-moves.md",
+      "duration_s": 4.5,
+      "energy": "medium",
+      "summary": "Fix a floating paper card with tape or unfold hinged cards from a page, using contact shadows to confirm each landing.",
+      "keywords": [
+        "paper craft",
+        "tape slap",
+        "popup book",
+        "hinged cards",
+        "contact shadow"
+      ],
+      "camera_move": "fixed overhead view or gentle tilt after unfolding",
+      "easing": "small damped wobble or staggered spring hinges",
+      "component_hint": "PaperCraftReveal",
+      "sfx_cue": "ui",
+      "tags": [],
+      "sha256": "077c1bd4c3ac606eca35d2217ad606165012278a9a65f21a104e8faaef3267f8"
+    },
+    {
+      "id": "paper-plane-messenger",
+      "category": "transition",
+      "source_path": "references/shots/transition/paper-plane-messenger.md",
+      "duration_s": 5.0,
+      "energy": "medium",
+      "summary": "Release a paper-plane messenger from a send action and follow it through parallax scenery to the next window.",
+      "keywords": [
+        "paper plane",
+        "messenger",
+        "send",
+        "invitation",
+        "sharing",
+        "delivery journey"
+      ],
+      "camera_move": "pullback, tracking flight, arrival push",
+      "easing": "curved ease-in-out flight",
+      "component_hint": "MessengerFlight",
+      "sfx_cue": "transition",
+      "tags": [
+        "camera"
+      ],
+      "sha256": "11784ee5f5feedf662b4c513d11623cf7eb92bf084f43ca5847dcceb10ac649f"
+    },
+    {
+      "id": "paper-title-card",
+      "category": "typography",
+      "source_path": "references/shots/typography/paper-title-card.md",
+      "duration_s": 1.8,
+      "energy": "low",
+      "summary": "Press a short sentence onto a paper-like field with one emphasized word and a closing underline.",
+      "keywords": [
+        "paper title",
+        "letterpress sentence",
+        "chapter card",
+        "breathing space",
+        "value statement"
+      ],
+      "camera_move": "fixed title view",
+      "easing": "restrained cubic-bezier compression",
+      "component_hint": "PaperPhraseCard",
+      "sfx_cue": "text",
+      "tags": [
+        "transition",
+        "rhythm"
+      ],
+      "sha256": "a474a2d6f5563239be6fabd33e0e6d9002f57623bc49ddf57ea0020cfeffc458"
+    },
+    {
+      "id": "particle-celebrate-hits",
+      "category": "data",
+      "source_path": "references/shots/data/particle-celebrate-hits.md",
+      "duration_s": 4.0,
+      "energy": "high",
+      "summary": "Celebrate a final metric with crossing confetti bursts or small sparks at each counting milestone.",
+      "keywords": [
+        "confetti crossfire",
+        "counter sparks",
+        "milestone",
+        "particle celebration",
+        "tick burst"
+      ],
+      "camera_move": "fixed metric view",
+      "easing": "deterministic ballistic arcs",
+      "component_hint": "MetricCelebration",
+      "sfx_cue": "impact",
+      "tags": [
+        "effects"
+      ],
+      "sha256": "8b26015c0ca9cd1f4a4ea43534ce7e4e5931795ee57357f228aac0d9fd7613cb"
+    },
+    {
+      "id": "particle-sand-fill",
+      "category": "data",
+      "source_path": "references/shots/data/particle-sand-fill.md",
+      "duration_s": 4.5,
+      "energy": "high",
+      "summary": "Build a bar chart from falling square particles that settle into solid columns and value labels.",
+      "keywords": [
+        "sand fill",
+        "particle rain",
+        "accumulating data",
+        "falling blocks",
+        "bar chart"
+      ],
+      "camera_move": "fixed chart view",
+      "easing": "gravity acceleration and single landing rebound",
+      "component_hint": "ParticleBarFill",
+      "sfx_cue": "data",
+      "tags": [
+        "effects"
+      ],
+      "sha256": "cff599b6d2ee509dc0aa393a1ed26f62806e1c589f08c4c6f20ba32fc19ae237"
+    },
+    {
+      "id": "picker-carousel-feature-cycle",
+      "category": "interaction",
+      "source_path": "references/shots/interaction/picker-carousel-feature-cycle.md",
+      "duration_s": 3.6,
+      "energy": "medium",
+      "summary": "Scroll feature names through a fixed selection pill, snapping and holding on each item.",
+      "keywords": [
+        "picker",
+        "feature cycle",
+        "vertical carousel",
+        "fixed focus",
+        "snap selection"
+      ],
+      "camera_move": "fixed centered view",
+      "easing": "out quintic with explicit holds",
+      "component_hint": "FeaturePicker",
+      "sfx_cue": "ui",
+      "tags": [],
+      "sha256": "0c904f96ec259632dc058e4457ff40d6dbcb0458cf88cd0cbe132fe6956afe0c"
+    },
+    {
+      "id": "pill-chip-slot-cycle-handled",
+      "category": "typography",
+      "source_path": "references/shots/typography/pill-chip-slot-cycle-handled.md",
+      "duration_s": 5.0,
+      "energy": "medium",
+      "summary": "Roll words inside an adapting dark pill that gently pushes the surrounding sentence apart and together.",
+      "keywords": [
+        "adaptive pill",
+        "word slot",
+        "rolling badge",
+        "sentence cycle",
+        "ghost neighbors"
+      ],
+      "camera_move": "fixed sentence view",
+      "easing": "in-out cubic roll and width interpolation",
+      "component_hint": "AdaptiveWordPill",
+      "sfx_cue": "text",
+      "tags": [],
+      "sha256": "24f1784bca3e08958ef952168a1a0d18ece88480bdf7f10b0dcb332d5195fc8b"
+    },
+    {
+      "id": "pill-slot-cycle",
+      "category": "typography",
+      "source_path": "references/shots/typography/pill-slot-cycle.md",
+      "duration_s": 5.8,
+      "energy": "medium",
+      "summary": "Keep a sentence stem fixed while feature phrases roll through its final pill slot and resolve into one complete promise.",
+      "keywords": [
+        "pill slot",
+        "feature phrases",
+        "sentence completion",
+        "function list",
+        "word cycle"
+      ],
+      "camera_move": "fixed sentence view",
+      "easing": "out cubic arrivals, in cubic exits, final out-back settle",
+      "component_hint": "FeaturePhraseSlot",
+      "sfx_cue": "text",
+      "tags": [],
+      "sha256": "32cddebfe7bb0869057e0f81f66c6d6044ea152b381f402a26707e9d4274ff62"
+    },
+    {
+      "id": "platform-hinge-rise",
+      "category": "ui-entrance",
+      "source_path": "references/shots/ui-entrance/platform-hinge-rise.md",
+      "duration_s": 3.5,
+      "energy": "medium",
+      "summary": "Grow a platform, raise two comparison objects from their bottom hinges, and lift a final summary pedestal after they settle.",
+      "keywords": [
+        "platform rise",
+        "paired hinges",
+        "comparison",
+        "supporting evidence",
+        "pedestal"
+      ],
+      "camera_move": "fixed platform view",
+      "easing": "smooth platform growth and damped hinge rotation",
+      "component_hint": "PlatformEvidenceReveal",
+      "sfx_cue": "ui",
+      "tags": [
+        "opening"
+      ],
+      "sha256": "db4c6b014f3b2274f8cc4ff588bfacfa2b85caf3eecb037079d8eabebc929f0e"
+    },
+    {
+      "id": "print-texture-transitions",
+      "category": "transition",
+      "source_path": "references/shots/transition/print-texture-transitions.md",
+      "duration_s": 4.3,
+      "energy": "medium",
+      "summary": "Reveal the new scene through an irregular expanding ink stain while keeping its content clear.",
+      "keywords": [
+        "ink bleed",
+        "paper texture",
+        "stain reveal",
+        "organic wipe",
+        "printed transition"
+      ],
+      "camera_move": "fixed scene view",
+      "easing": "out quadratic growth with bounded irregularity",
+      "component_hint": "InkBleedTransition",
+      "sfx_cue": "transition",
+      "tags": [],
+      "sha256": "a1ccb5edbd881ec2c2a3981cc1a8b5969ec63cae63d6b421169d8247c1180b70"
+    },
+    {
+      "id": "product-card-progressive-assemble",
+      "category": "ui-entrance",
+      "source_path": "references/shots/ui-entrance/product-card-progressive-assemble.md",
+      "duration_s": 5.0,
+      "energy": "medium",
+      "summary": "Assemble a product card in readable groups of image, title, details, highlights, and selected options.",
+      "keywords": [
+        "progressive assembly",
+        "product card",
+        "structured details",
+        "grouped reveal",
+        "options"
+      ],
+      "camera_move": "gentle forward push",
+      "easing": "out cubic content entries and small out-back pills",
+      "component_hint": "StructuredCardAssembly",
+      "sfx_cue": "ui",
+      "tags": [],
+      "sha256": "15210454fd1fb8efe63eb163799cb71e5a0d081f83fc770e79743be88c130645"
+    },
+    {
+      "id": "quad-split-parallel-scenes",
+      "category": "rhythm",
+      "source_path": "references/shots/rhythm/quad-split-parallel-scenes.md",
+      "duration_s": 2.1,
+      "energy": "high",
+      "summary": "Run four short scenes in parallel with their key actions offset by a few frames.",
+      "keywords": [
+        "quad split",
+        "four scenes",
+        "parallel features",
+        "dense montage",
+        "offset beats"
+      ],
+      "camera_move": "four independent closeups",
+      "easing": "offset action timing with cubic moves",
+      "component_hint": "ParallelQuadScene",
+      "sfx_cue": "ui",
+      "tags": [],
+      "sha256": "22b9e42c9d136c29710ea9371728205198be2ec73a90322107ce92223ea18fcb"
+    },
+    {
+      "id": "radial-ripple-phone-chips",
+      "category": "effects",
+      "source_path": "references/shots/effects/radial-ripple-phone-chips.md",
+      "duration_s": 5.6,
+      "energy": "low",
+      "summary": "Frame a phone with gently breathing concentric waves, a scrolling feed, and staggered floating feature chips.",
+      "keywords": [
+        "phone reveal",
+        "radial ripple",
+        "concentric waves",
+        "mobile overview",
+        "feature chips"
+      ],
+      "camera_move": "fixed centered view",
+      "easing": "sinusoidal breath and out-back chips",
+      "component_hint": "PhoneRippleScene",
+      "sfx_cue": "ui",
+      "tags": [],
+      "sha256": "46b805ee36f58cf3f0277c44fa053f463b48861a70d15dc4b2f3ee387fa76bf2"
+    },
+    {
+      "id": "radial-wave",
+      "category": "ui-entrance",
+      "source_path": "references/shots/ui-entrance/radial-wave.md",
+      "duration_s": 3.8,
+      "energy": "high",
+      "summary": "Light a dot grid outward from its center, then send a second pulse from the edges back toward the center.",
+      "keywords": [
+        "radial wave",
+        "dot grid",
+        "outward ripple",
+        "inward pulse",
+        "center stagger"
+      ],
+      "camera_move": "fixed grid view",
+      "easing": "distance-staggered out cubic growth with mild overshoot",
+      "component_hint": "RadialDotWave",
+      "sfx_cue": "data",
+      "tags": [],
+      "sha256": "d4bfb9bb8f0a0983442d6a98cff830674d995ee8dd65584563e65d78ee8bcf9a"
+    },
+    {
+      "id": "research-card-stack-scroll",
+      "category": "ui-entrance",
+      "source_path": "references/shots/ui-entrance/research-card-stack-scroll.md",
+      "duration_s": 4.8,
+      "energy": "high",
+      "summary": "Stream research cards into a diagonally drifting stack while keeping only the newest card fully readable.",
+      "keywords": [
+        "research stack",
+        "rapid intake",
+        "source cards",
+        "diagonal scroll",
+        "information throughput"
+      ],
+      "camera_move": "shared diagonal stack drift",
+      "easing": "short regular arrivals with continuous linear drift",
+      "component_hint": "ResearchThroughputStack",
+      "sfx_cue": "ui",
+      "tags": [],
+      "sha256": "89ad86b38e7216d61fa62fe5c4f32c9881a0363c51fcfe4bcaf28e791d49b4d7"
+    },
+    {
+      "id": "rhythm-interrupt-moves",
+      "category": "rhythm",
+      "source_path": "references/shots/rhythm/rhythm-interrupt-moves.md",
+      "duration_s": 4.5,
+      "energy": "high",
+      "summary": "Interrupt continuity with stepped punch-in crops or tightening black-frame intervals before the final hold.",
+      "keywords": [
+        "jump cut",
+        "punch in",
+        "rhythm interruption",
+        "black frames",
+        "tension countdown"
+      ],
+      "camera_move": "stepped fixed-origin punch-in",
+      "easing": "instant spatial steps",
+      "component_hint": "RhythmInterrupt",
+      "sfx_cue": "impact",
+      "tags": [],
+      "sha256": "e841a4213854f4e3ac0e897cc4dca6a0ccf2427e22f12f68a26908593c591986"
+    },
+    {
+      "id": "ring-diagram-annotation-reveal",
+      "category": "data",
+      "source_path": "references/shots/data/ring-diagram-annotation-reveal.md",
+      "duration_s": 6.3,
+      "energy": "high",
+      "summary": "Contract a full-frame subject into a ring diagram, then move it aside for readable annotations.",
+      "keywords": [
+        "ring diagram",
+        "concentric mechanism",
+        "circular reveal",
+        "inward arrows",
+        "annotation"
+      ],
+      "camera_move": "contracting view then leftward layout move",
+      "easing": "out cubic and shared smooth progress",
+      "component_hint": "RingDiagramReveal",
+      "sfx_cue": "data",
+      "tags": [
+        "camera",
+        "ui-entrance"
+      ],
+      "sha256": "bb43f7de5e3e699bd5298b3d11a245d292bde96d5db21b84a4698705d7e77dd1"
+    },
+    {
+      "id": "riso-print-hits",
+      "category": "effects",
+      "source_path": "references/shots/effects/riso-print-hits.md",
+      "duration_s": 4.3,
+      "energy": "high",
+      "summary": "Split a title into offset ink layers at impact, then register them sharply or increase the split on successive beats.",
+      "keywords": [
+        "ink registration",
+        "print offset",
+        "riso",
+        "beat pump",
+        "layered ink"
+      ],
+      "camera_move": "fixed title view with brief whole-frame pulse",
+      "easing": "exponentially decaying offset with hard registration",
+      "component_hint": "InkRegistrationHit",
+      "sfx_cue": "impact",
+      "tags": [
+        "typography",
+        "rhythm"
+      ],
+      "sha256": "aa97fa4a3d0c097563bd409c80c37e714fea534b88bfe66dd6eccd375200a227"
+    },
+    {
+      "id": "row-embed",
+      "category": "ui-entrance",
+      "source_path": "references/shots/ui-entrance/row-embed.md",
+      "duration_s": 2.0,
+      "energy": "medium",
+      "summary": "Drop rows into precise interface slots and confirm each fit with a bottom-edge accent as the view moves downward.",
+      "keywords": [
+        "embedded rows",
+        "slot landing",
+        "precise alignment",
+        "bottom edge cue",
+        "row reveal"
+      ],
+      "camera_move": "steady downward pan",
+      "easing": "cubic-bezier entries and out cubic edge accents",
+      "component_hint": "EmbeddedRows",
+      "sfx_cue": "ui",
+      "tags": [],
+      "sha256": "964e3011dc055dca1f5e0ab9afaabde457f7b9b55de6a20a4d068eecf0cd4545"
+    },
+    {
+      "id": "sakuga-timing-shift",
+      "category": "rhythm",
+      "source_path": "references/shots/rhythm/sakuga-timing-shift.md",
+      "duration_s": 5.0,
+      "energy": "high",
+      "summary": "Move an element in visible three-frame steps, then switch instantly to smooth full-frame motion for its final sprint.",
+      "keywords": [
+        "on threes",
+        "on ones",
+        "timing shift",
+        "hand animated",
+        "stepped motion",
+        "smooth sprint"
+      ],
+      "camera_move": "fixed action view",
+      "easing": "quantized travel then out quartic sprint",
+      "component_hint": "TimingShift",
+      "sfx_cue": "impact",
+      "tags": [
+        "ui-entrance"
+      ],
+      "sha256": "64b73c42b1d01883060b0ca611e9427c7b12ddad5a087c8f702591e83e7797b5"
+    },
+    {
+      "id": "scan-bracket-sweep",
+      "category": "effects",
+      "source_path": "references/shots/effects/scan-bracket-sweep.md",
+      "duration_s": 5.0,
+      "energy": "low",
+      "summary": "Hold a document still inside corner brackets while a narrow scanning beam makes alternating passes.",
+      "keywords": [
+        "document scan",
+        "bracket sweep",
+        "inspection",
+        "scanning beam",
+        "parser"
+      ],
+      "camera_move": "fixed document view",
+      "easing": "in-out sine passes with end pauses",
+      "component_hint": "DocumentScan",
+      "sfx_cue": "data",
+      "tags": [],
+      "sha256": "e80d67b51792b6355baca5f0547d8b9255675ec3fc6b935b43b57f44917cc686"
+    },
+    {
+      "id": "scanline-annotate-focus",
+      "category": "effects",
+      "source_path": "references/shots/effects/scanline-annotate-focus.md",
+      "duration_s": 4.6,
+      "energy": "medium",
+      "summary": "Move a scanning line down an existing page and reveal focus brackets and labels only after it passes each region.",
+      "keywords": [
+        "page analysis",
+        "scanline",
+        "annotation",
+        "focus frame",
+        "detection"
+      ],
+      "camera_move": "fixed page view",
+      "easing": "linear scan and out-back focus",
+      "component_hint": "ScanAnnotation",
+      "sfx_cue": "data",
+      "tags": [],
+      "sha256": "227490e2ce85ae5b011f81bc4b8c62cfe844edf716373adad8af41324d1dc54d"
+    },
+    {
+      "id": "scanline-assemble-flyin",
+      "category": "effects",
+      "source_path": "references/shots/effects/scanline-assemble-flyin.md",
+      "duration_s": 4.6,
+      "energy": "high",
+      "summary": "Build a blank page as a scanning line triggers components to fly into their final positions.",
+      "keywords": [
+        "scan assembly",
+        "page generation",
+        "flying components",
+        "progressive build"
+      ],
+      "camera_move": "fixed page view",
+      "easing": "linear scan and out-back assembly",
+      "component_hint": "ScanAssembly",
+      "sfx_cue": "ui",
+      "tags": [],
+      "sha256": "1a829af9a6dba139d48f21bd85f27fdfbf34beeb843bbec8ac1e289c5c2fd96a"
+    },
+    {
+      "id": "scramble",
+      "category": "typography",
+      "source_path": "references/shots/typography/scramble.md",
+      "duration_s": 3.2,
+      "energy": "high",
+      "summary": "Scramble characters deterministically, then lock a single phrase from left to right with brief confirmation highlights.",
+      "keywords": [
+        "scramble",
+        "decode",
+        "encryption reveal",
+        "code name",
+        "character lock"
+      ],
+      "camera_move": "fixed monospaced title",
+      "easing": "stepped noise and ordered character locks",
+      "component_hint": "ScrambleTitle",
+      "sfx_cue": "text",
+      "tags": [],
+      "sha256": "29ce01993b077423643a644800960d221c48feea01e09fc849bdc10b1d656937"
+    },
+    {
+      "id": "scroll-brake-moves",
+      "category": "data",
+      "source_path": "references/shots/data/scroll-brake-moves.md",
+      "duration_s": 4.5,
+      "energy": "high",
+      "summary": "Speed through a long list and brake onto a highlighted item, optionally locking corner brackets on the stopping frame.",
+      "keywords": [
+        "scroll brake",
+        "changelog",
+        "list rush",
+        "reticle lock",
+        "sudden stop"
+      ],
+      "camera_move": "vertical list travel",
+      "easing": "exponential deceleration or cubic rebound",
+      "component_hint": "ScrollBrake",
+      "sfx_cue": "impact",
+      "tags": [
+        "rhythm"
+      ],
+      "sha256": "7ee15612aaa1539653a144939f571ef5e0d71252f46610ce6bb6b9a872c8f0c6"
+    },
+    {
+      "id": "segmented-thumb-hero",
+      "category": "interaction",
+      "source_path": "references/shots/interaction/segmented-thumb-hero.md",
+      "duration_s": 3.5,
+      "energy": "medium",
+      "summary": "Show a large two-way control as a cursor presses it, its thumb slides, and a new icon confirms the change.",
+      "keywords": [
+        "segmented control",
+        "toggle",
+        "mode switch",
+        "sliding thumb",
+        "two choices"
+      ],
+      "camera_move": "fixed control closeup",
+      "easing": "out cubic thumb and restrained icon spring",
+      "component_hint": "SegmentedControlHero",
+      "sfx_cue": "ui",
+      "tags": [],
+      "sha256": "709e292c24992dee4527b81e7233f2020ce391a52930c4bbb70b2cf667434a1e"
+    },
+    {
+      "id": "shot-transitions",
+      "category": "transition",
+      "source_path": "references/shots/transition/shot-transitions.md",
+      "duration_s": 1.3,
+      "energy": "medium",
+      "summary": "Connect neighboring shots with a covered cut, dark travel, focus handoff, phrase card, whip, or expanding detail window.",
+      "keywords": [
+        "shot transition",
+        "flash cut",
+        "dark tunnel",
+        "focus handoff",
+        "whip pan",
+        "portal wipe"
+      ],
+      "camera_move": "selected handoff move",
+      "easing": "shared progress appropriate to the chosen handoff",
+      "component_hint": "ShotHandoff",
+      "sfx_cue": "transition",
+      "tags": [],
+      "sha256": "2cdb68da4060b519d4b0545db17ebc5ca000f04c814f40b0de4d4082756bc216"
+    },
+    {
+      "id": "skeleton-reveal",
+      "category": "ui-entrance",
+      "source_path": "references/shots/ui-entrance/skeleton-reveal.md",
+      "duration_s": 5.7,
+      "energy": "medium",
+      "summary": "Replace a moving sketch with a structural placeholder, then reveal real content line by line as the view pushes closer.",
+      "keywords": [
+        "sketch to interface",
+        "skeleton reveal",
+        "placeholder loading",
+        "fidelity stages",
+        "content reveal"
+      ],
+      "camera_move": "gradual forward push during content reveal",
+      "easing": "accelerating sketch retreat, spring frame, out cubic rows",
+      "component_hint": "SketchStructureContent",
+      "sfx_cue": "ui",
+      "tags": [],
+      "sha256": "d841c44eb95c693bdab7c7c5c30eb0ba287f3cc51683c19957e6cb2365d6f278"
+    },
+    {
+      "id": "slam-entrance-moves",
+      "category": "effects",
+      "source_path": "references/shots/effects/slam-entrance-moves.md",
+      "duration_s": 3.0,
+      "energy": "high",
+      "summary": "Land a focal card with a perspective snap or heavy slam whose shock wave can displace neighboring cards.",
+      "keywords": [
+        "slam entrance",
+        "perspective snap",
+        "score reveal",
+        "shock wave",
+        "heavy landing"
+      ],
+      "camera_move": "fixed focal view",
+      "easing": "accelerating landing and damped impact",
+      "component_hint": "CardSlam",
+      "sfx_cue": "impact",
+      "tags": [
+        "ui-entrance"
+      ],
+      "sha256": "69ae6548395c30d1fe45266da594af8e241655914f7395a361c73772a5092cb7"
+    },
+    {
+      "id": "smear-multiples",
+      "category": "rhythm",
+      "source_path": "references/shots/rhythm/smear-multiples.md",
+      "duration_s": 0.7,
+      "energy": "high",
+      "summary": "Trail a fast-moving card with several clear delayed copies that merge at its landing.",
+      "keywords": [
+        "smear",
+        "multiple exposure",
+        "afterimage",
+        "delayed copies",
+        "comic speed"
+      ],
+      "camera_move": "fixed lateral action",
+      "easing": "in-out cubic with brief rebound",
+      "component_hint": "ClearMotionCopies",
+      "sfx_cue": "transition",
+      "tags": [
+        "effects"
+      ],
+      "sha256": "07c27e3e4dc24cd648c5ca329c49f90b369294031f977bf8f4b3bace89fc33d7"
+    },
+    {
+      "id": "space-camera-moves",
+      "category": "camera",
+      "source_path": "references/shots/camera/space-camera-moves.md",
+      "duration_s": 5.0,
+      "energy": "high",
+      "summary": "Separate interface layers in depth and reassemble them, or dive from above into a hero detail.",
+      "keywords": [
+        "exploded view",
+        "drone dive",
+        "layer assembly",
+        "aerial landing",
+        "architecture reveal"
+      ],
+      "camera_move": "exploded orbit or aerial dive",
+      "easing": "ease-out-back and accelerating dive",
+      "component_hint": "SpatialReveal",
+      "sfx_cue": "impact",
+      "tags": [],
+      "sha256": "0ae6452bf1fefca34b7dc6b7761e98ff4347b3654873c046183b1a8e07ed26f9"
+    },
+    {
+      "id": "spectrum-morph-ui",
+      "category": "rhythm",
+      "source_path": "references/shots/rhythm/spectrum-morph-ui.md",
+      "duration_s": 4.7,
+      "energy": "medium",
+      "summary": "Split an underline into music-driven spectrum bars, then return it precisely to the original straight line.",
+      "keywords": [
+        "audio spectrum",
+        "underline morph",
+        "equalizer",
+        "music visualization",
+        "beat sync"
+      ],
+      "camera_move": "fixed title view",
+      "easing": "out cubic split and audio-driven bar motion",
+      "component_hint": "UnderlineSpectrum",
+      "sfx_cue": "data",
+      "tags": [
+        "typography"
+      ],
+      "sha256": "dd375cd1335a6464e408cc154d1234575df024b0e87bc0a1d29f77ca94985bbd"
+    },
+    {
+      "id": "speed-ramp-freeze",
+      "category": "rhythm",
+      "source_path": "references/shots/rhythm/speed-ramp-freeze.md",
+      "duration_s": 4.5,
+      "energy": "high",
+      "summary": "Remap a moving scene into a fast-slow-fast passage or freeze it long enough to annotate a focal detail.",
+      "keywords": [
+        "speed ramp",
+        "freeze annotate",
+        "time remap",
+        "slow motion",
+        "highlight hold"
+      ],
+      "camera_move": "inherits the moving scene",
+      "easing": "piecewise time remap",
+      "component_hint": "SpeedRampOrFreeze",
+      "sfx_cue": "transition",
+      "tags": [],
+      "sha256": "7d365e36082978b66ec5bca6623b9dbe57c7898b472f031a84d2bbbd09c3f56f"
+    },
+    {
+      "id": "split-flap-title",
+      "category": "typography",
+      "source_path": "references/shots/typography/split-flap-title.md",
+      "duration_s": 4.7,
+      "energy": "medium",
+      "summary": "Cascade mechanical character tiles through intermediate glyphs until they settle on the final title.",
+      "keywords": [
+        "split flap",
+        "airport board",
+        "mechanical title",
+        "flip letters",
+        "announcement"
+      ],
+      "camera_move": "fixed character-board view",
+      "easing": "accelerating hinged flips and small landing rebound",
+      "component_hint": "SplitFlapTitle",
+      "sfx_cue": "text",
+      "tags": [
+        "opening"
+      ],
+      "sha256": "7a3a624c14cf55c7be84a2c4008446403b906f7a6aa015a89696daf7d26d953c"
+    },
+    {
+      "id": "spotlight-hero-card",
+      "category": "opening",
+      "source_path": "references/shots/opening/spotlight-hero-card.md",
+      "duration_s": 4.6,
+      "energy": "medium",
+      "summary": "Lock a spotlight onto one interface card, push to an angled closeup, raise it, and settle it back into its slot.",
+      "keywords": [
+        "hero card",
+        "spotlight lock",
+        "floating card",
+        "contour scan",
+        "single subject"
+      ],
+      "camera_move": "angled push-in",
+      "easing": "overshooting lift and soft reseat",
+      "component_hint": "HeroCardSpotlight",
+      "sfx_cue": "ui",
+      "tags": [
+        "effects",
+        "camera"
+      ],
+      "sha256": "fbbd603a71ff0a472f37d4ea5647506da2c06dcef2f2d4687d3bc20c2484d989"
+    },
+    {
+      "id": "spotlight-sweep-moves",
+      "category": "effects",
+      "source_path": "references/shots/effects/spotlight-sweep-moves.md",
+      "duration_s": 4.0,
+      "energy": "low",
+      "summary": "Reveal or hide interface regions with a constant-speed spotlight and a bright glow anchored to their edges.",
+      "keywords": [
+        "spotlight reveal",
+        "edge glow",
+        "dark interface",
+        "light pan",
+        "corner reveal"
+      ],
+      "camera_move": "light sweep or simulated lateral pan",
+      "easing": "strictly linear light movement",
+      "component_hint": "EdgeSpotlight",
+      "sfx_cue": "ambience",
+      "tags": [
+        "ui-entrance",
+        "transition"
+      ],
+      "sha256": "35b5a5bde17662af0e303315c5a34f9d79bce89b4779e0c74f0452a80c99af94"
+    },
+    {
+      "id": "steep-tilt-glide",
+      "category": "camera",
+      "source_path": "references/shots/camera/steep-tilt-glide.md",
+      "duration_s": 4.0,
+      "energy": "high",
+      "summary": "Slide a steeply tilted page past a fixed camera as raised elements settle in sequence.",
+      "keywords": [
+        "fixed camera",
+        "steep perspective",
+        "side glide",
+        "scrolling plane",
+        "floating elements"
+      ],
+      "camera_move": "fixed with lateral page glide",
+      "easing": "continuous cubic bezier",
+      "component_hint": "TiltedPageGlide",
+      "sfx_cue": "ui",
+      "tags": [
+        "ui-entrance"
+      ],
+      "sha256": "6dfdc1e8f114dfbe75f2eb6a7c0824930fbf77d83a2368818088f0cc05881703"
+    },
+    {
+      "id": "stroke-segment-build",
+      "category": "opening",
+      "source_path": "references/shots/opening/stroke-segment-build.md",
+      "duration_s": 4.5,
+      "energy": "medium",
+      "summary": "Light disconnected title strokes in an unreadable order until the final pieces reveal the whole word.",
+      "keywords": [
+        "stroke segments",
+        "delayed title",
+        "mystery reveal",
+        "fragmented letters",
+        "meaning reveal"
+      ],
+      "camera_move": "fixed title view",
+      "easing": "staggered out cubic with final pulse",
+      "component_hint": "SegmentedTitleReveal",
+      "sfx_cue": "text",
+      "tags": [
+        "typography"
+      ],
+      "sha256": "05cbabf125c1ff573d2f5f7b3899fa98cfb5cb880fa9683ab3180f2e0f7e5b9b"
+    },
+    {
+      "id": "svg-shape-morph",
+      "category": "ui-entrance",
+      "source_path": "references/shots/ui-entrance/svg-shape-morph.md",
+      "duration_s": 5.2,
+      "energy": "low",
+      "summary": "Morph one sampled organic outline into another and back while a small breathing motion and linked color shift preserve continuity.",
+      "keywords": [
+        "organic morph",
+        "shape change",
+        "outline interpolation",
+        "breathing contour",
+        "reversible form"
+      ],
+      "camera_move": "fixed centered outline view",
+      "easing": "in-out cubic radius interpolation with gentle cyclical drift",
+      "component_hint": "OrganicOutlineMorph",
+      "sfx_cue": "ambience",
+      "tags": [],
+      "sha256": "ddc54c05b5c397adfe9c9fe458cf1f9ec62232d8162eb82ca3dca00090250f71"
+    },
+    {
+      "id": "tear-streak-transitions",
+      "category": "transition",
+      "source_path": "references/shots/transition/tear-streak-transitions.md",
+      "duration_s": 4.5,
+      "energy": "high",
+      "summary": "Displace complete horizontal strips briefly and hide the scene cut inside their decaying disturbance.",
+      "keywords": [
+        "glitch strips",
+        "tear streak",
+        "horizontal displacement",
+        "hidden cut",
+        "digital disruption"
+      ],
+      "camera_move": "fixed scene view",
+      "easing": "rapid out cubic onset and linear decay",
+      "component_hint": "StripDisplacement",
+      "sfx_cue": "transition",
+      "tags": [
+        "effects"
+      ],
+      "sha256": "440ebe46abf0894f5b0f380cfcaa5825cec5c20e8a58715b264a2434e806fcdd"
+    },
+    {
+      "id": "tension-camera-moves",
+      "category": "camera",
+      "source_path": "references/shots/camera/tension-camera-moves.md",
+      "duration_s": 4.5,
+      "energy": "medium",
+      "summary": "Shape a dramatic beat with a freeze orbit, leveling roll, slow push, or isolating pullback.",
+      "keywords": [
+        "bullet time",
+        "frozen orbit",
+        "dutch roll",
+        "slow push",
+        "pullback",
+        "isolation"
+      ],
+      "camera_move": "orbit, roll, push, or pullback",
+      "easing": "cubic with restrained single overshoot",
+      "component_hint": "TensionCamera",
+      "sfx_cue": "riser",
+      "tags": [],
+      "sha256": "6612ba598559261d2bb556bd536eeb1659490102a48b57e034fe053e10774631"
+    },
+    {
+      "id": "terminal-3d",
+      "category": "camera",
+      "source_path": "references/shots/camera/terminal-3d.md",
+      "duration_s": 6.0,
+      "energy": "medium",
+      "summary": "Travel between terminal windows in depth while commands and response lines appear at each stop.",
+      "keywords": [
+        "terminal tour",
+        "command line",
+        "workflow steps",
+        "typing",
+        "developer interface"
+      ],
+      "camera_move": "window-to-window flight",
+      "easing": "in-out cubic with sinusoidal pullback",
+      "component_hint": "TerminalTour",
+      "sfx_cue": "text",
+      "tags": [],
+      "sha256": "956b483a20e9bf49c192b53ed060fa9690cc5eee771e0d3ca29758768836bb4c"
+    },
+    {
+      "id": "text-as-mask",
+      "category": "opening",
+      "source_path": "references/shots/opening/text-as-mask.md",
+      "duration_s": 5.0,
+      "energy": "high",
+      "summary": "Show moving product imagery through a heavy title, then enlarge its strokes until the imagery fills the screen.",
+      "keywords": [
+        "text mask",
+        "video typography",
+        "title window",
+        "product takeover",
+        "masked reveal"
+      ],
+      "camera_move": "fixed text window then expanding mask",
+      "easing": "linear inner drift and cubic-bezier takeover",
+      "component_hint": "ProductTextMask",
+      "sfx_cue": "transition",
+      "tags": [
+        "typography"
+      ],
+      "sha256": "2fed719c299185b875d086b0027f38a3d64cc4707f9e8a0856cde854db3c7b35"
+    },
+    {
+      "id": "text-column-converge",
+      "category": "typography",
+      "source_path": "references/shots/typography/text-column-converge.md",
+      "duration_s": 5.5,
+      "energy": "low",
+      "summary": "Keep two words pinned to opposite margins during a phrase cycle, then join them once for the final reveal.",
+      "keywords": [
+        "word convergence",
+        "two columns",
+        "final phrase",
+        "pinned words",
+        "recap"
+      ],
+      "camera_move": "fixed two-column view",
+      "easing": "hard phrase changes then one in-out cubic join",
+      "component_hint": "ConvergingPhrase",
+      "sfx_cue": "text",
+      "tags": [
+        "outro"
+      ],
+      "sha256": "120457192f2c595cfcf7a683aaa5411c729581a0d77c09b283ce7e7d7510e72b"
+    },
+    {
+      "id": "theme-switch-moves",
+      "category": "interaction",
+      "source_path": "references/shots/interaction/theme-switch-moves.md",
+      "duration_s": 4.5,
+      "energy": "medium",
+      "summary": "Change one aligned interface theme with a diagonal sweep or a ripple launched from a collapsing command panel.",
+      "keywords": [
+        "theme switch",
+        "dark mode",
+        "diagonal sweep",
+        "circular ripple",
+        "palette"
+      ],
+      "camera_move": "fixed aligned interface",
+      "easing": "out cubic reveal",
+      "component_hint": "ThemeSwitch",
+      "sfx_cue": "transition",
+      "tags": [],
+      "sha256": "9f6265079d04714f3636c6d1e1a58f38ca1fc0d52858b3f9add64aa84561ce47"
+    },
+    {
+      "id": "timeline-travel",
+      "category": "data",
+      "source_path": "references/shots/data/timeline-travel.md",
+      "duration_s": 4.5,
+      "energy": "high",
+      "summary": "Accelerate along a horizontal timeline as milestone cards rise, then stop and push into the final entry.",
+      "keywords": [
+        "timeline",
+        "milestone journey",
+        "version history",
+        "horizontal travel",
+        "stop and zoom"
+      ],
+      "camera_move": "horizontal track then push-in",
+      "easing": "segmented speed ramp with out cubic settle",
+      "component_hint": "TimelineTravel",
+      "sfx_cue": "transition",
+      "tags": [
+        "camera"
+      ],
+      "sha256": "724840cde4d7bd72374da2a943ac94aee0255a4d1bef055dda6ddf4a6764e227"
+    },
+    {
+      "id": "title-demote-to-label",
+      "category": "typography",
+      "source_path": "references/shots/typography/title-demote-to-label.md",
+      "duration_s": 3.3,
+      "energy": "medium",
+      "summary": "Let a centered title settle, then shrink and move it into a corner label as its chapter content appears.",
+      "keywords": [
+        "title to label",
+        "chapter heading",
+        "hierarchy change",
+        "corner label",
+        "continuous handoff"
+      ],
+      "camera_move": "fixed layout view",
+      "easing": "out cubic reveal and shared in-out cubic demotion",
+      "component_hint": "TitleToLabel",
+      "sfx_cue": "text",
+      "tags": [
+        "transition"
+      ],
+      "sha256": "8ff840033599c3a8782c0266bbc7e623dda85d8b79ee4b4bbea9fe9f5ca0b1f0"
+    },
+    {
+      "id": "trailer-grammar-moves",
+      "category": "rhythm",
+      "source_path": "references/shots/rhythm/trailer-grammar-moves.md",
+      "duration_s": 4.7,
+      "energy": "high",
+      "summary": "Shape a trailer with a brief opening montage, alternating footage and phrase cards, or a hard cut from motion to stillness.",
+      "keywords": [
+        "trailer",
+        "cold open",
+        "footage text cadence",
+        "smash cut",
+        "launch film"
+      ],
+      "camera_move": "quick closeups or final wide view",
+      "easing": "hard cuts and accelerating pre-cut motion",
+      "component_hint": "TrailerRhythm",
+      "sfx_cue": "impact",
+      "tags": [
+        "opening",
+        "transition"
+      ],
+      "sha256": "1a898754876bc6cb5b1fa818564634df7932abf5dddaf430d492dfc72d556cdf"
+    },
+    {
+      "id": "transition-hidden-cut",
+      "category": "transition",
+      "source_path": "references/shots/transition/transition-hidden-cut.md",
+      "duration_s": 1.3,
+      "energy": "high",
+      "summary": "Hide a scene cut behind a full foreground sweep, two colliding panels, or the peak of a warm light leak.",
+      "keywords": [
+        "invisible cut",
+        "foreground occlusion",
+        "versus panels",
+        "light leak",
+        "hidden transition"
+      ],
+      "camera_move": "foreground sweep or collision",
+      "easing": "accelerating collision or shaped light envelope",
+      "component_hint": "HiddenSceneCut",
+      "sfx_cue": "transition",
+      "tags": [],
+      "sha256": "3e6b872df779eef27a4ec0304d04a02d49ba5a3ad7bf6744020c1de94c64d22e"
+    },
+    {
+      "id": "transition-travel",
+      "category": "transition",
+      "source_path": "references/shots/transition/transition-travel.md",
+      "duration_s": 1.5,
+      "energy": "high",
+      "summary": "Return a closeup card precisely to its grid slot or travel through a title's opening into the next scene.",
+      "keywords": [
+        "shared element",
+        "return to grid",
+        "letterform zoom",
+        "title portal",
+        "travel transition"
+      ],
+      "camera_move": "pullback return or letter-opening push",
+      "easing": "shared cubic-bezier morph or exponential zoom",
+      "component_hint": "SpatialTravelTransition",
+      "sfx_cue": "transition",
+      "tags": [
+        "camera"
+      ],
+      "sha256": "7e1d46357459532c97dde76cf2631770dd21580978f13437a0c4eefd647653eb"
+    },
+    {
+      "id": "type-and-filter",
+      "category": "interaction",
+      "source_path": "references/shots/interaction/type-and-filter.md",
+      "duration_s": 2.5,
+      "energy": "medium",
+      "summary": "Type a query in a real interface, filter its grid into one card, then click into that card's detail view.",
+      "keywords": [
+        "search",
+        "filter",
+        "typing",
+        "grid convergence",
+        "detail view"
+      ],
+      "camera_move": "search-framing move then click-anchored push",
+      "easing": "human-paced typing and cubic-bezier card travel",
+      "component_hint": "TypeAndFilter",
+      "sfx_cue": "ui",
+      "tags": [],
+      "sha256": "05da1b7e16fe652d2f5868485e913d08caaf87febb5512bd27b71d6b6c964fef"
+    },
+    {
+      "id": "type-assembly-moves",
+      "category": "typography",
+      "source_path": "references/shots/typography/type-assembly-moves.md",
+      "duration_s": 4.5,
+      "energy": "medium",
+      "summary": "Assemble a title from rising characters, drifting letters, expanded tracking, or a meaningful curved path.",
+      "keywords": [
+        "letter assembly",
+        "split text",
+        "drift",
+        "tracking expansion",
+        "text on path"
+      ],
+      "camera_move": "fixed title view",
+      "easing": "staggered cubic motion or shared tracking progress",
+      "component_hint": "AssembledTitle",
+      "sfx_cue": "text",
+      "tags": [],
+      "sha256": "c1bb40bc83810309bb6e2120e2b9abcae83f6edee483202ce10dbff4b7d92a63"
+    },
+    {
+      "id": "type-entrance-moves",
+      "category": "typography",
+      "source_path": "references/shots/typography/type-entrance-moves.md",
+      "duration_s": 4.5,
+      "energy": "high",
+      "summary": "Introduce a title by decoding fixed slots or dropping letters under gravity before they straighten together.",
+      "keywords": [
+        "title entrance",
+        "decode",
+        "falling letters",
+        "physics typography",
+        "letter drop"
+      ],
+      "camera_move": "fixed title view",
+      "easing": "stepped decode or gravity with two decaying bounces",
+      "component_hint": "TitleEntrance",
+      "sfx_cue": "text",
+      "tags": [],
+      "sha256": "fba00e4b0537b1f421d950dd9157522e97a6d583893f97528589692b7732f696"
+    },
+    {
+      "id": "type-rhythm-sync",
+      "category": "typography",
+      "source_path": "references/shots/typography/type-rhythm-sync.md",
+      "duration_s": 4.5,
+      "energy": "high",
+      "summary": "Tie a steady title to audio through beat-driven stroke pulses or word fills aligned to spoken boundaries.",
+      "keywords": [
+        "text beat sync",
+        "font weight pulse",
+        "karaoke",
+        "voice alignment",
+        "rhythmic typography"
+      ],
+      "camera_move": "fixed typography view",
+      "easing": "audio-timed pulses or linear word fill",
+      "component_hint": "AudioSyncedType",
+      "sfx_cue": "text",
+      "tags": [
+        "rhythm"
+      ],
+      "sha256": "4925c765f251d3674065ee0d544abf30bc52ab7bef6f24b7fcc00983ead00822"
+    },
+    {
+      "id": "typewriter-moves",
+      "category": "typography",
+      "source_path": "references/shots/typography/typewriter-moves.md",
+      "duration_s": 5.3,
+      "energy": "medium",
+      "summary": "Type a terminal command that triggers the next scene or revise a sentence through a pause, deletion, and firmer rewrite.",
+      "keywords": [
+        "typewriter",
+        "terminal command",
+        "retype",
+        "backspace",
+        "revised slogan"
+      ],
+      "camera_move": "fixed type view with optional command-line push",
+      "easing": "deterministic character steps and accelerating push",
+      "component_hint": "TypedNarrative",
+      "sfx_cue": "text",
+      "tags": [
+        "opening"
+      ],
+      "sha256": "c870748eeed55ab2c61f423cb355b57ba8dd0ea203bb7039b2a0f0385a5ddc1b"
+    },
+    {
+      "id": "typing-code-block",
+      "category": "typography",
+      "source_path": "references/shots/typography/typing-code-block.md",
+      "duration_s": 4.6,
+      "energy": "medium",
+      "summary": "Reveal syntax-colored code by staggered lines or character typing while preserving token colors from the start.",
+      "keywords": [
+        "code block",
+        "syntax highlight",
+        "code typing",
+        "line reveal",
+        "configuration"
+      ],
+      "camera_move": "fixed code-panel view",
+      "easing": "out cubic line arrivals or linear character timing",
+      "component_hint": "CodeReveal",
+      "sfx_cue": "text",
+      "tags": [],
+      "sha256": "409b1bd712836733dd194c1a433bd3ac4b26f1c5539dbd586d0be559e2e6d645"
+    },
+    {
+      "id": "ui-strip-away-outro",
+      "category": "outro",
+      "source_path": "references/shots/outro/ui-strip-away-outro.md",
+      "duration_s": 4.3,
+      "energy": "medium",
+      "summary": "After a final action, remove interface layers from the outside inward and move the surviving button to center before the wordmark.",
+      "keywords": [
+        "interface removal",
+        "publish ending",
+        "simplification",
+        "button focus",
+        "subtractive outro"
+      ],
+      "camera_move": "fixed interface with button-center migration",
+      "easing": "accelerating exits and in-out cubic move",
+      "component_hint": "InterfaceStripEnding",
+      "sfx_cue": "ui",
+      "tags": [],
+      "sha256": "db597a2edd6fbcecd7172585a7a8724f4f17cc29bf96715d2f9377a8b7af6669"
+    },
+    {
+      "id": "ui-to-brand-morph",
+      "category": "outro",
+      "source_path": "references/shots/outro/ui-to-brand-morph.md",
+      "duration_s": 4.5,
+      "energy": "high",
+      "summary": "Transform an interface icon or input field into a geometric mark before revealing its final wordmark.",
+      "keywords": [
+        "interface to mark",
+        "icon morph",
+        "logo assembly",
+        "petal bloom",
+        "input transformation"
+      ],
+      "camera_move": "fixed focal view",
+      "easing": "accelerating flip and shared geometric spring",
+      "component_hint": "InterfaceMarkMorph",
+      "sfx_cue": "transition",
+      "tags": [],
+      "sha256": "006c3b4212594b13e1ddeea9cac8ea1cc71d37747acde45b19a72dc943747108"
+    },
+    {
+      "id": "value-stagger-gradient",
+      "category": "ui-entrance",
+      "source_path": "references/shots/ui-entrance/value-stagger-gradient.md",
+      "duration_s": 5.0,
+      "energy": "high",
+      "summary": "Reveal bars with linked timing and value gradients, then pulse outward from the center with stronger motion near the middle.",
+      "keywords": [
+        "value gradient",
+        "staggered bars",
+        "center pulse",
+        "height gradient",
+        "equalizer reveal"
+      ],
+      "camera_move": "fixed bar-grid view",
+      "easing": "out cubic entries and distance-based pulse timing",
+      "component_hint": "GradientBarReveal",
+      "sfx_cue": "data",
+      "tags": [],
+      "sha256": "0be902ddd65fc39206dff0eb53763f9d0055d3c8cfda96dab689cfc824b9ed39"
+    },
+    {
+      "id": "vertical-word-roll-blur-cycle",
+      "category": "typography",
+      "source_path": "references/shots/typography/vertical-word-roll-blur-cycle.md",
+      "duration_s": 5.0,
+      "energy": "medium",
+      "summary": "Roll words through a fixed-width sentence slot, blur neighboring rows, and color the centered word only as it settles.",
+      "keywords": [
+        "word roll",
+        "vertical reel",
+        "audience list",
+        "blurred neighbors",
+        "fixed sentence"
+      ],
+      "camera_move": "fixed sentence view",
+      "easing": "out quintic and restrained out-back blend",
+      "component_hint": "WordReel",
+      "sfx_cue": "text",
+      "tags": [],
+      "sha256": "80529fb72660af3c78e51d22bc513f8df94b32072d1a5dc8ad8d4d1d73f05bdd"
+    },
+    {
+      "id": "voice-waveform-live",
+      "category": "interaction",
+      "source_path": "references/shots/interaction/voice-waveform-live.md",
+      "duration_s": 5.0,
+      "energy": "medium",
+      "summary": "Show a listening input with a rolling voice waveform, clear pauses, and a submission collapse.",
+      "keywords": [
+        "voice input",
+        "waveform",
+        "listening",
+        "dictation",
+        "recording",
+        "speech envelope"
+      ],
+      "camera_move": "fixed waveform closeup",
+      "easing": "smooth deterministic signal and accelerating collapse",
+      "component_hint": "ListeningWaveform",
+      "sfx_cue": "ui",
+      "tags": [],
+      "sha256": "d5835944532b621f55fef1894bbf6e7ade6c453402a8a9a01133626b81708d98"
+    },
+    {
+      "id": "wall-reveal-moves",
+      "category": "ui-entrance",
+      "source_path": "references/shots/ui-entrance/wall-reveal-moves.md",
+      "duration_s": 4.7,
+      "energy": "medium",
+      "summary": "Reveal an entire wall in place by sequential lighting, a diagonal flip wave, or a drawn outline that becomes real content.",
+      "keywords": [
+        "wall reveal",
+        "bento light up",
+        "diagonal flip wave",
+        "wireframe draw on",
+        "in place reveal"
+      ],
+      "camera_move": "fixed wall view with optional final slow push",
+      "easing": "staggered traces, cubic flips, or a smooth scanning wipe",
+      "component_hint": "InPlaceWallReveal",
+      "sfx_cue": "ui",
+      "tags": [],
+      "sha256": "e0783733037425ca97c48fce97fd10fbd1c104855d59faf8b50115f54f72d91d"
+    },
+    {
+      "id": "white-flash-logo-simplify-cut",
+      "category": "transition",
+      "source_path": "references/shots/transition/white-flash-logo-simplify-cut.md",
+      "duration_s": 3.6,
+      "energy": "high",
+      "summary": "Use a brief overexposed white takeover to replace a flowing textured wordmark with its clean final form.",
+      "keywords": [
+        "white flash",
+        "wordmark simplify",
+        "clean lockup",
+        "overexposure",
+        "texture to flat"
+      ],
+      "camera_move": "fixed wordmark view",
+      "easing": "accelerating white rise and out cubic final settle",
+      "component_hint": "WordmarkSimplify",
+      "sfx_cue": "impact",
+      "tags": [],
+      "sha256": "ec2f2181dae3c1a01c823570016df985a40c3b5f9b6a526f80bb3643e878f278"
+    },
+    {
+      "id": "wipe-transitions",
+      "category": "transition",
+      "source_path": "references/shots/transition/wipe-transitions.md",
+      "duration_s": 5.0,
+      "energy": "medium",
+      "summary": "Reveal the next still page with a highlighted clock sweep or staggered vertical blind slices.",
+      "keywords": [
+        "clock wipe",
+        "blinds",
+        "geometric wipe",
+        "radar sweep",
+        "page reveal"
+      ],
+      "camera_move": "fixed aligned page view",
+      "easing": "linear clock sweep or accelerating slice wave",
+      "component_hint": "GeometricPageWipe",
+      "sfx_cue": "transition",
+      "tags": [],
+      "sha256": "d3588e8ccb16dd6561c5298bfdfd1183a93716367148c1a153dba2ba5c0a6d43"
+    },
+    {
+      "id": "word-relay-filmstrip",
+      "category": "typography",
+      "source_path": "references/shots/typography/word-relay-filmstrip.md",
+      "duration_s": 6.0,
+      "energy": "low",
+      "summary": "Step a column of screenshots by one card as an aligned serif verb changes beside it.",
+      "keywords": [
+        "filmstrip",
+        "verb relay",
+        "screenshot evidence",
+        "editorial layout",
+        "feature enumeration"
+      ],
+      "camera_move": "fixed aligned two-column view",
+      "easing": "in-out roll with sequential word exit and entry",
+      "component_hint": "EvidenceFilmstrip",
+      "sfx_cue": "text",
+      "tags": [
+        "ui-entrance"
+      ],
+      "sha256": "46cd72e0c6f584c772a330d8a3ee68f0edf083052c061132d0aa7fe82a7f4678"
+    },
+    {
+      "id": "word-relay-geometry",
+      "category": "typography",
+      "source_path": "references/shots/typography/word-relay-geometry.md",
+      "duration_s": 6.0,
+      "energy": "high",
+      "summary": "Relay three benefit words through distinct geometric motifs, giving the last word a final material highlight.",
+      "keywords": [
+        "benefit words",
+        "geometric relay",
+        "three points",
+        "circles",
+        "final sheen"
+      ],
+      "camera_move": "fixed words and geometry",
+      "easing": "out cubic entrances and in-out cubic fills",
+      "component_hint": "GeometricWordRelay",
+      "sfx_cue": "text",
+      "tags": [],
+      "sha256": "5590d09cf06109757d7e31f575276a4085c78d31b7f27df87173881c1852f38c"
+    }
+  ]
+}
