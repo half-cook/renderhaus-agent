@@ -1,5 +1,9 @@
 # Studio Deep Agents backend
 
+Word-level footage corrections use [dialogue-edit](DIALOGUE_EDIT.md) on existing sync-3.
+Preview and video each pause for consent/cost approval; ambiguous preview creation cannot
+be automatically retried. The flow uses the existing media dispatch and native approval resume.
+
 Renderhaus uses `deepagents==0.7.23` by default. One chat handles planning, media generation,
 refinement, and final Remotion assembly. Canvas references are optional. The existing Studio
 request, job, approval, progress, asset, and conversation contracts remain in place.
