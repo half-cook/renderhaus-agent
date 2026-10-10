@@ -13,7 +13,7 @@ refusals return `blocked`, retired requests return `retired`, and unknown intent
 
 ## Packaged skills
 
-The backend packages 31 skills. Some explain pending capabilities; installing their
+The backend packages 32 skills. Some explain pending capabilities; installing their
 instructions does not install a provider adapter. The original execution skills remain
 available. `image-gen` and `named-provider` cover the new still-image policy and explicit
 requests for providers retained outside automatic selection. The archived `vidu-q4` skill
@@ -709,3 +709,18 @@ even in autonomous runs and have `training_eligible=false`. VibeMV requires a me
 invocation cannot bypass the skill or approval. Two named fixture rows were added; none
 of the five unrelated skips changed. See [contracts, pricing and terms](providers/named-fal-video.md).
 Browser E2E and real output playback remain blocked because Comet is unavailable here.
+
+## Motion carry after rendered graphics
+
+`motion-carry-qc` adds `motion_carry_probe` through the free local
+`Remotion___motion_carry_probe` editor tool. Run it after motion-graphics,
+product-demo-video, knowledge-explainer and explicit HyperFrames MP4 renders.
+Exact beat/element metadata takes priority over scene/audio detection. Failed
+reports gate completion and offer a Remotion re-render, with HyperFrames only
+when explicitly requested. Dry-run/skipped checks stay incomplete; generative
+continuity remains `continuity-qc` / `local_qc`. Thresholds are PROVISIONAL.
+Inventory is 16 providers, 123 Gateway tools, 32 skills and 240 active routing
+rows out of 245. The five existing skips remain, including capture/HyperFrames
+provider dependencies and exact OCR semantics. RT-163 and RT-164 exercise motion
+carry, and RT-165 protects generative continuity. See [motion carry QC](MOTION_CARRY_QC.md)
+for the independent clean-room implementation, calibration script and licences.
