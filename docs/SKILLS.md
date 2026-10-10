@@ -32,6 +32,7 @@ exact Gateway names, native arguments, and operational constraints.
 | Skill | Dispatch wrappers | Capability routing IDs |
 | --- | --- | --- |
 | [act-two](../agent/deep_agent/skills/act-two/SKILL.md) | `call_media_tool` | `runway_act_two`<br>`kling_motion_control` |
+| [art-style-motion](../agent/deep_agent/skills/art-style-motion/SKILL.md) | `call_editor_tool`<br>`call_media_tool`<br>`call_audio_tool` | `remotion_render`<br>`hyperframes_render`<br>`gpt_image25_t2i`<br>`eleven_v4_turbo`<br>`elevenlabs_sfx_v2` |
 | [audio](../agent/deep_agent/skills/audio/SKILL.md) | `call_audio_tool` | `eleven_v4_turbo`<br>`voices_ivc_create`<br>`mureka_v95`<br>`mirelo_v2a`<br>`elevenlabs_sfx_v2` |
 | [audio-bed](../agent/deep_agent/skills/audio-bed/SKILL.md) | `call_audio_tool`<br>`call_media_tool` | `eleven_v4_turbo`<br>`voices_ivc_create`<br>`heygen_voice_clone` (gated)<br>`heygen_voice_tts` (gated)<br>`mureka_v95`<br>`mirelo_v2a`<br>`elevenlabs_sfx_v2` |
 | [continuity-qc](../agent/deep_agent/skills/continuity-qc/SKILL.md) | `call_media_tool` | `local_qc`<br>`gemini_vlm_judge` |
@@ -212,8 +213,8 @@ Topaz submissions always pause with cost, including autonomous runs. Dry-run pre
 and queued jobs never satisfy final delivery. See [Topaz](TOPAZ.md) for pricing, licence
 sources, unknown-price blockers and the blocked Comet check.
 
-`tests/fixtures/skill_routing.json` contains 245 retained routing rows.
-There are 240 active cases and 5 explicit skips. Five caption/collage cases cover the
+`tests/fixtures/skill_routing.json` contains 248 retained routing rows.
+There are 243 active cases and 5 explicit skips. Five caption/collage cases cover the
 new templates' renderer selection. Seven performance-transfer cases now use built tools. Three Mureka lyrics-video cases
 now use built tools; music routes use Mureka without an ElevenLabs interim. Five Topaz upscale/interpolation cases
 now use built tools. Seedance reference dialogue and two
@@ -667,8 +668,8 @@ refusals and delivery/loudness/QC chains. RT-E043 remains skipped: exact OCR ver
 is not implemented (`feat/remotion-ocr-verification`). The original four dependency skips
 remain. Routing checks establish selection and refusal; provider tests establish file checks.
 
-Current inventory is 16 providers, 127 Gateway tools, 31 packaged skills and 245 fixture
-rows, with 240 active and 5 skipped. See [Remotion editing](REMOTION_EDITING.md) for
+Current inventory is 16 providers, 127 Gateway tools, 31 packaged skills and 248 fixture
+rows, with 243 active and 5 skipped. See [Remotion editing](REMOTION_EDITING.md) for
 licensing, the real local pipeline and incomplete browser/deployed validation.
 
 ## Static aspect variants

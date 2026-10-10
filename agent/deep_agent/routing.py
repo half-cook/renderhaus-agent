@@ -88,6 +88,8 @@ _SPEECH_PRODUCTION_TOOLS = {
 _LIPSYNC_REQUEST = next(rule["pattern"] for rule in POLICY["rules"] if rule["skill"] == "lipsync")
 _DIALOGUE_EDIT_REQUEST = next(rule["pattern"] for rule in POLICY["rules"] if rule["skill"] == "dialogue-edit")
 _KNOWLEDGE_REQUEST = next(rule["pattern"] for rule in POLICY["rules"] if rule["skill"] == "knowledge-explainer")
+_ART_STYLE_REQUEST = next(rule["pattern"] for rule in POLICY["rules"] if rule["skill"] == "art-style-motion")
+_ART_STYLE_NAMES = next(rule["named_styles"] for rule in POLICY["rules"] if rule["skill"] == "art-style-motion")
 _PLAN_REVIEW_REQUEST = next(rule["pattern"] for rule in POLICY["rules"] if rule["skill"] == "plan-to-video")
 _MODELSTUDIO_PREVIEW_WARNING = (
     "Alibaba preview terms permit internal testing, research and evaluation only until GA. "
@@ -163,16 +165,41 @@ def _video_voiceover(prompt: str) -> bool:
                 and not _knowledge_explainer_request(prompt))
 
 
+def _art_style_motion_text(prompt: str) -> str:
+    text = re.sub(_NEGATED_NARRATION, " ", _instruction_text(prompt), flags=re.I)
+    text = re.sub(
+        rf"\b(?:do not|don't|never|avoid|without|no|not)(?:\s+(?:use|using|a|the|any))*\s+(?:{_ART_STYLE_NAMES}|hyperframes|lip[ -]?sync\w*)\b(?:[ -]+(?:style|grammar))?",
+        "", text, flags=re.I,
+    )
+    return re.sub(
+        rf"\b(?:about|on|explaining|history of|life of|biography of)\s+(?:(?:the|ancient|art|life|history|of)\s+){{0,4}}(?:{_ART_STYLE_NAMES})\b",
+        "", text, flags=re.I,
+    )
+
+
+def _art_style_motion_request(prompt: str) -> bool:
+    text = _art_style_motion_text(prompt)
+    if _audio_postprocess_request(prompt) or re.search(
+        r"\b(?:restyle|relight|modify|edit)\b.*\b(?:existing|footage|clip|video)\b|\blip[ -]?sync\w*\b", text, re.I,
+    ):
+        return False
+    return bool(re.search(_ART_STYLE_REQUEST, text, re.I))
+
+
 def request_tool_blocker(prompt: str, name: str) -> str | None:
     if plan_text := _plan_review_instruction(prompt):
         prompt = plan_text
     if refusal := editing_request_refusal(prompt):
         return refusal
-    if _knowledge_explainer_request(prompt) and (
-        job_type(name) in {"tts", "voice_clone"} or name in _SPEECH_PRODUCTION_TOOLS
+    silent_art = (_art_style_motion_request(prompt)
+                  and re.search(_NEGATED_NARRATION + r"|\b(?:silent|unnarrated|unvoiced)\b", _instruction_text(prompt), re.I)
+                  and not re.search(_VOICEOVER, _narration_text(prompt), re.I))
+    if (_knowledge_explainer_request(prompt) or silent_art) and (
+        job_type(name) in {"tts", "cloned_tts", "voice_clone"} or name in _SPEECH_PRODUCTION_TOOLS
     ):
-        return "A silent knowledge explainer uses on-screen graphics and event SFX; narration/TTS is excluded."
-    if _video_voiceover(prompt) and job_type(name) in {"still_image", "image_edit"}:
+        return "A silent graphic explainer or art animation uses visuals and event SFX; narration/TTS is excluded."
+    if (_video_voiceover(prompt) and job_type(name) in {"still_image", "image_edit"}
+            and not intent_constraints(prompt)["predicates"]["art_style_motion"]):
         return "A shot or clip with voiceover uses video, TTS and assembly; image tools are excluded."
     if name.startswith("Seedream___") and not re.search(r"\bseedream\b", prompt, re.I):
         return "Seedream is explicit-only; request it by name. GPT Image 2.5 is the still-image default."
@@ -218,7 +245,7 @@ def capability_constraints(constraints: dict, capability: str) -> dict:
                                    if capability in POLICY["explicit_routes"].get(candidate, {})), None)
         scoped["model"] = scoped["named_model"] = None
     if not any(constraints["predicates"].get(workflow) for workflow in
-               ("video_voiceover", "knowledge_explainer", "plan_review")):
+               ("video_voiceover", "knowledge_explainer", "art_style_motion", "plan_review")):
         return scoped
     named = scoped.get("named_model")
     if named and capability not in POLICY["named_models"][named]["aliases"]:
@@ -241,7 +268,7 @@ def _video_capability(prompt: str, constraints: dict) -> tuple[str, str]:
 
 def _delivery_route(prompt: str, constraints: dict, *, region: str | None,
                     available_tools: set[str] | None, arguments: dict | None) -> Route | None:
-    if _knowledge_explainer_request(prompt):
+    if _knowledge_explainer_request(prompt) or constraints["predicates"]["art_style_motion"]:
         return None
     if any(rule.get("capability") in _FINISHING_CAPABILITIES and re.search(rule["pattern"], prompt, re.I)
            for rule in POLICY["rules"]):
@@ -485,6 +512,10 @@ def route_intent(prompt: str, *, region: str | None = None, tier: str | None = N
             continue
         if rule["skill"] == "plan-to-video":
             continue
+        if rule["skill"] == "art-style-motion" and not constraints["predicates"]["art_style_motion"]:
+            continue
+        if rule.get("capability") == "lipsync" and constraints["predicates"]["art_style_motion"]:
+            continue
         if rule["skill"] == "knowledge-explainer" and not knowledge_request:
             continue
         if knowledge_request and rule.get("capability") == "tts":
@@ -531,12 +562,14 @@ def route_intent(prompt: str, *, region: str | None = None, tier: str | None = N
         if capability == "t2v" and constraints["required"].get("start_end_frame"):
             capability, skill = "i2v", "i2v"
         if capability:
-            scoped = capability_constraints(constraints, capability) if capability == "lipsync" or knowledge_request else constraints
+            scoped = capability_constraints(constraints, capability) if (
+                capability == "lipsync" or knowledge_request or constraints["predicates"]["art_style_motion"]
+            ) else constraints
             route = select_provider(capability, arguments=arguments, available_tools=available_tools,
                                     region=region, retry=retry, **scoped)
             if capability == "delivery_render":
                 route = replace(route, required={"preset": _delivery_preset(prompt, arguments)})
-            if capability not in _FINISHING_CAPABILITIES | {"performance_transfer"} and (constraints["provider"] in {"kling", "runway", "luma", "seedream", "fish_audio", "alibaba_modelstudio"} or (
+            if capability not in _FINISHING_CAPABILITIES | {"performance_transfer"} and (route.provider in {"kling", "runway", "luma", "seedream", "fish_audio", "alibaba_modelstudio"} or (
                 constraints["provider"] == "fal" and re.search(r"vidu|vace", prompt, re.I)
             ) or constraints["named_model"] == "wan3" and capability in {"v2v_edit", "extend"}):
                 skill = "named-provider"
@@ -858,6 +891,14 @@ def intent_constraints(prompt: str, *, tier: str | None = None, confidential: bo
         model = "kling-3.0-omni" if re.search("omni", prompt, re.I) else "kling-3.0-turbo"
     named_model = next((key for key, entry in POLICY["named_models"].items()
                         if re.search(entry["pattern"], provider_prompt, re.I)), None)
+    video_capabilities = {"t2v", "i2v", "reference_video"}
+    predicates["art_style_motion"] = _art_style_motion_request(prompt) and not (
+        any(video_capabilities.intersection(POLICY["explicit_routes"].get(candidate, {}))
+            for candidate in provider_candidates)
+        or video_capabilities.intersection(POLICY["named_models"].get(named_model, {}).get("aliases", {}))
+    )
+    if predicates["art_style_motion"]:
+        predicates["explicit_hyperframes"] = bool(re.search(r"\bhyperframes\b", _art_style_motion_text(prompt), re.I))
     return {"provider": provider, "model": model, "named_model": named_model, "user_id": user_id,
             "provider_candidates": provider_candidates, "excluded_providers": excluded_providers, "excluded_aliases": excluded_aliases,
             "required": required, "predicates": predicates}
@@ -907,7 +948,8 @@ def select_provider(job: str, *, tier: str | None = None, required: dict | None 
         capability = "reference_video"
     elif tool_variant == "image_edit":
         capability = "image_edit"
-    if capability in {"still_image", "image_edit"} and predicates.get("video_voiceover"):
+    if (capability in {"still_image", "image_edit"} and predicates.get("video_voiceover")
+            and not predicates.get("art_style_motion")):
         reason = "A shot or clip with voiceover excludes image tools; use video, TTS and assembly."
         return Route(status="blocked", job_type=capability, reason=reason, disclosure=reason)
     if capability in {"tts", "cloned_tts", "voice_clone", "music", "sfx", "motion_graphics", "nle_handoff", "nle_import", "ad_variant_matrix", "media_inspection"} | _FINISHING_CAPABILITIES:

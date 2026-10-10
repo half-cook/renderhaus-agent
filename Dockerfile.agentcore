@@ -10,7 +10,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     RENDERHAUS_MEDIA_DIR=/tmp/renderhaus/media \
     PIP_DISABLE_PIP_VERSION_CHECK=1
 
-COPY pyproject.toml README.md ./
+COPY pyproject.toml README.md THIRD_PARTY_NOTICES ./
 COPY agent ./agent
 COPY providers ./providers
 COPY configs ./configs
@@ -20,7 +20,7 @@ COPY server ./server
 COPY third_party ./third_party
 
 RUN pip install --no-cache-dir -e . \
-    && python -c "import importlib.metadata, json; from pathlib import Path; from agent.deep_agent.runner import SKILLS_ROOT; from providers.catalog import PROVIDERS; from providers.registry import load_committed_schemas; assert importlib.metadata.version('deepagents') == '0.7.23'; assert len(list(SKILLS_ROOT.glob('*/SKILL.md'))) == 32; assert len(PROVIDERS) == 16; assert sum(len(load_committed_schemas(p)) for p in PROVIDERS) == 127; cases = json.loads(Path('tests/fixtures/skill_routing.json').read_text()); assert len(cases) == 245; assert sum(not c['skip_reason'] for c in cases) == 240; assert sum(bool(c['skip_reason']) for c in cases) == 5"
+    && python -c "import importlib.metadata, json; from pathlib import Path; from agent.deep_agent.runner import SKILLS_ROOT; from providers.catalog import PROVIDERS; from providers.registry import load_committed_schemas; assert importlib.metadata.version('deepagents') == '0.7.23'; assert len(list(SKILLS_ROOT.glob('*/SKILL.md'))) == 33; assert len(PROVIDERS) == 16; assert sum(len(load_committed_schemas(p)) for p in PROVIDERS) == 127; cases = json.loads(Path('tests/fixtures/skill_routing.json').read_text()); assert len(cases) == 248; assert sum(not c['skip_reason'] for c in cases) == 243; assert sum(bool(c['skip_reason']) for c in cases) == 5"
 
 EXPOSE 8080
 

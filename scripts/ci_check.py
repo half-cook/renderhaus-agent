@@ -89,7 +89,7 @@ def check_routing_inventory() -> None:
     assert len(PROVIDERS) == 16
     assert sum(len(load_committed_schemas(spec)) for spec in PROVIDERS) == 127
     paths = list(SKILLS_ROOT.glob("*/SKILL.md"))
-    assert len(paths) == 32
+    assert len(paths) == 33
     assert "ladder" not in POLICY and "premium_targets" not in POLICY
     assert "project_policy" not in POLICY and "flux2_klein4b_t2i" not in TOOL_MAP
     for capability, choice in POLICY["capability_map"].items():
@@ -108,7 +108,7 @@ def check_routing_inventory() -> None:
         assert set(metadata["include_tools"].split()) <= DISPATCH_TARGETS.keys(), path
         assert all(TOOL_MAP[alias]["status"] != "retired" for alias in metadata["routing_tools"].split()), path
     cases = json.loads((ROOT / "tests/fixtures/skill_routing.json").read_text())
-    assert len(cases) == 245 and sum(not case["skip_reason"] for case in cases) == 240
+    assert len(cases) == 248 and sum(not case["skip_reason"] for case in cases) == 243
     from agent.deep_agent.continuity_qc_vlm import EVAL_PATH, default_vlm_enabled
 
     if POLICY["continuity_qc"]["vlm_eval_gate"]["result_sha256"]:
@@ -116,7 +116,7 @@ def check_routing_inventory() -> None:
 
         subprocess.run(["git", "ls-files", "--error-unmatch", str(EVAL_PATH.relative_to(ROOT))], check=True, capture_output=True)
         assert default_vlm_enabled(), "Committed VLM evidence does not qualify for promotion."
-    print("ok routing inventory (16 providers, 127 Gateway tools, 32 skills, 240 active routing rows)")
+    print("ok routing inventory (16 providers, 127 Gateway tools, 33 skills, 243 active routing rows)")
 
 
 def _assert_gateway_shape(schema: object) -> None:

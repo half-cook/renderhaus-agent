@@ -1,0 +1,37 @@
+huashu-art-motion
+=================
+Source: https://github.com/alchaincyf/huashu-art-motion
+Revision: d861767d180008d27675819932070a670a3ae43f
+Read: 2026-10-10
+Copyright (c) 2026 alchaincyf (花叔 · 花生)
+Licence: MIT; full notice in third_party/huashu-art-motion/LICENSE and each adapted file.
+
+English adaptations of the method, 35 art style recipes and nine animation grammars
+are in agent/deep_agent/skills/art-style-motion/SKILL.md and references/*.md.
+No upstream Python renderer, dependencies, character artwork, sprites, demo media,
+fonts or stroke data are included. The upstream README excludes Huashu character
+artwork, sprites, demo videos and overviews containing that artwork from MIT:
+they are demo-only, not assets authorized for Renderhaus commercial delivery.
+Fonts and stroke data have separate upstream licences and are not distributed here.
+
+MIT License
+
+Copyright (c) 2026 alchaincyf (花叔 · 花生)
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
