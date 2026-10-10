@@ -1,0 +1,20 @@
+{
+  "enableCancellation": false, "rendererFunctionName": null, "framesPerLambda": 100,
+  "concurrency": null, "composition": "RenderhausTimeline", "serveUrl": "https://site.invalid",
+  "inputProps": {"type": "payload", "payload": "<canonical props>"},
+  "codec": "h264", "imageFormat": "jpeg", "maxRetries": 1, "jpegQuality": 100,
+  "storageClass": null, "envVariables": {}, "metadata": {}, "privacy": "private",
+  "colorSpace": null, "logLevel": "info", "frameRange": null,
+  "outName": "renderhaus-outputs/fixed/renderhaus-video.mp4", "preferLossless": false,
+  "sampleRate": 48000, "timeoutInMilliseconds": 30000, "chromiumOptions": {}, "scale": 1,
+  "everyNthFrame": 1, "numberOfGifLoops": null, "concurrencyPerLambda": 1,
+  "downloadBehavior": {"type": "play-in-browser"}, "muted": false, "version": "4.0.515",
+  "overwrite": false, "audioBitrate": null, "videoBitrate": null, "webhook": null,
+  "forceHeight": null, "forceFps": null, "forceDurationInFrames": null,
+  "offthreadVideoCacheSizeInBytes": null, "mediaCacheSizeInBytes": null,
+  "offthreadVideoThreads": null, "forceWidth": null, "licenseKey": null,
+  "bucketName": null, "audioCodec": null, "x264Preset": "veryfast", "gopSize": null,
+  "deleteAfter": null, "encodingBufferSize": null, "encodingMaxRate": null,
+  "isProduction": null, "type": "start", "crf": null, "pixelFormat": null,
+  "proResProfile": null, "forcePathStyle": false
+}

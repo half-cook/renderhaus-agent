@@ -301,11 +301,13 @@ class LambdaResolutionReceiptTests(unittest.TestCase):
         self.enterContext(patch.object(api.boto3, "Session", return_value=session))
         self.enterContext(patch.object(api, "_prepare_input_props", side_effect=lambda props, **_: props))
         self.enterContext(patch.object(api, "RemotionClient", return_value=self.client))
-        self.props = {"document": {"assets": []}, "renderConfig": {
+        self.props = api.build_timeline_props('Receipt', [{'kind': 'image',
+            'url': 'https://example.test/still.png', 'duration_seconds': 2}], fps=24, aspect_ratio='16:9')
+        self.props['renderConfig'].update({
             "width": 1280, "height": 720, "fps": 24, "videoBitrate": None, "crf": 18,
             "resolution": {"width": 1280, "height": 720, "source_resolution": "1280x720",
                 "upscaled": False, "warnings": [], "url": "https://private.test/input?credential=secret"},
-        }}
+        })
 
     def test_receipt_write_failure_preserves_accepted_render_handle(self) -> None:
         self.s3.put_object.side_effect = OSError("storage unavailable")

@@ -273,12 +273,13 @@ class RealOverlayTests(unittest.TestCase):
         self.assertGreater(max(self.frame(output, .5).getextrema()[0]), 200)
         self.assertLess(max(self.frame(output, .875).getextrema()[0]), 10)
 
-    def test_local_motion_grade_rotation_remain_refused(self) -> None:
+    def test_local_motion_grade_rotation_produce_valid_media(self) -> None:
         for field, value in [('motion', 'zoom_in'), ('grade', 'warm'), ('rotation', 10)]:
-            with self.subTest(field=field), self.assertRaisesRegex(ValueError, 'Lambda'):
+            with self.subTest(field=field):
                 props = props_for(self.source)
                 props['document']['tracks'][0]['items'][0][field] = value
-                self.render(props, f'{field}.mp4')
+                output = self.render(props, f'{field}.mp4')
+                self.assertEqual(local._probe(output)['streams'][0]['codec_name'], 'h264')
 
 
 if __name__ == '__main__':

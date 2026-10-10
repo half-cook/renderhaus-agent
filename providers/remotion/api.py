@@ -28,6 +28,8 @@ from remotion_lambda import Privacy, RemotionClient, RenderMediaParams, ValidSti
 from remotion_lambda.exception import RemotionException
 
 from providers.contracts import validate_remotion_timeline_arguments
+from providers.remotion.capabilities import validate_backend, validate_document
+from providers.remotion.captions import srt_captions
 from providers.remotion.mp4_probe import UnsupportedContainer
 from providers.remotion.transcript import build_conversational_edit
 
@@ -140,6 +142,7 @@ def render_backend() -> str:
 
 
 def _start_render(input_props: dict[str, Any], *, output_filename: str) -> dict[str, Any]:
+    validate_document(input_props, render_backend())
     if render_backend() == "local":
         from providers.remotion.local import start_render
 
@@ -380,8 +383,10 @@ def build_timeline_props(
     subtitles: list[dict[str, Any]] | None = None,
     video_bitrate: int | None = None,
     output_resolution: OutputResolution = "source",
+    subtitles_srt: str | None = None,
     *, measure_remote: bool = False, measure_local: bool = True,
 ) -> dict[str, Any]:
+    subtitles = srt_captions(subtitles_srt, subtitles)
     validate_remotion_timeline_arguments({
         "visuals": visuals, "audio_tracks": audio_tracks,
         "text_overlays": text_overlays, "subtitles": subtitles,
@@ -644,6 +649,7 @@ def _start_lambda_render(
     *,
     output_filename: str,
 ) -> dict[str, Any]:
+    validate_document(input_props, 'lambda')
     _refuse_lambda_reframe([item for track in input_props.get("document", {}).get("tracks", [])
                            for item in track.get("items", [])])
     new_fields = {"box", "fontFamily", "textFit", "minFontSize", "maxFontSize"}
@@ -717,11 +723,14 @@ def render_timeline(
     subtitles: list[dict[str, Any]] | None = None,
     video_bitrate: int | None = None,
     output_resolution: OutputResolution = "source",
+    subtitles_srt: str | None = None,
 ) -> dict[str, Any]:
     """Compose generated image, video, and audio clips into one final MP4, then poll get_render_progress."""
     choose_canvas(str(aspect_ratio), [], output_resolution)
-    if render_backend() == "lambda":
-        _refuse_lambda_reframe(visuals)
+    subtitles = srt_captions(subtitles_srt, subtitles)
+    validate_backend({'visuals': visuals, 'audio_tracks': audio_tracks,
+                      'text_overlays': text_overlays, 'subtitles': subtitles,
+                      'fps': fps, 'video_bitrate': video_bitrate}, render_backend())
     if dry_run():
         return {
             "status": "dry_run",
@@ -732,12 +741,6 @@ def render_timeline(
             "progress": 0.0,
             "note": "Dry run is enabled; set REMOTION_DRY_RUN=false to start the configured render backend.",
         }
-    fitted_fields = {"box", "font_family", "min_font_size", "max_font_size"}
-    needs_v2 = (any("box" in clip for clip in visuals)
-                or any(fitted_fields.intersection(item) for item in [*(text_overlays or []), *(subtitles or [])]))
-    if needs_v2 and render_backend() == "lambda" and os.getenv("REMOTION_OVERLAY_CONTRACT_VERSION", "1") != "2":
-        raise ValueError("Lambda requires overlay contract version 2 with matching worker fonts and font assets; "
-                         "use REMOTION_RENDER_BACKEND=local until that composition is deployed.")
     props = build_timeline_props(
         title,
         visuals,
@@ -941,13 +944,14 @@ def render_timeline_and_wait(
     poll_interval_seconds: float | None = None,
 ) -> dict[str, Any]:
     """Start a render and poll until it finishes. Local/smoke helper, not a Gateway tool."""
+    validate_document(input_props, render_backend())
     if dry_run():
         return {
             "status": "dry_run",
             "render_id": "dry-run",
             "filename": _safe_output_name(output_filename),
             "progress": 1.0,
-            "note": "Dry run is enabled; set REMOTION_DRY_RUN=false to render on Remotion Lambda.",
+            "note": "Dry run is enabled; set REMOTION_DRY_RUN=false to render on the configured backend.",
         }
     started = _start_render(input_props, output_filename=output_filename)
     timeout = timeout_seconds or float(os.getenv("REMOTION_RENDER_TIMEOUT_SECONDS", "1200"))

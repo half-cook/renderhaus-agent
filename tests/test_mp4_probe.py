@@ -389,24 +389,23 @@ class MP4ProbeTests(unittest.TestCase):
         self.assertEqual(result["streams"][0]["avg_frame_rate"], "30/1")
         self.assertEqual(result["streams"][0]["bit_rate"], 24000)
 
-    def test_ffprobe_preferred_without_changing_subprocess_arguments(self) -> None:
+    def test_ffprobe_preferred_with_bounded_execution(self) -> None:
         expected = {
             "streams": [{"codec_type": "video", "avg_frame_rate": "24/1", "width": 1280, "height": 720}],
             "format": {"duration": "2.0"},
         }
         with (
             patch.object(local.shutil, "which", return_value="/usr/bin/ffprobe"),
-            patch.object(
-                local.subprocess,
-                "run",
-                return_value=Mock(returncode=0, stdout=json.dumps(expected).encode()),
+            patch(
+                'providers.ffmpeg.api._bounded_run',
+                return_value=Mock(returncode=0, stdout=json.dumps(expected).encode(), stdout_truncated=False),
             ) as run,
             patch.object(local.mp4_probe, "probe", side_effect=AssertionError("fallback used")),
         ):
             self.assertEqual(local._probe(self.path), expected)
         run.assert_called_once_with(
             [
-                "ffprobe",
+                "/usr/bin/ffprobe",
                 "-v",
                 "error",
                 "-protocol_whitelist",
@@ -419,8 +418,8 @@ class MP4ProbeTests(unittest.TestCase):
                 "json",
                 str(self.path),
             ],
-            capture_output=True,
-            timeout=30,
+            self.path.parent,
+            30,
         )
 
     def test_fallback_reuses_media_size_limit(self) -> None:
