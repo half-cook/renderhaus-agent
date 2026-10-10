@@ -30,7 +30,7 @@ def demo_template() -> dict[str, Any]:
         "nodes": [
             {"id": "demo-brief", "type": "text", "position": {"x": 80, "y": 120},
              "data": {"kind": "text", "title": "Brief", "status": "idle", "inputs": [],
-                      "config": {"text": "A matte-black stainless travel mug on a pale stone counter, soft morning window light."}}},
+                      "config": {"prompt": "A matte-black stainless travel mug on a pale stone counter, soft morning window light."}}},
             {"id": "demo-still", "type": "image", "position": {"x": 460, "y": 80},
              "data": {"kind": "image", "title": "Product still", "status": "idle", "inputs": [],
                       "config": {"prompt": "Product photo of a matte-black travel mug on a pale stone counter.",

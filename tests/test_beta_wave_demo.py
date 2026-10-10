@@ -95,11 +95,11 @@ class DemoProjectTests(unittest.TestCase):
         self.assertEqual(doc["projectName"], "Matte travel mug")
         self.assertEqual(len(doc["nodes"]), len(demo_template()["nodes"]))
         # editing one copy never touches the other or the shared template
-        doc["nodes"][0]["data"]["config"]["text"] = "mine"
+        doc["nodes"][0]["data"]["config"]["prompt"] = "mine"
         self.repo.save_canvas("ws-a", first["project_id"], "user-a", doc)
         theirs = self.repo.get_canvas("ws-b", other["project_id"])["document"]
-        self.assertNotEqual(theirs["nodes"][0]["data"]["config"]["text"], "mine")
-        self.assertNotEqual(demo_template()["nodes"][0]["data"]["config"]["text"], "mine")
+        self.assertNotEqual(theirs["nodes"][0]["data"]["config"]["prompt"], "mine")
+        self.assertNotEqual(demo_template()["nodes"][0]["data"]["config"]["prompt"], "mine")
         # no node references a provider or carries a paid tool
         text = json.dumps(demo_template()).lower()
         for banned in ("seedance", "kling", "runway", "providerid", "toolid"):
@@ -114,6 +114,7 @@ class DemoProjectTests(unittest.TestCase):
 
     def test_demo_has_three_approved_static_shots_with_editable_trims(self):
         from server.demo_project import demo_template
+        self.assertTrue(demo_template()["nodes"][0]["data"]["config"]["prompt"])
         shots = [node for node in demo_template()["nodes"] if node["data"]["kind"] == "video"]
         self.assertEqual(len(shots), 3)
         for index, shot in enumerate(shots):

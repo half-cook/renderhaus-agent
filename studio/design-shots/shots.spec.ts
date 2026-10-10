@@ -30,6 +30,6 @@ for (const screen of SCREENS.filter((entry) => !process.env.SHOT_ONLY || new Reg
     });
     const evidence = path.join(OUT, "observations", LABEL, screen.theme ?? THEME);
     mkdirSync(evidence, { recursive: true });
-    writeFileSync(path.join(evidence, `${screen.id}.json`), JSON.stringify({ screen: screen.id, url: screen.url, theme: THEME, viewport: info.project.use.viewport, pageErrors: errors, computedStyles, evidence: "Mock design capture, not Comet E2E" }, null, 2));
+    writeFileSync(path.join(evidence, `${screen.id}.json`), JSON.stringify({ screen: screen.id, url: screen.url, theme: screen.theme ?? THEME, viewport: info.project.use.viewport, pageErrors: errors, computedStyles, evidence: "Mock design capture, not Comet E2E" }, null, 2));
   });
 }

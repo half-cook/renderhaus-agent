@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Check, Download, FileJson, X } from "lucide-react";
 import { Dialog as DialogPrimitive } from "radix-ui";
-import { Dialog, DialogClose, DialogDescription, DialogOverlay, DialogPortal, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogClose, DialogOverlay, DialogPortal, DialogTrigger } from "@/components/ui/dialog";
 import { studioFetch } from "@/lib/authenticated-fetch";
 import { useCanvasStore } from "@/lib/canvas/store";
 import { exportModel, type ExportModel } from "@/lib/rh/export";
@@ -50,7 +50,7 @@ export function ExportSheet() {
   return <Dialog open={open} onOpenChange={setOpen}>
     <DialogTrigger asChild><button className="text-btn" type="button">Export</button></DialogTrigger>
     <DialogPortal><DialogOverlay className="rh-export-overlay" /><DialogPrimitive.Content className="rh-export-sheet" data-shot={done ? "export-done-ready" : model ? "export-ready" : undefined} onOpenAutoFocus={(event) => { event.preventDefault(); titleRef.current?.focus(); }}>
-      <header><p className="rh-eyebrow">{safeCopy(projectName, "Project")}</p><DialogTitle asChild><h2 className="rh-h1" tabIndex={-1} ref={titleRef}>{done ? "Your file is ready." : "Export your project."}</h2></DialogTitle><DialogDescription>{done ? "Download the file below." : "Review the format and delivery details before exporting."}</DialogDescription><DialogClose asChild><button type="button" className="rh-btn rh-btn-quiet rh-export-close" aria-label="Close export"><X size={18} /></button></DialogClose></header>
+      <header><p className="rh-eyebrow">{safeCopy(projectName, "Project")}</p><DialogPrimitive.Title asChild><h2 className="rh-h1" tabIndex={-1} ref={titleRef}>{done ? "Your file is ready." : "Export your project."}</h2></DialogPrimitive.Title><DialogPrimitive.Description data-slot="dialog-description">{done ? "Download the file below." : "Review the format and delivery details before exporting."}</DialogPrimitive.Description><DialogClose asChild><button type="button" className="rh-btn rh-btn-quiet rh-export-close" aria-label="Close export"><X size={18} /></button></DialogClose></header>
       <div className="rh-export-body">
         {!model ? <p role="status" className="rh-fg3">Loading export details…</p> : <>
           {done ? <div className="rh-export-done"><Check size={24} aria-hidden="true" /><h3 className="rh-h3">{projectFile ? "Editable project JSON" : "Export complete"}</h3><p className="rh-fg2">{projectFile ? "Contains your canvas, connections and timeline trims." : "The server’s completed file is ready to download."}</p></div> : null}

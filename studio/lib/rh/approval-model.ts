@@ -68,9 +68,12 @@ export function visibleParameters(args: Record<string, unknown>): Array<[string,
   const hidden = /^(model|provider|endpoint|tool|tool_name|name|.*_id|.*_url|.*_b64)$/i;
   return Object.entries(args).flatMap(([key, value]): Array<[string, string]> => {
     if (hidden.test(key) || value == null || typeof value === "object") return [];
+    if (!safeCopy(key, "")) return [];
+    const label = safeCopy(key.replaceAll("_", " "), "");
+    if (!label) return [];
     const text = String(value);
     const clean = safeCopy(text, "");
-    return clean ? [[key.replaceAll("_", " "), clean.length > 400 ? `${clean.slice(0, 400)}…` : clean]] : [];
+    return clean ? [[label, clean.length > 400 ? `${clean.slice(0, 400)}…` : clean]] : [];
   });
 }
 

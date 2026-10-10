@@ -12,6 +12,7 @@ if (!["before", "after", "a11y", "verify"].includes(mode)) throw new Error(`Unkn
 const port = Number(process.env.SHOT_PORT || 5191);
 if (!Number.isInteger(port) || port < 1024 || port > 65535 || [5174, 8000].includes(port)) throw new Error("Choose an unreserved SHOT_PORT between 1024 and 65535");
 const baseURL = `http://localhost:${port}`;
+const distDir = process.env.RH_SHOT_BUILD_DIR || ".next-design-shots";
 const env = {
   ...process.env,
   NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: "",
@@ -21,6 +22,7 @@ const env = {
   SHOT_BASE_URL: baseURL,
   SHOT_LABEL: ["a11y", "verify"].includes(mode) ? process.env.SHOT_LABEL || "after" : mode,
   A11Y: mode === "a11y" ? "1" : "",
+  RH_SHOT_BUILD_DIR: distDir,
 };
 
 async function command(script, args, cwd, owner) {
@@ -39,7 +41,7 @@ async function command(script, args, cwd, owner) {
 }
 
 const next = path.join(studio, "node_modules/next/dist/bin/next");
-if (process.env.SHOT_SKIP_BUILD !== "1" || !existsSync(path.join(studio, ".next/BUILD_ID"))) {
+if (process.env.SHOT_SKIP_BUILD !== "1" || !existsSync(path.join(studio, distDir, "BUILD_ID"))) {
   await command(next, ["build"], studio);
 }
 await new Promise((resolve, reject) => {

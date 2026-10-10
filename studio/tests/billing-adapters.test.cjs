@@ -98,3 +98,6 @@ test('twelve pending approvals preserve order and the server totals for every st
 test('receipt missing account or cap data stays unavailable instead of showing zero credit', () => {
   for (const field of ['cap_cents', 'balance_before_cents', 'balance_after_cents']) assert.equal(billing.toRunReceiptModel({ ...receipt, [field]: undefined }), null);
 });
+test('parameter keys cannot reveal fees, vendor names or machine tool names', () => {
+  assert.deepEqual(approval.visibleParameters({ platform_fee: 30, seedream_version: 2, custom___special_tool: true, negative_prompt: 'No text', steps: 12 }), [['negative prompt', 'No text'], ['steps', '12']]);
+});

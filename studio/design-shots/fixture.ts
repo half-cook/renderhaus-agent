@@ -44,6 +44,7 @@ export async function wire(page: Page, screen?: Screen) {
     }
     if (route.request().method() !== "GET" && !/^\/api\/studio\/assets\/(demo-artifact-v1|fx-[a-z0-9-]+)\/playback$/.test(pathname)) return route.abort("blockedbyclient");
     if (Object.hasOwn(overrides, pathname)) return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(overrides[pathname]) });
+    if (pathname === "/api/config") return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ clerk_enabled: false }) });
     const fx = /^\/api\/studio\/assets\/fx-([a-z0-9-]+)\/playback$/.exec(pathname);
     if (fx) return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ url: `/beta/${fx[1] === "still-mug" ? "still-mug" : fx[1]}.jpg` }) });
     if (pathname === "/api/studio/account") return route.fulfill({ status: 200, contentType: "application/json", body: ACCOUNT });

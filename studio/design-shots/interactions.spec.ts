@@ -36,6 +36,20 @@ test("timeline keyboard trims, reorders and removes", async ({ page }) => {
   await privacyGuard(page);
 });
 
+test("the timeline dock keeps canvas controls and panels above its boundary", async ({ page }) => {
+  const fixture = screen("m06-canvas-timeline");
+  await wire(page, fixture); await page.goto(fixture.url);
+  await expect(page.locator(".rh-tl-dock")).toBeVisible();
+  await fixture.prepare?.(page);
+  const boundary = (await page.locator(".rh-tl-dock").boundingBox())!.y;
+  for (const selector of [".tool-rail", ".scene-rail", ".inspector", ".rh-minimap", ".rh-canvas-controls"]) {
+    const bounds = await page.locator(selector).boundingBox();
+    expect(bounds, selector).not.toBeNull();
+    expect(bounds!.y + bounds!.height, selector).toBeLessThanOrEqual(boundary);
+  }
+  await privacyGuard(page);
+});
+
 test("export traps focus, escapes and downloads the actual editable JSON", async ({ page }) => {
   const fixture = screen("m18-export");
   await wire(page, fixture); await page.goto(fixture.url);
@@ -81,5 +95,18 @@ test("verified signup opens the server-created demo project", async ({ page }) =
   await expect(page).toHaveURL(/\/project\/demo-matte-mug\?welcome=1/);
   await expect(page.locator(".rh-welcome")).toBeVisible();
   await expect(page.locator(".rh-shot-card")).toHaveCount(3);
+  await privacyGuard(page);
+});
+
+
+test("the existing example film opens and plays its actual local media", async ({ page }) => {
+  const fixture = screen("m01-landing");
+  await wire(page, fixture); await page.goto(fixture.url);
+  await page.getByRole("button", { name: "Play the example film" }).click();
+  const film = page.locator(".rh-hero-video");
+  await expect.poll(() => film.evaluate((video: HTMLVideoElement) => !video.paused && video.currentTime > 0)).toBe(true);
+  const dimensions = await film.evaluate((video: HTMLVideoElement) => ({ width: video.videoWidth, height: video.videoHeight, error: video.error?.message ?? null }));
+  expect(dimensions).toEqual({ width: 1706, height: 960, error: null });
+  await film.evaluate((video: HTMLVideoElement) => video.pause());
   await privacyGuard(page);
 });
