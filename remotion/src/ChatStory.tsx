@@ -11,6 +11,7 @@ type Bubble = {
 type Plan = {
   fps: number; width: number; height: number; durationInFrames: number;
   safeTop: number; safeBottom: number; fontSize: number; lineHeight: number; padding: number;
+  contactFontSize?: number;
   bubbles: Bubble[]; scrollEvents: {frame: number; endFrame?: number; offset: number}[];
 };
 export type ChatStory = {
@@ -27,9 +28,10 @@ const palettes = {
   moss: {background: '#eef3ef', chrome: '#ffffff', sent: '#477965', received: '#dce6df', text: '#242332', muted: '#64756c', avatar: '#d7e5dc'},
 };
 const receipts = {sent: 'Sent', delivered: 'Delivered', read: 'Read'};
+const graphemeSegmenter = new Intl.Segmenter(undefined, {granularity: 'grapheme'});
 const fontPromises = new Map<string, Promise<FontFace>>();
 const fontFiles = {'renderhaus-chat-text': 'DejaVuSans.ttf', 'renderhaus-chat-emoji': 'NotoColorEmoji.ttf'};
-const emojiPattern = /[\u{1F000}-\u{1FAFF}\u2600-\u27FF\u203C\u2049\u231A\u231B\u23F0\u23F3\u2B50\u2B55]/u;
+const emojiPattern = /[\u{1F000}-\u{1FAFF}\u2600-\u27FF\u203C\u2049\u20E3\u231A\u231B\u23F0\u23F3\u2B50\u2B55]/u;
 
 export function assertChatStory(story: ChatStory): void {
   const {payload, plan} = story;
@@ -48,6 +50,9 @@ export function assertChatStory(story: ChatStory): void {
       plan.safeTop < 0 || plan.safeBottom < 0 || plan.safeTop + plan.safeBottom >= plan.height) {
     throw new Error('Chat-story props exceed the supported duration or safe viewport.');
   }
+  if (plan.contactFontSize !== undefined && (!Number.isFinite(plan.contactFontSize) || plan.contactFontSize <= 0)) {
+    throw new Error('Chat-story contact font must use the bounded size in its validated plan.');
+  }
   plan.bubbles.forEach((bubble, index) => {
     const message = payload.messages[index];
     if (!message || !['me', 'them'].includes(message.from) || typeof message.text !== 'string' ||
@@ -61,7 +66,8 @@ export function assertChatStory(story: ChatStory): void {
 }
 
 function useChatFonts(story: ChatStory): void {
-  const requiresEmoji = story.payload.messages.some((message) => emojiPattern.test(message.text + message.reaction));
+  const requiresEmoji = emojiPattern.test(story.payload.contact.name) ||
+    story.payload.messages.some((message) => emojiPattern.test(message.text + message.reaction));
   const [handle] = useState(() => delayRender('Loading required chat-story fonts'));
   useEffect(() => {
     let active = true;
@@ -116,8 +122,11 @@ export function ChatStoryLayer({story}: {story: ChatStory}) {
   const floor = plan.height - plan.safeBottom;
   const scroll = scrollOffset(plan, frame);
   const headerEnd = Math.min(plan.safeTop - 12 * scale, 226 * scale);
+  const tagY = headerEnd >= 200 * scale ? headerEnd - 25 * scale : 110 * scale;
   const initials = payload.contact.avatar === 'initials'
-    ? payload.contact.name.split(/\s+/u).filter(Boolean).slice(0, 2).map((word) => Array.from(word)[0]).join('').toUpperCase() : '•';
+    ? payload.contact.name.split(/\s+/u).filter(Boolean).slice(0, 2)
+      .map((word) => graphemeSegmenter.segment(word)[Symbol.iterator]().next().value?.segment ?? '')
+      .join('').toUpperCase() : '•';
   const fontFamily = 'renderhaus-chat-text, renderhaus-chat-emoji';
   return <AbsoluteFill style={{backgroundColor: palette.background, fontFamily, color: palette.text}}>
     <div style={{position: 'absolute', inset: 0, height: headerEnd, backgroundColor: palette.chrome,
@@ -128,8 +137,9 @@ export function ChatStoryLayer({story}: {story: ChatStory}) {
       <div style={{position: 'absolute', left: plan.width / 2 - 34 * scale, top: 76 * scale,
         width: 68 * scale, height: 68 * scale, borderRadius: '50%', backgroundColor: palette.avatar,
         display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 27 * scale}}>{initials}</div>
-      <div style={{position: 'absolute', top: 164 * scale, width: '100%', textAlign: 'center', fontSize: 34 * scale}}>{payload.contact.name}</div>
-      {payload.dramatization ? <span style={{position: 'absolute', left: 48 * scale, top: headerEnd - 25 * scale,
+      <div style={{position: 'absolute', top: 164 * scale, left: 48 * scale, width: plan.width - 96 * scale,
+        textAlign: 'center', fontSize: plan.contactFontSize ?? 34 * scale, whiteSpace: 'nowrap'}}>{payload.contact.name}</div>
+      {payload.dramatization ? <span style={{position: 'absolute', left: 48 * scale, top: tagY,
         fontSize: 21 * scale, color: palette.muted}}>Dramatization</span> : null}
     </div>
     <div style={{position: 'absolute', left: 0, top: plan.safeTop, width: plan.width,
@@ -171,7 +181,7 @@ export function ChatStoryLayer({story}: {story: ChatStory}) {
             <div style={{position: 'absolute', left: bubble.x, top: y + bubble.height + 10 * scale, width: bubble.width,
               textAlign: 'right', fontSize: 23 * scale, color: palette.muted}}>{receipts[message.status]}</div> : null}
           {bubble.reactionFrame !== null && frame >= bubble.reactionFrame && message.reaction ?
-            <div style={{position: 'absolute', left: sent ? bubble.x + bubble.width - 75 * scale : bubble.x + 8 * scale,
+            <div style={{position: 'absolute', left: bubble.x + 8 * scale,
               top: y + bubble.height - 4 * scale, width: 70 * scale, height: 52 * scale,
               borderRadius: 24 * scale, border: `${Math.max(1, scale)}px solid ${palette.received}`,
               backgroundColor: palette.chrome, display: 'flex', alignItems: 'center', justifyContent: 'center',

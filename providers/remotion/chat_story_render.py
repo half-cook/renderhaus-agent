@@ -17,6 +17,7 @@ import wave
 from PIL import Image, ImageDraw, ImageFont
 
 from providers.ffmpeg.api import _bounded_run
+from providers.remotion.chat_story import graphemes
 
 
 EMOJI_FONT = Path('/usr/share/fonts/truetype/noto/NotoColorEmoji.ttf')
@@ -65,25 +66,12 @@ def _is_emoji(character: str) -> bool:
 
 def _runs(text: str) -> list[tuple[str, bool]]:
     runs: list[tuple[str, bool]] = []
-    index = 0
-    while index < len(text):
-        emoji = _is_emoji(text[index])
-        end = index + 1
-        if emoji:
-            if 0x1F1E6 <= ord(text[index]) <= 0x1F1FF and end < len(text) and 0x1F1E6 <= ord(text[end]) <= 0x1F1FF:
-                end += 1
-            while end < len(text):
-                if text[end] in {'\ufe0e', '\ufe0f'} or 0x1F3FB <= ord(text[end]) <= 0x1F3FF:
-                    end += 1
-                elif text[end] == '\u200d' and end + 1 < len(text):
-                    end += 2
-                else:
-                    break
+    for cluster in graphemes(text):
+        emoji = _is_emoji(cluster[0]) or (cluster[0] in '#*0123456789' and '\u20e3' in cluster)
+        if not emoji and runs and not runs[-1][1]:
+            runs[-1] = (runs[-1][0] + cluster, False)
         else:
-            while end < len(text) and not _is_emoji(text[end]):
-                end += 1
-        runs.append((text[index:end], emoji))
-        index = end
+            runs.append((cluster, emoji))
     return runs
 
 
@@ -100,6 +88,10 @@ def _text(image: Image.Image, text: str, xy: tuple[float, float], *, size: int,
     draw = ImageDraw.Draw(image)
     font = _font(size)
     runs = _runs(text)
+    directions = {unicodedata.bidirectional(character) for character in text}
+    if any(emoji for _, emoji in runs) and directions.intersection({'R', 'AL'}) and directions.intersection({'L', 'EN', 'AN'}):
+        raise ValueError('Local chat-story rendering does not support mixed text direction with emoji. '
+                         'Supply separately approved lines; the original text will not be reordered or rewritten.')
     rtl = _rtl(text)
     if rtl:
         runs.reverse()
@@ -151,13 +143,17 @@ def _chrome(image: Image.Image, story: dict[str, Any], palette: Palette) -> None
     radius, cx, cy = 34 * scale, width / 2, 110 * scale
     draw.ellipse((cx - radius, cy - radius, cx + radius, cy + radius), fill=palette.avatar)
     name = payload['contact']['name']
-    initials = ''.join(word[0] for word in name.split()[:2]).upper() if payload['contact']['avatar'] == 'initials' else '•'
+    initials = ''.join(graphemes(word)[0] for word in name.split()[:2]).upper() if payload['contact']['avatar'] == 'initials' else '•'
     _text(image, initials, (cx - 19 * scale, cy - 14 * scale), size=max(1, round(27 * scale)), fill=palette.text)
-    name_font = max(1, round(34 * scale))
-    name_width = ImageDraw.Draw(image).textlength(name, font=_font(name_font))
+    name_font = max(1, round(plan.get('contactFontSize', 34 * scale)))
+    name_width = sum(name_font * 1.25 if emoji else draw.textlength(run, font=_font(name_font))
+                     for run, emoji in _runs(name))
+    if name_width > width - 96 * scale:
+        raise ValueError('Chat-story contact name exceeds the bounded header. Supply a shorter fictional name.')
     _text(image, name, ((width - name_width) / 2, 164 * scale), size=name_font, fill=palette.text)
     if payload.get('dramatization'):
-        _text(image, 'Dramatization', (48 * scale, header_end - 25 * scale),
+        tag_y = header_end - 25 * scale if header_end >= 200 * scale else 110 * scale
+        _text(image, 'Dramatization', (48 * scale, tag_y),
               size=max(1, round(21 * scale)), fill=palette.muted)
     draw.line((0, header_end, width, header_end), fill=palette.received, width=max(1, round(scale)))
     draw.rounded_rectangle((width * .38, height - 38 * scale, width * .62, height - 30 * scale),
@@ -233,7 +229,7 @@ def draw_chat_frame(story: dict[str, Any], frame: int) -> Image.Image:
             _text(viewport, label, (x + bw - label_width, y + bh + 10 * scale), size=label_size, fill=palette.muted)
         reaction = bubble['reactionFrame']
         if reaction is not None and frame >= reaction and message['reaction']:
-            reaction_x = x + bw - 75 * scale if sent else x + 8 * scale
+            reaction_x = x + 8 * scale
             reaction_y = y + bh - 4 * scale
             draw = ImageDraw.Draw(viewport)
             draw.rounded_rectangle((reaction_x, reaction_y, reaction_x + 70 * scale, reaction_y + 52 * scale),

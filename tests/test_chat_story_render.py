@@ -94,14 +94,96 @@ class ChatStoryFrameTests(unittest.TestCase):
     def test_verbatim_unicode_and_markup_remain_literal_text(self):
         renderer = self.renderer()
         story = sample_story()
-        story["payload"]["messages"][0]["text"] = "<b>שלום 😀</b>"
-        story["plan"]["bubbles"][0]["lines"] = ["<b>שלום 😀</b>"]
+        story["payload"]["messages"][0]["text"] = "<b>Hello 😀</b>"
+        story["plan"]["bubbles"][0]["lines"] = ["<b>Hello 😀</b>"]
         original = copy.deepcopy(story)
         image = renderer.draw_chat_frame(story, 30)
         self.assertEqual(image.size, (320, 568))
         self.assertEqual(story, original)
         self.assertNotEqual(image.crop((130, 100, 300, 145)).tobytes(),
                             renderer.draw_chat_frame(sample_story(), 30).crop((130, 100, 300, 145)).tobytes())
+
+    def test_sent_reaction_leaves_the_read_receipt_visible(self):
+        renderer = self.renderer()
+        story = sample_story()
+        story["payload"]["messages"][0]["reaction"] = "👍"
+        story["plan"]["bubbles"][0]["reactionFrame"] = 30
+        before = renderer.draw_chat_frame(story, 29)
+        after = renderer.draw_chat_frame(story, 35)
+        self.assertEqual(before.crop((278, 142, 302, 158)).tobytes(),
+                         after.crop((278, 142, 302, 158)).tobytes(),
+                         "A reaction must not replace pixels in the receipt.")
+        self.assertNotEqual(before.crop((130, 140, 160, 160)).tobytes(),
+                            after.crop((130, 140, 160, 160)).tobytes())
+
+    def test_keycaps_and_tagged_flags_use_complete_color_glyphs(self):
+        from PIL import Image
+        renderer = self.renderer()
+        england = "🏴\U000e0067\U000e0062\U000e0065\U000e006e\U000e0067\U000e007f"
+        for text in ("1️⃣", england):
+            with self.subTest(text=text):
+                self.assertEqual(renderer._runs(text), [(text, True)])
+                image = Image.new("RGBA", (100, 70))
+                renderer._text(image, text, (4, 4), size=38, fill="#ffffff")
+                colors = {pixel[:3] for pixel in image.get_flattened_data() if pixel[3] > 150}
+                self.assertTrue(any(max(color) - min(color) > 30 for color in colors),
+                                "The full emoji must produce a visible color glyph.")
+        with patch.object(renderer, "EMOJI_FONT", Path("/missing/NotoColorEmoji.ttf")):
+            with self.assertRaisesRegex(ValueError, "emoji font"):
+                renderer._text(Image.new("RGBA", (100, 70)), "1️⃣", (4, 4), size=38, fill="#ffffff")
+
+    def test_mixed_direction_with_emoji_refuses_instead_of_reordering_words(self):
+        renderer = self.renderer()
+        story = sample_story()
+        for text in ("שלום A😊B", "Aשלום😊B", "שלום 1😊2"):
+            with self.subTest(text=text):
+                story["payload"]["messages"][0]["text"] = text
+                story["plan"]["bubbles"][0]["lines"] = [text]
+                with self.assertRaisesRegex(ValueError, "mixed.*direction.*emoji"):
+                    renderer.draw_chat_frame(story, 30)
+        story["payload"]["messages"][0]["text"] = "שלום 😊"
+        story["plan"]["bubbles"][0]["lines"] = ["שלום 😊"]
+        self.assertEqual(renderer.draw_chat_frame(story, 30).size, (320, 568))
+
+    def test_header_uses_the_bounded_contact_font_in_the_plan(self):
+        renderer = self.renderer()
+        story = sample_story()
+        story["payload"]["contact"]["name"] = "W" * 20
+        story["plan"]["contactFontSize"] = 8
+        observed = []
+        original = renderer._text
+
+        def draw_text(image, text, xy, **kwargs):
+            if text == story["payload"]["contact"]["name"]:
+                observed.append((xy, kwargs["size"]))
+            return original(image, text, xy, **kwargs)
+
+        with patch.object(renderer, "_text", side_effect=draw_text):
+            renderer.draw_chat_frame(story, 20)
+        self.assertEqual(observed[0][1], 8)
+        self.assertGreaterEqual(observed[0][0][0], 48 * 320 / 1080)
+
+    def test_header_refuses_a_name_that_still_exceeds_its_safe_width(self):
+        story = sample_story()
+        story["payload"]["contact"]["name"] = "W" * 40
+        with self.assertRaisesRegex(ValueError, "bounded header"):
+            self.renderer().draw_chat_frame(story, 0)
+
+    def test_square_dramatization_label_stays_clear_of_the_contact(self):
+        renderer = self.renderer()
+        story = sample_story()
+        story["plan"].update(width=1080, height=1080, safeTop=190, safeBottom=130)
+        labels = {}
+        original = renderer._text
+
+        def draw_text(image, text, xy, **kwargs):
+            if text in {"Dramatization", "Avery"}:
+                labels[text] = (xy[1], kwargs["size"])
+            return original(image, text, xy, **kwargs)
+
+        with patch.object(renderer, "_text", side_effect=draw_text):
+            renderer.draw_chat_frame(story, 0)
+        self.assertLessEqual(sum(labels["Dramatization"]), labels["Avery"][0])
 
     def test_missing_emoji_font_refuses_instead_of_silent_tofu(self):
         renderer = self.renderer()
