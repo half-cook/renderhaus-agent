@@ -30,6 +30,7 @@ from server.auth import AuthUser, clerk_enabled, current_user_id, optional_user,
 from server.config import ROOT, load_local_env
 from server.billing import router as billing_router
 from server.beta import router as beta_router
+from server.demo_project import router as demo_project_router
 from server.beta_credits import BetaSettings
 from server.studio import router as studio_router
 from server.studio_state import repository as studio_repository
@@ -482,6 +483,7 @@ app.add_middleware(
 app.include_router(studio_router)
 app.include_router(billing_router)
 app.include_router(beta_router)
+app.include_router(demo_project_router)
 
 
 @app.get("/", include_in_schema=False)

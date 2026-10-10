@@ -315,13 +315,14 @@ def check_beta_inventory() -> None:
     assert DEFAULT_ENV["BETA_VERIFICATION_DRY_RUN"] == "true"
     assert BetaSettings().enabled is False
     expected = {("/api/beta/status", "GET"), ("/api/beta/claim", "POST"),
-                ("/api/beta/waitlist", "POST"), ("/api/admin/beta/next-wave", "POST")}
+                ("/api/beta/waitlist", "POST"), ("/api/admin/beta/next-wave", "POST"),
+                ("/api/beta/wave", "GET"), ("/api/beta/hold", "POST"), ("/api/studio/demo-project", "POST")}
     expected.update((f"/api/beta/verify/{kind}/{action}", "POST")
                     for kind in ("email", "phone") for action in ("start", "confirm"))
     actual = {(path, method.upper()) for path, operations in app.openapi()["paths"].items()
               for method in operations}
     assert expected <= actual, f"missing beta routes: {expected - actual}"
-    print("ok beta route inventory and closed defaults (8 routes)")
+    print("ok beta route inventory and closed defaults (11 routes)")
 
 
 def check_lambda_zip() -> None:
