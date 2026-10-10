@@ -297,7 +297,7 @@ Local feature commits:
 - `72e7c49` — Integrate numbered Changes review and checkpoint restore.
 
 The final validation/report commit contains this section, the capture inventory,
-strict copy rules and browser checks. Nothing was pushed during this task.
+strict copy rules and browser checks. The branch was pushed to GitHub after each task; nothing was merged to staging.
 
 Evidence locations:
 
