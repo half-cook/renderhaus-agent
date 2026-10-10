@@ -510,8 +510,10 @@ and verifies the built GPT Image default without an expected failure.
 
 Local final assembly uses the same `Remotion___render_timeline` and
 `Remotion___get_render_progress` tools with `REMOTION_RENDER_BACKEND=local`. Provider-returned
-plain `output_path` fields can supply visuals and audio without S3. Trims, fit, fades, and
-audio timing/volume/fades are supported; captions and motion effects require Lambda. See
+owned asset handles or paths inside the current job can supply visuals and audio without S3.
+Trims, fit, fades, and
+audio timing/volume/fades, titles/captions, fixed motion/grade presets and centre rotation
+are supported. Unsupported requests refuse before media I/O; they never switch backends. See
 [local assembly and gateway setup](LOCAL_ASSEMBLY.md). The default backend remains Lambda.
 The final-assembly skill defaults `output_resolution` to `source` and reports the measured
 delivered dimensions. Explicit enlargement includes the source resolution and a warning

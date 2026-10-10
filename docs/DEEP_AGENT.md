@@ -610,6 +610,14 @@ composition. This task makes no deployment or Lambda call. Matrix jobs refuse th
 backend until the same job directory exists on its worker. See
 [Remotion editing](REMOTION_EDITING.md) for the supported backend table and demo commands.
 
+Ordinary Remotion renders now execute on the configured backend: local worker dispatch
+resolves owned asset handles without publishing and confines raw paths to the current job;
+Lambda uses the Gateway. Shared preflight refuses unsupported features before media I/O
+or AWS submission, including dry-run. Polls use their saved render IDs. Fixed motion/grade
+presets, centre rotation and literal SRT captions share the timeline contract. CI checks
+structured skill backend/feature claims against the executable capability table. Lambda
+parity is payload-level only; deployed rendering and Comet validation remain unverified.
+
 Inventory is 16 providers, 128 Gateway tools and 34 skills. The fixture has 246 active and
 5 deferred cases among 251 rows. Browser validation through Comet remains blocked here.
 
