@@ -38,6 +38,20 @@ class MessageContractTests(unittest.TestCase):
             with self.subTest(messages=str(messages)[:50]), self.assertRaises(ValueError):
                 chat.normalize({'messages': messages})
 
+    def test_batch_csv_has_one_payload_per_script_row_and_keeps_invalid_rows(self):
+        buffer = io.StringIO()
+        writer = csv.writer(buffer)
+        writer.writerow(['variant_key', 'messages', 'contact', 'theme', 'aspect'])
+        writer.writerow(['a', json.dumps([{'from': 'me', 'text': 'Hello, 🙂'}]), 'Friend', 'generic', '9:16'])
+        writer.writerow(['b', 'not valid JSON', 'Friend', 'generic', '9:16'])
+        rows = chat.batch_rows(buffer.getvalue())
+        self.assertEqual(len(rows), 2)
+        self.assertEqual(chat.normalize(rows[0]['chat_story'])['messages'][0]['text'], 'Hello, 🙂')
+        with self.assertRaises(ValueError):
+            chat.normalize(rows[1]['chat_story'])
+        with self.assertRaises(ValueError):
+            chat.batch_rows('variant_key,messages,messages\na,[],[]')
+
     def test_sent_messages_cannot_have_typing_or_received_receipts(self):
         for row in ({'from': 'me', 'text': 'x', 'typingMs': 500},
                     {'from': 'them', 'text': 'x', 'status': 'read'}):
