@@ -47,7 +47,7 @@ def routing_case(case):
         from agent.deep_agent.routing import resolve_alias, route_intent
 
         with patch.dict(os.environ, case.get("env", {})):
-            route = route_intent(runner_prompt(case["prompt"]), arguments=case.get("arguments"))
+            route = route_intent(runner_prompt(case["prompt"]), arguments=case.get("arguments"), user_id=case.get("user_id"))
         skill = case.get("expected_routed_skill", case["expected_skill"])
         alias = case.get("expected_routed_alias", case["expected_tool"])
         skills = skill.split(" + ") if skill else [None]
@@ -156,8 +156,8 @@ class SkillContracts(unittest.TestCase):
         )
 
     def test_fixture_preserves_active_workbook_rows_and_explains_pending_dependencies(self):
-        self.assertEqual(len(CASES), 236)
-        self.assertEqual(sum(not c["skip_reason"] for c in CASES), 231)
+        self.assertEqual(len(CASES), 240)
+        self.assertEqual(sum(not c["skip_reason"] for c in CASES), 235)
         self.assertEqual(sum(bool(c["skip_reason"]) for c in CASES), 5)
         self.assertTrue(all(c.get("source_status") != "archived" for c in CASES))
         self.assertTrue(all("[project.confidential=true]" not in c["prompt"] for c in CASES))

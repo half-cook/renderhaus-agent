@@ -19,6 +19,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 def _force_dry_run() -> None:
+    os.environ["AWS_S3_BUCKET"] = ""
     os.environ["BETA_VERIFICATION_DRY_RUN"] = "true"
     os.environ["GEMINI_DRY_RUN"] = "true"
     os.environ["KLING_DRY_RUN"] = "true"
@@ -35,6 +36,9 @@ def _force_dry_run() -> None:
     os.environ["MODELSTUDIO_DRY_RUN"] = "true"
     os.environ["SYNC_DRY_RUN"] = "true"
     os.environ["HEYGEN_DRY_RUN"] = "true"
+    os.environ["HEYGEN_VOICE_DRY_RUN"] = "true"
+    os.environ["HEYGEN_VOICE_MODEL"] = "heygen-voice-1"
+    os.environ["HEYGEN_VOICE_AB_GATE"] = "off"
     os.environ["TOPAZ_DRY_RUN"] = "true"
     os.environ["MUREKA_DRY_RUN"] = "true"
     os.environ["FFMPEG_DRY_RUN"] = "true"
@@ -83,7 +87,7 @@ def check_routing_inventory() -> None:
     from providers.registry import load_committed_schemas
 
     assert len(PROVIDERS) == 16
-    assert sum(len(load_committed_schemas(spec)) for spec in PROVIDERS) == 117
+    assert sum(len(load_committed_schemas(spec)) for spec in PROVIDERS) == 120
     paths = list(SKILLS_ROOT.glob("*/SKILL.md"))
     assert len(paths) == 31
     assert "ladder" not in POLICY and "premium_targets" not in POLICY
@@ -104,7 +108,7 @@ def check_routing_inventory() -> None:
         assert set(metadata["include_tools"].split()) <= DISPATCH_TARGETS.keys(), path
         assert all(TOOL_MAP[alias]["status"] != "retired" for alias in metadata["routing_tools"].split()), path
     cases = json.loads((ROOT / "tests/fixtures/skill_routing.json").read_text())
-    assert len(cases) == 236 and sum(not case["skip_reason"] for case in cases) == 231
+    assert len(cases) == 240 and sum(not case["skip_reason"] for case in cases) == 235
     from agent.deep_agent.continuity_qc_vlm import EVAL_PATH, default_vlm_enabled
 
     if POLICY["continuity_qc"]["vlm_eval_gate"]["result_sha256"]:
@@ -112,7 +116,7 @@ def check_routing_inventory() -> None:
 
         subprocess.run(["git", "ls-files", "--error-unmatch", str(EVAL_PATH.relative_to(ROOT))], check=True, capture_output=True)
         assert default_vlm_enabled(), "Committed VLM evidence does not qualify for promotion."
-    print("ok routing inventory (16 providers, 117 Gateway tools, 31 skills, 231 active routing rows)")
+    print("ok routing inventory (16 providers, 120 Gateway tools, 31 skills, 235 active routing rows)")
 
 
 def _assert_gateway_shape(schema: object) -> None:
@@ -140,6 +144,7 @@ def check_dry_run_dispatch() -> None:
             continue
         mureka_jobs = {}
         heygen_job_id = None
+        heygen_voice_id = None
         topaz_job_id = None
         gemini_job_id = None
         for schema in load_committed_schemas(spec):
@@ -188,6 +193,17 @@ def check_dry_run_dispatch() -> None:
             if spec.id == "topaz" and name == "get_video_task":
                 assert topaz_job_id, "Topaz poll must reuse a submitted dry-run handle"
                 arguments["job_id"] = topaz_job_id
+            if spec.id == "heygen" and name in {"voice_clone", "voice_tts", "get_voice_status"}:
+                arguments = {"account_id": "ci-user", "workspace_id": "ci-workspace", "project_id": "ci-project"}
+                if name == "voice_clone":
+                    arguments.update(reference_audio_url="https://example.com/ci.wav", reference_duration_seconds=60.0,
+                                     reference_size_bytes=1024, reference_format="wav", name="CI voice", subjects="CI owner",
+                                     consent_confirmed=True, consent_record_id="ci-consent")
+                else:
+                    assert heygen_voice_id, "Speech and poll must reuse the scoped dry clone"
+                    arguments["voice_id"] = heygen_voice_id
+                    if name == "voice_tts":
+                        arguments.update(text="CI dry-run placeholder", language="en")
             if spec.id == "heygen" and name == "create_avatar_video":
                 arguments.update(avatar_id="lk_ci", voice_id="voice_ci", script="Offline presenter preview",
                                  duration_seconds=90.0, subjects="Authorized test presenter and voice",
@@ -271,6 +287,8 @@ def check_dry_run_dispatch() -> None:
             if spec.id == "mureka" and name.startswith("generate_"):
                 mureka_jobs[name] = result["job_id"]
             assert isinstance(result, dict), f"{spec.id}.{name} did not return a dict"
+            if spec.id == "heygen" and name == "voice_clone":
+                heygen_voice_id = result["voice_id"]
             if spec.id == "heygen" and name == "create_avatar_video":
                 heygen_job_id = result["job_id"]
             if spec.id == "topaz" and name in {"upscale_video", "interpolate_video"}:

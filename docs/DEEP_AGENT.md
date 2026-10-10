@@ -243,7 +243,7 @@ order. The short Studio summary also includes per-step costs when they fit its 3
 contract; larger runs refer to the complete breakdown. Unknown charges remain explicit,
 with a known subtotal. Model token charges are recorded separately by `ModelUsage`.
 
-The capability-map fixture contains 236 retained rows, with 231 active and 5 dependency skips.
+The capability-map fixture contains 240 retained rows, with 235 active and 5 dependency skips.
 Archived/confidential routes are dropped. Active rows cover built tools and declared interims;
 pending specialists keep named branch reasons. Editorial overrides retain the safe preparer,
 separate rendering approval, and existing export/HyperFrames narration workflow contracts.
@@ -606,8 +606,8 @@ composition. This task makes no deployment or Lambda call. Matrix jobs refuse th
 backend until the same job directory exists on its worker. See
 [Remotion editing](REMOTION_EDITING.md) for the supported backend table and demo commands.
 
-Inventory is 16 providers, 117 Gateway tools and 31 skills. The fixture has 231 active and
-5 deferred cases among 236 rows. Browser validation through Comet remains blocked here.
+Inventory is 16 providers, 120 Gateway tools and 31 skills. The fixture has 235 active and
+5 deferred cases among 240 rows. Browser validation through Comet remains blocked here.
 
 ## Per-shot static reframing
 
@@ -638,8 +638,8 @@ or incomplete checks, and prevents a previous successful render from overriding 
 failed QC, including turn-limit recovery. Failure summaries preserve worker reasons
 verbatim. Existing ordinary assembly validation remains compatible.
 
-The three guides add delivery, loudness and deliverable QC routing. The 236 retained rows
-now contain 231 active cases and 5 skips. RT-E043 awaits exact OCR verification; the other
+The three guides add delivery, loudness and deliverable QC routing. The 240 retained rows
+now contain 235 active cases and 5 skips. RT-E043 awaits exact OCR verification; the other
 four are existing provider dependencies. `project.confidential` never changes these routes.
 See [contracts and operator commands](REMOTION_EDITING.md). Offline real-binary verification
 is supporting evidence; Comet Studio E2E is blocked by unavailable browser control here.

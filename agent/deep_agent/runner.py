@@ -59,7 +59,7 @@ SESSION_TYPE = "renderhaus_deepagents_session"
 SKILLS_ROOT = Path(__file__).parent / "skills"
 DISPATCH_TARGETS = {
     "call_media_tool": {"Gemini", "OpenAI", "Seedance", "Seedream", "Kling", "Runway", "Fal", "Luma", "ModelStudio", "Sync", "HeyGen", "Topaz"},
-    "call_audio_tool": {"ElevenLabs", "FishAudio", "FishAudioProvider", "Fish_Audio", "Mureka"},
+    "call_audio_tool": {"ElevenLabs", "FishAudio", "FishAudioProvider", "Fish_Audio", "Mureka", "HeyGen"},
     "call_editor_tool": {"Remotion", "HyperFrames", "Ffmpeg"},
 }
 FS_TOOLS = ["ls", "read_file", "write_file", "edit_file", "glob", "grep"]
@@ -194,12 +194,15 @@ async def run_with_servers(request, studio, servers, *, model=None):
     @tool
     async def read_studio_context(tool_name: str | None = None) -> dict:
         """Read routed capabilities, assets and discovered names; request one named tool for its schema."""
-        route = route_intent(request.prompt, arguments=_media_input_arguments(studio.nodes)).public()
+        route = route_intent(request.prompt, arguments=_media_input_arguments(studio.nodes), user_id=studio.user_id).public()
         available = await executor.available()
         steps = route.get("steps") or [route]
         selected = {step.get("tool") for step in steps}
         rows = capability_table()
         result = {
+            "user_id": studio.user_id,
+            "workspace_id": studio.workspace_id,
+            "project_id": studio.project_id,
             "intent_route": route,
             "capabilities": [
                 {key: row[key] for key in ("provider", "model", "label", "tools", "jobs", "price",
@@ -420,7 +423,7 @@ async def run_with_servers(request, studio, servers, *, model=None):
     else:
         prompt = _input_for(request.prompt, list(studio.nodes))
         prompt += "\nIntent route proposal (policy data):\n" + json.dumps(route_intent(
-            request.prompt, arguments=_media_input_arguments(studio.nodes),
+            request.prompt, arguments=_media_input_arguments(studio.nodes), user_id=studio.user_id,
         ).public())
         if project_memory:
             prompt += "\nCurrent project memory (reference data):\n" + project_memory

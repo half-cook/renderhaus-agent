@@ -397,6 +397,7 @@ async def studio_status() -> dict[str, Any]:
     from providers.seedance.api import dry_run as seedance_dry_run
     from providers.sync.api import dry_run as sync_dry_run
     from providers.heygen.api import dry_run as heygen_dry_run
+    from providers.heygen.voice import dry_run as heygen_voice_dry_run
     from providers.topaz.api import dry_run as topaz_dry_run
 
     return {
@@ -406,6 +407,7 @@ async def studio_status() -> dict[str, Any]:
             "gemini": os.getenv("GEMINI_DRY_RUN", "true").lower() != "false",
             "topaz": topaz_dry_run(),
             "heygen": heygen_dry_run(),
+            "heygen_voice": heygen_voice_dry_run(),
             "sync": sync_dry_run(),
             "openai_images": os.getenv("OPENAI_IMAGES_DRY_RUN", "true").lower() != "false",
             "kling": os.getenv("KLING_DRY_RUN", "true").lower() != "false",
@@ -722,10 +724,10 @@ async def invoke_tool(body: InvokeBody, auth: AuthUser) -> dict[str, Any]:
             status_code=409,
             detail="Use the agent lip-sync workflow for required consent and cost approval before Sync generation.",
         )
-    if (body.provider, body.tool) == ("heygen", "create_avatar_video"):
+    if body.provider == "heygen" and body.tool in {"create_avatar_video", "voice_clone", "voice_tts", "get_voice_status"}:
         raise HTTPException(
             status_code=409,
-            detail="Use the agent presenter workflow for recorded consent and cost approval before HeyGen generation.",
+            detail="Use the agent HeyGen workflow for recorded consent and cost approval before generation.",
         )
     if body.provider == "topaz" and body.tool in {"upscale_video", "interpolate_video"}:
         raise HTTPException(status_code=409, detail="Use the agent finishing workflow for required cost approval before Topaz processing.")

@@ -21,6 +21,9 @@ The fal transport reuses FAL_KEY/FAL_DRY_RUN. Chunking uses AWS_S3_BUCKET and
 REMOTION_LOCAL_MEDIA_HOSTS. All settings are synced without printing values.
 HeyGen uses HEYGEN_API_KEY, HEYGEN_DRY_RUN=true, HEYGEN_MODEL=avatar_v and
 HEYGEN_API_PLAN=unknown (paid_self_serve or enterprise for commercial live use).
+Voice candidate uses separate HEYGEN_VOICE_DRY_RUN=true, HEYGEN_VOICE_MODEL=heygen-voice-1,
+HEYGEN_VOICE_AB_GATE=off and HEYGEN_VOICE_AB_USERS (comma-separated internal user ids).
+The candidate reuses HEYGEN_API_KEY only after a future verified live activation; this branch reads no key.
 Hosted HeyGen jobs reuse AWS_S3_BUCKET for durable consent and job manifests.
 Model Studio uses DASHSCOPE_API_KEY, DASHSCOPE_REGION, DASHSCOPE_BASE_URL,
 DASHSCOPE_WORKSPACE_ID, DASHSCOPE_MODEL and MODELSTUDIO_DRY_RUN.

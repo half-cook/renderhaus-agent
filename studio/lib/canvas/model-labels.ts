@@ -14,6 +14,7 @@ const MODEL_LABELS: Record<string, string> = {
   "apo-8": "Topaz Apollo",
   "chr-2": "Topaz Chronos",
   avatar_v: "HeyGen Avatar V",
+  "heygen-voice-1": "HeyGen Voice instant clone (internal candidate)",
   "sync-3": "sync-3 lip sync",
   "fal-ai/sync-lipsync/v3": "sync-3 lip sync (fal)",
   "gpt-image-2.5-sunburst": "GPT Image 2.5 Sunburst",

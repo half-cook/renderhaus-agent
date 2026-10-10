@@ -12,6 +12,7 @@ from unittest.mock import patch
 
 from fastapi import HTTPException
 from langchain_core.messages import AIMessage
+from PIL import Image
 
 import server.studio as studio
 import server.studio_state as studio_state
@@ -45,7 +46,9 @@ class FlowFixture(unittest.IsolatedAsyncioTestCase):
         self.repo.create_project("user:local", "local", "Deep Agent", project_id="project")
         self.conversation = self.repo.create_conversation("user:local", "project", "local")["id"]
         self.job = self._job("Make a product still with Seedream")
-        self.gateway = Gateway()
+        image_path = Path(directory.name) / "hero.png"
+        Image.new("RGB", (16, 16), "blue").save(image_path)
+        self.gateway = Gateway(result={"status": "succeeded", "output_path": str(image_path)})
         self.steps = [final()]
 
         @asynccontextmanager
@@ -236,7 +239,8 @@ class ApprovalFlowTests(FlowFixture):
                 self.job, card["call_id"], studio.AgentApprovalBody(decision="approve", cap_cents=1), None)
         self.assertEqual(caught.exception.status_code, 400)
 
-    async def test_approval_resumes_with_the_chosen_cap_and_receipt_follows(self):
+    @patch("server.studio_state.httpx.stream")
+    async def test_approval_resumes_with_the_chosen_cap_and_receipt_follows(self, remote_download):
         execution = await self.pause_for_approval()
         card = execution["approvals"][0]
         self.steps = [final()]
@@ -248,6 +252,7 @@ class ApprovalFlowTests(FlowFixture):
         self.assertEqual(final_state["status"], "completed")
         self.assertEqual(final_state["receipt"]["cap_cents"], card["cap_cents"])
         self.assertEqual(self.repo.available_credit(self.user), self.repo.get_balance(self.user))
+        remote_download.assert_not_called()
 
     async def test_rejecting_everything_still_ends_cleanly(self):
         execution = await self.pause_for_approval()

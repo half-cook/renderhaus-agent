@@ -1,5 +1,171 @@
 [
   {
+    "name": "voice_clone",
+    "description": "Preview one consented instant voice clone; save its handle only in the current account/project.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "reference_audio_url": {
+          "type": "string",
+          "description": "One authorized public HTTPS MP3, WAV or OGG recording. It will be uploaded to HeyGen on future live activation. No upload occurs in dry-run."
+        },
+        "reference_duration_seconds": {
+          "type": "number",
+          "description": "Measured positive recording duration. Only the first 180 seconds are used, even for longer recordings."
+        },
+        "reference_size_bytes": {
+          "type": "integer",
+          "description": "Measured file size, 1 through 104857600 bytes (100 MiB). URL fetch must complete in 30 seconds on HeyGen."
+        },
+        "reference_format": {
+          "type": "string",
+          "description": "Allowed values: mp3, wav, ogg. This adapter supports URL input only."
+        },
+        "name": {
+          "type": "string",
+          "description": "Instant voice display name, 1-64 nonblank characters."
+        },
+        "subjects": {
+          "type": "string",
+          "description": "Name the real voice owner. Recorded permission must cover voice cloning, upload processing and vendor data use."
+        },
+        "consent_confirmed": {
+          "type": "boolean",
+          "description": "Required boolean true for recorded voice-owner consent. Spending approval does not replace consent."
+        },
+        "consent_record_id": {
+          "type": "string",
+          "description": "Opaque recorded-consent identifier, never a credential or signed URL."
+        },
+        "account_id": {
+          "type": "string",
+          "description": "Authenticated Studio user_id from read_studio_context. Must match the host account; voices cannot cross accounts."
+        },
+        "workspace_id": {
+          "type": "string",
+          "description": "Current Studio workspace_id. Must match the host workspace."
+        },
+        "project_id": {
+          "type": "string",
+          "description": "Current Studio project_id. Clone handles belong to this project only."
+        },
+        "mode": {
+          "type": "string",
+          "description": "Only instant is supported. Professional clones are out of scope and rejected."
+        },
+        "language": {
+          "type": "string",
+          "description": "Supported HeyGen base language or regional tag, such as en, en-US or fr-CA. Regional tags do not choose an accent."
+        },
+        "similarity": {
+          "type": "string",
+          "description": "Allowed values: medium, high, extra_high, max. API default extra_high."
+        },
+        "remove_background_noise": {
+          "type": "boolean",
+          "description": "Clean the recording before instant cloning; default true."
+        },
+        "model": {
+          "type": "string",
+          "description": "heygen-voice-1 is verified. Unknown models are UNVERIFIED preview-only, with unknown estimates."
+        }
+      },
+      "required": [
+        "reference_audio_url",
+        "reference_duration_seconds",
+        "reference_size_bytes",
+        "reference_format",
+        "name",
+        "subjects",
+        "consent_confirmed",
+        "consent_record_id",
+        "account_id",
+        "workspace_id",
+        "project_id"
+      ]
+    }
+  },
+  {
+    "name": "voice_tts",
+    "description": "Save a deterministic silent WAV placeholder for project-owned instant-clone speech, never generated audio.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "voice_id": {
+          "type": "string",
+          "description": "Saved project-owned instant clone id. Dry handles stay dry after flag changes. Never use a catalog or global voice id."
+        },
+        "text": {
+          "type": "string",
+          "description": "1-5000 nonblank plain-text characters. Instant voices reject SSML and professional prosody controls."
+        },
+        "language": {
+          "type": "string",
+          "description": "Supported HeyGen base language or regional tag, such as en, en-US or fr-CA. Regional tags do not choose an accent."
+        },
+        "account_id": {
+          "type": "string",
+          "description": "Authenticated Studio user_id from read_studio_context. Must match the host account; voices cannot cross accounts."
+        },
+        "workspace_id": {
+          "type": "string",
+          "description": "Current Studio workspace_id. Must match the host workspace."
+        },
+        "project_id": {
+          "type": "string",
+          "description": "Current Studio project_id. Clone handles belong to this project only."
+        },
+        "model": {
+          "type": "string",
+          "description": "heygen-voice-1 is verified. Unknown models are UNVERIFIED preview-only, with unknown estimates."
+        },
+        "expressiveness_boost": {
+          "type": "number",
+          "description": "Instant voice expression, 0.0 through 1.0; API default 1.0."
+        }
+      },
+      "required": [
+        "voice_id",
+        "text",
+        "language",
+        "account_id",
+        "workspace_id",
+        "project_id"
+      ]
+    }
+  },
+  {
+    "name": "get_voice_status",
+    "description": "Read one saved project clone preview; future live poll is GET /v3/models/audio/voices/{voice_id}.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "voice_id": {
+          "type": "string",
+          "description": "Saved project-owned instant clone id. Dry handles stay dry after flag changes. Never use a catalog or global voice id."
+        },
+        "account_id": {
+          "type": "string",
+          "description": "Authenticated Studio user_id from read_studio_context. Must match the host account; voices cannot cross accounts."
+        },
+        "workspace_id": {
+          "type": "string",
+          "description": "Current Studio workspace_id. Must match the host workspace."
+        },
+        "project_id": {
+          "type": "string",
+          "description": "Current Studio project_id. Clone handles belong to this project only."
+        }
+      },
+      "required": [
+        "voice_id",
+        "account_id",
+        "workspace_id",
+        "project_id"
+      ]
+    }
+  },
+  {
     "name": "create_avatar_video",
     "description": "Make a presenter video using official HeyGen Avatar V and an existing eligible digital-twin look avatar_id. Require subjects, consent_confirmed=true and recorded consent_record_id for every face and voice. Supply script with voice_id or audio_url, language locale, resolution and aspect_ratio. duration_seconds is a measured audio length or script duration estimate, not a vendor render control. All paid video pauses with cost even in autonomous runs. API billing is separate from app plans; self-serve list price is $0.12/s; enterprise estimates remain unknown. Default dry-run produces no media. Live checks engine eligibility and accepted vendor consent. Poll get_video_status with download=true; completion requires the saved MP4. Outputs are not training eligible.",
     "inputSchema": {

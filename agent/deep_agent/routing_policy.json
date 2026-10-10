@@ -25,7 +25,8 @@
     "import_nle_timeline",
     "ffmpeg_tool",
     "deliver_render",
-    "qc_deliverable"
+    "qc_deliverable",
+    "get_voice_status"
   ],
   "providers": {
     "kling": {
@@ -711,7 +712,8 @@
       "training_eligible": false,
       "allowed_regions": [],
       "models": [
-        "avatar_v"
+        "avatar_v",
+        "heygen-voice-1"
       ],
       "default_model": "avatar_v",
       "model_env": "HEYGEN_MODEL",
@@ -732,6 +734,20 @@
           "vendor_trains_on_uploads": "Non-enterprise may train unless opted out; enterprise data excluded per trust-and-safety.",
           "training_source": "https://www.heygen.com/privacy",
           "read_date": "2026-10-09"
+        },
+        "heygen-voice-1": {
+          "license": "service-terms",
+          "weights_license": "closed-weights",
+          "license_source": "https://www.heygen.com/terms",
+          "enabled": true,
+          "training_eligible": false,
+          "training_reason": "No model-specific grant for Renderhaus training verified.",
+          "commercial_status": "Paid API terms permit commercial outputs; free-plan use blocked. Live Voice activation remains blocked.",
+          "consent_requirements": "Named subjects, consent_confirmed=true and consent_record_id required before cloning. Handles scoped to authenticated account and project.",
+          "vendor_trains_on_uploads": "Terms permit training on uploaded content. Voice-specific no-training agreement UNVERIFIED.",
+          "training_source": "https://www.heygen.com/privacy",
+          "read_date": "2026-10-09",
+          "live_blocked": true
         }
       },
       "explicit_only": false,
@@ -1932,6 +1948,62 @@
       "source": "https://ffmpeg.org/legal.html",
       "price_source": "https://ffmpeg.org/legal.html",
       "verification": "Fixed local finishing/QC ops. Offline routing tests do not prove file semantics or browser validation."
+    },
+    "heygen_voice_clone": {
+      "gateway_tool": "HeyGen___voice_clone",
+      "status": "ready",
+      "skill": "audio-bed",
+      "provider": "heygen",
+      "model": "heygen-voice-1",
+      "host": "HeyGen direct",
+      "verification": "Instant clone endpoint/schema and TTS model verified. Pricing, comparative-use permission and model-specific US availability UNVERIFIED; dry-run only.",
+      "source": "https://developers.heygen.com/docs/voices/heygen-voice-instant-clone",
+      "price_source": "https://www.heygen.com/api-pricing",
+      "us_available": "UNVERIFIED model-specific account access; no US exclusion found",
+      "availability_source": "https://www.heygen.com/terms",
+      "explicit_only": true,
+      "internal_gate": "HEYGEN_VOICE_AB_GATE=internal and trusted user allowlist",
+      "dry_run": true,
+      "license": "service-terms",
+      "weights_license": "closed-weights",
+      "license_source": "https://www.heygen.com/terms",
+      "enabled": true,
+      "training_eligible": false,
+      "training_reason": "No model-specific grant for Renderhaus training verified.",
+      "commercial_status": "Paid API terms permit commercial outputs; free-plan use blocked. Live Voice activation remains blocked.",
+      "consent_requirements": "Named subjects, consent_confirmed=true and consent_record_id required before cloning. Handles scoped to authenticated account and project.",
+      "vendor_trains_on_uploads": "Terms permit training on uploaded content. Voice-specific no-training agreement UNVERIFIED.",
+      "training_source": "https://www.heygen.com/privacy",
+      "read_date": "2026-10-09",
+      "live_blocked": true
+    },
+    "heygen_voice_tts": {
+      "gateway_tool": "HeyGen___voice_tts",
+      "status": "ready",
+      "skill": "audio-bed",
+      "provider": "heygen",
+      "model": "heygen-voice-1",
+      "host": "HeyGen direct",
+      "verification": "Instant clone endpoint/schema and TTS model verified. Pricing, comparative-use permission and model-specific US availability UNVERIFIED; dry-run only.",
+      "source": "https://developers.heygen.com/docs/voices/heygen-voice-speech",
+      "price_source": "https://www.heygen.com/api-pricing",
+      "us_available": "UNVERIFIED model-specific account access; no US exclusion found",
+      "availability_source": "https://www.heygen.com/terms",
+      "explicit_only": true,
+      "internal_gate": "HEYGEN_VOICE_AB_GATE=internal and trusted user allowlist",
+      "dry_run": true,
+      "license": "service-terms",
+      "weights_license": "closed-weights",
+      "license_source": "https://www.heygen.com/terms",
+      "enabled": true,
+      "training_eligible": false,
+      "training_reason": "No model-specific grant for Renderhaus training verified.",
+      "commercial_status": "Paid API terms permit commercial outputs; free-plan use blocked. Live Voice activation remains blocked.",
+      "consent_requirements": "Named subjects, consent_confirmed=true and consent_record_id required before cloning. Handles scoped to authenticated account and project.",
+      "vendor_trains_on_uploads": "Terms permit training on uploaded content. Voice-specific no-training agreement UNVERIFIED.",
+      "training_source": "https://www.heygen.com/privacy",
+      "read_date": "2026-10-09",
+      "live_blocked": true
     }
   },
   "rules": [
@@ -2017,7 +2089,7 @@
       "abstract_tool": "conversational_hyperframes_overlay"
     },
     {
-      "pattern": "\\bknowledge[ -]explainer\\b|知识大赏|\\bexplainer\\b|\\b(?:knowledge|science|graphic|cognitive|vibe)(?:[ -]\\w+){0,3}[ -](?:short|video)\\b",
+      "pattern": "\\bknowledge[ -]explainer\\b|\u77e5\u8bc6\u5927\u8d4f|\\bexplainer\\b|\\b(?:knowledge|science|graphic|cognitive|vibe)(?:[ -]\\w+){0,3}[ -](?:short|video)\\b",
       "skill": "knowledge-explainer",
       "abstract_tool": "remotion_render",
       "capability": "motion_graphics"
@@ -4594,6 +4666,55 @@
       "native_audio_default": true
     },
     {
+      "provider": "heygen",
+      "policy_ref": "heygen",
+      "model": "heygen-voice-1",
+      "label": "HeyGen Voice internal clone candidate",
+      "tools": {
+        "voice_clone": "HeyGen___voice_clone",
+        "cloned_tts": "HeyGen___voice_tts"
+      },
+      "jobs": {},
+      "controls": {
+        "voice_clone": [
+          "reference_audio_url",
+          "reference_duration_seconds",
+          "reference_size_bytes",
+          "reference_format",
+          "name",
+          "subjects",
+          "consent_confirmed",
+          "consent_record_id",
+          "account_id",
+          "workspace_id",
+          "project_id",
+          "mode",
+          "language",
+          "similarity",
+          "remove_background_noise",
+          "model"
+        ],
+        "cloned_tts": [
+          "voice_id",
+          "text",
+          "language",
+          "account_id",
+          "workspace_id",
+          "project_id",
+          "model",
+          "expressiveness_boost"
+        ]
+      },
+      "durations": {},
+      "resolutions": [],
+      "price": {
+        "source": "https://www.heygen.com/api-pricing",
+        "checked_at": "2026-10-09",
+        "verification": "UNVERIFIED non-promo instant clone and character prices; dry-run only"
+      },
+      "native_audio_field": null
+    },
+    {
       "provider": "topaz",
       "policy_ref": "topaz",
       "model": "Starlight Precise 2.6",
@@ -5203,9 +5324,17 @@
     },
     "voice_clone": {
       "default": "voices_ivc_create",
-      "exceptions": [],
+      "exceptions": [
+        {
+          "when": "heygen_voice_ab && !voice_text_needs_normalisation",
+          "tool": "heygen_voice_clone",
+          "reason": "Internal HeyGen Voice A/B candidate for consented instant clones"
+        }
+      ],
       "interim": null,
-      "ab_candidates": []
+      "ab_candidates": [
+        "heygen_voice_clone"
+      ]
     },
     "music": {
       "default": "mureka_v95",
@@ -5312,6 +5441,20 @@
       "exceptions": [],
       "interim": null,
       "ab_candidates": []
+    },
+    "cloned_tts": {
+      "default": "eleven_v4_turbo",
+      "exceptions": [
+        {
+          "when": "heygen_voice_ab && !voice_text_needs_normalisation",
+          "tool": "heygen_voice_tts",
+          "reason": "Internal HeyGen Voice cloned-speech A/B candidate"
+        }
+      ],
+      "interim": null,
+      "ab_candidates": [
+        "heygen_voice_tts"
+      ]
     }
   },
   "paid_video_tools": [
@@ -5417,7 +5560,8 @@
       "tts": "eleven_v4_turbo",
       "voice_clone": "voices_ivc_create",
       "sfx": "elevenlabs_sfx_v2",
-      "music": "elevenlabs_music"
+      "music": "elevenlabs_music",
+      "cloned_tts": "eleven_v4_turbo"
     },
     "alibaba_modelstudio": {
       "v2v_edit": "wan3_edit",
@@ -5431,7 +5575,9 @@
       "lipsync": "sync3_lipsync"
     },
     "heygen": {
-      "lipsync": "heygen_avatar_v"
+      "lipsync": "heygen_avatar_v",
+      "voice_clone": "heygen_voice_clone",
+      "cloned_tts": "heygen_voice_tts"
     },
     "topaz": {
       "upscale": "topaz_upscale",
