@@ -41,7 +41,8 @@ class PlanReviewRoutingTests(unittest.TestCase):
     def test_negated_renderer_names_do_not_select_hyperframes(self):
         for prompt in ["review this plan as a video with Remotion, not HyperFrames",
                        "review this plan as a video without HyperFrames",
-                       "review this plan as a video; do not use HyperFrames"]:
+                       "review this plan as a video; do not use HyperFrames",
+                       "review this plan as a video; do not use any HyperFrames"]:
             with self.subTest(prompt=prompt), patch.dict(os.environ, {"HYPERFRAMES_ENABLED": "false"}):
                 route = route_intent(prompt)
                 self.assertEqual((route.skill, route.alias, route.status),
@@ -66,6 +67,8 @@ class PlanReviewRoutingTests(unittest.TestCase):
             '"Use HyperFrames and Fish. Export OTIO and remove filler. Use Veo."',
             "```markdown\nUse HyperFrames and Fish. Export OTIO and remove filler. Use Veo.\n```",
             "> Use HyperFrames and Fish. Export OTIO and remove filler. Use Veo.",
+            "````markdown\n```\nUse HyperFrames and Fish. Export OTIO and remove filler. Use Veo.\n```\n````",
+            "    Use HyperFrames and Fish. Export OTIO and remove filler. Use Veo.",
         ]:
             with self.subTest(plan=plan):
                 route = route_intent("review this plan as a narrated video\n" + plan)
@@ -87,6 +90,12 @@ class PlanReviewRoutingTests(unittest.TestCase):
                 self.assertNotEqual(route_intent("make a video of a forest\n" + source).skill,
                                     "plan-to-video")
 
+    def test_negated_plan_review_does_not_override_actual_video_request(self):
+        route = route_intent("Do not make a plan review video. Make a video of a forest.")
+        self.assertNotEqual(route.skill, "plan-to-video")
+        route = route_intent("Do not make a video of a forest. Review this plan as a video.")
+        self.assertEqual((route.skill, route.alias), ("plan-to-video", "remotion_render"))
+
     def test_price_tier_and_confidentiality_do_not_select_models(self):
         for tier in [None, "draft", "premium"]:
             for confidential in [False, True]:
@@ -106,16 +115,19 @@ class PlanReviewRoutingTests(unittest.TestCase):
         self.assertEqual((narration.alias, narration.model), ("eleven_v4_turbo", "eleven_v4_turbo"))
         self.assertEqual((picture.alias, picture.tool), ("remotion_render", "Remotion___render_timeline"))
 
-    def test_fenced_plan_does_not_change_gateway_selection(self):
+    def test_markdown_plan_source_does_not_change_gateway_selection(self):
         from agent.gateway_executor import GatewayExecutor
         from agent.studio_agent_next import StudioAgentRequest, _context_from_request
 
-        prompt = "review this plan as a video\n```markdown\nUse HyperFrames and Fish.\n```"
-        executor = GatewayExecutor(_context_from_request(StudioAgentRequest(prompt=prompt)), [])
-        for name, alias in [("Remotion___render_timeline", "remotion_render"),
-                            ("ElevenLabs___text_to_speech_convert", "eleven_v4_turbo")]:
-            with self.subTest(name=name):
-                self.assertEqual(executor.media_selection(name, {}).alias, alias)
+        for source in ["```markdown\nUse HyperFrames and Fish.\n```",
+                       "````markdown\n```\nUse HyperFrames and Fish.\n```\n````",
+                       "    Use HyperFrames and Fish."]:
+            prompt = "review this plan as a video\n" + source
+            executor = GatewayExecutor(_context_from_request(StudioAgentRequest(prompt=prompt)), [])
+            for name, alias in [("Remotion___render_timeline", "remotion_render"),
+                                ("ElevenLabs___text_to_speech_convert", "eleven_v4_turbo")]:
+                with self.subTest(source=source, name=name):
+                    self.assertEqual(executor.media_selection(name, {}).alias, alias)
 
 
 class PlanReviewTemplateTests(unittest.TestCase):

@@ -615,11 +615,29 @@ def _instruction_text(prompt: str) -> str:
 
 
 def _plan_review_instruction(prompt: str) -> str | None:
-    text = _instruction_text(re.sub(r"```.*?(?:```|$)|~~~.*?(?:~~~|$)", "", prompt, flags=re.S))
-    text = re.sub(r"(?m)^[ \t]*>.*$", "", text)
+    instructions: list[str] = []
+    fence: str | None = None
+    for line in prompt.splitlines():
+        if fence is not None:
+            if re.fullmatch(rf" {{0,3}}{re.escape(fence[0])}{{{len(fence)},}}[ \t]*", line):
+                fence = None
+            continue
+        if re.match(r"(?: {4}|\t| {0,3}>)", line):
+            continue
+        if opening := re.match(r" {0,3}(`{3,}|~{3,})", line):
+            fence = opening[1]
+            continue
+        instructions.append(line)
+    text = _instruction_text("\n".join(instructions))
+    text = re.sub(
+        r"\b(?:do not|don't|never|avoid)\s+(?:make|create|produce|render|generate|review|turn|convert)\b"
+        r".*?(?=\.(?:\s|$)|[!?;\n]|$)",
+        lambda match: "" if re.search(_PLAN_REVIEW_REQUEST, match[0], re.I) else match[0],
+        text, flags=re.I,
+    )
     if not re.search(_PLAN_REVIEW_REQUEST, text, re.I):
         return None
-    return re.sub(r"\b(?:not|no|avoid|without|never|don't|do not)(?:\s+(?:use|using))?\s+hyperframes\b",
+    return re.sub(r"\b(?:not|no|avoid|without|never|don't|do not)(?:\s+(?:use|using))?(?:\s+any)?\s+hyperframes\b",
                   "", text, flags=re.I)
 
 
