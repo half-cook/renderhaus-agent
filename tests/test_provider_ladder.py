@@ -28,7 +28,8 @@ class CapabilityMapTests(unittest.TestCase):
                     "continuity_qc": "local_qc", "motion_carry_qc": "motion_carry_probe", "lyrics_video": "mureka_lyrics_video",
                     "ad_variant_matrix": "ad_variant_matrix", "media_inspection": "ffmpeg_tool",
                     "delivery_render": "delivery_render", "deliverable_qc": "deliverable_qc",
-                    "loudness_qc": "ffmpeg_tool", "local_finishing": "ffmpeg_tool"}
+                    "loudness_qc": "ffmpeg_tool", "local_finishing": "ffmpeg_tool",
+                    "shot_recipes": "shot_recipe_search"}
         self.assertEqual({k: v["default"] for k, v in routing.POLICY["capability_map"].items()}, expected)
         self.assertNotIn("ladder", routing.POLICY)
         for capability in ["v2v_edit", "extend"]:

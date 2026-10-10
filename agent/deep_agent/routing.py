@@ -11,6 +11,7 @@ from pathlib import Path
 POLICY = json.loads(Path(__file__).with_name("routing_policy.json").read_text())
 TOOL_MAP = POLICY["tools"]
 TARGET_PROVIDERS = {
+    "ShotRecipes": "shot_recipes",
     "Gemini": "gemini",
     "Mureka": "mureka",
     "Topaz": "topaz",
@@ -463,6 +464,68 @@ def _voice_script(prompt: str, arguments: dict) -> str:
     return ""
 
 
+def _cinematic_route(prompt: str, constraints: dict, *, region: str | None,
+                     available_tools: set[str] | None, arguments: dict | None) -> Route | None:
+    rule = next(rule for rule in POLICY["rules"] if rule["skill"] == "cinematic-product-promo")
+    text = _instruction_text(prompt)
+    video_capabilities = {"t2v", "i2v", "reference_video"}
+    explicit_video = video_capabilities.intersection(
+        POLICY["explicit_routes"].get(constraints["provider"], {})
+    ) or video_capabilities.intersection(
+        POLICY["named_models"].get(constraints["named_model"], {}).get("aliases", {})
+    )
+    if (constraints["predicates"]["explicit_hyperframes"] or constraints["predicates"]["art_style_motion"]
+            or explicit_video or _knowledge_explainer_request(prompt)
+            or re.search(r"\blower thirds?\b", text, re.I)):
+        return None
+    if any(row.get("capability") == "ad_variant_matrix" and re.search(row["pattern"], text, re.I)
+           for row in POLICY["rules"]):
+        return None
+    matched = re.search(rule["pattern"], text, re.I)
+    if not matched and not re.search(r"\b(?:use|choose|select|apply)\b", text, re.I):
+        return None
+    from providers.shot_recipes.library import find_named_card
+
+    card_id = find_named_card(text)
+    quoted_selection = re.search(r"\b(?:use|choose|select|apply)\s+(?:(?:the|a|an)\s+)?(['\"])(.+?)\1", prompt, re.I)
+    if quoted_selection and not re.search(r"^\s+as\s+(?:a\s+)?(?:title|headline|caption|copy)\b", prompt[quoted_selection.end():], re.I):
+        card_id = find_named_card(quoted_selection[2]) or card_id
+    if not matched and not card_id:
+        return None
+    if not matched and card_id and card_id not in text.lower():
+        quoted = re.findall(r"['\"]([^'\"]+)['\"]", prompt)
+        if not any(find_named_card(phrase) == card_id for phrase in quoted):
+            return None
+    recipe_arguments = {"card_id": card_id} if card_id else {"query": text[:500]}
+    first = select_provider("shot_recipes", region=region, available_tools=available_tools,
+                            arguments=recipe_arguments)
+    required = dict(recipe_arguments)
+    if duration := deliverable_duration(prompt):
+        required["target_duration_s"] = duration.seconds
+    if card_id:
+        required["beat"] = beat[1].lower() if (beat := re.search(r"\b(reveal|opening|intro|closing|outro|logo|cta|feature)\b", text, re.I)) else "user-named beat"
+    first = replace(first, skill=rule["skill"], required=required,
+                    basis="explicit named card" if card_id else first.basis)
+    if card_id and first.status == "ready":
+        first = replace(first, disclosure=f"Use the user-named recipe {card_id} for {required['beat']}.")
+    if card_id and re.search(r"\b(?:use|choose|select|apply)\b", text, re.I):
+        return first
+    assembled = replace(select_provider("motion_graphics", region=region,
+                                         available_tools=available_tools, arguments=arguments,
+                                         **capability_constraints(constraints, "motion_graphics")),
+                        skill=rule["skill"])
+    steps = (first, assembled)
+    incomplete = next((step for step in steps if step.status != "ready"), None)
+    return replace(first, steps=steps, expected_output="assembled MP4",
+                   execution_groups=(("shot_recipe_search",), ("remotion_render",)),
+                   forbidden_tools=("wan3_t2v", "seedance25_t2v"),
+                   tool=None if incomplete else first.tool,
+                   dispatch_tool=None if incomplete else first.dispatch_tool,
+                   status=incomplete.status if incomplete else first.status,
+                   reason=incomplete.reason if incomplete else
+                   "Select recipe cards, validate the storyboard, then assemble supported shots.")
+
+
 def route_intent(prompt: str, *, region: str | None = None, tier: str | None = None,
                  confidential: bool = False, arguments: dict | None = None,
                  available_tools: set[str] | None = None, retry: bool = False, user_id: str | None = None) -> Route:
@@ -512,6 +575,9 @@ def route_intent(prompt: str, *, region: str | None = None, tier: str | None = N
         return voice_route
     if lyrics_route := _lyrics_route(prompt, constraints, region=region, available_tools=available_tools, arguments=arguments):
         return lyrics_route
+    if cinematic := _cinematic_route(prompt, constraints, region=region,
+                                    available_tools=available_tools, arguments=arguments):
+        return cinematic
     lipsync = bool(re.search(_LIPSYNC_REQUEST, prompt, re.I))
     delivery = None if lipsync else _delivery_route(prompt, constraints, region=region, available_tools=available_tools, arguments=arguments)
     if delivery is not None:
@@ -526,7 +592,7 @@ def route_intent(prompt: str, *, region: str | None = None, tier: str | None = N
     for rule in POLICY["rules"]:
         if rule.get("named_model") and rule["named_model"] != constraints["named_model"]:
             continue
-        if rule["skill"] == "plan-to-video":
+        if rule["skill"] in {"plan-to-video", "cinematic-product-promo"}:
             continue
         if rule["skill"] == "art-style-motion" and not constraints["predicates"]["art_style_motion"]:
             continue
@@ -611,7 +677,7 @@ def route_intent(prompt: str, *, region: str | None = None, tier: str | None = N
 def _dispatch(tool: str | None) -> str | None:
     if not tool:
         return None
-    if tool.startswith(("Remotion___", "HyperFrames___", "Ffmpeg___")):
+    if tool.startswith(("Remotion___", "HyperFrames___", "Ffmpeg___", "ShotRecipes___")):
         return "call_editor_tool"
     if tool in {"HeyGen___voice_clone", "HeyGen___voice_tts", "HeyGen___get_voice_status"}:
         return "call_audio_tool"
@@ -675,7 +741,7 @@ def _capability_price(row: dict):
     if price == "unknown":
         return price
     provider, model = row["provider"], row["model"]
-    if provider == "ffmpeg" or provider == "remotion" and all(is_free_tool(tool) for tool in row["tools"].values()):
+    if provider in {"ffmpeg", "shot_recipes"} or provider == "remotion" and all(is_free_tool(tool) for tool in row["tools"].values()):
         return {**price, "rates": {"cents_per_call": 0}, "currency_unit": "USD cents"}
     if provider == "remotion" and model == "ad-variant-timeline":
         try:
@@ -1217,7 +1283,7 @@ def is_free_tool(name: str) -> bool:
     provider, tool = tool_parts(name)
     if name == "x_amz_bedrock_agentcore_search":
         return True
-    if tool in POLICY["free_tools"]:
+    if name in POLICY["free_tools"] or tool in POLICY["free_tools"]:
         return True
     if provider == "elevenlabs":
         from providers.elevenlabs.catalog import CATALOG

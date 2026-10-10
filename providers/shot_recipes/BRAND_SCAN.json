@@ -1,0 +1,1342 @@
+{
+  "notice": "Renderhaus-authored provenance-only brand scan. Source text was read in full; names remain in verbatim cards and ATTRIBUTION, never as user-facing metadata. Occurrences use case-sensitive literal matches.",
+  "files_scanned": 158,
+  "frontmatter_format_notes": {
+    "single_line_scalar_cards": 157,
+    "strict_yaml_invalid_count": 24,
+    "strict_yaml_invalid_paths": [
+      "references/shots/data/avatar-grid-radial-build-colorize.md",
+      "references/shots/data/hatch-depth.md",
+      "references/shots/effects/scan-bracket-sweep.md",
+      "references/shots/effects/scanline-annotate-focus.md",
+      "references/shots/effects/scanline-assemble-flyin.md",
+      "references/shots/interaction/chip-lift-to-user-pill.md",
+      "references/shots/interaction/segmented-thumb-hero.md",
+      "references/shots/opening/crane-rise-reveal.md",
+      "references/shots/opening/spotlight-hero-card.md",
+      "references/shots/outro/ui-strip-away-outro.md",
+      "references/shots/rhythm/beat-step-list-theme-cycle.md",
+      "references/shots/transition/card-flip-reveal.md",
+      "references/shots/transition/mosaic-reframe.md",
+      "references/shots/transition/paper-plane-messenger.md",
+      "references/shots/typography/pill-chip-slot-cycle-handled.md",
+      "references/shots/typography/pill-slot-cycle.md",
+      "references/shots/typography/vertical-word-roll-blur-cycle.md",
+      "references/shots/typography/word-relay-filmstrip.md",
+      "references/shots/ui-entrance/avatar-bracket-carousel.md",
+      "references/shots/ui-entrance/bezier-source-converge-merge.md",
+      "references/shots/ui-entrance/cloner-depth-echo.md",
+      "references/shots/ui-entrance/page-waterfall-wall.md",
+      "references/shots/ui-entrance/research-card-stack-scroll.md",
+      "references/shots/ui-entrance/row-embed.md"
+    ],
+    "reason": "Source quoted opening phrases followed by unquoted prose are preserved verbatim. Use a bounded single-line scalar frontmatter parser."
+  },
+  "scope": "All 157 card Markdown files and references/shots/ATTRIBUTION.md; no upstream media or code imported.",
+  "matches": [
+    {
+      "term": "1amanly",
+      "occurrences": [
+        {
+          "source_path": "references/shots/ATTRIBUTION.md",
+          "line": 32
+        },
+        {
+          "source_path": "references/shots/ATTRIBUTION.md",
+          "line": 55
+        }
+      ]
+    },
+    {
+      "term": "ACME",
+      "occurrences": [
+        {
+          "source_path": "references/shots/outro/grain-dissolve.md",
+          "line": 31
+        }
+      ]
+    },
+    {
+      "term": "Acme",
+      "occurrences": [
+        {
+          "source_path": "references/shots/effects/assemble-then-type-flyin.md",
+          "line": 50
+        }
+      ]
+    },
+    {
+      "term": "Acme Studio",
+      "occurrences": [
+        {
+          "source_path": "references/shots/effects/assemble-then-type-flyin.md",
+          "line": 50
+        }
+      ]
+    },
+    {
+      "term": "aizal",
+      "occurrences": [
+        {
+          "source_path": "references/shots/ATTRIBUTION.md",
+          "line": 38
+        },
+        {
+          "source_path": "references/shots/ATTRIBUTION.md",
+          "line": 57
+        }
+      ]
+    },
+    {
+      "term": "aizal_mp4",
+      "occurrences": [
+        {
+          "source_path": "references/shots/ATTRIBUTION.md",
+          "line": 38
+        },
+        {
+          "source_path": "references/shots/ATTRIBUTION.md",
+          "line": 57
+        }
+      ]
+    },
+    {
+      "term": "amirdzm",
+      "occurrences": [
+        {
+          "source_path": "references/shots/ATTRIBUTION.md",
+          "line": 31
+        },
+        {
+          "source_path": "references/shots/ATTRIBUTION.md",
+          "line": 58
+        },
+        {
+          "source_path": "references/shots/ATTRIBUTION.md",
+          "line": 59
+        }
+      ]
+    },
+    {
+      "term": "anime.js",
+      "occurrences": [
+        {
+          "source_path": "references/shots/ui-entrance/svg-shape-morph.md",
+          "line": 58
+        },
+        {
+          "source_path": "references/shots/ui-entrance/value-stagger-gradient.md",
+          "line": 17
+        },
+        {
+          "source_path": "references/shots/ui-entrance/value-stagger-gradient.md",
+          "line": 55
+        },
+        {
+          "source_path": "references/shots/ATTRIBUTION.md",
+          "line": 29
+        },
+        {
+          "source_path": "references/shots/ATTRIBUTION.md",
+          "line": 53
+        }
+      ]
+    },
+    {
+      "term": "animejs.com",
+      "occurrences": [
+        {
+          "source_path": "references/shots/ATTRIBUTION.md",
+          "line": 29
+        }
+      ]
+    },
+    {
+      "term": "Apple",
+      "occurrences": [
+        {
+          "source_path": "references/shots/camera/space-camera-moves.md",
+          "line": 12
+        },
+        {
+          "source_path": "references/shots/transition/card-flip-reveal.md",
+          "line": 14
+        }
+      ]
+    },
+    {
+      "term": "Bear",
+      "occurrences": [
+        {
+          "source_path": "references/shots/interaction/hashtag-to-pill-materialize.md",
+          "line": 11
+        }
+      ]
+    },
+    {
+      "term": "bear-app",
+      "occurrences": [
+        {
+          "source_path": "references/shots/interaction/hashtag-to-pill-materialize.md",
+          "line": 58
+        },
+        {
+          "source_path": "references/shots/opening/icon-field-colorize.md",
+          "line": 42
+        },
+        {
+          "source_path": "references/shots/opening/icon-field-colorize.md",
+          "line": 54
+        },
+        {
+          "source_path": "references/shots/rhythm/beat-step-list-theme-cycle.md",
+          "line": 60
+        }
+      ]
+    },
+    {
+      "term": "bohdanmotion",
+      "occurrences": [
+        {
+          "source_path": "references/shots/ATTRIBUTION.md",
+          "line": 34
+        },
+        {
+          "source_path": "references/shots/ATTRIBUTION.md",
+          "line": 60
+        }
+      ]
+    },
+    {
+      "term": "C4D",
+      "occurrences": [
+        {
+          "source_path": "references/shots/ui-entrance/cloner-depth-echo.md",
+          "line": 10
+        }
+      ]
+    },
+    {
+      "term": "Chromium",
+      "occurrences": [
+        {
+          "source_path": "references/shots/typography/outline-word-fill.md",
+          "line": 55
+        },
+        {
+          "source_path": "references/shots/typography/outline-word-fill.md",
+          "line": 56
+        },
+        {
+          "source_path": "references/shots/typography/word-relay-geometry.md",
+          "line": 56
+        },
+        {
+          "source_path": "references/shots/typography/word-relay-geometry.md",
+          "line": 57
+        }
+      ]
+    },
+    {
+      "term": "clickup",
+      "occurrences": [
+        {
+          "source_path": "references/shots/camera/graze-face-tour.md",
+          "line": 51
+        },
+        {
+          "source_path": "references/shots/camera/graze-face-tour.md",
+          "line": 57
+        },
+        {
+          "source_path": "references/shots/camera/steep-tilt-glide.md",
+          "line": 54
+        },
+        {
+          "source_path": "references/shots/effects/spotlight-sweep-moves.md",
+          "line": 46
+        },
+        {
+          "source_path": "references/shots/effects/spotlight-sweep-moves.md",
+          "line": 52
+        },
+        {
+          "source_path": "references/shots/outro/neon-triple-marquee.md",
+          "line": 56
+        },
+        {
+          "source_path": "references/shots/transition/card-flock-tumble.md",
+          "line": 54
+        },
+        {
+          "source_path": "references/shots/typography/gradient-word-sweep.md",
+          "line": 50
+        },
+        {
+          "source_path": "references/shots/ui-entrance/integration-hub-map.md",
+          "line": 55
+        },
+        {
+          "source_path": "references/shots/ui-entrance/neon-frame-forerun.md",
+          "line": 41
+        },
+        {
+          "source_path": "references/shots/ui-entrance/neon-frame-forerun.md",
+          "line": 51
+        },
+        {
+          "source_path": "references/shots/ui-entrance/runway-ground-skim.md",
+          "line": 4
+        },
+        {
+          "source_path": "references/shots/ui-entrance/runway-ground-skim.md",
+          "line": 47
+        },
+        {
+          "source_path": "references/shots/ui-entrance/runway-ground-skim.md",
+          "line": 53
+        }
+      ]
+    },
+    {
+      "term": "clickup-30",
+      "occurrences": [
+        {
+          "source_path": "references/shots/camera/graze-face-tour.md",
+          "line": 51
+        },
+        {
+          "source_path": "references/shots/camera/graze-face-tour.md",
+          "line": 57
+        },
+        {
+          "source_path": "references/shots/camera/steep-tilt-glide.md",
+          "line": 54
+        },
+        {
+          "source_path": "references/shots/effects/spotlight-sweep-moves.md",
+          "line": 46
+        },
+        {
+          "source_path": "references/shots/effects/spotlight-sweep-moves.md",
+          "line": 52
+        },
+        {
+          "source_path": "references/shots/outro/neon-triple-marquee.md",
+          "line": 56
+        },
+        {
+          "source_path": "references/shots/transition/card-flock-tumble.md",
+          "line": 54
+        },
+        {
+          "source_path": "references/shots/typography/gradient-word-sweep.md",
+          "line": 50
+        },
+        {
+          "source_path": "references/shots/ui-entrance/integration-hub-map.md",
+          "line": 55
+        },
+        {
+          "source_path": "references/shots/ui-entrance/neon-frame-forerun.md",
+          "line": 51
+        },
+        {
+          "source_path": "references/shots/ui-entrance/runway-ground-skim.md",
+          "line": 53
+        }
+      ]
+    },
+    {
+      "term": "clickup11",
+      "occurrences": [
+        {
+          "source_path": "references/shots/ui-entrance/runway-ground-skim.md",
+          "line": 47
+        }
+      ]
+    },
+    {
+      "term": "Didot",
+      "occurrences": [
+        {
+          "source_path": "references/shots/typography/word-relay-filmstrip.md",
+          "line": 21
+        },
+        {
+          "source_path": "references/shots/typography/word-relay-filmstrip.md",
+          "line": 36
+        }
+      ]
+    },
+    {
+      "term": "disney",
+      "occurrences": [
+        {
+          "source_path": "references/shots/rhythm/smear-multiples.md",
+          "line": 21
+        }
+      ]
+    },
+    {
+      "term": "Edgar Wright",
+      "occurrences": [
+        {
+          "source_path": "references/shots/rhythm/montage-rhythm-moves.md",
+          "line": 14
+        }
+      ]
+    },
+    {
+      "term": "Figma",
+      "occurrences": [
+        {
+          "source_path": "references/shots/interaction/theme-switch-moves.md",
+          "line": 10
+        }
+      ]
+    },
+    {
+      "term": "figma",
+      "occurrences": [
+        {
+          "source_path": "references/shots/effects/brand-frame-snap.md",
+          "line": 52
+        },
+        {
+          "source_path": "references/shots/interaction/autolayout-gap-dial.md",
+          "line": 47
+        },
+        {
+          "source_path": "references/shots/interaction/collab-cursor-moves.md",
+          "line": 48
+        }
+      ]
+    },
+    {
+      "term": "figma-devmode",
+      "occurrences": [
+        {
+          "source_path": "references/shots/effects/brand-frame-snap.md",
+          "line": 52
+        },
+        {
+          "source_path": "references/shots/interaction/collab-cursor-moves.md",
+          "line": 48
+        }
+      ]
+    },
+    {
+      "term": "Firecrawl",
+      "occurrences": [
+        {
+          "source_path": "references/shots/ATTRIBUTION.md",
+          "line": 36
+        },
+        {
+          "source_path": "references/shots/ATTRIBUTION.md",
+          "line": 63
+        }
+      ]
+    },
+    {
+      "term": "Firefox",
+      "occurrences": [
+        {
+          "source_path": "references/shots/typography/outline-word-fill.md",
+          "line": 55
+        },
+        {
+          "source_path": "references/shots/typography/word-relay-geometry.md",
+          "line": 56
+        }
+      ]
+    },
+    {
+      "term": "Framer",
+      "occurrences": [
+        {
+          "source_path": "references/shots/outro/ui-strip-away-outro.md",
+          "line": 57
+        }
+      ]
+    },
+    {
+      "term": "framer",
+      "occurrences": [
+        {
+          "source_path": "references/shots/interaction/autolayout-gap-dial.md",
+          "line": 47
+        },
+        {
+          "source_path": "references/shots/interaction/autolayout-gap-dial.md",
+          "line": 53
+        },
+        {
+          "source_path": "references/shots/outro/ui-strip-away-outro.md",
+          "line": 63
+        },
+        {
+          "source_path": "references/shots/typography/title-demote-to-label.md",
+          "line": 59
+        }
+      ]
+    },
+    {
+      "term": "framer-ai",
+      "occurrences": [
+        {
+          "source_path": "references/shots/interaction/autolayout-gap-dial.md",
+          "line": 53
+        },
+        {
+          "source_path": "references/shots/outro/ui-strip-away-outro.md",
+          "line": 63
+        }
+      ]
+    },
+    {
+      "term": "Futura",
+      "occurrences": [
+        {
+          "source_path": "references/shots/interaction/hashtag-to-pill-materialize.md",
+          "line": 20
+        },
+        {
+          "source_path": "references/shots/interaction/hashtag-to-pill-materialize.md",
+          "line": 52
+        }
+      ]
+    },
+    {
+      "term": "GitHub",
+      "occurrences": [
+        {
+          "source_path": "references/shots/ATTRIBUTION.md",
+          "line": 29
+        }
+      ]
+    },
+    {
+      "term": "Helvetica",
+      "occurrences": [
+        {
+          "source_path": "references/shots/typography/split-flap-title.md",
+          "line": 37
+        }
+      ]
+    },
+    {
+      "term": "Honor",
+      "occurrences": [
+        {
+          "source_path": "references/shots/ATTRIBUTION.md",
+          "line": 39
+        }
+      ]
+    },
+    {
+      "term": "impress.js",
+      "occurrences": [
+        {
+          "source_path": "references/shots/camera/basic-3d-scene.md",
+          "line": 3
+        }
+      ]
+    },
+    {
+      "term": "Jarvis",
+      "occurrences": [
+        {
+          "source_path": "references/shots/effects/fui-hud-moves.md",
+          "line": 11
+        }
+      ]
+    },
+    {
+      "term": "Jerrythe2d",
+      "occurrences": [
+        {
+          "source_path": "references/shots/ATTRIBUTION.md",
+          "line": 33
+        },
+        {
+          "source_path": "references/shots/ATTRIBUTION.md",
+          "line": 56
+        }
+      ]
+    },
+    {
+      "term": "juliangarnier/anime",
+      "occurrences": [
+        {
+          "source_path": "references/shots/ATTRIBUTION.md",
+          "line": 29
+        }
+      ]
+    },
+    {
+      "term": "Linear",
+      "occurrences": [
+        {
+          "source_path": "references/shots/camera/depth-layer-moves.md",
+          "line": 11
+        },
+        {
+          "source_path": "references/shots/data/scroll-brake-moves.md",
+          "line": 11
+        },
+        {
+          "source_path": "references/shots/effects/glow-flyline-moves.md",
+          "line": 4
+        },
+        {
+          "source_path": "references/shots/interaction/ai-stream-response.md",
+          "line": 29
+        },
+        {
+          "source_path": "references/shots/interaction/ai-stream-response.md",
+          "line": 41
+        },
+        {
+          "source_path": "references/shots/interaction/command-palette-summon.md",
+          "line": 11
+        },
+        {
+          "source_path": "references/shots/interaction/theme-switch-moves.md",
+          "line": 10
+        },
+        {
+          "source_path": "references/shots/opening/dataviz-landscape-open.md",
+          "line": 11
+        },
+        {
+          "source_path": "references/shots/opening/dataviz-landscape-open.md",
+          "line": 41
+        },
+        {
+          "source_path": "references/shots/transition/shot-transitions.md",
+          "line": 12
+        },
+        {
+          "source_path": "references/shots/transition/shot-transitions.md",
+          "line": 42
+        }
+      ]
+    },
+    {
+      "term": "Linear Agent",
+      "occurrences": [
+        {
+          "source_path": "references/shots/interaction/ai-stream-response.md",
+          "line": 41
+        }
+      ]
+    },
+    {
+      "term": "Linear Releases",
+      "occurrences": [
+        {
+          "source_path": "references/shots/opening/dataviz-landscape-open.md",
+          "line": 11
+        },
+        {
+          "source_path": "references/shots/opening/dataviz-landscape-open.md",
+          "line": 41
+        },
+        {
+          "source_path": "references/shots/transition/shot-transitions.md",
+          "line": 12
+        }
+      ]
+    },
+    {
+      "term": "loom-ai",
+      "occurrences": [
+        {
+          "source_path": "references/shots/transition/bubble-swarm-takeover.md",
+          "line": 62
+        }
+      ]
+    },
+    {
+      "term": "Menlo",
+      "occurrences": [
+        {
+          "source_path": "references/shots/typography/scramble.md",
+          "line": 36
+        }
+      ]
+    },
+    {
+      "term": "miro-promo",
+      "occurrences": [
+        {
+          "source_path": "references/shots/interaction/canvas-materialize-moves.md",
+          "line": 56
+        },
+        {
+          "source_path": "references/shots/interaction/collab-cursor-moves.md",
+          "line": 48
+        }
+      ]
+    },
+    {
+      "term": "Notion",
+      "occurrences": [
+        {
+          "source_path": "references/shots/interaction/theme-switch-moves.md",
+          "line": 10
+        }
+      ]
+    },
+    {
+      "term": "notion-ai",
+      "occurrences": [
+        {
+          "source_path": "references/shots/transition/color-block-step-wipe.md",
+          "line": 54
+        },
+        {
+          "source_path": "references/shots/typography/marker-underline-title.md",
+          "line": 42
+        },
+        {
+          "source_path": "references/shots/typography/marker-underline-title.md",
+          "line": 48
+        },
+        {
+          "source_path": "references/shots/typography/pill-slot-cycle.md",
+          "line": 57
+        }
+      ]
+    },
+    {
+      "term": "perplexity-promo",
+      "occurrences": [
+        {
+          "source_path": "references/shots/interaction/segmented-thumb-hero.md",
+          "line": 57
+        },
+        {
+          "source_path": "references/shots/outro/ui-to-brand-morph.md",
+          "line": 49
+        },
+        {
+          "source_path": "references/shots/typography/title-demote-to-label.md",
+          "line": 59
+        },
+        {
+          "source_path": "references/shots/typography/word-relay-filmstrip.md",
+          "line": 51
+        }
+      ]
+    },
+    {
+      "term": "pitch-app",
+      "occurrences": [
+        {
+          "source_path": "references/shots/interaction/collab-cursor-moves.md",
+          "line": 48
+        },
+        {
+          "source_path": "references/shots/transition/paper-plane-messenger.md",
+          "line": 63
+        }
+      ]
+    },
+    {
+      "term": "pixel2motion",
+      "occurrences": [
+        {
+          "source_path": "references/shots/ui-entrance/deck-deal-flyin.md",
+          "line": 40
+        },
+        {
+          "source_path": "references/shots/ui-entrance/list-stack-press.md",
+          "line": 39
+        }
+      ]
+    },
+    {
+      "term": "Raycast",
+      "occurrences": [
+        {
+          "source_path": "references/shots/interaction/command-palette-summon.md",
+          "line": 11
+        }
+      ]
+    },
+    {
+      "term": "raycast",
+      "occurrences": [
+        {
+          "source_path": "references/shots/interaction/voice-waveform-live.md",
+          "line": 45
+        },
+        {
+          "source_path": "references/shots/interaction/voice-waveform-live.md",
+          "line": 52
+        },
+        {
+          "source_path": "references/shots/typography/text-column-converge.md",
+          "line": 56
+        }
+      ]
+    },
+    {
+      "term": "raycast-teams",
+      "occurrences": [
+        {
+          "source_path": "references/shots/interaction/voice-waveform-live.md",
+          "line": 52
+        },
+        {
+          "source_path": "references/shots/typography/text-column-converge.md",
+          "line": 56
+        }
+      ]
+    },
+    {
+      "term": "remotion-bits.dev",
+      "occurrences": [
+        {
+          "source_path": "references/shots/ATTRIBUTION.md",
+          "line": 30
+        },
+        {
+          "source_path": "references/shots/ATTRIBUTION.md",
+          "line": 54
+        }
+      ]
+    },
+    {
+      "term": "Rube Goldberg",
+      "occurrences": [
+        {
+          "source_path": "references/shots/rhythm/montage-rhythm-moves.md",
+          "line": 16
+        }
+      ]
+    },
+    {
+      "term": "Runway",
+      "occurrences": [
+        {
+          "source_path": "references/shots/ui-entrance/runway-ground-skim.md",
+          "line": 52
+        }
+      ]
+    },
+    {
+      "term": "runway",
+      "occurrences": [
+        {
+          "source_path": "references/shots/camera/graze-face-tour.md",
+          "line": 35
+        },
+        {
+          "source_path": "references/shots/camera/graze-face-tour.md",
+          "line": 43
+        },
+        {
+          "source_path": "references/shots/camera/steep-tilt-glide.md",
+          "line": 47
+        },
+        {
+          "source_path": "references/shots/ui-entrance/neon-frame-orbit-drop.md",
+          "line": 16
+        },
+        {
+          "source_path": "references/shots/ui-entrance/runway-ground-skim.md",
+          "line": 2
+        },
+        {
+          "source_path": "references/shots/ui-entrance/runway-ground-skim.md",
+          "line": 51
+        }
+      ]
+    },
+    {
+      "term": "Safari",
+      "occurrences": [
+        {
+          "source_path": "references/shots/outro/grain-dissolve.md",
+          "line": 33
+        }
+      ]
+    },
+    {
+      "term": "Saul Bass",
+      "occurrences": [
+        {
+          "source_path": "references/shots/transition/line-carry-transition.md",
+          "line": 36
+        }
+      ]
+    },
+    {
+      "term": "Scott Pilgrim",
+      "occurrences": [
+        {
+          "source_path": "references/shots/rhythm/panel-grid-moves.md",
+          "line": 17
+        }
+      ]
+    },
+    {
+      "term": "SF Mono",
+      "occurrences": [
+        {
+          "source_path": "references/shots/typography/glitch-cycle.md",
+          "line": 39
+        },
+        {
+          "source_path": "references/shots/typography/scramble.md",
+          "line": 36
+        },
+        {
+          "source_path": "references/shots/typography/text-column-converge.md",
+          "line": 49
+        }
+      ]
+    },
+    {
+      "term": "shapelayer",
+      "occurrences": [
+        {
+          "source_path": "references/shots/ATTRIBUTION.md",
+          "line": 37
+        },
+        {
+          "source_path": "references/shots/ATTRIBUTION.md",
+          "line": 61
+        }
+      ]
+    },
+    {
+      "term": "Slack",
+      "occurrences": [
+        {
+          "source_path": "references/shots/outro/ui-to-brand-morph.md",
+          "line": 41
+        }
+      ]
+    },
+    {
+      "term": "slack",
+      "occurrences": [
+        {
+          "source_path": "references/shots/outro/ui-to-brand-morph.md",
+          "line": 49
+        },
+        {
+          "source_path": "references/shots/transition/bottom-push-stack-wipe.md",
+          "line": 16
+        },
+        {
+          "source_path": "references/shots/transition/bottom-push-stack-wipe.md",
+          "line": 26
+        },
+        {
+          "source_path": "references/shots/transition/bottom-push-stack-wipe.md",
+          "line": 58
+        },
+        {
+          "source_path": "references/shots/ui-entrance/skeleton-reveal.md",
+          "line": 54
+        }
+      ]
+    },
+    {
+      "term": "slack-promo",
+      "occurrences": [
+        {
+          "source_path": "references/shots/outro/ui-to-brand-morph.md",
+          "line": 49
+        },
+        {
+          "source_path": "references/shots/transition/bottom-push-stack-wipe.md",
+          "line": 58
+        },
+        {
+          "source_path": "references/shots/ui-entrance/skeleton-reveal.md",
+          "line": 54
+        }
+      ]
+    },
+    {
+      "term": "Spline",
+      "occurrences": [
+        {
+          "source_path": "references/shots/ui-entrance/cloner-depth-echo.md",
+          "line": 10
+        }
+      ]
+    },
+    {
+      "term": "Stranger Things",
+      "occurrences": [
+        {
+          "source_path": "references/shots/typography/type-assembly-moves.md",
+          "line": 13
+        }
+      ]
+    },
+    {
+      "term": "Stripe",
+      "occurrences": [
+        {
+          "source_path": "references/shots/data/odometer-digit-roll.md",
+          "line": 14
+        }
+      ]
+    },
+    {
+      "term": "Stripe Sessions",
+      "occurrences": [
+        {
+          "source_path": "references/shots/data/odometer-digit-roll.md",
+          "line": 14
+        }
+      ]
+    },
+    {
+      "term": "SUPERHUMAN",
+      "occurrences": [
+        {
+          "source_path": "references/shots/opening/letterspace-materialize.md",
+          "line": 4
+        }
+      ]
+    },
+    {
+      "term": "superhuman-promo",
+      "occurrences": [
+        {
+          "source_path": "references/shots/opening/letterspace-materialize.md",
+          "line": 47
+        },
+        {
+          "source_path": "references/shots/opening/letterspace-materialize.md",
+          "line": 53
+        }
+      ]
+    },
+    {
+      "term": "Territory",
+      "occurrences": [
+        {
+          "source_path": "references/shots/effects/fui-hud-moves.md",
+          "line": 11
+        }
+      ]
+    },
+    {
+      "term": "thiswillblossom",
+      "occurrences": [
+        {
+          "source_path": "references/shots/ATTRIBUTION.md",
+          "line": 35
+        },
+        {
+          "source_path": "references/shots/ATTRIBUTION.md",
+          "line": 62
+        }
+      ]
+    },
+    {
+      "term": "tvnxty",
+      "occurrences": [
+        {
+          "source_path": "references/shots/ATTRIBUTION.md",
+          "line": 36
+        },
+        {
+          "source_path": "references/shots/ATTRIBUTION.md",
+          "line": 63
+        }
+      ]
+    },
+    {
+      "term": "Vercel",
+      "occurrences": [
+        {
+          "source_path": "references/shots/data/odometer-digit-roll.md",
+          "line": 14
+        }
+      ]
+    },
+    {
+      "term": "Vercel Ship",
+      "occurrences": [
+        {
+          "source_path": "references/shots/data/odometer-digit-roll.md",
+          "line": 14
+        }
+      ]
+    },
+    {
+      "term": "Vlambeer",
+      "occurrences": [
+        {
+          "source_path": "references/shots/effects/impact-feedback.md",
+          "line": 11
+        }
+      ]
+    },
+    {
+      "term": "WebKit",
+      "occurrences": [
+        {
+          "source_path": "references/shots/typography/outline-word-fill.md",
+          "line": 55
+        },
+        {
+          "source_path": "references/shots/typography/word-relay-geometry.md",
+          "line": 56
+        },
+        {
+          "source_path": "references/shots/ui-entrance/carousel-3d.md",
+          "line": 50
+        }
+      ]
+    },
+    {
+      "term": "Wes Anderson",
+      "occurrences": [
+        {
+          "source_path": "references/shots/ui-entrance/paper-craft-moves.md",
+          "line": 10
+        }
+      ]
+    },
+    {
+      "term": "Willow Voice",
+      "occurrences": [
+        {
+          "source_path": "references/shots/ATTRIBUTION.md",
+          "line": 38
+        },
+        {
+          "source_path": "references/shots/ATTRIBUTION.md",
+          "line": 57
+        }
+      ]
+    },
+    {
+      "term": "x.com",
+      "occurrences": [
+        {
+          "source_path": "references/shots/ATTRIBUTION.md",
+          "line": 31
+        },
+        {
+          "source_path": "references/shots/ATTRIBUTION.md",
+          "line": 32
+        },
+        {
+          "source_path": "references/shots/ATTRIBUTION.md",
+          "line": 33
+        },
+        {
+          "source_path": "references/shots/ATTRIBUTION.md",
+          "line": 34
+        },
+        {
+          "source_path": "references/shots/ATTRIBUTION.md",
+          "line": 35
+        },
+        {
+          "source_path": "references/shots/ATTRIBUTION.md",
+          "line": 36
+        },
+        {
+          "source_path": "references/shots/ATTRIBUTION.md",
+          "line": 37
+        },
+        {
+          "source_path": "references/shots/ATTRIBUTION.md",
+          "line": 38
+        },
+        {
+          "source_path": "references/shots/ATTRIBUTION.md",
+          "line": 55
+        },
+        {
+          "source_path": "references/shots/ATTRIBUTION.md",
+          "line": 56
+        },
+        {
+          "source_path": "references/shots/ATTRIBUTION.md",
+          "line": 57
+        },
+        {
+          "source_path": "references/shots/ATTRIBUTION.md",
+          "line": 58
+        },
+        {
+          "source_path": "references/shots/ATTRIBUTION.md",
+          "line": 59
+        },
+        {
+          "source_path": "references/shots/ATTRIBUTION.md",
+          "line": 60
+        },
+        {
+          "source_path": "references/shots/ATTRIBUTION.md",
+          "line": 61
+        },
+        {
+          "source_path": "references/shots/ATTRIBUTION.md",
+          "line": 62
+        },
+        {
+          "source_path": "references/shots/ATTRIBUTION.md",
+          "line": 63
+        }
+      ]
+    },
+    {
+      "term": "反恐王国",
+      "occurrences": [
+        {
+          "source_path": "references/shots/data/timeline-travel.md",
+          "line": 11
+        }
+      ]
+    },
+    {
+      "term": "异形",
+      "occurrences": [
+        {
+          "source_path": "references/shots/opening/stroke-segment-build.md",
+          "line": 11
+        }
+      ]
+    },
+    {
+      "term": "抖音",
+      "occurrences": [
+        {
+          "source_path": "references/shots/ATTRIBUTION.md",
+          "line": 39
+        },
+        {
+          "source_path": "references/shots/ATTRIBUTION.md",
+          "line": 40
+        },
+        {
+          "source_path": "references/shots/ATTRIBUTION.md",
+          "line": 43
+        },
+        {
+          "source_path": "references/shots/ATTRIBUTION.md",
+          "line": 64
+        }
+      ]
+    },
+    {
+      "term": "江经怜",
+      "occurrences": [
+        {
+          "source_path": "references/shots/ATTRIBUTION.md",
+          "line": 40
+        }
+      ]
+    },
+    {
+      "term": "荣耀",
+      "occurrences": [
+        {
+          "source_path": "references/shots/ATTRIBUTION.md",
+          "line": 39
+        }
+      ]
+    },
+    {
+      "term": "观机社",
+      "occurrences": [
+        {
+          "source_path": "references/shots/ATTRIBUTION.md",
+          "line": 39
+        },
+        {
+          "source_path": "references/shots/ATTRIBUTION.md",
+          "line": 64
+        }
+      ]
+    },
+    {
+      "term": "迪士尼",
+      "occurrences": [
+        {
+          "source_path": "references/shots/camera/depth-layer-moves.md",
+          "line": 11
+        },
+        {
+          "source_path": "references/shots/ui-entrance/deck-deal-flyin.md",
+          "line": 14
+        },
+        {
+          "source_path": "references/shots/ui-entrance/deck-deal-flyin.md",
+          "line": 40
+        },
+        {
+          "source_path": "references/shots/ui-entrance/list-stack-press.md",
+          "line": 13
+        },
+        {
+          "source_path": "references/shots/ui-entrance/list-stack-press.md",
+          "line": 39
+        },
+        {
+          "source_path": "references/shots/ui-entrance/morph-from-primitive.md",
+          "line": 14
+        }
+      ]
+    },
+    {
+      "term": "韦斯·安德森",
+      "occurrences": [
+        {
+          "source_path": "references/shots/camera/overhead-camera-moves.md",
+          "line": 16
+        }
+      ]
+    }
+  ],
+  "additional_output_guard_terms": [
+    "CapCut",
+    "ClickUp",
+    "Disney",
+    "ElevenLabs",
+    "Fish",
+    "github.com",
+    "Jianying",
+    "Kling",
+    "Loom",
+    "Luma",
+    "Miro",
+    "Mixkit",
+    "Mureka",
+    "Perplexity",
+    "Pitch",
+    "Seedance",
+    "Seedream",
+    "Superhuman",
+    "Topaz",
+    "Vidu",
+    "Wan",
+    "剪映",
+    "苹果"
+  ],
+  "special_cases": [
+    "Linear names the product when capitalized; lowercase linear describes interpolation and must remain usable as neutral motion data.",
+    "The neutral public id ground-skim maps to source ui-entrance/runway-ground-skim.md to avoid a provider-name collision. Original source bytes and frontmatter name remain unchanged; resolve its card path from validated source_path.",
+    "Reference-implementation and source-media paths are inert provenance text; exclude them from any returned recipe data.",
+    "Brand matching requires literal boundaries for ASCII names so Loom does not match bloom and Wan does not match words containing those letters."
+  ],
+  "frontmatter_missing_tags_count": 91,
+  "frontmatter_missing_tags_note": "91 source cards omit 标签; retain bytes and use authored index keywords, without inventing frontmatter."
+}

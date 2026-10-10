@@ -1,0 +1,148 @@
+[
+  {
+    "name": "shot_recipe_search",
+    "description": "Find neutral shot recipes locally, or validate a storyboard and separate audio stems.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "query": {
+          "type": "string",
+          "description": "Optional lexical query, at most 512 characters. English aliases include ink press, crane reveal and odometer."
+        },
+        "card_id": {
+          "type": "string",
+          "description": "Exact indexed lowercase slug, at most 100 characters. Wins over the query and all filters. No paths."
+        },
+        "category": {
+          "type": "string",
+          "description": "Optional category: camera, data, effects, interaction, opening, outro, rhythm, transition, typography, ui-entrance."
+        },
+        "max_duration_s": {
+          "type": "number",
+          "description": "Optional positive maximum recipe duration, at most 600 seconds."
+        },
+        "energy": {
+          "type": "string",
+          "description": "Optional low, medium or high energy filter."
+        },
+        "limit": {
+          "type": "integer",
+          "description": "Integer result limit 1-20. Default 8."
+        },
+        "mode": {
+          "type": "string",
+          "description": "search by default; validate_storyboard checks timing and returns an assembly plan without rendering."
+        },
+        "storyboard": {
+          "type": "object",
+          "properties": {
+            "target_duration_s": {
+              "type": "number"
+            },
+            "aspect": {
+              "type": "string",
+              "description": "One of: 16:9, 9:16, 1:1, 4:5, 2.39:1."
+            },
+            "fps": {
+              "type": "number"
+            },
+            "beat_grid_s": {
+              "items": {
+                "type": "number"
+              },
+              "type": "array"
+            },
+            "beats": {
+              "items": {
+                "properties": {
+                  "beat": {
+                    "type": "string"
+                  },
+                  "card_id": {
+                    "type": "string"
+                  },
+                  "start_s": {
+                    "type": "number"
+                  },
+                  "duration_s": {
+                    "type": "number"
+                  },
+                  "sfx_cue": {
+                    "type": "string",
+                    "description": "One of: transition, impact, riser, ui, text, data, ambience, none."
+                  },
+                  "cut_snap": {
+                    "type": "number"
+                  },
+                  "selection": {
+                    "type": "string",
+                    "description": "One of: agent, user_named."
+                  },
+                  "visual": {
+                    "type": "object"
+                  },
+                  "realization": {
+                    "type": "string",
+                    "description": "One of: pre_rendered_asset, timeline_preset."
+                  }
+                },
+                "required": [
+                  "beat",
+                  "card_id",
+                  "start_s",
+                  "duration_s"
+                ],
+                "type": "object"
+              },
+              "type": "array"
+            },
+            "audio_stems": {
+              "properties": {
+                "sfx": {
+                  "items": {
+                    "type": "object"
+                  },
+                  "type": "array"
+                },
+                "music": {
+                  "items": {
+                    "type": "object"
+                  },
+                  "type": "array"
+                },
+                "vo": {
+                  "items": {
+                    "type": "object"
+                  },
+                  "type": "array"
+                }
+              },
+              "required": [
+                "sfx",
+                "music",
+                "vo"
+              ],
+              "type": "object"
+            },
+            "named_cards": {
+              "type": "object"
+            },
+            "title": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "target_duration_s",
+            "aspect",
+            "fps",
+            "beat_grid_s",
+            "beats",
+            "audio_stems"
+          ],
+          "description": "Required only in validate_storyboard mode. Bounded beats, declared fps, supplied beat grid and separate sfx/music/vo stems. This validates a plan, never media."
+        }
+      },
+      "required": []
+    }
+  }
+]

@@ -938,7 +938,7 @@ def cost_for(provider: str, tool: str, arguments: dict[str, Any]) -> GenerationC
     (to charge the same amount), so it must be a pure function of the
     request, not of anything the provider returns.
     """
-    if provider == "ffmpeg":
+    if provider in {"ffmpeg", "shot_recipes"}:
         return GenerationCost(0, 0)
     if provider == "remotion" and tool in {"deliver_render", "qc_deliverable", "motion_carry_probe"}:
         return GenerationCost(0, 0)

@@ -13,7 +13,7 @@ refusals return `blocked`, retired requests return `retired`, and unknown intent
 
 ## Packaged skills
 
-The backend packages 32 skills. Some explain pending capabilities; installing their
+The backend packages 35 skills. Some explain pending capabilities; installing their
 instructions does not install a provider adapter. The original execution skills remain
 available. `image-gen` and `named-provider` cover the new still-image policy and explicit
 requests for providers retained outside automatic selection. The archived `vidu-q4` skill
@@ -35,6 +35,7 @@ exact Gateway names, native arguments, and operational constraints.
 | [art-style-motion](../agent/deep_agent/skills/art-style-motion/SKILL.md) | `call_editor_tool`<br>`call_media_tool`<br>`call_audio_tool` | `remotion_render`<br>`hyperframes_render`<br>`gpt_image25_t2i`<br>`eleven_v4_turbo`<br>`elevenlabs_sfx_v2` |
 | [audio](../agent/deep_agent/skills/audio/SKILL.md) | `call_audio_tool` | `eleven_v4_turbo`<br>`voices_ivc_create`<br>`mureka_v95`<br>`mirelo_v2a`<br>`elevenlabs_sfx_v2` |
 | [audio-bed](../agent/deep_agent/skills/audio-bed/SKILL.md) | `call_audio_tool`<br>`call_media_tool` | `eleven_v4_turbo`<br>`voices_ivc_create`<br>`heygen_voice_clone` (gated)<br>`heygen_voice_tts` (gated)<br>`mureka_v95`<br>`mirelo_v2a`<br>`elevenlabs_sfx_v2` |
+| [cinematic-product-promo](../agent/deep_agent/skills/cinematic-product-promo/SKILL.md) | `call_editor_tool`<br>`call_audio_tool` | `shot_recipe_search`<br>`remotion_render`<br>`cutaway_record` (pending)<br>`eleven_v4_turbo`<br>`mureka_v95`<br>`ffmpeg_tool`<br>`delivery_render`<br>`deliverable_qc`<br>`motion_carry_probe` |
 | [continuity-qc](../agent/deep_agent/skills/continuity-qc/SKILL.md) | `call_media_tool` | `local_qc`<br>`gemini_vlm_judge` |
 | [conversational-edit](../agent/deep_agent/skills/conversational-edit/SKILL.md) | `call_editor_tool`<br>`call_audio_tool` | `remotion_render`<br>`hyperframes_render` |
 | [dialogue-edit](../agent/deep_agent/skills/dialogue-edit/SKILL.md) | `call_media_tool`<br>`call_audio_tool` | `sync3_lipsync`<br>`eleven_v4_turbo` |
@@ -213,8 +214,8 @@ Topaz submissions always pause with cost, including autonomous runs. Dry-run pre
 and queued jobs never satisfy final delivery. See [Topaz](TOPAZ.md) for pricing, licence
 sources, unknown-price blockers and the blocked Comet check.
 
-`tests/fixtures/skill_routing.json` contains 256 retained routing rows.
-There are 251 active cases and 5 explicit skips. Five caption/collage cases cover the
+`tests/fixtures/skill_routing.json` contains 263 retained routing rows.
+There are 257 active cases and 6 explicit skips. Five caption/collage cases cover the
 new templates' renderer selection. Seven performance-transfer cases now use built tools. Three Mureka lyrics-video cases
 now use built tools; music routes use Mureka without an ElevenLabs interim. Five Topaz upscale/interpolation cases
 now use built tools. Seedance reference dialogue and two
@@ -670,8 +671,8 @@ refusals and delivery/loudness/QC chains. RT-E043 remains skipped: exact OCR ver
 is not implemented (`feat/remotion-ocr-verification`). The original four dependency skips
 remain. Routing checks establish selection and refusal; provider tests establish file checks.
 
-Current inventory is 16 providers, 128 Gateway tools, 34 packaged skills and 256 fixture
-rows, with 251 active and 5 skipped. See [Remotion editing](REMOTION_EDITING.md) for
+Current inventory is 17 providers, 129 Gateway tools, 35 packaged skills and 263 fixture
+rows, with 257 active and 6 skipped. See [Remotion editing](REMOTION_EDITING.md) for
 licensing, the real local pipeline and incomplete browser/deployed validation.
 
 ## Static aspect variants
@@ -729,13 +730,39 @@ Browser E2E and real output playback remain blocked because Comet is unavailable
 
 `motion-carry-qc` adds `motion_carry_probe` through the free local
 `Remotion___motion_carry_probe` editor tool. Run it after motion-graphics,
-product-demo-video, knowledge-explainer and explicit HyperFrames MP4 renders.
+product-demo-video, cinematic-product-promo, knowledge-explainer and explicit HyperFrames MP4 renders.
 Exact beat/element metadata takes priority over scene/audio detection. Failed
 reports gate completion and offer a Remotion re-render, with HyperFrames only
 when explicitly requested. Dry-run/skipped checks stay incomplete; generative
 continuity remains `continuity-qc` / `local_qc`. Thresholds are PROVISIONAL.
-Inventory is 16 providers, 128 Gateway tools, 34 skills and 251 active routing
-rows out of 256. The five existing skips remain, including capture/HyperFrames
+Inventory is 17 providers, 129 Gateway tools, 35 skills and 257 active routing
+rows out of 263. The six dependency skips remain, including capture/HyperFrames
 provider dependencies and exact OCR semantics. RT-163 and RT-164 exercise motion
 carry, and RT-165 protects generative continuity. See [motion carry QC](MOTION_CARRY_QC.md)
 for the independent clean-room implementation, calibration script and licences.
+
+## Cinematic product launches
+
+The [cinematic product promo skill](../agent/deep_agent/skills/cinematic-product-promo/SKILL.md)
+plans product reveal films from 157 imported text recipe cards. The free local
+`ShotRecipes___shot_recipe_search` editor tool searches neutral English metadata or
+fetches an exact card ID. `mode: validate_storyboard` checks known cards, target duration,
+frame-accurate cuts on a supplied measured beat grid, permitted SFX cue categories and
+separate SFX/music/VO plans. An explicit card ID or clear alias wins for the named beat.
+`ink press` resolves to `brand-ink-open`. Assembly continues through `remotion_render`.
+The cards add no custom component renderer. Unsupported camera moves or typography
+require actual pre-rendered user assets or remain a disclosed renderer dependency.
+
+SFX assets need Mixkit terms review before use. The import contains no audio or preview
+media. Use a user-supplied SFX library with usable rights, or an empty disclosed SFX stem.
+Music and voice use the existing audio tools and their existing approval controls.
+Without supplied measured beat timing, Studio beat acquisition and final sync verification
+remain incomplete. Existing loudness, delivery and motion checks still apply. Card metadata
+cannot certify exported stems, actual animation, visual acceptance or training rights.
+
+RT-174 and RT-175 are active. RT-176 preserves the pending `cutaway_record` dependency
+and remains skipped like the other capture cases. Its negative skill/tool guard runs as
+an active unit check. Four additional fixture negatives protect titles, explicit alternate
+rendering, knowledge explainers and ad variants. Inventory is 17 providers, 129 Gateway
+tools, 35 skills, 263 retained fixture rows, 257 active and 6 skipped. See
+[cinematic product promo](CINEMATIC_PRODUCT_PROMO.md) for provenance, licences and limits.

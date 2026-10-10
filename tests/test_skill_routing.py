@@ -60,6 +60,8 @@ def routing_case(case):
             self.assertEqual(len(steps), case["expected_step_count"])
         if case.get("expected_execution_groups"):
             self.assertEqual([list(group) for group in route.execution_groups], case["expected_execution_groups"])
+        for key, value in case.get("expected_required", {}).items():
+            self.assertEqual(route.required.get(key), value, key)
         for alias, limit in parse_max_calls(case.get("max_calls")).items():
             planned = [step.alias for step in steps if step.alias == alias]
             if route.status != "ready":
@@ -176,14 +178,14 @@ class SkillContracts(unittest.TestCase):
                 self.assertTrue(
                     any(name.split("___")[0] in DISPATCH_TARGETS[d] for d in dispatch), name
                 )
-        self.assertEqual(len(names), 34)
+        self.assertEqual(len(names), 35)
         self.assertTrue(
             {
                 "t2v", "i2v", "edit-v2v", "still-then-video", "image-gen", "named-provider",
                 "audio-bed", "motion-graphics", "hyperframes", "continuity-qc", "resolve-handoff",
                 "video-short", "product-images", "storyboard-shots", "audio", "final-assembly",
                 "refinement", "conversational-edit", "act-two", "lipsync", "dialogue-edit", "upscale",
-                "lyrics-video", "product-demo-video", "whiteboard-explainer", "knowledge-explainer", "plan-to-video", "remotion-ad-variant-matrix", "remotion-aspect-ratio-variants",
+                "lyrics-video", "product-demo-video", "cinematic-product-promo", "whiteboard-explainer", "knowledge-explainer", "plan-to-video", "remotion-ad-variant-matrix", "remotion-aspect-ratio-variants",
                 "remotion-delivery-render", "remotion-loudness-qc", "remotion-deliverable-qc",
             } <= names
         )
@@ -192,9 +194,9 @@ class SkillContracts(unittest.TestCase):
         )
 
     def test_fixture_preserves_active_workbook_rows_and_explains_pending_dependencies(self):
-        self.assertEqual(len(CASES), 256)
-        self.assertEqual(sum(not c["skip_reason"] for c in CASES), 251)
-        self.assertEqual(sum(bool(c["skip_reason"]) for c in CASES), 5)
+        self.assertEqual(len(CASES), 263)
+        self.assertEqual(sum(not c["skip_reason"] for c in CASES), 257)
+        self.assertEqual(sum(bool(c["skip_reason"]) for c in CASES), 6)
         self.assertTrue(all(c.get("source_status") != "archived" for c in CASES))
         self.assertTrue(all("[project.confidential=true]" not in c["prompt"] for c in CASES))
         self.assertTrue(all(c["expected_skill"] != "confidential-route" for c in CASES))
@@ -271,6 +273,7 @@ class SkillContracts(unittest.TestCase):
             "gemini_vlm_judge", "sync3_lipsync", "heygen_avatar_v", "runway_act_two",
             "kling_motion_control", "mureka_v95", "mureka_lyrics_video", "mirelo_v2a",
             "elevenlabs_sfx_v2", "eleven_v4_turbo", "topaz_upscale", "topaz_interpolate",
+            "shot_recipe_search",
         }
         self.assertTrue(required_aliases <= TOOL_MAP.keys())
         self.assertNotIn("flux2_klein4b_t2i", TOOL_MAP)

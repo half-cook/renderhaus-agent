@@ -40,6 +40,7 @@ from agent.studio_agent_next import (
 # Free, non-generative tools that only package existing project media. They
 # create no paid provider work, so they never pause for customer approval.
 APPROVAL_EXEMPT_TOOLS = frozenset({"Remotion___export_nle_timeline"})
+LOCAL_DATA_TOOLS = frozenset({"ShotRecipes___shot_recipe_search"})
 LOCAL_MEDIA_TOOLS = frozenset({
     "Remotion___motion_carry_probe",
     "Remotion___render_ad_variants", "Ffmpeg___ffmpeg_tool",
@@ -87,7 +88,8 @@ def tool_needs_approval(name: str, autonomous: bool, arguments: dict | None = No
         return (arguments or {}).get("stage") != "plan"
     if name in {"Ffmpeg___ffmpeg_tool", "ffmpeg_tool", "Remotion___deliver_render",
                 "Remotion___qc_deliverable", "delivery_render", "deliverable_qc",
-                "Remotion___motion_carry_probe", "motion_carry_probe"}:
+                "Remotion___motion_carry_probe", "motion_carry_probe",
+                "ShotRecipes___shot_recipe_search", "shot_recipe_search"}:
         return False
     if name in APPROVAL_EXEMPT_TOOLS:
         return False
@@ -196,12 +198,13 @@ class GatewayExecutor:
         from providers.catalog import get_provider
         from providers.registry import generate_schemas
 
-        for provider in ("ffmpeg", "remotion"):
+        for provider in ("ffmpeg", "remotion", "shot_recipes"):
             spec = get_provider(provider)
             for schema in generate_schemas(spec):
                 name = f"{spec.target_name}___{schema['name']}"
                 is_poll = name == 'Remotion___get_render_progress'
-                if name not in LOCAL_MEDIA_TOOLS and not _worker_remotion_tool(name) and not is_poll:
+                if (name not in LOCAL_MEDIA_TOOLS and name not in LOCAL_DATA_TOOLS
+                        and not _worker_remotion_tool(name) and not is_poll):
                     continue
                 if request_tool_blocker(self.studio.prompt, name) is None:
                     entry = (None, Tool(name=name, description=schema["description"],
@@ -388,6 +391,31 @@ class GatewayExecutor:
         if blocker := request_tool_blocker(self.studio.prompt, name):
             return blocker
         provider, tool = tool_parts(name)
+        if name == 'ShotRecipes___shot_recipe_search':
+            from providers.shot_recipes.library import find_named_card, neutral_text
+            from providers.shot_recipes.contracts import request_for
+
+            try:
+                request_for(arguments)
+            except ValueError as exc:
+                return neutral_text(str(exc))
+
+            intent = route_intent(self.studio.prompt)
+            card_id = intent.required.get('card_id') if intent.skill == 'cinematic-product-promo' else None
+            if card_id:
+                if arguments.get('mode', 'search') == 'validate_storyboard':
+                    story = arguments.get('storyboard') or {}
+                    beat_name = intent.required.get('beat', 'reveal')
+                    beat = next((b for b in story.get('beats', []) if b.get('beat') == beat_name), {})
+                    if (story.get('named_cards', {}).get(beat_name) != card_id
+                            or beat.get('card_id') != card_id or beat.get('selection') != 'user_named'):
+                        return 'The user-named card must remain assigned to the requested beat in the storyboard.'
+                else:
+                    fetched = any(event.name == name and event.arguments.get('card_id') == card_id
+                                  and event.result.get('ok') for event in self.studio.tool_events)
+                    chosen = arguments.get('card_id') or find_named_card(arguments.get('query') or '')
+                    if not fetched and chosen != card_id:
+                        return 'Fetch the user-named card before choosing other shot recipes.'
         if name == 'Remotion___render_timeline':
             from providers.remotion.api import render_backend
             from providers.remotion.capabilities import validate_backend
@@ -729,7 +757,7 @@ class GatewayExecutor:
                 {},
             )
             try:
-                if name in LOCAL_MEDIA_TOOLS or _worker_remotion_tool(name, arguments):
+                if name in LOCAL_MEDIA_TOOLS or name in LOCAL_DATA_TOOLS or _worker_remotion_tool(name, arguments):
                     from providers.registry import dispatch
                     from providers.remotion.ad_variants import authorize
                     from server.billing import stripe_enabled

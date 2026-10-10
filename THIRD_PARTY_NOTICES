@@ -35,3 +35,19 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+video-shotcraft shot cards
+=========================
+Source: https://github.com/Vincentwei1021/video-shotcraft
+Revision: 5ddbf521038b0a7accfb6dc1e0a9eb29c67277ab
+Read: 2026-10-10
+Copyright 2026 Wei Yihao
+Licence: Apache-2.0; full text in providers/shot_recipes/LICENSE.
+
+157 Chinese Markdown shot cards and references/shots/ATTRIBUTION.md were imported
+unmodified. Origin, unchanged status and separate authored metadata are recorded in
+providers/shot_recipes/NOTICE.md. The original attribution says the referenced source
+works were not licensed to upstream authors. Their media, brands and audio are not
+licensed by this text import. No upstream code, previews, audio, fonts or textures
+are included. English index metadata and the cinematic workflow are separate
+Renderhaus-authored additions. See docs/CINEMATIC_PRODUCT_PROMO.md.

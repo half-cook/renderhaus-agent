@@ -7,7 +7,7 @@ from agent.deep_agent.routing import route_intent
 from providers.remotion.motion_carry import validate_report
 
 
-MOTION_SKILLS = {"motion-graphics", "product-demo-video", "knowledge-explainer", "hyperframes", "motion-carry-qc"}
+MOTION_SKILLS = {"motion-graphics", "product-demo-video", "cinematic-product-promo", "knowledge-explainer", "hyperframes", "motion-carry-qc"}
 PROBE = "Remotion___motion_carry_probe"
 FINISHING_OPS = {"transcode_h264", "mux_aac", "loudnorm_mux_aac", "reframe_crop", "reframe_pad_blur"}
 
@@ -21,6 +21,8 @@ def _changes_output(event) -> bool:
 
 def requires_motion_qc(prompt, events) -> bool:
     skill = route_intent(prompt).skill
+    if skill == 'cinematic-product-promo' and not route_intent(prompt).steps:
+        return any(_changes_output(event) for event in events)
     if skill in MOTION_SKILLS:
         return True
     return skill in {None, "final-assembly", "editing"} and any(

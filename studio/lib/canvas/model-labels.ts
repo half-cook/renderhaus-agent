@@ -1,4 +1,5 @@
 const MODEL_LABELS: Record<string, string> = {
+  "shot-recipes-local": "Shot recipe library",
   "pixelcut/looping-video": "Studio Video · looping clip (named only)",
   "pixverse/music-video/vibemv": "Studio Music · music video (named only)",
   "gemini-3.8-flash": "Studio review model (experimental)",

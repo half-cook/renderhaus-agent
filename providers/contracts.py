@@ -324,6 +324,28 @@ def enrich_tool_schema(provider_id: str, tool: dict[str, Any]) -> dict[str, Any]
     enriched = deepcopy(tool)
     tool_name = str(enriched.get("name") or "")
     properties = (enriched.get("inputSchema") or {}).get("properties") or {}
+    if provider_id == "shot_recipes":
+        from providers.shot_recipes.contracts import FIELD_DESCRIPTIONS
+        from providers.shot_recipes.storyboard import Storyboard
+        from providers.registry import sanitize_gateway_json_schema
+
+        schema = Storyboard.model_json_schema()
+
+        def expand(node):
+            if isinstance(node, list):
+                return [expand(item) for item in node]
+            if not isinstance(node, dict):
+                return node
+            if '$ref' in node:
+                return expand(schema['$defs'][node['$ref'].rsplit('/', 1)[-1]])
+            if 'anyOf' in node:
+                choices = [choice for choice in node['anyOf'] if choice.get('type') != 'null']
+                return expand(choices[0])
+            return {key: expand(value) for key, value in node.items() if key != '$defs'}
+
+        properties['storyboard'].update(sanitize_gateway_json_schema(expand(schema)))
+        for name, description in FIELD_DESCRIPTIONS.items():
+            properties[name]['description'] = description
     if provider_id == "gemini":
         from providers.gemini.contracts import FIELD_DESCRIPTIONS
 
@@ -571,7 +593,7 @@ def _validate_rule(path: str, value: Any, rule: ArgumentRule) -> None:
         raise ValueError(f"{path} must be at most {rule.maximum:g}.")
 
 
-def _validate_cross_fields(provider_id: str, tool_name: str, arguments: dict[str, Any]) -> None:
+def _validate_cross_fields(provider_id: str, tool_name: str, arguments: dict[str, Any], *, allow_empty_visuals: bool = False) -> None:
     if provider_id == "remotion" and tool_name == "motion_carry_probe":
         from providers.remotion.motion_carry import validate_arguments
 
@@ -653,7 +675,7 @@ def _validate_cross_fields(provider_id: str, tool_name: str, arguments: dict[str
             for index, clip in enumerate(arguments.get(field) or []):
                 if bool(clip.get("url")) == bool(clip.get("output_path")):
                     raise ValueError(f"arguments.{field}[{index}] requires exactly one of url or output_path.")
-        if not arguments.get("visuals"):
+        if not arguments.get("visuals") and not allow_empty_visuals:
             raise ValueError("render_timeline requires at least one visual clip.")
         for index, clip in enumerate(arguments.get("visuals") or []):
             if "box" in clip:
@@ -790,11 +812,11 @@ def validate_remotion_text_items(items: list[dict[str, Any]], path: str) -> None
                 raise ValueError(f"{item_path}.{field} must fit inside the text duration.")
 
 
-def validate_remotion_timeline_arguments(arguments: dict[str, Any]) -> None:
+def validate_remotion_timeline_arguments(arguments: dict[str, Any], *, allow_empty_visuals: bool = False) -> None:
     for field, item_schema in (("visuals", _VISUAL_ITEM_SCHEMA), ("audio_tracks", _AUDIO_ITEM_SCHEMA)):
         if arguments.get(field) is not None:
             _validate_schema(arguments[field], {"type": "array", "items": item_schema}, f"arguments.{field}")
-    _validate_cross_fields("remotion", "render_timeline", arguments)
+    _validate_cross_fields("remotion", "render_timeline", arguments, allow_empty_visuals=allow_empty_visuals)
 
 
 def validate_tool_arguments(
@@ -802,8 +824,13 @@ def validate_tool_arguments(
     tool_name: str,
     arguments: dict[str, Any] | None,
     input_schema: dict[str, Any],
+    *, allow_empty_visuals: bool = False,
 ) -> dict[str, Any]:
     """Validate every Gateway call at the last boundary before provider I/O."""
+    if provider_id == "shot_recipes":
+        from providers.shot_recipes.contracts import validate_arguments
+
+        validate_arguments(arguments or {})
     if provider_id == "fal":
         from providers.fal.images import validate_arguments
 
@@ -842,7 +869,7 @@ def validate_tool_arguments(
     for field, rule in argument_rules(provider_id, tool_name).items():
         if field in cleaned:
             _validate_rule(f"arguments.{field}", cleaned[field], rule)
-    _validate_cross_fields(provider_id, tool_name, cleaned)
+    _validate_cross_fields(provider_id, tool_name, cleaned, allow_empty_visuals=allow_empty_visuals)
     if provider_id == "fal":
         from providers.fal import wan3
 
