@@ -21,7 +21,7 @@ for (const [endpoint, verb] of [
   assert.equal(toolForAgentArtifact('video', {
     name: 'Fal___get_video_task', provider: 'fal', providerJobId: endpoint + ':completed-video',
   }), undefined);
-  assert.match(choiceLabel('model', endpoint), /named only/);
+  assert.equal(choiceLabel('model', endpoint), endpoint === 'pixelcut/looping-video' ? 'Studio Video · looping clip' : 'Studio Music · music video');
 }
 assert.equal(toolForAgentArtifact('video', { name: 'Fal___generate_wan3_t2v', provider: 'fal' }).id,
   'video.wan3.generate');

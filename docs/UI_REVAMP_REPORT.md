@@ -3,7 +3,8 @@
 The requested UI screens are implemented or extended on `feat/ui-revamp`. Local
 checks and production fixture validation pass. Real-backend browser E2E remains
 **blocked and pending**: Comet is unavailable in this environment, as specified in
-the task. Nothing was pushed; no PR, rebase or change to main/staging was made.
+the task. The branch was previously pushed. This task did not push, open a PR,
+rebase committed history, or change main/staging.
 
 ## Commits
 
@@ -143,3 +144,178 @@ cross-model review is claimed. The requirement comes from
 `/home/box/.codex/plugins/cache/open-pstack/pstack/1.5.0/skills/show-me-your-work/SKILL.md`.
 The decision trail is `docs/ui-revamp-decisions.tsv`; the workflow record is
 `docs/ui-revamp-work.md`.
+
+## Changes & Timeline v1
+
+This work starts from the staging merge at `88f958d`. Concept C's numbered edit
+list is implemented across Changes, chat, Compare, Timeline and the twelve-state
+design board. The inspector's older Agent review block is superseded when a
+structured changeset exists. Projects with no changesets keep their existing UI;
+an API failure shows a retryable error and never silently substitutes fixtures.
+No changeset producer exists yet, so ordinary agent runs do not populate the tab.
+
+### Built
+
+- A typed, validated `ChangesDocument` adapter and Zustand store share current,
+  checkpoint and proposed clip lists. Numbered changes support Accept, Reject,
+  Revert, Undo, Re-apply, free-only bulk acceptance and confirmed checkpoint
+  restore. Restore saves the previous cut and creates a new version. Takes remain
+  immutable records; rejecting a paid take retains its price and media reference.
+- The third right-panel tab contains the Changeset header, numbered kind-specific
+  rows, collapsed decisions, a charged ledger with separate Agent orchestration,
+  and checkpoint restoration. The chat card opens Compare; badges insert
+  `change N` at the composer caret. Steering remains ordinary agent text.
+- Compare replaces the main workspace. Swipe, Side by side and hold-B Flicker
+  share a clock and shot/time alignment. Linked zoom/pan, frame stepping, Loop,
+  retained-take picking and the cut ribbon are implemented. Frame notes include
+  the timecode, use the normal agent submission API with the compared shot's
+  context, and preserve an unsent composer draft. Fixture posters explicitly say
+  they do not play; video takes support extensionless media URLs and seek to the
+  trimmed first frame after metadata loads.
+- Timeline uses the existing track model with numbered flags, explicit states,
+  a bottom/right trim hatch, top-left Take count, cover thumbnails, Current cut /
+  With changes, retained takes and an attached voiceover chip. A longer voiceover
+  offers Keep or Trim to fit. The latter changes cut metadata; it does not create
+  a new recording. The proposed cut is read-only until decisions are accepted.
+- `/design/change-states` is noindex and contains all twelve states using the real
+  `ChangeRow` and existing `ApprovalCard`. Connected approvals reuse the existing
+  approval, cancel and `answerAgentCap` APIs. Fixture-only paid controls cannot
+  authorize a run. J/K, A/R/C, hold B and G avoid inputs and dialogs. A on an
+  untaken paid change only focuses its price heading; still acceptance opens the
+  existing confirmation. Status text, accessible names and strike-throughs
+  accompany colour.
+
+### Persistence and contract
+
+The new server module is 243 lines; with the repository, route and inventory
+additions, the new nonblank server logic stays below the approximately 300-line
+limit. SQLite stores a validated changeset document and checkpoint cut JSON.
+Ownership follows the existing project repository boundary. Mutations use an
+expected revision, retain paid outputs, reject unsafe media substitutions and
+mark stale references Out of date. No endpoint calculates prices or generates
+media. Offline tests cover persistence, ownership, stale revisions, paid guards,
+retention and restore history.
+
+| Implemented request | Response / constraint |
+| --- | --- |
+| `GET /api/studio/projects/{id}/changesets` | `{items: ChangesDocument[]}`; empty when no producer has saved documents. |
+| `POST /api/studio/changesets/{cid}/changes/{n}/{action}` | Updated document. Body: `expected_revision`, optional `take_id`, `cut`, `max_duration_ms`. Per-row actions plus `n=0` bulk, metadata trim and manual cut edits. |
+| `POST /api/studio/changesets/{cid}/restore` | Updated document containing a new cut version and preserved prior cut. |
+
+The mutation URLs identify the changeset directly rather than repeating a
+project ID. The repository derives its project and checks ownership. Manual cut
+editing supports trim, reorder and removal; it cannot change a take, voice or
+still reference. Paid candidates are guarded across direct acceptance,
+re-application, alternate take selection and proposed-cut preview.
+
+Billing consumes integer cents and the existing approval/card, `paused_cap` and
+receipt adapters. A cap pause can reuse the original stored estimate when the
+pause payload omits it. Missing estimates remain incomplete. The UI does not
+compute prices. Disconnected approval controls with sufficient supplied credit
+remain disabled without incorrectly claiming insufficient credit.
+
+### Backend gaps and proposed contracts
+
+| Missing capability | Concrete proposed contract |
+| --- | --- |
+| Agent changeset production | After a run produces proposals, save a `ChangesDocument` through the internal `StudioRepository.save_changes_document` boundary: stable changeset ID, project ID, revision, numbered kind-specific before/after references, current/checkpoint cuts, immutable takes, billing lines and execution/call IDs. The existing GET then exposes it; no client inference from agent prose. |
+| Take generation and separate paid quoting | A future `POST /api/studio/projects/{id}/shots/{slot}/takes/quote` returns the existing approval payload: `estimate_cents`, `cap_cents`, `lines[]`, balance fields and linked execution/call IDs. Approve/reject uses the existing approval API. Completion publishes an immutable `Take` plus receipt/actual cents and a new document revision. A partly accepted changeset never receives this paid proposal; create its own changeset. |
+| Durable take media and inventory | Persist take metadata/media for the project's lifetime, expose `GET /api/studio/projects/{id}/shots/{slot}/takes`, and use the existing authenticated asset/playback-ticket resolver. Rejected takes retain their price, media and status; there is no paid-delete or expiry path. |
+| Canvas / export reconciliation and proposed-cut rendering | Accept/restore currently persists the changeset's cut, without changing legacy canvas nodes or the renderer. A future reconciliation boundary must select a versioned `cut_id` and map its slots, trims, order, voice/still references to the rendering/export model. A render request must name `cut_id` and `mode: current|changes`; it must return existing render/job/asset contracts. No proposed-cut render or delivered artifact is claimed here. |
+
+The current repository stores checkpoint JSON, but no agent-side film checkpoint
+producer is connected. Run-resume checkpoints are a different record. Source
+dimensions remain unknown when absent; the fixed 16:9 preview is not an export
+resolution claim. Voiceover re-recording, branches and difference views remain
+outside v1.
+
+### Open-question defaults used
+
+These are Satya's supplied defaults for spec section 10 item 10:
+
+1. Free changes say Free and never open a price card. Paid work uses one supplied
+   price, estimate and hard cap; Agent orchestration has its own ledger line.
+   Accepting or rejecting an already charged result adds no cost.
+2. Rejected paid takes remain in Takes with their price for the project's
+   lifetime. No paid output is deleted.
+3. Paid changes are priced and approved separately and cannot join a partly
+   accepted changeset. Accept free changes always excludes them and is hidden
+   when there are zero free pending changes.
+4. Voiceover re-recording is outside v1. Branches and difference views wait until
+   after beta. The v1 UI uses the approved Changeset / Change / Take / Checkpoint
+   vocabulary, including Accept, Reject, Revert, Undo, Re-apply, Compare and Restore.
+
+### Mockup deviations
+
+| Screen | Observed deviation and reason |
+| --- | --- |
+| m24 Agent Changes | Uses the existing project sidebar/header and regular conversation layout, with the real Changeset card rather than an invented transcript. Accepted/rejected rows collapse to one line with full accessible titles. The light variant darkens status text locally to pass contrast. |
+| m25 Compare Swipe | Uses distinct supplied cool/warm posters and labels them Still preview; Play is disabled for these fixtures. No output resolution or frame detail is fabricated. The new-take quote opens the real approval card but cannot run without a connected producer. |
+| m26 Compare Side by side | Shares the same honest poster limitation and quote boundary. Playback and zoom link controls are implemented for real video payloads; static captures demonstrate linked zoom/pan and frame references. The retained third take stays grey with its price. |
+| m27 Timeline Changes | Deliberately fixes the mockup glitches: Take 2 of 3 stays above the trim hatch and thumbnails preserve aspect ratio. Flags stack when they collide. With changes is a read-only preview; a long voiceover warning is exercised in the one-shot heavy-trim fixture. The monitor uses a supplied still until real video media is available. |
+| m28 Change States | Three columns contain the actual complete row and approval components. The full-page image is 1920×1806, taller than the reference because estimate, cap, receipt and explanatory copy are retained. Paid design controls are explicitly disconnected. Waveforms are labelled illustrations; no audio playback or re-recording is implied. Mockup Sample tags are omitted from all new screens. |
+
+### Motion, accessibility and review
+
+| Motion finding | Resolution |
+| --- | --- |
+| The reused approval card's older entrance exceeds the new flow's 160ms base and repeats on review navigation. | Disable its entrance within Changes rows and dialogs. Review selection, keyboard navigation, swipe dragging and hold-B switch immediately. Remaining colour feedback uses the existing 160ms token and reduced-motion rules. |
+
+Native code and comment reviews found and verified fixes for paid candidate
+substitution, unsafe manual cut media edits, stale/deleted targets, restore
+history, initial video seeking and frame-note context. There are no remaining
+code findings in the reviewed scope. External architect and audit-review lanes
+were omitted under the prohibition on live provider calls; no cross-provider
+review or consensus is claimed.
+
+### Verification and evidence
+
+| Check | Before | After / outcome |
+| --- | --- | --- |
+| `npx tsc --noEmit -p .` | Pass | Pass, including after restoring generated Next config churn. |
+| `node --test tests/*.test.cjs` | 85 passed | 131 passed; no skips or failures. |
+| Offline Python discovery | 2,100 run; 7 skipped | 2,119 run; 7 skipped; pass. |
+| Production `npm run build` | Existing production kit | Pass; isolated `.next-design-shots` output with Clerk keys empty, served by production Next. |
+| `node scripts/verify-*.cjs` | One pre-existing stale label assertion | All five scripts pass. The stale script now asserts the existing neutral video labels; artifact-routing checks are retained. |
+| Ruff across agent/lambdas/scripts/server/providers | — | Pass. |
+| `scripts/ci_check.py` with all requested dry-run flags | — | Pass, including the 15-route inventory. No live provider calls. |
+| Production fixture browser | 7 earlier checks | 17 pass, including actual local video loading/trimmed-frame seek/playback, normal timecoded frame submission, mutation rollback and safe paid keyboard handling. |
+| Captures / strict privacy and copy guards | 23 preserved m01–m18 captures | 33 current captures: the original 23 plus 10 Changes screens/variants. All capture guards pass, including forbidden v1 vocabulary. |
+| Axe WCAG A/AA | Earlier kit results | 33 scans; zero violations, including zero serious/critical findings. |
+| Existing-screen visual regression | Preserved pre-task captures | 22 captures have zero changed pixels. m06 originally captured a moving camera; a fresh detached `88f958d` production baseline and the final screen both wait for camera settling and have zero changed pixels. |
+
+The final m28 capture and axe scan were repeated after correcting its paused-cap
+fixture's receipt lines to account for the supplied $1.50 charged cap. Its money
+values remain fixture payload values, never UI calculations. The extensionless
+video browser fixture supports byte-range responses so its trimmed first frame
+can actually decode; the check observes a ready frame at one second and playback.
+
+Local feature commits:
+
+- `306a662` — Add typed changesets and ownership-checked cut decisions.
+- `bac0355` — Build linked take comparison and timeline change markers.
+- `72e7c49` — Integrate numbered Changes review and checkpoint restore.
+
+The final validation/report commit contains this section, the capture inventory,
+strict copy rules and browser checks. Nothing was pushed during this task.
+
+Evidence locations:
+
+- Checks: `.renderhaus/e2e/changes-checks/` (baseline/final logs and summary).
+- Captures: `/workspace/rh-ui-revamp-shots/after/dark/desktop-1920x1200/`,
+  with m24 light at `after/light/desktop-1920x1200/m24-agent-changes-light.png`.
+- Labelled mockup-left / production-right comparisons:
+  `/workspace/rh-ui-revamp-shots/after/side-by-side/m24-agent-changes.png`,
+  `m25-compare-swipe.png`, `m26-compare-side-by-side.png`,
+  `m27-timeline-changes.png`, `m28-change-states.png`.
+- Axe JSON: `/workspace/rh-ui-revamp-shots/a11y/after/`.
+- Preserved-baseline comparisons: `/workspace/rh-ui-revamp-shots/changes-regression/`.
+- Fresh m06 baseline: `/workspace/rh-ui-revamp-shots/changes-regression-fresh/`.
+- Browser workflow receipt: `.renderhaus/e2e/changes-v1.json`, recorded through
+  `scripts/browser_e2e_hook.py record` as blocked, never passed.
+
+Screenshots and browser evidence are not committed. Generated Next config
+changes were removed; the final source tree keeps the existing config formatting.
+Real-backend Comet E2E remains **blocked and pending**, as explicitly specified
+by the user. Fixture browser actions, offline repository tests and screenshots
+do not prove signed-in persistence or live approval/cap behavior.

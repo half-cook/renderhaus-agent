@@ -68,3 +68,15 @@ test('no app source file outside the legacy list names a provider or shows fee w
   }
   assert.deepEqual(offenders, []);
 });
+
+test('Changes UI vocabulary and all new source strings stay within v1 copy rules', async () => {
+  const { findChangesVocabularyLeaks, findCopyLeaks } = await rules();
+  for (const word of ['diff', 'commit', 'merge', 'branch', 'Sample']) assert.ok(findChangesVocabularyLeaks(`Open ${word}`).length);
+  assert.deepEqual(findChangesVocabularyLeaks('Changeset Change Take Checkpoint Accept Reject Revert Undo Re-apply Compare Restore'), []);
+  const files = [...walk('components/changes'), ...walk('app/(app)/design/change-states'), ...walk('lib/rh').filter((file) => /changes|compare-clock/.test(file)), 'design-shots/rh-fixtures.ts', 'design-shots/screens.ts'];
+  for (const file of files) {
+    const strings = userStrings(fs.readFileSync(path.join(studio, file), 'utf8')).join('\n');
+    assert.deepEqual(findCopyLeaks(strings), [], file);
+    assert.deepEqual(findChangesVocabularyLeaks(strings), [], file);
+  }
+});

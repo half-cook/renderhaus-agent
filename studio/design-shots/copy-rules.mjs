@@ -20,3 +20,8 @@ export function findCopyLeaks(text) {
   }
   return leaks;
 }
+
+
+export function findChangesVocabularyLeaks(text) {
+  return Array.from(String(text).matchAll(/\b(diff|commit|merge|branch|sample)\b/gi), (match) => ({ kind: "vocabulary", match: match[0], context: match[0] }));
+}
