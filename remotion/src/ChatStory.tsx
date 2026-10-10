@@ -1,26 +1,10 @@
 import {AbsoluteFill, cancelRender, continueRender, delayRender, staticFile, useCurrentFrame} from 'remotion';
 import {useEffect, useState} from 'react';
 import type {CSSProperties} from 'react';
-
-type Message = {from: 'me' | 'them'; text: string; status: '' | 'sent' | 'delivered' | 'read'; reaction: string};
-type Bubble = {
-  index: number; startFrame: number; typingStartFrame: number | null;
-  reactionFrame: number | null; receiptFrame: number | null;
-  lines: string[]; x: number; y: number; width: number; height: number; tail: boolean;
-};
-type Plan = {
-  fps: number; width: number; height: number; durationInFrames: number;
-  safeTop: number; safeBottom: number; fontSize: number; lineHeight: number; padding: number;
-  contactFontSize?: number;
-  bubbles: Bubble[]; scrollEvents: {frame: number; endFrame?: number; offset: number}[];
-};
-export type ChatStory = {
-  payload: {
-    theme: 'generic' | 'slate' | 'moss'; messages: Message[];
-    contact: {name: string; avatar: 'initials' | 'placeholder'}; dramatization: boolean;
-  };
-  plan: Plan;
-};
+import {ChatStorySchema} from './ChatStorySchema';
+import type {ChatStory} from './ChatStorySchema';
+export type {ChatStory} from './ChatStorySchema';
+type Plan = ChatStory['plan'];
 
 const palettes = {
   generic: {background: '#f3f0e9', chrome: '#ffffff', sent: '#635d86', received: '#ded9ce', text: '#242332', muted: '#657286', avatar: '#dae3f3'},
@@ -34,6 +18,7 @@ const fontFiles = {'renderhaus-chat-text': 'DejaVuSans.ttf', 'renderhaus-chat-em
 const emojiPattern = /[\u{1F000}-\u{1FAFF}\u2600-\u27FF\u203C\u2049\u20E3\u231A\u231B\u23F0\u23F3\u2B50\u2B55]/u;
 
 export function assertChatStory(story: ChatStory): void {
+  ChatStorySchema.parse(story);
   const {payload, plan} = story;
   if (!payload || !plan || !Object.hasOwn(palettes, payload.theme) ||
       !Array.isArray(payload.messages) || payload.messages.length < 1 || payload.messages.length > 40 ||
