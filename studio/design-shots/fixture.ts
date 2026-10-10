@@ -1,9 +1,10 @@
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { expect, type Page } from "@playwright/test";
 import type { Screen } from "./screens";
 import { assertCapturePrivacy } from "./privacy.mjs";
+import { findCopyLeaks } from "./copy-rules.mjs";
 
 export const HERE = path.dirname(fileURLToPath(import.meta.url));
 export const OUT = path.resolve(process.env.SHOT_OUT_DIR || path.join(HERE, "out"));
@@ -35,6 +36,18 @@ export async function privacyGuard(page: Page) {
   const text = await page.locator("body").innerText();
   const urls = await page.evaluate(() => Array.from(document.querySelectorAll<HTMLImageElement | HTMLMediaElement | HTMLSourceElement | HTMLAnchorElement>("img,video,source,a,audio")).map((element) => "href" in element ? element.href : ("currentSrc" in element ? element.currentSrc : "") || element.src));
   assertCapturePrivacy(text, urls);
+  const attributes = await page.evaluate(() => Array.from(document.querySelectorAll("[title],[aria-label],[alt],[placeholder]")).flatMap((element) => ["title", "aria-label", "alt", "placeholder"].map((name) => element.getAttribute(name) || "")));
+  const leaks = findCopyLeaks([text, ...attributes].join("\n"));
+  const label = process.env.SHOT_LABEL || "after";
+  const dir = path.join(OUT, "copy-leaks", label, THEME);
+  mkdirSync(dir, { recursive: true });
+  const key = new URL(page.url()).pathname.replace(/\W+/g, "_") + "_" + (new URL(page.url()).searchParams.get("workspace") || "page");
+  writeFileSync(path.join(dir, `${key}.json`), JSON.stringify({ url: page.url(), leaks }, null, 2));
+  // Standing rule: no platform fee and no provider/model names in visible product copy.
+  // Strict by default (the capture fails); SHOT_STRICT_COPY=0 downgrades it to the JSON report only.
+  if (leaks.length && process.env.SHOT_STRICT_COPY !== "0") {
+    throw new Error(`Visible copy leaks fee or provider wording: ${leaks.map((leak) => leak.match).join(", ")}`);
+  }
   await expect(page.locator("nextjs-portal, [data-nextjs-dev-tools-button], #__next-build-watcher")).toHaveCount(0);
 }
 

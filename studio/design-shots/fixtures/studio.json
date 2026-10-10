@@ -92,7 +92,7 @@
         "project_id": "demo-project",
         "conversation_id": "demo-task",
         "turn_index": 1,
-        "prompt": "Draft a plan without calling providers.",
+        "prompt": "Draft a storyboard plan for review.",
         "status": "completed",
         "created_at": 1791809900,
         "result": {
@@ -111,7 +111,7 @@
           "tool_events": [
             {
               "id": "demo-plan-1",
-              "name": "remotion.render_timeline",
+              "name": "render_timeline",
               "label": "Saved edit plan",
               "status": "completed",
               "summary": "Three-second opening shot.",
@@ -149,7 +149,7 @@
           "tool_events": [
             {
               "id": "demo-plan-2",
-              "name": "remotion.render_timeline",
+              "name": "render_timeline",
               "label": "Saved edit plan",
               "status": "completed",
               "summary": "Three-second opening shot.",
@@ -186,7 +186,6 @@
             "call_id": "demo-approval",
             "tool_name": "text_to_image",
             "label": "Generate storyboard reference",
-            "provider": "Demo provider",
             "arguments": {
               "prompt": "A storyboard reference for Demo Studio."
             }
@@ -210,7 +209,6 @@
         "call_id": "demo-approval",
         "tool_name": "text_to_image",
         "label": "Generate storyboard reference",
-        "provider": "Demo provider",
         "arguments": {
           "prompt": "A storyboard reference for Demo Studio."
         }

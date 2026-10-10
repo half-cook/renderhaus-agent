@@ -75,3 +75,14 @@ xyflow import. Clerk appearance stays as shipped pending a screen design.
 need writable paths through `npm_config_cache` and `PLAYWRIGHT_BROWSERS_PATH`
 in restricted environments. Never use another process's development port or
 stop a process the kit did not start.
+
+## Copy rules
+
+The standing rule is in `studio/design/DESIGN_SYSTEM.md` ("Copy rules"): no
+platform fee wording and no provider or model names in any user-visible string.
+`design-shots/copy-rules.mjs` holds the patterns. The capture kit checks visible
+text and `title`/`aria-label`/`alt`/`placeholder` on every screen and fails on a
+leak (`SHOT_STRICT_COPY=0` only writes `out/copy-leaks/**` reports). A node test
+keeps new files clean and ratchets the legacy files that still carry
+vendor-named labels (see `tests/copy-rules.test.cjs`); the revamp removes them.
+

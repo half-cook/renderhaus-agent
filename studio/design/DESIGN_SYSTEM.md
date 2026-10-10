@@ -264,3 +264,15 @@ Amber remains reserved for spend and credits. Port and status identity colors
 stay inherited. The token parity test guards every root variable.
 No existing page opts in. The current marketing page keeps its scoped light
 palette until its design is approved.
+
+## Copy rules (standing product rule)
+
+Product UI, the marketing page, toasts and error text never show the platform
+fee (no "Platform fee" line, no percentage, no fee footer) and never name the
+underlying providers or models. Approval cards show one fee-inclusive price per
+step plus a total; line items describe the work ("Product still", "10-second
+clip", "Voiceover"), not the vendor. The only allowed mention is a quiet FAQ
+line: "Every price you see includes a small platform fee." Fee and provider
+fields stay backend-only; client payload strings and errors must not carry them.
+Screenshot demo data follows the same rule, and the capture kit fails when
+visible text, `title`, `aria-label`, `alt` or `placeholder` leaks either.
