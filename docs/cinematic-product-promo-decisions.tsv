@@ -1,0 +1,22 @@
+subject	decision	detail	read_date	source
+scope	accepted	One free local search/validation tool; reuse existing renderer/music/VO; capture stays pending	2026-10-10	user task
+cards	imported	157 unmodified Chinese Markdown cards; 766503 packaged data bytes	2026-10-10	https://github.com/Vincentwei1021/video-shotcraft/tree/5ddbf521038b0a7accfb6dc1e0a9eb29c67277ab
+licence	Apache-2.0	Text permission only; original attribution denies licence to referenced source works; no new training grant	2026-10-10	https://github.com/Vincentwei1021/video-shotcraft/blob/5ddbf521038b0a7accfb6dc1e0a9eb29c67277ab/LICENSE
+source-parser	adapted	Preserve 24 invalid strict-YAML scalars and 91 missing tags fields; bounded scalar reader plus authored keywords	2026-10-10	providers/shot_recipes/BRAND_SCAN.json
+public-id	neutralized	ground-skim maps to unchanged runway-ground-skim source filename/frontmatter; no canonical tool-id clash	2026-10-10	providers/shot_recipes/index.json
+audio	blocked-upstream-assets	SFX assets need Mixkit terms review before use; user-supplied library or empty disclosed stem; no upstream audio/previews	2026-10-10	user licence decision
+storyboard	implemented	Pure bounded validator; duration +/-5%, frame/beat-grid cuts, named assignment, separate native audio/stem plans	2026-10-10	providers/shot_recipes/storyboard.py
+renderer	limited	Current timeline API cannot execute arbitrary components/JSX/keyframes; advanced recipes require pre-rendered assets	2026-10-10	providers/remotion/capabilities.py
+beat-grid	pending-input	No music beat-acquisition tool; supplied measured grid required; no invented detect op	2026-10-10	agent/deep_agent/skills/cinematic-product-promo/SKILL.md
+mureka_v95	verified-reused	mureka-9.5 via fal instrumental endpoint; $0.225/request; service terms/closed weights; training false	2026-10-10	https://fal.ai/models/mureka/api/generate/instrumental/api | https://fal.ai/models/mureka/api/generate/instrumental | https://platform.mureka.ai/docs/en/faq.html | https://fal.ai/legal/terms-of-service
+eleven_v4_turbo	verified-reused	Official model ID and TTS POST schema; $0.011/1k chars through Oct12 then $0.04; paid commercial terms; training false	2026-10-10	https://elevenlabs.io/docs/overview/models | https://elevenlabs.io/docs/api-reference/text-to-speech/convert | https://elevenlabs.io/pricing/api | https://elevenlabs.io/terms-of-use
+remotion_render	reused-price-TODO	Native schema verified; licence plan and compute vary; exact total unknown; existing 8-cent placeholder retained not official	2026-10-10	https://www.remotion.dev/docs/license/faq | https://aws.amazon.com/lambda/pricing/
+cutaway_record	provider-pending	No implementation or Gateway tool; existing capture skips preserved	2026-10-10	agent/deep_agent/routing_policy.json
+routing	activated	RT174/175 active; RT176 skipped capture with active direct negative; 263 total /257 active /6 skipped	2026-10-10	tests/fixtures/skill_routing.json
+models	unchanged	No new model; existing quality-first defaults and explicit exceptions; training false; confidential does not alter new route	2026-10-10	agent/deep_agent/routing_policy.json
+browser	blocked	Comet unavailable per task; no UI actions/artifact playback; E2E pending	2026-10-10	docs/BROWSER_E2E.md
+review	offline-native	Native review only; external cross-model provider lanes skipped under offline instruction	2026-10-10	user offline-only instruction
+secrets	none	No new env/secrets/flags; sync_secrets unchanged	2026-10-10	providers/catalog.py
+review-fixes	verified-focused	Strict guard before dereference; full native fps rules; distinct named aliases; quoted selections; neutral labels/errors; strict audio end; launch-video/style routes	2026-10-10	native offline review and regression tests
+data-update-build	wired	A shot-recipes-only data edit selects its Gateway and rebuilds agentcore; offline shell decision verified	2026-10-10	.github/workflows/deploy.yml
+verification	passed-offline	2347 unittest tests /8 skips; ruff; ci_check with offline wheelhouse; Studio typecheck; Lambda25782269 bytes; wheel byte parity	2026-10-10	docs/CINEMATIC_PRODUCT_PROMO.md
