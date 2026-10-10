@@ -2,6 +2,8 @@
 name: art-style-motion
 description: Plan animated art shorts, named explainer grammars such as Kurzgesagt, Vox or 3b1b, and characters walking through painting worlds. Compose supplied or authored motion with Remotion by default; generic silent explainers use knowledge-explainer.
 metadata:
+  remotion_backend: configured
+  remotion_features: clip_timing transitions fit_position scale motion titles captions audio_mix canvas encoding
   include_tools: call_editor_tool call_media_tool call_audio_tool
   routing_tools: remotion_render hyperframes_render gpt_image25_t2i eleven_v4_turbo elevenlabs_sfx_v2
   gateway_tools: Remotion___render_timeline Remotion___get_render_progress HyperFrames___render_composition OpenAI___generate_image ElevenLabs___text_to_speech_convert ElevenLabs___text_to_sound_effects_convert
@@ -118,3 +120,8 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 -->
+
+The configured Remotion backend must support every requested feature. Unsupported features refuse before media I/O
+or AWS submission. Crop/pad reframing requires local/worker; fitted font/box overlays require
+Lambda overlay contract version 2 or local/worker. Use named motion presets; arbitrary render
+keyframes, per-word kinetic typography and custom components remain unavailable.

@@ -2,6 +2,8 @@
 name: remotion-ad-variant-matrix
 description: Validate a retail table, compose price/CTA/logo/legal overlays on a locked master, render the first SKU at each aspect for human review, then render an approved batch with hashes and a manifest. Refuse arbitrary shell commands and parked Resolve operations.
 metadata:
+  remotion_backend: configured
+  remotion_features: clip_timing transitions fit_position scale motion titles captions audio_mix canvas encoding fitted_overlays crop_reframe blurred_padding ad_matrix
   include_tools: call_editor_tool
   routing_tools: ad_variant_matrix remotion_render ffmpeg_tool delivery_render deliverable_qc
   gateway_tools: Remotion___render_ad_variants Remotion___render_timeline Remotion___get_render_progress Ffmpeg___ffmpeg_tool Remotion___deliver_render Remotion___qc_deliverable
@@ -168,3 +170,8 @@ and [terms](https://www.remotion.dev/docs/terms), read 2026-10-09.
 FFmpeg's build can be LGPL or GPL. The demo binary reports GNU GPL version 2 or later
 (`ffmpeg -L`, checked 2026-10-09). The wrapper does not redistribute a binary.
 See [FFmpeg legal](https://ffmpeg.org/legal.html), read 2026-10-09.
+
+The configured Remotion backend must support every requested feature. Unsupported features refuse before media I/O
+or AWS submission. Crop/pad reframing requires local/worker; fitted font/box overlays require
+Lambda overlay contract version 2 or local/worker. Use named motion presets; arbitrary render
+keyframes, per-word kinetic typography and custom components remain unavailable.

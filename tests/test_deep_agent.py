@@ -24,6 +24,8 @@ from agent.studio_agent_next import (
 
 FINAL = {"title": "Product still", "summary": "A product still is ready.",
          "markdown": "# Product still", "filename": "../Product still"}
+RENDER_ARGUMENTS = {'title': 'Preview', 'visuals': [{'kind': 'image',
+    'url': 'https://example.test/still.png', 'duration_seconds': 1}]}
 IMAGE = Tool(name="Seedream___text_to_image", description="Generate a still",
              inputSchema={"type": "object", "properties": {"prompt": {"type": "string"}},
                           "required": ["prompt"], "additionalProperties": False})
@@ -465,7 +467,7 @@ class DeepAgentTests(unittest.IsolatedAsyncioTestCase):
         with self.assertRaises(StudioAgentApprovalRequired) as paused:
             await self.run_graph(request, [
                 call("read_file", {"file_path": "/skills/final-assembly/SKILL.md"}, "assembly"),
-                call("call_editor_tool", {"tool_name": render.name, "arguments": {}}, "render"),
+                call("call_editor_tool", {"tool_name": render.name, "arguments": RENDER_ARGUMENTS}, "render"),
             ], gateway, studio)
         gateway.call_tool.assert_not_awaited()
         approval = paused.exception.approvals[0]
@@ -477,7 +479,7 @@ class DeepAgentTests(unittest.IsolatedAsyncioTestCase):
             "approval_decisions": [StudioApprovalDecision(call_id=approval.call_id, decision="approve")],
         })
         result, restored, _ = await self.run_graph(resumed, [final()], gateway)
-        gateway.call_tool.assert_awaited_once_with(render.name, {})
+        gateway.call_tool.assert_awaited_once_with(render.name, RENDER_ARGUMENTS)
         self.assertEqual(restored.tool_events[-1].status, "dry_run")
         self.assertIn("incomplete", result.summary)
 
@@ -586,7 +588,7 @@ class DeepAgentTests(unittest.IsolatedAsyncioTestCase):
         with self.assertRaises(StudioAgentApprovalRequired) as paused:
             await self.run_graph(request, [
                 call("read_file", {"file_path": "/skills/final-assembly/SKILL.md"}, "skill"),
-                call("call_editor_tool", {"tool_name": render.name, "arguments": {}}, "render"),
+                call("call_editor_tool", {"tool_name": render.name, "arguments": RENDER_ARGUMENTS}, "render"),
             ], gateway, studio)
         gateway.call_tool.assert_not_awaited()
         approval = paused.exception.approvals[0]
@@ -597,14 +599,14 @@ class DeepAgentTests(unittest.IsolatedAsyncioTestCase):
             "approval_decisions": [StudioApprovalDecision(call_id=approval.call_id, decision="approve")],
         })
         _, studio, _ = await self.run_graph(resumed, [final()], gateway)
-        gateway.call_tool.assert_awaited_once_with(render.name, {})
+        gateway.call_tool.assert_awaited_once_with(render.name, RENDER_ARGUMENTS)
         gateway.call_tool.reset_mock()
         gateway.call_tool.return_value = {"status": "succeeded", "render_id": "render-1", "url": "https://cdn.example/out.mp4"}
         replacement = self.request(autonomous=True, session_items=json.loads(json.dumps(studio.session_items)))
         replacement_studio = _context_from_request(replacement)
         with self.assertRaises(StudioAgentApprovalRequired) as replacement_pending:
             await self.run_graph(replacement, [
-                call("call_editor_tool", {"tool_name": render.name, "arguments": {}}, "replacement"),
+                call("call_editor_tool", {"tool_name": render.name, "arguments": RENDER_ARGUMENTS}, "replacement"),
             ], gateway, replacement_studio)
         gateway.call_tool.assert_not_awaited()
         replacement_approval = replacement_pending.exception.approvals[0]

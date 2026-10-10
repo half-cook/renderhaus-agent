@@ -2,6 +2,8 @@
 name: motion-carry-qc
 description: Check rendered motion graphics, product demos, knowledge explainers and explicitly requested HyperFrames films for slideshow cuts, missing carry and rhythm faults before human review. Generative shot continuity stays on continuity-qc.
 metadata:
+  remotion_backend: configured
+  remotion_features: clip_timing transitions fit_position scale motion titles captions audio_mix canvas encoding
   include_tools: call_editor_tool
   routing_tools: motion_carry_probe remotion_render hyperframes_render
   gateway_tools: Remotion___motion_carry_probe Remotion___render_timeline Remotion___get_render_progress HyperFrames___render_composition
@@ -57,3 +59,8 @@ height, source_resolution and resolution warnings under final-assembly.
 This is an independent clean-room implementation of a published idea.
 No third-party code, animation library, look, template, or external threshold
 was read or copied. See `docs/MOTION_CARRY_QC.md` for calibration and limits.
+
+The configured Remotion backend must support every requested feature. Unsupported features refuse before media I/O
+or AWS submission. Crop/pad reframing requires local/worker; fitted font/box overlays require
+Lambda overlay contract version 2 or local/worker. Use named motion presets; arbitrary render
+keyframes, per-word kinetic typography and custom components remain unavailable.

@@ -49,6 +49,37 @@ SPENDING_SESSION_TYPE = "renderhaus_run_spending"
 logger = logging.getLogger("renderhaus.gateway_executor")
 
 
+def _worker_remotion_tool(name: str, arguments: dict | None = None) -> bool:
+    from providers.remotion.api import render_backend
+
+    if name == 'Remotion___get_render_progress':
+        return (arguments or {}).get('render_id', '').startswith('local-')
+    return name == 'Remotion___render_timeline' and render_backend() == 'local'
+
+
+def _local_remotion_arguments(studio, arguments: dict) -> dict:
+    prepared = {**arguments}
+    for section in ('visuals', 'audio_tracks'):
+        prepared[section] = [dict(item) for item in arguments.get(section) or []]
+        for item in prepared[section]:
+            field = 'url' if 'url' in item else 'output_path'
+            source = item.get(field, '')
+            version = studio.source_versions.get(source)
+            if source.startswith('renderhaus-asset://'):
+                version = source.removeprefix('renderhaus-asset://').strip()
+                if not version:
+                    raise ValueError('Referenced Studio asset is missing a version id.')
+            if version:
+                if studio.source_resolver is None:
+                    raise ValueError('Local Remotion requires the owned Studio asset resolver.')
+                item[field] = studio.source_resolver(version)
+            elif not source.startswith('https://'):
+                from providers.ffmpeg.sandbox import job_directory, validate_input_path
+
+                item[field] = str(validate_input_path(job_directory(studio.job_id), source))
+    return prepared
+
+
 def tool_needs_approval(name: str, autonomous: bool, arguments: dict | None = None) -> bool:
     from providers.elevenlabs.catalog import requires_approval
 
@@ -169,11 +200,16 @@ class GatewayExecutor:
             spec = get_provider(provider)
             for schema in generate_schemas(spec):
                 name = f"{spec.target_name}___{schema['name']}"
-                if name not in LOCAL_MEDIA_TOOLS:
+                is_poll = name == 'Remotion___get_render_progress'
+                if name not in LOCAL_MEDIA_TOOLS and not _worker_remotion_tool(name) and not is_poll:
                     continue
                 if request_tool_blocker(self.studio.prompt, name) is None:
-                    available[name] = (None, Tool(name=name, description=schema["description"],
-                                                  inputSchema=schema["inputSchema"]))
+                    entry = (None, Tool(name=name, description=schema["description"],
+                                        inputSchema=schema["inputSchema"]))
+                    if is_poll:
+                        available.setdefault(name, entry)
+                    else:
+                        available[name] = entry
         return available
 
     def filter_discovery(self, value):
@@ -352,6 +388,18 @@ class GatewayExecutor:
         if blocker := request_tool_blocker(self.studio.prompt, name):
             return blocker
         provider, tool = tool_parts(name)
+        if name == 'Remotion___render_timeline':
+            from providers.remotion.api import render_backend
+            from providers.remotion.capabilities import validate_backend
+            from providers.remotion.captions import srt_captions
+
+            try:
+                prepared = {**arguments, 'subtitles': srt_captions(arguments.get('subtitles_srt'), arguments.get('subtitles'))}
+                validate_backend(prepared, render_backend())
+                if render_backend() == 'local':
+                    _local_remotion_arguments(self.studio, arguments)
+            except ValueError as exc:
+                return str(exc)
         if name in {"Fal___pixelcut_looping_video", "Fal___pixverse_vibemv"}:
             from providers.fal.api import _validated
 
@@ -620,6 +668,8 @@ class GatewayExecutor:
         if name not in registry:
             return {"status": "failed", "error": "Search for this Gateway tool before invoking it."}
         server, tool = registry[name]
+        if name == 'Remotion___get_render_progress' and server is None and not _worker_remotion_tool(name, arguments):
+            return {'status': 'not_run', 'reason': 'Discover the Remotion Gateway progress tool before polling a saved Lambda render.'}
         try:
             validate(arguments, tool.input_schema)
         except SchemaValidationError as exc:
@@ -679,7 +729,7 @@ class GatewayExecutor:
                 {},
             )
             try:
-                if name in LOCAL_MEDIA_TOOLS:
+                if name in LOCAL_MEDIA_TOOLS or _worker_remotion_tool(name, arguments):
                     from providers.registry import dispatch
                     from providers.remotion.ad_variants import authorize
                     from server.billing import stripe_enabled
@@ -704,7 +754,9 @@ class GatewayExecutor:
                                            f"human:{call_id}" if approved else ""):
                                 output = await asyncio.to_thread(dispatch, provider, verb, arguments)
                         else:
-                            output = await asyncio.to_thread(dispatch, provider, verb, arguments)
+                            worker_arguments = (_local_remotion_arguments(studio, arguments)
+                                                if name == 'Remotion___render_timeline' else arguments)
+                            output = await asyncio.to_thread(dispatch, provider, verb, worker_arguments)
                         payload = _unwrap_tool_output(output)
                         if payload.get("error") or (payload.get("status") in {"failed", "error", "blocked", "not_run"}
                                                    and name != "Remotion___motion_carry_probe"):
@@ -743,7 +795,10 @@ class GatewayExecutor:
                             break
                         interval = 15 if name == "ModelStudio___get_task" else 8
                         await asyncio.sleep(min(interval, max(0, deadline - time.monotonic())))
-                        output = await server.call_tool(name, arguments)
+                        if _worker_remotion_tool(name, arguments):
+                            output = await asyncio.to_thread(dispatch, provider, verb, arguments)
+                        else:
+                            output = await server.call_tool(name, arguments)
                     _progress(
                         studio, event_id=f"wait-{call_id}", event_type="MEDIA_WAIT",
                         title="Media status", message="Status check finished.",

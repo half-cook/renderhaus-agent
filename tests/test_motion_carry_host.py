@@ -165,8 +165,11 @@ class MotionDeepAgentTests(unittest.IsolatedAsyncioTestCase):
             gateway.call_tool.return_value = {"status": "succeeded", "backend": "local", "render_id": render_id,
                                               "output_path": str(source), "motion_carry_timeline": timeline}
             with patch.dict(os.environ, {"RENDERHAUS_MEDIA_DIR": root, "MOTION_CARRY_QC_DRY_RUN": "false"}):
-                result = await GatewayExecutor(context, [gateway]).execute({
-                    "tool_name": "Remotion___get_render_progress", "arguments": {"render_id": render_id}, "call_id": "poll"})
+                with patch('providers.registry.dispatch', return_value=gateway.call_tool.return_value):
+                    result = await GatewayExecutor(context, [gateway]).execute({
+                        "tool_name": "Remotion___get_render_progress", "arguments": {
+                            "render_id": render_id, 'bucket_name': 'local'}, "call_id": "poll"})
+                gateway.call_tool.assert_not_called()
                 self.assertEqual(Path(result["output_path"]).parent, Path(root)/"job")
                 self.assertEqual(Path(result["output_path"]).read_bytes(), source.read_bytes())
                 self.assertEqual(result["motion_carry_timeline"], timeline)

@@ -2,6 +2,8 @@
 name: final-assembly
 description: Assemble existing assets into a Remotion video, verify the actual MP4 and require final delivery QC evidence before completion claims.
 metadata:
+  remotion_backend: configured
+  remotion_features: clip_timing transitions fit_position scale motion titles captions srt_captions audio_mix canvas encoding
   include_tools: call_editor_tool
   gateway_tools: Remotion___export_nle_timeline Remotion___get_render_progress Remotion___render_timeline Remotion___render_ad_variants Ffmpeg___ffmpeg_tool Remotion___deliver_render Remotion___qc_deliverable
   routing_tools: remotion_render ad_variant_matrix ffmpeg_tool delivery_render deliverable_qc
@@ -34,7 +36,7 @@ Omit `fps` and `video_bitrate` unless the customer sets them. The renderer uses 
 video's measured frame rate and preserves its quality. A cinematic brief alone does not set fps.
 Lambda supports captions and motion effects. The local ffmpeg backend supports trims, fit,
 fades, audio timing/volume/fades, allow-listed text fonts with fit guards, and positioned/scaled
-overlays. Video grade/motion/rotation remain unsupported locally. New font/box props need a
+overlays. Both backends accept fixed grade/motion presets and centre rotation. New font/box props need a
 compatible Lambda composition version or return a clear refusal. Use durable URLs for Lambda;
 for local assembly use provider-returned
 plain `output_path` fields in visuals/audio_tracks, without a `file://` prefix. Call call_editor_tool with
@@ -66,3 +68,10 @@ A handoff ZIP does not satisfy final MP4 delivery.
 Report progress before provider work. Respect DRY_RUN. Never change it to obtain an artifact.
 A preview or queued job is not finished media. Required approval appears in the existing chat.
 Use the smallest useful request and avoid redundant paid variants.
+
+The configured Remotion backend must support every requested feature. Unsupported features refuse before media I/O
+or AWS submission. Crop/pad reframing requires local/worker; fitted font/box overlays require
+Lambda overlay contract version 2 or local/worker. Use named motion presets; arbitrary render
+keyframes, per-word kinetic typography and custom components remain unavailable.
+For an existing caption transcript, `subtitles_srt` accepts bounded inline numbered SRT
+instead of a `subtitles` list. Captions burn in as literal output-timed text; validate fit.
