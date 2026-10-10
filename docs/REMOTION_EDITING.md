@@ -7,6 +7,15 @@ Resolve is parked. Free local delivery finishing normalizes audio, names/version
 checks every final file. Technical QC does not certify channel specifications or accept
 editorial content; those reviews remain explicit.
 
+Fictional chat stories also use the existing timeline and matrix tools. A direct timeline
+accepts `chat_story` instead of supplied visuals. A matrix uses `brief.mode="chat_story"`,
+1–50 `{variant_key,chat_story,aspect?}` script rows and no master asset. Each script produces
+one render; first-sample approval, still extraction, separate batch approval and final
+loudness/delivery QC retain the existing host gates. Invalid rows and persisted failures
+remain in the manifest while other rows proceed. Only generic chrome is enabled by default.
+This feature is local-only; Lambda refuses it. See [chat story video](CHAT_STORY_VIDEO.md)
+for the contract, safe layout, theme legal gate and pending Comet validation.
+
 ## Tool contracts
 
 `Remotion___render_ad_variants`, alias `ad_variant_matrix`, accepts these arguments:

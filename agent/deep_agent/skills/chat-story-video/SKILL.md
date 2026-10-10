@@ -78,7 +78,7 @@ A dry-run payload is a preview, never an MP4.
 For a batch, use `Remotion___render_ad_variants` with `brief.mode="chat_story"`,
 `master_asset=""`, the trusted current `job_id` and one `rows` record per script.
 Each row has a unique `variant_key`, its own `chat_story` payload and an optional `aspect`.
-The batch has 1-100 rows. Do not issue individual timeline calls
+The batch has 1-50 rows. Do not issue individual timeline calls
 to bypass batch approval.
 
 1. Call `stage="plan"`. Validate each row and report the returned counts, duration and cost
