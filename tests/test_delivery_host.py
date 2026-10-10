@@ -390,6 +390,29 @@ class DeliveryCompletionTests(unittest.TestCase):
                 self.assertFalse(_validate_video_delivery(self.request, self.context(newer), final))
                 self.assertNotIn("delivered", final.summary.lower())
 
+    def test_qc_after_finishing_must_match_every_new_output(self):
+        for prior, match in ((False, False), (False, True), (True, False), (True, True)):
+            with self.subTest(prior=prior, match=match):
+                old = self.report("old")
+                current = self.report("current")
+                delivery = tool_event(DELIVERY, old, event_id="delivery")
+                self.request.prior_tool_events = [delivery.public()] if prior else []
+                self.request.prompt = "color_match_lut on the local master"
+                outputs = [{"output_path": row["output_path"], "sha256": row["sha256"]}
+                           for row in current["files"]]
+                finishing = tool_event("Ffmpeg___ffmpeg_tool", {"status": "succeeded", "outputs": outputs},
+                                       event_id="finishing", arguments={"op": "color_match_lut"})
+                qc = tool_event(QC, current if match else old, event_id="qc")
+                context = self.context(finishing, qc) if prior else self.context(delivery, finishing, qc)
+                self.assertEqual(_validate_video_delivery(self.request, context), match)
+
+    def test_qc_cannot_certify_finishing_without_output_checksums(self):
+        delivery = tool_event(DELIVERY, self.report("old"), event_id="delivery")
+        finishing = tool_event("Ffmpeg___ffmpeg_tool", {"status": "succeeded", "outputs": []},
+                               event_id="finishing", arguments={"op": "burn_subtitles"})
+        qc = tool_event(QC, self.report("old"), event_id="qc")
+        self.assertFalse(_validate_video_delivery(self.request, self.context(delivery, finishing, qc)))
+
     def test_malformed_failed_report_still_discloses_the_worker_reason(self):
         failed = tool_event(DELIVERY, {"status": "failed", "passed": False, "files": None,
             "rendered": None, "checks": None, "failures": None, "reason": "Invalid source media."})
