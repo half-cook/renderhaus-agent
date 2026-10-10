@@ -6,6 +6,7 @@ import re
 import unittest
 from pathlib import Path
 from unittest.mock import patch
+from urllib.parse import unquote, urlsplit
 
 import yaml
 
@@ -111,6 +112,39 @@ for index, case in enumerate(CASES):
 
 
 class SkillContracts(unittest.TestCase):
+    def test_skill_and_catalog_relative_links_resolve(self):
+        paths = [*(ROOT / "agent/deep_agent/skills").glob("*/SKILL.md"), ROOT / "docs/SKILLS.md"]
+        for path in paths:
+            for target in re.findall(r"\[[^\]\n]+\]\(([^)\s]+)\)", path.read_text()):
+                link = urlsplit(target)
+                if link.scheme or link.netloc or not link.path:
+                    continue
+                with self.subTest(path=path, target=target):
+                    self.assertTrue((path.parent / unquote(link.path)).exists())
+
+    def test_motion_and_knowledge_pattern_references_have_source_and_licence(self):
+        for skill, repo, licence in [
+            ("motion-graphics", "JularDepick/Agent-Video-Driver.SKILL", "Apache-2.0"),
+            ("motion-graphics", "Ninesam-9/motion-efficiency", "MIT"),
+            ("knowledge-explainer", "mbackschat/explainery-core", "Apache-2.0"),
+        ]:
+            with self.subTest(skill=skill, repo=repo):
+                body = (ROOT / "agent/deep_agent/skills" / skill / "SKILL.md").read_text()
+                self.assertTrue("\n## References\n" in body, f"{skill} needs pattern references")
+                references = body.split("\n## References\n", 1)[1].split("\n## ", 1)[0]
+                entries = references.split("\n- ")
+                entry = next((item for item in entries if f"https://github.com/{repo}/blob/" in item), "")
+                urls = re.findall(r"\]\((https://github\.com/[^)\s]+)\)", entry)
+                sources = [url for url in urls if url.endswith(".md")]
+                self.assertTrue(sources, repo)
+                for source in sources:
+                    self.assertRegex(source, rf"^https://github\.com/{re.escape(repo)}/blob/[0-9a-f]{{40}}/")
+                    prefix, revision_path = source.split("/blob/", 1)
+                    revision_root = prefix + "/blob/" + revision_path.split("/", 1)[0]
+                    self.assertIn(revision_root + "/LICENSE", urls)
+                self.assertIn(licence, entry)
+                self.assertRegex(entry, r"read \d{4}-\d{2}-\d{2}")
+
     def test_every_gateway_reference_exists_and_dispatches_through_correct_role(self):
         from agent.deep_agent.routing import TOOL_MAP
         from agent.deep_agent.runner import DISPATCH_TARGETS
