@@ -156,3 +156,12 @@ class PodcastRoutingTests(unittest.TestCase):
         self.assertIsNone(route.tool)
         self.assertIn("explicit", route.reason.lower())
         self.assertIn("Remotion", route.reason)
+
+
+    def test_template_style_selection_does_not_index_episode(self):
+        for prompt in ["Pick the best font for this podcast audiogram",
+                       "Choose the best color for the podcast audiogram captions"]:
+            with self.subTest(prompt=prompt):
+                route = route_intent(prompt)
+                self.assertEqual(route.skill, "podcast-audiogram")
+                self.assertFalse(any(step.alias and step.alias.startswith("footage_memory") for step in route.steps))

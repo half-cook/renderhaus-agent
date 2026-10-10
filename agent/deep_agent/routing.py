@@ -625,7 +625,7 @@ def _podcast_route(prompt: str, *, arguments: dict | None,
     if not re.search(_PODCAST_REQUEST, text, re.I):
         return None
     if (re.search(r"\b(?:episode|podcast)\b", text, re.I)
-            and re.search(r"\b(?:find|pick|choose|pull|extract)\b.*\b(?:best|moments?)\b", text, re.I)):
+            and re.search(r"\b(?:find|pick|choose|pull|extract)\b[^.;!?]*\b(?:moments?|clips?|excerpts?|segments?|highlights?)\b", text, re.I)):
         args = dict(arguments or {})
         episode = re.search(r"\b(\d+(?:\.\d+)?)[ -]*(hours?|minutes?|mins?)\s+(?:podcast\s+)?episode\b", text, re.I)
         if episode and "source_duration_seconds" not in args:
