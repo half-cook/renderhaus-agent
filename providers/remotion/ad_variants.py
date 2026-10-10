@@ -52,11 +52,12 @@ def validate_arguments(arguments: dict[str, Any]) -> None:
         raise ValueError("job_id must contain 1-80 ASCII letters, digits, underscores or hyphens.")
     if not isinstance(arguments.get("brief"), dict):
         raise ValueError("brief must be an object.")
-    if not isinstance(arguments.get("rows"), list) or not 1 <= len(arguments["rows"]) <= 100:
-        raise ValueError("rows must contain 1-100 table records.")
+    limit = 50 if arguments['brief'].get('mode') == 'chat_story' else 100
+    if not isinstance(arguments.get("rows"), list) or not 1 <= len(arguments["rows"]) <= limit:
+        raise ValueError(f"rows must contain 1-{limit} table records.")
     if type(arguments.get("concurrency", 2)) is not int or not 1 <= arguments.get("concurrency", 2) <= 2:
         raise ValueError("concurrency must be an integer from 1 to 2.")
-    if not isinstance(arguments.get("master_asset"), str) or not arguments["master_asset"]:
+    if not isinstance(arguments.get("master_asset", ''), str) or (not arguments.get("master_asset") and arguments['brief'].get('mode') != 'chat_story'):
         raise ValueError("master_asset must be a job-relative input file.")
     if not isinstance(arguments.get("plan_hash", ""), str) or (
         arguments.get("plan_hash") and not re.fullmatch(r"[0-9a-f]{64}", arguments["plan_hash"])
@@ -238,7 +239,58 @@ def _row_arguments(row: dict, brief: dict, job: Path, master: Path, source: dict
             "output_resolution": brief.get("output_resolution", "source")}, plans
 
 
+def _chat_plan(job: Path, rows: list[dict], brief: dict) -> dict:
+    from providers.remotion.chat_story import build_props, normalize
+
+    if set(brief) - {'mode', 'campaign', 'fps'}:
+        raise ValueError('Chat brief accepts mode, campaign and fps only.')
+    campaign = brief.get('campaign', 'chat')
+    if not isinstance(campaign, str) or not re.fullmatch(r'[A-Za-z0-9_-]{1,40}', campaign):
+        raise ValueError('campaign must be a safe ASCII identifier.')
+    planned, blocked, hashes, keys = [], [], {}, set()
+    # Invalid rows still need stable provenance. JSON NaN/Infinity are permitted
+    # only in this hash encoding; normalization refuses them as render arguments.
+    input_hashes = [hashlib.sha256(json.dumps(raw, sort_keys=True, ensure_ascii=True,
+                    separators=(',', ':'), allow_nan=True).encode()).hexdigest() for raw in rows]
+    for index, raw in enumerate(rows):
+        try:
+            if not isinstance(raw, dict) or set(raw) - {'variant_key', 'chat_story', 'aspect'}:
+                raise ValueError('Chat row accepts variant_key, chat_story and optional aspect only.')
+            key = raw.get('variant_key')
+            if not isinstance(key, str) or not re.fullmatch(r'[A-Za-z0-9_-]{1,40}', key) or key in keys:
+                raise ValueError('variant_key must be unique and contain 1-40 ASCII letters, digits, underscores or hyphens.')
+            keys.add(key)
+            payload = normalize({**raw['chat_story'], **({'aspect': raw['aspect']} if 'aspect' in raw else {})})
+            for field in ('music_ref', 'send_sound_ref', 'receive_sound_ref'):
+                if payload[field]:
+                    path, metrics = _media(job, payload[field])
+                    if not any(s.get('codec_type') == 'audio' for s in _probe_payload(metrics).get('streams', [])):
+                        raise ValueError(f'{field} requires an audio stream.')
+                    hashes[payload[field]] = _file_hash(path)
+            props = build_props(campaign, payload, fps=brief.get('fps', 30))
+            arguments = {'title': campaign, 'chat_story': payload, 'fps': brief.get('fps', 30)}
+            row = {'variant_key': key, 'sku': key, 'locale': 'und', 'aspect': payload['aspect']}
+            planned.append({'row_index': index, **row, 'timeline': props, 'render_arguments': arguments,
+                            'input_props_hash': digest(props), 'filename': _filename(row, campaign),
+                            'reframe_plan': [], 'source_frame_rates': {}, 'cadence_warnings': [],
+                            'expected_strings': {'messages': [m['text'] for m in payload['messages']]}})
+        except (ValueError, TypeError, KeyError, OSError) as exc:
+            blocked.append({'row_index': index, 'variant_key': raw.get('variant_key') if isinstance(raw, dict) else None,
+                            'input_hash': input_hashes[index], 'reasons': [str(exc)]})
+    quote = ad_matrix_estimate({'stage': 'plan', 'rows': rows, 'brief': brief})
+    return {'status': 'planned' if planned else 'blocked', 'mode': 'chat_story', 'planned': planned,
+            'blocked': blocked, 'asset_hashes': hashes, 'render_count': len(planned), 'estimate': quote,
+            'plan_hash': digest({'row_input_hashes': input_hashes, 'planned': planned, 'blocked': blocked, 'brief': brief,
+                                 'assets': hashes, 'estimate': quote}), 'candidate_set': True,
+            'review_note': 'Open the first chat video and its stills. Batch approval accepts this unchanged sample hash; visual review remains pending.',
+            'warnings': list(dict.fromkeys(w for r in planned for w in r['timeline']['document']['chatStory']['plan']['warnings']))}
+
+
 def _plan(job: Path, master_asset: str, rows: list[dict], brief: dict) -> dict:
+    if brief.get('mode') == 'chat_story':
+        if master_asset:
+            raise ValueError('Chat stories do not accept a master video.')
+        return _chat_plan(job, rows, brief)
     planned, blocked = [], []
     brief = {"campaign": "campaign", "logo_alpha_required": True, **brief}
     if set(brief) - {"campaign", "logo_alpha_required", "legal_locales", "legal_by_locale", "fps",
@@ -383,6 +435,27 @@ def _freeze_sources(job: Path, directory: Path, hashes: dict[str, str]) -> dict[
     return frozen
 
 
+def _failed_chat_report_matches(artifact: Path, report: dict, reasons: list) -> bool:
+    """A failed report proves the recorded failure, never a finished deliverable."""
+    checks = report.get('checks')
+    if not isinstance(checks, list) or not all(isinstance(check, dict) and
+            isinstance(check.get('name'), str) and isinstance(check.get('detail'), str) and
+            type(check.get('pass')) is bool for check in checks):
+        return False
+    failures = [f"{check['name']}: {check['detail']}" for check in checks
+                if check.get('severity') == 'error' and not check['pass']]
+    return bool(failures) and (
+        report.get('passed') is False and report.get('technical_passed') is False and
+        report.get('failures') == failures == reasons and
+        report.get('output_path') == str(artifact) and
+        report.get('sha256') == _file_hash(artifact) and report.get('bytes') == artifact.stat().st_size)
+
+
+def _chat_failures(entries: list[dict]) -> list[dict]:
+    return [{'variant_key': entry['variant_key'], 'reasons': entry['reasons']} for entry in entries
+            if entry.get('row_status') == 'failed']
+
+
 def _load_manifest(path: Path, plan: dict, directory: Path) -> list[dict]:
     from providers.ffmpeg.sandbox import input_file
     from providers.remotion.delivery import MAX_JSON_BYTES, PRESETS
@@ -398,13 +471,25 @@ def _load_manifest(path: Path, plan: dict, directory: Path) -> list[dict]:
     rows = {r["variant_key"]: r for r in plan["planned"]}
     seen = set()
     for entry in entries:
-        if not isinstance(entry, dict) or entry.get("variant_key") not in rows:
+        if not isinstance(entry, dict):
+            raise ValueError('Manifest entries must be objects.')
+        if plan.get('mode') == 'chat_story' and entry.get('row_status') == 'blocked':
+            if entry not in [{**r, 'row_status': 'blocked'} for r in plan['blocked']]:
+                raise ValueError('Blocked chat row differs from the approved plan.')
+            continue
+        if entry.get("variant_key") not in rows:
             raise ValueError("Manifest contains an unplanned variant.")
         row = rows[entry["variant_key"]]
         if entry["variant_key"] in seen or any(entry.get(key) != row[key] for key in
                                               ("sku", "locale", "aspect", "input_props_hash")):
             raise ValueError("Manifest identity differs from the approved plan.")
         seen.add(entry["variant_key"])
+        if plan.get('mode') == 'chat_story' and entry.get('row_status') == 'failed':
+            if (not isinstance(entry.get('reasons'), list) or not entry['reasons'] or
+                    any(not isinstance(reason, str) or not reason for reason in entry['reasons'])):
+                raise ValueError('Failed chat rows require their failure reasons.')
+            if 'file' not in entry:
+                continue
         artifact = directory / row["filename"]
         if (entry.get("file") != str(artifact) or artifact.is_symlink() or not artifact.is_file()
                 or not isinstance(entry.get("approved_by"), str) or not entry["approved_by"]
@@ -418,8 +503,14 @@ def _load_manifest(path: Path, plan: dict, directory: Path) -> list[dict]:
             raise ValueError("Matrix technical QC report is unsafe or too large.")
         technical = json.loads(report_path.read_text())
         if (qc.get("sha256") != _file_hash(report_path) or not isinstance(technical, dict) or
-                technical.get("file") != str(artifact) or
-                not validate_file_report(directory.parent, technical, PRESETS["review-proxy"])):
+                technical.get("file") != str(artifact)):
+            raise ValueError("Matrix technical QC is missing, stale, failed or incomplete; inspect its saved report.")
+        if plan.get('mode') == 'chat_story' and entry.get('delivery_status') == 'failed':
+            reasons = entry.get('reasons', technical.get('failures'))
+            if not _failed_chat_report_matches(artifact, technical, reasons):
+                raise ValueError('Failed chat technical QC is missing, stale or inconsistent; inspect its saved report.')
+            entry.update(row_status='failed', reasons=reasons)
+        elif not validate_file_report(directory.parent, technical, PRESETS["review-proxy"]):
             raise ValueError("Matrix technical QC is missing, stale, failed or incomplete; inspect its saved report.")
     return entries
 
@@ -428,9 +519,14 @@ def _render(row: dict, job: Path, directory: Path, approved_by: str, review: boo
     from providers.ffmpeg.api import execute
 
     args = copy.deepcopy(row["render_arguments"])
+    chat = args.get('chat_story') is not None
     for field in ("visuals", "audio_tracks"):
-        for clip in args[field]:
+        for clip in args.get(field, []):
             clip["url"] = str(job / clip["url"])
+    if chat:
+        for field in ('music_ref', 'send_sound_ref', 'receive_sound_ref'):
+            if args['chat_story'][field]:
+                args['chat_story'][field] = str(job / args['chat_story'][field])
     destination = directory / row["filename"]
     if destination.exists() or destination.is_symlink():
         raise ValueError("Existing output blocks this row; overwriting is forbidden.")
@@ -461,6 +557,8 @@ def _render(row: dict, job: Path, directory: Path, approved_by: str, review: boo
                   "reframe_plan": row["reframe_plan"],
                   "source_frame_rates": row["source_frame_rates"], "cadence_warnings": row["cadence_warnings"],
                   **{key: result.get(key) for key in ("width", "height", "source_resolution", "upscaled", "warnings")}})
+    if chat:
+        entry.update(template_id='chat-story-v1', row_status='rendered', input_hash=row['input_props_hash'])
     duration = entry["duration_s"]
     sheet = execute("contact_sheet", job, str(destination.relative_to(job)),
                     {"every_s": max(.1, duration / 3), "cols": 3, "rows": 1})
@@ -469,8 +567,10 @@ def _render(row: dict, job: Path, directory: Path, approved_by: str, review: boo
     entry.update(contact_sheet=sheet["outputs"][0]["path"],
                  review_assets=[{"output_path": output["path"]} for output in sheet["outputs"]])
     if review:
+        times = ([frame / config['fps'] for frame in row['timeline']['document']['chatStory']['plan']['reviewFrames']]
+                 if chat else [duration * .05, duration * .5, max(0, duration - 1 / config['fps'])])
         frames = execute("extract_frames", job, str(destination.relative_to(job)),
-                         {"times": [duration * .05, duration * .5, max(0, duration - 1 / config["fps"])], "width": min(1920, config["width"])})
+                         {"times": times, "width": min(1920, config["width"])})
         if not frames["ok"]:
             raise ValueError(frames.get("error", "Review frame extraction failed."))
         entry.update(review_frames=[o["path"] for o in frames["outputs"]],
@@ -485,12 +585,18 @@ def _render(row: dict, job: Path, directory: Path, approved_by: str, review: boo
     spec = {"expected_width": config["width"], "expected_height": config["height"],
             "expected_fps": config["fps"], "expected_duration_s": duration,
             "expected_filename": destination.name}
-    primary = next(clip for clip in args["visuals"] if clip["kind"] == "video")
+    primary = ({'url': str(destination)} if chat else next(clip for clip in args["visuals"] if clip["kind"] == "video"))
     source_probe = execute("probe", job, primary["url"])
-    spec["require_audio"] = bool(args["audio_tracks"]) or any(
+    spec["require_audio"] = bool(args.get("audio_tracks")) or any(
         stream.get("codec_type") == "audio" for stream in source_probe.get("metrics", {}).get("streams", []))
+    if chat:
+        from providers.remotion.chat_story import qc_allowances
+
+        spec.update(qc_allowances(row['timeline']['document']['chatStory']))
+        spec['require_audio'] = bool(args.get('audio_tracks') or args['chat_story']['sfx'] or args['chat_story']['music_ref'])
+        entry['qc_spec'] = {key: copy.deepcopy(value) for key, value in spec.items() if key != 'expected_filename'}
     for name in ("black", "freeze", "silence"):
-        if name == "silence" and args["audio_tracks"]:
+        if chat or name == "silence" and args.get("audio_tracks"):
             continue
         detected = execute("detect_" + name, job, primary["url"])
         if not detected["ok"]:
@@ -513,11 +619,13 @@ def _render(row: dict, job: Path, directory: Path, approved_by: str, review: boo
                        delivery_qc="pending" if technical["passed"] else "failed")
     entry["matrix_qc"] = {"report_path": str(report_path), "sha256": _file_hash(report_path)}
     entry["delivery_status"] = "pending" if technical["passed"] else "failed"
+    if chat and not technical['passed']:
+        entry.update(row_status='failed', reasons=list(technical['failures']))
     return entry
 
 
 def render_ad_variants(stage: Literal["plan", "render_first", "render_batch"], job_id: str,
-                       brief: dict, rows: list[dict], master_asset: str,
+                       brief: dict, rows: list[dict], master_asset: str = '',
                        plan_hash: str = "", concurrency: int = 2) -> dict:
     """Plan a local retail matrix, approve first-aspect samples, then approve the bound batch."""
     args = dict(stage=stage, job_id=job_id, brief=brief, rows=rows, master_asset=master_asset,
@@ -537,7 +645,8 @@ def render_ad_variants(stage: Literal["plan", "render_first", "render_batch"], j
     authorization = _AUTHORIZATION.get()
     if not authorization or authorization[:2] != (stage, plan_hash) or not authorization[2]:
         return {"status": "blocked", "reason": "Explicit human approval is required for this render stage."}
-    if plan["blocked"] or not plan_hash or plan_hash != plan["plan_hash"]:
+    chat = plan.get('mode') == 'chat_story'
+    if (plan["blocked"] and not chat) or not plan['planned'] or not plan_hash or plan_hash != plan["plan_hash"]:
         return {**plan, "status": "blocked", "reason": "Plan changed or contains blocked rows. Re-plan and obtain new approval."}
     if api.dry_run():
         return {"status": "dry_run", "plan_hash": plan_hash, "estimate": ad_matrix_estimate(args), "rendered": []}
@@ -562,30 +671,44 @@ def render_ad_variants(stage: Literal["plan", "render_first", "render_batch"], j
             return {"status": "blocked", "reason": "Manifest cannot be a symlink."}
         try:
             rendered = _load_manifest(manifest_path, plan, directory)
+            if chat and not rendered:
+                rendered = [{**r, 'row_status': 'blocked'} for r in plan['blocked']]
             frozen = _freeze_sources(job, directory, plan["asset_hashes"])
         except (ValueError, OSError, KeyError, TypeError) as exc:
             return {"status": "blocked", "reason": str(exc)}
         first_key = (plan["planned"][0]["sku"], plan["planned"][0]["locale"])
         first = [r for r in plan["planned"] if (r["sku"], r["locale"]) == first_key]
-        completed = {r["variant_key"] for r in rendered if r.get("delivery_status") != "failed" and Path(r["file"]).is_file()
+        completed = {r["variant_key"] for r in rendered if 'file' in r and r.get("delivery_status") != "failed" and Path(r["file"]).is_file()
                      and _file_hash(Path(r["file"])) == r["sha256"]}
         if stage == "render_batch" and not {r["variant_key"] for r in first} <= completed:
             return {"status": "blocked", "reason": "Render and inspect the first variant at every aspect before batch approval."}
         selected = first if stage == "render_first" else [r for r in plan["planned"] if r not in first]
         selected = [r for r in selected if r["variant_key"] not in completed]
-        failed = []
+        if chat:
+            attempted = {entry['variant_key'] for entry in rendered if entry.get('row_status') != 'blocked'}
+            selected = [r for r in selected if r['variant_key'] not in attempted]
+        failed = _chat_failures(rendered) if chat else []
+        render_errors = (ValueError, OSError, RuntimeError) + ((KeyError, TypeError) if chat else ())
 
         def run(row):
             try:
                 frozen_row = copy.deepcopy(row)
                 for field in ("visuals", "audio_tracks"):
-                    for clip in frozen_row["render_arguments"][field]:
+                    for clip in frozen_row["render_arguments"].get(field, []):
                         clip["url"] = frozen[clip["url"]]
+                if chat:
+                    for field in ('music_ref', 'send_sound_ref', 'receive_sound_ref'):
+                        payload = frozen_row['render_arguments']['chat_story']
+                        if payload[field]:
+                            payload[field] = frozen[payload[field]]
                 entry = _render(frozen_row, job, directory, authorization[2], stage == "render_first")
                 error = {"variant_key": row["variant_key"], "reasons": entry["qc"]["technical_report"]["failures"]} if entry["delivery_status"] == "failed" else None
                 return entry, error
-            except (ValueError, OSError, RuntimeError) as exc:
-                return None, {"variant_key": row["variant_key"], "reasons": [str(exc)]}
+            except render_errors as exc:
+                error = {"variant_key": row["variant_key"], "reasons": [str(exc)]}
+                entry = ({**{key: row[key] for key in ('variant_key', 'sku', 'locale', 'aspect', 'input_props_hash')},
+                          'input_hash': row['input_props_hash'], 'row_status': 'failed', 'reasons': [str(exc)]} if chat else None)
+                return entry, error
 
         with ThreadPoolExecutor(max_workers=concurrency) as pool:
             for entry, error in pool.map(run, selected):
@@ -596,10 +719,11 @@ def render_ad_variants(stage: Literal["plan", "render_first", "render_batch"], j
                 _save(manifest_path, rendered)
         if not manifest_path.exists():
             _save(manifest_path, rendered)
-        _save(directory / "report.json", {"planned": plan["render_count"], "rendered": len(rendered),
+        artifacts = [entry for entry in rendered if 'file' in entry] if chat else rendered
+        _save(directory / "report.json", {"planned": plan["render_count"], "rendered": len(artifacts),
                                           "blocked": plan["blocked"], "failed": failed})
         return {"status": "failed" if failed else "succeeded", "plan_hash": plan_hash,
                 "candidate_set": True, "review_note": plan["review_note"],
-                "planned": plan["render_count"], "rendered": rendered, "blocked": plan["blocked"],
+                "planned": plan["render_count"], "rendered": artifacts, "blocked": plan["blocked"],
                 "failed": failed, "manifest_path": str(manifest_path), "warnings": plan["warnings"],
-                "estimate": ad_matrix_estimate(args)}
+                "estimate": ad_matrix_estimate(args), **({'rendered_count': len(artifacts)} if chat else {})}

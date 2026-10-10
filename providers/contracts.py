@@ -319,6 +319,25 @@ _TRANSCRIPT_SEGMENT_SCHEMA = {
 }
 
 
+CHAT_STORY_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "messages": {"type": "array", "items": {"type": "object", "required": ["from", "text"],
+            "properties": {"from": {"type": "string", "description": "me or them."},
+                "text": {"type": "string", "description": "Verbatim fictional plain text, 1-500 characters; no phone numbers."},
+                "typingMs": {"type": "number"}, "delayMs": {"type": "number"},
+                "status": {"type": "string"}, "reaction": {"type": "string"}}}},
+        "contact": {"type": "object", "properties": {"name": {"type": "string"}, "avatar": {"type": "string"}}},
+        "theme": {"type": "string", "description": "generic default. Neutral slate/moss require operator legal flag on."},
+        "aspect": {"type": "string", "description": "9:16 default, 1:1 or 4:5."},
+        "dramatization": {"type": "boolean"}, "sfx": {"type": "boolean"},
+        "holdMs": {"type": "number"}, "platformTargetMs": {"type": "number"},
+        **{key: {"type": "string"} for key in ("music_ref", "send_sound_ref", "receive_sound_ref")},
+    },
+    "required": ["messages"],
+}
+
+
 def enrich_tool_schema(provider_id: str, tool: dict[str, Any]) -> dict[str, Any]:
     """Add provider choices and nested contracts without unsupported schema keywords."""
     enriched = deepcopy(tool)
@@ -392,6 +411,8 @@ def enrich_tool_schema(provider_id: str, tool: dict[str, Any]) -> dict[str, Any]
         }
         properties["reference_images"]["description"] = "Up to two additional references, for at most three images including image_path_or_url."
     if provider_id == "remotion" and tool_name == "render_timeline":
+        if "chat_story" in properties:
+            properties["chat_story"].update(deepcopy(CHAT_STORY_SCHEMA))
         if isinstance(properties.get("output_resolution"), dict):
             properties["output_resolution"]["description"] = (
                 "One of: source, 720p, 1080p, 1440p, 2160p. "
@@ -445,6 +466,7 @@ def enrich_tool_schema(provider_id: str, tool: dict[str, Any]) -> dict[str, Any]
         properties["rows"]["items"] = {
             "type": "object", "properties": {
                 **{field: {"type": "string"} for field in required},
+                "chat_story": deepcopy(CHAT_STORY_SCHEMA),
                 "product_asset": {"type": "string"}, "vo_asset": {"type": "string"},
                 "start_s": {"type": "number"}, "end_s": {"type": "number"},
                 "subject_box": deepcopy(_BOX_SCHEMA), "crop_box": deepcopy(_VISUAL_ITEM_SCHEMA["properties"]["crop_box"]),
@@ -456,11 +478,13 @@ def enrich_tool_schema(provider_id: str, tool: dict[str, Any]) -> dict[str, Any]
                     "properties": {"from_s": {"type": "number"}, "to_s": {"type": "number"},
                         "subject_box": deepcopy(_BOX_SCHEMA), "crop_box": deepcopy(_VISUAL_ITEM_SCHEMA["properties"]["crop_box"]),
                         "anchor": {"type": "string"}}}}},
-            "required": ["variant_key", "aspect"],
+            "required": ["variant_key"],
         }
         properties["stage"]["description"] = "Allowed values: plan, render_first, render_batch. Plan is free. First and batch always need human approval, including autonomous runs."
-        properties["rows"]["description"] = "1-100 rows. Retail requires variant_key, sku, price_text, cta_text, logo_asset, legal_text, locale, aspect. brief.reframe_only=true requires only variant_key/aspect. Optional subject_box/crop_box/safe_zone/anchor/allow_upscale; shots contiguous or scene_times. Assets confined to job directory."
+        properties["rows"]["description"] = "1-100 retail rows or 1-50 chat rows. Retail requires variant_key, sku, price_text, cta_text, logo_asset, legal_text, locale, aspect. brief.reframe_only=true requires variant_key/aspect. brief.mode=chat_story requires variant_key/chat_story with optional aspect; no master. Assets confined to job directory."
         properties["brief"]["description"] = "campaign ASCII identifier; optional reframe_only, logo_alpha_required (default true), legal_locales, legal_by_locale, fps, source_width/source_height, output_resolution source or 720p/1080p/1440p/2160p. Shared subject_box/crop_box/safe_zone/anchor/allow_upscale defaults. No custom shell or template code."
+        properties["brief"]["description"] += " mode=chat_story renders independent fictional message tables through the same approval stages. Optional campaign/fps."
+        properties["master_asset"]["description"] = "Job-relative retail master; empty or omitted for brief.mode=chat_story."
         properties["plan_hash"]["description"] = "Exact immutable SHA-256 returned by plan. Required for render stages; changes to copy/media invalidate approval. Approval is trusted host context, never an argument."
         properties["concurrency"]["description"] = "Integer 1-2 local renders. A failed variant does not stop the others."
     if provider_id == "remotion" and tool_name == "prepare_conversational_edit":
@@ -675,11 +699,17 @@ def _validate_cross_fields(provider_id: str, tool_name: str, arguments: dict[str
 
         build_conversational_edit(**arguments)
     if provider_id == "remotion" and tool_name == "render_timeline":
+        if arguments.get("chat_story") is not None:
+            from providers.remotion.chat_story import normalize, plan
+
+            if arguments.get("visuals") or arguments.get("text_overlays") or arguments.get("subtitles") or arguments.get("subtitles_srt"):
+                raise ValueError("Chat stories cannot mix arbitrary visuals, overlays or subtitles.")
+            plan(normalize(arguments["chat_story"]), arguments.get("fps") or 30)
         for field in ("visuals", "audio_tracks"):
             for index, clip in enumerate(arguments.get(field) or []):
                 if bool(clip.get("url")) == bool(clip.get("output_path")):
                     raise ValueError(f"arguments.{field}[{index}] requires exactly one of url or output_path.")
-        if not arguments.get("visuals") and not allow_empty_visuals:
+        if not arguments.get("visuals") and arguments.get("chat_story") is None and not allow_empty_visuals:
             raise ValueError("render_timeline requires at least one visual clip.")
         for index, clip in enumerate(arguments.get("visuals") or []):
             if "box" in clip:
@@ -869,7 +899,7 @@ def validate_tool_arguments(
                 raise ValueError(f"arguments.{field} cannot be null.")
     cleaned = {key: value for key, value in (arguments or {}).items() if value is not None}
     _validate_schema(cleaned, input_schema, "arguments",
-                     allow_empty_strings=provider_id == "remotion" and tool_name == "prepare_conversational_edit")
+                     allow_empty_strings=provider_id == "remotion" and tool_name in {"prepare_conversational_edit", "render_timeline", "render_ad_variants"})
     for field, rule in argument_rules(provider_id, tool_name).items():
         if field in cleaned:
             _validate_rule(f"arguments.{field}", cleaned[field], rule)

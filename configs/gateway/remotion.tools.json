@@ -546,7 +546,7 @@
         },
         "brief": {
           "type": "object",
-          "description": "campaign ASCII identifier; optional reframe_only, logo_alpha_required (default true), legal_locales, legal_by_locale, fps, source_width/source_height, output_resolution source or 720p/1080p/1440p/2160p. Shared subject_box/crop_box/safe_zone/anchor/allow_upscale defaults. No custom shell or template code."
+          "description": "campaign ASCII identifier; optional reframe_only, logo_alpha_required (default true), legal_locales, legal_by_locale, fps, source_width/source_height, output_resolution source or 720p/1080p/1440p/2160p. Shared subject_box/crop_box/safe_zone/anchor/allow_upscale defaults. No custom shell or template code. mode=chat_story renders independent fictional message tables through the same approval stages. Optional campaign/fps."
         },
         "rows": {
           "type": "array",
@@ -576,6 +576,86 @@
               },
               "aspect": {
                 "type": "string"
+              },
+              "chat_story": {
+                "type": "object",
+                "properties": {
+                  "messages": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "from",
+                        "text"
+                      ],
+                      "properties": {
+                        "from": {
+                          "type": "string",
+                          "description": "me or them."
+                        },
+                        "text": {
+                          "type": "string",
+                          "description": "Verbatim fictional plain text, 1-500 characters; no phone numbers."
+                        },
+                        "typingMs": {
+                          "type": "number"
+                        },
+                        "delayMs": {
+                          "type": "number"
+                        },
+                        "status": {
+                          "type": "string"
+                        },
+                        "reaction": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  },
+                  "contact": {
+                    "type": "object",
+                    "properties": {
+                      "name": {
+                        "type": "string"
+                      },
+                      "avatar": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "theme": {
+                    "type": "string",
+                    "description": "generic default. Neutral slate/moss require operator legal flag on."
+                  },
+                  "aspect": {
+                    "type": "string",
+                    "description": "9:16 default, 1:1 or 4:5."
+                  },
+                  "dramatization": {
+                    "type": "boolean"
+                  },
+                  "sfx": {
+                    "type": "boolean"
+                  },
+                  "holdMs": {
+                    "type": "number"
+                  },
+                  "platformTargetMs": {
+                    "type": "number"
+                  },
+                  "music_ref": {
+                    "type": "string"
+                  },
+                  "send_sound_ref": {
+                    "type": "string"
+                  },
+                  "receive_sound_ref": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "messages"
+                ]
               },
               "product_asset": {
                 "type": "string"
@@ -735,14 +815,14 @@
               }
             },
             "required": [
-              "variant_key",
-              "aspect"
+              "variant_key"
             ]
           },
-          "description": "1-100 rows. Retail requires variant_key, sku, price_text, cta_text, logo_asset, legal_text, locale, aspect. brief.reframe_only=true requires only variant_key/aspect. Optional subject_box/crop_box/safe_zone/anchor/allow_upscale; shots contiguous or scene_times. Assets confined to job directory."
+          "description": "1-100 retail rows or 1-50 chat rows. Retail requires variant_key, sku, price_text, cta_text, logo_asset, legal_text, locale, aspect. brief.reframe_only=true requires variant_key/aspect. brief.mode=chat_story requires variant_key/chat_story with optional aspect; no master. Assets confined to job directory."
         },
         "master_asset": {
-          "type": "string"
+          "type": "string",
+          "description": "Job-relative retail master; empty or omitted for brief.mode=chat_story."
         },
         "plan_hash": {
           "type": "string",
@@ -757,8 +837,7 @@
         "stage",
         "job_id",
         "brief",
-        "rows",
-        "master_asset"
+        "rows"
       ]
     }
   },
@@ -1471,11 +1550,91 @@
         "subtitles_srt": {
           "type": "string",
           "description": "Inline numbered SRT, 1..60000 characters, at most 100 cues within 0..600 seconds; each literal cue text at most 500 characters. Choose subtitles or subtitles_srt. No paths, URLs or styling commands. Backend support: local supported; lambda supported. Inline numbered SRT, no file/URL, no styling or filter commands."
+        },
+        "chat_story": {
+          "type": "object",
+          "properties": {
+            "messages": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": [
+                  "from",
+                  "text"
+                ],
+                "properties": {
+                  "from": {
+                    "type": "string",
+                    "description": "me or them."
+                  },
+                  "text": {
+                    "type": "string",
+                    "description": "Verbatim fictional plain text, 1-500 characters; no phone numbers."
+                  },
+                  "typingMs": {
+                    "type": "number"
+                  },
+                  "delayMs": {
+                    "type": "number"
+                  },
+                  "status": {
+                    "type": "string"
+                  },
+                  "reaction": {
+                    "type": "string"
+                  }
+                }
+              }
+            },
+            "contact": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "avatar": {
+                  "type": "string"
+                }
+              }
+            },
+            "theme": {
+              "type": "string",
+              "description": "generic default. Neutral slate/moss require operator legal flag on."
+            },
+            "aspect": {
+              "type": "string",
+              "description": "9:16 default, 1:1 or 4:5."
+            },
+            "dramatization": {
+              "type": "boolean"
+            },
+            "sfx": {
+              "type": "boolean"
+            },
+            "holdMs": {
+              "type": "number"
+            },
+            "platformTargetMs": {
+              "type": "number"
+            },
+            "music_ref": {
+              "type": "string"
+            },
+            "send_sound_ref": {
+              "type": "string"
+            },
+            "receive_sound_ref": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "messages"
+          ],
+          "description": "Backend support: local supported; lambda refused-with-explicit-error. Lambda chat composition is not deployed or verified; use the local/worker backend. Messages and timing are validated before media I/O."
         }
       },
       "required": [
-        "title",
-        "visuals"
+        "title"
       ]
     }
   },

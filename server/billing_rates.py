@@ -405,6 +405,8 @@ def ad_matrix_estimate(arguments: dict[str, Any]) -> dict[str, Any]:
                    if rows and isinstance(rows[0], dict) else None)
     first = sum(1 for row in rows if isinstance(row, dict)
                 and (row.get("sku", sku_default), row.get("locale", locale_default)) == first_group)
+    if (arguments.get("brief") or {}).get("mode") == "chat_story":
+        first = min(1, count)
     stage = arguments.get("stage", "plan")
     count = first if stage == "render_first" else count - first if stage == "render_batch" else count
     allowance = _matrix_setting("REMOTION_LICENSE_RENDER_USD", "0.01", 1000)

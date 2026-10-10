@@ -161,6 +161,10 @@ def _entries(job: Path, input_path: str, manifest_path: str, *, final=False) -> 
     for entry in entries:
         if not isinstance(entry, dict):
             raise ValueError("Manifest entries must be objects.")
+        if _nonartifact_failure(entry):
+            continue
+        if entry.get('template_id') == 'chat-story-v1':
+            validate_spec(entry.get('qc_spec'), job)
         selected = entry.get("delivery", entry) if final else entry
         if not isinstance(selected, dict):
             raise ValueError("Manifest delivery entries must be objects.")
@@ -174,6 +178,22 @@ def _entries(job: Path, input_path: str, manifest_path: str, *, final=False) -> 
         if "aspect" in entry:
             _aspect(entry["aspect"])
     return entries, manifest
+
+
+def _nonartifact_failure(entry: dict) -> list[str]:
+    if entry.get('row_status') not in {'blocked', 'failed'} or 'file' in entry:
+        return []
+    reasons = entry.get('reasons')
+    if (not isinstance(reasons, list) or not 1 <= len(reasons) <= 60 or
+            any(not isinstance(reason, str) or not reason or len(reason) > 8192 for reason in reasons) or
+            'delivery' in entry):
+        raise ValueError('Non-artifact chat rows require bounded failure reasons and cannot contain delivery files.')
+    return reasons
+
+
+def _entry_spec(entry: dict, args: dict, job: Path) -> dict:
+    defaults = validate_spec(entry.get('qc_spec'), job) if entry.get('template_id') == 'chat-story-v1' else {}
+    return {**defaults, **(args.get('spec') or {})}
 
 
 def _named_copy(job: Path, source: Path, campaign: str, sku: str, locale: str, aspect: str) -> Path:
@@ -209,7 +229,7 @@ def _finish(job: Path, entry: dict, preset_name: str, args: dict) -> dict:
     duration = float(metadata.get("format", {}).get("duration", 0))
     if fps is None or not math.isfinite(duration) or not 0 < duration <= 600:
         raise ValueError("A measured video of at most 600 seconds with a positive FPS is required.")
-    spec = dict(args.get("spec") or {})
+    spec = _entry_spec(entry, args, job)
     if spec.get("expected_sha256", original_hash) != original_hash:
         raise ValueError("Input does not match expected_sha256; delivery refused.")
     spec.setdefault("expected_duration_s", entry.get("duration_s", duration))
@@ -294,6 +314,10 @@ def _run(tool_name: str, args: dict) -> dict:
                                          final=tool_name == "qc_deliverable")
             files = []
             for entry in entries:
+                reasons = _nonartifact_failure(entry)
+                if reasons:
+                    files.append({'variant_key': entry.get('variant_key'), 'passed': False, 'failures': reasons})
+                    continue
                 try:
                     if tool_name == "deliver_render":
                         inspected = _finish(job, entry, args.get("preset", "social-feed"), args)
@@ -301,7 +325,7 @@ def _run(tool_name: str, args: dict) -> dict:
                                              if key not in {"metrics", "checks", "review_frames", "contact_sheet"}}
                     else:
                         selected = entry.get("delivery", entry)
-                        spec = dict(args.get("spec") or {})
+                        spec = _entry_spec(entry, args, job)
                         if "sha256" in selected:
                             spec.setdefault("expected_sha256", selected["sha256"])
                         if "duration_s" in selected:

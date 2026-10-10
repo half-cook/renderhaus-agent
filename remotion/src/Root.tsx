@@ -1,6 +1,8 @@
 import {AbsoluteFill, Audio, cancelRender, Composition, continueRender, delayRender, Img, OffthreadVideo, Sequence, staticFile, useCurrentFrame, useVideoConfig} from 'remotion';
 import {useEffect, useState} from 'react';
 import type {CSSProperties} from 'react';
+import {assertChatStory, ChatStoryLayer} from './ChatStory';
+import type {ChatStory} from './ChatStory';
 
 type Asset = {id: string; kind: 'image' | 'video' | 'audio'; url: string};
 type Box = {x: number; y: number; width: number; height: number};
@@ -23,7 +25,7 @@ type TextItem = ItemTiming & {
 type Item = ClipItem | TextItem;
 type Track = {id: string; kind: string; items: Item[]};
 export type Props = {
-  document: {id: string; name: string; assets: Asset[]; tracks: Track[]};
+  document: {id: string; name: string; assets: Asset[]; tracks: Track[]; chatStory?: ChatStory};
   renderConfig?: {fps?: number; width?: number; height?: number; durationInFrames?: number};
 } & Record<string, unknown>;
 const clamp = (value: number) => Math.max(0, Math.min(1, value));
@@ -114,7 +116,7 @@ function Layer({item, asset, frames}: {item: Item; asset?: Asset; frames: number
 
 function Timeline({document}: Props) {
   const {fps, durationInFrames} = useVideoConfig();
-  return <AbsoluteFill style={{background: 'black'}}>{document.tracks.flatMap((track) => track.items.map((item) => {
+  return <AbsoluteFill style={{background: 'black'}}>{document.chatStory ? <ChatStoryLayer story={document.chatStory}/> : null}{document.tracks.flatMap((track) => track.items.map((item) => {
     const from = Math.round(item.start * fps);
     const frames = Math.min(durationInFrames - from, Math.max(1, Math.round((item.start + item.duration) * fps) - from));
     if (frames <= 0) return null;
@@ -125,6 +127,11 @@ function Timeline({document}: Props) {
 }
 
 const metadata = ({document, renderConfig}: Props) => {
+  if (document.chatStory) {
+    assertChatStory(document.chatStory);
+    const plan = document.chatStory.plan;
+    return {fps: plan.fps, width: plan.width, height: plan.height, durationInFrames: plan.durationInFrames};
+  }
   const fps = renderConfig?.fps ?? 30;
   const end = Math.max(0, ...document.tracks.filter((track) => ['video', 'overlay'].includes(track.kind)).flatMap((track) => track.items.map((item) => item.start + item.duration)));
   if (!Number.isFinite(end) || end <= 0) throw new Error('A render needs a non-empty visual sequence.');

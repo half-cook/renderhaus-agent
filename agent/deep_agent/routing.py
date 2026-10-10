@@ -94,6 +94,7 @@ _KNOWLEDGE_REQUEST = next(rule["pattern"] for rule in POLICY["rules"] if rule["s
 _ART_STYLE_REQUEST = next(rule["pattern"] for rule in POLICY["rules"] if rule["skill"] == "art-style-motion")
 _ART_STYLE_NAMES = next(rule["named_styles"] for rule in POLICY["rules"] if rule["skill"] == "art-style-motion")
 _PLAN_REVIEW_REQUEST = next(rule["pattern"] for rule in POLICY["rules"] if rule["skill"] == "plan-to-video")
+_CHAT_STORY_REQUEST = next(rule["pattern"] for rule in POLICY["rules"] if rule["skill"] == "chat-story-video")
 _MODELSTUDIO_PREVIEW_WARNING = (
     "Alibaba preview terms permit internal testing, research and evaluation only until GA. "
     "Live customer use is blocked by the preview licence."
@@ -189,11 +190,47 @@ def _art_style_motion_request(prompt: str) -> bool:
     return bool(re.search(_ART_STYLE_REQUEST, text, re.I))
 
 
+def _chat_story_request(prompt: str) -> bool:
+    text = _instruction_text(prompt)
+    text = re.sub(
+        r"\b(?:do not|don't|never|avoid)\s+(?:make|create|produce|render|animate|turn|convert)\b"
+        r".*?(?=\.(?:\s|$)|[!?;\n]|$)",
+        lambda match: "" if re.search(_CHAT_STORY_REQUEST, match[0], re.I) else match[0],
+        text, flags=re.I,
+    )
+    if not re.search(_CHAT_STORY_REQUEST, text, re.I):
+        return False
+    if re.search(r"\b(?:lower[ -]thirds?|ad[ -]variant[ -]matrix|per[ -]market copy swaps)\b", text, re.I):
+        return False
+    return not re.search(r"\b(?:cut|edit|trim|dub|revoice)\b[^.;!?\n]{0,80}\b(?:talking[ -]head|interview|footage)\b", text, re.I)
+
+
+def _chat_story_route(prompt: str, *, region: str | None, available_tools: set[str] | None,
+                      arguments: dict | None) -> Route:
+    route = select_provider("motion_graphics", region=region, available_tools=available_tools,
+                            arguments=arguments)
+    text = _instruction_text(prompt)
+    theme = "generic"
+    disclosure = "The chat thread uses a deterministic composition and verbatim messages."
+    if re.search(r"\b(?:imessage|whatsapp)(?:[ -]style)?\b", text, re.I):
+        if os.getenv("CHAT_STORY_LOOKALIKE_THEMES", "off") == "on":
+            theme = "slate" if re.search(r"\bimessage\b", text, re.I) else "moss"
+        else:
+            disclosure += " Requested lookalike themes are not enabled; using the generic theme. Legal sign-off is required before enabling them."
+    batch = bool(re.search(r"\bcsv\b|\bbatch\b|\bper (?:script |input )?row\b", text, re.I))
+    return replace(route, skill="chat-story-video", required={"theme": theme, "batch": batch},
+                   disclosure=f"{route.disclosure} {disclosure}".strip())
+
+
 def request_tool_blocker(prompt: str, name: str) -> str | None:
     if plan_text := _plan_review_instruction(prompt):
         prompt = plan_text
     if refusal := editing_request_refusal(prompt):
         return refusal
+    if _chat_story_request(prompt) and job_type(name) in {
+        "t2v", "i2v", "reference_video", "v2v_edit", "extend", "lipsync", "performance_transfer", "lyrics_video",
+    }:
+        return "A chat thread uses the chat-story composition; generative video tools cannot render the thread."
     silent_art = (_art_style_motion_request(prompt)
                   and re.search(_NEGATED_NARRATION + r"|\b(?:silent|unnarrated|unvoiced)\b", _instruction_text(prompt), re.I)
                   and not re.search(_VOICEOVER, _narration_text(prompt), re.I))
@@ -619,6 +656,8 @@ def route_intent(prompt: str, *, region: str | None = None, tier: str | None = N
     if any(re.search(pattern, prompt, re.I) for pattern in POLICY.get("non_dispatch_requests", [])):
         return Route(reason="No media intent matched; answer the Remotion licensing question from the editing skill.")
     constraints = intent_constraints(prompt, tier=tier, confidential=confidential, arguments=arguments, user_id=user_id)
+    if _chat_story_request(prompt):
+        return _chat_story_route(prompt, region=region, available_tools=available_tools, arguments=arguments)
     if footage := _footage_route(prompt, arguments=arguments, available_tools=available_tools):
         return footage
     motion_rule = next((rule for rule in POLICY["rules"] if rule.get("capability") == "motion_carry_qc"), None)
@@ -670,6 +709,8 @@ def route_intent(prompt: str, *, region: str | None = None, tier: str | None = N
         or video_capabilities.intersection(POLICY["named_models"].get(constraints["named_model"], {}).get("aliases", {}))
     )
     for rule in POLICY["rules"]:
+        if rule["skill"] == "chat-story-video" and not _chat_story_request(prompt):
+            continue
         if rule["skill"] == "footage-memory":
             continue  # The shared duration/reuse decision above owns these routes.
         if rule.get("named_model") and rule["named_model"] != constraints["named_model"]:

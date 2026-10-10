@@ -2447,6 +2447,12 @@
       "capability": "media_inspection"
     },
     {
+      "pattern": "\\b(?:chat[ -]stor(?:y|ies)|text[ -]stor(?:y|ies))\\b[^.;!?\\n]{0,60}\\b(?:videos?|shorts?|reels?|tiktok)\\b|\\b(?:fake[ -]+)?text[ -]messages?\\b[^.;!?\\n]{0,50}\\b(?:videos?|shorts?)\\b|\\b(?:animate|render)\\b[^.;!?\\n]{0,60}\\b(?:(?:sms|whatsapp|imessage|text[ -]message)[ -]+(?:conversation|thread)|chat[ -]+thread)\\b|\\bchat[ -]scripts?\\b[^.;!?\\n]{0,140}\\b(?:conversation|chat|text[ -]message)[ -]+videos?\\b",
+      "skill": "chat-story-video",
+      "abstract_tool": "remotion_render",
+      "capability": "motion_graphics"
+    },
+    {
       "pattern": "\\bburn captions\\b",
       "skill": "conversational-edit",
       "abstract_tool": "transcript_edit"

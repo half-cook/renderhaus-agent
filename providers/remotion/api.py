@@ -714,7 +714,7 @@ def _start_lambda_render(
 
 def render_timeline(
     title: str,
-    visuals: list[dict[str, Any]],
+    visuals: list[dict[str, Any]] | None = None,
     audio_tracks: list[dict[str, Any]] | None = None,
     text_overlays: list[dict[str, Any]] | None = None,
     aspect_ratio: Literal["16:9", "9:16", "1:1", "4:5", "2.39:1"] = "9:16",
@@ -724,8 +724,27 @@ def render_timeline(
     video_bitrate: int | None = None,
     output_resolution: OutputResolution = "source",
     subtitles_srt: str | None = None,
+    chat_story: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Compose generated image, video, and audio clips into one final MP4, then poll get_render_progress."""
+    if chat_story is not None:
+        from providers.remotion.chat_story import build_props
+
+        if visuals or text_overlays or subtitles or subtitles_srt:
+            raise ValueError("Chat stories cannot mix arbitrary visuals, overlays or subtitles.")
+        if output_resolution != "source":
+            raise ValueError("Chat stories use the native authored canvas; select aspect in chat_story.")
+        props = build_props(title, chat_story, fps=30 if fps is None else fps, audio_tracks=audio_tracks)
+        if video_bitrate is not None:
+            props["renderConfig"].update(videoBitrate=video_bitrate, crf=None)
+        validate_document(props, render_backend())
+        timing = props["document"]["chatStory"]["plan"]
+        if dry_run():
+            return {"status": "dry_run", "render_id": "dry-run", "filename": _safe_output_name(output_filename),
+                    "duration_s": timing["durationSeconds"], "warnings": timing["warnings"],
+                    "width": timing["width"], "height": timing["height"], "source_resolution": None,
+                    "note": "Dry run is enabled; no chat video was rendered."}
+        return _start_render(props, output_filename=output_filename)
     choose_canvas(str(aspect_ratio), [], output_resolution)
     subtitles = srt_captions(subtitles_srt, subtitles)
     validate_backend({'visuals': visuals, 'audio_tracks': audio_tracks,
@@ -1051,7 +1070,7 @@ def import_nle_timeline(
 
 
 def render_ad_variants(stage: Literal["plan", "render_first", "render_batch"], job_id: str,
-                       brief: dict, rows: list[dict], master_asset: str,
+                       brief: dict, rows: list[dict], master_asset: str = "",
                        plan_hash: str = "", concurrency: int = 2) -> dict[str, Any]:
     """Plan retail variants for free; first/batch need human approval of the exact plan hash."""
     from providers.remotion.ad_variants import render_ad_variants as run_matrix

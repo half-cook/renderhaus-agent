@@ -81,6 +81,21 @@ def _local_remotion_arguments(studio, arguments: dict) -> dict:
                 from providers.ffmpeg.sandbox import job_directory, validate_input_path
 
                 item[field] = str(validate_input_path(job_directory(studio.job_id), source))
+    if arguments.get('chat_story') is not None:
+        prepared['chat_story'] = dict(arguments['chat_story'])
+        for field in ('music_ref', 'send_sound_ref', 'receive_sound_ref'):
+            source = prepared['chat_story'].get(field, '')
+            if not source:
+                continue
+            version = studio.source_versions.get(source)
+            if version:
+                if studio.source_resolver is None:
+                    raise ValueError('Local Remotion requires the owned Studio asset resolver.')
+                prepared['chat_story'][field] = studio.source_resolver(version)
+            else:
+                from providers.ffmpeg.sandbox import job_directory, validate_input_path
+
+                prepared['chat_story'][field] = str(validate_input_path(job_directory(studio.job_id), source))
     return prepared
 
 

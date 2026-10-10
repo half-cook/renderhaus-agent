@@ -4,6 +4,7 @@ Filter semantics verified against https://ffmpeg.org/ffmpeg-filters.html, read 2
 """
 from __future__ import annotations
 
+import copy
 import ipaddress
 import json
 import os
@@ -196,6 +197,9 @@ def _transform(chain: list[str], filters: list[str], item: dict[str, Any], count
 def _command(props: dict[str, Any], directory: Path, *, media_roots: tuple[Path, ...],
              source_root: Path, filename: str) -> tuple[list[str], float]:
     validate_document(props, 'local')
+    if 'chatStory' in props['document']:
+        props = _chat_timeline(props, directory)
+        validate_document(props, 'local')
     config, document = props['renderConfig'], props['document']
     fps, width, height = float(config['fps']), int(config['width']), int(config['height'])
     frame_rate = str(Fraction(fps).limit_denominator(100_000))
@@ -341,6 +345,34 @@ def _command(props: dict[str, Any], directory: Path, *, media_roots: tuple[Path,
     return command, duration
 
 
+def _chat_timeline(props: dict[str, Any], directory: Path) -> dict[str, Any]:
+    from providers.remotion.chat_story_render import render_chat_visual
+
+    prepared = copy.deepcopy(props)
+    document, config = prepared['document'], prepared['renderConfig']
+    story = document.pop('chatStory')
+    sources = render_chat_visual(story, directory)
+    duration = config['durationInFrames'] / config['fps']
+    document['assets'].append({'id': 'chat-visual', 'kind': 'video', 'url': sources['visual_path']})
+    document['tracks'].insert(0, {'id': 'chat-visual', 'kind': 'video', 'items': [{
+        'id': 'chat-visual-clip', 'type': 'clip', 'assetId': 'chat-visual', 'start': 0,
+        'duration': duration, 'sourceIn': 0, 'sourceOut': duration, 'fit': 'contain', 'volume': 0,
+    }]})
+    for kind in ('send', 'receive'):
+        path = sources[kind + '_path']
+        if path is None:
+            continue
+        asset_id = 'chat-' + kind
+        items = [{'id': f'{asset_id}-{index}', 'type': 'clip', 'assetId': asset_id,
+                  'start': cue['frame'] / config['fps'], 'duration': .12,
+                  'sourceIn': 0, 'sourceOut': .12, 'volume': .5, 'fadeIn': 0, 'fadeOut': 0}
+                 for index, cue in enumerate(story['plan']['sfxCues']) if cue['kind'] == kind]
+        if items:
+            document['assets'].append({'id': asset_id, 'kind': 'audio', 'url': path})
+            document['tracks'].append({'id': asset_id, 'kind': 'audio', 'items': items})
+    return prepared
+
+
 def start_render(props: dict[str, Any], *, output_filename: str,
                  media_roots: tuple[Path, ...], source_root: Path) -> dict[str, Any]:
     from providers.remotion.api import _resolution_report
@@ -357,9 +389,15 @@ def start_render(props: dict[str, Any], *, output_filename: str,
     resolution = _resolution_report(props['renderConfig'].get('resolution', props['renderConfig']))
     try:
         timeout = max(1, float(os.getenv('REMOTION_RENDER_TIMEOUT_SECONDS', '1200')))
-        command, duration = _command(props, directory, media_roots=media_roots,
-                                     source_root=source_root, filename=filename)
-        (directory / 'worker.json').write_text(json.dumps({'command': command, 'timeout': timeout}))
+        if 'chatStory' in props['document']:
+            duration = props['renderConfig']['durationInFrames'] / props['renderConfig']['fps']
+            worker = {'props': props, 'media_roots': [str(root) for root in media_roots],
+                      'source_root': str(source_root), 'filename': filename, 'timeout': timeout}
+        else:
+            command, duration = _command(props, directory, media_roots=media_roots,
+                                         source_root=source_root, filename=filename)
+            worker = {'command': command, 'timeout': timeout}
+        (directory / 'worker.json').write_text(json.dumps(worker))
         process = subprocess.Popen([sys.executable, '-m', 'providers.remotion.local_worker', str(directory)],
                                    cwd=source_root, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
                                    start_new_session=True)
