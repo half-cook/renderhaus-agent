@@ -131,6 +131,8 @@ TOOL_GUIDANCE: dict[str, dict[str, str]] = {
         "list_seedance_models": "List verified Seedance models, transports, and API sources offline. No credential or network request. BytePlus is unavailable to US customers and requires written platform authorization for live integration.",
     },
     "remotion": {
+        "deliver_render": "Finish an existing local render or checksum matrix manifest using a named placeholder delivery preset. Uses fixed system ffmpeg ops, measured FPS/native geometry, loudness normalization and AAC faststart mux; never enlarges. Versioned campaign__sku__locale__aspect__v<n>.mp4 files never overwrite. Actual final-file QC must pass before a finished claim. Reports per-file failures verbatim. Free local worker job; Lambda refused. Respect REMOTION_DRY_RUN. Upload=true is refused; no S3/public/platform upload is available here.",
+        "qc_deliverable": "Free technical QC of final local files or matrix manifest against a named preset/spec. Probes codec/profile/pix_fmt/resolution/SAR/FPS/duration/audio, decoded cadence, full black/freeze/silence intervals, loudness/true peak/clipping, faststart, size/naming/checksum, and actual frames/contact sheet. Failed or incomplete checks fail the report. Caption/price/legal pixel review is a planner vision pass, never inferred from geometry. Confined job directory, local worker only; Lambda refused. Dry-run does no media inspection.",
         "render_ad_variants": (
             "Local ad matrix from job_id, master_asset, brief and rows. Use stage=plan first, "
             "then render_first with returned plan_hash, inspect frames and expected strings, "

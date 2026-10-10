@@ -34,7 +34,7 @@ An explicit exact-size request belongs in the QC spec and must pass on the actua
 
 The presets use H.264 High, `yuv420p`, MP4 faststart and AAC at 48 kHz. Keep one or two
 source channels. AAC is 192 kbit/s, except the review proxy at 96 kbit/s. Targeted presets
-use LRA 11 and a 0.5 LU tolerance. These are Renderhaus delivery defaults. Broadcast proxy
+use LRA 11 and a 0.5 LU tolerance. These are placeholder delivery targets; confirm the destination channel specification. Broadcast proxy
 checks programme loudness and cannot certify a broadcaster's full compliance spec or
 dialogue-gated loudness. Use an explicit customer spec for additional constraints.
 
@@ -64,7 +64,7 @@ Inputs are bounded to 128 MiB and 600 seconds. Each output is bounded to 16 MiB.
    QC report. A successful tool return, a dry-run or a queued render is incomplete evidence.
 
 The existing local `Remotion___render_timeline` API produces fixed AAC audio. It cannot
-request the draft's PCM intermediate or arbitrary renderer options. A supplied PCM
+request a PCM intermediate or arbitrary renderer options. A supplied PCM
 intermediate can use the fixed `mux_aac` operation; do not invent an `audioCodec` field.
 Lambda finishing is unverified and cannot read this local job directory. Return a clear
 unsupported-backend result; never switch the configured renderer or a dry-run flag.
@@ -88,6 +88,8 @@ This branch returns local artifacts. `upload=true`, S3 uploads, public links and
 YouTube, Meta or TikTok account publishing are unsupported. Never imply that an upload
 occurred or request account credentials. A later configured upload step must retain the QC gate.
 
+## Hard rules
+
 Local finishing and inspection are free. Keep the quality-first capability defaults,
 confidential metadata and existing paid-generation approvals unchanged. Resolve remains
 parked. Do not call a Resolve tool or skill. No free-form shell, filtergraph, `ffmpegOverride`,
@@ -96,8 +98,6 @@ training permission, third-party source code or binary redistribution is added h
 
 ## Sources
 
-The supplied delivery draft is `/workspace/research/renderhaus-skills/remotion-delivery-render/SKILL.md`.
-Only its workflow pattern is used. The fixed implementation and Gateway schema define
-available behavior. [FFmpeg legal](https://ffmpeg.org/legal.html) documents build-dependent
+The fixed implementation and Gateway schema define available behavior. [FFmpeg legal](https://ffmpeg.org/legal.html) documents build-dependent
 licensing. Remotion render licensing remains covered by the existing
 [ad matrix guide](../remotion-ad-variant-matrix/SKILL.md).

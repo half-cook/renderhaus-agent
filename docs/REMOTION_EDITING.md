@@ -3,8 +3,9 @@
 One brief and a table produce real local ad variants with editable price, CTA, logo and
 legal overlays. A finished master can also produce static aspect candidates with contact
 sheets for human editorial review. The existing Remotion timeline path performs assembly.
-Resolve is parked. Loudness and full deliverable certification remain pending
-`feat/remotion-delivery-qc`; these review files must not be sold as certified deliverables.
+Resolve is parked. Free local delivery finishing normalizes audio, names/version files and
+checks every final file. Technical QC does not certify channel specifications or accept
+editorial content; those reviews remain explicit.
 
 ## Tool contracts
 
@@ -69,6 +70,10 @@ owned directory before planning. Neither matrix nor timeline accepts arbitrary J
 Every output has a per-aspect contact sheet. The result is a `candidate_set=true` with
 `editorial_review="pending"`; a successful renderer cannot certify an editorial decision.
 The manifest records identities, document hashes, file paths, hashes, duration and QC metadata.
+Each matrix output receives a technical report. A failed check marks that variant failed;
+intentional master freezes, black or silence are recorded as allowed source intervals.
+Review intermediates still need final naming and loudness finishing. Delivery replaces the
+manifest `qc` field with each final-file report and preserves the original source provenance.
 Artifacts use generated/versioned names. Saved manifest paths, identities and hashes are
 checked before reuse. The worker freezes hash-checked inputs before rendering. Studio asset
 records include `output_path` for both videos and review images. Previous batches cannot
@@ -136,7 +141,16 @@ branches/bounds, so code validates the same contract before execution.
 | `contact_sheet` | `every_s`: finite 0.1-600; `cols`/`rows`: integers 1-10; `width`/`height`: integers 16-640 | JPEG, maximum 4096x4096 and 600-second sample window |
 | `sha256` | `{}` | File hash/bytes, pure Python |
 | `check_faststart` | `{}` | MP4 atom order, pure Python |
-| `volume_stats` | `{}` | Mean and sample peak; no LUFS or true-peak certification |
+| `volume_stats` | `{}` | Mean and sample peak |
+| `frame_cadence` | `{}` | All decoded timestamps through 600s; frame count, nominal cadence and CFR deviations |
+| `measure_loudness` | `I`: -30..-5 (default -14); `TP`: -9..0 (default -1.5); `LRA`: 1..20 (default 11) | Loudnorm pass-1 JSON plus ebur128 programme integrated LUFS, true peak and LRA |
+| `loudnorm_mux_aac` | Same targets; required `measured_I`, `measured_TP`, `measured_LRA`, `measured_thresh`, `offset`; `bitrate_kbps`: integer 64..320 | Source measurements verified before two-pass linear loudnorm; video copy, 48kHz AAC, faststart; actual before/after and dynamic fallback flag |
+| `mux_aac` | `bitrate_kbps`: integer 64..320 (default 192) | Video copy plus 48kHz AAC and faststart; refuses missing audio |
+| `transcode_h264` | `intent`: one preset name below | Fixed H.264 High/yuv420p/AAC MP4 template; native FPS, no upscaling, bounded preset dimensions |
+| `detect_black` | `d`: 0.1..5 (default 0.5); `pix_th`: 0..0.5 (default 0.1) | Black intervals, including head/tail and EOF closure |
+| `detect_freeze` | `d`: 0.1..5 (default 0.5); `n`: 0..0.1 (default 0.001) | Freeze intervals |
+| `detect_silence` | `d`: 0.1..5 (default 0.5); `noise`: -60..-20 dB (default -50) | Silence intervals |
+| `ssim` | `reference_path`: confined existing master | First/last decoded-frame SSIM; incompatible dimensions/duration refused, no hidden resizing |
 
 Preview defaults are 1920/1080 source dimensions and `9:16`; supply the measured dimensions
 explicitly. Rotation is a finite multiple of 90 degrees in `-360..360`. Pure preview still
@@ -167,6 +181,7 @@ return a clear structured failure. No binary is added to the Lambda zip.
 | Fitted text and positioned image/video overlays | Supported | Versioned font/box contract required |
 | New per-item static crop windows or blurred-pad fit | Supported | Explicit refusal before source retrieval or AWS request |
 | Matrix stages, including minimal reframe mode | Supported on host owning job directory | Explicit refusal before dry-run or AWS request |
+| Delivery finishing and deliverable QC | Real local files and binaries | Explicit refusal before media IO or AWS request |
 | Fixed ffmpeg binary ops | Installed binaries and job directory required | Refused without binaries; no binary bundled |
 | Pure crop preview | Supported without binary/input file | Requires only a validated job directory and request |
 | Video grade, motion and rotation effects | Unsupported message | Existing composition capabilities |
@@ -176,6 +191,78 @@ compatible font/box composition; it does not enable the new crop/pad fields. No 
 or live Lambda call occurs here. Parity tests compare the canonical document and early
 backend refusals; they do not claim deployed pixel parity. Render options must work on both
 backends or be refused explicitly. Never silently switch backends or disable dry-run.
+
+## Delivery jobs and preset data
+
+`Remotion___deliver_render` (`delivery_render`) and `Remotion___qc_deliverable`
+(`deliverable_qc`) take `job_id`, exactly one `input_path` or `manifest_path`, `preset`
+(default `social-feed`) and optional `spec`. Stage ordinary timeline output explicitly
+inside the owned job first; neither job fetches a URL or another job's file. Manifests
+contain 1-100 unique, checksum-matching entries and are at most 16 MiB. Reports share that
+cap. Delivery also accepts safe ASCII `campaign`, `sku`, `locale`, supported `aspect`,
+and `upload=false`. Upload=true is refused; this branch creates no S3/public link.
+
+Presets live in `providers/remotion/delivery_presets.json`. They are **placeholders to
+confirm per channel**, including dimensions, FPS bounds, loudness, file-size limits and
+safe zones. They are not claims of broadcast or platform certification.
+
+| Preset | Maximum width x height | LUFS / dBTP | Audio bitrate |
+| --- | --- | --- | --- |
+| `social-vertical` | 1080 x 1920 | -14 / -1.5 | 192k |
+| `social-feed` | 1080 x 1080 | -14 / -1.5 | 192k |
+| `web-1080p` | 1920 x 1080 | -14 / -1.5 | 192k |
+| `broadcast-proxy` | 1920 x 1080 | -23 / -1 | 192k |
+| `podcast-streaming` | 1920 x 1080 | -16 / -1.5 | 192k |
+| `review-proxy` | 960 x 540 | No normalization target | 96k |
+| `email-720p` | 1280 x 720 | -14 / -1.5 | 192k |
+
+Every preset uses MP4/H.264 High/yuv420p, square pixels, preserved FPS within 1..120,
+AAC at 48kHz with mono/stereo, faststart and a 16 MiB maximum file. Naming is
+`<campaign>__<sku>__<locale>__<aspect>__v<n>.mp4`. Exclusive file creation selects a new
+version and never overwrites. Compatible H.264 video is stream-copied while audio finishes;
+otherwise a named fixed transcode downsizes within the preset, never upscales. Review
+proxies use a lower fixed quality. Delivery retains delivered dimensions and known
+`source_resolution`; unknown original dimensions remain unknown. Nominal "1080p" in a
+preset name does not prove the actual output is 1080p.
+
+Loudness targets accept `I`, `TP`, `LRA` and `tolerance_lu` (0.1..1, default 0.5) overrides.
+Normalization rechecks pass-1 values against the source, refuses no-audio/inconsistent
+measurements, attempts linear mode and reports dynamic fallback. The encoded AAC is
+measured again before success. Programme loudness is measured; **dialogue gating is not
+available**. Clips shorter than three seconds cannot receive target loudness certification.
+See [loudnorm and ebur128](https://ffmpeg.org/ffmpeg-filters.html), read 2026-10-09.
+
+The upstream [Remotion encoding table](https://www.remotion.dev/docs/encoding), read
+2026-10-09, lists H.264 plus PCM-16 in MOV/MKV. This clone's local timeline renderer has
+fixed AAC output and exposes no PCM render option. Real tests verify local system-ffmpeg
+H.264/PCM-16 MOV inputs and their video-copy AAC finishing. This is not a new renderer PCM
+option. Lambda PCM support is **UNVERIFIED**; no deployed Lambda call was made. ProRes
+and arbitrary codec requests are explicitly refused by the delivery skill.
+
+QC reports each check: container, codec/profile/pixel format, SAR, delivered dimensions,
+FPS, decoded cadence/frame count, duration within one frame, audio presence/codec/layout/
+sample rate, sample clipping, programme loudness/tolerance, true peak, silence, black/freeze
+intervals, faststart, size, filename and checksum. It generates five review frames and a
+contact sheet. Optional same-size master SSIM measures the first/last frames only. Caption,
+price, legal-copy and editorial correctness require a planner vision pass on those frames;
+`require_vision=true` fails pending review. Declared overlay geometry alone can be checked
+against supplied safe-zone fractions. No OCR detector is added.
+
+`spec` supports `expected_width`, `expected_height`, `expected_fps`,
+`expected_duration_s`, `expected_sha256`, `expected_filename`, `master_path`,
+`audio_channels`, `require_audio`, `require_vision`, target overrides, detector `noise`,
+`black_d`, `freeze_d`, `silence_d`, `pix_th`, `n`, `allowed_black`, `allowed_freeze`,
+`allowed_silence`, `overlay_boxes` and `safe_zone`. Allowed intervals are explicit
+`{start_s,end_s}` spans; they never silently hide detections. An approved intermediate name
+may be checked with `expected_filename`; final delivery always uses the naming convention.
+Final QC validates actual artifacts, not source metadata or a successful encode response.
+
+A failed check makes its file and manifest variant failed, preserving reasons in the report.
+A current delivery workflow can be called finished/delivered only with a saved passing
+report that still matches every output checksum, or with every failure disclosed verbatim.
+The runner rejects incomplete/stale reports and previous video success overriding current
+failed QC, including turn-limit recovery. Ordinary legacy assembly checks remain intact.
+Editorial acceptance stays separate from technical QC and rendering authorization.
 
 ## Cost and licence
 
@@ -208,82 +295,73 @@ No new environment variable, dependency or secret is required in this branch. Ex
 operator driver selects local and opts into real rendering. Existing media-root, backend,
 licence allowance, Lambda estimate and timeout variables retain their roles.
 
-## Run the real local demo
+## Verification and remaining limits
 
-The generator creates a short master with synthetic audio, three alpha logos, three product
-stills, a fifteen-row retail CSV, and a five-row reframe CSV plus briefs under
-`.renderhaus/demo/<job-id>/`. Default master: `1280x720`, four seconds, 24 FPS. Use `--size
-1080p` for `1920x1080`, or `--size small` for a two-second `640x360` fixture. Existing jobs
-are never overwritten.
+The real-binary tests cover two-pass loudness round trips, final AAC peaks, PCM MOV input,
+no-audio refusal, injected black/freeze/silence/clipping, wrong dimensions/FPS/duration,
+faststart atom order, source provenance, version contention, manifest hashes, finished-claim
+guards, preset data, backend refusal and adversarial sandbox parameters. Tests call no
+paid provider, Lambda or external media service. No model adapter or provider price was
+added. The source model/capability map remains quality first.
+
+Inventory is 16 providers, 117 Gateway tools, 30 packaged skills, and 220 retained routing
+rows: 215 active and 5 skipped. Of RT-E001..RT-E079, 78 are active. RT-E043 remains skipped
+for exact OCR verification (`feat/remotion-ocr-verification`); four original dependency
+rows remain skipped. LUT/multicam/ProRes candidates are active honest refusals, and all
+Resolve-only rows are active negatives. Routing tests do not certify generated media.
+
+Comet Studio E2E is **blocked**: no Comet control is available in this environment. Offline
+binary checks cannot replace that browser validation. Deployed Lambda pixel parity and
+PCM output, planner vision/OCR review, per-channel preset approval, local Remotion metering,
+S3 upload and direct publishing remain unverified or unavailable. No deploy was attempted.
+
+The 2026-10-09 real local demo produced fifteen retail outputs and five reframe outputs,
+then finished and rechecked each final AAC/MP4 file at -13.97 LUFS with a maximum
+-5.78 dBTP. Every source_resolution is 1280x720. Delivered native dimensions are
+404x718 (9:16), 720x720 (1:1), 576x720 (4:5), 1280x720 (16:9), and 1278x536 (2.39:1).
+The 1280x720 export is 720p; no output was upscaled. No resolution warning was reported.
+The reports disclose placeholder presets, pending planner vision/editorial review, and
+dynamic loudnorm fallback requiring mix review. Topaz's `upscale` skill can provide actual
+enhancement with existing approval; it was not invoked in this offline demo. First-render
+contact sheets were inspected, and final files were decoded with the real FFmpeg binary.
+These checks do not establish browser playback or editorial acceptance.
+
+## Run the real local customer demo
+
+The generator creates a four-second master with synthetic audio, three alpha logos, three
+product stills, a fifteen-row retail CSV, a five-row reframe CSV and briefs under
+`.renderhaus/demo/<job-id>/`. Default master: native 1280x720, 24 FPS. `--size small` uses
+640x360 for the same duration; `--size 1080p` uses 1920x1080. Existing jobs are refused.
+The driver explicitly opts into the real local backend; all provider defaults remain dry-run.
 
 ```sh
-.venv/bin/python scripts/make_ad_demo_assets.py --job-id aspect-demo --size 1080p
-.venv/bin/python scripts/run_ad_demo.py plan --job-id aspect-demo --mode reframe
+.venv/bin/python scripts/make_ad_demo_assets.py --job-id delivery-demo --size 720p
+.venv/bin/python scripts/run_ad_demo.py plan --job-id delivery-demo
 ```
 
-Inspect each crop/pad plan, native output dimensions and cost. Copy the exact plan hash only
-after reviewing it. The driver requires operator approval for each rendering stage:
+Read the plan, dimensions, crop decisions and cost, then copy its exact reviewed hash.
+Use `--mode reframe` on every plan/render command to process the flat master as five aspect
+candidates without overlays. Retail mode includes all five aspects for each of three SKUs.
 
 ```sh
 AD_PLAN_HASH='paste-the-exact-reviewed-plan-hash'
-.venv/bin/python scripts/run_ad_demo.py render_first --job-id aspect-demo --mode reframe --approve-plan "$AD_PLAN_HASH"
+.venv/bin/python scripts/run_ad_demo.py render_first --job-id delivery-demo --approve-plan "$AD_PLAN_HASH"
 ```
 
-Open all five MP4s and contact sheets. Compare framing, dimensions, audio, FPS, SAR and
-warnings with the plan. Approve this candidate set editorially before authorizing the batch:
+Open every first-SKU MP4 and contact sheet; review framing, branding, legal copy and prices.
+Then authorize the unchanged batch. Read its `manifest_path`; use that exact path below.
 
 ```sh
-.venv/bin/python scripts/run_ad_demo.py render_batch --job-id aspect-demo --mode reframe --approve-plan "$AD_PLAN_HASH"
+.venv/bin/python scripts/run_ad_demo.py render_batch --job-id delivery-demo --approve-plan "$AD_PLAN_HASH"
+AD_MANIFEST='paste-the-completed-batch-manifest-path'
+.venv/bin/python scripts/run_ad_demo.py deliver --job-id delivery-demo --manifest "$AD_MANIFEST" --preset web-1080p
+.venv/bin/python scripts/run_ad_demo.py qc --job-id delivery-demo --manifest "$AD_MANIFEST" --preset web-1080p
 ```
 
-All rows belong to one master/locale group, so the first stage covers all five aspects;
-the approved batch verifies and reuses those files. To request nominal table sizes, include
-`--allow-upscale` in **every** stage and re-plan. A 1080p portrait output then requires and
-reports resampling with no added detail. For retail overlays, omit `--mode reframe`; each of
-three SKU groups has all five aspects. The driver makes no paid or Lambda calls.
-
-## Verification limits
-
-Tests use synthetic files and real installed binaries for geometry, scene cuts, output
-sizes, SAR, timing, audio, path attacks, parameter bounds, stale plans and backend refusals.
-Routing now activates RT-E011..RT-E019 alongside prior matrix and negative Resolve/shell
-cases. Of 79 editing workbook rows, 47 are active and 32 are deferred; RT-E046 delivery
-chaining remains deferred to `feat/remotion-delivery-qc`. Candidate LUT/multicam semantics
-remain unverified. Total inventory is 16 providers, 115 Gateway tools, 27 packaged skills
-and 220 routing rows (184 active, 36 deferred, including the original four dependency skips).
-
-On 2026-10-09, the operator CLI completed all six four-second demo renders at 24 FPS.
-Three outputs are 720x720 and three are 720x900, each with `source_resolution=1280x720`.
-All six hashes matched their manifest and all six decoded video and audio without errors.
-The two first-aspect contact sheets visibly contained A, $9.99, Shop now and Terms apply.
-The 720x900 outputs carry: "Video upscaled from 1280x720 to 720x900 with no added detail.
-Use the Topaz upscale skill before assembly for added detail." No OCR certification is
-recorded. Artifacts remain ignored under `.renderhaus/demo/ad-matrix-verification/`.
-
-The final full suite ran 1,681 tests: 1,634 passed and 47 skipped. Ruff, dry-run CI/schema
-packaging and Studio typecheck passed. The original allowance contention test intermittently
-failed in earlier runs (two of five isolated repetitions), then passed in the final full run.
-Its state code is unchanged; the five-attempt CAS retry limit remains an existing TODO.
-
-The Studio typecheck passed using the temporary dependency link, which was removed.
-The Remotion composition passed TypeScript syntax transpilation, but its full semantic
-typecheck is UNVERIFIED because Remotion node dependencies are absent here. A built Python
-wheel contains the layout JSON and imports it outside the source tree. Safe-zone presets,
-the rough four-times-duration render-time estimate and Lambda workload estimates remain
-placeholders to confirm; no deployed Lambda pixel parity is claimed.
-
-`feat/remotion-aspect-ratio-variants` adds per-shot subject-aware crop/pad handling.
-`feat/remotion-delivery-qc` adds delivery intents, loudness measurement/normalisation and
-deliverable checks. Its three skills are not available in this branch. Matrix review files
-cannot claim those checks until the real operations run and the actual artifacts open/play.
-
-The routing fixture preserves RT-E001..RT-E079. Thirty-eight rows are active and forty-one
-are deferred to named branches or unverified candidate semantics. Including the earlier
-fixture, there are 220 rows, 175 active and 45 skipped. Current inventory is 16 providers,
-115 Gateway tools and 27 packaged skills. No secrets are added.
-Comet is unavailable here, so real Studio browser E2E is blocked and pending. CLI/media
-checks are supporting evidence, never a browser pass. No Lambda deployment, live Lambda
-call or paid provider call is performed. Safe-zone presets, local licence metering and VFR
-cadence require explicit review. A later detector branch may evaluate MediaPipe/OpenCV and
-model licences; none is included now. Delivery, loudness and final QC await
-`feat/remotion-delivery-qc`. See [decisions](remotion-aspect-ratio-variants-decisions.tsv).
+`web-1080p` preserves these native aspect outputs and targets -14 LUFS, with the placeholder
+-1.5 dBTP ceiling. Delivery writes named versions and checks every final AAC/MP4 file. The
+last command rechecks the extended manifest and produces a saved pass/fail `report_path`.
+Open/play the actual final files and inspect the report, contact sheets and warnings before
+a customer summary. Say each delivered width/height, original `source_resolution` and
+resolution warnings; disclose pending editorial review and every failed check verbatim.
+No paid, Lambda, upload or posting call is made by these commands.

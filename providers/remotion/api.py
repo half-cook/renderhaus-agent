@@ -1064,7 +1064,13 @@ TOOL_HANDLERS = {
     "export_nle_timeline": export_nle_timeline,
 }
 
+from providers.remotion.delivery import deliver_render, qc_deliverable  # noqa: E402
+
+TOOL_HANDLERS.update(deliver_render=deliver_render, qc_deliverable=qc_deliverable)
+
 GATEWAY_TOOLS = (
+    "deliver_render",
+    "qc_deliverable",
     "render_ad_variants",
     "import_nle_timeline",
     "prepare_conversational_edit",

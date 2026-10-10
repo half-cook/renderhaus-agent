@@ -1,4 +1,3 @@
-"""Real-media and hostile-input contracts for fixed local delivery operations."""
 from concurrent.futures import ThreadPoolExecutor
 import math
 from pathlib import Path

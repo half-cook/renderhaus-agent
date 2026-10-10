@@ -1487,6 +1487,13 @@ def _validate_video_delivery(
         last = workflow_events[-1] if workflow_events else None
         latest = last.result if last else {}
         complete = False
+        newer_work = []
+        if last:
+            newer_work = [event for event in current_events[current_events.index(last) + 1:] if
+                          event.name in {"Remotion___render_timeline", "Remotion___render_ad_variants"} or
+                          event.name == "Ffmpeg___ffmpeg_tool" and event.arguments.get("op") in {
+                              "transcode_h264", "mux_aac", "loudnorm_mux_aac", "reframe_crop", "reframe_pad_blur",
+                          }]
         if last and last.status == "succeeded":
             from providers.remotion.delivery import validate_delivery_report
 
@@ -1500,9 +1507,13 @@ def _validate_video_delivery(
                     completed_files = {(row["output_path"], row["sha256"]) for row in latest["files"]}
                     delivery_files = {(row["output_path"], row["sha256"]) for row in delivery.result["files"]}
                     complete = completed_files == delivery_files
+        if newer_work:
+            complete = False
         if complete:
             return True
         reasons = _delivery_failure_reasons(latest)
+        if newer_work:
+            reasons.append("New render or finishing work started after the saved delivery report; QC the current output before completion.")
         if not reasons:
             reasons = ["No current successful delivery result and matching final-file QC report were verified."]
         message = "Delivery QC is incomplete. " + reasons[0]

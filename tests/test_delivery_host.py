@@ -58,12 +58,20 @@ def bound_report(root, name="report"):
               for check in check_names]
     checks.append({"name": "vision_review", "pass": None, "severity": "warning",
                    "detail": "Visual review remains pending."})
+    review_assets = []
+    for index in range(6):
+        image = root / f"{name}-review-{index}.{('jpg' if index == 0 else 'png')}"
+        image.write_bytes(f"worker review image {index}".encode())
+        review_assets.append({"output_path": str(image), "sha256": hashlib.sha256(image.read_bytes()).hexdigest(),
+                              "bytes": image.stat().st_size})
     result = {"status": "succeeded", "passed": True, "job_id": ARGS["job_id"],
               "preset": ARGS["preset"], "failures": [], "files": [{
         "file": str(artifact), "output_path": str(artifact),
         "sha256": hashlib.sha256(artifact.read_bytes()).hexdigest(), "passed": True,
         "technical_passed": True, "audio_present": True, "bytes": artifact.stat().st_size,
         "checks": checks, "failures": [], "width": 1280, "height": 720,
+        "contact_sheet": review_assets[0]["output_path"],
+        "review_frames": [image["output_path"] for image in review_assets[1:]], "review_assets": review_assets,
     }], "report_path": str(root / f"{name}.json")}
     Path(result["report_path"]).write_text(json.dumps(result))
     assert validate_delivery_report(result), "Host report fixture must satisfy the production report contract."
@@ -260,6 +268,22 @@ class DeliveryHostTests(unittest.IsolatedAsyncioTestCase):
 
 
 class DeliveryCompletionTests(unittest.TestCase):
+    def test_failed_qc_exposes_review_images_without_certifying_a_video(self):
+        from server.studio import _hydrate_tool_event_assets
+
+        result = self.report()
+        result.update(status="failed", passed=False, failures=["vision_review: Planner review pending."])
+        event = tool_event(QC, result)
+        with patch("server.studio.repository", MagicMock()), patch(
+                "server.studio._register_payload_assets", return_value=[{"kind": "image", "version_id": "frame"}]
+        ) as register:
+            _hydrate_tool_event_assets([event], workspace_id="workspace", project_id="project",
+                                       user_id="user", execution_id="execution")
+        self.assertEqual(register.call_count, 6)
+        self.assertTrue(all(call.kwargs["kind"] == "image" for call in register.call_args_list))
+        self.assertEqual(event.status, "failed")
+        self.assertFalse(_validate_video_delivery(self.request, self.context(event)))
+
     def setUp(self):
         self.root = owned_job(self)
         self.request = StudioAgentRequest(prompt="Inspect the local media", job_id="owned-job")
@@ -293,6 +317,25 @@ class DeliveryCompletionTests(unittest.TestCase):
                     result["files"][0]["file"] = str(self.root / "another.mp4")
                 self.assertFalse(_validate_video_delivery(self.request, self.context(tool_event(DELIVERY, result))))
 
+    def test_changed_or_missing_review_images_cannot_certify_completion(self):
+        for defect in ("changed", "missing", "removed-record", "duplicate-record", "demoted-check"):
+            with self.subTest(defect=defect):
+                result = self.report()
+                file = result["files"][0]
+                image = Path(file["review_assets"][1]["output_path"])
+                if defect == "changed":
+                    image.write_bytes(b"replaced review image")
+                elif defect == "missing":
+                    image.unlink()
+                elif defect == "removed-record":
+                    file["review_assets"].pop()
+                elif defect == "duplicate-record":
+                    file["review_assets"][-1] = file["review_assets"][0]
+                else:
+                    file["checks"][0].update(severity="warning", **{"pass": False})
+                Path(result["report_path"]).write_text(json.dumps(result))
+                self.assertFalse(_validate_video_delivery(self.request, self.context(tool_event(DELIVERY, result))))
+
     def test_prior_worker_report_does_not_certify_a_selected_new_delivery(self):
         old = tool_event(DELIVERY, self.report(), event_id="old")
         self.request.prior_tool_events = [old.public()]
@@ -316,6 +359,14 @@ class DeliveryCompletionTests(unittest.TestCase):
         failed = tool_event(QC, {"status": "failed", "passed": False, "files": [],
                                 "reason": "Unexpected frozen frames."}, event_id="failed")
         self.assertFalse(_validate_video_delivery(self.request, self.context(passed, failed)))
+
+    def test_new_render_or_finishing_work_invalidates_an_earlier_delivery(self):
+        passed = tool_event(DELIVERY, self.report(), event_id="passed")
+        for name, arguments in (("Remotion___render_timeline", {}),
+                                ("Ffmpeg___ffmpeg_tool", {"op": "transcode_h264"})):
+            with self.subTest(name=name):
+                newer = tool_event(name, {"status": "succeeded"}, event_id="newer", arguments=arguments)
+                self.assertFalse(_validate_video_delivery(self.request, self.context(passed, newer)))
 
     def test_later_qc_must_bind_to_the_current_delivered_files(self):
         delivered = tool_event(DELIVERY, self.report("delivery"), event_id="delivered")

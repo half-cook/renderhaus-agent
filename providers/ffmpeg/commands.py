@@ -1,4 +1,3 @@
-"""Shared fixed FFmpeg command fields and confined input options."""
 from __future__ import annotations
 
 from dataclasses import dataclass, field

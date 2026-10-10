@@ -93,6 +93,8 @@ width and height, `source_resolution`, measured `input_resolution`, and all warn
 For a resampled canvas, disclose the original measured source size and "no added detail".
 Use [Topaz upscale](../upscale/SKILL.md) with its existing approval for actual enhancement.
 
+## Hard rules
+
 Files remain confined to the local job host. Escaping paths, symlinks, network inputs,
 free-form shell, filtergraphs, scripts, executable overrides and unlisted ops are refused.
 Resolve remains parked. Local QC is free and adds no model or weights. Keep confidential
@@ -100,6 +102,5 @@ metadata, source rights, training eligibility and the existing paid-generation a
 
 ## Sources
 
-The supplied QC draft is `/workspace/research/renderhaus-skills/remotion-deliverable-qc/SKILL.md`.
 The fixed implementation and Gateway schema define the current checks. [FFmpeg filters](https://ffmpeg.org/ffmpeg-filters.html)
 documents the detection and SSIM filters. This wrapper redistributes no binary or upstream code.

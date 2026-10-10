@@ -1,13 +1,9 @@
-"""Fixed local delivery recipes and complete media measurements.
-
-Filter contracts follow https://ffmpeg.org/ffmpeg-filters.html and timestamp
-inspection follows https://ffmpeg.org/ffprobe.html, read 2026-10-09.
-"""
 from __future__ import annotations
 
 from fractions import Fraction
 import json
 import math
+from pathlib import Path
 import re
 import shutil
 import statistics
@@ -17,15 +13,8 @@ from providers.ffmpeg.commands import Command, FORMATS, THREADS, _ffmpeg_input, 
 from providers.ffmpeg.sandbox import MAX_OUTPUT_BYTES, input_file, output_file
 
 
-INTENTS = {
-    "social-vertical": (1080, 1920, 18),
-    "social-feed": (1080, 1080, 18),
-    "web-1080p": (1920, 1080, 18),
-    "broadcast-proxy": (1920, 1080, 18),
-    "review-proxy": (960, 540, 28),
-    "email-720p": (1280, 720, 24),
-    "podcast-streaming": (1920, 1080, 18),
-}
+PRESETS = json.loads((Path(__file__).parents[1] / "remotion" / "delivery_presets.json").read_text())
+INTENTS = {name: (preset["max_width"], preset["max_height"], preset["crf"]) for name, preset in PRESETS.items()}
 _NUMBER = r"[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?"
 _PASS1 = ("input_i", "input_tp", "input_lra", "input_thresh", "target_offset")
 _MEASURED = dict(zip(("measured_I", "measured_TP", "measured_LRA", "measured_thresh", "offset"), _PASS1))
@@ -142,6 +131,7 @@ def _delivery_source(directory, source, *, require_audio):
         "source_duration": duration, "source_fps": video["avg_frame_rate"], "source_cadence": cadence,
         "source_resolution": {"width": width, "height": height}, "width": width, "height": height,
         "source_audio": audio is not None, "source_channels": audio.get("channels") if audio else None,
+        "source_audio_duration": float(audio.get("duration", duration)) if audio else None,
         "source_channel_layout": audio.get("channel_layout") if audio else None,
         "source_video_codec": video.get("codec_name"), "upscaled": False, "warnings": [],
     }
@@ -155,7 +145,7 @@ def _mux_command(directory, source, params, metrics, *, audio_filter=None):
     output = output_file(directory, "delivery", ".mp4")
     argv = _ffmpeg_input(directory, source) + ["-nostats", "-map", "0:v:0", "-map", "0:a:0", "-c:v", "copy"]
     if audio_filter:
-        argv += ["-af", audio_filter]
+        argv += ["-af", audio_filter + f",atrim=duration={metrics['source_audio_duration']:g}"]
     argv += [*_aac_args(params), "-map_metadata", "-1", "-movflags", "+faststart", "-fs", str(MAX_OUTPUT_BYTES),
              "./" + output.name]
     return Command(argv, [output], metrics, stderr_bytes=65536)
@@ -263,7 +253,7 @@ def transcode(directory, source, params):
     else:
         argv += ["-crf", str(crf)]
     if audio:
-        argv += _aac_args({"bitrate_kbps": 96 if params["intent"] == "review-proxy" else 192})
+        argv += _aac_args({"bitrate_kbps": PRESETS[params["intent"]]["audio"]["bitrate_kbps"]})
     argv += ["-fps_mode", "passthrough", "-map_metadata", "-1", "-movflags", "+faststart", "-fs", str(MAX_OUTPUT_BYTES),
              "./" + output.name]
     return [Command(argv, [output], metrics, stderr_bytes=65536)]

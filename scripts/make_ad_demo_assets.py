@@ -32,7 +32,7 @@ def main() -> None:
         parser.error("The demo job already exists. Choose a new job-id; inputs are never overwritten.")
     directory.mkdir(parents=True)
     width, height = {"small": (640, 360), "720p": (1280, 720), "1080p": (1920, 1080)}[args.size]
-    duration = 2 if args.size == "small" else 4
+    duration = 4
     subprocess.run([
         "ffmpeg", "-nostdin", "-hide_banner", "-v", "error", "-n", "-f", "lavfi", "-i",
         f"testsrc2=size={width}x{height}:rate=24:duration={duration}", "-f", "lavfi", "-i",

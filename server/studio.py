@@ -290,13 +290,18 @@ def _hydrate_tool_event_assets(
         if existing:
             continue
         status = str(getattr(event, "status", "") or "").lower()
-        if status in _SKIP_ASSET_STATUSES:
+        failed_qc = status in {"failed", "error"} and event.name in {
+            "Remotion___deliver_render", "Remotion___qc_deliverable",
+        }
+        if status in _SKIP_ASSET_STATUSES and not failed_qc:
             continue
         payload = getattr(event, "result", None)
         if not isinstance(payload, dict):
             continue
         registered: list[dict[str, Any]] = []
         for candidate in collect_asset_sources(payload):
+            if failed_qc and candidate["kind"] != "image":
+                continue
             source = candidate["source"]
             if source in seen_sources:
                 continue

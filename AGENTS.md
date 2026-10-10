@@ -46,3 +46,8 @@ is 720p. A 1920x1080 canvas resampled from it must say "upscaled from 1280x720; 
 detail". Mention the Topaz `upscale` skill for actual enhancement, with existing approval.
 Unknown source dimensions remain unknown. Choosing a lower Wan resolution produces a
 lower-resolution deliverable unless an upscale is requested; keep routing and cost defaults.
+
+For delivery-render and deliverable-QC workflows, call an artifact finished or delivered
+only when its saved QC report passed and still matches every output checksum. Otherwise
+include each reported failure verbatim in the customer summary. Matrix technical checks
+do not accept framing, captions, legal copy or prices; keep pending visual review explicit.

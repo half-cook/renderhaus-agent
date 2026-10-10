@@ -68,6 +68,8 @@ AAC measurements in the QC report and delivery manifest. Open/play that actual f
 Do not claim loudness compliance from dry-run previews, a queued job or successful execution
 without measurements. `FFMPEG_DRY_RUN` and `REMOTION_DRY_RUN` keep their existing behavior.
 
+## Hard rules
+
 Files remain confined to the local job directory. No network fetch, escaping path, symlink,
 free-form shell, pasted script, filtergraph or unlisted op is allowed. Fairlight and other
 Resolve operations remain parked. Offer the fixed FFmpeg measure instead. Source rights,
@@ -75,7 +77,6 @@ confidential metadata, quality-first defaults and paid-generation approvals rema
 
 ## Sources
 
-The supplied loudness draft is `/workspace/research/renderhaus-skills/remotion-loudness-qc/SKILL.md`.
 The fixed op schema defines the current contract. [FFmpeg loudnorm](https://ffmpeg.org/ffmpeg-filters.html#loudnorm)
 describes two-pass programme loudness and [EBU R128](https://tech.ebu.ch/docs/r/r128.pdf)
 defines the programme target. FFmpeg licensing depends on the installed build; this wrapper

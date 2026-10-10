@@ -73,7 +73,7 @@ The related third row is the existing whiteboard-with-voiceover case; its source
 is retained, with actual workflow ownership corrected to `whiteboard-explainer`.
 
 Inventory is 16 providers, 115 cataloged Gateway tools, 26 packaged skills and 220 fixture
-rows: 175 active, 45 skipped. No pending provider row is activated by this skill-only change.
+rows: 215 active, 5 skipped. The later Remotion delivery branch activates its editing rows; this skill adds no provider.
 The retained skips are 29 delivery/loudness/QC, 10 subject-aware aspect/reframe, three Cutaway
 capture, two unverified LUT/multicam semantics and one HyperFrames footage-overlay case.
 
