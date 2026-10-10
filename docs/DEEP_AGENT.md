@@ -1,5 +1,9 @@
 # Studio Deep Agents backend
 
+Word-level footage corrections use [dialogue-edit](DIALOGUE_EDIT.md) on existing sync-3.
+Preview and video each pause for consent/cost approval; ambiguous preview creation cannot
+be automatically retried. The flow uses the existing media dispatch and native approval resume.
+
 Renderhaus uses `deepagents==0.7.23` by default. One chat handles planning, media generation,
 refinement, and final Remotion assembly. Canvas references are optional. The existing Studio
 request, job, approval, progress, asset, and conversation contracts remain in place.
@@ -243,7 +247,7 @@ order. The short Studio summary also includes per-step costs when they fit its 3
 contract; larger runs refer to the complete breakdown. Unknown charges remain explicit,
 with a known subtotal. Model token charges are recorded separately by `ModelUsage`.
 
-The capability-map fixture contains 242 retained rows, with 237 active and 5 dependency skips.
+The capability-map fixture contains 245 retained rows, with 240 active and 5 dependency skips.
 Archived/confidential routes are dropped. Active rows cover built tools and declared interims;
 pending specialists keep named branch reasons. Editorial overrides retain the safe preparer,
 separate rendering approval, and existing export/HyperFrames narration workflow contracts.
@@ -606,8 +610,8 @@ composition. This task makes no deployment or Lambda call. Matrix jobs refuse th
 backend until the same job directory exists on its worker. See
 [Remotion editing](REMOTION_EDITING.md) for the supported backend table and demo commands.
 
-Inventory is 16 providers, 122 Gateway tools and 31 skills. The fixture has 237 active and
-5 deferred cases among 242 rows. Browser validation through Comet remains blocked here.
+Inventory is 16 providers, 127 Gateway tools and 32 skills. The fixture has 240 active and
+5 deferred cases among 245 rows. Browser validation through Comet remains blocked here.
 
 ## Per-shot static reframing
 
@@ -638,8 +642,8 @@ or incomplete checks, and prevents a previous successful render from overriding 
 failed QC, including turn-limit recovery. Failure summaries preserve worker reasons
 verbatim. Existing ordinary assembly validation remains compatible.
 
-The three guides add delivery, loudness and deliverable QC routing. The 242 retained rows
-now contain 237 active cases and 5 skips. RT-E043 awaits exact OCR verification; the other
+The three guides add delivery, loudness and deliverable QC routing. The 245 retained rows
+now contain 240 active cases and 5 skips. RT-E043 awaits exact OCR verification; the other
 four are existing provider dependencies. `project.confidential` never changes these routes.
 See [contracts and operator commands](REMOTION_EDITING.md). Offline real-binary verification
 is supporting evidence; Comet Studio E2E is blocked by unavailable browser control here.
@@ -652,6 +656,6 @@ reuse `Fal___get_video_task`, shared fal credentials and dry-run guard. They are
 defaults or exceptions; unnamed executor calls and direct Studio invokes are blocked.
 Both always interrupt with cost even in autonomous mode and with premium approval disabled.
 Measured VibeMV source duration stays local; consent flags never enter the provider payload.
-Inventory is 16 providers, 119 tools, 31 skills, 233 active fixtures and 5 dependency skips.
+Inventory is 16 providers, 119 tools, 32 skills, 233 active fixtures and 5 dependency skips.
 See [named fal video](providers/named-fal-video.md) for contracts, dated official prices,
 commercial hosted terms and training exclusion. Comet E2E remains blocked here.

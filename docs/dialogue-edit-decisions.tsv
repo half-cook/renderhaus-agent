@@ -1,0 +1,20 @@
+topic	decision	source	read_date	status
+model	sync-3; canonical sync3_lipsync; existing provider and video poll	https://sync.so/docs/api-reference/api/generate-api/create	2026-10-10	VERIFIED
+transcription	POST /v2/transcriptions; GET /v2/transcriptions/{id}; maxSourceSeconds=600	https://sync.so/docs/api-reference/api/transcriptions-api/create	2026-10-10	VERIFIED
+preview	POST /v2/dialogue-edits creates preview; GET /v2/dialogue-edits/{id}; no separate preview POST	https://sync.so/docs/api-reference/api/dialogue-edits-api/create	2026-10-10	VERIFIED
+contract	One speaker; whole video <=600s; immutable fetched transcript; word IDs; consent	https://sync.so/docs/developer-guides/dialogue-editing	2026-10-10	VERIFIED
+storage	Only assets.sync.so verified; require uploaded/registered source; no upload automation	https://sync.so/docs/developer-guides/asset-uploads	2026-10-10	TODO other documented storage hosts
+preview_retry	Durable fingerprint; lost response/missing ID => submission_unknown; no automatic POST retry	https://sync.so/docs/developer-guides/dialogue-editing	2026-10-10	VERIFIED contract; mocked tests
+idempotency	Save generation Idempotency-Key before POST; reuse after ambiguous response	https://sync.so/docs/api-reference/guides/idempotency	2026-10-10	VERIFIED
+fallback	Retime 422 => regular lipsync with independent approved audio; never preview audio rollout bypass	https://sync.so/docs/developer-guides/dialogue-editing	2026-10-10	VERIFIED; separate approvals
+preview_price	Unpublished; unknown; live blocked without operator-confirmed SYNC_DIALOGUE_PREVIEW_COST_CENTS	https://sync.so/pricing	2026-10-10	TODO/unknown
+video_price	Base legacy $0.00534/output frame; cents rounded up; existing platform fee; credit/negotiated rate unknown	https://sync.so/pricing	2026-10-10	VERIFIED list rate; TODO account invoice
+rate_precision	Frame billing; per-second page rounds differently; ordinary lip-sync billing retained	https://sync.so/docs/product/billing	2026-10-10	VERIFIED
+licence	Proprietary service-terms/closed-weights; integration needs written authorization; voice/likeness permission	https://sync.so/terms	2026-10-10	VERIFIED; TODO account authorization
+training	training_eligible=false; no clear output-training grant; upload-use grant includes service improvement	https://sync.so/terms	2026-10-10	BLOCKED for training
+mcp_reference	MIT reference only; no code copied/vendored	https://github.com/synchronicity-labs/mcp-server/blob/main/LICENSE	2026-10-10	VERIFIED
+docs_links	.md links returned403; official extensionless equivalents used	https://sync.so/docs/developer-guides/dialogue-editing	2026-10-10	VERIFIED
+draft_aliases	Normalize to dispatch wrappers/Gateway names; preserve sync3_lipsync	/workspace/research/renderhaus-skills/dialogue-edit/SKILL.md	2026-10-10	READY; no tool clash
+fixtures	RT-157..159 absent; three cases authored from brief/draft; five unrelated skips retained	/workspace/rh-runs/inputs/capability-map.routing.csv	2026-10-10	238 active / 5 skipped
+deepagents	Installed0.7.23 signatures; existing interrupt_on/resume; no backend/model changes	.venv installed package	2026-10-10	VERIFIED locally
+browser_e2e	Comet unavailable; offline constraint; actual media and account rollout unverified	docs/BROWSER_E2E.md	2026-10-10	BLOCKED

@@ -344,8 +344,11 @@ def enrich_tool_schema(provider_id: str, tool: dict[str, Any]) -> dict[str, Any]
                 properties[field]["description"] = description
     if provider_id == "sync":
         from providers.sync.contracts import FIELD_DESCRIPTIONS
+        from providers.sync.dialogue_contracts import FIELD_DESCRIPTIONS as DIALOGUE_FIELDS, EDIT_SCHEMA
 
-        for field, description in FIELD_DESCRIPTIONS.items():
+        if "edits" in properties:
+            properties["edits"].update(deepcopy(EDIT_SCHEMA))
+        for field, description in {**FIELD_DESCRIPTIONS, **DIALOGUE_FIELDS}.items():
             if field in properties:
                 properties[field]["description"] = description
     for field, rule in argument_rules(provider_id, tool_name).items():
@@ -799,7 +802,7 @@ def validate_tool_arguments(
         validate_arguments(tool_name, arguments or {})
     if provider_id == "sync":
         for field, value in (arguments or {}).items():
-            if value is None and field not in {"model", "chunk_boundaries_seconds"}:
+            if value is None and field not in {"model", "chunk_boundaries_seconds", "voice_id", "rerun_of_job_id", "source_width", "source_height"}:
                 raise ValueError(f"arguments.{field} cannot be null.")
     if provider_id == "openai_images":
         for field, value in (arguments or {}).items():

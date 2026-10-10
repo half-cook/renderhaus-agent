@@ -1,5 +1,8 @@
 # sync-3 lip sync
 
+Word-level edits use [dialogue-edit](DIALOGUE_EDIT.md): direct Sync transcription,
+separately approved preview, then sync-3 `dialogueEdit` generation.
+
 `sync3_lipsync` is the quality-first default for replacing speech on existing footage.
 `Sync___lipsync_video` submits; `Sync___get_video_task` polls the returned `job_id`.
 New generated talking shots use Seedance 2.5. Presenters/digital twins over 30 seconds
