@@ -56,3 +56,11 @@ test('cn merges conflicting Tailwind classes and Motion stays lean and unmounted
   const layout = fs.readFileSync(path.join(studio, 'app/layout.tsx'), 'utf8');
   assert.doesNotMatch(layout, /components\/(ui|motion)/, 'foundation must not add route JS yet');
 });
+
+test('Sonner overrides its injected font, motion and focus shadow with Studio tokens', () => {
+  const source = fs.readFileSync(path.join(studio, 'components/ui/sonner.tsx'), 'utf8');
+  assert.match(source, /font-sans! duration-base! ease-studio!/);
+  assert.match(source, /\[box-shadow:var\(--shadow\)\]!/);
+  assert.match(source, /toast:.*duration-base! ease-studio!.*focus-visible:outline-2! focus-visible:outline-ring!/);
+  assert.match(source, /description: "text-sm text-muted!"/);
+});

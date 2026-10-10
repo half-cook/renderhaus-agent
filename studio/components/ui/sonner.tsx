@@ -9,7 +9,7 @@ function Toaster({ className, style, toastOptions, ...props }: ToasterProps) {
     <Sonner
       data-slot="toaster"
       position="bottom-right"
-      className={cn("font-sans", className)}
+      className={cn("font-sans! duration-base! ease-studio!", className)}
       icons={{
         success: <CircleCheckIcon className="size-4 text-ok" />,
         info: <InfoIcon className="size-4 text-text" />,
@@ -22,9 +22,9 @@ function Toaster({ className, style, toastOptions, ...props }: ToasterProps) {
         ...toastOptions,
         unstyled: true,
         classNames: {
-          toast: "flex items-center gap-3 border border-line bg-node p-4 text-text rounded-none [box-shadow:var(--shadow)]",
+          toast: "flex items-center gap-3 border border-line bg-node p-4 text-text rounded-none [box-shadow:var(--shadow)]! duration-base! ease-studio! focus-visible:outline-2! focus-visible:outline-ring!",
           title: "text-sm font-medium",
-          description: "text-sm text-muted",
+          description: "text-sm text-muted!",
           actionButton: "rounded-none! border! border-line! bg-primary! px-3 py-1.5 text-primary-foreground! text-sm! focus-visible:outline-2 focus-visible:outline-ring",
           cancelButton: "rounded-none! border! border-line! bg-chrome! px-3 py-1.5 text-text! text-sm! focus-visible:outline-2 focus-visible:outline-ring",
           closeButton: "rounded-none! border-line! bg-node! text-text! [box-shadow:var(--shadow)]! focus-visible:outline-2 focus-visible:outline-ring",
