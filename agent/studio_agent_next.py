@@ -36,6 +36,7 @@ from providers.contracts import SEEDREAM_SIZES
 from providers.registry import load_committed_schemas
 from providers.seedream.api import _size_for_ratio
 from server.billing import stripe_enabled
+from server.beta_credits import beta_billing_enabled
 from server.billing_rates import cost_for
 from server.config import (
     GATEWAY_MCP_SERVER_NAME,
@@ -729,7 +730,9 @@ class GatewayMCPServer(GatewayClient):
         name into the wrong provider would silently mis-bill, which is worse
         than this one call going unbilled.
         """
-        if not self._user_id or not stripe_enabled() or "___" not in tool_name:
+        if not self._user_id or "___" not in tool_name:
+            return None
+        if not (stripe_enabled() or beta_billing_enabled(repository, self._user_id)):
             return None
         target_name, raw_tool = tool_name.split("___", 1)
         provider_id = _PROVIDER_ID_BY_TARGET_NAME.get(target_name)
@@ -783,7 +786,7 @@ class GatewayMCPServer(GatewayClient):
             if (
                 getattr(result, "is_error", False)
                 or payload.get("error")
-                or payload.get("status") in {"failed", "error"}
+                or payload.get("status") in {"failed", "error", "blocked", "not_run"}
             ):
                 raise GatewayToolError(payload)
         except Exception:

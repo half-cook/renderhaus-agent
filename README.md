@@ -29,6 +29,9 @@ The default backend, skills, persistence, approvals, and verification are docume
 [docs/DEEP_AGENT.md](docs/DEEP_AGENT.md). The selectable Codex fallback is documented in
 [docs/CODEX_HARNESS.md](docs/CODEX_HARNESS.md).
 
+Closed-beta free grants, verification mocks, admission caps, and wave operations are documented
+in [docs/BETA_CREDITS.md](docs/BETA_CREDITS.md). New deployments keep grants disabled.
+
 ## Long-video program
 
 The evidence-backed product, architecture, continuity, evaluation, and six-sprint delivery package

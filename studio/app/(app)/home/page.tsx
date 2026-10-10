@@ -4,6 +4,7 @@ import { SignOutButton } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { LogoMark } from "@/components/Logo";
+import { BetaCredits } from "@/components/BetaCredits";
 import { useClerkConfigured } from "@/components/StudioAuth";
 import { ThemeToggle } from "@/components/canvas/ThemeToggle";
 import {
@@ -14,6 +15,7 @@ import {
   type StudioProject,
 } from "@/lib/api";
 import type { StudioAccount } from "@/lib/types";
+import { emptyWalletMessage } from "@/lib/beta-credits";
 import styles from "./page.module.css";
 
 function formatUsd(cents: number): string {
@@ -128,6 +130,7 @@ export default function DashboardPage() {
           ) : (
             <>
               <p className={styles["credit-balance-big"]}>{formatUsd(account.balance_cents)}</p>
+              {emptyWalletMessage(account) ? <p className="inspector-note">{emptyWalletMessage(account)}</p> : null}
               {account.subscription ? (
                 <div className={styles["daily-allowance"]}>
                   <span className={styles["daily-allowance-label"]}>
@@ -168,6 +171,7 @@ export default function DashboardPage() {
               )}
             </>
           )}
+          <BetaCredits account={account ?? null} onClaimed={async () => setAccount(await fetchAccount())} />
         </section>
 
         <section>
