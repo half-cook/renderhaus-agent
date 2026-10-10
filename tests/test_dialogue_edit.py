@@ -167,7 +167,7 @@ class DialogueEditTests(unittest.TestCase):
         self.create_routes()
         result = self.create()
         body = json.loads(self.requests[1].content)
-        self.assertEqual(body, {"sourceVideoUrl": SOURCE, "sourceTranscript": TRANSCRIPT, "edits": EDITS})
+        self.assertEqual(body, {"sourceVideoUrl": SOURCE, "transcript": TRANSCRIPT, "edits": EDITS})
         self.assertEqual(result["dialogue_edit_id"], "edit_1")
         self.assertEqual(result["status"], "queued")
 
@@ -293,12 +293,31 @@ class DialogueEditTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.video(preview_reviewed=False)
         self.assertEqual(self.requests, [])
-        for payload in (self.preview(segmentLipsyncEnabled=False), self.preview(sectionExpansionEnabled=False),
-                        self.preview(sourceVideoUrl=SOURCE + "?changed=1"), self.preview(status="PROCESSING")):
+        for payload in (self.preview(sourceVideoUrl=SOURCE + "?changed=1"), self.preview(status="PROCESSING")):
             self.route("GET", "/dialogue-edits/edit_1", payload)
             with self.assertRaises(ValueError):
                 self.video()
         self.assertTrue(all(r.method == "GET" for r in self.requests))
+
+    def test_missing_rollout_falls_back_without_paid_submission(self):
+        for changes in ({"segmentLipsyncEnabled": False}, {"sectionExpansionEnabled": False}):
+            self.route("GET", "/dialogue-edits/edit_1", self.preview(**changes))
+            result = self.video()
+            self.assertEqual(result["status"], "requires_audio_fallback")
+            self.assertEqual(result["next_tool"], "Sync___lipsync_video")
+            self.assertIn("independently", result["note"])
+        self.assertTrue(all(r.method == "GET" for r in self.requests))
+
+    def test_saved_video_quote_matches_current_official_frame_rate(self):
+        from server.billing_rates import cost_for
+
+        self.route("GET", "/dialogue-edits/edit_1", self.preview())
+        self.route("POST", "/generate", {"id": "generation_1", "status": "PENDING"}, 201)
+        result = self.video()
+        quote = cost_for("sync", "create_dialogue_video", {**BASE, "dialogue_edit_id": "edit_1",
+            "source_fps": 25.0, "preview_duration_seconds": 2.1, "preview_reviewed": True,
+            "idempotency_key": "video-action_1"})
+        self.assertEqual(result["estimated_cost_usd"], quote.provider_cents / 100)
 
     def test_video_body_idempotency_and_existing_download_poll(self):
         self.route("GET", "/dialogue-edits/edit_1", self.preview())
