@@ -17,6 +17,8 @@ import { schemaFor, type CanvasNodeData } from "@/lib/canvas/types";
 import { useCanvasStore } from "@/lib/canvas/store";
 import { portsForNode } from "@/lib/canvas/tool-registry";
 import { AssetMedia } from "../AssetMedia";
+import { formatCents } from "@/lib/rh/money";
+import { toNodeEstimate } from "@/lib/rh/billing";
 
 type Props = {
   id: string;
@@ -45,6 +47,7 @@ export function SceneCard({ id, data, selected }: Props) {
   const aspect = aspectLabel(data);
   const meta = [duration, aspect].filter(Boolean).join(" · ");
   const frame = nodeFrameSize(data);
+  const estimate = toNodeEstimate(data.estimate);
 
   return (
     <div className="flow-node-wrap node-media" style={{ width: frame.width }}>
@@ -153,6 +156,12 @@ export function SceneCard({ id, data, selected }: Props) {
         <footer className="scene-footer">
           <p className="scene-meta">{meta || "Scene"}</p>
           <div className="scene-actions">
+            {data.chargedCents != null ? <span className="rh-mono rh-num rh-money" aria-label={`Charged ${formatCents(data.chargedCents)}`}>{formatCents(data.chargedCents)}</span> : null}
+            {estimate && !data.output && data.toolId ? (
+              <button className="rh-btn rh-btn-primary rh-btn-sm nodrag" type="button" disabled={generateDisabled} title={blockers[0]} onClick={() => { void runNode(id); }}>
+                Generate · est. {formatCents(estimate.estimateCents)}
+              </button>
+            ) : null}
             <button
               className="text-btn nodrag"
               type="button"

@@ -2,6 +2,7 @@
 
 import type { JsonSchema } from "@/lib/types";
 import { fieldLabel, isPromptField } from "@/lib/canvas/field-labels";
+import { safeCopy } from "@/lib/rh/billing";
 import { choiceLabels } from "@/lib/canvas/model-labels";
 
 const OPAQUE_FIELDS = new Set([
@@ -241,7 +242,7 @@ export function SchemaForm({ schema, values, options, hiddenFields, onlyFields, 
               </span>
               <textarea
                 value={String(value ?? "")}
-                placeholder={field.description || `Write a ${label.toLowerCase()}`}
+                placeholder={safeCopy(field.description, `Write a ${label.toLowerCase()}`)}
                 onChange={(event) => onChange(name, event.target.value)}
               />
             </label>
@@ -256,7 +257,7 @@ export function SchemaForm({ schema, values, options, hiddenFields, onlyFields, 
             </span>
             <input
               value={String(value ?? "")}
-              placeholder={field.description || label}
+              placeholder={safeCopy(field.description, label)}
               onChange={(event) => onChange(name, event.target.value)}
             />
           </label>

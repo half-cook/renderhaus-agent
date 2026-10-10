@@ -604,6 +604,17 @@ async def studio_canvas(project_id: str, auth: AuthUser) -> dict[str, Any]:
         raise HTTPException(status_code=404, detail="Project not found.") from exc
 
 
+@router.get("/projects/{project_id}/export")
+async def studio_export_details(project_id: str, auth: AuthUser) -> dict[str, Any]:
+    """The project download is available; rendering has no connected service yet."""
+    try:
+        await asyncio.to_thread(repository.require_project, current_workspace_id(auth), project_id)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="Project not found.") from exc
+    return {"state": "disconnected", "format": "project_json", "resolution": None,
+            "size_bytes": None}
+
+
 @router.put("/projects/{project_id}/canvas")
 async def save_studio_canvas(
     project_id: str,

@@ -1,10 +1,12 @@
 "use client";
 
 import { SignOutButton } from "@clerk/nextjs";
-import { ChevronDown, Ellipsis, Redo2, Share2, Undo2 } from "lucide-react";
+import { ChevronDown, Ellipsis, Film, LayoutGrid, PanelBottom, Redo2, Share2, Sparkles, Undo2 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { LogoMark } from "@/components/Logo";
+import { ExportSheet } from "@/components/rh/ExportSheet";
+import { Avatar } from "@/components/rh/AppNav";
+import { fetchAccount } from "@/lib/api";
 import { useClerkConfigured } from "@/components/StudioAuth";
 import { queueSize, useCanvasStore } from "@/lib/canvas/store";
 import { approvedSequence } from "@/lib/canvas/story";
@@ -33,7 +35,16 @@ export function CanvasHeader({ navigationBusy, onBusyChange }: {
   onBusyChange: (busy: boolean) => void;
 }) {
   const agentOpen = useCanvasStore((state) => state.agentOpen);
-  const setAgentOpen = useCanvasStore((state) => state.setAgentOpen);
+  const timelineOpen = useCanvasStore((state) => state.timelineOpen);
+  const setWorkspaceView = useCanvasStore((state) => state.setWorkspaceView);
+  const timelineDockOpen = useCanvasStore((state) => state.timelineDockOpen);
+  const setTimelineDockOpen = useCanvasStore((state) => state.setTimelineDockOpen);
+  const [accountName, setAccountName] = useState("");
+  useEffect(() => {
+    let cancelled = false;
+    void fetchAccount().then((account) => { if (!cancelled && account.display_name) setAccountName(account.display_name); }).catch(() => undefined);
+    return () => { cancelled = true; };
+  }, []);
   const clerkConfigured = useClerkConfigured();
   const projectName = useCanvasStore((state) => state.projectName);
   const projects = useCanvasStore((state) => state.projects);
@@ -51,13 +62,10 @@ export function CanvasHeader({ navigationBusy, onBusyChange }: {
   const createProject = useCanvasStore((state) => state.createProject);
   const undo = useCanvasStore((state) => state.undo);
   const redo = useCanvasStore((state) => state.redo);
-  const persist = useCanvasStore((state) => state.persist);
   const duplicateSelected = useCanvasStore((state) => state.duplicateSelected);
   const deleteSelected = useCanvasStore((state) => state.deleteSelected);
   const arrangeSequence = useCanvasStore((state) => state.arrangeSequence);
   const [menu, setMenu] = useState<"project" | "status" | "share" | "more" | null>(null);
-  const [exported, setExported] = useState(false);
-  const fileRef = useRef<HTMLAnchorElement>(null);
   const headerRef = useRef<HTMLElement>(null);
   const navigating = useRef(false);
   const queued =
@@ -92,31 +100,13 @@ export function CanvasHeader({ navigationBusy, onBusyChange }: {
     return () => window.removeEventListener("pointerdown", onPointerDown);
   }, [menu]);
 
-  const exportGraph = () => {
-    persist();
-    const blob = new Blob(
-      [JSON.stringify({ projectName, nodes, edges: useCanvasStore.getState().edges }, null, 2)],
-      { type: "application/json" },
-    );
-    const url = URL.createObjectURL(blob);
-    const link = fileRef.current;
-    if (!link) {
-      return;
-    }
-    link.href = url;
-    link.download = `${projectName.replaceAll(" ", "-").toLowerCase() || "renderhaus"}.json`;
-    link.click();
-    URL.revokeObjectURL(url);
-    setExported(true);
-    window.setTimeout(() => setExported(false), 2000);
-  };
 
   return (
-    <header className="chrome-header" ref={headerRef}>
+    <header className="chrome-header rh-canvas-header" ref={headerRef}>
       <div className="header-left">
-        <Link href="/home" className="wordmark">
-          <LogoMark size={16} />
-          Renderhaus
+        <Link href="/home" className="rh-brand" aria-label="Renderhaus home">
+          <span className="rh-mark" aria-hidden="true" />
+          <span className="rh-wordmark">Renderhaus</span>
         </Link>
         <div className="header-menu-wrap">
           <button
@@ -128,6 +118,7 @@ export function CanvasHeader({ navigationBusy, onBusyChange }: {
             onClick={() => setMenu(menu === "project" ? null : "project")}
           >
             <span className="project-name-display">{projectName || "Untitled"}</span>
+            {projectId.startsWith("demo-") ? <span className="rh-chip rh-chip-mono">DEMO</span> : null}
             <ChevronDown size={16} />
           </button>
           {menu === "project" ? (
@@ -165,17 +156,19 @@ export function CanvasHeader({ navigationBusy, onBusyChange }: {
         </div>
       </div>
       <nav className="workspace-tabs" aria-label="Workspace">
-        <button type="button" aria-pressed={!agentOpen} onClick={() => setAgentOpen(false)}>Canvas</button>
-        <button type="button" aria-pressed={agentOpen} onClick={() => setAgentOpen(true)}>Agent</button>
+        <button type="button" aria-pressed={!agentOpen && !timelineOpen} onClick={() => setWorkspaceView("canvas")}><LayoutGrid size={14} aria-hidden="true" />Canvas</button>
+        <button type="button" aria-pressed={agentOpen} onClick={() => setWorkspaceView("agent")}><Sparkles size={14} aria-hidden="true" />Agent</button>
+        <button type="button" aria-pressed={timelineOpen} onClick={() => setWorkspaceView("timeline")}><Film size={14} aria-hidden="true" />Timeline</button>
       </nav>
       <div className="header-right">
-        <AccountBalance refreshKey={queued} />
-        <ThemeToggle />
         <button className="icon-btn" type="button" aria-label="Undo" disabled={past.length === 0} onClick={undo}>
           <Undo2 size={16} />
         </button>
         <button className="icon-btn" type="button" aria-label="Redo" disabled={future.length === 0} onClick={redo}>
           <Redo2 size={16} />
+        </button>
+        <button className="icon-btn" type="button" aria-label="Timeline dock" aria-pressed={timelineDockOpen} onClick={() => setTimelineDockOpen(!timelineDockOpen)}>
+          <PanelBottom size={16} />
         </button>
         <div className="header-menu-wrap">
           <button
@@ -190,7 +183,7 @@ export function CanvasHeader({ navigationBusy, onBusyChange }: {
               }
             }}
           >
-            {queued > 0 ? `${queued} running` : "Queue idle"}
+            <span className={`rh-dot ${queued > 0 ? "rh-dot-run" : "rh-dot-ok"}`} aria-hidden="true" />{queued > 0 ? `${queued} running` : "Queue idle"}
           </button>
           {menu === "status" ? (
             <div className="popover status-pop">
@@ -198,7 +191,7 @@ export function CanvasHeader({ navigationBusy, onBusyChange }: {
               {status
                 ? Object.entries(status.dry_run).map(([id, dry]) => (
                     <p key={id}>
-                      {id.replaceAll("_", " ")}: {dry ? "dry run" : "live"}
+                      Studio tools: {dry ? "dry run" : "live"}
                     </p>
                   ))
                 : null}
@@ -239,9 +232,7 @@ export function CanvasHeader({ navigationBusy, onBusyChange }: {
             </div>
           ) : null}
         </div>
-        <button className="text-btn" type="button" aria-live="polite" onClick={exportGraph}>
-          {exported ? "Exported" : "Export"}
-        </button>
+        <ExportSheet />
         <div className="header-menu-wrap">
           <button
             className="icon-btn"
@@ -290,15 +281,14 @@ export function CanvasHeader({ navigationBusy, onBusyChange }: {
             </div>
           ) : null}
         </div>
+        <AccountBalance refreshKey={queued} />
+        <ThemeToggle />
         {clerkConfigured ? (
           <SignOutButton redirectUrl="/">
-            <button className="text-btn" type="button">
-              Sign out
-            </button>
+            <button className="rh-avatar-btn" type="button" aria-label="Sign out"><Avatar name={accountName} /></button>
           </SignOutButton>
-        ) : null}
+        ) : <Avatar name={accountName} />}
       </div>
-      <a ref={fileRef} hidden />
     </header>
   );
 }

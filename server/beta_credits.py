@@ -25,6 +25,7 @@ RATE_LIMITED = "Too many verification attempts. Try again later."
 DAILY_LIMIT = "Today's beta grant limit has been reached. Try again tomorrow."
 RATE_WINDOW_SECONDS = 15 * 60
 CHALLENGE_TTL_SECONDS = 10 * 60
+HOLD_TTL_SECONDS = 15 * 60
 IdentityKind = Literal["email", "phone"]
 
 
@@ -190,6 +191,11 @@ def init_beta_schema(connection: sqlite3.Connection) -> None:
             attempts INTEGER NOT NULL,
             PRIMARY KEY(key_hash, window)
         );
+        CREATE TABLE IF NOT EXISTS beta_holds (
+            user_id TEXT PRIMARY KEY,
+            wave INTEGER NOT NULL,
+            expires_at INTEGER NOT NULL
+        );
         CREATE TABLE IF NOT EXISTS beta_waitlist (
             email_hash TEXT PRIMARY KEY,
             wave INTEGER NOT NULL,
@@ -251,6 +257,56 @@ class BetaCredits:
     def get_beta_status(self) -> dict:
         with self.repository._connect() as connection:
             return self._status(connection)
+
+    def _held_by_others(self, connection: sqlite3.Connection, account: str, wave: int) -> int:
+        now = int(time.time())
+        connection.execute("DELETE FROM beta_holds WHERE expires_at <= ?", (now,))
+        return connection.execute(
+            "SELECT COUNT(*) FROM beta_holds WHERE wave = ? AND user_id != ?", (wave, account)
+        ).fetchone()[0]
+
+    def get_wave(self) -> dict:
+        """Public live counter for the landing and sign-up pages (counters only, no identities)."""
+        with self.repository._connect() as connection:
+            status = self._status(connection)
+            now = int(time.time())
+            held = connection.execute(
+                "SELECT COUNT(*) FROM beta_holds WHERE wave = ? AND expires_at > ?", (status["wave"], now)
+            ).fetchone()[0]
+        open_spots = max(0, status["spots_left"] - held)
+        state = "closed" if not status["enabled"] or status["programme_full"] else "full" if open_spots == 0 else "open"
+        return {"capacity": status["wave_size"], "claimed": max(0, status["wave_size"] - status["spots_left"]),
+                "remaining": status["spots_left"], "held": held, "status": state,
+                "wave": status["wave"], "hold_seconds": HOLD_TTL_SECONDS, "updated_at": now}
+
+    def hold(self, account: str) -> dict:
+        """Reserve one spot for HOLD_TTL_SECONDS. Abandoned sign-ups free the spot on expiry."""
+        error = None
+        with self.repository._connect() as connection:
+            connection.execute("BEGIN IMMEDIATE")
+            try:
+                self._enabled()
+                self._bind_salt(connection)
+                if connection.execute("SELECT 1 FROM beta_grants WHERE user_id = ?", (account,)).fetchone():
+                    return {"held": False, "claimed": True, "hold_seconds": HOLD_TTL_SECONDS,
+                            "message": "You already have a free beta credit."}
+                status = self._status(connection)
+                if status["programme_full"] or status["spots_left"] == 0:
+                    raise BetaError(status["message"])
+                if status["spots_left"] - self._held_by_others(connection, account, status["wave"]) <= 0:
+                    raise BetaError(WAVE_FULL)
+                expires = int(time.time()) + HOLD_TTL_SECONDS
+                connection.execute(
+                    "INSERT INTO beta_holds(user_id, wave, expires_at) VALUES (?, ?, ?) "
+                    "ON CONFLICT(user_id) DO UPDATE SET wave = excluded.wave, expires_at = excluded.expires_at",
+                    (account, status["wave"], expires),
+                )
+            except BetaError as exc:
+                error = exc
+        if error:
+            raise error
+        return {"held": True, "claimed": False, "expires_at": expires, "hold_seconds": HOLD_TTL_SECONDS,
+                "message": "Your spot is held for 15 minutes."}
 
     def _rate_limit(self, connection: sqlite3.Connection, account: str, kind: str, digest: str) -> None:
         window = int(time.time()) // RATE_WINDOW_SECONDS
@@ -360,6 +416,8 @@ class BetaCredits:
                     status = self._status(connection)
                     if status["programme_full"] or status["spots_left"] == 0:
                         raise BetaError(status["message"])
+                    if status["spots_left"] - self._held_by_others(connection, account, status["wave"]) <= 0:
+                        raise BetaError(WAVE_FULL)
                     provider = self._require_provider()
                     identities = {row["kind"]: row for row in connection.execute(
                         "SELECT * FROM beta_verifications WHERE user_id = ? AND verified = 1 AND dry_run = ?", (account, int(provider.dry_run))
@@ -387,6 +445,7 @@ class BetaCredits:
                         )
                         self.repository._apply_balance_delta(connection, account, self.settings.grant_cents, now)
                         connection.execute("INSERT INTO credit_ledger VALUES (?, ?, ?, 'beta_grant', ?, ?)", (uuid.uuid4().hex, account, self.settings.grant_cents, f"beta:{grant_id}", now))
+                        connection.execute("DELETE FROM beta_holds WHERE user_id = ?", (account,))
                         self._audit(connection, account, "granted", "beta_grant", email, phone)
                         grant = connection.execute("SELECT * FROM beta_grants WHERE id = ?", (grant_id,)).fetchone()
             except BetaError as exc:

@@ -33,7 +33,7 @@ for (const [id, model] of [['runway.video.generate','gen4.5'],['runway.video.fro
 const schemas = JSON.parse(fs.readFileSync(path.join(root, '../configs/gateway/runway.tools.json'), 'utf8'));
 const schema = schemas.find(tool => tool.name === 'text_to_video').inputSchema;
 const markup = renderToStaticMarkup(React.createElement(SchemaForm,{schema,values:{model:'gen4.5'},options:{model:mixedModels},onChange(){}}));
-assert(markup.includes('Runway Gen-4.5'));
+assert(markup.includes('Studio Video · Cinematic Plus'));
 assert(!markup.includes('Aleph'));
 assert(!markup.includes('Gen-4 Image'));
 const editSchema = { name: 'video_to_video', inputSchema: {type:'object',properties:{prompt:{type:'string'},video_path_or_url:{type:'string'},video_duration_seconds:{type:'number'}},required:['prompt','video_path_or_url','video_duration_seconds']} };

@@ -3,6 +3,8 @@ name: redesign-existing-projects
 description: "Audits and upgrades existing websites and apps to premium quality. Diagnoses generic AI design patterns, weak states, and sloppy code, then applies targeted fixes without breaking functionality. Use this skill whenever the user wants to improve, polish, upgrade, refine, audit, fix, or redesign an EXISTING site, page, app, or component, even when they only say it looks bad, cheap, generic, or AI made. Works with any CSS framework or vanilla CSS."
 ---
 
+> **DO NOT apply:** Studio's [DESIGN_SYSTEM.md](../../../studio/design/DESIGN_SYSTEM.md) is the single source of truth. Preserve radius 0, no shadows, Lucide, 160ms state changes, and amber only for spend and credits. The generic audit and Design Values below are not Studio instructions.
+
 # Redesign Existing Projects
 
 This skill is a **diagnostic**. It finds what is wrong with an existing interface and fixes it in place.

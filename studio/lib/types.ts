@@ -45,6 +45,8 @@ export type SubscriptionState = {
 
 export type StudioAccount = {
   balance_cents: number;
+  /** Optional: the greeting falls back to a plain "Good evening." when the API sends no name. */
+  display_name?: string;
   recent_ledger: CreditLedgerEntry[];
   beta_credit?: {
     granted_cents: number;

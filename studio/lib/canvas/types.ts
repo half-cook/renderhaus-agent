@@ -117,6 +117,10 @@ export type CanvasNodeData = {
   agentRun?: AgentRunData;
   agentRunId?: string;
   agentRole?: "artifact" | "primary" | "final";
+  /** Server-sent price payload (estimate_cents, cap_cents, lines[]) for the Generate footer and inspector ledger. */
+  estimate?: Record<string, unknown>;
+  /** What a finished node was charged, integer cents from the server. */
+  chargedCents?: number;
 };
 
 export type CanvasEdgeData = {

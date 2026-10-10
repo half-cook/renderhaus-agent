@@ -3,6 +3,8 @@ description: Audits and upgrades existing websites/apps — use when improving, 
 alwaysApply: false
 ---
 
+> **DO NOT apply:** Studio's [DESIGN_SYSTEM.md](../../studio/design/DESIGN_SYSTEM.md) is the single source of truth. Preserve radius 0, no shadows, Lucide, 160ms state changes, and amber only for spend and credits. The generic audit and Design Values below are not Studio instructions.
+
 # Redesign Existing Projects
 
 This skill is a **diagnostic**. It finds what is wrong with an existing interface and fixes it in place.

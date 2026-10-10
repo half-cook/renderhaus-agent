@@ -81,14 +81,14 @@ export function generateBlockers(
     }
     if (data.toolName === "modify_video") {
       if (Number(hasSource("video_path_or_url")) + Number(hasSource("source_generation_id")) !== 1) {
-        blockers.push("Choose one source video or Luma generation.");
+        blockers.push("Choose one source video or an earlier generation.");
       }
       if (![5, 10].includes(Number(data.config.source_duration_seconds))) {
         blockers.push("Enter the measured source duration of 5 or 10 seconds.");
       }
     }
     if (data.toolName === "extend_video" && !hasSource("generation_id")) {
-      blockers.push("Add the completed Luma generation ID first.");
+      blockers.push("Add the completed generation ID first.");
     }
   }
 

@@ -10,8 +10,8 @@ export function CanvasControls() {
   const zoom = useCanvasStore((state) => state.viewport.zoom);
   return (
     <>
-      <MiniMap pannable zoomable position="bottom-right" className="minimap" />
-      <Panel position="bottom-right" className="canvas-controls">
+      <MiniMap pannable zoomable position="bottom-right" className="minimap rh-minimap" nodeColor="var(--rh-accent)" nodeStrokeColor="var(--rh-line)" maskColor="rgb(13 12 11 / 0.45)" />
+      <Panel position="bottom-right" className="canvas-controls rh-canvas-controls">
         <div className="zoombar">
           <button type="button" aria-label="Zoom out" onClick={() => void zoomOut()}>
             <Minus size={14} />

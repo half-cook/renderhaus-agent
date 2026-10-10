@@ -1,0 +1,262 @@
+{
+  "/api/studio/projects": {
+    "items": [
+      {
+        "id": "demo-project",
+        "name": "Demo Studio",
+        "created_at": 1791809900,
+        "updated_at": 1791810000
+      }
+    ]
+  },
+  "/api/studio/projects/demo-project/canvas": {
+    "revision": 1,
+    "document": {
+      "schemaVersion": 2,
+      "projectName": "Demo Studio",
+      "nodes": [
+        {
+          "id": "demo-note",
+          "type": "text",
+          "position": {
+            "x": 180,
+            "y": 180
+          },
+          "data": {
+            "kind": "text",
+            "title": "Creative brief",
+            "config": {
+              "text": "Demo Creator\nLaunch video notes"
+            },
+            "status": "idle",
+            "inputs": []
+          }
+        },
+        {
+          "id": "demo-shot",
+          "type": "image",
+          "position": {
+            "x": 580,
+            "y": 180
+          },
+          "data": {
+            "kind": "image",
+            "title": "Opening shot",
+            "config": {
+              "prompt": "Opening shot from the creative brief."
+            },
+            "status": "idle",
+            "inputs": [],
+            "toolId": "image.generate",
+            "providerId": "seedream",
+            "toolName": "text_to_image"
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "demo-edge",
+          "source": "demo-note",
+          "target": "demo-shot",
+          "sourceHandle": "text",
+          "targetHandle": "prompt",
+          "data": {
+            "dataType": "text",
+            "targetField": "prompt"
+          }
+        }
+      ],
+      "viewport": {
+        "x": 80,
+        "y": 80,
+        "zoom": 1
+      }
+    }
+  },
+  "/api/studio/projects/demo-project/agent-conversations": {
+    "items": [
+      {
+        "id": "demo-task",
+        "project_id": "demo-project",
+        "title": "Launch storyboard",
+        "status": "active",
+        "created_at": 1791809900,
+        "updated_at": 1791810000
+      }
+    ]
+  },
+  "/api/studio/agent": {
+    "items": [
+      {
+        "job_id": "demo-complete",
+        "project_id": "demo-project",
+        "conversation_id": "demo-task",
+        "turn_index": 1,
+        "prompt": "Draft a storyboard plan for review.",
+        "status": "completed",
+        "created_at": 1791809900,
+        "result": {
+          "title": "Storyboard plan",
+          "summary": "A three-shot draft for review.",
+          "markdown": "## Demo Studio\n\nDraft by Demo Creator.\n\n- Open with the product.\n- Show the workflow.\n- Close with the result.",
+          "assets": [
+            {
+              "asset_id": "demo-artifact",
+              "version_id": "demo-artifact-v1",
+              "kind": "image",
+              "filename": "demo-storyboard.svg",
+              "mime_type": "image/svg+xml"
+            }
+          ],
+          "tool_events": [
+            {
+              "id": "demo-plan-1",
+              "name": "render_timeline",
+              "label": "Saved edit plan",
+              "status": "completed",
+              "summary": "Three-second opening shot.",
+              "arguments": {
+                "title": "Demo Studio launch",
+                "aspect_ratio": "16:9",
+                "fps": 30,
+                "visuals": [
+                  {
+                    "url": "demo-storyboard.svg",
+                    "kind": "image",
+                    "duration_seconds": 3
+                  }
+                ]
+              },
+              "assets": []
+            }
+          ]
+        },
+        "tool_calls": []
+      },
+      {
+        "job_id": "demo-revision",
+        "project_id": "demo-project",
+        "conversation_id": "demo-task",
+        "turn_index": 2,
+        "prompt": "Extend the opening shot to four seconds.",
+        "status": "completed",
+        "created_at": 1791809950,
+        "result": {
+          "title": "Revised storyboard plan",
+          "summary": "Opening shot timing updated.",
+          "markdown": "## Demo Studio\n\nDraft by Demo Creator.\n\n- Open with the product.\n- Show the workflow.\n- Close with the result.",
+          "assets": [],
+          "tool_events": [
+            {
+              "id": "demo-plan-2",
+              "name": "render_timeline",
+              "label": "Saved edit plan",
+              "status": "completed",
+              "summary": "Three-second opening shot.",
+              "arguments": {
+                "title": "Demo Studio launch",
+                "aspect_ratio": "16:9",
+                "fps": 30,
+                "visuals": [
+                  {
+                    "url": "demo-storyboard.svg",
+                    "kind": "image",
+                    "duration_seconds": 4
+                  }
+                ]
+              },
+              "assets": []
+            }
+          ]
+        },
+        "tool_calls": []
+      },
+      {
+        "job_id": "demo-run",
+        "project_id": "demo-project",
+        "conversation_id": "demo-task",
+        "turn_index": 2,
+        "prompt": "Demo Creator: prepare a storyboard for the launch video.",
+        "status": "awaiting_approval",
+        "message": "Review the next step before generating media.",
+        "created_at": 1791810000,
+        "updated_at": 1791810000,
+        "approvals": [
+          {
+            "call_id": "demo-approval",
+            "tool_name": "text_to_image",
+            "label": "Generate storyboard reference",
+            "arguments": {
+              "prompt": "A storyboard reference for Demo Studio."
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "/api/studio/agent/demo-run": {
+    "job_id": "demo-run",
+    "project_id": "demo-project",
+    "conversation_id": "demo-task",
+    "turn_index": 2,
+    "prompt": "Demo Creator: prepare a storyboard for the launch video.",
+    "status": "awaiting_approval",
+    "message": "Review the next step before generating media.",
+    "created_at": 1791810000,
+    "updated_at": 1791810000,
+    "approvals": [
+      {
+        "call_id": "demo-approval",
+        "tool_name": "text_to_image",
+        "label": "Generate storyboard reference",
+        "arguments": {
+          "prompt": "A storyboard reference for Demo Studio."
+        }
+      }
+    ]
+  },
+  "/api/studio/tools": {
+    "providers": []
+  },
+  "/api/studio/status": {
+    "mode": "design-fixture",
+    "agent": true,
+    "dry_run": {}
+  },
+  "/api/studio/options": {
+    "providers": {}
+  },
+  "/api/studio/billing/packs": {
+    "items": [
+      {
+        "id": "demo-pack",
+        "label": "Demo credits",
+        "price_usd_cents": 1000
+      }
+    ]
+  },
+  "/api/studio/billing/plans": {
+    "items": []
+  },
+  "/api/studio/assets/demo-artifact-v1/playback": {
+    "url": "/api/studio/design-shot-artifact.svg"
+  },
+  "/api/beta/wave": {
+    "capacity": 50,
+    "claimed": 13,
+    "remaining": 37,
+    "held": 0,
+    "status": "open",
+    "wave": 1,
+    "hold_seconds": 900,
+    "updated_at": 1791848520
+  },
+  "/api/beta/status": {
+    "enabled": true,
+    "wave": 1,
+    "wave_size": 50,
+    "spots_left": 37,
+    "programme_full": false,
+    "message": "37 spots left in this wave"
+  }
+}

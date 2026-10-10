@@ -13,7 +13,8 @@ import { SceneList } from "./SceneList";
 import { StudioCanvas } from "./StudioCanvas";
 import { ToolRail } from "./ToolRail";
 import { UploadError } from "./UploadError";
-import "@xyflow/react/dist/style.css";
+import { TimelineDock } from "@/components/timeline/Timeline";
+import { TimelineView } from "@/components/timeline/TimelineView";
 
 const DOCK_STORAGE_KEY = "renderhaus.studio.dock.v2";
 
@@ -26,7 +27,7 @@ function isDockPosition(value: unknown): value is DockPosition {
 function Workspace() {
   const [agentBusy, setAgentBusy] = useState(false);
   const [mountReady, setMountReady] = useState(false);
-  const [dockState, setDockState] = useState<DockState>({ dock: "bottom", x: 0, y: 0 });
+  const [dockState, setDockState] = useState<DockState>({ dock: "left", x: 0, y: 0 });
   const hydrate = useCanvasStore((state) => state.hydrate);
   const loadCatalog = useCanvasStore((state) => state.loadCatalog);
   const hydrated = useCanvasStore((state) => state.hydrated);
@@ -47,25 +48,33 @@ function Workspace() {
   const projectId = useCanvasStore((state) => state.projectId);
   const conversationId = useCanvasStore((state) => state.conversationId);
   const setAgentOpen = useCanvasStore((state) => state.setAgentOpen);
+  const timelineOpen = useCanvasStore((state) => state.timelineOpen);
+  const timelineDockOpen = useCanvasStore((state) => state.timelineDockOpen);
+  const setWorkspaceView = useCanvasStore((state) => state.setWorkspaceView);
+  const setTimelineDockOpen = useCanvasStore((state) => state.setTimelineDockOpen);
   const { screenToFlowPosition, fitView } = useReactFlow();
 
   useEffect(() => {
     let cancelled = false;
-    setAgentOpen(new URLSearchParams(window.location.search).get("workspace") === "agent");
+    const params = new URLSearchParams(window.location.search);
+    const view = params.get("workspace");
+    setWorkspaceView(view === "agent" ? "agent" : view === "timeline" ? "timeline" : "canvas");
+    setTimelineDockOpen(params.get("dock") === "timeline");
     void hydrate().finally(() => { if (!cancelled) setMountReady(true); });
     void loadCatalog();
     return () => { cancelled = true; };
-  }, [hydrate, loadCatalog, setAgentOpen]);
+  }, [hydrate, loadCatalog, setTimelineDockOpen, setWorkspaceView]);
 
   useEffect(() => {
     if (!hydrated || !mountReady) return;
     const url = new URL(window.location.href);
     if (url.searchParams.get("project") !== projectId) url.searchParams.delete("task");
     url.searchParams.set("project", projectId);
-    url.searchParams.set("workspace", agentOpen ? "agent" : "canvas");
+    url.searchParams.set("workspace", agentOpen ? "agent" : timelineOpen ? "timeline" : "canvas");
+    if (timelineDockOpen && !agentOpen && !timelineOpen) url.searchParams.set("dock", "timeline"); else url.searchParams.delete("dock");
     if (conversationId) url.searchParams.set("task", conversationId);
     window.history.replaceState(null, "", url);
-  }, [agentOpen, projectId, conversationId, hydrated, mountReady]);
+  }, [agentOpen, timelineOpen, timelineDockOpen, projectId, conversationId, hydrated, mountReady]);
 
   useEffect(() => {
     // Wait for `hydrated`: until then Workspace renders the loading div in
@@ -140,7 +149,7 @@ function Workspace() {
       if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) {
         return;
       }
-      if (agentOpen) return;
+      if (agentOpen || timelineOpen) return;
       if (event.key.toLowerCase() === "v") {
         setActiveTool("select");
       }
@@ -150,10 +159,10 @@ function Workspace() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [agentOpen, redo, setActiveTool, setAgentOpen, undo]);
+  }, [agentOpen, timelineOpen, redo, setActiveTool, setAgentOpen, undo]);
 
   useEffect(() => {
-    if (agentOpen || !selectedNodeId || !inspectorVisible) return;
+    if (agentOpen || timelineOpen || !selectedNodeId || !inspectorVisible) return;
     // Only refocus after a selection or panel transition. Camera movement
     // updates the store too, and must remain under the user's control.
     const timer = window.setTimeout(() => {
@@ -165,7 +174,7 @@ function Workspace() {
       });
     }, 0);
     return () => window.clearTimeout(timer);
-  }, [agentOpen, fitView, inspectorVisible, selectedNodeId]);
+  }, [agentOpen, timelineOpen, fitView, inspectorVisible, selectedNodeId]);
 
   const center = () => {
     const pane = document.querySelector(".react-flow");
@@ -183,9 +192,11 @@ function Workspace() {
   return (
     <div
       className={[
-        "workspace",
+        "workspace rh-canvas-workspace",
         inspectorVisible ? "inspector-open" : "",
         agentOpen ? "agent-open" : "",
+        timelineOpen ? "timeline-open" : "",
+        timelineDockOpen && !agentOpen && !timelineOpen ? "timeline-dock-open" : "",
       ]
         .filter(Boolean)
         .join(" ")}
@@ -196,7 +207,7 @@ function Workspace() {
       </a>
       <CanvasHeader navigationBusy={agentBusy} onBusyChange={setAgentBusy} />
       <UploadError message={uploadError} onDismiss={dismissUploadError} />
-      <div className="canvas-surface" hidden={agentOpen}>
+      <div className="canvas-surface" hidden={agentOpen || timelineOpen}>
       <SceneList />
       <ToolRail
         dock={dockState.dock}
@@ -216,7 +227,9 @@ function Workspace() {
       </main>
       <NodeInspector />
       <AsciiPanel />
+      <TimelineDock />
       </div>
+      {timelineOpen ? <TimelineView /> : null}
       <AgentWorkspace busy={agentBusy} onBusyChange={setAgentBusy} />
     </div>
   );

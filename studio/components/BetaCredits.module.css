@@ -1,3 +1,6 @@
+@layer theme, base, xyflow, legacy, components, utilities;
+
+@layer legacy {
 .beta-credits {
   margin: 20px 0;
   padding-top: 12px;
@@ -60,4 +63,6 @@
 .button:disabled {
   color: var(--muted);
   cursor: default;
+}
+
 }

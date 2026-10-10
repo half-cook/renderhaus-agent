@@ -54,6 +54,19 @@ def beta_status(beta: BetaService) -> dict:
     return beta.get_beta_status()
 
 
+@router.get("/api/beta/wave")
+def beta_wave(beta: BetaService) -> dict:
+    return beta.get_wave()
+
+
+@router.post("/api/beta/hold")
+def hold_spot(account: BetaAccount, beta: BetaService) -> dict:
+    try:
+        return beta.hold(account)
+    except BetaError as exc:
+        raise HTTPException(exc.status_code, str(exc)) from None
+
+
 @router.post("/api/beta/verify/email/start")
 def start_email(body: EmailBody, account: BetaAccount, beta: BetaService) -> dict:
     try:

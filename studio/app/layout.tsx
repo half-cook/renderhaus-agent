@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
-import { Geist, Geist_Mono, Silkscreen } from "next/font/google";
+import { Geist, Geist_Mono, Instrument_Serif, Silkscreen } from "next/font/google";
 import { StudioClerkBootstrap } from "@/components/StudioAuth";
+import { MotionProvider } from "@/components/motion/provider";
+import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
 const geist = Geist({
@@ -12,6 +14,14 @@ const geist = Geist({
 const geistMono = Geist_Mono({
   subsets: ["latin"],
   variable: "--font-geist-mono",
+});
+
+// Display face for title-card moments only (hero, empty states, sign-up).
+const instrumentSerif = Instrument_Serif({
+  subsets: ["latin"],
+  weight: "400",
+  style: ["normal", "italic"],
+  variable: "--font-instrument-serif",
 });
 
 // The wordmark's typeface only -- a bitmap/pixel face so "Renderhaus" reads
@@ -42,7 +52,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html
       lang="en"
-      className={`${geist.variable} ${geistMono.variable} ${pixel.variable}`}
+      className={`${geist.variable} ${geistMono.variable} ${instrumentSerif.variable} ${pixel.variable}`}
       suppressHydrationWarning
     >
       <head>
@@ -51,9 +61,12 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
       </head>
       <body>
-        <StudioClerkBootstrap publishableKey={publishableKey}>
-          {children}
-        </StudioClerkBootstrap>
+        <MotionProvider>
+          <StudioClerkBootstrap publishableKey={publishableKey}>
+            {children}
+          </StudioClerkBootstrap>
+          <Toaster />
+        </MotionProvider>
       </body>
     </html>
   );

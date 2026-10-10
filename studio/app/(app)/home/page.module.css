@@ -1,3 +1,6 @@
+@layer theme, base, xyflow, legacy, components, utilities;
+
+@layer legacy {
 /* Post-sign-in landing spot -- credits + project list. Styled after
    SSENSE's own listing pages (ssense.com/en-ca/men): no boxes, no
    shadows, no rounded corners anywhere -- just black-on-white
@@ -227,4 +230,6 @@
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--muted);
+}
+
 }

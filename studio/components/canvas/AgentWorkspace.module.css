@@ -1,3 +1,6 @@
+@layer theme, base, xyflow, legacy, components, utilities;
+
+@layer legacy {
 .workspace {
   position: absolute;
   inset: var(--header-height) 0 0;
@@ -79,4 +82,6 @@
   .sidebar { position: absolute; top: 38px; bottom: 0; left: 0; width: 232px; z-index: 4; background: var(--bg); box-shadow: 12px 0 32px #0003; }
   .review { position: absolute; top: 38px; bottom: 0; right: 0; width: min(480px, 100%); z-index: 3; background: var(--bg); }
   .resourcePanel { padding: 18px; }
+}
+
 }

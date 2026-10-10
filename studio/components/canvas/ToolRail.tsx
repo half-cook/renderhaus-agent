@@ -251,7 +251,7 @@ export function ToolRail({ dock, freeX, freeY, onDockChange, onFreeMove, onPlace
     : undefined;
 
   return (
-    <nav className="tool-rail" data-dock={dock} style={freeStyle} ref={railRef} aria-label="Creation tools">
+    <nav className="tool-rail rh-tool-rail" data-dock={dock} style={freeStyle} ref={railRef} aria-label="Creation tools">
       {GROUPS.map((group) => (
         <div className="rail-group" key={group.id} role="group" aria-label={group.label}>
           <p className="rail-group-label">{group.label}</p>

@@ -1,3 +1,6 @@
+@layer theme, base, xyflow, legacy, components, utilities;
+
+@layer legacy {
 /* The demo panel -- a padded, rounded, shadowed frame sitting on the
    light page (unlike the rest of the page, which stays flat/sharp), so
    it visually reads as "a window onto the real product" rather than more
@@ -15,10 +18,10 @@
   display: flex;
   flex-direction: column;
   min-height: 0;
-  margin: 0 32px 32px;
-  border-radius: 20px;
-  border: 1px solid var(--l-line);
-  box-shadow: 0 40px 80px -40px rgba(10, 10, 10, 0.35);
+  margin: 0;
+  border-radius: 0;
+  border: 1px solid var(--line);
+  box-shadow: none;
   overflow: hidden;
   color-scheme: dark;
 }
@@ -442,4 +445,6 @@
   .demo-video-card-fill {
     animation: none;
   }
+}
+
 }

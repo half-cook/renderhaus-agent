@@ -1,42 +1,134 @@
+@layer theme, base, xyflow, legacy, components, utilities;
+
 @import "tailwindcss";
+@import "@xyflow/react/dist/style.css" layer(xyflow);
+@import "./revamp.css" layer(components);
 
 @theme {
   /* Port colours -- referenced from handle, edge, and node-tag icon; must agree. */
-  --color-port-text: var(--color-neutral-400);
-  --color-port-image: var(--color-indigo-400);
-  --color-port-video: var(--color-teal-400);
-  --color-port-audio: var(--color-pink-400);
+  --color-port-text: #a59e93;
+  --color-port-image: #7fa8d1;
+  --color-port-video: #66bda8;
+  --color-port-audio: #d88aa3;
 
   /* Status colours -- referenced from the node-tag status label and status dot. */
-  --color-status-queued: var(--color-neutral-400);
-  --color-status-running: var(--color-indigo-400);
-  --color-status-succeeded: var(--color-emerald-400);
-  --color-status-failed: var(--color-red-400);
+  --color-status-queued: var(--rh-fg-3);
+  --color-status-running: var(--rh-accent);
+  --color-status-succeeded: var(--rh-ok);
+  --color-status-failed: var(--rh-danger);
+}
+
+
+@theme {
+  --radius-*: initial;
+  --shadow-*: initial;
+  --radius-pill: 9999px;
+  --duration-base: 160ms;
+  --default-mono-font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-chrome: var(--chrome);
+  --color-node: var(--node);
+  --color-line: var(--line);
+  --color-grid: var(--grid);
+  --color-text: var(--text);
+  --color-muted: var(--muted);
+  --color-active: var(--active);
+  --color-selected: var(--selected);
+  --color-accent: var(--accent);
+  --color-danger: var(--danger);
+  --color-ok: var(--ok);
+  --color-warn: var(--warn);
+  --color-background: var(--bg);
+  --color-foreground: var(--text);
+  --color-card: var(--node);
+  --color-card-foreground: var(--text);
+  --color-popover: var(--node);
+  --color-popover-foreground: var(--text);
+  --color-border: var(--line);
+  --color-input: var(--line);
+  --color-ring: var(--active);
+  --color-primary: var(--active);
+  --color-primary-foreground: var(--bg);
+  --color-secondary: var(--chrome);
+  --color-secondary-foreground: var(--text);
+  --color-muted-foreground: var(--muted);
+  --color-accent-foreground: var(--bg);
+  --color-destructive: var(--danger);
+  --color-destructive-foreground: var(--bg);
+  --font-sans: var(--font-geist), "Segoe UI", system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), monospace;
+  --font-silkscreen: var(--font-pixel), monospace;
+  --font-serif: var(--font-instrument-serif), "Instrument Serif", "Times New Roman", serif;
+  --color-surface: var(--rh-surface);
+  --color-raised: var(--rh-raised);
+  --color-line-strong: var(--rh-line-strong);
+  --color-fg: var(--rh-fg);
+  --color-fg-2: var(--rh-fg-2);
+  --color-fg-3: var(--rh-fg-3);
+  --color-ember: var(--rh-accent);
+  --color-ember-text: var(--rh-accent-text);
+  --color-on-ember: var(--rh-on-accent);
+  --color-ember-soft: var(--rh-accent-soft);
+  --color-money: var(--rh-money);
+  --color-money-soft: var(--rh-money-soft);
+  --ease-studio: var(--ease);
+}
+
+@utility duration-base {
+  transition-duration: var(--duration-base);
 }
 
 :root {
   color-scheme: dark;
+  --rh-bg: #0d0c0b;
+  --rh-surface: #121110;
+  --rh-card: #171513;
+  --rh-raised: #1e1b18;
+  --rh-line: #2a2622;
+  --rh-line-strong: #3b3630;
+  --rh-fg: #f2eee6;
+  --rh-fg-2: #b8b0a4;
+  --rh-fg-3: #8c8478;
+  --rh-grid: #2f2a25;
+  --rh-accent: #ff6a2b;
+  --rh-accent-hover: #ff8247;
+  --rh-accent-text: #ff8a55;
+  --rh-on-accent: #1a0d06;
+  --rh-accent-soft: rgb(255 106 43 / 0.12);
+  --rh-money: #e3b55c;
+  --rh-money-soft: rgb(227 181 92 / 0.12);
+  --rh-ok: #7dc592;
+  --rh-danger: #f0646a;
+  --rh-shadow-pop: 0 12px 32px -12px rgb(0 0 0 / 0.7), 0 0 0 1px var(--rh-line-strong);
+  --rh-inset: inset 0 1px 0 rgb(255 255 255 / 0.035);
+  /* Legacy names stay; they alias the revamp tokens so every existing screen follows. */
+  --bg: var(--rh-bg);
+  --chrome: var(--rh-surface);
+  --node: var(--rh-card);
+  --line: var(--rh-line);
+  --grid: var(--rh-grid);
+  --text: var(--rh-fg);
+  --muted: var(--rh-fg-3);
+  /* Brass: spend and credit only (the old amber job, unchanged). */
+  --accent: var(--rh-money);
+  --active: var(--rh-fg);
+  /* Ember marks the selected frame and what needs you. */
+  --selected: var(--rh-accent);
+  --danger: var(--rh-danger);
+  --ok: var(--rh-ok);
+  --warn: var(--rh-money);
+
   /* Liblib-inspired: flat opaque neutral layers, no blur, no drop shadow.
      See design/merge-doc.md §11 "Visual reference" for the source values. */
-  --bg: var(--color-neutral-950);
-  --chrome: var(--color-neutral-900);
-  --node: var(--color-neutral-900);
-  --line: var(--color-neutral-800);
   /* Dots get their own, lighter tone -- not tied to --line -- so they stay
      clearly visible against the canvas rather than blending into borders. */
-  --grid: var(--color-neutral-600);
-  --text: var(--color-neutral-100);
-  --muted: var(--color-neutral-500);
   /* Reserved for spend/credit UI only -- not a general interactive accent.
      Everywhere else "active" is --active (near-white), not a hue. */
-  --accent: var(--color-amber-400);
-  --active: var(--color-neutral-100);
   /* Selected node/frame border only -- reuses the same indigo already used
      for image ports and the "running" status dot, not a new hue. */
-  --selected: var(--color-indigo-400);
-  --danger: var(--color-red-400);
-  --ok: var(--color-emerald-400);
-  --warn: var(--color-amber-400);
   --shadow: none;
   /* Sharp corners everywhere (SSENSE-style editorial minimalism) -- this
      one token drives every node/panel/popover that references
@@ -58,26 +150,84 @@
 
 :root[data-theme="light"] {
   color-scheme: light;
-  /* Warm off-white, not cool grey -- the Tailwind "stone" scale, not
-     "neutral" -- matching the Claude.ai console's own light palette: a
-     warm ivory page background with brighter white cards/surfaces on top
-     of it, not a flat single white. */
-  --bg: var(--color-stone-100);
-  --chrome: #fff;
-  --node: #fff;
-  --line: var(--color-stone-300);
-  --grid: var(--color-stone-400);
-  --text: var(--color-stone-900);
-  --muted: var(--color-stone-500);
-  --accent: var(--color-amber-500);
-  --active: var(--color-stone-900);
-  /* One shade deeper than the dark-mode indigo-400 -- 400 reads as washed
-     out against a white card border. */
-  --selected: var(--color-indigo-500);
-  --danger: var(--color-red-500);
-  --ok: var(--color-emerald-500);
-  --warn: var(--color-amber-500);
+  --rh-bg: #f4f0e8;
+  --rh-surface: #eee9df;
+  --rh-card: #fbf9f4;
+  --rh-raised: #ffffff;
+  --rh-line: #ddd6c8;
+  --rh-line-strong: #c4bba9;
+  --rh-fg: #1b1815;
+  --rh-fg-2: #58514a;
+  --rh-fg-3: #6c645a;
+  --rh-grid: #cfc7b7;
+  --rh-accent: #f25f1f;
+  --rh-accent-hover: #e2540f;
+  --rh-accent-text: #b63e0b;
+  --rh-on-accent: #1a0d06;
+  --rh-accent-soft: rgb(242 95 31 / 0.1);
+  --rh-money: #8a6212;
+  --rh-money-soft: rgb(138 98 18 / 0.1);
+  --rh-ok: #26763f;
+  --rh-danger: #c73a41;
+  --rh-shadow-pop: 0 12px 32px -14px rgb(60 40 20 / 0.35), 0 0 0 1px var(--rh-line-strong);
+  --rh-inset: inset 0 1px 0 rgb(255 255 255 / 0.8);
+
 }
+
+
+:root[data-surface="beta"],
+[data-surface="beta"] {
+  color-scheme: dark;
+  --rh-bg: #0d0c0b;
+  --rh-surface: #121110;
+  --rh-card: #171513;
+  --rh-raised: #1e1b18;
+  --rh-line: #2a2622;
+  --rh-line-strong: #3b3630;
+  --rh-fg: #f2eee6;
+  --rh-fg-2: #b8b0a4;
+  --rh-fg-3: #8c8478;
+  --rh-grid: #2f2a25;
+  --rh-accent: #ff6a2b;
+  --rh-accent-hover: #ff8247;
+  --rh-accent-text: #ff8a55;
+  --rh-on-accent: #1a0d06;
+  --rh-accent-soft: rgb(255 106 43 / 0.12);
+  --rh-money: #e3b55c;
+  --rh-money-soft: rgb(227 181 92 / 0.12);
+  --rh-ok: #7dc592;
+  --rh-danger: #f0646a;
+  --rh-shadow-pop: 0 12px 32px -12px rgb(0 0 0 / 0.7), 0 0 0 1px var(--rh-line-strong);
+  --rh-inset: inset 0 1px 0 rgb(255 255 255 / 0.035);
+  --bg: var(--rh-bg);
+  --chrome: var(--rh-surface);
+  --node: var(--rh-card);
+  --line: var(--rh-line);
+  --grid: var(--rh-grid);
+  --text: var(--rh-fg);
+  --muted: var(--rh-fg-3);
+  /* Brass: spend and credit only (the old amber job, unchanged). */
+  --accent: var(--rh-money);
+  --active: var(--rh-fg);
+  /* Ember marks the selected frame and what needs you. */
+  --selected: var(--rh-accent);
+  --danger: var(--rh-danger);
+  --ok: var(--rh-ok);
+  --warn: var(--rh-money);
+
+  --shadow: none;
+  --radius: 0;
+  --ease: cubic-bezier(0.32, 0.72, 0, 1);
+  --inspector-width: 320px;
+  --z-flow: 1;
+  --z-controls: 5;
+  --z-inspector: 25;
+  --z-rail: 30;
+  --z-header: 40;
+  --z-menu: 50;
+}
+
+@layer legacy {
 
 * {
   box-sizing: border-box;
@@ -2539,3 +2689,5 @@ input[type="range"] {
 .agent-conversation-controls select { padding:0 4px; line-height:28px; }
 .agent-approval-record { border:1px solid var(--line); border-radius:7px; padding:10px; font-size:11px; color:var(--muted); }
 .agent-approval-record summary { cursor:pointer; line-height:17px; }
+
+}
