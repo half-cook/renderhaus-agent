@@ -13,7 +13,21 @@ const FIXED_NOW = new Date("2026-10-12T14:00:00-04:00");
 const DATA: Record<string, unknown> = JSON.parse(readFileSync(path.join(HERE, "fixtures/studio.json"), "utf8"));
 const ACCOUNT = readFileSync(path.join(HERE, "fixtures/account.json"), "utf8");
 
-export async function wire(page: Page) {
+/** Mocked beta backends: dry-run verification only, nothing leaves the browser. */
+function betaPost(pathname: string, body: Record<string, unknown>): { status: number; json: unknown } | null {
+  if (pathname === "/api/beta/verify/email/start") return { status: 200, json: { challenge_id: "fx-email", dry_run: true, message: "Mock verification. No message was sent. Use beta-email-ok." } };
+  if (pathname === "/api/beta/verify/email/confirm") return body.token === "beta-email-ok" ? { status: 200, json: { verified: true, message: "Email verified." } } : { status: 400, json: { detail: "Verification could not be confirmed." } };
+  if (pathname === "/api/beta/hold") return { status: 200, json: { held: true, claimed: false, expires_at: Math.floor(FIXED_NOW.getTime() / 1000) + 900 - 24, hold_seconds: 900, message: "Your spot is held for 15 minutes." } };
+  if (pathname === "/api/beta/verify/phone/start") return { status: 200, json: { challenge_id: "fx-phone", dry_run: true, message: "Mock verification. No message was sent. Use 424242." } };
+  if (pathname === "/api/beta/verify/phone/confirm") return body.code === "424242" ? { status: 200, json: { verified: true, message: "Phone verified." } } : { status: 400, json: { detail: "Verification could not be confirmed." } };
+  if (pathname === "/api/beta/claim") return { status: 200, json: { balance_cents: 1000, grant: { amount_cents: 1000, wave: 1 }, message: "Your free beta credit is ready." } };
+  if (pathname === "/api/beta/waitlist") return { status: 200, json: { message: "You joined the waitlist. No email was sent." } };
+  if (pathname === "/api/studio/demo-project") return { status: 200, json: { project_id: "demo-project", name: "Matte travel mug", copied: true } };
+  return null;
+}
+
+export async function wire(page: Page, screen?: Screen) {
+  const overrides = screen?.fixtures ?? {};
   await page.addInitScript((theme) => {
     localStorage.setItem("renderhaus.studio.theme", theme);
     localStorage.setItem("renderhaus.studio.server-migration.v2", "true");
@@ -24,7 +38,12 @@ export async function wire(page: Page) {
   if (existsSync(har)) await page.routeFromHAR(har, { url: /\/api\//, notFound: "fallback" });
   await page.route("**/api/**", async (route) => {
     const pathname = new URL(route.request().url()).pathname;
+    if (route.request().method() !== "GET") {
+      const mocked = betaPost(pathname, JSON.parse(route.request().postData() || "{}"));
+      if (mocked) return route.fulfill({ status: mocked.status, contentType: "application/json", body: JSON.stringify(mocked.json) });
+    }
     if (route.request().method() !== "GET" && pathname !== "/api/studio/assets/demo-artifact-v1/playback") return route.abort("blockedbyclient");
+    if (Object.hasOwn(overrides, pathname)) return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(overrides[pathname]) });
     if (pathname === "/api/studio/account") return route.fulfill({ status: 200, contentType: "application/json", body: ACCOUNT });
     if (Object.hasOwn(DATA, pathname)) return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(DATA[pathname]) });
     if (pathname === "/api/studio/design-shot-artifact.svg") return route.fulfill({ status: 200, contentType: "image/svg+xml", body: readFileSync(path.join(HERE, "fixtures/artifact.svg"), "utf8") });
@@ -48,7 +67,7 @@ export async function privacyGuard(page: Page) {
   if (leaks.length && process.env.SHOT_STRICT_COPY !== "0") {
     throw new Error(`Visible copy leaks fee or provider wording: ${leaks.map((leak) => leak.match).join(", ")}`);
   }
-  await expect(page.locator("nextjs-portal, [data-nextjs-dev-tools-button], #__next-build-watcher")).toHaveCount(0);
+  if (!process.env.SHOT_DEV) await expect(page.locator("nextjs-portal, [data-nextjs-dev-tools-button], #__next-build-watcher")).toHaveCount(0);
 }
 
 export async function settle(page: Page, screen: Screen) {

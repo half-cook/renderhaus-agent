@@ -1,9 +1,5 @@
-import { SignUp } from "@clerk/nextjs";
+import { AuthPanel } from "@/components/AuthPanel";
 
 export default function SignUpPage() {
-  return (
-    <div className="canvas-texture-bg flex min-h-screen items-center justify-center">
-      <SignUp fallbackRedirectUrl="/home" />
-    </div>
-  );
+  return <AuthPanel mode="sign-up" />;
 }

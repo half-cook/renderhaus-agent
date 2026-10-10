@@ -26,6 +26,8 @@ export type Screen = {
   /** true = screen does not exist on staging; "before" capture is skipped automatically. */
   isNew?: boolean;
   requiresAuth?: boolean;
+  /** Per-screen API fixture overrides, keyed by pathname (GET only). */
+  fixtures?: Record<string, unknown>;
 };
 
 export const SCREENS: Screen[] = [
@@ -58,9 +60,39 @@ export const SCREENS: Screen[] = [
     },
   },
   { id: "09-agent-review-timeline-diff", url: `/canvas?project=${DEMO_PROJECT}&workspace=agent&task=${DEMO_TASK}`, ready: "[aria-label='Agent review']" },
-  { id: "10-beta-signup", url: "/beta", ready: "[data-shot='beta-ready']", isNew: true },
-  { id: "11-beta-wave-spots-left", url: "/beta", ready: "[data-shot='wave-spots-left']", isNew: true },
   { id: "12-export-download", url: `/canvas?project=${DEMO_PROJECT}&workspace=agent&task=${DEMO_TASK}`, ready: "[data-shot='export-ready'], .agent-artifacts", isNew: false },
 ];
 
 SCREENS.push({ id: "13-sign-up", url: "/sign-up", ready: ".cl-card", requiresAuth: true });
+
+// ---- Revamp screens, numbered after the designer's mockups (m01 .. m17) -------------------------------------
+const wave = (remaining: number, status: "open" | "full" = "open") => ({
+  "/api/beta/wave": { capacity: 50, claimed: 50 - remaining, remaining, held: 0, status, wave: 1, hold_seconds: 900, updated_at: 1791848520 },
+});
+
+/** Drives the real sign-up UI against the mocked dry-run verification endpoints. */
+export async function reachPhoneStep(page: Page) {
+  await page.getByLabel("Email", { exact: true }).fill("you@example.com");
+  await page.getByRole("button", { name: "Send code" }).click();
+  await page.getByLabel("Email code").fill("beta-email-ok");
+  await page.getByRole("button", { name: "Verify email" }).click();
+  await page.getByLabel("Phone, with country code").fill("+14165550123");
+  await page.getByRole("button", { name: "Send code" }).click();
+  await page.getByLabel("Phone code, digit 1").waitFor();
+}
+async function typeCode(page: Page, digits: string) {
+  for (const [index, digit] of [...digits].entries()) await page.getByLabel(`Phone code, digit ${index + 1}`).fill(digit);
+}
+
+SCREENS.push(
+  { id: "m01-landing", url: "/", ready: "[data-shot='landing-ready']", fullPage: true },
+  { id: "m01-landing-fold", url: "/", ready: "[data-shot='landing-ready']" },
+  { id: "m09-signup-open", url: "/beta", ready: "[data-shot='claim-form']", prepare: async (p) => { await reachPhoneStep(p); await typeCode(p, "4829"); } },
+  { id: "m10-signup-spots-left", url: "/beta", ready: "[data-shot='wave-spots-left']", fixtures: wave(6) },
+  { id: "m11-signup-full", url: "/beta", ready: "[data-shot='wave-full']", fixtures: wave(0, "full") },
+  { id: "m14-signup-code-error", url: "/beta", ready: "[data-shot='claim-form']", prepare: async (p) => {
+    await reachPhoneStep(p); await typeCode(p, "111111");
+    await p.getByRole("button", { name: "Verify and open the demo project" }).click();
+    await p.getByRole("alert").filter({ hasText: "didn’t match" }).waitFor();
+  } },
+);

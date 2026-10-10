@@ -6,11 +6,10 @@ import { SCREENS } from "./screens";
 import { canvasStyles } from "./canvas-styles";
 import { wire, settle, privacyGuard, OUT, THEME } from "./fixture";
 
-for (const screen of SCREENS) {
+for (const screen of SCREENS.filter((entry) => !process.env.SHOT_ONLY || new RegExp(process.env.SHOT_ONLY).test(entry.id))) {
   test(screen.id, async ({ page }, info) => {
-    test.skip(!!screen.isNew, "No beta screen exists in this foundation-only branch");
     test.skip(!!screen.requiresAuth, "Clerk screens require a publishable key; this kit runs without keys");
-    await wire(page);
+    await wire(page, screen);
     const errors: string[] = [];
     page.on("pageerror", (error) => errors.push(error.message));
     const response = await page.goto(screen.url, { waitUntil: "domcontentloaded" });

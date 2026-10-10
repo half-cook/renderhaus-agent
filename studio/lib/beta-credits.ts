@@ -90,3 +90,50 @@ export function emptyWalletMessage(account: StudioAccount): string | null {
     ? "Your free beta credit is used up. Top up to keep creating."
     : "Your wallet is empty. Top up to keep creating.";
 }
+
+/** Live wave counter (public). Counters only; no identities. */
+export type WaveState = {
+  capacity: number;
+  claimed: number;
+  remaining: number;
+  held: number;
+  status: "open" | "full" | "closed";
+  holdSeconds: number;
+  updatedAt: number;
+};
+
+export async function fetchWave(): Promise<WaveState> {
+  const response = await fetch("/api/beta/wave", { cache: "no-store" });
+  const payload = record(await response.json().catch(() => null));
+  const status = payload.status;
+  if (
+    !response.ok || (status !== "open" && status !== "full" && status !== "closed") ||
+    !isCount(payload.capacity) || !isCount(payload.claimed) || !isCount(payload.remaining) ||
+    !isCount(payload.hold_seconds) || !isCount(payload.updated_at)
+  ) {
+    throw new Error("Could not load the live spot counter.");
+  }
+  return {
+    capacity: payload.capacity, claimed: payload.claimed, remaining: payload.remaining,
+    held: isCount(payload.held) ? payload.held : 0, status, holdSeconds: payload.hold_seconds, updatedAt: payload.updated_at,
+  };
+}
+
+/** Holds one wave spot for 15 minutes once the email is verified. */
+export async function holdBetaSpot(): Promise<{ held: boolean; expiresAt: number | null; holdSeconds: number }> {
+  const payload = await betaPost("hold", {});
+  return {
+    held: payload.held === true,
+    expiresAt: isCount(payload.expires_at) ? payload.expires_at : null,
+    holdSeconds: isCount(payload.hold_seconds) ? payload.hold_seconds : 900,
+  };
+}
+
+export async function openDemoProject(): Promise<{ projectId: string; name: string }> {
+  const response = await studioFetch("/api/studio/demo-project", { method: "POST" });
+  const payload = record(await response.json().catch(() => null));
+  if (!response.ok || typeof payload.project_id !== "string" || typeof payload.name !== "string") {
+    throw new Error("Could not open the demo project. Please try again.");
+  }
+  return { projectId: payload.project_id, name: payload.name };
+}

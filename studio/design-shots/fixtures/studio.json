@@ -240,5 +240,23 @@
   },
   "/api/studio/assets/demo-artifact-v1/playback": {
     "url": "/api/studio/design-shot-artifact.svg"
+  },
+  "/api/beta/wave": {
+    "capacity": 50,
+    "claimed": 13,
+    "remaining": 37,
+    "held": 0,
+    "status": "open",
+    "wave": 1,
+    "hold_seconds": 900,
+    "updated_at": 1791848520
+  },
+  "/api/beta/status": {
+    "enabled": true,
+    "wave": 1,
+    "wave_size": 50,
+    "spots_left": 37,
+    "programme_full": false,
+    "message": "37 spots left in this wave"
   }
 }
