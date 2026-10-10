@@ -1,7 +1,6 @@
 """Deterministic raster drawing for validated Remotion template plans.
 
-Frame geometry and timing match Templates.tsx. Font rasterization parity is unverified.
-Audio and cover/logo assets stay in the existing timeline clip tracks.
+Font rasterization parity is unverified.
 """
 from __future__ import annotations
 
@@ -18,6 +17,7 @@ from typing import Any
 from PIL import Image, ImageDraw, ImageFont
 
 from providers.remotion.text import FONT_FILES
+from providers.remotion.templates import fitted_font_size
 
 
 MAX_VIDEO_BYTES = 128 * 1024 * 1024
@@ -33,13 +33,12 @@ def _pixel_box(rectangle: dict[str, float], width: int, height: int) -> tuple[in
 
 
 def _text_panel(image: Image.Image, rectangle: dict[str, float], lines: list[list[tuple[str, str]]],
-                *, size: float, opacity: float = 1) -> None:
+                *, size: float, opacity: float = 1, measured_size: int | None = None) -> None:
     x, y, width, height = _pixel_box(rectangle, *image.size)
     panel = Image.new('RGBA', (width, height))
     draw = ImageDraw.Draw(panel)
-    count = max((len(' '.join(word for word, _ in line)) for line in lines), default=1)
-    font_size = max(1, math.floor(min(size, width / max(1, count) * 1.6,
-                                    height / max(1, len(lines)) / 1.35)))
+    text_lines = [' '.join(word for word, _ in line) for line in lines]
+    font_size = measured_size if measured_size is not None else fitted_font_size(text_lines, rectangle, *image.size, size)
     font = ImageFont.truetype(str(FONT_FILES['dejavu-sans-bold']), font_size)
     line_height = font_size * 1.35
     top = (height - len(lines) * line_height) / 2
@@ -87,16 +86,20 @@ def render_template_frame(plan: dict[str, Any], frame: int) -> Image.Image:
     lines = [[(text, plan['text_color'])] for text in (plan['show_name'], plan['speaker_name']) if text]
     if lines:
         _text_panel(image, plan['layout']['identity'], lines,
-                    size=min(width, height) * .052 * scale, opacity=opacity)
+                    size=min(width, height) * .052 * scale, opacity=opacity,
+                    measured_size=max(1, math.floor(plan['typography']['identity'] * scale)) if 'typography' in plan else None)
     if name != 'podcast-audiogram':
         return image
     _waveform(image, plan, frame)
-    caption = next((caption for caption in plan['captions']
+    current = next(((index, caption) for index, caption in enumerate(plan['captions'])
                     if caption['start'] <= seconds < caption['end']), None)
-    if caption:
+    if current:
+        index, caption = current
         words = [(word['text'], plan['accent_color'] if word['start'] <= seconds < word['end']
                   else plan['text_color']) for word in caption['words']]
-        _text_panel(image, plan['layout']['captions'], [words], size=min(width, height) * .07)
+        lines = [words] if words else [[(line, plan['text_color'])] for line in caption['text'].split('\n')]
+        _text_panel(image, plan['layout']['captions'], lines, size=min(width, height) * .07,
+                    measured_size=plan['typography']['captions'][index] if 'typography' in plan else None)
     x, y, bar_width, bar_height = _pixel_box(plan['layout']['progress'], width, height)
     total_frames = math.ceil(plan['duration_seconds'] * plan['fps'] - 1e-9)
     progress = min(1, max(0, frame / max(1, total_frames - 1)))

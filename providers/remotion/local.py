@@ -204,8 +204,12 @@ def _command(props: dict[str, Any], directory: Path, *, media_roots: tuple[Path,
         raise ValueError('Local renders allow at most 600 seconds and 60 assets.')
     assets = {asset['id']: asset for asset in document['assets']}
     command = [shutil.which('ffmpeg') or 'ffmpeg', '-hide_banner', '-nostdin', '-v', 'error', '-y',
-               '-filter_complex_threads', '1', '-f', 'lavfi', '-i',
-               f'color=c=black:s={width}x{height}:r={frame_rate}:d={duration:g}']
+               '-filter_complex_threads', '1']
+    if 'template' in props:
+        background = directory / 'template-visual.mp4'
+        command += ['-protocol_whitelist', 'file,pipe', '-i', str(background)]
+    else:
+        command += ['-f', 'lavfi', '-i', f'color=c=black:s={width}x{height}:r={frame_rate}:d={duration:g}']
     filters: list[str] = []
     visual = '0:v'
     audio: list[str] = []
@@ -359,7 +363,8 @@ def start_render(props: dict[str, Any], *, output_filename: str,
         timeout = max(1, float(os.getenv('REMOTION_RENDER_TIMEOUT_SECONDS', '1200')))
         command, duration = _command(props, directory, media_roots=media_roots,
                                      source_root=source_root, filename=filename)
-        (directory / 'worker.json').write_text(json.dumps({'command': command, 'timeout': timeout}))
+        (directory / 'worker.json').write_text(json.dumps({'command': command, 'timeout': timeout,
+            **({'template': props['template']} if 'template' in props else {})}))
         process = subprocess.Popen([sys.executable, '-m', 'providers.remotion.local_worker', str(directory)],
                                    cwd=source_root, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
                                    start_new_session=True)

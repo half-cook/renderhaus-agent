@@ -73,7 +73,7 @@ def _trim(directory, source, params):
     position = argv.index('-i')
     argv[position:position] = ['-ss', f"{params['t0_s']:g}", '-accurate_seek']
     argv += ['-t', f"{params['t1_s'] - params['t0_s']:g}",
-             '-map', '0:v:0', '-map', '0:a:0?', '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '18',
+             '-map', '0:v:0?', '-map', '0:a:0?', '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '18',
              '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-threads', str(THREADS),
              '-movflags', '+faststart', '-fs', str(MAX_OUTPUT_BYTES), './' + output.name]
     return [Command(argv, [output])]
@@ -89,6 +89,25 @@ def _finish_trim(directory, source, params, outputs, metrics):
     if abs(measured - (params['t1_s'] - params['t0_s'])) > .15:
         raise ValueError('Trim output is incomplete or exceeds the requested duration.')
     return {'duration_s': measured, 't0_s': params['t0_s'], 't1_s': params['t1_s']}
+
+
+def _audio_envelope(directory, source, params):
+    output = output_file(directory, 'audio-analysis', '.wav')
+    argv = _ffmpeg_input(directory, source)
+    argv += ['-ss', str(params['start_seconds']), '-t', str(params['duration_seconds']),
+             '-map', '0:a:0', '-vn', '-ar', '16000', '-c:a', 'pcm_s16le',
+             '-threads', str(THREADS), '-fs', '6000000', './' + output.name]
+    return [Command(argv, [output])]
+
+
+def _finish_audio_envelope(directory, source, params, outputs, metrics):
+    from providers.remotion.templates import pcm_amplitudes
+
+    with outputs[0].open('rb') as audio:
+        amplitudes = pcm_amplitudes(audio, duration=params['duration_seconds'], fps=params['fps'],
+                                    smoothing=params['smoothing'])
+    return {'amplitudes': amplitudes, 'duration_seconds': params['duration_seconds'],
+            'fps': params['fps'], 'smoothing': params['smoothing'], 'source_sha256': sha256_file(source)}
 
 
 def _extract(directory, source, params):
@@ -408,6 +427,12 @@ _PROXY_PARAMS = {
 
 
 OPS = {
+    'audio_envelope': OpSpec({'start_seconds': number(0, 0, 86400),
+                             'duration_seconds': number(1, .1, 90),
+                             'fps': number(30, 12, 60, integer=True),
+                             'smoothing': number(.65, 0, .95)},
+                            _audio_envelope, binary='ffmpeg', timeout_s=120, finalize=_finish_audio_envelope,
+                            description='Measure bounded per-frame PCM RMS amplitudes for an audio-reactive template. Fixed decode only; original audio loudness is unchanged.'),
     "trim": OpSpec({'t0_s': number(0, 0, 86400), 't1_s': number(1, 0, 86400)},
                     _trim, binary='ffmpeg', timeout_s=180, validate=_trim_bounds, finalize=_finish_trim,
                     input_limit_bytes=MAX_FOOTAGE_INPUT_BYTES,

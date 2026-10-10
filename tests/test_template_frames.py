@@ -88,6 +88,13 @@ class TemplateFrameTests(unittest.TestCase):
         background = ImageColor.getrgb(template['background_color'])
         self.assertEqual(picture.crop((0, 144, 320, 156)).getextrema(), tuple((v, v) for v in background))
 
+    def test_phrase_srt_renders_both_supplied_lines_without_word_timing(self):
+        template = plan()
+        template['captions'] = [{'text': 'Hello\nworld', 'start': 0, 'end': 1, 'words': []}]
+        picture = render_template_frame(template, 5)
+        background = ImageColor.getrgb(template['background_color'])
+        self.assertNotEqual(picture.crop((16, 99, 304, 144)).getextrema(), tuple((v, v) for v in background))
+
     def test_end_screen_reservations_remain_empty_at_start_middle_and_last(self):
         template = plan('youtube-end-screen')
         template['layout']['identity'] = {'x': .05, 'y': .05, 'width': .25, 'height': .35}

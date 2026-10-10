@@ -13,6 +13,7 @@ export type TemplatePlan = {
   smoothing: number; speaker_name: string; show_name: string;
   background_color: string; accent_color: string; text_color: string;
   reserved_zones: Rectangle[];
+  typography: {identity: number; captions: number[]};
 };
 const clamp = (value: number) => Math.max(0, Math.min(1, value));
 let fontLoad: Promise<FontFace> | undefined;
@@ -21,12 +22,6 @@ const boxStyle = (box: Rectangle, plan: TemplatePlan): CSSProperties => ({
   position: 'absolute', left: Math.round(box.x * plan.width), top: Math.round(box.y * plan.height),
   width: Math.round(box.width * plan.width), height: Math.round(box.height * plan.height), overflow: 'hidden',
 });
-
-const fontSize = (box: Rectangle, plan: TemplatePlan, texts: string[], size: number) => {
-  const length = Math.max(1, ...texts.map((text) => text.length));
-  return Math.max(1, Math.floor(Math.min(size, Math.round(box.width * plan.width) / length * 1.6,
-    Math.round(box.height * plan.height) / Math.max(1, texts.length) / 1.35)));
-};
 
 function Waveform({plan, frame}: {plan: TemplatePlan; frame: number}) {
   const box = plan.layout.waveform;
@@ -70,10 +65,10 @@ export function TemplateBackdrop({plan}: {plan: TemplatePlan}) {
   const introOpacity = plan.name === 'youtube-intro-sting' ? clamp(seconds / 0.35) : 1;
   const introScale = plan.name === 'youtube-intro-sting' ? 0.92 + 0.08 * introOpacity : 1;
   const identity = [plan.show_name, plan.speaker_name].filter((text) => text.length > 0);
-  const identitySize = fontSize(plan.layout.identity, plan, identity, Math.min(plan.width, plan.height) * 0.052 * introScale);
-  const caption = plan.captions.find((item) => item.start <= seconds && seconds < item.end);
-  const captionSize = caption ? fontSize(plan.layout.captions, plan,
-    [caption.words.map((word) => word.text).join(' ')], Math.min(plan.width, plan.height) * 0.07) : 1;
+  const identitySize = Math.max(1, Math.floor(plan.typography.identity * introScale));
+  const captionIndex = plan.captions.findIndex((item) => item.start <= seconds && seconds < item.end);
+  const caption = plan.captions[captionIndex];
+  const captionSize = plan.typography.captions[captionIndex] ?? 1;
   const frames = Math.ceil(plan.duration_seconds * plan.fps - 1e-9);
   const progress = clamp(frame / Math.max(1, frames - 1));
   const panel: CSSProperties = {display: 'flex', flexDirection: 'column', justifyContent: 'center',
@@ -91,7 +86,7 @@ export function TemplateBackdrop({plan}: {plan: TemplatePlan}) {
         <div>{caption.words.map((word, index) => <span key={index}
           style={{color: word.start <= seconds && seconds < word.end ? plan.accent_color : plan.text_color}}>
           {index ? ' ' : ''}{word.text}
-        </span>)}</div>
+        </span>)}{caption.words.length === 0 ? caption.text : null}</div>
       </div> : null}
       <div style={{...boxStyle(plan.layout.progress, plan), width: Math.round(plan.layout.progress.width * plan.width * progress),
         backgroundColor: plan.accent_color}}/>

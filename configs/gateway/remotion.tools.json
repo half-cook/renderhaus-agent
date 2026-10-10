@@ -1471,6 +1471,101 @@
         "subtitles_srt": {
           "type": "string",
           "description": "Inline numbered SRT, 1..60000 characters, at most 100 cues within 0..600 seconds; each literal cue text at most 500 characters. Choose subtitles or subtitles_srt. No paths, URLs or styling commands. Backend support: local supported; lambda supported. Inline numbered SRT, no file/URL, no styling or filter commands."
+        },
+        "template": {
+          "type": "object",
+          "properties": {
+            "speaker_name": {
+              "type": "string"
+            },
+            "show_name": {
+              "type": "string"
+            },
+            "cover_url": {
+              "type": "string"
+            },
+            "logo_url": {
+              "type": "string"
+            },
+            "background_color": {
+              "type": "string"
+            },
+            "accent_color": {
+              "type": "string"
+            },
+            "text_color": {
+              "type": "string"
+            },
+            "captions_srt": {
+              "type": "string"
+            },
+            "name": {
+              "type": "string",
+              "description": "Allowed values: podcast-audiogram, youtube-intro-sting, youtube-end-screen."
+            },
+            "duration_seconds": {
+              "type": "number",
+              "description": "Audiogram .1..90, intro 3..5, end screen exactly 20 seconds."
+            },
+            "words": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "text": {
+                    "type": "string"
+                  },
+                  "start": {
+                    "type": "number"
+                  },
+                  "end": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "text",
+                  "start",
+                  "end"
+                ]
+              },
+              "description": "Verbatim measured words relative to the selected audio clip. 1..2000 words; no fabricated timings."
+            },
+            "amplitudes": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              },
+              "description": "One measured amplitude in 0..1 per frame from audio_envelope. Already smoothed; never normalize the source audio."
+            },
+            "waveform": {
+              "type": "string",
+              "description": "Allowed values: bars, line."
+            },
+            "bars": {
+              "type": "integer",
+              "description": "16..64, default 32."
+            },
+            "smoothing": {
+              "type": "number",
+              "description": "Analysis provenance in 0..0.95, default .65; envelope is already smoothed."
+            },
+            "remove_fillers": {
+              "type": "boolean",
+              "description": "Only true on explicit request. Removes caption um/uh/erm/hmm; never edits source audio."
+            },
+            "correction_terms": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Up to 100 names/jargon to flag for transcript review."
+            }
+          },
+          "required": [
+            "name",
+            "duration_seconds"
+          ],
+          "description": "Bounded named template, no JSX or arbitrary rendering code. Use visuals=[] and exactly one unity-gain audio track for an audiogram. Backend support: local supported; lambda refused-with-explicit-error. Audio-reactive PCM envelope, word highlight, progress and channel templates on local. Lambda template contract version 1 must be deployed and enabled; pixel parity UNVERIFIED."
         }
       },
       "required": [
