@@ -1,5 +1,9 @@
 # Renderhaus
 
+To run the backend, Studio, and local gateway with your own AWS identity, follow
+[the local run guide](docs/LOCAL_RUN.md). `make local-check` verifies setup;
+`make local` starts the app with media dry-run enabled.
+
 An AI-native video production canvas: a Next.js node-canvas app (`studio/`) in front of a Python
 generation/agent backend (`server/`, `agent/`, `providers/`).
 

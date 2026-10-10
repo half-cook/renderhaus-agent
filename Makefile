@@ -3,11 +3,13 @@ PYTHON ?= .venv/bin/python
 REGION ?= us-east-1
 PROVIDER ?= all
 
-.PHONY: help setup setup-clerk check lint tools backend studio dry-flags gateway smoke-gateway runtime smoke deploy-all invoke-tool schemas smoke-remotion
+.PHONY: help setup setup-clerk check lint tools backend studio dry-flags gateway smoke-gateway runtime smoke deploy-all invoke-tool schemas smoke-remotion local local-check
 
 help:
 	@echo "Local development"
 	@echo "  make setup         Create venv + install deps"
+	@echo "  make local-check   Check own AWS identity + local dry-run config (docs/LOCAL_RUN.md)"
+	@echo "  make local         Start local gateway + backend + Studio with media dry-run"
 	@echo "  make check         Fast CI checks (no paid APIs)"
 	@echo "  make lint          Ruff check"
 	@echo "  make tools         List Gateway tools generated from providers/"
@@ -28,6 +30,12 @@ help:
 
 setup:
 	bash scripts/setup_agent.sh
+
+local-check:
+	bash scripts/run_local.sh check
+
+local:
+	bash scripts/run_local.sh up
 
 check:
 	$(PYTHON) scripts/ci_check.py

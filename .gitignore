@@ -19,6 +19,10 @@ coverage/
 .venv/
 .external/
 .renderhaus/
+# Local launcher state and configuration (also covered by the patterns above).
+/.env.local
+/studio/.env.local
+/.renderhaus/logs/
 
 .DS_Store
 *.log
