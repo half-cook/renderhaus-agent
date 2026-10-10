@@ -31,7 +31,7 @@ export async function wire(page: Page, screen?: Screen) {
   await page.addInitScript((theme) => {
     localStorage.setItem("renderhaus.studio.theme", theme);
     localStorage.setItem("renderhaus.studio.server-migration.v2", "true");
-  }, THEME);
+  }, screen?.theme ?? THEME);
   await page.clock.setFixedTime(FIXED_NOW);
   await page.route("**/api/**", (route) => route.abort("blockedbyclient"));
   const har = path.join(HERE, "fixtures/studio.har");

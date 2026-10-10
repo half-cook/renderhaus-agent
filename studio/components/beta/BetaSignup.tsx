@@ -5,7 +5,6 @@ import { Check } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
-import { toast } from "sonner";
 import { Meter } from "@/components/rh/Meter";
 import { useWave } from "@/components/rh/useWave";
 import { useClerkConfigured } from "@/components/StudioAuth";
@@ -200,9 +199,8 @@ function ClaimFlow({ wave }: { wave: WaveState | null }) {
       setWrong(true); setCode(""); return;
     }
     await claimBetaCredit();
-    await openDemoProject();
-    toast.success("Phone verified. Opening your demo project.");
-    router.push("/demo?welcome=1");
+    const demo = await openDemoProject();
+    router.push(`/project/${encodeURIComponent(demo.projectId)}?welcome=1`);
   }); };
 
   const remaining = wave?.remaining;

@@ -18,7 +18,7 @@ for (const screen of SCREENS.filter((entry) => !process.env.SHOT_ONLY || new Reg
     await privacyGuard(page);
     expect(errors.length, `${screen.id}: browser errors`).toBe(0);
     const computedStyles = screen.id === "07-canvas-demo-project" ? await canvasStyles(page, LABEL === "after") : undefined;
-    const dir = path.join(OUT, LABEL, THEME, info.project.name);
+    const dir = path.join(OUT, LABEL, screen.theme ?? THEME, info.project.name);
     mkdirSync(dir, { recursive: true });
     await page.screenshot({
       path: path.join(dir, `${screen.id}.png`),
@@ -28,7 +28,7 @@ for (const screen of SCREENS.filter((entry) => !process.env.SHOT_ONLY || new Reg
       mask: (screen.mask ?? []).map((selector) => page.locator(selector)),
       maskColor: "#262626",
     });
-    const evidence = path.join(OUT, "observations", LABEL, THEME);
+    const evidence = path.join(OUT, "observations", LABEL, screen.theme ?? THEME);
     mkdirSync(evidence, { recursive: true });
     writeFileSync(path.join(evidence, `${screen.id}.json`), JSON.stringify({ screen: screen.id, url: screen.url, theme: THEME, viewport: info.project.use.viewport, pageErrors: errors, computedStyles, evidence: "Mock design capture, not Comet E2E" }, null, 2));
   });

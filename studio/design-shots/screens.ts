@@ -17,6 +17,7 @@ export const DEMO_TASK = process.env.SHOT_TASK ?? "demo-task";
 
 export type Screen = {
   id: string;
+  theme?: "light" | "dark";
   url: string;
   ready: string;
   prepare?: (page: Page) => Promise<void>;
@@ -131,3 +132,16 @@ SCREENS.push(
 );
 
 SCREENS.push({ id: "m05-approval-states", url: "/design/approval-states", ready: "[data-shot='approval-states-ready']", fullPage: true });
+
+const projectCanvas = structuredClone(mugCanvas);
+projectCanvas.document.nodes.push({
+  id: "mug-shot3", type: "video", position: { x: 860, y: 640 },
+  data: { kind: "video", title: "Shot 3 · window", status: "idle", approved: true, storyOrder: 2, inputs: [],
+    config: { duration_seconds: 5, trim_in_seconds: 0, trim_out_seconds: 5, thumbnail_url: "/beta/shot-window.jpg" } },
+});
+const projectFixtures = mug({ [`/api/studio/projects/${MUG}/canvas`]: projectCanvas, ...account(1000, 0) });
+SCREENS.push(
+  { id: "m08-demo-project", url: `/project/${MUG}`, ready: "[data-shot='project-ready']", fixtures: projectFixtures },
+  { id: "m12-signup-success", url: `/project/${MUG}?welcome=1`, ready: "[data-shot='project-ready'] .rh-welcome", fixtures: projectFixtures },
+  { id: "m13-agent-run-light", url: agentUrl, ready: "[data-shot='approval-ready']", fixtures: mug({ "/api/studio/agent": midRun, ...account(974, 26) }), theme: "light" },
+);

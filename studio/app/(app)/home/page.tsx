@@ -97,7 +97,7 @@ export default function HomePage() {
   }, []);
 
   const displayName = name || account?.display_name || "";
-  const open = (id: string) => router.push(`/canvas?project=${encodeURIComponent(id)}`);
+  const open = (id: string) => router.push(`/project/${encodeURIComponent(id)}`);
   const newProject = async () => {
     setCreating(true);
     setError(null);

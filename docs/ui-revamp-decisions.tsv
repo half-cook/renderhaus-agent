@@ -1,3 +1,4 @@
 ts	phase	decision	why	evidence	result
 2026-10-09T00:00:00Z	frame	Keep committed adapters and extend existing UI	The merged billing API already supplies flat run payloads	docs/BILLING.md; fc5238a	baseline 64 Node tests passed
 2026-10-10T03:07:05.896230+00:00	style	Styled agent, billing and timeline components; fixed kit media and shared semantics	Existing components lacked design styles; axe exposed invalid ledger and timeline markup	studio/app/revamp.css; /workspace/rh-ui-revamp-shots/iteration/after	64 node tests and production build pass; axe rerun in progress
+2026-10-10T03:09:53.280258+00:00	project	Added demo overview and account-backed welcome; seeded three approved static shots	The demo must be useful without generation and signup must open the created copy	studio/components/rh/ProjectOverview.tsx; tests/test_beta_wave_demo.py	64 node tests and 9 beta/demo tests pass

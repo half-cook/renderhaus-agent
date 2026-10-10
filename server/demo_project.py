@@ -1,8 +1,7 @@
 """Per-user demo project, copied from one shared, pre-generated template.
 
-The template carries no paid work: it is plain notes and unrun steps, so opening
-or copying it costs nothing. Clips shown in Studio's demo screen are static
-fixtures; replacing them with pre-generated assets only needs the template here.
+The template carries no paid work. Its approved shots use static preview stills;
+opening or copying it never generates media. Each user owns an editable copy.
 """
 from __future__ import annotations
 
@@ -19,7 +18,7 @@ from server.studio_state import StudioRepository, repository
 router = APIRouter(tags=["demo project"])
 
 DEMO_PROJECT_NAME = "Matte travel mug"
-DEMO_TEMPLATE_VERSION = 1
+DEMO_TEMPLATE_VERSION = 2
 
 
 def demo_template() -> dict[str, Any]:
@@ -34,10 +33,22 @@ def demo_template() -> dict[str, Any]:
                       "config": {"text": "A matte-black stainless travel mug on a pale stone counter, soft morning window light."}}},
             {"id": "demo-still", "type": "image", "position": {"x": 460, "y": 80},
              "data": {"kind": "image", "title": "Product still", "status": "idle", "inputs": [],
-                      "config": {"prompt": "Product photo of a matte-black travel mug on a pale stone counter."}}},
-            {"id": "demo-shot-1", "type": "video", "position": {"x": 460, "y": 300},
-             "data": {"kind": "video", "title": "Shot 1 · push-in", "status": "idle", "inputs": [],
-                      "config": {"prompt": "Slow push-in on the handle and the matte texture. No text."}}},
+                      "config": {"prompt": "Product photo of a matte-black travel mug on a pale stone counter.",
+                                 "thumbnail_url": "/beta/still-mug-wide.jpg"}}},
+            *[
+                {"id": f"demo-shot-{index + 1}", "type": "video",
+                 "position": {"x": 880, "y": 80 + index * 280},
+                 "data": {"kind": "video", "title": title, "status": "idle", "inputs": [],
+                          "approved": True, "storyOrder": index,
+                          "config": {"prompt": prompt, "duration_seconds": 5,
+                                     "trim_in_seconds": 0, "trim_out_seconds": 5,
+                                     "aspect_ratio": "16:9", "thumbnail_url": thumbnail}}}
+                for index, (title, prompt, thumbnail) in enumerate([
+                    ("Shot 1 · macro", "Slow push-in on the matte texture. No text.", "/beta/shot-macro.jpg"),
+                    ("Shot 2 · lift", "A hand lifts the mug from the counter. No text.", "/beta/shot-lift.jpg"),
+                    ("Shot 3 · window", "Gentle tilt toward morning window light. No text.", "/beta/shot-window.jpg"),
+                ])
+            ],
         ],
         "edges": [
             {"id": "demo-edge-1", "source": "demo-brief", "target": "demo-still", "sourceHandle": "text",

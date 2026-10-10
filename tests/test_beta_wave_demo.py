@@ -112,6 +112,21 @@ class DemoProjectTests(unittest.TestCase):
         self.assertIn(("/api/beta/wave", "GET"), paths)
         self.assertIn(("/api/beta/hold", "POST"), paths)
 
+    def test_demo_has_three_approved_static_shots_with_editable_trims(self):
+        from server.demo_project import demo_template
+        shots = [node for node in demo_template()["nodes"] if node["data"]["kind"] == "video"]
+        self.assertEqual(len(shots), 3)
+        for index, shot in enumerate(shots):
+            data = shot["data"]
+            self.assertTrue(data["approved"])
+            self.assertEqual(data["storyOrder"], index)
+            self.assertEqual(data["config"]["duration_seconds"], 5)
+            self.assertEqual(data["config"]["trim_in_seconds"], 0)
+            self.assertEqual(data["config"]["trim_out_seconds"], 5)
+            self.assertRegex(data["config"]["thumbnail_url"], r"^/beta/shot-[a-z]+\.jpg$")
+            self.assertNotIn("toolId", data)
+            self.assertNotIn("providerId", data)
+
 
 if __name__ == "__main__":
     unittest.main()

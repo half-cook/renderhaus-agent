@@ -621,3 +621,50 @@
 .rh-state-grid > section > p { margin-top:14px; line-height:1.6; }
 @media (max-width:1100px) { .rh-state-grid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:32px; } }
 @media (max-width:700px) { .rh-state-board { padding:24px; } .rh-state-grid { grid-template-columns:1fr; } .rh-state-board > header { align-items:start; flex-direction:column; } }
+
+.rh-project-main { max-width:1160px; margin:0 auto; padding:30px 0 64px; }
+.rh-project-crumb { display:flex; gap:10px; color:var(--rh-fg-3); font-size:12px; margin-bottom:28px; }
+.rh-project-crumb a { color:var(--rh-fg-2); }
+.rh-project-head { display:flex; align-items:center; justify-content:space-between; gap:24px; margin-bottom:28px; }
+.rh-project-title { display:flex; align-items:center; gap:16px; }
+.rh-project-title h1 { margin:0; font-size:44px; }
+.rh-project-head p { margin:10px 0 0; font-size:13px; }
+.rh-project-actions { display:flex; gap:10px; }
+.rh-tour { display:grid; grid-template-columns:minmax(0,1fr) 312px; border:1px solid var(--rh-line); border-left:2px solid var(--rh-accent); background:var(--rh-card); padding:24px; gap:32px; margin-bottom:32px; }
+.rh-tour .rh-ledger { margin:0; }
+.rh-tour-steps { display:flex; gap:24px; list-style:none; padding:0; margin:20px 0 24px; font-size:12px; color:var(--rh-fg-3); }
+.rh-tour-steps li { display:flex; align-items:center; gap:8px; }
+.rh-tour-steps li > span { display:grid; place-items:center; width:20px; height:20px; border:1px solid var(--rh-line-strong); border-radius:50%; font-family:var(--font-geist-mono); }
+.rh-tour-steps [data-done] { color:var(--rh-ok); }
+.rh-tour-steps [aria-current] { color:var(--rh-accent-text); }
+.rh-tour-steps [aria-current] > span { border-color:var(--rh-accent); }
+.rh-tour h3 { margin:0; }
+.rh-tour p { font-size:12.5px; line-height:1.6; max-width:580px; }
+.rh-tour-note { border:1px solid var(--rh-line); background:var(--rh-bg); padding:20px; color:var(--rh-fg-2); }
+.rh-project-cols { display:grid; grid-template-columns:minmax(0,1fr) 272px; gap:32px; }
+.rh-storyboard { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; }
+.rh-shot-card { color:var(--rh-fg); text-decoration:none; min-width:0; }
+.rh-shot-thumb { aspect-ratio:16/9; background-size:cover; background-position:center; background-color:var(--rh-card); }
+.rh-shot-card .rh-pcard-row { margin-top:12px; }
+.rh-shot-card b { font-size:12.5px; font-weight:500; overflow-wrap:anywhere; }
+.rh-shot-card p { margin:6px 0 0; }
+.rh-project-tasks { margin-top:32px; }
+.rh-project-tasks ul, .rh-project-details ul { list-style:none; margin:0; padding:0; }
+.rh-project-tasks li { border-top:1px solid var(--rh-line); }
+.rh-project-tasks li a { display:flex; align-items:center; gap:12px; padding:16px 4px; font-size:13px; }
+.rh-project-tasks li a > b { font-weight:500; flex:1; }
+.rh-project-details { border-left:1px solid var(--rh-line); padding-left:24px; }
+.rh-project-details section + section { margin-top:32px; }
+.rh-project-details dl { font-size:12px; }
+.rh-project-details dl > div { display:flex; justify-content:space-between; margin:14px 0; gap:12px; }
+.rh-project-details dt { color:var(--rh-fg-3); }
+.rh-project-details dd { margin:0; }
+.rh-project-details li { display:flex; align-items:center; gap:10px; font-size:12px; color:var(--rh-fg-2); padding:10px 0; }
+.rh-welcome { display:flex; align-items:center; gap:14px; padding:16px 20px; margin:0 0 24px; border:1px solid var(--rh-line-strong); background:var(--rh-card); }
+.rh-welcome > svg { color:var(--rh-ok); }
+.rh-welcome > div { flex:1; }
+.rh-welcome b { font-size:13px; font-weight:500; }
+.rh-welcome p { margin:4px 0 0; font-size:12px; color:var(--rh-fg-2); }
+@media (max-width:1250px) { .rh-project-main { padding:30px 32px 64px; } }
+@media (max-width:850px) { .rh-project-head { align-items:start; flex-direction:column; } .rh-tour { grid-template-columns:1fr; } .rh-project-cols { grid-template-columns:1fr; } .rh-project-details { border-left:0; border-top:1px solid var(--rh-line); padding:24px 0 0; } }
+@media (max-width:600px) { .rh-storyboard { grid-template-columns:1fr; } .rh-tour-steps { flex-direction:column; gap:12px; } .rh-welcome { flex-wrap:wrap; } }
