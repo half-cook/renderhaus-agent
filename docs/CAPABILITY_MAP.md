@@ -28,7 +28,7 @@ One quality-first default serves each capability. Selection order is **explicit 
 Canonical aliases remain stable even when an official endpoint differs from the research lead. A pending alias has no Gateway binding and cannot perform a request. Plain default requests can use only the listed interim and disclose “interim default until <alias> lands”. A named exact future model stays pending rather than silently running a different model. Bare “Seedance” uses the upgraded 2.5 adapter. Exception defaults do not receive unrelated capability interims.
 
 The t2v, i2v and reference_video defaults use Wan 3 on fal. The synthetic-dialogue exceptions
-now use Seedance 2.5 through fal US. Real-person references force Wan generation with consent.
+now use Seedance 2.5 through fal US. Default real-person references use Wan generation with consent; an explicit Pixelcut loop retains Pixelcut and requires consent.
 Edit/extend select Seedance 2.5 directly, without exceptions, interims or automatic fallback.
 Real-person edit/extend refuse Seedance. Naming Wan 3.0 or Model Studio selects only the
 preview-blocked Model Studio route with an internal-testing-only-until-GA warning. Changing
@@ -38,7 +38,7 @@ authorized non-US platform use.
 ## Deterministic intent predicates
 
 - `dialogue`: quoted speech or says/talking/dialogue/speaking, with explicit “no dialogue” and “not talking” negation.
-- `real_face_refs`: a real-person/actor reference, a described user photo/video, a CEO/selfie/face reference, or authoritative reference metadata. An argument set to false cannot erase prompt evidence. Video generation forces Wan 3 and requires explicit likeness consent.
+- `real_face_refs`: a real-person/actor reference, a described user photo/video, a CEO/selfie/face reference, or authoritative reference metadata. An argument set to false cannot erase prompt evidence. Default video generation uses Wan 3 and requires explicit likeness consent; an explicit Pixelcut loop stays on Pixelcut with consent.
 - `vector_output`: SVG/vector/logo output → Recraft. Ideogram generation without an existing image uses the GPT Image default; only `text_only_edit` selects Ideogram editing.
 - `full_body_motion`: dance/body motion → Kling Motion Control. `facial_performance`: facial expression/performance → Act-Two. Body motion wins when both apply.
 - `duration_over_30s`: generation/performance single shots over 30 seconds are blocked with a split-into-shots reason. A long presenter/digital twin lipsync request uses pending HeyGen Avatar V.
@@ -48,9 +48,9 @@ authorized non-US platform use.
 
 ## Explicit-only tools and approvals
 
-Kling generation/Omni, Runway Gen-4.5/Aleph/Gen-4 Image, Luma, Vidu Q4, Seedream, Fish Audio, ElevenLabs music and Wan 2.x VACE remain built. Named requests use their existing tools with “explicit request; not the default for <capability>”. Wan 3 edit/extend are also named-only; Alibaba preview terms permit internal testing only until GA, and live customer use stays blocked. Declared interims for other capabilities can use demoted tools while their replacement is pending. The existing rejected-shot Wan 2.x training retry path and provenance eligibility checks remain unchanged. MiniMax H3 and Hunyuan stay blocked.
+Kling generation/Omni, Runway Gen-4.5/Aleph/Gen-4 Image, Luma, Vidu Q4, Seedream, Fish Audio, ElevenLabs music and Wan 2.x VACE remain built. Pixelcut looping video and PixVerse VibeMV are also built named-only on fal; see [contracts and verified prices](providers/named-fal-video.md). They are never capability defaults, exceptions or automatic fallbacks. Named requests use their existing tools with “explicit request; not the default for <capability>”. Wan 3 edit/extend are also named-only; Alibaba preview terms permit internal testing only until GA, and live customer use stays blocked. Declared interims for other capabilities can use demoted tools while their replacement is pending. The existing rejected-shot Wan 2.x training retry path and provenance eligibility checks remain unchanged. MiniMax H3 and Hunyuan stay blocked.
 
-All paid video pauses for approval with a cost estimate, including autonomous runs: current Seedance, Fal/Wan/Vidu, Kling, Runway, Luma and Remotion, plus built Sync, HeyGen, Topaz, Act-Two, Kling Motion and Mureka lyrics-video and Mirelo. Sync, HeyGen, Topaz, Act-Two and Kling Motion always pause even when the general premium-video switch is disabled. `premium_video_approval` / `RENDERHAUS_PREMIUM_VIDEO_APPROVAL` remains the global switch. Approval exemptions and the autonomous spending cap are unchanged; paid non-video behavior follows the existing effect classification. Voice-clone writes retain their existing autonomous behavior. Editorial cut-plan confirmation and final paid rendering remain separate approvals.
+All paid video pauses for approval with a cost estimate, including autonomous runs: current Seedance, Fal/Wan/Vidu, Kling, Runway, Luma and Remotion, plus built Sync, HeyGen, Topaz, Act-Two, Kling Motion and Mureka lyrics-video and Mirelo. Sync, HeyGen, Topaz, Act-Two, Kling Motion, Pixelcut and PixVerse VibeMV always pause even when the general premium-video switch is disabled. `premium_video_approval` / `RENDERHAUS_PREMIUM_VIDEO_APPROVAL` remains the global switch. Approval exemptions and the autonomous spending cap are unchanged; paid non-video behavior follows the existing effect classification. Voice-clone writes retain their existing autonomous behavior. Editorial cut-plan confirmation and final paid rendering remain separate approvals.
 
 Each dispatch publishes MODEL_UPDATE with provider, model, approval estimate and default/exception/explicit/interim reason. Unknown prices stay unknown, including in dry-run mode. The optional `ab_arm` outcome field only records a label; no A/B runner or evaluation harness is activated.
 
