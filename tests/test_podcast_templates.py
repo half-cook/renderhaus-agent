@@ -148,6 +148,19 @@ class AudioEnvelopeTests(unittest.TestCase):
 
 
 class TemplateBoundaryTests(unittest.TestCase):
+    def test_unsupported_caption_or_name_glyphs_refuse_before_media_io(self):
+        for field, text in (('words', '你好'), ('words', '🤖'), ('speaker_name', '你好')):
+            raw = audiogram()
+            raw[field] = [{'text': text, 'start': 0, 'end': 1}] if field == 'words' else text
+            with self.subTest(field=field, text=text), \
+                    patch.dict('os.environ', {'REMOTION_DRY_RUN': 'true', 'REMOTION_RENDER_BACKEND': 'local'}), \
+                    patch.object(api, '_start_render') as render, patch.object(api, '_visual_metadata') as probe:
+                with self.assertRaisesRegex(ValueError, 'text_unsupported_glyph'):
+                    api.render_timeline(title='Podcast', visuals=[], template=raw,
+                        audio_tracks=[{'url': 'missing.wav', 'duration_seconds': 2}])
+                render.assert_not_called()
+                probe.assert_not_called()
+
     def test_real_gateway_template_dry_run_is_validated_without_io(self):
         with patch.dict('os.environ', {'REMOTION_DRY_RUN': 'true', 'REMOTION_RENDER_BACKEND': 'local'}), \
                 patch.object(api.boto3, 'Session') as aws, patch.object(api, '_visual_metadata') as probe:

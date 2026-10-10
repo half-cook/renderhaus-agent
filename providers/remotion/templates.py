@@ -10,7 +10,7 @@ import wave
 
 from PIL import ImageFont
 
-from providers.remotion.text import FONT_FILES
+from providers.remotion.text import font_path, validate_glyph_coverage
 
 from providers.remotion.captions import srt_captions
 
@@ -116,8 +116,10 @@ def progress_at(frame: int, frames: int) -> float:
 
 def fitted_font_size(lines: list[str], box: Rect, width: int, height: int, maximum: float) -> int:
     minimum = max(1, math.floor(min(width, height) * .018))
+    family, path = font_path({'fontFamily': 'dejavu-sans-bold'})
+    validate_glyph_coverage('\n'.join(lines), family, ImageFont.truetype(str(path), minimum))
     for size in range(max(minimum, math.floor(maximum)), minimum - 1, -1):
-        font = ImageFont.truetype(str(FONT_FILES['dejavu-sans-bold']), size)
+        font = ImageFont.truetype(str(path), size)
         if (all(font.getlength(line) <= box['width'] * width for line in lines)
                 and len(lines) * size * 1.35 <= box['height'] * height):
             return size

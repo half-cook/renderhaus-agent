@@ -35,4 +35,3 @@ class RealEnvelopeTests(unittest.TestCase):
             trimmed = execute('trim', job, 'clip.wav', {'t0_s': 1, 't1_s': 2})
             self.assertTrue(trimmed['ok'], trimmed)
             self.assertAlmostEqual(trimmed['metrics']['duration_s'], 1, delta=.1)
-
