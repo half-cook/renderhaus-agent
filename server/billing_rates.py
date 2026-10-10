@@ -764,6 +764,9 @@ SYNC_DIRECT_BASE_CENTS_PER_SECOND_25FPS = Decimal("13.3")
 SYNC_PRICING_READ_DATE = "2026-10-09"
 SYNC_FAL_PRICING_URL = "https://fal.ai/models/fal-ai/sync-lipsync/v3"
 SYNC_DIRECT_PRICING_URL = "https://sync.so/docs/product/billing"
+SYNC_DIALOGUE_PRICING_URL = "https://sync.so/pricing"
+SYNC_DIALOGUE_PRICING_READ_DATE = "2026-10-10"
+SYNC_DIALOGUE_BASE_CENTS_PER_FRAME = Decimal("0.534")
 
 HEYGEN_PRICING_URL = "https://help.heygen.com/en/articles/10060327-heygen-api-pricing-explained"
 HEYGEN_PRICING_READ_DATE = "2026-10-09"
@@ -821,6 +824,23 @@ def sync_price_cents(arguments: dict[str, Any]) -> Decimal:
         raise ValueError("Sync credit/negotiated billing estimate unknown; verify the account rate.")
     frames = Decimal(math.ceil(float(duration) * request.source_fps))
     return frames * SYNC_DIRECT_BASE_CENTS_PER_SECOND_25FPS / 25
+
+
+def sync_dialogue_price_cents(tool: str, arguments: dict[str, Any]) -> Decimal:
+    """Quote direct Sync edits; an unpublished preview price stays unknown."""
+    from providers.sync.dialogue_contracts import request_for, preview_quote_cents
+
+    request = request_for(tool, arguments)
+    if tool == "create_dialogue_edit":
+        return Decimal(preview_quote_cents())
+    if tool != "create_dialogue_video":
+        raise ValueError("Unknown paid Sync dialogue tool.")
+    if os.getenv("SYNC_BILLING_PLAN", "legacy_base") != "legacy_base":
+        raise ValueError("Sync credit/negotiated billing estimate unknown; verify the account rate.")
+    # Official pricing read 2026-10-10 lists $0.00534/frame. Billing
+    # counts output frames; per-second page values are rounded differently.
+    frames = Decimal(math.ceil(request.preview_duration_seconds * request.source_fps))
+    return frames * SYNC_DIALOGUE_BASE_CENTS_PER_FRAME
 
 
 # Official fal pricing examples, read 2026-10-09. Duration scaling is an estimate.
@@ -939,8 +959,16 @@ def cost_for(provider: str, tool: str, arguments: dict[str, Any]) -> GenerationC
             return GenerationCost(0, 0)
         return _with_fee(math.ceil(cents))
     if provider == "sync":
-        if tool == "get_video_task":
+        if tool in {"get_video_task", "transcribe_video", "get_transcription", "get_dialogue_edit"}:
             return GenerationCost(0, 0)
+        if tool in {"create_dialogue_edit", "create_dialogue_video"}:
+            from providers.sync.api import _is_dry
+            from providers.sync.dialogue_contracts import validate_arguments
+
+            validate_arguments(tool, arguments)
+            if _is_dry("direct"):
+                return GenerationCost(0, 0)
+            return _with_fee(math.ceil(sync_dialogue_price_cents(tool, arguments)))
         if tool != "lipsync_video":
             raise ValueError("Unknown Sync tool.")
         return _with_fee(math.ceil(sync_price_cents(arguments)))

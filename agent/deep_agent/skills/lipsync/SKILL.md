@@ -10,6 +10,8 @@ metadata:
 # Lip sync
 
 Use sync-3 for new audio on existing footage. Follow `read_studio_context.intent_route`:
+For changing/removing specific spoken words while preserving the source voice, read
+`/skills/dialogue-edit/SKILL.md`; its direct Sync preview and generation have separate approvals.
 explicit request, then named exception, then capability default. New generated talking shots
 use Seedance t2v/i2v. Presenters/digital twins over 30 seconds use HeyGen Avatar V,
 unless the customer explicitly requests sync-3. Retired LivePortrait/LatentSync depend on

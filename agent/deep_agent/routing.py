@@ -85,7 +85,8 @@ _SPEECH_PRODUCTION_TOOLS = {
     "ElevenLabs___dubbing_project_create",
     "ElevenLabs___dubbing_project_language_create",
 }
-_LIPSYNC_REQUEST = next(rule["pattern"] for rule in POLICY["rules"] if rule.get("capability") == "lipsync")
+_LIPSYNC_REQUEST = next(rule["pattern"] for rule in POLICY["rules"] if rule["skill"] == "lipsync")
+_DIALOGUE_EDIT_REQUEST = next(rule["pattern"] for rule in POLICY["rules"] if rule["skill"] == "dialogue-edit")
 _KNOWLEDGE_REQUEST = next(rule["pattern"] for rule in POLICY["rules"] if rule["skill"] == "knowledge-explainer")
 _PLAN_REVIEW_REQUEST = next(rule["pattern"] for rule in POLICY["rules"] if rule["skill"] == "plan-to-video")
 _MODELSTUDIO_PREVIEW_WARNING = (
@@ -438,6 +439,19 @@ def route_intent(prompt: str, *, region: str | None = None, tier: str | None = N
         if re.search(pattern, prompt, re.I):
             return Route(alias=alias, status="retired", reason=TOOL_MAP[alias]["reason"],
                          disclosure=TOOL_MAP[alias]["reason"])
+    if re.search(_DIALOGUE_EDIT_REQUEST, prompt, re.I):
+        reason = None
+        if (arguments or {}).get("speaker_count", 1) != 1 or re.search(r"multi[ -]?speaker|multiple speakers|two speakers", prompt, re.I):
+            reason = "Dialogue editing supports a single speaker only. Use the regular lip-sync workflow for multi-speaker footage."
+        duration = (arguments or {}).get("source_duration_seconds", constraints["required"].get("duration_seconds"))
+        if isinstance(duration, (int, float)) and duration > 600:
+            reason = "Dialogue editing supports whole videos of at most 10 minutes."
+        if reason:
+            return Route(skill="dialogue-edit", status="blocked", reason=reason, disclosure=reason)
+        route = select_provider("lipsync", region=region, available_tools=available_tools,
+                                tool_variant="Sync___create_dialogue_video", arguments=arguments,
+                                **capability_constraints(constraints, "lipsync"))
+        return replace(route, skill="dialogue-edit")
     if editing_workflow := _editing_workflow_route(prompt, constraints, region=region, available_tools=available_tools, arguments=arguments):
         return editing_workflow
     if voice_route := _voice_route(prompt, constraints, region=region, available_tools=available_tools, arguments=arguments):
@@ -652,8 +666,12 @@ def _capability_price(row: dict):
         values = {"self_serve_cents_per_second": str(rates.HEYGEN_AVATAR_V_CENTS_PER_SECOND),
                   "enterprise": "unknown"}
     elif provider == "sync":
-        values = {"fal_cents_per_minute": str(rates.SYNC_FAL_CENTS_PER_MINUTE),
-                  "direct_legacy_base_cents_per_second_at_25fps": str(rates.SYNC_DIRECT_BASE_CENTS_PER_SECOND_25FPS)}
+        if "Sync___create_dialogue_video" in row["tools"].values():
+            values = {"direct_legacy_base_cents_per_frame": str(rates.SYNC_DIALOGUE_BASE_CENTS_PER_FRAME),
+                      "preview_create": "unknown; optional operator-confirmed quote"}
+        else:
+            values = {"fal_cents_per_minute": str(rates.SYNC_FAL_CENTS_PER_MINUTE),
+                      "direct_legacy_base_cents_per_second_at_25fps": str(rates.SYNC_DIRECT_BASE_CENTS_PER_SECOND_25FPS)}
     elif provider == "topaz":
         values = {"upscale_cents_per_10_seconds": rates.TOPAZ_UPSCALE_CENTS_PER_10_SECONDS,
                   "interpolate_cents_per_new_frame": {key: str(value) for key, value in
@@ -863,6 +881,11 @@ def select_provider(job: str, *, tier: str | None = None, required: dict | None 
     predicates["voice_text_needs_normalisation"] = detected["voice_text_needs_normalisation"] or predicates["voice_text_needs_normalisation"]
     predicates["real_face_refs"] = detected["real_face_refs"] or predicates["real_face_refs"]
     capability = {"image": "still_image", "reference": "reference_video"}.get(job, job)
+    if tool_variant == "Sync___create_dialogue_video":
+        if provider not in {None, "sync"} or named_model not in {None, "sync3"}:
+            reason = "Requested provider/model has no built word-level dialogue editing tool; no automatic substitute was selected."
+            return Route(status="blocked", job_type="lipsync", reason=reason, disclosure=reason)
+        predicates["presenter"] = False
     if tool_variant in {"reference", "reference_video"}:
         capability = "reference_video"
     elif tool_variant == "image_edit":
@@ -1244,11 +1267,12 @@ def policy_blocker(name: str, arguments: dict, *, region: str | None = None) -> 
             if blocker := live_blocker(tool, arguments):
                 return blocker
     if provider == "sync":
-        from providers.sync.api import dry_run
+        from providers.sync.api import dry_run, _is_dry
         from providers.sync.contracts import live_blocker
 
-        if not dry_run():
-            if blocker := live_blocker(arguments):
+        dialogue = tool in {"transcribe_video", "get_transcription", "create_dialogue_edit", "get_dialogue_edit", "create_dialogue_video"}
+        if not (_is_dry("direct") if dialogue else dry_run()):
+            if blocker := live_blocker(arguments, transport="direct") if dialogue else live_blocker(arguments):
                 return blocker
     if provider == "heygen" and tool == "create_avatar_video":
         from providers.heygen.api import dry_run
@@ -1330,6 +1354,14 @@ def estimate_cost(name: str, arguments: dict, *, list_price: bool = False) -> Co
     if provider in {"heygen", "topaz", "mureka"} or name in {"Runway___act_two", "Fal___kling_motion_control", "Fal___mirelo_v2a", "Fal___ideogram_edit", "Fal___recraft_text_to_vector"}:
         try:
             return CostEstimate(_published_cost(provider, tool, arguments).total_cents)
+        except (ValueError, TypeError, KeyError) as exc:
+            return CostEstimate(None, str(exc))
+    if provider == "sync" and tool in {"create_dialogue_edit", "create_dialogue_video"}:
+        from server.billing_rates import sync_dialogue_price_cents, _with_fee
+        from math import ceil
+
+        try:
+            return CostEstimate(_with_fee(ceil(sync_dialogue_price_cents(tool, arguments))).total_cents)
         except (ValueError, TypeError, KeyError) as exc:
             return CostEstimate(None, str(exc))
     if provider == "openai_images":

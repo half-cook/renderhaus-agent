@@ -19,6 +19,7 @@ from agent.deep_agent.routing import (
     POLICY,
     request_tool_blocker,
     capability_constraints,
+    route_intent,
 )
 from agent.deep_agent.outcomes import OutcomeStore
 from agent.hyperframes import HYPERFRAMES_TOOL
@@ -59,7 +60,10 @@ def tool_needs_approval(name: str, autonomous: bool, arguments: dict | None = No
         return False
     if name == "Remotion___import_nle_timeline":
         return False
+    if name in {"Sync___transcribe_video", "Sync___get_transcription", "Sync___get_dialogue_edit"}:
+        return False
     if name in {"Remotion___prepare_conversational_edit", "Sync___lipsync_video", "sync3_lipsync",
+                "Sync___create_dialogue_edit", "Sync___create_dialogue_video",
                 "HeyGen___create_avatar_video", "heygen_avatar_v", "Topaz___upscale_video",
                 "Topaz___interpolate_video", "topaz_upscale", "topaz_interpolate",
                 "Mureka___generate_lyrics_video", "mureka_lyrics_video"}:
@@ -254,6 +258,9 @@ class GatewayExecutor:
         if job == "tts" and constraints["predicates"]["cloned_voice"]:
             job = "cloned_tts"
         constraints = capability_constraints(constraints, job)
+        if (name == "Sync___lipsync_video" and route_intent(self.studio.prompt).skill == "dialogue-edit"
+                and any(event.result.get("status") == "requires_audio_fallback" for event in self.studio.tool_events)):
+            constraints["predicates"]["presenter"] = False
         if job == "performance_transfer" and name == "Runway___act_two" and arguments.get("source_duration_seconds") is not None:
             duration = arguments.get("performance_duration_seconds")
             if isinstance(duration, (int, float)) and not isinstance(duration, bool) and 3 <= duration <= 30:
@@ -264,6 +271,13 @@ class GatewayExecutor:
         return route
 
     def dispatch_disclosure(self, name, arguments, route):
+        if name in {"Sync___create_dialogue_edit", "Sync___create_dialogue_video"}:
+            return (f"Provider sync via direct; model sync-3; {route.basis if route else 'default dialogue editing'}. "
+                    f"{estimate_cost(name, arguments, list_price=True).description} "
+                    f"Cloned source voice and face: {arguments.get('subjects') or 'identify the speaker'}. "
+                    f"Voice and likeness consent {'confirmed' if arguments.get('consent_confirmed') is True else 'required'}. "
+                    "Only edited spans are re-spoken. Direct Sync terms permit upload reuse for service improvement. "
+                    "Outputs are not training eligible. Listen to the preview before approving video generation.")
         if name == "Remotion___render_ad_variants":
             from providers.remotion.ad_variants import approval_description
 
@@ -334,6 +348,16 @@ class GatewayExecutor:
         if blocker := request_tool_blocker(self.studio.prompt, name):
             return blocker
         provider, tool = tool_parts(name)
+        dialogue_request = None
+        if provider == "sync" and tool in {"transcribe_video", "get_transcription", "create_dialogue_edit", "get_dialogue_edit", "create_dialogue_video"}:
+            from providers.sync.dialogue_contracts import request_for
+
+            try:
+                request = request_for(tool, arguments)
+                if tool == "create_dialogue_video":
+                    dialogue_request = request
+            except ValueError as exc:
+                return str(exc)
         if name in LOCAL_MEDIA_TOOLS:
             from providers.contracts import validate_tool_arguments
             from server.billing_rates import ad_matrix_estimate
@@ -455,6 +479,10 @@ class GatewayExecutor:
         if route.required.get("max_resolution"):
             if topaz_request:
                 actual = min(topaz_request.output_width, topaz_request.output_height)
+            elif dialogue_request:
+                actual = min(dialogue_request.source_width or 0, dialogue_request.source_height or 0)
+                if actual < route.required["max_resolution"]:
+                    return "Sync dialogue video inherits source resolution: supply measured source_width/source_height."
             elif sync_request:
                 from providers.sync.chunks import plan_for
 
@@ -524,6 +552,14 @@ class GatewayExecutor:
     async def execute(self, call, *, approved=False, rejection=None):
         studio, render_jobs = self.studio, self.render_jobs
         name, arguments, call_id = call["tool_name"], call["arguments"], call["call_id"]
+        if name == "Sync___create_dialogue_edit":
+            edit = {key: value for key, value in _compact_tool_arguments(arguments).items() if key != "action_id"}
+            uncertain = next((event for event in studio.tool_events if event.name == name
+                              and (event.result.get("status") == "submission_unknown" or event.status == "running")
+                              and {key: value for key, value in event.arguments.items() if key != "action_id"} == edit), None)
+            if uncertain:
+                return {**uncertain.result, "status": "submission_unknown", "next_action": "check_status_or_ask_user",
+                        "note": "Preview submission may already be billed. Check status with the operator or ask the user; never automatically resubmit."}
         if name.endswith("___render_timeline"):
             unfinished = [job for job in render_jobs.values()
                           if job.get("status") in {"queued", "running", "preparing"}]
@@ -670,6 +706,7 @@ class GatewayExecutor:
                 if name.rsplit("___", 1)[-1] in {
                     "query_music_task", "get_music_task", "get_video_task", "get_runway_task",
                     "get_render_progress", "get_task",
+                    "get_transcription", "get_dialogue_edit",
                 }:
                     started = time.monotonic()
                     deadline = started + float(os.getenv("STUDIO_MEDIA_WAIT_SECONDS", "600"))
@@ -700,8 +737,16 @@ class GatewayExecutor:
                     )
             except Exception as exc:
                 payload = getattr(exc, "payload", {})
-                output = {**payload, "status": "failed", "error": str(exc)[:400],
-                          "transport_error": not bool(payload.get("render_id") and payload.get("status") == "failed")}
+                if name == "Sync___create_dialogue_edit" and (not payload or payload.get("status") == "submission_unknown"):
+                    output = {**{key: value for key, value in payload.items() if key != "error"},
+                              "status": "submission_unknown", "action_id": arguments["action_id"],
+                              "next_action": "check_status_or_ask_user",
+                              "note": "Gateway response was lost; preview may be billed. Never automatically retry creation."}
+                elif name in {"Sync___create_dialogue_edit", "Sync___create_dialogue_video"} and payload.get("status") == "requires_audio_fallback":
+                    output = {key: value for key, value in payload.items() if key != "error"}
+                else:
+                    output = {**payload, "status": "failed", "error": str(exc)[:400],
+                              "transport_error": not bool(payload.get("render_id") and payload.get("status") == "failed")}
         saving_media = bool(studio.asset_registrar and _unwrap_tool_output(output).get("status") == "succeeded")
         if saving_media:
             _progress(studio, event_id=f"save-{call_id}", event_type="MEDIA_WAIT", title="Saving media",

@@ -15,7 +15,7 @@
         },
         "source_duration_seconds": {
           "type": "number",
-          "description": "Measured positive finite duration of the source video in seconds. Used to validate chunking and quote cost."
+          "description": "Measured whole-source duration, greater than zero and at most 600 seconds. Windowed sources are unsupported."
         },
         "audio_duration_seconds": {
           "type": "number",
@@ -27,11 +27,11 @@
         },
         "subjects": {
           "type": "string",
-          "description": "Nonblank declaration identifying everyone who appears and whose voice is used. An explicit synthetic-subject and synthetic-voice declaration is allowed."
+          "description": "Identify the single speaker whose source voice is cloned and whose likeness appears."
         },
         "consent_confirmed": {
           "type": "boolean",
-          "description": "Must be the boolean true, confirming permission to use every depicted likeness and supplied voice. Required even for synthetic declarations."
+          "description": "Must be boolean true. Confirms explicit permission to clone the source voice and edit the depicted likeness."
         },
         "sync_mode": {
           "type": "string",
@@ -85,6 +85,237 @@
       },
       "required": [
         "job_id"
+      ]
+    }
+  },
+  {
+    "name": "transcribe_video",
+    "description": "Transcribe a consented whole video already on assets.sync.so, at most 600 seconds and one speaker. Uses direct Sync even if regular lip-sync uses fal. No generation credit charge. Preserve transcription_id and poll get_transcription; dry-run produces no transcript.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "source_video_url": {
+          "type": "string",
+          "description": "Exact whole-source HTTPS URL on assets.sync.so. Upload the source through Sync's asset upload flow before using this tool."
+        },
+        "source_duration_seconds": {
+          "type": "number",
+          "description": "Measured whole-source duration, greater than zero and at most 600 seconds. Windowed sources are unsupported."
+        },
+        "speaker_count": {
+          "type": "integer",
+          "description": "Must be integer 1. Multi-speaker dialogue edits are unsupported."
+        },
+        "subjects": {
+          "type": "string",
+          "description": "Identify the single speaker whose source voice is cloned and whose likeness appears."
+        },
+        "consent_confirmed": {
+          "type": "boolean",
+          "description": "Must be boolean true. Confirms explicit permission to clone the source voice and edit the depicted likeness."
+        }
+      },
+      "required": [
+        "source_video_url",
+        "source_duration_seconds",
+        "speaker_count",
+        "subjects",
+        "consent_confirmed"
+      ]
+    }
+  },
+  {
+    "name": "get_transcription",
+    "description": "GET an existing transcription for unchanged transcript, original word IDs and speaker metadata. Never creates another job. Dry-run produces no transcript; dry IDs cannot be used live.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "transcription_id": {
+          "type": "string",
+          "description": "Exact Sync transcription ID from transcribe_video. The provider fetches and forwards the original transcript unchanged."
+        }
+      },
+      "required": [
+        "transcription_id"
+      ]
+    }
+  },
+  {
+    "name": "create_dialogue_edit",
+    "description": "Create a paid preview of 1-100 word changes/removals in the consented source-cloned voice using the unchanged fetched transcript. Requires cost approval even autonomously; preview price TODO/unknown unless operator-confirmed. Save action_id before submission. NEVER retry a lost create response: submission_unknown requires check status or ask user. Preserve dialogue_edit_id and poll get_dialogue_edit.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "source_video_url": {
+          "type": "string",
+          "description": "Exact whole-source HTTPS URL on assets.sync.so. Upload the source through Sync's asset upload flow before using this tool."
+        },
+        "transcription_id": {
+          "type": "string",
+          "description": "Exact Sync transcription ID from transcribe_video. The provider fetches and forwards the original transcript unchanged."
+        },
+        "edits": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "description": "change or remove"
+              },
+              "wordId": {
+                "type": "string",
+                "description": "Required for change."
+              },
+              "replacement": {
+                "type": "string",
+                "description": "Nonblank replacement for change."
+              },
+              "pronunciation": {
+                "type": "string",
+                "description": "Optional pronunciation hint for change."
+              },
+              "wordIds": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Required contiguous word IDs for remove."
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          "description": "1 to 100 change or remove operations using original word IDs. Removals must be contiguous and operations must not overlap."
+        },
+        "source_duration_seconds": {
+          "type": "number",
+          "description": "Measured whole-source duration, greater than zero and at most 600 seconds. Windowed sources are unsupported."
+        },
+        "speaker_count": {
+          "type": "integer",
+          "description": "Must be integer 1. Multi-speaker dialogue edits are unsupported."
+        },
+        "subjects": {
+          "type": "string",
+          "description": "Identify the single speaker whose source voice is cloned and whose likeness appears."
+        },
+        "consent_confirmed": {
+          "type": "boolean",
+          "description": "Must be boolean true. Confirms explicit permission to clone the source voice and edit the depicted likeness."
+        },
+        "action_id": {
+          "type": "string",
+          "description": "Stable unique identifier for this approved preview action. Reuse it after any interruption. A lost response never triggers another preview submission."
+        },
+        "voice_id": {
+          "type": "string",
+          "description": "Optional source-cloned voice ID from an earlier dialogue job for this exact source, with rerun_of_job_id. Foreign voice hints are ignored."
+        },
+        "rerun_of_job_id": {
+          "type": "string",
+          "description": "Optional prior dialogue job ID used to verify same-source voice reuse."
+        }
+      },
+      "required": [
+        "source_video_url",
+        "transcription_id",
+        "edits",
+        "source_duration_seconds",
+        "speaker_count",
+        "subjects",
+        "consent_confirmed",
+        "action_id"
+      ]
+    }
+  },
+  {
+    "name": "get_dialogue_edit",
+    "description": "GET an existing dialogue preview. Open/listen to previewAudioUrl; COMPLETED_PARTIAL remains partial and requires explicit acceptance. Preserve previewDurationMs, source/rollout metadata and voiceId. GET may retry; never retry preview creation to check status.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "dialogue_edit_id": {
+          "type": "string",
+          "description": "Exact Sync dialogue edit ID from create_dialogue_edit."
+        }
+      },
+      "required": [
+        "dialogue_edit_id"
+      ]
+    }
+  },
+  {
+    "name": "create_dialogue_video",
+    "description": "Generate sync-3 with dialogueEdit and the same original whole video, at most 600 seconds and one speaker. Requires voice/likeness consent, user-reviewed preview, measured matching preview duration/fps and a saved Idempotency-Key. Paid video always requires cost approval even autonomously. Retime-required falls back to regular lipsync with independent approved audio and separate cost approval. Poll existing get_video_task with download=true; preview and queued jobs cannot finish a video.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "source_video_url": {
+          "type": "string",
+          "description": "Exact whole-source HTTPS URL on assets.sync.so. Upload the source through Sync's asset upload flow before using this tool."
+        },
+        "dialogue_edit_id": {
+          "type": "string",
+          "description": "Exact Sync dialogue edit ID from create_dialogue_edit."
+        },
+        "source_duration_seconds": {
+          "type": "number",
+          "description": "Measured whole-source duration, greater than zero and at most 600 seconds. Windowed sources are unsupported."
+        },
+        "source_fps": {
+          "type": "number",
+          "description": "Measured positive finite video frame rate. Direct legacy-base pricing scales by frame count; fal pricing does not."
+        },
+        "speaker_count": {
+          "type": "integer",
+          "description": "Must be integer 1. Multi-speaker dialogue edits are unsupported."
+        },
+        "subjects": {
+          "type": "string",
+          "description": "Identify the single speaker whose source voice is cloned and whose likeness appears."
+        },
+        "consent_confirmed": {
+          "type": "boolean",
+          "description": "Must be boolean true. Confirms explicit permission to clone the source voice and edit the depicted likeness."
+        },
+        "preview_reviewed": {
+          "type": "boolean",
+          "description": "Must be boolean true after the user listens to the completed preview audio."
+        },
+        "preview_duration_seconds": {
+          "type": "number",
+          "description": "Measured previewDurationMs divided by 1000, greater than zero and at most 600. The paid output estimate uses this duration."
+        },
+        "idempotency_key": {
+          "type": "string",
+          "description": "Stable key for this approved video generation, 1 to 128 ASCII letters, digits, dot, underscore, tilde or hyphen."
+        },
+        "accept_partial": {
+          "type": "boolean",
+          "description": "True only after the user explicitly accepts COMPLETED_PARTIAL preview results and their reported failures."
+        },
+        "source_width": {
+          "type": "integer",
+          "description": "Optional measured input width in positive pixels, paired with source_height. No provider resolution setting is sent; single jobs inherit input dimensions and the current chunk concatenator produces 720p."
+        },
+        "source_height": {
+          "type": "integer",
+          "description": "Optional measured input height in positive pixels, paired with source_width. Required with width to assess an explicitly requested output resolution."
+        }
+      },
+      "required": [
+        "source_video_url",
+        "dialogue_edit_id",
+        "source_duration_seconds",
+        "source_fps",
+        "speaker_count",
+        "subjects",
+        "consent_confirmed",
+        "preview_reviewed",
+        "preview_duration_seconds",
+        "idempotency_key"
       ]
     }
   }

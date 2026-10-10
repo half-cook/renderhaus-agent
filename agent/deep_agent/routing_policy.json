@@ -26,7 +26,10 @@
     "ffmpeg_tool",
     "deliver_render",
     "qc_deliverable",
-    "get_voice_status"
+    "get_voice_status",
+    "transcribe_video",
+    "get_transcription",
+    "get_dialogue_edit"
   ],
   "providers": {
     "kling": {
@@ -688,7 +691,9 @@
       "default_model": "sync-3",
       "model_env": "SYNC_MODEL",
       "default_models": {
-        "lipsync_video": "sync-3"
+        "lipsync_video": "sync-3",
+        "create_dialogue_video": "sync-3",
+        "create_dialogue_edit": "sync-3"
       },
       "model_policies": {
         "sync-3": {
@@ -701,7 +706,10 @@
           "consent_requirements": "Required subjects and consent_confirmed=true for every real face and voice.",
           "consent_source": "https://sync.so/terms",
           "training_reason": "No clear output-training grant; fal competing-model restriction. Sync upload-use grant includes service improvement.",
-          "read_date": "2026-10-09"
+          "read_date": "2026-10-09",
+          "dialogue_license_source": "https://sync.so/terms",
+          "dialogue_read_date": "2026-10-10",
+          "dialogue_commercial_status": "Direct Sync only; express written authorization required for competitor/customer integration restrictions"
         }
       },
       "explicit_only": false
@@ -1487,7 +1495,10 @@
       "training_reason": "No unambiguous public output-training grant verified.",
       "source": "https://fal.ai/models/fal-ai/sync-lipsync/v3/api",
       "price_source": "https://fal.ai/models/fal-ai/sync-lipsync/v3",
-      "dry_run": true
+      "dry_run": true,
+      "gateway_variants": [
+        "Sync___create_dialogue_video"
+      ]
     },
     "heygen_avatar_v": {
       "gateway_tool": "HeyGen___create_avatar_video",
@@ -2008,6 +2019,12 @@
   },
   "rules": [
     {
+      "skill": "dialogue-edit",
+      "pattern": "\\bdialogue[ -]edit(?:ing)?\\b|\\b(?:change|replace|swap|remove|cut|correct|fix)\\b.*\\b(?:spoken (?:word|phrase)|flubbed word)\\b|\\b(?:word[ -]level|re[ -]?voic).*\\b(?:edit|fix|correction)\\b",
+      "abstract_tool": "sync3_lipsync",
+      "capability": "lipsync"
+    },
+    {
       "pattern": "\\bplan[ -]to[ -]video\\b|\\bplan[ -]explainer\\b|\\bplan[ -]review[ -](?:video|reel)\\b|\\b(?:review|turn|convert|render)\\b[^!?;\\n]{0,140}\\bplan(?:\\.md|[ -]mode)?\\b[^!?;\\n]{0,120}\\b(?:video|review[ -]reel|narrated[ -]walkthrough)\\b",
       "skill": "plan-to-video",
       "abstract_tool": "remotion_render",
@@ -2089,7 +2106,7 @@
       "abstract_tool": "conversational_hyperframes_overlay"
     },
     {
-      "pattern": "\\bknowledge[ -]explainer\\b|\u77e5\u8bc6\u5927\u8d4f|\\bexplainer\\b|\\b(?:knowledge|science|graphic|cognitive|vibe)(?:[ -]\\w+){0,3}[ -](?:short|video)\\b",
+      "pattern": "\\bknowledge[ -]explainer\\b|知识大赏|\\bexplainer\\b|\\b(?:knowledge|science|graphic|cognitive|vibe)(?:[ -]\\w+){0,3}[ -](?:short|video)\\b",
       "skill": "knowledge-explainer",
       "abstract_tool": "remotion_render",
       "capability": "motion_graphics"
@@ -4619,6 +4636,55 @@
       "native_audio_default": true
     },
     {
+      "provider": "sync",
+      "policy_ref": "sync",
+      "model": "sync-3",
+      "label": "sync-3 word-level dialogue edit",
+      "tools": {
+        "lipsync": "Sync___create_dialogue_video"
+      },
+      "jobs": {
+        "native_audio": true,
+        "max_resolution": 2160
+      },
+      "controls": {
+        "lipsync": [
+          "source_video_url",
+          "dialogue_edit_id",
+          "source_duration_seconds",
+          "preview_duration_seconds",
+          "source_fps",
+          "speaker_count",
+          "subjects",
+          "consent_confirmed",
+          "preview_reviewed",
+          "idempotency_key",
+          "accept_partial",
+          "source_width",
+          "source_height"
+        ]
+      },
+      "durations": {
+        "lipsync": [
+          0.001,
+          600
+        ]
+      },
+      "resolutions": [
+        480,
+        720,
+        1080,
+        2160
+      ],
+      "price": {
+        "source": "https://sync.so/pricing",
+        "checked_at": "2026-10-10",
+        "preview": "TODO unknown; optional operator-confirmed quote"
+      },
+      "native_audio_field": null,
+      "native_audio_default": true
+    },
+    {
       "provider": "heygen",
       "policy_ref": "heygen",
       "model": "avatar_v",
@@ -5509,7 +5575,9 @@
     "Runway___act_two",
     "Fal___kling_motion_control",
     "Fal___mirelo_v2a",
-    "Remotion___render_ad_variants"
+    "Remotion___render_ad_variants",
+    "Sync___create_dialogue_video",
+    "Sync___create_dialogue_edit"
   ],
   "explicit_routes": {
     "kling": {
@@ -6064,7 +6132,10 @@
       "consent_requirements": "Required subjects and consent_confirmed=true for every real face and voice.",
       "consent_source": "https://sync.so/terms",
       "training_reason": "No clear output-training grant; fal competing-model restriction. Sync upload-use grant includes service improvement.",
-      "read_date": "2026-10-09"
+      "read_date": "2026-10-09",
+      "dialogue_license_source": "https://sync.so/terms",
+      "dialogue_read_date": "2026-10-10",
+      "dialogue_commercial_status": "Direct Sync dialogue edits require express written competitor/customer integration authorization"
     },
     "heygen_avatar_v": {
       "license": "service-terms",

@@ -87,9 +87,9 @@ def check_routing_inventory() -> None:
     from providers.registry import load_committed_schemas
 
     assert len(PROVIDERS) == 16
-    assert sum(len(load_committed_schemas(spec)) for spec in PROVIDERS) == 120
+    assert sum(len(load_committed_schemas(spec)) for spec in PROVIDERS) == 125
     paths = list(SKILLS_ROOT.glob("*/SKILL.md"))
-    assert len(paths) == 31
+    assert len(paths) == 32
     assert "ladder" not in POLICY and "premium_targets" not in POLICY
     assert "project_policy" not in POLICY and "flux2_klein4b_t2i" not in TOOL_MAP
     for capability, choice in POLICY["capability_map"].items():
@@ -108,7 +108,7 @@ def check_routing_inventory() -> None:
         assert set(metadata["include_tools"].split()) <= DISPATCH_TARGETS.keys(), path
         assert all(TOOL_MAP[alias]["status"] != "retired" for alias in metadata["routing_tools"].split()), path
     cases = json.loads((ROOT / "tests/fixtures/skill_routing.json").read_text())
-    assert len(cases) == 240 and sum(not case["skip_reason"] for case in cases) == 235
+    assert len(cases) == 243 and sum(not case["skip_reason"] for case in cases) == 238
     from agent.deep_agent.continuity_qc_vlm import EVAL_PATH, default_vlm_enabled
 
     if POLICY["continuity_qc"]["vlm_eval_gate"]["result_sha256"]:
@@ -116,7 +116,7 @@ def check_routing_inventory() -> None:
 
         subprocess.run(["git", "ls-files", "--error-unmatch", str(EVAL_PATH.relative_to(ROOT))], check=True, capture_output=True)
         assert default_vlm_enabled(), "Committed VLM evidence does not qualify for promotion."
-    print("ok routing inventory (16 providers, 120 Gateway tools, 31 skills, 235 active routing rows)")
+    print("ok routing inventory (16 providers, 125 Gateway tools, 32 skills, 238 active routing rows)")
 
 
 def _assert_gateway_shape(schema: object) -> None:
@@ -147,6 +147,8 @@ def check_dry_run_dispatch() -> None:
         heygen_voice_id = None
         topaz_job_id = None
         gemini_job_id = None
+        sync_transcription_id = None
+        sync_dialogue_id = None
         for schema in load_committed_schemas(spec):
             name = schema["name"]
             arguments = dummy_arguments(schema)
@@ -219,6 +221,25 @@ def check_dry_run_dispatch() -> None:
                                  consent_confirmed=True)
             if spec.id == "sync" and name == "get_video_task":
                 arguments["job_id"] = "sync:dry:00000000000000000000000000000000"
+            if spec.id == "sync" and name in {"transcribe_video", "create_dialogue_edit", "create_dialogue_video"}:
+                arguments = {"source_video_url": "https://assets.sync.so/ci-source.mp4",
+                             "source_duration_seconds": 5.0, "speaker_count": 1,
+                             "subjects": "Authorized synthetic test speaker and source voice", "consent_confirmed": True}
+                if name == "create_dialogue_edit":
+                    assert sync_transcription_id, "Preview must reuse the dry transcription handle"
+                    arguments.update(transcription_id=sync_transcription_id, action_id="ci-dialogue-preview",
+                                     edits=[{"kind": "change", "wordId": "dry-word-1", "replacement": "Offline"}])
+                if name == "create_dialogue_video":
+                    assert sync_dialogue_id, "Video must reuse the dry preview handle"
+                    arguments.update(dialogue_edit_id=sync_dialogue_id, source_fps=25.0,
+                                     preview_duration_seconds=5.0, preview_reviewed=True,
+                                     idempotency_key="ci-dialogue-video")
+            if spec.id == "sync" and name == "get_transcription":
+                assert sync_transcription_id
+                arguments = {"transcription_id": sync_transcription_id}
+            if spec.id == "sync" and name == "get_dialogue_edit":
+                assert sync_dialogue_id
+                arguments = {"dialogue_edit_id": sync_dialogue_id}
             if spec.id == "seedance" and name in {"text_to_video", "image_to_video", "reference_to_video", "edit_video", "extend_video"}:
                 arguments["model"] = "dreamina-seedance-2-5-260628"
             if spec.id == "seedance" and name in {"edit_video", "extend_video"}:
@@ -272,6 +293,10 @@ def check_dry_run_dispatch() -> None:
                     "segments": [{"source_id": "source", "first_word": 0, "last_word": 0}],
                 }
             result = dispatch(spec.id, name, arguments)
+            if spec.id == "sync" and name == "transcribe_video":
+                sync_transcription_id = result["transcription_id"]
+            if spec.id == "sync" and name == "create_dialogue_edit":
+                sync_dialogue_id = result["dialogue_edit_id"]
             if spec.id == "remotion" and name == "render_ad_variants":
                 assert result.get("status") == "blocked", "CI matrix must refuse missing local job media"
                 assert "local" in str(result).lower() or "job" in str(result).lower(), result

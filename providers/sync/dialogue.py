@@ -118,12 +118,15 @@ def _saved_summary(record: ActionRecord) -> dict[str, Any]:
         result["job_id"] = record.generation_job_id
     if result["status"] == "submission_unknown":
         result["note"] = UNKNOWN_NOTE
+        result["next_action"] = "check_status_or_ask_user"
     if record.error_code:
         result["errorCode"] = record.error_code
     if record.section:
         result["dialogueEditSection"] = record.section
     if result["status"] == "requires_audio_fallback":
         result.update(next_tool="Sync___lipsync_video", note=FALLBACK_NOTE)
+    if result["status"] in {"refused", "failed", "requires_audio_fallback"}:
+        result["error"] = "Sync refused or failed this saved action. No new submission was made."
     if record.warning:
         result["warning"] = record.warning
     if record.partial_completion:
@@ -216,6 +219,9 @@ def _view(payload: dict[str, Any], id_field: str, expected_id: str | None = None
         result["error"] = "Sync reported a dialogue processing error; review the provider job before any new paid action."
     if status == "completed_partial":
         result.update(partial_completion=True, warning="Dialogue preview completed partially. Review the preview and reported failed edits before accepting it.")
+    if id_field == "dialogue_edit_id" and status in {"succeeded", "completed_partial"} and payload.get("previewAudioUrl"):
+        contracts.validate_media_reference(payload["previewAudioUrl"], allow_asset=False)
+        result["audio_url"] = payload["previewAudioUrl"]
     return result
 
 
@@ -297,17 +303,20 @@ def create_dialogue_edit(
             raise ValueError("The upstream transcription contains multiple speakers.")
         raw_transcript = transcription.get("transcript")
         dc.validate_edits(raw_transcript, edits, request.source_duration_seconds)
-        body = {"sourceVideoUrl": request.source_video_url, "sourceTranscript": raw_transcript, "edits": edits}
+        body = {"sourceVideoUrl": request.source_video_url, "transcript": raw_transcript, "edits": edits}
         warning = None
-        if request.voice_id:
-            if request.rerun_of_job_id:
-                earlier = get_dialogue_edit(request.rerun_of_job_id)
-                if earlier.get("sourceVideoUrl") == request.source_video_url and earlier.get("voiceId") == request.voice_id:
-                    body.update(voiceId=request.voice_id, rerunOfJobId=request.rerun_of_job_id)
-                else:
+        if request.rerun_of_job_id:
+            earlier = get_dialogue_edit(request.rerun_of_job_id)
+            if earlier.get("status") in {"succeeded", "completed_partial"} and earlier.get("sourceVideoUrl") == request.source_video_url:
+                body["rerunOfJobId"] = request.rerun_of_job_id
+                if request.voice_id and earlier.get("voiceId") == request.voice_id:
+                    body["voiceId"] = request.voice_id
+                elif request.voice_id:
                     warning = "Foreign voice hint ignored. The preview uses the cloned voice from this source."
             else:
-                warning = "Unverified voice hint ignored. The preview uses the cloned voice from this source."
+                warning = "Unfinished or foreign rerun/voice hint ignored. The preview uses the cloned voice from this source."
+        elif request.voice_id:
+            warning = "Unverified voice hint ignored. The preview uses the cloned voice from this source."
         record = ActionRecord(job_id=saved_id, mode="dialogue_edit_preview", fingerprint=fingerprint,
                               warning=warning, estimated_cost_usd=quote / 100)
         api._write(record, create_only=True)
@@ -356,12 +365,15 @@ def create_dialogue_video(
             raise ValueError("The dialogue preview completed partially. Obtain explicit partial acceptance before generation.")
         if preview.get("status") not in {"succeeded", "completed_partial"}:
             raise ValueError("The dialogue preview must be completed and reviewed before video generation.")
+        if not preview.get("audio_url"):
+            raise ValueError("A completed dialogue preview must include playable audio before video generation.")
         dc.validate_whole_source(preview, request)
         dc.validate_edits(preview.get("sourceTranscript"), preview.get("edits"), request.source_duration_seconds)
         if "speakerCount" in preview and (type(preview["speakerCount"]) is not int or preview["speakerCount"] != 1):
             raise ValueError("The upstream dialogue preview contains multiple speakers.")
         if preview.get("segmentLipsyncEnabled") is not True or preview.get("sectionExpansionEnabled") is not True:
-            raise ValueError("Dialogue video requires segment lipsync and section expansion rollout. Use consented regular lip-sync with a new cost approval.")
+            return {"status": "requires_audio_fallback", "next_tool": "Sync___lipsync_video", "note": FALLBACK_NOTE,
+                    "errorCode": "dialogue_edit_retime_required", "error": "Retiming rollout is unavailable; no paid generation was submitted."}
         duration_ms = preview.get("previewDurationMs")
         if type(duration_ms) is not int or duration_ms <= 0 or abs(duration_ms / 1000 - request.preview_duration_seconds) > 1e-6:
             raise ValueError("preview_duration_seconds must match the completed previewDurationMs before quoting generation.")
@@ -373,6 +385,10 @@ def create_dialogue_video(
             "sync_mode": "remap", "source_width": request.source_width, "source_height": request.source_height,
         })
         manifest = api._manifest(f"sync:direct:{uuid.uuid4().hex}", sync_request, "direct")
+        from math import ceil
+        from server.billing_rates import sync_dialogue_price_cents
+
+        manifest.estimated_cost_usd = ceil(sync_dialogue_price_cents("create_dialogue_video", request.model_dump())) / 100
         manifest.mode = "dialogue_edit_video"
         manifest.dialogue_edit_id = request.dialogue_edit_id
         manifest.idempotency_key = request.idempotency_key
