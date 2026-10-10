@@ -737,8 +737,11 @@ class StudioAgentTests(unittest.IsolatedAsyncioTestCase):
                 patch("server.studio.run_studio_agent", new=AsyncMock(return_value=outcome)),
             ):
                 queued = await studio_agent(AgentBody(prompt="Make the result"), None)
-                await asyncio.sleep(0.05)
-                payload = await studio_agent_job(queued["job_id"], None)
+                for _ in range(100):
+                    await asyncio.sleep(0.05)
+                    payload = await studio_agent_job(queued["job_id"], None)
+                    if payload["status"] != "running":
+                        break
                 saved_items = test_repository.get_conversation_items(
                     "user:local", queued["conversation_id"]
                 )
@@ -816,16 +819,22 @@ class StudioAgentTests(unittest.IsolatedAsyncioTestCase):
                     AgentBody(prompt="Make an image", autonomous=False),
                     None,
                 )
-                await asyncio.sleep(0.05)
-                paused = await studio_agent_job(queued["job_id"], None)
+                for _ in range(100):
+                    await asyncio.sleep(0.05)
+                    paused = await studio_agent_job(queued["job_id"], None)
+                    if paused["status"] != "running":
+                        break
                 await decide_studio_agent_tool(
                     queued["job_id"],
                     "call-approve",
                     AgentApprovalBody(decision="approve"),
                     None,
                 )
-                await asyncio.sleep(0.05)
-                resumed = await studio_agent_job(queued["job_id"], None)
+                for _ in range(100):
+                    await asyncio.sleep(0.05)
+                    resumed = await studio_agent_job(queued["job_id"], None)
+                    if resumed["status"] != "running":
+                        break
 
         self.assertEqual(paused["status"], "awaiting_approval")
         self.assertEqual(paused["approvals"][0]["arguments"]["prompt"], "A quiet portrait")

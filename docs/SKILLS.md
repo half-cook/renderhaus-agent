@@ -669,7 +669,7 @@ is not implemented (`feat/remotion-ocr-verification`). The original four depende
 remain. Routing checks establish selection and refusal; provider tests establish file checks.
 
 Current inventory is 16 providers, 128 Gateway tools, 34 packaged skills and 251 fixture
-rows, with 243 active and 5 skipped. See [Remotion editing](REMOTION_EDITING.md) for
+rows, with 246 active and 5 skipped. See [Remotion editing](REMOTION_EDITING.md) for
 licensing, the real local pipeline and incomplete browser/deployed validation.
 
 ## Static aspect variants

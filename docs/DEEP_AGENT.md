@@ -611,7 +611,7 @@ backend until the same job directory exists on its worker. See
 [Remotion editing](REMOTION_EDITING.md) for the supported backend table and demo commands.
 
 Inventory is 16 providers, 128 Gateway tools and 34 skills. The fixture has 246 active and
-5 deferred cases among 248 rows. Browser validation through Comet remains blocked here.
+5 deferred cases among 251 rows. Browser validation through Comet remains blocked here.
 
 ## Per-shot static reframing
 
