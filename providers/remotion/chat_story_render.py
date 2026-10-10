@@ -97,12 +97,16 @@ def _text(image: Image.Image, text: str, xy: tuple[float, float], *, size: int,
         runs.reverse()
     widths = [size * 1.25 if emoji else draw.textlength(run, font=font, direction='rtl' if rtl else 'ltr')
               for run, emoji in runs]
+    if max_width is not None and sum(widths) > max_width + 1:
+        raise ValueError('Chat-story text exceeds its measured bubble width. Supply approved replacement text; the original will not be clipped.')
     x, y = xy
     if rtl and max_width is not None:
         x += max(0, max_width - sum(widths))
     for (run, emoji), run_width in zip(runs, widths, strict=True):
         if emoji:
             emoji_font = _emoji_font(str(EMOJI_FONT))
+            if draw.textlength(run, font=emoji_font) > 150:
+                raise ValueError('Unsupported joined emoji cannot fit the installed glyph renderer. Supply an approved supported emoji; the original will not be cropped.')
             glyph = Image.new('RGBA', (150, 140))
             ImageDraw.Draw(glyph).text((0, 0), run, font=emoji_font, embedded_color=True)
             bounds = glyph.getbbox()

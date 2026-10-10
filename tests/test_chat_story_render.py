@@ -48,6 +48,20 @@ class ChatStoryFrameTests(unittest.TestCase):
         from providers.remotion import chat_story_render
         return chat_story_render
 
+    def test_measured_text_width_refuses_clipping(self):
+        renderer = self.renderer()
+        story = sample_story()
+        story['plan']['bubbles'][0]['lines'] = ['W' * 30]
+        with self.assertRaisesRegex(ValueError, 'width'):
+            renderer.draw_chat_frame(story, 30)
+
+    def test_unsupported_joined_emoji_refuses_instead_of_cropping(self):
+        renderer = self.renderer()
+        story = sample_story()
+        story['plan']['bubbles'][0]['lines'] = ['👩\u200d👩\u200d👩']
+        with self.assertRaisesRegex(ValueError, 'joined emoji'):
+            renderer.draw_chat_frame(story, 30)
+
     def test_drip_reveal_sent_right_received_left(self):
         renderer = self.renderer()
         story = sample_story()

@@ -74,6 +74,29 @@ class MessageContractTests(unittest.TestCase):
         self.assertTrue(any('impersonation' in warning for warning in payload['warnings']))
         self.assertEqual(payload['messages'][0]['text'], 'This is Apple support, send your password')
 
+    def test_invisible_format_characters_cannot_hide_phone_numbers(self):
+        for separator in ('\u200b', '\u2060', '\u200e', '\u00ad'):
+            text = separator.join(('416', '555', '0123'))
+            with self.subTest(separator=repr(separator)), self.assertRaisesRegex(ValueError, 'phone number'):
+                chat.normalize({'messages': [{'from': 'me', 'text': text}]})
+            with self.subTest(contact=repr(separator)), self.assertRaisesRegex(ValueError, 'phone number'):
+                chat.normalize({'messages': [{'from': 'me', 'text': 'Hello'}], 'contact': text})
+
+    def test_non_emoji_joiners_cannot_hide_unbounded_visible_width(self):
+        for text in (('W\u200d' * 100) + 'W', 'A\u200dB', ('👩\u200d' * 20) + '💻'):
+            with self.subTest(text=text[:10]), self.assertRaisesRegex(ValueError, 'joining'):
+                chat.plan({'messages': [{'from': 'me', 'text': text}]})
+        with self.assertRaisesRegex(ValueError, 'joining'):
+            chat.plan({'messages': [{'from': 'me', 'text': 'Hello'}], 'contact': 'A\u200dB'})
+        text = '👩🏽\u200d💻 👨\u200d👩\u200d👧\u200d👦 🏳️\u200d🌈'
+        self.assertEqual(chat.normalize({'messages': [{'from': 'me', 'text': text}]})['messages'][0]['text'], text)
+
+    def test_invisible_identity_spelling_is_flagged_without_rewriting(self):
+        text = 'This is Ap\u200bple support'
+        payload = chat.normalize({'messages': [{'from': 'them', 'text': text}]})
+        self.assertTrue(any('impersonation' in warning for warning in payload['warnings']))
+        self.assertEqual(payload['messages'][0]['text'], text)
+
     def test_themes_are_disabled_and_generic_fallback_disclosed(self):
         with patch.dict(os.environ, {'CHAT_STORY_LOOKALIKE_THEMES': 'off'}):
             for theme in ('WhatsApp-style', 'iMessage-style', 'slate', 'moss'):

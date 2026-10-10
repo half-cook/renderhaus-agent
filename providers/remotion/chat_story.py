@@ -40,6 +40,11 @@ def _number(value: Any, field: str, low: float, high: float, *, csv_value: bool 
     return value
 
 
+def _safety_view(value: str) -> str:
+    """Ignore invisible format characters for safety checks, preserving supplied copy."""
+    return ''.join(char for char in value if unicodedata.category(char) != 'Cf')
+
+
 def _text(value: Any, field: str, maximum: int) -> str:
     if not isinstance(value, str) or not value.strip() or len(value) > maximum:
         raise ValueError(f'{field} must contain 1-{maximum} characters of nonempty verbatim text.')
@@ -47,8 +52,15 @@ def _text(value: Any, field: str, maximum: int) -> str:
                                   (unicodedata.category(c) == 'Cc' and c not in '\n\t') or
                                   c in '\u202a\u202b\u202c\u202d\u202e\u2066\u2067\u2068\u2069' for c in value):
         raise ValueError(f'{field} contains markup or unsafe control characters. Supply plain text.')
-    if any(sum(c.isdecimal() for c in match.group()) >= 7 for match in _PHONE.finditer(value)):
+    if any(sum(c.isdecimal() for c in match.group()) >= 7 for match in _PHONE.finditer(_safety_view(value))):
         raise ValueError(f'{field} contains a real-looking phone number. Use a fictional label instead.')
+    for cluster in graphemes(value):
+        if '\u200d' not in cluster:
+            continue
+        parts = cluster.split('\u200d')
+        if len(parts) > 4 or any(not part or not (0x1F000 <= ord(part[0]) <= 0x1FAFF or
+                                                0x2600 <= ord(part[0]) <= 0x27FF) for part in parts):
+            raise ValueError(f'{field} contains an unsupported joining sequence. Supply approved plain text or a supported emoji.')
     return value
 
 
@@ -123,7 +135,7 @@ def normalize(payload: dict) -> dict:
             raise ValueError('reaction must be empty or an allow-listed emoji.')
         if sender == 'me' and typing != 0 or sender == 'them' and status:
             raise ValueError('Typing is received-only; receipts are sent-only.')
-        if _IDENTITIES.search(text) and _IMPERSONATION.search(text):
+        if _IDENTITIES.search(_safety_view(text)) and _IMPERSONATION.search(_safety_view(text)):
             warnings.append(f'Possible impersonation in message {index}; review fiction before rendering.')
         messages.append({'from': sender, 'text': text, 'typingMs': typing,
                          'delayMs': delay, 'status': status, 'reaction': reaction})
@@ -136,7 +148,7 @@ def normalize(payload: dict) -> dict:
     avatar = contact.get('avatar', 'initials')
     if not isinstance(avatar, str) or avatar not in {'initials', 'placeholder'}:
         raise ValueError('Avatars must be generated initials or placeholder; photos are refused.')
-    if _IDENTITIES.search(name):
+    if _IDENTITIES.search(_safety_view(name)):
         warnings.append('Possible contact impersonation; use an invented fictional contact.')
     theme = payload.get('theme', 'generic')
     if not isinstance(theme, str):
