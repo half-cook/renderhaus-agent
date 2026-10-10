@@ -650,9 +650,14 @@ def _podcast_route(prompt: str, *, arguments: dict | None,
     required = {"template_name": "podcast-audiogram", "aspects": aspects or ["9:16"],
                 "reuse_transcript": supplied, "first_render_review": True,
                 "preserve_source_voice": True}
+    constraints = intent_constraints(prompt, arguments=arguments)
+    if constraints["predicates"]["explicit_hyperframes"]:
+        reason = "The explicitly requested renderer cannot render named audiogram templates; they currently require Remotion. No substitute was selected."
+        return Route(skill="podcast-audiogram", status="blocked", reason=reason, disclosure=reason)
     render = replace(select_provider("motion_graphics", arguments=arguments, region=region,
-                                    available_tools=available_tools), skill="podcast-audiogram",
-                     required=required, expected_output="assembled MP4")
+                                    available_tools=available_tools,
+                                    **capability_constraints(constraints, "motion_graphics")),
+                     skill="podcast-audiogram", required=required, expected_output="assembled MP4")
     if render.status != "ready" or supplied:
         return render
     alias = "elevenlabs_stt"

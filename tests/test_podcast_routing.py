@@ -146,3 +146,13 @@ class PodcastRoutingTests(unittest.TestCase):
         with patch.dict(os.environ, {"ELEVENLABS_TOOL_COST_CENTS_JSON": '{"speech_to_text_convert": 10}', "STRIPE_SECRET_KEY": ""}):
             quote = estimate_cost("ElevenLabs___speech_to_text_convert", {"model_id": "scribe_v2"})
         self.assertIsNotNone(quote.total_cents)
+
+
+    def test_explicit_renderer_does_not_silently_select_remotion_template(self):
+        with patch.dict(os.environ, {"HYPERFRAMES_ENABLED": "true"}):
+            route = route_intent("Use HyperFrames to create this waveform video with captions")
+        self.assertEqual(route.skill, "podcast-audiogram")
+        self.assertEqual(route.status, "blocked")
+        self.assertIsNone(route.tool)
+        self.assertIn("explicit", route.reason.lower())
+        self.assertIn("Remotion", route.reason)
