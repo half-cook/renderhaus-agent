@@ -207,8 +207,8 @@ Topaz submissions always pause with cost, including autonomous runs. Dry-run pre
 and queued jobs never satisfy final delivery. See [Topaz](TOPAZ.md) for pricing, licence
 sources, unknown-price blockers and the blocked Comet check.
 
-`tests/fixtures/skill_routing.json` contains 220 retained routing rows.
-There are 184 active cases and 36 explicit skips. Five caption/collage cases cover the
+`tests/fixtures/skill_routing.json` contains 224 retained routing rows.
+There are 188 active cases and 36 explicit skips. Five caption/collage cases cover the
 new templates' renderer selection. Seven performance-transfer cases now use built tools. Three Mureka lyrics-video cases
 now use built tools; music routes use Mureka without an ElevenLabs interim. Five Topaz upscale/interpolation cases
 now use built tools. Seedance reference dialogue and two
@@ -631,8 +631,8 @@ Thirty-two rows remain deferred. RT-E046 and delivery/loudness/QC work name
 Routing checks do not establish OCR equality or artifact completion. Dedicated provider and
 executor tests cover validation, file rendering and approval.
 
-Current inventory is 16 providers, 115 Gateway tools, 27 packaged skills and 220 fixture rows,
-with 184 active and 36 skipped. The original four dependency skips remain. See
+Current inventory is 16 providers, 118 Gateway tools, 27 packaged skills and 224 fixture rows,
+with 188 active and 36 skipped. The original four dependency skips remain. See
 [Remotion editing](REMOTION_EDITING.md) for licensing, real local verification and pending checks.
 
 ## Static aspect variants
@@ -647,3 +647,10 @@ review; `candidate_set=true` and `editorial_review="pending"` prevent render aut
 from claiming framing approval. New per-item crop/pad options are refused by Lambda before
 any request. Outpainting keeps the existing quality-first generative edit and cost approval.
 See [decisions](remotion-aspect-ratio-variants-decisions.tsv) for licence sources and limits.
+
+The [audio-bed skill](../agent/deep_agent/skills/audio-bed/SKILL.md) includes a dry-only HeyGen
+Voice instant-clone candidate. ElevenLabs clone and stock TTS defaults stay unchanged.
+An internal gate requires an authenticated allowlisted user; explicit names take precedence.
+Abbreviation/number-heavy cloned scripts use ElevenLabs until the actual text is expanded.
+See [HeyGen Voice](HEYGEN_VOICE.md) for consent, project ownership, unknown prices, vendor
+training disclosure and the permission-dependent blind A/B activation checklist.

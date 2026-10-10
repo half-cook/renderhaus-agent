@@ -324,20 +324,56 @@ def resolve_alias(alias: str) -> str | None:
     return TOOL_MAP.get(interim, {}).get("gateway_tool") if interim else None
 
 
+def _voice_route(prompt: str, constraints: dict, *, region: str | None,
+                 available_tools: set[str] | None, arguments: dict | None) -> Route | None:
+    if not constraints["predicates"]["cloned_voice"]:
+        return None
+    creates = bool(re.search(r"\bclone\b.*\bvoice\b|\bvoice cloning\b", _instruction_text(prompt), re.I))
+    reads = bool(re.search(r"\bread\b|speak|narrat|script|\btts\b", _instruction_text(prompt), re.I))
+    capabilities = (["voice_clone"] if creates else []) + (["cloned_tts"] if reads else [])
+    if not capabilities:
+        return None
+    skill = "named-provider" if constraints["provider"] == "elevenlabs" else "audio-bed"
+    steps = [replace(select_provider(capability, arguments=arguments, region=region,
+                                     available_tools=available_tools, **constraints), skill=skill)
+             for capability in capabilities]
+    first = steps[0]
+    incomplete = next((step for step in steps if step.status != "ready"), None)
+    if len(steps) == 1:
+        return first
+    return replace(first, steps=tuple(steps), tool=None if incomplete else first.tool,
+                   status=incomplete.status if incomplete else first.status,
+                   reason=incomplete.reason if incomplete else "Clone first, then speak using the saved project voice.",
+                   execution_groups=tuple((step.alias,) for step in steps),
+                   disclosure=" ".join(step.disclosure for step in steps))
+
+
+def _voice_script(prompt: str, arguments: dict) -> str:
+    if isinstance(arguments.get("text"), str):
+        return arguments["text"]
+    quoted = re.findall(r"[\"'“](.*?)[\"'”]", prompt)
+    if quoted:
+        return " ".join(quoted)
+    match = re.search(r"(?:script|voice)\s*:\s*(.*)", prompt, re.I)
+    return match[1] if match else ""
+
+
 def route_intent(prompt: str, *, region: str | None = None, tier: str | None = None,
                  confidential: bool = False, arguments: dict | None = None,
-                 available_tools: set[str] | None = None, retry: bool = False) -> Route:
+                 available_tools: set[str] | None = None, retry: bool = False, user_id: str | None = None) -> Route:
     for refusal in POLICY.get("editing_refusals", []):
         if re.search(refusal["pattern"], prompt, re.IGNORECASE):
             return Route(skill=refusal.get("skill", "remotion-ad-variant-matrix"), status="blocked",
                          reason=refusal["reason"], disclosure=refusal["reason"])
     if any(re.search(pattern, prompt, re.I) for pattern in POLICY.get("non_dispatch_requests", [])):
         return Route(reason="No media intent matched; answer the Remotion licensing question from the editing skill.")
-    constraints = intent_constraints(prompt, tier=tier, confidential=confidential, arguments=arguments)
+    constraints = intent_constraints(prompt, tier=tier, confidential=confidential, arguments=arguments, user_id=user_id)
     for pattern, alias in POLICY["retired_requests"].items():
         if re.search(pattern, prompt, re.I):
             return Route(alias=alias, status="retired", reason=TOOL_MAP[alias]["reason"],
                          disclosure=TOOL_MAP[alias]["reason"])
+    if voice_route := _voice_route(prompt, constraints, region=region, available_tools=available_tools, arguments=arguments):
+        return voice_route
     if lyrics_route := _lyrics_route(prompt, constraints, region=region, available_tools=available_tools, arguments=arguments):
         return lyrics_route
     lipsync = bool(re.search(_LIPSYNC_REQUEST, prompt, re.I))
@@ -425,6 +461,8 @@ def _dispatch(tool: str | None) -> str | None:
         return None
     if tool.startswith(("Remotion___", "HyperFrames___", "Ffmpeg___")):
         return "call_editor_tool"
+    if tool in {"HeyGen___voice_clone", "HeyGen___voice_tts", "HeyGen___get_voice_status"}:
+        return "call_audio_tool"
     if tool.startswith(("ElevenLabs___", "FishAudio___", "Mureka___")):
         return "call_audio_tool"
     return "call_media_tool"
@@ -569,7 +607,9 @@ def _text_only_image_edit(prompt: str, arguments: dict) -> bool:
 
 
 def intent_constraints(prompt: str, *, tier: str | None = None, confidential: bool = False,
-                       arguments: dict | None = None) -> dict:
+                       arguments: dict | None = None, user_id: str | None = None) -> dict:
+    from providers.heygen.voice_contracts import internal_gate, needs_text_normalisation
+
     args = arguments or {}
     excluded_names = re.compile(
         r"\b(?:not|no|avoid|without|never|don't|do not)(?:\s+use)?\s+"
@@ -641,6 +681,7 @@ def intent_constraints(prompt: str, *, tier: str | None = None, confidential: bo
         video_sfx = False
     lyrics_capabilities = {capability for capability, _ in _lyrics_capabilities(prompt)}
     predicates = {
+        "cloned_voice": bool(re.search(r"clone.*voice|voice.*clon", _instruction_text(prompt), re.I)),
         "lyrics_video": "lyrics_video" in lyrics_capabilities,
         "lyrics_tts_first": "tts" in lyrics_capabilities,
         "lyrics_new_song": "music" in lyrics_capabilities,
@@ -660,6 +701,8 @@ def intent_constraints(prompt: str, *, tier: str | None = None, confidential: bo
     predicates.update({k: bool(args[k]) for k in predicates if k in args})
     predicates["text_only_edit"] = _text_only_image_edit(prompt, args)
     predicates["real_face_refs"] = real_face
+    predicates["heygen_voice_ab"] = internal_gate(user_id)
+    predicates["voice_text_needs_normalisation"] = needs_text_normalisation(_voice_script(prompt, args))
     predicates["explicit_hyperframes"] = bool(re.search(r"\bhyperframes\b", prompt, re.I))
     model = None
     if provider == "fal":
@@ -672,7 +715,7 @@ def intent_constraints(prompt: str, *, tier: str | None = None, confidential: bo
         model = "kling-3.0-omni" if re.search("omni", prompt, re.I) else "kling-3.0-turbo"
     named_model = next((key for key, entry in POLICY["named_models"].items()
                         if re.search(entry["pattern"], provider_prompt, re.I)), None)
-    return {"provider": provider, "model": model, "named_model": named_model,
+    return {"provider": provider, "model": model, "named_model": named_model, "user_id": user_id,
             "provider_candidates": provider_candidates, "excluded_providers": excluded_providers, "excluded_aliases": excluded_aliases,
             "required": required, "predicates": predicates}
 
@@ -702,10 +745,14 @@ def select_provider(job: str, *, tier: str | None = None, required: dict | None 
                     predicates: dict | None = None, named_model: str | None = None,
                     provider_candidates: list[str] | None = None,
                     excluded_providers: list[str] | None = None,
-                    excluded_aliases: list[str] | None = None) -> Route:
+                    excluded_aliases: list[str] | None = None, user_id: str | None = None) -> Route:
     args, required = dict(arguments or {}), dict(required or {})
-    detected = intent_constraints("", arguments=args)["predicates"]
+    from providers.heygen.voice_contracts import internal_gate
+
+    detected = intent_constraints("", arguments=args, user_id=user_id)["predicates"]
     predicates = {**detected, **(predicates or {})}
+    predicates["heygen_voice_ab"] = internal_gate(user_id)
+    predicates["voice_text_needs_normalisation"] = detected["voice_text_needs_normalisation"] or predicates["voice_text_needs_normalisation"]
     predicates["real_face_refs"] = detected["real_face_refs"] or predicates["real_face_refs"]
     capability = {"image": "still_image", "reference": "reference_video"}.get(job, job)
     if tool_variant in {"reference", "reference_video"}:
@@ -763,6 +810,8 @@ def select_provider(job: str, *, tier: str | None = None, required: dict | None 
         exception = next((ex for ex in choice["exceptions"] if _matches(ex["when"], predicates)), None)
         if exception:
             alias, basis = exception["tool"], "exception: " + exception["reason"]
+    if capability in {"voice_clone", "cloned_tts"} and basis == "default" and predicates["heygen_voice_ab"] and predicates["voice_text_needs_normalisation"]:
+        basis = "exception: abbreviation/number-heavy cloned speech requires text normalisation; use ElevenLabs"
     entry = TOOL_MAP[alias]
     if entry.get("provider") == "topaz":
         from providers.topaz.contracts import configured_model
@@ -988,6 +1037,10 @@ def effective_model(provider: str, tool: str, arguments: dict) -> str | None:
 
         return configured_model(tool, arguments)
     if provider == "heygen":
+        if tool in {"voice_clone", "voice_tts"}:
+            from providers.heygen.voice_contracts import configured_model as voice_model
+
+            return voice_model(arguments)
         if tool != "create_avatar_video":
             return None
         from providers.heygen.contracts import configured_model
@@ -1057,6 +1110,11 @@ def policy_blocker(name: str, arguments: dict, *, region: str | None = None) -> 
         from providers.mureka.api import dry_run
 
         return None if dry_run() else "UNVERIFIED Mureka model; live use is blocked and estimate unknown."
+    if provider == "heygen" and tool in {"voice_clone", "voice_tts"}:
+        from providers.heygen.voice import dry_run as voice_dry_run
+        from providers.heygen.voice_contracts import live_blocker as voice_live_blocker
+
+        return None if voice_dry_run() else voice_live_blocker(arguments)
     if policy.get("models") and model not in policy["models"]:
         return f"Model {model} is not allowed for {provider}."
     model_policy = policy.get("model_policies", {}).get(model, {})
@@ -1084,7 +1142,7 @@ def policy_blocker(name: str, arguments: dict, *, region: str | None = None) -> 
         if not dry_run():
             if blocker := live_blocker(arguments):
                 return blocker
-    if provider == "heygen":
+    if provider == "heygen" and tool == "create_avatar_video":
         from providers.heygen.api import dry_run
         from providers.heygen.contracts import live_blocker
 
@@ -1256,6 +1314,8 @@ def _published_cost(provider: str, tool: str, arguments: dict):
     if provider == "seedream":
         return rates._seedream_cost(arguments)
     if provider == "heygen":
+        if tool in {"voice_clone", "voice_tts"}:
+            return rates._with_fee(ceil(rates.heygen_voice_price_cents(tool, arguments)))
         return rates._with_fee(ceil(rates.heygen_price_cents(arguments)))
     if provider == "topaz":
         cents = rates.topaz_price_cents(tool, arguments)

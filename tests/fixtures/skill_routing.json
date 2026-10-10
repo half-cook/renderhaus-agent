@@ -4052,5 +4052,70 @@
       "HYPERFRAMES_ENABLED": "true",
       "HYPERFRAMES_DRY_RUN": "true"
     }
+  },
+  {
+    "suite": "Routing Tests",
+    "test_id": "RT-171",
+    "prompt": "Clone my voice from this 2-minute recording and read this script in it",
+    "expected_skill": "audio-bed",
+    "expected_tool": "heygen_voice_clone then heygen_voice_tts",
+    "pass_criterion": "Explicit request precedes internal candidate gate; stock default remains ElevenLabs.",
+    "source_status": "proposed",
+    "skip_reason": "",
+    "env": {
+      "HEYGEN_VOICE_AB_GATE": "internal",
+      "HEYGEN_VOICE_AB_USERS": "internal-alice",
+      "HEYGEN_VOICE_DRY_RUN": "true"
+    },
+    "user_id": "internal-alice"
+  },
+  {
+    "suite": "Routing Tests",
+    "test_id": "RT-172",
+    "prompt": "Read this script in my cloned voice: \"Call 1-800-555-0199 by Oct 31, ASAP, Dr. Lee, 3.5 GB\"",
+    "expected_skill": "audio-bed",
+    "expected_tool": "eleven_v4_turbo",
+    "pass_criterion": "Explicit request precedes internal candidate gate; stock default remains ElevenLabs.",
+    "source_status": "proposed",
+    "skip_reason": "",
+    "env": {
+      "HEYGEN_VOICE_AB_GATE": "internal",
+      "HEYGEN_VOICE_AB_USERS": "internal-alice",
+      "HEYGEN_VOICE_DRY_RUN": "true"
+    },
+    "user_id": "internal-alice"
+  },
+  {
+    "suite": "Routing Tests",
+    "test_id": "RT-173",
+    "prompt": "Use ElevenLabs to clone my voice and narrate this",
+    "expected_skill": "named-provider",
+    "expected_tool": "voices_ivc_create then eleven_v4_turbo",
+    "pass_criterion": "Explicit request precedes internal candidate gate; stock default remains ElevenLabs.",
+    "source_status": "proposed",
+    "skip_reason": "",
+    "env": {
+      "HEYGEN_VOICE_AB_GATE": "internal",
+      "HEYGEN_VOICE_AB_USERS": "internal-alice",
+      "HEYGEN_VOICE_DRY_RUN": "true"
+    },
+    "user_id": "internal-alice"
+  },
+  {
+    "suite": "Routing Tests",
+    "test_id": "RT-171-OFF",
+    "prompt": "Clone my voice from this 2-minute recording and read this script in it",
+    "expected_skill": "audio-bed",
+    "expected_tool": "voices_ivc_create then eleven_v4_turbo",
+    "pass_criterion": "Explicit request precedes internal candidate gate; stock default remains ElevenLabs.",
+    "source_status": "regression",
+    "skip_reason": "",
+    "env": {
+      "HEYGEN_VOICE_AB_GATE": "off",
+      "HEYGEN_VOICE_AB_USERS": "internal-alice",
+      "HEYGEN_VOICE_DRY_RUN": "true"
+    },
+    "user_id": "internal-alice",
+    "forbidden_tools": "heygen_voice_clone, heygen_voice_tts"
   }
 ]

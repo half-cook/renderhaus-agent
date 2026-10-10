@@ -469,8 +469,10 @@ def enrich_tool_schema(provider_id: str, tool: dict[str, Any]) -> dict[str, Any]
                 properties[field]["description"] = description
     if provider_id == "heygen":
         from providers.heygen.contracts import FIELD_DESCRIPTIONS
+        from providers.heygen.voice_contracts import FIELD_DESCRIPTIONS as VOICE_FIELDS, VOICE_TOOLS
 
-        for field, description in FIELD_DESCRIPTIONS.items():
+        descriptions = VOICE_FIELDS if tool_name in VOICE_TOOLS else FIELD_DESCRIPTIONS
+        for field, description in descriptions.items():
             if field in properties:
                 properties[field]["description"] = description
     return enriched

@@ -235,7 +235,7 @@ order. The short Studio summary also includes per-step costs when they fit its 3
 contract; larger runs refer to the complete breakdown. Unknown charges remain explicit,
 with a known subtotal. Model token charges are recorded separately by `ModelUsage`.
 
-The capability-map fixture contains 220 retained rows, with 175 active and 45 dependency skips.
+The capability-map fixture contains 224 retained rows, with 188 active and 36 dependency skips.
 Archived/confidential routes are dropped. Active rows cover built tools and declared interims;
 pending specialists keep named branch reasons. Editorial overrides retain the safe preparer,
 separate rendering approval, and existing export/HyperFrames narration workflow contracts.
@@ -595,8 +595,8 @@ composition. This task makes no deployment or Lambda call. Matrix jobs refuse th
 backend until the same job directory exists on its worker. See
 [Remotion editing](REMOTION_EDITING.md) for the supported backend table and demo commands.
 
-Inventory is 16 providers, 115 Gateway tools and 27 skills. The fixture has 184 active and
-36 deferred cases among 220 rows. Browser validation through Comet remains blocked here.
+Inventory is 16 providers, 118 Gateway tools and 27 skills. The fixture has 188 active and
+36 deferred cases among 224 rows. Browser validation through Comet remains blocked here.
 
 ## Per-shot static reframing
 
@@ -611,3 +611,12 @@ Lambda validator, which explicitly refuses them before any AWS call. Existing de
 Lambda timelines remain unchanged. Render results are editorial candidates with contact
 sheets and pending review, not certified delivery output. Paid outpainting still selects
 `edit-v2v` and pauses with the existing cost estimate. No model defaults or spend caps change.
+
+HeyGen Voice extends `call_audio_tool` with instant cloning, completed speech and a single
+clone-status poll. Routing receives authenticated Studio user identity for the internal A/B
+allowlist. Native `interrupt_on` uses the installed deepagents 0.7.23 `when` and description
+callbacks to validate consent and scope before showing the cost approval card. The existing
+checkpointer/resume protocol, approval exemptions and autonomous spend cap stay unchanged.
+Stock TTS remains ElevenLabs. Candidate outcomes use the `heygen_voice_internal` arm.
+See [HeyGen Voice](HEYGEN_VOICE.md). Official prices remain UNVERIFIED, estimates unknown,
+and live activation blocked. Comet browser validation remains pending.

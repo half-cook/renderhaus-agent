@@ -16,6 +16,7 @@ from botocore.exceptions import ClientError
 from pydantic import BaseModel, ConfigDict, Field
 
 from providers.heygen import contracts
+from providers.heygen.voice import voice_clone, voice_tts, get_voice_status
 from providers.sync.media import validate_mp4
 
 
@@ -411,6 +412,7 @@ def list_voices(limit: int = 20, next_token: str | None = None) -> dict[str, Any
     return _list_resources("list_voices", limit, next_token)
 
 
-TOOL_HANDLERS = {"create_avatar_video": create_avatar_video, "get_video_status": get_video_status,
+TOOL_HANDLERS = {"voice_clone": voice_clone, "voice_tts": voice_tts, "get_voice_status": get_voice_status,
+                 "create_avatar_video": create_avatar_video, "get_video_status": get_video_status,
                  "list_avatars": list_avatars, "list_voices": list_voices}
 GATEWAY_TOOLS = tuple(TOOL_HANDLERS)

@@ -771,6 +771,30 @@ HEYGEN_PRICING_READ_DATE = "2026-10-09"
 HEYGEN_AVATAR_V_CENTS_PER_SECOND = Decimal("12")
 
 
+# UNVERIFIED non-promo HeyGen Voice prices. Official pages read 2026-10-09.
+# https://developers.heygen.com/docs/models/heygen-voice.md only states preview creation is free.
+# https://www.heygen.com/api-pricing redirects to an account dashboard. No character list rate verified.
+HEYGEN_VOICE_PRICING_URL = "https://www.heygen.com/api-pricing"
+HEYGEN_VOICE_PRICING_READ_DATE = "2026-10-09"
+HEYGEN_VOICE_LIST_USD_PER_MILLION = None
+HEYGEN_VOICE_CLONE_LIST_USD = None
+
+
+def heygen_voice_price_cents(tool: str, arguments: dict) -> Decimal:
+    from providers.heygen.voice_contracts import DEFAULT_MODEL, configured_model
+
+    if configured_model(arguments) != DEFAULT_MODEL:
+        raise ValueError("UNVERIFIED HeyGen Voice model; estimate unknown.")
+    if tool == "voice_clone" and HEYGEN_VOICE_CLONE_LIST_USD is not None:
+        return Decimal(str(HEYGEN_VOICE_CLONE_LIST_USD)) * 100
+    if tool == "voice_tts" and HEYGEN_VOICE_LIST_USD_PER_MILLION is not None:
+        text = arguments.get("text")
+        if not isinstance(text, str) or not 1 <= len(text) <= 5000 or not text.strip():
+            raise ValueError("HeyGen Voice text must contain 1-5000 characters.")
+        return Decimal(len(text)) * Decimal(str(HEYGEN_VOICE_LIST_USD_PER_MILLION)) * 100 / 1000000
+    raise ValueError("UNVERIFIED HeyGen Voice non-promo list price; estimate unknown. Official rate TODO.")
+
+
 def heygen_price_cents(arguments: dict[str, Any]) -> Decimal:
     """Self-serve list quote; script duration is an estimate, not a render control."""
     from providers.heygen.contracts import request_for
@@ -895,6 +919,13 @@ def cost_for(provider: str, tool: str, arguments: dict[str, Any]) -> GenerationC
             raise ValueError("Topaz price unknown for these dimensions, FPS or slowdown; official quote TODO.")
         return _with_fee(math.ceil(cents))
     if provider == "heygen":
+        if tool in {"voice_clone", "voice_tts", "get_voice_status"}:
+            from providers.heygen.voice import dry_run
+            from providers.heygen.voice_contracts import live_blocker
+
+            if tool == "get_voice_status" or dry_run():
+                return GenerationCost(0, 0)
+            raise ValueError(live_blocker(arguments))
         if tool in {"get_video_status", "list_avatars", "list_voices"}:
             return GenerationCost(0, 0)
         if tool != "create_avatar_video":

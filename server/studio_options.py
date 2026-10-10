@@ -36,7 +36,8 @@ STATIC_FIELD_OPTIONS: dict[str, dict[str, list[str | int]]] = {
         "target_resolution": ["1080p", "4K"],
     },
     "heygen": {
-        "model": ["avatar_v"], "resolution": ["720p", "1080p"],
+        "model": ["avatar_v", "heygen-voice-1"], "mode": ["instant"],
+        "reference_format": ["mp3", "wav", "ogg"], "similarity": ["medium", "high", "extra_high", "max"], "resolution": ["720p", "1080p"],
         "aspect_ratio": ["16:9", "9:16", "4:5", "5:4", "1:1", "auto"],
     },
     "sync": {

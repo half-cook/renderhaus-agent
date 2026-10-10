@@ -236,7 +236,7 @@ class GatewayExecutor:
                     or isinstance(metadata, dict) and (metadata.get("real_face_refs") or metadata.get("user_supplied_real_person_refs"))):
                 selection_arguments["real_face_refs"] = True
         constraints = intent_constraints(self.studio.prompt, confidential=self.studio.confidential,
-                                         arguments=selection_arguments)
+                                         arguments=selection_arguments, user_id=getattr(self.studio, "user_id", None))
         if job in {"motion_graphics", "nle_handoff", "nle_import"}:
             constraints["provider"] = constraints["model"] = constraints["named_model"] = None
         rejected_id = self.rejected_reviews.get(job)
@@ -246,6 +246,8 @@ class GatewayExecutor:
         if retry:
             for key, value in rejected.get("required", {}).items():
                 constraints["required"][key] = max(value, constraints["required"].get(key, 0))
+        if job == "tts" and constraints["predicates"]["cloned_voice"]:
+            job = "cloned_tts"
         constraints = capability_constraints(constraints, job)
         if job == "performance_transfer" and name == "Runway___act_two" and arguments.get("source_duration_seconds") is not None:
             duration = arguments.get("performance_duration_seconds")
@@ -272,6 +274,24 @@ class GatewayExecutor:
                     f"Faces, voices and bodies: {arguments.get('subjects') or 'identify every subject'}. "
                     f"Consent {'confirmed' if arguments.get('consent_confirmed') is True else 'required'}. "
                     "Outputs are not training eligible." + segment)
+        if name in {"HeyGen___voice_clone", "HeyGen___voice_tts"}:
+            from providers.heygen.voice_contracts import TRAINING_STATEMENT
+
+            owner = arguments.get("subjects") or "saved project voice owner"
+            if name == "HeyGen___voice_tts":
+                from providers.heygen.voice import _read
+                from providers.heygen.voice_contracts import PollRequest
+
+                try:
+                    owner = _read(PollRequest.model_validate({key: arguments[key] for key in
+                        ("voice_id", "account_id", "workspace_id", "project_id")}))["subjects"]
+                except (ValueError, KeyError):
+                    pass
+            return (f"Provider HeyGen Voice; model {effective_model('heygen', name.split('___')[1], arguments)}. "
+                    f"{route.basis if route else 'explicit request'}. {estimate_cost(name, arguments).description} "
+                    f"Voice owner: {owner}. Consent record: {arguments.get('consent_record_id') or 'saved project consent'}. "
+                    "Recorded consent is required. Reference audio is uploaded to HeyGen on live activation. "
+                    f"{TRAINING_STATEMENT} Dry-run preview uploads nothing and costs $0.00.")
         if name == "HeyGen___create_avatar_video":
             consent = "confirmed with a recorded acknowledgement" if arguments.get("consent_confirmed") is True else "required"
             return (f"Provider HeyGen direct; model {effective_model('heygen', 'create_avatar_video', arguments)}. "
@@ -362,6 +382,20 @@ class GatewayExecutor:
 
             try:
                 topaz_request = request_for(tool, arguments)
+            except ValueError as exc:
+                return str(exc)
+        if provider == "heygen" and tool in {"voice_clone", "voice_tts", "get_voice_status"}:
+            from providers.heygen.voice_contracts import request_for
+            from providers.heygen.voice import _read
+
+            try:
+                request = request_for(tool, arguments)
+                expected = {"account_id": self.studio.user_id, "workspace_id": self.studio.workspace_id,
+                            "project_id": self.studio.project_id}
+                if any(not value or arguments.get(key) != value for key, value in expected.items()):
+                    return "HeyGen Voice scope must match the authenticated account, workspace and project."
+                if tool != "voice_clone":
+                    _read(request)
             except ValueError as exc:
                 return str(exc)
         if name == "HeyGen___create_avatar_video":
@@ -703,6 +737,8 @@ class GatewayExecutor:
             ab_arm = route.alias if route.job_type == "image_edit" and intent_constraints(studio.prompt, arguments=arguments)["predicates"]["text_only_edit"] else None
             if route.job_type == "continuity_qc":
                 ab_arm = "gemini_vlm_judge"
+            if route and route.alias in {"heygen_voice_clone", "heygen_voice_tts"}:
+                ab_arm = "heygen_voice_internal"
             self.outcomes.record(
                 event_id=f"approval-{self.run_scope}-{call_id}", provider=provider, model=model,
                 job_type=job_type(name), provider_job_id=provider_job_id,
