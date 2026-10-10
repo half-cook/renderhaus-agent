@@ -37,10 +37,11 @@ class ModelUsage:
             "estimated_cost_usd": 0.0, "unknown_cost_calls": 0,
         })
 
-    def record(self, message: AIMessage) -> None:
+    def record(self, message: AIMessage) -> float | None:
+        """Record one model call; returns its estimated USD cost, or None when it is not priced/unseen."""
         usage = message.usage_metadata
         if not usage or (message.id and message.id in self._seen):
-            return
+            return None
         if message.id:
             self._seen.add(message.id)
         model = message.response_metadata.get("model_name") or message.response_metadata.get("model") or "unknown"
@@ -62,14 +63,16 @@ class ModelUsage:
         rates = MODEL_RATES.get(model)
         if rates is None:
             total["unknown_cost_calls"] += 1
-            return
+            return None
         if model == "claude-haiku-5-5" and prompt > 100_000:
             rates = ModelRates(0.50, 2.50, 0.625, 1.0, 0.05)
         ordinary = max(0, prompt - read - write)
-        total["estimated_cost_usd"] += (
+        cost = (
             ordinary * rates.input + output * rates.output + write_5m * rates.cache_write_5m
             + write_1h * rates.cache_write_1h + read * rates.cache_read
         ) / 1_000_000
+        total["estimated_cost_usd"] += cost
+        return cost
 
     def records(self) -> list[dict]:
         return [{"event": "agent_model_usage", "entry_point": "deepagents",

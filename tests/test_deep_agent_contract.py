@@ -71,7 +71,11 @@ class DeepAgentContractTests(unittest.IsolatedAsyncioTestCase):
         execution = self.repo.get_execution("user:local", self.job)
         self.assertEqual(execution["status"], "awaiting_approval")
         approval = execution["approvals"][0]
-        self.assertEqual(approval["tool_name"], "Seedream___text_to_image")
+        # The client view never carries the tool/vendor name; the stored checkpoint keeps it.
+        self.assertNotIn("tool_name", approval)
+        self.assertNotIn("provider", approval)
+        stored = self.repo.execution_checkpoint("user:local", self.job)["approvals"][0]
+        self.assertEqual(stored["tool_name"], "Seedream___text_to_image")
         self.gateway.call_tool.assert_not_awaited()
         self.steps = [final()]
         await studio.decide_studio_agent_tool(
