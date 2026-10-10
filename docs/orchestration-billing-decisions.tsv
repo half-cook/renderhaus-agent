@@ -1,0 +1,15 @@
+decision	why	where
+Orchestration billed to credit (planner model cost x PLATFORM_FEE_RATE), flag ORCHESTRATION_BILLING_ENABLED default true	Satya: orchestration is billed; fee stays one backend constant	server/run_budget.py, server/run_billing.py
+Cumulative-cost billing (ceil of cumulative fee-inclusive cents minus billed) instead of per-turn rounding	Per-turn ceil over 20+ calls overcharges	run_budget.orchestration_total_cents, RunMeter.meter_turn
+Estimate default 75 cents; cap = ceil(estimate*1.4 / 25)*25	Observed clean runs $0.41-$0.69 model cost, P1 $0.98 with retries; designer's 1.4x/$0.25 rule	server/config.py DEFAULT_ENV
+Run-level cap and estimate (one hold per run), repeated on every card of a pause	Orchestration spans the run; cap must be a hard stop for the whole run	run_billing.plan_for_pending
+Hold at run start (default orchestration cap) and raise it at approval	Autonomous runs have no approval card but still bill planning	run_billing.start_run, approval_gate
+Planner turn over the cap is clipped, run pauses, overage is billed as catch-up only after the user raises the cap	Never charge above the cap; cost is only known after a turn	RunMeter.meter_turn
+Unknown model (no MODEL_RATES entry) is not billed	No invented prices	agent/deep_agent/usage.py
+Unpriced media step is shown at 0 with estimate_incomplete=true	Approvals for unknown costs existed before; do not guess	run_billing.public_approvals
+status gains "rejected" beyond the designer's list	A rejected card has no run state	run_billing.public_approvals
+Lines use price_cents (spec section 8 suggested cents)	Lead's steering named price_cents	server/run_budget.py
+Receipt shows balance_before/after as daily allowance + wallet (spendable), not minus other runs' holds	Matches what the user actually has	StudioRepository.release_run
+Tool-call name stays in client execution payloads; label/provider/summary/errors scrubbed	Studio canvas logic keys off the machine name; UI must hide it	run_billing.public_execution
+Failed runs bill what was actually charged (media refunds remove the line; orchestration is not refunded)	Planner work happened	StudioRepository.release_run
+Stale holds released after ORCHESTRATION_HOLD_TTL_SECONDS (6 h)	Crashed runs must not lock credit	run_budget.sweep_stale_holds

@@ -141,6 +141,22 @@ async def run_with_servers(request, studio, servers, *, model=None):
     injected_model = model
     model = model if model is not None else configured_deep_agent_model()
     usage = ModelUsage(_scope(request))
+    from server.run_billing import RunMeter, stored_pause
+    from server.run_budget import PAUSED_MESSAGE, RunPausedAtCap
+    from server.studio_state import repository as credit_repository
+
+    meter = RunMeter.for_run(credit_repository, studio.user_id, studio.job_id)
+    studio.run_meter = meter
+
+    async def settle_turn(cost_usd):
+        """Bill this planner turn to the run's credit; stop the run when the hard cap is reached."""
+        if meter is None:
+            return
+        if cost_usd:
+            await asyncio.to_thread(meter.meter_turn, cost_usd)
+        paused = meter.pause or await asyncio.to_thread(stored_pause, credit_repository, studio.job_id)
+        if paused:
+            raise RunPausedAtCap(paused)
     output_repair = False
     snapshots = [item for item in request.session_items if item.get("type") == SESSION_TYPE]
     session = snapshots[-1] if snapshots else None
@@ -415,6 +431,8 @@ async def run_with_servers(request, studio, servers, *, model=None):
     deadline = asyncio.get_running_loop().time() + float(os.getenv("RENDERHAUS_AGENT_TIMEOUT_SECONDS", "1800"))
 
     async def stream(value):
+        if meter is not None and (stopped := await asyncio.to_thread(meter.check_turn)):
+            raise RunPausedAtCap(stopped)
         async with asyncio.timeout_at(deadline):
             partial_text = {}
             async for namespace, mode, event in graph.astream(
@@ -437,8 +455,7 @@ async def run_with_servers(request, studio, servers, *, model=None):
                     if not isinstance(update, dict):
                         continue
                     for message in update.get("messages", []):
-                        if isinstance(message, AIMessage):
-                            usage.record(message)
+                        await settle_turn(usage.record(message) if isinstance(message, AIMessage) else None)
                         if isinstance(message, AIMessage) and message.text:
                             event_id = "deep-" + "-".join((*namespace, str(message.id)))
                             partial_text.pop(event_id, None)
@@ -485,6 +502,10 @@ async def run_with_servers(request, studio, servers, *, model=None):
                   status="completed" if delivered else "failed")
         return final
     except StudioAgentApprovalRequired:
+        raise
+    except RunPausedAtCap:
+        _progress(studio, event_id="run", event_type="RUN_ERROR", title="Paused at your cap",
+                  message=PAUSED_MESSAGE, status="failed")
         raise
     except (GraphRecursionError, TimeoutError) as exc:
         raise AgentRunLimitExceeded("The manager reached its execution limit.") from exc
