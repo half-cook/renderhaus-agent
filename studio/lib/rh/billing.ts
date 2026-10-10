@@ -58,7 +58,7 @@ export type ApprovalCardModel = {
   approveEnabled?: boolean;
 };
 
-const VENDOR_OR_FEE = /\b(wan|gpt|openai|eleven\s?labs|seedance|seedream|sonnet|opus|haiku|claude|anthropic|remotion|fal|kling|runway|luma|vidu|heygen|topaz|mureka|mirelo|ideogram|recraft|gemini|byteplus|dashscope|hyperframes|fee|markup|margin)\b|\d\s?%/i;
+const VENDOR_OR_FEE = /(?:^|[^a-z0-9])(wan|gpt|openai|eleven\s?labs|seedance|seedream|sonnet|opus|haiku|claude|anthropic|remotion|fal|kling|runway|luma|vidu|veo|heygen|topaz|mureka|mirelo|ideogram|recraft|gemini|byteplus|bytedance|dashscope|hyperframes|fish\s?audio|flux|pixverse|pixelcut|midjourney|runpod|fee|markup|margin)(?=$|[^a-z0-9])|\d\s?%|[a-z][a-z0-9_-]*___[a-z0-9_]+/i;
 
 /** Work labels for tool ids; the generic fallback never exposes an id. */
 const WORK_LABELS: Array<[RegExp, string]> = [
@@ -118,8 +118,8 @@ export function toApprovalCardModel(base: Partial<ApprovalCardModel> & { id: str
   const type = payload.type;
   const status = payload.status;
   const lines = parseLines(payload.lines);
-  const estimate = optionalCents(payload.estimate_cents) ?? optionalCents(payload.estimated_total_cents) ?? lines.reduce((sum, line) => sum + line.priceCents, 0);
-  const cap = optionalCents(payload.cap_cents) ?? optionalCents(payload.hard_cap_cents) ?? estimate;
+  const estimate = optionalCents(payload.estimate_cents) ?? optionalCents(payload.estimated_total_cents) ?? base.estimateCents ?? 0;
+  const cap = optionalCents(payload.cap_cents) ?? optionalCents(payload.hard_cap_cents) ?? base.capCents ?? 0;
   const model: ApprovalCardModel = {
     title: "Paid step",
     specs: [],
@@ -146,11 +146,11 @@ export function toApprovalCardModel(base: Partial<ApprovalCardModel> & { id: str
 
 /** Credit check from the spec: cap must be <= balance. The server also sends approve_enabled=false. */
 export function creditState(model: ApprovalCardModel, approveEnabled?: boolean): "ok" | "lower_cap" | "add_credit" {
-  if (approveEnabled === false) {
+  if ((approveEnabled ?? model.approveEnabled) === false) {
     return model.lowerCapOptionCents != null ? "lower_cap" : "add_credit";
   }
   if (model.balanceCents == null || model.balanceCents >= model.capCents) return "ok";
-  return model.balanceCents >= model.estimateCents ? "lower_cap" : "add_credit";
+  return model.lowerCapOptionCents != null ? "lower_cap" : "add_credit";
 }
 
 export function a11yApproveName(model: ApprovalCardModel, format: (cents: number) => string): string {
@@ -179,7 +179,7 @@ function text(value: unknown): string | undefined {
 /** Whole-run receipt: type "receipt", scope "run". */
 export function toRunReceiptModel(value: unknown): RunReceiptModel | null {
   const receipt = record(value);
-  if (receipt.type !== "receipt" || !isCents(receipt.actual_cents) || !isCents(receipt.estimate_cents)) return null;
+  if (receipt.type !== "receipt" || !isCents(receipt.actual_cents) || !isCents(receipt.estimate_cents) || !isCents(receipt.cap_cents) || !isCents(receipt.balance_before_cents) || !isCents(receipt.balance_after_cents)) return null;
   const lines = parseLines(receipt.lines);
   return {
     title: safeCopy(receipt.title, "Run receipt"),
@@ -187,11 +187,11 @@ export function toRunReceiptModel(value: unknown): RunReceiptModel | null {
     lines,
     actualCents: receipt.actual_cents,
     estimateCents: receipt.estimate_cents,
-    capCents: isCents(receipt.cap_cents) ? receipt.cap_cents : receipt.estimate_cents,
+    capCents: receipt.cap_cents,
     underEstimate: receipt.under_estimate === true,
-    balanceBeforeCents: isCents(receipt.balance_before_cents) ? receipt.balance_before_cents : 0,
-    balanceAfterCents: isCents(receipt.balance_after_cents) ? receipt.balance_after_cents : 0,
-    paidSteps: typeof receipt.paid_steps === "number" ? receipt.paid_steps : lines.filter((line) => line.kind === "media").length,
+    balanceBeforeCents: receipt.balance_before_cents,
+    balanceAfterCents: receipt.balance_after_cents,
+    paidSteps: typeof receipt.paid_steps === "number" ? receipt.paid_steps : lines.filter((line) => line.kind === "media" && line.priceCents > 0).length,
     status: receipt.status === "failed" ? "failed" : "done",
   };
 }
@@ -203,10 +203,10 @@ export type NodeEstimate = { estimateCents: number; capCents: number; lines: Bil
 /** Validates a node's server-sent estimate payload. Null when the server sent no usable price. */
 export function toNodeEstimate(value: unknown): NodeEstimate | null {
   const payload = record(value);
-  if (!isCents(payload.estimate_cents)) return null;
+  if (!isCents(payload.estimate_cents) || !isCents(payload.cap_cents)) return null;
   return {
     estimateCents: payload.estimate_cents,
-    capCents: isCents(payload.cap_cents) ? payload.cap_cents : payload.estimate_cents,
+    capCents: payload.cap_cents,
     lines: parseLines(payload.lines),
   };
 }

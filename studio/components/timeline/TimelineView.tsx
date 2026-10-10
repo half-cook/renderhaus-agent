@@ -4,16 +4,9 @@ import { ArrowLeft, ArrowRight, Mic } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { AssetMedia } from "@/components/canvas/AssetMedia";
 import { useCanvasStore } from "@/lib/canvas/store";
-import { PX_PER_SECOND, clipLength, setTrimField, timecode, type TimelineClip } from "@/lib/rh/timeline";
+import { PX_PER_SECOND, parseSeconds, clipLength, setTrimField, timecode, type TimelineClip } from "@/lib/rh/timeline";
 import { TimelineHints, TimelineTrack, TransportBar, useTimelineModel, useTransport } from "./Timeline";
 
-/** "4.2", "0:04.2" and "4,2" all mean 4.2 seconds. Anything else is rejected, not guessed. */
-export function parseSeconds(value: string): number | null {
-  const text = value.trim().replace(",", ".");
-  const match = /^(?:(\d+):)?(\d+(?:\.\d+)?)$/.exec(text);
-  if (!match) return null;
-  return Number(match[1] ?? 0) * 60 + Number(match[2]);
-}
 const fieldText = (seconds: number) => `${Math.floor(seconds / 60)}:${(seconds % 60).toFixed(1).padStart(4, "0")}`;
 
 function TrimField({ label, seconds, onCommit }: { label: string; seconds: number; onCommit: (seconds: number) => void }) {

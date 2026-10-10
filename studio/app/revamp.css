@@ -688,3 +688,10 @@
 .rh-export-done { padding:0 0 24px; }
 .rh-export-done > svg { color:var(--rh-ok); margin-bottom:20px; }
 .rh-export-done p { font-size:13px; line-height:1.6; }
+
+.rh-export-sheet :focus-visible, .rh-appr h3:focus-visible { outline:2px solid var(--rh-accent); outline-offset:4px; }
+.rh-export-body { overscroll-behavior:contain; }
+.rh-project-title h1, .rh-appr h3 { overflow-wrap:anywhere; }
+.rh-node-inspector .field-pill { color:var(--rh-fg-2); }
+.rh-node-inspector .field-pill.selected { color:var(--rh-accent-text); }
+.rh-canvas-workspace .rh-minimap { margin-bottom:16px; bottom:24px; }

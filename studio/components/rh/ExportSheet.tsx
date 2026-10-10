@@ -33,6 +33,10 @@ export function ExportSheet() {
     return () => { cancelled = true; };
   }, [open, projectId]);
   useEffect(() => () => { if (blobRef.current) URL.revokeObjectURL(blobRef.current); }, []);
+  useEffect(() => {
+    const show = () => setOpen(true); window.addEventListener("rh:open-export", show);
+    return () => window.removeEventListener("rh:open-export", show);
+  }, []);
   const prepareProject = () => {
     const state = useCanvasStore.getState();
     const blob = new Blob([JSON.stringify({ schemaVersion: 2, projectName: state.projectName, nodes: state.nodes, edges: state.edges, viewport: state.viewport }, null, 2)], { type: "application/json" });

@@ -13,6 +13,7 @@ import type {
   AgentToolEvent,
   CreativeNodeKind,
 } from "./canvas/types";
+import { safeCopy, workLabel } from "./rh/billing";
 import { studioFetch } from "./authenticated-fetch";
 import { checkUploadSize, parseUploadLimits, uploadKind, uploadSizeError } from "./upload-limits";
 
@@ -379,7 +380,7 @@ function agentApprovals(value: unknown): AgentApprovalRequest[] {
     return [{
       callId,
       toolName: String(item.tool_name || "tool"),
-      label: String(item.label || item.tool_name || "Tool"),
+      label: item.label === item.tool_name ? workLabel(String(item.tool_name)) : safeCopy(item.label, workLabel(String(item.tool_name))),
       provider: typeof item.provider === "string" ? item.provider : undefined,
       arguments:
         item.arguments && typeof item.arguments === "object" && !Array.isArray(item.arguments)
@@ -388,7 +389,7 @@ function agentApprovals(value: unknown): AgentApprovalRequest[] {
       billing: billingRecord(item),
       decision:
         item.decision === "approve" || item.decision === "reject" ? item.decision : undefined,
-      message: typeof item.message === "string" ? item.message : undefined,
+      message: safeCopy(item.message, "") || undefined,
     }];
   });
 }
@@ -400,9 +401,9 @@ function agentToolEvents(value: unknown): AgentToolEvent[] {
     return {
       id: String(item.id || crypto.randomUUID()),
       name: String(item.name || "tool"),
-      label: String(item.label || "Tool"),
+      label: item.label === item.name ? workLabel(String(item.name)) : safeCopy(item.label, workLabel(String(item.name))),
       status: String(item.status || "completed"),
-      summary: String(item.summary || ""),
+      summary: safeCopy(item.summary, ""),
       provider: typeof item.provider === "string" ? item.provider : undefined,
       providerJobId:
         typeof item.provider_job_id === "string" ? item.provider_job_id : undefined,
@@ -422,8 +423,8 @@ function agentProgressEvents(value: unknown): AgentProgressEvent[] {
     return {
       id: String(item.id || crypto.randomUUID()),
       type: String(item.type || "STEP_STARTED"),
-      title: String(item.title || "Agent update"),
-      message: String(item.message || ""),
+      title: safeCopy(item.title, "Agent update"),
+      message: safeCopy(item.message, ""),
       status: String(item.status || "running"),
       toolCallId:
         typeof item.tool_call_id === "string" ? item.tool_call_id : undefined,
@@ -487,9 +488,9 @@ export async function fetchStudioExecutions(
       turnIndex: typeof item.turn_index === "number" ? item.turn_index : undefined,
       prompt: String(item.prompt || ""),
       status: String(item.status || "unknown"),
-      message: String(item.message || ""),
-      title: typeof result.title === "string" ? result.title : undefined,
-      summary: typeof result.summary === "string" ? result.summary : undefined,
+      message: safeCopy(item.message, ""),
+      title: safeCopy(result.title, "") || undefined,
+      summary: safeCopy(result.summary, "") || undefined,
       primaryAsset,
       toolEvents,
       progressEvents: agentProgressEvents(item.events),

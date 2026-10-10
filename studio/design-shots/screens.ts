@@ -151,3 +151,9 @@ SCREENS.push(
   { id: "m18-export", url: `/canvas?project=${MUG}&workspace=canvas`, ready: ".react-flow__node", fixtures: exportFixtures, prepare: async (p) => { await p.getByRole("button", { name: "Export", exact: true }).click(); await p.locator("[data-shot='export-ready']").waitFor(); } },
   { id: "m18-export-done", url: `/canvas?project=${MUG}&workspace=canvas`, ready: ".react-flow__node", fixtures: exportFixtures, prepare: async (p) => { await p.getByRole("button", { name: "Export", exact: true }).click(); await p.getByRole("button", { name: "Prepare project JSON" }).click(); await p.locator("[data-shot='export-done-ready']").waitFor(); } },
 );
+
+SCREENS.push({ id: "m05-approval-edge-cases", url: "/design/approval-states?edge=1", ready: "[data-shot='approval-states-ready']", fullPage: true });
+const twelveRun = structuredClone(midRun);
+const sourceApproval = twelveRun.items[0]!.approvals[0]!;
+twelveRun.items[0]!.approvals = Array.from({ length: 12 }, (_, index) => ({ ...sourceApproval, call_id: `plan-step-${index + 1}`, label: `Shot ${index + 1} · product sequence`, step_index: index + 1, step_count: 12 }));
+SCREENS.push({ id: "m04-agent-plan-12", url: agentUrl, ready: ".rh-appr", fixtures: mug({ "/api/studio/agent": twelveRun, ...account(974, 26) }) });

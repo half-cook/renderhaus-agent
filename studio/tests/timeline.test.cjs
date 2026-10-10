@@ -66,3 +66,9 @@ test('timecode renders minutes, seconds and frames', () => {
   assert.equal(timeline.timecode(3.25), '00:03:06');
   assert.equal(timeline.timecode(0), '00:00:00');
 });
+
+
+test('seconds parser accepts decimal, comma and timecode, rejects invalid and overflowing input', () => {
+  for (const [input, expected] of [['4.2', 4.2], ['0:04.2', 4.2], ['4,2', 4.2], [' 1:30 ', 90], ['0', 0]]) assert.equal(timeline.parseSeconds(input), expected);
+  for (const input of ['', '-1', '4 seconds', '1:2:3', 'Infinity', '9'.repeat(400)]) assert.equal(timeline.parseSeconds(input), null);
+});

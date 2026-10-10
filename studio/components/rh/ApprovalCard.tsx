@@ -61,12 +61,13 @@ function Notice({ tone, title, children }: { tone: "ember" | "danger"; title: st
  * It renders integer cents it is given. It never computes, reconciles or invents a price, and it never
  * shows a fee line or a vendor name: lines are already fee-inclusive, work-described strings.
  */
-export function ApprovalCard({ model, approveEnabled, busy = false, actions = {}, className = "" }: {
+export function ApprovalCard({ model, approveEnabled, busy = false, actions = {}, className = "", focusOnMount = true }: {
   model: ApprovalCardModel;
   approveEnabled?: boolean;
   busy?: boolean;
   actions?: ApprovalCardActions;
   className?: string;
+  focusOnMount?: boolean;
 }) {
   const titleId = useId();
   const headingRef = useRef<HTMLHeadingElement>(null);
@@ -79,8 +80,8 @@ export function ApprovalCard({ model, approveEnabled, busy = false, actions = {}
 
   // Focus lands on the heading, never on Approve, so Enter cannot approve by accident.
   useEffect(() => {
-    if (model.status === "pending" && document.activeElement === document.body) headingRef.current?.focus({ preventScroll: true });
-  }, [model.status]);
+    if (focusOnMount && model.status === "pending") headingRef.current?.focus({ preventScroll: true });
+  }, [model.id, model.status, focusOnMount]);
 
   const emphasised = model.status === "pending" || model.status === "paused_cap";
   const showPrompt = ["pending", "approved"].includes(model.status);
@@ -172,7 +173,7 @@ export function ApprovalCard({ model, approveEnabled, busy = false, actions = {}
             ) : null}
           </div>
           <div className="rh-appr-ft" style={{ paddingTop: 0 }}>
-            <button type="button" className="rh-btn rh-btn-act" style={{ flex: 1 }} aria-disabled="true" aria-describedby={`${titleId}-why`} disabled>Approve · est. {formatCents(model.estimateCents)}</button>
+            <button type="button" className="rh-btn rh-btn-act" style={{ flex: 1 }} aria-label={approveName} aria-disabled="true" aria-describedby={`${titleId}-why`} disabled>Approve · est. {formatCents(model.estimateCents)}</button>
             <button type="button" className="rh-btn rh-btn-quiet rh-btn-act" onClick={actions.onReject}>Reject</button>
           </div>
           <div className="rh-footnote" id={`${titleId}-why`}><span>{credit === "lower_cap" ? "Approve turns on as soon as the cap fits your credit." : "Approve turns on once your credit covers the estimate."}</span></div>
@@ -208,7 +209,7 @@ export function ApprovalCard({ model, approveEnabled, busy = false, actions = {}
         <>
           <Ledger heading="Charged">
             {estimateLines.map((line) => <LedgerRow key={`${line.kind}:${line.label}`} label={lineLabel(line, actualMode)} amount={formatCents(line.priceCents)} />)}
-            <LedgerTotal label="Total charged" amountCents={model.actualCents ?? model.lines.reduce((sum, line) => sum + line.priceCents, 0)} />
+            {model.actualCents != null ? <LedgerTotal label="Total charged" amountCents={model.actualCents} /> : <p className="rh-fg3 rh-small">Final charge unavailable.</p>}
             <div className="rh-fg3" style={{ fontSize: 11.5, marginTop: 8 }}>Estimate was {formatCents(model.estimateCents)} · cap {formatCents(model.capCents)}</div>
           </Ledger>
           {model.balanceAfterCents != null ? (

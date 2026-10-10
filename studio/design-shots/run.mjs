@@ -8,7 +8,7 @@ import { setTimeout as delay } from "node:timers/promises";
 const here = path.dirname(fileURLToPath(import.meta.url));
 const studio = path.resolve(process.env.SHOT_STUDIO_DIR || path.join(here, ".."));
 const mode = process.argv[2] || "after";
-if (!["before", "after", "a11y"].includes(mode)) throw new Error(`Unknown capture mode: ${mode}`);
+if (!["before", "after", "a11y", "verify"].includes(mode)) throw new Error(`Unknown capture mode: ${mode}`);
 const port = Number(process.env.SHOT_PORT || 5191);
 if (!Number.isInteger(port) || port < 1024 || port > 65535 || [5174, 8000].includes(port)) throw new Error("Choose an unreserved SHOT_PORT between 1024 and 65535");
 const baseURL = `http://localhost:${port}`;
@@ -19,7 +19,7 @@ const env = {
   NEXT_TELEMETRY_DISABLED: "1",
   STUDIO_API_ORIGIN: "http://localhost:1",
   SHOT_BASE_URL: baseURL,
-  SHOT_LABEL: mode === "a11y" ? process.env.SHOT_LABEL || "after" : mode,
+  SHOT_LABEL: ["a11y", "verify"].includes(mode) ? process.env.SHOT_LABEL || "after" : mode,
   A11Y: mode === "a11y" ? "1" : "",
 };
 
@@ -79,7 +79,7 @@ try {
     await delay(200);
   }
   const playwright = path.join(here, "../node_modules/@playwright/test/cli.js");
-  await command(playwright, ["test", "--config", path.join(here, "playwright.config.ts"), mode === "a11y" ? "a11y.spec.ts" : "shots.spec.ts", "--project=desktop-1920x1200"], here, server);
+  await command(playwright, ["test", "--config", path.join(here, "playwright.config.ts"), mode === "a11y" ? "a11y.spec.ts" : mode === "verify" ? "interactions.spec.ts" : "shots.spec.ts", "--project=desktop-1920x1200"], here, server);
 } finally {
   clearTimeout(readyTimer);
   process.removeListener("SIGINT", stop);

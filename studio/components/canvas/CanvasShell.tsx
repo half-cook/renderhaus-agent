@@ -27,7 +27,7 @@ function isDockPosition(value: unknown): value is DockPosition {
 function Workspace() {
   const [agentBusy, setAgentBusy] = useState(false);
   const [mountReady, setMountReady] = useState(false);
-  const [dockState, setDockState] = useState<DockState>({ dock: "bottom", x: 0, y: 0 });
+  const [dockState, setDockState] = useState<DockState>({ dock: "left", x: 0, y: 0 });
   const hydrate = useCanvasStore((state) => state.hydrate);
   const loadCatalog = useCanvasStore((state) => state.loadCatalog);
   const hydrated = useCanvasStore((state) => state.hydrated);

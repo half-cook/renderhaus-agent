@@ -215,6 +215,7 @@ function ApprovalCards({
           </header>
           <strong>{approval.label}</strong>
           <ApprovalSummary approval={approval}/>
+          <p className="rh-fg3 rh-small">This step needs a server estimate and hard cap before you can approve.</p>
           <details className="agent-approval-details"><summary>Review parameters</summary><Parameters args={approval.arguments} bare /></details>
             <footer>
               <button
@@ -228,11 +229,11 @@ function ApprovalCards({
               <button
                 type="button"
                 className="agent-approval-approve"
-                disabled={disabled || busyCallId !== null}
-                onClick={() => onDecision(approval, "approve")}
+                disabled
+                aria-label="Approval unavailable until an estimate and hard cap arrive"
               >
                 {busyCallId === approval.callId ? <LoaderCircle className="spin" size={13} /> : null}
-                Approve once
+                Estimate unavailable
               </button>
             </footer>
         </article>;
@@ -604,9 +605,10 @@ export function AgentDock({ navigationBusy: externalBusy, onBusyChange, suggesti
     [nodes],
   );
 
+  const awaitingApproval = conversationExecutions.some((execution) => execution.status === "awaiting_approval" && execution.approvals.some((approval) => !approval.decision));
   useEffect(() => {
-    if (agentOpen) inputRef.current?.focus();
-  }, [agentOpen]);
+    if (agentOpen && !awaitingApproval) inputRef.current?.focus();
+  }, [agentOpen, awaitingApproval]);
 
   useEffect(() => {
     setAutonomous(window.localStorage.getItem("renderhaus.agent.autonomous") === "true");

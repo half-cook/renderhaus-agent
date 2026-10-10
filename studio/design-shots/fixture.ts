@@ -22,7 +22,7 @@ function betaPost(pathname: string, body: Record<string, unknown>): { status: nu
   if (pathname === "/api/beta/verify/phone/confirm") return body.code === "424242" ? { status: 200, json: { verified: true, message: "Phone verified." } } : { status: 400, json: { detail: "Verification could not be confirmed." } };
   if (pathname === "/api/beta/claim") return { status: 200, json: { balance_cents: 1000, grant: { amount_cents: 1000, wave: 1 }, message: "Your free beta credit is ready." } };
   if (pathname === "/api/beta/waitlist") return { status: 200, json: { message: "You joined the waitlist. No email was sent." } };
-  if (pathname === "/api/studio/demo-project") return { status: 200, json: { project_id: "demo-project", name: "Matte travel mug", copied: true } };
+  if (pathname === "/api/studio/demo-project") return { status: 200, json: { project_id: "demo-matte-mug", name: "Matte travel mug", copied: true } };
   return null;
 }
 

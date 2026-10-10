@@ -5,7 +5,7 @@ const BASE = process.env.SHOT_BASE_URL ?? "http://localhost:5191"; // NOT 127.0.
 
 export default defineConfig({
   testDir: ".",
-  testMatch: ["shots.spec.ts", "a11y.spec.ts"],
+  testMatch: ["shots.spec.ts", "a11y.spec.ts", "interactions.spec.ts"],
   fullyParallel: false,
   workers: 1,
   retries: 0,

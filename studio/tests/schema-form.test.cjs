@@ -14,7 +14,7 @@ function load(relative) {
   const module = { exports: {} };
   vm.runInNewContext(output, {
     module, exports: module.exports,
-    require: (name) => name.startsWith("@/") ? load(name.slice(2) + ".ts") : require(name),
+    require: (name) => name.startsWith("@/") ? load(name.slice(2) + ".ts") : name.startsWith(".") ? load(path.relative(root, path.resolve(path.dirname(filename), name + ".ts"))) : require(name),
   }, { filename });
   return module.exports;
 }

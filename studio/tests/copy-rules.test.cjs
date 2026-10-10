@@ -11,7 +11,7 @@ const rules = () => import(pathToFileURL(path.join(studio, 'design-shots/copy-ru
 
 test('copy guard catches fee wording and vendor or model names', async () => {
   const { findCopyLeaks, ALLOWED_FEE_LINE } = await rules();
-  for (const text of ['Platform fee $0.30', 'includes a 30% fee', 'Powered by Runway', 'Wan 3 image to video', 'GPT Image 2.5', 'Voiced by ElevenLabs', 'Seedance video', 'Planned by Sonnet', 'Rendered with Remotion', 'via fal']) {
+  for (const text of ['Platform fee $0.30', '30%', 'Seedream___text_to_image', 'custom___tool_name', 'includes a 30% fee', 'Powered by Runway', 'Wan 3 image to video', 'GPT Image 2.5', 'Voiced by ElevenLabs', 'Seedance video', 'Planned by Sonnet', 'Rendered with Remotion', 'via fal']) {
     assert.ok(findCopyLeaks(text).length > 0, text);
   }
   for (const text of ['Product still $0.26', '10-second clip $1.30', 'Voiceover $0.02', 'Total $1.58', 'Approve once', 'Demo Studio launch', 'Open the swan lake storyboard']) {

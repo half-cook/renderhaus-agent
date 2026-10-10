@@ -19,7 +19,7 @@ export function specsFrom(args: Record<string, unknown>): string[] {
   if (typeof duration === "number" && Number.isFinite(duration)) specs.push(`${duration} s`);
   for (const key of ["resolution", "aspect_ratio"] as const) {
     const value = str(args[key]);
-    if (value && /^[0-9a-z:.\-x ]{1,12}$/i.test(value)) specs.push(value);
+    if (value && safeCopy(value, "") && /^[0-9a-z:.\-x ]{1,12}$/i.test(value)) specs.push(value);
   }
   return specs;
 }
@@ -31,7 +31,7 @@ export function specsFrom(args: Record<string, unknown>): string[] {
  */
 export function approvalCardModel(approval: AgentApprovalRequest): ApprovalCardModel | null {
   const item = approval.billing;
-  if (!item || !isCents(item.estimate_cents)) return null;
+  if (!item || !isCents(item.estimate_cents) || !isCents(item.cap_cents)) return null;
   const status = str(item.status);
   if (status === "rejected") return null;
   const card: ApprovalStatus = STATUSES.includes(status as ApprovalStatus) ? (status as ApprovalStatus) : approval.decision === "approve" ? "approved" : "pending";

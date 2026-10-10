@@ -118,3 +118,12 @@ export function timecode(seconds: number): string {
 export function secondsLabel(seconds: number): string {
   return `${round3(seconds).toFixed(2)}s`;
 }
+
+/** "4.2", "0:04.2" and "4,2" all mean 4.2 seconds. Anything else is rejected, not guessed. */
+export function parseSeconds(value: string): number | null {
+  const text = value.trim().replace(",", ".");
+  const match = /^(?:(\d+):)?(\d+(?:\.\d+)?)$/.exec(text);
+  if (!match) return null;
+  const seconds = Number(match[1] ?? 0) * 60 + Number(match[2]);
+  return Number.isFinite(seconds) ? seconds : null;
+}
