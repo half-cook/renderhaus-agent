@@ -3,8 +3,8 @@ name: remotion-aspect-ratio-variants
 description: Reformat approved flat masters or existing Remotion timelines to aspect variants using static centre or safe-zone crops, optional planner-supplied subject boxes and blurred padding. Return candidate MP4s with contact sheets for human editorial approval. Refuse detectors, arbitrary commands and parked Resolve Smart Reframe.
 metadata:
   include_tools: call_editor_tool
-  routing_tools: ad_variant_matrix remotion_render ffmpeg_tool
-  gateway_tools: Remotion___render_ad_variants Remotion___render_timeline Remotion___get_render_progress Ffmpeg___ffmpeg_tool
+  routing_tools: ad_variant_matrix remotion_render ffmpeg_tool delivery_render deliverable_qc
+  gateway_tools: Remotion___render_ad_variants Remotion___render_timeline Remotion___get_render_progress Ffmpeg___ffmpeg_tool Remotion___deliver_render Remotion___qc_deliverable
 ---
 
 # Remotion aspect ratio variants
@@ -110,12 +110,19 @@ source rights and consent requirements. Paid generation always pauses with a cos
 local ffmpeg ops are free and matrix sample/batch gates remain mandatory. Actual files and
 human editorial review are required; queued jobs and dry-runs are not completed deliveries.
 
-## Not yet available
+## Finish approved variants
 
-Delivery presets, loudness measurement/normalisation and full deliverable QC belong to
-`feat/remotion-delivery-qc`. Its three skills are absent here. Do not claim loudness-checked
-or delivery-certified output. A later detector branch may evaluate MediaPipe/OpenCV and
-model licences; no detector is installed or invoked in this branch.
+After contact-sheet and editorial approval, read
+[delivery render](../remotion-delivery-render/SKILL.md) and finish the actual saved files
+or approved matrix manifest with a named preset. That wrapper performs audio finishing,
+[loudness QC](../remotion-loudness-qc/SKILL.md) and
+[deliverable QC](../remotion-deliverable-qc/SKILL.md). Reuse its measurements without a
+second normalisation. Keep the crop/pad decisions, original source provenance and all
+resolution warnings in the delivery record. The final technical QC report does not approve
+framing, establish deterministic OCR equality or replace the existing sample/batch gates.
+Report failed checks verbatim and re-test corrected files before completed-delivery claims.
+S3 upload and channel publishing are unsupported in this local branch.
+A later detector branch may evaluate MediaPipe/OpenCV and model licences; no detector runs here.
 
 ## Licence
 

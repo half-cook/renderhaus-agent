@@ -91,6 +91,7 @@ _MODELSTUDIO_PREVIEW_WARNING = (
     "Alibaba preview terms permit internal testing, research and evaluation only until GA. "
     "Live customer use is blocked by the preview licence."
 )
+_FINISHING_CAPABILITIES = {"delivery_render", "loudness_qc", "deliverable_qc"}
 
 
 @dataclass(frozen=True)
@@ -231,6 +232,9 @@ def _delivery_route(prompt: str, constraints: dict, *, region: str | None,
                     available_tools: set[str] | None, arguments: dict | None) -> Route | None:
     if _knowledge_explainer_request(prompt):
         return None
+    if any(rule.get("capability") in _FINISHING_CAPABILITIES and re.search(rule["pattern"], prompt, re.I)
+           for rule in POLICY["rules"]):
+        return None
     if any(rule.get("capability") == "ad_variant_matrix" and re.search(rule["pattern"], prompt, re.I)
            for rule in POLICY["rules"]):
         return None
@@ -261,6 +265,47 @@ def _delivery_route(prompt: str, constraints: dict, *, region: str | None,
                    reason=incomplete.reason if incomplete else
                    'Start independent video and voiceover together; assemble after both finish.' if voiceover else
                    'Assemble the existing assets into the final MP4.')
+
+
+def _delivery_preset(prompt: str, arguments: dict | None) -> str:
+    if preset := (arguments or {}).get("preset"):
+        return preset
+    for preset in ("social-vertical", "social-feed", "web-1080p", "broadcast-proxy", "review-proxy", "email-720p", "podcast-streaming"):
+        if re.search(rf"\b{re.escape(preset)}\b", prompt, re.I):
+            return preset
+    for pattern, preset in (
+        (r"\bemail\b", "email-720p"),
+        (r"\bproxy\b", "review-proxy"),
+        (r"\btiktok\b|\breels\b|\b9:16\b|\bvertical\b", "social-vertical"),
+        (r"\byoutube\b|\bweb\b", "web-1080p"),
+    ):
+        if re.search(pattern, prompt, re.I):
+            return preset
+    return "social-feed"
+
+
+def _editing_workflow_route(prompt: str, constraints: dict, *, region: str | None,
+                            available_tools: set[str] | None, arguments: dict | None) -> Route | None:
+    workflow = next((row for row in POLICY.get("editing_workflows", [])
+                     if re.search(row["pattern"], prompt, re.I)), None)
+    if workflow is None:
+        return None
+    steps = []
+    for step in workflow["steps"]:
+        route = select_provider(step["capability"], region=region, available_tools=available_tools,
+                                arguments=arguments, **constraints)
+        if step["capability"] == "delivery_render":
+            route = replace(route, required={"preset": _delivery_preset(prompt, arguments)})
+        steps.append(replace(route, skill=step["skill"]))
+    first = steps[0]
+    incomplete = next((step for step in steps if step.status != "ready"), None)
+    return replace(first, steps=tuple(steps), expected_output="QC-checked MP4",
+                   execution_groups=tuple((step.alias,) for step in steps if step.alias),
+                   tool=None if incomplete else first.tool,
+                   dispatch_tool=None if incomplete else first.dispatch_tool,
+                   status=incomplete.status if incomplete else first.status,
+                   reason=incomplete.reason if incomplete else
+                   "Complete matrix/reframe approval, delivery finishing, loudness and QC in order. Reuse integrated finishing evidence before reporting completion.")
 
 
 def _lyrics_capabilities(prompt: str) -> list[tuple[str, str]]:
@@ -338,6 +383,8 @@ def route_intent(prompt: str, *, region: str | None = None, tier: str | None = N
         if re.search(pattern, prompt, re.I):
             return Route(alias=alias, status="retired", reason=TOOL_MAP[alias]["reason"],
                          disclosure=TOOL_MAP[alias]["reason"])
+    if editing_workflow := _editing_workflow_route(prompt, constraints, region=region, available_tools=available_tools, arguments=arguments):
+        return editing_workflow
     if lyrics_route := _lyrics_route(prompt, constraints, region=region, available_tools=available_tools, arguments=arguments):
         return lyrics_route
     lipsync = bool(re.search(_LIPSYNC_REQUEST, prompt, re.I))
@@ -401,7 +448,9 @@ def route_intent(prompt: str, *, region: str | None = None, tier: str | None = N
             scoped = capability_constraints(constraints, capability) if capability == "lipsync" or knowledge_request else constraints
             route = select_provider(capability, arguments=arguments, available_tools=available_tools,
                                     region=region, retry=retry, **scoped)
-            if capability != "performance_transfer" and (constraints["provider"] in {"kling", "runway", "luma", "seedream", "fish_audio", "alibaba_modelstudio"} or (
+            if capability == "delivery_render":
+                route = replace(route, required={"preset": _delivery_preset(prompt, arguments)})
+            if capability not in _FINISHING_CAPABILITIES | {"performance_transfer"} and (constraints["provider"] in {"kling", "runway", "luma", "seedream", "fish_audio", "alibaba_modelstudio"} or (
                 constraints["provider"] == "fal" and re.search(r"vidu|vace", prompt, re.I)
             ) or constraints["named_model"] == "wan3" and capability in {"v2v_edit", "extend"}):
                 skill = "named-provider"
@@ -485,7 +534,7 @@ def _capability_price(row: dict):
     if price == "unknown":
         return price
     provider, model = row["provider"], row["model"]
-    if provider == "ffmpeg":
+    if provider == "ffmpeg" or provider == "remotion" and all(is_free_tool(tool) for tool in row["tools"].values()):
         return {**price, "rates": {"cents_per_call": 0}, "currency_unit": "USD cents"}
     if provider == "remotion" and model == "ad-variant-timeline":
         try:
@@ -715,9 +764,9 @@ def select_provider(job: str, *, tier: str | None = None, required: dict | None 
     if capability in {"still_image", "image_edit"} and predicates.get("video_voiceover"):
         reason = "A shot or clip with voiceover excludes image tools; use video, TTS and assembly."
         return Route(status="blocked", job_type=capability, reason=reason, disclosure=reason)
-    if capability in {"tts", "voice_clone", "music", "sfx", "motion_graphics", "nle_handoff", "nle_import", "ad_variant_matrix", "media_inspection"}:
+    if capability in {"tts", "voice_clone", "music", "sfx", "motion_graphics", "nle_handoff", "nle_import", "ad_variant_matrix", "media_inspection"} | _FINISHING_CAPABILITIES:
         required = {}
-        if capability in {"motion_graphics", "nle_handoff", "nle_import", "ad_variant_matrix", "media_inspection"}:
+        if capability in {"motion_graphics", "nle_handoff", "nle_import", "ad_variant_matrix", "media_inspection"} | _FINISHING_CAPABILITIES:
             provider = model = named_model = None
     if capability not in POLICY["capability_map"]:
         return Route(status="blocked", reason=f"No capability map for {capability}.")
