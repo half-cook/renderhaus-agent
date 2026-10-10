@@ -112,7 +112,7 @@ def check_routing_inventory() -> None:
 
         subprocess.run(["git", "ls-files", "--error-unmatch", str(EVAL_PATH.relative_to(ROOT))], check=True, capture_output=True)
         assert default_vlm_enabled(), "Committed VLM evidence does not qualify for promotion."
-    print("ok routing inventory (16 providers, 117 Gateway tools, 31 skills, 225 active routing rows)")
+    print("ok routing inventory (16 providers, 117 Gateway tools, 31 skills, 231 active routing rows)")
 
 
 def _assert_gateway_shape(schema: object) -> None:
@@ -281,6 +281,8 @@ def check_dry_run_dispatch() -> None:
 
 
 def check_hyperframes_preview() -> None:
+    import subprocess
+
     from agent.hyperframes import HYPERFRAMES_TOOL, HyperFramesServer
 
     server = HyperFramesServer()
@@ -298,6 +300,10 @@ def check_hyperframes_preview() -> None:
         assert not {"url", "output_path", "job_id", "render_id"} & result.keys()
     finally:
         os.environ["HYPERFRAMES_ENABLED"] = "false"
+    subprocess.run([
+        sys.executable, "-m", "unittest", "discover", "-s", str(ROOT / "tests"),
+        "-p", "test_hyperframes_packs.py", "-q",
+    ], cwd=ROOT, check=True)
     print("ok local HyperFrames schema and dry-run composition preview")
 
 

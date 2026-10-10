@@ -1,6 +1,6 @@
 ---
 name: hyperframes
-description: Plan HTML/CSS motion compositions and dry-run inputs for explicit HyperFrames requests, including faceless explainers, product launches, cinematic captions, tactile paper collage, and kinetic titles. Remotion remains the default renderer.
+description: Author HTML motion compositions and preview inputs for explicitly named HyperFrames requests. Includes cinematic captions, tactile collage, and Hyfrme templates. Remotion remains the default renderer.
 license: Apache-2.0
 metadata:
   include_tools: call_editor_tool call_audio_tool
@@ -28,6 +28,13 @@ on 2026-10-09. Their complete copyright and permission notices remain in
 `third_party/hyperframes-tactile-collage/LICENSE`. Those adapted resources retain
 MIT licensing; this existing owning skill retains its Apache-2.0 attribution.
 
+The [Hyfrme recipe](references/hyfrme.md) and three examples adapt selected
+[AksharP5/hyfrme](https://github.com/AksharP5/hyfrme/tree/26522a993082cd30ad5f404e4890d670c5c73bcb)
+patterns, copyright 2026 Akshar Patel, under MIT. Text and transition patterns
+also retain Remocn's MIT attribution. Renderhaus modified these resources on
+2026-10-09. Complete notices remain in `third_party/hyfrme/LICENSE` and
+`third_party/hyfrme/Remocn-LICENSE`. The adapted resources use MIT.
+
 ## Select the workflow
 
 Read `read_studio_context` and follow its `intent_route`. Use this skill when the
@@ -52,8 +59,9 @@ Choose a pattern from the supplied brief:
 | Cinematic captions | Read [the cinematic recipe](references/cinematic-caption.md) before planning ordered support, hero, and CTA cues. Use supplied speech timings. Depth requires a future worker and a supplied clean, frame-locked matte. |
 | Tactile paper collage | Read [the collage recipe](references/tactile-collage.md) before choosing a physical metaphor, full-frame or overlay mode, and a stable caption lane. Source footage and matte handling require the future worker. |
 | Kinetic titles | Plan a short, unnarrated title, lower third, logo reveal, or numeric callout. Use the approved brand kit and supplied logo or data. Hold text long enough to read and leave a clear final frame. |
+| Hyfrme component pack | Read [the Hyfrme recipe](references/hyfrme.md) for text reveals, shared-axis scene transitions, or a device card with raised UI rows. Choose one of the three catalog samples. The device card is illustrative UI, not website capture. |
 
-For either pack, read [the template catalog](templates/catalog.json), then its
+For a pack, read [the template catalog](templates/catalog.json), then its
 listed HTML file through the skill filesystem. Copy the entry's `arguments` and
 add `html` containing the actual file contents. Templates are asset-free,
 full-frame samples with invented copy and illustrative timings. They require
@@ -61,6 +69,10 @@ host-provided GSAP and create no source footage, subject matte, or proof frames.
 Keep the envelope consistent with the root after changes. The catalog adds no
 tool or top-level skill. Unnamed caption and collage animation requests stay on
 Remotion even when HyperFrames is enabled.
+The Hyfrme pack name alone also keeps the default renderer. Only an explicit
+HyperFrames name opts into this skill. Requests to record a UI demo retain the
+existing capture workflow and its pending dependency. The pack does not implement
+capture, install the upstream catalog, or supply shader, font, or media runtimes.
 
 ## Plan and author
 

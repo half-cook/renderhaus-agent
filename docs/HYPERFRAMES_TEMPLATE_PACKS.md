@@ -1,7 +1,8 @@
-# HyperFrames caption and collage packs
+# HyperFrames template packs
 
-The existing `hyperframes` skill includes two adapted MIT recipe packs and two
-standalone example compositions. Remotion remains the motion-graphics default.
+The existing `hyperframes` skill includes cinematic-caption, tactile-collage, and
+Hyfrme MIT recipe packs with five standalone example compositions.
+Remotion remains the motion-graphics default.
 An explicit HyperFrames request selects the optional preview tool when enabled.
 Plain cinematic captions and animated paper-collage requests select Remotion.
 An HTML template request without the HyperFrames name also keeps Remotion.
@@ -14,6 +15,7 @@ A request for a still poster for the video remains an image-generation request.
 | --- | --- | --- |
 | Cinematic caption | [Recipe](../agent/deep_agent/skills/hyperframes/references/cinematic-caption.md), [HTML](../agent/deep_agent/skills/hyperframes/templates/cinematic-caption.html) | Semantic groups, spoken-order reveals, deliberate hero emphasis, neutral translucent type, compact CTA, and subject-clear placement. |
 | Tactile collage | [Recipe](../agent/deep_agent/skills/hyperframes/references/tactile-collage.md), [HTML](../agent/deep_agent/skills/hyperframes/templates/tactile-collage.html) | Paper and ink roles, physical scene metaphors, restrained placed or stamped motion, safe caption areas, and full-frame fallback. |
+| Hyfrme | [Recipe](../agent/deep_agent/skills/hyperframes/references/hyfrme.md), [pack details](HYPERFRAMES_HYFRME_PACK.md) | Three examples for text reveals, shared-axis transitions, and a device card with raised UI rows. |
 
 The [catalog](../agent/deep_agent/skills/hyperframes/templates/catalog.json)
 stores each HTML filename and its preview dimensions, duration, and frame rate.
@@ -26,7 +28,9 @@ The examples use invented sample copy and system font stacks. No source footage,
 font files, model weights, upstream scripts, or new runtime dependency is bundled.
 The caption example uses clear space rather than claiming a subject matte.
 The collage example uses the full-frame mode. Approved brand assets and measured
-timings take precedence when adapting either example to a project.
+timings take precedence when adapting an example to a project. Hyfrme's device
+card uses invented UI and does not implement capture. Its recipe omits mixed-licence
+shader runtimes. The Hyfrme pack name alone does not opt into HyperFrames.
 
 ## Preview an example
 
@@ -67,12 +71,14 @@ on **2026-10-09** before adaptation.
 | audrey-560/hyperframes-tactile-collage | [ef6a49f5a250e6b3b1a0839cafc7a2d43872e619](https://github.com/audrey-560/hyperframes-tactile-collage/tree/ef6a49f5a250e6b3b1a0839cafc7a2d43872e619), [LICENSE](https://github.com/audrey-560/hyperframes-tactile-collage/blob/ef6a49f5a250e6b3b1a0839cafc7a2d43872e619/LICENSE) | MIT, Copyright (c) 2026 Audrey. |
 | Existing HyperFrames guidance | [heygen-com/hyperframes LICENSE at 3aa68869f7d4cec8b37cdfcb9cd539389b63abed](https://github.com/heygen-com/hyperframes/blob/3aa68869f7d4cec8b37cdfcb9cd539389b63abed/LICENSE), previously assessed 2026-10-08 | Apache-2.0, Copyright 2026 HeyGen, Inc. |
 
-Both complete MIT copyright and permission notices remain in
+The caption and collage MIT copyright and permission notices remain in
 `third_party/hyperframes-cinematic-caption/LICENSE` and
 `third_party/hyperframes-tactile-collage/LICENSE`. Adapted files carry source and
 modification attribution. Python distributions package the recipes, templates,
 catalog, and licences. The AgentCore image already copies `agent/` and
-`third_party/`. Provider, Gateway tool, and skill counts remain 15, 113, and 24.
+`third_party/`. Current provider, Gateway tool, and skill counts are 16, 117, and 30.
+The [Hyfrme pack assessment](HYPERFRAMES_HYFRME_PACK.md#sources-and-licence-scope)
+records its pinned MIT attribution chain and omitted dependencies.
 
 These licences permit commercial code adaptation. They do not grant rights to
 customer media, faces, voices, or training data. `hyperframes_render` remains
@@ -89,7 +95,8 @@ plain and explicit requests, enabled and disabled flags, and inert confidential
 metadata. Existing fake-model graph tests cover preview approvals, rejection,
 resumption, and the unknown-cost spending cap.
 
-Final offline checks on **2026-10-09** passed: 1,371 unittest tests ran, with
+Caption/collage checks recorded before the Hyfrme adaptation on **2026-10-09**
+passed: 1,371 unittest tests ran, with
 1,365 passing and six skipped. This includes all 18 pack contracts. Ruff,
 `scripts/ci_check.py`, and the requested Studio TypeScript check passed.
 CI used the required dry-run flags, an empty secrets name, and cached wheels with
@@ -97,11 +104,14 @@ package-index access disabled. The temporary Studio dependency link was removed.
 An actual wheel contains the five nested resources and both complete MIT notices,
 each identical to the checkout bytes.
 
-The fixture adds five active routing rows, including capability-map seed row 149.
+The caption/collage task added five active routing rows, including capability-map seed row 149.
 Current inventory and routing totals are in [Skill routing](SKILLS.md#offline-routing-verification).
 HyperFrames footage compositing and Cutaway capture remain pending. Ambiguous extension
 length semantics and named Wan's preview licence retain their existing blocks. No skipped row is activated
 by these template packs. The existing unnamed HTML-template row now uses Remotion.
+Hyfrme adds six active renderer-selection examples and activates no dependency
+skip. Its verification is recorded in [the Hyfrme assessment](HYPERFRAMES_HYFRME_PACK.md)
+and [decisions](hyperframes-hyfrme-decisions.tsv).
 
 These checks establish static structure and input-preview behavior. They do not
 prove real GSAP seeking, caption contrast, subject clearance, visual quality, or

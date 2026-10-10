@@ -4178,6 +4178,90 @@
     }
   },
   {
+    "test_id": "RT-HY001",
+    "prompt": "Hyfrme kinetic titles with HyperFrames",
+    "expected_skill": "hyperframes",
+    "expected_tool": "hyperframes_render",
+    "suite": "hyperframes-hyfrme-pack",
+    "skip_reason": "",
+    "note": "Hyfrme resource selection preserves explicitly named HyperFrames only; pack names do not change the default.",
+    "source_status": "new",
+    "env": {
+      "HYPERFRAMES_ENABLED": "true",
+      "HYPERFRAMES_DRY_RUN": "true"
+    }
+  },
+  {
+    "test_id": "RT-HY002",
+    "prompt": "Hyfrme kinetic titles",
+    "expected_skill": "motion-graphics",
+    "expected_tool": "remotion_render",
+    "suite": "hyperframes-hyfrme-pack",
+    "skip_reason": "",
+    "note": "Hyfrme resource selection preserves explicitly named HyperFrames only; pack names do not change the default.",
+    "source_status": "new",
+    "env": {
+      "HYPERFRAMES_ENABLED": "true",
+      "HYPERFRAMES_DRY_RUN": "true"
+    }
+  },
+  {
+    "test_id": "RT-HY003",
+    "prompt": "Hyfrme motion graphics transitions with HyperFrames",
+    "expected_skill": "hyperframes",
+    "expected_tool": "hyperframes_render",
+    "suite": "hyperframes-hyfrme-pack",
+    "skip_reason": "",
+    "note": "Hyfrme resource selection preserves explicitly named HyperFrames only; pack names do not change the default.",
+    "source_status": "new",
+    "env": {
+      "HYPERFRAMES_ENABLED": "true",
+      "HYPERFRAMES_DRY_RUN": "true"
+    }
+  },
+  {
+    "test_id": "RT-HY004",
+    "prompt": "Hyfrme motion graphics transitions",
+    "expected_skill": "motion-graphics",
+    "expected_tool": "remotion_render",
+    "suite": "hyperframes-hyfrme-pack",
+    "skip_reason": "",
+    "note": "Hyfrme resource selection preserves explicitly named HyperFrames only; pack names do not change the default.",
+    "source_status": "new",
+    "env": {
+      "HYPERFRAMES_ENABLED": "true",
+      "HYPERFRAMES_DRY_RUN": "true"
+    }
+  },
+  {
+    "test_id": "RT-HY005",
+    "prompt": "Hyfrme motion graphics product UI demo with HyperFrames",
+    "expected_skill": "hyperframes",
+    "expected_tool": "hyperframes_render",
+    "suite": "hyperframes-hyfrme-pack",
+    "skip_reason": "",
+    "note": "Hyfrme resource selection preserves explicitly named HyperFrames only; pack names do not change the default.",
+    "source_status": "new",
+    "env": {
+      "HYPERFRAMES_ENABLED": "true",
+      "HYPERFRAMES_DRY_RUN": "true"
+    }
+  },
+  {
+    "test_id": "RT-HY006",
+    "prompt": "Hyfrme motion graphics device card",
+    "expected_skill": "motion-graphics",
+    "expected_tool": "remotion_render",
+    "suite": "hyperframes-hyfrme-pack",
+    "skip_reason": "",
+    "note": "Hyfrme resource selection preserves explicitly named HyperFrames only; pack names do not change the default.",
+    "source_status": "new",
+    "env": {
+      "HYPERFRAMES_ENABLED": "true",
+      "HYPERFRAMES_DRY_RUN": "true"
+    }
+  },
+  {
     "test_id": "PTV-01",
     "suite": "plan-to-video",
     "prompt": "plan-to-video for my implementation plan",

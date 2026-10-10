@@ -1,0 +1,70 @@
+<!doctype html>
+<!--
+Adapted from AksharP5/hyfrme at 26522a993082cd30ad5f404e4890d670c5c73bcb.
+Source https://github.com/AksharP5/hyfrme/blob/26522a993082cd30ad5f404e4890d670c5c73bcb/registry/blocks/shared-axis-z/shared-axis-z.html
+Copyright (c) 2026 Akshar Patel. MIT License.
+Copyright (c) 2026 Remocn. MIT License.
+Complete copyright and permission notices remain in third_party/hyfrme/LICENSE
+and third_party/hyfrme/Remocn-LICENSE.
+Modified by Renderhaus on 2026-10-09 into an asset-free, full-frame sample.
+The host must provision GSAP and the isolated renderer.
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Hyfrme state transition sample</title>
+    <style>
+      * { box-sizing: border-box; }
+      html, body { margin: 0; width: 100%; height: 100%; }
+      #hyfrme-transitions { position: relative; width: 100%; height: 100%; overflow: hidden; background: #142b2d; color: #f1f2e9; font-family: Arial, sans-serif; font-synthesis: none; }
+      .clip { position: absolute; }
+      .htr-motion { opacity: 0; }
+      #htr-label-clip { left: 112px; top: 96px; width: 1056px; height: 46px; }
+      #htr-label-motion { font-size: 24px; line-height: 1.4; letter-spacing: 1px; }
+      .htr-state-clip { left: 112px; top: 192px; width: 1056px; height: 370px; }
+      .htr-state { width: 100%; height: 100%; padding: 42px 48px; border-radius: 24px; transform-origin: 50% 50%; }
+      #htr-from-motion { background: #f1efe6; color: #183335; }
+      #htr-to-motion { background: #c6dda7; color: #203826; }
+      .htr-state-name { font-size: 20px; letter-spacing: 2px; text-transform: uppercase; }
+      .htr-title { margin: 24px 0 30px; font-size: 68px; font-weight: 700; line-height: 1.1; letter-spacing: -2px; }
+      .htr-items { display: flex; gap: 16px; }
+      .htr-item { flex: 1; padding: 18px 22px; border: 1px solid currentColor; border-radius: 12px; font-size: 25px; line-height: 1.3; }
+      #htr-progress-clip { left: 112px; top: 624px; width: 1056px; height: 4px; background: #38504f; }
+      #htr-progress-motion { width: 100%; height: 100%; background: #c6dda7; transform-origin: 0% 50%; }
+    </style>
+  </head>
+  <body>
+    <div id="hyfrme-transitions" data-composition-id="hyfrme-transitions" data-width="1280" data-height="720" data-fps="30" data-duration="6">
+      <div id="htr-label-clip" class="clip" data-start="0" data-duration="6">
+        <div id="htr-label-motion" class="htr-motion">Collect &rarr; Organize</div>
+      </div>
+      <div id="htr-from-clip" class="clip htr-state-clip" data-start="0" data-duration="3.2">
+        <div id="htr-from-motion" class="htr-motion htr-state">
+          <div class="htr-state-name">Collect</div>
+          <h1 class="htr-title">Loose ideas</h1>
+          <div class="htr-items"><div class="htr-item">Notes</div><div class="htr-item">Sketches</div><div class="htr-item">References</div></div>
+        </div>
+      </div>
+      <div id="htr-to-clip" class="clip htr-state-clip" data-start="2.65" data-duration="3.35">
+        <div id="htr-to-motion" class="htr-motion htr-state">
+          <div class="htr-state-name">Organize</div>
+          <h2 class="htr-title">A clear outline</h2>
+          <div class="htr-items"><div class="htr-item">01 Purpose</div><div class="htr-item">02 Structure</div><div class="htr-item">03 Next step</div></div>
+        </div>
+      </div>
+      <div id="htr-progress-clip" class="clip" data-start="0" data-duration="6">
+        <div id="htr-progress-motion" aria-hidden="true"></div>
+      </div>
+    </div>
+    <script>
+      const timeline = gsap.timeline({ paused: true });
+      timeline.fromTo("#htr-label-motion", { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.35, ease: "power2.out" }, 0.15);
+      timeline.fromTo("#htr-from-motion", { opacity: 0, scale: 0.92, y: 12 }, { opacity: 1, scale: 1, y: 0, duration: 0.65, ease: "power2.out" }, 0.25);
+      timeline.to("#htr-from-motion", { opacity: 0, scale: 1.08, y: -8, duration: 0.55, ease: "power2.inOut" }, 2.6);
+      timeline.fromTo("#htr-to-motion", { opacity: 0, scale: 0.92, y: 12 }, { opacity: 1, scale: 1, y: 0, duration: 0.7, ease: "power2.out" }, 2.65);
+      timeline.fromTo("#htr-progress-motion", { scaleX: 0 }, { scaleX: 1, duration: 6, ease: "none" }, 0);
+      window.__timelines = window.__timelines || {};
+      window.__timelines["hyfrme-transitions"] = timeline;
+    </script>
+  </body>
+</html>
