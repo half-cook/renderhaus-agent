@@ -551,6 +551,14 @@ class GatewayExecutor:
         if rejection is not None:
             output = {"status": "rejected", "message": rejection}
         else:
+            meter = getattr(studio, "run_meter", None)
+            if meter is not None and not is_free_tool(name):
+                # Hard stop at the run's cap: run spend + this step must fit before anything paid is dispatched.
+                from server.run_budget import PAUSED_MESSAGE
+
+                step_quote = estimate_cost(name, arguments)
+                if await asyncio.to_thread(meter.check_step, step_quote.total_cents):
+                    return {"status": "not_run", "reason": PAUSED_MESSAGE}
             if self.cap_cents is not None and not is_free_tool(name):
                 quote = estimate_cost(name, arguments)
                 spent = sum(self.reservations.values())
@@ -596,7 +604,12 @@ class GatewayExecutor:
                     if studio.user_id and (stripe_enabled() or beta_billing_enabled(repository, studio.user_id)):
                         cost = cost_for(provider, verb, arguments)
                         if cost.total_cents > 0:
-                            charge = await asyncio.to_thread(repository.charge_usage, studio.user_id, cost.total_cents, "generation")
+                            from server.run_billing import charge_media
+
+                            charge = await asyncio.to_thread(
+                                charge_media, repository, studio.user_id, studio.job_id, cost.total_cents,
+                                name, arguments, call_id,
+                            )
                     try:
                         with authorize(arguments.get("stage", "plan"), arguments.get("plan_hash", ""),
                                        f"human:{call_id}" if approved else ""):

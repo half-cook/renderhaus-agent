@@ -24,6 +24,7 @@ from typing import Any, Literal
 
 import httpx
 
+from server import run_budget
 from server.config import ROOT
 
 logger = logging.getLogger(__name__)
@@ -440,8 +441,10 @@ class StudioRepository:
                     """
                 )
                 from server.beta_credits import init_beta_schema
+                from server.run_budget import init_run_budget_schema
 
                 init_beta_schema(connection)
+                init_run_budget_schema(connection)
                 connection.execute("BEGIN IMMEDIATE")
                 for table, columns in {
                     "usage_events": {"beta_cents": "INTEGER NOT NULL DEFAULT 0", "refunded_at": "INTEGER",
@@ -1711,6 +1714,22 @@ class StudioRepository:
                     )
         result = json.loads(row["result_json"]) if row["result_json"] else None
         approvals = json.loads(row["approvals_json"] or "[]")
+        if not isinstance(approvals, list):
+            approvals = []
+        from server import run_billing
+
+        # Client-facing money view: one fee-inclusive price per step, estimate and hard cap, and no
+        # vendor, model, tool-vendor or fee data (see docs/BILLING.md "Client payloads").
+        approvals = run_billing.public_approvals(
+            self, run_id=row["id"], user_id=row["created_by"], execution_status=row["status"],
+            error_type=row["error_type"], raw_approvals=approvals,
+        )
+        hold = self.get_run_hold(row["id"])
+        paused_cap = run_billing.paused_cap_view(self, row["id"]) if hold else None
+        receipt = json.loads(hold["receipt_json"]) if hold and hold["receipt_json"] else None
+        message = row["message"]
+        if not run_budget.is_client_safe(message):
+            message = "Working on it." if row["status"] in ACTIVE_EXECUTION_STATUSES else run_budget.NEUTRAL_ERROR
         return {
             "job_id": row["id"],
             "project_id": row["project_id"],
@@ -1718,9 +1737,11 @@ class StudioRepository:
             "turn_index": row["turn_index"],
             "prompt": row["prompt"],
             "status": row["status"],
-            "message": row["message"],
+            "message": message,
             "autonomous": bool(row["autonomous"]),
-            "approvals": approvals if isinstance(approvals, list) else [],
+            "approvals": approvals,
+            "paused_cap": paused_cap,
+            "receipt": receipt,
             "result": result,
             "tool_calls": calls,
             "events": events,
@@ -1863,8 +1884,16 @@ class StudioRepository:
         except sqlite3.IntegrityError:
             return self.get_balance(user_id)
 
-    def charge_usage(self, user_id: str, cost_cents: int, reason: str) -> UsageCharge:
-        """Atomically debit daily allowance, then beta credit, then purchased credit."""
+    def charge_usage(
+        self, user_id: str, cost_cents: int, reason: str, *, run_id: str | None = None,
+        line_kind: str | None = None, line_label: str | None = None, line_detail: str | None = None,
+        call_id: str | None = None,
+    ) -> UsageCharge:
+        """Atomically debit daily allowance, then beta credit, then purchased credit.
+
+        Credit reserved by other runs' holds (run_budget.run_holds) is not spendable here. With
+        ``run_id`` the charge draws on that run's own hold and can never push the run past its cap.
+        """
         if type(cost_cents) is not int or cost_cents < 0:
             raise ValueError("Usage cost must be non-negative integer cents.")
         self.ensure_account(user_id)
@@ -1883,7 +1912,10 @@ class StudioRepository:
             daily_portion = min(cost_cents, daily_remaining)
             wallet_portion = cost_cents - daily_portion
             wallet_balance = connection.execute("SELECT balance_cents FROM accounts WHERE user_id = ?", (user_id,)).fetchone()[0]
-            if wallet_portion > wallet_balance:
+            held_by_others = run_budget.reserved_cents(connection, user_id, exclude_run=run_id)
+            if wallet_portion > wallet_balance or (
+                held_by_others and cost_cents > daily_remaining + wallet_balance - held_by_others
+            ):
                 grant = connection.execute("SELECT remaining_cents FROM beta_grants WHERE user_id = ?", (user_id,)).fetchone()
                 message = (
                     f"Not enough balance: this generation costs ${cost_cents / 100:.2f}, "
@@ -1913,6 +1945,11 @@ class StudioRepository:
                 "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
                 (charge_id, user_id, daily_portion, wallet_portion, beta_portion, reason, now, today),
             )
+            if run_id:
+                run_budget.apply_run_charge(
+                    connection, run_id, user_id, cost_cents, charge_id, now,
+                    kind=line_kind, label=line_label, detail=line_detail, call_id=call_id,
+                )
         return UsageCharge(daily_portion, wallet_portion, today, beta_portion, charge_id)
 
     def _apply_refund(
@@ -2021,6 +2058,7 @@ class StudioRepository:
                     if cursor.rowcount == 0:
                         return
                 self._apply_refund(connection, user_id, charge, reason, now)
+                run_budget.reverse_run_charge(connection, charge.charge_id, now)
         except Exception:
             logger.exception("Could not apply pending refund %s for %s; left pending for later flush", refund_id, user_id)
 
@@ -2053,6 +2091,177 @@ class StudioRepository:
         fails; a failure to apply it is caught and left pending."""
         refund_id = self.record_pending_refund(user_id, charge, reason)
         self._claim_and_apply_pending_refund(user_id, refund_id, charge, reason)
+
+    # ----- run holds (see server/run_budget.py) -----
+
+    def available_credit(self, user_id: str, *, exclude_run: str | None = None) -> int:
+        """Spendable credit (daily allowance + wallet) minus other runs' active holds."""
+        self.ensure_account(user_id)
+        self.flush_pending_refunds(user_id)
+        with self._connect() as connection:
+            run_budget.sweep_stale_holds(connection, user_id)
+            spendable = run_budget.spendable_cents(connection, user_id, _today_utc())
+            return max(0, spendable - run_budget.reserved_cents(connection, user_id, exclude_run=exclude_run))
+
+    def spendable_credit(self, user_id: str) -> int:
+        self.ensure_account(user_id)
+        with self._connect() as connection:
+            return run_budget.spendable_cents(connection, user_id, _today_utc())
+
+    def hold_run(
+        self, user_id: str, run_id: str, cap_cents: int, *, estimate_cents: int = 0,
+        conversation_id: str | None = None,
+    ) -> dict[str, Any]:
+        """Hold ``cap_cents`` of the user's credit for a run (idempotent per run id).
+
+        An existing hold is raised (never lowered) when ``cap_cents`` is higher; the extra must fit
+        in available credit.  Raises InsufficientCreditError otherwise, so the wallet can never go
+        negative and the same credit cannot back two runs.
+        """
+        if type(cap_cents) is not int or cap_cents < 0:
+            raise ValueError("Cap must be non-negative integer cents.")
+        self.ensure_account(user_id)
+        self.flush_pending_refunds(user_id)
+        now = _now()
+        with self._connect() as connection:
+            connection.execute("BEGIN IMMEDIATE")
+            run_budget.sweep_stale_holds(connection, user_id, now=now)
+            spendable = run_budget.spendable_cents(connection, user_id, _today_utc())
+            others = run_budget.reserved_cents(connection, user_id, exclude_run=run_id)
+            available = max(0, spendable - others)
+            row = connection.execute("SELECT * FROM run_holds WHERE run_id = ?", (run_id,)).fetchone()
+            if row is not None and row["user_id"] != user_id:
+                raise KeyError("Run not found")
+            if row is not None and row["state"] == "held":
+                own_free = row["held_cents"] - row["charged_cents"]
+                extra = max(0, cap_cents - row["held_cents"])
+                if extra > max(0, available - own_free):
+                    raise run_budget.InsufficientCreditError(max(0, available - own_free), extra)
+                if extra:
+                    connection.execute(
+                        "UPDATE run_holds SET held_cents = ?, estimate_cents = MAX(estimate_cents, ?), "
+                        "status = CASE WHEN status = 'paused_cap' THEN 'running' ELSE status END, "
+                        "pause_json = NULL, updated_at = ? WHERE run_id = ?",
+                        (cap_cents, estimate_cents, now, run_id),
+                    )
+            elif row is not None:
+                raise ValueError("This run has already finished.")
+            else:
+                if cap_cents > available:
+                    raise run_budget.InsufficientCreditError(available, cap_cents)
+                connection.execute(
+                    "INSERT INTO run_holds(run_id, user_id, conversation_id, held_cents, estimate_cents, "
+                    "balance_before_cents, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                    (run_id, user_id, conversation_id, cap_cents, estimate_cents, spendable, now, now),
+                )
+        return self.get_run_hold(run_id) or {}
+
+    def conversation_has_hold(self, user_id: str, conversation_id: str) -> bool:
+        with self._connect() as connection:
+            return connection.execute(
+                "SELECT 1 FROM run_holds WHERE user_id = ? AND conversation_id = ? AND state = 'held'",
+                (user_id, conversation_id),
+            ).fetchone() is not None
+
+    def adopt_conversation_hold(self, user_id: str, conversation_id: str, run_id: str) -> bool:
+        """A new job in a conversation continues that conversation's still-held run (resume after a cap)."""
+        with self._connect() as connection:
+            connection.execute("BEGIN IMMEDIATE")
+            row = connection.execute(
+                "SELECT run_id FROM run_holds WHERE user_id = ? AND conversation_id = ? AND state = 'held' "
+                "AND run_id != ? ORDER BY updated_at DESC LIMIT 1", (user_id, conversation_id, run_id),
+            ).fetchone()
+            if row is None:
+                return False
+            connection.execute("UPDATE run_holds SET run_id = ?, updated_at = ? WHERE run_id = ?",
+                               (run_id, _now(), row["run_id"]))
+            connection.execute("UPDATE run_lines SET run_id = ? WHERE run_id = ?", (run_id, row["run_id"]))
+            connection.execute("UPDATE usage_events SET run_id = ? WHERE run_id = ?", (run_id, row["run_id"]))
+        return True
+
+    def get_run_hold(self, run_id: str) -> dict[str, Any] | None:
+        with self._connect() as connection:
+            row = connection.execute("SELECT * FROM run_holds WHERE run_id = ?", (run_id,)).fetchone()
+        return dict(row) if row else None
+
+    def run_lines(self, run_id: str) -> list[dict[str, Any]]:
+        with self._connect() as connection:
+            rows = connection.execute(
+                "SELECT kind, label, detail, cents, refunded_at FROM run_lines WHERE run_id = ? "
+                "ORDER BY created_at, rowid", (run_id,),
+            ).fetchall()
+        return [dict(row) for row in rows]
+
+    def add_run_model_cost(self, run_id: str, usd: float) -> float:
+        """Accumulate planner model cost (backend-only) and return the new cumulative USD."""
+        with self._connect() as connection:
+            connection.execute("BEGIN IMMEDIATE")
+            connection.execute(
+                "UPDATE run_holds SET model_usd = model_usd + ?, updated_at = ? WHERE run_id = ?",
+                (usd, _now(), run_id),
+            )
+            row = connection.execute("SELECT model_usd FROM run_holds WHERE run_id = ?", (run_id,)).fetchone()
+        return float(row[0]) if row else 0.0
+
+    def set_run_pause(self, run_id: str, payload: dict[str, Any] | None) -> None:
+        with self._connect() as connection:
+            connection.execute(
+                "UPDATE run_holds SET status = ?, pause_json = ?, updated_at = ? WHERE run_id = ? AND state = 'held'",
+                ("paused_cap" if payload else "running", json.dumps(payload) if payload else None, _now(), run_id),
+            )
+
+    def touch_run_hold(self, run_id: str) -> None:
+        with self._connect() as connection:
+            connection.execute("UPDATE run_holds SET updated_at = ? WHERE run_id = ? AND state = 'held'",
+                               (_now(), run_id))
+
+    def rekey_run(self, old_run_id: str, new_run_id: str) -> None:
+        """A resumed job continues the old run's hold and lines under its own id."""
+        with self._connect() as connection:
+            connection.execute("BEGIN IMMEDIATE")
+            cursor = connection.execute(
+                "UPDATE run_holds SET run_id = ?, updated_at = ? WHERE run_id = ? AND state = 'held'",
+                (new_run_id, _now(), old_run_id),
+            )
+            if cursor.rowcount:
+                connection.execute("UPDATE run_lines SET run_id = ? WHERE run_id = ?", (new_run_id, old_run_id))
+                connection.execute("UPDATE usage_events SET run_id = ? WHERE run_id = ?", (new_run_id, old_run_id))
+
+    def release_run(self, run_id: str, *, status: str = "done") -> dict[str, Any] | None:
+        """End a run: release the unused part of its hold and store the customer receipt.
+
+        Idempotent: a second call returns the stored receipt.  Returns None when the run never
+        held credit.
+        """
+        now = _now()
+        with self._connect() as connection:
+            connection.execute("BEGIN IMMEDIATE")
+            row = connection.execute("SELECT * FROM run_holds WHERE run_id = ?", (run_id,)).fetchone()
+            if row is None:
+                return None
+            if row["state"] == "released":
+                return json.loads(row["receipt_json"]) if row["receipt_json"] else None
+            lines = run_budget.lines_from_rows(connection.execute(
+                "SELECT kind, label, detail, cents, refunded_at FROM run_lines WHERE run_id = ? "
+                "ORDER BY created_at, rowid", (run_id,)).fetchall())
+            after = run_budget.spendable_cents(connection, row["user_id"], _today_utc())
+            receipt = run_budget.receipt_payload(
+                run_id=run_id, status=status, lines=lines, estimate_cents=row["estimate_cents"],
+                cap_cents=row["held_cents"], balance_before_cents=row["balance_before_cents"],
+                balance_after_cents=after,
+            )
+            connection.execute(
+                "UPDATE run_holds SET state = 'released', status = ?, balance_after_cents = ?, receipt_json = ?, "
+                "pause_json = NULL, released_at = ?, updated_at = ? WHERE run_id = ?",
+                (status, after, run_budget.dumps(receipt), now, now, run_id),
+            )
+        return receipt
+
+    def get_run_receipt(self, run_id: str, user_id: str | None = None) -> dict[str, Any] | None:
+        hold = self.get_run_hold(run_id)
+        if hold is None or (user_id and hold["user_id"] != user_id) or not hold["receipt_json"]:
+            return None
+        return json.loads(hold["receipt_json"])
 
     def claim_pending_subscription_checkout(self, user_id: str, *, ttl_seconds: int = 24 * 3600) -> bool:
         """Atomically claims the one pending-checkout slot for this user, so

@@ -304,6 +304,19 @@ def check_imports() -> None:
     print("ok python imports")
 
 
+def check_orchestration_billing() -> None:
+    from server import run_budget
+    from server.app import app
+    from server.config import DEFAULT_ENV
+
+    assert DEFAULT_ENV["ORCHESTRATION_BILLING_ENABLED"] == "true"
+    assert run_budget.default_cap_cents(105) == 150
+    actual = {(path, method.upper()) for path, operations in app.openapi()["paths"].items() for method in operations}
+    expected = {("/api/studio/agent/{job_id}/receipt", "GET"), ("/api/studio/agent/{job_id}/cap", "POST")}
+    assert expected <= actual, f"missing orchestration routes: {expected - actual}"
+    print("ok orchestration billing defaults and routes")
+
+
 def check_beta_inventory() -> None:
     from server.app import app
     from server.beta_credits import BetaSettings
@@ -378,6 +391,7 @@ def main() -> int:
     check_routing_inventory()
     check_imports()
     check_beta_inventory()
+    check_orchestration_billing()
     check_dry_run_dispatch()
     check_hyperframes_preview()
     check_lambda_zip()
