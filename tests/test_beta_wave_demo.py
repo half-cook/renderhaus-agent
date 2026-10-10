@@ -4,7 +4,6 @@ import json
 import time
 import unittest
 from types import SimpleNamespace
-from unittest.mock import patch
 
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
