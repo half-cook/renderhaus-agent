@@ -363,7 +363,11 @@ class DeliveryCompletionTests(unittest.TestCase):
     def test_new_render_or_finishing_work_invalidates_an_earlier_delivery(self):
         passed = tool_event(DELIVERY, self.report(), event_id="passed")
         for name, arguments in (("Remotion___render_timeline", {}),
-                                ("Ffmpeg___ffmpeg_tool", {"op": "transcode_h264"})):
+                                ("Ffmpeg___ffmpeg_tool", {"op": "transcode_h264"}),
+                                ("Ffmpeg___ffmpeg_tool", {"op": "burn_subtitles"}),
+                                ("Ffmpeg___ffmpeg_tool", {"op": "color_match_lut"}),
+                                ("Ffmpeg___ffmpeg_tool", {"op": "audio_cleanup"}),
+                                ("Ffmpeg___ffmpeg_tool", {"op": "make_proxy"})):
             with self.subTest(name=name):
                 newer = tool_event(name, {"status": "succeeded"}, event_id="newer", arguments=arguments)
                 self.assertFalse(_validate_video_delivery(self.request, self.context(passed, newer)))
