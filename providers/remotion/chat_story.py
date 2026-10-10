@@ -198,17 +198,37 @@ def batch_rows(source: str) -> list[dict]:
     return rows
 
 
-def _lines(text: str, columns: int) -> list[str]:
-    lines, line, units = [], '', 0
+def graphemes(text: str) -> list[str]:
+    """Keep combining marks, emoji modifiers, joiners and paired flags together."""
+    clusters = []
     for char in text:
-        width = 0 if unicodedata.combining(char) or char in '\u200d\ufe0f' else 1
-        if char == '\n' or units + width > columns:
-            lines.append(line)
-            line, units = '', 0
-        if char != '\n':
-            line += char
-            units += width
-    return [*lines, line]
+        code = ord(char)
+        regional = 0x1F1E6 <= code <= 0x1F1FF
+        previous_regional = clusters and all(0x1F1E6 <= ord(c) <= 0x1F1FF for c in clusters[-1])
+        attach = (unicodedata.category(char) in {'Mn', 'Mc', 'Me'} or char == '\u200d' or
+                  0x1F3FB <= code <= 0x1F3FF or 0xE0020 <= code <= 0xE007F or
+                  clusters and clusters[-1].endswith('\u200d') or
+                  regional and previous_regional and len(clusters[-1]) == 1)
+        if clusters and attach and char != '\n' and clusters[-1] != '\n':
+            clusters[-1] += char
+        else:
+            clusters.append(char)
+    return clusters
+
+
+def _lines(text: str, columns: int) -> list[str]:
+    lines, line = [], []
+    for char in graphemes(text):
+        if char == '\n':
+            lines.append(''.join(line))
+            line = []
+            continue
+        line.append(char)
+        if len(line) > columns:
+            boundary = max((i + 1 for i, cluster in enumerate(line[:columns]) if cluster.isspace()), default=columns)
+            lines.append(''.join(line[:boundary]))
+            line = line[boundary:]
+    return [*lines, ''.join(line)]
 
 
 def plan(payload: dict, fps: int = 30) -> dict:
@@ -222,7 +242,12 @@ def plan(payload: dict, fps: int = 30) -> dict:
     safe_top = 270 if payload['aspect'] == '9:16' else 190
     safe_bottom = 360 if payload['aspect'] == '9:16' else 130
     floor, max_width = height - safe_bottom, math.floor(width * .74)
-    columns = math.floor((max_width - 2 * padding) / font)
+    # The emoji font advances up to 1.25 em. Use that bound for every cluster,
+    # including wide Latin capitals, so a line never crosses its bubble padding.
+    columns = math.floor((max_width - 2 * padding) / (font * 1.25))
+    contact_font = min(34, math.floor((width - 96) / (len(graphemes(payload['contact']['name'])) * 1.25)))
+    if contact_font < 20:
+        raise ValueError('Contact name exceeds the readable header; supply a shorter approved fictional name.')
     frame = lambda ms: math.ceil(ms * fps / 1000 - 1e-9)
     bubbles, cues, scroll = [], [], []
     cursor, y, previous_offset = 0, safe_top + 24, 0
@@ -257,7 +282,8 @@ def plan(payload: dict, fps: int = 30) -> dict:
     if duration * 1000 / fps > payload['platformTargetMs']:
         warnings.append(f'Computed duration {duration / fps:.2f}s exceeds platform target {payload["platformTargetMs"] / 1000:g}s.')
     return {'fps': fps, 'width': width, 'height': height, 'durationInFrames': duration,
-            'durationSeconds': duration / fps, 'fontSize': font, 'lineHeight': line_height, 'padding': padding,
+            'durationSeconds': duration / fps, 'fontSize': font, 'contactFontSize': contact_font,
+            'lineHeight': line_height, 'padding': padding,
             'safeTop': safe_top, 'safeBottom': safe_bottom, 'bubbles': bubbles, 'scrollEvents': scroll,
             'sfxCues': cues, 'warnings': warnings,
             'reviewFrames': [min(duration - 1, bubbles[0]['startFrame'] + frame(250)), duration // 2, duration - 1]}
@@ -328,9 +354,8 @@ def qc_allowances(story: dict) -> dict:
     fps, end = timing['fps'], timing['durationSeconds']
     windows = []
     for bubble in timing['bubbles']:
-        windows.append((bubble['typingStartFrame'] / fps, min(end, bubble['startFrame'] / fps + .5)))
-        if bubble['reactionFrame'] is not None:
-            windows.append((bubble['reactionFrame'] / fps, min(end, bubble['reactionFrame'] / fps + .3)))
+        settled = (bubble['startFrame'] + max(1, round(fps * .16)) - 1) / fps
+        windows.append((bubble['typingStartFrame'] / fps, min(end, settled)))
     windows.extend((event['frame'] / fps, event['endFrame'] / fps) for event in timing['scrollEvents'])
 
     def gaps(intervals: list[tuple[float, float]]) -> list[dict]:
@@ -346,4 +371,6 @@ def qc_allowances(story: dict) -> dict:
     silence = [] if payload['music_ref'] else gaps(
         [(cue['frame'] / fps, min(end, cue['frame'] / fps + .12)) for cue in timing['sfxCues']]
         if payload['sfx'] else [])
-    return {'allowed_freeze': gaps(windows), 'allowed_silence': silence}
+    # Small typing dots occupy little of the portrait frame; the general default
+    # .001 threshold mistakes them for a freeze. Actual encoded samples verify 1e-6.
+    return {'allowed_freeze': gaps(windows), 'allowed_silence': silence, 'n': .000001}

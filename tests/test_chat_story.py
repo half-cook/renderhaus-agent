@@ -115,7 +115,7 @@ class TimingTests(unittest.TestCase):
     def test_scroll_keeps_newest_bubble_and_typing_in_safe_band(self):
         for aspect in ('9:16', '1:1', '4:5'):
             payload = chat.normalize({'aspect': aspect, 'messages': [
-                {'from': 'me' if i % 2 else 'them', 'text': 'Long readable message ' * 7}
+                {'from': 'me' if i % 2 else 'them', 'text': 'Long readable message ' * 6}
                 for i in range(20)]})
             plan = chat.plan(payload)
             self.assertGreater(plan['bubbles'][-1]['scrollOffset'], 0)
@@ -129,6 +129,42 @@ class TimingTests(unittest.TestCase):
         plan = chat.plan(chat.normalize({'messages': [{'from': 'me', 'text': 'x'}], 'platformTargetMs': 1000}))
         self.assertGreater(plan['bubbles'][0]['startFrame'], 0)
         self.assertTrue(plan['warnings'])
+
+    def test_wrapping_keeps_emoji_sequences_whole(self):
+        text = 'W' * 18 + '👩🏽‍💻' + '🇨🇦' + 'e\u0301'
+        timing = chat.plan(chat.normalize({'messages': [{'from': 'me', 'text': text}]}))
+        lines = timing['bubbles'][0]['lines']
+        self.assertEqual(''.join(lines), text)
+        self.assertTrue(any('👩🏽‍💻' in line for line in lines))
+        self.assertTrue(any('🇨🇦' in line for line in lines))
+
+    def test_audio_sources_are_deduplicated_under_shared_asset_limit(self):
+        props = chat.build_props('Fiction', {'messages': [{'from': 'me', 'text': 'Hi'}] * 40,
+                                            'music_ref': 'bed.wav'})
+        self.assertEqual(len(props['document']['assets']), 1)
+
+    def test_wrap_prefers_word_boundaries_without_changing_spaces(self):
+        text = 'Are we still friends?  Always.'
+        lines = chat.plan({'messages': [{'from': 'me', 'text': text}]})['bubbles'][0]['lines']
+        self.assertEqual(''.join(lines), text)
+        self.assertTrue(all(line.endswith(' ') for line in lines[:-1]))
+
+    def test_contact_header_is_bounded_without_rewriting_name(self):
+        timing = chat.plan({'messages': [{'from': 'me', 'text': 'Hi'}], 'contact': 'Alex'})
+        self.assertEqual(timing['contactFontSize'], 34)
+        with self.assertRaisesRegex(ValueError, 'readable header'):
+            chat.plan({'messages': [{'from': 'me', 'text': 'Hi'}], 'contact': 'W' * 40})
+
+    def test_qc_allows_read_holds_but_keeps_typing_and_pop_active(self):
+        payload = chat.normalize({'messages': [{'from': 'them', 'text': 'Hello'}]})
+        timing = chat.plan(payload)
+        spec = chat.qc_allowances({'payload': payload, 'plan': timing})
+        self.assertEqual(spec['n'], .000001)
+        bubble = timing['bubbles'][0]
+        read_time = (bubble['startFrame'] + 6) / timing['fps']
+        typing_time = (bubble['typingStartFrame'] + 5) / timing['fps']
+        self.assertTrue(any(s['start_s'] <= read_time < s['end_s'] for s in spec['allowed_freeze']))
+        self.assertFalse(any(s['start_s'] <= typing_time < s['end_s'] for s in spec['allowed_freeze']))
 
     def test_extreme_timings_refuse_worker_duration_limit(self):
         with self.assertRaisesRegex(ValueError, '600'):

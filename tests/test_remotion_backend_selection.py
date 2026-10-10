@@ -72,6 +72,29 @@ class BackendSelectionTests(unittest.IsolatedAsyncioTestCase):
         executor.studio.source_publisher.assert_not_called()
         gateway.call_tool.assert_not_called()
 
+    async def test_chat_audio_is_confined_to_the_owned_job_before_dispatch(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / 'parity').mkdir()
+            (root / 'sibling').mkdir()
+            (root / 'parity' / 'bed.wav').write_bytes(b'owned audio')
+            sibling = root / 'sibling' / 'bed.wav'
+            sibling.write_bytes(b'other job audio')
+            for source in ('bed.wav', str(sibling)):
+                gateway = self.gateway()
+                args = {'title': 'Fiction', 'chat_story': {
+                    'messages': [{'from': 'me', 'text': 'Hello'}], 'music_ref': source}}
+                with patch.dict(os.environ, {'RENDERHAUS_MEDIA_DIR': temporary, 'REMOTION_RENDER_BACKEND': 'local'}), \
+                        patch('providers.registry.dispatch', return_value={'status': 'dry_run'}) as worker:
+                    result = await self.executor(gateway).execute({
+                        'tool_name': NAME, 'arguments': args, 'call_id': 'chat-audio'}, approved=True)
+                if source == 'bed.wav':
+                    self.assertEqual(worker.call_args.args[2]['chat_story']['music_ref'], str(root / 'parity' / 'bed.wav'))
+                    self.assertEqual(args['chat_story']['music_ref'], source)
+                else:
+                    self.assertEqual(result['status'], 'not_run')
+                    worker.assert_not_called()
+
     async def test_local_refuses_unowned_raw_paths_before_dispatch(self):
         for path in ('/media/other-job/private.mp4', '../other-job/private.mp4',
                      'renderhaus-asset://'):
