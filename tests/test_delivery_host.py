@@ -4,9 +4,8 @@ import hashlib
 import json
 import os
 from pathlib import Path
-import sys
 import tempfile
-from types import ModuleType, SimpleNamespace
+from types import SimpleNamespace
 import unittest
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -17,7 +16,7 @@ from agent.studio_agent_next import (
     StudioAgentOutput, StudioAgentRequest, StudioToolEvent, _context_from_request,
     _validate_video_delivery,
 )
-from providers.registry import generate_schemas
+from providers.remotion.delivery import validate_delivery_report
 from server.billing_rates import cost_for
 from test_deep_agent import ScriptedModel, call, final
 
@@ -25,43 +24,19 @@ from test_deep_agent import ScriptedModel, call, final
 DELIVERY = "Remotion___deliver_render"
 QC = "Remotion___qc_deliverable"
 ARGS = {"job_id": "owned-job", "input_path": "source.mp4", "preset": "social-feed"}
+DELIVERY_PROMPT = "Deliver the finished MP4 for social-feed."
 
 
-def schemas(spec):
-    existing = generate_schemas(spec)
-    if spec.id != "remotion":
-        return existing
-    return existing + [{
-        "name": name, "description": "Finish or inspect existing local media.",
-        "inputSchema": {"type": "object", "properties": {
-            "job_id": {"type": "string"}, "input_path": {"type": "string"},
-            "manifest_path": {"type": "string"}, "preset": {"type": "string"},
-            "spec": {"type": "object"},
-        }, "required": ["job_id"], "additionalProperties": False},
-    } for name in ("deliver_render", "qc_deliverable")]
-
-
-def provider_double():
-    module = ModuleType("providers.remotion.delivery")
-
-    def validate_report(result):
-        if result.get("status") != "succeeded" or result.get("passed") is not True:
-            return False
-        try:
-            report = json.loads(Path(result["report_path"]).read_text())
-            if report != result or not report["files"]:
-                return False
-            for row in report["files"]:
-                path = Path(row["output_path"])
-                if (row["file"] != str(path) or row["passed"] is not True
-                        or hashlib.sha256(path.read_bytes()).hexdigest() != row["sha256"]):
-                    return False
-            return True
-        except (OSError, ValueError, KeyError, TypeError):
-            return False
-
-    module.validate_delivery_report = validate_report
-    return module
+def owned_job(test):
+    directory = tempfile.TemporaryDirectory()
+    test.addCleanup(directory.cleanup)
+    media_root = Path(directory.name)
+    job = media_root / ARGS["job_id"]
+    job.mkdir()
+    environment = patch.dict(os.environ, {"RENDERHAUS_MEDIA_DIR": str(media_root)})
+    environment.start()
+    test.addCleanup(environment.stop)
+    return job
 
 
 def tool_event(name, result, event_id="current", arguments=None):
@@ -73,27 +48,31 @@ def tool_event(name, result, event_id="current", arguments=None):
 def bound_report(root, name="report"):
     artifact = root / f"{name}.mp4"
     artifact.write_bytes(b"fixture bytes for the worker's report binding")
-    result = {"status": "succeeded", "passed": True, "files": [{
+    check_names = (
+        "container", "video_codec", "profile", "pix_fmt", "resolution", "sar", "fps", "duration",
+        "cadence", "frame_count", "audio_present", "black", "freeze", "faststart", "filename",
+        "file_size", "checksum", "contact_sheet", "review_frames", "audio_codec", "sample_rate",
+        "channels", "clipping", "audible", "silence", "loudness", "true_peak",
+    )
+    checks = [{"name": check, "pass": True, "severity": "error", "detail": "Saved worker check passed."}
+              for check in check_names]
+    checks.append({"name": "vision_review", "pass": None, "severity": "warning",
+                   "detail": "Visual review remains pending."})
+    result = {"status": "succeeded", "passed": True, "job_id": ARGS["job_id"],
+              "preset": ARGS["preset"], "failures": [], "files": [{
         "file": str(artifact), "output_path": str(artifact),
         "sha256": hashlib.sha256(artifact.read_bytes()).hexdigest(), "passed": True,
-        "checks": [{"name": "duration", "pass": True, "severity": "error", "detail": "Within one frame."}],
-        "failures": [], "width": 1280, "height": 720,
+        "technical_passed": True, "audio_present": True, "bytes": artifact.stat().st_size,
+        "checks": checks, "failures": [], "width": 1280, "height": 720,
     }], "report_path": str(root / f"{name}.json")}
     Path(result["report_path"]).write_text(json.dumps(result))
+    assert validate_delivery_report(result), "Host report fixture must satisfy the production report contract."
     return result
 
 
 class DeliveryHostTests(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
-        self.patches = [
-            patch("providers.registry.generate_schemas", side_effect=schemas),
-            patch.dict(routing.POLICY, {"free_tools": [*routing.POLICY["free_tools"],
-                                                      "deliver_render", "qc_deliverable"]}),
-            patch.dict(sys.modules, {"providers.remotion.delivery": provider_double()}),
-        ]
-        for item in self.patches:
-            item.start()
-            self.addCleanup(item.stop)
+        self.root = owned_job(self)
 
     @staticmethod
     def request(autonomous=False):
@@ -152,13 +131,12 @@ class DeliveryHostTests(unittest.IsolatedAsyncioTestCase):
 
     async def test_invalid_worker_contract_is_refused_before_dispatch(self):
         executor = GatewayExecutor(_context_from_request(self.request()), [])
-        with patch("providers.contracts.validate_tool_arguments", side_effect=ValueError(
-            "Choose exactly one input_path or manifest_path.",
-        )):
+        with patch("providers.registry.dispatch") as dispatch:
             result = await executor.execute({"tool_name": DELIVERY,
                 "arguments": {**ARGS, "manifest_path": "matrix.json"}, "call_id": "invalid"})
+        dispatch.assert_not_called()
         self.assertEqual(result["status"], "not_run")
-        self.assertEqual(result["reason"], "Choose exactly one input_path or manifest_path.")
+        self.assertEqual(result["reason"], "Supply exactly one input_path or manifest_path inside the job.")
 
     async def test_stopped_spending_cap_still_allows_free_worker_inspection(self):
         with patch.dict(os.environ, {"RENDERHAUS_AUTONOMOUS_RUN_CAP_CENTS": "0"}):
@@ -244,8 +222,8 @@ class DeliveryHostTests(unittest.IsolatedAsyncioTestCase):
         from server.studio import _run_studio_agent_job
 
         for defect in (None, "changed-file", "missing-report"):
-            with self.subTest(defect=defect), tempfile.TemporaryDirectory() as directory:
-                result = bound_report(Path(directory))
+            with self.subTest(defect=defect):
+                result = bound_report(self.root, name=defect or "valid")
                 if defect == "changed-file":
                     Path(result["files"][0]["output_path"]).write_bytes(b"changed")
                 elif defect == "missing-report":
@@ -274,21 +252,16 @@ class DeliveryHostTests(unittest.IsolatedAsyncioTestCase):
         repository.get_execution.return_value = {"tool_calls": [old_render.public()]}
         with patch("server.studio.repository", repository), patch(
             "server.studio.run_studio_agent", new=AsyncMock(side_effect=AgentRunLimitExceeded()),
-        ), patch("agent.deep_agent.routing.route_intent", return_value=routing.Route(alias="delivery_render")), \
-                self.assertLogs("server.studio", level="ERROR"):
-            await _run_studio_agent_job("owned-job", self.request().prompt, [], "conversation",
+        ), self.assertLogs("server.studio", level="ERROR"):
+            self.assertEqual(routing.route_intent(DELIVERY_PROMPT).alias, "delivery_render")
+            await _run_studio_agent_job("owned-job", DELIVERY_PROMPT, [], "conversation",
                                        workspace_id="workspace", project_id="project", user_id="user")
         self.assertEqual(repository.update_execution.call_args.kwargs["status"], "error")
 
 
 class DeliveryCompletionTests(unittest.TestCase):
     def setUp(self):
-        self.directory = tempfile.TemporaryDirectory()
-        self.addCleanup(self.directory.cleanup)
-        self.root = Path(self.directory.name)
-        module_patch = patch.dict(sys.modules, {"providers.remotion.delivery": provider_double()})
-        module_patch.start()
-        self.addCleanup(module_patch.stop)
+        self.root = owned_job(self)
         self.request = StudioAgentRequest(prompt="Inspect the local media", job_id="owned-job")
 
     def report(self, name="report"):
@@ -325,8 +298,9 @@ class DeliveryCompletionTests(unittest.TestCase):
         self.request.prior_tool_events = [old.public()]
         context = self.context(old, tool_event("Remotion___get_render_progress",
             {"status": "succeeded", "url": "https://example.com/old-render.mp4"}, event_id="poll"))
-        with patch("agent.deep_agent.routing.route_intent", return_value=routing.Route(alias="delivery_render")):
-            self.assertFalse(_validate_video_delivery(self.request, context))
+        self.request.prompt = DELIVERY_PROMPT
+        self.assertEqual(routing.route_intent(self.request.prompt).alias, "delivery_render")
+        self.assertFalse(_validate_video_delivery(self.request, context))
 
     def test_failed_delivery_takes_precedence_over_a_complete_matrix(self):
         matrix = tool_event("Remotion___render_ad_variants", {"status": "succeeded", "planned": 1,
@@ -372,8 +346,9 @@ class DeliveryCompletionTests(unittest.TestCase):
         self.assertNotIn("delivered", final_output.markdown.lower())
 
     def test_delivery_route_cannot_finish_from_a_standalone_qc_report(self):
-        with patch("agent.deep_agent.routing.route_intent", return_value=routing.Route(alias="delivery_render")):
-            self.assertFalse(_validate_video_delivery(self.request, self.context(tool_event(QC, self.report()))))
+        self.request.prompt = DELIVERY_PROMPT
+        self.assertEqual(routing.route_intent(self.request.prompt).alias, "delivery_render")
+        self.assertFalse(_validate_video_delivery(self.request, self.context(tool_event(QC, self.report()))))
 
     def test_ordinary_assembly_preserves_legacy_successful_poll(self):
         self.request.prompt = "Assemble and export the final MP4"
