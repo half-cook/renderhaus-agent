@@ -307,6 +307,7 @@ class DialogueEditTests(unittest.TestCase):
             self.assertEqual(result["status"], "requires_audio_fallback")
             self.assertEqual(result["next_tool"], "Sync___lipsync_video")
             self.assertIn("independently", result["note"])
+            self.assertIn("error", result)
         self.assertTrue(all(r.method == "GET" for r in self.requests))
 
     def test_saved_video_quote_matches_current_official_frame_rate(self):
@@ -373,6 +374,13 @@ class DialogueEditTests(unittest.TestCase):
         self.assertEqual(result["errorCode"], "dialogue_edit_removal_too_large")
         self.assertEqual(result["dialogueEditSection"], {"slotIndex": 1, "sourceStartMs": 0, "sourceDurationMs": 1000})
         self.assertNotIn("private", json.dumps(result))
+        self.assertIn("error", self.create())
+
+    def test_generation_refuses_completed_preview_without_playable_audio(self):
+        self.route("GET", "/dialogue-edits/edit_1", self.preview(previewAudioUrl=None))
+        with self.assertRaisesRegex(ValueError, "audio|preview"):
+            self.video()
+        self.assertTrue(all(request.method == "GET" for request in self.requests))
 
     def test_foreign_voice_hint_is_ignored(self):
         self.create_routes()
@@ -388,6 +396,31 @@ class DialogueEditTests(unittest.TestCase):
         body = json.loads(self.requests[2].content)
         self.assertEqual(body["voiceId"], "voice_1")
         self.assertEqual(body["rerunOfJobId"], "earlier_1")
+
+    def test_unfinished_voice_reuse_hint_is_ignored(self):
+        self.route("GET", "/transcriptions/transcript_1", self.transcription())
+        self.route("GET", "/dialogue-edits/earlier_1", self.preview(id="earlier_1", status="PROCESSING"))
+        self.route("POST", "/dialogue-edits", self.preview(status="PENDING"), 201)
+        result = self.create(voice_id="voice_1", rerun_of_job_id="earlier_1")
+        self.assertNotIn("voiceId", json.loads(self.requests[2].content))
+        self.assertIn("warning", result)
+
+    def test_completed_rerun_lineage_is_forwarded_without_voice_hint(self):
+        self.route("GET", "/transcriptions/transcript_1", self.transcription())
+        self.route("GET", "/dialogue-edits/earlier_1", self.preview(id="earlier_1"))
+        self.route("POST", "/dialogue-edits", self.preview(status="PENDING"), 201)
+        self.create(rerun_of_job_id="earlier_1")
+        self.assertEqual(json.loads(self.requests[-1].content)["rerunOfJobId"], "earlier_1")
+
+    def test_preview_audio_normalizes_for_studio_without_hiding_partial_state(self):
+        from server.studio import collect_asset_sources
+
+        for status in ("COMPLETED", "COMPLETED_PARTIAL"):
+            self.route("GET", "/dialogue-edits/edit_1", self.preview(status=status))
+            result = self.dialogue.get_dialogue_edit("edit_1")
+            self.assertEqual(collect_asset_sources(result), [{"kind": "audio", "source": PREVIEW}])
+            self.assertEqual(result["previewAudioUrl"], PREVIEW)
+            self.assertEqual(result["status"], "completed_partial" if status.endswith("PARTIAL") else "succeeded")
 
     def test_video_idempotency_contract(self):
         for value in ("", "spaces forbidden", "x" * 129, "unicodeé", True):

@@ -5,7 +5,7 @@ import os
 from pathlib import Path
 import tempfile
 import unittest
-from unittest.mock import patch
+from unittest.mock import AsyncMock, Mock, patch
 
 from mcp import Tool
 
@@ -15,6 +15,7 @@ from agent.gateway_executor import GatewayExecutor, tool_needs_approval
 from agent.studio_agent_next import (
     StudioAgentApprovalRequired, StudioAgentRequest, StudioApprovalDecision, StudioToolEvent,
     _context_from_request, _validate_video_delivery,
+    GatewayToolError, GatewayMCPServer, _append_harvested_event,
 )
 from test_deep_agent import Gateway, ScriptedModel, call, final
 
@@ -82,6 +83,35 @@ class DialogueRoutingTests(unittest.TestCase):
         self.assertEqual(route.status, "blocked")
         self.assertIn("word-level", route.reason)
 
+    def test_retired_models_still_refuse_dialogue_requests(self):
+        for model in ("LivePortrait", "LatentSync"):
+            route = routing.route_intent(f"Use {model} to change the spoken word in this footage")
+            self.assertEqual(route.status, "retired")
+            self.assertIsNone(route.tool)
+
+    def test_dialogue_capability_metadata_uses_direct_frame_price(self):
+        row = next(row for row in routing.capability_table() if "Sync___create_dialogue_video" in row["tools"].values())
+        self.assertEqual(row["price"]["rates"]["direct_legacy_base_cents_per_frame"], "0.534")
+        self.assertNotIn("fal_cents_per_minute", row["price"]["rates"])
+
+    def test_dialogue_resolution_uses_measured_source_dimensions(self):
+        executor = GatewayExecutor(_context_from_request(StudioAgentRequest(prompt="Dialogue-edit this footage at 1080p")), [])
+        arguments = {**VIDEO, "source_width": 1920, "source_height": 1080}
+        self.assertIsNone(executor.selection_blocker("Sync___create_dialogue_video", arguments,
+                                                   executor.media_selection("Sync___create_dialogue_video", arguments)))
+        self.assertIsNotNone(executor.selection_blocker("Sync___create_dialogue_video", VIDEO,
+                                                      executor.media_selection("Sync___create_dialogue_video", VIDEO)))
+
+    def test_long_presenter_retime_fallback_keeps_regular_sync(self):
+        from test_sync_wiring import ARGS
+
+        studio = _context_from_request(StudioAgentRequest(prompt="Dialogue-edit this 90 second presenter video"))
+        studio.tool_events.append(StudioToolEvent(id="fallback", name="Sync___create_dialogue_video",
+            label="Fallback", summary="Retiming unavailable", status="requires_audio_fallback",
+            result={"status": "requires_audio_fallback", "next_tool": "Sync___lipsync_video"}))
+        executor = GatewayExecutor(studio, [])
+        self.assertEqual(executor.media_selection("Sync___lipsync_video", ARGS).tool, "Sync___lipsync_video")
+
     def test_paid_dialogue_steps_pause_even_when_autonomous_and_switch_disabled(self):
         with patch.dict(os.environ, {"RENDERHAUS_PREMIUM_VIDEO_APPROVAL": "false"}):
             for name in ("Sync___create_dialogue_edit", "Sync___create_dialogue_video"):
@@ -127,6 +157,48 @@ class DialogueRoutingTests(unittest.TestCase):
 
 
 class DialogueApprovalTests(unittest.IsolatedAsyncioTestCase):
+    async def test_structured_unknown_preview_error_is_not_retried(self):
+        studio = _context_from_request(StudioAgentRequest(prompt="Dialogue-edit this footage", autonomous=True))
+        name = "Sync___create_dialogue_edit"
+        gateway = Gateway([Tool(name=name, inputSchema={"type": "object"})])
+        gateway.call_tool.side_effect = GatewayToolError({"status": "submission_unknown", "error": "Lost response"})
+        with tempfile.TemporaryDirectory() as directory, patch.dict(os.environ, {"RENDERHAUS_OUTCOME_DIR": directory}):
+            executor = GatewayExecutor(studio, [gateway])
+            first = await executor.execute({"tool_name": name, "arguments": PREVIEW, "call_id": "first"}, approved=True)
+            second = await executor.execute({"tool_name": name, "arguments": {**PREVIEW, "action_id": "new"}, "call_id": "second"}, approved=True)
+        self.assertEqual(first["status"], "submission_unknown")
+        self.assertEqual(second["status"], "submission_unknown")
+        gateway.call_tool.assert_awaited_once()
+
+    async def test_structured_retime_error_preserves_disclosed_fallback(self):
+        studio = _context_from_request(StudioAgentRequest(prompt="Dialogue-edit this footage", autonomous=True))
+        name = "Sync___create_dialogue_video"
+        gateway = Gateway([Tool(name=name, inputSchema={"type": "object"})])
+        gateway.call_tool.side_effect = GatewayToolError({"status": "requires_audio_fallback", "error": "Retime unavailable",
+            "next_tool": "Sync___lipsync_video", "note": "Use independent approved audio and a new cost approval"})
+        with tempfile.TemporaryDirectory() as directory, patch.dict(os.environ, {"RENDERHAUS_OUTCOME_DIR": directory}):
+            result = await GatewayExecutor(studio, [gateway]).execute({"tool_name": name, "arguments": VIDEO, "call_id": "video"}, approved=True)
+        self.assertEqual(result["status"], "requires_audio_fallback")
+        self.assertEqual(result["next_tool"], "Sync___lipsync_video")
+
+    async def test_billed_unknown_preview_keeps_charge_for_reconciliation(self):
+        import agent.studio_agent_next as studio_module
+        from server.billing_rates import GenerationCost
+
+        server = object.__new__(GatewayMCPServer)
+        server._argument_transformer = None
+        server._user_id, server._run_id = "test-user", "test-run"
+        uncertain = {"status": "submission_unknown", "error": "Response lost", "next_action": "check_status_or_ask_user"}
+        for failure in (None, RuntimeError("Connection dropped"), GatewayToolError(uncertain)):
+            with patch.object(server, "_billed_cost", return_value=GenerationCost(100, 30)), \
+                    patch.object(studio_module.GatewayClient, "call_tool", AsyncMock(return_value=uncertain, side_effect=failure)), \
+                    patch.object(studio_module.run_billing, "charge_media", return_value={"id": "test-charge"}) as charge, \
+                    patch.object(studio_module.repository, "refund_usage") as refund:
+                result = await server.call_tool("Sync___create_dialogue_edit", PREVIEW)
+                self.assertEqual(result["status"], "submission_unknown")
+                charge.assert_called_once()
+                refund.assert_not_called()
+
     async def test_canvas_invoke_cannot_bypass_dialogue_approval(self):
         from fastapi import HTTPException
         import server.studio as studio
@@ -221,6 +293,17 @@ class DialogueDeliveryTests(unittest.TestCase):
         studio.tool_events.append(self.event("Sync___get_dialogue_edit", {
             "status": "succeeded", "previewAudioUrl": "https://assets.sync.so/preview.wav"}))
         self.assertFalse(_validate_video_delivery(request, studio))
+
+    def test_completed_and_partial_preview_register_playable_audio_assets(self):
+        for status in ("succeeded", "completed_partial"):
+            studio = _context_from_request(StudioAgentRequest(prompt="Dialogue-edit this footage"))
+            studio.asset_registrar = Mock(return_value=[{"kind": "audio", "version_id": "preview-version"}])
+            _append_harvested_event(studio, call_id="preview", name="Sync___get_dialogue_edit", arguments={},
+                output={"status": status, "audio_url": "https://assets.sync.so/preview.wav", "dialogue_edit_id": "preview-1"})
+            studio.asset_registrar.assert_called_once()
+            self.assertEqual(studio.tool_events[-1].provider_job_id, "preview-1")
+            self.assertEqual(studio.tool_events[-1].status, status)
+            self.assertFalse(_validate_video_delivery(StudioAgentRequest(prompt="Dialogue-edit this footage"), studio))
 
     def test_only_current_matching_saved_video_can_finish_dialogue_edit(self):
         saved = {"status": "succeeded", "downloaded": True, "mode": "dialogue_edit_video",
