@@ -9,6 +9,8 @@ import re
 from dataclasses import dataclass, asdict, replace, field
 from pathlib import Path
 
+from agent.deep_agent.art_style_catalog import catalog_motion_request
+
 POLICY = json.loads(Path(__file__).with_name("routing_policy.json").read_text())
 TOOL_MAP = POLICY["tools"]
 TARGET_PROVIDERS = {
@@ -186,7 +188,7 @@ def _art_style_motion_request(prompt: str) -> bool:
         r"\b(?:restyle|relight|modify|edit)\b.*\b(?:existing|footage|clip|video)\b|\blip[ -]?sync\w*\b", text, re.I,
     ):
         return False
-    return bool(re.search(_ART_STYLE_REQUEST, text, re.I))
+    return bool(re.search(_ART_STYLE_REQUEST, text, re.I) or catalog_motion_request(prompt))
 
 
 def request_tool_blocker(prompt: str, name: str) -> str | None:
@@ -696,7 +698,7 @@ def route_intent(prompt: str, *, region: str | None = None, tier: str | None = N
             rule_prompt = _instruction_text(prompt)
         else:
             rule_prompt = prompt
-        if not re.search(rule["pattern"], rule_prompt, re.IGNORECASE):
+        if rule["skill"] != "art-style-motion" and not re.search(rule["pattern"], rule_prompt, re.IGNORECASE):
             continue
         skill, alias = rule["skill"], rule["abstract_tool"]
         capability = rule.get("capability")
