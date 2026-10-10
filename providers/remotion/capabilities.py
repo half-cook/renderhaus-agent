@@ -67,6 +67,8 @@ CAPABILITIES = {
     'crop_reframe': Capability(('visuals.crop_box', 'visuals.pad_box', 'visuals.reframe_size', 'visuals.allow_upscale'),
         lambda_=REFUSED, note='Lambda reframing is not deployed; use the local/worker backend for crop_box and pad_blur.'),
     'canvas': Capability(('aspect_ratio', 'output_resolution'), note='Source-native policy; explicit tiers report resampling with no added detail.'),
+    'chat_story': Capability(('chat_story',), lambda_=REFUSED,
+        note='Lambda chat composition is not deployed or verified; use the local/worker backend. Messages and timing are validated before media I/O.'),
     'encoding': Capability(('fps', 'video_bitrate'), note='MP4/H.264, CFR, AAC when audio exists; no caller-selected codec or filtergraph.'),
     'blurred_padding': Capability((), lambda_=REFUSED,
         note='Lambda reframing is not deployed; use the local/worker backend for crop_box and pad_blur.'),
@@ -120,6 +122,7 @@ STRUCTURES = {
     'visuals.reframe_size': {name: 'integer' for name in ('width', 'height')},
 }
 FIELD_TYPES = {
+    'chat_story': 'object',
     **{field: 'string' for field in (
         'title', 'output_filename', 'aspect_ratio', 'output_resolution', 'subtitles_srt',
         'visuals.kind', 'visuals.url', 'visuals.output_path', 'visuals.transition', 'visuals.fit',
@@ -137,7 +140,7 @@ WORKFLOW_SCHEMA_SHA256 = {
     'motion_carry_probe': 'ca4a3e1a7a25949f038933d68f40909c33c3f7695d57458edc95ed477ffe46a1',
     'deliver_render': '1f13e356cb6a7b46989ffbc3d09bc8435a34709ee08a3fb184fb742a245ffe4c',
     'qc_deliverable': 'a166b684310a2a75d51ec9bc65b41e46f3696fa85cf824e78e541f6a9dd33c15',
-    'render_ad_variants': 'c873a210d918c00b639bcc98e0dcacd9527730fca2d5b5e151a9c378c1120f5d',
+    'render_ad_variants': '293a271fef393acfd3d6922ab2c4ec86416043c6d54dabcc1bdd4f49c84a1a0a',
     'import_nle_timeline': '9f5d158a4a1252f163560dcf9b8006e1be2d491fae45673b17453c80c00f8f15',
     'prepare_conversational_edit': 'af9860ec8bdcfb1fa4c76b9b4f5a71a176568c8702641a90cfd932629667bd5d',
     'get_render_progress': '66c5b76380ac064e0fd64cc4e6772ebfa5020427b4399a9011c0b48b7cab5ad5',
@@ -194,6 +197,10 @@ def validate_backend(arguments: dict[str, Any], backend: Backend, *, overlay_ver
         start = item.get('start_seconds', track_ends.get(track, 0))
         track_ends[track] = max(track_ends.get(track, 0), start + item['duration_seconds'])
     end = max(track_ends.values(), default=0)
+    if arguments.get('chat_story') is not None:
+        from providers.remotion.chat_story import plan
+
+        end = plan(arguments['chat_story'], arguments.get('fps') or 30)['durationSeconds']
     if end > 600:
         raise ValueError('Timeline duration must be at most 600 seconds on local or Lambda.')
     for item in [*(arguments.get('text_overlays') or []), *(arguments.get('subtitles') or [])]:
@@ -210,6 +217,13 @@ def validate_backend(arguments: dict[str, Any], backend: Backend, *, overlay_ver
 def validate_document(props: dict[str, Any], backend: Backend) -> None:
     from providers.remotion.text import fit_text, number
 
+    story = props.get('document', {}).get('chatStory')
+    if story is not None:
+        from providers.remotion.chat_story import validate_story_document
+
+        if backend == 'lambda':
+            raise ValueError(CAPABILITIES['chat_story'].note)
+        validate_story_document(props)
     if backend == 'lambda':
         for track in props.get('document', {}).get('tracks', []):
             for item in track.get('items', []):
@@ -238,7 +252,7 @@ def validate_document(props: dict[str, Any], backend: Backend) -> None:
         raise ValueError('Remotion allows at most 60 assets on local or Lambda.')
     assets = {asset['id']: asset for asset in document['assets']}
     arguments: dict[str, Any] = {'visuals': [], 'audio_tracks': [], 'text_overlays': []}
-    visual_end = 0.0
+    visual_end = config['durationInFrames'] / config['fps'] if story is not None else 0.0
     visual_track = 0
     for track in document['tracks']:
         if track['kind'] not in {'video', 'overlay', 'caption', 'audio'}:
@@ -283,6 +297,8 @@ def validate_document(props: dict[str, Any], backend: Backend) -> None:
                     arguments['visuals'].append(converted)
         if track['kind'] in {'video', 'overlay'}:
             visual_track += 1
+    if story is not None:
+        arguments['chat_story'] = story['payload']
     validate_backend(arguments, backend)
     if config['durationInFrames'] != max(1, math.ceil(visual_end * config['fps'] - 1e-9)):
         raise ValueError('durationInFrames must match the visual timeline on local or Lambda.')
