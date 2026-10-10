@@ -431,6 +431,27 @@ def _freeze_sources(job: Path, directory: Path, hashes: dict[str, str]) -> dict[
     return frozen
 
 
+def _failed_chat_report_matches(artifact: Path, report: dict, reasons: list) -> bool:
+    """A failed report proves the recorded failure, never a finished deliverable."""
+    checks = report.get('checks')
+    if not isinstance(checks, list) or not all(isinstance(check, dict) and
+            isinstance(check.get('name'), str) and isinstance(check.get('detail'), str) and
+            type(check.get('pass')) is bool for check in checks):
+        return False
+    failures = [f"{check['name']}: {check['detail']}" for check in checks
+                if check.get('severity') == 'error' and not check['pass']]
+    return bool(failures) and (
+        report.get('passed') is False and report.get('technical_passed') is False and
+        report.get('failures') == failures == reasons and
+        report.get('output_path') == str(artifact) and
+        report.get('sha256') == _file_hash(artifact) and report.get('bytes') == artifact.stat().st_size)
+
+
+def _chat_failures(entries: list[dict]) -> list[dict]:
+    return [{'variant_key': entry['variant_key'], 'reasons': entry['reasons']} for entry in entries
+            if entry.get('row_status') == 'failed']
+
+
 def _load_manifest(path: Path, plan: dict, directory: Path) -> list[dict]:
     from providers.ffmpeg.sandbox import input_file
     from providers.remotion.delivery import MAX_JSON_BYTES, PRESETS
@@ -446,11 +467,13 @@ def _load_manifest(path: Path, plan: dict, directory: Path) -> list[dict]:
     rows = {r["variant_key"]: r for r in plan["planned"]}
     seen = set()
     for entry in entries:
+        if not isinstance(entry, dict):
+            raise ValueError('Manifest entries must be objects.')
         if plan.get('mode') == 'chat_story' and entry.get('row_status') == 'blocked':
             if entry not in [{**r, 'row_status': 'blocked'} for r in plan['blocked']]:
                 raise ValueError('Blocked chat row differs from the approved plan.')
             continue
-        if not isinstance(entry, dict) or entry.get("variant_key") not in rows:
+        if entry.get("variant_key") not in rows:
             raise ValueError("Manifest contains an unplanned variant.")
         row = rows[entry["variant_key"]]
         if entry["variant_key"] in seen or any(entry.get(key) != row[key] for key in
@@ -458,9 +481,11 @@ def _load_manifest(path: Path, plan: dict, directory: Path) -> list[dict]:
             raise ValueError("Manifest identity differs from the approved plan.")
         seen.add(entry["variant_key"])
         if plan.get('mode') == 'chat_story' and entry.get('row_status') == 'failed':
-            if not isinstance(entry.get('reasons'), list) or not entry['reasons']:
+            if (not isinstance(entry.get('reasons'), list) or not entry['reasons'] or
+                    any(not isinstance(reason, str) or not reason for reason in entry['reasons'])):
                 raise ValueError('Failed chat rows require their failure reasons.')
-            continue
+            if 'file' not in entry:
+                continue
         artifact = directory / row["filename"]
         if (entry.get("file") != str(artifact) or artifact.is_symlink() or not artifact.is_file()
                 or not isinstance(entry.get("approved_by"), str) or not entry["approved_by"]
@@ -474,8 +499,14 @@ def _load_manifest(path: Path, plan: dict, directory: Path) -> list[dict]:
             raise ValueError("Matrix technical QC report is unsafe or too large.")
         technical = json.loads(report_path.read_text())
         if (qc.get("sha256") != _file_hash(report_path) or not isinstance(technical, dict) or
-                technical.get("file") != str(artifact) or
-                not validate_file_report(directory.parent, technical, PRESETS["review-proxy"])):
+                technical.get("file") != str(artifact)):
+            raise ValueError("Matrix technical QC is missing, stale, failed or incomplete; inspect its saved report.")
+        if plan.get('mode') == 'chat_story' and entry.get('delivery_status') == 'failed':
+            reasons = entry.get('reasons', technical.get('failures'))
+            if not _failed_chat_report_matches(artifact, technical, reasons):
+                raise ValueError('Failed chat technical QC is missing, stale or inconsistent; inspect its saved report.')
+            entry.update(row_status='failed', reasons=reasons)
+        elif not validate_file_report(directory.parent, technical, PRESETS["review-proxy"]):
             raise ValueError("Matrix technical QC is missing, stale, failed or incomplete; inspect its saved report.")
     return entries
 
@@ -558,6 +589,8 @@ def _render(row: dict, job: Path, directory: Path, approved_by: str, review: boo
         from providers.remotion.chat_story import qc_allowances
 
         spec.update(qc_allowances(row['timeline']['document']['chatStory']))
+        spec['require_audio'] = bool(args.get('audio_tracks') or args['chat_story']['sfx'] or args['chat_story']['music_ref'])
+        entry['qc_spec'] = {key: copy.deepcopy(value) for key, value in spec.items() if key != 'expected_filename'}
     for name in ("black", "freeze", "silence"):
         if chat or name == "silence" and args.get("audio_tracks"):
             continue
@@ -582,6 +615,8 @@ def _render(row: dict, job: Path, directory: Path, approved_by: str, review: boo
                        delivery_qc="pending" if technical["passed"] else "failed")
     entry["matrix_qc"] = {"report_path": str(report_path), "sha256": _file_hash(report_path)}
     entry["delivery_status"] = "pending" if technical["passed"] else "failed"
+    if chat and not technical['passed']:
+        entry.update(row_status='failed', reasons=list(technical['failures']))
     return entry
 
 
@@ -646,8 +681,10 @@ def render_ad_variants(stage: Literal["plan", "render_first", "render_batch"], j
         selected = first if stage == "render_first" else [r for r in plan["planned"] if r not in first]
         selected = [r for r in selected if r["variant_key"] not in completed]
         if chat:
-            selected = [r for r in selected if r['variant_key'] not in {e.get('variant_key') for e in rendered}]
-        failed = []
+            attempted = {entry['variant_key'] for entry in rendered if entry.get('row_status') != 'blocked'}
+            selected = [r for r in selected if r['variant_key'] not in attempted]
+        failed = _chat_failures(rendered) if chat else []
+        render_errors = (ValueError, OSError, RuntimeError) + ((KeyError, TypeError) if chat else ())
 
         def run(row):
             try:
@@ -663,7 +700,7 @@ def render_ad_variants(stage: Literal["plan", "render_first", "render_batch"], j
                 entry = _render(frozen_row, job, directory, authorization[2], stage == "render_first")
                 error = {"variant_key": row["variant_key"], "reasons": entry["qc"]["technical_report"]["failures"]} if entry["delivery_status"] == "failed" else None
                 return entry, error
-            except (ValueError, OSError, RuntimeError) as exc:
+            except render_errors as exc:
                 error = {"variant_key": row["variant_key"], "reasons": [str(exc)]}
                 entry = ({**{key: row[key] for key in ('variant_key', 'sku', 'locale', 'aspect', 'input_props_hash')},
                           'input_hash': row['input_props_hash'], 'row_status': 'failed', 'reasons': [str(exc)]} if chat else None)
@@ -678,10 +715,11 @@ def render_ad_variants(stage: Literal["plan", "render_first", "render_batch"], j
                 _save(manifest_path, rendered)
         if not manifest_path.exists():
             _save(manifest_path, rendered)
-        _save(directory / "report.json", {"planned": plan["render_count"], "rendered": len(rendered),
+        artifacts = [entry for entry in rendered if 'file' in entry] if chat else rendered
+        _save(directory / "report.json", {"planned": plan["render_count"], "rendered": len(artifacts),
                                           "blocked": plan["blocked"], "failed": failed})
         return {"status": "failed" if failed else "succeeded", "plan_hash": plan_hash,
                 "candidate_set": True, "review_note": plan["review_note"],
-                "planned": plan["render_count"], "rendered": rendered, "blocked": plan["blocked"],
+                "planned": plan["render_count"], "rendered": artifacts, "blocked": plan["blocked"],
                 "failed": failed, "manifest_path": str(manifest_path), "warnings": plan["warnings"],
-                "estimate": ad_matrix_estimate(args)}
+                "estimate": ad_matrix_estimate(args), **({'rendered_count': len(artifacts)} if chat else {})}
