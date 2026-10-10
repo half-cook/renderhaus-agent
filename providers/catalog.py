@@ -17,6 +17,12 @@ class ProviderSpec:
 
 PROVIDERS: tuple[ProviderSpec, ...] = (
     ProviderSpec(
+        id="footage_memory", target_name="FootageMemory", function_name="renderhaus-footage-memory-tools",
+        module_path="providers.footage_memory.api", env_keys=("FOOTAGE_MEMORY_DRY_RUN", "FOOTAGE_MEMORY_BACKEND",
+            "FOOTAGE_MEMORY_CALL_CENTS", "RENDERHAUS_VIDEO_INDEX_ROOT", "RENDERHAUS_MEDIA_DIR", "GEMINI_VLM_MODEL"),
+        default_env={"FOOTAGE_MEMORY_DRY_RUN": "true", "FOOTAGE_MEMORY_BACKEND": "gemini"},
+    ),
+    ProviderSpec(
         id="shot_recipes", target_name="ShotRecipes", function_name="renderhaus-shot-recipes-tools",
         module_path="providers.shot_recipes.api", env_keys=(),
     ),

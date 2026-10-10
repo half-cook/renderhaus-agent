@@ -1,0 +1,157 @@
+[
+  {
+    "name": "footage_memory_status",
+    "description": "Footage memory. Check local clip duration, content hash, stale memory and whether to watch or build. Paths stay inside the current job. Free.",
+    "inputSchema": {
+      "properties": {
+        "project_id": {
+          "type": "string"
+        },
+        "workspace_id": {
+          "type": "string"
+        },
+        "job_id": {
+          "type": "string"
+        },
+        "path": {},
+        "folder": {},
+        "asset_version_id": {},
+        "question_count": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "project_id",
+        "job_id"
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "name": "footage_memory_build",
+    "description": "Footage memory. Estimate first, then request approval for build with the exact plan_hash. One analysis call per 30-second window. All builds pause even autonomously. Dry-run creates synthetic memory; no footage is uploaded.",
+    "inputSchema": {
+      "properties": {
+        "project_id": {
+          "type": "string"
+        },
+        "workspace_id": {
+          "type": "string"
+        },
+        "job_id": {
+          "type": "string"
+        },
+        "path": {},
+        "folder": {},
+        "asset_version_id": {},
+        "depth": {
+          "type": "string",
+          "description": "One of: events, hierarchy."
+        },
+        "window_s": {
+          "type": "number"
+        },
+        "stage": {
+          "type": "string",
+          "description": "One of: estimate, build."
+        },
+        "plan_hash": {}
+      },
+      "required": [
+        "project_id",
+        "job_id"
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "name": "footage_memory_query",
+    "description": "Find a moment. Search existing project memory for timestamped candidates. Every hit requires a narrow Verify watch before extraction. Free local retrieval, never ground truth.",
+    "inputSchema": {
+      "properties": {
+        "project_id": {
+          "type": "string"
+        },
+        "workspace_id": {
+          "type": "string"
+        },
+        "query": {
+          "type": "string"
+        },
+        "scope": {},
+        "limit": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "project_id",
+        "query"
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "name": "footage_watch_answer",
+    "description": "Verify. Watch one short clip or a narrow window with verify_hit_id. Returns timestamps and verified, refuted or ambiguous. Dry-run answers are simulated and cannot authorize a cut.",
+    "inputSchema": {
+      "properties": {
+        "project_id": {
+          "type": "string"
+        },
+        "workspace_id": {
+          "type": "string"
+        },
+        "job_id": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        },
+        "question": {
+          "type": "string"
+        },
+        "asset_version_id": {},
+        "t0_s": {},
+        "t1_s": {},
+        "verify_hit_id": {}
+      },
+      "required": [
+        "project_id",
+        "job_id",
+        "path",
+        "question"
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "name": "footage_clip_extract",
+    "description": "Footage memory. Extract verified hit_ids or explicit windows with handles through fixed local trims. Unverified selects are refused unless the caller explicitly sets allow_unverified=true. The skill must never use this override.",
+    "inputSchema": {
+      "properties": {
+        "project_id": {
+          "type": "string"
+        },
+        "workspace_id": {
+          "type": "string"
+        },
+        "job_id": {
+          "type": "string"
+        },
+        "hit_ids": {},
+        "windows": {},
+        "handles_s": {
+          "type": "number"
+        },
+        "allow_unverified": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "project_id",
+        "job_id"
+      ],
+      "type": "object"
+    }
+  }
+]

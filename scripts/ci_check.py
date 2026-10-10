@@ -23,6 +23,8 @@ def _force_dry_run() -> None:
     os.environ["AWS_S3_BUCKET"] = ""
     os.environ["BETA_VERIFICATION_DRY_RUN"] = "true"
     os.environ["GEMINI_DRY_RUN"] = "true"
+    os.environ["FOOTAGE_MEMORY_DRY_RUN"] = "true"
+    os.environ["FOOTAGE_MEMORY_BACKEND"] = "mock"
     os.environ["KLING_DRY_RUN"] = "true"
     os.environ["RUNWAY_DRY_RUN"] = "true"
     os.environ["LUMA_DRY_RUN"] = "true"
@@ -104,10 +106,10 @@ def check_routing_inventory() -> None:
     from providers.catalog import PROVIDERS
     from providers.registry import load_committed_schemas
 
-    assert len(PROVIDERS) == 17
-    assert sum(len(load_committed_schemas(spec)) for spec in PROVIDERS) == 129
+    assert len(PROVIDERS) == 18
+    assert sum(len(load_committed_schemas(spec)) for spec in PROVIDERS) == 134
     paths = list(SKILLS_ROOT.glob("*/SKILL.md"))
-    assert len(paths) == 35
+    assert len(paths) == 36
     assert "ladder" not in POLICY and "premium_targets" not in POLICY
     assert "project_policy" not in POLICY and "flux2_klein4b_t2i" not in TOOL_MAP
     for capability, choice in POLICY["capability_map"].items():
@@ -126,7 +128,7 @@ def check_routing_inventory() -> None:
         assert set(metadata["include_tools"].split()) <= DISPATCH_TARGETS.keys(), path
         assert all(TOOL_MAP[alias]["status"] != "retired" for alias in metadata["routing_tools"].split()), path
     cases = json.loads((ROOT / "tests/fixtures/skill_routing.json").read_text())
-    assert len(cases) == 263 and sum(not case["skip_reason"] for case in cases) == 257
+    assert len(cases) == 271 and sum(not case["skip_reason"] for case in cases) == 265
     assert sum(bool(case["skip_reason"]) for case in cases) == 6
     from agent.deep_agent.continuity_qc_vlm import EVAL_PATH, default_vlm_enabled
 
@@ -135,7 +137,7 @@ def check_routing_inventory() -> None:
 
         subprocess.run(["git", "ls-files", "--error-unmatch", str(EVAL_PATH.relative_to(ROOT))], check=True, capture_output=True)
         assert default_vlm_enabled(), "Committed VLM evidence does not qualify for promotion."
-    print("ok routing inventory (17 providers, 129 Gateway tools, 35 skills, 257 active routing rows)")
+    print("ok routing inventory (18 providers, 134 Gateway tools, 36 skills, 265 active routing rows)")
 
 
 def _assert_gateway_shape(schema: object) -> None:
@@ -171,6 +173,16 @@ def check_dry_run_dispatch() -> None:
         for schema in load_committed_schemas(spec):
             name = schema["name"]
             arguments = dummy_arguments(schema)
+            if spec.id == "footage_memory":
+                arguments = {"project_id": "ci-project", "workspace_id": "ci-workspace"}
+                if name == "footage_memory_query":
+                    arguments.update(query="Offline childhood fixture")
+                elif name == "footage_clip_extract":
+                    arguments.update(job_id="ci-smoke", windows=[{"clip_id": "missing-asset", "t0_s": 0.0, "t1_s": 1.0}])
+                else:
+                    arguments.update(job_id="ci-smoke", path="missing.mp4")
+                    if name == "footage_watch_answer":
+                        arguments.update(question="What appears in this window?")
             if spec.id == "ffmpeg":
                 arguments = {"op": "probe", "job_id": "ci-smoke", "input_path": "master.mp4", "params": {}}
                 for op, params in {
@@ -476,6 +488,8 @@ def validate_lambda_zip(zip_bytes: bytes) -> None:
     assert "providers/shot_recipes/index.json" in names, "lambda zip is missing the shot recipe index"
     for notice in ('LICENSE', 'NOTICE.md', 'ATTRIBUTION.md'):
         assert 'providers/shot_recipes/' + notice in names, 'lambda zip is missing shot recipe ' + notice
+    for resource in ('sql/001_core.sql', 'sql/002_segment_edit.sql', 'fixtures.json', 'NOTICE.md'):
+        assert 'providers/footage_memory/' + resource in names, 'lambda zip is missing footage memory ' + resource
     assert len([name for name in names if re.fullmatch(
         r"providers/shot_recipes/cards/[^/]+/[^/]+\.md", name
     )]) == 157, "lambda zip must contain all 157 shot recipe cards"

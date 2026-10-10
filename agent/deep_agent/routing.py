@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import math
 import os
 import re
 from dataclasses import dataclass, asdict, replace, field
@@ -11,6 +12,7 @@ from pathlib import Path
 POLICY = json.loads(Path(__file__).with_name("routing_policy.json").read_text())
 TOOL_MAP = POLICY["tools"]
 TARGET_PROVIDERS = {
+    "FootageMemory": "footage_memory",
     "ShotRecipes": "shot_recipes",
     "Gemini": "gemini",
     "Mureka": "mureka",
@@ -526,6 +528,82 @@ def _cinematic_route(prompt: str, constraints: dict, *, region: str | None,
                    "Select recipe cards, validate the storyboard, then assemble supported shots.")
 
 
+def _footage_duration(prompt: str, arguments: dict) -> float | None:
+    for field_name in ("duration_s", "source_duration_seconds"):
+        value = arguments.get(field_name)
+        if type(value) in {int, float} and math.isfinite(value) and value >= 0:
+            return float(value)
+    words = {"one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "ten": 10, "thirty": 30}
+    number = r"\d+(?:\.\d+)?|" + "|".join(words)
+    match = re.search(rf"\b({number})[ -]*(hours?|hrs?|minutes?|mins?|seconds?|secs?)\b", prompt, re.I)
+    if not match:
+        return None
+    amount = words.get(match[1].lower())
+    amount = float(amount if amount is not None else match[1])
+    multiplier = 3600 if match[2].lower().startswith("h") else 60 if match[2].lower().startswith("m") else 1
+    return amount * multiplier
+
+
+def _footage_route(prompt: str, *, arguments: dict | None,
+                   available_tools: set[str] | None) -> Route | None:
+    """Propose retrieval of existing media without stealing transcript or continuity work."""
+    text = _instruction_text(prompt)
+    if re.search(r"\b(?:transcript|filler|ums|silences|pauses|continuity|consistency|face drift)\b", text, re.I):
+        return None
+    rule = next(rule for rule in POLICY["rules"] if rule["skill"] == "footage-memory")
+    if not re.search(rule["pattern"], text, re.I):
+        return None
+    args = arguments or {}
+    is_folder = bool(args.get("folder") or args.get("is_folder") is True
+                     or re.search(r"\bfolder\b.*\b(?:clips?|videos?|footage)\b", text, re.I))
+    media = is_folder or re.search(r"\b(?:footage|rushes|clip|clips|videos|video|interview)\b", text, re.I)
+    if not media and not re.search(r"\bfootage[ -]memory\b", text, re.I):
+        return None
+    question_count = args.get("question_count", 1)
+    if re.search(r"\b(?:several|multiple|many|two|three)\s+questions?\b", text, re.I):
+        question_count = max(question_count, 2) if type(question_count) is int else 2
+    if type(question_count) is not int or question_count < 1:
+        question_count = 1
+    duration = _footage_duration(text, args)
+    memory_exists = args.get("memory_exists") is True and args.get("is_stale") is not True
+    known = duration is not None or is_folder or question_count > 1 or memory_exists
+    if known:
+        from providers.footage_memory.decisions import recommendation
+
+        decision = recommendation(duration or 0, question_count=question_count,
+                                  is_folder=is_folder, memory_exists=memory_exists)
+    else:
+        decision = "status"
+    cutting = bool(re.search(r"\b(?:give|return|extract|pull|cut|trim|make)\b.*\b(?:clips?|selects?)\b", text, re.I))
+    aliases = ["footage_memory_query"] if decision == "query" else ["footage_watch_answer"] if decision == "watch" else ["footage_memory_status"]
+    if decision == "build":
+        aliases.extend(["footage_memory_build", "footage_memory_query"])
+    if cutting and decision in {"query", "build"}:
+        aliases.extend(["footage_watch_answer", "footage_clip_extract"])
+    required = {"recommendation": decision, "question_count": question_count,
+                "verify_before_extract": True, "allow_unverified": False}
+    if decision == "status":
+        required["choose_after_status"] = True
+    if duration is not None:
+        required["duration_s"] = duration
+    steps = tuple(Route(skill="footage-memory", alias=alias, tool=TOOL_MAP[alias]["gateway_tool"],
+                        dispatch_tool="call_editor_tool", provider="footage_memory", status="ready",
+                        basis="existing memory" if memory_exists else "footage duration and questions",
+                        job_type="footage_memory", required=required if index == 0 else {},
+                        reason="Discover the exact schema and reuse the current source version.",
+                        disclosure="Verify each located moment before making selects.")
+                  for index, alias in enumerate(aliases))
+    unavailable = next((step for step in steps if available_tools is not None and step.tool not in available_tools), None)
+    first = steps[0]
+    if unavailable:
+        return replace(first, tool=None, dispatch_tool=None, status="blocked", steps=steps,
+                       reason="Footage memory requires an unavailable tool; verification cannot be skipped.",
+                       disclosure="Footage memory is unavailable in this session.")
+    return replace(first, steps=steps if len(steps) > 1 else (),
+                   execution_groups=tuple((alias,) for alias in aliases),
+                   expected_output="Verified timestamped selects with handles" if cutting else "Timestamped retrieval requiring verification")
+
+
 def route_intent(prompt: str, *, region: str | None = None, tier: str | None = None,
                  confidential: bool = False, arguments: dict | None = None,
                  available_tools: set[str] | None = None, retry: bool = False, user_id: str | None = None) -> Route:
@@ -541,6 +619,8 @@ def route_intent(prompt: str, *, region: str | None = None, tier: str | None = N
     if any(re.search(pattern, prompt, re.I) for pattern in POLICY.get("non_dispatch_requests", [])):
         return Route(reason="No media intent matched; answer the Remotion licensing question from the editing skill.")
     constraints = intent_constraints(prompt, tier=tier, confidential=confidential, arguments=arguments, user_id=user_id)
+    if footage := _footage_route(prompt, arguments=arguments, available_tools=available_tools):
+        return footage
     motion_rule = next((rule for rule in POLICY["rules"] if rule.get("capability") == "motion_carry_qc"), None)
     if motion_rule and re.search(motion_rule["pattern"], _instruction_text(prompt), re.I):
         route = select_provider("motion_carry_qc", region=region, available_tools=available_tools,
@@ -590,6 +670,8 @@ def route_intent(prompt: str, *, region: str | None = None, tier: str | None = N
         or video_capabilities.intersection(POLICY["named_models"].get(constraints["named_model"], {}).get("aliases", {}))
     )
     for rule in POLICY["rules"]:
+        if rule["skill"] == "footage-memory":
+            continue  # The shared duration/reuse decision above owns these routes.
         if rule.get("named_model") and rule["named_model"] != constraints["named_model"]:
             continue
         if rule["skill"] in {"plan-to-video", "cinematic-product-promo"}:
@@ -677,7 +759,7 @@ def route_intent(prompt: str, *, region: str | None = None, tier: str | None = N
 def _dispatch(tool: str | None) -> str | None:
     if not tool:
         return None
-    if tool.startswith(("Remotion___", "HyperFrames___", "Ffmpeg___", "ShotRecipes___")):
+    if tool.startswith(("Remotion___", "HyperFrames___", "Ffmpeg___", "ShotRecipes___", "FootageMemory___")):
         return "call_editor_tool"
     if tool in {"HeyGen___voice_clone", "HeyGen___voice_tts", "HeyGen___get_voice_status"}:
         return "call_audio_tool"
@@ -1479,14 +1561,30 @@ class CostEstimate:
         return {**asdict(self), "description": self.description}
 
 
+class FootageCostEstimate(CostEstimate):
+    @property
+    def description(self):
+        return self.reason
+
+
 def estimate_cost(name: str, arguments: dict, *, list_price: bool = False) -> CostEstimate:
     from server.billing_rates import cost_for
 
+    provider, tool = tool_parts(name)
+    if provider == "footage_memory":
+        if is_free_tool(name):
+            return FootageCostEstimate(0, "Local footage operation; $0.00 USD.")
+        try:
+            from server.billing_rates import footage_memory_estimate
+
+            quote = footage_memory_estimate(tool, arguments)
+            return FootageCostEstimate(quote["estimate_cents"], quote["estimate_description"])
+        except (ValueError, TypeError, KeyError, OSError) as exc:
+            return FootageCostEstimate(None, f"Footage estimate unavailable. {exc}")
     if name in {"Remotion___render_ad_variants", "ad_variant_matrix"}:
         return CostEstimate(cost_for("remotion", "render_ad_variants", arguments).total_cents)
     if is_free_tool(name):
         return CostEstimate(0)
-    provider, tool = tool_parts(name)
     if provider == "elevenlabs" and tool.startswith("text_to_speech_"):
         effective_model(provider, tool, arguments)
     blocker = policy_blocker(name, arguments)

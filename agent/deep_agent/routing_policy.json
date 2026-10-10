@@ -31,7 +31,10 @@
     "get_transcription",
     "get_dialogue_edit",
     "motion_carry_probe",
-    "shot_recipe_search"
+    "shot_recipe_search",
+    "footage_memory_status",
+    "footage_memory_query",
+    "footage_clip_extract"
   ],
   "providers": {
     "kling": {
@@ -994,6 +997,32 @@
           "training_eligible": false,
           "training_reason": "Local text recipe data, no model or generated media. Card provenance does not grant source-media training rights.",
           "commercial_status": "Imported Apache-2.0 text cards and separate in-house derivative metadata; no audio, preview media or upstream code."
+        }
+      }
+    },
+    "footage_memory": {
+      "license": "service-terms",
+      "license_id": "proprietary-api-terms",
+      "license_source": "https://ai.google.dev/gemini-api/terms",
+      "read_date": "2026-10-10",
+      "training_eligible": false,
+      "training_reason": "Retrieval and source footage do not grant media training rights. Hosted model terms do not clearly allow competing-model training.",
+      "commercial_status": "Offline memory tools; all understanding backends mocked on this branch. No live service or weights added.",
+      "enabled": true,
+      "allowed_regions": [],
+      "default_model": "footage-memory-dry",
+      "models": [
+        "footage-memory-dry"
+      ],
+      "model_policies": {
+        "footage-memory-dry": {
+          "license": "service-terms",
+          "license_id": "proprietary-api-terms",
+          "license_source": "https://ai.google.dev/gemini-api/terms",
+          "read_date": "2026-10-10",
+          "training_eligible": false,
+          "training_reason": "Retrieval and source footage do not grant media training rights. Hosted model terms do not clearly allow competing-model training.",
+          "commercial_status": "Offline memory tools; all understanding backends mocked on this branch. No live service or weights added."
         }
       }
     }
@@ -2171,9 +2200,114 @@
       "source": "docs/CINEMATIC_PRODUCT_PROMO.md",
       "price_source": "docs/CINEMATIC_PRODUCT_PROMO.md",
       "verification": "Pure local lexical search and storyboard validation; no network or model calls."
+    },
+    "footage_memory_status": {
+      "license": "service-terms",
+      "license_id": "proprietary-api-terms",
+      "license_source": "https://ai.google.dev/gemini-api/terms",
+      "read_date": "2026-10-10",
+      "training_eligible": false,
+      "training_reason": "Retrieval and source footage do not grant media training rights. Hosted model terms do not clearly allow competing-model training.",
+      "commercial_status": "Offline memory tools; all understanding backends mocked on this branch. No live service or weights added.",
+      "gateway_tool": "FootageMemory___footage_memory_status",
+      "provider": "footage_memory",
+      "model": "footage-memory-dry",
+      "skill": "footage-memory",
+      "status": "ready",
+      "host": "local project storage; mocked understanding",
+      "us_available": "yes (offline only)",
+      "availability_source": "docs/FOOTAGE_MEMORY.md",
+      "source": "docs/FOOTAGE_MEMORY.md",
+      "price_source": "https://ai.google.dev/gemini-api/docs/pricing",
+      "verification": "Offline only. Per-call estimate is configured, default unknown and UNVERIFIED. No live calls or backend promotion."
+    },
+    "footage_memory_build": {
+      "license": "service-terms",
+      "license_id": "proprietary-api-terms",
+      "license_source": "https://ai.google.dev/gemini-api/terms",
+      "read_date": "2026-10-10",
+      "training_eligible": false,
+      "training_reason": "Retrieval and source footage do not grant media training rights. Hosted model terms do not clearly allow competing-model training.",
+      "commercial_status": "Offline memory tools; all understanding backends mocked on this branch. No live service or weights added.",
+      "gateway_tool": "FootageMemory___footage_memory_build",
+      "provider": "footage_memory",
+      "model": "footage-memory-dry",
+      "skill": "footage-memory",
+      "status": "ready",
+      "host": "local project storage; mocked understanding",
+      "us_available": "yes (offline only)",
+      "availability_source": "docs/FOOTAGE_MEMORY.md",
+      "source": "docs/FOOTAGE_MEMORY.md",
+      "price_source": "https://ai.google.dev/gemini-api/docs/pricing",
+      "verification": "Offline only. Per-call estimate is configured, default unknown and UNVERIFIED. No live calls or backend promotion."
+    },
+    "footage_memory_query": {
+      "license": "service-terms",
+      "license_id": "proprietary-api-terms",
+      "license_source": "https://ai.google.dev/gemini-api/terms",
+      "read_date": "2026-10-10",
+      "training_eligible": false,
+      "training_reason": "Retrieval and source footage do not grant media training rights. Hosted model terms do not clearly allow competing-model training.",
+      "commercial_status": "Offline memory tools; all understanding backends mocked on this branch. No live service or weights added.",
+      "gateway_tool": "FootageMemory___footage_memory_query",
+      "provider": "footage_memory",
+      "model": "footage-memory-dry",
+      "skill": "footage-memory",
+      "status": "ready",
+      "host": "local project storage; mocked understanding",
+      "us_available": "yes (offline only)",
+      "availability_source": "docs/FOOTAGE_MEMORY.md",
+      "source": "docs/FOOTAGE_MEMORY.md",
+      "price_source": "https://ai.google.dev/gemini-api/docs/pricing",
+      "verification": "Offline only. Per-call estimate is configured, default unknown and UNVERIFIED. No live calls or backend promotion."
+    },
+    "footage_watch_answer": {
+      "license": "service-terms",
+      "license_id": "proprietary-api-terms",
+      "license_source": "https://ai.google.dev/gemini-api/terms",
+      "read_date": "2026-10-10",
+      "training_eligible": false,
+      "training_reason": "Retrieval and source footage do not grant media training rights. Hosted model terms do not clearly allow competing-model training.",
+      "commercial_status": "Offline memory tools; all understanding backends mocked on this branch. No live service or weights added.",
+      "gateway_tool": "FootageMemory___footage_watch_answer",
+      "provider": "footage_memory",
+      "model": "footage-memory-dry",
+      "skill": "footage-memory",
+      "status": "ready",
+      "host": "local project storage; mocked understanding",
+      "us_available": "yes (offline only)",
+      "availability_source": "docs/FOOTAGE_MEMORY.md",
+      "source": "docs/FOOTAGE_MEMORY.md",
+      "price_source": "https://ai.google.dev/gemini-api/docs/pricing",
+      "verification": "Offline only. Per-call estimate is configured, default unknown and UNVERIFIED. No live calls or backend promotion."
+    },
+    "footage_clip_extract": {
+      "license": "service-terms",
+      "license_id": "proprietary-api-terms",
+      "license_source": "https://ai.google.dev/gemini-api/terms",
+      "read_date": "2026-10-10",
+      "training_eligible": false,
+      "training_reason": "Retrieval and source footage do not grant media training rights. Hosted model terms do not clearly allow competing-model training.",
+      "commercial_status": "Offline memory tools; all understanding backends mocked on this branch. No live service or weights added.",
+      "gateway_tool": "FootageMemory___footage_clip_extract",
+      "provider": "footage_memory",
+      "model": "footage-memory-dry",
+      "skill": "footage-memory",
+      "status": "ready",
+      "host": "local project storage; mocked understanding",
+      "us_available": "yes (offline only)",
+      "availability_source": "docs/FOOTAGE_MEMORY.md",
+      "source": "docs/FOOTAGE_MEMORY.md",
+      "price_source": "https://ai.google.dev/gemini-api/docs/pricing",
+      "verification": "Offline only. Per-call estimate is configured, default unknown and UNVERIFIED. No live calls or backend promotion."
     }
   },
   "rules": [
+    {
+      "pattern": "\\bfootage[ -]memory\\b|\\bfolder\\b.*\\b(?:clips?|videos?|footage)\\b|\\bfind\\b.*\\b(?:moments?|where|shots?)\\b|\\b(?:what|who|when|where)\\b.*\\b(?:written|whiteboard|speaker|laugh|happens)\\b|\\b(?:several|multiple|many|two|three)\\s+questions?\\b",
+      "skill": "footage-memory",
+      "abstract_tool": "footage_memory_status"
+    },
     {
       "pattern": "\\bmotion[ -]carry(?:[ -]qc)?\\b|\\bmotion_carry_probe\\b|^(?!.*\\b(?:ai[ -]generated|generative|drone|continuity)\\b).*?(?:\\b(?:slideshow|powerpoint)\\b|\\b(?:no rhythm|jarring transitions)\\b|\\b(?:qc|check|review)\\b.*\\b(?:beats? (?:flow|carry)|carry|rhythm|beat[ -]to[ -]beat)\\b)|^(?!.*\\b(?:ai[ -]generated|generative|drone|continuity)\\b).*?\\b(?:qc|check|review)\\b.*\\b(?:motion[ -]graphics|product[ -]demo|knowledge[ -]explainer|hyperframes)\\b",
       "skill": "motion-carry-qc",
@@ -6805,6 +6939,61 @@
       "training_eligible": false,
       "training_reason": "Local text recipe data, no model or generated media. Card provenance does not grant source-media training rights.",
       "commercial_status": "Imported Apache-2.0 text cards and separate in-house derivative metadata; no audio, preview media or upstream code."
+    },
+    "footage_memory_status": {
+      "enabled": true,
+      "license": "service-terms",
+      "weights_license": "no-weights-added",
+      "training_eligible": false,
+      "license_source": "https://ai.google.dev/gemini-api/terms",
+      "read_date": "2026-10-10",
+      "training_reason": "Retrieval and source footage do not grant media training rights. Hosted model terms do not clearly allow competing-model training.",
+      "commercial_status": "Offline memory tools; all understanding backends mocked on this branch. No live service or weights added.",
+      "consent_requirements": "Source media rights and applicable personal-data permissions required; no live upload on this branch."
+    },
+    "footage_memory_build": {
+      "enabled": true,
+      "license": "service-terms",
+      "weights_license": "no-weights-added",
+      "training_eligible": false,
+      "license_source": "https://ai.google.dev/gemini-api/terms",
+      "read_date": "2026-10-10",
+      "training_reason": "Retrieval and source footage do not grant media training rights. Hosted model terms do not clearly allow competing-model training.",
+      "commercial_status": "Offline memory tools; all understanding backends mocked on this branch. No live service or weights added.",
+      "consent_requirements": "Source media rights and applicable personal-data permissions required; no live upload on this branch."
+    },
+    "footage_memory_query": {
+      "enabled": true,
+      "license": "service-terms",
+      "weights_license": "no-weights-added",
+      "training_eligible": false,
+      "license_source": "https://ai.google.dev/gemini-api/terms",
+      "read_date": "2026-10-10",
+      "training_reason": "Retrieval and source footage do not grant media training rights. Hosted model terms do not clearly allow competing-model training.",
+      "commercial_status": "Offline memory tools; all understanding backends mocked on this branch. No live service or weights added.",
+      "consent_requirements": "Source media rights and applicable personal-data permissions required; no live upload on this branch."
+    },
+    "footage_watch_answer": {
+      "enabled": true,
+      "license": "service-terms",
+      "weights_license": "no-weights-added",
+      "training_eligible": false,
+      "license_source": "https://ai.google.dev/gemini-api/terms",
+      "read_date": "2026-10-10",
+      "training_reason": "Retrieval and source footage do not grant media training rights. Hosted model terms do not clearly allow competing-model training.",
+      "commercial_status": "Offline memory tools; all understanding backends mocked on this branch. No live service or weights added.",
+      "consent_requirements": "Source media rights and applicable personal-data permissions required; no live upload on this branch."
+    },
+    "footage_clip_extract": {
+      "enabled": true,
+      "license": "service-terms",
+      "weights_license": "no-weights-added",
+      "training_eligible": false,
+      "license_source": "https://ai.google.dev/gemini-api/terms",
+      "read_date": "2026-10-10",
+      "training_reason": "Retrieval and source footage do not grant media training rights. Hosted model terms do not clearly allow competing-model training.",
+      "commercial_status": "Offline memory tools; all understanding backends mocked on this branch. No live service or weights added.",
+      "consent_requirements": "Source media rights and applicable personal-data permissions required; no live upload on this branch."
     }
   },
   "editing_refusals": [
@@ -6948,5 +7137,35 @@
         }
       ]
     }
-  ]
+  ],
+  "footage_memory_ab": {
+    "status": "candidate-with-gate",
+    "promoted_default": null,
+    "dry_run_backend": "gemini",
+    "candidates": {
+      "gemini": {
+        "model_config": "GEMINI_VLM_MODEL",
+        "model_default": "gemini-3.8-flash",
+        "license": "service-terms",
+        "license_source": "https://ai.google.dev/gemini-api/terms",
+        "training_eligible": false,
+        "read_date": "2026-10-10"
+      },
+      "qwen_omni": {
+        "enabled": false,
+        "license": "UNVERIFIED hosted API terms",
+        "license_source": "https://www.alibabacloud.com/help/en/model-studio/terms-of-service",
+        "training_eligible": false,
+        "us_available": "UNVERIFIED",
+        "reason": "International terms for US/Canada require review; US-region-only DASHSCOPE key must not be used.",
+        "read_date": "2026-10-10"
+      }
+    },
+    "gate": {
+      "fixture_set": "providers/footage_memory/fixtures.json",
+      "timestamp_tolerance_s": 2,
+      "precision": "Report held-out timestamp precision and recall per backend; offline mocks cannot promote a default. A future live comparison and reviewed evidence are required.",
+      "result_sha256": null
+    }
+  }
 }

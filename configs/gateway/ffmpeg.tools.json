@@ -7,7 +7,7 @@
       "properties": {
         "op": {
           "type": "string",
-          "description": "Allowed values: measure_loudness, loudnorm_mux_aac, mux_aac, transcode_h264, frame_cadence, detect_black, detect_freeze, detect_silence, ssim, crop_plan_preview, reframe_crop, reframe_pad_blur, detect_scenes, probe, extract_frames, contact_sheet, sha256, check_faststart, volume_stats, burn_subtitles, export_srt, color_match_lut, audio_cleanup, make_proxy. One of: measure_loudness, loudnorm_mux_aac, mux_aac, transcode_h264, frame_cadence, detect_black, detect_freeze, detect_silence, ssim, crop_plan_preview, reframe_crop, reframe_pad_blur, detect_scenes, probe, extract_frames, contact_sheet, sha256, check_faststart, volume_stats, burn_subtitles, export_srt, color_match_lut, audio_cleanup, make_proxy."
+          "description": "Allowed values: trim, measure_loudness, loudnorm_mux_aac, mux_aac, transcode_h264, frame_cadence, detect_black, detect_freeze, detect_silence, ssim, crop_plan_preview, reframe_crop, reframe_pad_blur, detect_scenes, probe, extract_frames, contact_sheet, sha256, check_faststart, volume_stats, burn_subtitles, export_srt, color_match_lut, audio_cleanup, make_proxy. One of: trim, measure_loudness, loudnorm_mux_aac, mux_aac, transcode_h264, frame_cadence, detect_black, detect_freeze, detect_silence, ssim, crop_plan_preview, reframe_crop, reframe_pad_blur, detect_scenes, probe, extract_frames, contact_sheet, sha256, check_faststart, volume_stats, burn_subtitles, export_srt, color_match_lut, audio_cleanup, make_proxy."
         },
         "job_id": {
           "type": "string",
@@ -20,6 +20,14 @@
         "params": {
           "type": "object",
           "properties": {
+            "t0_s": {
+              "type": "number",
+              "description": "trim: Allowed range: 0 to 86400. Default 0. "
+            },
+            "t1_s": {
+              "type": "number",
+              "description": "trim: Allowed range: 0 to 86400. Default 1. "
+            },
             "I": {
               "type": "number",
               "description": "measure_loudness: Allowed range: -30 to -5. Default -14. loudnorm_mux_aac: Allowed range: -30 to -5. Default -14. "

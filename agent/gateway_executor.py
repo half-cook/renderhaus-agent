@@ -41,6 +41,9 @@ from agent.studio_agent_next import (
 # create no paid provider work, so they never pause for customer approval.
 APPROVAL_EXEMPT_TOOLS = frozenset({"Remotion___export_nle_timeline"})
 LOCAL_DATA_TOOLS = frozenset({"ShotRecipes___shot_recipe_search"})
+FOOTAGE_TOOLS = frozenset('FootageMemory___' + name for name in (
+    'footage_memory_status', 'footage_memory_build', 'footage_memory_query',
+    'footage_watch_answer', 'footage_clip_extract'))
 LOCAL_MEDIA_TOOLS = frozenset({
     "Remotion___motion_carry_probe",
     "Remotion___render_ad_variants", "Ffmpeg___ffmpeg_tool",
@@ -83,6 +86,11 @@ def _local_remotion_arguments(studio, arguments: dict) -> dict:
 
 def tool_needs_approval(name: str, autonomous: bool, arguments: dict | None = None) -> bool:
     from providers.elevenlabs.catalog import requires_approval
+
+    if name in FOOTAGE_TOOLS:
+        if name.endswith('___footage_memory_build'):
+            return (arguments or {}).get('stage', 'estimate') == 'build'
+        return name.endswith('___footage_watch_answer') and not autonomous
 
     if name in {"Remotion___render_ad_variants", "ad_variant_matrix"}:
         return (arguments or {}).get("stage") != "plan"
@@ -198,12 +206,12 @@ class GatewayExecutor:
         from providers.catalog import get_provider
         from providers.registry import generate_schemas
 
-        for provider in ("ffmpeg", "remotion", "shot_recipes"):
+        for provider in ("ffmpeg", "remotion", "shot_recipes", "footage_memory"):
             spec = get_provider(provider)
             for schema in generate_schemas(spec):
                 name = f"{spec.target_name}___{schema['name']}"
                 is_poll = name == 'Remotion___get_render_progress'
-                if (name not in LOCAL_MEDIA_TOOLS and name not in LOCAL_DATA_TOOLS
+                if (name not in LOCAL_MEDIA_TOOLS and name not in LOCAL_DATA_TOOLS and name not in FOOTAGE_TOOLS
                         and not _worker_remotion_tool(name) and not is_poll):
                     continue
                 if request_tool_blocker(self.studio.prompt, name) is None:
@@ -265,6 +273,8 @@ class GatewayExecutor:
         return None
 
     def media_selection(self, name, arguments):
+        if name in FOOTAGE_TOOLS:
+            return None
         if name in LOCAL_MEDIA_TOOLS:
             return None
         job = job_type(name)
@@ -314,6 +324,15 @@ class GatewayExecutor:
         return route
 
     def dispatch_disclosure(self, name, arguments, route):
+        if name in FOOTAGE_TOOLS:
+            if name.endswith(('___footage_memory_build', '___footage_watch_answer')):
+                from server.billing_rates import footage_memory_estimate
+
+                try:
+                    return footage_memory_estimate(name.split('___', 1)[1], arguments)['estimate_description']
+                except (ValueError, OSError):
+                    return 'Footage memory. Estimate unknown, UNVERIFIED. Check the local source and build settings.'
+            return 'Footage memory. Local retrieval and selects require verification before cutting.'
         if name in {"Sync___create_dialogue_edit", "Sync___create_dialogue_video"}:
             return (f"Provider sync via direct; model sync-3; {route.basis if route else 'default dialogue editing'}. "
                     f"{estimate_cost(name, arguments, list_price=True).description} "
@@ -388,6 +407,30 @@ class GatewayExecutor:
                       title="Provider choice", message=message, status="completed")
 
     def selection_blocker(self, name, arguments, route):
+        if name in FOOTAGE_TOOLS:
+            from providers.footage_memory.contracts import request_for
+            from providers.footage_memory.service import build_plan, third_party_allowed
+
+            try:
+                request = request_for(name.split('___', 1)[1], arguments)
+                if (not self.studio.project_id or request.project_id != self.studio.project_id
+                        or request.workspace_id != (self.studio.workspace_id or 'local')):
+                    return 'Footage memory requires the trusted current Studio project and workspace.'
+                if hasattr(request, 'job_id') and request.job_id != self.studio.job_id:
+                    return 'Footage memory requires the trusted current Studio job.'
+                if name.endswith('___footage_memory_build') and request.stage == 'build':
+                    plan, _ = build_plan(request)
+                    if plan['plan_hash'] != request.plan_hash:
+                        return 'Footage or build settings changed. Request a new estimate.'
+                if name.endswith(('___footage_memory_build', '___footage_watch_answer')):
+                    from providers.footage_memory.backends import get_backend
+
+                    if not name.endswith('___footage_memory_build') or request.stage == 'build':
+                        get_backend(allow_third_party_vlm=not self.studio.confidential and third_party_allowed(request))
+            except ValueError as exc:
+                return str(exc)
+            except (OSError, KeyError):
+                return 'Footage memory is unavailable on this local host.'
         if blocker := request_tool_blocker(self.studio.prompt, name):
             return blocker
         provider, tool = tool_parts(name)
@@ -717,15 +760,17 @@ class GatewayExecutor:
         if rejection is not None:
             output = {"status": "rejected", "message": rejection}
         else:
+            free_dispatch = is_free_tool(name) or (
+                name == 'FootageMemory___footage_memory_build' and arguments.get('stage', 'estimate') == 'estimate')
             meter = getattr(studio, "run_meter", None)
-            if meter is not None and not is_free_tool(name):
+            if meter is not None and not free_dispatch:
                 # Hard stop at the run's cap: run spend + this step must fit before anything paid is dispatched.
                 from server.run_budget import PAUSED_MESSAGE
 
                 step_quote = estimate_cost(name, arguments)
                 if await asyncio.to_thread(meter.check_step, step_quote.total_cents):
                     return {"status": "not_run", "reason": PAUSED_MESSAGE}
-            if self.cap_cents is not None and not is_free_tool(name):
+            if self.cap_cents is not None and not free_dispatch:
                 quote = estimate_cost(name, arguments)
                 spent = sum(self.reservations.values())
                 if self.cap_stopped or quote.total_cents is None or spent + quote.total_cents > self.cap_cents:
@@ -757,7 +802,7 @@ class GatewayExecutor:
                 {},
             )
             try:
-                if name in LOCAL_MEDIA_TOOLS or name in LOCAL_DATA_TOOLS or _worker_remotion_tool(name, arguments):
+                if name in LOCAL_MEDIA_TOOLS or name in LOCAL_DATA_TOOLS or name in FOOTAGE_TOOLS or _worker_remotion_tool(name, arguments):
                     from providers.registry import dispatch
                     from providers.remotion.ad_variants import authorize
                     from server.billing import stripe_enabled
@@ -777,7 +822,12 @@ class GatewayExecutor:
                                 name, arguments, call_id,
                             )
                     try:
-                        if name == "Remotion___render_ad_variants":
+                        if name == 'FootageMemory___footage_memory_build':
+                            from providers.footage_memory.service import authorize as authorize_footage
+
+                            with authorize_footage(arguments.get('plan_hash') if approved else None):
+                                output = await asyncio.to_thread(dispatch, provider, verb, arguments)
+                        elif name == "Remotion___render_ad_variants":
                             with authorize(arguments.get("stage", "plan"), arguments.get("plan_hash", ""),
                                            f"human:{call_id}" if approved else ""):
                                 output = await asyncio.to_thread(dispatch, provider, verb, arguments)

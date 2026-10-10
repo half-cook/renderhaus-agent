@@ -175,10 +175,10 @@ def execute(op: str, job_dir: Path, input_path: str, params: dict | None = None)
             validate_input_path(directory, input_path, must_exist=False)
             metrics = spec.compute(parsed)
         elif spec.pure is not None:
-            source = input_file(directory, input_path)
+            source = input_file(directory, input_path, max_bytes=spec.input_limit_bytes)
             metrics = spec.pure(source)
         else:
-            source = input_file(directory, input_path)
+            source = input_file(directory, input_path, max_bytes=spec.input_limit_bytes)
             binary = shutil.which(spec.binary)
             if not binary:
                 raise ValueError(f"{spec.binary} is not installed. This op requires the local/worker host "
