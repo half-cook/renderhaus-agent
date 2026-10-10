@@ -1,0 +1,270 @@
+{
+  "origin": "Independent Renderhaus synthetic product-card films; Pillow and installed ffmpeg, not Remotion browser output.",
+  "films": [
+    {
+      "name": "carrying",
+      "file": "carrying.mp4",
+      "sha256": "7e7a60182baa9d3ec2ee504ca1eda5f1600ea262d50d9476257275d7e163fa98",
+      "timeline": {
+        "beats_s": [
+          0,
+          0.9,
+          2.3,
+          3.4,
+          6
+        ],
+        "elements": [
+          {
+            "id": "product-card",
+            "start_s": 0,
+            "end_s": 6,
+            "main_subject": true,
+            "intentional_exit": false
+          }
+        ]
+      },
+      "labels": {
+        "carry": true,
+        "uniform_cadence": true,
+        "no_rests": true,
+        "clipped_audio": true,
+        "unblurred_fast_move": true,
+        "subject_exit": true
+      }
+    },
+    {
+      "name": "slideshow",
+      "file": "slideshow.mp4",
+      "sha256": "5969df71bbb7a731555b1d16f419c6cdb9c81cbaa41d009b612b240038a435e4",
+      "timeline": {
+        "beats_s": [
+          0,
+          0.9,
+          2.3,
+          3.4,
+          6
+        ],
+        "elements": [
+          {
+            "id": "product-card",
+            "start_s": 0,
+            "end_s": 6,
+            "main_subject": true,
+            "intentional_exit": false
+          }
+        ]
+      },
+      "labels": {
+        "carry": false
+      }
+    },
+    {
+      "name": "fade_replace",
+      "file": "fade_replace.mp4",
+      "sha256": "1f77264e8ebfb92c9936445be59cd617f85b56b883d9bfdb238b7ac99d7ebcc5",
+      "timeline": {
+        "beats_s": [
+          0,
+          0.9,
+          2.3,
+          3.4,
+          6
+        ],
+        "elements": [
+          {
+            "id": "product-card",
+            "start_s": 0,
+            "end_s": 6,
+            "main_subject": true,
+            "intentional_exit": false
+          }
+        ]
+      },
+      "labels": {
+        "carry": false
+      }
+    },
+    {
+      "name": "uniform_cadence",
+      "file": "uniform_cadence.mp4",
+      "sha256": "9ae02f4bea7b07a57068efc12024fb8d62118dca583c8853e2ccea251de48f96",
+      "timeline": {
+        "beats_s": [
+          0,
+          1.5,
+          3,
+          4.5,
+          6
+        ],
+        "elements": [
+          {
+            "id": "product-card",
+            "start_s": 0,
+            "end_s": 6,
+            "main_subject": true,
+            "intentional_exit": false
+          }
+        ]
+      },
+      "labels": {
+        "uniform_cadence": false
+      }
+    },
+    {
+      "name": "no_rests",
+      "file": "no_rests.mp4",
+      "sha256": "442cf1e73502ab258e22b30361dbeba0c02c0cc23d8eae9fb9b88e6992a2653c",
+      "timeline": {
+        "beats_s": [
+          0,
+          0.9,
+          2.3,
+          3.4,
+          6
+        ],
+        "elements": [
+          {
+            "id": "product-card",
+            "start_s": 0,
+            "end_s": 6,
+            "main_subject": true,
+            "intentional_exit": false
+          }
+        ]
+      },
+      "labels": {
+        "no_rests": false
+      }
+    },
+    {
+      "name": "clipped_audio",
+      "file": "clipped_audio.mp4",
+      "sha256": "294324bd9fb0925efa2159dc50b483bb0f2a6d87fce3d1992113741ee6ede788",
+      "timeline": {
+        "beats_s": [
+          0,
+          0.9,
+          2.3,
+          3.4,
+          6
+        ],
+        "elements": [
+          {
+            "id": "product-card",
+            "start_s": 0,
+            "end_s": 6,
+            "main_subject": true,
+            "intentional_exit": false
+          }
+        ]
+      },
+      "labels": {
+        "clipped_audio": false
+      }
+    },
+    {
+      "name": "unblurred_fast_move",
+      "file": "unblurred_fast_move.mp4",
+      "sha256": "8ae1f7b71f1f86c24f08d30f34e6acd02e0e23ecd50c3b5a4a683ee4a009f9ac",
+      "timeline": {
+        "beats_s": [
+          0,
+          0.9,
+          2.3,
+          3.4,
+          6
+        ],
+        "elements": [
+          {
+            "id": "product-card",
+            "start_s": 0,
+            "end_s": 6,
+            "main_subject": true,
+            "intentional_exit": false
+          }
+        ]
+      },
+      "labels": {
+        "unblurred_fast_move": false
+      }
+    },
+    {
+      "name": "subject_exit",
+      "file": "subject_exit.mp4",
+      "sha256": "8fbb026d091343bde79f86d03e38dd766e1c5d13fe2b9dcf0196aa684a289808",
+      "timeline": {
+        "beats_s": [
+          0,
+          0.9,
+          2.3,
+          3.4,
+          6
+        ],
+        "elements": [
+          {
+            "id": "product-card",
+            "start_s": 0,
+            "end_s": 6,
+            "main_subject": true,
+            "intentional_exit": false
+          }
+        ]
+      },
+      "labels": {
+        "subject_exit": false
+      }
+    },
+    {
+      "name": "blurred_fast_move",
+      "file": "blurred_fast_move.mp4",
+      "sha256": "7481694971a4d850b61a707574a29697b6f0a50151fb691baeb616f4ddee904b",
+      "timeline": {
+        "beats_s": [
+          0,
+          0.9,
+          2.3,
+          3.4,
+          6
+        ],
+        "elements": [
+          {
+            "id": "product-card",
+            "start_s": 0,
+            "end_s": 6,
+            "main_subject": true,
+            "intentional_exit": false
+          }
+        ]
+      },
+      "labels": {
+        "unblurred_fast_move": true
+      }
+    },
+    {
+      "name": "intentional_exit",
+      "file": "intentional_exit.mp4",
+      "sha256": "8fbb026d091343bde79f86d03e38dd766e1c5d13fe2b9dcf0196aa684a289808",
+      "timeline": {
+        "beats_s": [
+          0,
+          0.9,
+          2.3,
+          3.4,
+          6
+        ],
+        "elements": [
+          {
+            "id": "product-card",
+            "start_s": 0,
+            "end_s": 6,
+            "main_subject": true,
+            "intentional_exit": true
+          }
+        ]
+      },
+      "labels": {
+        "subject_exit": true
+      }
+    }
+  ]
+}

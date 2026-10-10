@@ -1,0 +1,221 @@
+{
+  "schema_version": 1,
+  "provisional": true,
+  "method": "midpoint of labelled class extrema",
+  "origin": "Independent Renderhaus synthetic product-card films; Pillow and installed ffmpeg, not Remotion browser output.",
+  "manifest_sha256": "4b77d671309989d875e21f4c361c8504b82ae796c3d86b017632d0748e97b312",
+  "thresholds": {
+    "still_delta": 0.001555313472636044,
+    "carry": 0.020484216104920225,
+    "uniform_cadence": 0.219848432637882,
+    "no_rests": 0.4583333333333333,
+    "clipped_audio": 0.050414249897003174,
+    "unblurred_fast_move": 0.8158769063180829,
+    "subject_exit": 0.027777777777777776
+  },
+  "stillness_fit": {
+    "held_noise_p10": 0.0,
+    "moving_floor_p10": 0.003110626945272088
+  },
+  "separation": {
+    "carry": {
+      "positive_edge": 0.04096843220984042,
+      "negative_edge": 2.7382552486832217e-17,
+      "separated": true,
+      "positive_count": 1,
+      "negative_count": 2
+    },
+    "uniform_cadence": {
+      "positive_edge": 0.439696865275764,
+      "negative_edge": 0.0,
+      "separated": true,
+      "positive_count": 1,
+      "negative_count": 1
+    },
+    "no_rests": {
+      "positive_edge": 0.9166666666666666,
+      "negative_edge": 0,
+      "separated": true,
+      "positive_count": 1,
+      "negative_count": 1
+    },
+    "clipped_audio": {
+      "positive_edge": 0.0,
+      "negative_edge": 0.10082849979400635,
+      "separated": true,
+      "positive_count": 1,
+      "negative_count": 1
+    },
+    "unblurred_fast_move": {
+      "positive_edge": 0.5082244008714601,
+      "negative_edge": 1.1235294117647054,
+      "separated": true,
+      "positive_count": 2,
+      "negative_count": 1
+    },
+    "subject_exit": {
+      "positive_edge": 0.0,
+      "negative_edge": 0.05555555555555555,
+      "separated": true,
+      "positive_count": 2,
+      "negative_count": 1
+    }
+  },
+  "scores": [
+    {
+      "name": "carrying",
+      "sha256": "7e7a60182baa9d3ec2ee504ca1eda5f1600ea262d50d9476257275d7e163fa98",
+      "labels": {
+        "carry": true,
+        "uniform_cadence": true,
+        "no_rests": true,
+        "clipped_audio": true,
+        "unblurred_fast_move": true,
+        "subject_exit": true
+      },
+      "metrics": {
+        "carry": 0.04096843220984042,
+        "uniform_cadence": 0.439696865275764,
+        "no_rests": 0.9166666666666666,
+        "clipped_audio": 0.0,
+        "unblurred_fast_move": 0.10392156862745117,
+        "subject_exit": 0.0
+      }
+    },
+    {
+      "name": "slideshow",
+      "sha256": "5969df71bbb7a731555b1d16f419c6cdb9c81cbaa41d009b612b240038a435e4",
+      "labels": {
+        "carry": false
+      },
+      "metrics": {
+        "carry": 2.7382552486832217e-17,
+        "uniform_cadence": 0.439696865275764,
+        "no_rests": 2.5,
+        "clipped_audio": 0.0,
+        "unblurred_fast_move": 4.2823529411764705,
+        "subject_exit": 0.0
+      }
+    },
+    {
+      "name": "fade_replace",
+      "sha256": "1f77264e8ebfb92c9936445be59cd617f85b56b883d9bfdb238b7ac99d7ebcc5",
+      "labels": {
+        "carry": false
+      },
+      "metrics": {
+        "carry": 2.103030482837695e-17,
+        "uniform_cadence": 0.439696865275764,
+        "no_rests": 2.25,
+        "clipped_audio": 0.0,
+        "unblurred_fast_move": 3.1152103692813826,
+        "subject_exit": 0.0
+      }
+    },
+    {
+      "name": "uniform_cadence",
+      "sha256": "9ae02f4bea7b07a57068efc12024fb8d62118dca583c8853e2ccea251de48f96",
+      "labels": {
+        "uniform_cadence": false
+      },
+      "metrics": {
+        "carry": 1.2211466565848e-16,
+        "uniform_cadence": 0.0,
+        "no_rests": 0.9166666666666666,
+        "clipped_audio": 0.0,
+        "unblurred_fast_move": 0.10392156862745117,
+        "subject_exit": 0.0
+      }
+    },
+    {
+      "name": "no_rests",
+      "sha256": "442cf1e73502ab258e22b30361dbeba0c02c0cc23d8eae9fb9b88e6992a2653c",
+      "labels": {
+        "no_rests": false
+      },
+      "metrics": {
+        "carry": 0.01536500158260768,
+        "uniform_cadence": 0.439696865275764,
+        "no_rests": 0,
+        "clipped_audio": 0.0,
+        "unblurred_fast_move": 0.10784313725490273,
+        "subject_exit": 0.0
+      }
+    },
+    {
+      "name": "clipped_audio",
+      "sha256": "294324bd9fb0925efa2159dc50b483bb0f2a6d87fce3d1992113741ee6ede788",
+      "labels": {
+        "clipped_audio": false
+      },
+      "metrics": {
+        "carry": 0.04096843220984042,
+        "uniform_cadence": 0.439696865275764,
+        "no_rests": 0.9166666666666666,
+        "clipped_audio": 0.10082849979400635,
+        "unblurred_fast_move": 0.10392156862745117,
+        "subject_exit": 0.0
+      }
+    },
+    {
+      "name": "unblurred_fast_move",
+      "sha256": "8ae1f7b71f1f86c24f08d30f34e6acd02e0e23ecd50c3b5a4a683ee4a009f9ac",
+      "labels": {
+        "unblurred_fast_move": false
+      },
+      "metrics": {
+        "carry": 0.04096843220984042,
+        "uniform_cadence": 0.439696865275764,
+        "no_rests": 0.9166666666666666,
+        "clipped_audio": 0.0,
+        "unblurred_fast_move": 1.1235294117647054,
+        "subject_exit": 0.0
+      }
+    },
+    {
+      "name": "subject_exit",
+      "sha256": "8fbb026d091343bde79f86d03e38dd766e1c5d13fe2b9dcf0196aa684a289808",
+      "labels": {
+        "subject_exit": false
+      },
+      "metrics": {
+        "carry": 0.04096843220984042,
+        "uniform_cadence": 0.439696865275764,
+        "no_rests": 1.0,
+        "clipped_audio": 0.0,
+        "unblurred_fast_move": 2.8907774394968806,
+        "subject_exit": 0.05555555555555555
+      }
+    },
+    {
+      "name": "blurred_fast_move",
+      "sha256": "7481694971a4d850b61a707574a29697b6f0a50151fb691baeb616f4ddee904b",
+      "labels": {
+        "unblurred_fast_move": true
+      },
+      "metrics": {
+        "carry": 0.04096843220984042,
+        "uniform_cadence": 0.439696865275764,
+        "no_rests": 0.9166666666666666,
+        "clipped_audio": 0.0,
+        "unblurred_fast_move": 0.5082244008714601,
+        "subject_exit": 0.0
+      }
+    },
+    {
+      "name": "intentional_exit",
+      "sha256": "8fbb026d091343bde79f86d03e38dd766e1c5d13fe2b9dcf0196aa684a289808",
+      "labels": {
+        "subject_exit": true
+      },
+      "metrics": {
+        "carry": 0.04096843220984042,
+        "uniform_cadence": 0.439696865275764,
+        "no_rests": 1.0,
+        "clipped_audio": 0.0,
+        "unblurred_fast_move": 2.8907774394968806,
+        "subject_exit": 0.0
+      }
+    }
+  ]
+}

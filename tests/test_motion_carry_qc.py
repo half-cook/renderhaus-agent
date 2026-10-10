@@ -80,6 +80,40 @@ class MotionCarryTests(unittest.TestCase):
         self.assertEqual(estimate_cost(name, {}).total_cents, 0)
         self.assertEqual(cost_for("remotion", "motion_carry_probe", {}).total_cents, 0)
 
+    def test_clean_loud_audio_is_not_clipping_but_flat_rail_audio_is(self):
+        api = self.api()
+        frames = np.zeros((72, 48, 80, 3), dtype=np.uint8)
+        frames[:, 16:32, 20:36] = [40, 180, 240]
+        t = np.arange(3*192000)/192000
+        clean = .95*np.sin(2*np.pi*330*t)
+        clipped = np.clip(1.8*np.sin(2*np.pi*330*t), -1, 1)
+        for audio, expected in ((clean, True), (clipped, False)):
+            report = api.analyse_frames(frames, 24, audio=audio)
+            self.assertEqual(report["checks"]["clipped_audio"]["passed"], expected)
+
+    def test_completed_reports_conform_to_the_published_schema(self):
+        from jsonschema import validate, ValidationError
+        api = self.api()
+        frames = np.zeros((72, 48, 80, 3), dtype=np.uint8)
+        frames[:, 16:32, 20:36] = [40, 180, 240]
+        report = api.analyse_frames(frames, 24, timeline={"beats_s": [0, .8, 2, 3]})
+        validate(report, api.REPORT_SCHEMA)
+        report["checks"]["subject_exit"]["evidence"] = [{"time_s": -1}]
+        with self.assertRaises(ValidationError):
+            validate(report, api.REPORT_SCHEMA)
+
+    def test_busy_worker_skips_probe_without_reading_media(self):
+        api = self.api()
+        with patch.dict(os.environ, {"MOTION_CARRY_QC_DRY_RUN": "false"}), patch.object(api, "probe_file") as probe:
+            api.PROBE_SLOT.acquire()
+            try:
+                report = api.motion_carry_probe("job", "film.mp4")
+            finally:
+                api.PROBE_SLOT.release()
+        self.assertEqual(report["status"], "skipped")
+        self.assertIn("busy", report["reason"])
+        probe.assert_not_called()
+
 
 @unittest.skipUnless(shutil.which("ffmpeg") and shutil.which("ffprobe"), "ffmpeg/ffprobe absent")
 class MotionFixtureTests(unittest.TestCase):
