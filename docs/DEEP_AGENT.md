@@ -188,7 +188,7 @@ See [the capability map](CAPABILITY_MAP.md) and [routing policy](SKILLS.md#capab
 
 ## Skills and delegation
 
-There are 31 packaged `SKILL.md` files under `agent/deep_agent/skills/`.
+There are 32 packaged `SKILL.md` files under `agent/deep_agent/skills/`.
 Deep Agents reads metadata first. Full instructions enter context when a relevant skill is read.
 `metadata.include_tools` documents real dispatch wrappers, which are stably bound per role. `metadata.routing_tools` holds
 canonical capability/workflow IDs, while `metadata.gateway_tools` lists built names only.
@@ -200,7 +200,7 @@ skills remain. Image-gen applies GPT still defaults and Recraft/Ideogram excepti
 Named-provider honors explicit demoted generation providers. Act-Two and Kling Motion Control
 use the act-two skill even for explicit performance requests. Mureka lyrics-video and Topaz finishing are built. Product-demo-video keeps the pending cutaway capture utility;
 whiteboard-explainer plans narrated Remotion templates without claiming unsupported marker-hand animation.
-The new knowledge-explainer plans silent graphic beats and event-timed SFX. Its shared request
+The knowledge-explainer plans silent graphic beats and event-timed SFX. Its shared request
 guard excludes narration/TTS before approval and dispatch, including on resumes. It reuses
 Remotion, explicit HyperFrames previews, Mirelo and ElevenLabs SFX. Existing-clip audio-only
 requests retain audio-bed. See [knowledge explainers](KNOWLEDGE_EXPLAINER.md).
@@ -243,7 +243,7 @@ order. The short Studio summary also includes per-step costs when they fit its 3
 contract; larger runs refer to the complete breakdown. Unknown charges remain explicit,
 with a known subtotal. Model token charges are recorded separately by `ModelUsage`.
 
-The capability-map fixture contains 240 retained rows, with 235 active and 5 dependency skips.
+The capability-map fixture contains 243 retained rows, with 238 active and 5 dependency skips.
 Archived/confidential routes are dropped. Active rows cover built tools and declared interims;
 pending specialists keep named branch reasons. Editorial overrides retain the safe preparer,
 separate rendering approval, and existing export/HyperFrames narration workflow contracts.
@@ -405,7 +405,7 @@ See [the decisions record](fix-parallel-approvals-decisions.tsv) for reproductio
 ## AgentCore and verification
 
 `Dockerfile.agentcore` defaults to Deep Agents and retains Codex for explicit fallback.
-It installs pinned dependencies and verifies the Deep Agents version and all 31 packaged
+It installs pinned dependencies and verifies the Deep Agents version and all 32 packaged
 skills during the build. The entrypoint remains `python -m agent.studio_agent_next`.
 The existing Studio approval/review surfaces display the edit plan, subtitles, grade and
 audio fades. The database schema stays compatible.
@@ -606,8 +606,8 @@ composition. This task makes no deployment or Lambda call. Matrix jobs refuse th
 backend until the same job directory exists on its worker. See
 [Remotion editing](REMOTION_EDITING.md) for the supported backend table and demo commands.
 
-Inventory is 16 providers, 120 Gateway tools and 31 skills. The fixture has 235 active and
-5 deferred cases among 240 rows. Browser validation through Comet remains blocked here.
+Inventory is 16 providers, 120 Gateway tools and 32 skills. The fixture has 238 active and
+5 deferred cases among 243 rows. Browser validation through Comet remains blocked here.
 
 ## Per-shot static reframing
 
@@ -638,8 +638,19 @@ or incomplete checks, and prevents a previous successful render from overriding 
 failed QC, including turn-limit recovery. Failure summaries preserve worker reasons
 verbatim. Existing ordinary assembly validation remains compatible.
 
-The three guides add delivery, loudness and deliverable QC routing. The 240 retained rows
-now contain 235 active cases and 5 skips. RT-E043 awaits exact OCR verification; the other
+The three guides add delivery, loudness and deliverable QC routing. The 243 retained rows
+now contain 238 active cases and 5 skips. RT-E043 awaits exact OCR verification; the other
 four are existing provider dependencies. `project.confidential` never changes these routes.
 See [contracts and operator commands](REMOTION_EDITING.md). Offline real-binary verification
 is supporting evidence; Comet Studio E2E is blocked by unavailable browser control here.
+
+### Art style motion
+
+The packaged [art-style-motion](ART_STYLE_MOTION.md) skill and its local card references
+are available to the manager and every role through the existing native SkillsMiddleware.
+The installed deepagents 0.7.23 signatures remain the contract; no harness or interrupt API
+changes are required. Named art/grammar workflows avoid the generative video-plus-voiceover
+shortcut, keep supporting character images available, and scope an audio-provider request
+to audio. Explicit generated-video requests still win. The saved approval/rejection resume
+is covered with the actual graph and a scripted model, not a live provider. Browser validation
+remains blocked because Comet is unavailable.
