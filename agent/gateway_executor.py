@@ -62,25 +62,33 @@ def _worker_remotion_tool(name: str, arguments: dict | None = None) -> bool:
 
 
 def _local_remotion_arguments(studio, arguments: dict) -> dict:
+    def resolve_source(source):
+        version = studio.source_versions.get(source)
+        if source.startswith('renderhaus-asset://'):
+            version = source.removeprefix('renderhaus-asset://').strip()
+            if not version:
+                raise ValueError('Referenced Studio asset is missing a version id.')
+        if version:
+            if studio.source_resolver is None:
+                raise ValueError('Local Remotion requires the owned Studio asset resolver.')
+            return studio.source_resolver(version)
+        if source.startswith('https://'):
+            return source
+        from providers.ffmpeg.sandbox import job_directory, validate_input_path
+
+        return str(validate_input_path(job_directory(studio.job_id), source))
+
     prepared = {**arguments}
     for section in ('visuals', 'audio_tracks'):
         prepared[section] = [dict(item) for item in arguments.get(section) or []]
         for item in prepared[section]:
             field = 'url' if 'url' in item else 'output_path'
-            source = item.get(field, '')
-            version = studio.source_versions.get(source)
-            if source.startswith('renderhaus-asset://'):
-                version = source.removeprefix('renderhaus-asset://').strip()
-                if not version:
-                    raise ValueError('Referenced Studio asset is missing a version id.')
-            if version:
-                if studio.source_resolver is None:
-                    raise ValueError('Local Remotion requires the owned Studio asset resolver.')
-                item[field] = studio.source_resolver(version)
-            elif not source.startswith('https://'):
-                from providers.ffmpeg.sandbox import job_directory, validate_input_path
-
-                item[field] = str(validate_input_path(job_directory(studio.job_id), source))
+            item[field] = resolve_source(item.get(field, ''))
+    if arguments.get('template'):
+        prepared['template'] = dict(arguments['template'])
+        for field in ('cover_url', 'logo_url'):
+            if field in prepared['template']:
+                prepared['template'][field] = resolve_source(prepared['template'][field])
     return prepared
 
 
@@ -103,6 +111,8 @@ def tool_needs_approval(name: str, autonomous: bool, arguments: dict | None = No
         return False
     if name == "Remotion___import_nle_timeline":
         return False
+    if name in {"ElevenLabs___speech_to_text_convert", "ElevenLabs___forced_alignment_create"}:
+        return True
     if name in {"Sync___transcribe_video", "Sync___get_transcription", "Sync___get_dialogue_edit"}:
         return False
     if name in {"Remotion___prepare_conversational_edit", "Sync___lipsync_video", "sync3_lipsync",

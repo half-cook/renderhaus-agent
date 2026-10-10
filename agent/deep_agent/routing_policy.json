@@ -2300,9 +2300,47 @@
       "source": "docs/FOOTAGE_MEMORY.md",
       "price_source": "https://ai.google.dev/gemini-api/docs/pricing",
       "verification": "Offline only. Per-call estimate is configured, default unknown and UNVERIFIED. No live calls or backend promotion."
+    },
+    "elevenlabs_stt": {
+      "gateway_tool": "ElevenLabs___speech_to_text_convert",
+      "skill": "podcast-audiogram",
+      "status": "ready",
+      "host": "ElevenLabs direct",
+      "training_eligible": false,
+      "license": "service-terms",
+      "license_source": "https://elevenlabs.io/terms-of-use",
+      "source": "https://elevenlabs.io/docs/api-reference/speech-to-text/convert",
+      "price_source": "https://elevenlabs.io/pricing/api",
+      "read_date": "2026-10-10",
+      "verification": "Existing scribe_v2 API and word timestamps verified; per-call quote TODO/unknown without measured duration or operator quote."
     }
   },
   "rules": [
+    {
+      "pattern": "\\b(?:audiogram|podcast[ -]audiogram)\\b|\\b(?:reactive|moving|audio[ -]reactive|animated)\\s+waveform\\b|\\bwaveform\\s+(?:video|clip)\\b",
+      "skill": "podcast-audiogram",
+      "abstract_tool": "remotion_render",
+      "capability": "motion_graphics"
+    },
+    {
+      "pattern": "\\b(?:channel|youtube)\\b[^.;!?\\n]*\\b(?:intro|sting)\\b|\\byoutube[ -]intro[ -]sting\\b",
+      "skill": "motion-graphics",
+      "abstract_tool": "remotion_render",
+      "capability": "motion_graphics",
+      "template_name": "youtube-intro-sting"
+    },
+    {
+      "pattern": "\\byoutube\\b[^.;!?\\n]*\\b(?:end[ -]?screen|outro)\\b|\\byoutube[ -]end[ -]screen\\b",
+      "skill": "motion-graphics",
+      "abstract_tool": "remotion_render",
+      "capability": "motion_graphics",
+      "template_name": "youtube-end-screen"
+    },
+    {
+      "pattern": "(?=[\\s\\S]*\\b(?:talking[ -]head|interview)\\b)(?=[\\s\\S]*\\b(?:captions?|subtitles?)\\b)[\\s\\S]+",
+      "skill": "conversational-edit",
+      "abstract_tool": "transcript_edit"
+    },
     {
       "pattern": "\\bfootage[ -]memory\\b|\\bfolder\\b.*\\b(?:clips?|videos?|footage)\\b|\\bfind\\b.*\\b(?:moments?|where|shots?)\\b|\\b(?:what|who|when|where)\\b.*\\b(?:written|whiteboard|speaker|laugh|happens)\\b|\\b(?:several|multiple|many|two|three)\\s+questions?\\b",
       "skill": "footage-memory",
@@ -6994,6 +7032,16 @@
       "training_reason": "Retrieval and source footage do not grant media training rights. Hosted model terms do not clearly allow competing-model training.",
       "commercial_status": "Offline memory tools; all understanding backends mocked on this branch. No live service or weights added.",
       "consent_requirements": "Source media rights and applicable personal-data permissions required; no live upload on this branch."
+    },
+    "elevenlabs_stt": {
+      "model_id": "scribe_v2",
+      "license": "ElevenLabs commercial API service terms",
+      "license_source": "https://elevenlabs.io/terms-of-use",
+      "training_eligible": false,
+      "training_reason": "No clear model-training permission verified; source recording rights remain required.",
+      "commercial_status": "commercial service; user must have all necessary input recording rights",
+      "consent_requirements": "Authorized source recording only. No voice model, cloning or synthetic speech is created.",
+      "read_date": "2026-10-10"
     }
   },
   "editing_refusals": [
