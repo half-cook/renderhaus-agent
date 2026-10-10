@@ -125,8 +125,11 @@ Call the video finished or delivered only when its saved QC report passes and
 still matches every output checksum. Otherwise include every reported failure
 verbatim. Keep pending visual review explicit.
 
-Return the artifact, source plan reference/version, chapter timecodes, and exact
-open questions with IDs in both summary and Markdown. After the preview, ask
+Return the artifact, source plan reference/version, chapter timecodes, and a
+complete open-questions summary in Markdown. Keep its IDs and question wording
+identical to the cards. Keep the Studio short summary within 320 characters;
+when the full list cannot fit, give the question count and refer to the complete
+Markdown list. After the preview, ask
 the human to answer the open questions in chat. Store only their actual replies
 in the separate decisions file. If rendering is pending or rejected, return the
 same unanswered questions with the concrete blocker and saved job IDs.
@@ -139,7 +142,11 @@ existing approval. Technical QC does not accept copy, framing, or human decision
 
 ## Sources
 
-This original Renderhaus workflow adapts the Apache-2.0 plan-review pattern from
-[reelplanner](https://github.com/ncrispino/reelplanner). It vendors no upstream
-code or CLI. Remotion, HyperFrames, and voice APIs keep their existing licences,
-rights, provider configuration, and training eligibility.
+This original Renderhaus workflow uses the plan-review pattern associated with
+[reelplanner](https://github.com/ncrispino/reelplanner). The upstream page was
+unavailable during the 2026-10-09 read; its Apache-2.0 claim is UNVERIFIED here.
+No upstream code or CLI was copied. Remotion, HyperFrames, and voice APIs keep
+their existing licences, rights, configuration, and training eligibility.
+The exact public `eleven_v4_turbo` ID is also UNVERIFIED in this session. The
+starting adapter records operator TTS evidence and defaults to dry-run; this
+workflow changes no HTTP guard. See [pricing, evidence and limits](../../../../docs/PLAN_TO_VIDEO.md).

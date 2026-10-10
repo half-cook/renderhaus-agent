@@ -13,7 +13,7 @@ refusals return `blocked`, retired requests return `retired`, and unknown intent
 
 ## Packaged skills
 
-The backend packages 30 skills. Some explain pending capabilities; installing their
+The backend packages 31 skills. Some explain pending capabilities; installing their
 instructions does not install a provider adapter. The original execution skills remain
 available. `image-gen` and `named-provider` cover the new still-image policy and explicit
 requests for providers retained outside automatic selection. The archived `vidu-q4` skill
@@ -46,6 +46,7 @@ exact Gateway names, native arguments, and operational constraints.
 | [lyrics-video](../agent/deep_agent/skills/lyrics-video/SKILL.md) | `call_audio_tool`<br>`call_editor_tool` | `mureka_lyrics_video`<br>`mureka_v95` |
 | [motion-graphics](../agent/deep_agent/skills/motion-graphics/SKILL.md) | `call_editor_tool`<br>`call_media_tool` | `remotion_render`<br>`hyperframes_render` |
 | [named-provider](../agent/deep_agent/skills/named-provider/SKILL.md) | `call_media_tool`<br>`call_audio_tool` | `kling_t2v`<br>`kling_i2v`<br>`runway_gen45_t2v`<br>`runway_aleph_edit`<br>`luma_ray3_t2v`<br>`luma_ray3_modify`<br>`vidu_q4_i2v`<br>`vidu_q4_r2v`<br>`seedream_t2i`<br>`fish_audio_tts`<br>`wan_vace_edit` |
+| [plan-to-video](../agent/deep_agent/skills/plan-to-video/SKILL.md) | `call_editor_tool`<br>`call_audio_tool` | `remotion_render`<br>`hyperframes_render`<br>`eleven_v4_turbo`<br>`fish_audio_tts`<br>`ffmpeg_tool`<br>`deliverable_qc` |
 | [product-demo-video](../agent/deep_agent/skills/product-demo-video/SKILL.md) | `call_editor_tool` | `cutaway_record`<br>`remotion_render`<br>`hyperframes_render` |
 | [product-images](../agent/deep_agent/skills/product-images/SKILL.md) | `call_media_tool` | `gpt_image25_t2i`<br>`gpt_image25_edit`<br>`recraft_v41_vector`<br>`ideogram45_edit` |
 | [refinement](../agent/deep_agent/skills/refinement/SKILL.md) | `call_media_tool`<br>`call_audio_tool`<br>`call_editor_tool` | `gpt_image25_edit`<br>`wan3_edit`<br>`seedance25_edit`<br>`remotion_render` |
@@ -210,8 +211,8 @@ Topaz submissions always pause with cost, including autonomous runs. Dry-run pre
 and queued jobs never satisfy final delivery. See [Topaz](TOPAZ.md) for pricing, licence
 sources, unknown-price blockers and the blocked Comet check.
 
-`tests/fixtures/skill_routing.json` contains 220 retained routing rows.
-There are 215 active cases and 5 explicit skips. Five caption/collage cases cover the
+`tests/fixtures/skill_routing.json` contains 230 retained routing rows.
+There are 225 active cases and 5 explicit skips. Five caption/collage cases cover the
 new templates' renderer selection. Seven performance-transfer cases now use built tools. Three Mureka lyrics-video cases
 now use built tools; music routes use Mureka without an ElevenLabs interim. Five Topaz upscale/interpolation cases
 now use built tools. Seedance reference dialogue and two
@@ -255,6 +256,17 @@ approval and dispatch. Narrated whiteboards retain `whiteboard-explainer`, and a
 to existing footage retains `audio-bed`. Two seed rows are active; a third related narrated
 row retains its source expectation with corrected workflow ownership. See
 [contracts, official sources and limits](KNOWLEDGE_EXPLAINER.md).
+
+## Narrated plan reviews
+
+`plan-to-video` turns written plans into narrated chapter cards with stable open-question
+IDs, silent decision holds, and matching on-screen and returned summaries. Remotion is
+the default; HyperFrames requires an explicit request and remains a preview. Narration
+uses the configured ElevenLabs default and an authorized voice. Final timing requires
+measured chapter audio. Embedded source text does not choose tools, and review approval
+does not authorize implementing the plan. An MP4 hold asks the reviewer to pause the
+player; it does not automatically stop playback. See [plan review videos](PLAN_TO_VIDEO.md)
+for the native template, approval flow, pricing, licences and verification limits.
 
 ## Optional HyperFrames compositions
 
@@ -629,8 +641,8 @@ refusals and delivery/loudness/QC chains. RT-E043 remains skipped: exact OCR ver
 is not implemented (`feat/remotion-ocr-verification`). The original four dependency skips
 remain. Routing checks establish selection and refusal; provider tests establish file checks.
 
-Current inventory is 16 providers, 117 Gateway tools, 30 packaged skills and 220 fixture
-rows, with 215 active and 5 skipped. See [Remotion editing](REMOTION_EDITING.md) for
+Current inventory is 16 providers, 117 Gateway tools, 31 packaged skills and 230 fixture
+rows, with 225 active and 5 skipped. See [Remotion editing](REMOTION_EDITING.md) for
 licensing, the real local pipeline and incomplete browser/deployed validation.
 
 ## Static aspect variants
