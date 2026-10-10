@@ -1523,6 +1523,7 @@ def _validate_video_delivery(
                           event.name in {"Remotion___render_timeline", "Remotion___render_ad_variants"} or
                           event.name == "Ffmpeg___ffmpeg_tool" and event.arguments.get("op") in {
                               "transcode_h264", "mux_aac", "loudnorm_mux_aac", "reframe_crop", "reframe_pad_blur",
+                              "burn_subtitles", "color_match_lut", "audio_cleanup", "make_proxy",
                           }]
         if last and last.status == "succeeded":
             from providers.remotion.delivery import validate_delivery_report
