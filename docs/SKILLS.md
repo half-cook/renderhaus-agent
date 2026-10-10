@@ -257,6 +257,27 @@ to existing footage retains `audio-bed`. Two seed rows are active; a third relat
 row retains its source expectation with corrected workflow ownership. See
 [contracts, official sources and limits](KNOWLEDGE_EXPLAINER.md).
 
+The skill's [references](../agent/deep_agent/skills/knowledge-explainer/SKILL.md#references)
+cite Apache-2.0 explainery-core for the relationship between stable beats, copy, and timing.
+It is a planning reference. Its runtime and narration workflow are not part of the silent
+explainer contract.
+
+## Motion planning and verification
+
+[Motion graphics](../agent/deep_agent/skills/motion-graphics/SKILL.md) now describes compact
+scene tables, shared beat timing, exact media ledgers, focused revisions, and representative
+previews through the existing timeline contract. Inspection covers settled text, transition
+frames, and full MP4 playback. Delivery workflows still require saved QC reports matching
+the output checksums, with visual review tracked separately.
+
+The skill paraphrases Agent-Video-Driver.SKILL under Apache-2.0 and motion-efficiency under
+MIT. Its references pin the source and licence revisions read 2026-10-10. No upstream text,
+scripts, runtime, dependencies, or weights are vendored. Token savings are unmeasured.
+Remotion remains the default; explicit HyperFrames requests retain its preview gate.
+This documentation update adds no tools, skills, routes, prices, environment variables,
+secrets, or training permissions. See [decisions](motion-knowledge-guidance-decisions.tsv)
+for source licences, scope, and verification limits. Comet E2E is blocked in this environment.
+
 ## Narrated plan reviews
 
 `plan-to-video` turns written plans into narrated chapter cards with stable open-question

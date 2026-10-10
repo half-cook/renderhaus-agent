@@ -124,3 +124,14 @@ and write publishing copy from finished frames. Keep the cover outside the timel
 The MIT-licensed [vibe knowledge video skill](https://github.com/LuZhong-Li/vibe-knowledge-video-skill)
 is a pattern reference only. No upstream text, code, runtime, dependencies, or
 weights are included. Renderer and SFX terms remain those of the existing tools.
+
+## References
+
+- [explainery-core authoring guide](https://github.com/mbackschat/explainery-core/blob/741233ca2dc8d5d27e0a66c2496de6c73e7cd3d1/docs/authoring.md), by mbackschat.
+  [Apache-2.0 licence](https://github.com/mbackschat/explainery-core/blob/741233ca2dc8d5d27e0a66c2496de6c73e7cd3d1/LICENSE), read 2026-10-10.
+  Its `story.yaml` and separate timing records connect stable beat IDs, copy, and visual actions.
+  Use that relationship as a planning reference for the event list above.
+  Its narration-based timing and assemble, validate, and export CLI are not installed tools here.
+  Keep this workflow silent, translate only supported native arguments, and retain Remotion as default.
+  No upstream text, code, runtime, dependencies, or weights are included.
+  Source licences do not change media rights or training eligibility.
