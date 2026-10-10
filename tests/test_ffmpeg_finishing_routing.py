@@ -51,10 +51,28 @@ class FinishingRoutingTests(unittest.TestCase):
     def test_generation_and_existing_delivery_routes_keep_their_tools(self):
         cases = [
             ("Generate a video ad with subtitles", "wan3_t2v"),
+            ("Generate a cinematic video ad, then burn subtitles into it", "wan3_t2v"),
+            ("Generate a 10-second video and burn subtitles into it", "wan3_t2v"),
             ("Use Kling to generate a video with subtitles", "kling_t2v"),
+            ("Use Kling to generate a cinematic video and burn subtitles into it", "kling_t2v"),
+            ("Use Aleph to remove a logo from this video, preserving the dialogue", "runway_aleph_edit"),
             ("Export a review proxy of the cut for the client, small.", "delivery_render"),
             ("Make a 540p proxy of all clips.", "delivery_render"),
         ]
         for prompt, alias in cases:
             with self.subTest(prompt=prompt):
                 self.assertEqual(route_intent(prompt).alias, alias)
+
+    def test_audio_removal_does_not_choose_audio_preserving_cleanup(self):
+        route = route_intent("Remove the audio from this video")
+        self.assertNotEqual(route.required.get("op"), "audio_cleanup")
+
+    def test_quoted_and_negated_finishing_words_do_not_dispatch(self):
+        for prompt, alias in (
+            ('Read this narration: "Burn subtitles into the video"', "eleven_v4_turbo"),
+            ('Create an image with the text "audio_cleanup"', "gpt_image25_t2i"),
+        ):
+            with self.subTest(prompt=prompt):
+                self.assertEqual(route_intent(prompt).alias, alias)
+        route = route_intent("Do not burn subtitles into the video; just export timed cues as SRT")
+        self.assertEqual(route.required.get("op"), "export_srt")

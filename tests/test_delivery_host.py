@@ -377,6 +377,19 @@ class DeliveryCompletionTests(unittest.TestCase):
         inspected = tool_event(QC, self.report("other"), event_id="inspected")
         self.assertFalse(_validate_video_delivery(self.request, self.context(delivered, inspected)))
 
+    def test_new_finishing_turn_cannot_reuse_prior_delivery_qc(self):
+        passed = tool_event(DELIVERY, self.report(), event_id="passed")
+        self.request.prior_tool_events = [passed.public()]
+        for op in ("burn_subtitles", "color_match_lut", "audio_cleanup", "make_proxy"):
+            with self.subTest(op=op):
+                self.request.prompt = op + " on the local master"
+                newer = tool_event("Ffmpeg___ffmpeg_tool", {"status": "succeeded"},
+                                   event_id="newer", arguments={"op": op})
+                final = StudioAgentOutput(title="Finished export", summary="The video is delivered.",
+                                          markdown="# Finished export", filename="export.md")
+                self.assertFalse(_validate_video_delivery(self.request, self.context(newer), final))
+                self.assertNotIn("delivered", final.summary.lower())
+
     def test_malformed_failed_report_still_discloses_the_worker_reason(self):
         failed = tool_event(DELIVERY, {"status": "failed", "passed": False, "files": None,
             "rendered": None, "checks": None, "failures": None, "reason": "Invalid source media."})
