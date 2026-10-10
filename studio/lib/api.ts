@@ -245,6 +245,9 @@ export async function uploadStudioFile(
 export type StudioProject = {
   id: string;
   name: string;
+  /** Optional preview stills (up to four). Absent for projects with no media yet. */
+  thumbs?: string[];
+  file_count?: number;
   created_at?: number;
   updated_at?: number;
 };

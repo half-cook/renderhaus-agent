@@ -9,7 +9,7 @@ import { findCopyLeaks } from "./copy-rules.mjs";
 export const HERE = path.dirname(fileURLToPath(import.meta.url));
 export const OUT = path.resolve(process.env.SHOT_OUT_DIR || path.join(HERE, "out"));
 export const THEME = process.env.SHOT_THEME === "light" ? "light" : "dark";
-const FIXED_NOW = new Date("2026-10-12T14:00:00-04:00");
+const FIXED_NOW = new Date("2026-10-12T19:42:00-04:00");
 const DATA: Record<string, unknown> = JSON.parse(readFileSync(path.join(HERE, "fixtures/studio.json"), "utf8"));
 const ACCOUNT = readFileSync(path.join(HERE, "fixtures/account.json"), "utf8");
 

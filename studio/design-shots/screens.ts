@@ -70,6 +70,14 @@ const wave = (remaining: number, status: "open" | "full" = "open") => ({
   "/api/beta/wave": { capacity: 50, claimed: 50 - remaining, remaining, held: 0, status, wave: 1, hold_seconds: 900, updated_at: 1791848520 },
 });
 
+const homeProjects = {
+  "/api/studio/projects": { items: [
+    { id: "demo-matte-mug", name: "Matte travel mug", created_at: 1791848000, updated_at: 1791848400 },
+    { id: "spring-launch", name: "Spring launch ads", file_count: 3, thumbs: ["/beta/shot-macro.jpg", "/beta/shot-lift.jpg", "/beta/shot-window.jpg"], created_at: 1791600000, updated_at: 1791670000 },
+    { id: "untitled-1", name: "Untitled", created_at: 1791848100, updated_at: 1791848100 },
+  ] },
+};
+
 /** Drives the real sign-up UI against the mocked dry-run verification endpoints. */
 export async function reachPhoneStep(page: Page) {
   await page.getByLabel("Email", { exact: true }).fill("you@example.com");
@@ -95,4 +103,5 @@ SCREENS.push(
     await p.getByRole("button", { name: "Verify and open the demo project" }).click();
     await p.getByRole("alert").filter({ hasText: "didn’t match" }).waitFor();
   } },
+  { id: "m02-home", url: "/home", ready: "[data-shot='home-ready'] .rh-pgrid", fixtures: homeProjects },
 );
