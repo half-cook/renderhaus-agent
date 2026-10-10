@@ -451,9 +451,9 @@ def enrich_tool_schema(provider_id: str, tool: dict[str, Any]) -> dict[str, Any]
         properties["timeline_json"]["description"] = "Current project document/renderConfig JSON envelope with existing assets (id, kind, url, durationSec) and tracks. Preserve versionId, checksum and sourceTimecode when known."
         properties["format"]["description"] = "Interchange format. Allowed values: fcpxml, otio. EDL, AAF and FCP7 XML are unsupported."
     if provider_id == "fal":
-        from providers.fal import vidu, wan3, motion, mirelo, images
+        from providers.fal import vidu, wan3, motion, mirelo, images, named_video
 
-        for contract in (vidu, wan3, motion, mirelo, images):
+        for contract in (vidu, wan3, motion, mirelo, images, named_video):
             if tool_name in contract.TOOL_ENDPOINTS:
                 for field, description in contract.FIELD_DESCRIPTIONS.items():
                     if field in properties:
@@ -557,6 +557,10 @@ def _validate_rule(path: str, value: Any, rule: ArgumentRule) -> None:
 
 
 def _validate_cross_fields(provider_id: str, tool_name: str, arguments: dict[str, Any]) -> None:
+    if provider_id == "fal":
+        from providers.fal.named_video import validate_arguments
+
+        validate_arguments(tool_name, arguments)
     if provider_id == "remotion" and tool_name in {"deliver_render", "qc_deliverable"}:
         from providers.remotion.delivery import validate_arguments
 
@@ -844,7 +848,7 @@ def argument_rules(provider_id: str, tool_name: str) -> dict[str, ArgumentRule]:
 
         return ARGUMENT_RULES.get(tool_name, {})
     if provider_id == "fal":
-        from providers.fal import vidu, wan, wan3, mirelo
+        from providers.fal import vidu, wan, wan3, mirelo, named_video
 
-        return {**wan.ARGUMENT_RULES, **vidu.ARGUMENT_RULES, **wan3.ARGUMENT_RULES, **mirelo.ARGUMENT_RULES}.get(tool_name, {})
+        return {**wan.ARGUMENT_RULES, **vidu.ARGUMENT_RULES, **wan3.ARGUMENT_RULES, **mirelo.ARGUMENT_RULES, **named_video.ARGUMENT_RULES}.get(tool_name, {})
     return TOOL_ARGUMENT_RULES.get(provider_id, {}).get(tool_name, {})

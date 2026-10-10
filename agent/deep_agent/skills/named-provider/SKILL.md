@@ -1,10 +1,10 @@
 ---
 name: named-provider
-description: Honor explicit provider requests, including preview-blocked Wan 3.0 edits and extensions, with disclosure.
+description: Honor explicit provider requests, including Pixelcut loops, PixVerse VibeMV and preview-blocked Wan edits, with disclosure.
 metadata:
   include_tools: call_media_tool call_audio_tool
-  routing_tools: voices_ivc_create eleven_v4_turbo wan3_edit wan3_extend kling_t2v kling_i2v runway_gen45_t2v runway_aleph_edit luma_ray3_t2v luma_ray3_modify vidu_q4_i2v vidu_q4_r2v seedream_t2i fish_audio_tts wan_vace_edit
-  gateway_tools: ElevenLabs___voices_ivc_create ElevenLabs___text_to_speech_convert ModelStudio___edit_wan3_video ModelStudio___extend_wan3_video ModelStudio___get_task ElevenLabs___music_compose Fal___get_video_task Fal___image_to_video Fal___list_fal_models Fal___reference_to_video Fal___text_to_video Fal___video_to_video Fal___vidu_q4_i2v Fal___vidu_q4_r2v FishAudio___generate_speech Kling___get_video_task Kling___image_to_video Kling___list_kling_models Kling___omni_video Kling___text_to_video Luma___extend_video Luma___get_video_task Luma___image_to_video Luma___list_luma_models Luma___modify_video Luma___text_to_video Runway___get_runway_task Runway___image_to_image Runway___image_to_video Runway___list_runway_models Runway___text_to_image Runway___text_to_video Runway___video_to_video Seedream___image_to_image Seedream___text_to_image
+  routing_tools: pixverse_vibemv pixelcut_looping_video voices_ivc_create eleven_v4_turbo wan3_edit wan3_extend kling_t2v kling_i2v runway_gen45_t2v runway_aleph_edit luma_ray3_t2v luma_ray3_modify vidu_q4_i2v vidu_q4_r2v seedream_t2i fish_audio_tts wan_vace_edit
+  gateway_tools: Fal___pixverse_vibemv Fal___pixelcut_looping_video ElevenLabs___voices_ivc_create ElevenLabs___text_to_speech_convert ModelStudio___edit_wan3_video ModelStudio___extend_wan3_video ModelStudio___get_task ElevenLabs___music_compose Fal___get_video_task Fal___image_to_video Fal___list_fal_models Fal___reference_to_video Fal___text_to_video Fal___video_to_video Fal___vidu_q4_i2v Fal___vidu_q4_r2v FishAudio___generate_speech Kling___get_video_task Kling___image_to_video Kling___list_kling_models Kling___omni_video Kling___text_to_video Luma___extend_video Luma___get_video_task Luma___image_to_video Luma___list_luma_models Luma___modify_video Luma___text_to_video Runway___get_runway_task Runway___image_to_image Runway___image_to_video Runway___list_runway_models Runway___text_to_image Runway___text_to_video Runway___video_to_video Seedream___image_to_image Seedream___text_to_image
 ---
 
 # Named provider
@@ -15,6 +15,33 @@ are `explicit_only`; unnamed requests follow the capability map. Disclose
 An exception's name, such as Runway Act-Two or Kling Motion Control, stays in its specialist skill.
 Wan 3.0 generation uses the generation defaults. Wan 3.0 edit/extend or Model Studio naming
 uses the preview adapter below. Wan 2.x VACE naming means the legacy tools.
+
+Explicit "use Pixelcut looping video" selects `Fal___pixelcut_looping_video` on fal.
+Supply `image_url` (JPEG/PNG/WebP); optional `prompt` is at most 4000 characters.
+Integer `duration` is 5–15 seconds (default 5), `resolution` is 480p/768p/1080p
+(default 1080p), `motion` is subtle/spin (default subtle), and `include_audio` defaults false.
+Pixelcut is never the automatic product-loop or spin choice. Do not send a model argument.
+
+Explicit "PixVerse VibeMV" or "VibeMV" selects `Fal___pixverse_vibemv` on fal.
+Supply an authorized MP3/WAV `audio_url` and its measured `audio_duration_seconds`, 10–360.
+The measured duration is a local pricing field; do not infer it from a requested video length.
+Optional `image_url` anchors a character; `style_image_url` requires `style="Custom"`,
+and Custom requires that reference. Use exact style/music_style values from Gateway's schema.
+Optional `lyrics` is at most 5000 characters. `lip_sync_switch` defaults false, safety checking
+true, `resolution` 720p (1080p supported), and `aspect_ratio` 16:9 (9:16, 1:1, 4:3, 3:4 supported).
+Use owned/licensed music, lyrics and images. Real face/voice inputs require their corresponding
+`real_face_refs`/`real_voice_refs` flags and explicit `likeness_consent=true` for every subject.
+An unnamed music or lyrics video follows the capability default; never substitute VibeMV.
+
+Both are `explicit_only`, commercial hosted service models with `training_eligible=false`.
+Default `FAL_DRY_RUN=true` previews only. Always disclose the provider/model and host estimate,
+and pause for cost approval even in autonomous runs or with premium approval disabled.
+Pixelcut bills output seconds; VibeMV bills measured audio seconds rounded up to whole seconds.
+Host quotes include the existing platform fee. Missing measurements mean unknown cost and a blocker.
+Submit once and poll `Fal___get_video_task` with `download=true`. Play the saved MP4, check
+Pixelcut's loop seam or VibeMV's music/lyrics alignment, and preserve actual output dimensions.
+Queue acceptance is incomplete media. These outputs never enter the training flywheel.
+See docs/providers/named-fal-video.md for verified sources and current validation limits.
 
 Explicit "use Wan to edit this clip", "Wan 3.0 edit", "Model Studio edit" or named extension
 requests use `wan3_edit` or `wan3_extend`, mapped to `ModelStudio___edit_wan3_video` and

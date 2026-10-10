@@ -11,6 +11,7 @@ No direct MUREKA_API_KEY is needed by this fal-only transport.
 Act-Two reuses RUNWAYML_API_SECRET/RUNWAY_DRY_RUN and REMOTION_LOCAL_MEDIA_HOSTS for chunks.
 Kling Motion Control uses the existing FAL_KEY/FAL_DRY_RUN; no direct Kling secret is required.
 Mirelo and the Ideogram/Recraft image specialists reuse FAL_KEY/FAL_DRY_RUN.
+Named-only Pixelcut and PixVerse VibeMV also reuse FAL_KEY/FAL_DRY_RUN, with no new secrets or flags.
 Fal images in Lambda require existing AWS_S3_BUCKET or REMOTION_APP_BUCKET_NAME for sanitized durable outputs.
 No additional image secret or dry-run flag is needed.
 NLE import reuses REMOTION_DRY_RUN and needs no new secret or media credentials.

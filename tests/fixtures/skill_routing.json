@@ -4470,5 +4470,23 @@
     },
     "expected_status": "blocked",
     "expected_reason": "disabled"
+  },
+  {
+    "prompt": "use Pixelcut looping video for this product photo",
+    "expected_skill": "named-provider",
+    "expected_tool": "pixelcut_looping_video",
+    "suite": "named-provider",
+    "skip_reason": "",
+    "note": "explicit request; never default or exception",
+    "source_status": "added"
+  },
+  {
+    "prompt": "PixVerse VibeMV music video for this track",
+    "expected_skill": "named-provider",
+    "expected_tool": "pixverse_vibemv",
+    "suite": "named-provider",
+    "skip_reason": "",
+    "note": "explicit request; never default or exception",
+    "source_status": "added"
   }
 ]

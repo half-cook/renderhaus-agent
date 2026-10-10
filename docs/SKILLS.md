@@ -45,7 +45,7 @@ exact Gateway names, native arguments, and operational constraints.
 | [lipsync](../agent/deep_agent/skills/lipsync/SKILL.md) | `call_media_tool`<br>`call_audio_tool` | `sync3_lipsync`<br>`heygen_avatar_v`<br>`eleven_v4_turbo` |
 | [lyrics-video](../agent/deep_agent/skills/lyrics-video/SKILL.md) | `call_audio_tool`<br>`call_editor_tool` | `mureka_lyrics_video`<br>`mureka_v95` |
 | [motion-graphics](../agent/deep_agent/skills/motion-graphics/SKILL.md) | `call_editor_tool`<br>`call_media_tool` | `remotion_render`<br>`hyperframes_render` |
-| [named-provider](../agent/deep_agent/skills/named-provider/SKILL.md) | `call_media_tool`<br>`call_audio_tool` | `kling_t2v`<br>`kling_i2v`<br>`runway_gen45_t2v`<br>`runway_aleph_edit`<br>`luma_ray3_t2v`<br>`luma_ray3_modify`<br>`vidu_q4_i2v`<br>`vidu_q4_r2v`<br>`seedream_t2i`<br>`fish_audio_tts`<br>`wan_vace_edit` |
+| [named-provider](../agent/deep_agent/skills/named-provider/SKILL.md) | `call_media_tool`<br>`call_audio_tool` | `pixelcut_looping_video`<br>`pixverse_vibemv`<br>`kling_t2v`<br>`kling_i2v`<br>`runway_gen45_t2v`<br>`runway_aleph_edit`<br>`luma_ray3_t2v`<br>`luma_ray3_modify`<br>`vidu_q4_i2v`<br>`vidu_q4_r2v`<br>`seedream_t2i`<br>`fish_audio_tts`<br>`wan_vace_edit` |
 | [plan-to-video](../agent/deep_agent/skills/plan-to-video/SKILL.md) | `call_editor_tool`<br>`call_audio_tool` | `remotion_render`<br>`hyperframes_render`<br>`eleven_v4_turbo`<br>`fish_audio_tts`<br>`ffmpeg_tool`<br>`deliverable_qc` |
 | [product-demo-video](../agent/deep_agent/skills/product-demo-video/SKILL.md) | `call_editor_tool` | `cutaway_record`<br>`remotion_render`<br>`hyperframes_render` |
 | [product-images](../agent/deep_agent/skills/product-images/SKILL.md) | `call_media_tool` | `gpt_image25_t2i`<br>`gpt_image25_edit`<br>`recraft_v41_vector`<br>`ideogram45_edit` |
@@ -131,7 +131,7 @@ All paid video pauses with an estimate even in autonomous runs while
 `premium_video_approval` is enabled. That includes current Seedance, Kling, Runway, Luma,
 Vidu and rendering tools, plus future video-producing capabilities when implemented.
 `RENDERHAUS_PREMIUM_VIDEO_APPROVAL=false` disables the additional autonomous video pause
-for existing tools. Sync and HeyGen always pause, independently of that switch.
+for existing tools. Sync, HeyGen, Pixelcut looping video and PixVerse VibeMV always pause, independently of that switch.
 Paid non-video retains the existing non-autonomous approvals and authorized autonomous mode.
 `APPROVAL_EXEMPT_TOOLS`, free tools, and the autonomous spending cap remain unchanged.
 The free conversational-edit preparer still requires separate cut-plan confirmation.
@@ -211,8 +211,8 @@ Topaz submissions always pause with cost, including autonomous runs. Dry-run pre
 and queued jobs never satisfy final delivery. See [Topaz](TOPAZ.md) for pricing, licence
 sources, unknown-price blockers and the blocked Comet check.
 
-`tests/fixtures/skill_routing.json` contains 240 retained routing rows.
-There are 235 active cases and 5 explicit skips. Five caption/collage cases cover the
+`tests/fixtures/skill_routing.json` contains 242 retained routing rows.
+There are 237 active cases and 5 explicit skips. Five caption/collage cases cover the
 new templates' renderer selection. Seven performance-transfer cases now use built tools. Three Mureka lyrics-video cases
 now use built tools; music routes use Mureka without an ElevenLabs interim. Five Topaz upscale/interpolation cases
 now use built tools. Seedance reference dialogue and two
@@ -666,8 +666,8 @@ refusals and delivery/loudness/QC chains. RT-E043 remains skipped: exact OCR ver
 is not implemented (`feat/remotion-ocr-verification`). The original four dependency skips
 remain. Routing checks establish selection and refusal; provider tests establish file checks.
 
-Current inventory is 16 providers, 120 Gateway tools, 31 packaged skills and 240 fixture
-rows, with 235 active and 5 skipped. See [Remotion editing](REMOTION_EDITING.md) for
+Current inventory is 16 providers, 122 Gateway tools, 31 packaged skills and 242 fixture
+rows, with 237 active and 5 skipped. See [Remotion editing](REMOTION_EDITING.md) for
 licensing, the real local pipeline and incomplete browser/deployed validation.
 
 ## Static aspect variants
@@ -698,3 +698,14 @@ completion. Legacy assembly flows retain their existing validation. Matrix inter
 have technical reports but still require named delivery finishing and editorial review.
 Lambda and upload requests are explicitly refused for these local jobs. No model routing,
 paid-video approvals, approval exemptions or autonomous spend caps change.
+
+## Named Pixelcut and PixVerse video
+
+The existing `named-provider` skill exposes `Fal___pixelcut_looping_video` and
+`Fal___pixverse_vibemv` only for explicit model requests. They reuse fal polling and
+`FAL_DRY_RUN=true`, preserve all capability defaults/exceptions, require cost approval
+even in autonomous runs and have `training_eligible=false`. VibeMV requires a measured
+10–360 second audio duration; Pixelcut supports integer 5–15 second loops. Direct Studio
+invocation cannot bypass the skill or approval. Two named fixture rows were added; none
+of the five unrelated skips changed. See [contracts, pricing and terms](providers/named-fal-video.md).
+Browser E2E and real output playback remain blocked because Comet is unavailable here.

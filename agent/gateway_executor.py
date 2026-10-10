@@ -66,6 +66,8 @@ def tool_needs_approval(name: str, autonomous: bool, arguments: dict | None = No
         return True
     if name in {"Runway___act_two", "Fal___kling_motion_control", "runway_act_two", "kling_motion_control"}:
         return True
+    if name in {"Fal___pixelcut_looping_video", "Fal___pixverse_vibemv", "pixelcut_looping_video", "pixverse_vibemv"}:
+        return True
     return not autonomous or requires_approval(name) or premium_video(name)
 
 
@@ -334,6 +336,13 @@ class GatewayExecutor:
         if blocker := request_tool_blocker(self.studio.prompt, name):
             return blocker
         provider, tool = tool_parts(name)
+        if name in {"Fal___pixelcut_looping_video", "Fal___pixverse_vibemv"}:
+            from providers.fal.api import _validated
+
+            try:
+                _validated(tool, arguments)
+            except ValueError as exc:
+                return str(exc)
         if name in LOCAL_MEDIA_TOOLS:
             from providers.contracts import validate_tool_arguments
             from server.billing_rates import ad_matrix_estimate
@@ -429,7 +438,7 @@ class GatewayExecutor:
             return route.reason
         if name != route.tool or effective_model(provider, tool, arguments) != route.model:
             return f"Capability map selected {route.tool} ({route.model}). Discover its schema and use that route. {route.reason}"
-        if route.required.get("aspect_ratio") and arguments.get("aspect_ratio", "9:16") != route.required["aspect_ratio"]:
+        if route.required.get("aspect_ratio") and arguments.get("aspect_ratio", "16:9" if tool == "pixverse_vibemv" else "9:16") != route.required["aspect_ratio"]:
             return "Lyrics video must use the requested aspect_ratio."
         row = next((row for row in POLICY["capabilities"]
                     if row["model"] == route.model and name in row["tools"].values()), {})
@@ -476,6 +485,8 @@ class GatewayExecutor:
             if provider == "mureka" and tool == "generate_lyrics_video":
                 start, end = arguments.get("selection_start"), arguments.get("selection_end")
                 actual = (end - start) / 1000 if start is not None and end is not None else None
+            if tool == "pixverse_vibemv":
+                actual = arguments.get("audio_duration_seconds")
             if provider == "fal" and not row.get("duration_field") and route.job_type != "performance_transfer":
                 fps = arguments.get("frames_per_second", 16)
                 actual = (arguments.get("num_frames", 81) - 1) / fps if fps > 0 else 0
