@@ -5,11 +5,10 @@ import type { BillingLine } from "@/lib/rh/billing";
 
 export function LedgerRow({ label, amount, tone }: { label: ReactNode; amount: string; tone?: "money" | "muted" | "ember" }) {
   return (
-    <div className="rh-ledger-row" data-tone={tone}>
+    <dl className="rh-ledger-row" data-tone={tone}>
       <dt>{label}</dt>
-      <span className="rh-lead" aria-hidden="true" />
       <dd className="rh-num">{amount}</dd>
-    </div>
+    </dl>
   );
 }
 
@@ -23,17 +22,17 @@ export function Ledger({ heading, children, className = "" }: { heading?: string
   return (
     <div className={`rh-ledger ${className}`}>
       {heading ? <div className="rh-ledger-head"><span className="rh-eyebrow">{heading}</span></div> : null}
-      <dl>{children}</dl>
+      <div>{children}</div>
     </div>
   );
 }
 
 export function LedgerTotal({ label, amountCents, big = true }: { label: string; amountCents: number; big?: boolean }) {
   return (
-    <div className="rh-ledger-total" data-big={big}>
+    <dl className="rh-ledger-total" data-big={big}>
       <dt>{label}</dt>
       <dd className="rh-num">{formatCents(amountCents)}</dd>
-    </div>
+    </dl>
   );
 }
 

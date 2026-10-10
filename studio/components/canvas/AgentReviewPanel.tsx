@@ -20,11 +20,11 @@ function FileIcon({ kind }: { kind: StudioAsset["kind"] }) {
 }
 
 function Diff({ lines }: { lines: DiffLine[] }) {
-  return <div className={styles.diff} aria-label="Edit comparison">
+  return <div className={`${styles.diff} rh-review-diff`} aria-label="Edit comparison">
     {lines.map((line) => <div key={`${line.id}-${line.change}`} className={`${styles.diffLine} ${styles[line.change]}`}>
-      <span aria-label="Previous line">{line.before ?? ""}</span>
-      <span aria-label="Current line">{line.after ?? ""}</span>
-      <span aria-label={line.change}>{line.change === "added" ? "+" : line.change === "removed" ? "−" : " "}</span>
+      <span title="Previous line">{line.before ?? ""}</span>
+      <span title="Current line">{line.after ?? ""}</span>
+      <span title={line.change}>{line.change === "added" ? "+" : line.change === "removed" ? "−" : " "}</span>
       <code>{line.text}</code>
     </div>)}
   </div>;
@@ -49,9 +49,9 @@ function fieldValue(segment: TimelineSegment, key: string) {
 }
 
 function Thumbnail({ asset, kind, start }: { asset?: StudioAsset; kind?: TimelineSegment["kind"]; start?: number }) {
-  return <span className={styles.thumbnail}>
+  return <span className={`${styles.thumbnail} rh-review-thumbnail`}>
     {asset && asset.kind !== "audio"
-      ? <AssetMedia key={`${asset.versionId}-${start ?? 1}`} asset={asset} alt={asset.filename} className={styles.thumbnailMedia} muted preload="metadata" startTime={start ?? 1} />
+      ? <AssetMedia key={`${asset.versionId}-${start ?? 1}`} asset={asset} alt={asset.filename} className={`${styles.thumbnailMedia} rh-review-thumbnail-media`} muted preload="metadata" startTime={start ?? 1} />
       : kind === "text" ? <Type size={19} aria-hidden="true" /> : <FileIcon kind={asset?.kind || (kind === "audio" ? "audio" : "video")} />}
   </span>;
 }
@@ -66,23 +66,23 @@ function SegmentRow({ row, onPreview, outputAsset, previousOutputAsset }: { row:
   const sampleOffset = Math.min(1, (segment.duration || 0) / 2);
   const thumbnailTime = segment.asset ? (segment.sourceStart ?? 0) + sampleOffset : segment.start === undefined ? undefined : segment.start + sampleOffset;
   return <div className={`${styles.segment} ${styles[change]}`}>
-    <div className={styles.segmentLine}>
+    <div className={`${styles.segmentLine} rh-review-segment-line`}>
       <time aria-label="Previous time">{change !== "added" && before ? timecode(before.start) : ""}</time>
       <time aria-label="Current time">{change !== "removed" && after ? timecode(after.start) : ""}</time>
-      <span className={styles.sign} aria-label={change}>{change === "added" ? "+" : change === "removed" ? "−" : ""}</span>
-      <button className={styles.segmentContent} type="button" disabled={!canPreview} onClick={() => onPreview(row)} aria-label={`Preview ${change === "context" ? "" : `${change} `}${label} at ${timecode(segment.start)}`}>
+      <span className={`${styles.sign} rh-review-sign`} aria-label={change}>{change === "added" ? "+" : change === "removed" ? "−" : ""}</span>
+      <button className={`${styles.segmentContent} rh-review-segment-content`} type="button" disabled={!canPreview} onClick={() => onPreview(row)} aria-label={`Preview ${change === "context" ? "" : `${change} `}${label} at ${timecode(segment.start)}`}>
         <Thumbnail asset={thumbnailAsset} kind={segment.kind} start={thumbnailTime} />
-        <span className={styles.segmentText}>
-          <span className={styles.segmentTitle}><small>{segment.track}</small><strong title={label}>{label}</strong><Play size={11} aria-hidden="true" /></span>
-          <span className={styles.segmentMeta}>
+        <span className={`${styles.segmentText} rh-review-segment-text`}>
+          <span className={`${styles.segmentTitle} rh-review-segment-title`}><small>{segment.track}</small><strong title={label}>{label}</strong><Play size={11} aria-hidden="true" /></span>
+          <span className={`${styles.segmentMeta} rh-review-segment-meta`}>
             <span className={changedFields.includes("duration") && change !== "context" ? styles.changedValue : ""}>{segment.duration === undefined ? "Duration unknown" : `${segment.duration}s`}</span>
-            <span> · </span><span className={styles.range}>{timecode(segment.start)}–{timecode(segment.end)}</span>
+            <span> · </span><span className={`${styles.range} rh-review-range`}>{timecode(segment.start)}–{timecode(segment.end)}</span>
           </span>
           {segment.kind !== "text" ? <span className={`${styles.sourceName} ${changedFields.includes("source") && change !== "context" ? styles.changedValue : ""}`} title={segment.source}>{segment.source}</span> : null}
         </span>
       </button>
     </div>
-    {change !== "removed" && keys.length > 0 ? <details className={styles.properties}>
+    {change !== "removed" && keys.length > 0 ? <details className={`${styles.properties} rh-review-properties`}>
       <summary>{change === "context" ? "Clip settings" : `${keys.length} changed ${keys.length === 1 ? "property" : "properties"}`}</summary>
       <dl>{keys.map((key) => <div key={key}><dt>{fieldName(key)}</dt><dd>
         {change !== "context" && before ? <><del>{fieldValue(before, key)}</del><span aria-hidden="true"> → </span></> : null}
@@ -106,25 +106,25 @@ function TimelineDiff({ rows, hasPrevious, outputAsset, previousOutputAsset, onP
     return timed.length ? `${timecode(Math.min(...timed.map((item) => item.start!)))}–${timecode(Math.max(...timed.map((item) => item.end!)))}` : "—";
   }
   const renderRows = (items: TimelineDiffRow[]) => items.map((row) => <SegmentRow key={row.id} row={row} onPreview={onPreview} outputAsset={outputAsset} previousOutputAsset={previousOutputAsset} />);
-  return <div className={styles.timelineDiff} aria-label="Timeline edit comparison">
-    <div className={styles.diffHead}><span>Old</span><span>New</span><span /><span>Timeline segments</span></div>
+  return <div className={`${styles.timelineDiff} rh-review-timeline-diff`} aria-label="Timeline edit comparison">
+    <div className={`${styles.diffHead} rh-review-diff-head`}><span>Old</span><span>New</span><span /><span>Timeline segments</span></div>
     {groups.map((group, index) => {
       const before = range(group.rows.filter((row) => row.change !== "added").map((row) => row.before));
       const after = range(group.rows.filter((row) => row.change !== "removed").map((row) => row.after));
       if (group.context && group.rows.length > 4) return <div key={index}>
         {renderRows(group.rows.slice(0, 1))}
-        <details className={styles.contextFold}>
+        <details className={`${styles.contextFold} rh-review-context-fold`}>
           <summary><ChevronDown size={13} />{group.rows.length - 2} {hasPrevious ? "unchanged" : "more"} segments</summary>
           {renderRows(group.rows.slice(1, -1))}
         </details>
         {renderRows(group.rows.slice(-1))}
       </div>;
       return <div key={index}>
-        {!group.context ? <div className={styles.hunk}><span>@@ {before === after ? after : `${before} → ${after}`} @@</span><span>{group.rows.some((row) => row.before && row.after) ? "Edited segments" : group.rows[0].change === "added" ? "Added segments" : "Removed segments"}</span></div> : null}
+        {!group.context ? <div className={`${styles.hunk} rh-review-hunk`}><span>@@ {before === after ? after : `${before} → ${after}`} @@</span><span>{group.rows.some((row) => row.before && row.after) ? "Edited segments" : group.rows[0].change === "added" ? "Added segments" : "Removed segments"}</span></div> : null}
         {renderRows(group.rows)}
       </div>;
     })}
-    {hasPrevious && rows.every((row) => row.change === "context") ? <p className={styles.baselineNote}>No segment changes between these saved plans.</p> : null}
+    {hasPrevious && rows.every((row) => row.change === "context") ? <p className={`${styles.baselineNote} rh-review-baseline-note`}>No segment changes between these saved plans.</p> : null}
   </div>;
 }
 
@@ -133,17 +133,17 @@ function Viewer({ label, files, value, onChange, empty, startTime }: {
   onChange: (value: string) => void; empty: string; startTime?: number;
 }) {
   const asset = files.find((file) => file.asset.versionId === value)?.asset;
-  return <section className={styles.viewer} aria-label={`${label} viewer`}>
-    <header><span>{label}</span>{asset ? <AssetDownloadLink asset={asset} className={styles.iconButton} ariaLabel={`Download ${label.toLowerCase()}`}><Download size={14} /></AssetDownloadLink> : null}</header>
-    <label className={styles.selector}>
-      <span className={styles.srOnly}>{label} media</span>
+  return <section className={`${styles.viewer} rh-review-viewer`} aria-label={`${label} viewer`}>
+    <header><span>{label}</span>{asset ? <AssetDownloadLink asset={asset} className={`${styles.iconButton} rh-review-icon-button`} ariaLabel={`Download ${label.toLowerCase()}`}><Download size={14} /></AssetDownloadLink> : null}</header>
+    <label className={`${styles.selector} rh-review-selector`}>
+      <span className={`${styles.srOnly} rh-review-sr-only`}>{label} media</span>
       <select value={asset?.versionId || ""} onChange={(event) => onChange(event.target.value)}>
         <option value="">Choose media</option>
         {files.map((file) => <option key={file.asset.versionId} value={file.asset.versionId}>{file.asset.filename} · {file.asset.versionId.slice(0, 8)}{file.currentTask ? " · This task" : ""}</option>)}
       </select>
     </label>
-    <div className={styles.screen}>
-      {asset ? <AssetMedia key={`${asset.versionId}-${startTime ?? 0}`} asset={asset} alt={`${label}: ${asset.filename}`} className={styles.media} controls startTime={startTime} /> : <div className={styles.viewerEmpty}><Film size={22} /><p>{empty}</p></div>}
+    <div className={`${styles.screen} rh-review-screen`} data-kind={asset?.kind}>
+      {asset ? <AssetMedia key={`${asset.versionId}-${startTime ?? 0}`} asset={asset} alt={`${label}: ${asset.filename}`} className={`${styles.media} rh-review-media`} controls startTime={startTime} /> : <div className={`${styles.viewerEmpty} rh-review-viewer-empty`}><Film size={22} /><p>{empty}</p></div>}
     </div>
     <footer>{asset ? `${asset.kind.toUpperCase()} · ${asset.filename}` : "No media selected"}</footer>
   </section>;
@@ -208,11 +208,11 @@ export function AgentReviewPanel() {
 
   function fileList(items: ReviewFile[], title: string) {
     if (!items.length) return null;
-    return <section className={styles.fileGroup} aria-label={title}>
+    return <section className={`${styles.fileGroup} rh-review-file-group`} aria-label={title}>
       <h3>{title}<span>{items.length}</span></h3>
-      {items.map((file) => <details className={styles.file} key={file.asset.versionId}>
-        <summary><ChevronDown size={12} className={styles.chevron} /><FileIcon kind={file.asset.kind} /><span title={file.asset.filename}>{file.title || file.asset.filename}</span><small className={file.currentTask ? styles.created : ""}>{file.currentTask ? "Created" : file.origin}</small></summary>
-        <div className={styles.fileDetails}>
+      {items.map((file) => <details className={`${styles.file} rh-review-file`} key={file.asset.versionId}>
+        <summary><ChevronDown size={12} className={`${styles.chevron} rh-review-chevron`} /><FileIcon kind={file.asset.kind} /><span title={file.asset.filename}>{file.title || file.asset.filename}</span><small className={file.currentTask ? styles.created : ""}>{file.currentTask ? "Created" : file.origin}</small></summary>
+        <div className={`${styles.fileDetails} rh-review-file-details`}>
           <Thumbnail asset={file.asset} />
           <div><p>{file.asset.filename}</p>
           <span>{file.asset.kind.toUpperCase()} · Version {file.asset.versionId.slice(0, 8)}</span>
@@ -223,8 +223,8 @@ export function AgentReviewPanel() {
     </section>;
   }
 
-  return <aside className={styles.panel} aria-label="Agent review">
-    <div className={styles.tabs} role="tablist" aria-label="Review mode">
+  return <aside className={`${styles.panel} rh-review-panel`} aria-label="Agent review">
+    <div className={`${styles.tabs} rh-review-tabs`} role="tablist" aria-label="Review mode">
       {(["changes", "preview", "timeline"] as const).map((value) => <button
         type="button" key={value} id={`${id}-${value}`} role="tab" aria-selected={tab === value}
         aria-controls={`${id}-panel`} tabIndex={tab === value ? 0 : -1}
@@ -240,47 +240,45 @@ export function AgentReviewPanel() {
         {value === "changes" ? "Changes" : value === "preview" ? "Preview" : "Timeline"}
       </button>)}
     </div>
-    <div className={styles.content} id={`${id}-panel`} role="tabpanel" aria-labelledby={`${id}-${tab}`}>
+    <div className={`${styles.content} rh-review-content`} id={`${id}-panel`} role="tabpanel" aria-labelledby={`${id}-${tab}`}>
       {tab === "changes" ? <>
-        <div className={styles.heading}><div><h2>Changes</h2><p>{timeline ? "Saved edit plans and task media." : "Media created in this task."}</p></div><span className={styles.count}>{files.filter((file) => file.currentTask).length} created</span></div>
+        <div className={`${styles.heading} rh-review-heading`}><div><h2>Changes</h2><p>{timeline ? "Saved edit plans and task media." : "Media created in this task."}</p></div><span className={`${styles.count} rh-review-count`}>{files.filter((file) => file.currentTask).length} created</span></div>
         {timeline ? <>
-          {timeline.comparisons.length ? <label className={styles.comparisonSelector}>Compare with
+          {timeline.comparisons.length ? <label className={`${styles.comparisonSelector} rh-review-comparison-selector`}>Compare with
             <select value={timeline.previousPlanId || ""} onChange={(event) => setPreviousPlanId(event.target.value || null)}>
               <option value="">No comparison · current plan</option>
               {timeline.comparisons.map((plan) => <option key={plan.id} value={plan.id}>{plan.label}</option>)}
             </select>
           </label> : null}
-          <details className={styles.timelineFile} open key={`${conversationId}-${timeline.currentLabel}`}>
-            <summary className={styles.timelineTitle}><ChevronDown size={13} /><FileVideo size={15} /><strong>{timeline.outputFilename || timeline.title}</strong>
-              {timeline.hasPrevious ? <span className={styles.diffTotals}><b>+{timeline.rows.filter((row) => row.change === "added").length}</b><b>−{timeline.rows.filter((row) => row.change === "removed").length}</b></span> : <small>{timeline.comparisons.length ? "Current plan" : "First version"}</small>}
+          <details className={`${styles.timelineFile} rh-review-timeline-file`} open key={`${conversationId}-${timeline.currentLabel}`}>
+            <summary className={`${styles.timelineTitle} rh-review-timeline-title`}><ChevronDown size={13} /><FileVideo size={15} /><strong>{timeline.outputFilename || timeline.title}</strong>
+              {timeline.hasPrevious ? <span className={`${styles.diffTotals} rh-review-diff-totals`}><b>+{timeline.rows.filter((row) => row.change === "added").length}</b><b>−{timeline.rows.filter((row) => row.change === "removed").length}</b></span> : <small>{timeline.comparisons.length ? "Current plan" : "First version"}</small>}
             </summary>
-            <div className={styles.planSummary}>
+            <div className={`${styles.planSummary} rh-review-plan-summary`}>
               <span>{timeline.hasPrevious ? `${timeline.previousLabel} → ${timeline.currentLabel}` : timeline.currentLabel}</span>
               <span className={["failed", "error", "rejected", "cancelled", "canceled"].includes(timeline.requestStatus.toLowerCase()) || ["failed", "error"].includes(timeline.status) ? styles.failedStatus : ""}>Run {timeline.status.replaceAll("_", " ")}{["failed", "error", "rejected", "cancelled", "canceled"].includes(timeline.requestStatus.toLowerCase()) ? ` · Request ${timeline.requestStatus}` : ""}</span>
             </div>
-            {!timeline.hasPrevious ? <p className={styles.baselineNote}>{timeline.comparisons.length ? "Current saved plan. Choose an earlier plan to compare." : "First saved edit plan. No earlier plan to compare."}</p> : null}
+            {!timeline.hasPrevious ? <p className={`${styles.baselineNote} rh-review-baseline-note`}>{timeline.comparisons.length ? "Current saved plan. Choose an earlier plan to compare." : "First saved edit plan. No earlier plan to compare."}</p> : null}
             <TimelineDiff rows={timeline.rows} hasPrevious={timeline.hasPrevious} outputAsset={timeline.outputAsset} previousOutputAsset={timeline.previousOutputAsset} onPreview={previewSegment} />
-            {timeline.metadata.length ? <details className={styles.planSettings}><summary>Project settings{timeline.metadata.some((line) => line.change !== "context") ? " · changed" : ""}</summary><Diff lines={timeline.metadata} /></details> : null}
-            {timeline.outputAsset ? <button type="button" className={styles.openOutput} onClick={() => { setResultId(timeline.outputAsset!.versionId); setResultTime(undefined); showPreview(); }}><Play size={12} />Open rendered video</button> : <p className={styles.baselineNote}>Saved instructions · no rendered video linked to this plan.</p>}
+            {timeline.metadata.length ? <details className={`${styles.planSettings} rh-review-plan-settings`}><summary>Project settings{timeline.metadata.some((line) => line.change !== "context") ? " · changed" : ""}</summary><Diff lines={timeline.metadata} /></details> : null}
+            {timeline.outputAsset ? <button type="button" className={`${styles.openOutput} rh-review-open-output`} onClick={() => { setResultId(timeline.outputAsset!.versionId); setResultTime(undefined); showPreview(); }}><Play size={12} />Open rendered video</button> : <p className={`${styles.baselineNote} rh-review-baseline-note`}>Saved instructions · no rendered video linked to this plan.</p>}
           </details>
         </> : null}
-        {sequence.length ? <details className={styles.editSection} open={!timeline}>
-          <summary className={styles.sectionTitle}><Rows3 size={14} /><h3>Approved sequence</h3></summary>
-          <p className={styles.note}>{previous ? "Current canvas compared with its last undo snapshot." : "Current canvas sequence. No earlier snapshot to compare."}</p>
+        {sequence.length ? <details className={`${styles.editSection} rh-review-edit-section`} open={!timeline}>
+          <summary className={`${styles.sectionTitle} rh-review-section-title`}><Rows3 size={14} /><h3>Approved sequence</h3></summary>
+          <p className={`${styles.note} rh-review-note`}>{previous ? "Current canvas compared with its last undo snapshot." : "Current canvas sequence. No earlier snapshot to compare."}</p>
           <Diff lines={sequence} />
         </details> : null}
         {fileList(taskFiles, "Created in this task")}
-        {projectFiles.length ? <details className={styles.projectMedia}><summary>Project media <span>{projectFiles.length}</span></summary>{fileList(projectFiles, "Existing media")}</details> : null}
-        {!files.length && !sequence.length && !timeline ? <div className={styles.empty}><GitCompareArrows size={28} /><h3>Your media, ready to review</h3><p>Upload a source or ask the agent to create something. Files appear here, with edit plans shown as numbered changes.</p></div> : null}
+        {projectFiles.length ? <details className={`${styles.projectMedia} rh-review-project-media`}><summary>Project media <span>{projectFiles.length}</span></summary>{fileList(projectFiles, "Existing media")}</details> : null}
+        {!files.length && !sequence.length && !timeline ? <div className={`${styles.empty} rh-review-empty`}><GitCompareArrows size={28} /><h3>Your media, ready to review</h3><p>Upload a source or ask the agent to create something. Files appear here, with edit plans shown as numbered changes.</p></div> : null}
       </> : tab === "timeline" ? <TimelineMini /> : <>
-        <div className={styles.heading}><div><h2>Source & result</h2><p>Compare your current media with a created version.</p></div></div>
-        <div className={styles.viewers}>
-          <Viewer label="Source / current" files={files} value={source} startTime={sourceTime} onChange={(value) => { setSourceId(value); setSourceTime(undefined); }} empty="Select a canvas clip or choose source media." />
-          <Viewer label="Created result" files={files} value={result} startTime={resultTime} onChange={(value) => { setResultId(value); setResultTime(undefined); }} empty="No rendered result linked to this selection. Choose media to compare." />
+        <div className={`${styles.viewers} rh-review-viewers`}>
+          <Viewer label="Preview" files={files} value={result || source} startTime={resultTime} onChange={(value) => { setResultId(value); setResultTime(undefined); }} empty="Select media to preview." />
+          <details className="rh-review-compare"><summary>Compare with source</summary><Viewer label="Source / current" files={files} value={source} startTime={sourceTime} onChange={(value) => { setSourceId(value); setSourceTime(undefined); }} empty="Select a canvas clip or choose source media." /></details>
         </div>
-        <p className={styles.note}>Each viewer has independent playback controls. Choose any two versions to compare.</p>
       </>}
+      {spend ? <div className="rh-spend-dock"><SpendLedger rows={spend.rows} totalLabel={spend.totalLabel} totalCents={spend.totalCents} /></div> : null}
     </div>
-    {spend ? <div className="rh-spend-dock"><SpendLedger rows={spend.rows} totalLabel={spend.totalLabel} totalCents={spend.totalCents} /></div> : null}
   </aside>;
 }

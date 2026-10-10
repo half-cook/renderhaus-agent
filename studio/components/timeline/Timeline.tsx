@@ -216,7 +216,7 @@ export function TimelineTrack({ model, transport, pxPerSecond, snapOn, height }:
                   onPointerDown={() => select(clip.id)}
                 >
                   <div className="rh-tl-strip" style={clip.thumbUrl ? { backgroundImage: `url(${clip.thumbUrl})`, backgroundSize: `${Math.max(60, height * 1.7)}px 100%` } : undefined} />
-                  <button type="button" className="rh-tl-grip" aria-label={`Reorder ${clip.title}`} tabIndex={-1} onPointerDown={(event) => beginMove(event, clip)}><GripVertical size={11} /></button>
+                  <span className="rh-tl-grip" aria-hidden="true" onPointerDown={(event) => beginMove(event, clip)}><GripVertical size={11} /></span>
                   <span className="rh-tl-handle" data-edge="in" role="presentation" onPointerDown={(event) => beginTrim(event, clip, "in")} />
                   <span className="rh-tl-handle" data-edge="out" role="presentation" onPointerDown={(event) => beginTrim(event, clip, "out")} />
                   <span className="rh-tl-cliplabel rh-mono"><b>{String(clip.order).padStart(2, "0")}</b> · {clip.title}</span>

@@ -42,10 +42,10 @@ export async function wire(page: Page, screen?: Screen) {
       const mocked = betaPost(pathname, JSON.parse(route.request().postData() || "{}"));
       if (mocked) return route.fulfill({ status: mocked.status, contentType: "application/json", body: JSON.stringify(mocked.json) });
     }
-    if (route.request().method() !== "GET" && pathname !== "/api/studio/assets/demo-artifact-v1/playback") return route.abort("blockedbyclient");
+    if (route.request().method() !== "GET" && !/^\/api\/studio\/assets\/(demo-artifact-v1|fx-[a-z0-9-]+)\/playback$/.test(pathname)) return route.abort("blockedbyclient");
     if (Object.hasOwn(overrides, pathname)) return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(overrides[pathname]) });
     const fx = /^\/api\/studio\/assets\/fx-([a-z0-9-]+)\/playback$/.exec(pathname);
-    if (fx) return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ url: `/beta/${fx[1]}.jpg` }) });
+    if (fx) return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ url: `/beta/${fx[1] === "still-mug" ? "still-mug" : fx[1]}.jpg` }) });
     if (pathname === "/api/studio/account") return route.fulfill({ status: 200, contentType: "application/json", body: ACCOUNT });
     if (Object.hasOwn(DATA, pathname)) return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(DATA[pathname]) });
     if (pathname === "/api/studio/design-shot-artifact.svg") return route.fulfill({ status: 200, contentType: "image/svg+xml", body: readFileSync(path.join(HERE, "fixtures/artifact.svg"), "utf8") });
@@ -104,7 +104,7 @@ export async function settle(page: Page, screen: Screen) {
       return performance.now() - Number(state.shotSettledAt) >= 250;
     });
   }
-  await page.waitForFunction(() => Array.from(document.images).every((image) => image.complete));
+  await page.waitForFunction(() => Array.from(document.images).every((image) => image.complete && image.naturalWidth > 0));
   await page.mouse.move(0, 0);
   await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur?.());
 }

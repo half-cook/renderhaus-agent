@@ -801,7 +801,7 @@ export function AgentDock({ navigationBusy: externalBusy, onBusyChange, suggesti
   };
 
   return (
-    <section className="agent-dock" id="agent-composer" aria-label="Agent conversation">
+    <section className="agent-dock rh-agent-dock" id="agent-composer" aria-label="Agent conversation">
       <header className="agent-dock-head">
         <div className="agent-dock-title">
           <span className="agent-dock-kicker"><Sparkles size={14} /> {projectName}</span>
@@ -1015,7 +1015,7 @@ export function AgentDock({ navigationBusy: externalBusy, onBusyChange, suggesti
                   }}
                 />
                 <ShieldCheck size={14} />
-                <span>{autonomous ? "Autonomous" : "Ask before tools"}</span>
+                <span>{autonomous ? "Autonomous" : "Ask before every paid step"}</span>
               </label>
             </div>
             <button
@@ -1032,7 +1032,7 @@ export function AgentDock({ navigationBusy: externalBusy, onBusyChange, suggesti
         <div className="agent-composer-meta">
           <span>{selectedNodeIds.length ? `${selectedNodeIds.length} selected` : "Project context"}</span>
           <span>
-            {activeExecution ? "Progress saves automatically" : agentMessage?.startsWith("Error") ? agentMessage : status?.agent ? "Ready for your next idea" : "Agent unavailable"}
+            {activeExecution ? "Estimate and hard cap shown on every paid step" : agentMessage?.startsWith("Error") ? agentMessage : "Estimate and hard cap shown on every paid step"}
           </span>
         </div>
       </div>

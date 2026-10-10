@@ -1,0 +1,3 @@
+ts	phase	decision	why	evidence	result
+2026-10-09T00:00:00Z	frame	Keep committed adapters and extend existing UI	The merged billing API already supplies flat run payloads	docs/BILLING.md; fc5238a	baseline 64 Node tests passed
+2026-10-10T03:07:05.896230+00:00	style	Styled agent, billing and timeline components; fixed kit media and shared semantics	Existing components lacked design styles; axe exposed invalid ledger and timeline markup	studio/app/revamp.css; /workspace/rh-ui-revamp-shots/iteration/after	64 node tests and production build pass; axe rerun in progress

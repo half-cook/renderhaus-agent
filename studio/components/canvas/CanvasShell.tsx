@@ -192,7 +192,7 @@ function Workspace() {
   return (
     <div
       className={[
-        "workspace",
+        "workspace rh-canvas-workspace",
         inspectorVisible ? "inspector-open" : "",
         agentOpen ? "agent-open" : "",
         timelineOpen ? "timeline-open" : "",

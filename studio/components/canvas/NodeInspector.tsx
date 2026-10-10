@@ -68,7 +68,7 @@ export function NodeInspector() {
   const estimate = toNodeEstimate(node.data.estimate);
 
   return (
-    <aside className="inspector">
+    <aside className="inspector rh-node-inspector">
       <header className="inspector-head">
         <h2>{node.data.title}</h2>
         <button className="icon-btn" type="button" aria-label="Close inspector" onClick={() => setInspectorOpen(false)}>
@@ -101,7 +101,7 @@ export function NodeInspector() {
       ) : null}
       {schema ? (
         <>
-          <SchemaForm
+          <div className="rh-inspector-fields"><SchemaForm
             schema={schema.inputSchema}
             values={node.data.config}
             options={toolOptions}
@@ -109,6 +109,7 @@ export function NodeInspector() {
             hiddenFields={connectedFields}
             onChange={(name, value) => updateNodeConfig(node.id, name, value)}
           />
+          </div>
           {advanced.length > 0 ? (
             <section className="advanced">
               <button className="advanced-toggle" type="button" onClick={toggleAdvanced}>

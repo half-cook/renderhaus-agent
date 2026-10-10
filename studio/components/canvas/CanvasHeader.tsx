@@ -122,7 +122,7 @@ export function CanvasHeader({ navigationBusy, onBusyChange }: {
   };
 
   return (
-    <header className="chrome-header" ref={headerRef}>
+    <header className="chrome-header rh-canvas-header" ref={headerRef}>
       <div className="header-left">
         <Link href="/home" className="rh-brand" aria-label="Renderhaus home">
           <span className="rh-mark" aria-hidden="true" />
@@ -211,7 +211,7 @@ export function CanvasHeader({ navigationBusy, onBusyChange }: {
               {status
                 ? Object.entries(status.dry_run).map(([id, dry]) => (
                     <p key={id}>
-                      {id.replaceAll("_", " ")}: {dry ? "dry run" : "live"}
+                      Studio tools: {dry ? "dry run" : "live"}
                     </p>
                   ))
                 : null}

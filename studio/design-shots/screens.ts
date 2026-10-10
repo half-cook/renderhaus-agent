@@ -76,6 +76,8 @@ const mug = (extra: Record<string, unknown> = {}) => ({
   "/api/studio/projects": mugProjects,
   [`/api/studio/projects/${MUG}/canvas`]: mugCanvas,
   [`/api/studio/projects/${MUG}/agent-conversations`]: mugTasks,
+  "/api/studio/projects/spring-launch/agent-conversations": { items: [] },
+  "/api/studio/projects/untitled-1/agent-conversations": { items: [] },
   "/api/studio/tools": mugTools,
   ...extra,
 });
@@ -124,6 +126,6 @@ SCREENS.push(
   { id: "m16-cap-reached", url: agentUrl, ready: ".rh-appr[data-state='paused_cap']", fixtures: mug({ "/api/studio/agent": pausedRun, ...account(824, 176) }) },
   { id: "m17-low-credit", url: agentUrl, ready: ".rh-appr[data-credit='lower_cap']", fixtures: mug({ "/api/studio/agent": lowRun, "/api/studio/account": lowAccount }) },
   { id: "m06-canvas-timeline", url: `/canvas?project=${MUG}&workspace=canvas&dock=timeline`, ready: ".rh-tl-clip", fixtures: mug({ "/api/studio/agent": { items: [] }, ...account(974, 26) }),
-    prepare: async (p) => { await p.getByText("Shot 1 · push-in").first().click(); await p.getByRole("option", { name: /Shot 1/ }).click(); } },
+    prepare: async (p) => { await p.locator(".react-flow__node").filter({ hasText: "Shot 1 · push-in" }).click(); await p.getByRole("option", { name: /Shot 1/ }).click(); } },
   { id: "m07-timeline", url: `/canvas?project=${MUG}&workspace=timeline`, ready: "[data-shot='timeline-ready'] .rh-tl-clip", fixtures: mug({ "/api/studio/agent": { items: [] }, ...account(974, 26) }) },
 );
