@@ -215,6 +215,7 @@ class DialogueEditTests(unittest.TestCase):
         self.routes.append(("POST", ROOT + "/dialogue-edits", httpx.ReadTimeout("lost after send")))
         first = self.create()
         self.assertEqual(first["status"], "submission_unknown")
+        self.assertEqual(first["next_action"], "check_status_or_ask_user")
         self.assertIn("check status", first["note"].lower())
         self.dialogue = importlib.reload(self.dialogue)
         self.assertEqual(self.create()["status"], "submission_unknown")

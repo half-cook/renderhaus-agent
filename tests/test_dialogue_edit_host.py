@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+from pathlib import Path
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -12,7 +13,8 @@ from agent.deep_agent import routing
 from agent.deep_agent.runner import run_with_servers
 from agent.gateway_executor import GatewayExecutor, tool_needs_approval
 from agent.studio_agent_next import (
-    StudioAgentApprovalRequired, StudioAgentRequest, StudioApprovalDecision, _context_from_request,
+    StudioAgentApprovalRequired, StudioAgentRequest, StudioApprovalDecision, StudioToolEvent,
+    _context_from_request, _validate_video_delivery,
 )
 from test_deep_agent import Gateway, ScriptedModel, call, final
 
@@ -104,8 +106,8 @@ class DialogueRoutingTests(unittest.TestCase):
         with patch.dict(os.environ, {"SYNC_DRY_RUN": "false", "SYNC_TRANSPORT": "fal",
                                     "SYNC_DIRECT_AUTHORIZED": "true", "SYNC_BILLING_PLAN": "legacy_base"}):
             cost = cost_for("sync", "create_dialogue_video", VIDEO)
-            self.assertEqual(cost.provider_cents, 133)
-            self.assertEqual(cost_for("sync", "create_dialogue_video", {**VIDEO, "source_fps": 50.0}).provider_cents, 266)
+            self.assertEqual(cost.provider_cents, 134)
+            self.assertEqual(cost_for("sync", "create_dialogue_video", {**VIDEO, "source_fps": 50.0}).provider_cents, 267)
             self.assertEqual(routing.estimate_cost("Sync___create_dialogue_video", VIDEO).total_cents,
                              cost.total_cents)
 
@@ -161,7 +163,7 @@ class DialogueApprovalTests(unittest.IsolatedAsyncioTestCase):
                         approval = paused.exception.approvals[0]
                         self.assertIn("Alice", approval.description)
                         self.assertIn("direct", approval.description)
-                        self.assertIn("unknown" if name.endswith("create_dialogue_edit") else "$1.73", approval.description)
+                        self.assertIn("unknown" if name.endswith("create_dialogue_edit") else "$1.74", approval.description)
                         resumed = request.model_copy(update={
                             "session_items": json.loads(json.dumps(studio.session_items)),
                             "resume_state": paused.exception.state,
@@ -190,6 +192,53 @@ class DialogueApprovalTests(unittest.IsolatedAsyncioTestCase):
                                              "call_id": "second"}, approved=True)
         gateway.call_tool.assert_awaited_once()
         self.assertEqual(result["status"], "submission_unknown")
+
+    async def test_lost_gateway_response_does_not_retry_preview(self):
+        request = StudioAgentRequest(prompt="Dialogue-edit this footage", autonomous=True, job_id="dialogue")
+        studio = _context_from_request(request)
+        name = "Sync___create_dialogue_edit"
+        gateway = Gateway([Tool(name=name, inputSchema={"type": "object"})])
+        gateway.call_tool.side_effect = RuntimeError("Gateway connection lost after dispatch")
+        with tempfile.TemporaryDirectory() as directory, patch.dict(os.environ, {
+            "RENDERHAUS_OUTCOME_DIR": directory, "SYNC_DRY_RUN": "true",
+        }):
+            executor = GatewayExecutor(studio, [gateway])
+            first = await executor.execute({"tool_name": name, "arguments": PREVIEW, "call_id": "first"}, approved=True)
+            result = await executor.execute({"tool_name": name, "arguments": PREVIEW, "call_id": "second"}, approved=True)
+        gateway.call_tool.assert_awaited_once()
+        self.assertEqual(first["status"], "submission_unknown")
+        self.assertEqual(result["next_action"], "check_status_or_ask_user")
+
+
+class DialogueDeliveryTests(unittest.TestCase):
+    def event(self, name, result, arguments=None):
+        return StudioToolEvent(id=name, name=name, label="Dialogue work", summary="Offline result",
+                               status=result["status"], result=result, arguments=arguments or {})
+
+    def test_preview_alone_cannot_finish_word_edit_request(self):
+        request = StudioAgentRequest(prompt='Change the spoken word "quarterly" in this footage')
+        studio = _context_from_request(request)
+        studio.tool_events.append(self.event("Sync___get_dialogue_edit", {
+            "status": "succeeded", "previewAudioUrl": "https://assets.sync.so/preview.wav"}))
+        self.assertFalse(_validate_video_delivery(request, studio))
+
+    def test_only_current_matching_saved_video_can_finish_dialogue_edit(self):
+        saved = {"status": "succeeded", "downloaded": True, "mode": "dialogue_edit_video",
+                 "output_path": str(Path(__file__).parent / "fixtures/sync-video.mp4")}
+        for job, expected in [("new-video", True), ("old-video", False)]:
+            request = StudioAgentRequest(prompt="Dialogue-edit this footage")
+            studio = _context_from_request(request)
+            studio.tool_events.append(self.event("Sync___create_dialogue_video", {"status": "queued", "job_id": "new-video"}))
+            studio.tool_events.append(self.event("Sync___get_video_task", {**saved, "job_id": job}, {"job_id": job}))
+            self.assertEqual(_validate_video_delivery(request, studio), expected)
+
+    def test_old_video_and_new_preview_cannot_finish_new_edit(self):
+        old = self.event("Sync___get_video_task", {"status": "succeeded", "downloaded": True,
+            "output_path": str(Path(__file__).parent / "fixtures/sync-video.mp4"), "job_id": "old-video"})
+        request = StudioAgentRequest(prompt="Dialogue-edit this footage", prior_tool_events=[old.public()])
+        studio = _context_from_request(request)
+        studio.tool_events.append(self.event("Sync___create_dialogue_edit", {"status": "queued", "dialogue_edit_id": "new-preview"}))
+        self.assertFalse(_validate_video_delivery(request, studio))
 
 
 if __name__ == "__main__":
