@@ -338,6 +338,11 @@ def check_dry_run_dispatch() -> None:
                                  "words": [{"text": "Hello", "start": 0.1, "end": 0.5}]}],
                     "segments": [{"source_id": "source", "first_word": 0, "last_word": 0}],
                 }
+            if spec.id == 'remotion' and name == 'render_timeline':
+                # visuals is optional for authored chat props; this smoke case
+                # still exercises the supplied-media branch without reading media.
+                arguments['visuals'] = [{'kind': 'image', 'url': 'https://example.test/ci.png',
+                                         'duration_seconds': 1}]
             result = dispatch(spec.id, name, arguments)
             if spec.id == "sync" and name == "transcribe_video":
                 sync_transcription_id = result["transcription_id"]
