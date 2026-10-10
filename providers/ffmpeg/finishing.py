@@ -59,8 +59,9 @@ def cues_from_arguments(items: list[dict]) -> list[Cue]:
                 or end - start < .001 - 1e-12 or start < previous_end
                 or round(end * 1000) <= round(start * 1000)):
             raise ValueError("Cue times must be finite, sorted, non-overlapping, within 600 seconds and at least 1 ms apart.")
-        if (not isinstance(text, str) or not 1 <= len(text) <= 2000 or not text.strip()
-                or re.search(r"\n[^\S\n]*\n|[\x00-\x08\x0b-\x1f\x7f]", text)):
+        if (not isinstance(text, str) or not 1 <= len(text) <= 2000
+                or any(not line.strip() for line in text.split("\n"))
+                or re.search(r"[\x00-\x08\x0b-\x1f\x7f]", text)):
             raise ValueError("Cue text must be nonempty bounded text without control characters or blank lines.")
         try:
             text.encode("utf-8")
@@ -277,6 +278,7 @@ def _filters(directory, names):
 def _video_source(directory, source, *, audio=False):
     metadata, video, sound, metrics = delivery._delivery_source(directory, source, require_audio=audio)
     metrics["expected_video_codec"] = "h264"
+    metrics["source_container_bitrate"] = metadata["format"].get("bit_rate")
     return metadata, video, sound, metrics
 
 
@@ -288,7 +290,7 @@ def _render(directory, source, video, metrics, *, vf=None, graph=None, prefix="f
     argv += ["-filter_complex", graph, "-map", "[out]"] if graph else ["-vf", vf, "-map", "0:v:0"]
     argv += ["-map", "0:a:0?", "-c:v", "libx264", "-profile:v", "high", "-preset", preset,
              "-pix_fmt", "yuv420p", "-threads", str(THREADS)]
-    bitrate = video.get("bit_rate")
+    bitrate = video.get("bit_rate") or metrics.get("source_container_bitrate")
     if crf is None and bitrate is not None:
         measured = int(bitrate)
         if not 0 < measured <= 200_000_000:
@@ -409,6 +411,8 @@ def make_proxy(directory, source, params):
     width, height = metrics["width"], metrics["height"]
     factor = min(1, params["height"] / height, (854 if params["height"] == 480 else 960) / width)
     fitted = [max(2, math.floor(value * factor / 2) * 2) for value in (width, height)]
+    if abs(fitted[0] * height / (fitted[1] * width) - 1) > .01:
+        raise ValueError("Source aspect ratio cannot fit the proxy bounds within 1% using even dimensions.")
     metrics.update(width=fitted[0], height=fitted[1], source_sha256=sha256_file(source), is_proxy=True,
                    requested_height=params["height"], crf=params["crf"], proxy_preset=params["proxy_preset"])
     metrics["warnings"].append("Proxy media is for editing; it is not a delivery master.")

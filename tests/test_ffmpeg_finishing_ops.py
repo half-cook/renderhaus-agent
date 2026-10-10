@@ -99,6 +99,21 @@ class FinishingContractTests(FinishingFixture, unittest.TestCase):
                     {"start": 0, "end": 1, "text": "first\n" + whitespace + "\nsecond"}]})
                 self.assertFalse(result["ok"], result)
 
+    def test_export_refuses_boundary_blank_lines_before_batch_writes(self):
+        for whitespace in ("", " ", "\t", "\u00a0"):
+            for text in (whitespace + "\nCaption", "Caption\n" + whitespace):
+                with self.subTest(text=repr(text)):
+                    result = self.call("export_srt", {"cues": self.cues,
+                        "export_batch": [{"cues": [{"start": 0, "end": 1, "text": text}]}]})
+                    self.assertFalse(result["ok"], result)
+                    self.assertEqual(list(self.job.glob("*.srt")), [self.subtitle])
+
+    def test_export_preserves_valid_multiline_cues(self):
+        cues = [{"start": .125, "end": 1.875, "text": "First line\nCafé 世界"}]
+        output = self.exported(self.call("export_srt", {"cues": cues}))[0]
+        self.assertEqual(output.read_text(),
+                         "1\n00:00:00,125 --> 00:00:01,875\nFirst line\nCafé 世界\n\n")
+
     def test_dry_run_validates_new_operations_without_reading_files_or_running_binaries(self):
         cases = [("burn_subtitles", {"subtitle_path": "missing.srt"}),
                  ("export_srt", {"cues": self.cues}),
@@ -307,6 +322,22 @@ class FinishingRealBinaryTests(FinishingFixture, unittest.TestCase):
         before, after = self.frame(self.source).getpixel((100, 50)), self.frame(output).getpixel((100, 50))
         self.assertGreater(after[0] - after[2], before[0] - before[2] + 5)
 
+    def test_finishing_render_uses_container_bitrate_when_stream_bitrate_is_absent(self):
+        source = self.job / "source.mkv"
+        self.run_ffmpeg(["-f", "lavfi", "-i", "color=c=0x204060:size=320x180:rate=25:duration=4",
+                         "-c:v", "libx264", "-threads", "1", str(source)])
+        metadata = self.call("probe", input_path=source.name)["metrics"]
+        video = next(stream for stream in metadata["streams"] if stream["codec_type"] == "video")
+        self.assertNotIn("bit_rate", video)
+        measured = int(metadata["format"]["bit_rate"])
+        for op, params in [("burn_subtitles", {"subtitle_path": self.subtitle.name}),
+                           ("color_match_lut", {"grade_preset": "warm"})]:
+            with self.subTest(op=op):
+                result = self.call(op, params, input_path=source.name)
+                self.exported(result)
+                self.assertGreaterEqual(result["metrics"].get("video_bitrate", 0),
+                                        math.ceil(measured * 1.25))
+
     def test_malformed_luts_are_refused_without_artifacts(self):
         malformed = ["LUT_3D_SIZE 999999\n", "LUT_3D_SIZE 2\n0 0 0\n", "LUT_3D_SIZE 2\n" + "nan 0 0\n" * 8,
                      "LUT_3D_SIZE 2\n" + "inf 0 0\n" * 8,
@@ -391,6 +422,18 @@ class FinishingRealBinaryTests(FinishingFixture, unittest.TestCase):
         self.assertEqual([(result["metrics"]["width"], result["metrics"]["height"]) for result in results],
                          [(852, 480), (960, 540)])
         self.assertTrue(all(path.exists() for path in paths))
+
+    def test_proxy_refuses_even_fit_that_distorts_extreme_source_aspect(self):
+        for width, height in [(3840, 2), (2, 3840)]:
+            with self.subTest(width=width, height=height):
+                source = self.job / f"narrow-{width}x{height}.mp4"
+                self.run_ffmpeg(["-f", "lavfi", "-i", f"color=size={width}x{height}:rate=24:duration=1",
+                                 "-c:v", "libx264", "-threads", "1", str(source)])
+                before = set(self.job.iterdir())
+                result = self.call("make_proxy", input_path=source.name)
+                self.assertFalse(result["ok"], result)
+                self.assertIn("aspect", result["error"].lower())
+                self.assertEqual(set(self.job.iterdir()), before)
 
     def test_missing_binary_filter_or_font_fails_soft_and_removes_owned_files(self):
         with patch("providers.ffmpeg.api.shutil.which", return_value=None):
