@@ -67,3 +67,26 @@ These packs remain resources inside the `hyperframes` skill. Remotion stays the
 default renderer. Their permissive code licences do not authorize training on
 customer source media. See [pack details](HYPERFRAMES_TEMPLATE_PACKS.md) for
 the preview contract and remaining verification.
+
+## HyperFrames Hyfrme pack
+
+Renderhaus adapts the component-selection recipe and selected text, transition,
+and device-card patterns from
+[AksharP5/hyfrme at 26522a993082cd30ad5f404e4890d670c5c73bcb](https://github.com/AksharP5/hyfrme/tree/26522a993082cd30ad5f404e4890d670c5c73bcb).
+The full upstream MIT licence and third-party notices were read on 2026-10-09.
+Copyright (c) 2026 Akshar Patel. Text and transition patterns retain Remocn's
+MIT attribution, Copyright (c) 2026 Remocn.
+
+The complete notices remain in [Hyfrme LICENSE](../third_party/hyfrme/LICENSE)
+and [Remocn LICENSE](../third_party/hyfrme/Remocn-LICENSE). Adapted files identify
+their pinned sources and Renderhaus modifications. Python distributions include
+both licence files and all four nested resources. The AgentCore image already
+copies `agent/` and `third_party/`.
+
+These examples replace catalog installation and upstream variable/runtime hooks
+with static markup and one paused timeline. They use system fonts and invented
+copy. Upstream fonts, avatar photos, brand marks, GSAP, React runtimes, shaders,
+and catalog installers are not bundled. Hyfrme's root MIT licence does not cover
+every catalog entry. In particular, the inspected Paper shader runtime declares
+PolyForm Shield and is omitted. See [Hyfrme pack details](HYPERFRAMES_HYFRME_PACK.md)
+for the sources, adaptation scope, and pending rendering checks.

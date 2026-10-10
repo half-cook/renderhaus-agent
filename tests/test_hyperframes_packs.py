@@ -238,7 +238,7 @@ class HyperFramesPackRoutingTests(unittest.TestCase):
             with patch.dict(os.environ, {"HYPERFRAMES_ENABLED": enabled}):
                 for confidential in (True, False):
                     for pattern in ("Hyfrme kinetic titles", "Hyfrme motion graphics transitions",
-                                    "Hyfrme motion graphics product UI demo"):
+                                    "Hyfrme motion graphics device card"):
                         for named in (True, False):
                             prompt = pattern + (" with HyperFrames" if named else "")
                             with self.subTest(prompt=prompt, enabled=enabled, confidential=confidential):
@@ -250,6 +250,15 @@ class HyperFramesPackRoutingTests(unittest.TestCase):
                                 else:
                                     self.assertEqual(route.status, "ready")
                                     self.assertEqual(route.tool, HYPERFRAMES_TOOL.name if named else "Remotion___render_timeline")
+
+    def test_hyfrme_pack_does_not_implement_product_capture(self):
+        from agent.deep_agent.routing import route_intent
+
+        with patch.dict(os.environ, PREVIEW_ENV):
+            route = route_intent("Hyfrme motion graphics product UI demo")
+            self.assertEqual((route.skill, route.alias, route.status),
+                             ("product-demo-video", "cutaway_record", "pending"))
+            self.assertIsNone(route.tool)
 
     def test_caption_styles_keep_motion_routing_with_trailing_instructions(self):
         from agent.deep_agent.routing import route_intent
