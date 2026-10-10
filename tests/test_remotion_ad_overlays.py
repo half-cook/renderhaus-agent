@@ -26,6 +26,9 @@ def props_for(source: Path, *, text: str | None = None) -> dict:
             'fontSize': 24, 'minFontSize': 16, 'maxFontSize': 24,
             'fontFamily': 'dejavu-sans', 'color': '#ffffff', 'fadeIn': 0, 'fadeOut': 0,
         }]})
+        from providers.remotion.text import fit_text
+        item = tracks[-1]['items'][0]
+        item.update(fit_text(item, 320, 180))
     return {'document': {'id': 'test', 'assets': [{
         'id': 'master', 'kind': 'video', 'url': str(source)}], 'tracks': tracks},
         'renderConfig': {'width': 320, 'height': 180, 'fps': 16,

@@ -215,6 +215,8 @@ def validate_document(props: dict[str, Any], backend: Backend) -> None:
             for item in track.get('items', []):
                 if {'cropBox', 'padBox', 'reframeSize', 'allowUpscale'}.intersection(item) or item.get('fit') == 'pad_blur':
                     raise ValueError(CAPABILITIES['crop_reframe'].note)
+                if {'box', 'fontFamily', 'minFontSize', 'maxFontSize', 'textFit'}.intersection(item) and os.getenv('REMOTION_OVERLAY_CONTRACT_VERSION', '1') != '2':
+                    raise ValueError(CAPABILITIES['fitted_overlays'].note)
     config, document = props['renderConfig'], props['document']
     unknown_config = set(config) - {'width', 'height', 'fps', 'durationInFrames', 'videoBitrate', 'crf', 'resolution', 'timecode', 'dropFrame'}
     if unknown_config:
