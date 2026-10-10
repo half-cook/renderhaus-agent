@@ -36,6 +36,10 @@ def _record_path(request: contracts.PollRequest) -> Path:
     return Path(os.getenv("RENDERHAUS_MEDIA_DIR", ".renderhaus/media")) / "audio" / ".voices" / _scope(request) / (request.voice_id + ".json")
 
 
+def _store_key(request: contracts.PollRequest) -> str:
+    return f"renderhaus-heygen-voices/{_scope(request)}/{request.voice_id}.json"
+
+
 def _write(path: Path, content: dict) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary = path.with_suffix(f".{uuid.uuid4().hex}.tmp")
@@ -46,14 +50,43 @@ def _write(path: Path, content: dict) -> None:
         temporary.unlink(missing_ok=True)
 
 
-def _read(request: contracts.PollRequest) -> dict:
+def _save(request: contracts.PollRequest, record: dict) -> None:
+    from providers.heygen.api import _bucket, _store_client
+
     try:
-        record = json.loads(_record_path(request).read_text())
+        _write(_record_path(request), record)
+        if _bucket():
+            _store_client().put_object(Bucket=_bucket(), Key=_store_key(request),
+                                     Body=json.dumps(record).encode(), ContentType="application/json")
+    except Exception:
+        raise RuntimeError(f"HeyGen Voice clone storage failed; preserve voice_id {request.voice_id} and do not resubmit.") from None
+
+
+def _read(request: contracts.PollRequest) -> dict:
+    from providers.heygen.api import _bucket, _store_client
+
+    content = None
+    if _bucket():
+        from botocore.exceptions import ClientError
+
+        try:
+            body = _store_client().get_object(Bucket=_bucket(), Key=_store_key(request))["Body"]
+            try:
+                content = body.read().decode()
+            finally:
+                body.close()
+        except ClientError as exc:
+            if exc.response.get("Error", {}).get("Code") in {"NoSuchKey", "404", "NotFound"}:
+                raise ValueError("Voice is not saved in this account and project scope.") from None
+            raise RuntimeError("HeyGen Voice clone storage could not be read.") from None
+        except Exception:
+            raise RuntimeError("HeyGen Voice clone storage could not be read.") from None
+    try:
+        record = json.loads(content if content is not None else _record_path(request).read_text())
         if any(record[key] != getattr(request, key) for key in ("voice_id", "account_id", "workspace_id", "project_id")):
             raise ValueError
-        if (record.get("status") not in {"dry_run", "queued", "running", "succeeded", "failed"} or record.get("mode") != "instant"
-                or record.get("consent_confirmed") is not True or not record.get("subjects", "").strip()
-                or not record.get("consent_record_id")):
+        contracts.CloneRequest.model_validate({key: record[key] for key in contracts.CloneRequest.model_fields})
+        if record.get("status") not in {"dry_run", "queued", "running", "succeeded", "failed"}:
             raise ValueError
         return record
     except (OSError, ValueError, KeyError, TypeError):
@@ -80,7 +113,7 @@ def voice_clone(reference_audio_url: str, reference_duration_seconds: float, ref
     record = {**saved, "voice_id": voice_id, "status": "dry_run" if is_dry else "queued", "used_reference_seconds": request.used_reference_seconds,
               "cost_usd": 0 if is_dry else None, "placeholder": is_dry, **contracts.PROVENANCE, "model": request.model}
     scope = contracts.PollRequest.model_validate({key: record[key] for key in ("voice_id", "account_id", "workspace_id", "project_id")})
-    _write(_record_path(scope), record)
+    _save(scope, record)
     return {**record, "request_preview": {**contracts.clone_body(request),
             "audio": [{"type": "url", "url": saved["reference_audio_url"]}]},
             "note": (_note(request.model) if is_dry else "Accepted once; preserve this voice_id and poll without resubmitting.") + " Clone creation would return 202; poll get_voice_status until ACTIVE after activation."}
@@ -105,7 +138,7 @@ def get_voice_status(voice_id: str, account_id: str, workspace_id: str, project_
     record["status"] = states[data["status"]]
     if record["status"] == "failed":
         record["error"] = "HeyGen instant clone failed; inspect the provider account before requesting a new clone."
-    _write(_record_path(request), record)
+    _save(request, record)
     return record
 
 
@@ -125,7 +158,21 @@ def voice_tts(voice_id: str, text: str, language: str, account_id: str, workspac
         contracts.validate_media_reference(url, allow_asset=False)
         _download_wav(url, output)
         duration = _validate_wav(output)
-        return {**contracts.PROVENANCE, "model": request.model, "provider": "heygen", "status": "succeeded",
+        from providers.heygen.api import _bucket, _store_client
+
+        artifact = {}
+        if _bucket():
+            key = f"renderhaus-heygen-voice-outputs/{_scope(request)}/{output.name}"
+            try:
+                store = _store_client()
+                store.upload_file(Filename=str(output), Bucket=_bucket(), Key=key,
+                                  ExtraArgs={"ContentType": "audio/wav"})
+                artifact["audio_url"] = store.generate_presigned_url(
+                    "get_object", Params={"Bucket": _bucket(), "Key": key}, ExpiresIn=3600)
+                contracts.validate_media_reference(artifact["audio_url"], allow_asset=False)
+            except Exception:
+                raise RuntimeError("HeyGen Voice WAV storage failed; do not repeat synthesis.") from None
+        return {**contracts.PROVENANCE, **artifact, "model": request.model, "provider": "heygen", "status": "succeeded",
                 "voice_id": voice_id, "output_path": str(output), "duration_seconds": duration,
                 "placeholder": False, "subjects": record["subjects"], "consent_record_id": record["consent_record_id"]}
     temporary = output.with_suffix(f".{uuid.uuid4().hex}.tmp")

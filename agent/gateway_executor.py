@@ -285,7 +285,7 @@ class GatewayExecutor:
                 try:
                     owner = _read(PollRequest.model_validate({key: arguments[key] for key in
                         ("voice_id", "account_id", "workspace_id", "project_id")}))["subjects"]
-                except (ValueError, KeyError):
+                except (ValueError, KeyError, RuntimeError):
                     pass
             return (f"Provider HeyGen Voice; model {effective_model('heygen', name.split('___')[1], arguments)}. "
                     f"{route.basis if route else 'explicit request'}. {estimate_cost(name, arguments).description} "
@@ -396,7 +396,7 @@ class GatewayExecutor:
                     return "HeyGen Voice scope must match the authenticated account, workspace and project."
                 if tool != "voice_clone":
                     _read(request)
-            except ValueError as exc:
+            except (ValueError, RuntimeError) as exc:
                 return str(exc)
         if name == "HeyGen___create_avatar_video":
             from providers.heygen.contracts import request_for

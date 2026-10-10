@@ -19,6 +19,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 def _force_dry_run() -> None:
+    os.environ["AWS_S3_BUCKET"] = ""
     os.environ["BETA_VERIFICATION_DRY_RUN"] = "true"
     os.environ["GEMINI_DRY_RUN"] = "true"
     os.environ["KLING_DRY_RUN"] = "true"

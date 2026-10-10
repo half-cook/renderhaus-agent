@@ -73,7 +73,7 @@ _NEGATED_NARRATION = (
     rf"(?:[ ,]+(?:and|or|nor)?[ -]*{_SPEECH_LABEL})*\b|"
     rf"\b(?:do not|don't|never)\s+(?:(?:add|include|use|generate)\s+)?{_SPEECH_LABEL}\b|"
     r"\b(?:narration|voice[ -]?over)[ -]free\b|\bnot[ -]+narrated\b|"
-    r"\b(?:do not|don't|never)\s+narrate\b"
+    r"\b(?:do not|don't|never)\s+(?:narrate|read|speak)\b"
 )
 _IMAGE_ALIASES = ("gpt_image25_t2i", "gpt_image25_edit", "recraft_v41_vector", "ideogram45_edit", "seedream_t2i")
 _SPEECH_PRODUCTION_TOOLS = {
@@ -155,7 +155,8 @@ def _audio_postprocess_request(prompt: str) -> bool:
 
 def _video_voiceover(prompt: str) -> bool:
     return bool(re.search(_VIDEO_DELIVERABLE, _instruction_text(prompt), re.I)
-                and re.search(_VOICEOVER, _narration_text(prompt), re.I)
+                and (re.search(_VOICEOVER, _narration_text(prompt), re.I)
+                     or re.search(r"\b(?:read|speak)\b.*\bscript\b", _narration_text(prompt), re.I))
                 and not _knowledge_explainer_request(prompt))
 
 
@@ -243,15 +244,23 @@ def _delivery_route(prompt: str, constraints: dict, *, region: str | None,
     steps = []
     creates = bool(re.search(r"\b(?:make|create|generate)\b.*\b(?:shot|clip|video)\b", prompt, re.I))
     existing = bool(re.search(r"\b(?:referenced|existing|attached|uploaded)\b.*\b(?:clip|video|shot)\b", prompt, re.I))
-    for capability, skill in ([_video_capability(prompt, constraints)] if creates and not existing else []) + ([('tts', 'audio-bed')] if voiceover else []) + [('motion_graphics', 'final-assembly')]:
+    speech = [('tts', 'audio-bed')] if voiceover else []
+    clones = voiceover and constraints["predicates"]["cloned_voice"] and bool(re.search(
+        r"\bclone\b.*\bvoice\b|\bvoice clon(?:ing|e)\b", _instruction_text(prompt), re.I))
+    if voiceover and constraints["predicates"]["cloned_voice"]:
+        speech = ([('voice_clone', 'audio-bed')] if clones else []) + [('cloned_tts', 'audio-bed')]
+    for capability, skill in ([_video_capability(prompt, constraints)] if creates and not existing else []) + speech + [('motion_graphics', 'final-assembly')]:
         scoped = capability_constraints(constraints, capability)
         route = select_provider(capability, region=region, available_tools=available_tools,
                                 arguments=arguments, **scoped)
+        if capability in {"voice_clone", "cloned_tts"} and scoped["provider"] == "elevenlabs":
+            skill = "named-provider"
         steps.append(replace(route, skill=skill))
     first = steps[0]
     incomplete = next((step for step in steps if step.status != 'ready'), None)
     execution_groups = tuple(group for group in (
-        tuple(step.alias for step in steps[:-1] if step.alias),
+        tuple(step.alias for step in steps[:-1] if step.alias and (not clones or step.job_type != "cloned_tts")),
+        tuple(step.alias for step in steps if clones and step.job_type == "cloned_tts" and step.alias),
         tuple(step.alias for step in steps[-1:] if step.alias),
     ) if group)
     return replace(first, steps=tuple(steps), expected_output='assembled MP4',
@@ -259,6 +268,7 @@ def _delivery_route(prompt: str, constraints: dict, *, region: str | None,
                    forbidden_tools=_IMAGE_ALIASES if voiceover else (),
                    status=incomplete.status if incomplete else first.status,
                    reason=incomplete.reason if incomplete else
+                   'Start video and cloning together; speak after cloning, then assemble.' if clones else
                    'Start independent video and voiceover together; assemble after both finish.' if voiceover else
                    'Assemble the existing assets into the final MP4.')
 
@@ -326,9 +336,9 @@ def resolve_alias(alias: str) -> str | None:
 
 def _voice_route(prompt: str, constraints: dict, *, region: str | None,
                  available_tools: set[str] | None, arguments: dict | None) -> Route | None:
-    if not constraints["predicates"]["cloned_voice"]:
+    if not constraints["predicates"]["cloned_voice"] or constraints["predicates"]["video_voiceover"]:
         return None
-    creates = bool(re.search(r"\bclone\b.*\bvoice\b|\bvoice cloning\b", _instruction_text(prompt), re.I))
+    creates = bool(re.search(r"\bclone\b.*\bvoice\b|\bvoice clon(?:ing|e)\b", _instruction_text(prompt), re.I))
     reads = bool(re.search(r"\bread\b|speak|narrat|script|\btts\b", _instruction_text(prompt), re.I))
     capabilities = (["voice_clone"] if creates else []) + (["cloned_tts"] if reads else [])
     if not capabilities:
@@ -351,11 +361,13 @@ def _voice_route(prompt: str, constraints: dict, *, region: str | None,
 def _voice_script(prompt: str, arguments: dict) -> str:
     if isinstance(arguments.get("text"), str):
         return arguments["text"]
-    quoted = re.findall(r"[\"'“](.*?)[\"'”]", prompt)
+    match = re.search(r"(?:script(?:\s+in\s+it)?|voice(?:\s+in\s+[A-Za-z][A-Za-z -]*)?)\s*[:.]\s*(.*)", prompt, re.I | re.S)
+    if match:
+        return match[1]
+    quoted = re.findall(r'"([^"]*)"|“([^”]*)”|(?<!\w)\'(.*?)\'(?!\w)', prompt, re.S)
     if quoted:
-        return " ".join(quoted)
-    match = re.search(r"(?:script|voice)\s*:\s*(.*)", prompt, re.I)
-    return match[1] if match else ""
+        return " ".join(next(value for value in groups if value) for groups in quoted if any(groups))
+    return ""
 
 
 def route_intent(prompt: str, *, region: str | None = None, tier: str | None = None,
@@ -572,6 +584,11 @@ def _capability_price(row: dict):
         values = {region: {resolution: str(value) for resolution, value in table.items()}
                   for region, table in rates.MODELSTUDIO_CENTS_PER_SECOND.items()}
     elif provider == "heygen":
+        if model == "heygen-voice-1":
+            values = {"list_usd_per_million_characters": rates.HEYGEN_VOICE_LIST_USD_PER_MILLION,
+                      "instant_clone_list_usd": rates.HEYGEN_VOICE_CLONE_LIST_USD}
+            return {**price, "rates": {key: "unknown" if value is None else str(value) for key, value in values.items()},
+                    "currency_unit": "USD", "fee": "server.billing_rates._with_fee"}
         values = {"self_serve_cents_per_second": str(rates.HEYGEN_AVATAR_V_CENTS_PER_SECOND),
                   "enterprise": "unknown"}
     elif provider == "sync":
@@ -762,7 +779,7 @@ def select_provider(job: str, *, tier: str | None = None, required: dict | None 
     if capability in {"still_image", "image_edit"} and predicates.get("video_voiceover"):
         reason = "A shot or clip with voiceover excludes image tools; use video, TTS and assembly."
         return Route(status="blocked", job_type=capability, reason=reason, disclosure=reason)
-    if capability in {"tts", "voice_clone", "music", "sfx", "motion_graphics", "nle_handoff", "nle_import", "ad_variant_matrix", "media_inspection"}:
+    if capability in {"tts", "cloned_tts", "voice_clone", "music", "sfx", "motion_graphics", "nle_handoff", "nle_import", "ad_variant_matrix", "media_inspection"}:
         required = {}
         if capability in {"motion_graphics", "nle_handoff", "nle_import", "ad_variant_matrix", "media_inspection"}:
             provider = model = named_model = None

@@ -1,7 +1,7 @@
 """Instant Voice contracts verified against official HeyGen docs on 2026-10-09.
 
-https://developers.heygen.com/docs/voices/heygen-voice-instant-clone.md
-https://developers.heygen.com/docs/voices/heygen-voice-speech.md
+https://developers.heygen.com/docs/voices/heygen-voice-instant-clone
+https://developers.heygen.com/docs/voices/heygen-voice-speech
 Non-promo prices and model-specific US account availability remain UNVERIFIED.
 """
 from __future__ import annotations
@@ -71,7 +71,7 @@ def needs_text_normalisation(text: str) -> bool:
 class Scope(BaseModel):
     model_config = ConfigDict(strict=True, extra="forbid", allow_inf_nan=False, hide_input_in_errors=True)
     account_id: str = Field(pattern=r"^[A-Za-z0-9_-]{1,255}$")
-    workspace_id: str = Field(pattern=r"^[A-Za-z0-9_-]{1,255}$")
+    workspace_id: str = Field(pattern=r"^[A-Za-z0-9_:-]{1,255}$")
     project_id: str = Field(pattern=r"^[A-Za-z0-9_-]{1,255}$")
 
 

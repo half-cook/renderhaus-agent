@@ -1909,7 +1909,7 @@
       "model": "heygen-voice-1",
       "host": "HeyGen direct",
       "verification": "Instant clone endpoint/schema and TTS model verified. Pricing, comparative-use permission and model-specific US availability UNVERIFIED; dry-run only.",
-      "source": "https://developers.heygen.com/docs/voices/heygen-voice-instant-clone.md",
+      "source": "https://developers.heygen.com/docs/voices/heygen-voice-instant-clone",
       "price_source": "https://www.heygen.com/api-pricing",
       "us_available": "UNVERIFIED model-specific account access; no US exclusion found",
       "availability_source": "https://www.heygen.com/terms",
@@ -1937,7 +1937,7 @@
       "model": "heygen-voice-1",
       "host": "HeyGen direct",
       "verification": "Instant clone endpoint/schema and TTS model verified. Pricing, comparative-use permission and model-specific US availability UNVERIFIED; dry-run only.",
-      "source": "https://developers.heygen.com/docs/voices/heygen-voice-speech.md",
+      "source": "https://developers.heygen.com/docs/voices/heygen-voice-speech",
       "price_source": "https://www.heygen.com/api-pricing",
       "us_available": "UNVERIFIED model-specific account access; no US exclusion found",
       "availability_source": "https://www.heygen.com/terms",
@@ -4580,6 +4580,55 @@
       },
       "native_audio_field": null,
       "native_audio_default": true
+    },
+    {
+      "provider": "heygen",
+      "policy_ref": "heygen",
+      "model": "heygen-voice-1",
+      "label": "HeyGen Voice internal clone candidate",
+      "tools": {
+        "voice_clone": "HeyGen___voice_clone",
+        "cloned_tts": "HeyGen___voice_tts"
+      },
+      "jobs": {},
+      "controls": {
+        "voice_clone": [
+          "reference_audio_url",
+          "reference_duration_seconds",
+          "reference_size_bytes",
+          "reference_format",
+          "name",
+          "subjects",
+          "consent_confirmed",
+          "consent_record_id",
+          "account_id",
+          "workspace_id",
+          "project_id",
+          "mode",
+          "language",
+          "similarity",
+          "remove_background_noise",
+          "model"
+        ],
+        "cloned_tts": [
+          "voice_id",
+          "text",
+          "language",
+          "account_id",
+          "workspace_id",
+          "project_id",
+          "model",
+          "expressiveness_boost"
+        ]
+      },
+      "durations": {},
+      "resolutions": [],
+      "price": {
+        "source": "https://www.heygen.com/api-pricing",
+        "checked_at": "2026-10-09",
+        "verification": "UNVERIFIED non-promo instant clone and character prices; dry-run only"
+      },
+      "native_audio_field": null
     },
     {
       "provider": "topaz",

@@ -196,6 +196,9 @@ async def run_with_servers(request, studio, servers, *, model=None):
         selected = {step.get("tool") for step in steps}
         rows = capability_table()
         result = {
+            "user_id": studio.user_id,
+            "workspace_id": studio.workspace_id,
+            "project_id": studio.project_id,
             "intent_route": route,
             "capabilities": [
                 {key: row[key] for key in ("provider", "model", "label", "tools", "jobs", "price",

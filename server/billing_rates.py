@@ -772,7 +772,7 @@ HEYGEN_AVATAR_V_CENTS_PER_SECOND = Decimal("12")
 
 
 # UNVERIFIED non-promo HeyGen Voice prices. Official pages read 2026-10-09.
-# https://developers.heygen.com/docs/models/heygen-voice.md only states preview creation is free.
+# https://developers.heygen.com/docs/models/heygen-voice only states preview creation is free.
 # https://www.heygen.com/api-pricing redirects to an account dashboard. No character list rate verified.
 HEYGEN_VOICE_PRICING_URL = "https://www.heygen.com/api-pricing"
 HEYGEN_VOICE_PRICING_READ_DATE = "2026-10-09"

@@ -720,7 +720,7 @@ async def invoke_tool(body: InvokeBody, auth: AuthUser) -> dict[str, Any]:
     if body.provider == "heygen" and body.tool in {"create_avatar_video", "voice_clone", "voice_tts", "get_voice_status"}:
         raise HTTPException(
             status_code=409,
-            detail="Use the agent presenter workflow for recorded consent and cost approval before HeyGen generation.",
+            detail="Use the agent HeyGen workflow for recorded consent and cost approval before generation.",
         )
     if body.provider == "topaz" and body.tool in {"upscale_video", "interpolate_video"}:
         raise HTTPException(status_code=409, detail="Use the agent finishing workflow for required cost approval before Topaz processing.")
