@@ -1,12 +1,12 @@
 ---
 name: motion-graphics
-description: Assemble lower thirds, captions, simple motion, and explainers using the built Remotion timeline contract.
+description: Assemble lower thirds, captions, explainers, channel intro stings and YouTube end screens using the built Remotion timeline contract.
 metadata:
   remotion_backend: configured
-  remotion_features: clip_timing transitions fit_position scale motion titles captions audio_mix canvas encoding
+  remotion_features: named_templates clip_timing transitions fit_position scale motion titles captions audio_mix canvas encoding
   include_tools: call_editor_tool call_media_tool
-  gateway_tools: Remotion___render_timeline Remotion___get_render_progress Remotion___export_nle_timeline HyperFrames___render_composition Remotion___motion_carry_probe
-  routing_tools: remotion_render hyperframes_render motion_carry_probe
+  gateway_tools: Ffmpeg___ffmpeg_tool Remotion___render_timeline Remotion___get_render_progress Remotion___export_nle_timeline HyperFrames___render_composition Remotion___motion_carry_probe
+  routing_tools: remotion_render hyperframes_render ffmpeg_tool motion_carry_probe
 ---
 
 # Motion graphics
@@ -27,13 +27,40 @@ Each visual needs `kind`, `url`, and `duration_seconds`. Set timing with `start_
 and `source_in_seconds`. Use supported `motion`, `scale`, position, `fit`, and transitions
 for simple movement. Text overlays need `text`, `start_seconds`, and `duration_seconds`;
 choose native position, color, size, weight, and fades. The built contract supports these
-titles and motions; arbitrary per-word kinetic typography or custom components need a
-future integration. Explain that limit for a brief requiring unsupported animation.
+titles and motions. Measured word highlights are available through the bounded
+[podcast audiogram](../podcast-audiogram/SKILL.md) template; arbitrary kinetic typography
+or custom components need a future integration. Explain that limit for a brief requiring unsupported animation.
 
 For missing image assets, read [still images](../image-gen/SKILL.md) and use the matching
 default or specialist. Recraft vector output and Ideogram text-only edits use the built
 image-gen exceptions. A supplied existing Ideogram asset needs no generation.
 Do not promise SVG from a raster tool.
+
+## Channel intro and YouTube end-screen templates
+
+Keep these inside motion-graphics. Discover the existing timeline schema and set its
+`template.name` to `youtube-intro-sting` for a 3–5 second logo sting, or
+`youtube-end-screen` for an exactly 20-second 16:9 end-screen plate. Use `visuals=[]`,
+`duration_seconds`, supplied `logo_url`, `show_name` and bounded RGB colors. Optional
+source audio spans the full template at volume 1 and zero fades. These templates own
+their geometry and reject audiogram words, captions, amplitudes and correction options.
+Use customer art; no vendor logos. User-facing labels are “Channel intro” and
+“YouTube end screen”.
+
+The end-screen planner declares video/playlist and subscribe/channel reservations as
+normalized data. Its logo/text boxes must stay outside those rectangles. The exact native
+element geometry is UNVERIFIED: official help read 2026-10-10 verifies a last 5–20 second
+window, a minimum 25-second uploaded video and up to four elements for standard 16:9,
+not fixed pixel zones. Re-verify current official limits and actual YouTube Studio element
+placement before shipping. Append the plate to a sufficiently long video; no upload or
+native-element insertion tool is added. Read [the zone data and contract](../../../../docs/PODCAST_AUDIOGRAM.md).
+
+Local rendering supports these templates. Lambda refuses until the operator deploys the
+checked matching composition and sets `REMOTION_TEMPLATE_CONTRACT_VERSION=1`; never set
+that declaration yourself. Template art uses that versioned contract without a separate
+overlay version requirement. Review a full first render plus extracted stills at 10% and
+60% through the real ffmpeg `extract_frames` operation; obtain visual approval before
+extra aspects. Play the full video with audio and run loudness/deliverable QC for each output.
 
 ## Plan timing and reuse media
 
@@ -131,6 +158,13 @@ or change model training eligibility. Renderer terms remain those of the existin
   It informs compact scene tables, exact media ledgers, focused revisions, batched inspection,
   and cost disclosure with existing approval and verification gates.
 
+- Channel template pattern: [iart-ai/youtube-video-skills](https://github.com/iart-ai/youtube-video-skills/blob/f3df381d65abe5078f5ed410bbc3ed72e7cb92bd/skills/youtube-intro-outro/SKILL.md)
+as a pattern, read 2026-10-10. Its
+[MIT licence](https://github.com/iart-ai/youtube-video-skills/blob/f3df381d65abe5078f5ed410bbc3ed72e7cb92bd/LICENSE)
+and attribution are recorded in [NOTICE](../../../../providers/remotion/NOTICE.md).
+No upstream runtime, assets or dependency is copied.
+
+
 After a completed MP4 render, read [motion-carry-qc](../motion-carry-qc/SKILL.md)
 and run `motion_carry_probe` through `Remotion___motion_carry_probe` with the owned
 local MP4 and exact beat timing when available. Surface any failed report and
@@ -140,4 +174,5 @@ or skipped probe is incomplete QC. This free local check grants no paid calls.
 The configured Remotion backend must support every requested feature. Unsupported features refuse before media I/O
 or AWS submission. Crop/pad reframing requires local/worker; fitted font/box overlays require
 Lambda overlay contract version 2 or local/worker. Use named motion presets; arbitrary render
-keyframes, per-word kinetic typography and custom components remain unavailable.
+keyframes, arbitrary kinetic typography and custom components remain unavailable. Bounded
+audiogram word highlights and channel templates use the named_templates contract.
