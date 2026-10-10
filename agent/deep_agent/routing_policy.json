@@ -1936,6 +1936,12 @@
   },
   "rules": [
     {
+      "pattern": "\\bplan[ -]to[ -]video\\b|\\bplan[ -]explainer\\b|\\bplan[ -]review[ -](?:video|reel)\\b|\\b(?:review|turn|convert|render)\\b[^!?;\\n]{0,140}\\bplan(?:\\.md|[ -]mode)?\\b[^!?;\\n]{0,120}\\b(?:video|review[ -]reel|narrated[ -]walkthrough)\\b",
+      "skill": "plan-to-video",
+      "abstract_tool": "remotion_render",
+      "capability": "motion_graphics"
+    },
+    {
       "pattern": "\\b(?:deliver|export)\\b.*\\b(?:finished\\s+mp4|(?:9:16\\s+)?ad|master|cut)\\b.*\\b(?:tiktok|reels|meta|youtube|social|web)\\b|\\b(?:export|make|create)\\b.*\\b(?:review[ -]?proxy|540p\\s+proxy)\\b|\\b(?:convert|transcode)\\b.*\\b(?:existing\\s+mp4|rendered\\s+(?:file|video)|master)\\b.*\\b(?:h\\.?264|aac|email|delivery)\\b|\\b(?:delivery_render|deliver_render|remotion-delivery-render)\\b",
       "skill": "remotion-delivery-render",
       "abstract_tool": "delivery_render",

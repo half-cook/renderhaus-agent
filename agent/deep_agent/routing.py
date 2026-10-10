@@ -87,6 +87,7 @@ _SPEECH_PRODUCTION_TOOLS = {
 }
 _LIPSYNC_REQUEST = next(rule["pattern"] for rule in POLICY["rules"] if rule.get("capability") == "lipsync")
 _KNOWLEDGE_REQUEST = next(rule["pattern"] for rule in POLICY["rules"] if rule["skill"] == "knowledge-explainer")
+_PLAN_REVIEW_REQUEST = next(rule["pattern"] for rule in POLICY["rules"] if rule["skill"] == "plan-to-video")
 _MODELSTUDIO_PREVIEW_WARNING = (
     "Alibaba preview terms permit internal testing, research and evaluation only until GA. "
     "Live customer use is blocked by the preview licence."
@@ -161,6 +162,8 @@ def _video_voiceover(prompt: str) -> bool:
 
 
 def request_tool_blocker(prompt: str, name: str) -> str | None:
+    if plan_text := _plan_review_instruction(prompt):
+        prompt = plan_text
     if refusal := editing_request_refusal(prompt):
         return refusal
     if _knowledge_explainer_request(prompt) and (
@@ -207,7 +210,8 @@ def capability_constraints(constraints: dict, capability: str) -> dict:
         scoped["provider"] = next((candidate for candidate in scoped["provider_candidates"]
                                    if capability in POLICY["explicit_routes"].get(candidate, {})), None)
         scoped["model"] = scoped["named_model"] = None
-    if not (constraints["predicates"].get("video_voiceover") or constraints["predicates"].get("knowledge_explainer")):
+    if not any(constraints["predicates"].get(workflow) for workflow in
+               ("video_voiceover", "knowledge_explainer", "plan_review")):
         return scoped
     named = scoped.get("named_model")
     if named and capability not in POLICY["named_models"][named]["aliases"]:
@@ -372,6 +376,11 @@ def resolve_alias(alias: str) -> str | None:
 def route_intent(prompt: str, *, region: str | None = None, tier: str | None = None,
                  confidential: bool = False, arguments: dict | None = None,
                  available_tools: set[str] | None = None, retry: bool = False) -> Route:
+    if _plan_review_instruction(prompt) is not None:
+        constraints = intent_constraints(prompt, tier=tier, confidential=confidential, arguments=arguments)
+        route = select_provider("motion_graphics", region=region, available_tools=available_tools,
+                                arguments=arguments, **capability_constraints(constraints, "motion_graphics"))
+        return replace(route, skill="plan-to-video")
     for refusal in POLICY.get("editing_refusals", []):
         if re.search(refusal["pattern"], prompt, re.IGNORECASE):
             return Route(skill=refusal.get("skill", "remotion-ad-variant-matrix"), status="blocked",
@@ -399,6 +408,8 @@ def route_intent(prompt: str, *, region: str | None = None, tier: str | None = N
         or video_capabilities.intersection(POLICY["named_models"].get(constraints["named_model"], {}).get("aliases", {}))
     )
     for rule in POLICY["rules"]:
+        if rule["skill"] == "plan-to-video":
+            continue
         if rule["skill"] == "knowledge-explainer" and not knowledge_request:
             continue
         if knowledge_request and rule.get("capability") == "tts":
@@ -603,6 +614,33 @@ def _instruction_text(prompt: str) -> str:
     return re.sub(r"\"[^\"]*\"|“[^”]*”|(?<!\w)'[^']*'(?!\w)", "", prompt)
 
 
+def _plan_review_instruction(prompt: str) -> str | None:
+    instructions: list[str] = []
+    fence: str | None = None
+    for line in prompt.splitlines():
+        if fence is not None:
+            if re.fullmatch(rf" {{0,3}}{re.escape(fence[0])}{{{len(fence)},}}[ \t]*", line):
+                fence = None
+            continue
+        if re.match(r"(?: {4}|\t| {0,3}>)", line):
+            continue
+        if opening := re.match(r" {0,3}(`{3,}|~{3,})", line):
+            fence = opening[1]
+            continue
+        instructions.append(line)
+    text = _instruction_text("\n".join(instructions))
+    text = re.sub(
+        r"\b(?:do not|don't|never|avoid)\s+(?:make|create|produce|render|generate|review|turn|convert)\b"
+        r".*?(?=\.(?:\s|$)|[!?;\n]|$)",
+        lambda match: "" if re.search(_PLAN_REVIEW_REQUEST, match[0], re.I) else match[0],
+        text, flags=re.I,
+    )
+    if not re.search(_PLAN_REVIEW_REQUEST, text, re.I):
+        return None
+    return re.sub(r"\b(?:not|no|avoid|without|never|don't|do not)(?:\s+(?:use|using))?(?:\s+any)?\s+hyperframes\b",
+                  "", text, flags=re.I)
+
+
 def _text_only_image_edit(prompt: str, arguments: dict) -> bool:
     text = _instruction_text(prompt)
     existing = bool(arguments.get("image_url") or arguments.get("image_path_or_url") or re.search(
@@ -620,6 +658,9 @@ def _text_only_image_edit(prompt: str, arguments: dict) -> bool:
 def intent_constraints(prompt: str, *, tier: str | None = None, confidential: bool = False,
                        arguments: dict | None = None) -> dict:
     args = arguments or {}
+    plan_text = _plan_review_instruction(prompt)
+    if plan_text is not None:
+        prompt = plan_text
     excluded_names = re.compile(
         r"\b(?:not|no|avoid|without|never|don't|do not)(?:\s+use)?\s+"
         r"(heygen(?:\s+avatar\s+v)?|avatar[ -]v|sync(?:[ -]?3|\.so)?|ideogram(?:\s+4\.5)?|recraft(?:\s+v?4\.1)?)\b", re.IGNORECASE,
@@ -697,6 +738,7 @@ def intent_constraints(prompt: str, *, tier: str | None = None, confidential: bo
         "dialogue": dialogue, "real_face_refs": real_face,
         "video_voiceover": _video_voiceover(prompt),
         "knowledge_explainer": knowledge_explainer,
+        "plan_review": plan_text is not None,
         "vector_output": bool(re.search(r"\bsvg\b|vector|editable.*illustrator", prompt, re.I)),
         "text_only_edit": _text_only_image_edit(prompt, args),
         "full_body_motion": bool(re.search(r"full.body|whole.body|\bdance\b|\bdancing\b", prompt, re.I)),

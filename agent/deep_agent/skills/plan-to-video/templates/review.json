@@ -1,0 +1,229 @@
+{
+  "description": "Original 70-second static chapter-card Lambda input preview with two illustrative unanswered decisions. Narration durations are unmeasured placeholders; measure completed chapter audio and recalculate all timing before rendering a narrated review. The embedded SVG is for Lambda; local rendering requires a real approved PNG path. Loading this template produces no audio or video.",
+  "source_plan": {
+    "reference": "Illustrative sample only",
+    "version": "sample-v1",
+    "text": "Add a review-decisions endpoint. Preserve the source plan. Store human replies separately with persistent question IDs and source versions. Open questions: Where should review decisions be stored? How long should review decisions be retained?"
+  },
+  "arguments": {
+    "title": "Implementation plan review",
+    "aspect_ratio": "16:9",
+    "visuals": [
+      {
+        "kind": "image",
+        "url": "data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%221920%22%20height%3D%221080%22%20viewBox%3D%220%200%201920%201080%22%3E%3Crect%20width%3D%221920%22%20height%3D%221080%22%20fill%3D%22%23101827%22%2F%3E%3Crect%20x%3D%2272%22%20y%3D%2272%22%20width%3D%221776%22%20height%3D%22936%22%20rx%3D%2228%22%20fill%3D%22%2318243a%22%20stroke%3D%22%23405879%22%20stroke-width%3D%223%22%2F%3E%3Cpath%20d%3D%22M140%20218H1780M140%20860H1780%22%20stroke%3D%22%23405879%22%20stroke-width%3D%223%22%2F%3E%3Ccircle%20cx%3D%22148%22%20cy%3D%22140%22%20r%3D%2218%22%20fill%3D%22%2393c5fd%22%2F%3E%3Cpath%20d%3D%22M188%20140H530%22%20stroke%3D%22%2393c5fd%22%20stroke-width%3D%228%22%2F%3E%3C%2Fsvg%3E",
+        "duration_seconds": 70,
+        "fit": "contain",
+        "motion": "none"
+      }
+    ],
+    "audio_tracks": [],
+    "text_overlays": [
+      {
+        "text": "Review the proposed endpoint",
+        "start_seconds": 0,
+        "duration_seconds": 8,
+        "position": "top",
+        "font_size": 56,
+        "color": "#ffffff"
+      },
+      {
+        "text": "Review the proposed decisions endpoint. Two choices remain open.",
+        "start_seconds": 0,
+        "duration_seconds": 8,
+        "position": "center",
+        "font_size": 60,
+        "color": "#ffffff"
+      },
+      {
+        "text": "Preserve the source plan",
+        "start_seconds": 8,
+        "duration_seconds": 10,
+        "position": "top",
+        "font_size": 56,
+        "color": "#ffffff"
+      },
+      {
+        "text": "Keep the source plan unchanged. Preserve question IDs and the source version.",
+        "start_seconds": 8,
+        "duration_seconds": 10,
+        "position": "center",
+        "font_size": 60,
+        "color": "#ffffff"
+      },
+      {
+        "text": "Record human replies separately",
+        "start_seconds": 18,
+        "duration_seconds": 8,
+        "position": "top",
+        "font_size": 56,
+        "color": "#ffffff"
+      },
+      {
+        "text": "Save human replies in a separate versioned decisions file.",
+        "start_seconds": 18,
+        "duration_seconds": 8,
+        "position": "center",
+        "font_size": 60,
+        "color": "#ffffff"
+      },
+      {
+        "text": "Choose storage",
+        "start_seconds": 26,
+        "duration_seconds": 16,
+        "position": "top",
+        "font_size": 56,
+        "color": "#ffffff"
+      },
+      {
+        "text": "Q1. Where should review decisions be stored?",
+        "start_seconds": 26,
+        "duration_seconds": 16,
+        "position": "center",
+        "font_size": 60,
+        "color": "#ffffff"
+      },
+      {
+        "text": "Pause the player and answer Q1 in chat.",
+        "start_seconds": 34,
+        "duration_seconds": 8,
+        "position": "bottom",
+        "font_size": 40,
+        "color": "#ffffff"
+      },
+      {
+        "text": "Choose retention",
+        "start_seconds": 42,
+        "duration_seconds": 16,
+        "position": "top",
+        "font_size": 56,
+        "color": "#ffffff"
+      },
+      {
+        "text": "Q2. How long should review decisions be retained?",
+        "start_seconds": 42,
+        "duration_seconds": 16,
+        "position": "center",
+        "font_size": 60,
+        "color": "#ffffff"
+      },
+      {
+        "text": "Pause the player and answer Q2 in chat.",
+        "start_seconds": 50,
+        "duration_seconds": 8,
+        "position": "bottom",
+        "font_size": 40,
+        "color": "#ffffff"
+      },
+      {
+        "text": "Open questions",
+        "start_seconds": 58,
+        "duration_seconds": 12,
+        "position": "top",
+        "font_size": 56,
+        "color": "#ffffff"
+      },
+      {
+        "text": "Q1. Where should review decisions be stored?\n\nQ2. How long should review decisions be retained?",
+        "start_seconds": 58,
+        "duration_seconds": 12,
+        "position": "center",
+        "font_size": 52,
+        "color": "#ffffff"
+      },
+      {
+        "text": "Both unanswered. Reply in chat. Answers do not approve spending or execution.",
+        "start_seconds": 58,
+        "duration_seconds": 12,
+        "position": "bottom",
+        "font_size": 36,
+        "color": "#ffffff"
+      }
+    ]
+  },
+  "chapters": [
+    {
+      "id": "problem",
+      "kind": "problem",
+      "title": "Review the proposed endpoint",
+      "start_seconds": 0,
+      "duration_seconds": 8,
+      "narration_duration_seconds": 8,
+      "narration": "Review the proposed review-decisions endpoint. This is an implementation plan. Two choices remain open.",
+      "source": "Illustrative plan, problem statement"
+    },
+    {
+      "id": "step-1",
+      "kind": "step",
+      "title": "Preserve the source plan",
+      "start_seconds": 8,
+      "duration_seconds": 10,
+      "narration_duration_seconds": 10,
+      "narration": "Keep the supplied plan unchanged. Assign persistent IDs to its open questions and record the source version.",
+      "source": "Illustrative plan, step 1"
+    },
+    {
+      "id": "step-2",
+      "kind": "step",
+      "title": "Record human replies separately",
+      "start_seconds": 18,
+      "duration_seconds": 8,
+      "narration_duration_seconds": 8,
+      "narration": "Store only human-provided answers in a separate versioned decisions file. Answers do not approve spending or implementation.",
+      "source": "Illustrative plan, step 2"
+    },
+    {
+      "id": "decision-storage",
+      "kind": "decision",
+      "title": "Choose storage",
+      "start_seconds": 26,
+      "duration_seconds": 16,
+      "narration_duration_seconds": 8,
+      "narration": "Question one. Where should review decisions be stored? Pause the player and answer Q1 in chat.",
+      "source": "Illustrative plan, open storage decision"
+    },
+    {
+      "id": "decision-retention",
+      "kind": "decision",
+      "title": "Choose retention",
+      "start_seconds": 42,
+      "duration_seconds": 16,
+      "narration_duration_seconds": 8,
+      "narration": "Question two. How long should review decisions be retained? Pause the player and answer Q2 in chat.",
+      "source": "Illustrative plan, open retention decision"
+    },
+    {
+      "id": "summary",
+      "kind": "summary",
+      "title": "Open questions",
+      "start_seconds": 58,
+      "duration_seconds": 12,
+      "narration_duration_seconds": 12,
+      "narration": "Both questions remain open. Answer Q1 and Q2 in chat. The source plan stays unchanged, and your answers approve neither spending nor executing the plan.",
+      "source": "Illustrative plan, open decisions"
+    }
+  ],
+  "open_questions": [
+    {
+      "id": "Q1",
+      "chapter_id": "decision-storage",
+      "question": "Where should review decisions be stored?",
+      "source": "Illustrative plan, open storage decision",
+      "status": "open",
+      "answer": null,
+      "pause_start_seconds": 34,
+      "pause_duration_seconds": 8
+    },
+    {
+      "id": "Q2",
+      "chapter_id": "decision-retention",
+      "question": "How long should review decisions be retained?",
+      "source": "Illustrative plan, open retention decision",
+      "status": "open",
+      "answer": null,
+      "pause_start_seconds": 50,
+      "pause_duration_seconds": 8
+    }
+  ],
+  "returned_summary": "Silent input preview only. No narration or video has been produced. Both questions remain unanswered. Pause the player during the timed silent holds and reply in chat.\n\nQ1. Where should review decisions be stored?\nQ2. How long should review decisions be retained?\n\nAnswers do not approve spending or executing the coding plan. The source plan remains unchanged."
+}

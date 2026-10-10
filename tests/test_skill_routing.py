@@ -140,14 +140,14 @@ class SkillContracts(unittest.TestCase):
                 self.assertTrue(
                     any(name.split("___")[0] in DISPATCH_TARGETS[d] for d in dispatch), name
                 )
-        self.assertEqual(len(names), 30)
+        self.assertEqual(len(names), 31)
         self.assertTrue(
             {
                 "t2v", "i2v", "edit-v2v", "still-then-video", "image-gen", "named-provider",
                 "audio-bed", "motion-graphics", "hyperframes", "continuity-qc", "resolve-handoff",
                 "video-short", "product-images", "storyboard-shots", "audio", "final-assembly",
                 "refinement", "conversational-edit", "act-two", "lipsync", "upscale",
-                "lyrics-video", "product-demo-video", "whiteboard-explainer", "knowledge-explainer", "remotion-ad-variant-matrix", "remotion-aspect-ratio-variants",
+                "lyrics-video", "product-demo-video", "whiteboard-explainer", "knowledge-explainer", "plan-to-video", "remotion-ad-variant-matrix", "remotion-aspect-ratio-variants",
                 "remotion-delivery-render", "remotion-loudness-qc", "remotion-deliverable-qc",
             } <= names
         )
@@ -156,8 +156,8 @@ class SkillContracts(unittest.TestCase):
         )
 
     def test_fixture_preserves_active_workbook_rows_and_explains_pending_dependencies(self):
-        self.assertEqual(len(CASES), 220)
-        self.assertEqual(sum(not c["skip_reason"] for c in CASES), 215)
+        self.assertEqual(len(CASES), 230)
+        self.assertEqual(sum(not c["skip_reason"] for c in CASES), 225)
         self.assertEqual(sum(bool(c["skip_reason"]) for c in CASES), 5)
         self.assertTrue(all(c.get("source_status") != "archived" for c in CASES))
         self.assertTrue(all("[project.confidential=true]" not in c["prompt"] for c in CASES))

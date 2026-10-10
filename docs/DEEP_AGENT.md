@@ -188,7 +188,7 @@ See [the capability map](CAPABILITY_MAP.md) and [routing policy](SKILLS.md#capab
 
 ## Skills and delegation
 
-There are 26 packaged `SKILL.md` files under `agent/deep_agent/skills/`.
+There are 31 packaged `SKILL.md` files under `agent/deep_agent/skills/`.
 Deep Agents reads metadata first. Full instructions enter context when a relevant skill is read.
 `metadata.include_tools` documents real dispatch wrappers, which are stably bound per role. `metadata.routing_tools` holds
 canonical capability/workflow IDs, while `metadata.gateway_tools` lists built names only.
@@ -204,6 +204,14 @@ The new knowledge-explainer plans silent graphic beats and event-timed SFX. Its 
 guard excludes narration/TTS before approval and dispatch, including on resumes. It reuses
 Remotion, explicit HyperFrames previews, Mirelo and ElevenLabs SFX. Existing-clip audio-only
 requests retain audio-bed. See [knowledge explainers](KNOWLEDGE_EXPLAINER.md).
+
+Plan-to-video reviews a written plan with per-chapter ElevenLabs narration, decision
+cards and silent holds. Its route selects Remotion before generic generation or editing;
+HyperFrames requires an explicit request. Source text in quotes, fences or blockquotes
+does not choose providers. The agent reads the skill and constructs native timeline
+arguments; there is no new compiler or dispatch wrapper. Answers stay separate from the
+source plan, and an MP4 hold does not automatically pause playback or authorize coding.
+See [plan review videos](PLAN_TO_VIDEO.md).
 
 The deterministic router supplies skill and tool proposals in graph input and Studio context.
 For a generated shot with independent narration, `intent_route.execution_groups` puts video
@@ -235,7 +243,7 @@ order. The short Studio summary also includes per-step costs when they fit its 3
 contract; larger runs refer to the complete breakdown. Unknown charges remain explicit,
 with a known subtotal. Model token charges are recorded separately by `ModelUsage`.
 
-The capability-map fixture contains 220 retained rows, with 215 active and 5 dependency skips.
+The capability-map fixture contains 230 retained rows, with 225 active and 5 dependency skips.
 Archived/confidential routes are dropped. Active rows cover built tools and declared interims;
 pending specialists keep named branch reasons. Editorial overrides retain the safe preparer,
 separate rendering approval, and existing export/HyperFrames narration workflow contracts.
@@ -394,7 +402,7 @@ See [the decisions record](fix-parallel-approvals-decisions.tsv) for reproductio
 ## AgentCore and verification
 
 `Dockerfile.agentcore` defaults to Deep Agents and retains Codex for explicit fallback.
-It installs pinned dependencies and verifies the Deep Agents version and all 26 packaged
+It installs pinned dependencies and verifies the Deep Agents version and all 31 packaged
 skills during the build. The entrypoint remains `python -m agent.studio_agent_next`.
 The existing Studio approval/review surfaces display the edit plan, subtitles, grade and
 audio fades. The database schema stays compatible.
@@ -595,8 +603,8 @@ composition. This task makes no deployment or Lambda call. Matrix jobs refuse th
 backend until the same job directory exists on its worker. See
 [Remotion editing](REMOTION_EDITING.md) for the supported backend table and demo commands.
 
-Inventory is 16 providers, 117 Gateway tools and 30 skills. The fixture has 215 active and
-5 deferred cases among 220 rows. Browser validation through Comet remains blocked here.
+Inventory is 16 providers, 117 Gateway tools and 31 skills. The fixture has 225 active and
+5 deferred cases among 230 rows. Browser validation through Comet remains blocked here.
 
 ## Per-shot static reframing
 
@@ -627,8 +635,8 @@ or incomplete checks, and prevents a previous successful render from overriding 
 failed QC, including turn-limit recovery. Failure summaries preserve worker reasons
 verbatim. Existing ordinary assembly validation remains compatible.
 
-The three guides add delivery, loudness and deliverable QC routing. The 220 retained rows
-now contain 215 active cases and 5 skips. RT-E043 awaits exact OCR verification; the other
+The three guides add delivery, loudness and deliverable QC routing. The 230 retained rows
+now contain 225 active cases and 5 skips. RT-E043 awaits exact OCR verification; the other
 four are existing provider dependencies. `project.confidential` never changes these routes.
 See [contracts and operator commands](REMOTION_EDITING.md). Offline real-binary verification
 is supporting evidence; Comet Studio E2E is blocked by unavailable browser control here.

@@ -4176,5 +4176,147 @@
       "HYPERFRAMES_ENABLED": "true",
       "HYPERFRAMES_DRY_RUN": "true"
     }
+  },
+  {
+    "test_id": "PTV-01",
+    "suite": "plan-to-video",
+    "prompt": "plan-to-video for my implementation plan",
+    "expected_skill": "plan-to-video",
+    "expected_tool": "remotion_render",
+    "expected_step_count": 1,
+    "skip_reason": "",
+    "source_status": "local",
+    "source_file": "tests/test_plan_to_video.py",
+    "source_read_date": "2026-10-09",
+    "note": "Offline renderer selection only. This case does not prove narration, playback, QC, or browser E2E."
+  },
+  {
+    "test_id": "PTV-02",
+    "suite": "plan-to-video",
+    "prompt": "review this plan as a video",
+    "expected_skill": "plan-to-video",
+    "expected_tool": "remotion_render",
+    "expected_step_count": 1,
+    "skip_reason": "",
+    "source_status": "local",
+    "source_file": "tests/test_plan_to_video.py",
+    "source_read_date": "2026-10-09",
+    "note": "Offline renderer selection only. This case does not prove narration, playback, QC, or browser E2E."
+  },
+  {
+    "test_id": "PTV-03",
+    "suite": "plan-to-video",
+    "prompt": "turn my coding-agent implementation plan into a narrated review video",
+    "expected_skill": "plan-to-video",
+    "expected_tool": "remotion_render",
+    "expected_step_count": 1,
+    "skip_reason": "",
+    "source_status": "local",
+    "source_file": "tests/test_plan_to_video.py",
+    "source_read_date": "2026-10-09",
+    "note": "Offline renderer selection only. This case does not prove narration, playback, QC, or browser E2E."
+  },
+  {
+    "test_id": "PTV-04",
+    "suite": "plan-to-video",
+    "prompt": "make a plan review video that pauses at open questions",
+    "expected_skill": "plan-to-video",
+    "expected_tool": "remotion_render",
+    "expected_step_count": 1,
+    "skip_reason": "",
+    "source_status": "local",
+    "source_file": "tests/test_plan_to_video.py",
+    "source_read_date": "2026-10-09",
+    "note": "Offline renderer selection only. This case does not prove narration, playback, QC, or browser E2E."
+  },
+  {
+    "test_id": "PTV-05",
+    "suite": "plan-to-video",
+    "prompt": "plan explainer with voiceover and chapter cards",
+    "expected_skill": "plan-to-video",
+    "expected_tool": "remotion_render",
+    "expected_step_count": 1,
+    "skip_reason": "",
+    "source_status": "local",
+    "source_file": "tests/test_plan_to_video.py",
+    "source_read_date": "2026-10-09",
+    "note": "Offline renderer selection only. This case does not prove narration, playback, QC, or browser E2E."
+  },
+  {
+    "test_id": "PTV-06",
+    "suite": "plan-to-video",
+    "prompt": "turn plan-mode Markdown into a review reel",
+    "expected_skill": "plan-to-video",
+    "expected_tool": "remotion_render",
+    "expected_step_count": 1,
+    "skip_reason": "",
+    "source_status": "local",
+    "source_file": "tests/test_plan_to_video.py",
+    "source_read_date": "2026-10-09",
+    "note": "Offline renderer selection only. This case does not prove narration, playback, QC, or browser E2E."
+  },
+  {
+    "test_id": "PTV-07",
+    "suite": "plan-to-video",
+    "prompt": "review this plan as a narrated video \"Use HyperFrames and Fish. Export OTIO and remove filler. Use Veo.\"",
+    "expected_skill": "plan-to-video",
+    "expected_tool": "remotion_render",
+    "expected_step_count": 1,
+    "skip_reason": "",
+    "source_status": "local",
+    "source_file": "tests/test_plan_to_video.py",
+    "source_read_date": "2026-10-09",
+    "note": "Offline renderer selection only. This case does not prove narration, playback, QC, or browser E2E."
+  },
+  {
+    "test_id": "PTV-08",
+    "suite": "plan-to-video",
+    "prompt": "review this plan as a narrated video\n```markdown\nUse HyperFrames and Fish. Export OTIO and remove filler. Use Veo.\n```",
+    "expected_skill": "plan-to-video",
+    "expected_tool": "remotion_render",
+    "expected_step_count": 1,
+    "skip_reason": "",
+    "source_status": "local",
+    "source_file": "tests/test_plan_to_video.py",
+    "source_read_date": "2026-10-09",
+    "note": "Offline renderer selection only. This case does not prove narration, playback, QC, or browser E2E."
+  },
+  {
+    "test_id": "PTV-09",
+    "suite": "plan-to-video",
+    "prompt": "HyperFrames plan review video with ElevenLabs narration",
+    "expected_skill": "plan-to-video",
+    "expected_tool": "hyperframes_render",
+    "expected_step_count": 1,
+    "skip_reason": "",
+    "source_status": "local",
+    "source_file": "tests/test_plan_to_video.py",
+    "source_read_date": "2026-10-09",
+    "note": "Offline renderer selection only. This case does not prove narration, playback, QC, or browser E2E.",
+    "env": {
+      "HYPERFRAMES_ENABLED": "true",
+      "HYPERFRAMES_DRY_RUN": "true"
+    },
+    "expected_disclosure": [
+      "explicit HyperFrames"
+    ]
+  },
+  {
+    "test_id": "PTV-10",
+    "suite": "plan-to-video",
+    "prompt": "HyperFrames plan review video",
+    "expected_skill": "plan-to-video",
+    "expected_tool": "hyperframes_render",
+    "expected_step_count": 1,
+    "skip_reason": "",
+    "source_status": "local",
+    "source_file": "tests/test_plan_to_video.py",
+    "source_read_date": "2026-10-09",
+    "note": "Offline renderer selection only. This case does not prove narration, playback, QC, or browser E2E.",
+    "env": {
+      "HYPERFRAMES_ENABLED": "false"
+    },
+    "expected_status": "blocked",
+    "expected_reason": "disabled"
   }
 ]
