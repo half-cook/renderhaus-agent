@@ -310,8 +310,8 @@ def check_beta_inventory() -> None:
     from server.config import DEFAULT_ENV
 
     assert DEFAULT_ENV["BETA_CREDITS_ENABLED"] == "false"
-    assert DEFAULT_ENV["BETA_GLOBAL_CAP_CENTS"] == "0"
-    assert DEFAULT_ENV["BETA_WAVE_SIZE"] == "0"
+    assert DEFAULT_ENV["BETA_GLOBAL_CAP_CENTS"] == "50000"
+    assert DEFAULT_ENV["BETA_WAVE_SIZE"] == "50"
     assert DEFAULT_ENV["BETA_VERIFICATION_DRY_RUN"] == "true"
     assert BetaSettings().enabled is False
     expected = {("/api/beta/status", "GET"), ("/api/beta/claim", "POST"),

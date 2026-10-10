@@ -71,8 +71,8 @@ class BetaSettings:
         return cls(
             enabled=boolean("BETA_CREDITS_ENABLED", False),
             grant_cents=integer("BETA_GRANT_CENTS", 1000),
-            global_cap_cents=integer("BETA_GLOBAL_CAP_CENTS", 0),
-            wave_size=integer("BETA_WAVE_SIZE", 0),
+            global_cap_cents=integer("BETA_GLOBAL_CAP_CENTS", 50000),
+            wave_size=integer("BETA_WAVE_SIZE", 50),
             wave_index=integer("BETA_WAVE_INDEX", 1),
             daily_grant_limit=integer("BETA_DAILY_GRANT_LIMIT", 0),
             verification_dry_run=boolean("BETA_VERIFICATION_DRY_RUN", True),

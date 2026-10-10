@@ -228,7 +228,7 @@ class BetaCreditsTests(BetaFixture, unittest.TestCase):
         with patch.dict("os.environ", {}, clear=True):
             defaults = BetaSettings.from_env()
             self.assertFalse(defaults.enabled)
-            self.assertEqual(defaults.global_cap_cents, 0)
+            self.assertEqual((defaults.grant_cents, defaults.wave_size, defaults.global_cap_cents, defaults.wave_index), (1000, 50, 50000, 1))
 
     def test_stale_mock_verification_cannot_claim_after_switching_to_live(self):
         self.verify()

@@ -2,7 +2,8 @@
 
 The beta programme grants one verified account $10 by default. It uses the existing
 Studio wallet and never sends email or SMS in this implementation. Fresh deployments
-grant nothing. Both the feature flag and admission limits must be opened by an operator.
+grant nothing until an operator sets `BETA_CREDITS_ENABLED=true`. Wave 1 is preconfigured as
+50 accounts at $10 each (cap $500); every figure is configurable.
 
 ## Configuration
 
@@ -15,8 +16,8 @@ Boolean settings accept `true`, `false`, `1`, and `0`.
 | --- | --- | --- |
 | `BETA_CREDITS_ENABLED` | `false` | Allows verification, claims, waitlist admission, and wave advancement. A disabled programme cannot grant credit, including on a retry. |
 | `BETA_GRANT_CENTS` | `1000` | Positive integer USD cents per new grant. Existing grants keep their original amount. |
-| `BETA_GLOBAL_CAP_CENTS` | `0` | Lifetime commitment ceiling. Zero closes grants. Allocations remain committed after spending or refunds. |
-| `BETA_WAVE_SIZE` | `0` | Maximum accounts admitted per wave. Zero closes the wave. |
+| `BETA_GLOBAL_CAP_CENTS` | `50000` | Lifetime commitment ceiling ($500 = wave 1: 50 accounts x $10). Zero closes grants. Raise it before opening later waves. Allocations remain committed after spending or refunds. |
+| `BETA_WAVE_SIZE` | `50` | Maximum accounts admitted per wave (wave 1 = 50 people). Zero closes the wave. |
 | `BETA_WAVE_INDEX` | `1` | Initial wave for a new database. Once created, the database owns the current wave. Changing this variable cannot reset admission counts. |
 | `BETA_DAILY_GRANT_LIMIT` | `0` | Maximum new grants per UTC day. Zero disables this additional limit. |
 | `BETA_VERIFICATION_DRY_RUN` | `true` | Selects deterministic mocked verification. False refuses verification and new grants unless a real provider has been registered. |
