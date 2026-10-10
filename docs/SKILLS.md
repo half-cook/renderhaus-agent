@@ -13,7 +13,7 @@ refusals return `blocked`, retired requests return `retired`, and unknown intent
 
 ## Packaged skills
 
-The backend packages 36 skills. Some explain pending capabilities; installing their
+The backend packages 37 skills. Some explain pending capabilities; installing their
 instructions does not install a provider adapter. The original execution skills remain
 available. `image-gen` and `named-provider` cover the new still-image policy and explicit
 requests for providers retained outside automatic selection. The archived `vidu-q4` skill
@@ -35,6 +35,7 @@ exact Gateway names, native arguments, and operational constraints.
 | [art-style-motion](../agent/deep_agent/skills/art-style-motion/SKILL.md) | `call_editor_tool`<br>`call_media_tool`<br>`call_audio_tool` | `remotion_render`<br>`hyperframes_render`<br>`gpt_image25_t2i`<br>`eleven_v4_turbo`<br>`elevenlabs_sfx_v2` |
 | [audio](../agent/deep_agent/skills/audio/SKILL.md) | `call_audio_tool` | `eleven_v4_turbo`<br>`voices_ivc_create`<br>`mureka_v95`<br>`mirelo_v2a`<br>`elevenlabs_sfx_v2` |
 | [audio-bed](../agent/deep_agent/skills/audio-bed/SKILL.md) | `call_audio_tool`<br>`call_media_tool` | `eleven_v4_turbo`<br>`voices_ivc_create`<br>`heygen_voice_clone` (gated)<br>`heygen_voice_tts` (gated)<br>`mureka_v95`<br>`mirelo_v2a`<br>`elevenlabs_sfx_v2` |
+| [chat-story-video](../agent/deep_agent/skills/chat-story-video/SKILL.md) | `call_editor_tool` | `remotion_render`<br>`ffmpeg_tool`<br>`ad_variant_matrix`<br>`delivery_render`<br>`deliverable_qc` |
 | [cinematic-product-promo](../agent/deep_agent/skills/cinematic-product-promo/SKILL.md) | `call_editor_tool`<br>`call_audio_tool` | `shot_recipe_search`<br>`remotion_render`<br>`cutaway_record` (pending)<br>`eleven_v4_turbo`<br>`mureka_v95`<br>`ffmpeg_tool`<br>`delivery_render`<br>`deliverable_qc`<br>`motion_carry_probe` |
 | [continuity-qc](../agent/deep_agent/skills/continuity-qc/SKILL.md) | `call_media_tool` | `local_qc`<br>`gemini_vlm_judge` |
 | [conversational-edit](../agent/deep_agent/skills/conversational-edit/SKILL.md) | `call_editor_tool`<br>`call_audio_tool` | `remotion_render`<br>`hyperframes_render` |
@@ -215,8 +216,8 @@ Topaz submissions always pause with cost, including autonomous runs. Dry-run pre
 and queued jobs never satisfy final delivery. See [Topaz](TOPAZ.md) for pricing, licence
 sources, unknown-price blockers and the blocked Comet check.
 
-`tests/fixtures/skill_routing.json` contains 271 retained routing rows.
-There are 265 active cases and 6 explicit skips. Five caption/collage cases cover the
+`tests/fixtures/skill_routing.json` contains 279 retained routing rows.
+There are 273 active cases and 6 explicit skips. Five caption/collage cases cover the
 new templates' renderer selection. Seven performance-transfer cases now use built tools. Three Mureka lyrics-video cases
 now use built tools; music routes use Mureka without an ElevenLabs interim. Five Topaz upscale/interpolation cases
 now use built tools. Seedance reference dialogue and two
@@ -672,8 +673,8 @@ refusals and delivery/loudness/QC chains. RT-E043 remains skipped: exact OCR ver
 is not implemented (`feat/remotion-ocr-verification`). The original four dependency skips
 remain. Routing checks establish selection and refusal; provider tests establish file checks.
 
-Current inventory is 18 providers, 134 Gateway tools, 36 packaged skills and 271 fixture
-rows, with 265 active and 6 skipped. See [Remotion editing](REMOTION_EDITING.md) for
+Current inventory is 18 providers, 134 Gateway tools, 37 packaged skills and 279 fixture
+rows, with 273 active and 6 skipped. See [Remotion editing](REMOTION_EDITING.md) for
 licensing, the real local pipeline and incomplete browser/deployed validation.
 
 ## Static aspect variants
@@ -736,8 +737,8 @@ Exact beat/element metadata takes priority over scene/audio detection. Failed
 reports gate completion and offer a Remotion re-render, with HyperFrames only
 when explicitly requested. Dry-run/skipped checks stay incomplete; generative
 continuity remains `continuity-qc` / `local_qc`. Thresholds are PROVISIONAL.
-Inventory is 18 providers, 134 Gateway tools, 36 skills and 265 active routing
-rows out of 271. The six dependency skips remain, including capture/HyperFrames
+Inventory is 18 providers, 134 Gateway tools, 37 skills and 273 active routing
+rows out of 279. The six dependency skips remain, including capture/HyperFrames
 provider dependencies and exact OCR semantics. RT-163 and RT-164 exercise motion
 carry, and RT-165 protects generative continuity. See [motion carry QC](MOTION_CARRY_QC.md)
 for the independent clean-room implementation, calibration script and licences.
@@ -765,7 +766,7 @@ RT-174 and RT-175 are active. RT-176 preserves the pending `cutaway_record` depe
 and remains skipped like the other capture cases. Its negative skill/tool guard runs as
 an active unit check. Four additional fixture negatives protect titles, explicit alternate
 rendering, knowledge explainers and ad variants. Inventory is 18 providers, 134 Gateway
-tools, 36 skills, 271 retained fixture rows, 265 active and 6 skipped. See
+tools, 37 skills, 279 retained fixture rows, 273 active and 6 skipped. See
 [cinematic product promo](CINEMATIC_PRODUCT_PROMO.md) for provenance, licences and limits.
 
 ## Footage memory
@@ -785,5 +786,34 @@ is preserved as `source_sheet_tool`. RT-178 watches once. RT-179 uses the existi
 `conversational-edit` / `transcript_edit` / `Remotion___prepare_conversational_edit` route in
 place of parked `resolve-tighten-dialogue` / `resolve_run_script`. Five added rows cover
 folders, repeated questions, reuse, transcript cleanup and continuity. Inventory is 18
-providers, 134 Gateway tools, 36 skills, 271 rows: 265 active and the same six dependency skips.
+providers, 134 Gateway tools, 37 skills, 279 rows: 273 active and the same six dependency skips.
 Comet E2E remains blocked here; dry-run outputs are previews, not completed selects.
+
+## Fictional conversation shorts
+
+[Chat story video](../agent/deep_agent/skills/chat-story-video/SKILL.md) turns a bounded
+messages array or CSV into a deterministic conversation composition through the existing
+`remotion_render` alias. Text stays verbatim. Received messages have typing beats, bubbles
+align by sender, reactions follow their bubbles and scrolling protects the bottom safe zone.
+The local worker supports the composition. Lambda chat rendering refuses until deployed
+and verified. The configured backend declaration retains the Remotion capability parity guard.
+
+Only the generic theme is enabled. Neutral lookalike presets need an explicit user request,
+`CHAT_STORY_LOOKALIKE_THEMES=on` and legal sign-off before enabling them. Disabled requests
+render generic with a disclosure. Outputs use invented contact labels and generated initials
+or placeholder avatars. Real-looking phone numbers and photo avatars are refused.
+Possible brand or public-figure impersonation is flagged for fictional script review.
+
+Script batches reuse `ad_variant_matrix` with `brief.mode="chat_story"`. Both first and
+batch renders retain the existing host approval and cost gates, even in autonomous mode.
+The returned `plan_hash` binds approval to the input. One invalid row does not stop the
+other scripts. First-render stills and playback need visual review before batch approval.
+Each output passes loudness and final-file deliverable QC before a delivery claim.
+A checksum manifest records the results. See `docs/CHAT_STORY_VIDEO.md` for the contract.
+
+RT-180 and RT-181 are active. Six new fixture negatives protect real footage edits,
+per-market ad swaps, lower thirds, unrelated conversation mentions, still images and quoted
+copy. Discovery and dispatch reject generative video for the thread. The inventory is
+18 providers, 134 Gateway tools, 37 skills and 279 routing rows, with 273 active and the
+same six dependency skips. Comet visual validation and live Lambda chat rendering remain
+unverified in this environment. The source pattern has MIT attribution in the skill's NOTICE.

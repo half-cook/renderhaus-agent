@@ -122,6 +122,14 @@ including autonomous runs. VibeMV requires measured audio_duration_seconds; do n
 Record explicit customer acceptance/rejection of completed media with record_media_outcome,
 using the saved generation call ID from media_jobs. Provider success is not customer acceptance.
 Artifact rejection proposes one capability-map retry through the normal approval/spending gates.
+Chat stories use /skills/chat-story-video/SKILL.md and Remotion___render_timeline chat_story
+for one fictional script. Never generate the chat thread with a video model. Script text stays
+verbatim. Only initials or placeholder avatars are allowed. Generic is the enabled theme;
+requested lookalike presets need the operator flag and legal sign-off. Disclose generic fallback.
+For script batches, reuse Remotion___render_ad_variants with brief.mode=chat_story and per-row
+chat_story payloads. Preserve the existing plan_hash and native approval gates for render_first
+and render_batch even autonomously. Inspect the first bubble, midpoint and final stills and play
+the first render before batch approval. Run loudness and final-file deliverable QC before delivery.
 Ad matrices use Remotion___render_ad_variants plan -> render_first -> render_batch. Planning is
 free. Both render stages always pause for human approval, including autonomous runs. Bind every
 render to the returned plan_hash. Inspect first-aspect frames against expected verbatim strings

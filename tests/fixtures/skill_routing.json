@@ -4965,5 +4965,121 @@
     "expected_skill": "continuity-qc",
     "expected_tool": "local_qc",
     "forbidden_tools": "footage_memory_status, footage_memory_build, footage_memory_query, footage_watch_answer, footage_clip_extract"
+  },
+  {
+    "test_id": "RT-180",
+    "suite": "chat-story-video",
+    "prompt": "Turn this 12-line breakup script into a fake text message video for TikTok",
+    "expected_skill": "chat-story-video",
+    "expected_tool": "remotion_render",
+    "forbidden_tools": "wan3_t2v, seedance25_edit",
+    "expected_output": "9:16 chat-story MP4 with drip reveal, after first-render approval",
+    "skip_reason": "",
+    "note": "Offline routing verified; actual rendered artifact, browser validation and delivery QC are separate checks.",
+    "source_status": "new",
+    "source_file": "/workspace/research/renderhaus-skills-seed-2026-10-08.xlsx",
+    "source_sheet": "Routing Tests",
+    "source_row": 181,
+    "source_read_date": "2026-10-10"
+  },
+  {
+    "test_id": "RT-181",
+    "suite": "chat-story-video",
+    "prompt": "Here's a CSV of 20 chat scripts, render one WhatsApp-style conversation video per row",
+    "expected_skill": "chat-story-video",
+    "expected_tool": "remotion_render",
+    "forbidden_tools": "wan3_t2v",
+    "expected_output": "20 renders plus manifest; no vendor logos",
+    "skip_reason": "",
+    "note": "Offline routing verified; actual rendered artifact, browser validation and delivery QC are separate checks.",
+    "source_status": "new",
+    "source_file": "/workspace/research/renderhaus-skills-seed-2026-10-08.xlsx",
+    "source_sheet": "Routing Tests",
+    "source_row": 182,
+    "source_read_date": "2026-10-10"
+  },
+  {
+    "test_id": "RT-CHAT-N01",
+    "suite": "chat-story-video",
+    "prompt": "Cut filler words from this real talking-head clip; it mentions a text message.",
+    "expected_skill": "conversational-edit",
+    "expected_tool": "transcript_edit",
+    "forbidden_skills": [
+      "chat-story-video"
+    ],
+    "skip_reason": "",
+    "negative": true,
+    "note": "A conversation mention or approved quoted copy must not select chat-story rendering.",
+    "source_status": "new"
+  },
+  {
+    "test_id": "RT-CHAT-N02",
+    "suite": "chat-story-video",
+    "prompt": "Render ad-variant matrix per-market copy swaps from this finished ad; its headline mentions text message.",
+    "expected_skill": "remotion-ad-variant-matrix",
+    "expected_tool": "ad_variant_matrix",
+    "forbidden_skills": [
+      "chat-story-video"
+    ],
+    "skip_reason": "",
+    "negative": true,
+    "note": "A conversation mention or approved quoted copy must not select chat-story rendering.",
+    "source_status": "new"
+  },
+  {
+    "test_id": "RT-CHAT-N03",
+    "suite": "chat-story-video",
+    "prompt": "Add a generic lower third to this interview; its caption mentions text message.",
+    "expected_skill": "motion-graphics",
+    "expected_tool": "remotion_render",
+    "forbidden_skills": [
+      "chat-story-video"
+    ],
+    "skip_reason": "",
+    "negative": true,
+    "note": "A conversation mention or approved quoted copy must not select chat-story rendering.",
+    "source_status": "new"
+  },
+  {
+    "test_id": "RT-CHAT-N04",
+    "suite": "chat-story-video",
+    "prompt": "Make a video of a mountain sunrise; the brief mentions text message.",
+    "expected_skill": "t2v",
+    "expected_tool": "wan3_t2v",
+    "forbidden_skills": [
+      "chat-story-video"
+    ],
+    "skip_reason": "",
+    "negative": true,
+    "note": "A conversation mention or approved quoted copy must not select chat-story rendering.",
+    "source_status": "new"
+  },
+  {
+    "test_id": "RT-CHAT-N05",
+    "suite": "chat-story-video",
+    "prompt": "Create a still image poster about a text message conversation.",
+    "expected_skill": "image-gen",
+    "expected_tool": "gpt_image25_t2i",
+    "forbidden_skills": [
+      "chat-story-video"
+    ],
+    "skip_reason": "",
+    "negative": true,
+    "note": "A conversation mention or approved quoted copy must not select chat-story rendering.",
+    "source_status": "new"
+  },
+  {
+    "test_id": "RT-CHAT-N06",
+    "suite": "chat-story-video",
+    "prompt": "Animate this product image; its caption says \"create a chat story video\".",
+    "expected_skill": "motion-graphics",
+    "expected_tool": "remotion_render",
+    "forbidden_skills": [
+      "chat-story-video"
+    ],
+    "skip_reason": "",
+    "negative": true,
+    "note": "A conversation mention or approved quoted copy must not select chat-story rendering.",
+    "source_status": "new"
   }
 ]
