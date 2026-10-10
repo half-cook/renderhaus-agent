@@ -668,3 +668,23 @@
 @media (max-width:1250px) { .rh-project-main { padding:30px 32px 64px; } }
 @media (max-width:850px) { .rh-project-head { align-items:start; flex-direction:column; } .rh-tour { grid-template-columns:1fr; } .rh-project-cols { grid-template-columns:1fr; } .rh-project-details { border-left:0; border-top:1px solid var(--rh-line); padding:24px 0 0; } }
 @media (max-width:600px) { .rh-storyboard { grid-template-columns:1fr; } .rh-tour-steps { flex-direction:column; gap:12px; } .rh-welcome { flex-wrap:wrap; } }
+
+.rh-export-sheet { position:fixed; top:0; bottom:0; right:0; z-index:var(--z-menu); width:min(560px,100vw); background:var(--rh-card); color:var(--rh-fg); border-left:1px solid var(--rh-line-strong); display:flex; flex-direction:column; outline:none; font-family:var(--font-sans); }
+.rh-export-sheet > header { position:relative; padding:40px 32px 28px; border-bottom:1px solid var(--rh-line); }
+.rh-export-sheet h2 { font-size:40px; margin:10px 0 14px; }
+.rh-export-sheet [data-slot="dialog-description"] { font-size:13px; line-height:1.6; color:var(--rh-fg-2); }
+.rh-export-sheet .rh-export-close { position:absolute; right:20px; top:16px; }
+.rh-export-body { flex:1; overflow-y:auto; padding:32px; }
+.rh-export-details { margin:0 0 32px; font-size:13px; }
+.rh-export-details > div { display:flex; align-items:baseline; justify-content:space-between; gap:16px; border-bottom:1px solid var(--rh-line); padding:16px 0; }
+.rh-export-details dt { color:var(--rh-fg-3); }
+.rh-export-details dd { margin:0; text-align:right; }
+.rh-export-sheet .rh-ledger { margin:0 0 28px; }
+.rh-export-sheet .rh-notice { border-color:var(--rh-line-strong); padding:20px; background:var(--rh-surface); }
+.rh-export-sheet .rh-notice p { font-size:13px; line-height:1.6; }
+.rh-export-sheet > footer { padding:24px 32px; border-top:1px solid var(--rh-line); }
+.rh-export-sheet > footer .rh-btn { width:100%; }
+.rh-export-sheet > footer p { line-height:1.6; margin:12px 0 0; }
+.rh-export-done { padding:0 0 24px; }
+.rh-export-done > svg { color:var(--rh-ok); margin-bottom:20px; }
+.rh-export-done p { font-size:13px; line-height:1.6; }

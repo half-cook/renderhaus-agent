@@ -4,6 +4,7 @@ import { SignOutButton } from "@clerk/nextjs";
 import { ChevronDown, Ellipsis, Film, LayoutGrid, PanelBottom, Redo2, Share2, Sparkles, Undo2 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import { ExportSheet } from "@/components/rh/ExportSheet";
 import { Avatar } from "@/components/rh/AppNav";
 import { fetchAccount } from "@/lib/api";
 import { useClerkConfigured } from "@/components/StudioAuth";
@@ -61,13 +62,10 @@ export function CanvasHeader({ navigationBusy, onBusyChange }: {
   const createProject = useCanvasStore((state) => state.createProject);
   const undo = useCanvasStore((state) => state.undo);
   const redo = useCanvasStore((state) => state.redo);
-  const persist = useCanvasStore((state) => state.persist);
   const duplicateSelected = useCanvasStore((state) => state.duplicateSelected);
   const deleteSelected = useCanvasStore((state) => state.deleteSelected);
   const arrangeSequence = useCanvasStore((state) => state.arrangeSequence);
   const [menu, setMenu] = useState<"project" | "status" | "share" | "more" | null>(null);
-  const [exported, setExported] = useState(false);
-  const fileRef = useRef<HTMLAnchorElement>(null);
   const headerRef = useRef<HTMLElement>(null);
   const navigating = useRef(false);
   const queued =
@@ -102,24 +100,6 @@ export function CanvasHeader({ navigationBusy, onBusyChange }: {
     return () => window.removeEventListener("pointerdown", onPointerDown);
   }, [menu]);
 
-  const exportGraph = () => {
-    persist();
-    const blob = new Blob(
-      [JSON.stringify({ projectName, nodes, edges: useCanvasStore.getState().edges }, null, 2)],
-      { type: "application/json" },
-    );
-    const url = URL.createObjectURL(blob);
-    const link = fileRef.current;
-    if (!link) {
-      return;
-    }
-    link.href = url;
-    link.download = `${projectName.replaceAll(" ", "-").toLowerCase() || "renderhaus"}.json`;
-    link.click();
-    URL.revokeObjectURL(url);
-    setExported(true);
-    window.setTimeout(() => setExported(false), 2000);
-  };
 
   return (
     <header className="chrome-header rh-canvas-header" ref={headerRef}>
@@ -252,9 +232,7 @@ export function CanvasHeader({ navigationBusy, onBusyChange }: {
             </div>
           ) : null}
         </div>
-        <button className="text-btn" type="button" aria-live="polite" onClick={exportGraph}>
-          {exported ? "Exported" : "Export"}
-        </button>
+        <ExportSheet />
         <div className="header-menu-wrap">
           <button
             className="icon-btn"
@@ -311,7 +289,6 @@ export function CanvasHeader({ navigationBusy, onBusyChange }: {
           </SignOutButton>
         ) : <Avatar name={accountName} />}
       </div>
-      <a ref={fileRef} hidden />
     </header>
   );
 }

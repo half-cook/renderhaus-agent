@@ -145,3 +145,9 @@ SCREENS.push(
   { id: "m12-signup-success", url: `/project/${MUG}?welcome=1`, ready: "[data-shot='project-ready'] .rh-welcome", fixtures: projectFixtures },
   { id: "m13-agent-run-light", url: agentUrl, ready: "[data-shot='approval-ready']", fixtures: mug({ "/api/studio/agent": midRun, ...account(974, 26) }), theme: "light" },
 );
+
+const exportFixtures = mug({ [`/api/studio/projects/${MUG}/export`]: { state: "disconnected", format: "project_json", resolution: null, size_bytes: null }, ...account(974, 26) });
+SCREENS.push(
+  { id: "m18-export", url: `/canvas?project=${MUG}&workspace=canvas`, ready: ".react-flow__node", fixtures: exportFixtures, prepare: async (p) => { await p.getByRole("button", { name: "Export", exact: true }).click(); await p.locator("[data-shot='export-ready']").waitFor(); } },
+  { id: "m18-export-done", url: `/canvas?project=${MUG}&workspace=canvas`, ready: ".react-flow__node", fixtures: exportFixtures, prepare: async (p) => { await p.getByRole("button", { name: "Export", exact: true }).click(); await p.getByRole("button", { name: "Prepare project JSON" }).click(); await p.locator("[data-shot='export-done-ready']").waitFor(); } },
+);

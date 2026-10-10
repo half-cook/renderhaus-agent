@@ -320,3 +320,16 @@ tool-call `label` becomes the work label, `provider` is `null`, `summary`, run `
 ### Not done / decisions
 
 See `docs/orchestration-billing-decisions.tsv`.
+
+### Studio export metadata
+
+`GET /api/studio/projects/{project_id}/export` checks project ownership and currently returns
+`{"state":"disconnected","format":"project_json","resolution":null,"size_bytes":null}`.
+Rendering is not connected. The Studio can download the current editable canvas as JSON without
+starting paid work. It does not describe that download as a rendered film.
+
+The UI adapter accepts optional future `configure` metadata with `format`, `resolution`,
+`size_bytes` and an `estimate` containing integer `estimate_cents`, `cap_cents` and `lines`.
+It displays a render ledger only when both totals are present. A `done` response needs a
+same-origin `download_path`. These future shapes are adapter fixtures; no render submission
+endpoint or paid export approval is implemented.

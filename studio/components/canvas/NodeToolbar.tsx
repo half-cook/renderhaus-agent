@@ -23,7 +23,7 @@ export function NodeToolbar({ id, data }: Props) {
   const canStoryboard = Boolean(data.output) && (data.kind === "image" || data.kind === "video");
 
   return (
-    <FlowToolbar isVisible position={Position.Top} align="end" offset={8} className="node-toolbar">
+    <FlowToolbar isVisible position={Position.Top} align="end" offset={40} className="node-toolbar">
       <button type="button" aria-label="Edit" title="Edit" onClick={() => setInspectorOpen(true)}>
         <Pencil size={14} />
       </button>
