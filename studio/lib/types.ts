@@ -46,6 +46,11 @@ export type SubscriptionState = {
 export type StudioAccount = {
   balance_cents: number;
   recent_ledger: CreditLedgerEntry[];
+  beta_credit?: {
+    granted_cents: number;
+    remaining_cents: number;
+    spent_cents: number;
+  } | null;
   // Nullable/optional: deploy-skew safety against an older backend that
   // doesn't send this field yet.
   subscription?: SubscriptionState | null;

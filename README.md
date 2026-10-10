@@ -31,6 +31,9 @@ The default backend, skills, persistence, approvals, and verification are docume
 [docs/DEEP_AGENT.md](docs/DEEP_AGENT.md). The selectable Codex fallback is documented in
 [docs/CODEX_HARNESS.md](docs/CODEX_HARNESS.md).
 
+Closed-beta free grants, verification mocks, admission caps, and wave operations are documented
+in [docs/BETA_CREDITS.md](docs/BETA_CREDITS.md). New deployments keep grants disabled.
+
 ## Long-video program
 
 The evidence-backed product, architecture, continuity, evaluation, and six-sprint delivery package
@@ -44,6 +47,11 @@ through Remotion. The matrix plans first, pauses for sample-render approval, the
 explicit sample review before a batch. Free ffmpeg inspection uses fixed operations in the
 local job directory. [Remotion editing](docs/REMOTION_EDITING.md) documents the real local
 demo, backend limits, licence allowance and pending delivery/loudness certification.
+Static centre/safe-zone crops and blurred-pad fallback produce `9:16`, `1:1`, `4:5`,
+`16:9` and `2.39:1` candidates with per-aspect contact sheets. Optional planner-supplied
+boxes choose crop centres; no detector runs. Use `scripts/run_ad_demo.py --mode reframe`
+for a flat master. Current inventory is 16 providers, 115 Gateway tools, 26 skills and
+218 routing rows (182 active, 36 deferred).
 
 ## Development workflow
 

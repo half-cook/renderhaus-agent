@@ -6,6 +6,7 @@ https://ffmpeg.org/ffmpeg-filters.html, read 2026-10-09.
 from __future__ import annotations
 
 from collections.abc import Callable
+from copy import deepcopy
 from dataclasses import dataclass, field
 import difflib
 import json
@@ -26,6 +27,8 @@ THREADS = 2
 class Command:
     argv: list[str]
     outputs: list[Path] = field(default_factory=list)
+    metrics: dict[str, Any] = field(default_factory=dict)
+    stderr_bytes: int = 8192
 
 
 @dataclass(frozen=True)
@@ -38,6 +41,7 @@ class OpSpec:
     timeout_s: int = 30
     description: str = ""
     validate: Callable[[dict[str, Any]], None] | None = None
+    compute: Callable[[dict[str, Any]], dict[str, Any]] | None = None
 
 
 def number(default, minimum, maximum, *, integer=False):
@@ -61,7 +65,7 @@ def _probe(directory, source, params):
     return [Command(["ffprobe", "-hide_banner", "-v", "error", "-threads", str(THREADS),
                      "-protocol_whitelist", "file,pipe", "-format_whitelist", FORMATS,
                      "-show_entries", "stream=index,codec_name,codec_type,width,height,pix_fmt,"
-                     "r_frame_rate,avg_frame_rate,duration,bit_rate,channels,sample_rate:"
+                     "r_frame_rate,avg_frame_rate,duration,bit_rate,channels,sample_rate,sample_aspect_ratio:"
                      "stream_tags=rotate:stream_side_data=rotation:"
                      "format=duration,size,bit_rate,format_name", "-of", "json", _input(directory, source)])]
 
@@ -156,7 +160,176 @@ def _sheet_geometry(params):
         raise ValueError("Contact sheets must fit within 4096 by 4096 pixels.")
 
 
+def _geometry_preview(params):
+    from providers.ffmpeg.reframe import crop_plan
+
+    return crop_plan(params["source_width"], params["source_height"], params["aspect"],
+                     subject_box=params["subject_box"], crop_box=params["crop_box"],
+                     anchor=params["anchor"], safe_zone=params["safe_zone"],
+                     rotation=params["rotation"], allow_upscale=params["allow_upscale"])
+
+
+def _geometry_params(params):
+    from providers.ffmpeg.reframe import display_size, validated_box, validated_safe_zone
+
+    width, height = display_size(params.get("source_width", 16384), params.get("source_height", 16384),
+                                 params.get("rotation", 0))
+    for name in ("subject_box", "crop_box"):
+        if params.get(name) is not None:
+            validated_box(params[name], width, height, crop=name == "crop_box")
+    if params.get("safe_zone") is not None:
+        validated_safe_zone(params["safe_zone"])
+
+
+def _source_metrics(directory, source):
+    from providers.ffmpeg.api import execute
+    from providers.remotion.api import _media_dimensions
+
+    result = execute("probe", directory, _input(directory, source)[2:])
+    if not result["ok"]:
+        raise ValueError(result.get("error", "Source probe failed."))
+    metrics = result["metrics"]
+    video = next((s for s in metrics["streams"] if s.get("codec_type") == "video"), None)
+    size = _media_dimensions(video or {})
+    if size is None:
+        raise ValueError("A readable video with valid display dimensions is required.")
+    duration = float(metrics.get("format", {}).get("duration", video.get("duration", 0)))
+    if not math.isfinite(duration) or not 0 < duration <= 600:
+        raise ValueError("Reframing and scene detection require video of at most 600 seconds.")
+    return metrics, video, size, duration
+
+
+def _reframe(directory, source, params, *, pad=False):
+    from fractions import Fraction
+
+    from providers.ffmpeg.reframe import crop_plan
+
+    metadata, video, size, duration = _source_metrics(directory, source)
+    if video.get("sample_aspect_ratio") not in {None, "1:1", "0:1"}:
+        raise ValueError("Reframing requires square source pixels (SAR 1:1); "
+                         "normalize anamorphic media before crop/pad.")
+    try:
+        fps = float(Fraction(video.get("avg_frame_rate")))
+    except (ValueError, TypeError, ZeroDivisionError, OverflowError):
+        raise ValueError("Reframing requires a valid measured frame rate.") from None
+    if not math.isfinite(fps) or fps <= 0:
+        raise ValueError("Reframing requires a positive measured frame rate.")
+    aspect = params["size"] if pad else params["aspect"]
+    box = dict(x=0, y=0, width=size[0], height=size[1]) if pad else params["subject_box"]
+    plan = crop_plan(*size, aspect, subject_box=box,
+                     crop_box=None if pad else params["crop_box"],
+                     anchor="center" if pad else params["anchor"],
+                     safe_zone=params["safe_zone"], allow_upscale=params["allow_upscale"])
+    if pad:
+        plan.update(mode="pad_blur", crop_box=None)
+    if video.get("avg_frame_rate") != video.get("r_frame_rate"):
+        plan["warnings"].append("Frame-rate metadata suggests VFR; timestamps are preserved. "
+                                "Use an explicit CFR timeline rate for delivery if required.")
+    plan.update(source_duration=duration, source_fps=video.get("avg_frame_rate"),
+                source_audio=any(s.get("codec_type") == "audio" for s in metadata["streams"]))
+    output = output_file(directory, "reframe", ".mp4")
+    width, height = plan["width"], plan["height"]
+    argv = _ffmpeg_input(directory, source)
+    if plan["mode"] == "crop":
+        box = plan["crop_box"]
+        vf = (f"crop={box['width']}:{box['height']}:{box['x']}:{box['y']},"
+              f"scale={width}:{height}:flags=lanczos,setsar=1")
+        argv += ["-vf", vf, "-map", "0:v:0"]
+    else:
+        box = plan["foreground_box"]
+        graph = (f"[0:v:0]split[bg][fg];[bg]scale={width}:{height}:force_original_aspect_ratio=increase:"
+                 f"flags=lanczos,crop={width}:{height},gblur=sigma=20[blur];"
+                 f"[fg]scale={box['width']}:{box['height']}:flags=lanczos[front];"
+                 f"[blur][front]overlay={box['x']}:{box['y']}:shortest=1,setsar=1[out]")
+        argv += ["-filter_complex", graph, "-map", "[out]"]
+    bitrate = video.get("bit_rate") or metadata.get("format", {}).get("bit_rate")
+    quality = ["-crf", "18"]
+    if bitrate is not None:
+        measured = int(bitrate)
+        if not 0 < measured <= 200_000_000:
+            raise ValueError("Source bitrate is outside the supported rendering range.")
+        target_bitrate = math.ceil(measured * max(1, width * height / (size[0] * size[1])) * 1.25)
+        quality = ["-b:v", str(target_bitrate), "-maxrate", str(target_bitrate * 2),
+                   "-bufsize", str(target_bitrate * 4)]
+    argv += ["-map", "0:a?", "-c:v", "libx264", "-preset", "veryfast", "-threads", str(THREADS),
+             "-pix_fmt", "yuv420p", *quality, "-c:a", "copy", "-fps_mode", "passthrough",
+             "-map_metadata", "-1", "-metadata:s:v:0", "rotate=0", "-movflags", "+faststart",
+             "-t", f"{duration:g}", "-fs", str(MAX_OUTPUT_BYTES), "./" + output.name]
+    return [Command(argv, [output], plan)]
+
+
+def _reframe_crop(directory, source, params):
+    return _reframe(directory, source, params)
+
+
+def _reframe_pad(directory, source, params):
+    return _reframe(directory, source, params, pad=True)
+
+
+def _scenes(directory, source, params):
+    _, _, _, duration = _source_metrics(directory, source)
+    graph = f"select=gt(scene\\,{params['T']:g}),showinfo"
+    argv = _ffmpeg_input(directory, source)
+    argv += ["-t", f"{duration:g}", "-map", "0:v:0", "-an", "-vf", graph,
+             "-fps_mode", "vfr", "-threads", str(THREADS), "-f", "null", "-"]
+    return [Command(argv, metrics={"source_duration": duration}, stderr_bytes=65536)]
+
+
+def _scene_metrics(results):
+    from providers.ffmpeg.reframe import MAX_SHOTS
+
+    result = results[0]
+    if result.stderr_truncated:
+        raise ValueError("Scene detection exceeded its bounded log capture; no complete shot list is available.")
+    log = result.stderr.decode("utf-8", errors="replace")
+    times = [float(value) for value in re.findall(
+        r"^\[Parsed_showinfo_\d+ @ 0x[0-9a-fA-F]+\]\s+n:\s*\d+\s+pts:\s*-?\d+\s+"
+        r"pts_time:([0-9.eE+-]+)(?:\s|$)", log, re.MULTILINE)]
+    if len(times) >= MAX_SHOTS:
+        raise ValueError("Scene detection found more than 60 shots; split the source into shorter masters.")
+    return {"scene_times": times}
+
+
+_BOX_PARAMS = {
+    "type": ["object", "null"], "default": None,
+    "properties": {key: number(0, 0 if key in {"x", "y"} else 1, 16384)
+                   for key in ("x", "y", "width", "height")},
+    "required": ["x", "y", "width", "height"], "additionalProperties": False,
+    "description": "Optional box in displayed source pixels. x/y nonnegative, dimensions positive, within source. "
+                   "crop_box requires even integers; subject_box is only a crop-centre hint, never detection.",
+}
+_SAFE_PARAMS = {
+    "type": ["object", "null"], "default": None,
+    "properties": {key: number(0, 0, .49) for key in ("top", "bottom", "side")},
+    "additionalProperties": False, "description": "Safe-zone fraction overrides top,bottom,side; "
+    "leave at least 5% inner width/height. Null uses configured aspect placeholders.",
+}
+_ASPECT_PARAM = {"type": "string", "enum": ["9:16", "1:1", "4:5", "16:9", "2.39:1"], "default": "9:16",
+                 "description": "Target aspect enum. Nominal sizes come from the shared aspect table."}
+_REFRAME_PARAMS = {
+    "aspect": _ASPECT_PARAM, "subject_box": _BOX_PARAMS, "crop_box": _BOX_PARAMS,
+    "safe_zone": _SAFE_PARAMS,
+    "anchor": {"type": "string", "enum": ["center", "top", "bottom", "left", "right"], "default": "center",
+               "description": "Static centre or edge anchor. A supplied subject box takes precedence."},
+    "allow_upscale": {"type": "boolean", "default": False,
+                      "description": "Allow crop/foreground resampling to table size; disclosed as no added detail."},
+}
+
+
 OPS = {
+    "crop_plan_preview": OpSpec({
+        **_REFRAME_PARAMS, "source_width": number(1920, 2, 16384, integer=True),
+        "source_height": number(1080, 2, 16384, integer=True), "rotation": number(0, -360, 360),
+    }, compute=_geometry_preview, validate=_geometry_params,
+       description="Compute crop/pad geometry without reading media or running a binary."),
+    "reframe_crop": OpSpec(_REFRAME_PARAMS, _reframe_crop, binary="ffmpeg", timeout_s=120,
+                           validate=_geometry_params, description="Render a static crop or safe blurred-pad fallback."),
+    "reframe_pad_blur": OpSpec({"size": _ASPECT_PARAM, "safe_zone": _SAFE_PARAMS,
+                                "allow_upscale": _REFRAME_PARAMS["allow_upscale"]},
+                               _reframe_pad, binary="ffmpeg", timeout_s=120, validate=_geometry_params,
+                               description="Fit the whole frame over a blurred copy in an aspect canvas."),
+    "detect_scenes": OpSpec({"T": number(.3, .1, .6)}, _scenes, _scene_metrics,
+                           binary="ffmpeg", timeout_s=120, description="Detect bounded shot cuts with scene threshold T."),
     "probe": OpSpec({}, _probe, _probe_metrics, binary="ffprobe", description="Read streams and format JSON."),
     "extract_frames": OpSpec({
         "times": {"type": "array", "items": number(0, 0, 600), "minItems": 1, "maxItems": 20,
@@ -178,6 +351,18 @@ OPS = {
 
 def _validate_value(field: str, value: Any, schema: dict[str, Any]) -> None:
     kind = schema["type"]
+    if isinstance(kind, list):
+        if value is None and "null" in kind:
+            return
+        kind = next(k for k in kind if k != "null")
+    if kind == "object":
+        if not isinstance(value, dict) or set(value) - schema["properties"].keys():
+            raise ValueError(f"params.{field} requires only the documented object fields.")
+        if set(schema.get("required", [])) - value.keys():
+            raise ValueError(f"params.{field} is missing required box fields.")
+        for key, item in value.items():
+            _validate_value(f"{field}.{key}", item, schema["properties"][key])
+        return
     if kind in {"integer", "number"}:
         if (isinstance(value, bool) or not isinstance(value, (int, float))
                 or (kind == "integer" and not isinstance(value, int))
@@ -231,13 +416,13 @@ def tool_schema() -> dict:
     parameters = {}
     for op, spec in OPS.items():
         for name, schema in spec.params.items():
-            common = parameters.setdefault(name, {"type": schema["type"], "description": ""})
+            if name not in parameters:
+                parameters[name] = {**deepcopy(schema), "description": ""}
+            common = parameters[name]
             common["description"] += f"{op}: {schema.get('description', 'See the operation contract.')} "
-            if "items" in schema:
-                common["items"] = {"type": schema["items"]["type"]}
     return {
         "name": "ffmpeg_tool",
-        "description": "Free local/worker media inspection. Fixed operations only; no commands, filtergraphs, "
+        "description": "Free local/worker media inspection and fixed reframing. Fixed operations only; no commands, filtergraphs, "
                        "URLs or network access. Always execute on the machine containing job_id. "
                        "Missing binaries fail softly; Lambda hosts without ffmpeg cannot run binary ops.",
         "inputSchema": {

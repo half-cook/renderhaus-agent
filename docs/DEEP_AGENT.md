@@ -583,7 +583,7 @@ compute/licence estimate. The trusted executor records approval; the agent canno
 an approval by passing fields in the tool arguments.
 
 Media inspection is free. It runs on the machine owning the confined local job directory,
-with fixed ffmpeg/ffprobe executables and a six-op registry. No arbitrary scripts, paths or
+with fixed ffmpeg/ffprobe executables and a ten-op registry. No arbitrary scripts, paths or
 arguments enter subprocess commands. Resolve-only requests return a parked refusal before
 generic generation or NLE-handoff matching. Existing interchange export remains available
 for supported requests. The stored confidential field does not change these routes.
@@ -595,5 +595,19 @@ composition. This task makes no deployment or Lambda call. Matrix jobs refuse th
 backend until the same job directory exists on its worker. See
 [Remotion editing](REMOTION_EDITING.md) for the supported backend table and demo commands.
 
-Inventory is 16 providers, 115 Gateway tools and 26 skills. The fixture has 175 active and
-45 deferred cases among 220 rows. Browser validation through Comet remains blocked here.
+Inventory is 16 providers, 115 Gateway tools and 27 skills. The fixture has 184 active and
+36 deferred cases among 220 rows. Browser validation through Comet remains blocked here.
+
+## Per-shot static reframing
+
+The manager reads the [aspect skill](../agent/deep_agent/skills/remotion-aspect-ratio-variants/SKILL.md)
+for approved flat-master or existing Remotion-timeline aspect changes. The same matrix tool
+accepts `brief.reframe_only=true` and minimal rows. `crop_plan_preview` is pure geometry;
+`detect_scenes` supplies bounded cut times, and fixed crop/pad operations preserve real
+file provenance. Per-shot timeline windows are static, validated in display coordinates
+and switch to whole-frame blurred padding if a supplied box cannot fit its safe zone.
+No detector runs. Local crop/pad timeline fields share their canonical contract with the
+Lambda validator, which explicitly refuses them before any AWS call. Existing deployed
+Lambda timelines remain unchanged. Render results are editorial candidates with contact
+sheets and pending review, not certified delivery output. Paid outpainting still selects
+`edit-v2v` and pauses with the existing cost estimate. No model defaults or spend caps change.

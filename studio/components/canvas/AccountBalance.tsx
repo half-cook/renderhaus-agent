@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { BetaCredits } from "@/components/BetaCredits";
+import { emptyWalletMessage } from "@/lib/beta-credits";
 import {
   createCheckoutSession,
   createSubscriptionCheckout,
@@ -9,7 +11,7 @@ import {
   fetchTopUpPacks,
   openBillingPortalRedirect,
 } from "@/lib/api";
-import type { SubscriptionPlan, SubscriptionState, TopUpPack } from "@/lib/types";
+import type { StudioAccount, SubscriptionPlan, TopUpPack } from "@/lib/types";
 import styles from "./AccountBalance.module.css";
 
 function formatUsd(cents: number): string {
@@ -17,8 +19,8 @@ function formatUsd(cents: number): string {
 }
 
 export function AccountBalance({ refreshKey }: { refreshKey?: number | string }) {
-  const [balanceCents, setBalanceCents] = useState<number | null>(null);
-  const [subscription, setSubscription] = useState<SubscriptionState | null>(null);
+  const [account, setAccount] = useState<StudioAccount | null>(null);
+  const subscription = account?.subscription ?? null;
   const [open, setOpen] = useState(false);
   const [packs, setPacks] = useState<TopUpPack[] | null>(null);
   const [packsError, setPacksError] = useState(false);
@@ -33,13 +35,12 @@ export function AccountBalance({ refreshKey }: { refreshKey?: number | string })
     void fetchAccount()
       .then((account) => {
         if (cancelled) return;
-        setBalanceCents(account.balance_cents);
-        setSubscription(account.subscription ?? null);
+        setAccount(account);
       })
       .catch(() => {
         // Clerk off, or the request failed -- no balance to show rather
         // than a broken chip.
-        if (!cancelled) setBalanceCents(null);
+        if (!cancelled) setAccount(null);
       });
     return () => {
       cancelled = true;
@@ -84,7 +85,7 @@ export function AccountBalance({ refreshKey }: { refreshKey?: number | string })
     return () => window.removeEventListener("pointerdown", onPointerDown);
   }, [open]);
 
-  if (balanceCents === null) {
+  if (account === null) {
     return null;
   }
 
@@ -128,10 +129,12 @@ export function AccountBalance({ refreshKey }: { refreshKey?: number | string })
         aria-expanded={open}
         onClick={() => setOpen((value) => !value)}
       >
-        {formatUsd(balanceCents)}
+        {formatUsd(account.balance_cents)}
       </button>
       {open ? (
         <div className={`popover ${styles["balance-popover"]}`} role="menu" aria-label="Billing">
+          {emptyWalletMessage(account) ? <p className="inspector-note">{emptyWalletMessage(account)}</p> : null}
+          <BetaCredits account={account} compact />
           {subscription ? (
             <>
               <p className={styles["section-label"]}>Plan</p>
