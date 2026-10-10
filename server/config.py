@@ -57,6 +57,9 @@ DEFAULT_ENV = {
 def load_local_env() -> None:
     """Load bootstrap .env, then AWS Secrets Manager, then defaults."""
     load_dotenv(ENV_FILE, override=False)
+    from server.local_profile import apply_local_profile, capture_local_profile
+
+    local_profile = capture_local_profile(os.environ)
     if secrets_locator():
         load_secrets_from_manager(override=True)
     from agent.backend_config import DEFAULT_DEEP_AGENT_MODEL
@@ -66,6 +69,8 @@ def load_local_env() -> None:
     for key, value in DEFAULT_ENV.items():
         if key not in os.environ or (not key.startswith("BETA_") and not os.getenv(key)):
             os.environ[key] = value
+    if local_profile is not None:
+        apply_local_profile(local_profile)
 
 
 def agentcore_gateway_url() -> str:

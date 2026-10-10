@@ -81,6 +81,8 @@ def dynamodb_table_name() -> str:
 
 @lru_cache(maxsize=1)
 def _session() -> boto3.session.Session:
+    if os.getenv("RENDERHAUS_LOCAL_PROFILE") == "local":
+        raise RuntimeError("Legacy cloud assets are unavailable in the local profile. Use Studio assets.")
     return boto3.session.Session(
         aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID") or None,
         aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY") or None,
@@ -208,6 +210,8 @@ def init_assets_db() -> None:
     """Initialize DynamoDB table and verify/create the S3 bucket."""
     _session.cache_clear()
     CACHE_DIR.mkdir(parents=True, exist_ok=True)
+    if os.getenv("RENDERHAUS_LOCAL_PROFILE") == "local":
+        return
     if not s3_bucket():
         raise RuntimeError(
             "AWS_S3_BUCKET is not set. Add your bucket name to .env.local before starting the app."
