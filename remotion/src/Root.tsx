@@ -1,6 +1,8 @@
 import {AbsoluteFill, Audio, cancelRender, Composition, continueRender, delayRender, Img, OffthreadVideo, Sequence, staticFile, useCurrentFrame, useVideoConfig} from 'remotion';
 import {useEffect, useState} from 'react';
 import type {CSSProperties} from 'react';
+import {TemplateBackdrop} from './Templates';
+import type {TemplatePlan} from './Templates';
 
 type Asset = {id: string; kind: 'image' | 'video' | 'audio'; url: string};
 type Box = {x: number; y: number; width: number; height: number};
@@ -25,6 +27,7 @@ type Track = {id: string; kind: string; items: Item[]};
 export type Props = {
   document: {id: string; name: string; assets: Asset[]; tracks: Track[]};
   renderConfig?: {fps?: number; width?: number; height?: number; durationInFrames?: number};
+  template?: TemplatePlan;
 } & Record<string, unknown>;
 const clamp = (value: number) => Math.max(0, Math.min(1, value));
 const gradeFilters = {
@@ -112,9 +115,11 @@ function Layer({item, asset, frames}: {item: Item; asset?: Asset; frames: number
   </AbsoluteFill>;
 }
 
-function Timeline({document}: Props) {
+function Timeline({document, template}: Props) {
   const {fps, durationInFrames} = useVideoConfig();
-  return <AbsoluteFill style={{background: 'black'}}>{document.tracks.flatMap((track) => track.items.map((item) => {
+  return <AbsoluteFill style={{background: 'black'}}>
+    {template ? <TemplateBackdrop plan={template}/> : null}
+    {document.tracks.flatMap((track) => track.items.map((item) => {
     const from = Math.round(item.start * fps);
     const frames = Math.min(durationInFrames - from, Math.max(1, Math.round((item.start + item.duration) * fps) - from));
     if (frames <= 0) return null;
@@ -124,9 +129,9 @@ function Timeline({document}: Props) {
   }))}</AbsoluteFill>;
 }
 
-const metadata = ({document, renderConfig}: Props) => {
+const metadata = ({document, renderConfig, template}: Props) => {
   const fps = renderConfig?.fps ?? 30;
-  const end = Math.max(0, ...document.tracks.filter((track) => ['video', 'overlay'].includes(track.kind)).flatMap((track) => track.items.map((item) => item.start + item.duration)));
+  const end = Math.max(template?.duration_seconds ?? 0, ...document.tracks.filter((track) => ['video', 'overlay'].includes(track.kind)).flatMap((track) => track.items.map((item) => item.start + item.duration)));
   if (!Number.isFinite(end) || end <= 0) throw new Error('A render needs a non-empty visual sequence.');
   return {fps, width: renderConfig?.width ?? 1920, height: renderConfig?.height ?? 1080,
     durationInFrames: Math.max(1, Math.ceil(end * fps - 1e-9))};
