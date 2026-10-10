@@ -76,3 +76,9 @@ class FinishingRoutingTests(unittest.TestCase):
                 self.assertEqual(route_intent(prompt).alias, alias)
         route = route_intent("Do not burn subtitles into the video; just export timed cues as SRT")
         self.assertEqual(route.required.get("op"), "export_srt")
+        for prompt, op in (
+            ("Do not burn subtitles into the video, but clean up the noisy dialogue", "audio_cleanup"),
+            ("Do not burn subtitles into the video, just export timed cues as SRT", "export_srt"),
+        ):
+            with self.subTest(prompt=prompt):
+                self.assertEqual(route_intent(prompt).required.get("op"), op)

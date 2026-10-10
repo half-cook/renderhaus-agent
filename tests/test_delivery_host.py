@@ -395,10 +395,13 @@ class DeliveryCompletionTests(unittest.TestCase):
             with self.subTest(prior=prior, match=match):
                 old = self.report("old")
                 current = self.report("current")
+                current["files"].extend(self.report("current-second")["files"])
+                Path(current["report_path"]).write_text(json.dumps(current))
+                self.assertTrue(validate_delivery_report(current))
                 delivery = tool_event(DELIVERY, old, event_id="delivery")
                 self.request.prior_tool_events = [delivery.public()] if prior else []
                 self.request.prompt = "color_match_lut on the local master"
-                outputs = [{"output_path": row["output_path"], "sha256": row["sha256"]}
+                outputs = [{"path": row["output_path"], "sha256": row["sha256"]}
                            for row in current["files"]]
                 finishing = tool_event("Ffmpeg___ffmpeg_tool", {"status": "succeeded", "outputs": outputs},
                                        event_id="finishing", arguments={"op": "color_match_lut"})

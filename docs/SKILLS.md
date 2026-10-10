@@ -213,8 +213,8 @@ Topaz submissions always pause with cost, including autonomous runs. Dry-run pre
 and queued jobs never satisfy final delivery. See [Topaz](TOPAZ.md) for pricing, licence
 sources, unknown-price blockers and the blocked Comet check.
 
-`tests/fixtures/skill_routing.json` contains 248 retained routing rows.
-There are 243 active cases and 5 explicit skips. Five caption/collage cases cover the
+`tests/fixtures/skill_routing.json` contains 256 retained routing rows.
+There are 251 active cases and 5 explicit skips. Five caption/collage cases cover the
 new templates' renderer selection. Seven performance-transfer cases now use built tools. Three Mureka lyrics-video cases
 now use built tools; music routes use Mureka without an ElevenLabs interim. Five Topaz upscale/interpolation cases
 now use built tools. Seedance reference dialogue and two
@@ -668,8 +668,8 @@ refusals and delivery/loudness/QC chains. RT-E043 remains skipped: exact OCR ver
 is not implemented (`feat/remotion-ocr-verification`). The original four dependency skips
 remain. Routing checks establish selection and refusal; provider tests establish file checks.
 
-Current inventory is 16 providers, 128 Gateway tools, 34 packaged skills and 251 fixture
-rows, with 246 active and 5 skipped. See [Remotion editing](REMOTION_EDITING.md) for
+Current inventory is 16 providers, 128 Gateway tools, 34 packaged skills and 256 fixture
+rows, with 251 active and 5 skipped. See [Remotion editing](REMOTION_EDITING.md) for
 licensing, the real local pipeline and incomplete browser/deployed validation.
 
 ## Static aspect variants
@@ -701,6 +701,17 @@ have technical reports but still require named delivery finishing and editorial 
 Lambda and upload requests are explicitly refused for these local jobs. No model routing,
 paid-video approvals, approval exemptions or autonomous spend caps change.
 
+## Free local finishing
+
+The existing delivery and loudness skills cover `burn_subtitles`, `export_srt`,
+`color_match_lut`, `audio_cleanup` and `make_proxy` through `Ffmpeg___ffmpeg_tool`.
+No skill directory or Gateway tool is added. The capability map's `local_finishing`
+default is `ffmpeg_tool`, with no model tiers or price selection. Cleanup precedes
+loudness measurement; proxies and subtitle renders still need final-file QC for delivery.
+RT-E050 changes from a LUT refusal to a positive route, and RT-F001 through RT-F005
+add active operation routes. The five unrelated dependency skips remain unchanged.
+See [parameters, licence sources and validation limits](providers/ffmpeg-finishing.md).
+
 ## Named Pixelcut and PixVerse video
 
 The existing `named-provider` skill exposes `Fal___pixelcut_looping_video` and
@@ -721,8 +732,8 @@ Exact beat/element metadata takes priority over scene/audio detection. Failed
 reports gate completion and offer a Remotion re-render, with HyperFrames only
 when explicitly requested. Dry-run/skipped checks stay incomplete; generative
 continuity remains `continuity-qc` / `local_qc`. Thresholds are PROVISIONAL.
-Inventory is 16 providers, 123 Gateway tools, 32 skills and 240 active routing
-rows out of 245. The five existing skips remain, including capture/HyperFrames
+Inventory is 16 providers, 128 Gateway tools, 34 skills and 251 active routing
+rows out of 256. The five existing skips remain, including capture/HyperFrames
 provider dependencies and exact OCR semantics. RT-163 and RT-164 exercise motion
 carry, and RT-165 protects generative continuity. See [motion carry QC](MOTION_CARRY_QC.md)
 for the independent clean-room implementation, calibration script and licences.

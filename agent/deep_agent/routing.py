@@ -95,7 +95,7 @@ _MODELSTUDIO_PREVIEW_WARNING = (
     "Alibaba preview terms permit internal testing, research and evaluation only until GA. "
     "Live customer use is blocked by the preview licence."
 )
-_FINISHING_CAPABILITIES = {"delivery_render", "loudness_qc", "deliverable_qc", "motion_carry_qc"}
+_FINISHING_CAPABILITIES = {"delivery_render", "loudness_qc", "deliverable_qc", "motion_carry_qc", "local_finishing"}
 
 
 @dataclass(frozen=True)
@@ -266,11 +266,22 @@ def _video_capability(prompt: str, constraints: dict) -> tuple[str, str]:
     return "t2v", "t2v"
 
 
+def _finishing_instruction(prompt: str) -> str:
+    actions = (r"(?:burn(?:[ -]in)?|export|write|save|apply|use|match|clean\s*up|denoise|remove|make|create|"
+               r"burn_subtitles|export_srt|color_match_lut|audio_cleanup|make_proxy)")
+    return re.sub(
+        rf"\b(?:do not|don't|never|avoid)\s+{actions}\b[^;.!?\n]*?"
+        rf"(?=,\s*(?:(?:but|instead|just|then)\s+)?{actions}\b|\s+(?:but|instead)\b|[;.!?\n]|$)",
+        "", _instruction_text(prompt), flags=re.I,
+    )
+
+
 def _delivery_route(prompt: str, constraints: dict, *, region: str | None,
                     available_tools: set[str] | None, arguments: dict | None) -> Route | None:
     if _knowledge_explainer_request(prompt) or constraints["predicates"]["art_style_motion"]:
         return None
-    if any(rule.get("capability") in _FINISHING_CAPABILITIES and re.search(rule["pattern"], prompt, re.I)
+    if any(rule.get("capability") in _FINISHING_CAPABILITIES and re.search(
+               rule["pattern"], _finishing_instruction(prompt) if rule.get("op") else prompt, re.I)
            for rule in POLICY["rules"]):
         return None
     if any(rule.get("capability") == "ad_variant_matrix" and re.search(rule["pattern"], prompt, re.I)
@@ -531,6 +542,8 @@ def route_intent(prompt: str, *, region: str | None = None, tier: str | None = N
             continue
         if rule.get("capability") == "tts":
             rule_prompt = _narration_text(prompt)
+        elif rule.get("op"):
+            rule_prompt = _finishing_instruction(prompt)
         elif rule.get("capability") in {"still_image", "image_edit"} or rule["skill"] == "knowledge-explainer":
             rule_prompt = _instruction_text(prompt)
         else:
@@ -574,6 +587,8 @@ def route_intent(prompt: str, *, region: str | None = None, tier: str | None = N
                                     region=region, retry=retry, **scoped)
             if capability == "delivery_render":
                 route = replace(route, required={"preset": _delivery_preset(prompt, arguments)})
+            if rule.get("op"):
+                route = replace(route, required={**route.required, "op": rule["op"]})
             if capability not in _FINISHING_CAPABILITIES | {"performance_transfer"} and (route.provider in {"kling", "runway", "luma", "seedream", "fish_audio", "alibaba_modelstudio"} or (
                 constraints["provider"] == "fal" and re.search(r"vidu|vace", prompt, re.I)
             ) or constraints["named_model"] == "wan3" and capability in {"v2v_edit", "extend"}):

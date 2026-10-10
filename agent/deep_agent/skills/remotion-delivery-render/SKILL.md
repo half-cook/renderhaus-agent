@@ -41,6 +41,40 @@ dialogue-gated loudness. Use an explicit customer spec for additional constraint
 ProRes, DNx, H.265, 8K and caller-selected codecs are unsupported. Explain the unsupported
 request before dispatch; do not substitute a codec, silently downscale, or change backends.
 
+## Apply local finishing before delivery
+
+Use `Ffmpeg___ffmpeg_tool` for these changes to staged job files. Discover its schema
+and pass `op`, `job_id`, `input_path` and the documented `params`. These operations are
+free and have no spending approval. Keep `FFMPEG_DRY_RUN` unchanged.
+
+| Operation | Parameters | Result |
+|---|---|---|
+| `burn_subtitles` | `subtitle_path`; optional `subtitle_batch`, `font_id`, `font_size`, `colour`, `outline`, `margin` | Burn an existing SRT or restricted ASS into the video |
+| `export_srt` | `cues` with `{start,end,text}` in seconds; optional `export_batch` | Write numbered UTF-8 cues with millisecond timestamps |
+| `color_match_lut` | Optional `lut_path`, `intensity`, `grade_preset`, `brightness`, `contrast`, `saturation` | Apply a supplied `.cube` and a named bounded grade |
+| `make_proxy` | `height` 480 or 540, `crf` 18 to 35, `proxy_preset` | Write an H.264 review preview with faststart, hash and probe evidence |
+
+Subtitle and SRT batches contain at most four additional items, for five files per call.
+Styles are shared across a subtitle batch. Fonts come from the fixed DejaVu system catalog;
+font paths, embedded fonts and ASS override commands are unavailable. Text cues must be
+ordered, non-overlapping and inside 0 to 600 seconds. `export_srt` requires a safe
+`input_path` label but does not read that file or require a binary. It does not transcribe.
+
+No LUT is bundled. Stage a rights-cleared `.cube` in the job, then use intensity 0 to 1.
+The grade presets are `none`, `warm`, `cool` and `contrast`. Applying a supplied LUT does
+not compute a match from reference footage. Review skin tones and actual frames yourself.
+
+Proxy presets are `fast`, `veryfast` and `ultrafast`. Proxies preserve source cadence,
+avoid upscaling and remain review artifacts. Existing named delivery proxy requests still
+use `delivery_render`. Neither proxy success nor subtitle burning certifies editorial
+content or final delivery QC. Follow the saved-file delivery workflow after finishing.
+Use [audio cleanup](../remotion-loudness-qc/SKILL.md) before measuring or normalising audio.
+
+All inputs and sidecars stay in the job directory. Invalid parameters fail explicitly.
+A failed batch returns no successful outputs. Missing fonts, filters or binaries are
+failures. The worker must own the files; a Lambda host without these dependencies cannot
+perform binary operations. Never switch backends, use a pasted command or call Resolve.
+
 ## Finish the saved file
 
 The Gateway tool accepts `job_id`, `input_path`, `manifest_path`, `preset`, `spec`,

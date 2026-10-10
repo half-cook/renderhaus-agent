@@ -173,6 +173,43 @@ thread caps and output-size caps. No network is available. FFprobe 7.1.5 lacks `
 its stdin is `DEVNULL`. Installed FFmpeg/FFprobe are required for binary ops; missing binaries
 return a clear structured failure. No binary is added to the Lambda zip.
 
+## Local finishing operations
+
+The existing `Ffmpeg___ffmpeg_tool` also accepts `burn_subtitles`, `export_srt`,
+`color_match_lut`, `audio_cleanup` and `make_proxy`. These free operations run on the
+worker owning the job directory. They retain fixed argv builders, parameter validation,
+dry-run defaults and the existing timeout, thread and byte caps. No provider or Gateway
+tool is added. See the [finishing parameter reference](providers/ffmpeg-finishing.md).
+
+`burn_subtitles` takes a job-local SRT or restricted ASS and bounded font size, colour,
+outline and margin. Fonts come from the fixed DejaVu system catalog. `export_srt` writes
+validated `{start,end,text}` cues as numbered UTF-8 SRT with millisecond timestamps.
+Each operation accepts at most four additional batch items, for five files in one call.
+Output names are generated; existing files are never overwritten. A failed batch removes
+its partial outputs. Export uses a safe input label without requiring that file or a binary.
+
+`color_match_lut` applies a supplied `.cube` using `lut3d` and intensity 0 to 1 through a
+fixed blend. Named `warm`, `cool` and `contrast` grades use `colorbalance` and `eq` with
+bounded controls. No licensed LUT is bundled. Tests generate their own LUTs. Applying a
+supplied look does not infer a colour match from reference footage or certify skin tones.
+
+`audio_cleanup` uses highpass, bounded FFT denoise, named EQ and an optional compressor.
+Run cleanup before loudness measurement. Measure its output, then use those pass-one
+values with `loudnorm_mux_aac`; measurements from the original file are stale. Listen
+to the cleaned file before accepting the mix. Cleanup is available on video with audio
+and audio-only media. It does not perform neural voice isolation or normalize loudness.
+
+`make_proxy` creates an H.264 preview bounded to 480 or 540 pixels high, with bounded CRF and a fast preset,
+faststart, a source-derived name, SHA-256 and actual probe evidence. It never upscales.
+Native cadence and dimensions are checked on the output. A review proxy is incomplete
+delivery evidence; the existing final-file QC and editorial review rules still apply.
+
+FFmpeg filter and licence contracts were re-read from the official
+[filter reference](https://ffmpeg.org/ffmpeg-filters.html),
+[legal page](https://ffmpeg.org/legal.html) and
+[DejaVu licence](https://dejavu-fonts.github.io/License.html) on 2026-10-10.
+Local billing remains $0; no paid API, price, model licence or training permission is added.
+
 ## Backend contract
 
 | Capability | Local worker | Lambda |
@@ -184,7 +221,8 @@ return a clear structured failure. No binary is added to the Lambda zip.
 | Delivery finishing and deliverable QC | Real local files and binaries | Explicit refusal before media IO or AWS request |
 | Fixed ffmpeg binary ops | Installed binaries and job directory required | Refused without binaries; no binary bundled |
 | Pure crop preview | Supported without binary/input file | Requires only a validated job directory and request |
-| Video grade, motion and rotation effects | Unsupported message | Existing composition capabilities |
+| Fixed post-render LUT and grade operations | Installed FFmpeg and confined job-local files required | Refused without the local files and binary |
+| Arbitrary composition grade, motion and rotation effects | Unsupported message | Existing composition capabilities |
 
 `REMOTION_OVERLAY_CONTRACT_VERSION` defaults to 1. Version 2 declares a separately deployed
 compatible font/box composition; it does not enable the new crop/pad fields. No deployment
@@ -304,11 +342,13 @@ guards, preset data, backend refusal and adversarial sandbox parameters. Tests c
 paid provider, Lambda or external media service. No model adapter or provider price was
 added. The source model/capability map remains quality first.
 
-Inventory is 16 providers, 117 Gateway tools, 30 packaged skills, and 220 retained routing
-rows: 215 active and 5 skipped. Of RT-E001..RT-E079, 78 are active. RT-E043 remains skipped
+Inventory is 16 providers, 128 Gateway tools, 34 packaged skills, and 256 retained routing
+rows: 251 active and 5 skipped. Of RT-E001..RT-E079, 78 are active. RT-E043 remains skipped
 for exact OCR verification (`feat/remotion-ocr-verification`); four original dependency
-rows remain skipped. LUT/multicam/ProRes candidates are active honest refusals, and all
-Resolve-only rows are active negatives. Routing tests do not certify generated media.
+rows remain skipped. RT-E050 now routes supplied LUTs to `color_match_lut`. Five RT-F
+rows cover subtitles, SRT export, LUT application, audio cleanup and preview proxies.
+Multicam and ProRes candidates remain active honest refusals, and all Resolve-only rows
+are active negatives. Routing tests do not certify generated media.
 
 Comet Studio E2E is **blocked**: no Comet control is available in this environment. Offline
 binary checks cannot replace that browser validation. Deployed Lambda pixel parity and

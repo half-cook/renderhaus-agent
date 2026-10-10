@@ -109,7 +109,7 @@ def check_routing_inventory() -> None:
         assert set(metadata["include_tools"].split()) <= DISPATCH_TARGETS.keys(), path
         assert all(TOOL_MAP[alias]["status"] != "retired" for alias in metadata["routing_tools"].split()), path
     cases = json.loads((ROOT / "tests/fixtures/skill_routing.json").read_text())
-    assert len(cases) == 251 and sum(not case["skip_reason"] for case in cases) == 246
+    assert len(cases) == 256 and sum(not case["skip_reason"] for case in cases) == 251
     from agent.deep_agent.continuity_qc_vlm import EVAL_PATH, default_vlm_enabled
 
     if POLICY["continuity_qc"]["vlm_eval_gate"]["result_sha256"]:
@@ -117,7 +117,7 @@ def check_routing_inventory() -> None:
 
         subprocess.run(["git", "ls-files", "--error-unmatch", str(EVAL_PATH.relative_to(ROOT))], check=True, capture_output=True)
         assert default_vlm_enabled(), "Committed VLM evidence does not qualify for promotion."
-    print("ok routing inventory (16 providers, 128 Gateway tools, 34 skills, 246 active routing rows)")
+    print("ok routing inventory (16 providers, 128 Gateway tools, 34 skills, 251 active routing rows)")
 
 
 def _assert_gateway_shape(schema: object) -> None:
@@ -155,6 +155,15 @@ def check_dry_run_dispatch() -> None:
             arguments = dummy_arguments(schema)
             if spec.id == "ffmpeg":
                 arguments = {"op": "probe", "job_id": "ci-smoke", "input_path": "master.mp4", "params": {}}
+                for op, params in {
+                    "burn_subtitles": {"subtitle_path": "captions.srt"},
+                    "export_srt": {"cues": [{"start": 0, "end": 1, "text": "Offline caption"}]},
+                    "color_match_lut": {"lut_path": "look.cube", "intensity": .5},
+                    "audio_cleanup": {"cleanup_preset": "dialogue"},
+                    "make_proxy": {"height": 480},
+                }.items():
+                    preview = dispatch(spec.id, name, {**arguments, "op": op, "params": params})
+                    assert preview["status"] == "dry_run" and not preview["outputs"], preview
             if spec.id == "remotion" and name == "render_ad_variants":
                 arguments = {
                     "stage": "plan", "job_id": "ci-smoke", "brief": {"campaign": "ci-smoke"},

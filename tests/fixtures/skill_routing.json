@@ -3037,11 +3037,11 @@
     "suite": "remotion-editing",
     "category": "candidate",
     "prompt": "Apply this .cube LUT to the clip.",
-    "expected_skill": "(candidate) remotion-lut-apply",
-    "expected_tool": null,
+    "expected_skill": "remotion-delivery-render",
+    "expected_tool": "ffmpeg_tool",
     "skip_reason": "",
-    "negative": true,
-    "expected_behaviour": "A LUT op is not on the installed allow-list. Refuse the request and keep LUT support deferred to feat/remotion-lut-apply.",
+    "negative": false,
+    "expected_behaviour": "Apply a validated job-local .cube LUT with the fixed color_match_lut operation. Review actual pixels; no automatic reference matching is claimed.",
     "source_expected_skill": "(candidate) remotion-lut-apply",
     "source_must_call_tools": "ffmpeg_tool",
     "source_must_not_call": "any shell / free-form ffmpeg; any resolve_* tool or resolve-* skill; run_script_unsafe",
@@ -3060,14 +3060,13 @@
       "REMOTION_DRY_RUN": "true",
       "FFMPEG_DRY_RUN": "true"
     },
-    "note": "Offline router coverage checks the proposed skill/tool and refusals only. Real file, detection, loudness, QC and approval semantics require their separate runtime tests and browser evidence.",
+    "note": "Fixed local LUT application is built. Source workbook wording is retained below; no licensed LUT is bundled.",
     "expected_routed_skill": "remotion-delivery-render",
-    "expected_routed_alias": null,
-    "expected_status": "blocked",
-    "expected_reason": "LUT",
+    "expected_routed_alias": "ffmpeg_tool",
+    "expected_status": "ready",
     "source_expected_behaviour": "No skill yet; ffmpeg lut3d op would cover it. Until built: say it is a planned op, do not improvise a command.",
     "source_negative": false,
-    "negative_override_reason": "Workbook asks for a positive capability, but the implemented fixed renderer/allow-list cannot satisfy it. This active test asserts the honest unsupported response."
+    "expected_op": "color_match_lut"
   },
   {
     "test_id": "RT-E051",
@@ -4588,5 +4587,115 @@
     "skip_reason": "",
     "source_status": "added",
     "note": "Negative motion-carry route; generative continuity stays local_qc"
+  },
+  {
+    "test_id": "RT-F001",
+    "suite": "ffmpeg-finishing",
+    "prompt": "burn these subtitles into the video",
+    "expected_skill": "remotion-delivery-render",
+    "expected_tool": "ffmpeg_tool",
+    "expected_gateway_tool": "Ffmpeg___ffmpeg_tool",
+    "expected_status": "ready",
+    "expected_op": "burn_subtitles",
+    "skip_reason": "",
+    "negative": false,
+    "forbidden_gateway_prefixes": [
+      "Resolve___",
+      "Resolve_",
+      "Shell___"
+    ],
+    "source_status": "active",
+    "env": {
+      "FFMPEG_DRY_RUN": "true"
+    },
+    "note": "Free fixed operation on staged files. Routing does not certify artifacts or browser playback."
+  },
+  {
+    "test_id": "RT-F002",
+    "suite": "ffmpeg-finishing",
+    "prompt": "export an SRT from these timed cues",
+    "expected_skill": "remotion-delivery-render",
+    "expected_tool": "ffmpeg_tool",
+    "expected_gateway_tool": "Ffmpeg___ffmpeg_tool",
+    "expected_status": "ready",
+    "expected_op": "export_srt",
+    "skip_reason": "",
+    "negative": false,
+    "forbidden_gateway_prefixes": [
+      "Resolve___",
+      "Resolve_",
+      "Shell___"
+    ],
+    "source_status": "active",
+    "env": {
+      "FFMPEG_DRY_RUN": "true"
+    },
+    "note": "Free fixed operation on staged files. Routing does not certify artifacts or browser playback."
+  },
+  {
+    "test_id": "RT-F003",
+    "suite": "ffmpeg-finishing",
+    "prompt": "match the colour of clip B to clip A with this LUT",
+    "expected_skill": "remotion-delivery-render",
+    "expected_tool": "ffmpeg_tool",
+    "expected_gateway_tool": "Ffmpeg___ffmpeg_tool",
+    "expected_status": "ready",
+    "expected_op": "color_match_lut",
+    "skip_reason": "",
+    "negative": false,
+    "forbidden_gateway_prefixes": [
+      "Resolve___",
+      "Resolve_",
+      "Shell___"
+    ],
+    "source_status": "active",
+    "env": {
+      "FFMPEG_DRY_RUN": "true"
+    },
+    "note": "Free fixed operation on staged files. Routing does not certify artifacts or browser playback."
+  },
+  {
+    "test_id": "RT-F004",
+    "suite": "ffmpeg-finishing",
+    "prompt": "clean up the noisy dialogue before loudness QC",
+    "expected_skill": "remotion-loudness-qc",
+    "expected_tool": "ffmpeg_tool",
+    "expected_gateway_tool": "Ffmpeg___ffmpeg_tool",
+    "expected_status": "ready",
+    "expected_op": "audio_cleanup",
+    "skip_reason": "",
+    "negative": false,
+    "forbidden_gateway_prefixes": [
+      "Resolve___",
+      "Resolve_",
+      "Shell___"
+    ],
+    "source_status": "active",
+    "env": {
+      "FFMPEG_DRY_RUN": "true"
+    },
+    "note": "Free fixed operation on staged files. Routing does not certify artifacts or browser playback."
+  },
+  {
+    "test_id": "RT-F005",
+    "suite": "ffmpeg-finishing",
+    "prompt": "make a small preview proxy to review",
+    "expected_skill": "remotion-delivery-render",
+    "expected_tool": "ffmpeg_tool",
+    "expected_gateway_tool": "Ffmpeg___ffmpeg_tool",
+    "expected_status": "ready",
+    "expected_op": "make_proxy",
+    "skip_reason": "",
+    "negative": false,
+    "forbidden_gateway_prefixes": [
+      "Resolve___",
+      "Resolve_",
+      "Shell___"
+    ],
+    "source_status": "active",
+    "env": {
+      "FFMPEG_DRY_RUN": "true"
+    },
+    "note": "Free fixed operation on staged files. Routing does not certify artifacts or browser playback."
   }
 ]
