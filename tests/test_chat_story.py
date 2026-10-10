@@ -28,7 +28,8 @@ class MessageContractTests(unittest.TestCase):
         for change in ({'from': 'other'}, {'text': '  '}, {'text': 'a' * 501}, {'text': 12},
                        {'typingMs': True}, {'typingMs': float('nan')}, {'delayMs': -1},
                        {'typingMs': 10001}, {'delayMs': 30001}, {'status': 'verified'},
-                       {'reaction': '💰'}, {'html': '<b>x</b>'}):
+                       {'reaction': '💰'}, {'status': False}, {'reaction': 0},
+                       {'delayMs': 10**1000}, {'html': '<b>x</b>'}):
             with self.subTest(change=change), self.assertRaises(ValueError):
                 chat.normalize({'messages': [{'from': 'them', 'text': 'Hello', **change}]})
 

@@ -35,7 +35,7 @@ def _number(value: Any, field: str, low: float, high: float, *, csv_value: bool 
             value = float(value)
         except ValueError:
             raise ValueError(f'{field} must be numeric.') from None
-    if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value) or not low <= value <= high:
+    if isinstance(value, bool) or not isinstance(value, (int, float)) or not low <= value <= high or not math.isfinite(value):
         raise ValueError(f'{field} must be a finite number from {low:g} to {high:g}.')
     return value
 
@@ -116,7 +116,7 @@ def normalize(payload: dict) -> dict:
         typing = _number(typing, 'typingMs', 0, 10000, csv_value=csv_value)
         delay = row.get('delayMs')
         delay = _number(600 if delay is None or delay == '' else delay, 'delayMs', 0, 30000, csv_value=csv_value)
-        status, reaction = row.get('status') or '', row.get('reaction') or ''
+        status, reaction = row.get('status', ''), row.get('reaction', '')
         if not isinstance(status, str) or status not in {'', 'sent', 'delivered', 'read'}:
             raise ValueError('status must be empty, sent, delivered or read.')
         if not isinstance(reaction, str) or reaction not in REACTIONS:
