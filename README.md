@@ -24,6 +24,8 @@ generation/agent backend (`server/`, `agent/`, `providers/`).
 The Studio's workspace, canvas, immutable asset-version, provenance, and durable execution model is
 documented in [docs/STUDIO_STATE.md](docs/STUDIO_STATE.md). The end-to-end Studio manager, media
 playback, Remotion, UI, and operations guide is [docs/STUDIO_AGENT.md](docs/STUDIO_AGENT.md).
+The UI foundation and manual design captures are documented in
+[docs/UI_REVAMP_STACK.md](docs/UI_REVAMP_STACK.md).
 
 The default backend, skills, persistence, approvals, and verification are documented in
 [docs/DEEP_AGENT.md](docs/DEEP_AGENT.md). The selectable Codex fallback is documented in
