@@ -235,7 +235,7 @@ order. The short Studio summary also includes per-step costs when they fit its 3
 contract; larger runs refer to the complete breakdown. Unknown charges remain explicit,
 with a known subtotal. Model token charges are recorded separately by `ModelUsage`.
 
-The capability-map fixture contains 220 retained rows, with 215 active and 5 dependency skips.
+The capability-map fixture contains 226 retained rows, with 221 active and 5 dependency skips.
 Archived/confidential routes are dropped. Active rows cover built tools and declared interims;
 pending specialists keep named branch reasons. Editorial overrides retain the safe preparer,
 separate rendering approval, and existing export/HyperFrames narration workflow contracts.
@@ -250,12 +250,15 @@ editor dispatch, approval, and spending gates; live rendering fails closed until
 an isolated worker exists. The [assessment](HYPERFRAMES_ASSESSMENT.md) documents
 the Apache adaptation, dependencies, and remaining verification.
 
-The existing skill also packages MIT caption and collage
+The existing skill also packages MIT caption, collage, and Hyfrme
 [recipes and HTML examples](HYPERFRAMES_TEMPLATE_PACKS.md). Manager and editor
 read their catalog, templates, and references through `/skills/hyperframes/`.
 The existing composition input contract and native approval/resume paths apply.
 Plain style requests use Remotion. Named HyperFrames requests retain the optional
 feature gate. No provider dispatch, secret, or top-level skill is added.
+The [Hyfrme pack](HYPERFRAMES_HYFRME_PACK.md) uses the same catalog shape and
+native filesystem for three more examples. Only the HyperFrames name selects
+the optional renderer. A Hyfrme pack name cannot change routing or approvals.
 
 Fish Audio is not in the current active provider catalog. Its speech tool is usable only when
 Gateway discovers an available Fish Audio target. Skills explicitly report unavailable tools.
@@ -595,8 +598,8 @@ composition. This task makes no deployment or Lambda call. Matrix jobs refuse th
 backend until the same job directory exists on its worker. See
 [Remotion editing](REMOTION_EDITING.md) for the supported backend table and demo commands.
 
-Inventory is 16 providers, 117 Gateway tools and 30 skills. The fixture has 215 active and
-5 deferred cases among 220 rows. Browser validation through Comet remains blocked here.
+Inventory is 16 providers, 117 Gateway tools and 30 skills. The fixture has 221 active and
+5 deferred cases among 226 rows. Browser validation through Comet remains blocked here.
 
 ## Per-shot static reframing
 
@@ -627,8 +630,8 @@ or incomplete checks, and prevents a previous successful render from overriding 
 failed QC, including turn-limit recovery. Failure summaries preserve worker reasons
 verbatim. Existing ordinary assembly validation remains compatible.
 
-The three guides add delivery, loudness and deliverable QC routing. The 220 retained rows
-now contain 215 active cases and 5 skips. RT-E043 awaits exact OCR verification; the other
+The three guides add delivery, loudness and deliverable QC routing. The 226 retained rows
+now contain 221 active cases and 5 skips. RT-E043 awaits exact OCR verification; the other
 four are existing provider dependencies. `project.confidential` never changes these routes.
 See [contracts and operator commands](REMOTION_EDITING.md). Offline real-binary verification
 is supporting evidence; Comet Studio E2E is blocked by unavailable browser control here.

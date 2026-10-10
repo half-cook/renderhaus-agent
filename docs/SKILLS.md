@@ -210,8 +210,8 @@ Topaz submissions always pause with cost, including autonomous runs. Dry-run pre
 and queued jobs never satisfy final delivery. See [Topaz](TOPAZ.md) for pricing, licence
 sources, unknown-price blockers and the blocked Comet check.
 
-`tests/fixtures/skill_routing.json` contains 220 retained routing rows.
-There are 215 active cases and 5 explicit skips. Five caption/collage cases cover the
+`tests/fixtures/skill_routing.json` contains 226 retained routing rows.
+There are 221 active cases and 5 explicit skips. Five caption/collage cases cover the
 new templates' renderer selection. Seven performance-transfer cases now use built tools. Three Mureka lyrics-video cases
 now use built tools; music routes use Mureka without an ElevenLabs interim. Five Topaz upscale/interpolation cases
 now use built tools. Seedance reference dialogue and two
@@ -277,13 +277,17 @@ cannot pass artifact/playback checks. Compute cost remains unknown; paid-video a
 and any active cap still apply. The stored confidential flag creates no HyperFrames restriction.
 HyperFrames outputs remain ineligible for continuity training.
 
-The same skill includes MIT cinematic-caption and tactile-collage
-[template packs](HYPERFRAMES_TEMPLATE_PACKS.md). The resources include two
+The same skill includes MIT cinematic-caption, tactile-collage, and Hyfrme
+[template packs](HYPERFRAMES_TEMPLATE_PACKS.md). The resources include five
 standalone HTML examples, a preview catalog, and separate recipes.
 Plain cinematic captions and animated paper collage select `remotion_render`.
 Naming HyperFrames selects `hyperframes_render` only when its flag permits it.
 No top-level skill or provider is added. Proof frames, contact sheets, subject
 matting, live GSAP playback, and exported media remain pending.
+The [Hyfrme pack](HYPERFRAMES_HYFRME_PACK.md) adds text motion, shared-axis
+transitions, and a device-card example. Naming that pack alone keeps Remotion.
+Its templates do not implement Cutaway capture. Six new active fixtures cover
+named HyperFrames and the default renderer, without activating a dependency skip.
 
 ## Provider, model, licence, and region policy
 
@@ -629,8 +633,8 @@ refusals and delivery/loudness/QC chains. RT-E043 remains skipped: exact OCR ver
 is not implemented (`feat/remotion-ocr-verification`). The original four dependency skips
 remain. Routing checks establish selection and refusal; provider tests establish file checks.
 
-Current inventory is 16 providers, 117 Gateway tools, 30 packaged skills and 220 fixture
-rows, with 215 active and 5 skipped. See [Remotion editing](REMOTION_EDITING.md) for
+Current inventory is 16 providers, 117 Gateway tools, 30 packaged skills and 226 fixture
+rows, with 221 active and 5 skipped. See [Remotion editing](REMOTION_EDITING.md) for
 licensing, the real local pipeline and incomplete browser/deployed validation.
 
 ## Static aspect variants
