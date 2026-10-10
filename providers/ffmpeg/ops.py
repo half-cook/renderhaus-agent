@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from copy import deepcopy
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 import difflib
 import json
 import math
@@ -16,19 +16,8 @@ import re
 import struct
 from typing import Any
 
-from providers.ffmpeg.sandbox import MAX_OUTPUT_BYTES, output_file, sha256_file
-
-
-FORMATS = "mov,matroska,mp3,wav,aac,image2,png_pipe,jpeg_pipe,webp_pipe,ogg,flac"
-THREADS = 2
-
-
-@dataclass(frozen=True)
-class Command:
-    argv: list[str]
-    outputs: list[Path] = field(default_factory=list)
-    metrics: dict[str, Any] = field(default_factory=dict)
-    stderr_bytes: int = 8192
+from providers.ffmpeg.commands import Command, THREADS, FORMATS, _input, _ffmpeg_input
+from providers.ffmpeg.sandbox import MAX_OUTPUT_BYTES, PATH_PATTERN, output_file, sha256_file
 
 
 @dataclass(frozen=True)
@@ -42,30 +31,20 @@ class OpSpec:
     description: str = ""
     validate: Callable[[dict[str, Any]], None] | None = None
     compute: Callable[[dict[str, Any]], dict[str, Any]] | None = None
+    finalize: Callable[[Path, Path, dict, list[Path], dict], dict] | None = None
 
 
 def number(default, minimum, maximum, *, integer=False):
     return {"type": "integer" if integer else "number", "default": default,
-            "minimum": minimum, "maximum": maximum,
+            "minimum": minimum, "maximum": maximum, "not": {"exclusiveMaximum": minimum},
             "description": f"Allowed range: {minimum} to {maximum}. Default {default}."}
-
-
-def _input(directory: Path, source: Path) -> str:
-    return "./" + source.relative_to(directory).as_posix()
-
-
-def _ffmpeg_input(directory: Path, source: Path) -> list[str]:
-    return ["ffmpeg", "-nostdin", "-hide_banner", "-v", "info", "-n",
-            "-filter_threads", str(THREADS), "-filter_complex_threads", str(THREADS),
-            "-threads", str(THREADS), "-protocol_whitelist", "file,pipe",
-            "-format_whitelist", FORMATS, "-i", _input(directory, source)]
 
 
 def _probe(directory, source, params):
     return [Command(["ffprobe", "-hide_banner", "-v", "error", "-threads", str(THREADS),
                      "-protocol_whitelist", "file,pipe", "-format_whitelist", FORMATS,
                      "-show_entries", "stream=index,codec_name,codec_type,width,height,pix_fmt,"
-                     "r_frame_rate,avg_frame_rate,duration,bit_rate,channels,sample_rate,sample_aspect_ratio:"
+                     "r_frame_rate,avg_frame_rate,duration,start_time,nb_frames,time_base,bit_rate,profile,channels,channel_layout,sample_rate,sample_aspect_ratio:"
                      "stream_tags=rotate:stream_side_data=rotation:"
                      "format=duration,size,bit_rate,format_name", "-of", "json", _input(directory, source)])]
 
@@ -74,6 +53,9 @@ def _probe_metrics(results):
     payload = json.loads(results[0].stdout)
     if not isinstance(payload, dict) or not payload.get("streams"):
         raise ValueError("Media probe did not return supported streams.")
+    for stream in payload["streams"]:
+        if stream.get("codec_type") == "audio":
+            stream.setdefault("channel_layout", None)
     return {"streams": payload["streams"], "format": payload.get("format", {})}
 
 
@@ -316,7 +298,47 @@ _REFRAME_PARAMS = {
 }
 
 
+from providers.ffmpeg import delivery
+
+
+_LOUDNESS_PARAMS = {"I": number(-14, -30, -5), "TP": number(-1.5, -9, 0), "LRA": number(11, 1, 20)}
+_AAC_PARAMS = {"bitrate_kbps": number(192, 64, 320, integer=True)}
+_MEASURED_PARAMS = {
+    name: {**{key: value for key, value in number(0, lower, upper).items() if key != "default"},
+           "description": f"Required pass-one {name} from this source at these targets; finite {lower} to {upper}."}
+    for name, lower, upper in (("measured_I", -99, 0), ("measured_TP", -99, 99),
+                               ("measured_LRA", 0, 99), ("measured_thresh", -99, 0), ("offset", -99, 99))
+}
+
+
 OPS = {
+    "measure_loudness": OpSpec(_LOUDNESS_PARAMS, delivery.measure, delivery.measure_metrics,
+                               binary="ffmpeg", timeout_s=120, description="Measure complete loudnorm pass one and EBU R128 summary."),
+    "loudnorm_mux_aac": OpSpec({**_LOUDNESS_PARAMS, **_AAC_PARAMS, **_MEASURED_PARAMS},
+                               delivery.normalize, delivery.normalization_metrics, binary="ffmpeg", timeout_s=180,
+                               finalize=delivery.finish_normalization,
+                               description="Verify pass-one measurements, normalize audio, copy video and remeasure final AAC."),
+    "mux_aac": OpSpec(_AAC_PARAMS, delivery.mux, binary="ffmpeg", timeout_s=120,
+                      finalize=delivery.finish_delivery, description="Copy video and mux AAC at 48 kHz without changing channels."),
+    "transcode_h264": OpSpec({"intent": {"type": "string", "enum": list(delivery.INTENTS),
+                                       "description": "Fixed delivery intent; fit native dimensions without upscaling."}},
+                             delivery.transcode, binary="ffmpeg", timeout_s=180, finalize=delivery.finish_delivery,
+                             description="Encode a fixed H.264 High yuv420p intent with native cadence and faststart."),
+    "frame_cadence": OpSpec({}, delivery.cadence, delivery.cadence_metrics, binary="ffprobe", timeout_s=120, finalize=delivery.finish_cadence,
+                            description="Decode all video frame timestamps to verify cadence without trusting nominal rates."),
+    "detect_black": OpSpec({"d": number(.5, .1, 5), "pix_th": number(.1, 0, .5)},
+                           delivery.black, delivery.interval_metrics, binary="ffmpeg", timeout_s=120,
+                           finalize=delivery.finish_intervals, description="Detect complete black intervals, including EOF tails."),
+    "detect_freeze": OpSpec({"d": number(.5, .1, 5), "n": number(.001, 0, .1)},
+                            delivery.freeze, delivery.interval_metrics, binary="ffmpeg", timeout_s=120,
+                            finalize=delivery.finish_intervals, description="Detect complete frozen intervals, including EOF tails."),
+    "detect_silence": OpSpec({"d": number(.5, .1, 5), "noise": number(-50, -60, -20)},
+                             delivery.silence, delivery.interval_metrics, binary="ffmpeg", timeout_s=120,
+                             finalize=delivery.finish_intervals, description="Detect complete silence intervals, including EOF tails."),
+    "ssim": OpSpec({"reference_path": {"type": "string", "pattern": PATH_PATTERN, "maxLength": 1024,
+                                       "description": "Required readable reference video confined to the same job directory."}},
+                    delivery.ssim, delivery.ssim_metrics, binary="ffmpeg", timeout_s=180,
+                    description="Compare first and last actual matching frames with equal dimensions; never scale."),
     "crop_plan_preview": OpSpec({
         **_REFRAME_PARAMS, "source_width": number(1920, 2, 16384, integer=True),
         "source_height": number(1080, 2, 16384, integer=True), "rotation": number(0, -360, 360),
@@ -404,7 +426,9 @@ def validate_params(op: str, params: dict | None) -> tuple[OpSpec, dict]:
         raise ValueError(f"Unlisted params refused for {op}: {names}.")
     validated = {}
     for name, schema in spec.params.items():
-        value = params.get(name, schema["default"])
+        if name not in params and "default" not in schema:
+            raise ValueError(f"params.{name} is required for {op}.")
+        value = params[name] if name in params else schema["default"]
         _validate_value(name, value, schema)
         validated[name] = value
     if spec.validate is not None:
@@ -422,20 +446,22 @@ def tool_schema() -> dict:
             common["description"] += f"{op}: {schema.get('description', 'See the operation contract.')} "
     return {
         "name": "ffmpeg_tool",
-        "description": "Free local/worker media inspection and fixed reframing. Fixed operations only; no commands, filtergraphs, "
+        "description": "Free local/worker media inspection, delivery and fixed reframing. Fixed operations only; no commands, filtergraphs, "
                        "URLs or network access. Always execute on the machine containing job_id. "
                        "Missing binaries fail softly; Lambda hosts without ffmpeg cannot run binary ops.",
         "inputSchema": {
             "type": "object", "additionalProperties": False,
             "oneOf": [{"properties": {"op": {"enum": [name]}, "params": {
-                "type": "object", "properties": spec.params, "additionalProperties": False}}}
+                "type": "object", "properties": spec.params, "additionalProperties": False,
+                "required": [key for key, schema in spec.params.items() if "default" not in schema]}},
+                **({"required": ["params"]} if any("default" not in s for s in spec.params.values()) else {})}
                 for name, spec in OPS.items()],
             "properties": {
                 "op": {"type": "string", "enum": list(OPS),
                        "description": "Allowed values: " + ", ".join(OPS) + "."},
-                "job_id": {"type": "string", "pattern": "^[A-Za-z0-9_][A-Za-z0-9_.-]{0,79}$",
+                "job_id": {"type": "string", "pattern": r"^[A-Za-z0-9_][A-Za-z0-9_.-]{0,79}(?![\s\S])",
                            "description": "Existing job directory under RENDERHAUS_MEDIA_DIR. ASCII id, 1 to 80 characters."},
-                "input_path": {"type": "string", "description": "Readable regular file inside this job. "
+                "input_path": {"type": "string", "pattern": PATH_PATTERN, "maxLength": 1024, "description": "Readable regular file inside this job. "
                                "Relative path or confined absolute path. No URLs, traversal or option prefixes."},
                 "params": {"type": "object", "properties": parameters, "additionalProperties": False,
                            "description": "Per-op parameters only. probe, sha256, check_faststart, volume_stats "

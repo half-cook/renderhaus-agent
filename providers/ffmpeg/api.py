@@ -99,6 +99,9 @@ def validate_arguments(arguments: dict[str, Any]) -> None:
     if directory == root or not directory.is_relative_to(root):
         raise ValueError("The job directory must stay inside the local media root.")
     validate_input_path(directory, arguments.get("input_path"), must_exist=False)
+    params = arguments.get("params") or {}
+    if "reference_path" in params:
+        validate_input_path(directory, params["reference_path"], must_exist=False)
 
 
 def _version(directory: Path) -> str | None:
@@ -179,6 +182,8 @@ def execute(op: str, job_dir: Path, input_path: str, params: dict | None = None)
                 metrics.update(command.metrics)
             if spec.parse is not None:
                 metrics.update(spec.parse(processes))
+            if spec.finalize is not None:
+                metrics.update(spec.finalize(directory, source, parsed, outputs, metrics))
             if op == "detect_scenes":
                 from providers.ffmpeg.reframe import shots_from_scenes
 
