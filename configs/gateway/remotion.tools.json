@@ -1012,7 +1012,8 @@
       "type": "object",
       "properties": {
         "title": {
-          "type": "string"
+          "type": "string",
+          "description": "Backend support: local supported; lambda supported."
         },
         "visuals": {
           "type": "array",
@@ -1021,59 +1022,59 @@
             "properties": {
               "kind": {
                 "type": "string",
-                "description": "Allowed values: image, video."
+                "description": "Allowed values: image, video. Backend support: local supported; lambda supported."
               },
               "url": {
                 "type": "string",
-                "description": "HTTPS media URL, renderhaus-asset:// version handle, or local media path (no file://)."
+                "description": "HTTPS media URL, renderhaus-asset:// version handle, or local media path (no file://). Backend support: local supported; lambda supported."
               },
               "output_path": {
                 "type": "string",
-                "description": "Existing local media path returned by a provider, under RENDERHAUS_MEDIA_DIR; no file:// prefix. Use instead of url."
+                "description": "Existing local media path returned by a provider, under RENDERHAUS_MEDIA_DIR; no file:// prefix. Use instead of url. Backend support: local supported; lambda supported."
               },
               "duration_seconds": {
                 "type": "number",
-                "description": "Must be greater than 0."
+                "description": "Must be greater than 0. Backend support: local supported; lambda supported."
               },
               "source_fps": {
                 "type": "number",
-                "description": "Optional measured source video frame rate. Local files and trusted HTTPS video hosts are measured automatically before rendering."
+                "description": "Optional measured source video frame rate. Local files and trusted HTTPS video hosts are measured automatically before rendering. Backend support: local supported; lambda supported. Measured video metadata only."
               },
               "source_bitrate": {
                 "type": "integer",
-                "description": "Optional measured source bitrate in bits per second. Local files and trusted HTTPS video hosts are measured automatically; unknown stream bitrate uses the conservative container bitrate."
+                "description": "Optional measured source bitrate in bits per second. Local files and trusted HTTPS video hosts are measured automatically; unknown stream bitrate uses the conservative container bitrate. Backend support: local supported; lambda supported. Measured video metadata only."
               },
               "start_seconds": {
                 "type": "number",
-                "description": "Must be at least 0."
+                "description": "Must be at least 0. Backend support: local supported; lambda supported."
               },
               "source_in_seconds": {
                 "type": "number",
-                "description": "Must be at least 0."
+                "description": "Must be at least 0. Backend support: local supported; lambda supported."
               },
               "track": {
                 "type": "integer",
-                "description": "Allowed range: 0 to 8."
+                "description": "Allowed range: 0 to 8. Backend support: local supported; lambda supported. Ordered video/image tracks, later tracks composite above earlier ones."
               },
               "transition": {
                 "type": "string",
-                "description": "Allowed values: cut, fade, dip_to_black."
+                "description": "Allowed values: cut, fade, dip_to_black. Backend support: local supported; lambda supported. cut, fade and dip_to_black use item fades; no overlap cross-dissolve."
               },
               "fit": {
                 "type": "string",
-                "description": "Allowed values: cover, contain, pad_blur. Reframing is local/worker only; Lambda refuses pad_blur."
+                "description": "Allowed values: cover, contain, pad_blur. Reframing is local/worker only; Lambda refuses pad_blur. Backend support: local supported; lambda supported. cover/contain on both; pad_blur requires local/worker."
               },
               "position_x": {
                 "type": "number",
-                "description": "Allowed range: 0 to 1."
+                "description": "Allowed range: 0 to 1. Backend support: local supported; lambda supported. cover/contain on both; pad_blur requires local/worker."
               },
               "position_y": {
                 "type": "number",
-                "description": "Allowed range: 0 to 1."
+                "description": "Allowed range: 0 to 1. Backend support: local supported; lambda supported. cover/contain on both; pad_blur requires local/worker."
               },
               "scale": {
                 "type": "number",
-                "description": "Allowed range: 0.1 to 4."
+                "description": "Allowed range: 0.1 to 4. Backend support: local supported; lambda supported. Static centre scale 0.1..4; box clips at its edges."
               },
               "box": {
                 "type": "object",
@@ -1097,7 +1098,7 @@
                   "width",
                   "height"
                 ],
-                "description": "Canvas pixel box. x/y nonnegative, width/height positive and at most 7680; must fit canvas."
+                "description": "Canvas pixel box. x/y nonnegative, width/height positive and at most 7680; must fit canvas. Backend support: local supported; lambda refused-with-explicit-error. Lambda requires overlay contract version 2 with matching font assets; use local/worker until deployed."
               },
               "pad_box": {
                 "type": "object",
@@ -1121,7 +1122,7 @@
                   "width",
                   "height"
                 ],
-                "description": "Foreground canvas box from a safe-zone crop plan. Requires fit=pad_blur; local/worker only."
+                "description": "Foreground canvas box from a safe-zone crop plan. Requires fit=pad_blur; local/worker only. Backend support: local supported; lambda refused-with-explicit-error. Lambda reframing is not deployed; use the local/worker backend for crop_box and pad_blur."
               },
               "crop_box": {
                 "type": "object",
@@ -1145,7 +1146,7 @@
                     "type": "integer"
                   }
                 },
-                "description": "Static even-pixel crop in display-oriented source coordinates, each coordinate/dimension up to 16384. Local/worker only; must fit the measured source."
+                "description": "Static even-pixel crop in display-oriented source coordinates, each coordinate/dimension up to 16384. Local/worker only; must fit the measured source. Backend support: local supported; lambda refused-with-explicit-error. Lambda reframing is not deployed; use the local/worker backend for crop_box and pad_blur."
               },
               "reframe_size": {
                 "type": "object",
@@ -1161,51 +1162,51 @@
                     "type": "integer"
                   }
                 },
-                "description": "Validated crop-plan canvas in even pixels, 2..7680. Requires crop_box or pad_blur. Primary clips must agree."
+                "description": "Validated crop-plan canvas in even pixels, 2..7680. Requires crop_box or pad_blur. Primary clips must agree. Backend support: local supported; lambda refused-with-explicit-error. Lambda reframing is not deployed; use the local/worker backend for crop_box and pad_blur."
               },
               "allow_upscale": {
                 "type": "boolean",
-                "description": "Explicit permission to resample a reframe beyond available source pixels; reports no added detail. Default false."
+                "description": "Explicit permission to resample a reframe beyond available source pixels; reports no added detail. Default false. Backend support: local supported; lambda refused-with-explicit-error. Lambda reframing is not deployed; use the local/worker backend for crop_box and pad_blur."
               },
               "opacity": {
                 "type": "number",
-                "description": "Allowed range: 0 to 1."
+                "description": "Allowed range: 0 to 1. Backend support: local supported; lambda supported."
               },
               "rotation_degrees": {
                 "type": "number",
-                "description": "Allowed range: -360 to 360."
+                "description": "Allowed range: -360 to 360. Backend support: local supported; lambda supported. Centre rotation -360..360 degrees, clipped at viewport."
               },
               "playback_rate": {
                 "type": "number",
-                "description": "Allowed range: 0.25 to 4."
+                "description": "Allowed range: 0.25 to 4. Backend support: local supported; lambda supported. Video only; local source audio uses atempo."
               },
               "volume": {
                 "type": "number",
-                "description": "Source video audio volume. Allowed range: 0 to 1. Use 0 when replacing the soundtrack."
+                "description": "Source video audio volume. Allowed range: 0 to 1. Use 0 when replacing the soundtrack. Backend support: local supported; lambda supported."
               },
               "fade_in_seconds": {
                 "type": "number",
-                "description": "Must be at least 0."
+                "description": "Must be at least 0. Backend support: local supported; lambda supported."
               },
               "fade_out_seconds": {
                 "type": "number",
-                "description": "Must be at least 0."
+                "description": "Must be at least 0. Backend support: local supported; lambda supported."
               },
               "audio_fade_in_seconds": {
                 "type": "number",
-                "description": "Audio-only fade, independent of opacity. Must fit inside the clip duration."
+                "description": "Audio-only fade, independent of opacity. Must fit inside the clip duration. Backend support: local supported; lambda supported."
               },
               "audio_fade_out_seconds": {
                 "type": "number",
-                "description": "Audio-only fade, independent of opacity. Must fit inside the clip duration."
+                "description": "Audio-only fade, independent of opacity. Must fit inside the clip duration. Backend support: local supported; lambda supported."
               },
               "grade": {
                 "type": "string",
-                "description": "Media-only fixed color filter. Allowed values: none, neutral, warm."
+                "description": "Media-only fixed color filter. Allowed values: none, neutral, warm. Backend support: local supported; lambda supported. none, neutral, warm; fixed media-only filters. CSS/ffmpeg color pixel parity UNVERIFIED."
               },
               "motion": {
                 "type": "string",
-                "description": "Allowed values: none, zoom_in, zoom_out, pan_left, pan_right."
+                "description": "Allowed values: none, zoom_in, zoom_out, pan_left, pan_right. Backend support: local supported; lambda supported. none, linear zoom_in/zoom_out 8%, pan_left/pan_right +/-4% with 8% zoom. Arbitrary keyframes refused."
               }
             },
             "required": [
@@ -1222,35 +1223,35 @@
             "properties": {
               "url": {
                 "type": "string",
-                "description": "HTTPS media URL, renderhaus-asset:// version handle, or local media path (no file://)."
+                "description": "HTTPS media URL, renderhaus-asset:// version handle, or local media path (no file://). Backend support: local supported; lambda supported. Trim, delay, volume, fades and mix; clamped to visual end."
               },
               "output_path": {
                 "type": "string",
-                "description": "Existing local media path returned by a provider, under RENDERHAUS_MEDIA_DIR; no file:// prefix. Use instead of url."
+                "description": "Existing local media path returned by a provider, under RENDERHAUS_MEDIA_DIR; no file:// prefix. Use instead of url. Backend support: local supported; lambda supported. Trim, delay, volume, fades and mix; clamped to visual end."
               },
               "duration_seconds": {
                 "type": "number",
-                "description": "Must be greater than 0."
+                "description": "Must be greater than 0. Backend support: local supported; lambda supported. Trim, delay, volume, fades and mix; clamped to visual end."
               },
               "start_seconds": {
                 "type": "number",
-                "description": "Position in the final video where this audio begins (0 starts immediately). Must be at least 0."
+                "description": "Position in the final video where this audio begins (0 starts immediately). Must be at least 0. Backend support: local supported; lambda supported. Trim, delay, volume, fades and mix; clamped to visual end."
               },
               "source_in_seconds": {
                 "type": "number",
-                "description": "Seconds to skip inside the source music, independent of its position in the video. Must be at least 0."
+                "description": "Seconds to skip inside the source music, independent of its position in the video. Must be at least 0. Backend support: local supported; lambda supported. Trim, delay, volume, fades and mix; clamped to visual end."
               },
               "volume": {
                 "type": "number",
-                "description": "Allowed range: 0 to 1."
+                "description": "Allowed range: 0 to 1. Backend support: local supported; lambda supported. Trim, delay, volume, fades and mix; clamped to visual end."
               },
               "fade_in_seconds": {
                 "type": "number",
-                "description": "Must be at least 0."
+                "description": "Must be at least 0. Backend support: local supported; lambda supported. Trim, delay, volume, fades and mix; clamped to visual end."
               },
               "fade_out_seconds": {
                 "type": "number",
-                "description": "Must be at least 0."
+                "description": "Must be at least 0. Backend support: local supported; lambda supported. Trim, delay, volume, fades and mix; clamped to visual end."
               }
             },
             "required": [
@@ -1265,27 +1266,28 @@
             "type": "object",
             "properties": {
               "text": {
-                "type": "string"
+                "type": "string",
+                "description": "Backend support: local supported; lambda supported. Local fonts have weights 400/700, named/hex colors and fit guards. Other CSS colors/weights require Lambda. Legacy fonts/pixels UNVERIFIED."
               },
               "start_seconds": {
                 "type": "number",
-                "description": "Must be at least 0."
+                "description": "Must be at least 0. Backend support: local supported; lambda supported. Local fonts have weights 400/700, named/hex colors and fit guards. Other CSS colors/weights require Lambda. Legacy fonts/pixels UNVERIFIED."
               },
               "duration_seconds": {
                 "type": "number",
-                "description": "Must be greater than 0."
+                "description": "Must be greater than 0. Backend support: local supported; lambda supported. Local fonts have weights 400/700, named/hex colors and fit guards. Other CSS colors/weights require Lambda. Legacy fonts/pixels UNVERIFIED."
               },
               "position": {
                 "type": "string",
-                "description": "Allowed values: top, center, bottom."
+                "description": "Allowed values: top, center, bottom. Backend support: local supported; lambda supported. Local fonts have weights 400/700, named/hex colors and fit guards. Other CSS colors/weights require Lambda. Legacy fonts/pixels UNVERIFIED."
               },
               "font_size": {
                 "type": "integer",
-                "description": "Allowed range: 16 to 180."
+                "description": "Allowed range: 16 to 180. Backend support: local supported; lambda supported. Local fonts have weights 400/700, named/hex colors and fit guards. Other CSS colors/weights require Lambda. Legacy fonts/pixels UNVERIFIED."
               },
               "font_weight": {
                 "type": "integer",
-                "description": "Allowed range: 100 to 900."
+                "description": "Allowed range: 100 to 900. Backend support: local supported; lambda supported. Local fonts have weights 400/700, named/hex colors and fit guards. Other CSS colors/weights require Lambda. Legacy fonts/pixels UNVERIFIED."
               },
               "box": {
                 "type": "object",
@@ -1309,39 +1311,39 @@
                   "width",
                   "height"
                 ],
-                "description": "Canvas pixel box. x/y nonnegative, width/height positive and at most 7680; must fit canvas."
+                "description": "Canvas pixel box. x/y nonnegative, width/height positive and at most 7680; must fit canvas. Backend support: local supported; lambda refused-with-explicit-error. Lambda requires overlay contract version 2 with matching font assets; use local/worker until deployed."
               },
               "min_font_size": {
                 "type": "integer",
-                "description": "Allowed range: 16 to 180."
+                "description": "Allowed range: 16 to 180. Backend support: local supported; lambda refused-with-explicit-error. Lambda requires overlay contract version 2 with matching font assets; use local/worker until deployed."
               },
               "max_font_size": {
                 "type": "integer",
-                "description": "Allowed range: 16 to 180."
+                "description": "Allowed range: 16 to 180. Backend support: local supported; lambda refused-with-explicit-error. Lambda requires overlay contract version 2 with matching font assets; use local/worker until deployed."
               },
               "font_family": {
                 "type": "string",
-                "description": "Allowed values: dejavu-sans, dejavu-sans-bold."
+                "description": "Allowed values: dejavu-sans, dejavu-sans-bold. Backend support: local supported; lambda refused-with-explicit-error. Lambda requires overlay contract version 2 with matching font assets; use local/worker until deployed."
               },
               "opacity": {
                 "type": "number",
-                "description": "Allowed range: 0 to 1."
+                "description": "Allowed range: 0 to 1. Backend support: local supported; lambda supported. Local fonts have weights 400/700, named/hex colors and fit guards. Other CSS colors/weights require Lambda. Legacy fonts/pixels UNVERIFIED."
               },
               "color": {
                 "type": "string",
-                "description": "CSS color."
+                "description": "CSS color. Backend support: local supported; lambda supported. Local fonts have weights 400/700, named/hex colors and fit guards. Other CSS colors/weights require Lambda. Legacy fonts/pixels UNVERIFIED."
               },
               "background_color": {
                 "type": "string",
-                "description": "CSS color or transparent."
+                "description": "CSS color or transparent. Backend support: local supported; lambda supported. Local fonts have weights 400/700, named/hex colors and fit guards. Other CSS colors/weights require Lambda. Legacy fonts/pixels UNVERIFIED."
               },
               "fade_in_seconds": {
                 "type": "number",
-                "description": "Must be at least 0."
+                "description": "Must be at least 0. Backend support: local supported; lambda supported. Local fonts have weights 400/700, named/hex colors and fit guards. Other CSS colors/weights require Lambda. Legacy fonts/pixels UNVERIFIED."
               },
               "fade_out_seconds": {
                 "type": "number",
-                "description": "Must be at least 0."
+                "description": "Must be at least 0. Backend support: local supported; lambda supported. Local fonts have weights 400/700, named/hex colors and fit guards. Other CSS colors/weights require Lambda. Legacy fonts/pixels UNVERIFIED."
               }
             },
             "required": [
@@ -1354,14 +1356,15 @@
         },
         "aspect_ratio": {
           "type": "string",
-          "description": "One of: 16:9, 9:16, 1:1, 4:5, 2.39:1. Allowed values: 16:9, 9:16, 1:1, 4:5, 2.39:1."
+          "description": "One of: 16:9, 9:16, 1:1, 4:5, 2.39:1. Allowed values: 16:9, 9:16, 1:1, 4:5, 2.39:1. Backend support: local supported; lambda supported. Source-native policy; explicit tiers report resampling with no added detail."
         },
         "fps": {
           "type": "number",
-          "description": "Allowed range: 12 to 60."
+          "description": "Allowed range: 12 to 60. Backend support: local supported; lambda supported. MP4/H.264, CFR, AAC when audio exists; no caller-selected codec or filtergraph."
         },
         "output_filename": {
-          "type": "string"
+          "type": "string",
+          "description": "Backend support: local supported; lambda supported."
         },
         "subtitles": {
           "type": "array",
@@ -1369,27 +1372,28 @@
             "type": "object",
             "properties": {
               "text": {
-                "type": "string"
+                "type": "string",
+                "description": "Backend support: local supported; lambda supported. Output-timed literal burn-in text after all overlays; same local text restrictions as titles."
               },
               "start_seconds": {
                 "type": "number",
-                "description": "Must be at least 0."
+                "description": "Must be at least 0. Backend support: local supported; lambda supported. Output-timed literal burn-in text after all overlays; same local text restrictions as titles."
               },
               "duration_seconds": {
                 "type": "number",
-                "description": "Must be greater than 0."
+                "description": "Must be greater than 0. Backend support: local supported; lambda supported. Output-timed literal burn-in text after all overlays; same local text restrictions as titles."
               },
               "position": {
                 "type": "string",
-                "description": "Allowed values: top, center, bottom."
+                "description": "Allowed values: top, center, bottom. Backend support: local supported; lambda supported. Output-timed literal burn-in text after all overlays; same local text restrictions as titles."
               },
               "font_size": {
                 "type": "integer",
-                "description": "Allowed range: 16 to 180."
+                "description": "Allowed range: 16 to 180. Backend support: local supported; lambda supported. Output-timed literal burn-in text after all overlays; same local text restrictions as titles."
               },
               "font_weight": {
                 "type": "integer",
-                "description": "Allowed range: 100 to 900."
+                "description": "Allowed range: 100 to 900. Backend support: local supported; lambda supported. Output-timed literal burn-in text after all overlays; same local text restrictions as titles."
               },
               "box": {
                 "type": "object",
@@ -1413,39 +1417,39 @@
                   "width",
                   "height"
                 ],
-                "description": "Canvas pixel box. x/y nonnegative, width/height positive and at most 7680; must fit canvas."
+                "description": "Canvas pixel box. x/y nonnegative, width/height positive and at most 7680; must fit canvas. Backend support: local supported; lambda refused-with-explicit-error. Lambda requires overlay contract version 2 with matching font assets; use local/worker until deployed."
               },
               "min_font_size": {
                 "type": "integer",
-                "description": "Allowed range: 16 to 180."
+                "description": "Allowed range: 16 to 180. Backend support: local supported; lambda refused-with-explicit-error. Lambda requires overlay contract version 2 with matching font assets; use local/worker until deployed."
               },
               "max_font_size": {
                 "type": "integer",
-                "description": "Allowed range: 16 to 180."
+                "description": "Allowed range: 16 to 180. Backend support: local supported; lambda refused-with-explicit-error. Lambda requires overlay contract version 2 with matching font assets; use local/worker until deployed."
               },
               "font_family": {
                 "type": "string",
-                "description": "Allowed values: dejavu-sans, dejavu-sans-bold."
+                "description": "Allowed values: dejavu-sans, dejavu-sans-bold. Backend support: local supported; lambda refused-with-explicit-error. Lambda requires overlay contract version 2 with matching font assets; use local/worker until deployed."
               },
               "opacity": {
                 "type": "number",
-                "description": "Allowed range: 0 to 1."
+                "description": "Allowed range: 0 to 1. Backend support: local supported; lambda supported. Output-timed literal burn-in text after all overlays; same local text restrictions as titles."
               },
               "color": {
                 "type": "string",
-                "description": "CSS color."
+                "description": "CSS color. Backend support: local supported; lambda supported. Output-timed literal burn-in text after all overlays; same local text restrictions as titles."
               },
               "background_color": {
                 "type": "string",
-                "description": "CSS color or transparent."
+                "description": "CSS color or transparent. Backend support: local supported; lambda supported. Output-timed literal burn-in text after all overlays; same local text restrictions as titles."
               },
               "fade_in_seconds": {
                 "type": "number",
-                "description": "Must be at least 0."
+                "description": "Must be at least 0. Backend support: local supported; lambda supported. Output-timed literal burn-in text after all overlays; same local text restrictions as titles."
               },
               "fade_out_seconds": {
                 "type": "number",
-                "description": "Must be at least 0."
+                "description": "Must be at least 0. Backend support: local supported; lambda supported. Output-timed literal burn-in text after all overlays; same local text restrictions as titles."
               }
             },
             "required": [
@@ -1458,11 +1462,15 @@
         },
         "video_bitrate": {
           "type": "integer",
-          "description": "Must be at least 1."
+          "description": "Must be at least 1. Backend support: local supported; lambda supported. MP4/H.264, CFR, AAC when audio exists; no caller-selected codec or filtergraph."
         },
         "output_resolution": {
           "type": "string",
-          "description": "One of: source, 720p, 1080p, 1440p, 2160p. Default source uses the largest measured video short edge, capped at the aspect table. Explicit tiers scale that table relative to 1080p; 2.39:1 at 1080p stays 1920x804. Upscaling adds no detail; use the Topaz upscale skill before assembly for added detail."
+          "description": "One of: source, 720p, 1080p, 1440p, 2160p. Default source uses the largest measured video short edge, capped at the aspect table. Explicit tiers scale that table relative to 1080p; 2.39:1 at 1080p stays 1920x804. Upscaling adds no detail; use the Topaz upscale skill before assembly for added detail. Backend support: local supported; lambda supported. Source-native policy; explicit tiers report resampling with no added detail."
+        },
+        "subtitles_srt": {
+          "type": "string",
+          "description": "Inline numbered SRT, 1..60000 characters, at most 100 cues within 0..600 seconds; each literal cue text at most 500 characters. Choose subtitles or subtitles_srt. No paths, URLs or styling commands. Backend support: local supported; lambda supported. Inline numbered SRT, no file/URL, no styling or filter commands."
         }
       },
       "required": [

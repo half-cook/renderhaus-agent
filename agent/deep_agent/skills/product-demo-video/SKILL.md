@@ -2,6 +2,8 @@
 name: product-demo-video
 description: Capture real product/UI footage with cutaway, then assemble it with Remotion.
 metadata:
+  remotion_backend: configured
+  remotion_features: clip_timing transitions fit_position scale motion titles captions audio_mix canvas encoding
   include_tools: call_editor_tool
   routing_tools: cutaway_record remotion_render hyperframes_render motion_carry_probe
   gateway_tools: HyperFrames___render_composition Remotion___get_render_progress Remotion___render_timeline Remotion___motion_carry_probe
@@ -36,3 +38,8 @@ and run `motion_carry_probe` through `Remotion___motion_carry_probe` with the ow
 local MP4 and exact beat timing when available. Surface any failed report and
 offer a re-render before presenting the film as final. A dry-run, missing MP4
 or skipped probe is incomplete QC. This free local check grants no paid calls.
+
+The configured Remotion backend must support every requested feature. Unsupported features refuse before media I/O
+or AWS submission. Crop/pad reframing requires local/worker; fitted font/box overlays require
+Lambda overlay contract version 2 or local/worker. Use named motion presets; arbitrary render
+keyframes, per-word kinetic typography and custom components remain unavailable.

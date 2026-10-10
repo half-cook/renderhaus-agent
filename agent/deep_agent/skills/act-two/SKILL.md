@@ -2,6 +2,8 @@
 name: act-two
 description: Transfer facial or upper-body acting with Runway Act-Two, or full-body motion with Kling 3 Pro Motion Control. Process long performances in sequential shot or silence chunks and assemble them.
 metadata:
+  remotion_backend: configured
+  remotion_features: clip_timing transitions fit_position scale motion titles captions audio_mix canvas encoding
   include_tools: call_media_tool call_editor_tool
   routing_tools: runway_act_two kling_motion_control remotion_render
   gateway_tools: Runway___act_two Runway___get_runway_task Fal___kling_motion_control Fal___get_video_task Remotion___render_timeline Remotion___get_render_progress
@@ -80,3 +82,8 @@ https://docs.dev.runwayml.com/guides/pricing/,
 https://runway.com/terms-of-use,
 https://fal.ai/models/fal-ai/kling-video/v3/pro/motion-control/api and
 https://fal.ai/legal/terms-of-service.
+
+The configured Remotion backend must support every requested feature. Unsupported features refuse before media I/O
+or AWS submission. Crop/pad reframing requires local/worker; fitted font/box overlays require
+Lambda overlay contract version 2 or local/worker. Use named motion presets; arbitrary render
+keyframes, per-word kinetic typography and custom components remain unavailable.

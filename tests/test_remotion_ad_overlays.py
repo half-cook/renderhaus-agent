@@ -26,6 +26,9 @@ def props_for(source: Path, *, text: str | None = None) -> dict:
             'fontSize': 24, 'minFontSize': 16, 'maxFontSize': 24,
             'fontFamily': 'dejavu-sans', 'color': '#ffffff', 'fadeIn': 0, 'fadeOut': 0,
         }]})
+        from providers.remotion.text import fit_text
+        item = tracks[-1]['items'][0]
+        item.update(fit_text(item, 320, 180))
     return {'document': {'id': 'test', 'assets': [{
         'id': 'master', 'kind': 'video', 'url': str(source)}], 'tracks': tracks},
         'renderConfig': {'width': 320, 'height': 180, 'fps': 16,
@@ -273,12 +276,13 @@ class RealOverlayTests(unittest.TestCase):
         self.assertGreater(max(self.frame(output, .5).getextrema()[0]), 200)
         self.assertLess(max(self.frame(output, .875).getextrema()[0]), 10)
 
-    def test_local_motion_grade_rotation_remain_refused(self) -> None:
+    def test_local_motion_grade_rotation_produce_valid_media(self) -> None:
         for field, value in [('motion', 'zoom_in'), ('grade', 'warm'), ('rotation', 10)]:
-            with self.subTest(field=field), self.assertRaisesRegex(ValueError, 'Lambda'):
+            with self.subTest(field=field):
                 props = props_for(self.source)
                 props['document']['tracks'][0]['items'][0][field] = value
-                self.render(props, f'{field}.mp4')
+                output = self.render(props, f'{field}.mp4')
+                self.assertEqual(local._probe(output)['streams'][0]['codec_name'], 'h264')
 
 
 if __name__ == '__main__':

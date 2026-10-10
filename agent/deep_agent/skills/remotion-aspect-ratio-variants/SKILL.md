@@ -2,6 +2,8 @@
 name: remotion-aspect-ratio-variants
 description: Reformat approved flat masters or existing Remotion timelines to aspect variants using static centre or safe-zone crops, optional planner-supplied subject boxes and blurred padding. Return candidate MP4s with contact sheets for human editorial approval. Refuse detectors, arbitrary commands and parked Resolve Smart Reframe.
 metadata:
+  remotion_backend: configured
+  remotion_features: clip_timing transitions fit_position scale motion titles captions audio_mix canvas encoding fitted_overlays crop_reframe blurred_padding ad_matrix
   include_tools: call_editor_tool
   routing_tools: ad_variant_matrix remotion_render ffmpeg_tool delivery_render deliverable_qc
   gateway_tools: Remotion___render_ad_variants Remotion___render_timeline Remotion___get_render_progress Ffmpeg___ffmpeg_tool Remotion___deliver_render Remotion___qc_deliverable
@@ -134,3 +136,8 @@ local ffmpeg compositor is metered remains UNVERIFIED. See [licence FAQ](https:/
 and [terms](https://www.remotion.dev/docs/terms), read 2026-10-09. FFmpeg licence depends on
 the installed build; see [FFmpeg legal](https://ffmpeg.org/legal.html), read 2026-10-09.
 No binary or upstream code is redistributed. Demo media is generated locally.
+
+The configured Remotion backend must support every requested feature. Unsupported features refuse before media I/O
+or AWS submission. Crop/pad reframing requires local/worker; fitted font/box overlays require
+Lambda overlay contract version 2 or local/worker. Use named motion presets; arbitrary render
+keyframes, per-word kinetic typography and custom components remain unavailable.

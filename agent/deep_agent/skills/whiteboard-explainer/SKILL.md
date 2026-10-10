@@ -2,6 +2,8 @@
 name: whiteboard-explainer
 description: Plan a whiteboard explainer with requested voiceover, Remotion by default and explicit HyperFrames templates. Silent graphic explainers use knowledge-explainer.
 metadata:
+  remotion_backend: configured
+  remotion_features: clip_timing transitions fit_position scale motion titles captions audio_mix canvas encoding
   include_tools: call_editor_tool call_audio_tool
   routing_tools: remotion_render hyperframes_render eleven_v4_turbo
   gateway_tools: HyperFrames___render_composition Remotion___get_render_progress Remotion___render_timeline ElevenLabs___text_to_speech_convert
@@ -32,3 +34,8 @@ A queued job or dry-run is incomplete media. Open/play the actual saved artifact
 Record explicit customer visual acceptance/rejection with `record_media_outcome` and the saved call ID.
 A spending approval is not visual acceptance. Training eligibility follows provenance and the existing
 Wan training hook; these routing instructions cannot grant training rights.
+
+The configured Remotion backend must support every requested feature. Unsupported features refuse before media I/O
+or AWS submission. Crop/pad reframing requires local/worker; fitted font/box overlays require
+Lambda overlay contract version 2 or local/worker. Use named motion presets; arbitrary render
+keyframes, per-word kinetic typography and custom components remain unavailable.

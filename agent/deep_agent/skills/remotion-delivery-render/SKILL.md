@@ -2,6 +2,8 @@
 name: remotion-delivery-render
 description: Finish an existing local render or approved matrix manifest with a named H.264/AAC delivery preset, versioned naming, loudness and technical QC evidence. Refuse unsupported codecs, public links, channel publishing and backend changes.
 metadata:
+  remotion_backend: configured
+  remotion_features: clip_timing transitions fit_position scale motion titles captions audio_mix canvas encoding
   include_tools: call_editor_tool
   routing_tools: delivery_render deliverable_qc ffmpeg_tool remotion_render
   gateway_tools: Remotion___deliver_render Remotion___qc_deliverable Ffmpeg___ffmpeg_tool Remotion___render_timeline Remotion___get_render_progress
@@ -101,3 +103,8 @@ training permission, third-party source code or binary redistribution is added h
 The fixed implementation and Gateway schema define available behavior. [FFmpeg legal](https://ffmpeg.org/legal.html) documents build-dependent
 licensing. Remotion render licensing remains covered by the existing
 [ad matrix guide](../remotion-ad-variant-matrix/SKILL.md).
+
+The configured Remotion backend must support every requested feature. Unsupported features refuse before media I/O
+or AWS submission. Crop/pad reframing requires local/worker; fitted font/box overlays require
+Lambda overlay contract version 2 or local/worker. Use named motion presets; arbitrary render
+keyframes, per-word kinetic typography and custom components remain unavailable.

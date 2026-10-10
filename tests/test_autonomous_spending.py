@@ -104,7 +104,9 @@ class SpendingTests(unittest.IsolatedAsyncioTestCase):
             gateway = Gateway([PAID, unknown], {"status": "succeeded"})
             executor, _ = self.executor(gateway=gateway)
             output = await executor.execute(
-                {"tool_name": unknown.name, "arguments": {}, "call_id": "render"}, approved=True
+                {"tool_name": unknown.name, "arguments": {'title': 'Quote', 'visuals': [
+                    {'kind': 'image', 'url': 'https://example.test/still.png', 'duration_seconds': 1}]},
+                 "call_id": "render"}, approved=True
             )
             self.assertIn("unknown", output["reason"])
             self.assertEqual(output["status"], "not_run")

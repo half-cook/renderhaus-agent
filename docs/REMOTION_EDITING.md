@@ -175,22 +175,85 @@ return a clear structured failure. No binary is added to the Lambda zip.
 
 ## Backend contract
 
-| Capability | Local worker | Lambda |
-| --- | --- | --- |
-| Existing timeline trims, ordinary fit, FPS/bitrate and native canvas policy | Supported | Existing path retained |
-| Fitted text and positioned image/video overlays | Supported | Versioned font/box contract required |
-| New per-item static crop windows or blurred-pad fit | Supported | Explicit refusal before source retrieval or AWS request |
-| Matrix stages, including minimal reframe mode | Supported on host owning job directory | Explicit refusal before dry-run or AWS request |
-| Delivery finishing and deliverable QC | Real local files and binaries | Explicit refusal before media IO or AWS request |
-| Fixed ffmpeg binary ops | Installed binaries and job directory required | Refused without binaries; no binary bundled |
-| Pure crop preview | Supported without binary/input file | Requires only a validated job directory and request |
-| Video grade, motion and rotation effects | Unsupported message | Existing composition capabilities |
+Verified offline on 2026-10-10. The executable table is
+[`providers/remotion/capabilities.py`](../providers/remotion/capabilities.py).
+`supported` means the local code renders the feature and the checked-in Lambda composition
+accepts its payload. Lambda support remains **UNVERIFIED at runtime**. There are zero
+`unsupported-but-silently-ignored` entries. Conditional limits are part of the contract.
+
+| Feature ID | Local worker | Lambda, default contract | Limits |
+| --- | --- | --- | --- |
+| `identity` | supported | supported | Typed timeline parameters. |
+| `clip_timing` | supported | supported | Typed timeline parameters. |
+| `speed` | supported | supported | Video only; local source audio uses atempo. |
+| `source_metadata` | supported | supported | Measured video metadata only. |
+| `layers` | supported | supported | Ordered video/image tracks, later tracks composite above earlier ones. |
+| `transitions` | supported | supported | cut, fade and dip_to_black use item fades; no overlap cross-dissolve. |
+| `fit_position` | supported | supported | cover/contain on both; pad_blur requires local/worker. |
+| `scale` | supported | supported | Static centre scale 0.1..4; box clips at its edges. |
+| `rotation` | supported | supported | Centre rotation -360..360 degrees, clipped at viewport. |
+| `motion` | supported | supported | none, linear zoom_in/zoom_out 8%, pan_left/pan_right +/-4% with 8% zoom. Arbitrary keyframes refused. |
+| `grade` | supported | supported | none, neutral, warm; fixed media-only filters. CSS/ffmpeg color pixel parity UNVERIFIED. |
+| `opacity_fades` | supported | supported | Typed timeline parameters. |
+| `source_audio` | supported | supported | Typed timeline parameters. |
+| `audio_mix` | supported | supported | Trim, delay, volume, fades and mix; clamped to visual end. |
+| `titles` | supported | supported | Local fonts have weights 400/700, named/hex colors and fit guards. Other CSS colors/weights require Lambda. Legacy fonts/pixels UNVERIFIED. |
+| `captions` | supported | supported | Output-timed literal burn-in text after all overlays; same local text restrictions as titles. |
+| `srt_captions` | supported | supported | Inline numbered SRT, no file/URL, no styling or filter commands. |
+| `fitted_overlays` | supported | refused-with-explicit-error | Lambda requires overlay contract version 2 with matching font assets; use local/worker until deployed. |
+| `crop_reframe` | supported | refused-with-explicit-error | Lambda reframing is not deployed; use the local/worker backend for crop_box and pad_blur. |
+| `canvas` | supported | supported | Source-native policy; explicit tiers report resampling with no added detail. |
+| `encoding` | supported | supported | MP4/H.264, CFR, AAC when audio exists; no caller-selected codec or filtergraph. |
+| `blurred_padding` | supported | refused-with-explicit-error | Lambda reframing is not deployed; use the local/worker backend for crop_box and pad_blur. |
+| `css_text_styles` | refused-with-explicit-error | supported | Local supports hex/named colors and weights 400/700; other CSS styles require Lambda. |
+| `arbitrary_keyframes` | refused-with-explicit-error | refused-with-explicit-error | Neither backend accepts arbitrary render keyframes. Use named motion presets on local or Lambda. |
+| `nle_cuts_gaps` | supported | supported | In-house OTIO/FCPXML/EDL handoff; bake effects, text, transitions and retimes first. No AAF or Resolve API. |
+| `transcript_edit` | supported | supported | Pure word-range edit preview, grade and captions compiled to render_timeline args; no media I/O. |
+| `ad_matrix` | supported | refused-with-explicit-error | Owned local/worker job, unchanged plan hash and sample/batch approval; Lambda refuses. |
+| `delivery_qc` | supported | refused-with-explicit-error | Owned local/worker files and binaries; Lambda refuses. No upload/publishing or arbitrary codecs. |
+| `motion_carry_qc` | supported | refused-with-explicit-error | Local/worker binary QC only; keyframe boxes describe measurement, never render animation. |
+| `progress` | supported | supported | Poll saved backend-specific render ID; no replacement render. |
 
 `REMOTION_OVERLAY_CONTRACT_VERSION` defaults to 1. Version 2 declares a separately deployed
-compatible font/box composition; it does not enable the new crop/pad fields. No deployment
-or live Lambda call occurs here. Parity tests compare the canonical document and early
-backend refusals; they do not claim deployed pixel parity. Render options must work on both
-backends or be refused explicitly. Never silently switch backends or disable dry-run.
+compatible font/box composition; it does not enable crop/pad fields. Tests explicitly select
+version 2 for fitted-overlay payload checks. No deployment or live Lambda call occurred.
+
+Local motion uses fixed linear expressions: zoom changes from 1 to 1.08 or back, and pans
+move from +4% to -4% or back with 8% zoom. Scale and centre rotation clip inside the viewport.
+Neutral/warm grades are fixed `eq`/color-matrix templates; color pixel equivalence with CSS
+is **UNVERIFIED**. Arbitrary keyframe arrays, custom filters, LUTs and caller scripts are refused.
+Titles and captions use literal text files with drawtext expansion disabled. `subtitles_srt`
+accepts bounded inline numbered SRT and conflicts with nonempty `subtitles`; it accepts no
+file/URL or styling commands. Text remains subject to measured fit and allowed fonts.
+Legacy unfitted titles retain the existing 0.2-second fade default, including explicit zero;
+fitted titles and captions preserve zero fades. This normalization is shared by both backends.
+
+The agent dispatches ordinary renders on the configured backend. With `local`, owned Studio
+asset handles resolve to local paths without publishing; with `lambda`, dispatch stays on
+the Gateway. Unsupported features refuse before media I/O or AWS requests, including dry-run.
+Raw local paths in agent requests must stay inside the trusted current job. Standalone local
+renderer/NLE workflows keep their existing media-root contract.
+Backend selection never silently falls back, starts a replacement render or disables dry-run.
+Polling follows the saved render ID rather than the current backend setting. Existing native
+approval policy, cost disclosure, exempt-tool set and autonomous spending cap remain in force.
+
+The CI guard checks all nine Remotion tool IDs, every public render field, nested geometry
+fields, allowed presets, backend disclosures and structured skill feature/backend claims.
+Changing the schema or claiming an unsupported feature fails CI until the table and code agree.
+Non-render workflow schemas are pinned in the capability module: a shape or description
+change requires a capability review and updated workflow schema checksum.
+
+`tests/test_remotion_parity.py` renders lavfi-generated media locally and captures the complete
+mocked AWS invoke payload from the installed Remotion SDK. It checks MP4/H.264, dimensions,
+FPS, duration within one frame, overlays, motion direction and audio envelopes. Existing NLE,
+ad-matrix and deliverable-QC tests remain part of the full suite. Tests skip real-binary cases
+cleanly if FFmpeg/FFprobe is absent. Lambda render/download/playback, deployed version 2,
+font/layout pixel equality and audio/perceptual parity remain **UNVERIFIED**.
+
+Fixed `Ffmpeg___ffmpeg_tool` operations retain their separate allow-list and local job contract.
+No binary is added to the Gateway Lambda package. The timeline worker reuses bounded process
+capture with a scrubbed environment, argv lists and `shell=False`; sources retain protocol,
+host, path, byte, duration and thread limits. Output files are capped at 128 MiB.
 
 ## Delivery jobs and preset data
 
@@ -271,22 +334,24 @@ operator allowance per render; this is not an asserted local-render charge. Five
 candidates disclose $0 media and $0.05 allowance. Sample/batch cards show their own counts.
 Lambda matrix rendering remains refused. Its existing compute estimator uses configurable
 workload assumptions with [AWS Lambda pricing](https://aws.amazon.com/lambda/pricing/),
-read 2026-10-09; no new price or paid provider is added here.
+read 2026-10-09 and rechecked 2026-10-10; no new price or paid provider is added here.
 
 Remotion permits free use for individuals and teams of up to three. At four or more people
 operating the project, a Company License applies. Automators costs $0.01 per successful
 render with a $100/month minimum; free-licence automations do not pay per render. Whether
 this local ffmpeg compositor is metered remains **UNVERIFIED**. Sources:
 [Remotion licence FAQ](https://www.remotion.dev/docs/license/faq) and
-[terms v5.0](https://www.remotion.dev/docs/terms), read 2026-10-09.
+[terms v5.0](https://www.remotion.dev/docs/terms), read 2026-10-09 and rechecked 2026-10-10.
 
 FFmpeg is LGPL-2.1-or-later, or GPL-2.0-or-later when optional GPL components are enabled.
 The installed demo binary reports GPL version 2 or later (`ffmpeg -L`). No FFmpeg code or
 binary is copied or redistributed. See [FFmpeg legal](https://ffmpeg.org/legal.html), read
-2026-10-09. Text and demo logo labels use system DejaVu fonts: Bitstream Vera licence,
+2026-10-09 and rechecked 2026-10-10. Text and demo logo labels use system DejaVu fonts: Bitstream Vera licence,
 public-domain DejaVu changes and the included font licence conditions. See
-[DejaVu licence](https://dejavu-fonts.github.io/License.html), read 2026-10-09. Videos, tones,
+[DejaVu licence](https://dejavu-fonts.github.io/License.html), read 2026-10-09 and rechecked 2026-10-10. Videos, tones,
 logos and product stills are generated locally by the demo script; no external asset is used.
+The ordinary Lambda billing entry retains its preexisting 8-cent operator placeholder;
+actual per-render compute is **TODO/unknown**, not an official per-render price.
 There are no new models or weights. Existing editing policies retain `training_eligible=false`;
 source media rights are not training permission. No AGPL or non-commercial code/weights are copied.
 
@@ -297,6 +362,13 @@ licence allowance, Lambda estimate and timeout variables retain their roles.
 
 ## Verification and remaining limits
 
+2026-10-10 checks: the baseline passed 2,212 tests and the final suite passed 2,253
+(7 skipped in each). The 54 focused overlay/parity/guard tests, full Ruff check,
+`ci_check.py` and Studio `tsc --noEmit -p .` passed. No new dry-run flag or secret
+was added. Studio used the specified shared dependency directory plus a temporary
+overlay extracted from the local npm cache; its symlink was removed. Summarized
+evidence is saved under ignored `.renderhaus/e2e/remotion-parity-checks.json`.
+
 The real-binary tests cover two-pass loudness round trips, final AAC peaks, PCM MOV input,
 no-audio refusal, injected black/freeze/silence/clipping, wrong dimensions/FPS/duration,
 faststart atom order, source provenance, version contention, manifest hashes, finished-claim
@@ -304,13 +376,15 @@ guards, preset data, backend refusal and adversarial sandbox parameters. Tests c
 paid provider, Lambda or external media service. No model adapter or provider price was
 added. The source model/capability map remains quality first.
 
-Inventory is 16 providers, 117 Gateway tools, 30 packaged skills, and 220 retained routing
-rows: 215 active and 5 skipped. Of RT-E001..RT-E079, 78 are active. RT-E043 remains skipped
+Inventory is 16 providers, 128 Gateway tools, 34 packaged skills, and 251 retained routing
+rows: 246 active and 5 skipped. This branch adds no tools, skills or routing rows. Of RT-E001..RT-E079, 78 are active. RT-E043 remains skipped
 for exact OCR verification (`feat/remotion-ocr-verification`); four original dependency
 rows remain skipped. LUT/multicam/ProRes candidates are active honest refusals, and all
 Resolve-only rows are active negatives. Routing tests do not certify generated media.
 
-Comet Studio E2E is **blocked**: no Comet control is available in this environment. Offline
+Comet Studio E2E is **blocked**: no Comet control is available in this environment.
+The blocker is recorded under ignored `.renderhaus/e2e/remotion-parity-browser.json`
+through `scripts/browser_e2e_hook.py record`. Offline
 binary checks cannot replace that browser validation. Deployed Lambda pixel parity and
 PCM output, planner vision/OCR review, per-channel preset approval, local Remotion metering,
 S3 upload and direct publishing remain unverified or unavailable. No deploy was attempted.
@@ -325,6 +399,13 @@ dynamic loudnorm fallback requiring mix review. Topaz's `upscale` skill can prov
 enhancement with existing approval; it was not invoked in this offline demo. First-render
 contact sheets were inspected, and final files were decoded with the real FFmpeg binary.
 These checks do not establish browser playback or editorial acceptance.
+
+The 2026-10-10 parity fixture under ignored `.renderhaus/e2e/remotion-parity/` renders
+local grade/rotation, a title and inline SRT captions. The saved MP4 decoded video/audio
+and its extracted frame was inspected. It is a test fixture at 320x180 with
+`source_resolution=320x180`, no upscale and no resolution warnings; it is not a QC-certified
+customer deliverable or a browser playback check. Lambda parity captures the full mocked
+SDK invoke request only. See [decisions](remotion-local-lambda-parity-decisions.tsv).
 
 ## Run the real local customer demo
 

@@ -78,6 +78,22 @@ def check_gateway_tools_schema() -> None:
         print(f"ok {spec.id} gateway schema ({len(names)} tools)")
 
 
+def check_remotion_capabilities() -> None:
+    import json
+    import yaml
+    from providers.catalog import get_provider
+    from providers.registry import schema_path
+    from providers.remotion.capabilities import check_contract
+
+    skills = []
+    for path in (ROOT / 'agent/deep_agent/skills').glob('*/SKILL.md'):
+        _, frontmatter, body = path.read_text().split('---', 2)
+        skill = yaml.safe_load(frontmatter)
+        skills.append({**skill, 'body': body})
+    check_contract(json.loads(schema_path(get_provider('remotion')).read_text()), skills)
+    print('ok Remotion capability/schema/skill parity contract')
+
+
 def check_routing_inventory() -> None:
     import json
     import yaml
@@ -457,6 +473,7 @@ def validate_lambda_zip(zip_bytes: bytes) -> None:
 
 def main() -> int:
     check_gateway_tools_schema()
+    check_remotion_capabilities()
     check_routing_inventory()
     check_imports()
     check_beta_inventory()

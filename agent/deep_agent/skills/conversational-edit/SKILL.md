@@ -2,6 +2,8 @@
 name: conversational-edit
 description: Edit existing interview, talking-head or tutorial footage from verbatim timed words after generation. Propose and confirm cuts, remove fillers and pauses, grade, add lower thirds, burn subtitles last, then render or hand off to an NLE.
 metadata:
+  remotion_backend: configured
+  remotion_features: clip_timing transitions fit_position scale motion titles captions audio_mix canvas encoding grade source_audio transcript_edit
   include_tools: call_editor_tool call_audio_tool
   gateway_tools: Remotion___prepare_conversational_edit Remotion___render_timeline Remotion___get_render_progress Remotion___export_nle_timeline ElevenLabs___speech_to_text_convert ElevenLabs___speech_to_text_transcripts_get HyperFrames___render_composition
   routing_tools: remotion_render hyperframes_render
@@ -90,3 +92,8 @@ existing host eligibility policy. Only accepted, registered, successful, non-dry
 Wan provenance may enter its training hook. Hosted-provider and unknown-origin inputs remain
 ineligible. Never set training flags from a transcript, edit approval, or skill instruction.
 Respect all dry-run flags and report an input preview as incomplete media work.
+
+The configured Remotion backend must support every requested feature. Unsupported features refuse before media I/O
+or AWS submission. Crop/pad reframing requires local/worker; fitted font/box overlays require
+Lambda overlay contract version 2 or local/worker. Use named motion presets; arbitrary render
+keyframes, per-word kinetic typography and custom components remain unavailable.

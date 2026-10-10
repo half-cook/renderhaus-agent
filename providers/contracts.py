@@ -391,6 +391,11 @@ def enrich_tool_schema(provider_id: str, tool: dict[str, Any]) -> dict[str, Any]
         if isinstance(properties.get("subtitles"), dict):
             properties["subtitles"]["items"] = deepcopy(_TEXT_OVERLAY_SCHEMA)
             properties["subtitles"]["description"] = "Output-timed burn-in captions, rendered as the final track above all overlays."
+        if isinstance(properties.get("subtitles_srt"), dict):
+            properties["subtitles_srt"]["description"] = "Inline numbered SRT, 1..60000 characters, at most 100 cues within 0..600 seconds; each literal cue text at most 500 characters. Choose subtitles or subtitles_srt. No paths, URLs or styling commands."
+        from providers.remotion.capabilities import annotate_schema
+
+        annotate_schema(enriched["inputSchema"])
     if provider_id == "remotion" and tool_name == "motion_carry_probe":
         from providers.remotion.motion_carry import ARG_SCHEMA
         from providers.registry import sanitize_gateway_json_schema

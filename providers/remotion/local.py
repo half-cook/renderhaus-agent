@@ -23,6 +23,7 @@ import uuid
 import httpx
 
 from providers.remotion import mp4_probe
+from providers.remotion.capabilities import local_colour as _colour, validate_document
 from providers.remotion.text import box_geometry, fit_text, font_path, number
 
 MAX_MEDIA_BYTES = 128 * 1024 * 1024
@@ -80,12 +81,15 @@ def _source(source: str, *, directory: Path, index: int,
 
 
 def _probe(path: Path) -> dict[str, Any]:
-    if not shutil.which('ffprobe'):
+    from providers.ffmpeg.api import _bounded_run
+
+    binary = shutil.which('ffprobe')
+    if not binary:
         return mp4_probe.probe(path, max_bytes=MAX_MEDIA_BYTES)
-    result = subprocess.run(['ffprobe', '-v', 'error', '-protocol_whitelist', 'file,pipe',
+    result = _bounded_run([binary, '-v', 'error', '-protocol_whitelist', 'file,pipe',
                              '-format_whitelist', FORMATS, '-show_streams', '-show_format',
-                             '-of', 'json', str(path)], capture_output=True, timeout=30)
-    if result.returncode:
+                             '-of', 'json', str(path)], path.parent, 30)
+    if result.returncode or result.stdout_truncated:
         raise ValueError('Local source/output is not a supported media container.')
     return json.loads(result.stdout)
 
@@ -106,23 +110,13 @@ def _audio_filter(label: str, item: dict[str, Any], *, rate: float = 1,
     filters += [f'atrim=duration={duration:g}', f'volume={item.get("volume", 1):g}']
     for field, kind in [('audioFadeIn' if source_audio else 'fadeIn', 'in'),
                         ('audioFadeOut' if source_audio else 'fadeOut', 'out')]:
-        length = float(item.get(field, 0))
+        fallback = item.get('fadeIn' if kind == 'in' else 'fadeOut', 0) if source_audio else 0
+        length = float(item.get(field, fallback))
         if length:
             when = 0 if kind == 'in' else max(0, duration - length)
             filters.append(f'afade=t={kind}:st={when:g}:d={length:g}')
     filters += [f'adelay={round(start*1000)}:all=1', 'aresample=48000']
     return f'[{label}]' + ','.join(filters)
-
-
-def _colour(value: str) -> str:
-    names = {'white', 'black', 'red', 'green', 'blue', 'yellow', 'gray', 'grey', 'transparent'}
-    if value in names:
-        return 'black@0' if value == 'transparent' else value
-    if re.fullmatch(r'#[0-9a-fA-F]{3}', value):
-        return '0x' + ''.join(character * 2 for character in value[1:])
-    if re.fullmatch(r'#[0-9a-fA-F]{6}(?:[0-9a-fA-F]{2})?', value):
-        return '0x' + value[1:]
-    raise ValueError('Local text colors require a hex color or an allow-listed color name.')
 
 
 def _visual_layer(label: str, item: dict[str, Any], *, duration: float, fps: float) -> list[str]:
@@ -163,8 +157,45 @@ def _text_layer(item: dict[str, Any], directory: Path, index: int, *, width: int
     return ','.join(chain), box
 
 
+GRADE_FILTERS = {
+    'none': [],
+    'neutral': ['eq=contrast=1.04:saturation=0.96'],
+    'warm': ['colorchannelmixer=rr=0.92716:rg=0.09228:rb=0.02268:'
+             'gr=0.04188:gg=0.96232:gb=0.02016:br=0.03264:bg=0.06408:bb=0.89572',
+             'eq=saturation=1.08:contrast=1.03'],
+}
+
+
+def _transform(chain: list[str], filters: list[str], item: dict[str, Any], count: int,
+               *, width: int, height: int, frame_rate: str, fps: float) -> list[str]:
+    motion, rotation = item.get('motion', 'none'), item.get('rotation', 0)
+    chain += GRADE_FILTERS[item.get('grade', 'none')]
+    if motion == 'none' and rotation == 0:
+        return chain
+    frames = max(1, round((item['start'] + item['duration']) * fps) - round(item['start'] * fps))
+    progress = f'min(1,max(0,n/{max(1, frames - 1)}))'
+    zoom = {'none': '1', 'zoom_in': f'(1+0.08*{progress})',
+            'zoom_out': f'(1.08-0.08*{progress})', 'pan_left': '1.08', 'pan_right': '1.08'}[motion]
+    if rotation:
+        angle = f'{rotation:g}*PI/180'
+        chain.append(f'rotate=angle={angle}:ow=ceil(rotw({angle})/2)*2:'
+                     f'oh=ceil(roth({angle})/2)*2:c=black@0')
+    factor = f'{item.get("scale", 1):g}*{zoom}'
+    chain.append(f"scale=w='max(2,trunc(iw*({factor})/2)*2)':"
+                 f"h='max(2,trunc(ih*({factor})/2)*2)':eval=frame:flags=lanczos")
+    filters.append(','.join(chain) + f'[transformed{count}]')
+    filters.append(f'color=c=black@0:s={width}x{height}:r={frame_rate}:d={item["duration"]:g},'
+                   f'format=rgba[viewport{count}]')
+    overlay_progress = f'min(1,max(0,t*{fps:g}/{max(1, frames - 1)}))'
+    pan = {'pan_left': f'(0.04-0.08*{overlay_progress})*W',
+           'pan_right': f'(-0.04+0.08*{overlay_progress})*W'}.get(motion, '0')
+    return [f"[viewport{count}][transformed{count}]overlay=x='(W-w)/2+{pan}':y=(H-h)/2:"
+            'eof_action=pass:repeatlast=0:shortest=1:format=auto', 'format=rgba']
+
+
 def _command(props: dict[str, Any], directory: Path, *, media_roots: tuple[Path, ...],
              source_root: Path, filename: str) -> tuple[list[str], float]:
+    validate_document(props, 'local')
     config, document = props['renderConfig'], props['document']
     fps, width, height = float(config['fps']), int(config['width']), int(config['height'])
     frame_rate = str(Fraction(fps).limit_denominator(100_000))
@@ -172,7 +203,7 @@ def _command(props: dict[str, Any], directory: Path, *, media_roots: tuple[Path,
     if not 0 < duration <= 600 or len(document['assets']) > 60:
         raise ValueError('Local renders allow at most 600 seconds and 60 assets.')
     assets = {asset['id']: asset for asset in document['assets']}
-    command = ['ffmpeg', '-hide_banner', '-nostdin', '-v', 'error', '-y',
+    command = [shutil.which('ffmpeg') or 'ffmpeg', '-hide_banner', '-nostdin', '-v', 'error', '-y',
                '-filter_complex_threads', '1', '-f', 'lavfi', '-i',
                f'color=c=black:s={width}x{height}:r={frame_rate}:d={duration:g}']
     filters: list[str] = []
@@ -198,9 +229,6 @@ def _command(props: dict[str, Any], directory: Path, *, media_roots: tuple[Path,
                 continue
             if item['type'] != 'clip':
                 raise ValueError('Unsupported timeline item type; local supports clip and text items.')
-            if (item.get('motion', 'none') != 'none' or item.get('grade', 'none') != 'none'
-                    or item.get('rotation', 0) != 0):
-                raise ValueError('Local assembly does not support motion/grade/rotation; use Lambda.')
             count += 1
             asset = assets[item['assetId']]
             if asset['url'] not in sources:
@@ -234,6 +262,9 @@ def _command(props: dict[str, Any], directory: Path, *, media_roots: tuple[Path,
                 box = box_geometry(item['box'], width, height) if 'box' in item else {
                     'x': 0, 'y': 0, 'width': width, 'height': height}
                 scale = number(item.get('scale', 1), 'scale', .1, 4)
+                transform = item.get('motion', 'none') != 'none' or item.get('rotation', 0) != 0
+                if transform:
+                    scale = 1
                 target_width = max(2, round(box['width'] * scale / 2) * 2)
                 target_height = max(2, round(box['height'] * scale / 2) * 2)
                 x = box['x'] + (box['width'] - target_width) / 2
@@ -279,6 +310,9 @@ def _command(props: dict[str, Any], directory: Path, *, media_roots: tuple[Path,
                 if scale > 1 and 'box' in item:
                     chain += [f'crop={max(2, round(box["width"] / 2) * 2)}:{max(2, round(box["height"] / 2) * 2)}']
                     x, y = box['x'], box['y']
+                chain = _transform(chain, filters, item, count,
+                    width=max(2, round(box['width'] / 2) * 2),
+                    height=max(2, round(box['height'] / 2) * 2), frame_rate=frame_rate, fps=fps)
                 chain += ['setsar=1', *_visual_layer(f'v{count}', item, duration=float(item['duration']), fps=fps)]
                 filters.append(','.join(chain))
                 filters.append(f'[{visual}][v{count}]overlay=x={x:g}:y={y:g}:eof_action=pass:repeatlast=0'
@@ -300,9 +334,9 @@ def _command(props: dict[str, Any], directory: Path, *, media_roots: tuple[Path,
     if audio:
         command += ['-map', '[audio]', '-c:a', 'aac', '-ar', '48000']
     bitrate = config.get('videoBitrate')
-    quality = ['-b:v', str(bitrate)] if bitrate else ['-crf', str(config.get('crf') or 18)]
+    quality = ['-b:v', str(bitrate)] if bitrate else ['-crf', str(config['crf'] if config.get('crf') is not None else 18)]
     command += ['-c:v', 'libx264', '-threads', '2', '-preset', 'veryfast', '-pix_fmt', 'yuv420p',
-                *quality, '-movflags', '+faststart', '-t', str(duration), '-progress',
+                *quality, '-movflags', '+faststart', '-fs', str(MAX_MEDIA_BYTES), '-t', str(duration), '-progress',
                 str(directory / 'progress.txt'), str(directory / filename)]
     return command, duration
 
@@ -311,6 +345,7 @@ def start_render(props: dict[str, Any], *, output_filename: str,
                  media_roots: tuple[Path, ...], source_root: Path) -> dict[str, Any]:
     from providers.remotion.api import _resolution_report
 
+    validate_document(props, 'local')
     if not shutil.which('ffmpeg') or not shutil.which('ffprobe'):
         raise RuntimeError('Local assembly requires ffmpeg and ffprobe on PATH.')
     render_id = f'local-{uuid.uuid4().hex}'

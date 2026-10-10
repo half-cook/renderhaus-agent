@@ -219,7 +219,9 @@ class DeepAgentExecutionTests(unittest.IsolatedAsyncioTestCase):
         gateway.call_tool.side_effect = provider
         model = ScriptedModel([
             dispatch(VIDEO, VIDEO_ARGS, "video"), dispatch(TTS, TTS_ARGS, "audio"),
-            dispatch(RENDER, {"visuals": []}, "render"), call("StudioAgentOutput", FINAL, "finish"),
+            dispatch(RENDER, {'title': 'Assemble', 'visuals': [{'kind': 'image',
+                'url': 'https://example.test/still.png', 'duration_seconds': 1}]}, "render"),
+            call("StudioAgentOutput", FINAL, "finish"),
         ])
         with tempfile.TemporaryDirectory() as directory, patch.dict("os.environ", {
             "RENDERHAUS_OUTCOME_DIR": directory, "STRIPE_SECRET_KEY": "",

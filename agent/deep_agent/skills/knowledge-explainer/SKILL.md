@@ -2,6 +2,8 @@
 name: knowledge-explainer
 description: Create silent graphic knowledge or science explainers with on-screen text and event-synced sound effects. No narration or TTS. Remotion is the default; use HyperFrames only when explicitly named.
 metadata:
+  remotion_backend: configured
+  remotion_features: clip_timing transitions fit_position scale motion titles captions audio_mix canvas encoding
   include_tools: call_editor_tool call_media_tool call_audio_tool
   routing_tools: remotion_render hyperframes_render mirelo_v2a elevenlabs_sfx_v2 motion_carry_probe
   gateway_tools: Remotion___render_timeline Remotion___get_render_progress HyperFrames___render_composition Fal___mirelo_v2a Fal___get_video_task ElevenLabs___text_to_sound_effects_convert Remotion___motion_carry_probe
@@ -141,3 +143,8 @@ and run `motion_carry_probe` through `Remotion___motion_carry_probe` with the ow
 local MP4 and exact beat timing when available. Surface any failed report and
 offer a re-render before presenting the film as final. A dry-run, missing MP4
 or skipped probe is incomplete QC. This free local check grants no paid calls.
+
+The configured Remotion backend must support every requested feature. Unsupported features refuse before media I/O
+or AWS submission. Crop/pad reframing requires local/worker; fitted font/box overlays require
+Lambda overlay contract version 2 or local/worker. Use named motion presets; arbitrary render
+keyframes, per-word kinetic typography and custom components remain unavailable.

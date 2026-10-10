@@ -2,6 +2,8 @@
 name: plan-to-video
 description: Turn an existing implementation plan or plan-mode Markdown into a narrated review video with chapter cards and open questions. Remotion is the default; use HyperFrames only when named.
 metadata:
+  remotion_backend: configured
+  remotion_features: clip_timing transitions fit_position scale motion titles captions audio_mix canvas encoding
   include_tools: call_editor_tool call_audio_tool
   routing_tools: remotion_render hyperframes_render eleven_v4_turbo fish_audio_tts ffmpeg_tool deliverable_qc
   gateway_tools: Remotion___render_timeline Remotion___get_render_progress HyperFrames___render_composition ElevenLabs___text_to_speech_convert FishAudio___generate_speech Ffmpeg___ffmpeg_tool Remotion___qc_deliverable
@@ -150,3 +152,8 @@ their existing licences, rights, configuration, and training eligibility.
 The exact public `eleven_v4_turbo` ID is also UNVERIFIED in this session. The
 starting adapter records operator TTS evidence and defaults to dry-run; this
 workflow changes no HTTP guard. See [pricing, evidence and limits](../../../../docs/PLAN_TO_VIDEO.md).
+
+The configured Remotion backend must support every requested feature. Unsupported features refuse before media I/O
+or AWS submission. Crop/pad reframing requires local/worker; fitted font/box overlays require
+Lambda overlay contract version 2 or local/worker. Use named motion presets; arbitrary render
+keyframes, per-word kinetic typography and custom components remain unavailable.

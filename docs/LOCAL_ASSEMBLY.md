@@ -101,8 +101,10 @@ ordered visual layers and start times, cover/contain fitting, crop positions,
 opacity and fades; source-video audio and independent audio tracks with source
 trims, start, duration, volume and fades. Audio never extends the visual length.
 Local titles/subtitles use allow-listed DejaVu fonts, measured fit and safe text files.
-Positioned/scaled image or video overlays, opacity and fades are supported. Motion presets,
-video grading and rotation still require Lambda and fail explicitly in local mode. New
+Positioned/scaled image or video overlays, opacity and fades are supported. Both backends
+accept fixed linear zoom/pan presets, neutral/warm grade and centre rotation. Inline
+`subtitles_srt` burns bounded numbered captions using literal text; arbitrary animation
+keyframes and free filtergraphs are refused. New
 font/box props require a compatible Lambda composition or return a clear refusal. See
 [the ad matrix contract](REMOTION_EDITING.md) for capabilities, font licences and real demo
 commands. This is a local assembly backend, not
@@ -113,7 +115,7 @@ Local render downloads require HTTPS on exact hosts listed in the comma-separate
 hosts, redirects, credentials in URLs, `file://`, and sources outside local
 media roots are refused. Assets are downloaded with bounded requests and byte
 limits before ffmpeg receives local paths. Renders are limited to 600 seconds
-and 60 assets, 128 MiB per source and 384 MiB total. The existing
+and 60 assets, 128 MiB per source and output, and 384 MiB total input. The existing
 `REMOTION_RENDER_TIMEOUT_SECONDS` defaults to 1200 for local jobs too.
 
 Start a loopback MCP Gateway with progressive tool discovery:
