@@ -19,6 +19,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 def _force_dry_run() -> None:
+    os.environ["BETA_VERIFICATION_DRY_RUN"] = "true"
     os.environ["GEMINI_DRY_RUN"] = "true"
     os.environ["KLING_DRY_RUN"] = "true"
     os.environ["RUNWAY_DRY_RUN"] = "true"
@@ -310,6 +311,39 @@ def check_imports() -> None:
     print("ok python imports")
 
 
+def check_orchestration_billing() -> None:
+    from server import run_budget
+    from server.app import app
+    from server.config import DEFAULT_ENV
+
+    assert DEFAULT_ENV["ORCHESTRATION_BILLING_ENABLED"] == "true"
+    assert run_budget.default_cap_cents(105) == 150
+    actual = {(path, method.upper()) for path, operations in app.openapi()["paths"].items() for method in operations}
+    expected = {("/api/studio/agent/{job_id}/receipt", "GET"), ("/api/studio/agent/{job_id}/cap", "POST")}
+    assert expected <= actual, f"missing orchestration routes: {expected - actual}"
+    print("ok orchestration billing defaults and routes")
+
+
+def check_beta_inventory() -> None:
+    from server.app import app
+    from server.beta_credits import BetaSettings
+    from server.config import DEFAULT_ENV
+
+    assert DEFAULT_ENV["BETA_CREDITS_ENABLED"] == "false"
+    assert DEFAULT_ENV["BETA_GLOBAL_CAP_CENTS"] == "50000"
+    assert DEFAULT_ENV["BETA_WAVE_SIZE"] == "50"
+    assert DEFAULT_ENV["BETA_VERIFICATION_DRY_RUN"] == "true"
+    assert BetaSettings().enabled is False
+    expected = {("/api/beta/status", "GET"), ("/api/beta/claim", "POST"),
+                ("/api/beta/waitlist", "POST"), ("/api/admin/beta/next-wave", "POST")}
+    expected.update((f"/api/beta/verify/{kind}/{action}", "POST")
+                    for kind in ("email", "phone") for action in ("start", "confirm"))
+    actual = {(path, method.upper()) for path, operations in app.openapi()["paths"].items()
+              for method in operations}
+    assert expected <= actual, f"missing beta routes: {expected - actual}"
+    print("ok beta route inventory and closed defaults (8 routes)")
+
+
 def check_lambda_zip() -> None:
     import importlib.util
 
@@ -363,6 +397,8 @@ def main() -> int:
     check_gateway_tools_schema()
     check_routing_inventory()
     check_imports()
+    check_beta_inventory()
+    check_orchestration_billing()
     check_dry_run_dispatch()
     check_hyperframes_preview()
     check_lambda_zip()

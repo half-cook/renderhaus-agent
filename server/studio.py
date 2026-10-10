@@ -46,7 +46,9 @@ from providers.registry import dispatch, load_committed_schemas
 from server.assets import publish_provider_input_url
 from server.auth import AuthUser, OptionalAuthUser, current_user_id, current_workspace_id
 from server.billing import stripe_enabled
+from server.beta_credits import beta_billing_enabled
 from server.billing_rates import cost_for
+from server import run_billing, run_budget
 from server.config import ROOT
 from server.studio_state import ACTIVE_EXECUTION_STATUSES, CanvasConflictError, InsufficientBalanceError, StudioAssetKind, repository
 from server.studio_options import LIVE_CHOICE_TOOLS, extract_choice_ids, static_field_options
@@ -538,12 +540,13 @@ def _normalize_canvas_document(
 @router.get("/account")
 async def studio_account(auth: AuthUser) -> dict[str, Any]:
     user_id = current_user_id(auth)
-    balance, ledger, subscription = await asyncio.gather(
-        asyncio.to_thread(repository.get_balance, user_id),
+    balance = await asyncio.to_thread(repository.get_balance, user_id)
+    ledger, subscription, beta_credit = await asyncio.gather(
         asyncio.to_thread(repository.list_ledger, user_id, limit=20),
         asyncio.to_thread(repository.get_subscription_state, user_id),
+        asyncio.to_thread(repository.get_beta_credit, user_id),
     )
-    return {"balance_cents": balance, "recent_ledger": ledger, "subscription": subscription}
+    return {"balance_cents": balance, "recent_ledger": ledger, "subscription": subscription, "beta_credit": beta_credit}
 
 
 @router.get("/projects")
@@ -752,18 +755,9 @@ async def invoke_tool(body: InvokeBody, auth: AuthUser) -> dict[str, Any]:
         cost = cost_for(body.provider, body.tool, cleaned)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
-    # No billing enforcement at all when Stripe isn't configured (local/dry-run
-    # dev, per the README) -- every account starts at $0 with no way to top up
-    # in that mode, so charging here would 402 every single generation.
-    billed = stripe_enabled() and cost.total_cents > 0
+    billed = cost.total_cents > 0 and (stripe_enabled() or beta_billing_enabled(repository, user_id))
     charge = None
     if billed:
-        # Debit *before* dispatch, not after: charge_usage's daily-allowance
-        # CAS and wallet UPDATE are both atomic, so two concurrent requests
-        # reading the same allowance/balance can no longer both pass a
-        # check and both spend real provider money -- whichever debits
-        # first wins, the other sees the reduced amounts and correctly
-        # 402s before anything is dispatched.
         try:
             charge = await asyncio.to_thread(
                 repository.charge_usage, user_id, cost.total_cents, "generation"
@@ -803,6 +797,9 @@ async def invoke_tool(body: InvokeBody, auth: AuthUser) -> dict[str, Any]:
         if billed:
             await refund("dispatch failed")
         raise HTTPException(status_code=500, detail=str(exc)) from exc
+    if result.get("error") or result.get("status") in {"failed", "error", "blocked", "not_run"}:
+        await refund("provider returned a failed or no-work result")
+        return {"provider": body.provider, "tool": body.tool, "result": result, "assets": [], "cost": cost.public()}
     if body.provider == "runway" and body.tool != "get_runway_task" and result.get("job_id"):
         await asyncio.to_thread(repository.record_provider_task, workspace_id, body.project_id, "runway", result["job_id"])
     if preparing_edit:
@@ -922,6 +919,13 @@ class AgentBody(BaseModel):
 class AgentApprovalBody(BaseModel):
     decision: str = Field(pattern="^(approve|reject)$")
     message: str | None = Field(default=None, max_length=1_000)
+    # Hard cap (integer cents, a run total) chosen by the user on the approval card; defaults to the card's cap.
+    cap_cents: int | None = Field(default=None, ge=0, le=10_000_000)
+
+
+class AgentCapBody(BaseModel):
+    action: Literal["raise", "stop"]
+    cap_cents: int | None = Field(default=None, ge=0, le=10_000_000)
 
 
 class AgentNodeBody(BaseModel):
@@ -1568,6 +1572,54 @@ async def _run_studio_agent_job(
     project_id: str,
     user_id: str,
     autonomous: bool = False,
+    **kwargs: Any,
+) -> None:
+    """Run one agent job inside its credit hold: hold the cap first, release the unused part at the end."""
+    autonomous_cents = run_budget.autonomous_media_cents() if autonomous else 0
+    try:
+        await asyncio.to_thread(
+            run_billing.start_run, repository, user_id, job_id, conversation_id,
+            autonomous_media_cents=autonomous_cents,
+        )
+    except run_budget.InsufficientCreditError:
+        await asyncio.to_thread(
+            repository.update_execution, workspace_id, job_id, status="error",
+            message="Not enough credit to start this run. Add credit and try again.",
+            error_type="InsufficientCredit",
+        )
+        return
+    try:
+        await _run_studio_agent_job_inner(
+            job_id, prompt, references, conversation_id, workspace_id=workspace_id, project_id=project_id,
+            user_id=user_id, autonomous=autonomous, **kwargs,
+        )
+    finally:
+        try:
+            execution = repository.get_run_hold(job_id)
+            row = repository.get_execution(workspace_id, job_id) or {}
+            if execution and execution["status"] == "paused_cap" and row.get("status") == "error":
+                repository.update_execution(
+                    workspace_id, job_id, status="error", message=run_budget.PAUSED_MESSAGE,
+                    error_type="PausedAtCap",
+                )
+            run_billing.end_run(
+                repository, job_id, execution_status=str(row.get("status") or "error"),
+                error_type=row.get("error_type"),
+            )
+        except Exception:  # noqa: BLE001 - a stale hold is swept by TTL; never mask the run's own outcome
+            logger.exception("Could not settle the credit hold for run %s", job_id)
+
+
+async def _run_studio_agent_job_inner(
+    job_id: str,
+    prompt: str,
+    references: list[StudioNodeReference],
+    conversation_id: str,
+    *,
+    workspace_id: str,
+    project_id: str,
+    user_id: str,
+    autonomous: bool = False,
     resume_state: str | None = None,
     approval_decisions: list[StudioApprovalDecision] | None = None,
     prior_tool_events: list[StudioToolEvent] | None = None,
@@ -1776,6 +1828,15 @@ async def _run_studio_agent_job(
                 )
             )
         raise
+    except run_budget.RunPausedAtCap:
+        # Hard stop at the run's cap: not a failure. The hold stays until the user raises the cap or stops.
+        logger.info("Studio agent job %s paused at its credit cap", job_id)
+        execution = await asyncio.to_thread(repository.get_execution, workspace_id, job_id) or {}
+        await asyncio.to_thread(
+            repository.update_execution, workspace_id, job_id, status="error", message=run_budget.PAUSED_MESSAGE,
+            result=_partial_agent_result(execution), error_type="PausedAtCap",
+        )
+        return
     except AgentRunLimitExceeded as exc:
         from agent.deep_agent.routing import route_intent
 
@@ -1961,6 +2022,11 @@ async def studio_agent(body: AgentBody, auth: AuthUser) -> dict[str, Any]:
         user_id=user_id,
         autonomous=body.autonomous,
     )
+    short = await asyncio.to_thread(
+        run_billing.precheck_start, repository, user_id, conversation_id
+    )
+    if short is not None:
+        raise HTTPException(status_code=402, detail=short)
     try:
         job = await asyncio.to_thread(
             repository.create_execution,
@@ -2005,6 +2071,23 @@ async def decide_studio_agent_tool(
     auth: AuthUser,
 ) -> dict[str, Any]:
     workspace_id = current_workspace_id(auth)
+    if body.decision == "approve":
+        # Hold the hard cap from the user's credit before the approval counts; nothing is recorded if it fails.
+        checkpoint_for_cap = await asyncio.to_thread(repository.execution_checkpoint, workspace_id, job_id)
+        pending = [dict(item, decision=item.get("decision") or ("approve" if item.get("call_id") == call_id else None))
+                   for item in (checkpoint_for_cap or {}).get("approvals") or []]
+        if pending:
+            try:
+                await asyncio.to_thread(
+                    run_billing.approval_gate, repository, run_id=job_id, user_id=current_user_id(auth),
+                    conversation_id=str((checkpoint_for_cap or {}).get("request", {}).get("conversation_id") or "") or None,
+                    raw_approvals=pending, requested_cap_cents=body.cap_cents,
+                )
+            except run_budget.InsufficientCreditError as exc:
+                raise HTTPException(status_code=402, detail=run_billing.insufficient_for(
+                    repository, job_id, exc, pending, body.cap_cents)) from None
+            except ValueError as exc:
+                raise HTTPException(status_code=400, detail=run_budget.neutral_error(str(exc))) from None
     try:
         execution, ready = await asyncio.to_thread(
             repository.decide_execution_approval,
@@ -2020,7 +2103,7 @@ async def decide_studio_agent_tool(
         raise HTTPException(status_code=409, detail=str(exc)) from exc
 
     if not ready:
-        return execution
+        return run_billing.public_execution(execution)
 
     checkpoint = await asyncio.to_thread(repository.execution_checkpoint, workspace_id, job_id)
     if checkpoint is None or not checkpoint.get("run_state"):
@@ -2070,7 +2153,51 @@ async def decide_studio_agent_tool(
     )
     _AGENT_TASKS.add(task)
     task.add_done_callback(_AGENT_TASKS.discard)
-    return execution
+    return run_billing.public_execution(execution)
+
+
+@router.get("/agent/{job_id}/receipt")
+async def studio_agent_receipt(job_id: str, auth: AuthUser) -> dict[str, Any]:
+    """The run receipt: fee-inclusive work lines, orchestration actual, total, balance before/after."""
+    execution = await asyncio.to_thread(repository.get_execution, current_workspace_id(auth), job_id)
+    if execution is None:
+        raise HTTPException(status_code=404, detail="Agent job not found.")
+    receipt = await asyncio.to_thread(repository.get_run_receipt, job_id, current_user_id(auth))
+    if receipt is None:
+        raise HTTPException(status_code=404, detail="This run has no receipt yet.")
+    return receipt
+
+
+@router.post("/agent/{job_id}/cap")
+async def studio_agent_cap(job_id: str, body: AgentCapBody, auth: AuthUser) -> dict[str, Any]:
+    """Answer a paused_cap event: raise the cap to a new total (then continue) or stop."""
+    workspace_id = current_workspace_id(auth)
+    user_id = current_user_id(auth)
+    execution = await asyncio.to_thread(repository.get_execution, workspace_id, job_id)
+    hold = await asyncio.to_thread(repository.get_run_hold, job_id)
+    if execution is None or hold is None or hold["user_id"] != user_id:
+        raise HTTPException(status_code=404, detail="Agent job not found.")
+    if hold["state"] != "held" or hold["status"] != "paused_cap":
+        raise HTTPException(status_code=409, detail="This run is not paused at its cap.")
+    if body.action == "stop":
+        receipt = await asyncio.to_thread(repository.release_run, job_id, status="stopped")
+        await asyncio.to_thread(
+            repository.update_execution, workspace_id, job_id, status="error",
+            message="Stopped. Nothing more has been charged.", error_type="UserStopped",
+        )
+        return {"status": "stopped", "receipt": receipt}
+    if body.cap_cents is None:
+        raise HTTPException(status_code=400, detail="Choose a new cap.")
+    if not execution.get("can_resume"):
+        raise HTTPException(status_code=409, detail="This run has no unfinished progress available to resume.")
+    try:
+        await asyncio.to_thread(run_billing.raise_cap, repository, job_id, user_id, body.cap_cents)
+    except run_budget.InsufficientCreditError as exc:
+        raise HTTPException(status_code=402, detail=run_billing.insufficient_for_raise(
+            repository, job_id, exc, body.cap_cents)) from None
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=run_budget.neutral_error(str(exc))) from None
+    return await resume_studio_agent_job(job_id, auth)
 
 
 @router.post("/agent/{job_id}/resume", status_code=202)
@@ -2138,7 +2265,7 @@ async def stop_studio_agent_job(job_id: str, auth: AuthUser) -> dict[str, Any]:
         await asyncio.to_thread(repository.update_execution, workspace_id, job_id,
                                status="error", message="Stopped. Provider jobs already started may still finish.",
                                result=_partial_agent_result(latest), error_type="UserStopped", only_if_active=True)
-    return await asyncio.to_thread(repository.get_execution, workspace_id, job_id)
+    return run_billing.public_execution(await asyncio.to_thread(repository.get_execution, workspace_id, job_id))
 
 
 @router.get("/agent")
@@ -2155,7 +2282,7 @@ async def studio_agent_jobs(
         project_id=project_id,
         conversation_id=conversation_id,
     )
-    return {"items": items}
+    return {"items": [run_billing.public_execution(item) for item in items]}
 
 
 @router.get("/agent/{job_id}")
@@ -2163,7 +2290,7 @@ async def studio_agent_job(job_id: str, auth: AuthUser) -> dict[str, Any]:
     job = await asyncio.to_thread(repository.get_execution, current_workspace_id(auth), job_id)
     if job is None:
         raise HTTPException(status_code=404, detail="Agent job not found.")
-    return job
+    return run_billing.public_execution(job)
 
 
 @router.get("/agent/{job_id}/events")
@@ -2187,7 +2314,8 @@ async def studio_agent_job_events(
             job = await asyncio.to_thread(repository.get_execution, workspace_id, job_id)
             if job is None:
                 return
-            serialized = json.dumps(job, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+            serialized = json.dumps(run_billing.public_execution(job), ensure_ascii=False, sort_keys=True,
+                                    separators=(",", ":"))
             if serialized != previous:
                 previous = serialized
                 yield f"event: snapshot\ndata: {serialized}\n\n"

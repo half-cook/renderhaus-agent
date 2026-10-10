@@ -864,7 +864,9 @@ def cost_for(provider: str, tool: str, arguments: dict[str, Any]) -> GenerationC
     if provider == "remotion" and tool in {"deliver_render", "qc_deliverable"}:
         return GenerationCost(0, 0)
     if provider == "remotion" and tool == "render_ad_variants":
-        if arguments.get("stage") == "plan":
+        from providers.remotion.api import dry_run
+
+        if dry_run() or arguments.get("stage") == "plan":
             return GenerationCost(0, 0)
         estimate = ad_matrix_estimate(arguments)
         return GenerationCost(math.ceil(estimate["estimated_total_usd"] * 100), 0)

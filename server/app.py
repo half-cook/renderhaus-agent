@@ -29,6 +29,8 @@ from server.assets import (
 from server.auth import AuthUser, clerk_enabled, current_user_id, optional_user, publishable_key
 from server.config import ROOT, load_local_env
 from server.billing import router as billing_router
+from server.beta import router as beta_router
+from server.beta_credits import BetaSettings
 from server.studio import router as studio_router
 from server.studio_state import repository as studio_repository
 from server.uploads import bounded_upload_path, upload_limits_mb
@@ -46,6 +48,7 @@ from server.projects import (
 
 
 load_local_env()
+BetaSettings.from_env()
 
 STATE_DIR = ROOT / ".renderhaus" / "web-jobs"
 MEDIA_DIR = (ROOT / os.getenv("RENDERHAUS_MEDIA_DIR", ".renderhaus/media")).resolve()
@@ -478,6 +481,7 @@ app.add_middleware(
 )
 app.include_router(studio_router)
 app.include_router(billing_router)
+app.include_router(beta_router)
 
 
 @app.get("/", include_in_schema=False)

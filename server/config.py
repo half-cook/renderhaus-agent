@@ -14,6 +14,21 @@ GATEWAY_MCP_SERVER_NAME = "agentcore-gateway"
 
 
 DEFAULT_ENV = {
+    # Orchestration billing (docs/BILLING.md). Integer cents are fee-inclusive.
+    "ORCHESTRATION_BILLING_ENABLED": "true",
+    "ORCHESTRATION_ESTIMATE_CENTS": "75",
+    "ORCHESTRATION_CAP_FACTOR": "1.4",
+    "ORCHESTRATION_CAP_ROUND_CENTS": "25",
+    "ORCHESTRATION_RAISE_STEP_CENTS": "50",
+    "ORCHESTRATION_HOLD_TTL_SECONDS": "21600",
+    "ORCHESTRATION_AUTONOMOUS_MEDIA_CENTS": "300",
+    "BETA_CREDITS_ENABLED": "false",
+    "BETA_GRANT_CENTS": "1000",
+    "BETA_GLOBAL_CAP_CENTS": "50000",
+    "BETA_WAVE_SIZE": "50",
+    "BETA_WAVE_INDEX": "1",
+    "BETA_DAILY_GRANT_LIMIT": "0",
+    "BETA_VERIFICATION_DRY_RUN": "true",
     "OPENAI_IMAGES_DRY_RUN": "true",
     "OPENAI_IMAGES_MODEL": "gpt-image-2.5-sunburst",
     "KLING_BASE_URL": "https://api-singapore.klingai.com",
@@ -49,7 +64,7 @@ def load_local_env() -> None:
     if not os.getenv("RENDERHAUS_AGENT_MODEL") and not os.getenv("AGENT_MODEL"):
         os.environ["RENDERHAUS_AGENT_MODEL"] = DEFAULT_DEEP_AGENT_MODEL
     for key, value in DEFAULT_ENV.items():
-        if not os.getenv(key):
+        if key not in os.environ or (not key.startswith("BETA_") and not os.getenv(key)):
             os.environ[key] = value
 
 

@@ -25,6 +25,7 @@ from agent.hyperframes import HYPERFRAMES_TOOL
 
 from agent.codex_harness import ToolApprovalPending
 from agent.studio_agent_next import (
+    GatewayToolError,
     _GATEWAY_SEARCH_TOOL,
     _append_harvested_event,
     _asset_version_ids,
@@ -555,6 +556,14 @@ class GatewayExecutor:
         if rejection is not None:
             output = {"status": "rejected", "message": rejection}
         else:
+            meter = getattr(studio, "run_meter", None)
+            if meter is not None and not is_free_tool(name):
+                # Hard stop at the run's cap: run spend + this step must fit before anything paid is dispatched.
+                from server.run_budget import PAUSED_MESSAGE
+
+                step_quote = estimate_cost(name, arguments)
+                if await asyncio.to_thread(meter.check_step, step_quote.total_cents):
+                    return {"status": "not_run", "reason": PAUSED_MESSAGE}
             if self.cap_cents is not None and not is_free_tool(name):
                 quote = estimate_cost(name, arguments)
                 spent = sum(self.reservations.values())
@@ -589,16 +598,37 @@ class GatewayExecutor:
             try:
                 if name in LOCAL_MEDIA_TOOLS:
                     from providers.registry import dispatch
+                    from providers.remotion.ad_variants import authorize
+                    from server.billing import stripe_enabled
+                    from server.billing_rates import cost_for
+                    from server.beta_credits import beta_billing_enabled
+                    from server.studio_state import repository
 
                     provider, verb = tool_parts(name)
-                    if name == "Remotion___render_ad_variants":
-                        from providers.remotion.ad_variants import authorize
+                    charge = None
+                    if studio.user_id and (stripe_enabled() or beta_billing_enabled(repository, studio.user_id)):
+                        cost = cost_for(provider, verb, arguments)
+                        if cost.total_cents > 0:
+                            from server.run_billing import charge_media
 
-                        with authorize(arguments.get("stage", "plan"), arguments.get("plan_hash", ""),
-                                       f"human:{call_id}" if approved else ""):
+                            charge = await asyncio.to_thread(
+                                charge_media, repository, studio.user_id, studio.job_id, cost.total_cents,
+                                name, arguments, call_id,
+                            )
+                    try:
+                        if name == "Remotion___render_ad_variants":
+                            with authorize(arguments.get("stage", "plan"), arguments.get("plan_hash", ""),
+                                           f"human:{call_id}" if approved else ""):
+                                output = await asyncio.to_thread(dispatch, provider, verb, arguments)
+                        else:
                             output = await asyncio.to_thread(dispatch, provider, verb, arguments)
-                    else:
-                        output = await asyncio.to_thread(dispatch, provider, verb, arguments)
+                        payload = _unwrap_tool_output(output)
+                        if payload.get("error") or payload.get("status") in {"failed", "error", "blocked", "not_run"}:
+                            raise GatewayToolError(payload)
+                    except Exception:
+                        if charge is not None:
+                            await asyncio.to_thread(repository.refund_usage, studio.user_id, charge, "refund: local agent dispatch failed")
+                        raise
                 else:
                     output = await server.call_tool(name, arguments)
                 if name == _GATEWAY_SEARCH_TOOL:

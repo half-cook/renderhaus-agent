@@ -27,6 +27,10 @@ DASHSCOPE_WORKSPACE_ID, DASHSCOPE_MODEL and MODELSTUDIO_DRY_RUN.
 Seedance 2.5 defaults to FAL_KEY with SEEDANCE_TRANSPORT=fal and SEEDANCE_FAL_REGION=us.
 The optional authorized non-US route uses BYTEPLUS_API_KEY, with ARK_API_KEY as fallback,
 and SEEDANCE_BYTEPLUS_PLATFORM_AUTHORIZED. SEEDANCE_DRY_RUN remains true by default.
+Beta credits sync BETA_CREDITS_ENABLED, BETA_GRANT_CENTS, BETA_GLOBAL_CAP_CENTS,
+BETA_WAVE_SIZE, BETA_WAVE_INDEX, BETA_DAILY_GRANT_LIMIT, BETA_VERIFICATION_DRY_RUN,
+BETA_IDENTITY_SALT and BETA_ADMIN_TOKEN through the existing application-secret mapping.
+Verification defaults to dry run and registers no email or SMS vendor.
 """
 
 from __future__ import annotations

@@ -35,7 +35,9 @@ from providers.catalog import PROVIDERS
 from providers.contracts import SEEDREAM_SIZES
 from providers.registry import load_committed_schemas
 from providers.seedream.api import _size_for_ratio
+from server import run_billing
 from server.billing import stripe_enabled
+from server.beta_credits import beta_billing_enabled
 from server.billing_rates import cost_for
 from server.config import (
     GATEWAY_MCP_SERVER_NAME,
@@ -302,6 +304,7 @@ class StudioAgentContext:
     confidential: bool = False
     quality_tier: str = "standard"
     prompt: str = ""
+    run_meter: Any = None  # server.run_billing.RunMeter when the run holds credit; backend-only
 
     def add_assets(self, assets: list[dict[str, Any]]) -> None:
         for asset in assets:
@@ -701,12 +704,14 @@ class GatewayMCPServer(GatewayClient):
         *args: Any,
         argument_transformer: GatewayArgumentTransformer | None = None,
         user_id: str | None = None,
+        run_id: str | None = None,
         **kwargs: Any,
     ) -> None:
         super().__init__(*args, **kwargs)
         self._discovered_tool_names: set[str] = set()
         self._argument_transformer = argument_transformer
         self._user_id = user_id
+        self._run_id = run_id
 
     async def list_tools(self, run_context: Any = None, agent: Any = None) -> list[Any]:
         tools = await super().list_tools(run_context, agent)
@@ -729,7 +734,9 @@ class GatewayMCPServer(GatewayClient):
         name into the wrong provider would silently mis-bill, which is worse
         than this one call going unbilled.
         """
-        if not self._user_id or not stripe_enabled() or "___" not in tool_name:
+        if not self._user_id or "___" not in tool_name:
+            return None
+        if not (stripe_enabled() or beta_billing_enabled(repository, self._user_id)):
             return None
         target_name, raw_tool = tool_name.split("___", 1)
         provider_id = _PROVIDER_ID_BY_TARGET_NAME.get(target_name)
@@ -756,7 +763,8 @@ class GatewayMCPServer(GatewayClient):
         if cost is not None:
             try:
                 charge = await asyncio.to_thread(
-                    repository.charge_usage, self._user_id, cost.total_cents, "generation"
+                    run_billing.charge_media, repository, self._user_id, self._run_id,
+                    cost.total_cents, tool_name, resolved_arguments,
                 )
             except InsufficientBalanceError as exc:
                 raise RuntimeError(str(exc)) from exc
@@ -783,7 +791,7 @@ class GatewayMCPServer(GatewayClient):
             if (
                 getattr(result, "is_error", False)
                 or payload.get("error")
-                or payload.get("status") in {"failed", "error"}
+                or payload.get("status") in {"failed", "error", "blocked", "not_run"}
             ):
                 raise GatewayToolError(payload)
         except Exception:
@@ -1348,6 +1356,7 @@ def gateway_mcp_server(
     *,
     argument_transformer: GatewayArgumentTransformer | None = None,
     user_id: str | None = None,
+    run_id: str | None = None,
 ) -> GatewayMCPServer:
     """MCP client for the AgentCore Gateway endpoint."""
     load_local_env()
@@ -1364,6 +1373,7 @@ def gateway_mcp_server(
         client_session_timeout_seconds=_SESSION_TIMEOUT_SECONDS,
         argument_transformer=argument_transformer,
         user_id=user_id,
+        run_id=run_id,
     )
 
 
@@ -1693,7 +1703,7 @@ async def run_studio_agent(
     if mcp_servers is not None:
         return await run(mcp_servers)
     async with gateway_mcp_server(
-        argument_transformer=studio.prepare_gateway_arguments, user_id=studio.user_id
+        argument_transformer=studio.prepare_gateway_arguments, user_id=studio.user_id, run_id=studio.job_id
     ) as server:
         return await run([server])
 
