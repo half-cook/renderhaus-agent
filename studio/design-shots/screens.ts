@@ -129,3 +129,5 @@ SCREENS.push(
     prepare: async (p) => { await p.locator(".react-flow__node").filter({ hasText: "Shot 1 · push-in" }).click(); await p.getByRole("option", { name: /Shot 1/ }).click(); } },
   { id: "m07-timeline", url: `/canvas?project=${MUG}&workspace=timeline`, ready: "[data-shot='timeline-ready'] .rh-tl-clip", fixtures: mug({ "/api/studio/agent": { items: [] }, ...account(974, 26) }) },
 );
+
+SCREENS.push({ id: "m05-approval-states", url: "/design/approval-states", ready: "[data-shot='approval-states-ready']", fullPage: true });
