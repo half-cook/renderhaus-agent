@@ -104,7 +104,7 @@ def check_routing_inventory() -> None:
         assert set(metadata["include_tools"].split()) <= DISPATCH_TARGETS.keys(), path
         assert all(TOOL_MAP[alias]["status"] != "retired" for alias in metadata["routing_tools"].split()), path
     cases = json.loads((ROOT / "tests/fixtures/skill_routing.json").read_text())
-    assert len(cases) == 230 and sum(not case["skip_reason"] for case in cases) == 225
+    assert len(cases) == 236 and sum(not case["skip_reason"] for case in cases) == 231
     from agent.deep_agent.continuity_qc_vlm import EVAL_PATH, default_vlm_enabled
 
     if POLICY["continuity_qc"]["vlm_eval_gate"]["result_sha256"]:
