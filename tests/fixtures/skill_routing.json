@@ -4470,5 +4470,38 @@
     },
     "expected_status": "blocked",
     "expected_reason": "disabled"
+  },
+  {
+    "id": "RT-160",
+    "prompt": "Make a Van Gogh painting move with swirling brushwork",
+    "expected_skill": "art-style-motion",
+    "expected_tool": "remotion_render",
+    "expected_gateway_tool": "Remotion___render_timeline",
+    "suite": "art-style-motion",
+    "skip_reason": "",
+    "note": "Task/draft reconstruction: supplied CSV has no RT-160..RT-162 rows.",
+    "source_status": "task-derived"
+  },
+  {
+    "id": "RT-161",
+    "prompt": "Create a Kurzgesagt-style explainer video with voiceover",
+    "expected_skill": "art-style-motion",
+    "expected_tool": "remotion_render",
+    "expected_gateway_tool": "Remotion___render_timeline",
+    "suite": "art-style-motion",
+    "skip_reason": "",
+    "note": "Task/draft reconstruction: supplied CSV has no RT-160..RT-162 rows.",
+    "source_status": "task-derived"
+  },
+  {
+    "id": "RT-162",
+    "prompt": "Make a silent explainer video with no narration and synced sound effects",
+    "expected_skill": "knowledge-explainer",
+    "expected_tool": "remotion_render",
+    "expected_gateway_tool": "Remotion___render_timeline",
+    "suite": "art-style-motion",
+    "skip_reason": "",
+    "note": "Task/draft reconstruction: supplied CSV has no RT-160..RT-162 rows; RT-162 is negative.",
+    "source_status": "task-derived"
   }
 ]
