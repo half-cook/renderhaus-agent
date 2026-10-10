@@ -236,11 +236,14 @@ as an `insufficient_credit` payload (HTTP 402) and never charges.
 
 ### Client payloads
 
-All amounts are integer cents and already fee-inclusive. Clients render them and never recompute. Not present anywhere
-in a client payload: fee amounts or percentages, `fee`/`markup`/`platform` wording, provider, vendor or model names,
+All amounts are integer cents and already fee-inclusive. Clients render them and never recompute. Not present in
+billing data: fee amounts or percentages, `fee`/`markup`/`platform` wording, provider, vendor or model names,
 `approval.provider`, upstream model ids, the tool's machine name on approval cards. Error and status text is passed
 through `run_budget.neutral_error` (replaced by a neutral sentence when it names a vendor/model or a fee).
 `tests/test_run_billing.py` scans every payload and every gateway tool id's label for a deny-list.
+HeyGen Voice approval messages are a consent exception: they name the voice owner and HeyGen
+as the reference-upload destination, disclose possible vendor training and show the total or
+unknown estimate. The billing labels, rate fields and receipts retain the neutral format.
 
 **Approval card** (each item of `execution.approvals`; run-level numbers repeat on every card of the pause):
 

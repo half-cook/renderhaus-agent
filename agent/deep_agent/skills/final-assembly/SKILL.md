@@ -1,10 +1,10 @@
 ---
 name: final-assembly
-description: Assemble existing assets into a final Remotion video and verify the rendered MP4 result.
+description: Assemble existing assets into a Remotion video, verify the actual MP4 and require final delivery QC evidence before completion claims.
 metadata:
   include_tools: call_editor_tool
-  gateway_tools: Remotion___export_nle_timeline Remotion___get_render_progress Remotion___render_timeline Remotion___render_ad_variants Ffmpeg___ffmpeg_tool
-  routing_tools: remotion_render ad_variant_matrix ffmpeg_tool
+  gateway_tools: Remotion___export_nle_timeline Remotion___get_render_progress Remotion___render_timeline Remotion___render_ad_variants Ffmpeg___ffmpeg_tool Remotion___deliver_render Remotion___qc_deliverable
+  routing_tools: remotion_render ad_variant_matrix ffmpeg_tool delivery_render deliverable_qc
 ---
 
 # Final assembly
@@ -41,8 +41,18 @@ plain `output_path` fields in visuals/audio_tracks, without a `file://` prefix. 
 Remotion___render_timeline once. Save render_id, bucket_name, and output_key unchanged.
 Call Remotion___get_render_progress with those identifiers. The host polls the same render.
 If waiting times out, preserve the ID and describe pending work. Never start a replacement
-because a poll failed. Deliver a video only when a successful poll provides the final MP4.
+because a poll failed. A successful poll must provide the actual MP4 before finishing.
 Report a dry-run timeline as a preview and an incomplete export.
+For the saved local MP4, read [delivery render](../remotion-delivery-render/SKILL.md) for a
+named delivery preset or [deliverable QC](../remotion-deliverable-qc/SKILL.md) for inspection.
+Keep the requested source resolution and measured FPS. The local renderer emits fixed AAC;
+its schema does not offer a PCM intermediate or arbitrary codec options. Do not re-render an
+existing MP4 merely to finish its AAC/container. Reuse integrated loudness/QC evidence.
+Open and play the actual completed artifact. Do not call it finished or delivered unless
+an actual final QC report exists and passed. If QC fails or is missing, disclose failed or
+pending checks verbatim and describe the artifact as incomplete. A technical pass does not
+replace required human editorial review. Lambda finishing remains unverified; do not switch
+backends or claim a local inspection of an unavailable remote artifact.
 State the successful result's delivered `width` and `height` in the final summary and
 Markdown. Include `source_resolution` and all resolution warnings. If `upscaled` is true,
 say, for example, "1920x1080, upscaled from 1280x720; no added detail."

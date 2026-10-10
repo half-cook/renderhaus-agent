@@ -155,7 +155,11 @@ def request_for(arguments: dict[str, Any]) -> AvatarRequest:
 
 
 def validate_arguments(tool: str, arguments: dict[str, Any]) -> None:
-    if tool == "create_avatar_video":
+    from providers.heygen import voice_contracts
+
+    if tool in voice_contracts.VOICE_TOOLS:
+        voice_contracts.request_for(tool, arguments)
+    elif tool == "create_avatar_video":
         request_for(arguments)
     elif tool == "get_video_status":
         PollRequest.model_validate(arguments)

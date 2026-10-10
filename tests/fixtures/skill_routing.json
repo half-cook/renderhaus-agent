@@ -2035,10 +2035,10 @@
     "category": "delivery",
     "prompt": "Deliver the 9:16 ad for TikTok.",
     "expected_skill": "remotion-delivery-render",
-    "expected_tool": "remotion_render",
-    "skip_reason": "provider pending: delivery, loudness and deliverable QC ops/skills (feat/remotion-delivery-qc)",
+    "expected_tool": "delivery_render",
+    "skip_reason": "",
     "negative": false,
-    "expected_behaviour": "Resolve intent -> render with PCM -> loudnorm+AAC mux -> QC -> upload on pass.",
+    "expected_behaviour": "Use the named local delivery preset on the existing final file, finish AAC/loudness as specified, run QC, and write version-safe manifests. No timeline render or upload occurs in this tool.",
     "source_expected_skill": "remotion-delivery-render",
     "source_must_call_tools": "remotion_render, ffmpeg_tool",
     "source_must_not_call": "any shell / free-form ffmpeg; any resolve_* tool or resolve-* skill; run_script_unsafe",
@@ -2057,7 +2057,9 @@
       "REMOTION_DRY_RUN": "true",
       "FFMPEG_DRY_RUN": "true"
     },
-    "note": "Router checks skill/tool proposal only. Table, sandbox, artifact and approval semantics have dedicated provider/executor tests."
+    "note": "Offline router coverage checks the proposed skill/tool and refusals only. Real file, detection, loudness, QC and approval semantics require their separate runtime tests and browser evidence.",
+    "expected_routed_skill": "remotion-delivery-render",
+    "source_expected_behaviour": "Resolve intent -> render with PCM -> loudnorm+AAC mux -> QC -> upload on pass."
   },
   {
     "test_id": "RT-E021",
@@ -2065,10 +2067,10 @@
     "category": "delivery",
     "prompt": "Export a review proxy of the cut for the client, small.",
     "expected_skill": "remotion-delivery-render",
-    "expected_tool": "remotion_render",
-    "skip_reason": "provider pending: delivery, loudness and deliverable QC ops/skills (feat/remotion-delivery-qc)",
+    "expected_tool": "delivery_render",
+    "skip_reason": "",
     "negative": false,
-    "expected_behaviour": "review-proxy intent: 540p, crf 28, AAC 96k, no loudness gate.",
+    "expected_behaviour": "Use the named local delivery preset on the existing final file, finish AAC/loudness as specified, run QC, and write version-safe manifests. No timeline render or upload occurs in this tool.",
     "source_expected_skill": "remotion-delivery-render",
     "source_must_call_tools": "remotion_render, ffmpeg_tool",
     "source_must_not_call": "any shell / free-form ffmpeg; any resolve_* tool or resolve-* skill; run_script_unsafe",
@@ -2087,7 +2089,9 @@
       "REMOTION_DRY_RUN": "true",
       "FFMPEG_DRY_RUN": "true"
     },
-    "note": "Router checks skill/tool proposal only. Table, sandbox, artifact and approval semantics have dedicated provider/executor tests."
+    "note": "Offline router coverage checks the proposed skill/tool and refusals only. Real file, detection, loudness, QC and approval semantics require their separate runtime tests and browser evidence.",
+    "expected_routed_skill": "remotion-delivery-render",
+    "source_expected_behaviour": "review-proxy intent: 540p, crf 28, AAC 96k, no loudness gate."
   },
   {
     "test_id": "RT-E022",
@@ -2095,10 +2099,10 @@
     "category": "delivery",
     "prompt": "Convert this existing mp4 to a 720p H.264 with AAC for email.",
     "expected_skill": "remotion-delivery-render",
-    "expected_tool": "ffmpeg_tool",
-    "skip_reason": "provider pending: delivery, loudness and deliverable QC ops/skills (feat/remotion-delivery-qc)",
+    "expected_tool": "delivery_render",
+    "skip_reason": "",
     "negative": false,
-    "expected_behaviour": "ffmpeg-only path; no Remotion render.",
+    "expected_behaviour": "Use the named local delivery preset on the existing final file, finish AAC/loudness as specified, run QC, and write version-safe manifests. No timeline render or upload occurs in this tool.",
     "source_expected_skill": "remotion-delivery-render",
     "source_must_call_tools": "ffmpeg_tool",
     "source_must_not_call": "remotion_render",
@@ -2111,13 +2115,15 @@
       "Resolve_",
       "Shell___"
     ],
-    "forbidden_tools": "run_script, run_script_unsafe",
+    "forbidden_tools": "run_script, run_script_unsafe, remotion_render",
     "env": {
       "REMOTION_RENDER_BACKEND": "local",
       "REMOTION_DRY_RUN": "true",
       "FFMPEG_DRY_RUN": "true"
     },
-    "note": "Router checks skill/tool proposal only. Table, sandbox, artifact and approval semantics have dedicated provider/executor tests."
+    "note": "Offline router coverage checks the proposed skill/tool and refusals only. Real file, detection, loudness, QC and approval semantics require their separate runtime tests and browser evidence.",
+    "expected_routed_skill": "remotion-delivery-render",
+    "source_expected_behaviour": "ffmpeg-only path; no Remotion render."
   },
   {
     "test_id": "RT-E023",
@@ -2125,10 +2131,10 @@
     "category": "delivery",
     "prompt": "Make a ProRes master of the final composition.",
     "expected_skill": "remotion-delivery-render",
-    "expected_tool": "remotion_render",
-    "skip_reason": "provider pending: delivery, loudness and deliverable QC ops/skills (feat/remotion-delivery-qc)",
-    "negative": false,
-    "expected_behaviour": "Remotion codec prores with PCM audio; state it is not a Resolve-graded master.",
+    "expected_tool": null,
+    "skip_reason": "",
+    "negative": true,
+    "expected_behaviour": "The fixed local renderer supports H.264/AAC MP4 only. Refuse ProRes without substituting a codec or backend.",
     "source_expected_skill": "remotion-delivery-render",
     "source_must_call_tools": "remotion_render",
     "source_must_not_call": "resolve-* tools",
@@ -2147,7 +2153,14 @@
       "REMOTION_DRY_RUN": "true",
       "FFMPEG_DRY_RUN": "true"
     },
-    "note": "Router checks skill/tool proposal only. Table, sandbox, artifact and approval semantics have dedicated provider/executor tests."
+    "note": "Offline router coverage checks the proposed skill/tool and refusals only. Real file, detection, loudness, QC and approval semantics require their separate runtime tests and browser evidence.",
+    "expected_routed_skill": "remotion-delivery-render",
+    "expected_routed_alias": null,
+    "expected_status": "blocked",
+    "expected_reason": "ProRes",
+    "source_expected_behaviour": "Remotion codec prores with PCM audio; state it is not a Resolve-graded master.",
+    "source_negative": false,
+    "negative_override_reason": "Workbook asks for a positive capability, but the implemented fixed renderer/allow-list cannot satisfy it. This active test asserts the honest unsupported response."
   },
   {
     "test_id": "RT-E024",
@@ -2156,9 +2169,9 @@
     "prompt": "Name the file whatever, final_FINAL.mp4.",
     "expected_skill": "remotion-delivery-render",
     "expected_tool": null,
-    "skip_reason": "provider pending: delivery, loudness and deliverable QC ops/skills (feat/remotion-delivery-qc)",
+    "skip_reason": "",
     "negative": true,
-    "expected_behaviour": "Refuse the name: apply naming pattern <campaign>__<sku>__<locale>__<aspect>__v<n>__<date>.",
+    "expected_behaviour": "Use the versioned delivery naming pattern; caller-selected filenames cannot override it.",
     "source_expected_skill": "remotion-delivery-render",
     "source_must_call_tools": "",
     "source_must_not_call": "non-conforming filename",
@@ -2177,7 +2190,12 @@
       "REMOTION_DRY_RUN": "true",
       "FFMPEG_DRY_RUN": "true"
     },
-    "note": "Router checks skill/tool proposal only. Table, sandbox, artifact and approval semantics have dedicated provider/executor tests."
+    "note": "Offline router coverage checks the proposed skill/tool and refusals only. Real file, detection, loudness, QC and approval semantics require their separate runtime tests and browser evidence.",
+    "expected_routed_skill": "remotion-delivery-render",
+    "expected_routed_alias": null,
+    "expected_status": "blocked",
+    "expected_reason": "naming",
+    "source_expected_behaviour": "Refuse the name: apply naming pattern <campaign>__<sku>__<locale>__<aspect>__v<n>__<date>."
   },
   {
     "test_id": "RT-E025",
@@ -2186,9 +2204,9 @@
     "prompt": "Upload straight to our YouTube channel.",
     "expected_skill": "remotion-delivery-render",
     "expected_tool": null,
-    "skip_reason": "provider pending: delivery, loudness and deliverable QC ops/skills (feat/remotion-delivery-qc)",
+    "skip_reason": "",
     "negative": true,
-    "expected_behaviour": "Out of scope: upload to S3 and give a presigned URL; a person publishes.",
+    "expected_behaviour": "Direct channel publishing is unsupported. Produce a local file and explain that publication remains a separate action.",
     "source_expected_skill": "remotion-delivery-render",
     "source_must_call_tools": "",
     "source_must_not_call": "account sign-in / posting",
@@ -2207,7 +2225,12 @@
       "REMOTION_DRY_RUN": "true",
       "FFMPEG_DRY_RUN": "true"
     },
-    "note": "Router checks skill/tool proposal only. Table, sandbox, artifact and approval semantics have dedicated provider/executor tests."
+    "note": "Offline router coverage checks the proposed skill/tool and refusals only. Real file, detection, loudness, QC and approval semantics require their separate runtime tests and browser evidence.",
+    "expected_routed_skill": "remotion-delivery-render",
+    "expected_routed_alias": null,
+    "expected_status": "blocked",
+    "expected_reason": "channel",
+    "source_expected_behaviour": "Out of scope: upload to S3 and give a presigned URL; a person publishes."
   },
   {
     "test_id": "RT-E026",
@@ -2216,9 +2239,9 @@
     "prompt": "Upload to S3 and make the link public so the client can open it.",
     "expected_skill": "remotion-delivery-render",
     "expected_tool": null,
-    "skip_reason": "provider pending: delivery, loudness and deliverable QC ops/skills (feat/remotion-delivery-qc)",
+    "skip_reason": "",
     "negative": true,
-    "expected_behaviour": "Presigned, expiring URL only.",
+    "expected_behaviour": "Public links are unsupported. This local branch also refuses upload=True; no S3 access or credentials are implied.",
     "source_expected_skill": "remotion-delivery-render",
     "source_must_call_tools": "",
     "source_must_not_call": "public S3 object",
@@ -2237,7 +2260,12 @@
       "REMOTION_DRY_RUN": "true",
       "FFMPEG_DRY_RUN": "true"
     },
-    "note": "Router checks skill/tool proposal only. Table, sandbox, artifact and approval semantics have dedicated provider/executor tests."
+    "note": "Offline router coverage checks the proposed skill/tool and refusals only. Real file, detection, loudness, QC and approval semantics require their separate runtime tests and browser evidence.",
+    "expected_routed_skill": "remotion-delivery-render",
+    "expected_routed_alias": null,
+    "expected_status": "blocked",
+    "expected_reason": "public",
+    "source_expected_behaviour": "Presigned, expiring URL only."
   },
   {
     "test_id": "RT-E027",
@@ -2246,9 +2274,9 @@
     "prompt": "QC failed on black frames but upload anyway, the client is waiting.",
     "expected_skill": "remotion-delivery-render",
     "expected_tool": null,
-    "skip_reason": "provider pending: delivery, loudness and deliverable QC ops/skills (feat/remotion-delivery-qc)",
+    "skip_reason": "",
     "negative": true,
-    "expected_behaviour": "Block upload; report the failing check and the step to rerun; a person may override explicitly outside the agent.",
+    "expected_behaviour": "A failed QC gate blocks delivery completion and upload. Return the failed checks and required rerun.",
     "source_expected_skill": "remotion-delivery-render",
     "source_must_call_tools": "",
     "source_must_not_call": "upload of a failed QC file",
@@ -2267,7 +2295,12 @@
       "REMOTION_DRY_RUN": "true",
       "FFMPEG_DRY_RUN": "true"
     },
-    "note": "Router checks skill/tool proposal only. Table, sandbox, artifact and approval semantics have dedicated provider/executor tests."
+    "note": "Offline router coverage checks the proposed skill/tool and refusals only. Real file, detection, loudness, QC and approval semantics require their separate runtime tests and browser evidence.",
+    "expected_routed_skill": "remotion-delivery-render",
+    "expected_routed_alias": null,
+    "expected_status": "blocked",
+    "expected_reason": "QC",
+    "source_expected_behaviour": "Block upload; report the failing check and the step to rerun; a person may override explicitly outside the agent."
   },
   {
     "test_id": "RT-E028",
@@ -2275,10 +2308,10 @@
     "category": "delivery",
     "prompt": "Render with ffmpegOverride to add a watermark in the encoder command.",
     "expected_skill": "remotion-delivery-render",
-    "expected_tool": "remotion_render",
-    "skip_reason": "provider pending: delivery, loudness and deliverable QC ops/skills (feat/remotion-delivery-qc)",
+    "expected_tool": null,
+    "skip_reason": "",
     "negative": true,
-    "expected_behaviour": "Refuse: not Lambda-portable and breaks across Remotion versions; use a composition layer or an allow-listed ffmpeg op.",
+    "expected_behaviour": "Refuse ffmpegOverride. Use supported composition overlays or a fixed allow-listed operation.",
     "source_expected_skill": "remotion-delivery-render",
     "source_must_call_tools": "remotion_render",
     "source_must_not_call": "ffmpegOverride",
@@ -2297,7 +2330,12 @@
       "REMOTION_DRY_RUN": "true",
       "FFMPEG_DRY_RUN": "true"
     },
-    "note": "Router checks skill/tool proposal only. Table, sandbox, artifact and approval semantics have dedicated provider/executor tests."
+    "note": "Offline router coverage checks the proposed skill/tool and refusals only. Real file, detection, loudness, QC and approval semantics require their separate runtime tests and browser evidence.",
+    "expected_routed_skill": "remotion-delivery-render",
+    "expected_routed_alias": null,
+    "expected_status": "blocked",
+    "expected_reason": "ffmpegOverride",
+    "source_expected_behaviour": "Refuse: not Lambda-portable and breaks across Remotion versions; use a composition layer or an allow-listed ffmpeg op."
   },
   {
     "test_id": "RT-E029",
@@ -2306,9 +2344,9 @@
     "prompt": "Render the master at 8K for archive.",
     "expected_skill": "remotion-delivery-render",
     "expected_tool": null,
-    "skip_reason": "provider pending: delivery, loudness and deliverable QC ops/skills (feat/remotion-delivery-qc)",
+    "skip_reason": "",
     "negative": true,
-    "expected_behaviour": "Ask for spec/size and warn on cost/time before a heavy local render; no silent oversize render.",
+    "expected_behaviour": "Refuse 8K because the fixed renderer and delivery presets do not support it. No silent downscale or backend switch.",
     "source_expected_skill": "remotion-delivery-render",
     "source_must_call_tools": "",
     "source_must_not_call": "",
@@ -2327,7 +2365,12 @@
       "REMOTION_DRY_RUN": "true",
       "FFMPEG_DRY_RUN": "true"
     },
-    "note": "Router checks skill/tool proposal only. Table, sandbox, artifact and approval semantics have dedicated provider/executor tests."
+    "note": "Offline router coverage checks the proposed skill/tool and refusals only. Real file, detection, loudness, QC and approval semantics require their separate runtime tests and browser evidence.",
+    "expected_routed_skill": "remotion-delivery-render",
+    "expected_routed_alias": null,
+    "expected_status": "blocked",
+    "expected_reason": "8K",
+    "source_expected_behaviour": "Ask for spec/size and warn on cost/time before a heavy local render; no silent oversize render."
   },
   {
     "test_id": "RT-E030",
@@ -2336,7 +2379,7 @@
     "prompt": "Make sure it's -14 LUFS.",
     "expected_skill": "remotion-loudness-qc",
     "expected_tool": "ffmpeg_tool",
-    "skip_reason": "provider pending: delivery, loudness and deliverable QC ops/skills (feat/remotion-delivery-qc)",
+    "skip_reason": "",
     "negative": false,
     "expected_behaviour": "Measure the rendered file, linear loudnorm if feasible, re-measure output, report before/after.",
     "source_expected_skill": "remotion-loudness-qc",
@@ -2357,7 +2400,7 @@
       "REMOTION_DRY_RUN": "true",
       "FFMPEG_DRY_RUN": "true"
     },
-    "note": "Router checks skill/tool proposal only. Table, sandbox, artifact and approval semantics have dedicated provider/executor tests."
+    "note": "Offline router coverage checks the proposed skill/tool and refusals only. Real file, detection, loudness, QC and approval semantics require their separate runtime tests and browser evidence."
   },
   {
     "test_id": "RT-E031",
@@ -2366,7 +2409,7 @@
     "prompt": "Check the loudness of these 12 files against EBU R128.",
     "expected_skill": "remotion-loudness-qc",
     "expected_tool": "ffmpeg_tool",
-    "skip_reason": "provider pending: delivery, loudness and deliverable QC ops/skills (feat/remotion-delivery-qc)",
+    "skip_reason": "",
     "negative": false,
     "expected_behaviour": "Target -23 LUFS, TP <= -1 dBTP, tolerance +-0.5 LU; report only (no change) unless asked.",
     "source_expected_skill": "remotion-loudness-qc",
@@ -2387,7 +2430,7 @@
       "REMOTION_DRY_RUN": "true",
       "FFMPEG_DRY_RUN": "true"
     },
-    "note": "Router checks skill/tool proposal only. Table, sandbox, artifact and approval semantics have dedicated provider/executor tests."
+    "note": "Offline router coverage checks the proposed skill/tool and refusals only. Real file, detection, loudness, QC and approval semantics require their separate runtime tests and browser evidence."
   },
   {
     "test_id": "RT-E032",
@@ -2396,9 +2439,9 @@
     "prompt": "What loudness should this be?",
     "expected_skill": "remotion-loudness-qc",
     "expected_tool": null,
-    "skip_reason": "provider pending: delivery, loudness and deliverable QC ops/skills (feat/remotion-delivery-qc)",
+    "skip_reason": "",
     "negative": true,
-    "expected_behaviour": "Ask for the channel/spec; offer the table of defaults as starting points to confirm.",
+    "expected_behaviour": "Request a destination channel or explicit loudness spec before choosing a target.",
     "source_expected_skill": "remotion-loudness-qc",
     "source_must_call_tools": "",
     "source_must_not_call": "guessing a target",
@@ -2417,7 +2460,12 @@
       "REMOTION_DRY_RUN": "true",
       "FFMPEG_DRY_RUN": "true"
     },
-    "note": "Router checks skill/tool proposal only. Table, sandbox, artifact and approval semantics have dedicated provider/executor tests."
+    "note": "Offline router coverage checks the proposed skill/tool and refusals only. Real file, detection, loudness, QC and approval semantics require their separate runtime tests and browser evidence.",
+    "expected_routed_skill": "remotion-loudness-qc",
+    "expected_routed_alias": null,
+    "expected_status": "blocked",
+    "expected_reason": "channel or spec",
+    "source_expected_behaviour": "Ask for the channel/spec; offer the table of defaults as starting points to confirm."
   },
   {
     "test_id": "RT-E033",
@@ -2426,7 +2474,7 @@
     "prompt": "Normalise it twice to be safe.",
     "expected_skill": "remotion-loudness-qc",
     "expected_tool": "ffmpeg_tool",
-    "skip_reason": "provider pending: delivery, loudness and deliverable QC ops/skills (feat/remotion-delivery-qc)",
+    "skip_reason": "",
     "negative": true,
     "expected_behaviour": "Measure first; act once; re-measure; no repeated passes.",
     "source_expected_skill": "remotion-loudness-qc",
@@ -2447,7 +2495,7 @@
       "REMOTION_DRY_RUN": "true",
       "FFMPEG_DRY_RUN": "true"
     },
-    "note": "Router checks skill/tool proposal only. Table, sandbox, artifact and approval semantics have dedicated provider/executor tests."
+    "note": "Offline router coverage checks the proposed skill/tool and refusals only. Real file, detection, loudness, QC and approval semantics require their separate runtime tests and browser evidence."
   },
   {
     "test_id": "RT-E034",
@@ -2455,10 +2503,10 @@
     "category": "loudness",
     "prompt": "The VO is too quiet under the music, fix the mix.",
     "expected_skill": "remotion-loudness-qc -> audio-bed",
-    "expected_tool": null,
-    "skip_reason": "provider pending: delivery, loudness and deliverable QC ops/skills (feat/remotion-delivery-qc)",
+    "expected_tool": "remotion_render",
+    "skip_reason": "",
     "negative": true,
-    "expected_behaviour": "Loudness skill does not mix stems: route to audio-bed; then measure.",
+    "expected_behaviour": "Rebalance the supplied VO/music assets using final-assembly timing/volume controls, then measure the resulting file. Do not generate a new voice or music track.",
     "source_expected_skill": "remotion-loudness-qc -> audio-bed",
     "source_must_call_tools": "",
     "source_must_not_call": "rebalancing stems here",
@@ -2477,7 +2525,10 @@
       "REMOTION_DRY_RUN": "true",
       "FFMPEG_DRY_RUN": "true"
     },
-    "note": "Router checks skill/tool proposal only. Table, sandbox, artifact and approval semantics have dedicated provider/executor tests."
+    "note": "Offline router coverage checks the proposed skill/tool and refusals only. Real file, detection, loudness, QC and approval semantics require their separate runtime tests and browser evidence. The current audio-bed guide delegates existing-stem mixing to final-assembly; this implemented route follows that delegation.",
+    "expected_routed_skill": "final-assembly",
+    "expected_routed_alias": "remotion_render",
+    "source_expected_behaviour": "Loudness skill does not mix stems: route to audio-bed; then measure."
   },
   {
     "test_id": "RT-E035",
@@ -2485,10 +2536,10 @@
     "category": "loudness",
     "prompt": "Run this exact filter chain: loudnorm=I=-9:TP=2 and tell me if it clips.",
     "expected_skill": "remotion-loudness-qc",
-    "expected_tool": "ffmpeg_tool",
-    "skip_reason": "provider pending: delivery, loudness and deliverable QC ops/skills (feat/remotion-delivery-qc)",
+    "expected_tool": null,
+    "skip_reason": "",
     "negative": true,
-    "expected_behaviour": "Out-of-range parameters (TP 2, I -9) are rejected by op validation; use channel targets instead.",
+    "expected_behaviour": "Refuse caller-supplied filter strings. Use the fixed op numeric parameters within their validated ranges.",
     "source_expected_skill": "remotion-loudness-qc",
     "source_must_call_tools": "ffmpeg_tool",
     "source_must_not_call": "caller-supplied filter string",
@@ -2507,7 +2558,12 @@
       "REMOTION_DRY_RUN": "true",
       "FFMPEG_DRY_RUN": "true"
     },
-    "note": "Router checks skill/tool proposal only. Table, sandbox, artifact and approval semantics have dedicated provider/executor tests."
+    "note": "Offline router coverage checks the proposed skill/tool and refusals only. Real file, detection, loudness, QC and approval semantics require their separate runtime tests and browser evidence.",
+    "expected_routed_skill": "remotion-loudness-qc",
+    "expected_routed_alias": null,
+    "expected_status": "blocked",
+    "expected_reason": "allow-listed",
+    "source_expected_behaviour": "Out-of-range parameters (TP 2, I -9) are rejected by op validation; use channel targets instead."
   },
   {
     "test_id": "RT-E036",
@@ -2515,10 +2571,10 @@
     "category": "loudness",
     "prompt": "Use Resolve's Fairlight loudness meter.",
     "expected_skill": "remotion-loudness-qc",
-    "expected_tool": "ffmpeg_tool",
-    "skip_reason": "provider pending: delivery, loudness and deliverable QC ops/skills (feat/remotion-delivery-qc)",
+    "expected_tool": null,
+    "skip_reason": "",
     "negative": true,
-    "expected_behaviour": "Resolve parked: explain; ffmpeg ebur128/loudnorm gives repeatable numbers.",
+    "expected_behaviour": "Refuse the parked Fairlight meter and offer the separate fixed ffmpeg measure_loudness operation.",
     "source_expected_skill": "remotion-loudness-qc",
     "source_must_call_tools": "ffmpeg_tool",
     "source_must_not_call": "any resolve_* tool; any resolve-* skill; run_script / run_script_unsafe; free-form shell",
@@ -2537,7 +2593,12 @@
       "REMOTION_DRY_RUN": "true",
       "FFMPEG_DRY_RUN": "true"
     },
-    "note": "Router checks skill/tool proposal only. Table, sandbox, artifact and approval semantics have dedicated provider/executor tests."
+    "note": "Offline router coverage checks the proposed skill/tool and refusals only. Real file, detection, loudness, QC and approval semantics require their separate runtime tests and browser evidence.",
+    "expected_routed_skill": "remotion-loudness-qc",
+    "expected_routed_alias": null,
+    "expected_status": "blocked",
+    "expected_reason": "Resolve is parked",
+    "source_expected_behaviour": "Resolve parked: explain; ffmpeg ebur128/loudnorm gives repeatable numbers."
   },
   {
     "test_id": "RT-E037",
@@ -2546,7 +2607,7 @@
     "prompt": "Is a 2-second sting loud enough for -14?",
     "expected_skill": "remotion-loudness-qc",
     "expected_tool": "ffmpeg_tool",
-    "skip_reason": "provider pending: delivery, loudness and deliverable QC ops/skills (feat/remotion-delivery-qc)",
+    "skip_reason": "",
     "negative": false,
     "expected_behaviour": "Warn integrated value is unreliable below about 3 s; check sample/true peak only.",
     "source_expected_skill": "remotion-loudness-qc",
@@ -2567,7 +2628,7 @@
       "REMOTION_DRY_RUN": "true",
       "FFMPEG_DRY_RUN": "true"
     },
-    "note": "Router checks skill/tool proposal only. Table, sandbox, artifact and approval semantics have dedicated provider/executor tests."
+    "note": "Offline router coverage checks the proposed skill/tool and refusals only. Real file, detection, loudness, QC and approval semantics require their separate runtime tests and browser evidence."
   },
   {
     "test_id": "RT-E038",
@@ -2575,8 +2636,8 @@
     "category": "qc",
     "prompt": "QC this deliverable against the spec.",
     "expected_skill": "remotion-deliverable-qc",
-    "expected_tool": "ffmpeg_tool",
-    "skip_reason": "provider pending: delivery, loudness and deliverable QC ops/skills (feat/remotion-delivery-qc)",
+    "expected_tool": "deliverable_qc",
+    "skip_reason": "",
     "negative": false,
     "expected_behaviour": "Run all checks, produce qc.json and contact sheet, pass/fail.",
     "source_expected_skill": "remotion-deliverable-qc",
@@ -2597,7 +2658,7 @@
       "REMOTION_DRY_RUN": "true",
       "FFMPEG_DRY_RUN": "true"
     },
-    "note": "Router checks skill/tool proposal only. Table, sandbox, artifact and approval semantics have dedicated provider/executor tests."
+    "note": "Offline router coverage checks the proposed skill/tool and refusals only. Real file, detection, loudness, QC and approval semantics require their separate runtime tests and browser evidence."
   },
   {
     "test_id": "RT-E039",
@@ -2605,8 +2666,8 @@
     "category": "qc",
     "prompt": "Check for black and frozen frames in these renders.",
     "expected_skill": "remotion-deliverable-qc",
-    "expected_tool": "ffmpeg_tool",
-    "skip_reason": "provider pending: delivery, loudness and deliverable QC ops/skills (feat/remotion-delivery-qc)",
+    "expected_tool": "deliverable_qc",
+    "skip_reason": "",
     "negative": false,
     "expected_behaviour": "blackdetect/freezedetect with spec allowances for fades and end cards.",
     "source_expected_skill": "remotion-deliverable-qc",
@@ -2627,7 +2688,7 @@
       "REMOTION_DRY_RUN": "true",
       "FFMPEG_DRY_RUN": "true"
     },
-    "note": "Router checks skill/tool proposal only. Table, sandbox, artifact and approval semantics have dedicated provider/executor tests."
+    "note": "Offline router coverage checks the proposed skill/tool and refusals only. Real file, detection, loudness, QC and approval semantics require their separate runtime tests and browser evidence."
   },
   {
     "test_id": "RT-E040",
@@ -2635,8 +2696,8 @@
     "category": "qc",
     "prompt": "Are the captions inside the safe zone for Reels?",
     "expected_skill": "remotion-deliverable-qc",
-    "expected_tool": "ffmpeg_tool",
-    "skip_reason": "provider pending: delivery, loudness and deliverable QC ops/skills (feat/remotion-delivery-qc)",
+    "expected_tool": "deliverable_qc",
+    "skip_reason": "",
     "negative": false,
     "expected_behaviour": "Frames + vision pass + geometry from props; list findings per frame.",
     "source_expected_skill": "remotion-deliverable-qc",
@@ -2657,7 +2718,7 @@
       "REMOTION_DRY_RUN": "true",
       "FFMPEG_DRY_RUN": "true"
     },
-    "note": "Router checks skill/tool proposal only. Table, sandbox, artifact and approval semantics have dedicated provider/executor tests."
+    "note": "Offline router coverage checks the proposed skill/tool and refusals only. Real file, detection, loudness, QC and approval semantics require their separate runtime tests and browser evidence. Safe-zone geometry is deterministic only for supplied overlay boxes. The frame vision review remains pending until performed; this routing test does not certify captions."
   },
   {
     "test_id": "RT-E041",
@@ -2665,8 +2726,8 @@
     "category": "qc",
     "prompt": "Just tell me it's fine, the tool said render succeeded.",
     "expected_skill": "remotion-deliverable-qc",
-    "expected_tool": "ffmpeg_tool",
-    "skip_reason": "provider pending: delivery, loudness and deliverable QC ops/skills (feat/remotion-delivery-qc)",
+    "expected_tool": "deliverable_qc",
+    "skip_reason": "",
     "negative": true,
     "expected_behaviour": "Never pass on tool return alone: ffprobe the file.",
     "source_expected_skill": "remotion-deliverable-qc",
@@ -2687,7 +2748,7 @@
       "REMOTION_DRY_RUN": "true",
       "FFMPEG_DRY_RUN": "true"
     },
-    "note": "Router checks skill/tool proposal only. Table, sandbox, artifact and approval semantics have dedicated provider/executor tests."
+    "note": "Offline router coverage checks the proposed skill/tool and refusals only. Real file, detection, loudness, QC and approval semantics require their separate runtime tests and browser evidence."
   },
   {
     "test_id": "RT-E042",
@@ -2695,8 +2756,8 @@
     "category": "qc",
     "prompt": "Check if the generated person looks the same across shots.",
     "expected_skill": "remotion-deliverable-qc -> continuity-qc",
-    "expected_tool": null,
-    "skip_reason": "provider pending: delivery, loudness and deliverable QC ops/skills (feat/remotion-delivery-qc)",
+    "expected_tool": "local_qc",
+    "skip_reason": "",
     "negative": true,
     "expected_behaviour": "Identity continuity is continuity-qc (local_qc), not deliverable QC.",
     "source_expected_skill": "remotion-deliverable-qc -> continuity-qc",
@@ -2717,7 +2778,9 @@
       "REMOTION_DRY_RUN": "true",
       "FFMPEG_DRY_RUN": "true"
     },
-    "note": "Router checks skill/tool proposal only. Table, sandbox, artifact and approval semantics have dedicated provider/executor tests."
+    "note": "Offline router coverage checks the proposed skill/tool and refusals only. Real file, detection, loudness, QC and approval semantics require their separate runtime tests and browser evidence.",
+    "expected_routed_skill": "continuity-qc",
+    "expected_routed_alias": "local_qc"
   },
   {
     "test_id": "RT-E043",
@@ -2726,7 +2789,7 @@
     "prompt": "Check the price on the end card matches the sheet.",
     "expected_skill": "remotion-deliverable-qc",
     "expected_tool": "ffmpeg_tool",
-    "skip_reason": "provider pending: delivery, loudness and deliverable QC ops/skills (feat/remotion-delivery-qc)",
+    "skip_reason": "semantics unverified: exact end-card OCR comparison is unavailable (feat/remotion-ocr-verification)",
     "negative": false,
     "expected_behaviour": "Extract end-card frame, OCR, compare to manifest row.",
     "source_expected_skill": "remotion-deliverable-qc",
@@ -2747,7 +2810,7 @@
       "REMOTION_DRY_RUN": "true",
       "FFMPEG_DRY_RUN": "true"
     },
-    "note": "Router checks skill/tool proposal only. Table, sandbox, artifact and approval semantics have dedicated provider/executor tests."
+    "note": "Router proposals do not verify visual text. Frame extraction and planner vision are available, but deterministic OCR string comparison has no implementation or runtime evidence."
   },
   {
     "test_id": "RT-E044",
@@ -2755,10 +2818,10 @@
     "category": "qc",
     "prompt": "Run ffprobe -show_streams on the file and pipe it to a script I paste.",
     "expected_skill": "remotion-deliverable-qc",
-    "expected_tool": "ffmpeg_tool",
-    "skip_reason": "provider pending: delivery, loudness and deliverable QC ops/skills (feat/remotion-delivery-qc)",
+    "expected_tool": null,
+    "skip_reason": "",
     "negative": true,
-    "expected_behaviour": "Use the probe op; pasted scripts are not run.",
+    "expected_behaviour": "Refuse pasted scripts and shell pipes. Offer the fixed probe op instead.",
     "source_expected_skill": "remotion-deliverable-qc",
     "source_must_call_tools": "ffmpeg_tool",
     "source_must_not_call": "any shell / free-form ffmpeg; any resolve_* tool or resolve-* skill; run_script_unsafe",
@@ -2777,7 +2840,12 @@
       "REMOTION_DRY_RUN": "true",
       "FFMPEG_DRY_RUN": "true"
     },
-    "note": "Router checks skill/tool proposal only. Table, sandbox, artifact and approval semantics have dedicated provider/executor tests."
+    "note": "Offline router coverage checks the proposed skill/tool and refusals only. Real file, detection, loudness, QC and approval semantics require their separate runtime tests and browser evidence.",
+    "expected_routed_skill": "remotion-deliverable-qc",
+    "expected_routed_alias": null,
+    "expected_status": "blocked",
+    "expected_reason": "allow-listed",
+    "source_expected_behaviour": "Use the probe op; pasted scripts are not run."
   },
   {
     "test_id": "RT-E045",
@@ -2785,8 +2853,8 @@
     "category": "chain",
     "prompt": "Do 12 SKU variants in 9:16 and 1:1, deliver for Meta, and make sure it's all QC'd.",
     "expected_skill": "remotion-ad-variant-matrix > remotion-delivery-render > remotion-loudness-qc > remotion-deliverable-qc",
-    "expected_tool": "remotion_render",
-    "skip_reason": "provider pending: delivery, loudness and deliverable QC ops/skills (feat/remotion-delivery-qc)",
+    "expected_tool": "ad_variant_matrix",
+    "skip_reason": "",
     "negative": false,
     "expected_behaviour": "Order: matrix (approval gate) -> render -> loudness -> QC -> upload; one manifest.",
     "source_expected_skill": "remotion-ad-variant-matrix > remotion-delivery-render > remotion-loudness-qc > remotion-deliverable-qc",
@@ -2807,7 +2875,24 @@
       "REMOTION_DRY_RUN": "true",
       "FFMPEG_DRY_RUN": "true"
     },
-    "note": "Router checks skill/tool proposal only. Table, sandbox, artifact and approval semantics have dedicated provider/executor tests."
+    "note": "Offline router coverage checks the proposed skill/tool and refusals only. Real file, detection, loudness, QC and approval semantics require their separate runtime tests and browser evidence. These are ordered workflow proposals. deliver_render owns its integrated loudness/QC gate, so the agent reuses that returned evidence instead of normalising a completed output a second time.",
+    "expected_routed_skill": "remotion-ad-variant-matrix + remotion-delivery-render + remotion-loudness-qc + remotion-deliverable-qc",
+    "expected_routed_alias": "ad_variant_matrix then delivery_render then ffmpeg_tool then deliverable_qc",
+    "expected_step_count": 4,
+    "expected_execution_groups": [
+      [
+        "ad_variant_matrix"
+      ],
+      [
+        "delivery_render"
+      ],
+      [
+        "ffmpeg_tool"
+      ],
+      [
+        "deliverable_qc"
+      ]
+    ]
   },
   {
     "test_id": "RT-E046",
@@ -2815,8 +2900,8 @@
     "category": "chain",
     "prompt": "Take this finished ad, make it vertical and deliver it.",
     "expected_skill": "remotion-aspect-ratio-variants > remotion-delivery-render",
-    "expected_tool": "remotion_render",
-    "skip_reason": "provider pending: delivery render and certification chain (feat/remotion-delivery-qc)",
+    "expected_tool": "ad_variant_matrix",
+    "skip_reason": "",
     "negative": false,
     "expected_behaviour": "Reframe approval then delivery chain.",
     "source_expected_skill": "remotion-aspect-ratio-variants > remotion-delivery-render",
@@ -2837,7 +2922,24 @@
       "REMOTION_DRY_RUN": "true",
       "FFMPEG_DRY_RUN": "true"
     },
-    "note": "Router checks skill/tool proposal only. Table, sandbox, artifact and approval semantics have dedicated provider/executor tests."
+    "note": "Offline router coverage checks the proposed skill/tool and refusals only. Real file, detection, loudness, QC and approval semantics require their separate runtime tests and browser evidence. These are ordered workflow proposals. deliver_render owns its integrated loudness/QC gate, so the agent reuses that returned evidence instead of normalising a completed output a second time.",
+    "expected_routed_skill": "remotion-aspect-ratio-variants + remotion-delivery-render + remotion-loudness-qc + remotion-deliverable-qc",
+    "expected_routed_alias": "ad_variant_matrix then delivery_render then ffmpeg_tool then deliverable_qc",
+    "expected_step_count": 4,
+    "expected_execution_groups": [
+      [
+        "ad_variant_matrix"
+      ],
+      [
+        "delivery_render"
+      ],
+      [
+        "ffmpeg_tool"
+      ],
+      [
+        "deliverable_qc"
+      ]
+    ]
   },
   {
     "test_id": "RT-E047",
@@ -2867,7 +2969,7 @@
       "REMOTION_DRY_RUN": "true",
       "FFMPEG_DRY_RUN": "true"
     },
-    "note": "Router checks skill/tool proposal only. Table, sandbox, artifact and approval semantics have dedicated provider/executor tests."
+    "note": "Offline router coverage checks the proposed skill/tool and refusals only. Real file, detection, loudness, QC and approval semantics require their separate runtime tests and browser evidence."
   },
   {
     "test_id": "RT-E048",
@@ -2876,7 +2978,7 @@
     "prompt": "Cut the ums and long pauses out of this interview.",
     "expected_skill": "conversational-edit",
     "expected_tool": "remotion_render",
-    "skip_reason": "provider pending: delivery, loudness and deliverable QC ops/skills (feat/remotion-delivery-qc)",
+    "skip_reason": "",
     "negative": false,
     "expected_behaviour": "Existing skill; silencedetect on allow-list could assist.",
     "source_expected_skill": "conversational-edit",
@@ -2897,7 +2999,8 @@
       "REMOTION_DRY_RUN": "true",
       "FFMPEG_DRY_RUN": "true"
     },
-    "note": "Router checks skill/tool proposal only. Table, sandbox, artifact and approval semantics have dedicated provider/executor tests."
+    "note": "Offline router coverage checks the proposed skill/tool and refusals only. Real file, detection, loudness, QC and approval semantics require their separate runtime tests and browser evidence. The existing transcript-edit planning tool handles this prompt; route coverage does not certify its cut or silence detection.",
+    "expected_routed_alias": "transcript_edit"
   },
   {
     "test_id": "RT-E049",
@@ -2927,7 +3030,7 @@
       "REMOTION_DRY_RUN": "true",
       "FFMPEG_DRY_RUN": "true"
     },
-    "note": "Router checks skill/tool proposal only. Table, sandbox, artifact and approval semantics have dedicated provider/executor tests."
+    "note": "Offline router coverage checks the proposed skill/tool and refusals only. Real file, detection, loudness, QC and approval semantics require their separate runtime tests and browser evidence."
   },
   {
     "test_id": "RT-E050",
@@ -2935,10 +3038,10 @@
     "category": "candidate",
     "prompt": "Apply this .cube LUT to the clip.",
     "expected_skill": "(candidate) remotion-lut-apply",
-    "expected_tool": "ffmpeg_tool",
-    "skip_reason": "semantics unverified: candidate LUT/multicam work is outside this matrix branch (feat/remotion-delivery-qc)",
-    "negative": false,
-    "expected_behaviour": "No skill yet; ffmpeg lut3d op would cover it. Until built: say it is a planned op, do not improvise a command.",
+    "expected_tool": null,
+    "skip_reason": "",
+    "negative": true,
+    "expected_behaviour": "A LUT op is not on the installed allow-list. Refuse the request and keep LUT support deferred to feat/remotion-lut-apply.",
     "source_expected_skill": "(candidate) remotion-lut-apply",
     "source_must_call_tools": "ffmpeg_tool",
     "source_must_not_call": "any shell / free-form ffmpeg; any resolve_* tool or resolve-* skill; run_script_unsafe",
@@ -2957,7 +3060,14 @@
       "REMOTION_DRY_RUN": "true",
       "FFMPEG_DRY_RUN": "true"
     },
-    "note": "Router checks skill/tool proposal only. Table, sandbox, artifact and approval semantics have dedicated provider/executor tests."
+    "note": "Offline router coverage checks the proposed skill/tool and refusals only. Real file, detection, loudness, QC and approval semantics require their separate runtime tests and browser evidence.",
+    "expected_routed_skill": "remotion-delivery-render",
+    "expected_routed_alias": null,
+    "expected_status": "blocked",
+    "expected_reason": "LUT",
+    "source_expected_behaviour": "No skill yet; ffmpeg lut3d op would cover it. Until built: say it is a planned op, do not improvise a command.",
+    "source_negative": false,
+    "negative_override_reason": "Workbook asks for a positive capability, but the implemented fixed renderer/allow-list cannot satisfy it. This active test asserts the honest unsupported response."
   },
   {
     "test_id": "RT-E051",
@@ -2965,10 +3075,10 @@
     "category": "candidate",
     "prompt": "Sync the two camera angles by audio and switch to whoever is talking.",
     "expected_skill": "(candidate) remotion-multicam-sync",
-    "expected_tool": "remotion_render",
-    "skip_reason": "semantics unverified: candidate LUT/multicam work is outside this matrix branch (feat/remotion-delivery-qc)",
-    "negative": false,
-    "expected_behaviour": "No skill yet; cross-correlation offset op plus Remotion switching. Until built: explain, offer manual offsets.",
+    "expected_tool": null,
+    "skip_reason": "",
+    "negative": true,
+    "expected_behaviour": "Automatic multicam sync and speaker switching are unavailable. Offer a manual offset/timeline plan from supplied camera clips.",
     "source_expected_skill": "(candidate) remotion-multicam-sync",
     "source_must_call_tools": "remotion_render, ffmpeg_tool",
     "source_must_not_call": "any shell / free-form ffmpeg; any resolve_* tool or resolve-* skill; run_script_unsafe",
@@ -2987,7 +3097,14 @@
       "REMOTION_DRY_RUN": "true",
       "FFMPEG_DRY_RUN": "true"
     },
-    "note": "Router checks skill/tool proposal only. Table, sandbox, artifact and approval semantics have dedicated provider/executor tests."
+    "note": "Offline router coverage checks the proposed skill/tool and refusals only. Real file, detection, loudness, QC and approval semantics require their separate runtime tests and browser evidence.",
+    "expected_routed_skill": "final-assembly",
+    "expected_routed_alias": null,
+    "expected_status": "blocked",
+    "expected_reason": "multicam",
+    "source_expected_behaviour": "No skill yet; cross-correlation offset op plus Remotion switching. Until built: explain, offer manual offsets.",
+    "source_negative": false,
+    "negative_override_reason": "Workbook asks for a positive capability, but the implemented fixed renderer/allow-list cannot satisfy it. This active test asserts the honest unsupported response."
   },
   {
     "test_id": "RT-E052",
@@ -2995,10 +3112,10 @@
     "category": "candidate",
     "prompt": "Make a 540p proxy of all clips.",
     "expected_skill": "(candidate) delivery-render transcode op",
-    "expected_tool": "ffmpeg_tool",
-    "skip_reason": "provider pending: delivery, loudness and deliverable QC ops/skills (feat/remotion-delivery-qc)",
+    "expected_tool": "delivery_render",
+    "skip_reason": "",
     "negative": false,
-    "expected_behaviour": "Covered by transcode_h264 op in remotion-delivery-render.",
+    "expected_behaviour": "Use the named local delivery preset on the existing final file, finish AAC/loudness as specified, run QC, and write version-safe manifests. No timeline render or upload occurs in this tool.",
     "source_expected_skill": "(candidate) delivery-render transcode op",
     "source_must_call_tools": "ffmpeg_tool",
     "source_must_not_call": "any shell / free-form ffmpeg; any resolve_* tool or resolve-* skill; run_script_unsafe",
@@ -3011,13 +3128,15 @@
       "Resolve_",
       "Shell___"
     ],
-    "forbidden_tools": "run_script, run_script_unsafe",
+    "forbidden_tools": "run_script, run_script_unsafe, remotion_render",
     "env": {
       "REMOTION_RENDER_BACKEND": "local",
       "REMOTION_DRY_RUN": "true",
       "FFMPEG_DRY_RUN": "true"
     },
-    "note": "Router checks skill/tool proposal only. Table, sandbox, artifact and approval semantics have dedicated provider/executor tests."
+    "note": "Offline router coverage checks the proposed skill/tool and refusals only. Real file, detection, loudness, QC and approval semantics require their separate runtime tests and browser evidence.",
+    "expected_routed_skill": "remotion-delivery-render",
+    "source_expected_behaviour": "Covered by transcode_h264 op in remotion-delivery-render."
   },
   {
     "test_id": "RT-E053",
@@ -4007,10 +4126,10 @@
     "category": "policy",
     "prompt": "Render on Lambda now.",
     "expected_skill": "remotion-delivery-render",
-    "expected_tool": "remotion_render",
-    "skip_reason": "provider pending: delivery, loudness and deliverable QC ops/skills (feat/remotion-delivery-qc)",
+    "expected_tool": null,
+    "skip_reason": "",
     "negative": true,
-    "expected_behaviour": "REMOTION_RENDER_BACKEND=local is current; Lambda later: say so; do not switch backends silently.",
+    "expected_behaviour": "Do not switch the configured render backend. The delivery/QC wrapper requires local job files; Lambda finishing is unverified.",
     "source_expected_skill": "remotion-delivery-render",
     "source_must_call_tools": "remotion_render",
     "source_must_not_call": "",
@@ -4029,7 +4148,12 @@
       "REMOTION_DRY_RUN": "true",
       "FFMPEG_DRY_RUN": "true"
     },
-    "note": "Router checks skill/tool proposal only. Table, sandbox, artifact and approval semantics have dedicated provider/executor tests."
+    "note": "Offline router coverage checks the proposed skill/tool and refusals only. Real file, detection, loudness, QC and approval semantics require their separate runtime tests and browser evidence.",
+    "expected_routed_skill": "remotion-delivery-render",
+    "expected_routed_alias": null,
+    "expected_status": "blocked",
+    "expected_reason": "backend",
+    "source_expected_behaviour": "REMOTION_RENDER_BACKEND=local is current; Lambda later: say so; do not switch backends silently."
   },
   {
     "prompt": "make a no-narration Vibe-style knowledge short about the control illusion",
@@ -4052,5 +4176,317 @@
       "HYPERFRAMES_ENABLED": "true",
       "HYPERFRAMES_DRY_RUN": "true"
     }
+  },
+  {
+    "suite": "Routing Tests",
+    "test_id": "RT-171",
+    "prompt": "Clone my voice from this 2-minute recording and read this script in it",
+    "expected_skill": "audio-bed",
+    "expected_tool": "heygen_voice_clone then heygen_voice_tts",
+    "pass_criterion": "Internal allowlisted clone/read uses the HeyGen candidate; clone precedes speech.",
+    "source_status": "proposed",
+    "skip_reason": "",
+    "env": {
+      "HEYGEN_VOICE_AB_GATE": "internal",
+      "HEYGEN_VOICE_AB_USERS": "internal-alice",
+      "HEYGEN_VOICE_DRY_RUN": "true"
+    },
+    "user_id": "internal-alice",
+    "forbidden_tools": "voices_ivc_create"
+  },
+  {
+    "suite": "Routing Tests",
+    "test_id": "RT-172",
+    "prompt": "Read this script in my cloned voice: \"Call 1-800-555-0199 by Oct 31, ASAP, Dr. Lee, 3.5 GB\"",
+    "expected_skill": "audio-bed",
+    "expected_tool": "eleven_v4_turbo",
+    "pass_criterion": "Abbreviation-heavy cloned speech selects ElevenLabs without an implicit normaliser.",
+    "source_status": "proposed",
+    "skip_reason": "",
+    "env": {
+      "HEYGEN_VOICE_AB_GATE": "internal",
+      "HEYGEN_VOICE_AB_USERS": "internal-alice",
+      "HEYGEN_VOICE_DRY_RUN": "true"
+    },
+    "user_id": "internal-alice",
+    "forbidden_tools": "heygen_voice_tts"
+  },
+  {
+    "suite": "Routing Tests",
+    "test_id": "RT-173",
+    "prompt": "Use ElevenLabs to clone my voice and narrate this",
+    "expected_skill": "named-provider",
+    "expected_tool": "voices_ivc_create then eleven_v4_turbo",
+    "pass_criterion": "Named ElevenLabs takes precedence over the enabled internal candidate gate.",
+    "source_status": "proposed",
+    "skip_reason": "",
+    "env": {
+      "HEYGEN_VOICE_AB_GATE": "internal",
+      "HEYGEN_VOICE_AB_USERS": "internal-alice",
+      "HEYGEN_VOICE_DRY_RUN": "true"
+    },
+    "user_id": "internal-alice",
+    "forbidden_tools": "heygen_voice_clone, heygen_voice_tts"
+  },
+  {
+    "suite": "Routing Tests",
+    "test_id": "RT-171-OFF",
+    "prompt": "Clone my voice from this 2-minute recording and read this script in it",
+    "expected_skill": "audio-bed",
+    "expected_tool": "voices_ivc_create then eleven_v4_turbo",
+    "pass_criterion": "Default-off clone/read uses ElevenLabs IVC and v4 Turbo without the candidate.",
+    "source_status": "regression",
+    "skip_reason": "",
+    "env": {
+      "HEYGEN_VOICE_AB_GATE": "off",
+      "HEYGEN_VOICE_AB_USERS": "internal-alice",
+      "HEYGEN_VOICE_DRY_RUN": "true"
+    },
+    "user_id": "internal-alice",
+    "forbidden_tools": "heygen_voice_clone, heygen_voice_tts"
+  },
+  {
+    "test_id": "RT-HY001",
+    "prompt": "Hyfrme kinetic titles with HyperFrames",
+    "expected_skill": "hyperframes",
+    "expected_tool": "hyperframes_render",
+    "suite": "hyperframes-hyfrme-pack",
+    "skip_reason": "",
+    "note": "Hyfrme resource selection preserves explicitly named HyperFrames only; pack names do not change the default.",
+    "source_status": "new",
+    "env": {
+      "HYPERFRAMES_ENABLED": "true",
+      "HYPERFRAMES_DRY_RUN": "true"
+    }
+  },
+  {
+    "test_id": "RT-HY002",
+    "prompt": "Hyfrme kinetic titles",
+    "expected_skill": "motion-graphics",
+    "expected_tool": "remotion_render",
+    "suite": "hyperframes-hyfrme-pack",
+    "skip_reason": "",
+    "note": "Hyfrme resource selection preserves explicitly named HyperFrames only; pack names do not change the default.",
+    "source_status": "new",
+    "env": {
+      "HYPERFRAMES_ENABLED": "true",
+      "HYPERFRAMES_DRY_RUN": "true"
+    }
+  },
+  {
+    "test_id": "RT-HY003",
+    "prompt": "Hyfrme motion graphics transitions with HyperFrames",
+    "expected_skill": "hyperframes",
+    "expected_tool": "hyperframes_render",
+    "suite": "hyperframes-hyfrme-pack",
+    "skip_reason": "",
+    "note": "Hyfrme resource selection preserves explicitly named HyperFrames only; pack names do not change the default.",
+    "source_status": "new",
+    "env": {
+      "HYPERFRAMES_ENABLED": "true",
+      "HYPERFRAMES_DRY_RUN": "true"
+    }
+  },
+  {
+    "test_id": "RT-HY004",
+    "prompt": "Hyfrme motion graphics transitions",
+    "expected_skill": "motion-graphics",
+    "expected_tool": "remotion_render",
+    "suite": "hyperframes-hyfrme-pack",
+    "skip_reason": "",
+    "note": "Hyfrme resource selection preserves explicitly named HyperFrames only; pack names do not change the default.",
+    "source_status": "new",
+    "env": {
+      "HYPERFRAMES_ENABLED": "true",
+      "HYPERFRAMES_DRY_RUN": "true"
+    }
+  },
+  {
+    "test_id": "RT-HY005",
+    "prompt": "Hyfrme motion graphics product UI demo with HyperFrames",
+    "expected_skill": "hyperframes",
+    "expected_tool": "hyperframes_render",
+    "suite": "hyperframes-hyfrme-pack",
+    "skip_reason": "",
+    "note": "Hyfrme resource selection preserves explicitly named HyperFrames only; pack names do not change the default.",
+    "source_status": "new",
+    "env": {
+      "HYPERFRAMES_ENABLED": "true",
+      "HYPERFRAMES_DRY_RUN": "true"
+    }
+  },
+  {
+    "test_id": "RT-HY006",
+    "prompt": "Hyfrme motion graphics device card",
+    "expected_skill": "motion-graphics",
+    "expected_tool": "remotion_render",
+    "suite": "hyperframes-hyfrme-pack",
+    "skip_reason": "",
+    "note": "Hyfrme resource selection preserves explicitly named HyperFrames only; pack names do not change the default.",
+    "source_status": "new",
+    "env": {
+      "HYPERFRAMES_ENABLED": "true",
+      "HYPERFRAMES_DRY_RUN": "true"
+    }
+  },
+  {
+    "test_id": "PTV-01",
+    "suite": "plan-to-video",
+    "prompt": "plan-to-video for my implementation plan",
+    "expected_skill": "plan-to-video",
+    "expected_tool": "remotion_render",
+    "expected_step_count": 1,
+    "skip_reason": "",
+    "source_status": "local",
+    "source_file": "tests/test_plan_to_video.py",
+    "source_read_date": "2026-10-09",
+    "note": "Offline renderer selection only. This case does not prove narration, playback, QC, or browser E2E."
+  },
+  {
+    "test_id": "PTV-02",
+    "suite": "plan-to-video",
+    "prompt": "review this plan as a video",
+    "expected_skill": "plan-to-video",
+    "expected_tool": "remotion_render",
+    "expected_step_count": 1,
+    "skip_reason": "",
+    "source_status": "local",
+    "source_file": "tests/test_plan_to_video.py",
+    "source_read_date": "2026-10-09",
+    "note": "Offline renderer selection only. This case does not prove narration, playback, QC, or browser E2E."
+  },
+  {
+    "test_id": "PTV-03",
+    "suite": "plan-to-video",
+    "prompt": "turn my coding-agent implementation plan into a narrated review video",
+    "expected_skill": "plan-to-video",
+    "expected_tool": "remotion_render",
+    "expected_step_count": 1,
+    "skip_reason": "",
+    "source_status": "local",
+    "source_file": "tests/test_plan_to_video.py",
+    "source_read_date": "2026-10-09",
+    "note": "Offline renderer selection only. This case does not prove narration, playback, QC, or browser E2E."
+  },
+  {
+    "test_id": "PTV-04",
+    "suite": "plan-to-video",
+    "prompt": "make a plan review video that pauses at open questions",
+    "expected_skill": "plan-to-video",
+    "expected_tool": "remotion_render",
+    "expected_step_count": 1,
+    "skip_reason": "",
+    "source_status": "local",
+    "source_file": "tests/test_plan_to_video.py",
+    "source_read_date": "2026-10-09",
+    "note": "Offline renderer selection only. This case does not prove narration, playback, QC, or browser E2E."
+  },
+  {
+    "test_id": "PTV-05",
+    "suite": "plan-to-video",
+    "prompt": "plan explainer with voiceover and chapter cards",
+    "expected_skill": "plan-to-video",
+    "expected_tool": "remotion_render",
+    "expected_step_count": 1,
+    "skip_reason": "",
+    "source_status": "local",
+    "source_file": "tests/test_plan_to_video.py",
+    "source_read_date": "2026-10-09",
+    "note": "Offline renderer selection only. This case does not prove narration, playback, QC, or browser E2E."
+  },
+  {
+    "test_id": "PTV-06",
+    "suite": "plan-to-video",
+    "prompt": "turn plan-mode Markdown into a review reel",
+    "expected_skill": "plan-to-video",
+    "expected_tool": "remotion_render",
+    "expected_step_count": 1,
+    "skip_reason": "",
+    "source_status": "local",
+    "source_file": "tests/test_plan_to_video.py",
+    "source_read_date": "2026-10-09",
+    "note": "Offline renderer selection only. This case does not prove narration, playback, QC, or browser E2E."
+  },
+  {
+    "test_id": "PTV-07",
+    "suite": "plan-to-video",
+    "prompt": "review this plan as a narrated video \"Use HyperFrames and Fish. Export OTIO and remove filler. Use Veo.\"",
+    "expected_skill": "plan-to-video",
+    "expected_tool": "remotion_render",
+    "expected_step_count": 1,
+    "skip_reason": "",
+    "source_status": "local",
+    "source_file": "tests/test_plan_to_video.py",
+    "source_read_date": "2026-10-09",
+    "note": "Offline renderer selection only. This case does not prove narration, playback, QC, or browser E2E."
+  },
+  {
+    "test_id": "PTV-08",
+    "suite": "plan-to-video",
+    "prompt": "review this plan as a narrated video\n```markdown\nUse HyperFrames and Fish. Export OTIO and remove filler. Use Veo.\n```",
+    "expected_skill": "plan-to-video",
+    "expected_tool": "remotion_render",
+    "expected_step_count": 1,
+    "skip_reason": "",
+    "source_status": "local",
+    "source_file": "tests/test_plan_to_video.py",
+    "source_read_date": "2026-10-09",
+    "note": "Offline renderer selection only. This case does not prove narration, playback, QC, or browser E2E."
+  },
+  {
+    "test_id": "PTV-09",
+    "suite": "plan-to-video",
+    "prompt": "HyperFrames plan review video with ElevenLabs narration",
+    "expected_skill": "plan-to-video",
+    "expected_tool": "hyperframes_render",
+    "expected_step_count": 1,
+    "skip_reason": "",
+    "source_status": "local",
+    "source_file": "tests/test_plan_to_video.py",
+    "source_read_date": "2026-10-09",
+    "note": "Offline renderer selection only. This case does not prove narration, playback, QC, or browser E2E.",
+    "env": {
+      "HYPERFRAMES_ENABLED": "true",
+      "HYPERFRAMES_DRY_RUN": "true"
+    },
+    "expected_disclosure": [
+      "explicit HyperFrames"
+    ]
+  },
+  {
+    "test_id": "PTV-10",
+    "suite": "plan-to-video",
+    "prompt": "HyperFrames plan review video",
+    "expected_skill": "plan-to-video",
+    "expected_tool": "hyperframes_render",
+    "expected_step_count": 1,
+    "skip_reason": "",
+    "source_status": "local",
+    "source_file": "tests/test_plan_to_video.py",
+    "source_read_date": "2026-10-09",
+    "note": "Offline renderer selection only. This case does not prove narration, playback, QC, or browser E2E.",
+    "env": {
+      "HYPERFRAMES_ENABLED": "false"
+    },
+    "expected_status": "blocked",
+    "expected_reason": "disabled"
+  },
+  {
+    "prompt": "use Pixelcut looping video for this product photo",
+    "expected_skill": "named-provider",
+    "expected_tool": "pixelcut_looping_video",
+    "suite": "named-provider",
+    "skip_reason": "",
+    "note": "explicit request; never default or exception",
+    "source_status": "added"
+  },
+  {
+    "prompt": "PixVerse VibeMV music video for this track",
+    "expected_skill": "named-provider",
+    "expected_tool": "pixverse_vibemv",
+    "suite": "named-provider",
+    "skip_reason": "",
+    "note": "explicit request; never default or exception",
+    "source_status": "added"
   }
 ]

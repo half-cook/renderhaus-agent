@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import hashlib
 import os
 import re
 import subprocess
@@ -47,7 +48,10 @@ class HyperFramesPackTests(unittest.IsolatedAsyncioTestCase):
         path = SKILL.joinpath("templates/catalog.json")
         self.assertTrue(path.is_file(), "The existing HyperFrames skill must package its template catalog.")
         catalog = json.loads(path.read_text())
-        self.assertEqual(set(catalog), {"cinematic-caption", "tactile-collage"})
+        self.assertEqual(set(catalog), {
+            "cinematic-caption", "tactile-collage", "hyfrme-text-motion",
+            "hyfrme-transitions", "hyfrme-product-demo",
+        })
         return catalog
 
     def arguments(self, entry):
@@ -119,6 +123,11 @@ process.stdout.write(JSON.stringify({timelines, registry: sandbox.window.__timel
                     self.assertRegex(selector, r"^#[a-z][a-z0-9-]+$")
                     target = ids[selector[1:]]
                     self.assertNotIn("clip", target.get("class", "").split())
+                    position = call["args"][-1]
+                    self.assertIsInstance(position, (int, float))
+                    self.assertGreaterEqual(position, 0)
+                    options = call["args"][2 if call["method"] == "fromTo" else 1]
+                    self.assertLessEqual(position + options.get("duration", 0), entry["arguments"]["duration_seconds"])
 
     def test_templates_require_no_downloads_or_remote_assets(self):
         for name, entry in self.catalog().items():
@@ -163,7 +172,8 @@ process.stdout.write(JSON.stringify({timelines, registry: sandbox.window.__timel
         from deepagents.backends import FilesystemBackend
 
         backend = FilesystemBackend(root_dir=ROOT / "agent/deep_agent/skills", virtual_mode=True)
-        resources = ["templates/catalog.json", "references/cinematic-caption.md", "references/tactile-collage.md"]
+        resources = ["templates/catalog.json", "references/cinematic-caption.md", "references/tactile-collage.md",
+                     "references/hyfrme.md"]
         resources.extend("templates/" + entry["html_file"] for entry in self.catalog().values())
         for resource in resources:
             with self.subTest(resource=resource):
@@ -174,7 +184,8 @@ process.stdout.write(JSON.stringify({timelines, registry: sandbox.window.__timel
     def test_resource_and_mit_notice_files_are_in_distribution_configuration(self):
         config = tomllib.loads((ROOT / "pyproject.toml").read_text())["tool"]["setuptools"]
         patterns = config["package-data"]["agent.deep_agent"]
-        for resource in ["references/cinematic-caption.md", "references/tactile-collage.md", "templates/catalog.json"] + [
+        for resource in ["references/cinematic-caption.md", "references/tactile-collage.md", "references/hyfrme.md",
+                         "templates/catalog.json"] + [
             "templates/" + entry["html_file"] for entry in self.catalog().values()
         ]:
             self.assertTrue(any(fnmatch("skills/hyperframes/" + resource, pattern) for pattern in patterns), resource)
@@ -186,8 +197,69 @@ process.stdout.write(JSON.stringify({timelines, registry: sandbox.window.__timel
             self.assertIn("Permission is hereby granted, free of charge", notice)
             self.assertIn("THE SOFTWARE IS PROVIDED \"AS IS\"", notice)
 
+    def test_hyfrme_keeps_complete_pinned_mit_notices_and_adaptation_headers(self):
+        config = tomllib.loads((ROOT / "pyproject.toml").read_text())["tool"]["setuptools"]
+        for path, digest in {
+            "third_party/hyfrme/LICENSE": "1f9b29bca45562ceb744891478e2dac179a2e3bd1ec5c5d5420abaff8c738eca",
+            "third_party/hyfrme/Remocn-LICENSE": "9045ed59114eee12264c0d551288d4ab0f77893c1fc211283410c5c24cc579c6",
+        }.items():
+            with self.subTest(path=path):
+                self.assertIn(path, config["license-files"])
+                self.assertEqual(hashlib.sha256((ROOT / path).read_bytes()).hexdigest(), digest)
+        recipe = SKILL.joinpath("references/hyfrme.md").read_text()
+        self.assertIn("26522a993082cd30ad5f404e4890d670c5c73bcb", recipe)
+        self.assertIn("PolyForm Shield", recipe)
+        for name, entry in self.catalog().items():
+            if name.startswith("hyfrme-"):
+                html = self.arguments(entry)["html"]
+                self.assertIn("Copyright (c) 2026 Akshar Patel", html)
+                self.assertIn("third_party/hyfrme/LICENSE", html)
+                self.assertIn("Modified by Renderhaus on 2026-10-09", html)
+                self.assertIn("26522a993082cd30ad5f404e4890d670c5c73bcb", html)
+
+    def test_hyfrme_samples_use_only_the_host_timeline_dependency(self):
+        for name, entry in self.catalog().items():
+            if not name.startswith("hyfrme-"):
+                continue
+            with self.subTest(pack=name):
+                parsed = CompositionParser()
+                parsed.feed(self.arguments(entry)["html"])
+                script = "\n".join(parsed.scripts)
+                self.assertNotRegex(script, r"Math\.random|Date\.|performance\.|setTimeout|setInterval|requestAnimationFrame|fetch\(|__hyperframes|__hyfrmeRenderFrame|CustomEase")
+                self.assertNotRegex(script, r"\brepeat\s*:")
+                self.assertNotIn("data-composition-src", self.arguments(entry)["html"])
+
 
 class HyperFramesPackRoutingTests(unittest.TestCase):
+    def test_hyfrme_patterns_keep_named_only_routing_and_confidential_metadata_inert(self):
+        from agent.deep_agent.routing import route_intent
+
+        for enabled in ("true", "false"):
+            with patch.dict(os.environ, {"HYPERFRAMES_ENABLED": enabled}):
+                for confidential in (True, False):
+                    for pattern in ("Hyfrme kinetic titles", "Hyfrme motion graphics transitions",
+                                    "Hyfrme motion graphics device card"):
+                        for named in (True, False):
+                            prompt = pattern + (" with HyperFrames" if named else "")
+                            with self.subTest(prompt=prompt, enabled=enabled, confidential=confidential):
+                                route = route_intent(prompt, confidential=confidential)
+                                self.assertEqual(route.skill, "hyperframes" if named else "motion-graphics")
+                                if named and enabled == "false":
+                                    self.assertEqual(route.status, "blocked")
+                                    self.assertIsNone(route.tool)
+                                else:
+                                    self.assertEqual(route.status, "ready")
+                                    self.assertEqual(route.tool, HYPERFRAMES_TOOL.name if named else "Remotion___render_timeline")
+
+    def test_hyfrme_pack_does_not_implement_product_capture(self):
+        from agent.deep_agent.routing import route_intent
+
+        with patch.dict(os.environ, PREVIEW_ENV):
+            route = route_intent("Hyfrme motion graphics product UI demo")
+            self.assertEqual((route.skill, route.alias, route.status),
+                             ("product-demo-video", "cutaway_record", "pending"))
+            self.assertIsNone(route.tool)
+
     def test_caption_styles_keep_motion_routing_with_trailing_instructions(self):
         from agent.deep_agent.routing import route_intent
 

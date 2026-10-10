@@ -20,12 +20,15 @@ class CapabilityMapTests(unittest.TestCase):
                     "v2v_edit": "seedance25_edit", "extend": "seedance25_extend", "still_image": "gpt_image25_t2i",
                     "image_edit": "gpt_image25_edit", "lipsync": "sync3_lipsync",
                     "performance_transfer": "runway_act_two", "tts": "eleven_v4_turbo",
-                    "voice_clone": "voices_ivc_create", "music": "mureka_v95", "sfx": "mirelo_v2a",
+                    "voice_clone": "voices_ivc_create", "cloned_tts": "eleven_v4_turbo",
+                    "music": "mureka_v95", "sfx": "mirelo_v2a",
                     "upscale": "topaz_upscale", "interpolate": "topaz_interpolate",
                     "motion_graphics": "remotion_render", "nle_handoff": "Remotion___export_nle_timeline",
                     "nle_import": "nle_import",
                     "continuity_qc": "local_qc", "lyrics_video": "mureka_lyrics_video",
-                    "ad_variant_matrix": "ad_variant_matrix", "media_inspection": "ffmpeg_tool"}
+                    "ad_variant_matrix": "ad_variant_matrix", "media_inspection": "ffmpeg_tool",
+                    "delivery_render": "delivery_render", "deliverable_qc": "deliverable_qc",
+                    "loudness_qc": "ffmpeg_tool"}
         self.assertEqual({k: v["default"] for k, v in routing.POLICY["capability_map"].items()}, expected)
         self.assertNotIn("ladder", routing.POLICY)
         for capability in ["v2v_edit", "extend"]:

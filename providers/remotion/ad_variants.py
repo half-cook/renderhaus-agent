@@ -341,7 +341,7 @@ def _plan(job: Path, master_asset: str, rows: list[dict], brief: dict) -> dict:
             "source_frame_rates": source_frame_rates, "cadence_warnings": cadence_warnings,
             "warnings": [*cadence_warnings, "Safe-zone percentages are placeholders; confirm with the channel brief.",
                          "Flat-master swaps affect overlays only; baked-in pixels cannot change.",
-                         "Delivery/loudness/black/freeze QC is pending feat/remotion-delivery-qc."]}
+                         "Matrix files are review intermediates. Named delivery and final loudness QC are required before a finished claim."]}
 
 
 def approval_description(arguments: dict) -> str:
@@ -384,6 +384,10 @@ def _freeze_sources(job: Path, directory: Path, hashes: dict[str, str]) -> dict[
 
 
 def _load_manifest(path: Path, plan: dict, directory: Path) -> list[dict]:
+    from providers.ffmpeg.sandbox import input_file
+    from providers.remotion.delivery import MAX_JSON_BYTES, PRESETS
+    from providers.remotion.qc import validate_file_report
+
     if not path.exists():
         return []
     if path.is_symlink() or not path.is_file() or path.stat().st_size > 2 * 1024 * 1024:
@@ -406,6 +410,17 @@ def _load_manifest(path: Path, plan: dict, directory: Path) -> list[dict]:
                 or not isinstance(entry.get("approved_by"), str) or not entry["approved_by"]
                 or entry.get("sha256") != _file_hash(artifact)):
             raise ValueError("Manifest artifact is missing, changed or outside the matrix directory.")
+        qc = entry.get("matrix_qc")
+        if not isinstance(qc, dict):
+            raise ValueError("Matrix technical QC must contain its saved report.")
+        report_path = input_file(directory, qc.get("report_path"))
+        if report_path.is_symlink() or report_path.stat().st_size > MAX_JSON_BYTES:
+            raise ValueError("Matrix technical QC report is unsafe or too large.")
+        technical = json.loads(report_path.read_text())
+        if (qc.get("sha256") != _file_hash(report_path) or not isinstance(technical, dict) or
+                technical.get("file") != str(artifact) or
+                not validate_file_report(directory.parent, technical, PRESETS["review-proxy"])):
+            raise ValueError("Matrix technical QC is missing, stale, failed or incomplete; inspect its saved report.")
     return entries
 
 
@@ -461,6 +476,43 @@ def _render(row: dict, job: Path, directory: Path, approved_by: str, review: boo
         entry.update(review_frames=[o["path"] for o in frames["outputs"]],
                      contact_sheet=sheet["outputs"][0]["path"], expected_strings=row["expected_strings"],
                      review_assets=[{"output_path": o["path"]} for o in frames["outputs"] + sheet["outputs"]])
+    from providers.ffmpeg.sandbox import output_file
+    from providers.remotion.delivery import PRESETS
+    from providers.remotion.qc import inspect_file
+
+    intermediate = copy.deepcopy(PRESETS["review-proxy"])
+    intermediate.update(max_width=config["width"], max_height=config["height"])
+    spec = {"expected_width": config["width"], "expected_height": config["height"],
+            "expected_fps": config["fps"], "expected_duration_s": duration,
+            "expected_filename": destination.name}
+    primary = next(clip for clip in args["visuals"] if clip["kind"] == "video")
+    source_probe = execute("probe", job, primary["url"])
+    spec["require_audio"] = bool(args["audio_tracks"]) or any(
+        stream.get("codec_type") == "audio" for stream in source_probe.get("metrics", {}).get("streams", []))
+    for name in ("black", "freeze", "silence"):
+        if name == "silence" and args["audio_tracks"]:
+            continue
+        detected = execute("detect_" + name, job, primary["url"])
+        if not detected["ok"]:
+            continue
+        spans = []
+        offset = 0
+        for shot in row["reframe_plan"]:
+            for interval in detected["metrics"]["intervals"]:
+                start = max(shot["from_s"], interval["start_s"])
+                end = min(shot["to_s"], interval["end_s"])
+                if start < end:
+                    spans.append({"start_s": start - shot["from_s"] + offset,
+                                  "end_s": end - shot["from_s"] + offset})
+            offset += shot["to_s"] - shot["from_s"]
+        spec["allowed_" + name] = spans
+    technical = inspect_file(job, str(destination.relative_to(job)), intermediate, spec)
+    report_path = output_file(directory, "matrix-qc", ".json")
+    _save(report_path, technical)
+    entry["qc"].update(technical_report=technical, report_path=str(report_path),
+                       delivery_qc="pending" if technical["passed"] else "failed")
+    entry["matrix_qc"] = {"report_path": str(report_path), "sha256": _file_hash(report_path)}
+    entry["delivery_status"] = "pending" if technical["passed"] else "failed"
     return entry
 
 
@@ -515,7 +567,7 @@ def render_ad_variants(stage: Literal["plan", "render_first", "render_batch"], j
             return {"status": "blocked", "reason": str(exc)}
         first_key = (plan["planned"][0]["sku"], plan["planned"][0]["locale"])
         first = [r for r in plan["planned"] if (r["sku"], r["locale"]) == first_key]
-        completed = {r["variant_key"] for r in rendered if Path(r["file"]).is_file()
+        completed = {r["variant_key"] for r in rendered if r.get("delivery_status") != "failed" and Path(r["file"]).is_file()
                      and _file_hash(Path(r["file"])) == r["sha256"]}
         if stage == "render_batch" and not {r["variant_key"] for r in first} <= completed:
             return {"status": "blocked", "reason": "Render and inspect the first variant at every aspect before batch approval."}
@@ -529,7 +581,9 @@ def render_ad_variants(stage: Literal["plan", "render_first", "render_batch"], j
                 for field in ("visuals", "audio_tracks"):
                     for clip in frozen_row["render_arguments"][field]:
                         clip["url"] = frozen[clip["url"]]
-                return _render(frozen_row, job, directory, authorization[2], stage == "render_first"), None
+                entry = _render(frozen_row, job, directory, authorization[2], stage == "render_first")
+                error = {"variant_key": row["variant_key"], "reasons": entry["qc"]["technical_report"]["failures"]} if entry["delivery_status"] == "failed" else None
+                return entry, error
             except (ValueError, OSError, RuntimeError) as exc:
                 return None, {"variant_key": row["variant_key"], "reasons": [str(exc)]}
 
@@ -537,7 +591,7 @@ def render_ad_variants(stage: Literal["plan", "render_first", "render_batch"], j
             for entry, error in pool.map(run, selected):
                 if entry:
                     rendered.append(entry)
-                else:
+                if error:
                     failed.append(error)
                 _save(manifest_path, rendered)
         if not manifest_path.exists():

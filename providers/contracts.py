@@ -388,6 +388,21 @@ def enrich_tool_schema(provider_id: str, tool: dict[str, Any]) -> dict[str, Any]
         if isinstance(properties.get("subtitles"), dict):
             properties["subtitles"]["items"] = deepcopy(_TEXT_OVERLAY_SCHEMA)
             properties["subtitles"]["description"] = "Output-timed burn-in captions, rendered as the final track above all overlays."
+    if provider_id == "remotion" and tool_name in {"deliver_render", "qc_deliverable"}:
+        from providers.remotion.delivery import PRESETS, SPEC_PROPERTIES
+        from providers.registry import sanitize_gateway_json_schema
+
+        properties["job_id"]["description"] = "Existing job directory owned by this Studio execution under RENDERHAUS_MEDIA_DIR."
+        for field in ("input_path", "manifest_path"):
+            properties[field]["description"] = "Supply exactly one input_path or manifest_path. Regular file confined inside this job. No URLs, traversal or symlink escape."
+        properties["preset"]["description"] = "Named placeholder delivery intent: " + ", ".join(PRESETS) + ". Native dimensions/FPS preserved without enlargement; confirm channel specifications."
+        properties["spec"].update(sanitize_gateway_json_schema({"type": "object", "properties": SPEC_PROPERTIES}))
+        properties["spec"]["description"] = "Optional bounded QC requirements. Expected geometry/FPS/duration, explicit detector allowances, loudness targets and declared overlay geometry. Vision/OCR remains a planner pass."
+        if tool_name == "deliver_render":
+            properties["upload"]["description"] = "Default false. Upload=true is refused in this branch; no AWS write or public object is created."
+            properties["aspect"]["description"] = "Filename aspect: 9x16,1x1,4x5,16x9,2p39x1 (colon variants also accepted). Does not reframe."
+            for field in ("campaign", "sku", "locale"):
+                properties[field]["description"] = "ASCII filename identifier, 1-40 letters/digits/underscore/hyphen; leading letter/digit/underscore."
     if provider_id == "remotion" and tool_name == "render_ad_variants":
         required = ("variant_key", "sku", "price_text", "cta_text", "logo_asset", "legal_text", "locale", "aspect")
         properties["rows"]["items"] = {
@@ -436,9 +451,9 @@ def enrich_tool_schema(provider_id: str, tool: dict[str, Any]) -> dict[str, Any]
         properties["timeline_json"]["description"] = "Current project document/renderConfig JSON envelope with existing assets (id, kind, url, durationSec) and tracks. Preserve versionId, checksum and sourceTimecode when known."
         properties["format"]["description"] = "Interchange format. Allowed values: fcpxml, otio. EDL, AAF and FCP7 XML are unsupported."
     if provider_id == "fal":
-        from providers.fal import vidu, wan3, motion, mirelo, images
+        from providers.fal import vidu, wan3, motion, mirelo, images, named_video
 
-        for contract in (vidu, wan3, motion, mirelo, images):
+        for contract in (vidu, wan3, motion, mirelo, images, named_video):
             if tool_name in contract.TOOL_ENDPOINTS:
                 for field, description in contract.FIELD_DESCRIPTIONS.items():
                     if field in properties:
@@ -469,8 +484,10 @@ def enrich_tool_schema(provider_id: str, tool: dict[str, Any]) -> dict[str, Any]
                 properties[field]["description"] = description
     if provider_id == "heygen":
         from providers.heygen.contracts import FIELD_DESCRIPTIONS
+        from providers.heygen.voice_contracts import FIELD_DESCRIPTIONS as VOICE_FIELDS, VOICE_TOOLS
 
-        for field, description in FIELD_DESCRIPTIONS.items():
+        descriptions = VOICE_FIELDS if tool_name in VOICE_TOOLS else FIELD_DESCRIPTIONS
+        for field, description in descriptions.items():
             if field in properties:
                 properties[field]["description"] = description
     return enriched
@@ -540,6 +557,14 @@ def _validate_rule(path: str, value: Any, rule: ArgumentRule) -> None:
 
 
 def _validate_cross_fields(provider_id: str, tool_name: str, arguments: dict[str, Any]) -> None:
+    if provider_id == "fal":
+        from providers.fal.named_video import validate_arguments
+
+        validate_arguments(tool_name, arguments)
+    if provider_id == "remotion" and tool_name in {"deliver_render", "qc_deliverable"}:
+        from providers.remotion.delivery import validate_arguments
+
+        validate_arguments(tool_name, arguments)
     if provider_id == "ffmpeg":
         from providers.ffmpeg.api import validate_arguments
 
@@ -823,7 +848,7 @@ def argument_rules(provider_id: str, tool_name: str) -> dict[str, ArgumentRule]:
 
         return ARGUMENT_RULES.get(tool_name, {})
     if provider_id == "fal":
-        from providers.fal import vidu, wan, wan3, mirelo
+        from providers.fal import vidu, wan, wan3, mirelo, named_video
 
-        return {**wan.ARGUMENT_RULES, **vidu.ARGUMENT_RULES, **wan3.ARGUMENT_RULES, **mirelo.ARGUMENT_RULES}.get(tool_name, {})
+        return {**wan.ARGUMENT_RULES, **vidu.ARGUMENT_RULES, **wan3.ARGUMENT_RULES, **mirelo.ARGUMENT_RULES, **named_video.ARGUMENT_RULES}.get(tool_name, {})
     return TOOL_ARGUMENT_RULES.get(provider_id, {}).get(tool_name, {})

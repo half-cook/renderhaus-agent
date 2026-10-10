@@ -23,7 +23,10 @@
     "list_topaz_models",
     "list_mureka_models",
     "import_nle_timeline",
-    "ffmpeg_tool"
+    "ffmpeg_tool",
+    "deliver_render",
+    "qc_deliverable",
+    "get_voice_status"
   ],
   "providers": {
     "kling": {
@@ -364,10 +367,20 @@
           "read_date": "2026-10-09",
           "training_eligible": false,
           "commercial_status": "requires applicable Remotion licence; local ffmpeg metering unverified"
+        },
+        "ffmpeg-local": {
+          "license": "service-terms",
+          "license_id": "system-FFmpeg-build",
+          "license_source": "https://ffmpeg.org/legal.html",
+          "read_date": "2026-10-09",
+          "training_eligible": false,
+          "commercial_status": "Installed local FFmpeg; source rights and operator build licence remain unchanged."
         }
       },
       "fixed_models": {
-        "render_ad_variants": "ad-variant-timeline"
+        "render_ad_variants": "ad-variant-timeline",
+        "deliver_render": "ffmpeg-local",
+        "qc_deliverable": "ffmpeg-local"
       }
     },
     "fal": {
@@ -386,7 +399,9 @@
         "fal-ai/kling-video/v3/pro/motion-control",
         "mirelo-ai/sfx1.6/video-to-video",
         "ideogram/v4.5/edit",
-        "fal-ai/recraft/v4.1/pro/text-to-vector"
+        "fal-ai/recraft/v4.1/pro/text-to-vector",
+        "pixelcut/looping-video",
+        "pixverse/music-video/vibemv"
       ],
       "default_model": "fal-ai/wan-vace-14b",
       "model_policies": {
@@ -504,6 +519,38 @@
           "consent_requirements": "Input rights and all required likeness consents under fal terms 6(d). No model-specific recorded-consent API field verified.",
           "consent_source": "https://fal.ai/legal/terms-of-service",
           "read_date": "2026-10-09"
+        },
+        "pixelcut/looping-video": {
+          "enabled": true,
+          "license": "service-terms",
+          "weights_license": "closed-weights",
+          "license_source": "https://fal.ai/models/pixelcut/looping-video",
+          "hosted_terms_url": "https://fal.ai/legal/terms-of-service",
+          "training_eligible": false,
+          "training_reason": "No express output-training grant verified; fal terms 14.3 restrict training competing models from outputs.",
+          "commercial_status": "Commercial hosted API per official fal model card; rights to all input media required.",
+          "consent_requirements": "Real faces or voices require likeness_consent=true for every subject. Input music and lyrics require usage rights.",
+          "consent_source": "https://fal.ai/legal/terms-of-service",
+          "consent_verification": "fal terms 6(d) and AUP 3.3 require rights and permissions. No separate model-specific recorded-consent API verified.",
+          "read_date": "2026-10-10",
+          "explicit_only": true,
+          "allowed_regions": []
+        },
+        "pixverse/music-video/vibemv": {
+          "enabled": true,
+          "license": "service-terms",
+          "weights_license": "closed-weights",
+          "license_source": "https://fal.ai/models/pixverse/music-video/vibemv",
+          "hosted_terms_url": "https://fal.ai/legal/terms-of-service",
+          "training_eligible": false,
+          "training_reason": "No express output-training grant verified; fal terms 14.3 restrict training competing models from outputs.",
+          "commercial_status": "Commercial hosted API per official fal model card; rights to all input media required.",
+          "consent_requirements": "Real faces or voices require likeness_consent=true for every subject. Input music and lyrics require usage rights.",
+          "consent_source": "https://fal.ai/legal/terms-of-service",
+          "consent_verification": "fal terms 6(d) and AUP 3.3 require rights and permissions. No separate model-specific recorded-consent API verified.",
+          "read_date": "2026-10-10",
+          "explicit_only": true,
+          "allowed_regions": []
         }
       },
       "fixed_models": {
@@ -515,7 +562,9 @@
         "kling_motion_control": "fal-ai/kling-video/v3/pro/motion-control",
         "mirelo_v2a": "mirelo-ai/sfx1.6/video-to-video",
         "ideogram_edit": "ideogram/v4.5/edit",
-        "recraft_text_to_vector": "fal-ai/recraft/v4.1/pro/text-to-vector"
+        "recraft_text_to_vector": "fal-ai/recraft/v4.1/pro/text-to-vector",
+        "pixelcut_looping_video": "pixelcut/looping-video",
+        "pixverse_vibemv": "pixverse/music-video/vibemv"
       },
       "default_models": {
         "vidu_q4_i2v": "fal-ai/vidu/q4/image-to-video",
@@ -699,7 +748,8 @@
       "training_eligible": false,
       "allowed_regions": [],
       "models": [
-        "avatar_v"
+        "avatar_v",
+        "heygen-voice-1"
       ],
       "default_model": "avatar_v",
       "model_env": "HEYGEN_MODEL",
@@ -720,6 +770,20 @@
           "vendor_trains_on_uploads": "Non-enterprise may train unless opted out; enterprise data excluded per trust-and-safety.",
           "training_source": "https://www.heygen.com/privacy",
           "read_date": "2026-10-09"
+        },
+        "heygen-voice-1": {
+          "license": "service-terms",
+          "weights_license": "closed-weights",
+          "license_source": "https://www.heygen.com/terms",
+          "enabled": true,
+          "training_eligible": false,
+          "training_reason": "No model-specific grant for Renderhaus training verified.",
+          "commercial_status": "Paid API terms permit commercial outputs; free-plan use blocked. Live Voice activation remains blocked.",
+          "consent_requirements": "Named subjects, consent_confirmed=true and consent_record_id required before cloning. Handles scoped to authenticated account and project.",
+          "vendor_trains_on_uploads": "Terms permit training on uploaded content. Voice-specific no-training agreement UNVERIFIED.",
+          "training_source": "https://www.heygen.com/privacy",
+          "read_date": "2026-10-09",
+          "live_blocked": true
         }
       },
       "explicit_only": false,
@@ -1884,9 +1948,193 @@
       "source": "https://www.remotion.dev/docs/license/faq",
       "price_source": "https://www.remotion.dev/docs/license/faq",
       "verification": "local real-binary verification; browser validation blocked; no live Lambda tests"
+    },
+    "delivery_render": {
+      "gateway_tool": "Remotion___deliver_render",
+      "provider": "remotion",
+      "model": "ffmpeg-local",
+      "skill": "remotion-delivery-render",
+      "status": "ready",
+      "host": "local worker with the job directory",
+      "us_available": "yes",
+      "availability_source": "https://ffmpeg.org/legal.html",
+      "read_date": "2026-10-09",
+      "training_eligible": false,
+      "license": "installed FFmpeg LGPL/GPL by build; in-house wrapper",
+      "license_source": "https://ffmpeg.org/legal.html",
+      "training_reason": "Editing retains source rights; no new model or weight licence grants training rights.",
+      "source": "https://ffmpeg.org/legal.html",
+      "price_source": "https://ffmpeg.org/legal.html",
+      "verification": "Fixed local finishing/QC ops. Offline routing tests do not prove file semantics or browser validation."
+    },
+    "deliverable_qc": {
+      "gateway_tool": "Remotion___qc_deliverable",
+      "provider": "remotion",
+      "model": "ffmpeg-local",
+      "skill": "remotion-deliverable-qc",
+      "status": "ready",
+      "host": "local worker with the job directory",
+      "us_available": "yes",
+      "availability_source": "https://ffmpeg.org/legal.html",
+      "read_date": "2026-10-09",
+      "training_eligible": false,
+      "license": "installed FFmpeg LGPL/GPL by build; in-house wrapper",
+      "license_source": "https://ffmpeg.org/legal.html",
+      "training_reason": "Editing retains source rights; no new model or weight licence grants training rights.",
+      "source": "https://ffmpeg.org/legal.html",
+      "price_source": "https://ffmpeg.org/legal.html",
+      "verification": "Fixed local finishing/QC ops. Offline routing tests do not prove file semantics or browser validation."
+    },
+    "heygen_voice_clone": {
+      "gateway_tool": "HeyGen___voice_clone",
+      "status": "ready",
+      "skill": "audio-bed",
+      "provider": "heygen",
+      "model": "heygen-voice-1",
+      "host": "HeyGen direct",
+      "verification": "Instant clone endpoint/schema and TTS model verified. Pricing, comparative-use permission and model-specific US availability UNVERIFIED; dry-run only.",
+      "source": "https://developers.heygen.com/docs/voices/heygen-voice-instant-clone",
+      "price_source": "https://www.heygen.com/api-pricing",
+      "us_available": "UNVERIFIED model-specific account access; no US exclusion found",
+      "availability_source": "https://www.heygen.com/terms",
+      "explicit_only": true,
+      "internal_gate": "HEYGEN_VOICE_AB_GATE=internal and trusted user allowlist",
+      "dry_run": true,
+      "license": "service-terms",
+      "weights_license": "closed-weights",
+      "license_source": "https://www.heygen.com/terms",
+      "enabled": true,
+      "training_eligible": false,
+      "training_reason": "No model-specific grant for Renderhaus training verified.",
+      "commercial_status": "Paid API terms permit commercial outputs; free-plan use blocked. Live Voice activation remains blocked.",
+      "consent_requirements": "Named subjects, consent_confirmed=true and consent_record_id required before cloning. Handles scoped to authenticated account and project.",
+      "vendor_trains_on_uploads": "Terms permit training on uploaded content. Voice-specific no-training agreement UNVERIFIED.",
+      "training_source": "https://www.heygen.com/privacy",
+      "read_date": "2026-10-09",
+      "live_blocked": true
+    },
+    "heygen_voice_tts": {
+      "gateway_tool": "HeyGen___voice_tts",
+      "status": "ready",
+      "skill": "audio-bed",
+      "provider": "heygen",
+      "model": "heygen-voice-1",
+      "host": "HeyGen direct",
+      "verification": "Instant clone endpoint/schema and TTS model verified. Pricing, comparative-use permission and model-specific US availability UNVERIFIED; dry-run only.",
+      "source": "https://developers.heygen.com/docs/voices/heygen-voice-speech",
+      "price_source": "https://www.heygen.com/api-pricing",
+      "us_available": "UNVERIFIED model-specific account access; no US exclusion found",
+      "availability_source": "https://www.heygen.com/terms",
+      "explicit_only": true,
+      "internal_gate": "HEYGEN_VOICE_AB_GATE=internal and trusted user allowlist",
+      "dry_run": true,
+      "license": "service-terms",
+      "weights_license": "closed-weights",
+      "license_source": "https://www.heygen.com/terms",
+      "enabled": true,
+      "training_eligible": false,
+      "training_reason": "No model-specific grant for Renderhaus training verified.",
+      "commercial_status": "Paid API terms permit commercial outputs; free-plan use blocked. Live Voice activation remains blocked.",
+      "consent_requirements": "Named subjects, consent_confirmed=true and consent_record_id required before cloning. Handles scoped to authenticated account and project.",
+      "vendor_trains_on_uploads": "Terms permit training on uploaded content. Voice-specific no-training agreement UNVERIFIED.",
+      "training_source": "https://www.heygen.com/privacy",
+      "read_date": "2026-10-09",
+      "live_blocked": true
+    },
+    "pixelcut_looping_video": {
+      "gateway_tool": "Fal___pixelcut_looping_video",
+      "skill": "named-provider",
+      "status": "ready",
+      "explicit_only": true,
+      "provider": "fal",
+      "model": "pixelcut/looping-video",
+      "reason": "Built named-only fal adapter; FAL_DRY_RUN defaults true. Always pause for cost approval, even autonomous.",
+      "verification": "Official fal endpoint, current OpenAPI, prices and commercial label verified 2026-10-10; live API and visual quality untested.",
+      "source": "https://fal.ai/models/pixelcut/looping-video/api",
+      "price_source": "https://fal.ai/models/pixelcut/looping-video",
+      "license": "service-terms",
+      "license_source": "https://fal.ai/models/pixelcut/looping-video",
+      "training_eligible": false,
+      "host": "fal",
+      "us_available": "yes",
+      "availability_source": "https://fal.ai/legal/terms-of-service",
+      "read_date": "2026-10-10",
+      "dry_run": true,
+      "produces_video": true
+    },
+    "pixverse_vibemv": {
+      "gateway_tool": "Fal___pixverse_vibemv",
+      "skill": "named-provider",
+      "status": "ready",
+      "explicit_only": true,
+      "provider": "fal",
+      "model": "pixverse/music-video/vibemv",
+      "reason": "Built named-only fal adapter; FAL_DRY_RUN defaults true. Always pause for cost approval, even autonomous.",
+      "verification": "Official fal endpoint, current OpenAPI, prices and commercial label verified 2026-10-10; live API and visual quality untested.",
+      "source": "https://fal.ai/models/pixverse/music-video/vibemv/api",
+      "price_source": "https://fal.ai/models/pixverse/music-video/vibemv",
+      "license": "service-terms",
+      "license_source": "https://fal.ai/models/pixverse/music-video/vibemv",
+      "training_eligible": false,
+      "host": "fal",
+      "us_available": "yes",
+      "availability_source": "https://fal.ai/legal/terms-of-service",
+      "read_date": "2026-10-10",
+      "dry_run": true,
+      "produces_video": true
     }
   },
   "rules": [
+    {
+      "pattern": "\\bpixverse\\b|\\bvibemv\\b",
+      "skill": "named-provider",
+      "abstract_tool": "pixverse_vibemv",
+      "capability": "lyrics_video",
+      "named_model": "pixverse_vibemv"
+    },
+    {
+      "pattern": "\\bpixelcut\\b",
+      "skill": "named-provider",
+      "abstract_tool": "pixelcut_looping_video",
+      "capability": "i2v",
+      "named_model": "pixelcut"
+    },
+    {
+      "pattern": "\\bplan[ -]to[ -]video\\b|\\bplan[ -]explainer\\b|\\bplan[ -]review[ -](?:video|reel)\\b|\\b(?:review|turn|convert|render)\\b[^!?;\\n]{0,140}\\bplan(?:\\.md|[ -]mode)?\\b[^!?;\\n]{0,120}\\b(?:video|review[ -]reel|narrated[ -]walkthrough)\\b",
+      "skill": "plan-to-video",
+      "abstract_tool": "remotion_render",
+      "capability": "motion_graphics"
+    },
+    {
+      "pattern": "\\b(?:deliver|export)\\b.*\\b(?:finished\\s+mp4|(?:9:16\\s+)?ad|master|cut)\\b.*\\b(?:tiktok|reels|meta|youtube|social|web)\\b|\\b(?:export|make|create)\\b.*\\b(?:review[ -]?proxy|540p\\s+proxy)\\b|\\b(?:convert|transcode)\\b.*\\b(?:existing\\s+mp4|rendered\\s+(?:file|video)|master)\\b.*\\b(?:h\\.?264|aac|email|delivery)\\b|\\b(?:delivery_render|deliver_render|remotion-delivery-render)\\b",
+      "skill": "remotion-delivery-render",
+      "abstract_tool": "delivery_render",
+      "capability": "delivery_render"
+    },
+    {
+      "pattern": "^(?!.*\\b(?:generate|create|make\\s+(?:an?|new))\\b[^.;!?]*\\b(?:videos?|clips?|voice[ -]?over|music|song)\\b).*?(?:\\blufs\\b|\\bebu\\s*r128\\b|\\b(?:check|measure|fix|normalise|normalize|make sure)\\b.*\\bloudness\\b|\\b(?:measure_loudness|loudnorm_mux_aac|mux_aac)\\b|\\bnormal(?:ise|ize)\\s+it\\s+twice\\b|\\bsting\\b.*\\bloud enough\\b)",
+      "skill": "remotion-loudness-qc",
+      "abstract_tool": "ffmpeg_tool",
+      "capability": "loudness_qc"
+    },
+    {
+      "pattern": "^(?!.*\\b(?:generate|create|make\\s+(?:an?|new))\\b[^.;!?]*\\b(?:videos?|clips?|voice[ -]?over|music|song)\\b).*?(?:\\b(?:qc|quality[ -]check)\\b.*\\b(?:deliverable|render|spec|file)\\b|\\b(?:deliverable|delivery)\\s+qc\\b|\\b(?:black|frozen|freeze)\\s+frames\\b|\\b(?:captions?|logos?)\\b.*\\bsafe[ -]zone\\b|\\btool\\s+said\\s+render\\s+succeeded\\b|\\b(?:detect_black|detect_freeze|detect_silence|frame_cadence|ssim|deliverable_qc|qc_deliverable)\\b)",
+      "skill": "remotion-deliverable-qc",
+      "abstract_tool": "deliverable_qc",
+      "capability": "deliverable_qc"
+    },
+    {
+      "pattern": "\\b(?:vo|voice[ -]?over|narration)\\b.*\\b(?:too quiet|too loud|under the music)\\b.*\\b(?:fix|rebalance|mix)\\b",
+      "skill": "final-assembly",
+      "abstract_tool": "remotion_render",
+      "capability": "motion_graphics"
+    },
+    {
+      "pattern": "\\bcheck\\b.*\\b(?:person|character|identity)\\b.*\\b(?:same|consistent)\\b.*\\bacross shots\\b",
+      "skill": "continuity-qc",
+      "abstract_tool": "local_qc",
+      "capability": "continuity_qc"
+    },
     {
       "pattern": "\\boutpaint(?:ing)?\\b|\\b(?:extend|fill|generate)\\b.*\\b(?:sides|missing background|missing pixels)\\b",
       "skill": "edit-v2v",
@@ -1933,7 +2181,7 @@
       "abstract_tool": "conversational_hyperframes_overlay"
     },
     {
-      "pattern": "\\bknowledge[ -]explainer\\b|知识大赏|\\bexplainer\\b|\\b(?:knowledge|science|graphic|cognitive|vibe)(?:[ -]\\w+){0,3}[ -](?:short|video)\\b",
+      "pattern": "\\bknowledge[ -]explainer\\b|\u77e5\u8bc6\u5927\u8d4f|\\bexplainer\\b|\\b(?:knowledge|science|graphic|cognitive|vibe)(?:[ -]\\w+){0,3}[ -](?:short|video)\\b",
       "skill": "knowledge-explainer",
       "abstract_tool": "remotion_render",
       "capability": "motion_graphics"
@@ -4510,6 +4758,55 @@
       "native_audio_default": true
     },
     {
+      "provider": "heygen",
+      "policy_ref": "heygen",
+      "model": "heygen-voice-1",
+      "label": "HeyGen Voice internal clone candidate",
+      "tools": {
+        "voice_clone": "HeyGen___voice_clone",
+        "cloned_tts": "HeyGen___voice_tts"
+      },
+      "jobs": {},
+      "controls": {
+        "voice_clone": [
+          "reference_audio_url",
+          "reference_duration_seconds",
+          "reference_size_bytes",
+          "reference_format",
+          "name",
+          "subjects",
+          "consent_confirmed",
+          "consent_record_id",
+          "account_id",
+          "workspace_id",
+          "project_id",
+          "mode",
+          "language",
+          "similarity",
+          "remove_background_noise",
+          "model"
+        ],
+        "cloned_tts": [
+          "voice_id",
+          "text",
+          "language",
+          "account_id",
+          "workspace_id",
+          "project_id",
+          "model",
+          "expressiveness_boost"
+        ]
+      },
+      "durations": {},
+      "resolutions": [],
+      "price": {
+        "source": "https://www.heygen.com/api-pricing",
+        "checked_at": "2026-10-09",
+        "verification": "UNVERIFIED non-promo instant clone and character prices; dry-run only"
+      },
+      "native_audio_field": null
+    },
+    {
       "provider": "topaz",
       "policy_ref": "topaz",
       "model": "Starlight Precise 2.6",
@@ -4957,6 +5254,154 @@
       },
       "durations": {},
       "explicit_only": false
+    },
+    {
+      "provider": "remotion",
+      "policy_ref": "remotion",
+      "model": "ffmpeg-local",
+      "label": "Local delivery finishing and technical QC",
+      "tools": {
+        "delivery_render": "Remotion___deliver_render",
+        "deliverable_qc": "Remotion___qc_deliverable"
+      },
+      "jobs": {
+        "delivery_render": true,
+        "deliverable_qc": true
+      },
+      "resolutions": [],
+      "speed_class": "local-worker",
+      "price": {
+        "source": "https://ffmpeg.org/legal.html",
+        "read_date": "2026-10-09",
+        "unit": "call"
+      },
+      "notes": "Named H.264/AAC MP4 presets and structured QC on existing local job files. No generation, upload or backend switch. Source rights unchanged.",
+      "controls": {
+        "delivery_render": [
+          "job_id",
+          "input_path",
+          "manifest_path",
+          "preset",
+          "spec",
+          "campaign",
+          "sku",
+          "locale",
+          "aspect",
+          "upload"
+        ],
+        "deliverable_qc": [
+          "job_id",
+          "input_path",
+          "manifest_path",
+          "preset",
+          "spec"
+        ]
+      },
+      "durations": {},
+      "explicit_only": false
+    },
+    {
+      "provider": "fal",
+      "model": "pixelcut/looping-video",
+      "label": "Pixelcut looping video",
+      "tools": {
+        "i2v": "Fal___pixelcut_looping_video"
+      },
+      "jobs": {
+        "i2v": true,
+        "native_audio": true,
+        "max_resolution": 1080
+      },
+      "resolutions": [
+        480,
+        768,
+        1080
+      ],
+      "speed_class": "unknown",
+      "policy_ref": "fal",
+      "price": {
+        "unit": "output_second",
+        "source": "https://fal.ai/models/pixelcut/looping-video",
+        "checked_at": "2026-10-10"
+      },
+      "controls": {
+        "i2v": [
+          "image_url",
+          "prompt",
+          "duration",
+          "resolution",
+          "motion",
+          "include_audio",
+          "real_face_refs",
+          "likeness_consent"
+        ]
+      },
+      "durations": {
+        "i2v": [
+          5,
+          15
+        ]
+      },
+      "duration_field": "duration",
+      "duration_integer": true,
+      "native_audio_field": "include_audio",
+      "resolution_default": "1080p",
+      "explicit_only": true,
+      "notes": "Named requests only. No automatic route, tier selection or training rights."
+    },
+    {
+      "provider": "fal",
+      "model": "pixverse/music-video/vibemv",
+      "label": "PixVerse VibeMV",
+      "tools": {
+        "lyrics_video": "Fal___pixverse_vibemv"
+      },
+      "jobs": {
+        "lyrics_video": true,
+        "native_audio": true,
+        "max_resolution": 1080
+      },
+      "resolutions": [
+        720,
+        1080
+      ],
+      "speed_class": "unknown",
+      "policy_ref": "fal",
+      "price": {
+        "unit": "rounded_input_audio_second",
+        "source": "https://fal.ai/models/pixverse/music-video/vibemv",
+        "checked_at": "2026-10-10"
+      },
+      "controls": {
+        "lyrics_video": [
+          "audio_url",
+          "audio_duration_seconds",
+          "image_url",
+          "style_image_url",
+          "music_style",
+          "style",
+          "aspect_ratio",
+          "resolution",
+          "lyrics",
+          "lip_sync_switch",
+          "enable_safety_checker",
+          "real_face_refs",
+          "real_voice_refs",
+          "likeness_consent"
+        ]
+      },
+      "durations": {
+        "lyrics_video": [
+          10,
+          360
+        ]
+      },
+      "duration_field": "audio_duration_seconds",
+      "duration_integer": false,
+      "native_audio_field": null,
+      "resolution_default": "720p",
+      "explicit_only": true,
+      "notes": "Named requests only. No automatic route, tier selection or training rights."
     }
   ],
   "image_default_size": "2K",
@@ -5074,9 +5519,17 @@
     },
     "voice_clone": {
       "default": "voices_ivc_create",
-      "exceptions": [],
+      "exceptions": [
+        {
+          "when": "heygen_voice_ab && !voice_text_needs_normalisation",
+          "tool": "heygen_voice_clone",
+          "reason": "Internal HeyGen Voice A/B candidate for consented instant clones"
+        }
+      ],
       "interim": null,
-      "ab_candidates": []
+      "ab_candidates": [
+        "heygen_voice_clone"
+      ]
     },
     "music": {
       "default": "mureka_v95",
@@ -5165,6 +5618,38 @@
       "exceptions": [],
       "interim": null,
       "ab_candidates": []
+    },
+    "delivery_render": {
+      "default": "delivery_render",
+      "exceptions": [],
+      "interim": null,
+      "ab_candidates": []
+    },
+    "deliverable_qc": {
+      "default": "deliverable_qc",
+      "exceptions": [],
+      "interim": null,
+      "ab_candidates": []
+    },
+    "loudness_qc": {
+      "default": "ffmpeg_tool",
+      "exceptions": [],
+      "interim": null,
+      "ab_candidates": []
+    },
+    "cloned_tts": {
+      "default": "eleven_v4_turbo",
+      "exceptions": [
+        {
+          "when": "heygen_voice_ab && !voice_text_needs_normalisation",
+          "tool": "heygen_voice_tts",
+          "reason": "Internal HeyGen Voice cloned-speech A/B candidate"
+        }
+      ],
+      "interim": null,
+      "ab_candidates": [
+        "heygen_voice_tts"
+      ]
     }
   },
   "paid_video_tools": [
@@ -5219,7 +5704,11 @@
     "Runway___act_two",
     "Fal___kling_motion_control",
     "Fal___mirelo_v2a",
-    "Remotion___render_ad_variants"
+    "Remotion___render_ad_variants",
+    "Fal___pixelcut_looping_video",
+    "pixelcut_looping_video",
+    "Fal___pixverse_vibemv",
+    "pixverse_vibemv"
   ],
   "explicit_routes": {
     "kling": {
@@ -5270,7 +5759,8 @@
       "tts": "eleven_v4_turbo",
       "voice_clone": "voices_ivc_create",
       "sfx": "elevenlabs_sfx_v2",
-      "music": "elevenlabs_music"
+      "music": "elevenlabs_music",
+      "cloned_tts": "eleven_v4_turbo"
     },
     "alibaba_modelstudio": {
       "v2v_edit": "wan3_edit",
@@ -5284,7 +5774,9 @@
       "lipsync": "sync3_lipsync"
     },
     "heygen": {
-      "lipsync": "heygen_avatar_v"
+      "lipsync": "heygen_avatar_v",
+      "voice_clone": "heygen_voice_clone",
+      "cloned_tts": "heygen_voice_tts"
     },
     "topaz": {
       "upscale": "topaz_upscale",
@@ -5299,6 +5791,20 @@
     }
   },
   "named_models": {
+    "pixelcut": {
+      "pattern": "\\bpixelcut\\b",
+      "aliases": {
+        "i2v": "pixelcut_looping_video"
+      },
+      "skill": "named-provider"
+    },
+    "pixverse_vibemv": {
+      "pattern": "\\bpixverse\\b|\\bvibemv\\b",
+      "aliases": {
+        "lyrics_video": "pixverse_vibemv"
+      },
+      "skill": "named-provider"
+    },
     "topaz_apollo": {
       "pattern": "\\bapollo\\b|\\bapo-8\\b",
       "model": "Apollo",
@@ -5997,9 +6503,116 @@
       "training_reason": "Editing retains source rights; no new model or weight licence grants training rights.",
       "commercial_status": "commercial use with source rights and operator licence compliance; no model or weights",
       "consent_requirements": "No face or voice synthesis. Caller must have rights to supplied media."
+    },
+    "pixelcut_looping_video": {
+      "enabled": true,
+      "license": "service-terms",
+      "weights_license": "closed-weights",
+      "license_source": "https://fal.ai/models/pixelcut/looping-video",
+      "hosted_terms_url": "https://fal.ai/legal/terms-of-service",
+      "training_eligible": false,
+      "training_reason": "No express output-training grant verified; fal terms 14.3 restrict training competing models from outputs.",
+      "commercial_status": "Commercial hosted API per official fal model card; rights to all input media required.",
+      "consent_requirements": "Real faces or voices require likeness_consent=true for every subject. Input music and lyrics require usage rights.",
+      "consent_source": "https://fal.ai/legal/terms-of-service",
+      "consent_verification": "fal terms 6(d) and AUP 3.3 require rights and permissions. No separate model-specific recorded-consent API verified.",
+      "read_date": "2026-10-10",
+      "explicit_only": true,
+      "allowed_regions": []
+    },
+    "pixverse_vibemv": {
+      "enabled": true,
+      "license": "service-terms",
+      "weights_license": "closed-weights",
+      "license_source": "https://fal.ai/models/pixverse/music-video/vibemv",
+      "hosted_terms_url": "https://fal.ai/legal/terms-of-service",
+      "training_eligible": false,
+      "training_reason": "No express output-training grant verified; fal terms 14.3 restrict training competing models from outputs.",
+      "commercial_status": "Commercial hosted API per official fal model card; rights to all input media required.",
+      "consent_requirements": "Real faces or voices require likeness_consent=true for every subject. Input music and lyrics require usage rights.",
+      "consent_source": "https://fal.ai/legal/terms-of-service",
+      "consent_verification": "fal terms 6(d) and AUP 3.3 require rights and permissions. No separate model-specific recorded-consent API verified.",
+      "read_date": "2026-10-10",
+      "explicit_only": true,
+      "allowed_regions": []
     }
   },
   "editing_refusals": [
+    {
+      "pattern": "\\bffmpegOverride\\b",
+      "skill": "remotion-delivery-render",
+      "reason": "Refuse ffmpegOverride. It is not portable across supported backends. Use a supported composition overlay or an allow-listed fixed op."
+    },
+    {
+      "pattern": "\\bfairlight\\b.*\\bloudness\\b",
+      "skill": "remotion-loudness-qc",
+      "reason": "Resolve is parked by Satya (2026-10-09). Fairlight metering is unavailable. Offer fixed ffmpeg measure_loudness without calling Resolve."
+    },
+    {
+      "pattern": "\\bffprobe\\s+-[^.;!?]*\\b(?:pipe|script)\\b",
+      "skill": "remotion-deliverable-qc",
+      "reason": "Refuse shell pipes and pasted scripts. Use only allow-listed ffmpeg_tool ops; the fixed probe op returns structured data."
+    },
+    {
+      "pattern": "\\bloudnorm\\s*=|\\b(?:exact|custom)\\s+filter\\s+chain\\b",
+      "skill": "remotion-loudness-qc",
+      "reason": "Refuse caller-supplied filter strings. Use allow-listed measure_loudness and loudnorm_mux_aac with validated numeric parameters."
+    },
+    {
+      "pattern": "\\b(?:make|render|export|deliver)\\b.*\\b(?:prores|dnx(?:hd|hr)?)\\b",
+      "skill": "remotion-delivery-render",
+      "reason": "ProRes and DNx delivery are unsupported by the fixed local H.264/AAC renderer. No codec substitution or backend switch was performed."
+    },
+    {
+      "pattern": "\\b(?:render|export|deliver)\\b.*\\b8k\\b",
+      "skill": "remotion-delivery-render",
+      "reason": "8K delivery is unsupported by the fixed renderer and named presets. Specify a supported delivery size; no silent downscale or backend switch."
+    },
+    {
+      "pattern": "\\b(?:name|call)\\s+the\\s+file\\b.*\\b(?:whatever|final_FINAL)\\b",
+      "skill": "remotion-delivery-render",
+      "reason": "Delivery naming uses campaign, SKU, locale, aspect, version and date. A caller-selected filename cannot override that naming contract."
+    },
+    {
+      "pattern": "\\b(?:upload|post|publish)\\b.*\\b(?:youtube|tiktok|meta)\\b.*\\b(?:channel|account)\\b",
+      "skill": "remotion-delivery-render",
+      "reason": "Direct channel publishing is unsupported. Produce the local delivery artifact; a person handles account publishing separately."
+    },
+    {
+      "pattern": "\\b(?:upload|publish)\\b.*\\b(?:s3|link)\\b.*\\bpublic\\b",
+      "skill": "remotion-delivery-render",
+      "reason": "A public S3 object or public link is unsupported. Local delivery produces files and manifests only; upload=True is refused."
+    },
+    {
+      "pattern": "\\b(?:upload|publish)\\b.*\\bs3\\b",
+      "skill": "remotion-delivery-render",
+      "reason": "S3 upload is unsupported in this local delivery branch. Return the saved artifact and manifest; upload=True is refused."
+    },
+    {
+      "pattern": "\\bqc\\b.*\\b(?:failed|fail)\\b.*\\bupload\\b|\\bupload\\b.*\\b(?:failed|failing)\\s+qc\\b",
+      "skill": "remotion-delivery-render",
+      "reason": "A failed QC gate blocks upload and completed-delivery claims. Return the failed checks and the step to rerun."
+    },
+    {
+      "pattern": "\\bwhat\\s+loudness\\s+should\\b",
+      "skill": "remotion-loudness-qc",
+      "reason": "A loudness target needs a channel or spec. Ask for that target before measuring or normalising to a guessed value."
+    },
+    {
+      "pattern": "\\bapply\\b.*(?:\\.cube\\b|\\blut\\b)",
+      "skill": "remotion-delivery-render",
+      "reason": "LUT application is unavailable because no LUT op is on the installed allow-list. Supply an already approved master or defer to feat/remotion-lut-apply."
+    },
+    {
+      "pattern": "\\bsync\\b.*\\b(?:two|multiple|camera)\\b.*\\b(?:camera angles|by audio)\\b",
+      "skill": "final-assembly",
+      "reason": "Automatic multicam audio sync and speaker switching are unavailable. Supply manual camera offsets and an approved switching plan for final assembly."
+    },
+    {
+      "pattern": "\\brender\\s+on\\s+lambda\\s+now\\b",
+      "skill": "remotion-delivery-render",
+      "reason": "The configured backend is unchanged. Delivery/QC requires the local job host; Lambda finishing is unverified. Reuse the existing backend for supported timeline renders."
+    },
     {
       "pattern": "\\bresolve\\b.*\\bsmart reframe\\b",
       "skill": "remotion-aspect-ratio-variants",
@@ -6026,5 +6639,49 @@
   ],
   "non_dispatch_requests": [
     "\\bremotion\\b.*\\b(?:still free|licen[cs]e|licensing|headcount)\\b|\\b(?:people|team)\\b.*\\bremotion\\b.*\\bfree\\b"
+  ],
+  "editing_workflows": [
+    {
+      "pattern": "\\bsku[ -]variants?\\b.*\\b(?:deliver|delivery|export)\\b|\\b(?:deliver|delivery|export)\\b.*\\bsku[ -]variants?\\b",
+      "steps": [
+        {
+          "capability": "ad_variant_matrix",
+          "skill": "remotion-ad-variant-matrix"
+        },
+        {
+          "capability": "delivery_render",
+          "skill": "remotion-delivery-render"
+        },
+        {
+          "capability": "loudness_qc",
+          "skill": "remotion-loudness-qc"
+        },
+        {
+          "capability": "deliverable_qc",
+          "skill": "remotion-deliverable-qc"
+        }
+      ]
+    },
+    {
+      "pattern": "\\b(?:finished|approved|existing)\\s+ad\\b.*\\b(?:vertical|reframe|reformat)\\b.*\\b(?:deliver|delivery|export)\\b",
+      "steps": [
+        {
+          "capability": "ad_variant_matrix",
+          "skill": "remotion-aspect-ratio-variants"
+        },
+        {
+          "capability": "delivery_render",
+          "skill": "remotion-delivery-render"
+        },
+        {
+          "capability": "loudness_qc",
+          "skill": "remotion-loudness-qc"
+        },
+        {
+          "capability": "deliverable_qc",
+          "skill": "remotion-deliverable-qc"
+        }
+      ]
+    }
   ]
 }

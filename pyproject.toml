@@ -46,10 +46,10 @@ include = ["agent*", "server*", "lambdas*", "providers*"]
 
 [tool.setuptools]
 include-package-data = true
-license-files = ["third_party/video-use/LICENSE", "third_party/hyperframes/LICENSE", "third_party/hyperframes/NOTICE", "third_party/hyperframes-cinematic-caption/LICENSE", "third_party/hyperframes-tactile-collage/LICENSE"]
+license-files = ["third_party/video-use/LICENSE", "third_party/hyperframes/LICENSE", "third_party/hyperframes/NOTICE", "third_party/hyperframes-cinematic-caption/LICENSE", "third_party/hyperframes-tactile-collage/LICENSE", "third_party/hyfrme/LICENSE", "third_party/hyfrme/Remocn-LICENSE"]
 
 [tool.setuptools.package-data]
 "providers.elevenlabs" = ["openapi.json"]
-"providers.remotion" = ["ad_layouts.json"]
+"providers.remotion" = ["ad_layouts.json", "delivery_presets.json"]
 
 "agent.deep_agent" = ["AGENTS.md", "routing_policy.json", "continuity_qc_calibration.json", "continuity_qc_vlm_eval.json", "skills/*/SKILL.md", "skills/hyperframes/templates/*.html", "skills/hyperframes/templates/*.json", "skills/hyperframes/references/*.md", "skills/knowledge-explainer/templates/*.json"]

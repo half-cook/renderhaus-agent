@@ -6,6 +6,7 @@ import re
 import unittest
 from pathlib import Path
 from unittest.mock import patch
+from urllib.parse import unquote, urlsplit
 
 import yaml
 
@@ -47,7 +48,7 @@ def routing_case(case):
         from agent.deep_agent.routing import resolve_alias, route_intent
 
         with patch.dict(os.environ, case.get("env", {})):
-            route = route_intent(runner_prompt(case["prompt"]), arguments=case.get("arguments"))
+            route = route_intent(runner_prompt(case["prompt"]), arguments=case.get("arguments"), user_id=case.get("user_id"))
         skill = case.get("expected_routed_skill", case["expected_skill"])
         alias = case.get("expected_routed_alias", case["expected_tool"])
         skills = skill.split(" + ") if skill else [None]
@@ -55,6 +56,10 @@ def routing_case(case):
         steps = list(route.steps) or [route]
         self.assertEqual([step.skill for step in steps[:len(skills)]], skills)
         self.assertEqual([step.alias for step in steps[:len(aliases)]], aliases)
+        if case.get("expected_step_count"):
+            self.assertEqual(len(steps), case["expected_step_count"])
+        if case.get("expected_execution_groups"):
+            self.assertEqual([list(group) for group in route.execution_groups], case["expected_execution_groups"])
         for alias, limit in parse_max_calls(case.get("max_calls")).items():
             planned = [step.alias for step in steps if step.alias == alias]
             if route.status != "ready":
@@ -107,6 +112,39 @@ for index, case in enumerate(CASES):
 
 
 class SkillContracts(unittest.TestCase):
+    def test_skill_and_catalog_relative_links_resolve(self):
+        paths = [*(ROOT / "agent/deep_agent/skills").glob("*/SKILL.md"), ROOT / "docs/SKILLS.md"]
+        for path in paths:
+            for target in re.findall(r"\[[^\]\n]+\]\(([^)\s]+)\)", path.read_text()):
+                link = urlsplit(target)
+                if link.scheme or link.netloc or not link.path:
+                    continue
+                with self.subTest(path=path, target=target):
+                    self.assertTrue((path.parent / unquote(link.path)).exists())
+
+    def test_motion_and_knowledge_pattern_references_have_source_and_licence(self):
+        for skill, repo, licence in [
+            ("motion-graphics", "JularDepick/Agent-Video-Driver.SKILL", "Apache-2.0"),
+            ("motion-graphics", "Ninesam-9/motion-efficiency", "MIT"),
+            ("knowledge-explainer", "mbackschat/explainery-core", "Apache-2.0"),
+        ]:
+            with self.subTest(skill=skill, repo=repo):
+                body = (ROOT / "agent/deep_agent/skills" / skill / "SKILL.md").read_text()
+                self.assertTrue("\n## References\n" in body, f"{skill} needs pattern references")
+                references = body.split("\n## References\n", 1)[1].split("\n## ", 1)[0]
+                entries = references.split("\n- ")
+                entry = next((item for item in entries if f"https://github.com/{repo}/blob/" in item), "")
+                urls = re.findall(r"\]\((https://github\.com/[^)\s]+)\)", entry)
+                sources = [url for url in urls if url.endswith(".md")]
+                self.assertTrue(sources, repo)
+                for source in sources:
+                    self.assertRegex(source, rf"^https://github\.com/{re.escape(repo)}/blob/[0-9a-f]{{40}}/")
+                    prefix, revision_path = source.split("/blob/", 1)
+                    revision_root = prefix + "/blob/" + revision_path.split("/", 1)[0]
+                    self.assertIn(revision_root + "/LICENSE", urls)
+                self.assertIn(licence, entry)
+                self.assertRegex(entry, r"read \d{4}-\d{2}-\d{2}")
+
     def test_every_gateway_reference_exists_and_dispatches_through_correct_role(self):
         from agent.deep_agent.routing import TOOL_MAP
         from agent.deep_agent.runner import DISPATCH_TARGETS
@@ -136,14 +174,15 @@ class SkillContracts(unittest.TestCase):
                 self.assertTrue(
                     any(name.split("___")[0] in DISPATCH_TARGETS[d] for d in dispatch), name
                 )
-        self.assertEqual(len(names), 27)
+        self.assertEqual(len(names), 31)
         self.assertTrue(
             {
                 "t2v", "i2v", "edit-v2v", "still-then-video", "image-gen", "named-provider",
                 "audio-bed", "motion-graphics", "hyperframes", "continuity-qc", "resolve-handoff",
                 "video-short", "product-images", "storyboard-shots", "audio", "final-assembly",
                 "refinement", "conversational-edit", "act-two", "lipsync", "upscale",
-                "lyrics-video", "product-demo-video", "whiteboard-explainer", "knowledge-explainer", "remotion-ad-variant-matrix", "remotion-aspect-ratio-variants",
+                "lyrics-video", "product-demo-video", "whiteboard-explainer", "knowledge-explainer", "plan-to-video", "remotion-ad-variant-matrix", "remotion-aspect-ratio-variants",
+                "remotion-delivery-render", "remotion-loudness-qc", "remotion-deliverable-qc",
             } <= names
         )
         self.assertFalse(
@@ -151,9 +190,9 @@ class SkillContracts(unittest.TestCase):
         )
 
     def test_fixture_preserves_active_workbook_rows_and_explains_pending_dependencies(self):
-        self.assertEqual(len(CASES), 220)
-        self.assertEqual(sum(not c["skip_reason"] for c in CASES), 184)
-        self.assertEqual(sum(bool(c["skip_reason"]) for c in CASES), 36)
+        self.assertEqual(len(CASES), 242)
+        self.assertEqual(sum(not c["skip_reason"] for c in CASES), 237)
+        self.assertEqual(sum(bool(c["skip_reason"]) for c in CASES), 5)
         self.assertTrue(all(c.get("source_status") != "archived" for c in CASES))
         self.assertTrue(all("[project.confidential=true]" not in c["prompt"] for c in CASES))
         self.assertTrue(all(c["expected_skill"] != "confidential-route" for c in CASES))

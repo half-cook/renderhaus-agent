@@ -561,6 +561,8 @@ export function toolForAgentArtifact(
   // agent used an input asset or a composition tool, placing the result must
   // not create an invisible dependency on another artifact in the run.
   const provider = `${event?.provider || ""} ${event?.name || ""} ${event?.providerJobId || ""}`.toLowerCase();
+  if (provider.includes("remotion") || provider.includes("ffmpeg")) return undefined;
+  if (provider.includes("pixelcut") || provider.includes("pixverse")) return undefined;
   const runway = provider.includes("runway");
   if (kind === "image") {
     if (provider.includes("ideogram")) return toolById("image.ideogram.edit");

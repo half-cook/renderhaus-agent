@@ -2,8 +2,9 @@
 
 Client payload rules, enforced here and by tests/test_run_billing.py:
 * integer cents, fee-inclusive, one price per step;
-* no fee amounts or percentages, no provider/vendor/model names, no tool vendor fields;
+* no fee amounts or percentages, no provider/vendor/model names in billing data, no tool vendor fields;
 * line labels describe the work.
+Voice consent notices name the upload destination as required for recorded consent.
 """
 
 from __future__ import annotations
@@ -109,7 +110,7 @@ def public_approvals(
     repo: Any, *, run_id: str, user_id: str | None, execution_status: str, error_type: str | None,
     raw_approvals: list[dict[str, Any]],
 ) -> list[dict[str, Any]]:
-    """Client view of an execution's approval cards.  Vendor, fee and tool-name data never leave here."""
+    """Client approval cards with neutral billing data and required voice consent notices."""
     if not raw_approvals:
         return []
     plan = plan_for_pending(repo, run_id, raw_approvals)
@@ -154,6 +155,13 @@ def public_approvals(
             entry["detail"] = detail
         if isinstance(item.get("message"), str):
             entry["message"] = item["message"]
+        if item.get("tool_name") in {"HeyGen___voice_clone", "HeyGen___voice_tts"}:
+            _, marker, notice = str(item.get("description") or "").partition("Voice owner:")
+            if marker:
+                estimate = item.get("estimated_cost") or {}
+                cents = estimate.get("total_cents")
+                cost = f"Estimated cost ${cents / 100:.2f} USD." if isinstance(cents, (int, float)) else "Estimated cost unknown."
+                entry["message"] = f"Voice owner:{notice} {cost}"
         if plan and status in {"pending", "approved", "running"}:
             entry.update({
                 "estimate_cents": plan.estimate_cents,

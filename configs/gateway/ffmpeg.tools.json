@@ -1,13 +1,13 @@
 [
   {
     "name": "ffmpeg_tool",
-    "description": "Free local/worker media inspection and fixed reframing. Fixed operations only; no commands, filtergraphs, URLs or network access. Always execute on the machine containing job_id. Missing binaries fail softly; Lambda hosts without ffmpeg cannot run binary ops.",
+    "description": "Free local/worker media inspection, delivery and fixed reframing. Fixed operations only; no commands, filtergraphs, URLs or network access. Always execute on the machine containing job_id. Missing binaries fail softly; Lambda hosts without ffmpeg cannot run binary ops.",
     "inputSchema": {
       "type": "object",
       "properties": {
         "op": {
           "type": "string",
-          "description": "Allowed values: crop_plan_preview, reframe_crop, reframe_pad_blur, detect_scenes, probe, extract_frames, contact_sheet, sha256, check_faststart, volume_stats. One of: crop_plan_preview, reframe_crop, reframe_pad_blur, detect_scenes, probe, extract_frames, contact_sheet, sha256, check_faststart, volume_stats."
+          "description": "Allowed values: measure_loudness, loudnorm_mux_aac, mux_aac, transcode_h264, frame_cadence, detect_black, detect_freeze, detect_silence, ssim, crop_plan_preview, reframe_crop, reframe_pad_blur, detect_scenes, probe, extract_frames, contact_sheet, sha256, check_faststart, volume_stats. One of: measure_loudness, loudnorm_mux_aac, mux_aac, transcode_h264, frame_cadence, detect_black, detect_freeze, detect_silence, ssim, crop_plan_preview, reframe_crop, reframe_pad_blur, detect_scenes, probe, extract_frames, contact_sheet, sha256, check_faststart, volume_stats."
         },
         "job_id": {
           "type": "string",
@@ -20,6 +20,66 @@
         "params": {
           "type": "object",
           "properties": {
+            "I": {
+              "type": "number",
+              "description": "measure_loudness: Allowed range: -30 to -5. Default -14. loudnorm_mux_aac: Allowed range: -30 to -5. Default -14. "
+            },
+            "TP": {
+              "type": "number",
+              "description": "measure_loudness: Allowed range: -9 to 0. Default -1.5. loudnorm_mux_aac: Allowed range: -9 to 0. Default -1.5. "
+            },
+            "LRA": {
+              "type": "number",
+              "description": "measure_loudness: Allowed range: 1 to 20. Default 11. loudnorm_mux_aac: Allowed range: 1 to 20. Default 11. "
+            },
+            "bitrate_kbps": {
+              "type": "integer",
+              "description": "loudnorm_mux_aac: Allowed range: 64 to 320. Default 192. mux_aac: Allowed range: 64 to 320. Default 192. "
+            },
+            "measured_I": {
+              "type": "number",
+              "description": "loudnorm_mux_aac: Required pass-one measured_I from this source at these targets; finite -99 to 0. "
+            },
+            "measured_TP": {
+              "type": "number",
+              "description": "loudnorm_mux_aac: Required pass-one measured_TP from this source at these targets; finite -99 to 99. "
+            },
+            "measured_LRA": {
+              "type": "number",
+              "description": "loudnorm_mux_aac: Required pass-one measured_LRA from this source at these targets; finite 0 to 99. "
+            },
+            "measured_thresh": {
+              "type": "number",
+              "description": "loudnorm_mux_aac: Required pass-one measured_thresh from this source at these targets; finite -99 to 0. "
+            },
+            "offset": {
+              "type": "number",
+              "description": "loudnorm_mux_aac: Required pass-one offset from this source at these targets; finite -99 to 99. "
+            },
+            "intent": {
+              "type": "string",
+              "description": "transcode_h264: Fixed delivery intent; fit native dimensions without upscaling. One of: social-vertical, social-feed, web-1080p, broadcast-proxy, review-proxy, email-720p, podcast-streaming."
+            },
+            "d": {
+              "type": "number",
+              "description": "detect_black: Allowed range: 0.1 to 5. Default 0.5. detect_freeze: Allowed range: 0.1 to 5. Default 0.5. detect_silence: Allowed range: 0.1 to 5. Default 0.5. "
+            },
+            "pix_th": {
+              "type": "number",
+              "description": "detect_black: Allowed range: 0 to 0.5. Default 0.1. "
+            },
+            "n": {
+              "type": "number",
+              "description": "detect_freeze: Allowed range: 0 to 0.1. Default 0.001. "
+            },
+            "noise": {
+              "type": "number",
+              "description": "detect_silence: Allowed range: -60 to -20. Default -50. "
+            },
+            "reference_path": {
+              "type": "string",
+              "description": "ssim: Required readable reference video confined to the same job directory. "
+            },
             "aspect": {
               "type": "string",
               "description": "crop_plan_preview: Target aspect enum. Nominal sizes come from the shared aspect table. reframe_crop: Target aspect enum. Nominal sizes come from the shared aspect table. One of: 9:16, 1:1, 4:5, 16:9, 2.39:1."

@@ -1,0 +1,95 @@
+<!doctype html>
+<!--
+Adapted from AksharP5/hyfrme at 26522a993082cd30ad5f404e4890d670c5c73bcb.
+Source https://github.com/AksharP5/hyfrme/blob/26522a993082cd30ad5f404e4890d670c5c73bcb/registry/blocks/screen-lift/screen-lift.html
+Copyright (c) 2026 Akshar Patel. MIT License.
+Complete copyright and permission notice remains in third_party/hyfrme/LICENSE.
+Modified by Renderhaus on 2026-10-09 into an asset-free, full-frame sample.
+The host must provision GSAP and the isolated renderer.
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Hyfrme product UI sample</title>
+    <style>
+      * { box-sizing: border-box; }
+      html, body { margin: 0; width: 100%; height: 100%; }
+      #hyfrme-product-demo { position: relative; width: 100%; height: 100%; overflow: hidden; background: #111a20; color: #edf2ef; font-family: Arial, sans-serif; font-synthesis: none; }
+      .clip { position: absolute; }
+      .hpd-motion { opacity: 0; }
+      #hpd-label-clip { left: 96px; top: 96px; width: 1088px; height: 36px; }
+      #hpd-label-motion { color: #afd0c3; font-size: 20px; line-height: 1.4; letter-spacing: 2px; text-transform: uppercase; }
+      #hpd-copy-clip { left: 96px; top: 218px; width: 400px; height: 260px; }
+      #hpd-copy-motion { margin: 0; font-size: 66px; font-weight: 700; line-height: 1.06; letter-spacing: -2px; }
+      #hpd-note-clip { left: 96px; top: 508px; width: 400px; height: 80px; }
+      #hpd-note-motion { color: #afd0c3; font-size: 24px; line-height: 1.4; }
+      #hpd-screen-clip { left: 628px; top: 170px; width: 536px; height: 430px; perspective: 1200px; perspective-origin: 50% 50%; }
+      #hpd-screen-motion { position: relative; width: 100%; height: 100%; border: 1px solid #52666e; border-radius: 20px; background: #1a272e; box-shadow: 0 26px 60px #00000055; transform-style: preserve-3d; }
+      .hpd-heading { position: absolute; left: 24px; right: 24px; top: 24px; display: flex; align-items: center; justify-content: space-between; }
+      .hpd-heading strong { display: block; font-size: 25px; line-height: 1.3; }
+      .hpd-heading small { display: block; margin-top: 7px; color: #aac0c4; font-size: 16px; line-height: 1.3; }
+      .hpd-date { padding: 10px 14px; border: 1px solid #4c6668; border-radius: 10px; color: #c1e1d0; font-size: 16px; }
+      .hpd-base-row { position: absolute; left: 24px; width: 488px; height: 74px; }
+      #hpd-draft-base { top: 118px; }
+      #hpd-review-base { top: 206px; }
+      #hpd-plan-base { top: 294px; }
+      .hpd-row { display: flex; align-items: center; gap: 18px; padding: 14px 18px; border: 1px solid #42575f; border-radius: 12px; background: #263940; }
+      .hpd-code { width: 30px; color: #9bb5b8; font-size: 15px; letter-spacing: 1px; }
+      .hpd-task { flex: 1; font-size: 21px; line-height: 1.2; }
+      .hpd-status { color: #bddacf; font-size: 15px; }
+      .hpd-lift-clip { left: 24px; width: 488px; height: 74px; transform-style: preserve-3d; }
+      #hpd-review-clip { top: 206px; }
+      #hpd-plan-clip { top: 294px; }
+      .hpd-lift-row { width: 100%; height: 100%; opacity: 0; backface-visibility: hidden; }
+      #hpd-review-motion { border-color: #a3d5bc; background: #304e51; box-shadow: 0 16px 26px #00000055; }
+      #hpd-plan-motion { border-color: #5e8a85; background: #2b4149; box-shadow: 0 10px 18px #00000044; }
+    </style>
+  </head>
+  <body>
+    <div id="hyfrme-product-demo" data-composition-id="hyfrme-product-demo" data-width="1280" data-height="720" data-fps="30" data-duration="6">
+      <div id="hpd-label-clip" class="clip" data-start="0" data-duration="6">
+        <div id="hpd-label-motion" class="hpd-motion">A focused next step</div>
+      </div>
+      <div id="hpd-copy-clip" class="clip" data-start="0.35" data-duration="5.65">
+        <h1 id="hpd-copy-motion" class="hpd-motion">Bring the next step forward.</h1>
+      </div>
+      <div id="hpd-note-clip" class="clip" data-start="2.3" data-duration="3.7">
+        <div id="hpd-note-motion" class="hpd-motion">Review the outline, then plan.</div>
+      </div>
+      <div id="hpd-screen-clip" class="clip" data-start="0" data-duration="6">
+        <div id="hpd-screen-motion" class="hpd-motion">
+          <div class="hpd-heading"><div><strong>Planning board</strong><small>Illustrative interface</small></div><div class="hpd-date">Today</div></div>
+          <div id="hpd-draft-base" class="hpd-base-row hpd-row"><span class="hpd-code">DN</span><span class="hpd-task">Draft notes</span><span class="hpd-status">Draft</span></div>
+          <div id="hpd-review-base" class="hpd-base-row hpd-row"><span class="hpd-code">RO</span><span class="hpd-task">Review the outline</span><span class="hpd-status">Next</span></div>
+          <div id="hpd-plan-base" class="hpd-base-row hpd-row"><span class="hpd-code">PR</span><span class="hpd-task">Plan the release</span><span class="hpd-status">Planned</span></div>
+          <div id="hpd-review-clip" class="clip hpd-lift-clip" data-start="1.6" data-duration="4.4">
+            <div id="hpd-review-motion" class="hpd-row hpd-lift-row"><span class="hpd-code">RO</span><span class="hpd-task">Review the outline</span><span class="hpd-status">Next</span></div>
+          </div>
+          <div id="hpd-plan-clip" class="clip hpd-lift-clip" data-start="1.85" data-duration="4.15">
+            <div id="hpd-plan-motion" class="hpd-row hpd-lift-row"><span class="hpd-code">PR</span><span class="hpd-task">Plan the release</span><span class="hpd-status">Planned</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script>
+      const timeline = gsap.timeline({ paused: true });
+      timeline.fromTo("#hpd-label-motion", { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.4, ease: "power2.out" }, 0.2);
+      timeline.fromTo("#hpd-copy-motion", { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: 0.6, ease: "power2.out" }, 0.35);
+      timeline.fromTo("#hpd-note-motion", { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.45, ease: "power2.out" }, 2.3);
+      timeline.fromTo("#hpd-screen-motion", { opacity: 0, x: 45, y: 25, rotationX: 12, rotationY: -16, rotationZ: 4, scale: 0.92 }, { opacity: 1, x: 0, y: 0, rotationX: 6, rotationY: -9, rotationZ: 1.5, scale: 1, duration: 1.1, ease: "power2.out" }, 0.3);
+      timeline.to("#hpd-review-base", { opacity: 0.25, duration: 0.4 }, 1.6);
+      timeline.to("#hpd-plan-base", { opacity: 0.4, duration: 0.4 }, 1.85);
+      timeline.fromTo("#hpd-review-motion", { opacity: 0, z: 0, x: 0, y: 0 }, { opacity: 1, z: 80, x: -36, y: -10, duration: 1.1, ease: "power3.inOut" }, 1.6);
+      timeline.fromTo("#hpd-plan-motion", { opacity: 0, z: 0, x: 0, y: 0 }, { opacity: 1, z: 40, x: -18, y: -8, duration: 1.15, ease: "power3.inOut" }, 1.85);
+      timeline.to("#hpd-review-motion", { z: 0, x: 0, y: 0, duration: 0.8, ease: "power3.inOut" }, 4.45);
+      timeline.to("#hpd-plan-motion", { z: 0, x: 0, y: 0, duration: 0.75, ease: "power3.inOut" }, 4.5);
+      timeline.to("#hpd-review-base", { opacity: 1, duration: 0.25 }, 5.2);
+      timeline.to("#hpd-plan-base", { opacity: 1, duration: 0.25 }, 5.2);
+      timeline.to("#hpd-review-motion", { opacity: 0, duration: 0.2 }, 5.25);
+      timeline.to("#hpd-plan-motion", { opacity: 0, duration: 0.2 }, 5.25);
+      timeline.to("#hpd-screen-motion", { rotationX: 4, rotationY: -5, rotationZ: 0, duration: 3, ease: "power2.inOut" }, 3);
+      window.__timelines = window.__timelines || {};
+      window.__timelines["hyfrme-product-demo"] = timeline;
+    </script>
+  </body>
+</html>

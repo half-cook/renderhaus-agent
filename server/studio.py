@@ -38,6 +38,7 @@ from agent.studio_agent_next import (
     StudioProgressEvent,
     StudioToolEvent,
     _requests_video_deliverable,
+    _validate_video_delivery,
     run_studio_agent as run_studio_agent_runtime,
 )
 from providers.catalog import PROVIDERS, get_provider
@@ -291,13 +292,18 @@ def _hydrate_tool_event_assets(
         if existing:
             continue
         status = str(getattr(event, "status", "") or "").lower()
-        if status in _SKIP_ASSET_STATUSES:
+        failed_qc = status in {"failed", "error"} and event.name in {
+            "Remotion___deliver_render", "Remotion___qc_deliverable",
+        }
+        if status in _SKIP_ASSET_STATUSES and not failed_qc:
             continue
         payload = getattr(event, "result", None)
         if not isinstance(payload, dict):
             continue
         registered: list[dict[str, Any]] = []
         for candidate in collect_asset_sources(payload):
+            if failed_qc and candidate["kind"] != "image":
+                continue
             source = candidate["source"]
             if source in seen_sources:
                 continue
@@ -391,6 +397,7 @@ async def studio_status() -> dict[str, Any]:
     from providers.seedance.api import dry_run as seedance_dry_run
     from providers.sync.api import dry_run as sync_dry_run
     from providers.heygen.api import dry_run as heygen_dry_run
+    from providers.heygen.voice import dry_run as heygen_voice_dry_run
     from providers.topaz.api import dry_run as topaz_dry_run
 
     return {
@@ -400,6 +407,7 @@ async def studio_status() -> dict[str, Any]:
             "gemini": os.getenv("GEMINI_DRY_RUN", "true").lower() != "false",
             "topaz": topaz_dry_run(),
             "heygen": heygen_dry_run(),
+            "heygen_voice": heygen_voice_dry_run(),
             "sync": sync_dry_run(),
             "openai_images": os.getenv("OPENAI_IMAGES_DRY_RUN", "true").lower() != "false",
             "kling": os.getenv("KLING_DRY_RUN", "true").lower() != "false",
@@ -719,17 +727,18 @@ async def invoke_tool(body: InvokeBody, auth: AuthUser) -> dict[str, Any]:
         await asyncio.to_thread(repository.require_project, workspace_id, body.project_id)
     except KeyError as exc:
         raise HTTPException(status_code=404, detail="Project not found.") from exc
-    if (body.provider, body.tool) in {("ffmpeg", "ffmpeg_tool"), ("remotion", "render_ad_variants")}:
+    if (body.provider, body.tool) in {("ffmpeg", "ffmpeg_tool"), ("remotion", "render_ad_variants"),
+                                    ("remotion", "deliver_render"), ("remotion", "qc_deliverable")}:
         raise HTTPException(status_code=409, detail="Use the agent local-media workflow with its owned Studio job directory and stage approvals.")
     if (body.provider, body.tool) == ("sync", "lipsync_video"):
         raise HTTPException(
             status_code=409,
             detail="Use the agent lip-sync workflow for required consent and cost approval before Sync generation.",
         )
-    if (body.provider, body.tool) == ("heygen", "create_avatar_video"):
+    if body.provider == "heygen" and body.tool in {"create_avatar_video", "voice_clone", "voice_tts", "get_voice_status"}:
         raise HTTPException(
             status_code=409,
-            detail="Use the agent presenter workflow for recorded consent and cost approval before HeyGen generation.",
+            detail="Use the agent HeyGen workflow for recorded consent and cost approval before generation.",
         )
     if body.provider == "topaz" and body.tool in {"upscale_video", "interpolate_video"}:
         raise HTTPException(status_code=409, detail="Use the agent finishing workflow for required cost approval before Topaz processing.")
@@ -737,6 +746,8 @@ async def invoke_tool(body: InvokeBody, auth: AuthUser) -> dict[str, Any]:
         raise HTTPException(status_code=409, detail="Use the agent lyrics-video workflow for required cost approval before Mureka video generation.")
     if (body.provider, body.tool) == ("fal", "mirelo_v2a"):
         raise HTTPException(status_code=409, detail="Use the agent SFX workflow for required cost approval before Mirelo video processing.")
+    if body.provider == "fal" and body.tool in {"pixelcut_looping_video", "pixverse_vibemv"}:
+        raise HTTPException(status_code=409, detail="Use the agent named-provider skill with an explicit provider request and cost approval before video generation.")
     if (body.provider, body.tool) in {("runway", "act_two"), ("fal", "kling_motion_control")}:
         raise HTTPException(status_code=409, detail="Use the agent performance-transfer workflow for required consent and cost approval.")
     cleaned = _tool_arguments(body.provider, body.tool, body.arguments)
@@ -1191,6 +1202,8 @@ _MEDIA_CREATION_TOOLS = frozenset(
         "reference_to_video",
         "video_to_video",
         "mirelo_v2a",
+        "pixelcut_looping_video",
+        "pixverse_vibemv",
         "render_timeline",
         "text_to_music",
         "create_instrumental",
@@ -1842,6 +1855,8 @@ async def _run_studio_agent_job_inner(
         )
         return
     except AgentRunLimitExceeded as exc:
+        from agent.deep_agent.routing import route_intent
+
         logger.exception("Studio agent job %s reached its turn limit", job_id)
         execution = await asyncio.to_thread(repository.get_execution, workspace_id, job_id) or {}
         partial = _partial_agent_result(execution)
@@ -1851,6 +1866,25 @@ async def _run_studio_agent_job_inner(
             and any(asset.get("kind") == "video" for asset in call.get("assets") or [])
             for call in execution.get("tool_calls") or []
         )
+        route = route_intent(prompt)
+        delivery_alias = route.steps[-1].alias if route.steps else route.alias
+        recovered_events = _events_from_payload(execution.get("tool_calls") or [])
+        prior_events = {event.id: event.public() for event in prior_tool_events or []}
+        current_delivery = any(
+            event.name in {"Remotion___deliver_render", "Remotion___qc_deliverable"}
+            and event.public() != prior_events.get(event.id)
+            for event in recovered_events
+        )
+        if current_delivery or delivery_alias in {"delivery_render", "deliverable_qc"}:
+            request = StudioAgentRequest(prompt=prompt, job_id=job_id,
+                                         prior_tool_events=list(prior_events.values()))
+            context = StudioAgentContext(nodes=references, job_id=job_id, progress_sink=record_progress)
+            context.restore_events(recovered_events)
+            report = StudioAgentOutput(title="Delivery QC incomplete", summary="Delivery QC is incomplete.",
+                                       markdown="# Delivery QC incomplete", filename="delivery-qc.md")
+            recovered_render = _validate_video_delivery(request, context, report)
+            if not recovered_render:
+                partial.update(title=report.title, summary=report.summary, markdown=report.markdown)
         record_progress(
             StudioProgressEvent(
                 id="run",

@@ -13,7 +13,7 @@ refusals return `blocked`, retired requests return `retired`, and unknown intent
 
 ## Packaged skills
 
-The backend packages 27 skills. Some explain pending capabilities; installing their
+The backend packages 31 skills. Some explain pending capabilities; installing their
 instructions does not install a provider adapter. The original execution skills remain
 available. `image-gen` and `named-provider` cover the new still-image policy and explicit
 requests for providers retained outside automatic selection. The archived `vidu-q4` skill
@@ -33,11 +33,11 @@ exact Gateway names, native arguments, and operational constraints.
 | --- | --- | --- |
 | [act-two](../agent/deep_agent/skills/act-two/SKILL.md) | `call_media_tool` | `runway_act_two`<br>`kling_motion_control` |
 | [audio](../agent/deep_agent/skills/audio/SKILL.md) | `call_audio_tool` | `eleven_v4_turbo`<br>`voices_ivc_create`<br>`mureka_v95`<br>`mirelo_v2a`<br>`elevenlabs_sfx_v2` |
-| [audio-bed](../agent/deep_agent/skills/audio-bed/SKILL.md) | `call_audio_tool`<br>`call_media_tool` | `eleven_v4_turbo`<br>`voices_ivc_create`<br>`mureka_v95`<br>`mirelo_v2a`<br>`elevenlabs_sfx_v2` |
+| [audio-bed](../agent/deep_agent/skills/audio-bed/SKILL.md) | `call_audio_tool`<br>`call_media_tool` | `eleven_v4_turbo`<br>`voices_ivc_create`<br>`heygen_voice_clone` (gated)<br>`heygen_voice_tts` (gated)<br>`mureka_v95`<br>`mirelo_v2a`<br>`elevenlabs_sfx_v2` |
 | [continuity-qc](../agent/deep_agent/skills/continuity-qc/SKILL.md) | `call_media_tool` | `local_qc`<br>`gemini_vlm_judge` |
 | [conversational-edit](../agent/deep_agent/skills/conversational-edit/SKILL.md) | `call_editor_tool`<br>`call_audio_tool` | `remotion_render`<br>`hyperframes_render` |
 | [edit-v2v](../agent/deep_agent/skills/edit-v2v/SKILL.md) | `call_media_tool` | `wan3_edit`<br>`wan3_extend`<br>`seedance25_edit`<br>`seedance25_extend` |
-| [final-assembly](../agent/deep_agent/skills/final-assembly/SKILL.md) | `call_editor_tool` | `remotion_render` |
+| [final-assembly](../agent/deep_agent/skills/final-assembly/SKILL.md) | `call_editor_tool` | `remotion_render`<br>`ad_variant_matrix`<br>`ffmpeg_tool`<br>`delivery_render`<br>`deliverable_qc` |
 | [hyperframes](../agent/deep_agent/skills/hyperframes/SKILL.md) | `call_editor_tool`<br>`call_audio_tool` | `hyperframes_render` |
 | [i2v](../agent/deep_agent/skills/i2v/SKILL.md) | `call_media_tool` | `wan3_i2v`<br>`wan3_r2v`<br>`seedance25_i2v`<br>`seedance25_r2v` |
 | [image-gen](../agent/deep_agent/skills/image-gen/SKILL.md) | `call_media_tool` | `gpt_image25_t2i`<br>`gpt_image25_edit`<br>`recraft_v41_vector`<br>`ideogram45_edit` |
@@ -45,12 +45,16 @@ exact Gateway names, native arguments, and operational constraints.
 | [lipsync](../agent/deep_agent/skills/lipsync/SKILL.md) | `call_media_tool`<br>`call_audio_tool` | `sync3_lipsync`<br>`heygen_avatar_v`<br>`eleven_v4_turbo` |
 | [lyrics-video](../agent/deep_agent/skills/lyrics-video/SKILL.md) | `call_audio_tool`<br>`call_editor_tool` | `mureka_lyrics_video`<br>`mureka_v95` |
 | [motion-graphics](../agent/deep_agent/skills/motion-graphics/SKILL.md) | `call_editor_tool`<br>`call_media_tool` | `remotion_render`<br>`hyperframes_render` |
-| [named-provider](../agent/deep_agent/skills/named-provider/SKILL.md) | `call_media_tool`<br>`call_audio_tool` | `kling_t2v`<br>`kling_i2v`<br>`runway_gen45_t2v`<br>`runway_aleph_edit`<br>`luma_ray3_t2v`<br>`luma_ray3_modify`<br>`vidu_q4_i2v`<br>`vidu_q4_r2v`<br>`seedream_t2i`<br>`fish_audio_tts`<br>`wan_vace_edit` |
+| [named-provider](../agent/deep_agent/skills/named-provider/SKILL.md) | `call_media_tool`<br>`call_audio_tool` | `pixelcut_looping_video`<br>`pixverse_vibemv`<br>`kling_t2v`<br>`kling_i2v`<br>`runway_gen45_t2v`<br>`runway_aleph_edit`<br>`luma_ray3_t2v`<br>`luma_ray3_modify`<br>`vidu_q4_i2v`<br>`vidu_q4_r2v`<br>`seedream_t2i`<br>`fish_audio_tts`<br>`wan_vace_edit` |
+| [plan-to-video](../agent/deep_agent/skills/plan-to-video/SKILL.md) | `call_editor_tool`<br>`call_audio_tool` | `remotion_render`<br>`hyperframes_render`<br>`eleven_v4_turbo`<br>`fish_audio_tts`<br>`ffmpeg_tool`<br>`deliverable_qc` |
 | [product-demo-video](../agent/deep_agent/skills/product-demo-video/SKILL.md) | `call_editor_tool` | `cutaway_record`<br>`remotion_render`<br>`hyperframes_render` |
 | [product-images](../agent/deep_agent/skills/product-images/SKILL.md) | `call_media_tool` | `gpt_image25_t2i`<br>`gpt_image25_edit`<br>`recraft_v41_vector`<br>`ideogram45_edit` |
 | [refinement](../agent/deep_agent/skills/refinement/SKILL.md) | `call_media_tool`<br>`call_audio_tool`<br>`call_editor_tool` | `gpt_image25_edit`<br>`wan3_edit`<br>`seedance25_edit`<br>`remotion_render` |
 | [remotion-ad-variant-matrix](../agent/deep_agent/skills/remotion-ad-variant-matrix/SKILL.md) | `call_editor_tool` | `ad_variant_matrix`<br>`remotion_render`<br>`ffmpeg_tool` |
 | [remotion-aspect-ratio-variants](../agent/deep_agent/skills/remotion-aspect-ratio-variants/SKILL.md) | `call_editor_tool` | `ad_variant_matrix`<br>`remotion_render`<br>`ffmpeg_tool` |
+| [remotion-delivery-render](../agent/deep_agent/skills/remotion-delivery-render/SKILL.md) | `call_editor_tool` | `delivery_render`<br>`deliverable_qc`<br>`ffmpeg_tool`<br>`remotion_render` |
+| [remotion-loudness-qc](../agent/deep_agent/skills/remotion-loudness-qc/SKILL.md) | `call_editor_tool` | `ffmpeg_tool` |
+| [remotion-deliverable-qc](../agent/deep_agent/skills/remotion-deliverable-qc/SKILL.md) | `call_editor_tool` | `deliverable_qc`<br>`ffmpeg_tool` |
 | [resolve-handoff](../agent/deep_agent/skills/resolve-handoff/SKILL.md) | `call_editor_tool` | `Remotion___export_nle_timeline`, `Remotion___import_nle_timeline` |
 | [still-then-video](../agent/deep_agent/skills/still-then-video/SKILL.md) | `call_media_tool` | `gpt_image25_t2i`<br>`gpt_image25_edit`<br>`wan3_i2v`<br>`seedance25_i2v` |
 | [storyboard-shots](../agent/deep_agent/skills/storyboard-shots/SKILL.md) | `call_media_tool` | `gpt_image25_t2i`<br>`gpt_image25_edit`<br>`wan3_i2v`<br>`wan3_r2v`<br>`seedance25_i2v`<br>`seedance25_r2v` |
@@ -127,7 +131,7 @@ All paid video pauses with an estimate even in autonomous runs while
 `premium_video_approval` is enabled. That includes current Seedance, Kling, Runway, Luma,
 Vidu and rendering tools, plus future video-producing capabilities when implemented.
 `RENDERHAUS_PREMIUM_VIDEO_APPROVAL=false` disables the additional autonomous video pause
-for existing tools. Sync and HeyGen always pause, independently of that switch.
+for existing tools. Sync, HeyGen, Pixelcut looping video and PixVerse VibeMV always pause, independently of that switch.
 Paid non-video retains the existing non-autonomous approvals and authorized autonomous mode.
 `APPROVAL_EXEMPT_TOOLS`, free tools, and the autonomous spending cap remain unchanged.
 The free conversational-edit preparer still requires separate cut-plan confirmation.
@@ -207,8 +211,8 @@ Topaz submissions always pause with cost, including autonomous runs. Dry-run pre
 and queued jobs never satisfy final delivery. See [Topaz](TOPAZ.md) for pricing, licence
 sources, unknown-price blockers and the blocked Comet check.
 
-`tests/fixtures/skill_routing.json` contains 220 retained routing rows.
-There are 184 active cases and 36 explicit skips. Five caption/collage cases cover the
+`tests/fixtures/skill_routing.json` contains 242 retained routing rows.
+There are 237 active cases and 5 explicit skips. Five caption/collage cases cover the
 new templates' renderer selection. Seven performance-transfer cases now use built tools. Three Mureka lyrics-video cases
 now use built tools; music routes use Mureka without an ElevenLabs interim. Five Topaz upscale/interpolation cases
 now use built tools. Seedance reference dialogue and two
@@ -253,6 +257,38 @@ to existing footage retains `audio-bed`. Two seed rows are active; a third relat
 row retains its source expectation with corrected workflow ownership. See
 [contracts, official sources and limits](KNOWLEDGE_EXPLAINER.md).
 
+The skill's [references](../agent/deep_agent/skills/knowledge-explainer/SKILL.md#references)
+cite Apache-2.0 explainery-core for the relationship between stable beats, copy, and timing.
+It is a planning reference. Its runtime and narration workflow are not part of the silent
+explainer contract.
+
+## Motion planning and verification
+
+[Motion graphics](../agent/deep_agent/skills/motion-graphics/SKILL.md) now describes compact
+scene tables, shared beat timing, exact media ledgers, focused revisions, and representative
+previews through the existing timeline contract. Inspection covers settled text, transition
+frames, and full MP4 playback. Delivery workflows still require saved QC reports matching
+the output checksums, with visual review tracked separately.
+
+The skill paraphrases Agent-Video-Driver.SKILL under Apache-2.0 and motion-efficiency under
+MIT. Its references pin the source and licence revisions read 2026-10-10. No upstream text,
+scripts, runtime, dependencies, or weights are vendored. Token savings are unmeasured.
+Remotion remains the default; explicit HyperFrames requests retain its preview gate.
+This documentation update adds no tools, skills, routes, prices, environment variables,
+secrets, or training permissions. See [decisions](motion-knowledge-guidance-decisions.tsv)
+for source licences, scope, and verification limits. Comet E2E is blocked in this environment.
+
+## Narrated plan reviews
+
+`plan-to-video` turns written plans into narrated chapter cards with stable open-question
+IDs, silent decision holds, and matching on-screen and returned summaries. Remotion is
+the default; HyperFrames requires an explicit request and remains a preview. Narration
+uses the configured ElevenLabs default and an authorized voice. Final timing requires
+measured chapter audio. Embedded source text does not choose tools, and review approval
+does not authorize implementing the plan. An MP4 hold asks the reviewer to pause the
+player; it does not automatically stop playback. See [plan review videos](PLAN_TO_VIDEO.md)
+for the native template, approval flow, pricing, licences and verification limits.
+
 ## Optional HyperFrames compositions
 
 The [HyperFrames skill](../agent/deep_agent/skills/hyperframes/SKILL.md) adapts Apache-2.0
@@ -274,13 +310,17 @@ cannot pass artifact/playback checks. Compute cost remains unknown; paid-video a
 and any active cap still apply. The stored confidential flag creates no HyperFrames restriction.
 HyperFrames outputs remain ineligible for continuity training.
 
-The same skill includes MIT cinematic-caption and tactile-collage
-[template packs](HYPERFRAMES_TEMPLATE_PACKS.md). The resources include two
+The same skill includes MIT cinematic-caption, tactile-collage, and Hyfrme
+[template packs](HYPERFRAMES_TEMPLATE_PACKS.md). The resources include five
 standalone HTML examples, a preview catalog, and separate recipes.
 Plain cinematic captions and animated paper collage select `remotion_render`.
 Naming HyperFrames selects `hyperframes_render` only when its flag permits it.
 No top-level skill or provider is added. Proof frames, contact sheets, subject
 matting, live GSAP playback, and exported media remain pending.
+The [Hyfrme pack](HYPERFRAMES_HYFRME_PACK.md) adds text motion, shared-axis
+transitions, and a device-card example. Naming that pack alone keeps Remotion.
+Its templates do not implement Cutaway capture. Six new active fixtures cover
+named HyperFrames and the default renderer, without activating a dependency skip.
 
 ## Provider, model, licence, and region policy
 
@@ -620,20 +660,15 @@ The matrix explicitly refuses Lambda until a worker can access its local job dir
 Overlay timeline parity uses the same document/renderConfig contract, with an explicit Lambda
 composition-version refusal for newly added font and box fields.
 
-All 79 Remotion workbook rows are preserved with source prompts, behavioural expectations and
-source tool aliases. Forty-seven rows are active. RT-E001 through RT-E010 cover matrix
-selection; RT-E056 through RT-E075 cover parked Resolve and shell refusal. Existing built
-flows activate RT-E047, RT-E049 and RT-E053 through RT-E055. RT-E076 through RT-E078 cover
-licensing, consent and matrix face-swap scope. RT-E011 through RT-E019 cover aspect
-selection, fixed crops, rotation and negative detector/Resolve/outpainting/logo paths.
-Thirty-two rows remain deferred. RT-E046 and delivery/loudness/QC work name
-`feat/remotion-delivery-qc`. Candidate LUT and multicam semantics remain unverified.
-Routing checks do not establish OCR equality or artifact completion. Dedicated provider and
-executor tests cover validation, file rendering and approval.
+All 79 Remotion workbook rows retain their source prompts and behavioural expectations.
+Seventy-eight are active, including the Resolve-only negatives, unsupported candidate
+refusals and delivery/loudness/QC chains. RT-E043 remains skipped: exact OCR verification
+is not implemented (`feat/remotion-ocr-verification`). The original four dependency skips
+remain. Routing checks establish selection and refusal; provider tests establish file checks.
 
-Current inventory is 16 providers, 115 Gateway tools, 27 packaged skills and 220 fixture rows,
-with 184 active and 36 skipped. The original four dependency skips remain. See
-[Remotion editing](REMOTION_EDITING.md) for licensing, real local verification and pending checks.
+Current inventory is 16 providers, 122 Gateway tools, 31 packaged skills and 242 fixture
+rows, with 237 active and 5 skipped. See [Remotion editing](REMOTION_EDITING.md) for
+licensing, the real local pipeline and incomplete browser/deployed validation.
 
 ## Static aspect variants
 
@@ -647,3 +682,30 @@ review; `candidate_set=true` and `editorial_review="pending"` prevent render aut
 from claiming framing approval. New per-item crop/pad options are refused by Lambda before
 any request. Outpainting keeps the existing quality-first generative edit and cost approval.
 See [decisions](remotion-aspect-ratio-variants-decisions.tsv) for licence sources and limits.
+
+## Delivery and final-file QC
+
+The three delivery guides use free local `Remotion___deliver_render`,
+`Remotion___qc_deliverable` and the fixed `Ffmpeg___ffmpeg_tool`. Delivery presets are data,
+with channel targets explicitly marked as placeholders. Two-pass loudness finishing
+measures the encoded AAC file; QC checks every matrix output and records failures verbatim.
+Dialogue gating is unavailable. Extracted frames and contact sheets support a planner
+vision pass, while deterministic safe-zone checks cover supplied geometry only.
+
+A new delivery route or current delivery/QC call requires a saved, passing report with
+unchanged checksums before Studio can complete it. A failed report is disclosed or blocks
+completion. Legacy assembly flows retain their existing validation. Matrix intermediates
+have technical reports but still require named delivery finishing and editorial review.
+Lambda and upload requests are explicitly refused for these local jobs. No model routing,
+paid-video approvals, approval exemptions or autonomous spend caps change.
+
+## Named Pixelcut and PixVerse video
+
+The existing `named-provider` skill exposes `Fal___pixelcut_looping_video` and
+`Fal___pixverse_vibemv` only for explicit model requests. They reuse fal polling and
+`FAL_DRY_RUN=true`, preserve all capability defaults/exceptions, require cost approval
+even in autonomous runs and have `training_eligible=false`. VibeMV requires a measured
+10–360 second audio duration; Pixelcut supports integer 5–15 second loops. Direct Studio
+invocation cannot bypass the skill or approval. Two named fixture rows were added; none
+of the five unrelated skips changed. See [contracts, pricing and terms](providers/named-fal-video.md).
+Browser E2E and real output playback remain blocked because Comet is unavailable here.

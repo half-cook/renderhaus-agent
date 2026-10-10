@@ -16,5 +16,32 @@
       "height": 1920,
       "fps": 30
     }
+  },
+  "hyfrme-text-motion": {
+    "html_file": "hyfrme-text-motion.html",
+    "arguments": {
+      "duration_seconds": 6,
+      "width": 1280,
+      "height": 720,
+      "fps": 30
+    }
+  },
+  "hyfrme-transitions": {
+    "html_file": "hyfrme-transitions.html",
+    "arguments": {
+      "duration_seconds": 6,
+      "width": 1280,
+      "height": 720,
+      "fps": 30
+    }
+  },
+  "hyfrme-product-demo": {
+    "html_file": "hyfrme-product-demo.html",
+    "arguments": {
+      "duration_seconds": 6,
+      "width": 1280,
+      "height": 720,
+      "fps": 30
+    }
   }
 }

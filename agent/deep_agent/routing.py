@@ -73,7 +73,7 @@ _NEGATED_NARRATION = (
     rf"(?:[ ,]+(?:and|or|nor)?[ -]*{_SPEECH_LABEL})*\b|"
     rf"\b(?:do not|don't|never)\s+(?:(?:add|include|use|generate)\s+)?{_SPEECH_LABEL}\b|"
     r"\b(?:narration|voice[ -]?over)[ -]free\b|\bnot[ -]+narrated\b|"
-    r"\b(?:do not|don't|never)\s+narrate\b"
+    r"\b(?:do not|don't|never)\s+(?:narrate|read|speak)\b"
 )
 _IMAGE_ALIASES = ("gpt_image25_t2i", "gpt_image25_edit", "recraft_v41_vector", "ideogram45_edit", "seedream_t2i")
 _SPEECH_PRODUCTION_TOOLS = {
@@ -87,10 +87,12 @@ _SPEECH_PRODUCTION_TOOLS = {
 }
 _LIPSYNC_REQUEST = next(rule["pattern"] for rule in POLICY["rules"] if rule.get("capability") == "lipsync")
 _KNOWLEDGE_REQUEST = next(rule["pattern"] for rule in POLICY["rules"] if rule["skill"] == "knowledge-explainer")
+_PLAN_REVIEW_REQUEST = next(rule["pattern"] for rule in POLICY["rules"] if rule["skill"] == "plan-to-video")
 _MODELSTUDIO_PREVIEW_WARNING = (
     "Alibaba preview terms permit internal testing, research and evaluation only until GA. "
     "Live customer use is blocked by the preview licence."
 )
+_FINISHING_CAPABILITIES = {"delivery_render", "loudness_qc", "deliverable_qc"}
 
 
 @dataclass(frozen=True)
@@ -155,11 +157,14 @@ def _audio_postprocess_request(prompt: str) -> bool:
 
 def _video_voiceover(prompt: str) -> bool:
     return bool(re.search(_VIDEO_DELIVERABLE, _instruction_text(prompt), re.I)
-                and re.search(_VOICEOVER, _narration_text(prompt), re.I)
+                and (re.search(_VOICEOVER, _narration_text(prompt), re.I)
+                     or re.search(r"\b(?:read|speak)\b.*\bscript\b", _narration_text(prompt), re.I))
                 and not _knowledge_explainer_request(prompt))
 
 
 def request_tool_blocker(prompt: str, name: str) -> str | None:
+    if plan_text := _plan_review_instruction(prompt):
+        prompt = plan_text
     if refusal := editing_request_refusal(prompt):
         return refusal
     if _knowledge_explainer_request(prompt) and (
@@ -170,6 +175,11 @@ def request_tool_blocker(prompt: str, name: str) -> str | None:
         return "A shot or clip with voiceover uses video, TTS and assembly; image tools are excluded."
     if name.startswith("Seedream___") and not re.search(r"\bseedream\b", prompt, re.I):
         return "Seedream is explicit-only; request it by name. GPT Image 2.5 is the still-image default."
+    if name in {"Fal___pixelcut_looping_video", "Fal___pixverse_vibemv"}:
+        named = intent_constraints(prompt)["named_model"]
+        aliases = POLICY["named_models"].get(named, {}).get("aliases", {})
+        if name.split("___")[1] not in aliases.values():
+            return "Pixelcut looping video and PixVerse VibeMV are explicit-only; request the selected model by name."
     return None
 
 
@@ -206,7 +216,8 @@ def capability_constraints(constraints: dict, capability: str) -> dict:
         scoped["provider"] = next((candidate for candidate in scoped["provider_candidates"]
                                    if capability in POLICY["explicit_routes"].get(candidate, {})), None)
         scoped["model"] = scoped["named_model"] = None
-    if not (constraints["predicates"].get("video_voiceover") or constraints["predicates"].get("knowledge_explainer")):
+    if not any(constraints["predicates"].get(workflow) for workflow in
+               ("video_voiceover", "knowledge_explainer", "plan_review")):
         return scoped
     named = scoped.get("named_model")
     if named and capability not in POLICY["named_models"][named]["aliases"]:
@@ -231,6 +242,9 @@ def _delivery_route(prompt: str, constraints: dict, *, region: str | None,
                     available_tools: set[str] | None, arguments: dict | None) -> Route | None:
     if _knowledge_explainer_request(prompt):
         return None
+    if any(rule.get("capability") in _FINISHING_CAPABILITIES and re.search(rule["pattern"], prompt, re.I)
+           for rule in POLICY["rules"]):
+        return None
     if any(rule.get("capability") == "ad_variant_matrix" and re.search(rule["pattern"], prompt, re.I)
            for rule in POLICY["rules"]):
         return None
@@ -243,15 +257,23 @@ def _delivery_route(prompt: str, constraints: dict, *, region: str | None,
     steps = []
     creates = bool(re.search(r"\b(?:make|create|generate)\b.*\b(?:shot|clip|video)\b", prompt, re.I))
     existing = bool(re.search(r"\b(?:referenced|existing|attached|uploaded)\b.*\b(?:clip|video|shot)\b", prompt, re.I))
-    for capability, skill in ([_video_capability(prompt, constraints)] if creates and not existing else []) + ([('tts', 'audio-bed')] if voiceover else []) + [('motion_graphics', 'final-assembly')]:
+    speech = [('tts', 'audio-bed')] if voiceover else []
+    clones = voiceover and constraints["predicates"]["cloned_voice"] and bool(re.search(
+        r"\bclone\b.*\bvoice\b|\bvoice clon(?:ing|e)\b", _instruction_text(prompt), re.I))
+    if voiceover and constraints["predicates"]["cloned_voice"]:
+        speech = ([('voice_clone', 'audio-bed')] if clones else []) + [('cloned_tts', 'audio-bed')]
+    for capability, skill in ([_video_capability(prompt, constraints)] if creates and not existing else []) + speech + [('motion_graphics', 'final-assembly')]:
         scoped = capability_constraints(constraints, capability)
         route = select_provider(capability, region=region, available_tools=available_tools,
                                 arguments=arguments, **scoped)
+        if capability in {"voice_clone", "cloned_tts"} and scoped["provider"] == "elevenlabs":
+            skill = "named-provider"
         steps.append(replace(route, skill=skill))
     first = steps[0]
     incomplete = next((step for step in steps if step.status != 'ready'), None)
     execution_groups = tuple(group for group in (
-        tuple(step.alias for step in steps[:-1] if step.alias),
+        tuple(step.alias for step in steps[:-1] if step.alias and (not clones or step.job_type != "cloned_tts")),
+        tuple(step.alias for step in steps if clones and step.job_type == "cloned_tts" and step.alias),
         tuple(step.alias for step in steps[-1:] if step.alias),
     ) if group)
     return replace(first, steps=tuple(steps), expected_output='assembled MP4',
@@ -259,8 +281,50 @@ def _delivery_route(prompt: str, constraints: dict, *, region: str | None,
                    forbidden_tools=_IMAGE_ALIASES if voiceover else (),
                    status=incomplete.status if incomplete else first.status,
                    reason=incomplete.reason if incomplete else
+                   'Start video and cloning together; speak after cloning, then assemble.' if clones else
                    'Start independent video and voiceover together; assemble after both finish.' if voiceover else
                    'Assemble the existing assets into the final MP4.')
+
+
+def _delivery_preset(prompt: str, arguments: dict | None) -> str:
+    if preset := (arguments or {}).get("preset"):
+        return preset
+    for preset in ("social-vertical", "social-feed", "web-1080p", "broadcast-proxy", "review-proxy", "email-720p", "podcast-streaming"):
+        if re.search(rf"\b{re.escape(preset)}\b", prompt, re.I):
+            return preset
+    for pattern, preset in (
+        (r"\bemail\b", "email-720p"),
+        (r"\bproxy\b", "review-proxy"),
+        (r"\btiktok\b|\breels\b|\b9:16\b|\bvertical\b", "social-vertical"),
+        (r"\byoutube\b|\bweb\b", "web-1080p"),
+    ):
+        if re.search(pattern, prompt, re.I):
+            return preset
+    return "social-feed"
+
+
+def _editing_workflow_route(prompt: str, constraints: dict, *, region: str | None,
+                            available_tools: set[str] | None, arguments: dict | None) -> Route | None:
+    workflow = next((row for row in POLICY.get("editing_workflows", [])
+                     if re.search(row["pattern"], prompt, re.I)), None)
+    if workflow is None:
+        return None
+    steps = []
+    for step in workflow["steps"]:
+        route = select_provider(step["capability"], region=region, available_tools=available_tools,
+                                arguments=arguments, **constraints)
+        if step["capability"] == "delivery_render":
+            route = replace(route, required={"preset": _delivery_preset(prompt, arguments)})
+        steps.append(replace(route, skill=step["skill"]))
+    first = steps[0]
+    incomplete = next((step for step in steps if step.status != "ready"), None)
+    return replace(first, steps=tuple(steps), expected_output="QC-checked MP4",
+                   execution_groups=tuple((step.alias,) for step in steps if step.alias),
+                   tool=None if incomplete else first.tool,
+                   dispatch_tool=None if incomplete else first.dispatch_tool,
+                   status=incomplete.status if incomplete else first.status,
+                   reason=incomplete.reason if incomplete else
+                   "Complete matrix/reframe approval, delivery finishing, loudness and QC in order. Reuse integrated finishing evidence before reporting completion.")
 
 
 def _lyrics_capabilities(prompt: str) -> list[tuple[str, str]]:
@@ -324,20 +388,71 @@ def resolve_alias(alias: str) -> str | None:
     return TOOL_MAP.get(interim, {}).get("gateway_tool") if interim else None
 
 
+def _voice_route(prompt: str, constraints: dict, *, region: str | None,
+                 available_tools: set[str] | None, arguments: dict | None) -> Route | None:
+    if not constraints["predicates"]["cloned_voice"] or constraints["predicates"]["video_voiceover"]:
+        return None
+    creates = bool(re.search(r"\bclone\b.*\bvoice\b|\bvoice clon(?:ing|e)\b", _instruction_text(prompt), re.I))
+    reads = bool(re.search(r"\bread\b|speak|narrat|script|\btts\b", _instruction_text(prompt), re.I))
+    capabilities = (["voice_clone"] if creates else []) + (["cloned_tts"] if reads else [])
+    if not capabilities:
+        return None
+    skill = "named-provider" if constraints["provider"] == "elevenlabs" else "audio-bed"
+    steps = [replace(select_provider(capability, arguments=arguments, region=region,
+                                     available_tools=available_tools, **constraints), skill=skill)
+             for capability in capabilities]
+    first = steps[0]
+    incomplete = next((step for step in steps if step.status != "ready"), None)
+    if len(steps) == 1:
+        return first
+    return replace(first, steps=tuple(steps), tool=None if incomplete else first.tool,
+                   status=incomplete.status if incomplete else first.status,
+                   reason=incomplete.reason if incomplete else "Clone first, then speak using the saved project voice.",
+                   execution_groups=tuple((step.alias,) for step in steps),
+                   disclosure=" ".join(step.disclosure for step in steps))
+
+
+def _voice_script(prompt: str, arguments: dict) -> str:
+    if isinstance(arguments.get("text"), str):
+        return arguments["text"]
+    match = re.search(r"(?:script(?:\s+in\s+it)?|voice(?:\s+in\s+[A-Za-z][A-Za-z -]*)?)\s*[:.]\s*(.*)", prompt, re.I | re.S)
+    if match:
+        return match[1]
+    quoted = re.findall(r'"([^"]*)"|“([^”]*)”|(?<!\w)\'(.*?)\'(?!\w)', prompt, re.S)
+    if quoted:
+        return " ".join(next(value for value in groups if value) for groups in quoted if any(groups))
+    return ""
+
+
 def route_intent(prompt: str, *, region: str | None = None, tier: str | None = None,
                  confidential: bool = False, arguments: dict | None = None,
-                 available_tools: set[str] | None = None, retry: bool = False) -> Route:
+                 available_tools: set[str] | None = None, retry: bool = False, user_id: str | None = None) -> Route:
+    if _plan_review_instruction(prompt) is not None:
+        constraints = intent_constraints(prompt, tier=tier, confidential=confidential, arguments=arguments)
+        route = select_provider("motion_graphics", region=region, available_tools=available_tools,
+                                arguments=arguments, **capability_constraints(constraints, "motion_graphics"))
+        return replace(route, skill="plan-to-video")
     for refusal in POLICY.get("editing_refusals", []):
         if re.search(refusal["pattern"], prompt, re.IGNORECASE):
             return Route(skill=refusal.get("skill", "remotion-ad-variant-matrix"), status="blocked",
                          reason=refusal["reason"], disclosure=refusal["reason"])
     if any(re.search(pattern, prompt, re.I) for pattern in POLICY.get("non_dispatch_requests", [])):
         return Route(reason="No media intent matched; answer the Remotion licensing question from the editing skill.")
-    constraints = intent_constraints(prompt, tier=tier, confidential=confidential, arguments=arguments)
+    constraints = intent_constraints(prompt, tier=tier, confidential=confidential, arguments=arguments, user_id=user_id)
     for pattern, alias in POLICY["retired_requests"].items():
         if re.search(pattern, prompt, re.I):
             return Route(alias=alias, status="retired", reason=TOOL_MAP[alias]["reason"],
                          disclosure=TOOL_MAP[alias]["reason"])
+    named = POLICY["named_models"].get(constraints["named_model"], {})
+    if named.get("skill") == "named-provider":
+        capability = next(iter(named["aliases"]))
+        route = select_provider(capability, arguments=arguments, available_tools=available_tools,
+                                region=region, retry=retry, **constraints)
+        return replace(route, skill="named-provider")
+    if editing_workflow := _editing_workflow_route(prompt, constraints, region=region, available_tools=available_tools, arguments=arguments):
+        return editing_workflow
+    if voice_route := _voice_route(prompt, constraints, region=region, available_tools=available_tools, arguments=arguments):
+        return voice_route
     if lyrics_route := _lyrics_route(prompt, constraints, region=region, available_tools=available_tools, arguments=arguments):
         return lyrics_route
     lipsync = bool(re.search(_LIPSYNC_REQUEST, prompt, re.I))
@@ -352,6 +467,10 @@ def route_intent(prompt: str, *, region: str | None = None, tier: str | None = N
         or video_capabilities.intersection(POLICY["named_models"].get(constraints["named_model"], {}).get("aliases", {}))
     )
     for rule in POLICY["rules"]:
+        if rule.get("named_model") and rule["named_model"] != constraints["named_model"]:
+            continue
+        if rule["skill"] == "plan-to-video":
+            continue
         if rule["skill"] == "knowledge-explainer" and not knowledge_request:
             continue
         if knowledge_request and rule.get("capability") == "tts":
@@ -401,7 +520,9 @@ def route_intent(prompt: str, *, region: str | None = None, tier: str | None = N
             scoped = capability_constraints(constraints, capability) if capability == "lipsync" or knowledge_request else constraints
             route = select_provider(capability, arguments=arguments, available_tools=available_tools,
                                     region=region, retry=retry, **scoped)
-            if capability != "performance_transfer" and (constraints["provider"] in {"kling", "runway", "luma", "seedream", "fish_audio", "alibaba_modelstudio"} or (
+            if capability == "delivery_render":
+                route = replace(route, required={"preset": _delivery_preset(prompt, arguments)})
+            if capability not in _FINISHING_CAPABILITIES | {"performance_transfer"} and (constraints["provider"] in {"kling", "runway", "luma", "seedream", "fish_audio", "alibaba_modelstudio"} or (
                 constraints["provider"] == "fal" and re.search(r"vidu|vace", prompt, re.I)
             ) or constraints["named_model"] == "wan3" and capability in {"v2v_edit", "extend"}):
                 skill = "named-provider"
@@ -425,6 +546,8 @@ def _dispatch(tool: str | None) -> str | None:
         return None
     if tool.startswith(("Remotion___", "HyperFrames___", "Ffmpeg___")):
         return "call_editor_tool"
+    if tool in {"HeyGen___voice_clone", "HeyGen___voice_tts", "HeyGen___get_voice_status"}:
+        return "call_audio_tool"
     if tool.startswith(("ElevenLabs___", "FishAudio___", "Mureka___")):
         return "call_audio_tool"
     return "call_media_tool"
@@ -485,7 +608,7 @@ def _capability_price(row: dict):
     if price == "unknown":
         return price
     provider, model = row["provider"], row["model"]
-    if provider == "ffmpeg":
+    if provider == "ffmpeg" or provider == "remotion" and all(is_free_tool(tool) for tool in row["tools"].values()):
         return {**price, "rates": {"cents_per_call": 0}, "currency_unit": "USD cents"}
     if provider == "remotion" and model == "ad-variant-timeline":
         try:
@@ -496,7 +619,11 @@ def _capability_price(row: dict):
     if provider == "mureka":
         values = {"lyrics_to_song_cents": str(rates.MUREKA_LYRICS_SONG_CENTS), "prompt_to_song_cents": str(rates.MUREKA_PROMPT_SONG_CENTS), "instrumental_cents": str(rates.MUREKA_INSTRUMENTAL_CENTS), "lyrics_video_cents": str(rates.MUREKA_LYRICS_VIDEO_CENTS)}
     elif provider == "fal":
-        if model == "ideogram/v4.5/edit":
+        if model == "pixelcut/looping-video":
+            values = {resolution: str(value) for resolution, value in rates.PIXELCUT_CENTS_PER_SECOND.items()}
+        elif model == "pixverse/music-video/vibemv":
+            values = {resolution: str(value) for resolution, value in rates.PIXVERSE_CENTS_PER_SECOND.items()}
+        elif model == "ideogram/v4.5/edit":
             values = {quality: str(value) for quality, value in rates.IDEOGRAM_CENTS_PER_IMAGE.items()}
         elif model == "fal-ai/recraft/v4.1/pro/text-to-vector":
             values = {"cents_per_image": str(rates.RECRAFT_VECTOR_CENTS_PER_IMAGE)}
@@ -534,6 +661,11 @@ def _capability_price(row: dict):
         values = {region: {resolution: str(value) for resolution, value in table.items()}
                   for region, table in rates.MODELSTUDIO_CENTS_PER_SECOND.items()}
     elif provider == "heygen":
+        if model == "heygen-voice-1":
+            values = {"list_usd_per_million_characters": rates.HEYGEN_VOICE_LIST_USD_PER_MILLION,
+                      "instant_clone_list_usd": rates.HEYGEN_VOICE_CLONE_LIST_USD}
+            return {**price, "rates": {key: "unknown" if value is None else str(value) for key, value in values.items()},
+                    "currency_unit": "USD", "fee": "server.billing_rates._with_fee"}
         values = {"self_serve_cents_per_second": str(rates.HEYGEN_AVATAR_V_CENTS_PER_SECOND),
                   "enterprise": "unknown"}
     elif provider == "sync":
@@ -554,6 +686,33 @@ def _instruction_text(prompt: str) -> str:
     return re.sub(r"\"[^\"]*\"|“[^”]*”|(?<!\w)'[^']*'(?!\w)", "", prompt)
 
 
+def _plan_review_instruction(prompt: str) -> str | None:
+    instructions: list[str] = []
+    fence: str | None = None
+    for line in prompt.splitlines():
+        if fence is not None:
+            if re.fullmatch(rf" {{0,3}}{re.escape(fence[0])}{{{len(fence)},}}[ \t]*", line):
+                fence = None
+            continue
+        if re.match(r"(?: {4}|\t| {0,3}>)", line):
+            continue
+        if opening := re.match(r" {0,3}(`{3,}|~{3,})", line):
+            fence = opening[1]
+            continue
+        instructions.append(line)
+    text = _instruction_text("\n".join(instructions))
+    text = re.sub(
+        r"\b(?:do not|don't|never|avoid)\s+(?:make|create|produce|render|generate|review|turn|convert)\b"
+        r".*?(?=\.(?:\s|$)|[!?;\n]|$)",
+        lambda match: "" if re.search(_PLAN_REVIEW_REQUEST, match[0], re.I) else match[0],
+        text, flags=re.I,
+    )
+    if not re.search(_PLAN_REVIEW_REQUEST, text, re.I):
+        return None
+    return re.sub(r"\b(?:not|no|avoid|without|never|don't|do not)(?:\s+(?:use|using))?(?:\s+any)?\s+hyperframes\b",
+                  "", text, flags=re.I)
+
+
 def _text_only_image_edit(prompt: str, arguments: dict) -> bool:
     text = _instruction_text(prompt)
     existing = bool(arguments.get("image_url") or arguments.get("image_path_or_url") or re.search(
@@ -569,11 +728,16 @@ def _text_only_image_edit(prompt: str, arguments: dict) -> bool:
 
 
 def intent_constraints(prompt: str, *, tier: str | None = None, confidential: bool = False,
-                       arguments: dict | None = None) -> dict:
+                       arguments: dict | None = None, user_id: str | None = None) -> dict:
+    from providers.heygen.voice_contracts import internal_gate, needs_text_normalisation
+
     args = arguments or {}
+    plan_text = _plan_review_instruction(prompt)
+    if plan_text is not None:
+        prompt = plan_text
     excluded_names = re.compile(
         r"\b(?:not|no|avoid|without|never|don't|do not)(?:\s+use)?\s+"
-        r"(heygen(?:\s+avatar\s+v)?|avatar[ -]v|sync(?:[ -]?3|\.so)?|ideogram(?:\s+4\.5)?|recraft(?:\s+v?4\.1)?)\b", re.IGNORECASE,
+        r"(heygen(?:\s+avatar\s+v)?|avatar[ -]v|sync(?:[ -]?3|\.so)?|ideogram(?:\s+4\.5)?|recraft(?:\s+v?4\.1)?|pixelcut|pixverse(?:\s+vibemv)?|vibemv)\b", re.IGNORECASE,
     )
     exclusions = [match[1].lower() for match in excluded_names.finditer(_instruction_text(prompt))]
     excluded_providers = sorted({"heygen" if name.startswith(("heygen", "avatar")) else "sync"
@@ -604,7 +768,7 @@ def intent_constraints(prompt: str, *, tier: str | None = None, confidential: bo
     }.items():
         if re.search(pattern, prompt, re.I):
             required[feature] = True
-    resolution = re.search(r"\b(480p|540p|580p|720p|1080p|2k|4k)\b", prompt, re.I)
+    resolution = re.search(r"\b(480p|540p|580p|720p|768p|1080p|2k|4k)\b", prompt, re.I)
     if resolution:
         required["max_resolution"] = resolution_value(resolution[1])
     fps = re.search(r"(?:to|at)\s*(\d+)\s*fps\b", prompt, re.I)
@@ -618,8 +782,8 @@ def intent_constraints(prompt: str, *, tier: str | None = None, confidential: bo
     if extension:
         added = float(extension[1])
         required["extension_seconds"] = int(added) if added.is_integer() else added
-    if re.search(r"lyrics?[ -]?video|karaoke", prompt, re.I):
-        aspect = re.search(r"\b(16:9|9:16|3:4|4:3)\b", prompt)
+    if re.search(r"lyrics?[ -]?video|karaoke|\bvibemv\b|\bpixverse\b", provider_prompt, re.I):
+        aspect = re.search(r"\b(16:9|9:16|3:4|4:3|1:1)\b", prompt)
         if aspect:
             required["aspect_ratio"] = aspect[1]
         elif re.search(r"vertical|portrait", prompt, re.I):
@@ -641,6 +805,7 @@ def intent_constraints(prompt: str, *, tier: str | None = None, confidential: bo
         video_sfx = False
     lyrics_capabilities = {capability for capability, _ in _lyrics_capabilities(prompt)}
     predicates = {
+        "cloned_voice": bool(re.search(r"clone.*voice|voice.*clon", _instruction_text(prompt), re.I)),
         "lyrics_video": "lyrics_video" in lyrics_capabilities,
         "lyrics_tts_first": "tts" in lyrics_capabilities,
         "lyrics_new_song": "music" in lyrics_capabilities,
@@ -648,6 +813,7 @@ def intent_constraints(prompt: str, *, tier: str | None = None, confidential: bo
         "dialogue": dialogue, "real_face_refs": real_face,
         "video_voiceover": _video_voiceover(prompt),
         "knowledge_explainer": knowledge_explainer,
+        "plan_review": plan_text is not None,
         "vector_output": bool(re.search(r"\bsvg\b|vector|editable.*illustrator", prompt, re.I)),
         "text_only_edit": _text_only_image_edit(prompt, args),
         "full_body_motion": bool(re.search(r"full.body|whole.body|\bdance\b|\bdancing\b", prompt, re.I)),
@@ -660,6 +826,8 @@ def intent_constraints(prompt: str, *, tier: str | None = None, confidential: bo
     predicates.update({k: bool(args[k]) for k in predicates if k in args})
     predicates["text_only_edit"] = _text_only_image_edit(prompt, args)
     predicates["real_face_refs"] = real_face
+    predicates["heygen_voice_ab"] = internal_gate(user_id)
+    predicates["voice_text_needs_normalisation"] = needs_text_normalisation(_voice_script(prompt, args))
     predicates["explicit_hyperframes"] = bool(re.search(r"\bhyperframes\b", prompt, re.I))
     model = None
     if provider == "fal":
@@ -672,7 +840,7 @@ def intent_constraints(prompt: str, *, tier: str | None = None, confidential: bo
         model = "kling-3.0-omni" if re.search("omni", prompt, re.I) else "kling-3.0-turbo"
     named_model = next((key for key, entry in POLICY["named_models"].items()
                         if re.search(entry["pattern"], provider_prompt, re.I)), None)
-    return {"provider": provider, "model": model, "named_model": named_model,
+    return {"provider": provider, "model": model, "named_model": named_model, "user_id": user_id,
             "provider_candidates": provider_candidates, "excluded_providers": excluded_providers, "excluded_aliases": excluded_aliases,
             "required": required, "predicates": predicates}
 
@@ -702,10 +870,14 @@ def select_provider(job: str, *, tier: str | None = None, required: dict | None 
                     predicates: dict | None = None, named_model: str | None = None,
                     provider_candidates: list[str] | None = None,
                     excluded_providers: list[str] | None = None,
-                    excluded_aliases: list[str] | None = None) -> Route:
+                    excluded_aliases: list[str] | None = None, user_id: str | None = None) -> Route:
     args, required = dict(arguments or {}), dict(required or {})
-    detected = intent_constraints("", arguments=args)["predicates"]
+    from providers.heygen.voice_contracts import internal_gate
+
+    detected = intent_constraints("", arguments=args, user_id=user_id)["predicates"]
     predicates = {**detected, **(predicates or {})}
+    predicates["heygen_voice_ab"] = internal_gate(user_id)
+    predicates["voice_text_needs_normalisation"] = detected["voice_text_needs_normalisation"] or predicates["voice_text_needs_normalisation"]
     predicates["real_face_refs"] = detected["real_face_refs"] or predicates["real_face_refs"]
     capability = {"image": "still_image", "reference": "reference_video"}.get(job, job)
     if tool_variant in {"reference", "reference_video"}:
@@ -715,9 +887,9 @@ def select_provider(job: str, *, tier: str | None = None, required: dict | None 
     if capability in {"still_image", "image_edit"} and predicates.get("video_voiceover"):
         reason = "A shot or clip with voiceover excludes image tools; use video, TTS and assembly."
         return Route(status="blocked", job_type=capability, reason=reason, disclosure=reason)
-    if capability in {"tts", "voice_clone", "music", "sfx", "motion_graphics", "nle_handoff", "nle_import", "ad_variant_matrix", "media_inspection"}:
+    if capability in {"tts", "cloned_tts", "voice_clone", "music", "sfx", "motion_graphics", "nle_handoff", "nle_import", "ad_variant_matrix", "media_inspection"} | _FINISHING_CAPABILITIES:
         required = {}
-        if capability in {"motion_graphics", "nle_handoff", "nle_import", "ad_variant_matrix", "media_inspection"}:
+        if capability in {"motion_graphics", "nle_handoff", "nle_import", "ad_variant_matrix", "media_inspection"} | _FINISHING_CAPABILITIES:
             provider = model = named_model = None
     if capability not in POLICY["capability_map"]:
         return Route(status="blocked", reason=f"No capability map for {capability}.")
@@ -733,10 +905,10 @@ def select_provider(job: str, *, tier: str | None = None, required: dict | None 
     if named_model and capability not in POLICY["named_models"][named_model]["aliases"] and provider:
         named_model = None
     alias, basis = choice["default"], "default"
-    if retry and capability in {"t2v", "i2v", "v2v_edit", "reference_video"}:
+    if retry and capability in {"t2v", "i2v", "v2v_edit", "reference_video"} and named_model != "pixelcut":
         alias = {"t2v": "wan_t2v", "i2v": "wan_i2v", "v2v_edit": "wan_vace_edit", "reference_video": "wan_reference"}[capability]
         model, basis = POLICY["providers"]["fal"]["default_model"], "training retry after artifact rejection"
-    elif predicates["real_face_refs"] and capability in {"t2v", "i2v", "reference_video"}:
+    elif predicates["real_face_refs"] and capability in {"t2v", "i2v", "reference_video"} and named_model != "pixelcut":
         alias, basis = choice["default"], "default; real-face references require Wan; Seedance and Omni blocked"
     elif named_model:
         alias = POLICY["named_models"][named_model]["aliases"].get(capability)
@@ -744,6 +916,8 @@ def select_provider(job: str, *, tier: str | None = None, required: dict | None 
             reason = f"Requested model {named_model} has no {capability} tool."
             return Route(status="blocked", reason=reason, disclosure=reason)
         model, basis = None, "explicit request"
+        if POLICY["named_models"][named_model].get("skill") == "named-provider":
+            basis += f"; not the default for {capability}"
     elif provider or model:
         if provider in {"minimax_h3", "hunyuan"}:
             return Route(status="blocked", reason=f"Provider {provider} is blocked.", disclosure=f"Provider {provider} is blocked.")
@@ -763,6 +937,8 @@ def select_provider(job: str, *, tier: str | None = None, required: dict | None 
         exception = next((ex for ex in choice["exceptions"] if _matches(ex["when"], predicates)), None)
         if exception:
             alias, basis = exception["tool"], "exception: " + exception["reason"]
+    if capability in {"voice_clone", "cloned_tts"} and basis == "default" and predicates["heygen_voice_ab"] and predicates["voice_text_needs_normalisation"]:
+        basis = "exception: abbreviation/number-heavy cloned speech requires text normalisation; use ElevenLabs"
     entry = TOOL_MAP[alias]
     if entry.get("provider") == "topaz":
         from providers.topaz.contracts import configured_model
@@ -824,6 +1000,8 @@ def select_provider(job: str, *, tier: str | None = None, required: dict | None 
     duration = required.get("duration_seconds") or next((args[k] for k in ("performance_duration_seconds", "duration", "duration_seconds", "video_duration_seconds", "source_duration_seconds") if args.get(k) is not None), None)
     if entry.get("provider") == "alibaba_modelstudio" and not required.get("duration_seconds"):
         duration = args.get("duration")
+    if alias == "pixverse_vibemv":
+        duration = args.get("audio_duration_seconds", required.get("duration_seconds"))
     if (predicates["duration_over_30s"] or isinstance(duration, (int, float)) and duration > 30) and capability in {"t2v", "i2v", "reference_video", "performance_transfer"}:
         reason = "Duration exceeds 30 seconds; split into shots of at most 30 seconds before generation."
         return Route(alias=alias, basis=basis, status="blocked", job_type=capability, reason=reason, disclosure=reason)
@@ -935,7 +1113,7 @@ def select_provider(job: str, *, tier: str | None = None, required: dict | None 
         disclosure += " Experimental continuity judge. Default promotion requires a committed passing eval. Background inputs are stored by the vendor."
     if provider_id == "alibaba_modelstudio":
         disclosure += " " + _MODELSTUDIO_PREVIEW_WARNING
-    if predicates["real_face_refs"] and alias in {"wan3_t2v", "wan3_i2v", "wan3_r2v", "wan3_edit", "wan3_extend"}:
+    if predicates["real_face_refs"] and alias in {"wan3_t2v", "wan3_i2v", "wan3_r2v", "wan3_edit", "wan3_extend", "pixelcut_looping_video", "pixverse_vibemv"}:
         required["real_face_refs"] = True
         disclosure += " Real-person likeness consent " + (
             "acknowledged." if args.get("likeness_consent") is True else "required before generation."
@@ -988,6 +1166,10 @@ def effective_model(provider: str, tool: str, arguments: dict) -> str | None:
 
         return configured_model(tool, arguments)
     if provider == "heygen":
+        if tool in {"voice_clone", "voice_tts"}:
+            from providers.heygen.voice_contracts import configured_model as voice_model
+
+            return voice_model(arguments)
         if tool != "create_avatar_video":
             return None
         from providers.heygen.contracts import configured_model
@@ -1057,6 +1239,11 @@ def policy_blocker(name: str, arguments: dict, *, region: str | None = None) -> 
         from providers.mureka.api import dry_run
 
         return None if dry_run() else "UNVERIFIED Mureka model; live use is blocked and estimate unknown."
+    if provider == "heygen" and tool in {"voice_clone", "voice_tts"}:
+        from providers.heygen.voice import dry_run as voice_dry_run
+        from providers.heygen.voice_contracts import live_blocker as voice_live_blocker
+
+        return None if voice_dry_run() else voice_live_blocker(arguments)
     if policy.get("models") and model not in policy["models"]:
         return f"Model {model} is not allowed for {provider}."
     model_policy = policy.get("model_policies", {}).get(model, {})
@@ -1084,7 +1271,7 @@ def policy_blocker(name: str, arguments: dict, *, region: str | None = None) -> 
         if not dry_run():
             if blocker := live_blocker(arguments):
                 return blocker
-    if provider == "heygen":
+    if provider == "heygen" and tool == "create_avatar_video":
         from providers.heygen.api import dry_run
         from providers.heygen.contracts import live_blocker
 
@@ -1161,7 +1348,7 @@ def estimate_cost(name: str, arguments: dict, *, list_price: bool = False) -> Co
             return CostEstimate(gemini_quote(tool, arguments).total_cents)
         except ValueError as exc:
             return CostEstimate(None, str(exc))
-    if provider in {"heygen", "topaz", "mureka"} or name in {"Runway___act_two", "Fal___kling_motion_control", "Fal___mirelo_v2a", "Fal___ideogram_edit", "Fal___recraft_text_to_vector"}:
+    if provider in {"heygen", "topaz", "mureka"} or name in {"Runway___act_two", "Fal___kling_motion_control", "Fal___mirelo_v2a", "Fal___ideogram_edit", "Fal___recraft_text_to_vector", "Fal___pixelcut_looping_video", "Fal___pixverse_vibemv"}:
         try:
             return CostEstimate(_published_cost(provider, tool, arguments).total_cents)
         except (ValueError, TypeError, KeyError) as exc:
@@ -1233,6 +1420,8 @@ def _published_cost(provider: str, tool: str, arguments: dict):
     from math import ceil
     from server import billing_rates as rates
 
+    if provider == "fal" and tool in {"pixelcut_looping_video", "pixverse_vibemv"}:
+        return rates._with_fee(ceil(rates.named_fal_video_price_cents(tool, arguments)))
     if provider == "mureka":
         cents = rates.mureka_price_cents(tool, arguments)
         if cents is None:
@@ -1256,6 +1445,8 @@ def _published_cost(provider: str, tool: str, arguments: dict):
     if provider == "seedream":
         return rates._seedream_cost(arguments)
     if provider == "heygen":
+        if tool in {"voice_clone", "voice_tts"}:
+            return rates._with_fee(ceil(rates.heygen_voice_price_cents(tool, arguments)))
         return rates._with_fee(ceil(rates.heygen_price_cents(arguments)))
     if provider == "topaz":
         cents = rates.topaz_price_cents(tool, arguments)

@@ -14,12 +14,13 @@ COPY pyproject.toml README.md ./
 COPY agent ./agent
 COPY providers ./providers
 COPY configs ./configs
+COPY tests/fixtures/skill_routing.json ./tests/fixtures/
 COPY docs/continuity_qc_benchmark_scores.json ./docs/
 COPY server ./server
 COPY third_party ./third_party
 
 RUN pip install --no-cache-dir -e . \
-    && python -c "import importlib.metadata; from agent.deep_agent.runner import SKILLS_ROOT; from providers.catalog import PROVIDERS; from providers.registry import load_committed_schemas; assert importlib.metadata.version('deepagents') == '0.7.23'; assert len(list(SKILLS_ROOT.glob('*/SKILL.md'))) == 27; assert len(PROVIDERS) == 16; assert sum(len(load_committed_schemas(p)) for p in PROVIDERS) == 115"
+    && python -c "import importlib.metadata, json; from pathlib import Path; from agent.deep_agent.runner import SKILLS_ROOT; from providers.catalog import PROVIDERS; from providers.registry import load_committed_schemas; assert importlib.metadata.version('deepagents') == '0.7.23'; assert len(list(SKILLS_ROOT.glob('*/SKILL.md'))) == 31; assert len(PROVIDERS) == 16; assert sum(len(load_committed_schemas(p)) for p in PROVIDERS) == 122; cases = json.loads(Path('tests/fixtures/skill_routing.json').read_text()); assert len(cases) == 242; assert sum(not c['skip_reason'] for c in cases) == 237; assert sum(bool(c['skip_reason']) for c in cases) == 5"
 
 EXPOSE 8080
 

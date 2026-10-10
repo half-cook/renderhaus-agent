@@ -292,6 +292,7 @@ const AGENT_STARTERS = [
 ] as const;
 
 function ApprovalSummary({approval}: {approval: AgentApprovalRequest}) {
+  if (approval.message) return <p className="agent-approval-summary">{approval.message}</p>;
   const args = approval.arguments;
   if (Array.isArray(args.visuals)) {
     const ends = new Map<number, number>();

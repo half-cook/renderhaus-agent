@@ -128,6 +128,26 @@ class MatrixPersistedStateTests(unittest.TestCase):
             result = self.batch()
         self.assertEqual(result["status"], "blocked", result)
 
+    def test_technical_report_read_is_bounded_before_json_decode(self):
+        first = self.directory / "first.mp4"
+        first.write_bytes(b"approved-render")
+        report = self.directory / "matrix-qc.json"
+        with report.open("wb") as target:
+            target.truncate(16 * 1024 * 1024 + 1)
+        entry = self.entry(first)
+        entry["matrix_qc"] = {"report_path": str(report), "sha256": "a" * 64}
+        self.save([entry])
+        original_read = Path.read_text
+
+        def guarded_read(path, *args, **kwargs):
+            if path == report:
+                self.fail("Oversized QC report reached unbounded read_text")
+            return original_read(path, *args, **kwargs)
+
+        with patch.object(Path, "read_text", guarded_read):
+            result = self.batch()
+        self.assertEqual(result["status"], "blocked", result)
+
 
 if __name__ == "__main__":
     unittest.main()

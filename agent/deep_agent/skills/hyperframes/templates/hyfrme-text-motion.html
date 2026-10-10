@@ -1,0 +1,62 @@
+<!doctype html>
+<!--
+Adapted from AksharP5/hyfrme at 26522a993082cd30ad5f404e4890d670c5c73bcb.
+Source https://github.com/AksharP5/hyfrme/blob/26522a993082cd30ad5f404e4890d670c5c73bcb/registry/blocks/soft-blur-in/soft-blur-in.html
+Copyright (c) 2026 Akshar Patel. MIT License.
+Copyright (c) 2026 Remocn. MIT License.
+Complete copyright and permission notices remain in third_party/hyfrme/LICENSE
+and third_party/hyfrme/Remocn-LICENSE.
+Modified by Renderhaus on 2026-10-09 into an asset-free, full-frame sample.
+The host must provision GSAP and the isolated renderer.
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Hyfrme text motion sample</title>
+    <style>
+      * { box-sizing: border-box; }
+      html, body { margin: 0; width: 100%; height: 100%; }
+      #hyfrme-text-motion { position: relative; width: 100%; height: 100%; overflow: hidden; background: #f1efe6; color: #152923; font-family: Arial, sans-serif; font-synthesis: none; }
+      .clip { position: absolute; }
+      .htm-motion, .htm-character { opacity: 0; }
+      #htm-label-clip { left: 104px; top: 104px; width: 1072px; height: 40px; }
+      #htm-label-motion { font-size: 22px; line-height: 1.4; letter-spacing: 3px; text-transform: uppercase; }
+      #htm-title-clip { left: 96px; top: 228px; width: 1088px; height: 200px; }
+      #htm-word { margin: 0; font-size: 176px; font-weight: 700; line-height: 1.1; letter-spacing: -10px; }
+      .htm-character { display: inline-block; transform-origin: 50% 55%; backface-visibility: hidden; }
+      #htm-support-clip { left: 104px; top: 462px; width: 1072px; height: 104px; }
+      #htm-support-motion { font-size: 40px; line-height: 1.3; color: #50635a; }
+      #htm-progress-clip { left: 104px; top: 614px; width: 1072px; height: 6px; background: #d4dbcb; }
+      #htm-progress-motion { width: 100%; height: 100%; background: #2d5d43; transform-origin: 0% 50%; }
+    </style>
+  </head>
+  <body>
+    <div id="hyfrme-text-motion" data-composition-id="hyfrme-text-motion" data-width="1280" data-height="720" data-fps="30" data-duration="6">
+      <div id="htm-label-clip" class="clip" data-start="0.2" data-duration="5.8">
+        <div id="htm-label-motion" class="htm-motion">One thought at a time</div>
+      </div>
+      <div id="htm-title-clip" class="clip" data-start="0.6" data-duration="5.4">
+        <h1 id="htm-word" aria-label="CLEAR"><span id="htm-char-c" class="htm-character" aria-hidden="true">C</span><span id="htm-char-l" class="htm-character" aria-hidden="true">L</span><span id="htm-char-e" class="htm-character" aria-hidden="true">E</span><span id="htm-char-a" class="htm-character" aria-hidden="true">A</span><span id="htm-char-r" class="htm-character" aria-hidden="true">R</span></h1>
+      </div>
+      <div id="htm-support-clip" class="clip" data-start="1.8" data-duration="4.2">
+        <div id="htm-support-motion" class="htm-motion">Bring one idea into focus.</div>
+      </div>
+      <div id="htm-progress-clip" class="clip" data-start="0" data-duration="6">
+        <div id="htm-progress-motion" aria-hidden="true"></div>
+      </div>
+    </div>
+    <script>
+      const timeline = gsap.timeline({ paused: true });
+      timeline.fromTo("#htm-label-motion", { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.35, ease: "power2.out" }, 0.2);
+      timeline.fromTo("#htm-char-c", { opacity: 0, y: 16, filter: "blur(12px)" }, { opacity: 1, y: 0, filter: "blur(0px)", duration: 0.8, ease: "power3.out" }, 0.6);
+      timeline.fromTo("#htm-char-l", { opacity: 0, y: 16, filter: "blur(12px)" }, { opacity: 1, y: 0, filter: "blur(0px)", duration: 0.8, ease: "power3.out" }, 0.68);
+      timeline.fromTo("#htm-char-e", { opacity: 0, y: 16, filter: "blur(12px)" }, { opacity: 1, y: 0, filter: "blur(0px)", duration: 0.8, ease: "power3.out" }, 0.76);
+      timeline.fromTo("#htm-char-a", { opacity: 0, y: 16, filter: "blur(12px)" }, { opacity: 1, y: 0, filter: "blur(0px)", duration: 0.8, ease: "power3.out" }, 0.84);
+      timeline.fromTo("#htm-char-r", { opacity: 0, y: 16, filter: "blur(12px)" }, { opacity: 1, y: 0, filter: "blur(0px)", duration: 0.8, ease: "power3.out" }, 0.92);
+      timeline.fromTo("#htm-support-motion", { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.45, ease: "power2.out" }, 1.8);
+      timeline.fromTo("#htm-progress-motion", { scaleX: 0 }, { scaleX: 1, duration: 6, ease: "none" }, 0);
+      window.__timelines = window.__timelines || {};
+      window.__timelines["hyfrme-text-motion"] = timeline;
+    </script>
+  </body>
+</html>

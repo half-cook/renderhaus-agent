@@ -39,6 +39,10 @@ from agent.studio_agent_next import (
 # Free, non-generative tools that only package existing project media. They
 # create no paid provider work, so they never pause for customer approval.
 APPROVAL_EXEMPT_TOOLS = frozenset({"Remotion___export_nle_timeline"})
+LOCAL_MEDIA_TOOLS = frozenset({
+    "Remotion___render_ad_variants", "Ffmpeg___ffmpeg_tool",
+    "Remotion___deliver_render", "Remotion___qc_deliverable",
+})
 SPENDING_SESSION_TYPE = "renderhaus_run_spending"
 logger = logging.getLogger("renderhaus.gateway_executor")
 
@@ -48,7 +52,8 @@ def tool_needs_approval(name: str, autonomous: bool, arguments: dict | None = No
 
     if name in {"Remotion___render_ad_variants", "ad_variant_matrix"}:
         return (arguments or {}).get("stage") != "plan"
-    if name in {"Ffmpeg___ffmpeg_tool", "ffmpeg_tool"}:
+    if name in {"Ffmpeg___ffmpeg_tool", "ffmpeg_tool", "Remotion___deliver_render",
+                "Remotion___qc_deliverable", "delivery_render", "deliverable_qc"}:
         return False
     if name in APPROVAL_EXEMPT_TOOLS:
         return False
@@ -60,6 +65,8 @@ def tool_needs_approval(name: str, autonomous: bool, arguments: dict | None = No
                 "Mureka___generate_lyrics_video", "mureka_lyrics_video"}:
         return True
     if name in {"Runway___act_two", "Fal___kling_motion_control", "runway_act_two", "kling_motion_control"}:
+        return True
+    if name in {"Fal___pixelcut_looping_video", "Fal___pixverse_vibemv", "pixelcut_looping_video", "pixverse_vibemv"}:
         return True
     return not autonomous or requires_approval(name) or premium_video(name)
 
@@ -155,9 +162,9 @@ class GatewayExecutor:
         for provider in ("ffmpeg", "remotion"):
             spec = get_provider(provider)
             for schema in generate_schemas(spec):
-                if schema["name"] not in {"ffmpeg_tool", "render_ad_variants"}:
-                    continue
                 name = f"{spec.target_name}___{schema['name']}"
+                if name not in LOCAL_MEDIA_TOOLS:
+                    continue
                 if request_tool_blocker(self.studio.prompt, name) is None:
                     available[name] = (None, Tool(name=name, description=schema["description"],
                                                   inputSchema=schema["inputSchema"]))
@@ -213,7 +220,7 @@ class GatewayExecutor:
         return None
 
     def media_selection(self, name, arguments):
-        if name in {"Remotion___render_ad_variants", "Ffmpeg___ffmpeg_tool"}:
+        if name in LOCAL_MEDIA_TOOLS:
             return None
         job = job_type(name)
         if not job or is_free_tool(name):
@@ -236,7 +243,7 @@ class GatewayExecutor:
                     or isinstance(metadata, dict) and (metadata.get("real_face_refs") or metadata.get("user_supplied_real_person_refs"))):
                 selection_arguments["real_face_refs"] = True
         constraints = intent_constraints(self.studio.prompt, confidential=self.studio.confidential,
-                                         arguments=selection_arguments)
+                                         arguments=selection_arguments, user_id=getattr(self.studio, "user_id", None))
         if job in {"motion_graphics", "nle_handoff", "nle_import"}:
             constraints["provider"] = constraints["model"] = constraints["named_model"] = None
         rejected_id = self.rejected_reviews.get(job)
@@ -246,6 +253,8 @@ class GatewayExecutor:
         if retry:
             for key, value in rejected.get("required", {}).items():
                 constraints["required"][key] = max(value, constraints["required"].get(key, 0))
+        if job == "tts" and constraints["predicates"]["cloned_voice"]:
+            job = "cloned_tts"
         constraints = capability_constraints(constraints, job)
         if job == "performance_transfer" and name == "Runway___act_two" and arguments.get("source_duration_seconds") is not None:
             duration = arguments.get("performance_duration_seconds")
@@ -272,6 +281,24 @@ class GatewayExecutor:
                     f"Faces, voices and bodies: {arguments.get('subjects') or 'identify every subject'}. "
                     f"Consent {'confirmed' if arguments.get('consent_confirmed') is True else 'required'}. "
                     "Outputs are not training eligible." + segment)
+        if name in {"HeyGen___voice_clone", "HeyGen___voice_tts"}:
+            from providers.heygen.voice_contracts import TRAINING_STATEMENT
+
+            owner = arguments.get("subjects") or "saved project voice owner"
+            if name == "HeyGen___voice_tts":
+                from providers.heygen.voice import _read
+                from providers.heygen.voice_contracts import PollRequest
+
+                try:
+                    owner = _read(PollRequest.model_validate({key: arguments[key] for key in
+                        ("voice_id", "account_id", "workspace_id", "project_id")}))["subjects"]
+                except (ValueError, KeyError, RuntimeError):
+                    pass
+            return (f"Provider HeyGen Voice; model {effective_model('heygen', name.split('___')[1], arguments)}. "
+                    f"{route.basis if route else 'explicit request'}. {estimate_cost(name, arguments).description} "
+                    f"Voice owner: {owner}. Consent record: {arguments.get('consent_record_id') or 'saved project consent'}. "
+                    "Recorded consent is required. Reference audio is uploaded to HeyGen on live activation. "
+                    f"{TRAINING_STATEMENT} Dry-run preview uploads nothing and costs $0.00.")
         if name == "HeyGen___create_avatar_video":
             consent = "confirmed with a recorded acknowledgement" if arguments.get("consent_confirmed") is True else "required"
             return (f"Provider HeyGen direct; model {effective_model('heygen', 'create_avatar_video', arguments)}. "
@@ -309,7 +336,14 @@ class GatewayExecutor:
         if blocker := request_tool_blocker(self.studio.prompt, name):
             return blocker
         provider, tool = tool_parts(name)
-        if name in {"Remotion___render_ad_variants", "Ffmpeg___ffmpeg_tool"}:
+        if name in {"Fal___pixelcut_looping_video", "Fal___pixverse_vibemv"}:
+            from providers.fal.api import _validated
+
+            try:
+                _validated(tool, arguments)
+            except ValueError as exc:
+                return str(exc)
+        if name in LOCAL_MEDIA_TOOLS:
             from providers.contracts import validate_tool_arguments
             from server.billing_rates import ad_matrix_estimate
 
@@ -364,6 +398,20 @@ class GatewayExecutor:
                 topaz_request = request_for(tool, arguments)
             except ValueError as exc:
                 return str(exc)
+        if provider == "heygen" and tool in {"voice_clone", "voice_tts", "get_voice_status"}:
+            from providers.heygen.voice_contracts import request_for
+            from providers.heygen.voice import _read
+
+            try:
+                request = request_for(tool, arguments)
+                expected = {"account_id": self.studio.user_id, "workspace_id": self.studio.workspace_id,
+                            "project_id": self.studio.project_id}
+                if any(not value or arguments.get(key) != value for key, value in expected.items()):
+                    return "HeyGen Voice scope must match the authenticated account, workspace and project."
+                if tool != "voice_clone":
+                    _read(request)
+            except (ValueError, RuntimeError) as exc:
+                return str(exc)
         if name == "HeyGen___create_avatar_video":
             from providers.heygen.contracts import request_for
 
@@ -390,7 +438,7 @@ class GatewayExecutor:
             return route.reason
         if name != route.tool or effective_model(provider, tool, arguments) != route.model:
             return f"Capability map selected {route.tool} ({route.model}). Discover its schema and use that route. {route.reason}"
-        if route.required.get("aspect_ratio") and arguments.get("aspect_ratio", "9:16") != route.required["aspect_ratio"]:
+        if route.required.get("aspect_ratio") and arguments.get("aspect_ratio", "16:9" if tool == "pixverse_vibemv" else "9:16") != route.required["aspect_ratio"]:
             return "Lyrics video must use the requested aspect_ratio."
         row = next((row for row in POLICY["capabilities"]
                     if row["model"] == route.model and name in row["tools"].values()), {})
@@ -437,6 +485,8 @@ class GatewayExecutor:
             if provider == "mureka" and tool == "generate_lyrics_video":
                 start, end = arguments.get("selection_start"), arguments.get("selection_end")
                 actual = (end - start) / 1000 if start is not None and end is not None else None
+            if tool == "pixverse_vibemv":
+                actual = arguments.get("audio_duration_seconds")
             if provider == "fal" and not row.get("duration_field") and route.job_type != "performance_transfer":
                 fps = arguments.get("frames_per_second", 16)
                 actual = (arguments.get("num_frames", 81) - 1) / fps if fps > 0 else 0
@@ -520,7 +570,7 @@ class GatewayExecutor:
         )
         if previous:
             return previous.result
-        if name in {"Remotion___render_ad_variants", "Ffmpeg___ffmpeg_tool"} and (
+        if name in LOCAL_MEDIA_TOOLS and (
             not studio.job_id or arguments.get("job_id") != studio.job_id
         ):
             return {"status": "not_run", "reason": "Local media tools must use the trusted current Studio job_id. Stage inputs inside that job directory; another Studio job cannot be read."}
@@ -591,7 +641,7 @@ class GatewayExecutor:
                 {},
             )
             try:
-                if name in {"Remotion___render_ad_variants", "Ffmpeg___ffmpeg_tool"}:
+                if name in LOCAL_MEDIA_TOOLS:
                     from providers.registry import dispatch
                     from providers.remotion.ad_variants import authorize
                     from server.billing import stripe_enabled
@@ -611,8 +661,11 @@ class GatewayExecutor:
                                 name, arguments, call_id,
                             )
                     try:
-                        with authorize(arguments.get("stage", "plan"), arguments.get("plan_hash", ""),
-                                       f"human:{call_id}" if approved else ""):
+                        if name == "Remotion___render_ad_variants":
+                            with authorize(arguments.get("stage", "plan"), arguments.get("plan_hash", ""),
+                                           f"human:{call_id}" if approved else ""):
+                                output = await asyncio.to_thread(dispatch, provider, verb, arguments)
+                        else:
                             output = await asyncio.to_thread(dispatch, provider, verb, arguments)
                         payload = _unwrap_tool_output(output)
                         if payload.get("error") or payload.get("status") in {"failed", "error", "blocked", "not_run"}:
@@ -716,6 +769,8 @@ class GatewayExecutor:
             ab_arm = route.alias if route.job_type == "image_edit" and intent_constraints(studio.prompt, arguments=arguments)["predicates"]["text_only_edit"] else None
             if route.job_type == "continuity_qc":
                 ab_arm = "gemini_vlm_judge"
+            if route and route.alias in {"heygen_voice_clone", "heygen_voice_tts"}:
+                ab_arm = "heygen_voice_internal"
             self.outcomes.record(
                 event_id=f"approval-{self.run_scope}-{call_id}", provider=provider, model=model,
                 job_type=job_type(name), provider_job_id=provider_job_id,

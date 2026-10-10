@@ -1,4 +1,7 @@
 const MODEL_LABELS: Record<string, string> = {
+  "pixelcut/looping-video": "Studio Video · looping clip",
+  "pixverse/music-video/vibemv": "Studio Music · music video",
+  "heygen-voice-1": "Studio Voice · instant clone (internal)",
   "gemini-3.8-flash": "Studio review model (experimental)",
   "ideogram/v4.5/edit": "Studio Image · text edit",
   "fal-ai/recraft/v4.1/pro/text-to-vector": "Studio Image · vector",

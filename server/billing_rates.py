@@ -680,17 +680,50 @@ def mirelo_price_cents(arguments: dict[str, Any]) -> Decimal | None:
     return MIRELO_CENTS_PER_SECOND * Decimal(str(request.duration))
 
 
+PIXELCUT_PRICING_URL = "https://fal.ai/models/pixelcut/looping-video"
+PIXVERSE_PRICING_URL = "https://fal.ai/models/pixverse/music-video/vibemv"
+NAMED_FAL_VIDEO_PRICING_READ_DATE = "2026-10-10"
+PIXELCUT_CENTS_PER_SECOND = {"480p": Decimal("8"), "768p": Decimal("16"), "1080p": Decimal("32")}
+PIXVERSE_CENTS_PER_SECOND = {"720p": Decimal("6"), "1080p": Decimal("9")}
+
+
+def named_fal_video_price_cents(tool: str, arguments: dict[str, Any]) -> Decimal:
+    """Official fal output-second and rounded audio-second prices, before the platform fee."""
+    from providers.fal.named_video import TOOL_ENDPOINTS
+
+    if tool not in TOOL_ENDPOINTS:
+        raise ValueError("Unknown named fal video tool; estimate unknown.")
+    if arguments.get("model", TOOL_ENDPOINTS[tool]) != TOOL_ENDPOINTS[tool]:
+        raise ValueError("Named fal video model must match its verified fixed endpoint.")
+    if tool == "pixelcut_looping_video":
+        seconds = arguments.get("duration", 5)
+        if type(seconds) is not int or not 5 <= seconds <= 15:
+            raise ValueError("Pixelcut duration must be an integer from 5 to 15; estimate unknown.")
+        resolution = arguments.get("resolution", "1080p")
+        rates = PIXELCUT_CENTS_PER_SECOND
+    else:
+        seconds = arguments.get("audio_duration_seconds")
+        if isinstance(seconds, bool) or not isinstance(seconds, (int, float)) or not math.isfinite(seconds) or not 10 <= seconds <= 360:
+            raise ValueError("VibeMV estimate unknown; supply measured audio_duration_seconds from 10 through 360.")
+        seconds = math.ceil(seconds)
+        resolution = arguments.get("resolution", "720p")
+        rates = PIXVERSE_CENTS_PER_SECOND
+    if not isinstance(resolution, str) or resolution not in rates:
+        raise ValueError("Unsupported named fal video resolution; estimate unknown.")
+    return rates[resolution] * seconds
+
+
 def _fal_cost(tool: str, arguments: dict[str, Any]) -> GenerationCost:
-    from providers.fal import api, queue, vidu, wan, wan3
+    from providers.fal import api, queue, vidu, wan, wan3, named_video
 
     if tool == "list_fal_models":
         return GenerationCost(0, 0)
-    if tool not in wan.GENERATING_TOOLS + vidu.GENERATING_TOOLS + wan3.GENERATING_TOOLS:
+    if tool not in wan.GENERATING_TOOLS + vidu.GENERATING_TOOLS + wan3.GENERATING_TOOLS + named_video.GENERATING_TOOLS:
         raise ValueError("Unknown fal generation tool.")
     from providers.registry import schema_from_callable
     from providers.contracts import validate_tool_arguments
 
-    fixed_endpoints = {**vidu.TOOL_ENDPOINTS, **wan3.TOOL_ENDPOINTS}
+    fixed_endpoints = {**vidu.TOOL_ENDPOINTS, **wan3.TOOL_ENDPOINTS, **named_video.TOOL_ENDPOINTS}
     if tool in fixed_endpoints:
         if "model" in arguments and arguments["model"] != fixed_endpoints[tool]:
             raise ValueError("fal model must match the tool's fixed endpoint.")
@@ -699,6 +732,8 @@ def _fal_cost(tool: str, arguments: dict[str, Any]) -> GenerationCost:
     cleaned = validate_tool_arguments("fal", tool, arguments, schema)
     if queue.dry_run():
         return GenerationCost(0, 0)
+    if tool in named_video.TOOL_ENDPOINTS:
+        return _with_fee(math.ceil(named_fal_video_price_cents(tool, cleaned)))
     if tool in vidu.TOOL_ENDPOINTS:
         return _with_fee(round(vidu_q4_price_cents(cleaned)))
     if tool in wan3.TOOL_ENDPOINTS:
@@ -769,6 +804,30 @@ HEYGEN_PRICING_URL = "https://help.heygen.com/en/articles/10060327-heygen-api-pr
 HEYGEN_PRICING_READ_DATE = "2026-10-09"
 # Official Avatar V Digital Twin API PAYG rate: $7.20/min, charged per actual second.
 HEYGEN_AVATAR_V_CENTS_PER_SECOND = Decimal("12")
+
+
+# UNVERIFIED non-promo HeyGen Voice prices. Official pages read 2026-10-09.
+# https://developers.heygen.com/docs/models/heygen-voice only states preview creation is free.
+# https://www.heygen.com/api-pricing redirects to an account dashboard. No character list rate verified.
+HEYGEN_VOICE_PRICING_URL = "https://www.heygen.com/api-pricing"
+HEYGEN_VOICE_PRICING_READ_DATE = "2026-10-09"
+HEYGEN_VOICE_LIST_USD_PER_MILLION = None
+HEYGEN_VOICE_CLONE_LIST_USD = None
+
+
+def heygen_voice_price_cents(tool: str, arguments: dict) -> Decimal:
+    from providers.heygen.voice_contracts import DEFAULT_MODEL, configured_model
+
+    if configured_model(arguments) != DEFAULT_MODEL:
+        raise ValueError("UNVERIFIED HeyGen Voice model; estimate unknown.")
+    if tool == "voice_clone" and HEYGEN_VOICE_CLONE_LIST_USD is not None:
+        return Decimal(str(HEYGEN_VOICE_CLONE_LIST_USD)) * 100
+    if tool == "voice_tts" and HEYGEN_VOICE_LIST_USD_PER_MILLION is not None:
+        text = arguments.get("text")
+        if not isinstance(text, str) or not 1 <= len(text) <= 5000 or not text.strip():
+            raise ValueError("HeyGen Voice text must contain 1-5000 characters.")
+        return Decimal(len(text)) * Decimal(str(HEYGEN_VOICE_LIST_USD_PER_MILLION)) * 100 / 1000000
+    raise ValueError("UNVERIFIED HeyGen Voice non-promo list price; estimate unknown. Official rate TODO.")
 
 
 def heygen_price_cents(arguments: dict[str, Any]) -> Decimal:
@@ -861,6 +920,8 @@ def cost_for(provider: str, tool: str, arguments: dict[str, Any]) -> GenerationC
     """
     if provider == "ffmpeg":
         return GenerationCost(0, 0)
+    if provider == "remotion" and tool in {"deliver_render", "qc_deliverable"}:
+        return GenerationCost(0, 0)
     if provider == "remotion" and tool == "render_ad_variants":
         from providers.remotion.api import dry_run
 
@@ -895,6 +956,13 @@ def cost_for(provider: str, tool: str, arguments: dict[str, Any]) -> GenerationC
             raise ValueError("Topaz price unknown for these dimensions, FPS or slowdown; official quote TODO.")
         return _with_fee(math.ceil(cents))
     if provider == "heygen":
+        if tool in {"voice_clone", "voice_tts", "get_voice_status"}:
+            from providers.heygen.voice import dry_run
+            from providers.heygen.voice_contracts import live_blocker
+
+            if tool == "get_voice_status" or dry_run():
+                return GenerationCost(0, 0)
+            raise ValueError(live_blocker(arguments))
         if tool in {"get_video_status", "list_avatars", "list_voices"}:
             return GenerationCost(0, 0)
         if tool != "create_avatar_video":

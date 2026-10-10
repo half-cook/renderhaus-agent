@@ -188,7 +188,7 @@ See [the capability map](CAPABILITY_MAP.md) and [routing policy](SKILLS.md#capab
 
 ## Skills and delegation
 
-There are 26 packaged `SKILL.md` files under `agent/deep_agent/skills/`.
+There are 31 packaged `SKILL.md` files under `agent/deep_agent/skills/`.
 Deep Agents reads metadata first. Full instructions enter context when a relevant skill is read.
 `metadata.include_tools` documents real dispatch wrappers, which are stably bound per role. `metadata.routing_tools` holds
 canonical capability/workflow IDs, while `metadata.gateway_tools` lists built names only.
@@ -204,6 +204,14 @@ The new knowledge-explainer plans silent graphic beats and event-timed SFX. Its 
 guard excludes narration/TTS before approval and dispatch, including on resumes. It reuses
 Remotion, explicit HyperFrames previews, Mirelo and ElevenLabs SFX. Existing-clip audio-only
 requests retain audio-bed. See [knowledge explainers](KNOWLEDGE_EXPLAINER.md).
+
+Plan-to-video reviews a written plan with per-chapter ElevenLabs narration, decision
+cards and silent holds. Its route selects Remotion before generic generation or editing;
+HyperFrames requires an explicit request. Source text in quotes, fences or blockquotes
+does not choose providers. The agent reads the skill and constructs native timeline
+arguments; there is no new compiler or dispatch wrapper. Answers stay separate from the
+source plan, and an MP4 hold does not automatically pause playback or authorize coding.
+See [plan review videos](PLAN_TO_VIDEO.md).
 
 The deterministic router supplies skill and tool proposals in graph input and Studio context.
 For a generated shot with independent narration, `intent_route.execution_groups` puts video
@@ -235,7 +243,7 @@ order. The short Studio summary also includes per-step costs when they fit its 3
 contract; larger runs refer to the complete breakdown. Unknown charges remain explicit,
 with a known subtotal. Model token charges are recorded separately by `ModelUsage`.
 
-The capability-map fixture contains 220 retained rows, with 175 active and 45 dependency skips.
+The capability-map fixture contains 242 retained rows, with 237 active and 5 dependency skips.
 Archived/confidential routes are dropped. Active rows cover built tools and declared interims;
 pending specialists keep named branch reasons. Editorial overrides retain the safe preparer,
 separate rendering approval, and existing export/HyperFrames narration workflow contracts.
@@ -250,12 +258,15 @@ editor dispatch, approval, and spending gates; live rendering fails closed until
 an isolated worker exists. The [assessment](HYPERFRAMES_ASSESSMENT.md) documents
 the Apache adaptation, dependencies, and remaining verification.
 
-The existing skill also packages MIT caption and collage
+The existing skill also packages MIT caption, collage, and Hyfrme
 [recipes and HTML examples](HYPERFRAMES_TEMPLATE_PACKS.md). Manager and editor
 read their catalog, templates, and references through `/skills/hyperframes/`.
 The existing composition input contract and native approval/resume paths apply.
 Plain style requests use Remotion. Named HyperFrames requests retain the optional
 feature gate. No provider dispatch, secret, or top-level skill is added.
+The [Hyfrme pack](HYPERFRAMES_HYFRME_PACK.md) uses the same catalog shape and
+native filesystem for three more examples. Only the HyperFrames name selects
+the optional renderer. A Hyfrme pack name cannot change routing or approvals.
 
 Fish Audio is not in the current active provider catalog. Its speech tool is usable only when
 Gateway discovers an available Fish Audio target. Skills explicitly report unavailable tools.
@@ -394,7 +405,7 @@ See [the decisions record](fix-parallel-approvals-decisions.tsv) for reproductio
 ## AgentCore and verification
 
 `Dockerfile.agentcore` defaults to Deep Agents and retains Codex for explicit fallback.
-It installs pinned dependencies and verifies the Deep Agents version and all 26 packaged
+It installs pinned dependencies and verifies the Deep Agents version and all 31 packaged
 skills during the build. The entrypoint remains `python -m agent.studio_agent_next`.
 The existing Studio approval/review surfaces display the edit plan, subtitles, grade and
 audio fades. The database schema stays compatible.
@@ -583,7 +594,7 @@ compute/licence estimate. The trusted executor records approval; the agent canno
 an approval by passing fields in the tool arguments.
 
 Media inspection is free. It runs on the machine owning the confined local job directory,
-with fixed ffmpeg/ffprobe executables and a ten-op registry. No arbitrary scripts, paths or
+with fixed ffmpeg/ffprobe executables and a nineteen-op registry. No arbitrary scripts, paths or
 arguments enter subprocess commands. Resolve-only requests return a parked refusal before
 generic generation or NLE-handoff matching. Existing interchange export remains available
 for supported requests. The stored confidential field does not change these routes.
@@ -595,8 +606,8 @@ composition. This task makes no deployment or Lambda call. Matrix jobs refuse th
 backend until the same job directory exists on its worker. See
 [Remotion editing](REMOTION_EDITING.md) for the supported backend table and demo commands.
 
-Inventory is 16 providers, 115 Gateway tools and 27 skills. The fixture has 184 active and
-36 deferred cases among 220 rows. Browser validation through Comet remains blocked here.
+Inventory is 16 providers, 122 Gateway tools and 31 skills. The fixture has 237 active and
+5 deferred cases among 242 rows. Browser validation through Comet remains blocked here.
 
 ## Per-shot static reframing
 
@@ -611,3 +622,36 @@ Lambda validator, which explicitly refuses them before any AWS call. Existing de
 Lambda timelines remain unchanged. Render results are editorial candidates with contact
 sheets and pending review, not certified delivery output. Paid outpainting still selects
 `edit-v2v` and pauses with the existing cost estimate. No model defaults or spend caps change.
+
+## Local delivery validation
+
+The editor role discovers `Remotion___deliver_render` (`delivery_render`) and
+`Remotion___qc_deliverable` (`deliverable_qc`). The executor runs them in process on the
+host owning the authenticated job directory. They are free, bypass the generic Remotion
+Lambda estimate, and require no spending approval. Approval-exempt sets and spend caps
+are unchanged. Unscoped direct invocation and Lambda execution are refused.
+
+Delivery stages a finished file or matrix manifest, uses fixed finishing operations,
+normalizes audio to the preset target, writes versioned names and hashes, and QC checks
+the actual result. The completion guard binds the report to current files, rejects stale
+or incomplete checks, and prevents a previous successful render from overriding current
+failed QC, including turn-limit recovery. Failure summaries preserve worker reasons
+verbatim. Existing ordinary assembly validation remains compatible.
+
+The three guides add delivery, loudness and deliverable QC routing. The 242 retained rows
+now contain 237 active cases and 5 skips. RT-E043 awaits exact OCR verification; the other
+four are existing provider dependencies. `project.confidential` never changes these routes.
+See [contracts and operator commands](REMOTION_EDITING.md). Offline real-binary verification
+is supporting evidence; Comet Studio E2E is blocked by unavailable browser control here.
+
+## Named-only fal video
+
+Explicit Pixelcut looping video and PixVerse VibeMV requests route through `named-provider`
+and the existing media role. `Fal___pixelcut_looping_video` and `Fal___pixverse_vibemv`
+reuse `Fal___get_video_task`, shared fal credentials and dry-run guard. They are never
+defaults or exceptions; unnamed executor calls and direct Studio invokes are blocked.
+Both always interrupt with cost even in autonomous mode and with premium approval disabled.
+Measured VibeMV source duration stays local; consent flags never enter the provider payload.
+Inventory is 16 providers, 119 tools, 31 skills, 233 active fixtures and 5 dependency skips.
+See [named fal video](providers/named-fal-video.md) for contracts, dated official prices,
+commercial hosted terms and training exclusion. Comet E2E remains blocked here.
