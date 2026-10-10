@@ -86,5 +86,5 @@ export const FIXTURE_RECEIPT: RunReceiptModel = {
     { kind: "orchestration", label: "Agent orchestration", priceCents: 71, basis: "fixed" },
   ],
   actualCents: 229, estimateCents: 258, capCents: 350, underEstimate: true,
-  balanceBeforeCents: 1000, balanceAfterCents: 771, paidSteps: 4,
+  balanceBeforeCents: 1000, balanceAfterCents: 771, paidSteps: 4, status: "done",
 };

@@ -132,6 +132,7 @@ export function ApprovalCard({ model, approveEnabled, busy = false, actions = {}
               </>
             )}
           </Ledger>
+          {model.estimateIncomplete ? <div className="rh-note" role="status"><Info size={13} aria-hidden="true" /><span>One step couldn’t be priced yet. It is shown at {formatCents(0)}, which does not mean free.</span></div> : null}
           {credit === "ok" && model.balanceAfterEstimateCents != null && model.balanceAfterCapCents != null ? (
             <BalanceNote>Balance after this step · est. <b className="rh-num rh-mono">{formatCents(model.balanceAfterEstimateCents)}</b>, at the cap <b className="rh-num rh-mono">{formatCents(model.balanceAfterCapCents)}</b></BalanceNote>
           ) : null}
@@ -248,6 +249,7 @@ export function ApprovalCard({ model, approveEnabled, busy = false, actions = {}
                 {index === 0 ? `Raise cap to ${formatCents(option)}` : `Raise to ${formatCents(option)}`}
               </button>
             ))}
+            {(model.raiseOptionsCents ?? []).length === 0 ? <button type="button" className="rh-btn rh-btn-primary rh-btn-act" style={{ flex: 1 }} onClick={actions.onAddCredit}><Plus size={14} aria-hidden="true" />Add credit</button> : null}
             <button type="button" className="rh-btn rh-btn-quiet rh-btn-act" onClick={actions.onStop}>Stop here</button>
           </div>
           <div className="rh-footnote"><span>Raising the cap lets this step continue until the new total is reached. Stopping keeps what was made and charges nothing further.</span></div>

@@ -73,15 +73,6 @@ export const mugTasks = { items: [
   { id: "task-captions", project_id: MUG, title: "Caption variants (9:16)", status: "active", created_at: NOW - 3500, updated_at: NOW - 2500 },
 ] };
 
-const planSteps = (current: number) => [
-  { label: "Product still · image", price_cents: 26, basis: "fixed", state: current > 0 ? "done" : "current" },
-  { label: "Shot 1 · push-in · 5 s", price_cents: 65, basis: "fixed", state: current > 1 ? "done" : current === 1 ? "current" : "todo" },
-  { label: "Shot 2 · hand lifts mug · 5 s", price_cents: 65, basis: "fixed", state: current > 2 ? "done" : current === 2 ? "current" : "todo" },
-  { label: "Voiceover · 24 words · library voice", price_cents: 2, basis: "fixed", state: "todo" },
-  { label: "Assemble film · hard cuts", price_cents: 0, free: true, state: "todo" },
-  { label: "Agent orchestration · estimate across the plan", price_cents: 100, basis: "estimate", state: "todo" },
-];
-
 const runBase = (jobId: string, patch: Record<string, unknown>) => ({
   job_id: jobId, project_id: MUG, conversation_id: MUG_TASK, turn_index: 1,
   prompt: "From this product photo make a 10 second product film with a warm voiceover. Ask me before every paid step.",
@@ -93,66 +84,59 @@ const stillEvent = {
   arguments: {}, assets: [STILL],
 };
 
+const midLines = [
+  { label: "Product still", detail: "image", price_cents: 26, kind: "media", basis: "fixed" },
+  { label: "Video clip", detail: "5 s · 720p", price_cents: 65, kind: "media", basis: "fixed" },
+  { label: "Agent orchestration", price_cents: 40, kind: "orchestration", basis: "estimate" },
+];
+const shot1Approval = {
+  call_id: "ap-shot1", label: "Shot 1 · push-in on the handle", detail: "Studio Video · Standard quality", status: "pending", decision: null,
+  arguments: { prompt: "Slow push-in on the handle and the matte texture. Soft morning window light, shallow depth of field. No text.", duration_seconds: 5, resolution: "720p", aspect_ratio: "16:9" },
+  step_price_cents: 65, step_index: 2, step_count: 4,
+  estimate_cents: 131, cap_cents: 200, held_cents: 0, spent_so_far_cents: 26, lines: midLines,
+  balance_cents: 974, balance_after_estimate_cents: 843, balance_after_cap_cents: 774,
+  approve_enabled: true, insufficient_credit: null, raise_options_cents: [], estimate_incomplete: false,
+};
+
 export const midRun = { items: [runBase("run-mid", {
   status: "awaiting_approval", message: "Shot 1 is next. Here's the price card. Nothing runs until you approve.",
-  title: undefined, result: { title: "", summary: "", markdown: "", assets: [STILL], tool_events: [stillEvent] },
-  approvals: [{
-    call_id: "ap-shot1", tool_name: "text_to_video", label: "Shot 1 · push-in on the handle",
-    arguments: { prompt: "Slow push-in on the handle and the matte texture. Soft morning window light, shallow depth of field. No text.", duration_seconds: 5, resolution: "720p", aspect_ratio: "16:9" },
-    billing: { ...VIDEO_ESTIMATE, balance_cents: 974, tier: "Studio Video · Standard quality", step_index: 2, step_count: 4, thumb_url: "/beta/still-mug-wide.jpg", balance_after_estimate_cents: 869, balance_after_cap_cents: 824, wallet_total_cents: 1000 },
-  }],
-  billing: {
-    plan: { estimate_cents: 258, cap_cents: 350, steps: planSteps(1) },
-    spend: { lines: [
-      { label: "Product still", amount_cents: 26, tone: "charged" },
-      { label: "Awaiting approval", amount_cents: 105, tone: "awaiting" },
-      { label: "Still to ask", amount_cents: 127, tone: "estimate" },
-    ], total_label: "Plan · estimated total", total_cents: 258 },
-  },
+  result: { title: "", summary: "", markdown: "", assets: [STILL], tool_events: [stillEvent] },
+  approvals: [shot1Approval],
 })] };
 
 export const receiptRun = { items: [runBase("run-done", {
   status: "completed", message: "Done.", title: "10s product film",
   result: { title: "10s product film", summary: "Done. The film is assembled, and every step came in under its estimate. Here is exactly what was charged.", markdown: "", assets: [MACRO], primary_asset: MACRO, tool_events: [] },
   approvals: [],
-  billing: {
-    type: "receipt", scope: "run", title: "10s product film", finished_label: "Finished 7:52 PM · 10 s · 16:9 · voiceover",
-    estimate_cents: 258, cap_cents: 350, actual_cents: 229, under_estimate: true, balance_before_cents: 1000, balance_after_cents: 771, paid_steps: 4,
+  receipt: {
+    type: "receipt", run_id: "run-done", status: "done", estimate_cents: 258, cap_cents: 350, actual_cents: 229, under_estimate: true, balance_before_cents: 1000, balance_after_cents: 771,
     lines: [
-      { kind: "media", label: "Product still", detail: "image", price_cents: 26 },
-      { kind: "media", label: "Shot 1", detail: "video clip · 5 s · 720p", price_cents: 65 },
-      { kind: "media", label: "Shot 2", detail: "video clip · 5 s · 720p", price_cents: 65 },
-      { kind: "media", label: "Voiceover", detail: "library voice · 24 words", price_cents: 2 },
-      { kind: "orchestration", label: "Agent orchestration", price_cents: 71 },
+      { kind: "media", label: "Product still", detail: "image", price_cents: 26, basis: "fixed" },
+      { kind: "media", label: "Shot 1", detail: "video clip · 5 s · 720p", price_cents: 65, basis: "fixed" },
+      { kind: "media", label: "Shot 2", detail: "video clip · 5 s · 720p", price_cents: 65, basis: "fixed" },
+      { kind: "media", label: "Voiceover", detail: "library voice · 24 words", price_cents: 2, basis: "fixed" },
+      { kind: "orchestration", label: "Agent orchestration", price_cents: 71, basis: "fixed" },
     ],
-    spend: { lines: [
-      { label: "Product still", amount_cents: 26, tone: "charged" }, { label: "Shots 1 and 2", amount_cents: 130, tone: "charged" },
-      { label: "Voiceover", amount_cents: 2, tone: "charged" }, { label: "Agent orchestration", amount_cents: 71, tone: "charged" },
-    ], total_label: "Total charged", total_cents: 229 },
   },
 })] };
 
 export const pausedRun = { items: [runBase("run-paused", {
   status: "error", error_type: "PausedAtCap", message: "Paused at the cap.", can_resume: true, recovery_available: true,
   result: { title: "", summary: "", markdown: "", assets: [STILL], tool_events: [stillEvent] }, approvals: [],
-  billing: {
-    type: "paused_cap", status: "paused_cap", title: "Shot 1 · push-in on the handle", tier: "Studio Video · Standard quality", step_index: 2, step_count: 4,
-    charged_cents: 150, cap_cents: 150, held_cents: 150, balance_cents: 824, wallet_total_cents: 1000, raise_options_cents: [200, 250],
-    lines: [
-      { kind: "media", label: "Video clip", detail: "5 s · 720p", price_cents: 65 }, { kind: "orchestration", label: "Agent orchestration", price_cents: 85 },
-    ],
+  paused_cap: {
+    type: "paused_cap", status: "paused_cap", run_id: "run-paused",
     message: "The agent needed more attempts than estimated. Nothing more has been charged, and the step is paused so you decide.",
-    held: 150,
-    spend: { lines: [
-      { label: "Product still", amount_cents: 26, tone: "charged" }, { label: "Shot 1 · stopped at cap", amount_cents: 150, tone: "charged" },
-      { label: "Still to ask", amount_cents: 127, tone: "estimate" },
-    ], total_label: "Plan · estimated total", total_cents: 303 },
+    charged_cents: 150, cap_cents: 150, held_cents: 150, balance_cents: 824, choices: ["raise_cap", "stop"], add_credit: false, raise_options_cents: [200, 250],
+    lines: [
+      { kind: "media", label: "Video clip", detail: "5 s · 720p", price_cents: 65, basis: "fixed" },
+      { kind: "orchestration", label: "Agent orchestration", price_cents: 85, basis: "fixed" },
+    ],
   },
 })] };
 
-const lowEstimate = { ...VIDEO_ESTIMATE, balance_cents: 120, lower_cap_option_cents: 120, approve_enabled: false };
-export const lowRun = { items: [{ ...midRun.items[0]!, approvals: [{ ...midRun.items[0]!.approvals[0]!, billing: { ...midRun.items[0]!.approvals[0]!.billing, ...lowEstimate, balance_after_estimate_cents: undefined, balance_after_cap_cents: undefined } }] }] };
+const insufficient = { type: "insufficient_credit", reason: "insufficient_credit", approve_enabled: false, message: "Not enough credit for this cap.", balance_cents: 150, estimate_cents: 131, cap_cents: 200, lower_cap_option_cents: 150, add_credit: true, shortfall_cents: 50, minimum_needed_cents: 0 };
+export const lowRun = { items: [{ ...midRun.items[0]!, approvals: [{ ...shot1Approval, balance_cents: 150, approve_enabled: false, insufficient_credit: insufficient, balance_after_estimate_cents: null, balance_after_cap_cents: null }] }] };
 
-export const lowAccount = { balance_cents: 120, display_name: "Satya", beta_credit: { granted_cents: 1000, remaining_cents: 120, spent_cents: 880 }, recent_ledger: [], subscription: null };
+export const lowAccount = { balance_cents: 150, display_name: "Satya", beta_credit: { granted_cents: 1000, remaining_cents: 150, spent_cents: 850 }, recent_ledger: [], subscription: null };
 
 export { camel };

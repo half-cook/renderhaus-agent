@@ -10,6 +10,9 @@ import {
 import type { StudioAsset } from "@/lib/types";
 import { AssetDownloadLink, AssetMedia } from "./AssetMedia";
 import styles from "./AgentReviewPanel.module.css";
+import { SpendLedger } from "@/components/rh/RunBilling";
+import { spendSummary } from "@/lib/rh/approval-model";
+import { TimelineMini } from "@/components/timeline/TimelineMini";
 
 function FileIcon({ kind }: { kind: StudioAsset["kind"] }) {
   const Icon = kind === "video" ? FileVideo : kind === "audio" ? FileAudio : FileImage;
@@ -153,7 +156,8 @@ export function AgentReviewPanel() {
   const selectedNodeIds = useCanvasStore((state) => state.selectedNodeIds);
   const conversationId = useCanvasStore((state) => state.conversationId);
   const projectId = useCanvasStore((state) => state.projectId);
-  const [tab, setTab] = useState<"changes" | "preview">("changes");
+  const [tab, setTab] = useState<"changes" | "preview" | "timeline">(() => useCanvasStore.getState().executions.some((execution) => execution.approvals.length || execution.receipt || execution.pausedCap) ? "preview" : "changes");
+  const spend = useMemo(() => spendSummary(executions), [executions]);
   const [sourceId, setSourceId] = useState<string | null>(null);
   const [resultId, setResultId] = useState<string | null>(null);
   const [sourceTime, setSourceTime] = useState<number>();
@@ -221,17 +225,19 @@ export function AgentReviewPanel() {
 
   return <aside className={styles.panel} aria-label="Agent review">
     <div className={styles.tabs} role="tablist" aria-label="Review mode">
-      {(["changes", "preview"] as const).map((value) => <button
+      {(["changes", "preview", "timeline"] as const).map((value) => <button
         type="button" key={value} id={`${id}-${value}`} role="tab" aria-selected={tab === value}
         aria-controls={`${id}-panel`} tabIndex={tab === value ? 0 : -1}
         onClick={() => setTab(value)} onKeyDown={(event) => {
+          const order = ["changes", "preview", "timeline"] as const;
           if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
           event.preventDefault();
-          const next = event.key === "Home" ? "changes" : event.key === "End" ? "preview" : tab === "changes" ? "preview" : "changes";
+          const at = order.indexOf(tab);
+          const next = event.key === "Home" ? order[0] : event.key === "End" ? order[2] : order[(at + (event.key === "ArrowRight" ? 1 : 2)) % 3]!;
           setTab(next); document.getElementById(`${id}-${next}`)?.focus();
         }}>
-        {value === "changes" ? <GitCompareArrows size={15} /> : <Play size={15} />}
-        {value === "changes" ? "Changes" : "Preview"}
+        {value === "changes" ? <GitCompareArrows size={15} /> : value === "preview" ? <Play size={15} /> : <Film size={15} />}
+        {value === "changes" ? "Changes" : value === "preview" ? "Preview" : "Timeline"}
       </button>)}
     </div>
     <div className={styles.content} id={`${id}-panel`} role="tabpanel" aria-labelledby={`${id}-${tab}`}>
@@ -266,7 +272,7 @@ export function AgentReviewPanel() {
         {fileList(taskFiles, "Created in this task")}
         {projectFiles.length ? <details className={styles.projectMedia}><summary>Project media <span>{projectFiles.length}</span></summary>{fileList(projectFiles, "Existing media")}</details> : null}
         {!files.length && !sequence.length && !timeline ? <div className={styles.empty}><GitCompareArrows size={28} /><h3>Your media, ready to review</h3><p>Upload a source or ask the agent to create something. Files appear here, with edit plans shown as numbered changes.</p></div> : null}
-      </> : <>
+      </> : tab === "timeline" ? <TimelineMini /> : <>
         <div className={styles.heading}><div><h2>Source & result</h2><p>Compare your current media with a created version.</p></div></div>
         <div className={styles.viewers}>
           <Viewer label="Source / current" files={files} value={source} startTime={sourceTime} onChange={(value) => { setSourceId(value); setSourceTime(undefined); }} empty="Select a canvas clip or choose source media." />
@@ -275,5 +281,6 @@ export function AgentReviewPanel() {
         <p className={styles.note}>Each viewer has independent playback controls. Choose any two versions to compare.</p>
       </>}
     </div>
+    {spend ? <div className="rh-spend-dock"><SpendLedger rows={spend.rows} totalLabel={spend.totalLabel} totalCents={spend.totalCents} /></div> : null}
   </aside>;
 }

@@ -44,9 +44,9 @@ import type { AgentProgressEvent, AgentToolEvent } from "@/lib/canvas/types";
 import type { StudioAsset } from "@/lib/types";
 import { AssetDownloadLink, AssetMedia } from "./AssetMedia";
 import { ApprovalCard } from "@/components/rh/ApprovalCard";
-import { PlanCard, RunReceipt } from "@/components/rh/RunBilling";
-import { approvalCardModel } from "@/lib/rh/approval-model";
-import { toPlanModel, toRunReceiptModel, toApprovalCardModel } from "@/lib/rh/billing";
+import { RunReceipt } from "@/components/rh/RunBilling";
+import { approvalCardModel, visibleParameters } from "@/lib/rh/approval-model";
+import { toRunReceiptModel, toApprovalCardModel } from "@/lib/rh/billing";
 import { useCreditContext } from "@/lib/rh/credit-store";
 import { RH_ADD_CREDIT_EVENT } from "@/lib/rh/events";
 
@@ -207,7 +207,7 @@ function ApprovalCards({
         return approval.decision || !active ? <details className="agent-approval-record" key={approval.callId}>
           <summary>{approval.decision === "approve" ? "Approved" : approval.decision === "reject" ? "Rejected" : "Not run · closed"} · {approval.label}</summary>
           <ApprovalSummary approval={approval}/>
-          <div className="agent-approval-details"><pre>{JSON.stringify(approval.arguments, null, 2)}</pre></div>
+          <div className="agent-approval-details"><Parameters args={approval.arguments} bare /></div>
         </details> :
         <article className="agent-approval" key={approval.callId}>
           <header>
@@ -215,7 +215,7 @@ function ApprovalCards({
           </header>
           <strong>{approval.label}</strong>
           <ApprovalSummary approval={approval}/>
-          <details className="agent-approval-details"><summary>Review parameters</summary><pre>{JSON.stringify(approval.arguments, null, 2)}</pre></details>
+          <details className="agent-approval-details"><summary>Review parameters</summary><Parameters args={approval.arguments} bare /></details>
             <footer>
               <button
                 type="button"
@@ -250,12 +250,13 @@ function PricedApproval({ approval, model, busy, onDecision }: {
 }) {
   const [editing, setEditing] = useState(false);
   const [loweredCap, setLoweredCap] = useState<number | null>(null);
-  const shown = loweredCap == null ? model : toApprovalCardModel({ ...model, balanceCents: undefined, balanceAfterCapCents: undefined }, { ...approval.billing, cap_cents: loweredCap, balance_cents: undefined });
+  // Lowering the cap is the user's own choice, sent as cap_cents on approve. The server re-checks it against the estimate and credit.
+  const shown = loweredCap == null ? model : { ...model, capCents: loweredCap, balanceCents: undefined, balanceAfterCapCents: undefined };
   return (
     <div className="rh-appr-wrap">
       <ApprovalCard
         model={shown}
-        approveEnabled={approval.billing?.approve_enabled !== false || loweredCap != null}
+        approveEnabled={model.approveEnabled !== false || loweredCap != null}
         busy={busy}
         actions={{
           onApprove: () => onDecision(approval, "approve", loweredCap ?? undefined),
@@ -265,9 +266,16 @@ function PricedApproval({ approval, model, busy, onDecision }: {
           onLowerCap: (cap) => setLoweredCap(cap),
         }}
       />
-      {editing ? <details className="agent-approval-details rh-appr-params" open><summary>Parameters</summary><pre>{JSON.stringify(approval.arguments, null, 2)}</pre></details> : null}
+      {editing ? <Parameters args={approval.arguments} /> : null}
     </div>
   );
+}
+
+/** The step's settings as plain label/value rows. Model and provider fields and machine ids are never shown. */
+function Parameters({ args, bare = false }: { args: Record<string, unknown>; bare?: boolean }) {
+  const rows = visibleParameters(args);
+  const body = rows.length ? <dl className="rh-params">{rows.map(([key, value]) => <div key={key}><dt>{key}</dt><dd>{value}</dd></div>)}</dl> : <p className="rh-fg3 rh-small">No adjustable settings for this step.</p>;
+  return bare ? body : <details className="agent-approval-details rh-appr-params" open><summary>Parameters</summary>{body}</details>;
 }
 
 /** Starter prompts. Chips say what to expect, never a price: prices only ever come from the server's approval card. */
@@ -345,36 +353,41 @@ function ArtifactCard({
   );
 }
 
-/** Run-level billing: the plan, the paused-at-cap card, the whole-run receipt. All figures arrive as cents from the server. */
+/** Run-level billing from the server: the paused-at-cap card and the whole-run receipt. All figures are cents it sent. */
 function RunBillingBlocks({ execution, disabled, onCap }: {
   execution: StudioExecution;
   disabled: boolean;
   onCap: (execution: StudioExecution, action: "raise" | "stop", capCents?: number) => void;
 }) {
-  const billing = execution.billing;
-  if (!billing) return null;
-  const plan = toPlanModel(billing.plan);
-  const receipt = toRunReceiptModel(billing);
-  const paused = billing.type === "paused_cap" || billing.status === "paused_cap";
+  const paused = execution.pausedCap;
+  const receipt = toRunReceiptModel(execution.receipt);
+  const finished = execution.updatedAt ? new Date(execution.updatedAt * 1000).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }) : "";
   return (
     <>
-      {plan && !receipt ? <PlanCard plan={plan} /> : null}
       {paused ? (
         <ApprovalCard
           model={toApprovalCardModel({
             id: `${execution.jobId}:paused`,
             status: "paused_cap",
-            title: typeof billing.title === "string" ? billing.title : "Shot paused at its cap",
-            tier: typeof billing.tier === "string" ? billing.tier : undefined,
-            walletTotalCents: typeof billing.wallet_total_cents === "number" ? billing.wallet_total_cents : undefined,
-            stepIndex: typeof billing.step_index === "number" ? billing.step_index : undefined,
-            stepCount: typeof billing.step_count === "number" ? billing.step_count : undefined,
-          }, billing)}
+            title: "Paused at your cap",
+            walletTotalCents: undefined,
+          }, paused)}
           busy={disabled}
-          actions={{ onRaise: (cap) => onCap(execution, "raise", cap), onStop: () => onCap(execution, "stop") }}
+          actions={{
+            onRaise: (cap) => onCap(execution, "raise", cap),
+            onStop: () => onCap(execution, "stop"),
+            onAddCredit: () => window.dispatchEvent(new CustomEvent(RH_ADD_CREDIT_EVENT)),
+          }}
         />
       ) : null}
-      {receipt ? <RunReceipt receipt={receipt} onOpen={() => window.dispatchEvent(new CustomEvent("rh:open-film"))} onTimeline={() => useCanvasStore.getState().setWorkspaceView("timeline")} onExport={() => window.dispatchEvent(new CustomEvent("rh:open-export"))} /> : null}
+      {receipt && !paused ? (
+        <RunReceipt
+          receipt={{ ...receipt, title: execution.title || "Run receipt", finishedLabel: finished ? `Finished ${finished}` : "" }}
+          onOpen={() => window.dispatchEvent(new CustomEvent("rh:open-film"))}
+          onTimeline={() => useCanvasStore.getState().setWorkspaceView("timeline")}
+          onExport={() => window.dispatchEvent(new CustomEvent("rh:open-export"))}
+        />
+      ) : null}
     </>
   );
 }
@@ -562,7 +575,7 @@ export function AgentDock({ navigationBusy: externalBusy, onBusyChange, suggesti
     const waiting = conversationExecutions.flatMap((execution) => execution.status === "awaiting_approval" ? execution.approvals.filter((approval) => !approval.decision) : []);
     const cap = waiting.map((approval) => approval.billing?.cap_cents).find((value): value is number => typeof value === "number");
     setPendingCap(cap ?? null);
-    const held = conversationExecutions.map((execution) => execution.billing?.held_cents).find((value): value is number => typeof value === "number");
+    const held = conversationExecutions.map((execution) => execution.pausedCap?.held_cents ?? execution.approvals.find((approval) => approval.billing?.status === "running")?.billing?.held_cents).find((value): value is number => typeof value === "number");
     setHeld(held ?? 0);
   }, [conversationExecutions, setHeld, setPendingCap]);
   const activeConversation = conversations.find((item) => item.id === conversationId);

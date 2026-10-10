@@ -348,8 +348,10 @@ export type StudioExecution = {
   updatedAt?: number;
   autonomous: boolean;
   approvals: AgentApprovalRequest[];
-  /** Run-level billing payload (plan, spend, receipt, paused-at-cap). Cents only; adapted in lib/rh/billing.ts. */
-  billing?: Record<string, unknown>;
+  /** `execution.paused_cap`: present while the run is stopped at its hard cap. Cents only. */
+  pausedCap?: Record<string, unknown>;
+  /** `execution.receipt`: present once the run has ended. Cents only. */
+  receipt?: Record<string, unknown>;
 };
 
 export type AgentApprovalRequest = {
@@ -358,7 +360,7 @@ export type AgentApprovalRequest = {
   label: string;
   provider?: string;
   arguments: Record<string, unknown>;
-  /** Price payload for this step: estimate_cents, cap_cents, lines[], balance_cents, ... */
+  /** The approval item exactly as the server sent it (price fields: estimate_cents, cap_cents, lines[], status, ...). */
   billing?: Record<string, unknown>;
   decision?: "approve" | "reject";
   message?: string;
@@ -383,7 +385,7 @@ function agentApprovals(value: unknown): AgentApprovalRequest[] {
         item.arguments && typeof item.arguments === "object" && !Array.isArray(item.arguments)
           ? (item.arguments as Record<string, unknown>)
           : {},
-      billing: billingRecord(item.billing),
+      billing: billingRecord(item),
       decision:
         item.decision === "approve" || item.decision === "reject" ? item.decision : undefined,
       message: typeof item.message === "string" ? item.message : undefined,
@@ -501,7 +503,8 @@ export async function fetchStudioExecutions(
       updatedAt: typeof item.updated_at === "number" ? item.updated_at : undefined,
       autonomous: item.autonomous === true,
       approvals: agentApprovals(item.approvals),
-      billing: billingRecord(item.billing),
+      pausedCap: billingRecord(item.paused_cap),
+      receipt: billingRecord(item.receipt),
     };
   });
 }
@@ -605,7 +608,8 @@ type AgentJobPayload = {
   updated_at?: number;
   autonomous?: boolean;
   approvals?: unknown[];
-  billing?: unknown;
+  paused_cap?: unknown;
+  receipt?: unknown;
 };
 
 export type AgentProgress = {
@@ -617,7 +621,8 @@ export type AgentProgress = {
   result?: AgentResultData;
   autonomous: boolean;
   approvals: AgentApprovalRequest[];
-  billing?: Record<string, unknown>;
+  pausedCap?: Record<string, unknown>;
+  receipt?: Record<string, unknown>;
 };
 
 export const AGENT_PROMPT_MAX_CHARS = 64_000;
@@ -684,7 +689,8 @@ function agentProgress(payload: AgentJobPayload): AgentProgress {
     ...(result ? { result } : {}),
     autonomous: payload.autonomous === true,
     approvals: agentApprovals(payload.approvals),
-    billing: billingRecord(payload.billing),
+    pausedCap: billingRecord(payload.paused_cap),
+    receipt: billingRecord(payload.receipt),
   };
 }
 
