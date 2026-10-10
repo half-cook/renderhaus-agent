@@ -146,6 +146,7 @@ export function toApprovalCardModel(base: Partial<ApprovalCardModel> & { id: str
 
 /** Credit check from the spec: cap must be <= balance. The server also sends approve_enabled=false. */
 export function creditState(model: ApprovalCardModel, approveEnabled?: boolean): "ok" | "lower_cap" | "add_credit" {
+  if (model.balanceCents != null && model.balanceCents >= model.capCents) return "ok";
   if ((approveEnabled ?? model.approveEnabled) === false) {
     return model.lowerCapOptionCents != null ? "lower_cap" : "add_credit";
   }

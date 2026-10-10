@@ -16,6 +16,10 @@ import { UploadError } from "./UploadError";
 import { TimelineDock } from "@/components/timeline/Timeline";
 import { TimelineView } from "@/components/timeline/TimelineView";
 
+import { useChangesStore } from "@/lib/rh/changes-store";
+import { ChangesWorkspace } from "@/components/changes/ChangesWorkspace";
+import { ChangesKeyboard } from "@/components/changes/ChangesReview";
+
 const DOCK_STORAGE_KEY = "renderhaus.studio.dock.v2";
 
 type DockState = { dock: DockPosition; x: number; y: number };
@@ -52,6 +56,9 @@ function Workspace() {
   const timelineDockOpen = useCanvasStore((state) => state.timelineDockOpen);
   const setWorkspaceView = useCanvasStore((state) => state.setWorkspaceView);
   const setTimelineDockOpen = useCanvasStore((state) => state.setTimelineDockOpen);
+  const changesDocument = useChangesStore((state) => state.document);
+  const compareN = useChangesStore((state) => state.compareN);
+  const loadChanges = useChangesStore((state) => state.load);
   const { screenToFlowPosition, fitView } = useReactFlow();
 
   useEffect(() => {
@@ -64,6 +71,22 @@ function Workspace() {
     void loadCatalog();
     return () => { cancelled = true; };
   }, [hydrate, loadCatalog, setTimelineDockOpen, setWorkspaceView]);
+
+  useEffect(() => {
+    if (!hydrated || !mountReady) return;
+    let cancelled = false;
+    void loadChanges(projectId).then(() => {
+      if (cancelled) return;
+      const params = new URLSearchParams(window.location.search);
+      const store = useChangesStore.getState();
+      if (params.get("review") === "changes") store.setTab("changes");
+      if (params.get("monitor") === "changes") store.setMonitorMode("changes");
+      const compare = Number(params.get("compare"));
+      if (store.document?.changes.some((change) => change.n === compare)) store.openCompare(compare);
+      if (params.get("compare-mode") === "side-by-side") store.setCompareMode("side-by-side");
+    });
+    return () => { cancelled = true; };
+  }, [projectId, hydrated, mountReady, loadChanges]);
 
   useEffect(() => {
     if (!hydrated || !mountReady) return;
@@ -200,6 +223,7 @@ function Workspace() {
       ]
         .filter(Boolean)
         .join(" ")}
+      data-comparing={compareN !== null}
       data-dock={dockState.dock}
     >
       <a className="skip-link" href={agentOpen ? "#agent-composer" : "#canvas"}>
@@ -207,7 +231,7 @@ function Workspace() {
       </a>
       <CanvasHeader navigationBusy={agentBusy} onBusyChange={setAgentBusy} />
       <UploadError message={uploadError} onDismiss={dismissUploadError} />
-      <div className="canvas-surface" hidden={agentOpen || timelineOpen}>
+      <div className="canvas-surface" hidden={agentOpen || timelineOpen || compareN !== null}>
       <SceneList />
       <ToolRail
         dock={dockState.dock}
@@ -229,7 +253,9 @@ function Workspace() {
       <AsciiPanel />
       <TimelineDock />
       </div>
-      {timelineOpen ? <TimelineView /> : null}
+      {timelineOpen && !changesDocument && compareN === null ? <TimelineView /> : null}
+      {changesDocument ? <ChangesWorkspace timeline={timelineOpen} /> : null}
+      <ChangesKeyboard />
       <AgentWorkspace busy={agentBusy} onBusyChange={setAgentBusy} />
     </div>
   );

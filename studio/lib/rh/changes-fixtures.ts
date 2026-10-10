@@ -49,7 +49,10 @@ export function changesStateVariants(): ChangesStateFixture[] {
       approval.status = state === "awaiting_approval" ? "pending" : state === "paused_at_cap" ? "paused_cap" : state === "failed" ? "failed" : "running";
       if (state === "running") { approval.heldCents = 150; approval.spentSoFarCents = 28; }
       if (state === "failed") { approval.chargedCents = 0; approval.failureMessage = "No output was produced."; }
-      if (state === "paused_at_cap") { approval.heldCents = 150; approval.chargedCents = 150; approval.raiseOptionsCents = [200]; }
+      if (state === "paused_at_cap") {
+        approval.heldCents = 150; approval.chargedCents = 150; approval.balanceCents = 850; approval.raiseOptionsCents = [200];
+        approval.lines = [{ kind: "media", label: "Video clip", priceCents: 110, basis: "fixed" }, { kind: "orchestration", label: "Agent orchestration", priceCents: 40, basis: "fixed" }];
+      }
       change = { ...change, taken: false, approval };
     }
     if (state === "out_of_date") document.currentCut.slots = document.currentCut.slots.map((slot) => slot.slotId === "n-shot2" ? { ...slot, takeId: "shot-2-take-2" } : slot);

@@ -343,3 +343,9 @@ test('malformed approval pricing cannot turn an untaken zero-cost change into fr
   value.changes[0].approval = { id: 'bad-price', estimateCents: '65', capCents: 150, lines: [], specs: [], status: 'pending' };
   assert.equal(changes.parseChangesDocument(value), null);
 });
+
+test('the paused state fixture accounts for the charged cap in its receipt lines', () => {
+  const paused = fixtures.changesStateVariants().find((item) => item.id === 'paused_at_cap').document.changes[0].approval;
+  assert.equal(paused.lines.reduce((total, line) => total + line.priceCents, 0), paused.chargedCents);
+  assert.equal(paused.chargedCents, paused.capCents);
+});

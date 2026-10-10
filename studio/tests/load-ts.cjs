@@ -10,11 +10,11 @@ module.exports = function load(file) {
   const exported = {};
   cache.set(target, exported);
   const source = fs.readFileSync(target, 'utf8');
-  const js = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
+  const js = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX } }).outputText;
   new Function('require', 'exports', js)((name) => {
     if (name.startsWith('@/') || name.startsWith('.')) {
       const local = name.startsWith('@/') ? path.join(root, name.slice(2)) : path.resolve(path.dirname(target), name);
-      return load(fs.existsSync(local) ? local : `${local}.ts`);
+      return load(fs.existsSync(local) ? local : fs.existsSync(`${local}.ts`) ? `${local}.ts` : `${local}.tsx`);
     }
     return require(name);
   }, exported);
