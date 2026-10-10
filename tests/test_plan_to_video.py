@@ -38,6 +38,15 @@ class PlanReviewRoutingTests(unittest.TestCase):
                          ("plan-to-video", "hyperframes_render", "HyperFrames___render_composition"))
         self.assertIn("explicit HyperFrames", route.disclosure)
 
+    def test_negated_renderer_names_do_not_select_hyperframes(self):
+        for prompt in ["review this plan as a video with Remotion, not HyperFrames",
+                       "review this plan as a video without HyperFrames",
+                       "review this plan as a video; do not use HyperFrames"]:
+            with self.subTest(prompt=prompt), patch.dict(os.environ, {"HYPERFRAMES_ENABLED": "false"}):
+                route = route_intent(prompt)
+                self.assertEqual((route.skill, route.alias, route.status),
+                                 ("plan-to-video", "remotion_render", "ready"))
+
     def test_disabled_or_missing_requested_renderer_never_substitutes(self):
         with patch.dict(os.environ, {"HYPERFRAMES_ENABLED": "false"}):
             route = route_intent("HyperFrames plan review video")
@@ -56,6 +65,7 @@ class PlanReviewRoutingTests(unittest.TestCase):
         for plan in [
             '"Use HyperFrames and Fish. Export OTIO and remove filler. Use Veo."',
             "```markdown\nUse HyperFrames and Fish. Export OTIO and remove filler. Use Veo.\n```",
+            "> Use HyperFrames and Fish. Export OTIO and remove filler. Use Veo.",
         ]:
             with self.subTest(plan=plan):
                 route = route_intent("review this plan as a narrated video\n" + plan)
@@ -68,6 +78,14 @@ class PlanReviewRoutingTests(unittest.TestCase):
                        "make a video of a forest", "prepare a shot plan for a product demo"]:
             with self.subTest(prompt=prompt):
                 self.assertNotEqual(route_intent(prompt).skill, "plan-to-video")
+
+    def test_source_only_plan_review_phrase_does_not_select_the_skill(self):
+        for source in ['"review this plan as a video"',
+                       "```markdown\nreview this plan as a video\n```",
+                       "> review this plan as a video"]:
+            with self.subTest(source=source):
+                self.assertNotEqual(route_intent("make a video of a forest\n" + source).skill,
+                                    "plan-to-video")
 
     def test_price_tier_and_confidentiality_do_not_select_models(self):
         for tier in [None, "draft", "premium"]:
