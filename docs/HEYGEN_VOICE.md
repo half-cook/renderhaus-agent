@@ -26,7 +26,9 @@ Require a named owner in `subjects`, `consent_confirmed=true`, and an opaque
 `consent_record_id`. Recorded consent covers cloning, uploading the reference, and vendor
 processing/data use. Spending approval is separate. Contracts reject invalid requests before
 approval or provider I/O. The approval card identifies the owner, consent record, upload to
-HeyGen on activation, possible vendor training, and the cost or unknown estimate.
+HeyGen on activation, possible vendor training, and the cost or unknown estimate. The billing client view preserves this voice-specific
+consent notice in the existing approval message field, and Studio renders the notice on the card.
+Billing line items remain free of vendor, model and fee details.
 
 Clone submission is `POST /v3/models/audio/voices`, with `mode`, `name`, `audio` containing
 one URL item, optional `language`, `similarity`, and `remove_background_noise`.
@@ -44,18 +46,25 @@ Instant clones reject seed, speed, pitch and SSML. Both speech endpoints have a 
 
 The completed artifact is a 44.1 kHz mono PCM16 WAV. Downloads enforce public hosts, no
 redirects, bounded bytes/time, complete PCM data, and atomic local saving. Successful
-`output_path` results use the ordinary Studio audio asset registrar. Dry-run speech saves a
+`output_path` results use the ordinary Studio audio asset registrar. Hosted workers also save
+the WAV in the configured S3 bucket and return `audio_url` for the registrar. Dry-run speech saves a
 deterministic one-second silent WAV marked `status=dry_run`, `placeholder=true`, and
 `cost_usd=0`. It is not generated speech or a deliverable, and Studio does not register it
 as completed media. The mock WAV was opened with Python's WAV reader; browser playback
 remains untested.
 
-Clone manifests are stored beneath `RENDERHAUS_MEDIA_DIR/audio/.voices/<scope hash>/`.
-The scope includes authenticated account, workspace and project IDs. The host rejects
-caller-supplied scope that differs from Studio identity. Poll and TTS require a saved
+Clone manifests are stored beneath `RENDERHAUS_MEDIA_DIR/audio/.voices/<scope hash>/` locally.
+When `AWS_S3_BUCKET` is configured, scoped manifests in that bucket are authoritative, so
+the agent host and fresh Lambda workers can read the same consented handle. Storage failures
+stop reuse rather than falling back to stale local consent. This uses the existing HeyGen
+S3 client and requires bucket access for both runtimes. CI clears the bucket to stay offline.
+The scope includes authenticated account, workspace and project IDs. Workspace IDs retain
+Studio's `user:` or `org:` namespace. The host rejects caller-supplied scope that differs
+from Studio identity. Poll and TTS require a saved
 consented instant clone in that scope. Signed URL queries are excluded from saved manifests
 and previews. Clones cannot cross projects or accounts. Dry handles remain previews after
-configuration changes. Hosted durable project storage must be completed before live activation.
+configuration changes. Cross-worker persistence and normal asset registration are covered
+with fake S3; real hosted IAM and playback remain unverified.
 
 ## Internal routing gate
 
@@ -79,10 +88,15 @@ compatibility. HeyGen voice IDs cannot be sent to ElevenLabs.
 
 `needs_text_normalisation` is a conservative deterministic predicate. It flags any digit
 and common shorthand/honorifics, including phone numbers, dates, units, `Dr.`, `ASAP`, and
-`3.5 GB`. Routing checks supplied `text`, quoted script text, or script text after a colon.
+`3.5 GB`. Routing checks supplied `text`, labelled script text after a colon or period,
+then quoted text. A language prefix such as `voice in French:` still exposes the script.
+Apostrophes inside contractions do not hide the script. A labelled script
+takes precedence over a quoted display name in the instruction.
 Recording duration in the surrounding instruction is not speech text. Already expanded
 plain prose can take the candidate route. A `text_normalised` boolean alone cannot override
-unexpanded text. No LLM normaliser or extra paid pre-pass is implemented.
+unexpanded text. No LLM normaliser or extra paid pre-pass is implemented. Combined video,
+clone and narration requests retain all three operations and final assembly. Video and clone
+can start together; speech waits for its clone, and assembly waits for completed video and speech.
 
 RT-171, RT-172, and RT-173 are now active offline routing fixtures with explicit gate/user
 setup. RT-171-OFF covers the unchanged default. Source status stays `proposed` for the
@@ -94,9 +108,9 @@ Gateway tools increase from 115 to 118, and packaged skills remain 27.
 
 | Evidence | Result | Source |
 | --- | --- | --- |
-| Instant endpoint, fields, formats, sizes, first-three-minute behavior, asynchronous states | Verified in the instant guide. The generated reference OpenAPI still includes a professional-only mode enum despite documenting instant creation. The explicit instant guide defines this adapter's subset. | [Instant guide](https://developers.heygen.com/docs/voices/heygen-voice-instant-clone.md), [Clone reference](https://developers.heygen.com/reference/create-or-retrain-an-audio-voice.md) |
-| TTS model, character limit, synchronous result, WAV encoding, instant-only controls | Verified. | [Speech guide](https://developers.heygen.com/docs/voices/heygen-voice-speech.md), [TTS reference](https://developers.heygen.com/reference/generate-model-speech.md) |
-| Creation fee | Free during preview only. Non-promo creation fee is UNVERIFIED. | [Voice model guide](https://developers.heygen.com/docs/models/heygen-voice.md) |
+| Instant endpoint, fields, formats, sizes, first-three-minute behavior, asynchronous states | Verified in the instant guide. The reference displays the professional schema branch by default and separately documents the instant request. The instant guide defines this adapter's subset. | [Instant guide](https://developers.heygen.com/docs/voices/heygen-voice-instant-clone), [Clone reference](https://developers.heygen.com/reference/create-or-retrain-an-audio-voice) |
+| TTS model, character limit, synchronous result, WAV encoding, instant-only controls | Verified. | [Speech guide](https://developers.heygen.com/docs/voices/heygen-voice-speech), [TTS reference](https://developers.heygen.com/reference/generate-model-speech) |
+| Creation fee | Free during preview only. Non-promo creation fee is UNVERIFIED. | [Voice model guide](https://developers.heygen.com/docs/models/heygen-voice) |
 | Non-promo character price and promotion | UNVERIFIED. API pricing redirects to an account dashboard. The public help table's Starfish rate is a different engine. | [API pricing](https://www.heygen.com/api-pricing), [API pricing help](https://help.heygen.com/en/articles/10060327-heygen-api-pricing-explained) |
 | Model licence | Closed weights; commercial API governed by HeyGen service terms. Paid-plan output rights are described in section 3. Free-plan commercial output is prohibited. API account/plan applicability needs confirmation before activation. | [Terms](https://www.heygen.com/terms) |
 | Upload data use | Terms permit uploaded-content training; privacy describes inputs and an opt-out process. A Voice-specific no-training guarantee is UNVERIFIED. | [Terms](https://www.heygen.com/terms), [Privacy](https://www.heygen.com/privacy) |
@@ -121,8 +135,9 @@ replace the blocker only after its prerequisites are verified.
    output rights, Voice availability for US accounts, upload retention, and training opt-out.
 2. Verify official non-promo instant character price and creation fee. Record source URLs
    and read dates. Add those rates and preserve list-price estimates through promotions.
-3. Complete durable account/project voice manifests and output storage for hosted workers.
-   Verify recovery/idempotency after uncertain submissions and interrupted downloads.
+3. Verify hosted bucket permissions for the agent and Lambda, cross-worker manifest reuse,
+   asset registration and actual WAV playback. Verify recovery/idempotency after uncertain
+   submissions and interrupted downloads; fake-storage tests do not establish hosted access.
 4. Use the same eight consented reference voices for both providers. Pair scripts and recording
    conditions. Randomize arm labels and presentation order, collect blind votes, and record
    identity, naturalness, intelligibility, pronunciation errors, latency, and failures.
@@ -144,8 +159,29 @@ replace the blocker only after its prerequisites are verified.
 
 ## Validation
 
-Mocked contracts, transport, consent, ownership, routing, pricing math and native approval
-checks are in `tests/test_heygen_voice.py`. Full verification commands and outcomes are
+Mocked contracts, transport, consent, ownership and pricing checks are in
+`tests/test_heygen_voice.py`. `tests/test_heygen_voice_boundaries.py` covers shared storage,
+normal audio registration and native deepagents 0.7.23 approval/rejection across fresh resume.
+`tests/test_heygen_voice_routing_regressions.py` covers script extraction and combined delivery.
+Full verification commands and outcomes are
 recorded in [the decisions file](heygen-voice-decisions.tsv).
+The final merged-base suite passed: 1,945 tests run, 38 skipped, including 53 Voice-specific
+tests. Ruff, the CI inventory/schema/package checks, and the Studio TypeScript check passed.
+Checks used dry-run flags, mocked provider/cloud transport, an empty Secrets Manager name
+and deployment bucket, and no provider keys. Inventory is 16 providers, 118 Gateway tools,
+27 skills and 224 routing rows (188 active, 36 skipped). No Docker image was built.
 Comet browser E2E is blocked because that browser cannot be controlled in this environment,
 as specified by the user. Live provider checks and blind votes were not performed.
+
+## Branch file scope
+
+The resumed branch changes these 36 files relative to staging `3941a3d`, including the earlier WIP.
+
+| Area | Files |
+| --- | --- |
+| Providers and Gateway | `configs/gateway/heygen.tools.json`<br>`providers/catalog.py`<br>`providers/contracts.py`<br>`providers/heygen/api.py`<br>`providers/heygen/contracts.py`<br>`providers/heygen/voice.py`<br>`providers/heygen/voice_contracts.py` |
+| Agent and skills | `agent/deep_agent/routing.py`<br>`agent/deep_agent/routing_policy.json`<br>`agent/deep_agent/runner.py`<br>`agent/deep_agent/skills/audio-bed/SKILL.md`<br>`agent/deep_agent/skills/named-provider/SKILL.md`<br>`agent/gateway_executor.py` |
+| Billing and Studio | `server/billing_rates.py`<br>`server/run_billing.py`<br>`server/studio.py`<br>`server/studio_options.py`<br>`studio/lib/canvas/model-labels.ts`<br>`studio/components/canvas/AgentDock.tsx` |
+| Packaging and config | `.dockerignore`<br>`.github/workflows/deploy.yml`<br>`Dockerfile.agentcore`<br>`scripts/ci_check.py`<br>`scripts/sync_secrets.py` |
+| Tests and fixtures | `tests/fixtures/skill_routing.json`<br>`tests/test_heygen_voice.py`<br>`tests/test_heygen_voice_boundaries.py`<br>`tests/test_heygen_voice_routing_regressions.py`<br>`tests/test_provider_ladder.py`<br>`tests/test_run_billing_flow.py`<br>`tests/test_skill_routing.py` |
+| Docs | `docs/BILLING.md`<br>`docs/DEEP_AGENT.md`<br>`docs/HEYGEN_VOICE.md`<br>`docs/SKILLS.md`<br>`docs/heygen-voice-decisions.tsv` |

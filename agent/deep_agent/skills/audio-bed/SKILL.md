@@ -37,6 +37,9 @@ select ElevenLabs unless the actual submitted script has already been expanded t
 The detector is deterministic and conservative. There is no LLM normalisation pre-pass.
 A combined clone/read request with this weakness uses ElevenLabs for both operations so the
 speech voice remains compatible. Named ElevenLabs wins even with the internal gate enabled.
+For a video with cloned narration, retain the video, clone, speech and final-assembly steps.
+Video and clone can start together. Speech waits for the saved clone; assembly waits for both
+completed media artifacts. A video provider request applies to picture, not voice selection.
 
 Use `HeyGen___voice_clone` through `call_audio_tool`. Supply one public HTTPS recording,
 measured `reference_duration_seconds`, `reference_size_bytes`, `reference_format`, display `name`,
@@ -50,6 +53,8 @@ clone. After future activation, wait for ACTIVE before `HeyGen___voice_tts` with
 `text`, `language`, and optional `expressiveness_boost`. Text is plain prose, 1-5000 characters.
 Instant clones have no seed, speed, pitch or SSML. Speech waits synchronously for the WAV.
 The normal output is a saved 44.1 kHz mono PCM16 WAV and uses ordinary Studio audio assets.
+Hosted manifests use the configured bucket so the host and fresh workers share the scoped
+consent record. Storage errors stop the workflow; preserve the voice ID and do not re-clone.
 
 `HEYGEN_VOICE_DRY_RUN=true` is separate from the avatar flag. All outputs on this branch are
 previews. Speech saves a deterministic one-second silent mock WAV marked `placeholder=true`.

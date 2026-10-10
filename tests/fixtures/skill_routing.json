@@ -4059,7 +4059,7 @@
     "prompt": "Clone my voice from this 2-minute recording and read this script in it",
     "expected_skill": "audio-bed",
     "expected_tool": "heygen_voice_clone then heygen_voice_tts",
-    "pass_criterion": "Explicit request precedes internal candidate gate; stock default remains ElevenLabs.",
+    "pass_criterion": "Internal allowlisted clone/read uses the HeyGen candidate; clone precedes speech.",
     "source_status": "proposed",
     "skip_reason": "",
     "env": {
@@ -4067,7 +4067,8 @@
       "HEYGEN_VOICE_AB_USERS": "internal-alice",
       "HEYGEN_VOICE_DRY_RUN": "true"
     },
-    "user_id": "internal-alice"
+    "user_id": "internal-alice",
+    "forbidden_tools": "voices_ivc_create"
   },
   {
     "suite": "Routing Tests",
@@ -4075,7 +4076,7 @@
     "prompt": "Read this script in my cloned voice: \"Call 1-800-555-0199 by Oct 31, ASAP, Dr. Lee, 3.5 GB\"",
     "expected_skill": "audio-bed",
     "expected_tool": "eleven_v4_turbo",
-    "pass_criterion": "Explicit request precedes internal candidate gate; stock default remains ElevenLabs.",
+    "pass_criterion": "Abbreviation-heavy cloned speech selects ElevenLabs without an implicit normaliser.",
     "source_status": "proposed",
     "skip_reason": "",
     "env": {
@@ -4083,7 +4084,8 @@
       "HEYGEN_VOICE_AB_USERS": "internal-alice",
       "HEYGEN_VOICE_DRY_RUN": "true"
     },
-    "user_id": "internal-alice"
+    "user_id": "internal-alice",
+    "forbidden_tools": "heygen_voice_tts"
   },
   {
     "suite": "Routing Tests",
@@ -4091,7 +4093,7 @@
     "prompt": "Use ElevenLabs to clone my voice and narrate this",
     "expected_skill": "named-provider",
     "expected_tool": "voices_ivc_create then eleven_v4_turbo",
-    "pass_criterion": "Explicit request precedes internal candidate gate; stock default remains ElevenLabs.",
+    "pass_criterion": "Named ElevenLabs takes precedence over the enabled internal candidate gate.",
     "source_status": "proposed",
     "skip_reason": "",
     "env": {
@@ -4099,7 +4101,8 @@
       "HEYGEN_VOICE_AB_USERS": "internal-alice",
       "HEYGEN_VOICE_DRY_RUN": "true"
     },
-    "user_id": "internal-alice"
+    "user_id": "internal-alice",
+    "forbidden_tools": "heygen_voice_clone, heygen_voice_tts"
   },
   {
     "suite": "Routing Tests",
@@ -4107,7 +4110,7 @@
     "prompt": "Clone my voice from this 2-minute recording and read this script in it",
     "expected_skill": "audio-bed",
     "expected_tool": "voices_ivc_create then eleven_v4_turbo",
-    "pass_criterion": "Explicit request precedes internal candidate gate; stock default remains ElevenLabs.",
+    "pass_criterion": "Default-off clone/read uses ElevenLabs IVC and v4 Turbo without the candidate.",
     "source_status": "regression",
     "skip_reason": "",
     "env": {

@@ -618,5 +618,12 @@ allowlist. Native `interrupt_on` uses the installed deepagents 0.7.23 `when` and
 callbacks to validate consent and scope before showing the cost approval card. The existing
 checkpointer/resume protocol, approval exemptions and autonomous spend cap stay unchanged.
 Stock TTS remains ElevenLabs. Candidate outcomes use the `heygen_voice_internal` arm.
+`read_studio_context` exposes authenticated user/workspace/project IDs and the candidate's
+capability controls with unknown prices. Scoped manifests use the existing HeyGen S3 bucket
+when configured; fresh hosts and workers validate recorded consent before reuse. Mocked
+native approve/reject tests resume from the persisted interrupt without duplicate dispatch.
+Voice consent notices survive the run-billing client view and appear in the approval summary,
+including the named owner, upload destination, training statement and cost. Billing labels
+and amounts retain the existing neutral format.
 See [HeyGen Voice](HEYGEN_VOICE.md). Official prices remain UNVERIFIED, estimates unknown,
 and live activation blocked. Comet browser validation remains pending.

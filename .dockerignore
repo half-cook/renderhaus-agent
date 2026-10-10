@@ -9,7 +9,14 @@
 !providers/**
 !configs/
 !configs/**
+!docs/
+!docs/continuity_qc_benchmark_scores.json
+!tests/
+!tests/fixtures/
+!tests/fixtures/skill_routing.json
 !server/
 !server/**
+!third_party/
+!third_party/**
 **/__pycache__
 **/*.pyc

@@ -33,7 +33,7 @@ exact Gateway names, native arguments, and operational constraints.
 | --- | --- | --- |
 | [act-two](../agent/deep_agent/skills/act-two/SKILL.md) | `call_media_tool` | `runway_act_two`<br>`kling_motion_control` |
 | [audio](../agent/deep_agent/skills/audio/SKILL.md) | `call_audio_tool` | `eleven_v4_turbo`<br>`voices_ivc_create`<br>`mureka_v95`<br>`mirelo_v2a`<br>`elevenlabs_sfx_v2` |
-| [audio-bed](../agent/deep_agent/skills/audio-bed/SKILL.md) | `call_audio_tool`<br>`call_media_tool` | `eleven_v4_turbo`<br>`voices_ivc_create`<br>`mureka_v95`<br>`mirelo_v2a`<br>`elevenlabs_sfx_v2` |
+| [audio-bed](../agent/deep_agent/skills/audio-bed/SKILL.md) | `call_audio_tool`<br>`call_media_tool` | `eleven_v4_turbo`<br>`voices_ivc_create`<br>`heygen_voice_clone` (gated)<br>`heygen_voice_tts` (gated)<br>`mureka_v95`<br>`mirelo_v2a`<br>`elevenlabs_sfx_v2` |
 | [continuity-qc](../agent/deep_agent/skills/continuity-qc/SKILL.md) | `call_media_tool` | `local_qc`<br>`gemini_vlm_judge` |
 | [conversational-edit](../agent/deep_agent/skills/conversational-edit/SKILL.md) | `call_editor_tool`<br>`call_audio_tool` | `remotion_render`<br>`hyperframes_render` |
 | [edit-v2v](../agent/deep_agent/skills/edit-v2v/SKILL.md) | `call_media_tool` | `wan3_edit`<br>`wan3_extend`<br>`seedance25_edit`<br>`seedance25_extend` |
@@ -652,5 +652,8 @@ The [audio-bed skill](../agent/deep_agent/skills/audio-bed/SKILL.md) includes a 
 Voice instant-clone candidate. ElevenLabs clone and stock TTS defaults stay unchanged.
 An internal gate requires an authenticated allowlisted user; explicit names take precedence.
 Abbreviation/number-heavy cloned scripts use ElevenLabs until the actual text is expanded.
+RT-171 through RT-173 and RT-171-OFF are active offline routing checks. Shared scoped
+consent manifests and completed-WAV registration have fake-storage coverage; native approval
+tests cover rejection and fresh resume. Comet E2E remains blocked in this environment.
 See [HeyGen Voice](HEYGEN_VOICE.md) for consent, project ownership, unknown prices, vendor
 training disclosure and the permission-dependent blind A/B activation checklist.
