@@ -8,7 +8,7 @@ from typing import Any
 from providers.fish_audio.api import MODELS, VOICES
 from providers.runway.contracts import I2V_RATIOS, IMAGE_RATIOS
 from providers.fal.wan import ASPECT_RATIOS, EDIT_MODES, MODELS as FAL_MODELS, RESOLUTIONS
-from providers.fal import wan3, mirelo, images
+from providers.fal import wan3, mirelo, images, named_video
 from providers.luma.catalog import (
     ASPECT_RATIOS as LUMA_ASPECT_RATIOS,
     DURATIONS as LUMA_DURATIONS,
@@ -64,7 +64,7 @@ STATIC_FIELD_OPTIONS: dict[str, dict[str, list[str | int]]] = {
     },
     "fal": {
         "character_orientation": ["video", "image"],
-        "model": list(FAL_MODELS) + list(wan3.ENDPOINTS) + ["fal-ai/kling-video/v3/pro/motion-control", mirelo.ENDPOINT_ID, *images.ENDPOINTS],
+        "model": list(FAL_MODELS) + list(wan3.ENDPOINTS) + ["fal-ai/kling-video/v3/pro/motion-control", mirelo.ENDPOINT_ID, *images.ENDPOINTS, *named_video.ENDPOINTS],
         "edit_precision": ["high", "regular"],
         "quality": ["very_low", "low", "medium", "high"],
         "image_size": ["auto", "square_hd", "square", "portrait_4_3", "portrait_16_9", "landscape_4_3", "landscape_16_9"],

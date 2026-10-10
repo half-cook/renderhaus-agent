@@ -398,7 +398,9 @@
         "fal-ai/kling-video/v3/pro/motion-control",
         "mirelo-ai/sfx1.6/video-to-video",
         "ideogram/v4.5/edit",
-        "fal-ai/recraft/v4.1/pro/text-to-vector"
+        "fal-ai/recraft/v4.1/pro/text-to-vector",
+        "pixelcut/looping-video",
+        "pixverse/music-video/vibemv"
       ],
       "default_model": "fal-ai/wan-vace-14b",
       "model_policies": {
@@ -516,6 +518,38 @@
           "consent_requirements": "Input rights and all required likeness consents under fal terms 6(d). No model-specific recorded-consent API field verified.",
           "consent_source": "https://fal.ai/legal/terms-of-service",
           "read_date": "2026-10-09"
+        },
+        "pixelcut/looping-video": {
+          "enabled": true,
+          "license": "service-terms",
+          "weights_license": "closed-weights",
+          "license_source": "https://fal.ai/models/pixelcut/looping-video",
+          "hosted_terms_url": "https://fal.ai/legal/terms-of-service",
+          "training_eligible": false,
+          "training_reason": "No express output-training grant verified; fal terms 14.3 restrict training competing models from outputs.",
+          "commercial_status": "Commercial hosted API per official fal model card; rights to all input media required.",
+          "consent_requirements": "Real faces or voices require likeness_consent=true for every subject. Input music and lyrics require usage rights.",
+          "consent_source": "https://fal.ai/legal/terms-of-service",
+          "consent_verification": "fal terms 6(d) and AUP 3.3 require rights and permissions. No separate model-specific recorded-consent API verified.",
+          "read_date": "2026-10-10",
+          "explicit_only": true,
+          "allowed_regions": []
+        },
+        "pixverse/music-video/vibemv": {
+          "enabled": true,
+          "license": "service-terms",
+          "weights_license": "closed-weights",
+          "license_source": "https://fal.ai/models/pixverse/music-video/vibemv",
+          "hosted_terms_url": "https://fal.ai/legal/terms-of-service",
+          "training_eligible": false,
+          "training_reason": "No express output-training grant verified; fal terms 14.3 restrict training competing models from outputs.",
+          "commercial_status": "Commercial hosted API per official fal model card; rights to all input media required.",
+          "consent_requirements": "Real faces or voices require likeness_consent=true for every subject. Input music and lyrics require usage rights.",
+          "consent_source": "https://fal.ai/legal/terms-of-service",
+          "consent_verification": "fal terms 6(d) and AUP 3.3 require rights and permissions. No separate model-specific recorded-consent API verified.",
+          "read_date": "2026-10-10",
+          "explicit_only": true,
+          "allowed_regions": []
         }
       },
       "fixed_models": {
@@ -527,7 +561,9 @@
         "kling_motion_control": "fal-ai/kling-video/v3/pro/motion-control",
         "mirelo_v2a": "mirelo-ai/sfx1.6/video-to-video",
         "ideogram_edit": "ideogram/v4.5/edit",
-        "recraft_text_to_vector": "fal-ai/recraft/v4.1/pro/text-to-vector"
+        "recraft_text_to_vector": "fal-ai/recraft/v4.1/pro/text-to-vector",
+        "pixelcut_looping_video": "pixelcut/looping-video",
+        "pixverse_vibemv": "pixverse/music-video/vibemv"
       },
       "default_models": {
         "vidu_q4_i2v": "fal-ai/vidu/q4/image-to-video",
@@ -1932,9 +1968,65 @@
       "source": "https://ffmpeg.org/legal.html",
       "price_source": "https://ffmpeg.org/legal.html",
       "verification": "Fixed local finishing/QC ops. Offline routing tests do not prove file semantics or browser validation."
+    },
+    "pixelcut_looping_video": {
+      "gateway_tool": "Fal___pixelcut_looping_video",
+      "skill": "named-provider",
+      "status": "ready",
+      "explicit_only": true,
+      "provider": "fal",
+      "model": "pixelcut/looping-video",
+      "reason": "Built named-only fal adapter; FAL_DRY_RUN defaults true. Always pause for cost approval, even autonomous.",
+      "verification": "Official fal endpoint, current OpenAPI, prices and commercial label verified 2026-10-10; live API and visual quality untested.",
+      "source": "https://fal.ai/models/pixelcut/looping-video/api",
+      "price_source": "https://fal.ai/models/pixelcut/looping-video",
+      "license": "service-terms",
+      "license_source": "https://fal.ai/models/pixelcut/looping-video",
+      "training_eligible": false,
+      "host": "fal",
+      "us_available": "yes",
+      "availability_source": "https://fal.ai/legal/terms-of-service",
+      "read_date": "2026-10-10",
+      "dry_run": true,
+      "produces_video": true
+    },
+    "pixverse_vibemv": {
+      "gateway_tool": "Fal___pixverse_vibemv",
+      "skill": "named-provider",
+      "status": "ready",
+      "explicit_only": true,
+      "provider": "fal",
+      "model": "pixverse/music-video/vibemv",
+      "reason": "Built named-only fal adapter; FAL_DRY_RUN defaults true. Always pause for cost approval, even autonomous.",
+      "verification": "Official fal endpoint, current OpenAPI, prices and commercial label verified 2026-10-10; live API and visual quality untested.",
+      "source": "https://fal.ai/models/pixverse/music-video/vibemv/api",
+      "price_source": "https://fal.ai/models/pixverse/music-video/vibemv",
+      "license": "service-terms",
+      "license_source": "https://fal.ai/models/pixverse/music-video/vibemv",
+      "training_eligible": false,
+      "host": "fal",
+      "us_available": "yes",
+      "availability_source": "https://fal.ai/legal/terms-of-service",
+      "read_date": "2026-10-10",
+      "dry_run": true,
+      "produces_video": true
     }
   },
   "rules": [
+    {
+      "pattern": "\\bpixverse\\b|\\bvibemv\\b",
+      "skill": "named-provider",
+      "abstract_tool": "pixverse_vibemv",
+      "capability": "lyrics_video",
+      "named_model": "pixverse_vibemv"
+    },
+    {
+      "pattern": "\\bpixelcut\\b",
+      "skill": "named-provider",
+      "abstract_tool": "pixelcut_looping_video",
+      "capability": "i2v",
+      "named_model": "pixelcut"
+    },
     {
       "pattern": "\\bplan[ -]to[ -]video\\b|\\bplan[ -]explainer\\b|\\bplan[ -]review[ -](?:video|reel)\\b|\\b(?:review|turn|convert|render)\\b[^!?;\\n]{0,140}\\bplan(?:\\.md|[ -]mode)?\\b[^!?;\\n]{0,120}\\b(?:video|review[ -]reel|narrated[ -]walkthrough)\\b",
       "skill": "plan-to-video",
@@ -5086,6 +5178,109 @@
       },
       "durations": {},
       "explicit_only": false
+    },
+    {
+      "provider": "fal",
+      "model": "pixelcut/looping-video",
+      "label": "Pixelcut looping video",
+      "tools": {
+        "i2v": "Fal___pixelcut_looping_video"
+      },
+      "jobs": {
+        "i2v": true,
+        "native_audio": true,
+        "max_resolution": 1080
+      },
+      "resolutions": [
+        480,
+        768,
+        1080
+      ],
+      "speed_class": "unknown",
+      "policy_ref": "fal",
+      "price": {
+        "unit": "output_second",
+        "source": "https://fal.ai/models/pixelcut/looping-video",
+        "checked_at": "2026-10-10"
+      },
+      "controls": {
+        "i2v": [
+          "image_url",
+          "prompt",
+          "duration",
+          "resolution",
+          "motion",
+          "include_audio",
+          "real_face_refs",
+          "likeness_consent"
+        ]
+      },
+      "durations": {
+        "i2v": [
+          5,
+          15
+        ]
+      },
+      "duration_field": "duration",
+      "duration_integer": true,
+      "native_audio_field": "include_audio",
+      "resolution_default": "1080p",
+      "explicit_only": true,
+      "notes": "Named requests only. No automatic route, tier selection or training rights."
+    },
+    {
+      "provider": "fal",
+      "model": "pixverse/music-video/vibemv",
+      "label": "PixVerse VibeMV",
+      "tools": {
+        "lyrics_video": "Fal___pixverse_vibemv"
+      },
+      "jobs": {
+        "lyrics_video": true,
+        "native_audio": true,
+        "max_resolution": 1080
+      },
+      "resolutions": [
+        720,
+        1080
+      ],
+      "speed_class": "unknown",
+      "policy_ref": "fal",
+      "price": {
+        "unit": "rounded_input_audio_second",
+        "source": "https://fal.ai/models/pixverse/music-video/vibemv",
+        "checked_at": "2026-10-10"
+      },
+      "controls": {
+        "lyrics_video": [
+          "audio_url",
+          "audio_duration_seconds",
+          "image_url",
+          "style_image_url",
+          "music_style",
+          "style",
+          "aspect_ratio",
+          "resolution",
+          "lyrics",
+          "lip_sync_switch",
+          "enable_safety_checker",
+          "real_face_refs",
+          "real_voice_refs",
+          "likeness_consent"
+        ]
+      },
+      "durations": {
+        "lyrics_video": [
+          10,
+          360
+        ]
+      },
+      "duration_field": "audio_duration_seconds",
+      "duration_integer": false,
+      "native_audio_field": null,
+      "resolution_default": "720p",
+      "explicit_only": true,
+      "notes": "Named requests only. No automatic route, tier selection or training rights."
     }
   ],
   "image_default_size": "2K",
@@ -5366,7 +5561,11 @@
     "Runway___act_two",
     "Fal___kling_motion_control",
     "Fal___mirelo_v2a",
-    "Remotion___render_ad_variants"
+    "Remotion___render_ad_variants",
+    "Fal___pixelcut_looping_video",
+    "pixelcut_looping_video",
+    "Fal___pixverse_vibemv",
+    "pixverse_vibemv"
   ],
   "explicit_routes": {
     "kling": {
@@ -5446,6 +5645,20 @@
     }
   },
   "named_models": {
+    "pixelcut": {
+      "pattern": "\\bpixelcut\\b",
+      "aliases": {
+        "i2v": "pixelcut_looping_video"
+      },
+      "skill": "named-provider"
+    },
+    "pixverse_vibemv": {
+      "pattern": "\\bpixverse\\b|\\bvibemv\\b",
+      "aliases": {
+        "lyrics_video": "pixverse_vibemv"
+      },
+      "skill": "named-provider"
+    },
     "topaz_apollo": {
       "pattern": "\\bapollo\\b|\\bapo-8\\b",
       "model": "Apollo",
@@ -6144,6 +6357,38 @@
       "training_reason": "Editing retains source rights; no new model or weight licence grants training rights.",
       "commercial_status": "commercial use with source rights and operator licence compliance; no model or weights",
       "consent_requirements": "No face or voice synthesis. Caller must have rights to supplied media."
+    },
+    "pixelcut_looping_video": {
+      "enabled": true,
+      "license": "service-terms",
+      "weights_license": "closed-weights",
+      "license_source": "https://fal.ai/models/pixelcut/looping-video",
+      "hosted_terms_url": "https://fal.ai/legal/terms-of-service",
+      "training_eligible": false,
+      "training_reason": "No express output-training grant verified; fal terms 14.3 restrict training competing models from outputs.",
+      "commercial_status": "Commercial hosted API per official fal model card; rights to all input media required.",
+      "consent_requirements": "Real faces or voices require likeness_consent=true for every subject. Input music and lyrics require usage rights.",
+      "consent_source": "https://fal.ai/legal/terms-of-service",
+      "consent_verification": "fal terms 6(d) and AUP 3.3 require rights and permissions. No separate model-specific recorded-consent API verified.",
+      "read_date": "2026-10-10",
+      "explicit_only": true,
+      "allowed_regions": []
+    },
+    "pixverse_vibemv": {
+      "enabled": true,
+      "license": "service-terms",
+      "weights_license": "closed-weights",
+      "license_source": "https://fal.ai/models/pixverse/music-video/vibemv",
+      "hosted_terms_url": "https://fal.ai/legal/terms-of-service",
+      "training_eligible": false,
+      "training_reason": "No express output-training grant verified; fal terms 14.3 restrict training competing models from outputs.",
+      "commercial_status": "Commercial hosted API per official fal model card; rights to all input media required.",
+      "consent_requirements": "Real faces or voices require likeness_consent=true for every subject. Input music and lyrics require usage rights.",
+      "consent_source": "https://fal.ai/legal/terms-of-service",
+      "consent_verification": "fal terms 6(d) and AUP 3.3 require rights and permissions. No separate model-specific recorded-consent API verified.",
+      "read_date": "2026-10-10",
+      "explicit_only": true,
+      "allowed_regions": []
     }
   },
   "editing_refusals": [

@@ -216,6 +216,10 @@ class NamedFalRoutingTests(unittest.TestCase):
         self.assertEqual(route.status, "blocked")
         self.assertIsNone(route.tool)
 
+    def test_rejected_artifact_does_not_replace_explicit_pixelcut_with_training_model(self):
+        route = routing.route_intent(CASES[0][2], arguments=CASES[0][3], retry=True)
+        self.assertEqual((route.skill, route.alias), ("named-provider", "pixelcut_looping_video"))
+
     def test_policy_inventory_has_no_default_exception_or_training_grant(self):
         front = yaml.safe_load((SKILLS_ROOT / "named-provider/SKILL.md").read_text().split("---", 2)[1])
         for verb, endpoint, _, _ in CASES:
@@ -260,6 +264,23 @@ class NamedFalRoutingTests(unittest.TestCase):
 
 
 class NamedFalApprovalTests(unittest.IsolatedAsyncioTestCase):
+    async def test_direct_studio_invoke_cannot_bypass_named_skill_or_approval(self):
+        from fastapi import HTTPException
+        import server.studio as studio
+
+        for verb, _, _, args in CASES:
+            body = studio.InvokeBody(provider="fal", tool=verb, arguments=args, project_id="untitled")
+            with patch.object(studio.repository, "require_project"), patch.object(studio, "dispatch") as submit, \
+                    patch.object(studio, "cost_for") as quote, patch.object(studio.repository, "charge_usage") as charge:
+                with self.assertRaises(HTTPException) as denied:
+                    await studio.invoke_tool(body, None)
+                self.assertEqual(denied.exception.status_code, 409)
+                self.assertIn("named-provider", denied.exception.detail)
+                self.assertIn("approval", denied.exception.detail)
+                submit.assert_not_called()
+                quote.assert_not_called()
+                charge.assert_not_called()
+
     async def test_executor_cannot_dispatch_unnamed_or_invalid_requests(self):
         for verb, _, prompt, args in CASES:
             gateway = Gateway([gateway_tool(verb)])

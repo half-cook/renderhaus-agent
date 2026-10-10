@@ -105,6 +105,9 @@ runs. Use /skills/act-two/SKILL.md for sequential shot/silence chunks and Remoti
 Mirelo picture-synced SFX returns a video. Dispatch Fal___mirelo_v2a and Fal___get_video_task
 through call_media_tool in the media role. The audio role handles text-only ElevenLabs SFX.
 Mirelo paid video needs cost approval even autonomous when premium_video_approval is enabled.
+Pixelcut looping video and PixVerse VibeMV require an explicit named request and
+/skills/named-provider/SKILL.md. Both use Fal through call_media_tool. Always pause with cost,
+including autonomous runs. VibeMV requires measured audio_duration_seconds; do not invent it.
 Record explicit customer acceptance/rejection of completed media with record_media_outcome,
 using the saved generation call ID from media_jobs. Provider success is not customer acceptance.
 Artifact rejection proposes one capability-map retry through the normal approval/spending gates.

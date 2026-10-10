@@ -174,6 +174,11 @@ def request_tool_blocker(prompt: str, name: str) -> str | None:
         return "A shot or clip with voiceover uses video, TTS and assembly; image tools are excluded."
     if name.startswith("Seedream___") and not re.search(r"\bseedream\b", prompt, re.I):
         return "Seedream is explicit-only; request it by name. GPT Image 2.5 is the still-image default."
+    if name in {"Fal___pixelcut_looping_video", "Fal___pixverse_vibemv"}:
+        named = intent_constraints(prompt)["named_model"]
+        aliases = POLICY["named_models"].get(named, {}).get("aliases", {})
+        if name.split("___")[1] not in aliases.values():
+            return "Pixelcut looping video and PixVerse VibeMV are explicit-only; request the selected model by name."
     return None
 
 
@@ -392,6 +397,12 @@ def route_intent(prompt: str, *, region: str | None = None, tier: str | None = N
         if re.search(pattern, prompt, re.I):
             return Route(alias=alias, status="retired", reason=TOOL_MAP[alias]["reason"],
                          disclosure=TOOL_MAP[alias]["reason"])
+    named = POLICY["named_models"].get(constraints["named_model"], {})
+    if named.get("skill") == "named-provider":
+        capability = next(iter(named["aliases"]))
+        route = select_provider(capability, arguments=arguments, available_tools=available_tools,
+                                region=region, retry=retry, **constraints)
+        return replace(route, skill="named-provider")
     if editing_workflow := _editing_workflow_route(prompt, constraints, region=region, available_tools=available_tools, arguments=arguments):
         return editing_workflow
     if lyrics_route := _lyrics_route(prompt, constraints, region=region, available_tools=available_tools, arguments=arguments):
@@ -408,6 +419,8 @@ def route_intent(prompt: str, *, region: str | None = None, tier: str | None = N
         or video_capabilities.intersection(POLICY["named_models"].get(constraints["named_model"], {}).get("aliases", {}))
     )
     for rule in POLICY["rules"]:
+        if rule.get("named_model") and rule["named_model"] != constraints["named_model"]:
+            continue
         if rule["skill"] == "plan-to-video":
             continue
         if rule["skill"] == "knowledge-explainer" and not knowledge_request:
@@ -556,7 +569,11 @@ def _capability_price(row: dict):
     if provider == "mureka":
         values = {"lyrics_to_song_cents": str(rates.MUREKA_LYRICS_SONG_CENTS), "prompt_to_song_cents": str(rates.MUREKA_PROMPT_SONG_CENTS), "instrumental_cents": str(rates.MUREKA_INSTRUMENTAL_CENTS), "lyrics_video_cents": str(rates.MUREKA_LYRICS_VIDEO_CENTS)}
     elif provider == "fal":
-        if model == "ideogram/v4.5/edit":
+        if model == "pixelcut/looping-video":
+            values = {resolution: str(value) for resolution, value in rates.PIXELCUT_CENTS_PER_SECOND.items()}
+        elif model == "pixverse/music-video/vibemv":
+            values = {resolution: str(value) for resolution, value in rates.PIXVERSE_CENTS_PER_SECOND.items()}
+        elif model == "ideogram/v4.5/edit":
             values = {quality: str(value) for quality, value in rates.IDEOGRAM_CENTS_PER_IMAGE.items()}
         elif model == "fal-ai/recraft/v4.1/pro/text-to-vector":
             values = {"cents_per_image": str(rates.RECRAFT_VECTOR_CENTS_PER_IMAGE)}
@@ -663,7 +680,7 @@ def intent_constraints(prompt: str, *, tier: str | None = None, confidential: bo
         prompt = plan_text
     excluded_names = re.compile(
         r"\b(?:not|no|avoid|without|never|don't|do not)(?:\s+use)?\s+"
-        r"(heygen(?:\s+avatar\s+v)?|avatar[ -]v|sync(?:[ -]?3|\.so)?|ideogram(?:\s+4\.5)?|recraft(?:\s+v?4\.1)?)\b", re.IGNORECASE,
+        r"(heygen(?:\s+avatar\s+v)?|avatar[ -]v|sync(?:[ -]?3|\.so)?|ideogram(?:\s+4\.5)?|recraft(?:\s+v?4\.1)?|pixelcut|pixverse(?:\s+vibemv)?|vibemv)\b", re.IGNORECASE,
     )
     exclusions = [match[1].lower() for match in excluded_names.finditer(_instruction_text(prompt))]
     excluded_providers = sorted({"heygen" if name.startswith(("heygen", "avatar")) else "sync"
@@ -694,7 +711,7 @@ def intent_constraints(prompt: str, *, tier: str | None = None, confidential: bo
     }.items():
         if re.search(pattern, prompt, re.I):
             required[feature] = True
-    resolution = re.search(r"\b(480p|540p|580p|720p|1080p|2k|4k)\b", prompt, re.I)
+    resolution = re.search(r"\b(480p|540p|580p|720p|768p|1080p|2k|4k)\b", prompt, re.I)
     if resolution:
         required["max_resolution"] = resolution_value(resolution[1])
     fps = re.search(r"(?:to|at)\s*(\d+)\s*fps\b", prompt, re.I)
@@ -708,8 +725,8 @@ def intent_constraints(prompt: str, *, tier: str | None = None, confidential: bo
     if extension:
         added = float(extension[1])
         required["extension_seconds"] = int(added) if added.is_integer() else added
-    if re.search(r"lyrics?[ -]?video|karaoke", prompt, re.I):
-        aspect = re.search(r"\b(16:9|9:16|3:4|4:3)\b", prompt)
+    if re.search(r"lyrics?[ -]?video|karaoke|\bvibemv\b|\bpixverse\b", provider_prompt, re.I):
+        aspect = re.search(r"\b(16:9|9:16|3:4|4:3|1:1)\b", prompt)
         if aspect:
             required["aspect_ratio"] = aspect[1]
         elif re.search(r"vertical|portrait", prompt, re.I):
@@ -824,10 +841,10 @@ def select_provider(job: str, *, tier: str | None = None, required: dict | None 
     if named_model and capability not in POLICY["named_models"][named_model]["aliases"] and provider:
         named_model = None
     alias, basis = choice["default"], "default"
-    if retry and capability in {"t2v", "i2v", "v2v_edit", "reference_video"}:
+    if retry and capability in {"t2v", "i2v", "v2v_edit", "reference_video"} and named_model != "pixelcut":
         alias = {"t2v": "wan_t2v", "i2v": "wan_i2v", "v2v_edit": "wan_vace_edit", "reference_video": "wan_reference"}[capability]
         model, basis = POLICY["providers"]["fal"]["default_model"], "training retry after artifact rejection"
-    elif predicates["real_face_refs"] and capability in {"t2v", "i2v", "reference_video"}:
+    elif predicates["real_face_refs"] and capability in {"t2v", "i2v", "reference_video"} and named_model != "pixelcut":
         alias, basis = choice["default"], "default; real-face references require Wan; Seedance and Omni blocked"
     elif named_model:
         alias = POLICY["named_models"][named_model]["aliases"].get(capability)
@@ -835,6 +852,8 @@ def select_provider(job: str, *, tier: str | None = None, required: dict | None 
             reason = f"Requested model {named_model} has no {capability} tool."
             return Route(status="blocked", reason=reason, disclosure=reason)
         model, basis = None, "explicit request"
+        if POLICY["named_models"][named_model].get("skill") == "named-provider":
+            basis += f"; not the default for {capability}"
     elif provider or model:
         if provider in {"minimax_h3", "hunyuan"}:
             return Route(status="blocked", reason=f"Provider {provider} is blocked.", disclosure=f"Provider {provider} is blocked.")
@@ -915,6 +934,8 @@ def select_provider(job: str, *, tier: str | None = None, required: dict | None 
     duration = required.get("duration_seconds") or next((args[k] for k in ("performance_duration_seconds", "duration", "duration_seconds", "video_duration_seconds", "source_duration_seconds") if args.get(k) is not None), None)
     if entry.get("provider") == "alibaba_modelstudio" and not required.get("duration_seconds"):
         duration = args.get("duration")
+    if alias == "pixverse_vibemv":
+        duration = args.get("audio_duration_seconds", required.get("duration_seconds"))
     if (predicates["duration_over_30s"] or isinstance(duration, (int, float)) and duration > 30) and capability in {"t2v", "i2v", "reference_video", "performance_transfer"}:
         reason = "Duration exceeds 30 seconds; split into shots of at most 30 seconds before generation."
         return Route(alias=alias, basis=basis, status="blocked", job_type=capability, reason=reason, disclosure=reason)
@@ -1026,7 +1047,7 @@ def select_provider(job: str, *, tier: str | None = None, required: dict | None 
         disclosure += " Experimental continuity judge. Default promotion requires a committed passing eval. Background inputs are stored by the vendor."
     if provider_id == "alibaba_modelstudio":
         disclosure += " " + _MODELSTUDIO_PREVIEW_WARNING
-    if predicates["real_face_refs"] and alias in {"wan3_t2v", "wan3_i2v", "wan3_r2v", "wan3_edit", "wan3_extend"}:
+    if predicates["real_face_refs"] and alias in {"wan3_t2v", "wan3_i2v", "wan3_r2v", "wan3_edit", "wan3_extend", "pixelcut_looping_video", "pixverse_vibemv"}:
         required["real_face_refs"] = True
         disclosure += " Real-person likeness consent " + (
             "acknowledged." if args.get("likeness_consent") is True else "required before generation."
@@ -1252,7 +1273,7 @@ def estimate_cost(name: str, arguments: dict, *, list_price: bool = False) -> Co
             return CostEstimate(gemini_quote(tool, arguments).total_cents)
         except ValueError as exc:
             return CostEstimate(None, str(exc))
-    if provider in {"heygen", "topaz", "mureka"} or name in {"Runway___act_two", "Fal___kling_motion_control", "Fal___mirelo_v2a", "Fal___ideogram_edit", "Fal___recraft_text_to_vector"}:
+    if provider in {"heygen", "topaz", "mureka"} or name in {"Runway___act_two", "Fal___kling_motion_control", "Fal___mirelo_v2a", "Fal___ideogram_edit", "Fal___recraft_text_to_vector", "Fal___pixelcut_looping_video", "Fal___pixverse_vibemv"}:
         try:
             return CostEstimate(_published_cost(provider, tool, arguments).total_cents)
         except (ValueError, TypeError, KeyError) as exc:
@@ -1324,6 +1345,8 @@ def _published_cost(provider: str, tool: str, arguments: dict):
     from math import ceil
     from server import billing_rates as rates
 
+    if provider == "fal" and tool in {"pixelcut_looping_video", "pixverse_vibemv"}:
+        return rates._with_fee(ceil(rates.named_fal_video_price_cents(tool, arguments)))
     if provider == "mureka":
         cents = rates.mureka_price_cents(tool, arguments)
         if cents is None:

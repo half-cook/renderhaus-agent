@@ -19,7 +19,7 @@ from urllib.parse import urlsplit
 import httpx
 
 from providers.contracts import validate_tool_arguments
-from providers.fal import queue, vidu, wan, wan3, motion, mirelo, images
+from providers.fal import queue, vidu, wan, wan3, motion, mirelo, images, named_video
 from providers.registry import schema_from_callable
 from providers.seedance import contracts as seedance_contracts
 from providers.sync import contracts as sync_contracts
@@ -27,8 +27,8 @@ from providers.topaz import contracts as topaz_contracts
 from providers.mureka import contracts as mureka_contracts
 
 
-TOOL_CONTRACTS = {tool: contract for contract in (wan, vidu, wan3, motion, mirelo, images) for tool in contract.GENERATING_TOOLS}
-ENDPOINT_CONTRACTS = {endpoint: contract for contract in (wan, vidu, wan3, motion, mirelo, images, seedance_contracts, sync_contracts, topaz_contracts, mureka_contracts) for endpoint in contract.ENDPOINTS}
+TOOL_CONTRACTS = {tool: contract for contract in (wan, vidu, wan3, motion, mirelo, images, named_video) for tool in contract.GENERATING_TOOLS}
+ENDPOINT_CONTRACTS = {endpoint: contract for contract in (wan, vidu, wan3, motion, mirelo, images, named_video, seedance_contracts, sync_contracts, topaz_contracts, mureka_contracts) for endpoint in contract.ENDPOINTS}
 
 
 def _validated(tool: str, arguments: dict[str, Any]) -> dict[str, Any]:
@@ -70,7 +70,11 @@ def _submit(tool: str, arguments: dict[str, Any]) -> dict[str, Any]:
     arguments = _validated(tool, arguments)
     contract = TOOL_CONTRACTS[tool]
     endpoint, body = contract.request_body(tool, arguments)
-    if contract is images:
+    if contract is named_video:
+        from server.billing_rates import named_fal_video_price_cents
+
+        estimate = named_fal_video_price_cents(tool, arguments)
+    elif contract is images:
         from server.billing_rates import image_specialist_price_cents
 
         estimate = image_specialist_price_cents(tool, arguments)
@@ -90,7 +94,7 @@ def _submit(tool: str, arguments: dict[str, Any]) -> dict[str, Any]:
         estimate = None
     if queue.dry_run():
         preview = {}
-        if contract in (wan3, motion, mirelo, images):
+        if contract in (wan3, motion, mirelo, images, named_video):
             preview = {
                 "request_preview": body,
                 "estimated_cost_usd": float(estimate / 100) if estimate is not None else None,
@@ -111,7 +115,9 @@ def _submit(tool: str, arguments: dict[str, Any]) -> dict[str, Any]:
             **contract.TRAINING_METADATA,
             "note": "No fal request made. Set FAL_DRY_RUN=false for live generation.",
         }
-    if contract is images:
+    if contract is named_video:
+        named_video.require_resolved_references(body)
+    elif contract is images:
         images.require_resolved_references(body)
         images.require_durable_output()
     elif contract is mirelo:
@@ -164,6 +170,40 @@ def _submit(tool: str, arguments: dict[str, Any]) -> dict[str, Any]:
         "note": ("Call get_video_task with this job_id until terminal; image results are validated and persisted, SVGs sanitized."
                  if contract is images else "Call get_video_task with this job_id until terminal; use download=true for the MP4."),
     }
+
+
+def pixelcut_looping_video(
+    image_url: str,
+    prompt: str = "",
+    duration: int = 5,
+    resolution: named_video.PixelcutResolution = "1080p",
+    motion: Literal["subtle", "spin"] = "subtle",
+    include_audio: bool = False,
+    real_face_refs: bool = False,
+    likeness_consent: bool = False,
+) -> dict:
+    """Named-only Pixelcut product loop; always approve cost, then poll get_video_task."""
+    return _submit("pixelcut_looping_video", locals())
+
+
+def pixverse_vibemv(
+    audio_url: str,
+    audio_duration_seconds: float,
+    image_url: str | None = None,
+    style_image_url: str | None = None,
+    music_style: named_video.MusicStyle | None = None,
+    style: named_video.VibeStyle = "Cinematic",
+    aspect_ratio: named_video.VibeAspect = "16:9",
+    resolution: named_video.VibeResolution = "720p",
+    lyrics: str | None = None,
+    lip_sync_switch: bool = False,
+    enable_safety_checker: bool = True,
+    real_face_refs: bool = False,
+    real_voice_refs: bool = False,
+    likeness_consent: bool = False,
+) -> dict:
+    """Named-only PixVerse music video from measured audio; always approve cost, then poll get_video_task."""
+    return _submit("pixverse_vibemv", locals())
 
 
 def ideogram_edit(
@@ -495,6 +535,9 @@ def _poll_video_task(job_id: str, endpoint_id: str, request_id: str, *, download
 def list_fal_models() -> dict:
     """List documented fal endpoints and pricing without calling fal."""
     from server.billing_rates import (
+        NAMED_FAL_VIDEO_PRICING_READ_DATE,
+        PIXELCUT_CENTS_PER_SECOND,
+        PIXVERSE_CENTS_PER_SECOND,
         VIDU_Q4_LIST_CENTS_PER_SECOND,
         VIDU_Q4_PROMO_EXPIRES_ON,
         WAN3_CENTS_PER_SECOND,
@@ -512,7 +555,8 @@ def list_fal_models() -> dict:
         ] + [{"id": endpoint, **wan3.TRAINING_METADATA} for endpoint in wan3.ENDPOINTS]
         + [{"id": endpoint, **motion.TRAINING_METADATA} for endpoint in motion.ENDPOINTS]
         + [{"id": endpoint, **mirelo.TRAINING_METADATA} for endpoint in mirelo.ENDPOINTS]
-        + [{"id": endpoint, **images.TRAINING_METADATA} for endpoint in images.ENDPOINTS],
+        + [{"id": endpoint, **images.TRAINING_METADATA} for endpoint in images.ENDPOINTS]
+        + [{"id": endpoint, "explicit_only": True, **named_video.TRAINING_METADATA} for endpoint in named_video.ENDPOINTS],
         "endpoints": [
             {
                 "id": endpoint.id,
@@ -600,12 +644,26 @@ def list_fal_models() -> dict:
                 if endpoint == images.IDEOGRAM else {"usd_per_unit": "0.30"}),
              **images.TRAINING_METADATA}
             for tool, endpoint in images.TOOL_ENDPOINTS.items()
+        ] + [
+            {"id": endpoint, "model": endpoint, "endpoint_id": endpoint, "mode": tool,
+             "api_url": f"https://fal.ai/models/{endpoint}/api",
+             "pricing_url": f"https://fal.ai/models/{endpoint}",
+             "price_unit": "video_second" if tool == "pixelcut_looping_video" else "rounded_up_audio_second",
+             "pricing_checked_at": NAMED_FAL_VIDEO_PRICING_READ_DATE, "pricing_confirmed": True,
+             "usd_per_unit_by_resolution": {
+                 resolution: str(rate / 100) for resolution, rate in (
+                     PIXELCUT_CENTS_PER_SECOND if tool == "pixelcut_looping_video" else PIXVERSE_CENTS_PER_SECOND
+                 ).items()
+             }, "explicit_only": True, **named_video.TRAINING_METADATA}
+            for tool, endpoint in named_video.TOOL_ENDPOINTS.items()
         ],
         "note": "Static documented catalog. Does not confirm account access. fal hosted Terms of Service apply.",
     }
 
 
 TOOL_HANDLERS = {
+    "pixelcut_looping_video": pixelcut_looping_video,
+    "pixverse_vibemv": pixverse_vibemv,
     "ideogram_edit": ideogram_edit,
     "recraft_text_to_vector": recraft_text_to_vector,
     "mirelo_v2a": mirelo_v2a,

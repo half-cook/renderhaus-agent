@@ -1,5 +1,118 @@
 [
   {
+    "name": "pixelcut_looping_video",
+    "description": "Named-only Pixelcut loop from image_url. Requires an explicit Pixelcut request and named-provider skill. Optional prompt, integer duration 5-15, resolution 480p/768p/1080p, motion subtle/spin, include_audio=false. Always pause with cost, including autonomous runs. Default FAL_DRY_RUN=true previews inputs only. Poll get_video_task with download=true, then inspect the MP4 and loop seam. Outputs are not training eligible.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "image_url": {
+          "type": "string",
+          "description": "Authorized JPEG, PNG or WebP image URL, data URI or Studio asset handle. Pixelcut needs a product frame; VibeMV accepts an optional character reference."
+        },
+        "prompt": {
+          "type": "string",
+          "description": "At most 4000 characters."
+        },
+        "duration": {
+          "type": "integer",
+          "description": "Allowed range: 5 to 15."
+        },
+        "resolution": {
+          "type": "string",
+          "description": "One of: 480p, 768p, 1080p. Allowed values: 480p, 768p, 1080p."
+        },
+        "motion": {
+          "type": "string",
+          "description": "One of: subtle, spin. Allowed values: subtle, spin."
+        },
+        "include_audio": {
+          "type": "boolean",
+          "description": "Keep Pixelcut's generated audio when true. Default false. Motion and audio do not change its price."
+        },
+        "real_face_refs": {
+          "type": "boolean",
+          "description": "True when input references depict real people. Requires likeness_consent=true for every person."
+        },
+        "likeness_consent": {
+          "type": "boolean",
+          "description": "Explicit permission for every real face or voice used in the inputs. Local acknowledgement, never sent to fal."
+        }
+      },
+      "required": [
+        "image_url"
+      ]
+    }
+  },
+  {
+    "name": "pixverse_vibemv",
+    "description": "Named-only PixVerse VibeMV music video from audio_url and measured audio_duration_seconds 10-360. Requires an explicit PixVerse or VibeMV request and named-provider skill. Optional character image_url, Custom style with style_image_url, music_style, lyrics, aspect_ratio, resolution 720p/1080p, lip_sync_switch. Always pause with rounded audio-second cost, including autonomous runs. FAL_DRY_RUN defaults true. Poll get_video_task with download=true and play the saved MP4. Input music/lyrics rights and real face/voice consent required. Outputs are not training eligible.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "audio_url": {
+          "type": "string",
+          "description": "Authorized MP3 or WAV URL, data URI or Studio asset handle. Supply the actual measured audio_duration_seconds from 10 through 360."
+        },
+        "audio_duration_seconds": {
+          "type": "number",
+          "description": "Measured input audio seconds, 10-360. Local quote field, never sent to fal. Whole seconds rounded up for VibeMV billing. Do not invent measurements."
+        },
+        "image_url": {
+          "type": "string",
+          "description": "Authorized JPEG, PNG or WebP image URL, data URI or Studio asset handle. Pixelcut needs a product frame; VibeMV accepts an optional character reference."
+        },
+        "style_image_url": {
+          "type": "string",
+          "description": "Style image URL, data URI or Studio asset handle. Requires style=Custom; Custom requires this reference."
+        },
+        "music_style": {
+          "type": "string",
+          "description": "One of: Pop, Rock, Hip Hop, R&B, Jazz, Reggae, Country, Folk, Electronic, Classical, Soul, Funk, Metal, Ambient, Others. Allowed values: Pop, Rock, Hip Hop, R&B, Jazz, Reggae, Country, Folk, Electronic, Classical, Soul, Funk, Metal, Ambient, Others."
+        },
+        "style": {
+          "type": "string",
+          "description": "One of: Custom, Cinematic, Lo-fi, Dreamscape, Woolen Felt, Candy, Golden Age, Voxel, Retro Game, Claymation, Woodland Tale, Impressionism, Decadence, Futuristic, Chromatic Clash, Holiday. Allowed values: Custom, Cinematic, Lo-fi, Dreamscape, Woolen Felt, Candy, Golden Age, Voxel, Retro Game, Claymation, Woodland Tale, Impressionism, Decadence, Futuristic, Chromatic Clash, Holiday."
+        },
+        "aspect_ratio": {
+          "type": "string",
+          "description": "One of: 16:9, 9:16, 1:1, 4:3, 3:4. Allowed values: 16:9, 9:16, 1:1, 4:3, 3:4."
+        },
+        "resolution": {
+          "type": "string",
+          "description": "One of: 720p, 1080p. Allowed values: 720p, 1080p."
+        },
+        "lyrics": {
+          "type": "string",
+          "description": "At most 5000 characters."
+        },
+        "lip_sync_switch": {
+          "type": "boolean",
+          "description": "Enable VibeMV mouth motion matching the vocals. Default false; a character reference works best."
+        },
+        "enable_safety_checker": {
+          "type": "boolean",
+          "description": "Default true. Only vendor-authorized callers may request relaxed screening with false."
+        },
+        "real_face_refs": {
+          "type": "boolean",
+          "description": "True when input references depict real people. Requires likeness_consent=true for every person."
+        },
+        "real_voice_refs": {
+          "type": "boolean",
+          "description": "True when input audio contains a real person's voice. Requires likeness_consent=true for every speaker or singer."
+        },
+        "likeness_consent": {
+          "type": "boolean",
+          "description": "Explicit permission for every real face or voice used in the inputs. Local acknowledgement, never sent to fal."
+        }
+      },
+      "required": [
+        "audio_url",
+        "audio_duration_seconds"
+      ]
+    }
+  },
+  {
     "name": "ideogram_edit",
     "description": "Pixel-preserving text-only image edit exception via Ideogram 4.5; evidence is thin, compare A/B. Requires existing image_url. edit_precision=high restores unchanged pixels; mask_url is black-edit/white-preserve and requires source dimensions. At most 4 references or 3 with mask. Paid images pause unless autonomous. Poll get_video_task; every returned image persists. No training eligibility.",
     "inputSchema": {
@@ -765,7 +878,7 @@
   },
   {
     "name": "list_fal_models",
-    "description": "List documented Wan VACE, Wan 3.0 and Vidu Q4 models, endpoints, licences, and published pricing. Static catalog; no network or generation.",
+    "description": "List documented fal models, endpoints, licences and published pricing, including named-only Pixelcut and PixVerse VibeMV. Static catalog; no network or generation.",
     "inputSchema": {
       "type": "object",
       "properties": {},
