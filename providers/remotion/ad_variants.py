@@ -248,6 +248,10 @@ def _chat_plan(job: Path, rows: list[dict], brief: dict) -> dict:
     if not isinstance(campaign, str) or not re.fullmatch(r'[A-Za-z0-9_-]{1,40}', campaign):
         raise ValueError('campaign must be a safe ASCII identifier.')
     planned, blocked, hashes, keys = [], [], {}, set()
+    # Invalid rows still need stable provenance. JSON NaN/Infinity are permitted
+    # only in this hash encoding; normalization refuses them as render arguments.
+    input_hashes = [hashlib.sha256(json.dumps(raw, sort_keys=True, ensure_ascii=True,
+                    separators=(',', ':'), allow_nan=True).encode()).hexdigest() for raw in rows]
     for index, raw in enumerate(rows):
         try:
             if not isinstance(raw, dict) or set(raw) - {'variant_key', 'chat_story', 'aspect'}:
@@ -272,11 +276,11 @@ def _chat_plan(job: Path, rows: list[dict], brief: dict) -> dict:
                             'expected_strings': {'messages': [m['text'] for m in payload['messages']]}})
         except (ValueError, TypeError, KeyError, OSError) as exc:
             blocked.append({'row_index': index, 'variant_key': raw.get('variant_key') if isinstance(raw, dict) else None,
-                            'reasons': [str(exc)]})
+                            'input_hash': input_hashes[index], 'reasons': [str(exc)]})
     quote = ad_matrix_estimate({'stage': 'plan', 'rows': rows, 'brief': brief})
     return {'status': 'planned' if planned else 'blocked', 'mode': 'chat_story', 'planned': planned,
             'blocked': blocked, 'asset_hashes': hashes, 'render_count': len(planned), 'estimate': quote,
-            'plan_hash': digest({'rows': rows, 'planned': planned, 'blocked': blocked, 'brief': brief,
+            'plan_hash': digest({'row_input_hashes': input_hashes, 'planned': planned, 'blocked': blocked, 'brief': brief,
                                  'assets': hashes, 'estimate': quote}), 'candidate_set': True,
             'review_note': 'Open the first chat video and its stills. Batch approval accepts this unchanged sample hash; visual review remains pending.',
             'warnings': list(dict.fromkeys(w for r in planned for w in r['timeline']['document']['chatStory']['plan']['warnings']))}

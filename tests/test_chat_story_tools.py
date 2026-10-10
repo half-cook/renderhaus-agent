@@ -140,6 +140,13 @@ class ChatBatchTests(unittest.TestCase):
         self.assertEqual(result['blocked'][0]['variant_key'], 'invalid')
         self.assertTrue(result['blocked'][0]['reasons'])
 
+    def test_invalid_numeric_row_keeps_input_hash_without_blocking_other_scripts(self):
+        self.rows.insert(1, {'variant_key': 'invalid', 'chat_story': {'messages': [
+            {'from': 'them', 'text': 'Hello', 'delayMs': float('nan')}]}})
+        result = self.run_stage()
+        self.assertEqual(result['render_count'], 2, result)
+        self.assertRegex(result['blocked'][0]['input_hash'], r'^[a-f0-9]{64}$')
+
     def test_batch_bound_and_untrusted_approval_fields_are_refused(self):
         with self.assertRaises(ValueError):
             self.run_stage(rows=[{'variant_key': str(i), 'chat_story': PAYLOAD} for i in range(51)])
