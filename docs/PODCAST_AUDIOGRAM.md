@@ -51,6 +51,13 @@ is **unknown**, not a fabricated total. Rendering retains the existing Remotion 
 paid-video approval policy, including autonomous approval. No live call was used to verify
 these workflows.
 
+The existing approval estimate reports local operator compute as zero provider charge.
+Lambda compute remains **TODO unknown** until measured billing is configured. The
+[official Remotion licence pricing](https://www.remotion.dev/docs/license/pricing), read
+2026-10-10, lists automator licensing at $0.01 per render with a $100 monthly minimum
+for the company licence. That licence rate does not establish a Lambda compute bill.
+No new pricing constant or paid provider is introduced.
+
 ## Render contract
 
 Use the existing `Remotion___render_timeline` with `visuals=[]`, one source `audio_tracks`
@@ -111,6 +118,9 @@ coordinates. They are Renderhaus buffers, **UNVERIFIED** as current platform UI 
 Within that rectangle the planner assigns art, identity, waveform, captions and progress
 boxes. Tests require them to remain inside the safe rectangle. Long labels and caption fit
 can refuse rendering; revise the copy/art layout rather than allowing clipped text.
+The fitter measures the existing allow-listed DejaVu Sans Bold font and rejects missing
+glyphs with `text_unsupported_glyph` before media I/O. Unsupported CJK and emoji inputs
+must not silently become boxes or a fabricated replacement transcript.
 
 Render one full first-aspect MP4 and poll its saved render ID. Extract stills at 10% and
 60% with the existing ffmpeg `extract_frames` operation. Inspect both stills and play the
@@ -154,7 +164,8 @@ positions and device visibility. Append the plate to a video of at least 25 seco
 Local rendering supports the named templates with real FFmpeg/FFprobe. The checked-in
 Remotion composition consumes the same canonical plan. Lambda defaults to refusing named
 templates before media I/O or AWS submission: `REMOTION_TEMPLATE_CONTRACT_VERSION=0`.
-An operator can set version 1 only after deploying the checked matching composition;
+An operator can set version 1 only after deploying the checked matching composition and
+the existing `fonts/DejaVuSans-Bold.ttf` asset;
 template-contained art does not independently require overlay contract version 2.
 No deployment, live Lambda render or hosted transcription took place. Cross-backend
 pixel/perceptual equivalence remains **UNVERIFIED**. Dry-run defaults and flags are unchanged.
@@ -179,3 +190,70 @@ and ad variants retain their matrix skill. User-facing product labels use “Pod
 “Channel intro” and “YouTube end screen”; provider and cost disclosure remains in the existing
 approval messages. Comet browser E2E is **blocked** in this environment and cannot be claimed
 as passed. See [decisions](podcast-audiogram-decisions.tsv).
+
+Remotion's standalone TypeScript build remains **UNVERIFIED** in this offline clone.
+Its dependencies are absent, and the offline npm cache lacks a required package.
+The Studio TypeScript check uses a complete local dependency tree and does not establish
+the Remotion build or Lambda playback. These are separate pending checks.
+
+## Recorded validation
+
+The stable revision `1592194` passed full unittest discovery: 2,506 tests in 384.429 seconds,
+with eight skips. This includes 58 additional tests compared with the starting revision.
+Ruff and `scripts/ci_check.py` passed with the required dry-run flags and an empty
+`RENDERHAUS_SECRETS_NAME`. Studio `tsc --noEmit -p .` passed using the complete local
+`/workspace/rh-staging/studio/node_modules` tree; the temporary symlink was removed.
+The prescribed `rh-runway-aleph` tree lacked five existing Studio dependencies.
+
+Real FFmpeg/FFprobe checks rendered and decoded all four aspects with the expected
+dimensions, duration and audio stream. A separate synthetic local-worker smoke render
+produced a 360x640, 4.0-second MP4 with audio. Its source resolution is unknown and its
+resolution warnings are empty. The extracted 10% and 60% stills showed caption highlights,
+the measured waveform and progress. These checks do not establish browser playback,
+customer visual approval or saved deliverable-QC acceptance.
+
+The project hook recorded Comet E2E as `blocked` in ignored
+`.renderhaus/e2e/podcast-audiogram.json`. No browser actions were performed.
+The separate binary evidence is under `.renderhaus/e2e/audiogram-smoke/`.
+No live provider/AWS call, deployment, push or PR was performed.
+
+## Implementation inventory
+
+The tracked diff from `47b2ac7` changes 35 files. Providers and Gateway tools remain
+18 and 134. Skills increase to 37. No new dependency, secret or dry-run flag is added.
+
+- [`.github/workflows/deploy.yml`](../.github/workflows/deploy.yml)
+- [`Dockerfile.agentcore`](../Dockerfile.agentcore)
+- [`agent/deep_agent/routing.py`](../agent/deep_agent/routing.py)
+- [`agent/deep_agent/routing_policy.json`](../agent/deep_agent/routing_policy.json)
+- [`agent/deep_agent/skills/motion-graphics/SKILL.md`](../agent/deep_agent/skills/motion-graphics/SKILL.md)
+- [`agent/deep_agent/skills/podcast-audiogram/SKILL.md`](../agent/deep_agent/skills/podcast-audiogram/SKILL.md)
+- [`agent/gateway_executor.py`](../agent/gateway_executor.py)
+- [`configs/gateway/ffmpeg.tools.json`](../configs/gateway/ffmpeg.tools.json)
+- [`configs/gateway/remotion.tools.json`](../configs/gateway/remotion.tools.json)
+- [`docs/DEEP_AGENT.md`](../docs/DEEP_AGENT.md)
+- [`docs/PODCAST_AUDIOGRAM.md`](../docs/PODCAST_AUDIOGRAM.md)
+- [`docs/REMOTION_EDITING.md`](../docs/REMOTION_EDITING.md)
+- [`docs/SKILLS.md`](../docs/SKILLS.md)
+- [`docs/podcast-audiogram-decisions.tsv`](../docs/podcast-audiogram-decisions.tsv)
+- [`providers/contracts.py`](../providers/contracts.py)
+- [`providers/ffmpeg/ops.py`](../providers/ffmpeg/ops.py)
+- [`providers/remotion/NOTICE.md`](../providers/remotion/NOTICE.md)
+- [`providers/remotion/api.py`](../providers/remotion/api.py)
+- [`providers/remotion/capabilities.py`](../providers/remotion/capabilities.py)
+- [`providers/remotion/local.py`](../providers/remotion/local.py)
+- [`providers/remotion/local_worker.py`](../providers/remotion/local_worker.py)
+- [`providers/remotion/template_frames.py`](../providers/remotion/template_frames.py)
+- [`providers/remotion/templates.py`](../providers/remotion/templates.py)
+- [`providers/remotion/text.py`](../providers/remotion/text.py)
+- [`remotion/src/Root.tsx`](../remotion/src/Root.tsx)
+- [`remotion/src/Templates.tsx`](../remotion/src/Templates.tsx)
+- [`scripts/ci_check.py`](../scripts/ci_check.py)
+- [`tests/fixtures/skill_routing.json`](../tests/fixtures/skill_routing.json)
+- [`tests/test_audiogram_ffmpeg.py`](../tests/test_audiogram_ffmpeg.py)
+- [`tests/test_audiogram_render.py`](../tests/test_audiogram_render.py)
+- [`tests/test_conversational_edit.py`](../tests/test_conversational_edit.py)
+- [`tests/test_podcast_routing.py`](../tests/test_podcast_routing.py)
+- [`tests/test_podcast_templates.py`](../tests/test_podcast_templates.py)
+- [`tests/test_skill_routing.py`](../tests/test_skill_routing.py)
+- [`tests/test_template_frames.py`](../tests/test_template_frames.py)
