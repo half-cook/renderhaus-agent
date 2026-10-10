@@ -3,18 +3,19 @@ from __future__ import annotations
 import copy
 import hashlib
 import json
+import re
 import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
 DATA = ROOT / 'providers/shot_recipes'
 FORBIDDEN = {'.mp3', '.wav', '.ogg', '.m4a', '.mp4', '.webm', '.mov', '.gif',
              '.png', '.jpg', '.jpeg', '.svg', '.tsx', '.ts', '.js', '.woff', '.ttf'}
 BRANDS = ('Mixkit', 'Firecrawl', 'Willow Voice', 'Honor', 'Apple', 'CapCut',
-          'Jianying', 'Seedance', 'Wan', 'ElevenLabs', 'Mureka', 'fal.ai', 'platform fee')
+          'Jianying', 'Seedance', 'Wan', 'ElevenLabs', 'Mureka', 'fal.ai', 'platform fee', 'Runway', 'Figma', 'Notion', 'ClickUp',
+          'Framer', 'Raycast', 'Perplexity', 'Superhuman', 'Slack', '荣耀')
 
 
 def storyboard():
@@ -34,25 +35,33 @@ def storyboard():
 
 class CardImportTests(unittest.TestCase):
     def test_card_library_integrity_and_provenance(self):
-        from providers.shot_recipes.library import load_index, parse_card
+        from providers.shot_recipes.library import load_index, parse_card, read_frontmatter
 
         cards = list((DATA / 'cards').glob('*/*.md'))
         self.assertEqual(len(cards), 157)
         index = load_index()
         self.assertEqual(len(index), 157)
-        self.assertEqual({p.stem for p in cards}, set(index))
+        by_source = {entry['source_path']: (card_id, entry) for card_id, entry in index.items()}
+        self.assertEqual({f'references/shots/{p.parent.name}/{p.name}' for p in cards}, set(by_source))
         for path in cards:
             with self.subTest(card=path.stem):
-                front = yaml.safe_load(path.read_text().split('---', 2)[1])
+                front = read_frontmatter(path.read_text())
                 self.assertEqual(front['name'], path.stem)
-                self.assertTrue({'一句话', '适用', '时长', '能量', '标签'} <= front.keys())
-                entry = index[path.stem]
+                self.assertTrue({'一句话', '适用', '时长', '能量'} <= front.keys())
+                card_id, entry = by_source[f'references/shots/{path.parent.name}/{path.name}']
                 self.assertEqual(entry['category'], path.parent.name)
                 self.assertEqual(entry['source_path'], f'references/shots/{path.parent.name}/{path.name}')
                 self.assertEqual(entry['sha256'], hashlib.sha256(path.read_bytes()).hexdigest())
                 self.assertTrue(entry['summary'].isascii())
                 self.assertTrue(entry['keywords'])
-                self.assertTrue(parse_card(path.stem)['parameter_table'])
+                self.assertTrue(parse_card(card_id)['parameter_table'])
+        digest = hashlib.sha256()
+        for path in sorted(cards):
+            digest.update(path.relative_to(DATA / 'cards').as_posix().encode())
+            digest.update(b'\0')
+            digest.update(path.read_bytes())
+            digest.update(b'\0')
+        self.assertEqual(digest.hexdigest(), 'a4ee7e60b28a75fa5be20a55eb4856aec26381b1fc09bbe8e1bf0f10aaad6752')
         for name in ('LICENSE', 'NOTICE.md', 'ATTRIBUTION.md'):
             self.assertTrue((DATA / name).is_file(), name)
         notice = (DATA / 'NOTICE.md').read_text()
@@ -105,6 +114,14 @@ class SearchTests(unittest.TestCase):
             self.assertEqual(card['energy'], 'low')
         self.assertEqual(self.search(query='zzzznevermatching')['results'], [])
 
+    def test_parameter_table_preserves_escaped_absolute_value_pipes(self):
+        from providers.shot_recipes.library import parse_table
+
+        card = (DATA / 'cards/ui-entrance/element-body-moves.md').read_text()
+        section = card.split('## 两式选型', 1)[1].split('## 参数表', 1)[0]
+        row = next(row for row in parse_table(section) if 'axial-stretch' in row['parameter'])
+        self.assertIn('|p(f)−p(f−1)|', row['value'])
+
     def test_bounds_types_traversal_and_unknown_id(self):
         for arguments in ({'limit': 21}, {'limit': 0}, {'limit': True}, {'limit': '3'},
                           {'query': 'x' * 513}, {'card_id': '../LICENSE'},
@@ -127,6 +144,15 @@ class SearchTests(unittest.TestCase):
                 text = json.dumps(self.search(card_id=card_id), ensure_ascii=False).lower()
                 for brand in BRANDS:
                     self.assertNotIn(brand.lower(), text)
+                terms = json.loads((DATA / 'index.json').read_text())['brand_terms']
+                for term in terms:
+                    # Product capitalization differs from the mathematical easing word.
+                    if term == 'Linear':
+                        continue
+                    pattern = re.escape(term.lower())
+                    if term.isascii():
+                        pattern = r'(?<![a-z0-9])' + pattern + r'(?![a-z0-9])'
+                    self.assertIsNone(re.search(pattern, text), term)
                 self.assertNotIn('参考实现', text)
                 self.assertNotIn('.tsx', text)
 
@@ -192,6 +218,62 @@ class StoryboardTests(unittest.TestCase):
         saved = copy.deepcopy(value)
         self.assertEqual(self.validate(value), self.validate(value))
         self.assertEqual(value, saved)
+
+    def test_native_render_plan_preserves_independent_audio_assets(self):
+        value = storyboard()
+        for beat in value['beats']:
+            beat['visual'] = {'kind': 'video', 'output_path': '/tmp/supplied-shot.mp4'}
+        for stem in value['audio_stems']:
+            value['audio_stems'][stem] = [{'output_path': f'/tmp/supplied-{stem}.wav',
+                                          'duration_seconds': 6, 'volume': .5}]
+        result = self.validate(value)
+        self.assertTrue(result['ok'], result)
+        plan = result['render_plan']
+        self.assertTrue(plan['render_ready'])
+        self.assertEqual(len(plan['render_args']['audio_tracks']), 3)
+        for stem in ('sfx', 'music', 'vo'):
+            self.assertEqual(plan['stem_render_args'][stem]['audio_tracks'], value['audio_stems'][stem])
+        self.assertTrue(all(clip['volume'] == 0 for clip in plan['render_args']['visuals']))
+        value['audio_stems']['music'][0]['duration_seconds'] = 8
+        self.assertFalse(self.validate(value)['ok'])
+
+    def test_storyboard_is_bounded_and_invalid_native_items_fail_soft(self):
+        for change in (lambda s: s.update(fps=True),
+                       lambda s: s.update(beat_grid_s=[0] * 2001),
+                       lambda s: s['beats'][0].update(visual={'jsx': 'x' * (129 * 1024)}),
+                       lambda s: s['audio_stems']['music'].append({'duration_seconds': 6}),
+                       lambda s: s['beats'][0].update(visual={'kind': 'video', 'url': 'x', 'unknown': 1})):
+            value = storyboard()
+            change(value)
+            with self.subTest(change=change):
+                self.assertFalse(self.validate(value)['ok'])
+
+    def test_plan_rejects_fps_outside_the_actual_renderer_contract(self):
+        for fps in (1, 120):
+            value = storyboard()
+            value['fps'] = fps
+            for beat in value['beats']:
+                beat['visual'] = {'kind': 'video', 'output_path': '/tmp/supplied-shot.mp4'}
+            self.assertFalse(self.validate(value)['ok'])
+
+    def test_audio_track_starts_before_end_and_cannot_overhang(self):
+        value = storyboard()
+        for beat in value['beats']:
+            beat['visual'] = {'kind': 'image', 'url': 'https://example.test/shot.png'}
+        for start, duration in ((6, .01), (5.99, .02)):
+            value['audio_stems']['sfx'] = [{'url': 'https://example.test/cue.wav',
+                                           'start_seconds': start, 'duration_seconds': duration}]
+            self.assertFalse(self.validate(value)['ok'])
+
+    def test_storyboard_labels_and_error_paths_are_neutral(self):
+        value = storyboard()
+        value['beats'][1]['beat'] = 'Apple reveal'
+        result = self.validate(value)
+        self.assertTrue(result['ok'], result)
+        self.assertNotIn('Apple', json.dumps(result))
+        value['named_cards'] = {'Mureka': 3}
+        from providers.shot_recipes.api import shot_recipe_search
+        self.assertNotIn('Mureka', json.dumps(shot_recipe_search(mode='validate_storyboard', storyboard=value)))
 
     def test_gateway_validation_mode_returns_the_same_plan(self):
         from providers.shot_recipes.api import shot_recipe_search

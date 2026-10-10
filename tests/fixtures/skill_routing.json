@@ -4697,5 +4697,126 @@
       "FFMPEG_DRY_RUN": "true"
     },
     "note": "Free fixed operation on staged files. Routing does not certify artifacts or browser playback."
+  },
+  {
+    "suite": "cinematic-product-promo",
+    "skip_reason": "",
+    "note": "Workbook Routing Tests, read 2026-10-10. Offline route proposal; no render or provider call.",
+    "source_status": "new",
+    "source_file": "/workspace/research/renderhaus-skills-seed-2026-10-08.xlsx",
+    "source_sheet": "Routing Tests",
+    "source_read_date": "2026-10-10",
+    "test_id": "RT-174",
+    "prompt": "Make a 30-second cinematic Apple-style launch film for my note-taking app, with punchy beat-synced cuts",
+    "expected_skill": "cinematic-product-promo",
+    "expected_tool": "shot_recipe_search then remotion_render",
+    "forbidden_tools": "wan3_t2v, seedance25_t2v",
+    "expected_output": "Storyboard of recipe cards, then 30 s MP4 with SFX/music/VO stems",
+    "expected_required": {
+      "target_duration_s": 30
+    },
+    "expected_step_count": 2,
+    "expected_execution_groups": [
+      [
+        "shot_recipe_search"
+      ],
+      [
+        "remotion_render"
+      ]
+    ]
+  },
+  {
+    "suite": "cinematic-product-promo",
+    "skip_reason": "",
+    "note": "Workbook Routing Tests, read 2026-10-10. Offline route proposal; no render or provider call.",
+    "source_status": "new",
+    "source_file": "/workspace/research/renderhaus-skills-seed-2026-10-08.xlsx",
+    "source_sheet": "Routing Tests",
+    "source_read_date": "2026-10-10",
+    "test_id": "RT-175",
+    "prompt": "Use the 'ink press' style shot card for the product reveal in my promo video",
+    "expected_skill": "cinematic-product-promo",
+    "expected_tool": "shot_recipe_search",
+    "forbidden_tools": "hyperframes_render",
+    "expected_output": "Storyboard uses the named card for the reveal beat",
+    "expected_required": {
+      "card_id": "brand-ink-open",
+      "beat": "reveal"
+    }
+  },
+  {
+    "suite": "cinematic-product-promo",
+    "skip_reason": "provider pending: cutaway_record (feat/product-demo-capture)",
+    "note": "Negative skill and forbidden-tool assertion runs separately in test_cinematic_routing. Capture and MP4 remain pending.",
+    "source_status": "new",
+    "source_file": "/workspace/research/renderhaus-skills-seed-2026-10-08.xlsx",
+    "source_sheet": "Routing Tests",
+    "source_read_date": "2026-10-10",
+    "test_id": "RT-176",
+    "prompt": "Record a quick walkthrough of my dashboard with captions, nothing fancy",
+    "expected_skill": "product-demo-video",
+    "expected_tool": "cutaway_record then remotion_render",
+    "forbidden_tools": "shot_recipe_search",
+    "expected_output": "Plain UI walkthrough MP4"
+  },
+  {
+    "test_id": "RT-CP001",
+    "prompt": "Add a lower third to my product promo",
+    "expected_skill": "motion-graphics",
+    "expected_tool": "remotion_render",
+    "forbidden_tools": "shot_recipe_search",
+    "forbidden_skills": [
+      "cinematic-product-promo"
+    ],
+    "suite": "cinematic-product-promo-negatives",
+    "skip_reason": "",
+    "note": "New card routing must preserve the existing authoring workflow.",
+    "source_status": "new"
+  },
+  {
+    "test_id": "RT-CP002",
+    "prompt": "Make a HyperFrames cinematic product promo",
+    "expected_skill": "hyperframes",
+    "expected_tool": "hyperframes_render",
+    "forbidden_tools": "shot_recipe_search",
+    "forbidden_skills": [
+      "cinematic-product-promo"
+    ],
+    "suite": "cinematic-product-promo-negatives",
+    "skip_reason": "",
+    "note": "New card routing must preserve the existing authoring workflow.",
+    "source_status": "new",
+    "env": {
+      "HYPERFRAMES_ENABLED": "true",
+      "HYPERFRAMES_DRY_RUN": "true"
+    }
+  },
+  {
+    "test_id": "RT-CP003",
+    "prompt": "Make a silent knowledge explainer about gravity",
+    "expected_skill": "knowledge-explainer",
+    "expected_tool": "remotion_render",
+    "forbidden_tools": "shot_recipe_search",
+    "forbidden_skills": [
+      "cinematic-product-promo"
+    ],
+    "suite": "cinematic-product-promo-negatives",
+    "skip_reason": "",
+    "note": "New card routing must preserve the existing authoring workflow.",
+    "source_status": "new"
+  },
+  {
+    "test_id": "RT-CP004",
+    "prompt": "Render ad variants for a cinematic product promo",
+    "expected_skill": "remotion-ad-variant-matrix",
+    "expected_tool": "ad_variant_matrix",
+    "forbidden_tools": "shot_recipe_search",
+    "forbidden_skills": [
+      "cinematic-product-promo"
+    ],
+    "suite": "cinematic-product-promo-negatives",
+    "skip_reason": "",
+    "note": "New card routing must preserve the existing authoring workflow.",
+    "source_status": "new"
   }
 ]

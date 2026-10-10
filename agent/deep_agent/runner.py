@@ -60,7 +60,7 @@ SKILLS_ROOT = Path(__file__).parent / "skills"
 DISPATCH_TARGETS = {
     "call_media_tool": {"Gemini", "OpenAI", "Seedance", "Seedream", "Kling", "Runway", "Fal", "Luma", "ModelStudio", "Sync", "HeyGen", "Topaz"},
     "call_audio_tool": {"ElevenLabs", "FishAudio", "FishAudioProvider", "Fish_Audio", "Mureka", "HeyGen"},
-    "call_editor_tool": {"Remotion", "HyperFrames", "Ffmpeg"},
+    "call_editor_tool": {"Remotion", "HyperFrames", "Ffmpeg", "ShotRecipes"},
 }
 FS_TOOLS = ["ls", "read_file", "write_file", "edit_file", "glob", "grep"]
 PERMISSIONS = [FilesystemPermission(operations=["write"], paths=["/skills/**"], mode="deny")]
@@ -82,6 +82,12 @@ Omit timeline fps and bitrate unless the customer sets them. The renderer preser
 visual's measured frame rate and quality; a cinematic brief does not request 24 fps.
 Remotion remains the default renderer. Explicit HyperFrames requests use the optional local
 tool schema in read_studio_context, through call_editor_tool. If disabled, report the blocker.
+For cinematic product launch films, read /skills/cinematic-product-promo/SKILL.md and search
+ShotRecipes___shot_recipe_search through the editor before planning the render. A user-named
+card or clear alias wins for its requested beat. Validate the storyboard with the same local
+tool's validate_storyboard mode before assembly. Keep music, SFX and voiceover separate.
+SFX cues name categories only. Use a user-supplied asset library or an empty disclosed stem.
+The imported recipe cards do not install custom animation components or capture footage.
 HyperFrames only previews composition inputs, never executes HTML or produces a video here.
 Do not silently replace a requested HyperFrames workflow with Remotion or a hosted HeyGen API.
 Use write_todos to track multi-shot or multi-step work and update the plan as steps finish.
@@ -127,7 +133,7 @@ Remotion___qc_deliverable inspects existing in-job media without changing it. Bo
 worker tools and need no spending approval. They refuse Lambda. Dry-run previews and failed checks
 are incomplete delivery. Quote each failure verbatim and report visual/OCR/editorial review as pending.
 Spending-approval rejection does not authorize a retry. Poll pending jobs before review.
-After motion-graphics, product-demo-video, knowledge-explainer or explicit HyperFrames renders,
+After motion-graphics, product-demo-video, cinematic-product-promo, knowledge-explainer or explicit HyperFrames renders,
 read /skills/motion-carry-qc/SKILL.md and run Remotion___motion_carry_probe through the editor
 on the completed owned local MP4. Supply exact beat/element metadata when available. This is
 free and requires no approval. A completed failed probe gates delivery. Surface every failure

@@ -35,6 +35,7 @@ on:
           - elevenlabs
           - remotion
           - ffmpeg
+          - shot_recipes
         default: all
       region:
         description: AWS region
@@ -129,6 +130,7 @@ jobs:
                   echo "$CHANGED" | grep -E '^providers/elevenlabs/|^configs/gateway/elevenlabs\.tools\.json' >/dev/null && SELECTED+=(elevenlabs)
                   echo "$CHANGED" | grep -E '^providers/remotion/' >/dev/null && SELECTED+=(remotion)
                   echo "$CHANGED" | grep -E '^providers/ffmpeg/|^configs/gateway/ffmpeg\.tools\.json' >/dev/null && SELECTED+=(ffmpeg)
+                  echo "$CHANGED" | grep -E '^providers/shot_recipes/|^configs/gateway/shot_recipes\.tools\.json' >/dev/null && SELECTED+=(shot_recipes)
                   if [ "${#SELECTED[@]}" -eq 0 ] || [ "${#SELECTED[@]}" -ge 12 ]; then
                     PROVIDER=all
                   else
@@ -137,7 +139,7 @@ jobs:
                   fi
                 fi
               fi
-              if echo "$CHANGED" | grep -E '^(agent/|Dockerfile\.agentcore|scripts/deploy_agentcore\.py|pyproject\.toml|server/billing_rates\.py)' >/dev/null; then
+              if echo "$CHANGED" | grep -E '^(agent/|providers/shot_recipes/|Dockerfile\.agentcore|scripts/deploy_agentcore\.py|pyproject\.toml|server/billing_rates\.py)' >/dev/null; then
                 RT=true
               fi
             fi
@@ -169,7 +171,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install -e .
 
-      - name: Check inventories (16 providers, 128 tools, 34 skills)
+      - name: Check inventories (17 providers, 129 tools, 35 skills)
         run: python -c "from scripts.ci_check import check_routing_inventory; check_routing_inventory()"
 
       - name: Configure AWS (OIDC)

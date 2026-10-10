@@ -485,6 +485,7 @@ _SECRET_ARGUMENT_PARTS = (
 )
 _TEXT_PART_KEYS = frozenset({"type", "text"})
 _TOOL_TITLES = {
+    "shot_recipe_search": "Find shot recipes",
     "render_timeline": "Compose final MP4",
     "get_render_progress": "Poll Remotion render",
     "text_to_image": "Generate image",

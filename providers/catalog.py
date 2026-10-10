@@ -17,6 +17,10 @@ class ProviderSpec:
 
 PROVIDERS: tuple[ProviderSpec, ...] = (
     ProviderSpec(
+        id="shot_recipes", target_name="ShotRecipes", function_name="renderhaus-shot-recipes-tools",
+        module_path="providers.shot_recipes.api", env_keys=(),
+    ),
+    ProviderSpec(
         id="ffmpeg", target_name="Ffmpeg", function_name="renderhaus-ffmpeg-tools",
         module_path="providers.ffmpeg.api",
         env_keys=("FFMPEG_DRY_RUN", "RENDERHAUS_MEDIA_DIR"),

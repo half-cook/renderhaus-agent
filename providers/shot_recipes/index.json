@@ -1,5 +1,5 @@
 {
-  "metadata_notice": "Renderhaus-authored derivative metadata: neutral English summaries, lexical aliases, typical duration defaults and implementation hints written from reading all 157 original Chinese cards. Imported card text is unmodified. Neutral public id ground-skim maps to source ui-entrance/runway-ground-skim.md; source filename and frontmatter name remain intact.",
+  "metadata_notice": "Renderhaus-authored derivative metadata: neutral English summaries, lexical aliases, typical duration defaults and implementation hints written from reading all 157 original Chinese cards. Imported card text is unmodified. Neutral public id ground-skim maps to source ui-entrance/runway-ground-skim.md; source filename and frontmatter name remain intact. Named-card aliases are separate from broad lexical search keywords; spaced public ids and explicitly authored reveal aliases identify cards.",
   "source": {
     "repository": "https://github.com/Vincentwei1021/video-shotcraft",
     "commit": "5ddbf521038b0a7accfb6dc1e0a9eb29c67277ab",
@@ -137,7 +137,10 @@
       "component_hint": "ResponseEvidence",
       "sfx_cue": "ui",
       "tags": [],
-      "sha256": "a44dc2f57dcc3e367e21ecd71669f6550262e5746be0af87e95309ed40308e65"
+      "sha256": "a44dc2f57dcc3e367e21ecd71669f6550262e5746be0af87e95309ed40308e65",
+      "aliases": [
+        "ai stream response"
+      ]
     },
     {
       "id": "assemble-then-type-flyin",
@@ -157,7 +160,10 @@
       "component_hint": "PageTypeAssembly",
       "sfx_cue": "text",
       "tags": [],
-      "sha256": "9595dc6c901098dc40863346b38c452eb79db316fb78f2b50da7edbc59bb9c55"
+      "sha256": "9595dc6c901098dc40863346b38c452eb79db316fb78f2b50da7edbc59bb9c55",
+      "aliases": [
+        "assemble then type flyin"
+      ]
     },
     {
       "id": "aurora-bloom-bg-flip",
@@ -178,7 +184,10 @@
       "component_hint": "AuroraSceneFlip",
       "sfx_cue": "riser",
       "tags": [],
-      "sha256": "1f07bb3cf98476d7703be50ae78e8949a47fa8d745972b1a38c064cb8f7ee365"
+      "sha256": "1f07bb3cf98476d7703be50ae78e8949a47fa8d745972b1a38c064cb8f7ee365",
+      "aliases": [
+        "aurora bloom bg flip"
+      ]
     },
     {
       "id": "autolayout-gap-dial",
@@ -199,7 +208,10 @@
       "component_hint": "LayoutGapDial",
       "sfx_cue": "ui",
       "tags": [],
-      "sha256": "35a594da44e545d2b265433f97c43541e96ed1a97409edcd6acae0f574fd4b88"
+      "sha256": "35a594da44e545d2b265433f97c43541e96ed1a97409edcd6acae0f574fd4b88",
+      "aliases": [
+        "autolayout gap dial"
+      ]
     },
     {
       "id": "avatar-bracket-carousel",
@@ -220,7 +232,10 @@
       "component_hint": "RoleAvatarSlot",
       "sfx_cue": "ui",
       "tags": [],
-      "sha256": "5665c2cb46373728323e206255f9a41c52420d9a8144c4aba03f713c93774a0e"
+      "sha256": "5665c2cb46373728323e206255f9a41c52420d9a8144c4aba03f713c93774a0e",
+      "aliases": [
+        "avatar bracket carousel"
+      ]
     },
     {
       "id": "avatar-grid-radial-build-colorize",
@@ -241,7 +256,10 @@
       "component_hint": "RadialStatusGrid",
       "sfx_cue": "data",
       "tags": [],
-      "sha256": "d63d83204608f29f8798726efa3e97800bc04fb15e98a23a2abe14a04d0ed033"
+      "sha256": "d63d83204608f29f8798726efa3e97800bc04fb15e98a23a2abe14a04d0ed033",
+      "aliases": [
+        "avatar grid radial build colorize"
+      ]
     },
     {
       "id": "basic-3d-scene",
@@ -262,7 +280,10 @@
       "component_hint": "SpatialCardTour",
       "sfx_cue": "transition",
       "tags": [],
-      "sha256": "5783a05d2081d94e7d4b382615d6d7c369e700bdd0947dc02dfded61661af298"
+      "sha256": "5783a05d2081d94e7d4b382615d6d7c369e700bdd0947dc02dfded61661af298",
+      "aliases": [
+        "basic 3d scene"
+      ]
     },
     {
       "id": "beat-cut-moves",
@@ -286,7 +307,10 @@
       "tags": [
         "transition"
       ],
-      "sha256": "8ddffa6bffa58ce9bd7573211e0decd7182e4719b3772a48e9b27085b325d8e7"
+      "sha256": "8ddffa6bffa58ce9bd7573211e0decd7182e4719b3772a48e9b27085b325d8e7",
+      "aliases": [
+        "beat cut moves"
+      ]
     },
     {
       "id": "beat-step-list-theme-cycle",
@@ -309,7 +333,10 @@
       "tags": [
         "typography"
       ],
-      "sha256": "47f30ecbdc393a7a2b3dae63ffe516d5c0c93bdfc015ecc68dd70ba3077fdce6"
+      "sha256": "47f30ecbdc393a7a2b3dae63ffe516d5c0c93bdfc015ecc68dd70ba3077fdce6",
+      "aliases": [
+        "beat step list theme cycle"
+      ]
     },
     {
       "id": "before-after-slider-scrub",
@@ -332,7 +359,10 @@
       "tags": [
         "interaction"
       ],
-      "sha256": "32b23cedd2529e9b51ea2061f1eecfbee391bb4dc56bcd420fc48426af54d278"
+      "sha256": "32b23cedd2529e9b51ea2061f1eecfbee391bb4dc56bcd420fc48426af54d278",
+      "aliases": [
+        "before after slider scrub"
+      ]
     },
     {
       "id": "bezier-source-converge-merge",
@@ -353,7 +383,10 @@
       "component_hint": "SourceConvergence",
       "sfx_cue": "data",
       "tags": [],
-      "sha256": "8b4c94782209e2026e00c3ca4ee802aba1dd0a44d8e8f88e5073caa3f1c986a5"
+      "sha256": "8b4c94782209e2026e00c3ca4ee802aba1dd0a44d8e8f88e5073caa3f1c986a5",
+      "aliases": [
+        "bezier source converge merge"
+      ]
     },
     {
       "id": "blur-slide",
@@ -374,7 +407,10 @@
       "component_hint": "SoftWordReveal",
       "sfx_cue": "text",
       "tags": [],
-      "sha256": "5744aad82a6424a74252381a9c452cbe829478e5ada354a73d8f5a35daa997ab"
+      "sha256": "5744aad82a6424a74252381a9c452cbe829478e5ada354a73d8f5a35daa997ab",
+      "aliases": [
+        "blur slide"
+      ]
     },
     {
       "id": "bottom-push-stack-wipe",
@@ -394,7 +430,10 @@
       "component_hint": "ChapterStackPush",
       "sfx_cue": "transition",
       "tags": [],
-      "sha256": "f6bbe2e5462b55c354dd6843918c3a981ef3fed5281053d556593ce4f8c282f4"
+      "sha256": "f6bbe2e5462b55c354dd6843918c3a981ef3fed5281053d556593ce4f8c282f4",
+      "aliases": [
+        "bottom push stack wipe"
+      ]
     },
     {
       "id": "brace-expand",
@@ -415,7 +454,10 @@
       "component_hint": "BraceTitleReveal",
       "sfx_cue": "text",
       "tags": [],
-      "sha256": "a3d0c00d16ff3b61c80055626d8e615fbaeb941af7d2f32ff0b00a67bad49a71"
+      "sha256": "a3d0c00d16ff3b61c80055626d8e615fbaeb941af7d2f32ff0b00a67bad49a71",
+      "aliases": [
+        "brace expand"
+      ]
     },
     {
       "id": "brand-frame-snap",
@@ -438,7 +480,10 @@
       "tags": [
         "transition"
       ],
-      "sha256": "76df6e490212f838a2c613b4ba28a32ae3149d9c5fec3cd3a51a64768e65b3c0"
+      "sha256": "76df6e490212f838a2c613b4ba28a32ae3149d9c5fec3cd3a51a64768e65b3c0",
+      "aliases": [
+        "brand frame snap"
+      ]
     },
     {
       "id": "brand-ink-open",
@@ -463,7 +508,13 @@
       "tags": [
         "typography"
       ],
-      "sha256": "3fce12ba7ff5c8dcdf59f8c4a7add5ae52f9f29e38c82a6c95ffe34626458de8"
+      "sha256": "3fce12ba7ff5c8dcdf59f8c4a7add5ae52f9f29e38c82a6c95ffe34626458de8",
+      "aliases": [
+        "brand ink open",
+        "ink press",
+        "ink press style",
+        "letterpress reveal"
+      ]
     },
     {
       "id": "bubble-swarm-takeover",
@@ -484,7 +535,10 @@
       "component_hint": "BubbleCurtain",
       "sfx_cue": "transition",
       "tags": [],
-      "sha256": "767d3e1d6828c22e2c2ca1270ab54f14046ab19be2d06f1c84461ca333f8c5f8"
+      "sha256": "767d3e1d6828c22e2c2ca1270ab54f14046ab19be2d06f1c84461ca333f8c5f8",
+      "aliases": [
+        "bubble swarm takeover"
+      ]
     },
     {
       "id": "canvas-materialize-moves",
@@ -507,7 +561,10 @@
       "tags": [
         "ui-entrance"
       ],
-      "sha256": "8f62da7fc1ffcfa904f35c42ca68464632e62cd0178878868cf53926d3346045"
+      "sha256": "8f62da7fc1ffcfa904f35c42ca68464632e62cd0178878868cf53926d3346045",
+      "aliases": [
+        "canvas materialize moves"
+      ]
     },
     {
       "id": "card-flip-reveal",
@@ -530,7 +587,10 @@
       "tags": [
         "data"
       ],
-      "sha256": "02c3e077d64c5eabb31d1b62be542a95c4c8d9b65d58139eba365a26a29e5911"
+      "sha256": "02c3e077d64c5eabb31d1b62be542a95c4c8d9b65d58139eba365a26a29e5911",
+      "aliases": [
+        "card flip reveal"
+      ]
     },
     {
       "id": "card-flock-tumble",
@@ -547,11 +607,14 @@
         "slogan burst"
       ],
       "camera_move": "fixed spatial view",
-      "easing": "continuous spline and accelerating collapse",
+      "easing": "continuous curve and accelerating collapse",
       "component_hint": "CardFlockRing",
       "sfx_cue": "impact",
       "tags": [],
-      "sha256": "3e9766a79c9e85f364687ba3578ebe0477038722752586befdf97a148e0f7f0b"
+      "sha256": "3e9766a79c9e85f364687ba3578ebe0477038722752586befdf97a148e0f7f0b",
+      "aliases": [
+        "card flock tumble"
+      ]
     },
     {
       "id": "card-stack",
@@ -572,7 +635,10 @@
       "component_hint": "StackToFan",
       "sfx_cue": "ui",
       "tags": [],
-      "sha256": "9a9a417fc1021cb0182b38f9cec3e32521eb2fe0ca632c27aae85b2d2e833ecf"
+      "sha256": "9a9a417fc1021cb0182b38f9cec3e32521eb2fe0ca632c27aae85b2d2e833ecf",
+      "aliases": [
+        "card stack"
+      ]
     },
     {
       "id": "carousel-3d",
@@ -592,7 +658,10 @@
       "component_hint": "UprightCardCarousel",
       "sfx_cue": "transition",
       "tags": [],
-      "sha256": "57f72b4c9d783e9523753f399837322cab98b47120375ab34b4a17d1922524ef"
+      "sha256": "57f72b4c9d783e9523753f399837322cab98b47120375ab34b4a17d1922524ef",
+      "aliases": [
+        "carousel 3d"
+      ]
     },
     {
       "id": "cel-flash-stomp",
@@ -615,7 +684,10 @@
       "tags": [
         "rhythm"
       ],
-      "sha256": "1d70addd39663c7670e25ecf7a9f2bb1889a93074a7e01a588a1ffc0c2dd9dcb"
+      "sha256": "1d70addd39663c7670e25ecf7a9f2bb1889a93074a7e01a588a1ffc0c2dd9dcb",
+      "aliases": [
+        "cel flash stomp"
+      ]
     },
     {
       "id": "chart-live-moves",
@@ -637,7 +709,10 @@
       "component_hint": "LiveDataStory",
       "sfx_cue": "data",
       "tags": [],
-      "sha256": "a24e5d3711e75d00670d0cb7595f684cf02fd7ddebadafd2fc12974e273359b9"
+      "sha256": "a24e5d3711e75d00670d0cb7595f684cf02fd7ddebadafd2fc12974e273359b9",
+      "aliases": [
+        "chart live moves"
+      ]
     },
     {
       "id": "chip-grid-single-select-blackout",
@@ -658,7 +733,10 @@
       "component_hint": "ChipSelection",
       "sfx_cue": "ui",
       "tags": [],
-      "sha256": "566389d19c29cd07713470b0fa2fe66c6a0480d567248abd5e3aa342a06282ac"
+      "sha256": "566389d19c29cd07713470b0fa2fe66c6a0480d567248abd5e3aa342a06282ac",
+      "aliases": [
+        "chip grid single select blackout"
+      ]
     },
     {
       "id": "chip-lift-to-user-pill",
@@ -679,7 +757,10 @@
       "component_hint": "ChipDetailPill",
       "sfx_cue": "ui",
       "tags": [],
-      "sha256": "70877c76fb0fbf049eefbcc9dc2cea4265c00219847b93fab34e7f3b31825a0c"
+      "sha256": "70877c76fb0fbf049eefbcc9dc2cea4265c00219847b93fab34e7f3b31825a0c",
+      "aliases": [
+        "chip lift to user pill"
+      ]
     },
     {
       "id": "circle-match-iris",
@@ -700,7 +781,10 @@
       "component_hint": "CircularMatchReveal",
       "sfx_cue": "transition",
       "tags": [],
-      "sha256": "5c5e46f211f90fdb437865a863144abba7867eea34d7c19b34d5bc0e5e063f14"
+      "sha256": "5c5e46f211f90fdb437865a863144abba7867eea34d7c19b34d5bc0e5e063f14",
+      "aliases": [
+        "circle match iris"
+      ]
     },
     {
       "id": "cloner-depth-echo",
@@ -722,7 +806,10 @@
       "component_hint": "CardCloneEcho",
       "sfx_cue": "ui",
       "tags": [],
-      "sha256": "370a3add4d937dbf3d91e9a677f35843b16bade3b0ee3cbbaad9b4e4d892cd10"
+      "sha256": "370a3add4d937dbf3d91e9a677f35843b16bade3b0ee3cbbaad9b4e4d892cd10",
+      "aliases": [
+        "cloner depth echo"
+      ]
     },
     {
       "id": "collab-cursor-moves",
@@ -743,7 +830,10 @@
       "component_hint": "CollaborativeCursors",
       "sfx_cue": "ui",
       "tags": [],
-      "sha256": "5573e13795e0f0080c9a7e56d217c508d0b12d3474095f6069763e9a92338305"
+      "sha256": "5573e13795e0f0080c9a7e56d217c508d0b12d3474095f6069763e9a92338305",
+      "aliases": [
+        "collab cursor moves"
+      ]
     },
     {
       "id": "color-block-step-wipe",
@@ -764,7 +854,10 @@
       "component_hint": "SteppedColorWipe",
       "sfx_cue": "impact",
       "tags": [],
-      "sha256": "f8e028eb284e91fb77c882280dfe83ec57057837b972068c1418356f0c76067c"
+      "sha256": "f8e028eb284e91fb77c882280dfe83ec57057837b972068c1418356f0c76067c",
+      "aliases": [
+        "color block step wipe"
+      ]
     },
     {
       "id": "command-palette-summon",
@@ -786,7 +879,10 @@
       "tags": [
         "ui-entrance"
       ],
-      "sha256": "5ddb0ab973fba05682f66b0fe1c873a24e274de465a20ace30311b6830d9957d"
+      "sha256": "5ddb0ab973fba05682f66b0fe1c873a24e274de465a20ace30311b6830d9957d",
+      "aliases": [
+        "command palette summon"
+      ]
     },
     {
       "id": "countdown-arc-scatter",
@@ -807,7 +903,10 @@
       "component_hint": "ArcNumberTitle",
       "sfx_cue": "data",
       "tags": [],
-      "sha256": "03e5dd4e3e16aed8c81e29ddce109c0c1d88ef8dac8d3497cd38025ebd5c7a14"
+      "sha256": "03e5dd4e3e16aed8c81e29ddce109c0c1d88ef8dac8d3497cd38025ebd5c7a14",
+      "aliases": [
+        "countdown arc scatter"
+      ]
     },
     {
       "id": "counter-confetti",
@@ -828,7 +927,10 @@
       "component_hint": "CelebrationCounter",
       "sfx_cue": "impact",
       "tags": [],
-      "sha256": "9a05ad8cb6b0c43b5457b5dc6012b44103fde5094ac016f61dd5bfe1c13e74fa"
+      "sha256": "9a05ad8cb6b0c43b5457b5dc6012b44103fde5094ac016f61dd5bfe1c13e74fa",
+      "aliases": [
+        "counter confetti"
+      ]
     },
     {
       "id": "crane-rise-reveal",
@@ -853,7 +955,11 @@
         "camera",
         "data"
       ],
-      "sha256": "4d3b7e5b49d12034d511e4cc9035861b9e7a8b46a605d8e6c5483a6de8a6f4f5"
+      "sha256": "4d3b7e5b49d12034d511e4cc9035861b9e7a8b46a605d8e6c5483a6de8a6f4f5",
+      "aliases": [
+        "crane rise reveal",
+        "crane reveal"
+      ]
     },
     {
       "id": "crash-zoom-punch",
@@ -876,7 +982,10 @@
       "tags": [
         "effects"
       ],
-      "sha256": "7ff7214d17dc305718683ae15b308ab6704a2cc82ee82a6afe9db5cbe7a417f4"
+      "sha256": "7ff7214d17dc305718683ae15b308ab6704a2cc82ee82a6afe9db5cbe7a417f4",
+      "aliases": [
+        "crash zoom punch"
+      ]
     },
     {
       "id": "cube-navigation",
@@ -897,7 +1006,10 @@
       "component_hint": "ContentCubeTour",
       "sfx_cue": "transition",
       "tags": [],
-      "sha256": "898bd23e7d1a54e4e02b1b9ce4c43142a86a6b9e5dc512a800808f0340c14e38"
+      "sha256": "898bd23e7d1a54e4e02b1b9ce4c43142a86a6b9e5dc512a800808f0340c14e38",
+      "aliases": [
+        "cube navigation"
+      ]
     },
     {
       "id": "cursor-flyover",
@@ -918,7 +1030,10 @@
       "component_hint": "CursorTour",
       "sfx_cue": "ui",
       "tags": [],
-      "sha256": "811e8864bc9ab325ec2699d3945edadf9b5a07191356e14b35d92d7adf5783f5"
+      "sha256": "811e8864bc9ab325ec2699d3945edadf9b5a07191356e14b35d92d7adf5783f5",
+      "aliases": [
+        "cursor flyover"
+      ]
     },
     {
       "id": "cycle-glass-node-morph",
@@ -942,7 +1057,10 @@
         "interaction",
         "camera"
       ],
-      "sha256": "3844ed591b51daa5957c98c86bfe25f3007a9dfcbdc4c8c60aae19ec8349cd67"
+      "sha256": "3844ed591b51daa5957c98c86bfe25f3007a9dfcbdc4c8c60aae19ec8349cd67",
+      "aliases": [
+        "cycle glass node morph"
+      ]
     },
     {
       "id": "dashboard-glow-highlight-pill",
@@ -963,7 +1081,10 @@
       "component_hint": "DashboardLightRelay",
       "sfx_cue": "ui",
       "tags": [],
-      "sha256": "1c67ede74198d0eced8ffe7e14cc929f803d0a05a8102cd7d1762c1991675176"
+      "sha256": "1c67ede74198d0eced8ffe7e14cc929f803d0a05a8102cd7d1762c1991675176",
+      "aliases": [
+        "dashboard glow highlight pill"
+      ]
     },
     {
       "id": "dataviz-landscape-open",
@@ -987,7 +1108,10 @@
         "data",
         "camera"
       ],
-      "sha256": "40318d4903ce1aecf1b39a0beb7738e7ec9b41f35ce49978eafe875efa402439"
+      "sha256": "40318d4903ce1aecf1b39a0beb7738e7ec9b41f35ce49978eafe875efa402439",
+      "aliases": [
+        "dataviz landscape open"
+      ]
     },
     {
       "id": "deck-deal-flyin",
@@ -1008,7 +1132,10 @@
       "component_hint": "CardDealGrid",
       "sfx_cue": "ui",
       "tags": [],
-      "sha256": "1341d0ae4728efa49ee47ee5715eb11c19155ba695d15b79ac5f986c180f71ad"
+      "sha256": "1341d0ae4728efa49ee47ee5715eb11c19155ba695d15b79ac5f986c180f71ad",
+      "aliases": [
+        "deck deal flyin"
+      ]
     },
     {
       "id": "depth-layer-moves",
@@ -1029,7 +1156,10 @@
       "component_hint": "DepthLayerMove",
       "sfx_cue": "transition",
       "tags": [],
-      "sha256": "3caa8ebc9c5ae5af8dfe3932f43bc88c1f1bd5d4e6980a0c0461be121bcf1acc"
+      "sha256": "3caa8ebc9c5ae5af8dfe3932f43bc88c1f1bd5d4e6980a0c0461be121bcf1acc",
+      "aliases": [
+        "depth layer moves"
+      ]
     },
     {
       "id": "doc-park-left-pill-deal",
@@ -1050,7 +1180,10 @@
       "component_hint": "DocumentConclusionPills",
       "sfx_cue": "ui",
       "tags": [],
-      "sha256": "301561810b31b96af7e8de5c58172bad6d5366dfe01e74795db79ef5a68e2007"
+      "sha256": "301561810b31b96af7e8de5c58172bad6d5366dfe01e74795db79ef5a68e2007",
+      "aliases": [
+        "doc park left pill deal"
+      ]
     },
     {
       "id": "document-typewriter-reveal",
@@ -1073,7 +1206,10 @@
       "tags": [
         "ui-entrance"
       ],
-      "sha256": "a40cdd16dd88ce4e868f3f247fe4c6c85e246521d93f7e837a81f87bec9c60fe"
+      "sha256": "a40cdd16dd88ce4e868f3f247fe4c6c85e246521d93f7e837a81f87bec9c60fe",
+      "aliases": [
+        "document typewriter reveal"
+      ]
     },
     {
       "id": "draw-svg-trace",
@@ -1096,7 +1232,10 @@
       "tags": [
         "typography"
       ],
-      "sha256": "efafcc9abd8cd7dee3e22036b98dc7fcc1c5d122ba7630af622f0714675a335d"
+      "sha256": "efafcc9abd8cd7dee3e22036b98dc7fcc1c5d122ba7630af622f0714675a335d",
+      "aliases": [
+        "draw svg trace"
+      ]
     },
     {
       "id": "edit-hook-moves",
@@ -1117,7 +1256,10 @@
       "component_hint": "EndingHook",
       "sfx_cue": "impact",
       "tags": [],
-      "sha256": "1baf040246f537057fa7ef22a3fcb1607a6d297c1495e1808d071e6564720263"
+      "sha256": "1baf040246f537057fa7ef22a3fcb1607a6d297c1495e1808d071e6564720263",
+      "aliases": [
+        "edit hook moves"
+      ]
     },
     {
       "id": "element-body-moves",
@@ -1138,7 +1280,10 @@
       "component_hint": "PhysicalElementMove",
       "sfx_cue": "ui",
       "tags": [],
-      "sha256": "d3cbcb1401dcfc8f6206d8a332b3092e212dc146d8ee1d7655c0619c0c0e0317"
+      "sha256": "d3cbcb1401dcfc8f6206d8a332b3092e212dc146d8ee1d7655c0619c0c0e0317",
+      "aliases": [
+        "element body moves"
+      ]
     },
     {
       "id": "floating-glossy-label-pills",
@@ -1159,7 +1304,10 @@
       "component_hint": "FeaturePillCorridor",
       "sfx_cue": "ui",
       "tags": [],
-      "sha256": "8c49ec6f221f331f09a53aea5baf9a54779f9da0900c5428150270fc69b43b1c"
+      "sha256": "8c49ec6f221f331f09a53aea5baf9a54779f9da0900c5428150270fc69b43b1c",
+      "aliases": [
+        "floating glossy label pills"
+      ]
     },
     {
       "id": "flying-words",
@@ -1180,7 +1328,10 @@
       "component_hint": "KeywordTunnel",
       "sfx_cue": "text",
       "tags": [],
-      "sha256": "0f56645a905dbb90d0fc9f220e6ddda9a4732d574f75571176d6b89a838375bf"
+      "sha256": "0f56645a905dbb90d0fc9f220e6ddda9a4732d574f75571176d6b89a838375bf",
+      "aliases": [
+        "flying words"
+      ]
     },
     {
       "id": "fracture",
@@ -1201,7 +1352,10 @@
       "component_hint": "TileReassembly",
       "sfx_cue": "transition",
       "tags": [],
-      "sha256": "4d0b2a76c2bd4a65eec3dd8e586e8ce841d3887ba8eeaffdca9d44fc64a1413b"
+      "sha256": "4d0b2a76c2bd4a65eec3dd8e586e8ce841d3887ba8eeaffdca9d44fc64a1413b",
+      "aliases": [
+        "fracture"
+      ]
     },
     {
       "id": "fui-hud-moves",
@@ -1224,7 +1378,10 @@
       "tags": [
         "ui-entrance"
       ],
-      "sha256": "480e920e376e8f18529142d06c4de84544406b0e5f2dd37062dfe274b3f51305"
+      "sha256": "480e920e376e8f18529142d06c4de84544406b0e5f2dd37062dfe274b3f51305",
+      "aliases": [
+        "fui hud moves"
+      ]
     },
     {
       "id": "gauge-readout-moves",
@@ -1246,7 +1403,10 @@
       "component_hint": "GaugeReadout",
       "sfx_cue": "data",
       "tags": [],
-      "sha256": "dbd2801aa6ce647725230216e8d4bc593e6ad91f097ad3e4d3555211d7966698"
+      "sha256": "dbd2801aa6ce647725230216e8d4bc593e6ad91f097ad3e4d3555211d7966698",
+      "aliases": [
+        "gauge readout moves"
+      ]
     },
     {
       "id": "glass-pill-dictation-typing",
@@ -1267,7 +1427,10 @@
       "component_hint": "DictationPill",
       "sfx_cue": "text",
       "tags": [],
-      "sha256": "fd41dce82df9de936d958fee0640d0b411f13a5e0f71711280076a848e639036"
+      "sha256": "fd41dce82df9de936d958fee0640d0b411f13a5e0f71711280076a848e639036",
+      "aliases": [
+        "glass pill dictation typing"
+      ]
     },
     {
       "id": "glitch-cycle",
@@ -1288,7 +1451,10 @@
       "component_hint": "StatusGlitchCycle",
       "sfx_cue": "text",
       "tags": [],
-      "sha256": "e0ad73950c1d56b9fad5c737b981765201a13a93ef44ae02fec2deec885c6b5c"
+      "sha256": "e0ad73950c1d56b9fad5c737b981765201a13a93ef44ae02fec2deec885c6b5c",
+      "aliases": [
+        "glitch cycle"
+      ]
     },
     {
       "id": "glow-flyline-moves",
@@ -1311,7 +1477,10 @@
       "tags": [
         "data"
       ],
-      "sha256": "e6e11ac3659debfc8918c956c4a3c5ccb202c76f89d5d3b09717fb240be6f8be"
+      "sha256": "e6e11ac3659debfc8918c956c4a3c5ccb202c76f89d5d3b09717fb240be6f8be",
+      "aliases": [
+        "glow flyline moves"
+      ]
     },
     {
       "id": "gradient-transition",
@@ -1331,7 +1500,10 @@
       "component_hint": "GradientBackdrop",
       "sfx_cue": "ambience",
       "tags": [],
-      "sha256": "0fb74f2a64807b4855aa55d223ad088e06a25b235a8e8737eb5f8dffbc6d432f"
+      "sha256": "0fb74f2a64807b4855aa55d223ad088e06a25b235a8e8737eb5f8dffbc6d432f",
+      "aliases": [
+        "gradient transition"
+      ]
     },
     {
       "id": "gradient-word-sweep",
@@ -1354,7 +1526,10 @@
       "tags": [
         "effects"
       ],
-      "sha256": "595f023015843f6446c1d4e9d29bbf3a1dc0cf331b2f8fe08ccdc95a6f716e88"
+      "sha256": "595f023015843f6446c1d4e9d29bbf3a1dc0cf331b2f8fe08ccdc95a6f716e88",
+      "aliases": [
+        "gradient word sweep"
+      ]
     },
     {
       "id": "grain-dissolve",
@@ -1374,7 +1549,10 @@
       "component_hint": "GrainWordmark",
       "sfx_cue": "text",
       "tags": [],
-      "sha256": "62eb469fe414c08e5807e2d13b481e84b39f043904744668a0ed9594114fe89b"
+      "sha256": "62eb469fe414c08e5807e2d13b481e84b39f043904744668a0ed9594114fe89b",
+      "aliases": [
+        "grain dissolve"
+      ]
     },
     {
       "id": "graze-face-tour",
@@ -1397,7 +1575,10 @@
       "tags": [
         "ui-entrance"
       ],
-      "sha256": "5ce46610dee7fbdd5d07679353d71c464ba8797273351bc8dbaac5182db5b9a3"
+      "sha256": "5ce46610dee7fbdd5d07679353d71c464ba8797273351bc8dbaac5182db5b9a3",
+      "aliases": [
+        "graze face tour"
+      ]
     },
     {
       "id": "ground-skim",
@@ -1420,7 +1601,10 @@
       "tags": [
         "camera"
       ],
-      "sha256": "f236a0d24d05e58f44ceb6680085daf99dd4da864fa7b6fec287b610b4af05a2"
+      "sha256": "f236a0d24d05e58f44ceb6680085daf99dd4da864fa7b6fec287b610b4af05a2",
+      "aliases": [
+        "ground skim"
+      ]
     },
     {
       "id": "hashtag-to-pill-materialize",
@@ -1443,7 +1627,10 @@
       "tags": [
         "typography"
       ],
-      "sha256": "c2376c04e432f54f7b24c9975d3d69741a38ed14be382582cef6f040351dff80"
+      "sha256": "c2376c04e432f54f7b24c9975d3d69741a38ed14be382582cef6f040351dff80",
+      "aliases": [
+        "hashtag to pill materialize"
+      ]
     },
     {
       "id": "hatch-depth",
@@ -1464,7 +1651,10 @@
       "component_hint": "HatchedBarReveal",
       "sfx_cue": "data",
       "tags": [],
-      "sha256": "92d1b1a213ee077a7fb9c4615da26d90543d2e22c26888c61f7a15f51ff534ca"
+      "sha256": "92d1b1a213ee077a7fb9c4615da26d90543d2e22c26888c61f7a15f51ff534ca",
+      "aliases": [
+        "hatch depth"
+      ]
     },
     {
       "id": "icon-field-colorize",
@@ -1488,7 +1678,10 @@
         "ui-entrance",
         "outro"
       ],
-      "sha256": "987a9354ef9f933965c5bea27c6aa9b8e22b9150114b2c7dd85052f2c692b6a4"
+      "sha256": "987a9354ef9f933965c5bea27c6aa9b8e22b9150114b2c7dd85052f2c692b6a4",
+      "aliases": [
+        "icon field colorize"
+      ]
     },
     {
       "id": "icon-performance-moves",
@@ -1511,7 +1704,10 @@
       "tags": [
         "interaction"
       ],
-      "sha256": "e643217134fe454c5049a4bf02ece3a2c0d066a4bf7f2c92e3d2c17daed351fe"
+      "sha256": "e643217134fe454c5049a4bf02ece3a2c0d066a4bf7f2c92e3d2c17daed351fe",
+      "aliases": [
+        "icon performance moves"
+      ]
     },
     {
       "id": "impact-feedback",
@@ -1532,7 +1728,10 @@
       "component_hint": "ImpactFeedback",
       "sfx_cue": "impact",
       "tags": [],
-      "sha256": "823876ebd6b955693ce6665db33cbb9fb07f6c5ab5ca6f2da9212b0bb16b94d6"
+      "sha256": "823876ebd6b955693ce6665db33cbb9fb07f6c5ab5ca6f2da9212b0bb16b94d6",
+      "aliases": [
+        "impact feedback"
+      ]
     },
     {
       "id": "input-trigger-moves",
@@ -1555,7 +1754,10 @@
       "tags": [
         "opening"
       ],
-      "sha256": "4ad36f963da66a7b1c9315da7f80ff75fe3e44d687036c876aebdc1b7484a992"
+      "sha256": "4ad36f963da66a7b1c9315da7f80ff75fe3e44d687036c876aebdc1b7484a992",
+      "aliases": [
+        "input trigger moves"
+      ]
     },
     {
       "id": "integration-hub-map",
@@ -1578,7 +1780,10 @@
       "tags": [
         "effects"
       ],
-      "sha256": "ebaec72ec69d2bbf5a94d4a10d95300b4710db4cc815fe04c1ac881281c711e1"
+      "sha256": "ebaec72ec69d2bbf5a94d4a10d95300b4710db4cc815fe04c1ac881281c711e1",
+      "aliases": [
+        "integration hub map"
+      ]
     },
     {
       "id": "lead-word-zoom-assemble",
@@ -1601,7 +1806,10 @@
       "tags": [
         "opening"
       ],
-      "sha256": "f3ef1f01e2a719699ab9153dde285576a72eaf324226eecbb119f80dbac60355"
+      "sha256": "f3ef1f01e2a719699ab9153dde285576a72eaf324226eecbb119f80dbac60355",
+      "aliases": [
+        "lead word zoom assemble"
+      ]
     },
     {
       "id": "letterspace-materialize",
@@ -1625,7 +1833,10 @@
         "typography",
         "outro"
       ],
-      "sha256": "f6632e8da2ab2bef13248514617e3e636c79d9140de4605997312b01060ddd4a"
+      "sha256": "f6632e8da2ab2bef13248514617e3e636c79d9140de4605997312b01060ddd4a",
+      "aliases": [
+        "letterspace materialize"
+      ]
     },
     {
       "id": "light-play-moves",
@@ -1648,7 +1859,10 @@
       "tags": [
         "typography"
       ],
-      "sha256": "e45f10c67bca8d9bf20af879f60328182ba71a67fa0f90c082f8c8feedb42328"
+      "sha256": "e45f10c67bca8d9bf20af879f60328182ba71a67fa0f90c082f8c8feedb42328",
+      "aliases": [
+        "light play moves"
+      ]
     },
     {
       "id": "line-boil",
@@ -1671,7 +1885,10 @@
       "tags": [
         "typography"
       ],
-      "sha256": "751b96babc027ee5e8f3c45267e0374fbc2c94386c7d57a2eed1b918092bc734"
+      "sha256": "751b96babc027ee5e8f3c45267e0374fbc2c94386c7d57a2eed1b918092bc734",
+      "aliases": [
+        "line boil"
+      ]
     },
     {
       "id": "line-carry-transition",
@@ -1694,7 +1911,10 @@
       "tags": [
         "camera"
       ],
-      "sha256": "fd032128329b222c8769911fe5419c9ee0aad4411055c26bd5f7a238bbf59c97"
+      "sha256": "fd032128329b222c8769911fe5419c9ee0aad4411055c26bd5f7a238bbf59c97",
+      "aliases": [
+        "line carry transition"
+      ]
     },
     {
       "id": "list-reveal",
@@ -1715,7 +1935,10 @@
       "component_hint": "ReadableListReveal",
       "sfx_cue": "ui",
       "tags": [],
-      "sha256": "de1633dc78cfdf4d16e5b538640b63e60163df82d9098c469e1794e6a4e5dc68"
+      "sha256": "de1633dc78cfdf4d16e5b538640b63e60163df82d9098c469e1794e6a4e5dc68",
+      "aliases": [
+        "list reveal"
+      ]
     },
     {
       "id": "list-stack-press",
@@ -1736,7 +1959,10 @@
       "component_hint": "StackCountReveal",
       "sfx_cue": "ui",
       "tags": [],
-      "sha256": "fcf031f506570e4838c9313e4957c8c290a048a35321156ed61874685e8110ba"
+      "sha256": "fcf031f506570e4838c9313e4957c8c290a048a35321156ed61874685e8110ba",
+      "aliases": [
+        "list stack press"
+      ]
     },
     {
       "id": "logo-shrink-wordmark-lockup",
@@ -1757,7 +1983,10 @@
       "component_hint": "MarkLockup",
       "sfx_cue": "text",
       "tags": [],
-      "sha256": "1f76c5434a85bf2e5b8867142419577348adfe265fb215e460ec2b7e239b189b"
+      "sha256": "1f76c5434a85bf2e5b8867142419577348adfe265fb215e460ec2b7e239b189b",
+      "aliases": [
+        "logo shrink wordmark lockup"
+      ]
     },
     {
       "id": "magician-card-flourish",
@@ -1781,7 +2010,10 @@
         "ui-entrance",
         "effects"
       ],
-      "sha256": "9a92ef4e4c2b1256abbec0e0ec9b6dd94d46131d4b83f2e0937c10af2e3c27fd"
+      "sha256": "9a92ef4e4c2b1256abbec0e0ec9b6dd94d46131d4b83f2e0937c10af2e3c27fd",
+      "aliases": [
+        "magician card flourish"
+      ]
     },
     {
       "id": "marker-underline-title",
@@ -1802,7 +2034,10 @@
       "component_hint": "MarkerUnderline",
       "sfx_cue": "text",
       "tags": [],
-      "sha256": "89d3f168f347c742913b7cb18e5730d1809b51a6c346f4dafc3727a25c3e6212"
+      "sha256": "89d3f168f347c742913b7cb18e5730d1809b51a6c346f4dafc3727a25c3e6212",
+      "aliases": [
+        "marker underline title"
+      ]
     },
     {
       "id": "montage-rhythm-moves",
@@ -1823,7 +2058,10 @@
       "component_hint": "RhythmicMontage",
       "sfx_cue": "impact",
       "tags": [],
-      "sha256": "d573edbbc8198ec29391784ea4f1720df930684ed51b92c7b3b8babf5383f5ea"
+      "sha256": "d573edbbc8198ec29391784ea4f1720df930684ed51b92c7b3b8babf5383f5ea",
+      "aliases": [
+        "montage rhythm moves"
+      ]
     },
     {
       "id": "morph-from-primitive",
@@ -1845,7 +2083,10 @@
       "tags": [
         "opening"
       ],
-      "sha256": "c338f6d3639b65bea1edff3c5749e530daa9a6ce70c8f44e6bbffbcfe86a6456"
+      "sha256": "c338f6d3639b65bea1edff3c5749e530daa9a6ce70c8f44e6bbffbcfe86a6456",
+      "aliases": [
+        "morph from primitive"
+      ]
     },
     {
       "id": "mosaic-reframe",
@@ -1866,7 +2107,10 @@
       "component_hint": "MosaicReframe",
       "sfx_cue": "ui",
       "tags": [],
-      "sha256": "c39427cb8c3f931da5f63ae72265865334d3f28dd2832eacbd8d55ab034c95f5"
+      "sha256": "c39427cb8c3f931da5f63ae72265865334d3f28dd2832eacbd8d55ab034c95f5",
+      "aliases": [
+        "mosaic reframe"
+      ]
     },
     {
       "id": "neon-frame-forerun",
@@ -1889,7 +2133,10 @@
       "tags": [
         "effects"
       ],
-      "sha256": "a504f1a81137042a939ed1a50352023e9fa24f235398086d56132aee32013e71"
+      "sha256": "a504f1a81137042a939ed1a50352023e9fa24f235398086d56132aee32013e71",
+      "aliases": [
+        "neon frame forerun"
+      ]
     },
     {
       "id": "neon-frame-orbit-drop",
@@ -1912,7 +2159,10 @@
         "effects",
         "camera"
       ],
-      "sha256": "0e33057834bfb86adf2e4e298d008c9efac5bdb6736b4161ca6b96d1d6db4355"
+      "sha256": "0e33057834bfb86adf2e4e298d008c9efac5bdb6736b4161ca6b96d1d6db4355",
+      "aliases": [
+        "neon frame orbit drop"
+      ]
     },
     {
       "id": "neon-triple-marquee",
@@ -1935,7 +2185,10 @@
       "tags": [
         "typography"
       ],
-      "sha256": "5e15f43be56a4f3dc9e784c9cc45e42823a859c45a0065e5141be1e843450b2a"
+      "sha256": "5e15f43be56a4f3dc9e784c9cc45e42823a859c45a0065e5141be1e843450b2a",
+      "aliases": [
+        "neon triple marquee"
+      ]
     },
     {
       "id": "odometer-digit-roll",
@@ -1959,7 +2212,12 @@
       "tags": [
         "typography"
       ],
-      "sha256": "8f8b356fc57d914d4b324244fe437b232fe10030d212482a31b19a932c56513c"
+      "sha256": "8f8b356fc57d914d4b324244fe437b232fe10030d212482a31b19a932c56513c",
+      "aliases": [
+        "odometer digit roll",
+        "odometer",
+        "digit odometer"
+      ]
     },
     {
       "id": "orbit-ring-title-open",
@@ -1982,7 +2240,10 @@
       "tags": [
         "ui-entrance"
       ],
-      "sha256": "c38909e6c19ee107ca1a2ef2940b8140e33b1cf0aece816670140dd8f2f42edb"
+      "sha256": "c38909e6c19ee107ca1a2ef2940b8140e33b1cf0aece816670140dd8f2f42edb",
+      "aliases": [
+        "orbit ring title open"
+      ]
     },
     {
       "id": "outline-word-fill",
@@ -2003,7 +2264,10 @@
       "component_hint": "OutlineWordConfirm",
       "sfx_cue": "impact",
       "tags": [],
-      "sha256": "691fa3796bd7e20b70b1d5391fc4d44924831d71cef5ea38f7ec9436da9f01d5"
+      "sha256": "691fa3796bd7e20b70b1d5391fc4d44924831d71cef5ea38f7ec9436da9f01d5",
+      "aliases": [
+        "outline word fill"
+      ]
     },
     {
       "id": "outro-group-photo-launch",
@@ -2024,7 +2288,10 @@
       "component_hint": "FeatureEnsembleEnding",
       "sfx_cue": "impact",
       "tags": [],
-      "sha256": "6cb64b674b8bded5f08a39aceac73de2b957c7a6fdaf559921c4421b6c27d46f"
+      "sha256": "6cb64b674b8bded5f08a39aceac73de2b957c7a6fdaf559921c4421b6c27d46f",
+      "aliases": [
+        "outro group photo launch"
+      ]
     },
     {
       "id": "overhead-camera-moves",
@@ -2048,7 +2315,10 @@
         "opening",
         "transition"
       ],
-      "sha256": "3ae9c44dbaae7ff0bef4e6d3ea5357985e88f9813f8720f62127900d0bd4d7ce"
+      "sha256": "3ae9c44dbaae7ff0bef4e6d3ea5357985e88f9813f8720f62127900d0bd4d7ce",
+      "aliases": [
+        "overhead camera moves"
+      ]
     },
     {
       "id": "page-turn-transitions",
@@ -2069,7 +2339,10 @@
       "component_hint": "PageBlockTransition",
       "sfx_cue": "transition",
       "tags": [],
-      "sha256": "7604612d8fe0af814da0b3b34e7b108a897ce994663180ad6a827c8ee664a2ff"
+      "sha256": "7604612d8fe0af814da0b3b34e7b108a897ce994663180ad6a827c8ee664a2ff",
+      "aliases": [
+        "page turn transitions"
+      ]
     },
     {
       "id": "page-waterfall-wall",
@@ -2090,7 +2363,10 @@
       "component_hint": "PageWaterfall",
       "sfx_cue": "ui",
       "tags": [],
-      "sha256": "7f5691a48c167a52e2a6dc6d0472cdc35dca03270e5040d8942a296f54c056ca"
+      "sha256": "7f5691a48c167a52e2a6dc6d0472cdc35dca03270e5040d8942a296f54c056ca",
+      "aliases": [
+        "page waterfall wall"
+      ]
     },
     {
       "id": "panel-grid-moves",
@@ -2113,7 +2389,10 @@
       "tags": [
         "ui-entrance"
       ],
-      "sha256": "6294ff8de084ac4256a72e9fdded233996e9c91147198f0ff5e4fd8cc063a75a"
+      "sha256": "6294ff8de084ac4256a72e9fdded233996e9c91147198f0ff5e4fd8cc063a75a",
+      "aliases": [
+        "panel grid moves"
+      ]
     },
     {
       "id": "paper-craft-moves",
@@ -2134,7 +2413,10 @@
       "component_hint": "PaperCraftReveal",
       "sfx_cue": "ui",
       "tags": [],
-      "sha256": "077c1bd4c3ac606eca35d2217ad606165012278a9a65f21a104e8faaef3267f8"
+      "sha256": "077c1bd4c3ac606eca35d2217ad606165012278a9a65f21a104e8faaef3267f8",
+      "aliases": [
+        "paper craft moves"
+      ]
     },
     {
       "id": "paper-plane-messenger",
@@ -2158,7 +2440,10 @@
       "tags": [
         "camera"
       ],
-      "sha256": "11784ee5f5feedf662b4c513d11623cf7eb92bf084f43ca5847dcceb10ac649f"
+      "sha256": "11784ee5f5feedf662b4c513d11623cf7eb92bf084f43ca5847dcceb10ac649f",
+      "aliases": [
+        "paper plane messenger"
+      ]
     },
     {
       "id": "paper-title-card",
@@ -2182,7 +2467,10 @@
         "transition",
         "rhythm"
       ],
-      "sha256": "a474a2d6f5563239be6fabd33e0e6d9002f57623bc49ddf57ea0020cfeffc458"
+      "sha256": "a474a2d6f5563239be6fabd33e0e6d9002f57623bc49ddf57ea0020cfeffc458",
+      "aliases": [
+        "paper title card"
+      ]
     },
     {
       "id": "particle-celebrate-hits",
@@ -2205,7 +2493,10 @@
       "tags": [
         "effects"
       ],
-      "sha256": "8b26015c0ca9cd1f4a4ea43534ce7e4e5931795ee57357f228aac0d9fd7613cb"
+      "sha256": "8b26015c0ca9cd1f4a4ea43534ce7e4e5931795ee57357f228aac0d9fd7613cb",
+      "aliases": [
+        "particle celebrate hits"
+      ]
     },
     {
       "id": "particle-sand-fill",
@@ -2228,7 +2519,10 @@
       "tags": [
         "effects"
       ],
-      "sha256": "cff599b6d2ee509dc0aa393a1ed26f62806e1c589f08c4c6f20ba32fc19ae237"
+      "sha256": "cff599b6d2ee509dc0aa393a1ed26f62806e1c589f08c4c6f20ba32fc19ae237",
+      "aliases": [
+        "particle sand fill"
+      ]
     },
     {
       "id": "picker-carousel-feature-cycle",
@@ -2249,7 +2543,10 @@
       "component_hint": "FeaturePicker",
       "sfx_cue": "ui",
       "tags": [],
-      "sha256": "0c904f96ec259632dc058e4457ff40d6dbcb0458cf88cd0cbe132fe6956afe0c"
+      "sha256": "0c904f96ec259632dc058e4457ff40d6dbcb0458cf88cd0cbe132fe6956afe0c",
+      "aliases": [
+        "picker carousel feature cycle"
+      ]
     },
     {
       "id": "pill-chip-slot-cycle-handled",
@@ -2270,7 +2567,10 @@
       "component_hint": "AdaptiveWordPill",
       "sfx_cue": "text",
       "tags": [],
-      "sha256": "24f1784bca3e08958ef952168a1a0d18ece88480bdf7f10b0dcb332d5195fc8b"
+      "sha256": "24f1784bca3e08958ef952168a1a0d18ece88480bdf7f10b0dcb332d5195fc8b",
+      "aliases": [
+        "pill chip slot cycle handled"
+      ]
     },
     {
       "id": "pill-slot-cycle",
@@ -2291,7 +2591,10 @@
       "component_hint": "FeaturePhraseSlot",
       "sfx_cue": "text",
       "tags": [],
-      "sha256": "32cddebfe7bb0869057e0f81f66c6d6044ea152b381f402a26707e9d4274ff62"
+      "sha256": "32cddebfe7bb0869057e0f81f66c6d6044ea152b381f402a26707e9d4274ff62",
+      "aliases": [
+        "pill slot cycle"
+      ]
     },
     {
       "id": "platform-hinge-rise",
@@ -2314,7 +2617,10 @@
       "tags": [
         "opening"
       ],
-      "sha256": "db4c6b014f3b2274f8cc4ff588bfacfa2b85caf3eecb037079d8eabebc929f0e"
+      "sha256": "db4c6b014f3b2274f8cc4ff588bfacfa2b85caf3eecb037079d8eabebc929f0e",
+      "aliases": [
+        "platform hinge rise"
+      ]
     },
     {
       "id": "print-texture-transitions",
@@ -2335,7 +2641,10 @@
       "component_hint": "InkBleedTransition",
       "sfx_cue": "transition",
       "tags": [],
-      "sha256": "a1ccb5edbd881ec2c2a3981cc1a8b5969ec63cae63d6b421169d8247c1180b70"
+      "sha256": "a1ccb5edbd881ec2c2a3981cc1a8b5969ec63cae63d6b421169d8247c1180b70",
+      "aliases": [
+        "print texture transitions"
+      ]
     },
     {
       "id": "product-card-progressive-assemble",
@@ -2356,7 +2665,10 @@
       "component_hint": "StructuredCardAssembly",
       "sfx_cue": "ui",
       "tags": [],
-      "sha256": "15210454fd1fb8efe63eb163799cb71e5a0d081f83fc770e79743be88c130645"
+      "sha256": "15210454fd1fb8efe63eb163799cb71e5a0d081f83fc770e79743be88c130645",
+      "aliases": [
+        "product card progressive assemble"
+      ]
     },
     {
       "id": "quad-split-parallel-scenes",
@@ -2377,7 +2689,10 @@
       "component_hint": "ParallelQuadScene",
       "sfx_cue": "ui",
       "tags": [],
-      "sha256": "22b9e42c9d136c29710ea9371728205198be2ec73a90322107ce92223ea18fcb"
+      "sha256": "22b9e42c9d136c29710ea9371728205198be2ec73a90322107ce92223ea18fcb",
+      "aliases": [
+        "quad split parallel scenes"
+      ]
     },
     {
       "id": "radial-ripple-phone-chips",
@@ -2398,7 +2713,10 @@
       "component_hint": "PhoneRippleScene",
       "sfx_cue": "ui",
       "tags": [],
-      "sha256": "46b805ee36f58cf3f0277c44fa053f463b48861a70d15dc4b2f3ee387fa76bf2"
+      "sha256": "46b805ee36f58cf3f0277c44fa053f463b48861a70d15dc4b2f3ee387fa76bf2",
+      "aliases": [
+        "radial ripple phone chips"
+      ]
     },
     {
       "id": "radial-wave",
@@ -2419,7 +2737,10 @@
       "component_hint": "RadialDotWave",
       "sfx_cue": "data",
       "tags": [],
-      "sha256": "d4bfb9bb8f0a0983442d6a98cff830674d995ee8dd65584563e65d78ee8bcf9a"
+      "sha256": "d4bfb9bb8f0a0983442d6a98cff830674d995ee8dd65584563e65d78ee8bcf9a",
+      "aliases": [
+        "radial wave"
+      ]
     },
     {
       "id": "research-card-stack-scroll",
@@ -2440,7 +2761,10 @@
       "component_hint": "ResearchThroughputStack",
       "sfx_cue": "ui",
       "tags": [],
-      "sha256": "89ad86b38e7216d61fa62fe5c4f32c9881a0363c51fcfe4bcaf28e791d49b4d7"
+      "sha256": "89ad86b38e7216d61fa62fe5c4f32c9881a0363c51fcfe4bcaf28e791d49b4d7",
+      "aliases": [
+        "research card stack scroll"
+      ]
     },
     {
       "id": "rhythm-interrupt-moves",
@@ -2461,7 +2785,10 @@
       "component_hint": "RhythmInterrupt",
       "sfx_cue": "impact",
       "tags": [],
-      "sha256": "e841a4213854f4e3ac0e897cc4dca6a0ccf2427e22f12f68a26908593c591986"
+      "sha256": "e841a4213854f4e3ac0e897cc4dca6a0ccf2427e22f12f68a26908593c591986",
+      "aliases": [
+        "rhythm interrupt moves"
+      ]
     },
     {
       "id": "ring-diagram-annotation-reveal",
@@ -2485,7 +2812,10 @@
         "camera",
         "ui-entrance"
       ],
-      "sha256": "bb43f7de5e3e699bd5298b3d11a245d292bde96d5db21b84a4698705d7e77dd1"
+      "sha256": "bb43f7de5e3e699bd5298b3d11a245d292bde96d5db21b84a4698705d7e77dd1",
+      "aliases": [
+        "ring diagram annotation reveal"
+      ]
     },
     {
       "id": "riso-print-hits",
@@ -2509,7 +2839,10 @@
         "typography",
         "rhythm"
       ],
-      "sha256": "aa97fa4a3d0c097563bd409c80c37e714fea534b88bfe66dd6eccd375200a227"
+      "sha256": "aa97fa4a3d0c097563bd409c80c37e714fea534b88bfe66dd6eccd375200a227",
+      "aliases": [
+        "riso print hits"
+      ]
     },
     {
       "id": "row-embed",
@@ -2530,7 +2863,10 @@
       "component_hint": "EmbeddedRows",
       "sfx_cue": "ui",
       "tags": [],
-      "sha256": "964e3011dc055dca1f5e0ab9afaabde457f7b9b55de6a20a4d068eecf0cd4545"
+      "sha256": "964e3011dc055dca1f5e0ab9afaabde457f7b9b55de6a20a4d068eecf0cd4545",
+      "aliases": [
+        "row embed"
+      ]
     },
     {
       "id": "sakuga-timing-shift",
@@ -2554,7 +2890,10 @@
       "tags": [
         "ui-entrance"
       ],
-      "sha256": "64b73c42b1d01883060b0ca611e9427c7b12ddad5a087c8f702591e83e7797b5"
+      "sha256": "64b73c42b1d01883060b0ca611e9427c7b12ddad5a087c8f702591e83e7797b5",
+      "aliases": [
+        "sakuga timing shift"
+      ]
     },
     {
       "id": "scan-bracket-sweep",
@@ -2575,7 +2914,10 @@
       "component_hint": "DocumentScan",
       "sfx_cue": "data",
       "tags": [],
-      "sha256": "e80d67b51792b6355baca5f0547d8b9255675ec3fc6b935b43b57f44917cc686"
+      "sha256": "e80d67b51792b6355baca5f0547d8b9255675ec3fc6b935b43b57f44917cc686",
+      "aliases": [
+        "scan bracket sweep"
+      ]
     },
     {
       "id": "scanline-annotate-focus",
@@ -2596,7 +2938,10 @@
       "component_hint": "ScanAnnotation",
       "sfx_cue": "data",
       "tags": [],
-      "sha256": "227490e2ce85ae5b011f81bc4b8c62cfe844edf716373adad8af41324d1dc54d"
+      "sha256": "227490e2ce85ae5b011f81bc4b8c62cfe844edf716373adad8af41324d1dc54d",
+      "aliases": [
+        "scanline annotate focus"
+      ]
     },
     {
       "id": "scanline-assemble-flyin",
@@ -2616,7 +2961,10 @@
       "component_hint": "ScanAssembly",
       "sfx_cue": "ui",
       "tags": [],
-      "sha256": "1a829af9a6dba139d48f21bd85f27fdfbf34beeb843bbec8ac1e289c5c2fd96a"
+      "sha256": "1a829af9a6dba139d48f21bd85f27fdfbf34beeb843bbec8ac1e289c5c2fd96a",
+      "aliases": [
+        "scanline assemble flyin"
+      ]
     },
     {
       "id": "scramble",
@@ -2637,7 +2985,10 @@
       "component_hint": "ScrambleTitle",
       "sfx_cue": "text",
       "tags": [],
-      "sha256": "29ce01993b077423643a644800960d221c48feea01e09fc849bdc10b1d656937"
+      "sha256": "29ce01993b077423643a644800960d221c48feea01e09fc849bdc10b1d656937",
+      "aliases": [
+        "scramble"
+      ]
     },
     {
       "id": "scroll-brake-moves",
@@ -2660,7 +3011,10 @@
       "tags": [
         "rhythm"
       ],
-      "sha256": "7ee15612aaa1539653a144939f571ef5e0d71252f46610ce6bb6b9a872c8f0c6"
+      "sha256": "7ee15612aaa1539653a144939f571ef5e0d71252f46610ce6bb6b9a872c8f0c6",
+      "aliases": [
+        "scroll brake moves"
+      ]
     },
     {
       "id": "segmented-thumb-hero",
@@ -2681,7 +3035,10 @@
       "component_hint": "SegmentedControlHero",
       "sfx_cue": "ui",
       "tags": [],
-      "sha256": "709e292c24992dee4527b81e7233f2020ce391a52930c4bbb70b2cf667434a1e"
+      "sha256": "709e292c24992dee4527b81e7233f2020ce391a52930c4bbb70b2cf667434a1e",
+      "aliases": [
+        "segmented thumb hero"
+      ]
     },
     {
       "id": "shot-transitions",
@@ -2703,7 +3060,10 @@
       "component_hint": "ShotHandoff",
       "sfx_cue": "transition",
       "tags": [],
-      "sha256": "2cdb68da4060b519d4b0545db17ebc5ca000f04c814f40b0de4d4082756bc216"
+      "sha256": "2cdb68da4060b519d4b0545db17ebc5ca000f04c814f40b0de4d4082756bc216",
+      "aliases": [
+        "shot transitions"
+      ]
     },
     {
       "id": "skeleton-reveal",
@@ -2724,7 +3084,10 @@
       "component_hint": "SketchStructureContent",
       "sfx_cue": "ui",
       "tags": [],
-      "sha256": "d841c44eb95c693bdab7c7c5c30eb0ba287f3cc51683c19957e6cb2365d6f278"
+      "sha256": "d841c44eb95c693bdab7c7c5c30eb0ba287f3cc51683c19957e6cb2365d6f278",
+      "aliases": [
+        "skeleton reveal"
+      ]
     },
     {
       "id": "slam-entrance-moves",
@@ -2747,7 +3110,10 @@
       "tags": [
         "ui-entrance"
       ],
-      "sha256": "69ae6548395c30d1fe45266da594af8e241655914f7395a361c73772a5092cb7"
+      "sha256": "69ae6548395c30d1fe45266da594af8e241655914f7395a361c73772a5092cb7",
+      "aliases": [
+        "slam entrance moves"
+      ]
     },
     {
       "id": "smear-multiples",
@@ -2770,7 +3136,10 @@
       "tags": [
         "effects"
       ],
-      "sha256": "07c27e3e4dc24cd648c5ca329c49f90b369294031f977bf8f4b3bace89fc33d7"
+      "sha256": "07c27e3e4dc24cd648c5ca329c49f90b369294031f977bf8f4b3bace89fc33d7",
+      "aliases": [
+        "smear multiples"
+      ]
     },
     {
       "id": "space-camera-moves",
@@ -2791,7 +3160,10 @@
       "component_hint": "SpatialReveal",
       "sfx_cue": "impact",
       "tags": [],
-      "sha256": "0ae6452bf1fefca34b7dc6b7761e98ff4347b3654873c046183b1a8e07ed26f9"
+      "sha256": "0ae6452bf1fefca34b7dc6b7761e98ff4347b3654873c046183b1a8e07ed26f9",
+      "aliases": [
+        "space camera moves"
+      ]
     },
     {
       "id": "spectrum-morph-ui",
@@ -2814,7 +3186,10 @@
       "tags": [
         "typography"
       ],
-      "sha256": "dd375cd1335a6464e408cc154d1234575df024b0e87bc0a1d29f77ca94985bbd"
+      "sha256": "dd375cd1335a6464e408cc154d1234575df024b0e87bc0a1d29f77ca94985bbd",
+      "aliases": [
+        "spectrum morph ui"
+      ]
     },
     {
       "id": "speed-ramp-freeze",
@@ -2835,7 +3210,10 @@
       "component_hint": "SpeedRampOrFreeze",
       "sfx_cue": "transition",
       "tags": [],
-      "sha256": "7d365e36082978b66ec5bca6623b9dbe57c7898b472f031a84d2bbbd09c3f56f"
+      "sha256": "7d365e36082978b66ec5bca6623b9dbe57c7898b472f031a84d2bbbd09c3f56f",
+      "aliases": [
+        "speed ramp freeze"
+      ]
     },
     {
       "id": "split-flap-title",
@@ -2858,7 +3236,10 @@
       "tags": [
         "opening"
       ],
-      "sha256": "7a3a624c14cf55c7be84a2c4008446403b906f7a6aa015a89696daf7d26d953c"
+      "sha256": "7a3a624c14cf55c7be84a2c4008446403b906f7a6aa015a89696daf7d26d953c",
+      "aliases": [
+        "split flap title"
+      ]
     },
     {
       "id": "spotlight-hero-card",
@@ -2882,7 +3263,10 @@
         "effects",
         "camera"
       ],
-      "sha256": "fbbd603a71ff0a472f37d4ea5647506da2c06dcef2f2d4687d3bc20c2484d989"
+      "sha256": "fbbd603a71ff0a472f37d4ea5647506da2c06dcef2f2d4687d3bc20c2484d989",
+      "aliases": [
+        "spotlight hero card"
+      ]
     },
     {
       "id": "spotlight-sweep-moves",
@@ -2906,7 +3290,10 @@
         "ui-entrance",
         "transition"
       ],
-      "sha256": "35b5a5bde17662af0e303315c5a34f9d79bce89b4779e0c74f0452a80c99af94"
+      "sha256": "35b5a5bde17662af0e303315c5a34f9d79bce89b4779e0c74f0452a80c99af94",
+      "aliases": [
+        "spotlight sweep moves"
+      ]
     },
     {
       "id": "steep-tilt-glide",
@@ -2929,7 +3316,10 @@
       "tags": [
         "ui-entrance"
       ],
-      "sha256": "6dfdc1e8f114dfbe75f2eb6a7c0824930fbf77d83a2368818088f0cc05881703"
+      "sha256": "6dfdc1e8f114dfbe75f2eb6a7c0824930fbf77d83a2368818088f0cc05881703",
+      "aliases": [
+        "steep tilt glide"
+      ]
     },
     {
       "id": "stroke-segment-build",
@@ -2952,7 +3342,10 @@
       "tags": [
         "typography"
       ],
-      "sha256": "05cbabf125c1ff573d2f5f7b3899fa98cfb5cb880fa9683ab3180f2e0f7e5b9b"
+      "sha256": "05cbabf125c1ff573d2f5f7b3899fa98cfb5cb880fa9683ab3180f2e0f7e5b9b",
+      "aliases": [
+        "stroke segment build"
+      ]
     },
     {
       "id": "svg-shape-morph",
@@ -2973,7 +3366,10 @@
       "component_hint": "OrganicOutlineMorph",
       "sfx_cue": "ambience",
       "tags": [],
-      "sha256": "ddc54c05b5c397adfe9c9fe458cf1f9ec62232d8162eb82ca3dca00090250f71"
+      "sha256": "ddc54c05b5c397adfe9c9fe458cf1f9ec62232d8162eb82ca3dca00090250f71",
+      "aliases": [
+        "svg shape morph"
+      ]
     },
     {
       "id": "tear-streak-transitions",
@@ -2996,7 +3392,10 @@
       "tags": [
         "effects"
       ],
-      "sha256": "440ebe46abf0894f5b0f380cfcaa5825cec5c20e8a58715b264a2434e806fcdd"
+      "sha256": "440ebe46abf0894f5b0f380cfcaa5825cec5c20e8a58715b264a2434e806fcdd",
+      "aliases": [
+        "tear streak transitions"
+      ]
     },
     {
       "id": "tension-camera-moves",
@@ -3018,7 +3417,10 @@
       "component_hint": "TensionCamera",
       "sfx_cue": "riser",
       "tags": [],
-      "sha256": "6612ba598559261d2bb556bd536eeb1659490102a48b57e034fe053e10774631"
+      "sha256": "6612ba598559261d2bb556bd536eeb1659490102a48b57e034fe053e10774631",
+      "aliases": [
+        "tension camera moves"
+      ]
     },
     {
       "id": "terminal-3d",
@@ -3039,7 +3441,10 @@
       "component_hint": "TerminalTour",
       "sfx_cue": "text",
       "tags": [],
-      "sha256": "956b483a20e9bf49c192b53ed060fa9690cc5eee771e0d3ca29758768836bb4c"
+      "sha256": "956b483a20e9bf49c192b53ed060fa9690cc5eee771e0d3ca29758768836bb4c",
+      "aliases": [
+        "terminal 3d"
+      ]
     },
     {
       "id": "text-as-mask",
@@ -3062,7 +3467,10 @@
       "tags": [
         "typography"
       ],
-      "sha256": "2fed719c299185b875d086b0027f38a3d64cc4707f9e8a0856cde854db3c7b35"
+      "sha256": "2fed719c299185b875d086b0027f38a3d64cc4707f9e8a0856cde854db3c7b35",
+      "aliases": [
+        "text as mask"
+      ]
     },
     {
       "id": "text-column-converge",
@@ -3085,7 +3493,10 @@
       "tags": [
         "outro"
       ],
-      "sha256": "120457192f2c595cfcf7a683aaa5411c729581a0d77c09b283ce7e7d7510e72b"
+      "sha256": "120457192f2c595cfcf7a683aaa5411c729581a0d77c09b283ce7e7d7510e72b",
+      "aliases": [
+        "text column converge"
+      ]
     },
     {
       "id": "theme-switch-moves",
@@ -3106,7 +3517,10 @@
       "component_hint": "ThemeSwitch",
       "sfx_cue": "transition",
       "tags": [],
-      "sha256": "9f6265079d04714f3636c6d1e1a58f38ca1fc0d52858b3f9add64aa84561ce47"
+      "sha256": "9f6265079d04714f3636c6d1e1a58f38ca1fc0d52858b3f9add64aa84561ce47",
+      "aliases": [
+        "theme switch moves"
+      ]
     },
     {
       "id": "timeline-travel",
@@ -3129,7 +3543,10 @@
       "tags": [
         "camera"
       ],
-      "sha256": "724840cde4d7bd72374da2a943ac94aee0255a4d1bef055dda6ddf4a6764e227"
+      "sha256": "724840cde4d7bd72374da2a943ac94aee0255a4d1bef055dda6ddf4a6764e227",
+      "aliases": [
+        "timeline travel"
+      ]
     },
     {
       "id": "title-demote-to-label",
@@ -3152,7 +3569,10 @@
       "tags": [
         "transition"
       ],
-      "sha256": "8ff840033599c3a8782c0266bbc7e623dda85d8b79ee4b4bbea9fe9f5ca0b1f0"
+      "sha256": "8ff840033599c3a8782c0266bbc7e623dda85d8b79ee4b4bbea9fe9f5ca0b1f0",
+      "aliases": [
+        "title demote to label"
+      ]
     },
     {
       "id": "trailer-grammar-moves",
@@ -3176,7 +3596,10 @@
         "opening",
         "transition"
       ],
-      "sha256": "1a898754876bc6cb5b1fa818564634df7932abf5dddaf430d492dfc72d556cdf"
+      "sha256": "1a898754876bc6cb5b1fa818564634df7932abf5dddaf430d492dfc72d556cdf",
+      "aliases": [
+        "trailer grammar moves"
+      ]
     },
     {
       "id": "transition-hidden-cut",
@@ -3197,7 +3620,10 @@
       "component_hint": "HiddenSceneCut",
       "sfx_cue": "transition",
       "tags": [],
-      "sha256": "3e6b872df779eef27a4ec0304d04a02d49ba5a3ad7bf6744020c1de94c64d22e"
+      "sha256": "3e6b872df779eef27a4ec0304d04a02d49ba5a3ad7bf6744020c1de94c64d22e",
+      "aliases": [
+        "transition hidden cut"
+      ]
     },
     {
       "id": "transition-travel",
@@ -3220,7 +3646,10 @@
       "tags": [
         "camera"
       ],
-      "sha256": "7e1d46357459532c97dde76cf2631770dd21580978f13437a0c4eefd647653eb"
+      "sha256": "7e1d46357459532c97dde76cf2631770dd21580978f13437a0c4eefd647653eb",
+      "aliases": [
+        "transition travel"
+      ]
     },
     {
       "id": "type-and-filter",
@@ -3241,7 +3670,10 @@
       "component_hint": "TypeAndFilter",
       "sfx_cue": "ui",
       "tags": [],
-      "sha256": "05da1b7e16fe652d2f5868485e913d08caaf87febb5512bd27b71d6b6c964fef"
+      "sha256": "05da1b7e16fe652d2f5868485e913d08caaf87febb5512bd27b71d6b6c964fef",
+      "aliases": [
+        "type and filter"
+      ]
     },
     {
       "id": "type-assembly-moves",
@@ -3262,7 +3694,10 @@
       "component_hint": "AssembledTitle",
       "sfx_cue": "text",
       "tags": [],
-      "sha256": "c1bb40bc83810309bb6e2120e2b9abcae83f6edee483202ce10dbff4b7d92a63"
+      "sha256": "c1bb40bc83810309bb6e2120e2b9abcae83f6edee483202ce10dbff4b7d92a63",
+      "aliases": [
+        "type assembly moves"
+      ]
     },
     {
       "id": "type-entrance-moves",
@@ -3283,7 +3718,10 @@
       "component_hint": "TitleEntrance",
       "sfx_cue": "text",
       "tags": [],
-      "sha256": "fba00e4b0537b1f421d950dd9157522e97a6d583893f97528589692b7732f696"
+      "sha256": "fba00e4b0537b1f421d950dd9157522e97a6d583893f97528589692b7732f696",
+      "aliases": [
+        "type entrance moves"
+      ]
     },
     {
       "id": "type-rhythm-sync",
@@ -3306,7 +3744,10 @@
       "tags": [
         "rhythm"
       ],
-      "sha256": "4925c765f251d3674065ee0d544abf30bc52ab7bef6f24b7fcc00983ead00822"
+      "sha256": "4925c765f251d3674065ee0d544abf30bc52ab7bef6f24b7fcc00983ead00822",
+      "aliases": [
+        "type rhythm sync"
+      ]
     },
     {
       "id": "typewriter-moves",
@@ -3329,7 +3770,10 @@
       "tags": [
         "opening"
       ],
-      "sha256": "c870748eeed55ab2c61f423cb355b57ba8dd0ea203bb7039b2a0f0385a5ddc1b"
+      "sha256": "c870748eeed55ab2c61f423cb355b57ba8dd0ea203bb7039b2a0f0385a5ddc1b",
+      "aliases": [
+        "typewriter moves"
+      ]
     },
     {
       "id": "typing-code-block",
@@ -3350,7 +3794,10 @@
       "component_hint": "CodeReveal",
       "sfx_cue": "text",
       "tags": [],
-      "sha256": "409b1bd712836733dd194c1a433bd3ac4b26f1c5539dbd586d0be559e2e6d645"
+      "sha256": "409b1bd712836733dd194c1a433bd3ac4b26f1c5539dbd586d0be559e2e6d645",
+      "aliases": [
+        "typing code block"
+      ]
     },
     {
       "id": "ui-strip-away-outro",
@@ -3371,7 +3818,10 @@
       "component_hint": "InterfaceStripEnding",
       "sfx_cue": "ui",
       "tags": [],
-      "sha256": "db597a2edd6fbcecd7172585a7a8724f4f17cc29bf96715d2f9377a8b7af6669"
+      "sha256": "db597a2edd6fbcecd7172585a7a8724f4f17cc29bf96715d2f9377a8b7af6669",
+      "aliases": [
+        "ui strip away outro"
+      ]
     },
     {
       "id": "ui-to-brand-morph",
@@ -3392,7 +3842,10 @@
       "component_hint": "InterfaceMarkMorph",
       "sfx_cue": "transition",
       "tags": [],
-      "sha256": "006c3b4212594b13e1ddeea9cac8ea1cc71d37747acde45b19a72dc943747108"
+      "sha256": "006c3b4212594b13e1ddeea9cac8ea1cc71d37747acde45b19a72dc943747108",
+      "aliases": [
+        "ui to brand morph"
+      ]
     },
     {
       "id": "value-stagger-gradient",
@@ -3413,7 +3866,10 @@
       "component_hint": "GradientBarReveal",
       "sfx_cue": "data",
       "tags": [],
-      "sha256": "0be902ddd65fc39206dff0eb53763f9d0055d3c8cfda96dab689cfc824b9ed39"
+      "sha256": "0be902ddd65fc39206dff0eb53763f9d0055d3c8cfda96dab689cfc824b9ed39",
+      "aliases": [
+        "value stagger gradient"
+      ]
     },
     {
       "id": "vertical-word-roll-blur-cycle",
@@ -3434,7 +3890,10 @@
       "component_hint": "WordReel",
       "sfx_cue": "text",
       "tags": [],
-      "sha256": "80529fb72660af3c78e51d22bc513f8df94b32072d1a5dc8ad8d4d1d73f05bdd"
+      "sha256": "80529fb72660af3c78e51d22bc513f8df94b32072d1a5dc8ad8d4d1d73f05bdd",
+      "aliases": [
+        "vertical word roll blur cycle"
+      ]
     },
     {
       "id": "voice-waveform-live",
@@ -3456,7 +3915,10 @@
       "component_hint": "ListeningWaveform",
       "sfx_cue": "ui",
       "tags": [],
-      "sha256": "d5835944532b621f55fef1894bbf6e7ade6c453402a8a9a01133626b81708d98"
+      "sha256": "d5835944532b621f55fef1894bbf6e7ade6c453402a8a9a01133626b81708d98",
+      "aliases": [
+        "voice waveform live"
+      ]
     },
     {
       "id": "wall-reveal-moves",
@@ -3477,7 +3939,10 @@
       "component_hint": "InPlaceWallReveal",
       "sfx_cue": "ui",
       "tags": [],
-      "sha256": "e0783733037425ca97c48fce97fd10fbd1c104855d59faf8b50115f54f72d91d"
+      "sha256": "e0783733037425ca97c48fce97fd10fbd1c104855d59faf8b50115f54f72d91d",
+      "aliases": [
+        "wall reveal moves"
+      ]
     },
     {
       "id": "white-flash-logo-simplify-cut",
@@ -3498,7 +3963,10 @@
       "component_hint": "WordmarkSimplify",
       "sfx_cue": "impact",
       "tags": [],
-      "sha256": "ec2f2181dae3c1a01c823570016df985a40c3b5f9b6a526f80bb3643e878f278"
+      "sha256": "ec2f2181dae3c1a01c823570016df985a40c3b5f9b6a526f80bb3643e878f278",
+      "aliases": [
+        "white flash logo simplify cut"
+      ]
     },
     {
       "id": "wipe-transitions",
@@ -3519,7 +3987,10 @@
       "component_hint": "GeometricPageWipe",
       "sfx_cue": "transition",
       "tags": [],
-      "sha256": "d3588e8ccb16dd6561c5298bfdfd1183a93716367148c1a153dba2ba5c0a6d43"
+      "sha256": "d3588e8ccb16dd6561c5298bfdfd1183a93716367148c1a153dba2ba5c0a6d43",
+      "aliases": [
+        "wipe transitions"
+      ]
     },
     {
       "id": "word-relay-filmstrip",
@@ -3542,7 +4013,10 @@
       "tags": [
         "ui-entrance"
       ],
-      "sha256": "46cd72e0c6f584c772a330d8a3ee68f0edf083052c061132d0aa7fe82a7f4678"
+      "sha256": "46cd72e0c6f584c772a330d8a3ee68f0edf083052c061132d0aa7fe82a7f4678",
+      "aliases": [
+        "word relay filmstrip"
+      ]
     },
     {
       "id": "word-relay-geometry",
@@ -3563,7 +4037,10 @@
       "component_hint": "GeometricWordRelay",
       "sfx_cue": "text",
       "tags": [],
-      "sha256": "5590d09cf06109757d7e31f575276a4085c78d31b7f27df87173881c1852f38c"
+      "sha256": "5590d09cf06109757d7e31f575276a4085c78d31b7f27df87173881c1852f38c",
+      "aliases": [
+        "word relay geometry"
+      ]
     }
   ]
 }

@@ -25,6 +25,10 @@ def package(extra: str | None = None) -> bytes:
             "opentimelineio/_otio.cpython-311-aarch64-linux-gnu.so",
         ):
             archive.writestr(name, b"package data")
+        data = ROOT / 'providers/shot_recipes'
+        for path in data.rglob('*'):
+            if path.is_file() and path.suffix != '.py' and '__pycache__' not in path.parts:
+                archive.writestr(path.relative_to(ROOT).as_posix(), path.read_bytes())
         if extra:
             archive.writestr(extra, b"forbidden binary")
     return output.getvalue()

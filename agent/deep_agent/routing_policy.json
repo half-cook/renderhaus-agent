@@ -30,7 +30,8 @@
     "transcribe_video",
     "get_transcription",
     "get_dialogue_edit",
-    "motion_carry_probe"
+    "motion_carry_probe",
+    "shot_recipe_search"
   ],
   "providers": {
     "kling": {
@@ -964,6 +965,35 @@
           "read_date": "2026-10-09",
           "commercial_status": "installed command-line binary; no binary redistribution",
           "training_eligible": false
+        }
+      }
+    },
+    "shot_recipes": {
+      "license": "Apache-2.0",
+      "license_id": "Apache-2.0",
+      "license_source": "https://github.com/Vincentwei1021/video-shotcraft/blob/5ddbf52/LICENSE",
+      "read_date": "2026-10-10",
+      "training_eligible": false,
+      "training_reason": "Local text recipe data, no model or generated media. Card provenance does not grant source-media training rights.",
+      "commercial_status": "Imported Apache-2.0 text cards and separate in-house derivative metadata; no audio, preview media or upstream code.",
+      "enabled": true,
+      "allowed_regions": [],
+      "default_model": "shot-recipes-local",
+      "models": [
+        "shot-recipes-local"
+      ],
+      "fixed_models": {
+        "shot_recipe_search": "shot-recipes-local"
+      },
+      "model_policies": {
+        "shot-recipes-local": {
+          "license": "Apache-2.0",
+          "license_id": "Apache-2.0",
+          "license_source": "https://github.com/Vincentwei1021/video-shotcraft/blob/5ddbf52/LICENSE",
+          "read_date": "2026-10-10",
+          "training_eligible": false,
+          "training_reason": "Local text recipe data, no model or generated media. Card provenance does not grant source-media training rights.",
+          "commercial_status": "Imported Apache-2.0 text cards and separate in-house derivative metadata; no audio, preview media or upstream code."
         }
       }
     }
@@ -2121,6 +2151,26 @@
       "source": "docs/MOTION_CARRY_QC.md",
       "price_source": "docs/MOTION_CARRY_QC.md",
       "verification": "Free local measurements calibrated on our synthetic films; PROVISIONAL; browser E2E blocked."
+    },
+    "shot_recipe_search": {
+      "license": "Apache-2.0",
+      "license_id": "Apache-2.0",
+      "license_source": "https://github.com/Vincentwei1021/video-shotcraft/blob/5ddbf52/LICENSE",
+      "read_date": "2026-10-10",
+      "training_eligible": false,
+      "training_reason": "Local text recipe data, no model or generated media. Card provenance does not grant source-media training rights.",
+      "commercial_status": "Imported Apache-2.0 text cards and separate in-house derivative metadata; no audio, preview media or upstream code.",
+      "gateway_tool": "ShotRecipes___shot_recipe_search",
+      "provider": "shot_recipes",
+      "model": "shot-recipes-local",
+      "skill": "cinematic-product-promo",
+      "status": "ready",
+      "host": "local packaged data",
+      "us_available": "yes",
+      "availability_source": "docs/CINEMATIC_PRODUCT_PROMO.md",
+      "source": "docs/CINEMATIC_PRODUCT_PROMO.md",
+      "price_source": "docs/CINEMATIC_PRODUCT_PROMO.md",
+      "verification": "Pure local lexical search and storyboard validation; no network or model calls."
     }
   },
   "rules": [
@@ -2273,11 +2323,11 @@
       "abstract_tool": "conversational_hyperframes_overlay"
     },
     {
-      "pattern": "\\bart[ -]style[ -]motion\\b|(?=[\\s\\S]*\\b(?:animat\\w*|videos?|shorts?|explainer|move|moving|motion)\\b)(?=[\\s\\S]*(?:\\b(?:van[ -]?gogh|monet|bauhaus|ukiyo[ -]?e|8[ -]?bit|impressionis[mt]|post[ -]?impressionis[mt]|seurat|matisse|haring|rembrandt|klimt|munch|dunhuang|kusama|constructivis[mt]|dal[ií]|hopper|ghibli|vaporwave|kirby|shinkai|picasso|mucha|art[ -]?nouveau|cubis[mt]|pop[ -]?art|rubber[ -]?hose|shadow[ -]?puppet|cave[ -]?(?:art|painting)|egyptian|greek[ -]?pottery|roman[ -]?mosaic|gothic|renaissance|chinese[ -]?ink|early[ -]?(?:ray[ -]?traced[ -]?)?cgi|contemporary[ -]flat[ -]animation|kurzgesagt|vox|3blue1brown|3b1b|kinetic[ -]?(?:type|typography)|storytime|illustrated[ -]presenter|whiteboard|keynote|finance[ -]?chart)(?:[ -]+\\w+){0,3}[ -]+(?:style|grammar|inspired)\\b|\\b(?:van[ -]?gogh|monet|bauhaus|ukiyo[ -]?e|8[ -]?bit|impressionis[mt]|post[ -]?impressionis[mt]|seurat|matisse|haring|rembrandt|klimt|munch|dunhuang|kusama|constructivis[mt]|dal[ií]|hopper|ghibli|vaporwave|kirby|shinkai|picasso|mucha|art[ -]?nouveau|cubis[mt]|pop[ -]?art|rubber[ -]?hose|shadow[ -]?puppet|cave[ -]?(?:art|painting)|egyptian|greek[ -]?pottery|roman[ -]?mosaic|gothic|renaissance|chinese[ -]?ink|early[ -]?(?:ray[ -]?traced[ -]?)?cgi|contemporary[ -]flat[ -]animation|kurzgesagt|vox|3blue1brown|3b1b|kinetic[ -]?(?:type|typography)|storytime|illustrated[ -]presenter|whiteboard|keynote|finance[ -]?chart)[ -]+(?:art|paintings?|pond|mural|mosaic|pottery|animation|animated)\\b|\\b(?:style of|inspired by)\\s+(?:van[ -]?gogh|monet|bauhaus|ukiyo[ -]?e|8[ -]?bit|impressionis[mt]|post[ -]?impressionis[mt]|seurat|matisse|haring|rembrandt|klimt|munch|dunhuang|kusama|constructivis[mt]|dal[ií]|hopper|ghibli|vaporwave|kirby|shinkai|picasso|mucha|art[ -]?nouveau|cubis[mt]|pop[ -]?art|rubber[ -]?hose|shadow[ -]?puppet|cave[ -]?(?:art|painting)|egyptian|greek[ -]?pottery|roman[ -]?mosaic|gothic|renaissance|chinese[ -]?ink|early[ -]?(?:ray[ -]?traced[ -]?)?cgi|contemporary[ -]flat[ -]animation|kurzgesagt|vox|3blue1brown|3b1b|kinetic[ -]?(?:type|typography)|storytime|illustrated[ -]presenter|whiteboard|keynote|finance[ -]?chart)\\b|\\b(?:kurzgesagt|vox|3blue1brown|3b1b|kinetic[ -]?(?:type|typography)|storytime|illustrated[ -]presenter)[ -]+(?:explainer|animation|video|grammar|style)\\b|\\bcontemporary[ -]flat[ -]animation\\b))[\\s\\S]+|\\bcharacter\\b.*\\bwalk\\w*\\b.*\\b(?:series|worlds|eras)\\b.*\\bpaintings?\\b",
+      "pattern": "\\bart[ -]style[ -]motion\\b|(?=[\\s\\S]*\\b(?:animat\\w*|videos?|shorts?|explainer|move|moving|motion)\\b)(?=[\\s\\S]*(?:\\b(?:van[ -]?gogh|monet|bauhaus|ukiyo[ -]?e|8[ -]?bit|impressionis[mt]|post[ -]?impressionis[mt]|seurat|matisse|haring|rembrandt|klimt|munch|dunhuang|kusama|constructivis[mt]|dal[i\u00ed]|hopper|ghibli|vaporwave|kirby|shinkai|picasso|mucha|art[ -]?nouveau|cubis[mt]|pop[ -]?art|rubber[ -]?hose|shadow[ -]?puppet|cave[ -]?(?:art|painting)|egyptian|greek[ -]?pottery|roman[ -]?mosaic|gothic|renaissance|chinese[ -]?ink|early[ -]?(?:ray[ -]?traced[ -]?)?cgi|contemporary[ -]flat[ -]animation|kurzgesagt|vox|3blue1brown|3b1b|kinetic[ -]?(?:type|typography)|storytime|illustrated[ -]presenter|whiteboard|keynote|finance[ -]?chart)(?:[ -]+\\w+){0,3}[ -]+(?:style|grammar|inspired)\\b|\\b(?:van[ -]?gogh|monet|bauhaus|ukiyo[ -]?e|8[ -]?bit|impressionis[mt]|post[ -]?impressionis[mt]|seurat|matisse|haring|rembrandt|klimt|munch|dunhuang|kusama|constructivis[mt]|dal[i\u00ed]|hopper|ghibli|vaporwave|kirby|shinkai|picasso|mucha|art[ -]?nouveau|cubis[mt]|pop[ -]?art|rubber[ -]?hose|shadow[ -]?puppet|cave[ -]?(?:art|painting)|egyptian|greek[ -]?pottery|roman[ -]?mosaic|gothic|renaissance|chinese[ -]?ink|early[ -]?(?:ray[ -]?traced[ -]?)?cgi|contemporary[ -]flat[ -]animation|kurzgesagt|vox|3blue1brown|3b1b|kinetic[ -]?(?:type|typography)|storytime|illustrated[ -]presenter|whiteboard|keynote|finance[ -]?chart)[ -]+(?:art|paintings?|pond|mural|mosaic|pottery|animation|animated)\\b|\\b(?:style of|inspired by)\\s+(?:van[ -]?gogh|monet|bauhaus|ukiyo[ -]?e|8[ -]?bit|impressionis[mt]|post[ -]?impressionis[mt]|seurat|matisse|haring|rembrandt|klimt|munch|dunhuang|kusama|constructivis[mt]|dal[i\u00ed]|hopper|ghibli|vaporwave|kirby|shinkai|picasso|mucha|art[ -]?nouveau|cubis[mt]|pop[ -]?art|rubber[ -]?hose|shadow[ -]?puppet|cave[ -]?(?:art|painting)|egyptian|greek[ -]?pottery|roman[ -]?mosaic|gothic|renaissance|chinese[ -]?ink|early[ -]?(?:ray[ -]?traced[ -]?)?cgi|contemporary[ -]flat[ -]animation|kurzgesagt|vox|3blue1brown|3b1b|kinetic[ -]?(?:type|typography)|storytime|illustrated[ -]presenter|whiteboard|keynote|finance[ -]?chart)\\b|\\b(?:kurzgesagt|vox|3blue1brown|3b1b|kinetic[ -]?(?:type|typography)|storytime|illustrated[ -]presenter)[ -]+(?:explainer|animation|video|grammar|style)\\b|\\bcontemporary[ -]flat[ -]animation\\b))[\\s\\S]+|\\bcharacter\\b.*\\bwalk\\w*\\b.*\\b(?:series|worlds|eras)\\b.*\\bpaintings?\\b",
       "skill": "art-style-motion",
       "abstract_tool": "remotion_render",
       "capability": "motion_graphics",
-      "named_styles": "van[ -]?gogh|monet|bauhaus|ukiyo[ -]?e|8[ -]?bit|impressionis[mt]|post[ -]?impressionis[mt]|seurat|matisse|haring|rembrandt|klimt|munch|dunhuang|kusama|constructivis[mt]|dal[ií]|hopper|ghibli|vaporwave|kirby|shinkai|picasso|mucha|art[ -]?nouveau|cubis[mt]|pop[ -]?art|rubber[ -]?hose|shadow[ -]?puppet|cave[ -]?(?:art|painting)|egyptian|greek[ -]?pottery|roman[ -]?mosaic|gothic|renaissance|chinese[ -]?ink|early[ -]?(?:ray[ -]?traced[ -]?)?cgi|contemporary[ -]flat[ -]animation|kurzgesagt|vox|3blue1brown|3b1b|kinetic[ -]?(?:type|typography)|storytime|illustrated[ -]presenter|whiteboard|keynote|finance[ -]?chart"
+      "named_styles": "van[ -]?gogh|monet|bauhaus|ukiyo[ -]?e|8[ -]?bit|impressionis[mt]|post[ -]?impressionis[mt]|seurat|matisse|haring|rembrandt|klimt|munch|dunhuang|kusama|constructivis[mt]|dal[i\u00ed]|hopper|ghibli|vaporwave|kirby|shinkai|picasso|mucha|art[ -]?nouveau|cubis[mt]|pop[ -]?art|rubber[ -]?hose|shadow[ -]?puppet|cave[ -]?(?:art|painting)|egyptian|greek[ -]?pottery|roman[ -]?mosaic|gothic|renaissance|chinese[ -]?ink|early[ -]?(?:ray[ -]?traced[ -]?)?cgi|contemporary[ -]flat[ -]animation|kurzgesagt|vox|3blue1brown|3b1b|kinetic[ -]?(?:type|typography)|storytime|illustrated[ -]presenter|whiteboard|keynote|finance[ -]?chart"
     },
     {
       "pattern": "\\bknowledge[ -]explainer\\b|\u77e5\u8bc6\u5927\u8d4f|\\bexplainer\\b|\\b(?:knowledge|science|graphic|cognitive|vibe)(?:[ -]\\w+){0,3}[ -](?:short|video)\\b",
@@ -2308,6 +2358,12 @@
       "skill": "hyperframes",
       "abstract_tool": "hyperframes_render",
       "capability": "motion_graphics"
+    },
+    {
+      "pattern": "\\bcinematic[ -]product[ -]promo\\b|\\bshot[ -](?:recipe|card)s?\\b|\\blaunch[ -]film\\b|(?=[\\s\\S]*\\b(?:product|app|software|launch)\\b)(?=[\\s\\S]*\\b(?:promo|film|trailer|demo|video)\\b)[\\s\\S]*\\b(?:cinematic|apple[ -]style|hype|beat[ -]sync(?:ed)?|2\\.5d|camera[ -]moves?)\\b",
+      "skill": "cinematic-product-promo",
+      "abstract_tool": "shot_recipe_search",
+      "capability": "shot_recipes"
     },
     {
       "pattern": "(?:export|handoff).*(?:after (?:the )?agent cut|conversational[ -]edit|transcript[ -](?:driven|based) cut)",
@@ -2420,7 +2476,7 @@
       "capability": "upscale"
     },
     {
-      "pattern": "record.*demo|repo.*launch.*video|ui demo",
+      "pattern": "record.*demo|repo.*launch.*video|ui demo|\\b(?:record|capture)\\b.*\\bwalkthrough\\b.*\\b(?:dashboard|app|product|ui)\\b|\\b(?:record|capture)\\b.*\\b(?:dashboard|app|product|ui)\\b.*\\bwalkthrough\\b",
       "skill": "product-demo-video",
       "abstract_tool": "cutaway_record"
     },
@@ -5550,6 +5606,40 @@
       "resolution_default": "720p",
       "explicit_only": true,
       "notes": "Named requests only. No automatic route, tier selection or training rights."
+    },
+    {
+      "provider": "shot_recipes",
+      "policy_ref": "shot_recipes",
+      "model": "shot-recipes-local",
+      "label": "Shot recipe library",
+      "tools": {
+        "shot_recipes": "ShotRecipes___shot_recipe_search"
+      },
+      "jobs": {
+        "shot_recipes": true
+      },
+      "resolutions": [],
+      "speed_class": "local",
+      "price": {
+        "source": "docs/CINEMATIC_PRODUCT_PROMO.md",
+        "read_date": "2026-10-10",
+        "unit": "call"
+      },
+      "notes": "Deterministic text search and storyboard checks; no rendering or source-media training grant.",
+      "controls": {
+        "shot_recipes": [
+          "mode",
+          "query",
+          "card_id",
+          "category",
+          "max_duration_s",
+          "energy",
+          "limit",
+          "storyboard"
+        ]
+      },
+      "durations": {},
+      "explicit_only": false
     }
   ],
   "image_default_size": "2K",
@@ -5810,6 +5900,12 @@
       "exceptions": [],
       "ab_candidates": [],
       "interim": null
+    },
+    "shot_recipes": {
+      "default": "shot_recipe_search",
+      "exceptions": [],
+      "interim": null,
+      "ab_candidates": []
     }
   },
   "paid_video_tools": [
@@ -6700,6 +6796,15 @@
       "read_date": "2026-10-10",
       "explicit_only": true,
       "allowed_regions": []
+    },
+    "shot_recipe_search": {
+      "license": "Apache-2.0",
+      "license_id": "Apache-2.0",
+      "license_source": "https://github.com/Vincentwei1021/video-shotcraft/blob/5ddbf52/LICENSE",
+      "read_date": "2026-10-10",
+      "training_eligible": false,
+      "training_reason": "Local text recipe data, no model or generated media. Card provenance does not grant source-media training rights.",
+      "commercial_status": "Imported Apache-2.0 text cards and separate in-house derivative metadata; no audio, preview media or upstream code."
     }
   },
   "editing_refusals": [

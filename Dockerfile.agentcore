@@ -20,7 +20,7 @@ COPY server ./server
 COPY third_party ./third_party
 
 RUN pip install --no-cache-dir -e . \
-    && python -c "import importlib.metadata, json; from pathlib import Path; from agent.deep_agent.runner import SKILLS_ROOT; from providers.catalog import PROVIDERS; from providers.registry import load_committed_schemas; assert importlib.metadata.version('deepagents') == '0.7.23'; assert len(list(SKILLS_ROOT.glob('*/SKILL.md'))) == 34; assert len(PROVIDERS) == 16; assert sum(len(load_committed_schemas(p)) for p in PROVIDERS) == 128; cases = json.loads(Path('tests/fixtures/skill_routing.json').read_text()); assert len(cases) == 256; assert sum(not c['skip_reason'] for c in cases) == 251; assert sum(bool(c['skip_reason']) for c in cases) == 5"
+    && python -c "import importlib.metadata, json; from pathlib import Path; from agent.deep_agent.runner import SKILLS_ROOT; from providers.catalog import PROVIDERS; from providers.registry import load_committed_schemas; assert importlib.metadata.version('deepagents') == '0.7.23'; assert len(list(SKILLS_ROOT.glob('*/SKILL.md'))) == 35; assert len(PROVIDERS) == 17; assert len(list(Path('providers/shot_recipes/cards').glob('*/*.md'))) == 157; assert Path('providers/shot_recipes/index.json').is_file(); assert sum(len(load_committed_schemas(p)) for p in PROVIDERS) == 129; cases = json.loads(Path('tests/fixtures/skill_routing.json').read_text()); assert len(cases) == 263; assert sum(not c['skip_reason'] for c in cases) == 257; assert sum(bool(c['skip_reason']) for c in cases) == 6"
 
 EXPOSE 8080
 

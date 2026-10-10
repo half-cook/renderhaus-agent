@@ -1336,5 +1336,7 @@
     "The neutral public id ground-skim maps to source ui-entrance/runway-ground-skim.md to avoid a provider-name collision. Original source bytes and frontmatter name remain unchanged; resolve its card path from validated source_path.",
     "Reference-implementation and source-media paths are inert provenance text; exclude them from any returned recipe data.",
     "Brand matching requires literal boundaries for ASCII names so Loom does not match bloom and Wan does not match words containing those letters."
-  ]
+  ],
+  "frontmatter_missing_tags_count": 91,
+  "frontmatter_missing_tags_note": "91 source cards omit 标签; retain bytes and use authored index keywords, without inventing frontmatter."
 }
