@@ -4,6 +4,7 @@ import json
 import os
 import re
 import tempfile
+import tomllib
 import unittest
 from pathlib import Path
 from unittest.mock import patch
@@ -18,6 +19,16 @@ SKILL = ROOT / 'agent/deep_agent/skills/art-style-motion'
 
 
 class ArtStyleMotionRoutingTests(unittest.TestCase):
+    def test_published_card_titles_can_be_requested_by_name(self):
+        for filename in ['style-cards.md', 'grammar-cards.md']:
+            titles = [line.split('|')[1].strip() for line in (SKILL / 'references' / filename).read_text().splitlines()
+                      if line.startswith('| ') and not line.startswith(('| Card |', '| Grammar |'))]
+            self.assertTrue(titles)
+            for title in titles:
+                with self.subTest(title=title):
+                    route = route_intent(f'Make an animated video using {title} style')
+                    self.assertEqual((route.skill, route.alias), ('art-style-motion', 'remotion_render'))
+
     def test_named_art_and_explainer_grammars_select_remotion(self):
         for prompt in [
             'Make a Van Gogh painting move with swirling brushwork',
@@ -29,6 +40,16 @@ class ArtStyleMotionRoutingTests(unittest.TestCase):
             'Make a Vox-style explainer video over my recording',
             'Make a 3Blue1Brown animation of gradient descent',
             'Make a 3b1b explainer animation',
+            'Make a video without narration in Vox style',
+            'Make an animation without music in Bauhaus style',
+            'Make a Vox-style explainer animation without HyperFrames',
+            'Make a silent Bauhaus animation; do not lip-sync anyone',
+            'Create a kinetic typography explainer video',
+            'Make a Dalí-style animation',
+            'Make a cave painting animation',
+            'Make an early ray-traced CGI animation',
+            'Make a contemporary flat animation',
+            'Make an illustrated-presenter animation with narration',
             'Make a whiteboard-style animated explainer with narration',
             'Make a keynote-style animated product explainer',
             'Make a finance-chart-style animated explainer with voiceover',
@@ -52,6 +73,13 @@ class ArtStyleMotionRoutingTests(unittest.TestCase):
             ('Draw and explain this concept as whiteboard video', 'whiteboard-explainer'),
             ('Make a silent explainer titled "Vox style" with no narration', 'knowledge-explainer'),
             ('Make a silent explainer; do not use Vox style', 'knowledge-explainer'),
+            ('Make a silent explainer video about ancient Egyptian farming', 'knowledge-explainer'),
+            ('Make a silent animated explainer about ancient Egyptian farming', 'knowledge-explainer'),
+            ('Make a silent animated explainer about the life of Monet', 'knowledge-explainer'),
+            ('Make a silent explainer video, not Vox style', 'knowledge-explainer'),
+            ('Make a silent explainer video with no Vox style', 'knowledge-explainer'),
+            ('Make a silent explainer video on ancient Egyptian farming', 'knowledge-explainer'),
+            ('Make a silent explainer video explaining Egyptian farming', 'knowledge-explainer'),
         ]:
             with self.subTest(prompt=prompt):
                 self.assertEqual(route_intent(prompt).skill, skill)
@@ -63,6 +91,7 @@ class ArtStyleMotionRoutingTests(unittest.TestCase):
             ('Add foley to this existing silent Vox-style explainer', {'video_url': 'https://example.invalid/clip.mp4'}, 'audio-bed'),
             ('Make a photoreal cinematic drone shot', None, 't2v'),
             ('Who was Van Gogh?', None, None),
+            ('Make a narrated video about Monet with archival photographs', None, 't2v'),
         ]:
             with self.subTest(prompt=prompt):
                 self.assertEqual(route_intent(prompt, arguments=arguments).skill, skill)
@@ -74,6 +103,13 @@ class ArtStyleMotionRoutingTests(unittest.TestCase):
         route = route_intent('Use Kling to make a Vox-style video with voiceover')
         self.assertEqual(route.steps[0].tool, 'Kling___text_to_video')
         self.assertEqual(route.steps[-1].tool, 'Remotion___render_timeline')
+        for provider, tool in [('Runway', 'Runway___text_to_video'), ('Luma', 'Luma___text_to_video')]:
+            prompt = f'Make a Vox-style video using OpenAI character frames and {provider} for video'
+            route = route_intent(prompt)
+            self.assertEqual((route.skill, route.tool), ('named-provider', tool))
+            self.assertIn('explicit request', route.disclosure)
+            voiced = route_intent(prompt + ' with voiceover')
+            self.assertEqual(voiced.steps[0].tool, tool)
 
     def test_explicit_hyperframes_uses_same_skill_with_feature_and_availability_gates(self):
         prompt = 'Make a Vox-style explainer animation with HyperFrames'
@@ -120,12 +156,28 @@ class ArtStyleMotionRoutingTests(unittest.TestCase):
 
     def test_silent_named_style_keeps_images_sfx_and_excludes_speech(self):
         allowed = {'OpenAI___generate_image', 'ElevenLabs___text_to_sound_effects_convert', 'Remotion___render_timeline'}
-        prompt = 'Make a silent Vox-style explainer video with no narration and event sound effects'
-        self.assertEqual(route_intent(prompt).skill, 'art-style-motion')
-        self.assertEqual(filter_request_tools(prompt, allowed | {'ElevenLabs___text_to_speech_convert'}), allowed)
+        for prompt in [
+            'Make a silent Vox-style explainer video with no narration and event sound effects',
+            'Make a silent Bauhaus animation without narration',
+            'Make a video without narration in Vox style',
+        ]:
+            with self.subTest(prompt=prompt):
+                self.assertEqual(route_intent(prompt).skill, 'art-style-motion')
+                self.assertEqual(filter_request_tools(prompt, allowed | {'ElevenLabs___text_to_speech_convert'}), allowed)
+        prompt = 'Make a silent Bauhaus animation with no speech'
+        self.assertNotIn('HeyGen___voice_tts', filter_request_tools(prompt, {'HeyGen___voice_tts'}))
 
 
 class ArtStyleMotionSkillTests(unittest.TestCase):
+    def test_distribution_includes_references_and_licence_notices(self):
+        config = tomllib.loads((ROOT / 'pyproject.toml').read_text())['tool']['setuptools']
+        package_root = ROOT / 'agent/deep_agent'
+        included = {path for pattern in config['package-data']['agent.deep_agent']
+                    for path in package_root.glob(pattern)}
+        self.assertTrue(set(SKILL.glob('references/*.md')) <= included)
+        self.assertIn('third_party/huashu-art-motion/LICENSE', config['license-files'])
+        self.assertIn('THIRD_PARTY_NOTICES', config['license-files'])
+
     def test_skill_is_parseable_and_all_local_references_are_shipped(self):
         from deepagents.middleware.skills import _parse_skill_metadata
 
@@ -196,7 +248,7 @@ class ArtStyleMotionApprovalTests(unittest.IsolatedAsyncioTestCase):
             context = next(json.loads(message.content) for message in messages if isinstance(message, ToolMessage) and message.name == 'read_studio_context')
             self.assertEqual(context['intent_route']['skill'], 'art-style-motion')
             approval = paused.exception.approvals[0]
-            self.assertIn('Remotion___render_timeline', approval.description)
+            self.assertEqual(approval.tool_name, 'Remotion___render_timeline')
             self.assertIn('Estimated cost', approval.description)
             self.assertIn('unknown', approval.description)
             gateway.call_tool.assert_not_awaited()
