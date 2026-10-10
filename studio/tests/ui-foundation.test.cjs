@@ -54,7 +54,8 @@ test('cn merges conflicting Tailwind classes and Motion stays lean and unmounted
   assert.match(provider, /reducedMotion="user"/);
   assert.match(provider, /export \{ m \} from "motion\/react"/);
   const layout = fs.readFileSync(path.join(studio, 'app/layout.tsx'), 'utf8');
-  assert.doesNotMatch(layout, /components\/(ui|motion)/, 'foundation must not add route JS yet');
+  assert.match(layout, /components\/motion\/provider/, 'the revamp mounts the lean Motion provider and the Toaster once, at the root');
+  assert.match(layout, /components\/ui\/sonner/);
 });
 
 test('Sonner overrides its injected font, motion and focus shadow with Studio tokens', () => {

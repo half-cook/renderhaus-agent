@@ -197,7 +197,6 @@ function ApprovalCards({
         <article className="agent-approval" key={approval.callId}>
           <header>
             <span><ShieldCheck size={14} /> Tool approval</span>
-            {approval.provider ? <em>{approval.provider}</em> : null}
           </header>
           <strong>{approval.label}</strong>
           <ApprovalSummary approval={approval}/>

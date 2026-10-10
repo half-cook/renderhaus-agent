@@ -51,7 +51,7 @@ test('the opt-in dark beta surface defines every root token without changing the
   assert.ok(beta, 'beta surface must be opt-in');
   assert.deepEqual(tokens(beta), tokens(root));
   assert.ok(beta.nodes.some((node) => node.prop === 'color-scheme' && node.value === 'dark'));
-  assert.equal(root.nodes.find((node) => node.prop === '--bg').value, 'var(--color-neutral-950)');
+  assert.equal(root.nodes.find((node) => node.prop === '--bg').value, 'var(--rh-bg)');
   assert.equal(root.nodes.find((node) => node.prop === '--ease').value, 'cubic-bezier(0.32, 0.72, 0, 1)');
 });
 

@@ -3,7 +3,7 @@ import type { AgentToolEvent, CreativeNodeKind, PortDataType, ToolDefinition } f
 const CREATIVE_TOOLS: ToolDefinition[] = [
   {
     id: "image.ideogram.edit",
-    displayName: "Ideogram text edit",
+    displayName: "Studio Image · text edit",
     description: "Correct text in an existing image; review pixel preservation",
     category: "image",
     providerId: "fal",
@@ -21,7 +21,7 @@ const CREATIVE_TOOLS: ToolDefinition[] = [
   },
   {
     id: "image.recraft.vector",
-    displayName: "Recraft editable vector",
+    displayName: "Studio Image · editable vector",
     description: "Generate an editable SVG with a preferred RGB palette",
     category: "image",
     providerId: "fal",
@@ -35,7 +35,7 @@ const CREATIVE_TOOLS: ToolDefinition[] = [
   },
   {
     id: "video.mirelo.foley",
-    displayName: "Mirelo video foley",
+    displayName: "Studio Sound · video foley",
     description: "Use chat to approve synchronized SFX with a cost estimate",
     category: "video",
     providerId: "fal",
@@ -49,7 +49,7 @@ const CREATIVE_TOOLS: ToolDefinition[] = [
   },
   {
     id: "video.topaz.upscale",
-    displayName: "Topaz Starlight upscale",
+    displayName: "Studio Finish · detail upscale",
     description: "Use chat to approve finishing with a cost estimate",
     category: "video",
     providerId: "topaz",
@@ -64,7 +64,7 @@ const CREATIVE_TOOLS: ToolDefinition[] = [
   },
   {
     id: "video.topaz.interpolate",
-    displayName: "Topaz frame interpolation",
+    displayName: "Studio Finish · frame interpolation",
     description: "Use chat to approve Apollo or Chronos interpolation with a cost estimate",
     category: "video",
     providerId: "topaz",
@@ -79,7 +79,7 @@ const CREATIVE_TOOLS: ToolDefinition[] = [
   },
   {
     id: "video.heygen.presenter",
-    displayName: "HeyGen Avatar V presenter",
+    displayName: "Studio Avatar · presenter",
     description: "Use chat to approve a presenter video with recorded face and voice consent",
     category: "video",
     providerId: "heygen",
@@ -111,7 +111,7 @@ const CREATIVE_TOOLS: ToolDefinition[] = [
   },
   {
     id: "fal.performance.motion",
-    displayName: "Kling motion control",
+    displayName: "Studio Video · motion control",
     category: "video",
     providerId: "fal",
     toolName: "kling_motion_control",
@@ -128,7 +128,7 @@ const CREATIVE_TOOLS: ToolDefinition[] = [
   },
   {
     id: "runway.video.generate",
-    displayName: "Runway video",
+    displayName: "Studio Video · Cinematic",
     category: "video",
     providerId: "runway",
     toolName: "text_to_video",
@@ -143,7 +143,7 @@ const CREATIVE_TOOLS: ToolDefinition[] = [
   },
   {
     id: "runway.video.fromImage",
-    displayName: "Runway image to video",
+    displayName: "Studio Video · Cinematic from a still",
     category: "video",
     providerId: "runway",
     toolName: "image_to_video",
@@ -159,7 +159,7 @@ const CREATIVE_TOOLS: ToolDefinition[] = [
   },
   {
     id: "runway.video.edit",
-    displayName: "Runway Aleph edit",
+    displayName: "Studio Video · Cinematic edit",
     category: "video",
     providerId: "runway",
     toolName: "video_to_video",
@@ -176,7 +176,7 @@ const CREATIVE_TOOLS: ToolDefinition[] = [
   },
   {
     id: "runway.image.generate",
-    displayName: "Runway image",
+    displayName: "Studio Image · Cinematic",
     category: "image",
     providerId: "runway",
     toolName: "text_to_image",
@@ -191,7 +191,7 @@ const CREATIVE_TOOLS: ToolDefinition[] = [
   },
   {
     id: "runway.image.edit",
-    displayName: "Runway reference image",
+    displayName: "Studio Image · Cinematic from references",
     category: "image",
     providerId: "runway",
     toolName: "image_to_image",
@@ -207,8 +207,8 @@ const CREATIVE_TOOLS: ToolDefinition[] = [
   },
   {
     id: "video.falGenerate",
-    displayName: "Wan VACE video",
-    description: "Generate a Wan VACE clip from a prompt",
+    displayName: "Studio Video · edit",
+    description: "Generate a Studio Video clip from a prompt",
     category: "video",
     providerId: "fal",
     toolName: "text_to_video",
@@ -219,7 +219,7 @@ const CREATIVE_TOOLS: ToolDefinition[] = [
   },
   {
     id: "video.wan3.generate",
-    displayName: "Wan 3.0 video",
+    displayName: "Studio Video · Standard",
     description: "Generate a video with native audio from a prompt",
     category: "video",
     providerId: "fal",
@@ -232,7 +232,7 @@ const CREATIVE_TOOLS: ToolDefinition[] = [
   },
   {
     id: "video.wan3.animate",
-    displayName: "Wan 3.0 animation",
+    displayName: "Studio Video · animate",
     description: "Animate a start frame with an optional end frame",
     category: "video",
     providerId: "fal",
@@ -249,7 +249,7 @@ const CREATIVE_TOOLS: ToolDefinition[] = [
   },
   {
     id: "video.wan3.reference",
-    displayName: "Wan 3.0 reference video",
+    displayName: "Studio Video · from references",
     description: "Generate a shot from image, video, or audio references",
     category: "video",
     providerId: "fal",
@@ -262,8 +262,8 @@ const CREATIVE_TOOLS: ToolDefinition[] = [
   },
   {
     id: "video.wan3.edit",
-    displayName: "Wan 3.0 video edit",
-    description: "Edit existing footage with Wan 3.0",
+    displayName: "Studio Video · edit footage",
+    description: "Edit existing footage with Studio Video",
     category: "video",
     providerId: "alibaba_modelstudio",
     toolName: "edit_wan3_video",
@@ -279,8 +279,8 @@ const CREATIVE_TOOLS: ToolDefinition[] = [
   },
   {
     id: "video.wan3.extend",
-    displayName: "Wan 3.0 video extend",
-    description: "Continue existing footage with Wan 3.0",
+    displayName: "Studio Video · extend footage",
+    description: "Continue existing footage with Studio Video",
     category: "video",
     providerId: "alibaba_modelstudio",
     toolName: "extend_wan3_video",
@@ -296,7 +296,7 @@ const CREATIVE_TOOLS: ToolDefinition[] = [
   },
   {
     id: "video.luma.generate",
-    displayName: "Luma video",
+    displayName: "Studio Video · Cinematic Plus",
     description: "Generate a Ray 3.2 clip from a prompt",
     category: "video",
     providerId: "luma",
@@ -308,7 +308,7 @@ const CREATIVE_TOOLS: ToolDefinition[] = [
   },
   {
     id: "video.luma.fromImage",
-    displayName: "Luma image to video",
+    displayName: "Studio Video · Cinematic Plus from a still",
     category: "video",
     providerId: "luma",
     toolName: "image_to_video",
@@ -323,7 +323,7 @@ const CREATIVE_TOOLS: ToolDefinition[] = [
   },
   {
     id: "video.luma.modify",
-    displayName: "Modify Luma video",
+    displayName: "Studio Video · modify clip",
     category: "video",
     providerId: "luma",
     toolName: "modify_video",
@@ -337,7 +337,7 @@ const CREATIVE_TOOLS: ToolDefinition[] = [
   },
   {
     id: "video.luma.extend",
-    displayName: "Extend Luma video",
+    displayName: "Studio Video · extend clip",
     category: "video",
     providerId: "luma",
     toolName: "extend_video",
@@ -348,7 +348,7 @@ const CREATIVE_TOOLS: ToolDefinition[] = [
   },
   {
     id: "openai.image.generate",
-    displayName: "GPT Image 2.5",
+    displayName: "Studio Image · Standard",
     description: "Generate a still from a prompt",
     category: "image",
     providerId: "openai_images",
@@ -360,7 +360,7 @@ const CREATIVE_TOOLS: ToolDefinition[] = [
   },
   {
     id: "openai.image.edit",
-    displayName: "GPT Image 2.5 edit",
+    displayName: "Studio Image · Standard edit",
     description: "Restyle an image from a prompt",
     category: "image",
     providerId: "openai_images",
@@ -376,8 +376,8 @@ const CREATIVE_TOOLS: ToolDefinition[] = [
   },
   {
     id: "image.generate",
-    displayName: "Seedream image",
-    description: "Use Seedream when explicitly requested",
+    displayName: "Studio Image · Fast",
+    description: "Use Studio Image Fast when explicitly requested",
     category: "image",
     providerId: "seedream",
     toolName: "text_to_image",
@@ -387,8 +387,8 @@ const CREATIVE_TOOLS: ToolDefinition[] = [
   },
   {
     id: "image.edit",
-    displayName: "Seedream edit",
-    description: "Use Seedream editing when explicitly requested",
+    displayName: "Studio Image · Fast edit",
+    description: "Use Studio Image Fast editing when explicitly requested",
     category: "image",
     providerId: "seedream",
     toolName: "image_to_image",
@@ -401,7 +401,7 @@ const CREATIVE_TOOLS: ToolDefinition[] = [
   },
   {
     id: "video.generate",
-    displayName: "Seedance 2.5 video",
+    displayName: "Studio Video · Pro",
     description: "Generate synthetic-character dialogue",
     category: "video",
     providerId: "seedance",
@@ -413,7 +413,7 @@ const CREATIVE_TOOLS: ToolDefinition[] = [
   },
   {
     id: "video.fromImage",
-    displayName: "Seedance 2.5 image to video",
+    displayName: "Studio Video · Pro from a still",
     description: "Animate a synthetic-character frame",
     category: "video",
     providerId: "seedance",
@@ -428,7 +428,7 @@ const CREATIVE_TOOLS: ToolDefinition[] = [
   },
   {
     id: "video.seedance.reference",
-    displayName: "Seedance 2.5 references",
+    displayName: "Studio Video · Pro from references",
     description: "Generate a shot from synthetic-character references",
     category: "video",
     providerId: "seedance",
@@ -441,7 +441,7 @@ const CREATIVE_TOOLS: ToolDefinition[] = [
   },
   {
     id: "video.seedance.edit",
-    displayName: "Seedance 2.5 edit",
+    displayName: "Studio Video · Pro edit",
     description: "Edit synthetic-character footage",
     category: "video",
     providerId: "seedance",
@@ -457,7 +457,7 @@ const CREATIVE_TOOLS: ToolDefinition[] = [
   },
   {
     id: "video.seedance.extend",
-    displayName: "Seedance 2.5 extend",
+    displayName: "Studio Video · Pro extend",
     description: "Continue synthetic-character footage",
     category: "video",
     providerId: "seedance",
@@ -474,7 +474,7 @@ const CREATIVE_TOOLS: ToolDefinition[] = [
   {
     id: "music.generate",
     displayName: "Music",
-    description: "Generate a Mureka V9.5 instrumental music bed",
+    description: "Generate an instrumental music bed",
     category: "audio",
     providerId: "mureka",
     toolName: "generate_instrumental",
@@ -487,7 +487,7 @@ const CREATIVE_TOOLS: ToolDefinition[] = [
   },
   {
     id: "music.song",
-    displayName: "Mureka song",
+    displayName: "Studio Music · song",
     description: "Generate a song from lyrics or a prompt",
     category: "audio",
     providerId: "mureka",
@@ -501,8 +501,8 @@ const CREATIVE_TOOLS: ToolDefinition[] = [
   },
   {
     id: "video.mureka.lyrics",
-    displayName: "Mureka lyrics video",
-    description: "Use chat to approve a lyrics video from a Mureka song or uploaded audio ID",
+    displayName: "Studio Music · lyrics video",
+    description: "Use chat to approve a lyrics video from a song or uploaded audio ID",
     category: "video",
     providerId: "mureka",
     toolName: "generate_lyrics_video",

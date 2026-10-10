@@ -47,15 +47,8 @@ test('approval fixtures expose no provider or fee fields to the client', () => {
   assert.doesNotMatch(text, /"provider"\s*:|platform_fee|fee_cents|"fee"/i);
 });
 
-// Ratchet: these legacy files still contain vendor-named labels. The revamp must remove them;
-// no other app source file may start leaking.
-const LEGACY_VENDOR_LABELS = new Set([
-  'components/canvas/NodeInspector.tsx',
-  'components/canvas/StudioCanvas.tsx',
-  'lib/canvas/model-labels.ts',
-  'lib/canvas/tool-registry.ts',
-  'lib/canvas/generate-readiness.ts',
-]);
+// Ratchet closed: the legacy vendor-label files are clean, so no app source file may leak.
+const LEGACY_VENDOR_LABELS = new Set([]);
 
 function walk(dir) {
   return fs.readdirSync(path.join(studio, dir), { withFileTypes: true }).flatMap((entry) => {
@@ -74,11 +67,4 @@ test('no app source file outside the legacy list names a provider or shows fee w
     if (findCopyLeaks(userStrings(text).join('\n')).length) offenders.push(file);
   }
   assert.deepEqual(offenders, []);
-});
-
-test('the legacy list only shrinks: every listed file still leaks', async () => {
-  const { findCopyLeaks } = await rules();
-  for (const file of LEGACY_VENDOR_LABELS) {
-    assert.ok(findCopyLeaks(userStrings(fs.readFileSync(path.join(studio, file), 'utf8')).join('\n')).length > 0, `${file} is clean now: remove it from LEGACY_VENDOR_LABELS`);
-  }
 });

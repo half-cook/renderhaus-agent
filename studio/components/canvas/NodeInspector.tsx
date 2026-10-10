@@ -145,9 +145,6 @@ export function NodeInspector() {
           ) : null}
         </>
       ) : null}
-      {node.data.providerId === "runway" ? (
-        <a href="https://runway.com" target="_blank" rel="noreferrer">Powered by Runway</a>
-      ) : null}
       {node.data.error ? <p className="node-error">{node.data.error}</p> : null}
     </aside>
   );
