@@ -49,6 +49,7 @@ class LocalAssemblyTests(unittest.TestCase):
                         break
                     time.sleep(.05)
             self.assertEqual(finished['status'], 'succeeded', finished)
+            self.assertEqual([(e['start_s'], e['end_s']) for e in finished['motion_carry_timeline']['elements']], [(0, 1)])
             from providers.remotion import local
             with patch.dict(local._PROCESSES, {}, clear=True):
                 repeated = api.get_render_progress(started['render_id'], started['bucket_name'])

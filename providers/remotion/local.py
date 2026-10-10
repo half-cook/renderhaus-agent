@@ -333,6 +333,7 @@ def start_render(props: dict[str, Any], *, output_filename: str,
         (directory / 'job.json').write_text(json.dumps({'filename': filename, 'pid': process.pid,
                                                        'duration': duration, 'fps': props['renderConfig']['fps'],
                                                        'resolution': resolution,
+                                                       'motion_carry_timeline': _motion_timeline(props),
                                                        'timeout': timeout, 'started': time.time()}))
     except Exception:
         if process is not None:
@@ -347,6 +348,25 @@ def start_render(props: dict[str, Any], *, output_filename: str,
             'filename': filename, 'progress': 0.0, 'backend': 'local', **resolution}
 
 
+def _motion_timeline(props: dict[str, Any]) -> dict[str, Any]:
+    """Retain exact item lifetimes and visual clip cuts, without inventing animation."""
+    config = props['renderConfig']
+    duration = config['durationInFrames'] / config['fps']
+    if duration > 120:
+        return {}
+    elements, cuts = [], {0.0, duration}
+    assets = {asset['id']: asset for asset in props['document']['assets']}
+    for track_index, track in enumerate(props['document']['tracks']):
+        for item_index, item in enumerate(track['items']):
+            start, end = max(0, item['start']), min(duration, item['start'] + item['duration'])
+            if start >= end or item['type'] == 'clip' and assets[item['assetId']]['kind'] == 'audio':
+                continue
+            elements.append({'id': f'track-{track_index}-item-{item_index}', 'start_s': start, 'end_s': end})
+            if item['type'] == 'clip':
+                cuts.update((start, end))
+    return {'elements': elements[:100], **({'beats_s': sorted(cuts)[:200]} if 2 < len(cuts) <= 200 else {})}
+
+
 def get_progress(render_id: str, *, media_roots: tuple[Path, ...]) -> dict[str, Any]:
     from providers.remotion.api import _media_dimensions, _resolution_report
 
@@ -358,6 +378,7 @@ def get_progress(render_id: str, *, media_roots: tuple[Path, ...]) -> dict[str, 
     job = json.loads((directory / 'job.json').read_text())
     result: dict[str, Any] = {'render_id': render_id, 'bucket_name': 'local', 'backend': 'local',
                               'filename': job['filename'], 'progress': 0.0,
+                              'motion_carry_timeline': job.get('motion_carry_timeline', {}),
                               **_resolution_report(job.get('resolution'))}
     with _LOCK:
         process = _PROCESSES.get(render_id)

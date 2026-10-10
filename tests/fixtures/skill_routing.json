@@ -4558,5 +4558,35 @@
     "skip_reason": "",
     "note": "explicit request; never default or exception",
     "source_status": "added"
+  },
+  {
+    "test_id": "RT-163",
+    "prompt": "Check my 20s launch video render and tell me why it feels like a PowerPoint",
+    "expected_skill": "motion-carry-qc",
+    "expected_tool": "motion_carry_probe",
+    "suite": "motion-carry-qc",
+    "skip_reason": "",
+    "source_status": "added",
+    "note": "Independent local motion QC"
+  },
+  {
+    "test_id": "RT-164",
+    "prompt": "Before I review it, QC the product demo you just rendered: do the beats flow into each other?",
+    "expected_skill": "motion-carry-qc",
+    "expected_tool": "motion_carry_probe",
+    "suite": "motion-carry-qc",
+    "skip_reason": "",
+    "source_status": "added",
+    "note": "Independent local motion QC"
+  },
+  {
+    "test_id": "RT-165",
+    "prompt": "Check this AI-generated drone clip for continuity errors between shots",
+    "expected_skill": "continuity-qc",
+    "expected_tool": "local_qc",
+    "suite": "motion-carry-qc",
+    "skip_reason": "",
+    "source_status": "added",
+    "note": "Negative motion-carry route; generative continuity stays local_qc"
   }
 ]

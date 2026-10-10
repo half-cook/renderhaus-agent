@@ -3,8 +3,8 @@ name: motion-graphics
 description: Assemble lower thirds, captions, simple motion, and explainers using the built Remotion timeline contract.
 metadata:
   include_tools: call_editor_tool call_media_tool
-  gateway_tools: Remotion___render_timeline Remotion___get_render_progress Remotion___export_nle_timeline HyperFrames___render_composition
-  routing_tools: remotion_render hyperframes_render
+  gateway_tools: Remotion___render_timeline Remotion___get_render_progress Remotion___export_nle_timeline HyperFrames___render_composition Remotion___motion_carry_probe
+  routing_tools: remotion_render hyperframes_render motion_carry_probe
 ---
 
 # Motion graphics
@@ -128,3 +128,9 @@ or change model training eligibility. Renderer terms remain those of the existin
   [MIT licence](https://github.com/Ninesam-9/motion-efficiency/blob/925cb290c424db5aec2089e354335fe6a3a16b1d/LICENSE), read 2026-10-10.
   It informs compact scene tables, exact media ledgers, focused revisions, batched inspection,
   and cost disclosure with existing approval and verification gates.
+
+After a completed MP4 render, read [motion-carry-qc](../motion-carry-qc/SKILL.md)
+and run `motion_carry_probe` through `Remotion___motion_carry_probe` with the owned
+local MP4 and exact beat timing when available. Surface any failed report and
+offer a re-render before presenting the film as final. A dry-run, missing MP4
+or skipped probe is incomplete QC. This free local check grants no paid calls.

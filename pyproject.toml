@@ -20,6 +20,7 @@ dependencies = [
   "httpx2>=2.12.0,<3",
   "jsonschema>=4.23.0",
   "mcp>=2.1.1,<3",
+  "numpy>=2.4.6,<3",
   "openai-codex==0.154.0",
   "opentimelineio==0.18.1",
   "pillow>=12.3.0,<13",
@@ -50,6 +51,6 @@ license-files = ["third_party/video-use/LICENSE", "third_party/hyperframes/LICEN
 
 [tool.setuptools.package-data]
 "providers.elevenlabs" = ["openapi.json"]
-"providers.remotion" = ["ad_layouts.json", "delivery_presets.json"]
+"providers.remotion" = ["ad_layouts.json", "delivery_presets.json", "motion_carry_calibration.json"]
 
 "agent.deep_agent" = ["AGENTS.md", "routing_policy.json", "continuity_qc_calibration.json", "continuity_qc_vlm_eval.json", "skills/*/SKILL.md", "skills/hyperframes/templates/*.html", "skills/hyperframes/templates/*.json", "skills/hyperframes/references/*.md", "skills/knowledge-explainer/templates/*.json", "skills/art-style-motion/references/*.md"]

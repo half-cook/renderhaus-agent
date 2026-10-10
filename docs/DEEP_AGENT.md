@@ -610,7 +610,7 @@ composition. This task makes no deployment or Lambda call. Matrix jobs refuse th
 backend until the same job directory exists on its worker. See
 [Remotion editing](REMOTION_EDITING.md) for the supported backend table and demo commands.
 
-Inventory is 16 providers, 127 Gateway tools and 33 skills. The fixture has 243 active and
+Inventory is 16 providers, 128 Gateway tools and 34 skills. The fixture has 246 active and
 5 deferred cases among 248 rows. Browser validation through Comet remains blocked here.
 
 ## Per-shot static reframing
@@ -659,3 +659,21 @@ Measured VibeMV source duration stays local; consent flags never enter the provi
 Inventory is 16 providers, 119 tools, 33 skills, 233 active fixtures and 5 dependency skips.
 See [named fal video](providers/named-fal-video.md) for contracts, dated official prices,
 commercial hosted terms and training exclusion. Comet E2E remains blocked here.
+
+## Motion carry quality gate
+
+The editor discovers `Remotion___motion_carry_probe` as an owned-job local tool.
+Its canonical ID is `motion_carry_probe`. It takes `job_id`, in-job MP4
+`input_path` and optional exact `timeline`, with no cost approval or provider
+call. The installed Deep Agents 0.7.23 dispatcher and interrupt predicates stay
+unchanged. `MOTION_CARRY_QC_DRY_RUN=true` is the default.
+
+Motion graphics, product demos, knowledge explainers and explicit HyperFrames
+films require a saved passing report that matches the current artifact checksum
+before completion. The shared completion validator also covers run-limit
+recovery. A failure is quoted verbatim with timestamped fixes and an offered
+re-render through Remotion, or HyperFrames only if explicitly requested.
+Dry-run/skipped measurements are incomplete QC and preserve the existing render.
+Generative continuity remains `local_qc`. All thresholds are PROVISIONAL.
+Current inventory is 16 providers, 123 tools, 32 skills, 245 routing rows with
+240 active and five existing skips. See [motion carry QC](MOTION_CARRY_QC.md).

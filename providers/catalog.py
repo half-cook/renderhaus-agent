@@ -193,6 +193,7 @@ PROVIDERS: tuple[ProviderSpec, ...] = (
             "REMOTION_APP_SERVE_URL",
             "REMOTION_APP_BUCKET_NAME",
             "REMOTION_DRY_RUN",
+            "MOTION_CARRY_QC_DRY_RUN",
             "REMOTION_RENDER_BACKEND",
             "REMOTION_LICENSE_RENDER_USD",
             "REMOTION_MATRIX_LAMBDA_MEMORY_MB",
@@ -207,6 +208,7 @@ PROVIDERS: tuple[ProviderSpec, ...] = (
         ),
         default_env={
             "REMOTION_DRY_RUN": "true",
+            "MOTION_CARRY_QC_DRY_RUN": "true",
         },
     ),
 )

@@ -29,7 +29,8 @@
     "get_voice_status",
     "transcribe_video",
     "get_transcription",
-    "get_dialogue_edit"
+    "get_dialogue_edit",
+    "motion_carry_probe"
   ],
   "providers": {
     "kling": {
@@ -378,12 +379,21 @@
           "read_date": "2026-10-09",
           "training_eligible": false,
           "commercial_status": "Installed local FFmpeg; source rights and operator build licence remain unchanged."
+        },
+        "motion-carry-local": {
+          "license": "service-terms",
+          "license_id": "in-house-clean-room",
+          "license_source": "docs/MOTION_CARRY_QC.md",
+          "read_date": "2026-10-10",
+          "training_eligible": false,
+          "commercial_status": "Independent local analyzer, no model weights or new output rights."
         }
       },
       "fixed_models": {
         "render_ad_variants": "ad-variant-timeline",
         "deliver_render": "ffmpeg-local",
-        "qc_deliverable": "ffmpeg-local"
+        "qc_deliverable": "ffmpeg-local",
+        "motion_carry_probe": "motion-carry-local"
       }
     },
     "fal": {
@@ -2093,9 +2103,39 @@
       "read_date": "2026-10-10",
       "dry_run": true,
       "produces_video": true
+    },
+    "motion_carry_probe": {
+      "gateway_tool": "Remotion___motion_carry_probe",
+      "provider": "remotion",
+      "model": "motion-carry-local",
+      "skill": "motion-carry-qc",
+      "status": "ready",
+      "host": "local worker with the owned job directory",
+      "us_available": "yes",
+      "availability_source": "docs/MOTION_CARRY_QC.md",
+      "read_date": "2026-10-10",
+      "training_eligible": false,
+      "license": "Independent in-house clean-room implementation; NumPy BSD-3-Clause and Pillow MIT-CMU; installed ffmpeg build terms",
+      "license_source": "docs/MOTION_CARRY_QC.md",
+      "training_reason": "No model or generated media. QC cannot grant source training rights.",
+      "source": "docs/MOTION_CARRY_QC.md",
+      "price_source": "docs/MOTION_CARRY_QC.md",
+      "verification": "Free local measurements calibrated on our synthetic films; PROVISIONAL; browser E2E blocked."
     }
   },
   "rules": [
+    {
+      "pattern": "\\bmotion[ -]carry(?:[ -]qc)?\\b|\\bmotion_carry_probe\\b|^(?!.*\\b(?:ai[ -]generated|generative|drone|continuity)\\b).*?(?:\\b(?:slideshow|powerpoint)\\b|\\b(?:no rhythm|jarring transitions)\\b|\\b(?:qc|check|review)\\b.*\\b(?:beats? (?:flow|carry)|carry|rhythm|beat[ -]to[ -]beat)\\b)|^(?!.*\\b(?:ai[ -]generated|generative|drone|continuity)\\b).*?\\b(?:qc|check|review)\\b.*\\b(?:motion[ -]graphics|product[ -]demo|knowledge[ -]explainer|hyperframes)\\b",
+      "skill": "motion-carry-qc",
+      "abstract_tool": "motion_carry_probe",
+      "capability": "motion_carry_qc"
+    },
+    {
+      "pattern": "\\b(?:check|qc|review)\\b.*\\bcontinuity\\b.*\\b(?:shots?|clips?)\\b",
+      "skill": "continuity-qc",
+      "abstract_tool": "local_qc",
+      "capability": "continuity_qc"
+    },
     {
       "pattern": "\\bpixverse\\b|\\bvibemv\\b",
       "skill": "named-provider",
@@ -5723,6 +5763,12 @@
       "ab_candidates": [
         "heygen_voice_tts"
       ]
+    },
+    "motion_carry_qc": {
+      "default": "motion_carry_probe",
+      "exceptions": [],
+      "ab_candidates": [],
+      "interim": null
     }
   },
   "paid_video_tools": [

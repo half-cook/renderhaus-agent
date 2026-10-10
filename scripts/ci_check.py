@@ -42,6 +42,7 @@ def _force_dry_run() -> None:
     os.environ["TOPAZ_DRY_RUN"] = "true"
     os.environ["MUREKA_DRY_RUN"] = "true"
     os.environ["FFMPEG_DRY_RUN"] = "true"
+    os.environ["MOTION_CARRY_QC_DRY_RUN"] = "true"
     os.environ["MUREKA_MODEL"] = "mureka-9.5"
 
 
@@ -87,9 +88,9 @@ def check_routing_inventory() -> None:
     from providers.registry import load_committed_schemas
 
     assert len(PROVIDERS) == 16
-    assert sum(len(load_committed_schemas(spec)) for spec in PROVIDERS) == 127
+    assert sum(len(load_committed_schemas(spec)) for spec in PROVIDERS) == 128
     paths = list(SKILLS_ROOT.glob("*/SKILL.md"))
-    assert len(paths) == 33
+    assert len(paths) == 34
     assert "ladder" not in POLICY and "premium_targets" not in POLICY
     assert "project_policy" not in POLICY and "flux2_klein4b_t2i" not in TOOL_MAP
     for capability, choice in POLICY["capability_map"].items():
@@ -108,7 +109,7 @@ def check_routing_inventory() -> None:
         assert set(metadata["include_tools"].split()) <= DISPATCH_TARGETS.keys(), path
         assert all(TOOL_MAP[alias]["status"] != "retired" for alias in metadata["routing_tools"].split()), path
     cases = json.loads((ROOT / "tests/fixtures/skill_routing.json").read_text())
-    assert len(cases) == 248 and sum(not case["skip_reason"] for case in cases) == 243
+    assert len(cases) == 251 and sum(not case["skip_reason"] for case in cases) == 246
     from agent.deep_agent.continuity_qc_vlm import EVAL_PATH, default_vlm_enabled
 
     if POLICY["continuity_qc"]["vlm_eval_gate"]["result_sha256"]:
@@ -116,7 +117,7 @@ def check_routing_inventory() -> None:
 
         subprocess.run(["git", "ls-files", "--error-unmatch", str(EVAL_PATH.relative_to(ROOT))], check=True, capture_output=True)
         assert default_vlm_enabled(), "Committed VLM evidence does not qualify for promotion."
-    print("ok routing inventory (16 providers, 127 Gateway tools, 33 skills, 243 active routing rows)")
+    print("ok routing inventory (16 providers, 128 Gateway tools, 34 skills, 246 active routing rows)")
 
 
 def _assert_gateway_shape(schema: object) -> None:
@@ -163,6 +164,8 @@ def check_dry_run_dispatch() -> None:
                 }
             if spec.id == "remotion" and name in {"deliver_render", "qc_deliverable"}:
                 arguments = {"job_id": "ci-smoke", "input_path": "master.mp4", "preset": "web-1080p"}
+            if spec.id == "remotion" and name == "motion_carry_probe":
+                arguments = {"job_id": "ci-smoke", "input_path": "master.mp4"}
             if spec.id == "remotion" and name == "import_nle_timeline":
                 arguments = {
                     "format": "fcpxml",
@@ -310,6 +313,11 @@ def check_dry_run_dispatch() -> None:
                 assert result.get("status") in {"blocked", "dry_run"} and result.get("passed") is False, result
                 assert not result.get("files"), "CI cannot finish or inspect media"
                 print(f"ok dry-run remotion.{name} status={result['status']}")
+                continue
+            if spec.id == "remotion" and name == "motion_carry_probe":
+                assert result.get("status") == "dry_run" and result.get("passed") is False, result
+                assert not result.get("boundaries"), "CI must not inspect media"
+                print("ok dry-run remotion.motion_carry_probe")
                 continue
             if spec.id == "gemini" and name == "judge_continuity":
                 gemini_job_id = result["job_id"]

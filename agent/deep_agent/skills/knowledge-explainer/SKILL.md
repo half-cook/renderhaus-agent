@@ -3,8 +3,8 @@ name: knowledge-explainer
 description: Create silent graphic knowledge or science explainers with on-screen text and event-synced sound effects. No narration or TTS. Remotion is the default; use HyperFrames only when explicitly named.
 metadata:
   include_tools: call_editor_tool call_media_tool call_audio_tool
-  routing_tools: remotion_render hyperframes_render mirelo_v2a elevenlabs_sfx_v2
-  gateway_tools: Remotion___render_timeline Remotion___get_render_progress HyperFrames___render_composition Fal___mirelo_v2a Fal___get_video_task ElevenLabs___text_to_sound_effects_convert
+  routing_tools: remotion_render hyperframes_render mirelo_v2a elevenlabs_sfx_v2 motion_carry_probe
+  gateway_tools: Remotion___render_timeline Remotion___get_render_progress HyperFrames___render_composition Fal___mirelo_v2a Fal___get_video_task ElevenLabs___text_to_sound_effects_convert Remotion___motion_carry_probe
 ---
 
 # Silent knowledge explainer
@@ -135,3 +135,9 @@ weights are included. Renderer and SFX terms remain those of the existing tools.
   Keep this workflow silent, translate only supported native arguments, and retain Remotion as default.
   No upstream text, code, runtime, dependencies, or weights are included.
   Source licences do not change media rights or training eligibility.
+
+After a completed MP4 render, read [motion-carry-qc](../motion-carry-qc/SKILL.md)
+and run `motion_carry_probe` through `Remotion___motion_carry_probe` with the owned
+local MP4 and exact beat timing when available. Surface any failed report and
+offer a re-render before presenting the film as final. A dry-run, missing MP4
+or skipped probe is incomplete QC. This free local check grants no paid calls.

@@ -41,6 +41,7 @@ from agent.studio_agent_next import (
 # create no paid provider work, so they never pause for customer approval.
 APPROVAL_EXEMPT_TOOLS = frozenset({"Remotion___export_nle_timeline"})
 LOCAL_MEDIA_TOOLS = frozenset({
+    "Remotion___motion_carry_probe",
     "Remotion___render_ad_variants", "Ffmpeg___ffmpeg_tool",
     "Remotion___deliver_render", "Remotion___qc_deliverable",
 })
@@ -54,7 +55,8 @@ def tool_needs_approval(name: str, autonomous: bool, arguments: dict | None = No
     if name in {"Remotion___render_ad_variants", "ad_variant_matrix"}:
         return (arguments or {}).get("stage") != "plan"
     if name in {"Ffmpeg___ffmpeg_tool", "ffmpeg_tool", "Remotion___deliver_render",
-                "Remotion___qc_deliverable", "delivery_render", "deliverable_qc"}:
+                "Remotion___qc_deliverable", "delivery_render", "deliverable_qc",
+                "Remotion___motion_carry_probe", "motion_carry_probe"}:
         return False
     if name in APPROVAL_EXEMPT_TOOLS:
         return False
@@ -704,7 +706,8 @@ class GatewayExecutor:
                         else:
                             output = await asyncio.to_thread(dispatch, provider, verb, arguments)
                         payload = _unwrap_tool_output(output)
-                        if payload.get("error") or payload.get("status") in {"failed", "error", "blocked", "not_run"}:
+                        if payload.get("error") or (payload.get("status") in {"failed", "error", "blocked", "not_run"}
+                                                   and name != "Remotion___motion_carry_probe"):
                             raise GatewayToolError(payload)
                     except Exception:
                         if charge is not None:
@@ -758,6 +761,18 @@ class GatewayExecutor:
                 else:
                     output = {**payload, "status": "failed", "error": str(exc)[:400],
                               "transport_error": not bool(payload.get("render_id") and payload.get("status") == "failed")}
+        if name in {"Remotion___render_timeline", "Remotion___get_render_progress", "HyperFrames___render_composition"}:
+            from agent.deep_agent.motion_carry_gate import requires_motion_qc
+
+            if requires_motion_qc(studio.prompt, studio.tool_events):
+                output = {**_unwrap_tool_output(output), "motion_carry_required": True}
+        if name == "Remotion___get_render_progress":
+            from providers.remotion.motion_carry import stage_local_render
+
+            owned_ids = {event.result.get("render_id") for event in studio.tool_events
+                         if event.name in {"Remotion___render_timeline", "Remotion___render_composition"}}
+            output = await asyncio.to_thread(stage_local_render, studio.job_id,
+                                            _unwrap_tool_output(output), owned_ids)
         saving_media = bool(studio.asset_registrar and _unwrap_tool_output(output).get("status") == "succeeded")
         if saving_media:
             _progress(studio, event_id=f"save-{call_id}", event_type="MEDIA_WAIT", title="Saving media",

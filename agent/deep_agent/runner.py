@@ -127,6 +127,14 @@ Remotion___qc_deliverable inspects existing in-job media without changing it. Bo
 worker tools and need no spending approval. They refuse Lambda. Dry-run previews and failed checks
 are incomplete delivery. Quote each failure verbatim and report visual/OCR/editorial review as pending.
 Spending-approval rejection does not authorize a retry. Poll pending jobs before review.
+After motion-graphics, product-demo-video, knowledge-explainer or explicit HyperFrames renders,
+read /skills/motion-carry-qc/SKILL.md and run Remotion___motion_carry_probe through the editor
+on the completed owned local MP4. Supply exact beat/element metadata when available. This is
+free and requires no approval. A completed failed probe gates delivery. Surface every failure
+and its timestamped fixes, link the saved report, and offer remotion_render for a re-render,
+or hyperframes_render only when explicitly requested. Keep render approval/cost controls.
+Missing media, a dry-run or skipped probe is incomplete QC. Never present it as a final film.
+Generative shot continuity stays on continuity-qc / local_qc. Thresholds are PROVISIONAL.
 """
 
 
