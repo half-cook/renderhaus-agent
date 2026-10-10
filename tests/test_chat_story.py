@@ -144,6 +144,12 @@ class TimingTests(unittest.TestCase):
                                             'music_ref': 'bed.wav'})
         self.assertEqual(len(props['document']['assets']), 1)
 
+    def test_theme_fallback_warning_survives_real_render_metadata(self):
+        with patch.dict(os.environ, {'CHAT_STORY_LOOKALIKE_THEMES': 'off'}):
+            props = chat.build_props('Fiction', {'messages': [{'from': 'me', 'text': 'Hello'}],
+                                               'theme': 'WhatsApp-style'})
+        self.assertTrue(any('not enabled' in w for w in props['renderConfig']['resolution']['warnings']))
+
     def test_wrap_prefers_word_boundaries_without_changing_spaces(self):
         text = 'Are we still friends?  Always.'
         lines = chat.plan({'messages': [{'from': 'me', 'text': text}]})['bubbles'][0]['lines']

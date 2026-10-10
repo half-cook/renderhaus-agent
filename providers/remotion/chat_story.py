@@ -331,6 +331,8 @@ def build_props(title: str, payload: dict, *, fps: int = 30, audio_tracks: list[
         for item in track['items']:
             item['assetId'] = replacements.get(item['assetId'], item['assetId'])
     document['chatStory'] = {'payload': payload, 'plan': timing}
+    resolution = props['renderConfig']['resolution']
+    resolution['warnings'] = list(dict.fromkeys([*resolution.get('warnings', []), *timing['warnings']]))
     return props
 
 
