@@ -861,6 +861,8 @@ def cost_for(provider: str, tool: str, arguments: dict[str, Any]) -> GenerationC
     """
     if provider == "ffmpeg":
         return GenerationCost(0, 0)
+    if provider == "remotion" and tool in {"deliver_render", "qc_deliverable"}:
+        return GenerationCost(0, 0)
     if provider == "remotion" and tool == "render_ad_variants":
         if arguments.get("stage") == "plan":
             return GenerationCost(0, 0)

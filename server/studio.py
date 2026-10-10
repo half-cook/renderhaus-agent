@@ -38,6 +38,7 @@ from agent.studio_agent_next import (
     StudioProgressEvent,
     StudioToolEvent,
     _requests_video_deliverable,
+    _validate_video_delivery,
     run_studio_agent as run_studio_agent_runtime,
 )
 from providers.catalog import PROVIDERS, get_provider
@@ -705,7 +706,8 @@ async def invoke_tool(body: InvokeBody, auth: AuthUser) -> dict[str, Any]:
         await asyncio.to_thread(repository.require_project, workspace_id, body.project_id)
     except KeyError as exc:
         raise HTTPException(status_code=404, detail="Project not found.") from exc
-    if (body.provider, body.tool) in {("ffmpeg", "ffmpeg_tool"), ("remotion", "render_ad_variants")}:
+    if (body.provider, body.tool) in {("ffmpeg", "ffmpeg_tool"), ("remotion", "render_ad_variants"),
+                                    ("remotion", "deliver_render"), ("remotion", "qc_deliverable")}:
         raise HTTPException(status_code=409, detail="Use the agent local-media workflow with its owned Studio job directory and stage approvals.")
     if (body.provider, body.tool) == ("sync", "lipsync_video"):
         raise HTTPException(
@@ -1770,6 +1772,8 @@ async def _run_studio_agent_job(
             )
         raise
     except AgentRunLimitExceeded as exc:
+        from agent.deep_agent.routing import route_intent
+
         logger.exception("Studio agent job %s reached its turn limit", job_id)
         execution = await asyncio.to_thread(repository.get_execution, workspace_id, job_id) or {}
         partial = _partial_agent_result(execution)
@@ -1779,6 +1783,25 @@ async def _run_studio_agent_job(
             and any(asset.get("kind") == "video" for asset in call.get("assets") or [])
             for call in execution.get("tool_calls") or []
         )
+        route = route_intent(prompt)
+        delivery_alias = route.steps[-1].alias if route.steps else route.alias
+        recovered_events = _events_from_payload(execution.get("tool_calls") or [])
+        prior_events = {event.id: event.public() for event in prior_tool_events or []}
+        current_delivery = any(
+            event.name in {"Remotion___deliver_render", "Remotion___qc_deliverable"}
+            and event.public() != prior_events.get(event.id)
+            for event in recovered_events
+        )
+        if current_delivery or delivery_alias in {"delivery_render", "deliverable_qc"}:
+            request = StudioAgentRequest(prompt=prompt, job_id=job_id,
+                                         prior_tool_events=list(prior_events.values()))
+            context = StudioAgentContext(nodes=references, job_id=job_id, progress_sink=record_progress)
+            context.restore_events(recovered_events)
+            report = StudioAgentOutput(title="Delivery QC incomplete", summary="Delivery QC is incomplete.",
+                                       markdown="# Delivery QC incomplete", filename="delivery-qc.md")
+            recovered_render = _validate_video_delivery(request, context, report)
+            if not recovered_render:
+                partial.update(title=report.title, summary=report.summary, markdown=report.markdown)
         record_progress(
             StudioProgressEvent(
                 id="run",
