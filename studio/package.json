@@ -5,7 +5,13 @@
   "scripts": {
     "dev": "next dev --port 5174 --hostname localhost",
     "build": "next build",
-    "start": "next start --port 5174"
+    "start": "next start --port 5174",
+    "shots:install": "playwright install chromium",
+    "shots": "node design-shots/run.mjs",
+    "shots:before": "node design-shots/run.mjs before",
+    "shots:after": "node design-shots/run.mjs after",
+    "shots:compare": "node design-shots/compare.mjs",
+    "shots:a11y": "node design-shots/run.mjs a11y"
   },
   "dependencies": {
     "@clerk/nextjs": "^7.8.0",

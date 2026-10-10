@@ -23,3 +23,8 @@ coverage/
 *.log
 # Generated Python Import Helper files
 **/.vscode/PythonImportHelper*.json
+
+studio/design-shots/out/
+studio/design-shots/node_modules/
+studio/design-shots/.pw-output/
+studio/design-shots/fixtures/*.har
