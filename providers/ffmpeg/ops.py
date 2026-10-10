@@ -17,7 +17,8 @@ import struct
 from typing import Any
 
 from providers.ffmpeg.commands import Command, THREADS, FORMATS, _input, _ffmpeg_input
-from providers.ffmpeg.sandbox import MAX_OUTPUT_BYTES, PATH_PATTERN, output_file, sha256_file
+from providers.ffmpeg.sandbox import (MAX_INPUT_BYTES, MAX_FOOTAGE_INPUT_BYTES, MAX_OUTPUT_BYTES,
+                                      PATH_PATTERN, output_file, sha256_file)
 
 
 @dataclass(frozen=True)
@@ -33,6 +34,7 @@ class OpSpec:
     compute: Callable[[dict[str, Any]], dict[str, Any]] | None = None
     finalize: Callable[[Path, Path, dict, list[Path], dict], dict] | None = None
     export: Callable[[Path, dict, list[Path]], dict] | None = None
+    input_limit_bytes: int = MAX_INPUT_BYTES
 
 
 def number(default, minimum, maximum, *, integer=False):
@@ -58,6 +60,35 @@ def _probe_metrics(results):
         if stream.get("codec_type") == "audio":
             stream.setdefault("channel_layout", None)
     return {"streams": payload["streams"], "format": payload.get("format", {})}
+
+
+def _trim_bounds(params):
+    if not 0 <= params['t0_s'] < params['t1_s'] or params['t1_s'] - params['t0_s'] > 600:
+        raise ValueError('Trim requires increasing endpoints and at most 600 seconds.')
+
+
+def _trim(directory, source, params):
+    output = output_file(directory, 'select', '.mp4')
+    argv = _ffmpeg_input(directory, source)
+    position = argv.index('-i')
+    argv[position:position] = ['-ss', f"{params['t0_s']:g}", '-accurate_seek']
+    argv += ['-t', f"{params['t1_s'] - params['t0_s']:g}",
+             '-map', '0:v:0', '-map', '0:a:0?', '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '18',
+             '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-threads', str(THREADS),
+             '-movflags', '+faststart', '-fs', str(MAX_OUTPUT_BYTES), './' + output.name]
+    return [Command(argv, [output])]
+
+
+def _finish_trim(directory, source, params, outputs, metrics):
+    from providers.ffmpeg.api import execute
+
+    probe = execute('probe', directory, outputs[0].name)
+    if not probe.get('ok'):
+        raise ValueError('Trim output is unreadable.')
+    measured = float(probe['metrics']['format'].get('duration', 0))
+    if abs(measured - (params['t1_s'] - params['t0_s'])) > .15:
+        raise ValueError('Trim output is incomplete or exceeds the requested duration.')
+    return {'duration_s': measured, 't0_s': params['t0_s'], 't1_s': params['t1_s']}
 
 
 def _extract(directory, source, params):
@@ -377,6 +408,10 @@ _PROXY_PARAMS = {
 
 
 OPS = {
+    "trim": OpSpec({'t0_s': number(0, 0, 86400), 't1_s': number(1, 0, 86400)},
+                    _trim, binary='ffmpeg', timeout_s=180, validate=_trim_bounds, finalize=_finish_trim,
+                    input_limit_bytes=MAX_FOOTAGE_INPUT_BYTES,
+                    description='Extract a bounded select with accurate timestamps, native geometry and optional source audio.'),
     "measure_loudness": OpSpec(_LOUDNESS_PARAMS, delivery.measure, delivery.measure_metrics,
                                binary="ffmpeg", timeout_s=120, description="Measure complete loudnorm pass one and EBU R128 summary."),
     "loudnorm_mux_aac": OpSpec({**_LOUDNESS_PARAMS, **_AAC_PARAMS, **_MEASURED_PARAMS},
@@ -418,7 +453,8 @@ OPS = {
                                description="Fit the whole frame over a blurred copy in an aspect canvas."),
     "detect_scenes": OpSpec({"T": number(.3, .1, .6)}, _scenes, _scene_metrics,
                            binary="ffmpeg", timeout_s=120, description="Detect bounded shot cuts with scene threshold T."),
-    "probe": OpSpec({}, _probe, _probe_metrics, binary="ffprobe", description="Read streams and format JSON."),
+    "probe": OpSpec({}, _probe, _probe_metrics, binary="ffprobe", input_limit_bytes=MAX_FOOTAGE_INPUT_BYTES,
+                    description="Read streams and format JSON."),
     "extract_frames": OpSpec({
         "times": {"type": "array", "items": number(0, 0, 600), "minItems": 1, "maxItems": 20,
                   "default": [0], "description": "1 to 20 frame times, each 0 to 600 seconds. Default [0]."},

@@ -37,6 +37,9 @@ Beta credits sync BETA_CREDITS_ENABLED, BETA_GRANT_CENTS, BETA_GLOBAL_CAP_CENTS,
 BETA_WAVE_SIZE, BETA_WAVE_INDEX, BETA_DAILY_GRANT_LIMIT, BETA_VERIFICATION_DRY_RUN,
 BETA_IDENTITY_SALT and BETA_ADMIN_TOKEN through the existing application-secret mapping.
 Verification defaults to dry run and registers no email or SMS vendor.
+Footage memory adds no secrets. FOOTAGE_MEMORY_DRY_RUN=true, FOOTAGE_MEMORY_BACKEND=gemini,
+FOOTAGE_MEMORY_CALL_CENTS (optional unverified estimate) and RENDERHAUS_VIDEO_INDEX_ROOT
+are configuration only. It reuses GEMINI_VLM_MODEL without reading GEMINI_API_KEY or DASHSCOPE_API_KEY.
 """
 
 from __future__ import annotations

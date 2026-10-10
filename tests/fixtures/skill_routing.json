@@ -219,7 +219,7 @@
     "expected_tool": "gpt_image25_t2i",
     "suite": "motion-graphics",
     "skip_reason": "",
-    "note": "Ideogram named → edit tool; ambiguous if generation intended; binding decision (d): no existing edit image, use generation default",
+    "note": "Ideogram named \u2192 edit tool; ambiguous if generation intended; binding decision (d): no existing edit image, use generation default",
     "source_status": "updated"
   },
   {
@@ -516,7 +516,7 @@
     "expected_tool": "vidu_q4_i2v",
     "suite": "vidu-q4",
     "skip_reason": "",
-    "note": "vidu-q4 archived → named-provider",
+    "note": "vidu-q4 archived \u2192 named-provider",
     "source_status": "moved"
   },
   {
@@ -525,7 +525,7 @@
     "expected_tool": "vidu_q4_r2v",
     "suite": "vidu-q4",
     "skip_reason": "",
-    "note": "vidu-q4 archived → named-provider",
+    "note": "vidu-q4 archived \u2192 named-provider",
     "source_status": "moved"
   },
   {
@@ -534,7 +534,7 @@
     "expected_tool": "vidu_q4_i2v",
     "suite": "vidu-q4",
     "skip_reason": "",
-    "note": "vidu-q4 archived → named-provider",
+    "note": "vidu-q4 archived \u2192 named-provider",
     "source_status": "moved"
   },
   {
@@ -733,7 +733,7 @@
     "expected_tool": "wan3_r2v",
     "suite": "i2v",
     "skip_reason": "",
-    "note": "real_face_refs → Wan",
+    "note": "real_face_refs \u2192 Wan",
     "source_status": "new"
   },
   {
@@ -779,7 +779,7 @@
     "expected_tool": "wan3_t2v",
     "suite": "t2v",
     "skip_reason": "",
-    "note": "duration > 30 s → split or refuse",
+    "note": "duration > 30 s \u2192 split or refuse",
     "source_status": "new",
     "expected_status": "blocked",
     "expected_reason": "30 seconds"
@@ -1127,7 +1127,7 @@
     "expected_tool": "mureka_v95",
     "suite": "lyrics-video",
     "skip_reason": "",
-    "note": "no song supplied → Mureka V9.5 first",
+    "note": "no song supplied \u2192 Mureka V9.5 first",
     "source_status": "new"
   },
   {
@@ -4818,5 +4818,152 @@
     "skip_reason": "",
     "note": "New card routing must preserve the existing authoring workflow.",
     "source_status": "new"
+  },
+  {
+    "suite": "footage-memory",
+    "skip_reason": "",
+    "source_status": "new",
+    "source_file": "/workspace/research/renderhaus-skills-seed-2026-10-08.xlsx",
+    "source_sheet": "Routing Tests",
+    "source_read_date": "2026-10-10",
+    "test_id": "RT-177",
+    "prompt": "Here are 3 hours of interview rushes. Find every moment where the guest talks about her childhood and give me the clips",
+    "expected_skill": "footage-memory",
+    "expected_tool": "footage_memory_status then footage_memory_build then footage_memory_query then footage_watch_answer then footage_clip_extract",
+    "source_sheet_tool": "footage_memory_status then footage_memory_build then footage_memory_query then footage_clip_extract",
+    "forbidden_tools": "wan3_t2v, seedance25_edit",
+    "expected_output": "List of timestamped selects, verified, plus trimmed clips with handles",
+    "expected_step_count": 5,
+    "expected_execution_groups": [
+      [
+        "footage_memory_status"
+      ],
+      [
+        "footage_memory_build"
+      ],
+      [
+        "footage_memory_query"
+      ],
+      [
+        "footage_watch_answer"
+      ],
+      [
+        "footage_clip_extract"
+      ]
+    ],
+    "expected_required": {
+      "recommendation": "build",
+      "verify_before_extract": true,
+      "allow_unverified": false
+    },
+    "note": "Adds mandatory narrow Verify between query and extract to reconcile the workbook with the guardrail."
+  },
+  {
+    "suite": "footage-memory",
+    "skip_reason": "",
+    "source_status": "new",
+    "source_file": "/workspace/research/renderhaus-skills-seed-2026-10-08.xlsx",
+    "source_sheet": "Routing Tests",
+    "source_read_date": "2026-10-10",
+    "test_id": "RT-178",
+    "prompt": "In this 4-minute clip, what's written on the whiteboard behind the speaker?",
+    "expected_skill": "footage-memory",
+    "expected_tool": "footage_watch_answer",
+    "forbidden_tools": "footage_memory_build",
+    "expected_output": "One-line answer with timestamp",
+    "expected_step_count": 1
+  },
+  {
+    "suite": "footage-memory",
+    "skip_reason": "",
+    "source_status": "new",
+    "source_file": "/workspace/research/renderhaus-skills-seed-2026-10-08.xlsx",
+    "source_sheet": "Routing Tests",
+    "source_read_date": "2026-10-10",
+    "test_id": "RT-179",
+    "prompt": "Cut the ums and long pauses out of this talking-head take",
+    "expected_skill": "conversational-edit",
+    "expected_tool": "transcript_edit",
+    "source_expected_skill": "resolve-tighten-dialogue",
+    "source_sheet_tool": "resolve_run_script",
+    "forbidden_tools": "footage_memory_status, footage_memory_build, footage_memory_query, footage_watch_answer, footage_clip_extract",
+    "expected_output": "Tightened take",
+    "note": "Uses existing Remotion___prepare_conversational_edit; the parked Resolve skill is not added."
+  },
+  {
+    "suite": "footage-memory",
+    "skip_reason": "",
+    "source_status": "new",
+    "source_file": "/workspace/research/renderhaus-skills-seed-2026-10-08.xlsx",
+    "source_sheet": "Routing Tests",
+    "source_read_date": "2026-10-10",
+    "test_id": "FM-001",
+    "prompt": "Find every moment with a red car in this folder of clips",
+    "expected_skill": "footage-memory",
+    "expected_tool": "footage_memory_status then footage_memory_build then footage_memory_query",
+    "forbidden_tools": "wan3_t2v",
+    "expected_required": {
+      "recommendation": "build"
+    }
+  },
+  {
+    "suite": "footage-memory",
+    "skip_reason": "",
+    "source_status": "new",
+    "source_file": "/workspace/research/renderhaus-skills-seed-2026-10-08.xlsx",
+    "source_sheet": "Routing Tests",
+    "source_read_date": "2026-10-10",
+    "test_id": "FM-002",
+    "prompt": "I have several questions about the same footage: what is written, who speaks, and when does she laugh?",
+    "expected_skill": "footage-memory",
+    "expected_tool": "footage_memory_status then footage_memory_build then footage_memory_query",
+    "expected_required": {
+      "recommendation": "build"
+    }
+  },
+  {
+    "suite": "footage-memory",
+    "skip_reason": "",
+    "source_status": "new",
+    "source_file": "/workspace/research/renderhaus-skills-seed-2026-10-08.xlsx",
+    "source_sheet": "Routing Tests",
+    "source_read_date": "2026-10-10",
+    "test_id": "FM-003",
+    "prompt": "Find the moment where she laughs in this 4-minute clip",
+    "arguments": {
+      "memory_exists": true
+    },
+    "expected_skill": "footage-memory",
+    "expected_tool": "footage_memory_query",
+    "forbidden_tools": "footage_memory_build, footage_watch_answer",
+    "expected_required": {
+      "recommendation": "query"
+    }
+  },
+  {
+    "suite": "footage-memory",
+    "skip_reason": "",
+    "source_status": "new",
+    "source_file": "/workspace/research/renderhaus-skills-seed-2026-10-08.xlsx",
+    "source_sheet": "Routing Tests",
+    "source_read_date": "2026-10-10",
+    "test_id": "FM-004",
+    "prompt": "Remove filler words from this transcript",
+    "expected_skill": "conversational-edit",
+    "expected_tool": "transcript_edit",
+    "forbidden_tools": "footage_memory_status, footage_memory_build, footage_memory_query, footage_watch_answer, footage_clip_extract"
+  },
+  {
+    "suite": "footage-memory",
+    "skip_reason": "",
+    "source_status": "new",
+    "source_file": "/workspace/research/renderhaus-skills-seed-2026-10-08.xlsx",
+    "source_sheet": "Routing Tests",
+    "source_read_date": "2026-10-10",
+    "test_id": "FM-005",
+    "prompt": "Check continuity across these clips",
+    "expected_skill": "continuity-qc",
+    "expected_tool": "local_qc",
+    "forbidden_tools": "footage_memory_status, footage_memory_build, footage_memory_query, footage_watch_answer, footage_clip_extract"
   }
 ]

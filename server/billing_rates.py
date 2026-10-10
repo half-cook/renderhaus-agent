@@ -932,13 +932,30 @@ def mureka_price_cents(tool: str, arguments: dict[str, Any]) -> Decimal | None:
     return MUREKA_INSTRUMENTAL_CENTS
 
 
+def footage_memory_estimate(tool: str, arguments: dict[str, Any]) -> dict:
+    """Configured per-window estimate, never an invented official per-call rate.
+
+    Official token pricing https://ai.google.dev/gemini-api/docs/pricing,
+    read 2026-10-10. Token usage per footage window is unknown. TODO live quote.
+    """
+    from providers.footage_memory.contracts import request_for
+    from providers.footage_memory.service import build_plan, call_estimate
+
+    request = request_for(tool, arguments)
+    if tool == 'footage_memory_build':
+        return build_plan(request)[0]
+    if tool == 'footage_watch_answer':
+        return call_estimate(1)
+    return call_estimate(0)
+
+
 def cost_for(provider: str, tool: str, arguments: dict[str, Any]) -> GenerationCost:
     """Real cost (provider + disclosed fee) for one call to `provider`/`tool`.
     Called both before dispatch (to check affordability) and after success
     (to charge the same amount), so it must be a pure function of the
     request, not of anything the provider returns.
     """
-    if provider in {"ffmpeg", "shot_recipes"}:
+    if provider in {"ffmpeg", "shot_recipes", "footage_memory"}:
         return GenerationCost(0, 0)
     if provider == "remotion" and tool in {"deliver_render", "qc_deliverable", "motion_carry_probe"}:
         return GenerationCost(0, 0)

@@ -1,0 +1,257 @@
+{
+  "version": 1,
+  "provenance": "Generated fictional events; no real footage or vendor data.",
+  "event_templates": [
+    {
+      "kind": "person",
+      "start_fraction": 0.0,
+      "end_fraction": 1.0,
+      "speaker_id": "guest",
+      "text": "Guest wearing a green sweater.",
+      "confidence": 0.6,
+      "attrs": {
+        "label": "Guest"
+      }
+    },
+    {
+      "kind": "object",
+      "start_fraction": 0.1,
+      "end_fraction": 0.6,
+      "speaker_id": null,
+      "text": "A notebook rests on the table.",
+      "confidence": 0.6,
+      "attrs": {}
+    },
+    {
+      "kind": "location",
+      "start_fraction": 0.0,
+      "end_fraction": 1.0,
+      "speaker_id": null,
+      "text": "An interview room with a whiteboard.",
+      "confidence": 0.6,
+      "attrs": {}
+    },
+    {
+      "kind": "dialogue",
+      "start_fraction": 0.2,
+      "end_fraction": 0.4,
+      "speaker_id": "guest",
+      "text": "I remember my childhood and the garden at home.",
+      "confidence": 0.6,
+      "attrs": {}
+    },
+    {
+      "kind": "sound",
+      "start_fraction": 0.4,
+      "end_fraction": 0.5,
+      "speaker_id": null,
+      "text": "Non-speech laughter from the guest.",
+      "confidence": 0.6,
+      "attrs": {}
+    },
+    {
+      "kind": "on_screen_text",
+      "start_fraction": 0.5,
+      "end_fraction": 0.7,
+      "speaker_id": null,
+      "text": "Whiteboard reads Launch plan.",
+      "confidence": 0.6,
+      "attrs": {}
+    },
+    {
+      "kind": "moment",
+      "start_fraction": 0.7,
+      "end_fraction": 0.9,
+      "speaker_id": null,
+      "text": "The guest gestures toward the whiteboard.",
+      "confidence": 0.6,
+      "attrs": {}
+    }
+  ],
+  "media": [
+    {
+      "id": "m01",
+      "duration_s": 60,
+      "events": [
+        {
+          "kind": "moment",
+          "t0_ms": 12000,
+          "t1_ms": 13000,
+          "text": "The red cup falls onto the table.",
+          "speaker_id": null
+        },
+        {
+          "kind": "object",
+          "t0_ms": 35000,
+          "t1_ms": 36000,
+          "text": "The blue cup sits on a shelf."
+        }
+      ]
+    },
+    {
+      "id": "m02",
+      "duration_s": 60,
+      "events": [
+        {
+          "kind": "sound",
+          "t0_ms": 37000,
+          "t1_ms": 38000,
+          "text": "The brass bell rings twice.",
+          "speaker_id": null
+        },
+        {
+          "kind": "object",
+          "t0_ms": 35000,
+          "t1_ms": 36000,
+          "text": "The blue cup sits on a shelf."
+        }
+      ]
+    },
+    {
+      "id": "m03",
+      "duration_s": 60,
+      "events": [
+        {
+          "kind": "object",
+          "t0_ms": 48000,
+          "t1_ms": 49000,
+          "text": "A yellow kite appears above the field.",
+          "speaker_id": null
+        },
+        {
+          "kind": "object",
+          "t0_ms": 35000,
+          "t1_ms": 36000,
+          "text": "The blue cup sits on a shelf."
+        }
+      ]
+    },
+    {
+      "id": "m04",
+      "duration_s": 60,
+      "events": [
+        {
+          "kind": "on_screen_text",
+          "t0_ms": 8000,
+          "t1_ms": 9000,
+          "text": "The sign reads North gate.",
+          "speaker_id": null
+        },
+        {
+          "kind": "object",
+          "t0_ms": 35000,
+          "t1_ms": 36000,
+          "text": "The blue cup sits on a shelf."
+        }
+      ]
+    },
+    {
+      "id": "m05",
+      "duration_s": 60,
+      "events": [
+        {
+          "kind": "dialogue",
+          "t0_ms": 25000,
+          "t1_ms": 26000,
+          "text": "I used to visit the bakery every morning.",
+          "speaker_id": "guest"
+        },
+        {
+          "kind": "object",
+          "t0_ms": 35000,
+          "t1_ms": 36000,
+          "text": "The blue cup sits on a shelf."
+        }
+      ]
+    },
+    {
+      "id": "m06",
+      "duration_s": 60,
+      "events": [
+        {
+          "kind": "moment",
+          "t0_ms": 53000,
+          "t1_ms": 54000,
+          "text": "A purple train arrives at the platform.",
+          "speaker_id": null
+        },
+        {
+          "kind": "object",
+          "t0_ms": 35000,
+          "t1_ms": 36000,
+          "text": "The blue cup sits on a shelf."
+        }
+      ]
+    }
+  ],
+  "cases": [
+    {
+      "id": "q01",
+      "clip_id": "m01",
+      "query": "Find the moment the red cup falls.",
+      "split": "held_out"
+    },
+    {
+      "id": "q02",
+      "clip_id": "m02",
+      "query": "Find the moment the bell rings.",
+      "split": "held_out"
+    },
+    {
+      "id": "q03",
+      "clip_id": "m03",
+      "query": "Find the moment a yellow kite appears.",
+      "split": "held_out"
+    },
+    {
+      "id": "q04",
+      "clip_id": "m04",
+      "query": "Find the moment the sign reads North gate.",
+      "split": "held_out"
+    },
+    {
+      "id": "q05",
+      "clip_id": "m05",
+      "query": "Find the moment someone mentions the bakery.",
+      "split": "held_out"
+    },
+    {
+      "id": "q06",
+      "clip_id": "m06",
+      "query": "Find the moment a purple train arrives.",
+      "split": "held_out"
+    }
+  ],
+  "labels": [
+    {
+      "query_id": "q01",
+      "clip_id": "m01",
+      "t0_s": 12.0
+    },
+    {
+      "query_id": "q02",
+      "clip_id": "m02",
+      "t0_s": 37.0
+    },
+    {
+      "query_id": "q03",
+      "clip_id": "m03",
+      "t0_s": 48.0
+    },
+    {
+      "query_id": "q04",
+      "clip_id": "m04",
+      "t0_s": 8.0
+    },
+    {
+      "query_id": "q05",
+      "clip_id": "m05",
+      "t0_s": 25.0
+    },
+    {
+      "query_id": "q06",
+      "clip_id": "m06",
+      "t0_s": 53.0
+    }
+  ]
+}

@@ -10,6 +10,7 @@ import uuid
 
 
 MAX_INPUT_BYTES = 128 * 1024 * 1024
+MAX_FOOTAGE_INPUT_BYTES = 32 * 1024 ** 3
 MAX_OUTPUT_BYTES = 16 * 1024 * 1024
 MAX_TOTAL_OUTPUT_BYTES = 64 * 1024 * 1024
 ID_PATTERN = r"[A-Za-z0-9_][A-Za-z0-9_.-]{0,79}"
@@ -32,7 +33,8 @@ def job_directory(job_id: str) -> Path:
     return directory
 
 
-def validate_input_path(directory: Path, value: str, *, must_exist: bool = True) -> Path:
+def validate_input_path(directory: Path, value: str, *, must_exist: bool = True,
+                        max_bytes: int = MAX_INPUT_BYTES) -> Path:
     if not isinstance(value, str) or not value or len(value) > 1024:
         raise ValueError("input_path must name a regular file inside the job directory.")
     path = Path(value)
@@ -55,15 +57,15 @@ def validate_input_path(directory: Path, value: str, *, must_exist: bool = True)
             info = resolved.stat()
         except OSError:
             raise ValueError("Input file is missing or unreadable inside the job directory.") from None
-        if not stat.S_ISREG(info.st_mode) or not 0 < info.st_size <= MAX_INPUT_BYTES:
-            raise ValueError("Inputs must be nonempty regular files of at most 128 MiB.")
+        if not stat.S_ISREG(info.st_mode) or not 0 < info.st_size <= max_bytes:
+            raise ValueError(f"Inputs must be nonempty regular files of at most {max_bytes // (1024 * 1024)} MiB.")
         if not os.access(resolved, os.R_OK):
             raise ValueError("Input file is not readable.")
     return resolved
 
 
-def input_file(job_dir: Path, path: str) -> Path:
-    return validate_input_path(job_dir, path)
+def input_file(job_dir: Path, path: str, *, max_bytes: int = MAX_INPUT_BYTES) -> Path:
+    return validate_input_path(job_dir, path, max_bytes=max_bytes)
 
 
 def output_file(job_dir: Path, prefix: str, suffix: str) -> Path:

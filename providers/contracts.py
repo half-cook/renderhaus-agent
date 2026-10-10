@@ -594,6 +594,10 @@ def _validate_rule(path: str, value: Any, rule: ArgumentRule) -> None:
 
 
 def _validate_cross_fields(provider_id: str, tool_name: str, arguments: dict[str, Any], *, allow_empty_visuals: bool = False) -> None:
+    if provider_id == "footage_memory":
+        from providers.footage_memory.contracts import validate_arguments
+
+        validate_arguments(tool_name, arguments)
     if provider_id == "remotion" and tool_name == "motion_carry_probe":
         from providers.remotion.motion_carry import validate_arguments
 

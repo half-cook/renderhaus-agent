@@ -36,6 +36,7 @@ on:
           - remotion
           - ffmpeg
           - shot_recipes
+          - footage_memory
         default: all
       region:
         description: AWS region
@@ -114,6 +115,7 @@ jobs:
                   PROVIDER=all
                 else
                   SELECTED=()
+                  echo "$CHANGED" | grep -E '^providers/footage_memory/|^configs/gateway/footage_memory\.tools\.json' >/dev/null && SELECTED+=(footage_memory)
                   echo "$CHANGED" | grep -E '^providers/gemini/|^configs/gateway/gemini\.tools\.json' >/dev/null && SELECTED+=(gemini)
                   echo "$CHANGED" | grep -E '^providers/sync/|^configs/gateway/sync\.tools\.json' >/dev/null && SELECTED+=(sync)
                   echo "$CHANGED" | grep -E '^providers/heygen/|^configs/gateway/heygen\.tools\.json' >/dev/null && SELECTED+=(heygen)
@@ -139,7 +141,7 @@ jobs:
                   fi
                 fi
               fi
-              if echo "$CHANGED" | grep -E '^(agent/|providers/shot_recipes/|Dockerfile\.agentcore|scripts/deploy_agentcore\.py|pyproject\.toml|server/billing_rates\.py)' >/dev/null; then
+              if echo "$CHANGED" | grep -E '^(agent/|providers/shot_recipes/|providers/footage_memory/|Dockerfile\.agentcore|scripts/deploy_agentcore\.py|pyproject\.toml|server/billing_rates\.py)' >/dev/null; then
                 RT=true
               fi
             fi
@@ -171,7 +173,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install -e .
 
-      - name: Check inventories (17 providers, 129 tools, 35 skills)
+      - name: Check inventories (18 providers, 134 tools, 36 skills)
         run: python -c "from scripts.ci_check import check_routing_inventory; check_routing_inventory()"
 
       - name: Configure AWS (OIDC)

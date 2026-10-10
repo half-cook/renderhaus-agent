@@ -60,7 +60,7 @@ SKILLS_ROOT = Path(__file__).parent / "skills"
 DISPATCH_TARGETS = {
     "call_media_tool": {"Gemini", "OpenAI", "Seedance", "Seedream", "Kling", "Runway", "Fal", "Luma", "ModelStudio", "Sync", "HeyGen", "Topaz"},
     "call_audio_tool": {"ElevenLabs", "FishAudio", "FishAudioProvider", "Fish_Audio", "Mureka", "HeyGen"},
-    "call_editor_tool": {"Remotion", "HyperFrames", "Ffmpeg", "ShotRecipes"},
+    "call_editor_tool": {"Remotion", "HyperFrames", "Ffmpeg", "ShotRecipes", "FootageMemory"},
 }
 FS_TOOLS = ["ls", "read_file", "write_file", "edit_file", "glob", "grep"]
 PERMISSIONS = [FilesystemPermission(operations=["write"], paths=["/skills/**"], mode="deny")]
@@ -319,6 +319,9 @@ async def run_with_servers(request, studio, servers, *, model=None):
     def approval_description(tool_call, state, runtime):
         name, arguments = _gateway_action({"name": tool_call["name"], "args": tool_call["args"]})
         route = executor.media_selection(name, arguments)
+        if name.startswith("FootageMemory___"):
+            label = "Footage memory" if name.endswith("footage_memory_build") else "Verify"
+            return f"Approve {label}. {executor.dispatch_disclosure(name, arguments, route)}"
         plan = arguments.get("plan_summary", "") if name == "Remotion___prepare_conversational_edit" else ""
         proposal = f"{plan} " if plan else ""
         return f"Approve {name}. {proposal}{executor.dispatch_disclosure(name, arguments, route)}"
@@ -333,6 +336,7 @@ async def run_with_servers(request, studio, servers, *, model=None):
         ("media", "Generate, edit or refine stills and video through the host capability map and explicit provider requests.", [dispatch_tools[0]]),
         ("audio", "Produce voiceover, music, sound effects and Mureka lyrics videos using the routed tools and separate video cost approval.", [dispatch_tools[1]]),
         ("editor", "Edit existing footage from a word-level transcript after cut-plan confirmation, "
+                   "or find moments in existing footage using footage-memory, verify each hit before cutting, "
                    "assemble approved assets into a final Remotion MP4 and poll it to completion, "
                    "or preview an explicitly requested HyperFrames HTML composition when enabled, "
                    "or export an NLE handoff (OTIO/FCPXML/EDL) for DaVinci Resolve, "
