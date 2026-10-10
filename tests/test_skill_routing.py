@@ -174,7 +174,7 @@ class SkillContracts(unittest.TestCase):
                 self.assertTrue(
                     any(name.split("___")[0] in DISPATCH_TARGETS[d] for d in dispatch), name
                 )
-        self.assertEqual(len(names), 32)
+        self.assertEqual(len(names), 33)
         self.assertTrue(
             {
                 "t2v", "i2v", "edit-v2v", "still-then-video", "image-gen", "named-provider",
