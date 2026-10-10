@@ -4,6 +4,7 @@ import copy
 import importlib
 import json
 import os
+import io
 import tempfile
 import unittest
 from contextlib import contextmanager
@@ -57,9 +58,6 @@ class DialogueEditTests(unittest.TestCase):
         stream_patch = patch.object(httpx, "stream", self.mock_stream)
         stream_patch.start()
         self.addCleanup(stream_patch.stop)
-        quote_patch = patch("server.billing_rates.sync_dialogue_preview_price_cents", return_value=100, create=True)
-        quote_patch.start()
-        self.addCleanup(quote_patch.stop)
 
     def mock_client(self, *args, **kwargs):
         return CLIENT(*args, transport=self.transport, **kwargs)
@@ -261,7 +259,7 @@ class DialogueEditTests(unittest.TestCase):
         self.assertEqual(self.requests, [])
 
     def test_unknown_preview_cost_blocks_live_but_dry_can_preview(self):
-        with patch("server.billing_rates.sync_dialogue_preview_price_cents", side_effect=ValueError("unknown"), create=True):
+        with patch.object(self.contracts, "preview_quote_cents", side_effect=ValueError("unknown preview cost")):
             with self.assertRaisesRegex(ValueError, "cost|price|quote"):
                 self.create()
             os.environ["SYNC_DRY_RUN"] = "true"
@@ -377,6 +375,150 @@ class DialogueEditTests(unittest.TestCase):
                 self.video(idempotency_key=value)
         with self.assertRaises(ValueError):
             self.video(source_width=1280)
+        self.assertEqual(self.requests, [])
+
+
+    def test_full_transcribe_preview_generate_flow_uses_only_direct_endpoints(self):
+        self.route("POST", "/transcriptions", {"id": "transcript_1", "status": "PENDING"}, 201)
+        transcription_id = self.dialogue.transcribe_video(**BASE)["transcription_id"]
+        self.route("GET", "/transcriptions/transcript_1", self.transcription())
+        self.assertEqual(self.dialogue.get_transcription(transcription_id)["transcript"], TRANSCRIPT)
+        self.create_routes()
+        dialogue_id = self.create(transcription_id=transcription_id)["dialogue_edit_id"]
+        self.route("GET", "/dialogue-edits/edit_1", self.preview())
+        self.assertEqual(self.dialogue.get_dialogue_edit(dialogue_id)["previewAudioUrl"], PREVIEW)
+        self.route("GET", "/dialogue-edits/edit_1", self.preview())
+        self.route("POST", "/generate", {"id": "generation_1", "status": "PENDING"}, 201)
+        job_id = self.video(dialogue_edit_id=dialogue_id)["job_id"]
+        self.route("GET", "/generate/generation_1", {"id": "generation_1", "status": "COMPLETED", "outputUrl": OUTPUT})
+        self.routes.append(("GET", OUTPUT, httpx.Response(200, content=MP4)))
+        self.assertTrue(self.api.get_video_task(job_id, download=True)["downloaded"])
+        self.assertTrue(all(request.url.host in {"api.sync.so", "assets.sync.so"} for request in self.requests))
+        self.assertFalse(self.routes)
+
+    def test_dry_handles_refuse_before_live_provider_io(self):
+        os.environ["SYNC_DRY_RUN"] = "true"
+        transcription = self.dialogue.transcribe_video(**BASE)
+        dialogue = self.create(transcription_id=transcription["transcription_id"])
+        self.assertTrue(transcription["transcription_id"].startswith("dry_transcription_"))
+        self.assertTrue(dialogue["dialogue_edit_id"].startswith("dry_dialogue_"))
+        self.assertEqual(self.dialogue.get_transcription(transcription["transcription_id"])["status"], "dry_run")
+        self.assertEqual(self.dialogue.get_dialogue_edit(dialogue["dialogue_edit_id"])["status"], "dry_run")
+        self.assertNotIn("previewAudioUrl", dialogue)
+        os.environ["SYNC_DRY_RUN"] = "false"
+        calls = [lambda: self.dialogue.get_transcription(transcription["transcription_id"]),
+                 lambda: self.dialogue.get_dialogue_edit(dialogue["dialogue_edit_id"]),
+                 lambda: self.create(transcription_id=transcription["transcription_id"]),
+                 lambda: self.video(dialogue_edit_id=dialogue["dialogue_edit_id"])]
+        for call in calls:
+            with self.assertRaisesRegex(ValueError, "dry-run|Dry-run"):
+                call()
+        self.assertEqual(self.requests, [])
+
+    def test_preview_duration_quote_and_actual_duration_must_agree(self):
+        self.route("GET", "/dialogue-edits/edit_1", self.preview())
+        with self.assertRaisesRegex(ValueError, "preview_duration_seconds"):
+            self.video(preview_duration_seconds=2.0)
+        self.assertTrue(all(request.method == "GET" for request in self.requests))
+
+    def test_generation_source_transcript_must_be_single_speaker(self):
+        self.route("GET", "/dialogue-edits/edit_1", self.preview(sourceTranscript={**TRANSCRIPT, "speakerCount": 2}))
+        with self.assertRaisesRegex(ValueError, "speaker"):
+            self.video()
+        self.assertTrue(all(request.method == "GET" for request in self.requests))
+
+    def test_lost_generation_poll_remains_unknown_without_http(self):
+        self.route("GET", "/dialogue-edits/edit_1", self.preview())
+        self.routes.append(("POST", ROOT + "/generate", httpx.ReadTimeout("lost")))
+        job = self.video()
+        self.assertEqual(self.api.get_video_task(job["job_id"])["status"], "submission_unknown")
+        self.assertEqual(sum(request.method == "POST" for request in self.requests), 1)
+
+    def test_accepted_preview_is_preserved_after_metadata_write_failure(self):
+        self.create_routes()
+        original = self.api._write
+        calls = 0
+
+        def interrupted_write(record, **kwargs):
+            nonlocal calls
+            calls += 1
+            if calls == 2:
+                raise self.api.SyncStoreError("offline interrupted save")
+            return original(record, **kwargs)
+
+        with patch.object(self.api, "_write", side_effect=interrupted_write):
+            result = self.create()
+        self.assertEqual(result["dialogue_edit_id"], "edit_1")
+        self.assertTrue(result["persistence_error"])
+        self.assertEqual(self.create()["dialogue_edit_id"], "edit_1")
+        self.assertEqual(sum(request.method == "POST" for request in self.requests), 1)
+
+    def test_accepted_preview_reuses_saved_id_without_new_quote(self):
+        self.create_routes()
+        self.create()
+        del os.environ["SYNC_DIALOGUE_PREVIEW_COST_CENTS"]
+        self.assertEqual(self.create()["dialogue_edit_id"], "edit_1")
+        self.assertEqual(sum(request.method == "POST" for request in self.requests), 1)
+
+    def test_preview_quote_is_operator_supplied_and_rejects_invalid_values(self):
+        for value in ("", "0", "-1", "1.5", "NaN", "Infinity", "unknown"):
+            os.environ["SYNC_DIALOGUE_PREVIEW_COST_CENTS"] = value
+            with self.assertRaisesRegex(ValueError, "unknown"):
+                self.contracts.preview_quote_cents()
+        self.assertEqual(self.requests, [])
+
+    def test_durable_store_claims_once_and_survives_local_loss(self):
+        from botocore.exceptions import ClientError
+
+        objects = {}
+        claims = []
+
+        class Store:
+            def get_object(inner, *, Bucket, Key):
+                if Key not in objects:
+                    raise ClientError({"Error": {"Code": "NoSuchKey"}}, "GetObject")
+                return {"Body": io.BytesIO(objects[Key])}
+
+            def put_object(inner, *, Bucket, Key, Body, ContentType, IfNoneMatch=None):
+                if IfNoneMatch:
+                    claims.append(IfNoneMatch)
+                    if Key in objects:
+                        raise ClientError({"Error": {"Code": "PreconditionFailed"}}, "PutObject")
+                objects[Key] = Body
+
+        os.environ["AWS_S3_BUCKET"] = "offline-bucket"
+        self.create_routes()
+        with patch.object(self.api, "_store_client", return_value=Store()):
+            first = self.create()
+            for path in Path(self.directory.name).rglob("*.json"):
+                path.unlink()
+            self.dialogue = importlib.reload(self.dialogue)
+            self.assertEqual(self.create()["dialogue_edit_id"], first["dialogue_edit_id"])
+        self.assertEqual(claims, ["*"])
+        self.assertEqual(sum(request.method == "POST" for request in self.requests), 1)
+
+    def test_idempotency_unknown_generation_id_is_recovered_for_polling(self):
+        self.route("GET", "/dialogue-edits/edit_1", self.preview())
+        self.route("POST", "/generate", {"errorCode": "IDEMPOTENCY_OUTCOME_UNKNOWN", "generationId": "generation_1"}, 409)
+        result = self.video()
+        self.assertEqual(result["status"], "submission_unknown")
+        self.assertEqual(result["accepted_provider_handle"], "generation_1")
+        self.route("GET", "/generate/generation_1", {"id": "generation_1", "status": "PROCESSING"})
+        self.assertEqual(self.api.get_video_task(result["job_id"])["status"], "running")
+
+    def test_gateway_nested_edits_are_typed_and_cannot_carry_audio_or_windows(self):
+        from providers.contracts import enrich_tool_schema, validate_tool_arguments
+
+        schema = {"type": "object", "properties": {
+            key: {"type": "array" if key == "edits" else "boolean" if isinstance(value, bool) else "number" if isinstance(value, float) else "integer" if isinstance(value, int) else "string"}
+            for key, value in {**BASE, "transcription_id": "transcript_1", "edits": EDITS, "action_id": "a"}.items()
+        }}
+        tool = enrich_tool_schema("sync", {"name": "create_dialogue_edit", "inputSchema": schema})
+        arguments = {**BASE, "transcription_id": "transcript_1", "edits": EDITS, "action_id": "a"}
+        self.assertEqual(validate_tool_arguments("sync", "create_dialogue_edit", arguments, tool["inputSchema"])["edits"], EDITS)
+        for change in ({"audio_url": PREVIEW}, {"sourceStartMs": 10}, {"edits": [{"kind": "remove", "wordIds": [7]}]}):
+            with self.assertRaises(ValueError):
+                validate_tool_arguments("sync", "create_dialogue_edit", {**arguments, **change}, tool["inputSchema"])
         self.assertEqual(self.requests, [])
 
 
