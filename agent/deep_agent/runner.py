@@ -100,6 +100,11 @@ The host discloses provider/model, selection reason and estimated list cost befo
 dispatch. Unknown means unknown, not free. All paid video requires approval even in autonomous
 runs when premium_video_approval is enabled. Sync and HeyGen always require consent and cost approval
 independently of that switch. Keep all existing approval and spending gates.
+For word-level changes/removals in existing footage, read dialogue-edit and use direct Sync
+transcription, then preview creation/polling, then sync-3 dialogue video. Require one speaker,
+whole source <=600 seconds, measured media metadata and voice/likeness consent. Preview and video
+each require cost approval even autonomously. Never retry an ambiguous preview create response;
+check status or ask the operator/user. Listen to and approve the preview before generating video.
 Act-Two and Kling Motion Control also always require consent and cost approval, including autonomous
 runs. Use /skills/act-two/SKILL.md for sequential shot/silence chunks and Remotion concatenation.
 Mirelo picture-synced SFX returns a video. Dispatch Fal___mirelo_v2a and Fal___get_video_task

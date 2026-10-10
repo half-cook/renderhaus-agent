@@ -7,7 +7,7 @@ import threading
 import time
 import uuid
 from pathlib import Path
-from typing import Any, Literal
+from typing import TYPE_CHECKING, Any, Literal
 
 import httpx
 from botocore.exceptions import ClientError
@@ -15,6 +15,9 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from providers.fal import queue
 from providers.sync import chunks, contracts, media
+
+if TYPE_CHECKING:
+    from providers.sync.dialogue import ActionRecord
 
 
 DIRECT_URL = "https://api.sync.so/v2/generate"
@@ -43,6 +46,11 @@ class JobManifest(BaseModel):
     model_config = ConfigDict(strict=True, extra="forbid", allow_inf_nan=False, hide_input_in_errors=True)
 
     version: Literal[1] = 1
+    mode: Literal["lipsync_video", "dialogue_edit_video"] = "lipsync_video"
+    dialogue_edit_id: str | None = None
+    idempotency_key: str | None = None
+    partial_completion: bool = False
+    submission_unknown: bool = False
     provider: Literal["sync"] = "sync"
     job_id: str
     transport: Literal["fal", "direct"]
@@ -113,18 +121,21 @@ def _artifact_key(job_id: str) -> str:
     return "renderhaus-sync-outputs/" + hashlib.sha256(job_id.encode()).hexdigest() + ".mp4"
 
 
-def _write_local(manifest: JobManifest) -> None:
+def _write_local(manifest: JobManifest | ActionRecord) -> None:
     path, _ = _paths(manifest.job_id)
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary = path.with_suffix(f".{uuid.uuid4().hex}.tmp")
     try:
-        temporary.write_text(manifest.model_dump_json(indent=2))
+        with temporary.open("w") as target:
+            target.write(manifest.model_dump_json(indent=2))
+            target.flush()
+            os.fsync(target.fileno())
         temporary.replace(path)
     finally:
         temporary.unlink(missing_ok=True)
 
 
-def _write(manifest: JobManifest) -> None:
+def _write(manifest: JobManifest | ActionRecord, *, create_only: bool = False) -> None:
     local_error = False
     try:
         _write_local(manifest)
@@ -134,7 +145,7 @@ def _write(manifest: JobManifest) -> None:
         try:
             _store_client().put_object(
                 Bucket=_store_bucket(), Key=_store_key(manifest.job_id),
-                Body=manifest.model_dump_json(indent=2).encode(), ContentType="application/json",
+                Body=manifest.model_dump_json(indent=2).encode(), ContentType="application/json", **({"IfNoneMatch": "*"} if create_only else {}),
             )
         except Exception:
             raise SyncStoreError("Durable Sync job store is unavailable; no automatic retry was made.") from None
@@ -285,11 +296,17 @@ def _manifest(job_id: str, request: contracts.SyncRequest, transport: str) -> Jo
 def _summary(manifest: JobManifest) -> dict[str, Any]:
     result = {
         "job_id": manifest.job_id, "provider": "sync", "transport": manifest.transport,
-        "mode": "lipsync_video", "model": manifest.model, "endpoint_id": manifest.endpoint_id,
+        "mode": manifest.mode, "model": manifest.model, "endpoint_id": manifest.endpoint_id,
         "status": manifest.status, "output_duration_seconds": manifest.output_duration_seconds,
         "estimated_cost_usd": manifest.estimated_cost_usd,
         "verification_status": "verified", **contracts.training_metadata(manifest.transport),
     }
+    if manifest.submission_unknown:
+        result["status"] = "submission_unknown"
+    if manifest.partial_completion:
+        result.update(partial_completion=True, warning="Generated from an explicitly accepted partial dialogue preview. Some requested edits were not completed.")
+    if manifest.dialogue_edit_id:
+        result["dialogue_edit_id"] = manifest.dialogue_edit_id
     if manifest.error:
         result["error"] = manifest.error
     if manifest.request_id:
@@ -646,5 +663,8 @@ def get_video_task(job_id: str, download: bool = False) -> dict:
         return _poll_single(manifest, download=request.download)
 
 
-TOOL_HANDLERS = {"lipsync_video": lipsync_video, "get_video_task": get_video_task}
+from providers.sync.dialogue import TOOL_HANDLERS as DIALOGUE_TOOL_HANDLERS
+
+
+TOOL_HANDLERS = {"lipsync_video": lipsync_video, "get_video_task": get_video_task, **DIALOGUE_TOOL_HANDLERS}
 GATEWAY_TOOLS = tuple(TOOL_HANDLERS)

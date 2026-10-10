@@ -794,7 +794,13 @@ class GatewayMCPServer(GatewayClient):
                 or payload.get("status") in {"failed", "error", "blocked", "not_run"}
             ):
                 raise GatewayToolError(payload)
-        except Exception:
+        except Exception as exc:
+            payload = getattr(exc, "payload", {})
+            if tool_name == "Sync___create_dialogue_edit" and (not payload or payload.get("status") == "submission_unknown"):
+                return {**{key: value for key, value in payload.items() if key != "error"},
+                        "status": "submission_unknown", "action_id": resolved_arguments.get("action_id"),
+                        "next_action": "check_status_or_ask_user",
+                        "note": "Preview may already be billed. Check status or ask the user; no automatic retry or refund was made."}
             if charge is not None:
                 try:
                     await asyncio.to_thread(
@@ -1145,7 +1151,9 @@ def _append_harvested_event(
     else:
         summary = str(payload.get("note") or payload.get("summary") or f"{label}: {status}.")
     assets: list[dict[str, Any]] = []
-    if studio.asset_registrar and status in {"succeeded", "success", "completed"}:
+    partial_preview = (name in {"Sync___get_dialogue_edit", "Sync___create_dialogue_edit"}
+                       and status == "completed_partial" and bool(payload.get("audio_url")))
+    if studio.asset_registrar and (status in {"succeeded", "success", "completed"} or partial_preview):
         try:
             assets = studio.asset_registrar(
                 result=payload,
@@ -1166,7 +1174,8 @@ def _append_harvested_event(
             summary=summary[:320],
             provider=provider.lower() if provider else None,
             provider_job_id=(
-                str(payload["job_id"]) if isinstance(payload.get("job_id"), (str, int)) else None
+                next((str(payload[key]) for key in ("job_id", "dialogue_edit_id", "transcription_id")
+                      if isinstance(payload.get(key), (str, int))), None)
             ),
             arguments=arguments,
             assets=assets,
@@ -1488,6 +1497,7 @@ def _validate_video_delivery(
 
     delivery_route = route_intent(request.prompt, arguments=_media_input_arguments(studio.nodes))
     delivery_alias = delivery_route.steps[-1].alias if delivery_route.steps else delivery_route.alias
+    dialogue_requested = delivery_route.skill == "dialogue-edit" and delivery_route.status == "ready"
     prior_events = {event["id"]: event for event in request.prior_tool_events}
     current_events = [event for event in studio.tool_events if event.public() != prior_events.get(event.id)]
     workflow_events = [event for event in current_events if event.name in {
@@ -1560,9 +1570,14 @@ def _validate_video_delivery(
         mirelo_started = False
     if mirelo_started and delivery_alias in {"mirelo_v2a", "elevenlabs_sfx_v2"}:
         delivery_alias = "mirelo_v2a"
-    delivery_events = current_events if delivery_alias == "mirelo_v2a" or mirelo_started else studio.tool_events
+    dialogue_actions = [event for event in studio.tool_events if event.name in {
+        "Sync___create_dialogue_edit", "Sync___create_dialogue_video", "Sync___lipsync_video",
+    }] if dialogue_requested else []
+    dialogue_job = (dialogue_actions[-1].result.get("job_id") if dialogue_actions
+                    and dialogue_actions[-1].name != "Sync___create_dialogue_edit" else None)
+    delivery_events = current_events if dialogue_requested or delivery_alias == "mirelo_v2a" or mirelo_started else studio.tool_events
     render_started = any(event.name.endswith(("render_timeline", "render_composition")) for event in delivery_events)
-    wants_video = _requests_video_deliverable(request.prompt) or render_started or delivery_alias == "mirelo_v2a" or mirelo_started
+    wants_video = dialogue_requested or _requests_video_deliverable(request.prompt) or render_started or delivery_alias == "mirelo_v2a" or mirelo_started
     if not wants_video:
         return True
     assembly_prompt = re.sub(
@@ -1587,6 +1602,8 @@ def _validate_video_delivery(
             and event.status.lower() in {"succeeded", "success", "completed"}
             and event.result.get("status") == "succeeded"
             and event.result.get("downloaded") is True
+            and (not dialogue_requested or (event in current_events and dialogue_job
+                 and (event.provider_job_id or event.arguments.get("job_id") or event.result.get("job_id")) == dialogue_job))
             and (delivery_alias != "mirelo_v2a" or (
                 event in current_events
                 and event.result.get("model") == "mirelo-ai/sfx1.6/video-to-video"

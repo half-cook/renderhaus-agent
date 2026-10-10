@@ -4472,6 +4472,40 @@
     "expected_reason": "disabled"
   },
   {
+    "test_id": "RT-157",
+    "prompt": "Change the spoken word \"quarterly\" to \"annual\" in this footage",
+    "expected_skill": "dialogue-edit",
+    "expected_tool": "sync3_lipsync",
+    "suite": "dialogue-edit",
+    "skip_reason": "",
+    "source_status": "added",
+    "note": "Authored from dialogue-edit handoff/draft: IDs absent from supplied fixture and CSV",
+    "expected_gateway_tool": "Sync___create_dialogue_video"
+  },
+  {
+    "test_id": "RT-158",
+    "prompt": "Remove the spoken phrase \"limited time\" from this video",
+    "expected_skill": "dialogue-edit",
+    "expected_tool": "sync3_lipsync",
+    "suite": "dialogue-edit",
+    "skip_reason": "",
+    "source_status": "added",
+    "note": "Authored from dialogue-edit handoff/draft: IDs absent from supplied fixture and CSV",
+    "expected_gateway_tool": "Sync___create_dialogue_video"
+  },
+  {
+    "test_id": "RT-159",
+    "prompt": "Dialogue-edit this multi-speaker interview",
+    "expected_skill": "dialogue-edit",
+    "expected_tool": "",
+    "suite": "dialogue-edit",
+    "skip_reason": "",
+    "source_status": "added",
+    "note": "Authored from dialogue-edit handoff/draft: IDs absent from supplied fixture and CSV",
+    "expected_status": "blocked",
+    "expected_reason": "single speaker"
+  },
+  {
     "prompt": "use Pixelcut looping video for this product photo",
     "expected_skill": "named-provider",
     "expected_tool": "pixelcut_looping_video",

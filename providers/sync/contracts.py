@@ -181,6 +181,9 @@ def request_for(arguments: dict[str, Any]) -> SyncRequest:
 
 
 def validate_arguments(tool: str, arguments: dict[str, Any]) -> None:
+    from providers.sync.dialogue_contracts import validate_arguments as validate_dialogue_arguments
+
+    validate_dialogue_arguments(tool, arguments)
     if tool == "lipsync_video":
         request_for(arguments)
     elif tool == "get_video_task":

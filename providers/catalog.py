@@ -55,6 +55,7 @@ PROVIDERS: tuple[ProviderSpec, ...] = (
         module_path="providers.sync.api",
         env_keys=("SYNC_API_KEY", "SYNC_DRY_RUN", "SYNC_MODEL", "SYNC_TRANSPORT",
                   "SYNC_DIRECT_AUTHORIZED", "SYNC_MAX_CHUNK_SECONDS", "SYNC_BILLING_PLAN",
+                  "SYNC_DIALOGUE_PREVIEW_COST_CENTS",
                   "FAL_KEY", "FAL_DRY_RUN", "AWS_S3_BUCKET", "REMOTION_LOCAL_MEDIA_HOSTS"),
         default_env={"SYNC_DRY_RUN": "true", "SYNC_MODEL": "sync-3", "SYNC_TRANSPORT": "fal",
                      "SYNC_DIRECT_AUTHORIZED": "false", "SYNC_MAX_CHUNK_SECONDS": "60",

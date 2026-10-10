@@ -730,7 +730,7 @@ async def invoke_tool(body: InvokeBody, auth: AuthUser) -> dict[str, Any]:
     if (body.provider, body.tool) in {("ffmpeg", "ffmpeg_tool"), ("remotion", "render_ad_variants"),
                                     ("remotion", "deliver_render"), ("remotion", "qc_deliverable")}:
         raise HTTPException(status_code=409, detail="Use the agent local-media workflow with its owned Studio job directory and stage approvals.")
-    if (body.provider, body.tool) == ("sync", "lipsync_video"):
+    if body.provider == "sync" and body.tool in {"lipsync_video", "create_dialogue_edit", "create_dialogue_video"}:
         raise HTTPException(
             status_code=409,
             detail="Use the agent lip-sync workflow for required consent and cost approval before Sync generation.",

@@ -8,6 +8,8 @@ RENDERHAUS_AGENT_MODEL (Sonnet 5.5 default), RENDERHAUS_AGENT_EFFORT, their per-
 and the existing FAL_KEY/FAL_DRY_RUN settings shared by Wan 3, VACE and Vidu.
 Mureka uses MUREKA_DRY_RUN=true, MUREKA_MODEL=mureka-9.5 and the existing FAL_KEY/FAL_DRY_RUN.
 No direct MUREKA_API_KEY is needed by this fal-only transport.
+Dialogue edits reuse SYNC_API_KEY/SYNC_DRY_RUN/SYNC_DIRECT_AUTHORIZED and optional
+SYNC_DIALOGUE_PREVIEW_COST_CENTS (operator-confirmed quote; unpublished official rate).
 Act-Two reuses RUNWAYML_API_SECRET/RUNWAY_DRY_RUN and REMOTION_LOCAL_MEDIA_HOSTS for chunks.
 Kling Motion Control uses the existing FAL_KEY/FAL_DRY_RUN; no direct Kling secret is required.
 Mirelo and the Ideogram/Recraft image specialists reuse FAL_KEY/FAL_DRY_RUN.
