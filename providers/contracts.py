@@ -388,6 +388,13 @@ def enrich_tool_schema(provider_id: str, tool: dict[str, Any]) -> dict[str, Any]
         if isinstance(properties.get("subtitles"), dict):
             properties["subtitles"]["items"] = deepcopy(_TEXT_OVERLAY_SCHEMA)
             properties["subtitles"]["description"] = "Output-timed burn-in captions, rendered as the final track above all overlays."
+    if provider_id == "remotion" and tool_name == "motion_carry_probe":
+        from providers.remotion.motion_carry import ARG_SCHEMA
+        from providers.registry import sanitize_gateway_json_schema
+
+        enriched["inputSchema"].update(sanitize_gateway_json_schema(ARG_SCHEMA))
+        properties = enriched["inputSchema"]["properties"]
+        properties["timeline"]["description"] = "Exact composition beats_s from zero to measured duration, plus stable element lifetimes and optional normalized keyframe boxes. Omit to detect cuts and audio onsets."
     if provider_id == "remotion" and tool_name in {"deliver_render", "qc_deliverable"}:
         from providers.remotion.delivery import PRESETS, SPEC_PROPERTIES
         from providers.registry import sanitize_gateway_json_schema
@@ -557,6 +564,10 @@ def _validate_rule(path: str, value: Any, rule: ArgumentRule) -> None:
 
 
 def _validate_cross_fields(provider_id: str, tool_name: str, arguments: dict[str, Any]) -> None:
+    if provider_id == "remotion" and tool_name == "motion_carry_probe":
+        from providers.remotion.motion_carry import validate_arguments
+
+        validate_arguments(arguments)
     if provider_id == "fal":
         from providers.fal.named_video import validate_arguments
 

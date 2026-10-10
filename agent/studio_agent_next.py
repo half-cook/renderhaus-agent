@@ -1485,6 +1485,16 @@ def _validate_video_delivery(
     final: StudioAgentOutput | None = None,
 ) -> bool:
     from agent.deep_agent.routing import route_intent
+    from agent.deep_agent.motion_carry_gate import gate_motion_delivery
+
+    motion_verdict = gate_motion_delivery(request, studio, final)
+    if motion_verdict is False:
+        return False
+    if (motion_verdict is True and route_intent(request.prompt).skill == "motion-carry-qc"
+            and not any(event.name in {"Remotion___deliver_render", "Remotion___qc_deliverable", "Remotion___render_ad_variants"}
+                        and event.public() != next((prior for prior in request.prior_tool_events if prior["id"] == event.id), None)
+                        for event in studio.tool_events)):
+        return True
 
     delivery_route = route_intent(request.prompt, arguments=_media_input_arguments(studio.nodes))
     delivery_alias = delivery_route.steps[-1].alias if delivery_route.steps else delivery_route.alias

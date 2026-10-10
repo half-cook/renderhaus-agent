@@ -4,8 +4,8 @@ description: Author HTML motion compositions and preview inputs for explicitly n
 license: Apache-2.0
 metadata:
   include_tools: call_editor_tool call_audio_tool
-  gateway_tools: HyperFrames___render_composition ElevenLabs___text_to_speech_convert
-  routing_tools: hyperframes_render
+  gateway_tools: HyperFrames___render_composition ElevenLabs___text_to_speech_convert Remotion___motion_carry_probe
+  routing_tools: hyperframes_render motion_carry_probe
 ---
 
 # HyperFrames
@@ -123,3 +123,9 @@ A future isolated worker must run HyperFrames checks, inspect proof frames and t
 visible composition, render once, verify duration, and open/play the actual artifact.
 Preserve any saved job ID during recovery. Re-check after edits. Until those steps
 are implemented and observed, report rendering and visual verification as pending.
+
+After a completed MP4 render, read [motion-carry-qc](../motion-carry-qc/SKILL.md)
+and run `motion_carry_probe` through `Remotion___motion_carry_probe` with the owned
+local MP4 and exact beat timing when available. Surface any failed report and
+offer a re-render before presenting the film as final. A dry-run, missing MP4
+or skipped probe is incomplete QC. This free local check grants no paid calls.

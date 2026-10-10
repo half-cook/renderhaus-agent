@@ -383,7 +383,8 @@ class HyperFramesGraphTests(unittest.IsolatedAsyncioTestCase):
         ))
         self.assertFalse(_validate_video_delivery(request, studio))
         switched = request.model_copy(update={"prompt": "Use Remotion lower thirds instead"})
-        self.assertTrue(_validate_video_delivery(switched, studio))
+        # The newly requested motion film also needs its own local carry report.
+        self.assertFalse(_validate_video_delivery(switched, studio))
 
     async def test_media_role_cannot_dispatch_hyperframes(self):
         request = self.request(autonomous=True)

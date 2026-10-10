@@ -920,7 +920,7 @@ def cost_for(provider: str, tool: str, arguments: dict[str, Any]) -> GenerationC
     """
     if provider == "ffmpeg":
         return GenerationCost(0, 0)
-    if provider == "remotion" and tool in {"deliver_render", "qc_deliverable"}:
+    if provider == "remotion" and tool in {"deliver_render", "qc_deliverable", "motion_carry_probe"}:
         return GenerationCost(0, 0)
     if provider == "remotion" and tool == "render_ad_variants":
         from providers.remotion.api import dry_run

@@ -1067,8 +1067,12 @@ TOOL_HANDLERS = {
 from providers.remotion.delivery import deliver_render, qc_deliverable  # noqa: E402
 
 TOOL_HANDLERS.update(deliver_render=deliver_render, qc_deliverable=qc_deliverable)
+from providers.remotion.motion_carry import motion_carry_probe  # noqa: E402
+
+TOOL_HANDLERS["motion_carry_probe"] = motion_carry_probe
 
 GATEWAY_TOOLS = (
+    "motion_carry_probe",
     "deliver_render",
     "qc_deliverable",
     "render_ad_variants",

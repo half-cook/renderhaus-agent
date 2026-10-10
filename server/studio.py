@@ -717,7 +717,8 @@ async def invoke_tool(body: InvokeBody, auth: AuthUser) -> dict[str, Any]:
     except KeyError as exc:
         raise HTTPException(status_code=404, detail="Project not found.") from exc
     if (body.provider, body.tool) in {("ffmpeg", "ffmpeg_tool"), ("remotion", "render_ad_variants"),
-                                    ("remotion", "deliver_render"), ("remotion", "qc_deliverable")}:
+                                    ("remotion", "deliver_render"), ("remotion", "qc_deliverable"),
+                                    ("remotion", "motion_carry_probe")}:
         raise HTTPException(status_code=409, detail="Use the agent local-media workflow with its owned Studio job directory and stage approvals.")
     if (body.provider, body.tool) == ("sync", "lipsync_video"):
         raise HTTPException(
@@ -1864,7 +1865,10 @@ async def _run_studio_agent_job_inner(
             and event.public() != prior_events.get(event.id)
             for event in recovered_events
         )
-        if current_delivery or delivery_alias in {"delivery_render", "deliverable_qc"}:
+        from agent.deep_agent.motion_carry_gate import PROBE, requires_motion_qc
+
+        if (current_delivery or delivery_alias in {"delivery_render", "deliverable_qc"}
+                or requires_motion_qc(prompt, recovered_events) or any(event.name == PROBE for event in recovered_events)):
             request = StudioAgentRequest(prompt=prompt, job_id=job_id,
                                          prior_tool_events=list(prior_events.values()))
             context = StudioAgentContext(nodes=references, job_id=job_id, progress_sink=record_progress)

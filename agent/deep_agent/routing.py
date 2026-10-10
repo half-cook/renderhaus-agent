@@ -92,7 +92,7 @@ _MODELSTUDIO_PREVIEW_WARNING = (
     "Alibaba preview terms permit internal testing, research and evaluation only until GA. "
     "Live customer use is blocked by the preview licence."
 )
-_FINISHING_CAPABILITIES = {"delivery_render", "loudness_qc", "deliverable_qc"}
+_FINISHING_CAPABILITIES = {"delivery_render", "loudness_qc", "deliverable_qc", "motion_carry_qc"}
 
 
 @dataclass(frozen=True)
@@ -439,6 +439,11 @@ def route_intent(prompt: str, *, region: str | None = None, tier: str | None = N
     if any(re.search(pattern, prompt, re.I) for pattern in POLICY.get("non_dispatch_requests", [])):
         return Route(reason="No media intent matched; answer the Remotion licensing question from the editing skill.")
     constraints = intent_constraints(prompt, tier=tier, confidential=confidential, arguments=arguments, user_id=user_id)
+    motion_rule = next((rule for rule in POLICY["rules"] if rule.get("capability") == "motion_carry_qc"), None)
+    if motion_rule and re.search(motion_rule["pattern"], _instruction_text(prompt), re.I):
+        route = select_provider("motion_carry_qc", region=region, available_tools=available_tools,
+                                arguments=arguments)
+        return replace(route, skill="motion-carry-qc")
     for pattern, alias in POLICY["retired_requests"].items():
         if re.search(pattern, prompt, re.I):
             return Route(alias=alias, status="retired", reason=TOOL_MAP[alias]["reason"],

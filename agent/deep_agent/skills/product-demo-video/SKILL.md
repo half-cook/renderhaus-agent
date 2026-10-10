@@ -3,8 +3,8 @@ name: product-demo-video
 description: Capture real product/UI footage with cutaway, then assemble it with Remotion.
 metadata:
   include_tools: call_editor_tool
-  routing_tools: cutaway_record remotion_render hyperframes_render
-  gateway_tools: HyperFrames___render_composition Remotion___get_render_progress Remotion___render_timeline
+  routing_tools: cutaway_record remotion_render hyperframes_render motion_carry_probe
+  gateway_tools: HyperFrames___render_composition Remotion___get_render_progress Remotion___render_timeline Remotion___motion_carry_probe
 ---
 
 # Product demo
@@ -30,3 +30,9 @@ A queued job or dry-run is incomplete media. Open/play the actual saved artifact
 Record explicit customer visual acceptance/rejection with `record_media_outcome` and the saved call ID.
 A spending approval is not visual acceptance. Training eligibility follows provenance and the existing
 Wan training hook; these routing instructions cannot grant training rights.
+
+After a completed MP4 render, read [motion-carry-qc](../motion-carry-qc/SKILL.md)
+and run `motion_carry_probe` through `Remotion___motion_carry_probe` with the owned
+local MP4 and exact beat timing when available. Surface any failed report and
+offer a re-render before presenting the film as final. A dry-run, missing MP4
+or skipped probe is incomplete QC. This free local check grants no paid calls.

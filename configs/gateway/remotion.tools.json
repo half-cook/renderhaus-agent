@@ -1,5 +1,85 @@
 [
   {
+    "name": "motion_carry_probe",
+    "description": "Free local post-render motion carry and rhythm QC for motion graphics, product demos, knowledge explainers and explicit HyperFrames films. Requires owned job_id and in-job MP4 input_path, optional exact timeline. No network or model calls. Default MOTION_CARRY_QC_DRY_RUN=true. Reports per-boundary scores, cadence, rests, audio peaks, sharp fast moves and possible subject exits with timestamps/fixes. A failed report gates delivery and requires an offered re-render. PROVISIONAL calibration; human visual review stays pending. Generative continuity uses local_qc instead.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "job_id": {
+          "type": "string"
+        },
+        "input_path": {
+          "type": "string"
+        },
+        "timeline": {
+          "type": "object",
+          "properties": {
+            "beats_s": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            },
+            "elements": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": [
+                  "id",
+                  "start_s",
+                  "end_s"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "start_s": {
+                    "type": "number"
+                  },
+                  "end_s": {
+                    "type": "number"
+                  },
+                  "main_subject": {
+                    "type": "boolean"
+                  },
+                  "intentional_exit": {
+                    "type": "boolean"
+                  },
+                  "keyframes": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "time_s",
+                        "box"
+                      ],
+                      "properties": {
+                        "time_s": {
+                          "type": "number"
+                        },
+                        "box": {
+                          "type": "array",
+                          "items": {
+                            "type": "number"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "description": "Exact composition beats_s from zero to measured duration, plus stable element lifetimes and optional normalized keyframe boxes. Omit to detect cuts and audio onsets."
+        }
+      },
+      "required": [
+        "job_id",
+        "input_path"
+      ]
+    }
+  },
+  {
     "name": "deliver_render",
     "description": "Finish an existing local render or checksum matrix manifest using a named placeholder delivery preset. Uses fixed system ffmpeg ops, measured FPS/native geometry, loudness normalization and AAC faststart mux; never enlarges. Versioned campaign__sku__locale__aspect__v<n>.mp4 files never overwrite. Actual final-file QC must pass before a finished claim. Reports per-file failures verbatim. Free local worker job; Lambda refused. Respect REMOTION_DRY_RUN. Upload=true is refused; no S3/public/platform upload is available here.",
     "inputSchema": {
