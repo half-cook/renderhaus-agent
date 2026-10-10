@@ -367,10 +367,13 @@ def check_beta_inventory() -> None:
                 ("/api/beta/wave", "GET"), ("/api/beta/hold", "POST"), ("/api/studio/demo-project", "POST"), ("/api/studio/projects/{project_id}/export", "GET")}
     expected.update((f"/api/beta/verify/{kind}/{action}", "POST")
                     for kind in ("email", "phone") for action in ("start", "confirm"))
+    expected.update({("/api/studio/projects/{project_id}/changesets", "GET"),
+                     ("/api/studio/changesets/{changeset_id}/changes/{n}/{action}", "POST"),
+                     ("/api/studio/changesets/{changeset_id}/restore", "POST")})
     actual = {(path, method.upper()) for path, operations in app.openapi()["paths"].items()
               for method in operations}
     assert expected <= actual, f"missing beta routes: {expected - actual}"
-    print("ok beta/demo/export route inventory and closed defaults (12 routes)")
+    print("ok beta/demo/export/changes route inventory and closed defaults (15 routes)")
 
 
 def check_lambda_zip() -> None:

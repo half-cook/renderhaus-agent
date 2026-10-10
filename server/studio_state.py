@@ -214,6 +214,15 @@ class StudioRepository:
                             REFERENCES projects(workspace_id, id) ON DELETE CASCADE
                     );
 
+                    CREATE TABLE IF NOT EXISTS studio_changes_documents (
+                        id TEXT NOT NULL, workspace_id TEXT NOT NULL, project_id TEXT NOT NULL,
+                        revision INTEGER NOT NULL, document_json TEXT NOT NULL,
+                        updated_by TEXT NOT NULL, updated_at INTEGER NOT NULL,
+                        PRIMARY KEY(workspace_id, id),
+                        FOREIGN KEY(workspace_id, project_id)
+                            REFERENCES projects(workspace_id, id) ON DELETE CASCADE
+                    );
+
                     CREATE TABLE IF NOT EXISTS assets (
                         id TEXT PRIMARY KEY,
                         workspace_id TEXT NOT NULL REFERENCES workspaces(id),
@@ -923,6 +932,40 @@ class StudioRepository:
                 (project_id, workspace_id),
             ).fetchone()
         return {"revision": int(row["revision"]), "document": document, "updated_at": now}
+
+    def list_changes_documents(self, workspace_id: str, project_id: str) -> list[dict[str, Any]]:
+        from server.studio_changes import validate_document
+        self.require_project(workspace_id, project_id)
+        with self._connect() as connection:
+            rows = connection.execute("SELECT document_json FROM studio_changes_documents WHERE workspace_id = ? AND project_id = ? ORDER BY updated_at DESC, id DESC", (workspace_id, project_id)).fetchall()
+        return [validate_document(json.loads(row["document_json"])) for row in rows]
+
+    def save_changes_document(self, workspace_id: str, project_id: str, user_id: str, document: dict[str, Any], expected_revision: int | None = None) -> dict[str, Any]:
+        from server.studio_changes import ChangesConflictError, validate_document
+        self.require_project(workspace_id, project_id)
+        document = validate_document(document)
+        if document["changeset"]["projectId"] != project_id:
+            raise ValueError("This changeset is unavailable.")
+        with self._connect() as connection:
+            connection.execute("BEGIN IMMEDIATE")
+            row = connection.execute("SELECT revision, project_id FROM studio_changes_documents WHERE workspace_id = ? AND id = ?", (workspace_id, document["changeset"]["id"])).fetchone()
+            if row and (row["project_id"] != project_id or expected_revision != row["revision"]):
+                raise ChangesConflictError("The cut changed. Reload before trying again.")
+            connection.execute("INSERT INTO studio_changes_documents VALUES (?, ?, ?, ?, ?, ?, ?) ON CONFLICT(workspace_id, id) DO UPDATE SET revision = excluded.revision, document_json = excluded.document_json, updated_by = excluded.updated_by, updated_at = excluded.updated_at", (document["changeset"]["id"], workspace_id, project_id, document["revision"], json.dumps(document), user_id, _now()))
+        return document
+
+    def transition_changes_document(self, workspace_id: str, changeset_id: str, user_id: str, n: int, action: str, expected_revision: int, **options: Any) -> dict[str, Any]:
+        from server.studio_changes import transition_document, validate_document
+        with self._connect() as connection:
+            connection.execute("BEGIN IMMEDIATE")
+            row = connection.execute("SELECT project_id, revision, document_json FROM studio_changes_documents WHERE workspace_id = ? AND id = ?", (workspace_id, changeset_id)).fetchone()
+            if row is None:
+                raise KeyError("Changeset not found")
+            self.require_project(workspace_id, row["project_id"])
+            document = transition_document(validate_document(json.loads(row["document_json"])), n, action, expected_revision, **options)
+            connection.execute("UPDATE studio_changes_documents SET revision = ?, document_json = ?, updated_by = ?, updated_at = ? WHERE workspace_id = ? AND id = ?", (document["revision"], json.dumps(document), user_id, _now(), workspace_id, changeset_id))
+            connection.execute("UPDATE projects SET updated_at = ? WHERE workspace_id = ? AND id = ?", (_now(), workspace_id, row["project_id"]))
+        return document
 
     def _asset_ref(self, row: sqlite3.Row) -> StudioAssetRef:
         return StudioAssetRef(

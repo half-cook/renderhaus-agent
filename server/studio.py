@@ -53,6 +53,7 @@ from server.config import ROOT
 from server.studio_state import ACTIVE_EXECUTION_STATUSES, CanvasConflictError, InsufficientBalanceError, StudioAssetKind, repository
 from server.studio_options import LIVE_CHOICE_TOOLS, extract_choice_ids, static_field_options
 from server.uploads import bounded_upload_path, upload_limits_mb
+from server.studio_changes import Action as ChangesAction, ChangesActionBody, ChangesConflictError
 
 
 router = APIRouter(prefix="/api/studio", tags=["studio"])
@@ -613,6 +614,35 @@ async def studio_export_details(project_id: str, auth: AuthUser) -> dict[str, An
         raise HTTPException(status_code=404, detail="Project not found.") from exc
     return {"state": "disconnected", "format": "project_json", "resolution": None,
             "size_bytes": None}
+
+
+@router.get("/projects/{project_id}/changesets")
+async def studio_changesets(project_id: str, auth: AuthUser) -> dict[str, Any]:
+    try:
+        return {"items": await asyncio.to_thread(repository.list_changes_documents, current_workspace_id(auth), project_id)}
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="Project not found.") from exc
+
+
+async def _change_transition(changeset_id: str, n: int, action: str, body: ChangesActionBody, auth: Any) -> dict[str, Any]:
+    try:
+        return await asyncio.to_thread(repository.transition_changes_document, current_workspace_id(auth), changeset_id, current_user_id(auth), n, action, body.expected_revision, take_id=body.take_id, cut=body.cut, max_duration_ms=body.max_duration_ms)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="Changeset not found.") from exc
+    except ChangesConflictError as exc:
+        raise HTTPException(status_code=409, detail="The cut changed. Reload before trying again.") from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail="This change is unavailable. Reload before trying again.") from exc
+
+
+@router.post("/changesets/{changeset_id}/changes/{n}/{action}")
+async def studio_change_action(changeset_id: str, n: int, action: ChangesAction, body: ChangesActionBody, auth: AuthUser) -> dict[str, Any]:
+    return await _change_transition(changeset_id, n, action, body, auth)
+
+
+@router.post("/changesets/{changeset_id}/restore")
+async def studio_changes_restore(changeset_id: str, body: ChangesActionBody, auth: AuthUser) -> dict[str, Any]:
+    return await _change_transition(changeset_id, 0, "restore", body, auth)
 
 
 @router.put("/projects/{project_id}/canvas")
