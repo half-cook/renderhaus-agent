@@ -235,7 +235,7 @@ order. The short Studio summary also includes per-step costs when they fit its 3
 contract; larger runs refer to the complete breakdown. Unknown charges remain explicit,
 with a known subtotal. Model token charges are recorded separately by `ModelUsage`.
 
-The capability-map fixture contains 220 retained rows, with 175 active and 45 dependency skips.
+The capability-map fixture contains 220 retained rows, with 215 active and 5 dependency skips.
 Archived/confidential routes are dropped. Active rows cover built tools and declared interims;
 pending specialists keep named branch reasons. Editorial overrides retain the safe preparer,
 separate rendering approval, and existing export/HyperFrames narration workflow contracts.
@@ -583,7 +583,7 @@ compute/licence estimate. The trusted executor records approval; the agent canno
 an approval by passing fields in the tool arguments.
 
 Media inspection is free. It runs on the machine owning the confined local job directory,
-with fixed ffmpeg/ffprobe executables and a ten-op registry. No arbitrary scripts, paths or
+with fixed ffmpeg/ffprobe executables and a nineteen-op registry. No arbitrary scripts, paths or
 arguments enter subprocess commands. Resolve-only requests return a parked refusal before
 generic generation or NLE-handoff matching. Existing interchange export remains available
 for supported requests. The stored confidential field does not change these routes.
@@ -595,8 +595,8 @@ composition. This task makes no deployment or Lambda call. Matrix jobs refuse th
 backend until the same job directory exists on its worker. See
 [Remotion editing](REMOTION_EDITING.md) for the supported backend table and demo commands.
 
-Inventory is 16 providers, 115 Gateway tools and 27 skills. The fixture has 184 active and
-36 deferred cases among 220 rows. Browser validation through Comet remains blocked here.
+Inventory is 16 providers, 117 Gateway tools and 30 skills. The fixture has 215 active and
+5 deferred cases among 220 rows. Browser validation through Comet remains blocked here.
 
 ## Per-shot static reframing
 
@@ -611,3 +611,24 @@ Lambda validator, which explicitly refuses them before any AWS call. Existing de
 Lambda timelines remain unchanged. Render results are editorial candidates with contact
 sheets and pending review, not certified delivery output. Paid outpainting still selects
 `edit-v2v` and pauses with the existing cost estimate. No model defaults or spend caps change.
+
+## Local delivery validation
+
+The editor role discovers `Remotion___deliver_render` (`delivery_render`) and
+`Remotion___qc_deliverable` (`deliverable_qc`). The executor runs them in process on the
+host owning the authenticated job directory. They are free, bypass the generic Remotion
+Lambda estimate, and require no spending approval. Approval-exempt sets and spend caps
+are unchanged. Unscoped direct invocation and Lambda execution are refused.
+
+Delivery stages a finished file or matrix manifest, uses fixed finishing operations,
+normalizes audio to the preset target, writes versioned names and hashes, and QC checks
+the actual result. The completion guard binds the report to current files, rejects stale
+or incomplete checks, and prevents a previous successful render from overriding current
+failed QC, including turn-limit recovery. Failure summaries preserve worker reasons
+verbatim. Existing ordinary assembly validation remains compatible.
+
+The three guides add delivery, loudness and deliverable QC routing. The 220 retained rows
+now contain 215 active cases and 5 skips. RT-E043 awaits exact OCR verification; the other
+four are existing provider dependencies. `project.confidential` never changes these routes.
+See [contracts and operator commands](REMOTION_EDITING.md). Offline real-binary verification
+is supporting evidence; Comet Studio E2E is blocked by unavailable browser control here.

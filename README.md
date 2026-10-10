@@ -44,12 +44,14 @@ A brief and a table of SKUs, prices, CTAs and logos produce aspect-specific revi
 through Remotion. The matrix plans first, pauses for sample-render approval, then requires
 explicit sample review before a batch. Free ffmpeg inspection uses fixed operations in the
 local job directory. [Remotion editing](docs/REMOTION_EDITING.md) documents the real local
-demo, backend limits, licence allowance and pending delivery/loudness certification.
+demo, backend limits, licence allowance and final-file loudness/QC checks.
 Static centre/safe-zone crops and blurred-pad fallback produce `9:16`, `1:1`, `4:5`,
 `16:9` and `2.39:1` candidates with per-aspect contact sheets. Optional planner-supplied
 boxes choose crop centres; no detector runs. Use `scripts/run_ad_demo.py --mode reframe`
-for a flat master. Current inventory is 16 providers, 115 Gateway tools, 26 skills and
-218 routing rows (182 active, 36 deferred).
+for a flat master. `deliver` normalizes to the selected loudness target and writes named,
+versioned MP4s; `qc` rechecks their actual files and manifest checksums. Technical QC keeps
+visual/editorial review pending. Current inventory is 16 providers, 117 Gateway tools,
+30 skills and 220 routing rows (215 active, 5 deferred).
 
 ## Development workflow
 

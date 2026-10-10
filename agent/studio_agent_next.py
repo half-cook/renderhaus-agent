@@ -1459,6 +1459,26 @@ def _media_input_arguments(nodes: list[StudioNode]) -> dict[str, str]:
     return arguments
 
 
+def _delivery_failure_reasons(result: dict[str, Any]) -> list[str]:
+    reasons = [result[key] for key in ("reason", "error") if isinstance(result.get(key), str)]
+    failures = result.get("failures")
+    if isinstance(failures, list):
+        reasons.extend(reason for reason in failures if isinstance(reason, str))
+    checks = result.get("checks")
+    for check in checks if isinstance(checks, list) else []:
+        if (isinstance(check, dict) and check.get("pass") is False
+                and check.get("severity") == "error" and isinstance(check.get("detail"), str)):
+            reasons.append(check["detail"])
+    for key in ("files", "rendered"):
+        rows = result.get(key)
+        for row in rows if isinstance(rows, list) else []:
+            if isinstance(row, dict):
+                reasons.extend(_delivery_failure_reasons(row))
+    if isinstance(result.get("qc"), dict):
+        reasons.extend(_delivery_failure_reasons(result["qc"]))
+    return list(dict.fromkeys(reason for reason in reasons if reason.strip()))
+
+
 def _validate_video_delivery(
     request: StudioAgentRequest,
     studio: StudioAgentContext,
@@ -1470,6 +1490,50 @@ def _validate_video_delivery(
     delivery_alias = delivery_route.steps[-1].alias if delivery_route.steps else delivery_route.alias
     prior_events = {event["id"]: event for event in request.prior_tool_events}
     current_events = [event for event in studio.tool_events if event.public() != prior_events.get(event.id)]
+    workflow_events = [event for event in current_events if event.name in {
+        "Remotion___deliver_render", "Remotion___qc_deliverable",
+    }]
+    if workflow_events or delivery_alias in {"delivery_render", "deliverable_qc"}:
+        last = workflow_events[-1] if workflow_events else None
+        latest = last.result if last else {}
+        complete = False
+        newer_work = []
+        if last:
+            newer_work = [event for event in current_events[current_events.index(last) + 1:] if
+                          event.name in {"Remotion___render_timeline", "Remotion___render_ad_variants"} or
+                          event.name == "Ffmpeg___ffmpeg_tool" and event.arguments.get("op") in {
+                              "transcode_h264", "mux_aac", "loudnorm_mux_aac", "reframe_crop", "reframe_pad_blur",
+                          }]
+        if last and last.status == "succeeded":
+            from providers.remotion.delivery import validate_delivery_report
+
+            complete = validate_delivery_report(latest)
+            deliveries = [event for event in workflow_events if event.name == "Remotion___deliver_render"]
+            if complete and (deliveries or delivery_alias == "delivery_render") and last.name != "Remotion___deliver_render":
+                delivery = deliveries[-1] if deliveries else None
+                complete = bool(delivery and delivery.status == "succeeded"
+                                and validate_delivery_report(delivery.result))
+                if complete:
+                    completed_files = {(row["output_path"], row["sha256"]) for row in latest["files"]}
+                    delivery_files = {(row["output_path"], row["sha256"]) for row in delivery.result["files"]}
+                    complete = completed_files == delivery_files
+        if newer_work:
+            complete = False
+        if complete:
+            return True
+        reasons = _delivery_failure_reasons(latest)
+        if newer_work:
+            reasons.append("New render or finishing work started after the saved delivery report; QC the current output before completion.")
+        if not reasons:
+            reasons = ["No current successful delivery result and matching final-file QC report were verified."]
+        message = "Delivery QC is incomplete. " + reasons[0]
+        _progress(studio, event_id="video-delivery", event_type="RUN_ERROR", title="Delivery QC incomplete",
+                  message=message, status="failed")
+        if final is not None:
+            final.title = "Delivery QC incomplete"
+            final.summary = message[:320]
+            final.markdown = ("# Delivery QC incomplete\n\n" + "\n\n".join(reasons))[:30_000]
+        return False
     if delivery_alias == "ad_variant_matrix" or any(event.name == "Remotion___render_ad_variants" for event in current_events):
         matrix_events = [event for event in current_events if event.name == "Remotion___render_ad_variants"]
         last = matrix_events[-1] if matrix_events else None

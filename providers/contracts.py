@@ -388,6 +388,21 @@ def enrich_tool_schema(provider_id: str, tool: dict[str, Any]) -> dict[str, Any]
         if isinstance(properties.get("subtitles"), dict):
             properties["subtitles"]["items"] = deepcopy(_TEXT_OVERLAY_SCHEMA)
             properties["subtitles"]["description"] = "Output-timed burn-in captions, rendered as the final track above all overlays."
+    if provider_id == "remotion" and tool_name in {"deliver_render", "qc_deliverable"}:
+        from providers.remotion.delivery import PRESETS, SPEC_PROPERTIES
+        from providers.registry import sanitize_gateway_json_schema
+
+        properties["job_id"]["description"] = "Existing job directory owned by this Studio execution under RENDERHAUS_MEDIA_DIR."
+        for field in ("input_path", "manifest_path"):
+            properties[field]["description"] = "Supply exactly one input_path or manifest_path. Regular file confined inside this job. No URLs, traversal or symlink escape."
+        properties["preset"]["description"] = "Named placeholder delivery intent: " + ", ".join(PRESETS) + ". Native dimensions/FPS preserved without enlargement; confirm channel specifications."
+        properties["spec"].update(sanitize_gateway_json_schema({"type": "object", "properties": SPEC_PROPERTIES}))
+        properties["spec"]["description"] = "Optional bounded QC requirements. Expected geometry/FPS/duration, explicit detector allowances, loudness targets and declared overlay geometry. Vision/OCR remains a planner pass."
+        if tool_name == "deliver_render":
+            properties["upload"]["description"] = "Default false. Upload=true is refused in this branch; no AWS write or public object is created."
+            properties["aspect"]["description"] = "Filename aspect: 9x16,1x1,4x5,16x9,2p39x1 (colon variants also accepted). Does not reframe."
+            for field in ("campaign", "sku", "locale"):
+                properties[field]["description"] = "ASCII filename identifier, 1-40 letters/digits/underscore/hyphen; leading letter/digit/underscore."
     if provider_id == "remotion" and tool_name == "render_ad_variants":
         required = ("variant_key", "sku", "price_text", "cta_text", "logo_asset", "legal_text", "locale", "aspect")
         properties["rows"]["items"] = {
@@ -540,6 +555,10 @@ def _validate_rule(path: str, value: Any, rule: ArgumentRule) -> None:
 
 
 def _validate_cross_fields(provider_id: str, tool_name: str, arguments: dict[str, Any]) -> None:
+    if provider_id == "remotion" and tool_name in {"deliver_render", "qc_deliverable"}:
+        from providers.remotion.delivery import validate_arguments
+
+        validate_arguments(tool_name, arguments)
     if provider_id == "ffmpeg":
         from providers.ffmpeg.api import validate_arguments
 

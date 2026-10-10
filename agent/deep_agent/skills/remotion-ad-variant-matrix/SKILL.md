@@ -3,8 +3,8 @@ name: remotion-ad-variant-matrix
 description: Validate a retail table, compose price/CTA/logo/legal overlays on a locked master, render the first SKU at each aspect for human review, then render an approved batch with hashes and a manifest. Refuse arbitrary shell commands and parked Resolve operations.
 metadata:
   include_tools: call_editor_tool
-  routing_tools: ad_variant_matrix remotion_render ffmpeg_tool
-  gateway_tools: Remotion___render_ad_variants Remotion___render_timeline Remotion___get_render_progress Ffmpeg___ffmpeg_tool
+  routing_tools: ad_variant_matrix remotion_render ffmpeg_tool delivery_render deliverable_qc
+  gateway_tools: Remotion___render_ad_variants Remotion___render_timeline Remotion___get_render_progress Ffmpeg___ffmpeg_tool Remotion___deliver_render Remotion___qc_deliverable
 ---
 
 # Remotion ad variant matrix
@@ -72,7 +72,13 @@ match flag or another approval field as a tool argument.
 5. Inspect the actual output MP4s and the manifest. Verify dimensions, FPS, duration,
    text-fit/safe-zone results, checksums and per-row failures. Report planned, rendered,
    blocked and failed counts. Report `ocr_match` as unverified until a human or an actual
-   vision comparison establishes it. Do not claim loudness or delivery certification.
+   vision comparison establishes it. Treat these outputs as review renders until finishing
+   and actual per-output delivery QC evidence exist.
+6. After editorial approval, read [delivery render](../remotion-delivery-render/SKILL.md)
+   and pass the approved matrix manifest to `delivery_render`. It performs fixed local
+   finishing, [loudness QC](../remotion-loudness-qc/SKILL.md) and
+   [deliverable QC](../remotion-deliverable-qc/SKILL.md) in that order. Reuse its measurements
+   instead of normalising again. Preserve first-variant and batch approval records.
 
 `manifest.json` records `variant_key`, `sku`, `locale`, `aspect`, composition/template ID,
 `input_props_hash`, `file`, `sha256`, `duration_s`, `qc`, `ocr_match` and `approved_by`.
@@ -121,13 +127,15 @@ Never invent an output filename or overwrite
 flag. The tool generates version-safe names and reports output hashes.
 `volume_stats` reports mean/sample peak. It does not certify LUFS or true peak.
 
-## Not yet available
+## Finish each approved output
 
-Delivery presets, two-pass loudness measurement and
-normalisation, black/freeze detection, and per-output delivery certification arrive in
-`feat/remotion-delivery-qc`. Its skills are `remotion-delivery-render`, `remotion-loudness-qc`
-and `remotion-deliverable-qc`. Do not invoke those absent skills or their future ops.
-The matrix outputs are review renders until those checks have actual evidence.
+Named delivery presets, two-pass loudness and black/freeze/silence checks are available
+through the delivery and QC skills. A matrix render's geometry `qc` field is not a final
+delivery report. Inspect each final file's actual QC evidence, audio measurements, hash and
+resolution warnings. Report failures verbatim. A technical pass retains pending editorial
+review when required and does not establish deterministic OCR equality.
+Exact end-card OCR comparison remains deferred to `feat/remotion-ocr-verification`.
+S3 upload and channel publishing are unsupported by the local finishing wrapper.
 
 ## Hard rules
 

@@ -39,6 +39,10 @@ from agent.studio_agent_next import (
 # Free, non-generative tools that only package existing project media. They
 # create no paid provider work, so they never pause for customer approval.
 APPROVAL_EXEMPT_TOOLS = frozenset({"Remotion___export_nle_timeline"})
+LOCAL_MEDIA_TOOLS = frozenset({
+    "Remotion___render_ad_variants", "Ffmpeg___ffmpeg_tool",
+    "Remotion___deliver_render", "Remotion___qc_deliverable",
+})
 SPENDING_SESSION_TYPE = "renderhaus_run_spending"
 logger = logging.getLogger("renderhaus.gateway_executor")
 
@@ -48,7 +52,8 @@ def tool_needs_approval(name: str, autonomous: bool, arguments: dict | None = No
 
     if name in {"Remotion___render_ad_variants", "ad_variant_matrix"}:
         return (arguments or {}).get("stage") != "plan"
-    if name in {"Ffmpeg___ffmpeg_tool", "ffmpeg_tool"}:
+    if name in {"Ffmpeg___ffmpeg_tool", "ffmpeg_tool", "Remotion___deliver_render",
+                "Remotion___qc_deliverable", "delivery_render", "deliverable_qc"}:
         return False
     if name in APPROVAL_EXEMPT_TOOLS:
         return False
@@ -155,9 +160,9 @@ class GatewayExecutor:
         for provider in ("ffmpeg", "remotion"):
             spec = get_provider(provider)
             for schema in generate_schemas(spec):
-                if schema["name"] not in {"ffmpeg_tool", "render_ad_variants"}:
-                    continue
                 name = f"{spec.target_name}___{schema['name']}"
+                if name not in LOCAL_MEDIA_TOOLS:
+                    continue
                 if request_tool_blocker(self.studio.prompt, name) is None:
                     available[name] = (None, Tool(name=name, description=schema["description"],
                                                   inputSchema=schema["inputSchema"]))
@@ -213,7 +218,7 @@ class GatewayExecutor:
         return None
 
     def media_selection(self, name, arguments):
-        if name in {"Remotion___render_ad_variants", "Ffmpeg___ffmpeg_tool"}:
+        if name in LOCAL_MEDIA_TOOLS:
             return None
         job = job_type(name)
         if not job or is_free_tool(name):
@@ -309,7 +314,7 @@ class GatewayExecutor:
         if blocker := request_tool_blocker(self.studio.prompt, name):
             return blocker
         provider, tool = tool_parts(name)
-        if name in {"Remotion___render_ad_variants", "Ffmpeg___ffmpeg_tool"}:
+        if name in LOCAL_MEDIA_TOOLS:
             from providers.contracts import validate_tool_arguments
             from server.billing_rates import ad_matrix_estimate
 
@@ -520,7 +525,7 @@ class GatewayExecutor:
         )
         if previous:
             return previous.result
-        if name in {"Remotion___render_ad_variants", "Ffmpeg___ffmpeg_tool"} and (
+        if name in LOCAL_MEDIA_TOOLS and (
             not studio.job_id or arguments.get("job_id") != studio.job_id
         ):
             return {"status": "not_run", "reason": "Local media tools must use the trusted current Studio job_id. Stage inputs inside that job directory; another Studio job cannot be read."}
@@ -591,7 +596,7 @@ class GatewayExecutor:
                 {},
             )
             try:
-                if name in {"Remotion___render_ad_variants", "Ffmpeg___ffmpeg_tool"}:
+                if name in LOCAL_MEDIA_TOOLS:
                     from providers.registry import dispatch
                     from providers.remotion.ad_variants import authorize
                     from server.billing import stripe_enabled
@@ -611,8 +616,11 @@ class GatewayExecutor:
                                 name, arguments, call_id,
                             )
                     try:
-                        with authorize(arguments.get("stage", "plan"), arguments.get("plan_hash", ""),
-                                       f"human:{call_id}" if approved else ""):
+                        if name == "Remotion___render_ad_variants":
+                            with authorize(arguments.get("stage", "plan"), arguments.get("plan_hash", ""),
+                                           f"human:{call_id}" if approved else ""):
+                                output = await asyncio.to_thread(dispatch, provider, verb, arguments)
+                        else:
                             output = await asyncio.to_thread(dispatch, provider, verb, arguments)
                         payload = _unwrap_tool_output(output)
                         if payload.get("error") or payload.get("status") in {"failed", "error", "blocked", "not_run"}:

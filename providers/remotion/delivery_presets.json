@@ -1,0 +1,228 @@
+{
+  "social-vertical": {
+    "placeholder": true,
+    "container": "mp4",
+    "video_codec": "h264",
+    "profile": "High",
+    "pix_fmt": "yuv420p",
+    "fps": {
+      "min": 1,
+      "max": 120,
+      "policy": "preserve"
+    },
+    "audio": {
+      "codec": "aac",
+      "sample_rate": 48000,
+      "channels": [
+        1,
+        2
+      ],
+      "bitrate_kbps": 192
+    },
+    "loudness": {
+      "I": -14,
+      "TP": -1.5,
+      "LRA": 11,
+      "tolerance_lu": 0.5
+    },
+    "max_file_bytes": 16777216,
+    "faststart": true,
+    "naming_template": "<campaign>__<sku>__<locale>__<aspect>__v<n>",
+    "crf": 18,
+    "max_width": 1080,
+    "max_height": 1920
+  },
+  "social-feed": {
+    "placeholder": true,
+    "container": "mp4",
+    "video_codec": "h264",
+    "profile": "High",
+    "pix_fmt": "yuv420p",
+    "fps": {
+      "min": 1,
+      "max": 120,
+      "policy": "preserve"
+    },
+    "audio": {
+      "codec": "aac",
+      "sample_rate": 48000,
+      "channels": [
+        1,
+        2
+      ],
+      "bitrate_kbps": 192
+    },
+    "loudness": {
+      "I": -14,
+      "TP": -1.5,
+      "LRA": 11,
+      "tolerance_lu": 0.5
+    },
+    "max_file_bytes": 16777216,
+    "faststart": true,
+    "naming_template": "<campaign>__<sku>__<locale>__<aspect>__v<n>",
+    "crf": 18,
+    "max_width": 1080,
+    "max_height": 1080
+  },
+  "web-1080p": {
+    "placeholder": true,
+    "container": "mp4",
+    "video_codec": "h264",
+    "profile": "High",
+    "pix_fmt": "yuv420p",
+    "fps": {
+      "min": 1,
+      "max": 120,
+      "policy": "preserve"
+    },
+    "audio": {
+      "codec": "aac",
+      "sample_rate": 48000,
+      "channels": [
+        1,
+        2
+      ],
+      "bitrate_kbps": 192
+    },
+    "loudness": {
+      "I": -14,
+      "TP": -1.5,
+      "LRA": 11,
+      "tolerance_lu": 0.5
+    },
+    "max_file_bytes": 16777216,
+    "faststart": true,
+    "naming_template": "<campaign>__<sku>__<locale>__<aspect>__v<n>",
+    "crf": 18,
+    "max_width": 1920,
+    "max_height": 1080
+  },
+  "broadcast-proxy": {
+    "placeholder": true,
+    "container": "mp4",
+    "video_codec": "h264",
+    "profile": "High",
+    "pix_fmt": "yuv420p",
+    "fps": {
+      "min": 1,
+      "max": 120,
+      "policy": "preserve"
+    },
+    "audio": {
+      "codec": "aac",
+      "sample_rate": 48000,
+      "channels": [
+        1,
+        2
+      ],
+      "bitrate_kbps": 192
+    },
+    "loudness": {
+      "I": -23,
+      "TP": -1,
+      "LRA": 11,
+      "tolerance_lu": 0.5
+    },
+    "max_file_bytes": 16777216,
+    "faststart": true,
+    "naming_template": "<campaign>__<sku>__<locale>__<aspect>__v<n>",
+    "crf": 18,
+    "max_width": 1920,
+    "max_height": 1080
+  },
+  "review-proxy": {
+    "placeholder": true,
+    "container": "mp4",
+    "video_codec": "h264",
+    "profile": "High",
+    "pix_fmt": "yuv420p",
+    "fps": {
+      "min": 1,
+      "max": 120,
+      "policy": "preserve"
+    },
+    "audio": {
+      "codec": "aac",
+      "sample_rate": 48000,
+      "channels": [
+        1,
+        2
+      ],
+      "bitrate_kbps": 96
+    },
+    "loudness": null,
+    "max_file_bytes": 16777216,
+    "faststart": true,
+    "naming_template": "<campaign>__<sku>__<locale>__<aspect>__v<n>",
+    "crf": 28,
+    "max_width": 960,
+    "max_height": 540
+  },
+  "email-720p": {
+    "placeholder": true,
+    "container": "mp4",
+    "video_codec": "h264",
+    "profile": "High",
+    "pix_fmt": "yuv420p",
+    "fps": {
+      "min": 1,
+      "max": 120,
+      "policy": "preserve"
+    },
+    "audio": {
+      "codec": "aac",
+      "sample_rate": 48000,
+      "channels": [
+        1,
+        2
+      ],
+      "bitrate_kbps": 192
+    },
+    "loudness": {
+      "I": -14,
+      "TP": -1.5,
+      "LRA": 11,
+      "tolerance_lu": 0.5
+    },
+    "max_file_bytes": 16777216,
+    "faststart": true,
+    "naming_template": "<campaign>__<sku>__<locale>__<aspect>__v<n>",
+    "crf": 18,
+    "max_width": 1280,
+    "max_height": 720
+  },
+  "podcast-streaming": {
+    "placeholder": true,
+    "container": "mp4",
+    "video_codec": "h264",
+    "profile": "High",
+    "pix_fmt": "yuv420p",
+    "fps": {
+      "min": 1,
+      "max": 120,
+      "policy": "preserve"
+    },
+    "audio": {
+      "codec": "aac",
+      "sample_rate": 48000,
+      "channels": [
+        1,
+        2
+      ],
+      "bitrate_kbps": 192
+    },
+    "loudness": {
+      "I": -16,
+      "TP": -1.5,
+      "LRA": 11,
+      "tolerance_lu": 0.5
+    },
+    "max_file_bytes": 16777216,
+    "faststart": true,
+    "naming_template": "<campaign>__<sku>__<locale>__<aspect>__v<n>",
+    "crf": 18,
+    "max_width": 1920,
+    "max_height": 1080
+  }
+}

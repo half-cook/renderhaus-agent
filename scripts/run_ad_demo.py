@@ -14,11 +14,12 @@ sys.path.insert(0, str(ROOT))
 
 from providers.ffmpeg.sandbox import input_file, job_directory  # noqa: E402
 from providers.remotion.ad_variants import authorize, render_ad_variants  # noqa: E402
+from providers.remotion.delivery import PRESETS, deliver_render, qc_deliverable  # noqa: E402
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("stage", choices=("plan", "render_first", "render_batch"))
+    parser.add_argument("stage", choices=("plan", "render_first", "render_batch", "deliver", "qc"))
     parser.add_argument("--media-root", type=Path, default=ROOT / ".renderhaus/demo")
     parser.add_argument("--job-id", default="ad-demo")
     parser.add_argument("--mode", choices=("retail", "reframe"), default="retail")
@@ -28,8 +29,10 @@ def main() -> None:
     parser.add_argument("--table", default=None)
     parser.add_argument("--brief", default=None)
     parser.add_argument("--approve-plan", default="", help="Exact reviewed plan hash; authorizes this stage only.")
+    parser.add_argument("--manifest", default="", help="Completed matrix manifest inside the job, required for deliver/qc.")
+    parser.add_argument("--preset", choices=tuple(PRESETS), default="web-1080p")
     args = parser.parse_args()
-    if args.stage != "plan" and not args.approve_plan:
+    if args.stage in {"render_first", "render_batch"} and not args.approve_plan:
         parser.error("Render stages require --approve-plan HASH after reviewing the plan/cost and first frames.")
     if args.allow_upscale and args.mode != "reframe":
         parser.error("--allow-upscale requires --mode reframe.")
@@ -37,6 +40,16 @@ def main() -> None:
     os.environ["REMOTION_RENDER_BACKEND"] = "local"
     os.environ["REMOTION_DRY_RUN"] = "false"
     job = job_directory(args.job_id)
+    if args.stage in {"deliver", "qc"}:
+        if not args.manifest:
+            parser.error("Delivery and QC require --manifest PATH from the completed batch.")
+        function = deliver_render if args.stage == "deliver" else qc_deliverable
+        extra = {"campaign": "demo"} if args.stage == "deliver" else {}
+        result = function(args.job_id, manifest_path=args.manifest, preset=args.preset, **extra)
+        print(json.dumps(result, indent=2, ensure_ascii=False, allow_nan=False))
+        if not result.get("passed"):
+            raise SystemExit(1)
+        return
     table_path = args.table or ("reframe.csv" if args.mode == "reframe" else "variants.csv")
     brief_path = args.brief or ("reframe-brief.json" if args.mode == "reframe" else "brief.json")
     with input_file(job, table_path).open(encoding="utf-8-sig", newline="") as table:

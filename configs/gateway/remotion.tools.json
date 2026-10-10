@@ -1,5 +1,457 @@
 [
   {
+    "name": "deliver_render",
+    "description": "Finish an existing local render or checksum matrix manifest using a named placeholder delivery preset. Uses fixed system ffmpeg ops, measured FPS/native geometry, loudness normalization and AAC faststart mux; never enlarges. Versioned campaign__sku__locale__aspect__v<n>.mp4 files never overwrite. Actual final-file QC must pass before a finished claim. Reports per-file failures verbatim. Free local worker job; Lambda refused. Respect REMOTION_DRY_RUN. Upload=true is refused; no S3/public/platform upload is available here.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "job_id": {
+          "type": "string",
+          "description": "Existing job directory owned by this Studio execution under RENDERHAUS_MEDIA_DIR."
+        },
+        "input_path": {
+          "type": "string",
+          "description": "Supply exactly one input_path or manifest_path. Regular file confined inside this job. No URLs, traversal or symlink escape."
+        },
+        "manifest_path": {
+          "type": "string",
+          "description": "Supply exactly one input_path or manifest_path. Regular file confined inside this job. No URLs, traversal or symlink escape."
+        },
+        "preset": {
+          "type": "string",
+          "description": "Named placeholder delivery intent: social-vertical, social-feed, web-1080p, broadcast-proxy, review-proxy, email-720p, podcast-streaming. Native dimensions/FPS preserved without enlargement; confirm channel specifications."
+        },
+        "spec": {
+          "type": "object",
+          "properties": {
+            "expected_width": {
+              "type": "integer",
+              "description": "Allowed range: 2 to 16384. Default 1920."
+            },
+            "expected_height": {
+              "type": "integer",
+              "description": "Allowed range: 2 to 16384. Default 1080."
+            },
+            "expected_fps": {
+              "type": "number",
+              "description": "Allowed range: 0.01 to 240. Default 24."
+            },
+            "expected_duration_s": {
+              "type": "number",
+              "description": "Allowed range: 0.01 to 600. Default 4."
+            },
+            "expected_sha256": {
+              "type": "string"
+            },
+            "expected_filename": {
+              "type": "string"
+            },
+            "master_path": {
+              "type": "string",
+              "description": "Regular media file confined inside this job."
+            },
+            "audio_channels": {
+              "type": "integer"
+            },
+            "require_audio": {
+              "type": "boolean"
+            },
+            "require_vision": {
+              "type": "boolean"
+            },
+            "I": {
+              "type": "number",
+              "description": "Allowed range: -30 to -5. Default -14."
+            },
+            "TP": {
+              "type": "number",
+              "description": "Allowed range: -9 to 0. Default -1.5."
+            },
+            "LRA": {
+              "type": "number",
+              "description": "Allowed range: 1 to 20. Default 11."
+            },
+            "tolerance_lu": {
+              "type": "number",
+              "description": "Allowed range: 0.1 to 1. Default 0.5."
+            },
+            "noise": {
+              "type": "number",
+              "description": "Allowed range: -60 to -20. Default -50."
+            },
+            "black_d": {
+              "type": "number",
+              "description": "Allowed range: 0.1 to 5. Default 0.5."
+            },
+            "freeze_d": {
+              "type": "number",
+              "description": "Allowed range: 0.1 to 5. Default 0.5."
+            },
+            "silence_d": {
+              "type": "number",
+              "description": "Allowed range: 0.1 to 5. Default 0.5."
+            },
+            "pix_th": {
+              "type": "number",
+              "description": "Allowed range: 0 to 0.5. Default 0.1."
+            },
+            "n": {
+              "type": "number",
+              "description": "Allowed range: 0 to 0.1. Default 0.001."
+            },
+            "allowed_black": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "start_s": {
+                    "type": "number",
+                    "description": "Allowed range: 0 to 600. Default 0."
+                  },
+                  "end_s": {
+                    "type": "number",
+                    "description": "Allowed range: 0 to 600. Default 0."
+                  }
+                },
+                "required": [
+                  "start_s",
+                  "end_s"
+                ]
+              }
+            },
+            "allowed_freeze": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "start_s": {
+                    "type": "number",
+                    "description": "Allowed range: 0 to 600. Default 0."
+                  },
+                  "end_s": {
+                    "type": "number",
+                    "description": "Allowed range: 0 to 600. Default 0."
+                  }
+                },
+                "required": [
+                  "start_s",
+                  "end_s"
+                ]
+              }
+            },
+            "allowed_silence": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "start_s": {
+                    "type": "number",
+                    "description": "Allowed range: 0 to 600. Default 0."
+                  },
+                  "end_s": {
+                    "type": "number",
+                    "description": "Allowed range: 0 to 600. Default 0."
+                  }
+                },
+                "required": [
+                  "start_s",
+                  "end_s"
+                ]
+              }
+            },
+            "overlay_boxes": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "x": {
+                    "type": "number",
+                    "description": "Allowed range: 0 to 16384. Default 0."
+                  },
+                  "y": {
+                    "type": "number",
+                    "description": "Allowed range: 0 to 16384. Default 0."
+                  },
+                  "width": {
+                    "type": "number",
+                    "description": "Allowed range: 1 to 16384. Default 0."
+                  },
+                  "height": {
+                    "type": "number",
+                    "description": "Allowed range: 1 to 16384. Default 0."
+                  }
+                },
+                "required": [
+                  "x",
+                  "y",
+                  "width",
+                  "height"
+                ]
+              }
+            },
+            "safe_zone": {
+              "type": "object",
+              "properties": {
+                "top": {
+                  "type": "number",
+                  "description": "Allowed range: 0 to 0.49. Default 0."
+                },
+                "bottom": {
+                  "type": "number",
+                  "description": "Allowed range: 0 to 0.49. Default 0."
+                },
+                "side": {
+                  "type": "number",
+                  "description": "Allowed range: 0 to 0.49. Default 0."
+                }
+              }
+            }
+          },
+          "description": "Optional bounded QC requirements. Expected geometry/FPS/duration, explicit detector allowances, loudness targets and declared overlay geometry. Vision/OCR remains a planner pass."
+        },
+        "campaign": {
+          "type": "string",
+          "description": "ASCII filename identifier, 1-40 letters/digits/underscore/hyphen; leading letter/digit/underscore."
+        },
+        "sku": {
+          "type": "string",
+          "description": "ASCII filename identifier, 1-40 letters/digits/underscore/hyphen; leading letter/digit/underscore."
+        },
+        "locale": {
+          "type": "string",
+          "description": "ASCII filename identifier, 1-40 letters/digits/underscore/hyphen; leading letter/digit/underscore."
+        },
+        "aspect": {
+          "type": "string",
+          "description": "Filename aspect: 9x16,1x1,4x5,16x9,2p39x1 (colon variants also accepted). Does not reframe."
+        },
+        "upload": {
+          "type": "boolean",
+          "description": "Default false. Upload=true is refused in this branch; no AWS write or public object is created."
+        }
+      },
+      "required": [
+        "job_id"
+      ]
+    }
+  },
+  {
+    "name": "qc_deliverable",
+    "description": "Free technical QC of final local files or matrix manifest against a named preset/spec. Probes codec/profile/pix_fmt/resolution/SAR/FPS/duration/audio, decoded cadence, full black/freeze/silence intervals, loudness/true peak/clipping, faststart, size/naming/checksum, and actual frames/contact sheet. Failed or incomplete checks fail the report. Caption/price/legal pixel review is a planner vision pass, never inferred from geometry. Confined job directory, local worker only; Lambda refused. Dry-run does no media inspection.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "job_id": {
+          "type": "string",
+          "description": "Existing job directory owned by this Studio execution under RENDERHAUS_MEDIA_DIR."
+        },
+        "input_path": {
+          "type": "string",
+          "description": "Supply exactly one input_path or manifest_path. Regular file confined inside this job. No URLs, traversal or symlink escape."
+        },
+        "manifest_path": {
+          "type": "string",
+          "description": "Supply exactly one input_path or manifest_path. Regular file confined inside this job. No URLs, traversal or symlink escape."
+        },
+        "preset": {
+          "type": "string",
+          "description": "Named placeholder delivery intent: social-vertical, social-feed, web-1080p, broadcast-proxy, review-proxy, email-720p, podcast-streaming. Native dimensions/FPS preserved without enlargement; confirm channel specifications."
+        },
+        "spec": {
+          "type": "object",
+          "properties": {
+            "expected_width": {
+              "type": "integer",
+              "description": "Allowed range: 2 to 16384. Default 1920."
+            },
+            "expected_height": {
+              "type": "integer",
+              "description": "Allowed range: 2 to 16384. Default 1080."
+            },
+            "expected_fps": {
+              "type": "number",
+              "description": "Allowed range: 0.01 to 240. Default 24."
+            },
+            "expected_duration_s": {
+              "type": "number",
+              "description": "Allowed range: 0.01 to 600. Default 4."
+            },
+            "expected_sha256": {
+              "type": "string"
+            },
+            "expected_filename": {
+              "type": "string"
+            },
+            "master_path": {
+              "type": "string",
+              "description": "Regular media file confined inside this job."
+            },
+            "audio_channels": {
+              "type": "integer"
+            },
+            "require_audio": {
+              "type": "boolean"
+            },
+            "require_vision": {
+              "type": "boolean"
+            },
+            "I": {
+              "type": "number",
+              "description": "Allowed range: -30 to -5. Default -14."
+            },
+            "TP": {
+              "type": "number",
+              "description": "Allowed range: -9 to 0. Default -1.5."
+            },
+            "LRA": {
+              "type": "number",
+              "description": "Allowed range: 1 to 20. Default 11."
+            },
+            "tolerance_lu": {
+              "type": "number",
+              "description": "Allowed range: 0.1 to 1. Default 0.5."
+            },
+            "noise": {
+              "type": "number",
+              "description": "Allowed range: -60 to -20. Default -50."
+            },
+            "black_d": {
+              "type": "number",
+              "description": "Allowed range: 0.1 to 5. Default 0.5."
+            },
+            "freeze_d": {
+              "type": "number",
+              "description": "Allowed range: 0.1 to 5. Default 0.5."
+            },
+            "silence_d": {
+              "type": "number",
+              "description": "Allowed range: 0.1 to 5. Default 0.5."
+            },
+            "pix_th": {
+              "type": "number",
+              "description": "Allowed range: 0 to 0.5. Default 0.1."
+            },
+            "n": {
+              "type": "number",
+              "description": "Allowed range: 0 to 0.1. Default 0.001."
+            },
+            "allowed_black": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "start_s": {
+                    "type": "number",
+                    "description": "Allowed range: 0 to 600. Default 0."
+                  },
+                  "end_s": {
+                    "type": "number",
+                    "description": "Allowed range: 0 to 600. Default 0."
+                  }
+                },
+                "required": [
+                  "start_s",
+                  "end_s"
+                ]
+              }
+            },
+            "allowed_freeze": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "start_s": {
+                    "type": "number",
+                    "description": "Allowed range: 0 to 600. Default 0."
+                  },
+                  "end_s": {
+                    "type": "number",
+                    "description": "Allowed range: 0 to 600. Default 0."
+                  }
+                },
+                "required": [
+                  "start_s",
+                  "end_s"
+                ]
+              }
+            },
+            "allowed_silence": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "start_s": {
+                    "type": "number",
+                    "description": "Allowed range: 0 to 600. Default 0."
+                  },
+                  "end_s": {
+                    "type": "number",
+                    "description": "Allowed range: 0 to 600. Default 0."
+                  }
+                },
+                "required": [
+                  "start_s",
+                  "end_s"
+                ]
+              }
+            },
+            "overlay_boxes": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "x": {
+                    "type": "number",
+                    "description": "Allowed range: 0 to 16384. Default 0."
+                  },
+                  "y": {
+                    "type": "number",
+                    "description": "Allowed range: 0 to 16384. Default 0."
+                  },
+                  "width": {
+                    "type": "number",
+                    "description": "Allowed range: 1 to 16384. Default 0."
+                  },
+                  "height": {
+                    "type": "number",
+                    "description": "Allowed range: 1 to 16384. Default 0."
+                  }
+                },
+                "required": [
+                  "x",
+                  "y",
+                  "width",
+                  "height"
+                ]
+              }
+            },
+            "safe_zone": {
+              "type": "object",
+              "properties": {
+                "top": {
+                  "type": "number",
+                  "description": "Allowed range: 0 to 0.49. Default 0."
+                },
+                "bottom": {
+                  "type": "number",
+                  "description": "Allowed range: 0 to 0.49. Default 0."
+                },
+                "side": {
+                  "type": "number",
+                  "description": "Allowed range: 0 to 0.49. Default 0."
+                }
+              }
+            }
+          },
+          "description": "Optional bounded QC requirements. Expected geometry/FPS/duration, explicit detector allowances, loudness targets and declared overlay geometry. Vision/OCR remains a planner pass."
+        }
+      },
+      "required": [
+        "job_id"
+      ]
+    }
+  },
+  {
     "name": "render_ad_variants",
     "description": "Local ad matrix from job_id, master_asset, brief and rows. Use stage=plan first, then render_first with returned plan_hash, inspect frames and expected strings, then human-approved render_batch bound to that hash. First/batch pause with count, aspects and cost even autonomous. No agent-supplied authorization. Lambda matrix orchestration is refused. Copy stays verbatim; outputs include checksum manifest.",
     "inputSchema": {

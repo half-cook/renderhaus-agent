@@ -83,9 +83,9 @@ def check_routing_inventory() -> None:
     from providers.registry import load_committed_schemas
 
     assert len(PROVIDERS) == 16
-    assert sum(len(load_committed_schemas(spec)) for spec in PROVIDERS) == 115
+    assert sum(len(load_committed_schemas(spec)) for spec in PROVIDERS) == 117
     paths = list(SKILLS_ROOT.glob("*/SKILL.md"))
-    assert len(paths) == 27
+    assert len(paths) == 30
     assert "ladder" not in POLICY and "premium_targets" not in POLICY
     assert "project_policy" not in POLICY and "flux2_klein4b_t2i" not in TOOL_MAP
     for capability, choice in POLICY["capability_map"].items():
@@ -104,7 +104,7 @@ def check_routing_inventory() -> None:
         assert set(metadata["include_tools"].split()) <= DISPATCH_TARGETS.keys(), path
         assert all(TOOL_MAP[alias]["status"] != "retired" for alias in metadata["routing_tools"].split()), path
     cases = json.loads((ROOT / "tests/fixtures/skill_routing.json").read_text())
-    assert len(cases) == 220 and sum(not case["skip_reason"] for case in cases) == 184
+    assert len(cases) == 220 and sum(not case["skip_reason"] for case in cases) == 215
     from agent.deep_agent.continuity_qc_vlm import EVAL_PATH, default_vlm_enabled
 
     if POLICY["continuity_qc"]["vlm_eval_gate"]["result_sha256"]:
@@ -112,7 +112,7 @@ def check_routing_inventory() -> None:
 
         subprocess.run(["git", "ls-files", "--error-unmatch", str(EVAL_PATH.relative_to(ROOT))], check=True, capture_output=True)
         assert default_vlm_enabled(), "Committed VLM evidence does not qualify for promotion."
-    print("ok routing inventory (16 providers, 115 Gateway tools, 27 skills, 184 active routing rows)")
+    print("ok routing inventory (16 providers, 117 Gateway tools, 30 skills, 215 active routing rows)")
 
 
 def _assert_gateway_shape(schema: object) -> None:
@@ -154,6 +154,8 @@ def check_dry_run_dispatch() -> None:
                               "logo_asset": "logo.png", "legal_text": "Terms", "locale": "en", "aspect": "1:1"}],
                     "master_asset": "master.mp4",
                 }
+            if spec.id == "remotion" and name in {"deliver_render", "qc_deliverable"}:
+                arguments = {"job_id": "ci-smoke", "input_path": "master.mp4", "preset": "web-1080p"}
             if spec.id == "remotion" and name == "import_nle_timeline":
                 arguments = {
                     "format": "fcpxml",
@@ -258,6 +260,11 @@ def check_dry_run_dispatch() -> None:
                 assert result.get("status") == "blocked", "CI matrix must refuse missing local job media"
                 assert "local" in str(result).lower() or "job" in str(result).lower(), result
                 print("ok dry-run remotion.render_ad_variants blocked without local job media")
+                continue
+            if spec.id == "remotion" and name in {"deliver_render", "qc_deliverable"}:
+                assert result.get("status") in {"blocked", "dry_run"} and result.get("passed") is False, result
+                assert not result.get("files"), "CI cannot finish or inspect media"
+                print(f"ok dry-run remotion.{name} status={result['status']}")
                 continue
             if spec.id == "gemini" and name == "judge_continuity":
                 gemini_job_id = result["job_id"]
@@ -376,6 +383,7 @@ def validate_lambda_zip(zip_bytes: bytes) -> None:
     ]
     assert otio_native, "lambda zip is missing the Linux aarch64 OpenTimelineIO native module"
     assert "providers/remotion/mp4_probe.py" in names, "lambda zip is missing the stdlib MP4 parser"
+    assert "providers/remotion/delivery_presets.json" in names, "lambda zip is missing delivery presets"
     assert not any(name.startswith(("av/", "av.libs/", "av-")) for name in names), (
         "Lambda zip contains PyAV or its bundled FFmpeg libraries"
     )

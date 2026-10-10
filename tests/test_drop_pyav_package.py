@@ -20,6 +20,7 @@ def package(extra: str | None = None) -> bytes:
         for name in (
             "server/billing_rates.py",
             "providers/remotion/mp4_probe.py",
+            "providers/remotion/delivery_presets.json",
             "pydantic_core/_pydantic_core.cpython-311-aarch64-linux-gnu.so",
             "opentimelineio/_otio.cpython-311-aarch64-linux-gnu.so",
         ):
@@ -40,6 +41,15 @@ class DropPyAVPackageTests(unittest.TestCase):
 
     def test_clean_lambda_package_passes(self) -> None:
         ci_check.validate_lambda_zip(package())
+
+    def test_delivery_presets_cannot_be_omitted_from_the_lambda_package(self) -> None:
+        output = io.BytesIO()
+        with zipfile.ZipFile(io.BytesIO(package())) as source, zipfile.ZipFile(output, "w") as target:
+            for item in source.infolist():
+                if item.filename != "providers/remotion/delivery_presets.json":
+                    target.writestr(item, source.read(item))
+        with self.assertRaisesRegex(AssertionError, "delivery presets"):
+            ci_check.validate_lambda_zip(output.getvalue())
 
     def test_pyav_or_ffmpeg_libraries_fail_lambda_validation(self) -> None:
         for name in (

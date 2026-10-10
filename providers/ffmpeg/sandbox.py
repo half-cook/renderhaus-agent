@@ -13,6 +13,7 @@ MAX_INPUT_BYTES = 128 * 1024 * 1024
 MAX_OUTPUT_BYTES = 16 * 1024 * 1024
 MAX_TOTAL_OUTPUT_BYTES = 64 * 1024 * 1024
 ID_PATTERN = r"[A-Za-z0-9_][A-Za-z0-9_.-]{0,79}"
+PATH_PATTERN = r"^(?!.*(?:^|/)\.\.?(?:/|$))(?:/)?(?:[A-Za-z0-9_.][A-Za-z0-9_.-]*/)*[A-Za-z0-9_][A-Za-z0-9_.-]{0,127}(?![\s\S])"
 NAME_PATTERN = r"[A-Za-z0-9_][A-Za-z0-9_.-]{0,127}"
 
 

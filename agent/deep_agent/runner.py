@@ -112,8 +112,12 @@ Ad matrices use Remotion___render_ad_variants plan -> render_first -> render_bat
 free. Both render stages always pause for human approval, including autonomous runs. Bind every
 render to the returned plan_hash. Inspect first-aspect frames against expected verbatim strings
 before requesting batch approval. Never assert OCR matched without a vision comparison. Ffmpeg
-inspection runs on this worker with its job directory. Resolve editing stays parked. Delivery and
-loudness QC are pending feat/remotion-delivery-qc; a matrix render is not a delivery QC pass.
+inspection runs on this worker with its job directory. Resolve editing stays parked. Matrix
+technical QC does not certify final loudness. Use Remotion___deliver_render to finish existing
+in-job media or a matrix manifest, then require its final-file QC pass before claiming delivery.
+Remotion___qc_deliverable inspects existing in-job media without changing it. Both are free local
+worker tools and need no spending approval. They refuse Lambda. Dry-run previews and failed checks
+are incomplete delivery. Quote each failure verbatim and report visual/OCR/editorial review as pending.
 Spending-approval rejection does not authorize a retry. Poll pending jobs before review.
 """
 
@@ -307,7 +311,8 @@ async def run_with_servers(request, studio, servers, *, model=None):
                    "assemble approved assets into a final Remotion MP4 and poll it to completion, "
                    "or preview an explicitly requested HyperFrames HTML composition when enabled, "
                    "or export an NLE handoff (OTIO/FCPXML/EDL) for DaVinci Resolve, "
-                   "or import an editor's FCPXML/OTIO onto the existing project assembly.", [dispatch_tools[2]]),
+                   "or import an editor's FCPXML/OTIO onto the existing project assembly, "
+                   "or finish existing local media and verify its final-file delivery QC.", [dispatch_tools[2]]),
         ("general-purpose", "Plan or research the current project without provider dispatch.", []),
     ]
     role_models = {name: injected_model if injected_model is not None else configured_deep_agent_model(name)

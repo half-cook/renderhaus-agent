@@ -23,7 +23,9 @@
     "list_topaz_models",
     "list_mureka_models",
     "import_nle_timeline",
-    "ffmpeg_tool"
+    "ffmpeg_tool",
+    "deliver_render",
+    "qc_deliverable"
   ],
   "providers": {
     "kling": {
@@ -364,10 +366,20 @@
           "read_date": "2026-10-09",
           "training_eligible": false,
           "commercial_status": "requires applicable Remotion licence; local ffmpeg metering unverified"
+        },
+        "ffmpeg-local": {
+          "license": "service-terms",
+          "license_id": "system-FFmpeg-build",
+          "license_source": "https://ffmpeg.org/legal.html",
+          "read_date": "2026-10-09",
+          "training_eligible": false,
+          "commercial_status": "Installed local FFmpeg; source rights and operator build licence remain unchanged."
         }
       },
       "fixed_models": {
-        "render_ad_variants": "ad-variant-timeline"
+        "render_ad_variants": "ad-variant-timeline",
+        "deliver_render": "ffmpeg-local",
+        "qc_deliverable": "ffmpeg-local"
       }
     },
     "fal": {
@@ -1884,9 +1896,75 @@
       "source": "https://www.remotion.dev/docs/license/faq",
       "price_source": "https://www.remotion.dev/docs/license/faq",
       "verification": "local real-binary verification; browser validation blocked; no live Lambda tests"
+    },
+    "delivery_render": {
+      "gateway_tool": "Remotion___deliver_render",
+      "provider": "remotion",
+      "model": "ffmpeg-local",
+      "skill": "remotion-delivery-render",
+      "status": "ready",
+      "host": "local worker with the job directory",
+      "us_available": "yes",
+      "availability_source": "https://ffmpeg.org/legal.html",
+      "read_date": "2026-10-09",
+      "training_eligible": false,
+      "license": "installed FFmpeg LGPL/GPL by build; in-house wrapper",
+      "license_source": "https://ffmpeg.org/legal.html",
+      "training_reason": "Editing retains source rights; no new model or weight licence grants training rights.",
+      "source": "https://ffmpeg.org/legal.html",
+      "price_source": "https://ffmpeg.org/legal.html",
+      "verification": "Fixed local finishing/QC ops. Offline routing tests do not prove file semantics or browser validation."
+    },
+    "deliverable_qc": {
+      "gateway_tool": "Remotion___qc_deliverable",
+      "provider": "remotion",
+      "model": "ffmpeg-local",
+      "skill": "remotion-deliverable-qc",
+      "status": "ready",
+      "host": "local worker with the job directory",
+      "us_available": "yes",
+      "availability_source": "https://ffmpeg.org/legal.html",
+      "read_date": "2026-10-09",
+      "training_eligible": false,
+      "license": "installed FFmpeg LGPL/GPL by build; in-house wrapper",
+      "license_source": "https://ffmpeg.org/legal.html",
+      "training_reason": "Editing retains source rights; no new model or weight licence grants training rights.",
+      "source": "https://ffmpeg.org/legal.html",
+      "price_source": "https://ffmpeg.org/legal.html",
+      "verification": "Fixed local finishing/QC ops. Offline routing tests do not prove file semantics or browser validation."
     }
   },
   "rules": [
+    {
+      "pattern": "\\b(?:deliver|export)\\b.*\\b(?:finished\\s+mp4|(?:9:16\\s+)?ad|master|cut)\\b.*\\b(?:tiktok|reels|meta|youtube|social|web)\\b|\\b(?:export|make|create)\\b.*\\b(?:review[ -]?proxy|540p\\s+proxy)\\b|\\b(?:convert|transcode)\\b.*\\b(?:existing\\s+mp4|rendered\\s+(?:file|video)|master)\\b.*\\b(?:h\\.?264|aac|email|delivery)\\b|\\b(?:delivery_render|deliver_render|remotion-delivery-render)\\b",
+      "skill": "remotion-delivery-render",
+      "abstract_tool": "delivery_render",
+      "capability": "delivery_render"
+    },
+    {
+      "pattern": "^(?!.*\\b(?:generate|create|make\\s+(?:an?|new))\\b[^.;!?]*\\b(?:videos?|clips?|voice[ -]?over|music|song)\\b).*?(?:\\blufs\\b|\\bebu\\s*r128\\b|\\b(?:check|measure|fix|normalise|normalize|make sure)\\b.*\\bloudness\\b|\\b(?:measure_loudness|loudnorm_mux_aac|mux_aac)\\b|\\bnormal(?:ise|ize)\\s+it\\s+twice\\b|\\bsting\\b.*\\bloud enough\\b)",
+      "skill": "remotion-loudness-qc",
+      "abstract_tool": "ffmpeg_tool",
+      "capability": "loudness_qc"
+    },
+    {
+      "pattern": "^(?!.*\\b(?:generate|create|make\\s+(?:an?|new))\\b[^.;!?]*\\b(?:videos?|clips?|voice[ -]?over|music|song)\\b).*?(?:\\b(?:qc|quality[ -]check)\\b.*\\b(?:deliverable|render|spec|file)\\b|\\b(?:deliverable|delivery)\\s+qc\\b|\\b(?:black|frozen|freeze)\\s+frames\\b|\\b(?:captions?|logos?)\\b.*\\bsafe[ -]zone\\b|\\btool\\s+said\\s+render\\s+succeeded\\b|\\b(?:detect_black|detect_freeze|detect_silence|frame_cadence|ssim|deliverable_qc|qc_deliverable)\\b)",
+      "skill": "remotion-deliverable-qc",
+      "abstract_tool": "deliverable_qc",
+      "capability": "deliverable_qc"
+    },
+    {
+      "pattern": "\\b(?:vo|voice[ -]?over|narration)\\b.*\\b(?:too quiet|too loud|under the music)\\b.*\\b(?:fix|rebalance|mix)\\b",
+      "skill": "final-assembly",
+      "abstract_tool": "remotion_render",
+      "capability": "motion_graphics"
+    },
+    {
+      "pattern": "\\bcheck\\b.*\\b(?:person|character|identity)\\b.*\\b(?:same|consistent)\\b.*\\bacross shots\\b",
+      "skill": "continuity-qc",
+      "abstract_tool": "local_qc",
+      "capability": "continuity_qc"
+    },
     {
       "pattern": "\\boutpaint(?:ing)?\\b|\\b(?:extend|fill|generate)\\b.*\\b(?:sides|missing background|missing pixels)\\b",
       "skill": "edit-v2v",
@@ -4957,6 +5035,51 @@
       },
       "durations": {},
       "explicit_only": false
+    },
+    {
+      "provider": "remotion",
+      "policy_ref": "remotion",
+      "model": "ffmpeg-local",
+      "label": "Local delivery finishing and technical QC",
+      "tools": {
+        "delivery_render": "Remotion___deliver_render",
+        "deliverable_qc": "Remotion___qc_deliverable"
+      },
+      "jobs": {
+        "delivery_render": true,
+        "deliverable_qc": true
+      },
+      "resolutions": [],
+      "speed_class": "local-worker",
+      "price": {
+        "source": "https://ffmpeg.org/legal.html",
+        "read_date": "2026-10-09",
+        "unit": "call"
+      },
+      "notes": "Named H.264/AAC MP4 presets and structured QC on existing local job files. No generation, upload or backend switch. Source rights unchanged.",
+      "controls": {
+        "delivery_render": [
+          "job_id",
+          "input_path",
+          "manifest_path",
+          "preset",
+          "spec",
+          "campaign",
+          "sku",
+          "locale",
+          "aspect",
+          "upload"
+        ],
+        "deliverable_qc": [
+          "job_id",
+          "input_path",
+          "manifest_path",
+          "preset",
+          "spec"
+        ]
+      },
+      "durations": {},
+      "explicit_only": false
     }
   ],
   "image_default_size": "2K",
@@ -5162,6 +5285,24 @@
     },
     "ad_variant_matrix": {
       "default": "ad_variant_matrix",
+      "exceptions": [],
+      "interim": null,
+      "ab_candidates": []
+    },
+    "delivery_render": {
+      "default": "delivery_render",
+      "exceptions": [],
+      "interim": null,
+      "ab_candidates": []
+    },
+    "deliverable_qc": {
+      "default": "deliverable_qc",
+      "exceptions": [],
+      "interim": null,
+      "ab_candidates": []
+    },
+    "loudness_qc": {
+      "default": "ffmpeg_tool",
       "exceptions": [],
       "interim": null,
       "ab_candidates": []
@@ -6001,6 +6142,81 @@
   },
   "editing_refusals": [
     {
+      "pattern": "\\bffmpegOverride\\b",
+      "skill": "remotion-delivery-render",
+      "reason": "Refuse ffmpegOverride. It is not portable across supported backends. Use a supported composition overlay or an allow-listed fixed op."
+    },
+    {
+      "pattern": "\\bfairlight\\b.*\\bloudness\\b",
+      "skill": "remotion-loudness-qc",
+      "reason": "Resolve is parked by Satya (2026-10-09). Fairlight metering is unavailable. Offer fixed ffmpeg measure_loudness without calling Resolve."
+    },
+    {
+      "pattern": "\\bffprobe\\s+-[^.;!?]*\\b(?:pipe|script)\\b",
+      "skill": "remotion-deliverable-qc",
+      "reason": "Refuse shell pipes and pasted scripts. Use only allow-listed ffmpeg_tool ops; the fixed probe op returns structured data."
+    },
+    {
+      "pattern": "\\bloudnorm\\s*=|\\b(?:exact|custom)\\s+filter\\s+chain\\b",
+      "skill": "remotion-loudness-qc",
+      "reason": "Refuse caller-supplied filter strings. Use allow-listed measure_loudness and loudnorm_mux_aac with validated numeric parameters."
+    },
+    {
+      "pattern": "\\b(?:make|render|export|deliver)\\b.*\\b(?:prores|dnx(?:hd|hr)?)\\b",
+      "skill": "remotion-delivery-render",
+      "reason": "ProRes and DNx delivery are unsupported by the fixed local H.264/AAC renderer. No codec substitution or backend switch was performed."
+    },
+    {
+      "pattern": "\\b(?:render|export|deliver)\\b.*\\b8k\\b",
+      "skill": "remotion-delivery-render",
+      "reason": "8K delivery is unsupported by the fixed renderer and named presets. Specify a supported delivery size; no silent downscale or backend switch."
+    },
+    {
+      "pattern": "\\b(?:name|call)\\s+the\\s+file\\b.*\\b(?:whatever|final_FINAL)\\b",
+      "skill": "remotion-delivery-render",
+      "reason": "Delivery naming uses campaign, SKU, locale, aspect, version and date. A caller-selected filename cannot override that naming contract."
+    },
+    {
+      "pattern": "\\b(?:upload|post|publish)\\b.*\\b(?:youtube|tiktok|meta)\\b.*\\b(?:channel|account)\\b",
+      "skill": "remotion-delivery-render",
+      "reason": "Direct channel publishing is unsupported. Produce the local delivery artifact; a person handles account publishing separately."
+    },
+    {
+      "pattern": "\\b(?:upload|publish)\\b.*\\b(?:s3|link)\\b.*\\bpublic\\b",
+      "skill": "remotion-delivery-render",
+      "reason": "A public S3 object or public link is unsupported. Local delivery produces files and manifests only; upload=True is refused."
+    },
+    {
+      "pattern": "\\b(?:upload|publish)\\b.*\\bs3\\b",
+      "skill": "remotion-delivery-render",
+      "reason": "S3 upload is unsupported in this local delivery branch. Return the saved artifact and manifest; upload=True is refused."
+    },
+    {
+      "pattern": "\\bqc\\b.*\\b(?:failed|fail)\\b.*\\bupload\\b|\\bupload\\b.*\\b(?:failed|failing)\\s+qc\\b",
+      "skill": "remotion-delivery-render",
+      "reason": "A failed QC gate blocks upload and completed-delivery claims. Return the failed checks and the step to rerun."
+    },
+    {
+      "pattern": "\\bwhat\\s+loudness\\s+should\\b",
+      "skill": "remotion-loudness-qc",
+      "reason": "A loudness target needs a channel or spec. Ask for that target before measuring or normalising to a guessed value."
+    },
+    {
+      "pattern": "\\bapply\\b.*(?:\\.cube\\b|\\blut\\b)",
+      "skill": "remotion-delivery-render",
+      "reason": "LUT application is unavailable because no LUT op is on the installed allow-list. Supply an already approved master or defer to feat/remotion-lut-apply."
+    },
+    {
+      "pattern": "\\bsync\\b.*\\b(?:two|multiple|camera)\\b.*\\b(?:camera angles|by audio)\\b",
+      "skill": "final-assembly",
+      "reason": "Automatic multicam audio sync and speaker switching are unavailable. Supply manual camera offsets and an approved switching plan for final assembly."
+    },
+    {
+      "pattern": "\\brender\\s+on\\s+lambda\\s+now\\b",
+      "skill": "remotion-delivery-render",
+      "reason": "The configured backend is unchanged. Delivery/QC requires the local job host; Lambda finishing is unverified. Reuse the existing backend for supported timeline renders."
+    },
+    {
       "pattern": "\\bresolve\\b.*\\bsmart reframe\\b",
       "skill": "remotion-aspect-ratio-variants",
       "reason": "Resolve is parked by Satya (2026-10-09). Use centre/safe-zone crops or blurred padding with an optional planner-supplied box; no detector runs."
@@ -6026,5 +6242,49 @@
   ],
   "non_dispatch_requests": [
     "\\bremotion\\b.*\\b(?:still free|licen[cs]e|licensing|headcount)\\b|\\b(?:people|team)\\b.*\\bremotion\\b.*\\bfree\\b"
+  ],
+  "editing_workflows": [
+    {
+      "pattern": "\\bsku[ -]variants?\\b.*\\b(?:deliver|delivery|export)\\b|\\b(?:deliver|delivery|export)\\b.*\\bsku[ -]variants?\\b",
+      "steps": [
+        {
+          "capability": "ad_variant_matrix",
+          "skill": "remotion-ad-variant-matrix"
+        },
+        {
+          "capability": "delivery_render",
+          "skill": "remotion-delivery-render"
+        },
+        {
+          "capability": "loudness_qc",
+          "skill": "remotion-loudness-qc"
+        },
+        {
+          "capability": "deliverable_qc",
+          "skill": "remotion-deliverable-qc"
+        }
+      ]
+    },
+    {
+      "pattern": "\\b(?:finished|approved|existing)\\s+ad\\b.*\\b(?:vertical|reframe|reformat)\\b.*\\b(?:deliver|delivery|export)\\b",
+      "steps": [
+        {
+          "capability": "ad_variant_matrix",
+          "skill": "remotion-aspect-ratio-variants"
+        },
+        {
+          "capability": "delivery_render",
+          "skill": "remotion-delivery-render"
+        },
+        {
+          "capability": "loudness_qc",
+          "skill": "remotion-loudness-qc"
+        },
+        {
+          "capability": "deliverable_qc",
+          "skill": "remotion-deliverable-qc"
+        }
+      ]
+    }
   ]
 }

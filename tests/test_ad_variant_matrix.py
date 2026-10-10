@@ -252,7 +252,8 @@ class MatrixContractTests(unittest.TestCase):
         self.assertEqual(len(first["rendered"][0]["review_frames"]), 3)
         from server.studio import collect_asset_sources
         assets = collect_asset_sources(first)
-        self.assertEqual(sum(a["kind"] == "image" for a in assets), 8, "Review frames and sheets must appear in Studio")
+        self.assertEqual(sum(a["kind"] == "image" for a in assets), 20,
+                         "Original sample assets and each output's six QC review images must appear in Studio")
         with self.matrix.authorize("render_batch", plan_hash, "operator:test"):
             batch = self.matrix.render_ad_variants(stage="render_batch", plan_hash=plan_hash, **self.args)
         self.assertEqual(batch["status"], "succeeded", batch)

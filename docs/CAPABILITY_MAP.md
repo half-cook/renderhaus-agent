@@ -337,17 +337,15 @@ Apache-2.0 weights/model metadata, DINOv2 Apache-2.0 code. `training_eligible=fa
 
 ## Skills and routing fixtures
 
-There are 26 packaged skills, 16 provider targets and 115 Gateway tools. No tools or skills were added for the permanent Seedance default decision. Vidu’s archived skill is removed; its real tools remain under named-provider. Draft alias include_tools cannot be copied verbatim into this harness: `metadata.include_tools` must contain real dispatch wrappers, `metadata.routing_tools` records the canonical aliases, and `metadata.gateway_tools` contains only built Gateway names.
+There are 30 packaged skills, 16 provider targets and 117 Gateway tools. No tools or skills were added for the permanent Seedance default decision. Vidu’s archived skill is removed; its real tools remain under named-provider. Draft alias include_tools cannot be copied verbatim into this harness: `metadata.include_tools` must contain real dispatch wrappers, `metadata.routing_tools` records the canonical aliases, and `metadata.gateway_tools` contains only built Gateway names.
 
-The routing fixture has 220 cases: 175 active and 45 dependency skips. RT-091 now requests an explicit 15-second generated output and passes the Seedance contract. RT-008, RT-092, RT-166 and RT-167 use the permanent Seedance defaults; RT-168 covers named-only, preview-blocked Wan editing. A separate skipped unit test retains the unresolved question of whether Seedance extension output includes the source or only continuation. Ambiguous “by N seconds” requests actively test refusal. The 23 archived/confidential rows remain dropped. Detailed changes are in [the default decision trail](seedance-edit-extend-default-decisions.tsv).
+The routing fixture has 220 cases: 215 active and 5 dependency skips. RT-091 now requests an explicit 15-second generated output and passes the Seedance contract. RT-008, RT-092, RT-166 and RT-167 use the permanent Seedance defaults; RT-168 covers named-only, preview-blocked Wan editing. A separate skipped unit test retains the unresolved question of whether Seedance extension output includes the source or only continuation. Ambiguous “by N seconds” requests actively test refusal. The 23 archived/confidential rows remain dropped. Detailed changes are in [the default decision trail](seedance-edit-extend-default-decisions.tsv).
 
 | Skipped dependency/reason | Rows |
 | --- | --- |
 | provider pending: HyperFrames overlays (feat/hyperframes-overlays) | 1 |
 | provider pending: cutaway_record (feat/product-demo-capture) | 3 |
-| provider pending: delivery, loudness and deliverable QC ops/skills (feat/remotion-delivery-qc) | 29 |
-| provider pending: subject-aware aspect layouts and reframe ops (feat/remotion-aspect-ratio-variants) | 10 |
-| semantics unverified: candidate LUT/multicam work is outside this matrix branch (feat/remotion-delivery-qc) | 2 |
+| semantics unverified: exact caption OCR verification (feat/remotion-ocr-verification) | 1 |
 
 The [knowledge-explainer workflow](KNOWLEDGE_EXPLAINER.md) adds silent event-timed graphics
 with two active seed rows. It reuses the existing renderers and SFX tools without changing
@@ -395,3 +393,11 @@ committed, hash-pinned live result above 0.85 on the 420 frozen pairs. No result
 See [Gemini configuration and sources](GEMINI_CONTINUITY_QC.md),
 [benchmark procedure](CONTINUITY_QC_BENCHMARK.md#experimental-gemini-judge-and-eval-gate),
 and [decisions](continuity-qc-vlm-decisions.tsv). Comet E2E remains blocked.
+
+Free local workflow defaults now include `delivery_render`, `deliverable_qc` and
+`loudness_qc` (the latter uses `ffmpeg_tool`). Dedicated Remotion jobs finish and inspect
+staged files using system FFmpeg. They add no model/weights, permit no training, and refuse
+Lambda, uploads, arbitrary commands and unsupported codecs. Named delivery targets remain
+channel placeholders. See [Remotion editing](REMOTION_EDITING.md) and
+[decisions](remotion-delivery-qc-decisions.tsv). Model defaults and explicit-only providers
+remain unchanged; confidential metadata does not change selection.
