@@ -4,6 +4,10 @@ import { useReactFlow } from "@xyflow/react";
 import {
   Archive,
   BookmarkCheck,
+  Captions,
+  Clapperboard,
+  FileText,
+  Layers,
   Clock3,
   RotateCcw,
   Square,
@@ -26,6 +30,7 @@ import remarkGfm from "remark-gfm";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   AGENT_PROMPT_MAX_CHARS,
+  answerAgentCap,
   decideAgentApproval,
   resumeAgentRun,
   stopAgentRun,
@@ -38,6 +43,12 @@ import { useCanvasStore } from "@/lib/canvas/store";
 import type { AgentProgressEvent, AgentToolEvent } from "@/lib/canvas/types";
 import type { StudioAsset } from "@/lib/types";
 import { AssetDownloadLink, AssetMedia } from "./AssetMedia";
+import { ApprovalCard } from "@/components/rh/ApprovalCard";
+import { PlanCard, RunReceipt } from "@/components/rh/RunBilling";
+import { approvalCardModel } from "@/lib/rh/approval-model";
+import { toPlanModel, toRunReceiptModel, toApprovalCardModel } from "@/lib/rh/billing";
+import { useCreditContext } from "@/lib/rh/credit-store";
+import { RH_ADD_CREDIT_EVENT } from "@/lib/rh/events";
 
 type LiveRun = {
   prompt: string;
@@ -180,7 +191,7 @@ function ApprovalCards({
   disabled,
 }: {
   approvals: AgentApprovalRequest[];
-  onDecision: (approval: AgentApprovalRequest, decision: "approve" | "reject") => void;
+  onDecision: (approval: AgentApprovalRequest, decision: "approve" | "reject", capCents?: number) => void;
   busyCallId: string | null;
   active: boolean;
   disabled: boolean;
@@ -188,8 +199,12 @@ function ApprovalCards({
   if (!approvals.length) return null;
   return (
     <div className="agent-approvals" aria-label="Tool approvals">
-      {approvals.map((approval) => (
-        approval.decision || !active ? <details className="agent-approval-record" key={approval.callId}>
+      {approvals.map((approval) => {
+        const model = approvalCardModel(approval);
+        if (model && active && approval.decision !== "reject") {
+          return <PricedApproval key={approval.callId} approval={approval} model={model} busy={disabled || busyCallId !== null} onDecision={onDecision} />;
+        }
+        return approval.decision || !active ? <details className="agent-approval-record" key={approval.callId}>
           <summary>{approval.decision === "approve" ? "Approved" : approval.decision === "reject" ? "Rejected" : "Not run · closed"} · {approval.label}</summary>
           <ApprovalSummary approval={approval}/>
           <div className="agent-approval-details"><pre>{JSON.stringify(approval.arguments, null, 2)}</pre></div>
@@ -220,11 +235,52 @@ function ApprovalCards({
                 Approve once
               </button>
             </footer>
-        </article>
-      ))}
+        </article>;
+      })}
     </div>
   );
 }
+
+/** A step with a server-sent price: the full approval card. Edit reveals the parameters; Approve is never auto-focused. */
+function PricedApproval({ approval, model, busy, onDecision }: {
+  approval: AgentApprovalRequest;
+  model: ReturnType<typeof approvalCardModel> & object;
+  busy: boolean;
+  onDecision: (approval: AgentApprovalRequest, decision: "approve" | "reject", capCents?: number) => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [loweredCap, setLoweredCap] = useState<number | null>(null);
+  const shown = loweredCap == null ? model : toApprovalCardModel({ ...model, balanceCents: undefined, balanceAfterCapCents: undefined }, { ...approval.billing, cap_cents: loweredCap, balance_cents: undefined });
+  return (
+    <div className="rh-appr-wrap">
+      <ApprovalCard
+        model={shown}
+        approveEnabled={approval.billing?.approve_enabled !== false || loweredCap != null}
+        busy={busy}
+        actions={{
+          onApprove: () => onDecision(approval, "approve", loweredCap ?? undefined),
+          onReject: () => onDecision(approval, "reject"),
+          onEdit: () => setEditing((value) => !value),
+          onAddCredit: () => window.dispatchEvent(new CustomEvent(RH_ADD_CREDIT_EVENT)),
+          onLowerCap: (cap) => setLoweredCap(cap),
+        }}
+      />
+      {editing ? <details className="agent-approval-details rh-appr-params" open><summary>Parameters</summary><pre>{JSON.stringify(approval.arguments, null, 2)}</pre></details> : null}
+    </div>
+  );
+}
+
+/** Starter prompts. Chips say what to expect, never a price: prices only ever come from the server's approval card. */
+const AGENT_STARTERS = [
+  { id: "film", Icon: Clapperboard, title: "Product film from one photo", detail: "Upload a still, get a 10 s film with voiceover.", chip: "Shows estimate", free: false,
+    prompt: "From the product photo in this project, plan a 10 second product film with a warm voiceover. Show me the plan and ask before every paid step." },
+  { id: "variants", Icon: Layers, title: "Ad variants in 9:16, 1:1, 4:5", detail: "One master cut, every placement.", chip: "Shows estimate", free: false,
+    prompt: "Take the master cut and propose ad variants in 9:16, 1:1 and 4:5. Show the plan and ask before every paid step." },
+  { id: "captions", Icon: Captions, title: "Captions and a punchier hook", detail: "Edit what you already have. Free to preview.", chip: "Free to preview", free: true,
+    prompt: "Add captions to the existing cut and suggest a punchier opening hook. Preview the edit before anything paid runs." },
+  { id: "explainer", Icon: FileText, title: "Explainer from a document", detail: "Drop a PDF; I'll storyboard and ask first.", chip: "Shows estimate", free: false,
+    prompt: "I'll upload a document. Storyboard a short explainer from it and ask me before any paid step." },
+] as const;
 
 function ApprovalSummary({approval}: {approval: AgentApprovalRequest}) {
   const args = approval.arguments;
@@ -289,11 +345,46 @@ function ArtifactCard({
   );
 }
 
+/** Run-level billing: the plan, the paused-at-cap card, the whole-run receipt. All figures arrive as cents from the server. */
+function RunBillingBlocks({ execution, disabled, onCap }: {
+  execution: StudioExecution;
+  disabled: boolean;
+  onCap: (execution: StudioExecution, action: "raise" | "stop", capCents?: number) => void;
+}) {
+  const billing = execution.billing;
+  if (!billing) return null;
+  const plan = toPlanModel(billing.plan);
+  const receipt = toRunReceiptModel(billing);
+  const paused = billing.type === "paused_cap" || billing.status === "paused_cap";
+  return (
+    <>
+      {plan && !receipt ? <PlanCard plan={plan} /> : null}
+      {paused ? (
+        <ApprovalCard
+          model={toApprovalCardModel({
+            id: `${execution.jobId}:paused`,
+            status: "paused_cap",
+            title: typeof billing.title === "string" ? billing.title : "Shot paused at its cap",
+            tier: typeof billing.tier === "string" ? billing.tier : undefined,
+            walletTotalCents: typeof billing.wallet_total_cents === "number" ? billing.wallet_total_cents : undefined,
+            stepIndex: typeof billing.step_index === "number" ? billing.step_index : undefined,
+            stepCount: typeof billing.step_count === "number" ? billing.step_count : undefined,
+          }, billing)}
+          busy={disabled}
+          actions={{ onRaise: (cap) => onCap(execution, "raise", cap), onStop: () => onCap(execution, "stop") }}
+        />
+      ) : null}
+      {receipt ? <RunReceipt receipt={receipt} onOpen={() => window.dispatchEvent(new CustomEvent("rh:open-film"))} onTimeline={() => useCanvasStore.getState().setWorkspaceView("timeline")} onExport={() => window.dispatchEvent(new CustomEvent("rh:open-export"))} /> : null}
+    </>
+  );
+}
+
 function ExecutionTurn({
   execution,
   placedVersionIds,
   onPlace,
   onApproval,
+  onCap,
   busyApproval,
   onResume,
   canResume,
@@ -307,7 +398,9 @@ function ExecutionTurn({
     execution: StudioExecution,
     approval: AgentApprovalRequest,
     decision: "approve" | "reject",
+    capCents?: number,
   ) => void;
+  onCap: (execution: StudioExecution, action: "raise" | "stop", capCents?: number) => void;
   busyApproval: string | null;
   onResume: () => void;
   canResume: boolean;
@@ -335,8 +428,9 @@ function ExecutionTurn({
           active={execution.status === "awaiting_approval"}
           busyCallId={busyApproval}
           disabled={actionsDisabled}
-          onDecision={(approval, decision) => onApproval(execution, approval, decision)}
+          onDecision={(approval, decision, capCents) => onApproval(execution, approval, decision, capCents)}
         />
+        <RunBillingBlocks execution={execution} disabled={actionsDisabled} onCap={onCap} />
         {execution.title ? <h3 className="agent-result-title">{execution.title}</h3> : null}
         {execution.summary ? <p className="agent-response-summary">{execution.summary}</p> : null}
         {state === "failed" ? (
@@ -461,6 +555,16 @@ export function AgentDock({ navigationBusy: externalBusy, onBusyChange, suggesti
       .sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0)),
     [executions, conversationId],
   );
+  // The credit chip needs the hard cap of the step waiting for approval, and any credit held for a running step.
+  const setPendingCap = useCreditContext((state) => state.setPendingCap);
+  const setHeld = useCreditContext((state) => state.setHeld);
+  useEffect(() => {
+    const waiting = conversationExecutions.flatMap((execution) => execution.status === "awaiting_approval" ? execution.approvals.filter((approval) => !approval.decision) : []);
+    const cap = waiting.map((approval) => approval.billing?.cap_cents).find((value): value is number => typeof value === "number");
+    setPendingCap(cap ?? null);
+    const held = conversationExecutions.map((execution) => execution.billing?.held_cents).find((value): value is number => typeof value === "number");
+    setHeld(held ?? 0);
+  }, [conversationExecutions, setHeld, setPendingCap]);
   const activeConversation = conversations.find((item) => item.id === conversationId);
   const activeExecution = conversationExecutions.find(
     (execution) => normalizedStatus(execution.status) === "running",
@@ -635,15 +739,30 @@ export function AgentDock({ navigationBusy: externalBusy, onBusyChange, suggesti
     }
   };
 
+  const onCap = async (execution: StudioExecution, action: "raise" | "stop", capCents?: number) => {
+    if (externalBusy || navigationBusy) return;
+    setBusyApproval(execution.jobId);
+    try {
+      const progress = await answerAgentCap(execution.jobId, action, capCents);
+      setAgentMessage(progress.message);
+      await refreshExecutions();
+    } catch (error) {
+      setAgentMessage(error instanceof Error ? error.message : "The cap could not be changed. Nothing more has been charged.");
+    } finally {
+      setBusyApproval(null);
+    }
+  };
+
   const onApproval = async (
     execution: StudioExecution,
     approval: AgentApprovalRequest,
     decision: "approve" | "reject",
+    capCents?: number,
   ) => {
     if (externalBusy || navigationBusy) return;
     setBusyApproval(approval.callId);
     try {
-      const progress = await decideAgentApproval(execution.jobId, approval.callId, decision);
+      const progress = await decideAgentApproval(execution.jobId, approval.callId, decision, capCents);
       setAgentMessage(progress.message);
       await refreshExecutions();
     } catch (error) {
@@ -774,9 +893,18 @@ export function AgentDock({ navigationBusy: externalBusy, onBusyChange, suggesti
       }}>
         {conversationExecutions.length === 0 && !liveRun ? (
           <div className="agent-empty">
-            <Sparkles size={18} />
-            <h3>What are we making?</h3>
-            <p>From the first idea to the final cut.<br />Plan, create and refine with your project agent.</p>
+            <p className="rh-eyebrow">Project · {projectName}</p>
+            <h3>What are we <em>making</em>?</h3>
+            <p>Describe the video, or drop in a still. I&apos;ll plan the shots and show you the price of every paid step before it runs.</p>
+            <div className="rh-starters" role="list">
+              {AGENT_STARTERS.map(({ id, Icon, title, detail, chip, prompt, free }) => (
+                <button key={id} type="button" role="listitem" className="rh-starter" onClick={() => { setValue(prompt); inputRef.current?.focus(); }}>
+                  <span className="rh-starter-top"><Icon size={16} aria-hidden="true" /><span className={`rh-chip rh-chip-mono ${free ? "rh-chip-ok" : "rh-chip-money"}`}>{chip}</span></span>
+                  <b>{title}</b>
+                  <span>{detail}</span>
+                </button>
+              ))}
+            </div>
             {!conversationId ? <button type="button" className="agent-conversation-action" disabled={externalBusy || navigationBusy} onClick={() => void changeTask(createAgentConversation)}>Start a task</button> : null}
           </div>
         ) : null}
@@ -787,6 +915,7 @@ export function AgentDock({ navigationBusy: externalBusy, onBusyChange, suggesti
             placedVersionIds={placedVersionIds}
             onPlace={onPlace}
             onApproval={onApproval}
+            onCap={onCap}
             busyApproval={busyApproval}
             actionsDisabled={externalBusy || navigationBusy}
             canResume={!runInFlight && execution.jobId === conversationExecutions.at(-1)?.jobId}

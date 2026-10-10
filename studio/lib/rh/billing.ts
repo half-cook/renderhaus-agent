@@ -153,3 +153,95 @@ export function creditState(model: ApprovalCardModel, approveEnabled?: boolean):
 export function a11yApproveName(model: ApprovalCardModel, format: (cents: number) => string): string {
   return `Approve, estimated ${format(model.estimateCents)}, hard cap ${format(model.capCents)}`;
 }
+
+// ---- Run-level payloads (plan, spend ledger, receipt) ---------------------------------------------------
+export type PlanStepState = "done" | "current" | "todo";
+export type PlanStepModel = { label: string; priceCents: number | null; free: boolean; estimate: boolean; state: PlanStepState };
+export type PlanModel = { steps: PlanStepModel[]; estimateCents: number; capCents: number };
+
+export type SpendLineModel = { label: string; amountCents: number; tone: "charged" | "awaiting" | "estimate" };
+export type SpendModel = { lines: SpendLineModel[]; totalLabel: string; totalCents: number };
+
+export type RunReceiptModel = {
+  title: string;
+  finishedLabel: string;
+  lines: BillingLine[];
+  actualCents: number;
+  estimateCents: number;
+  capCents: number;
+  underEstimate: boolean;
+  balanceBeforeCents: number;
+  balanceAfterCents: number;
+  paidSteps: number;
+};
+
+function text(value: unknown): string | undefined {
+  return typeof value === "string" && value.trim() ? value.trim() : undefined;
+}
+
+/** `plan` = { steps: [{ label, price_cents | null, basis, state }], estimate_cents, cap_cents } */
+export function toPlanModel(value: unknown): PlanModel | null {
+  const plan = record(value);
+  if (!Array.isArray(plan.steps) || !isCents(plan.estimate_cents)) return null;
+  const steps = plan.steps.flatMap((raw): PlanStepModel[] => {
+    const step = record(raw);
+    const label = safeCopy(step.label, "");
+    if (!label) return [];
+    const state: PlanStepState = step.state === "done" || step.state === "current" ? step.state : "todo";
+    return [{
+      label,
+      priceCents: isCents(step.price_cents) ? step.price_cents : null,
+      free: step.price_cents === 0 || step.free === true,
+      estimate: step.basis === "estimate",
+      state,
+    }];
+  });
+  return { steps, estimateCents: plan.estimate_cents, capCents: isCents(plan.cap_cents) ? plan.cap_cents : plan.estimate_cents };
+}
+
+/** `spend` = { lines: [{ label, amount_cents, tone }], total_label, total_cents } -- the server sends the total. */
+export function toSpendModel(value: unknown): SpendModel | null {
+  const spend = record(value);
+  if (!Array.isArray(spend.lines) || !isCents(spend.total_cents)) return null;
+  const lines = spend.lines.flatMap((raw): SpendLineModel[] => {
+    const line = record(raw);
+    const label = safeCopy(line.label, "");
+    if (!label || !isCents(line.amount_cents)) return [];
+    return [{ label, amountCents: line.amount_cents, tone: line.tone === "awaiting" ? "awaiting" : line.tone === "estimate" ? "estimate" : "charged" }];
+  });
+  return { lines, totalLabel: safeCopy(spend.total_label, "Total"), totalCents: spend.total_cents };
+}
+
+/** Whole-run receipt: type "receipt", scope "run". */
+export function toRunReceiptModel(value: unknown): RunReceiptModel | null {
+  const receipt = record(value);
+  if (receipt.type !== "receipt" || !isCents(receipt.actual_cents) || !isCents(receipt.estimate_cents)) return null;
+  const lines = parseLines(receipt.lines);
+  return {
+    title: safeCopy(receipt.title, "Run receipt"),
+    finishedLabel: safeCopy(receipt.finished_label, ""),
+    lines,
+    actualCents: receipt.actual_cents,
+    estimateCents: receipt.estimate_cents,
+    capCents: isCents(receipt.cap_cents) ? receipt.cap_cents : receipt.estimate_cents,
+    underEstimate: receipt.under_estimate === true,
+    balanceBeforeCents: isCents(receipt.balance_before_cents) ? receipt.balance_before_cents : 0,
+    balanceAfterCents: isCents(receipt.balance_after_cents) ? receipt.balance_after_cents : 0,
+    paidSteps: typeof receipt.paid_steps === "number" ? receipt.paid_steps : lines.filter((line) => line.kind === "media").length,
+  };
+}
+
+export { text as optionalText };
+
+export type NodeEstimate = { estimateCents: number; capCents: number; lines: BillingLine[] };
+
+/** Validates a node's server-sent estimate payload. Null when the server sent no usable price. */
+export function toNodeEstimate(value: unknown): NodeEstimate | null {
+  const payload = record(value);
+  if (!isCents(payload.estimate_cents)) return null;
+  return {
+    estimateCents: payload.estimate_cents,
+    capCents: isCents(payload.cap_cents) ? payload.cap_cents : payload.estimate_cents,
+    lines: parseLines(payload.lines),
+  };
+}

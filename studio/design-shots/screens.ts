@@ -70,6 +70,20 @@ const wave = (remaining: number, status: "open" | "full" = "open") => ({
   "/api/beta/wave": { capacity: 50, claimed: 50 - remaining, remaining, held: 0, status, wave: 1, hold_seconds: 900, updated_at: 1791848520 },
 });
 
+import { MUG, MUG_TASK, lowAccount, lowRun, midRun, mugCanvas, mugProjects, mugTasks, mugTools, pausedRun, receiptRun } from "./rh-fixtures";
+
+const mug = (extra: Record<string, unknown> = {}) => ({
+  "/api/studio/projects": mugProjects,
+  [`/api/studio/projects/${MUG}/canvas`]: mugCanvas,
+  [`/api/studio/projects/${MUG}/agent-conversations`]: mugTasks,
+  "/api/studio/tools": mugTools,
+  ...extra,
+});
+const agentUrl = `/canvas?project=${MUG}&workspace=agent&task=${MUG_TASK}`;
+const account = (balance: number, spent: number) => ({
+  "/api/studio/account": { balance_cents: balance, display_name: "Satya", beta_credit: { granted_cents: 1000, remaining_cents: balance, spent_cents: spent }, recent_ledger: [], subscription: null },
+});
+
 const homeProjects = {
   "/api/studio/projects": { items: [
     { id: "demo-matte-mug", name: "Matte travel mug", created_at: 1791848000, updated_at: 1791848400 },
@@ -104,4 +118,12 @@ SCREENS.push(
     await p.getByRole("alert").filter({ hasText: "didn’t match" }).waitFor();
   } },
   { id: "m02-home", url: "/home", ready: "[data-shot='home-ready'] .rh-pgrid", fixtures: homeProjects },
+  { id: "m03-agent-empty", url: agentUrl, ready: ".rh-starters", fixtures: mug({ "/api/studio/agent": { items: [] }, ...account(1000, 0) }) },
+  { id: "m04-agent-run", url: agentUrl, ready: "[data-shot='approval-ready']", fixtures: mug({ "/api/studio/agent": midRun, ...account(974, 26) }) },
+  { id: "m15-run-receipt", url: agentUrl, ready: ".rh-receipt", fixtures: mug({ "/api/studio/agent": receiptRun, ...account(771, 229) }) },
+  { id: "m16-cap-reached", url: agentUrl, ready: ".rh-appr[data-state='paused_cap']", fixtures: mug({ "/api/studio/agent": pausedRun, ...account(824, 176) }) },
+  { id: "m17-low-credit", url: agentUrl, ready: ".rh-appr[data-credit='lower_cap']", fixtures: mug({ "/api/studio/agent": lowRun, "/api/studio/account": lowAccount }) },
+  { id: "m06-canvas-timeline", url: `/canvas?project=${MUG}&workspace=canvas&dock=timeline`, ready: ".rh-tl-clip", fixtures: mug({ "/api/studio/agent": { items: [] }, ...account(974, 26) }),
+    prepare: async (p) => { await p.getByText("Shot 1 · push-in").first().click(); await p.getByRole("option", { name: /Shot 1/ }).click(); } },
+  { id: "m07-timeline", url: `/canvas?project=${MUG}&workspace=timeline`, ready: "[data-shot='timeline-ready'] .rh-tl-clip", fixtures: mug({ "/api/studio/agent": { items: [] }, ...account(974, 26) }) },
 );

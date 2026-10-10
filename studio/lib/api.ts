@@ -348,6 +348,8 @@ export type StudioExecution = {
   updatedAt?: number;
   autonomous: boolean;
   approvals: AgentApprovalRequest[];
+  /** Run-level billing payload (plan, spend, receipt, paused-at-cap). Cents only; adapted in lib/rh/billing.ts. */
+  billing?: Record<string, unknown>;
 };
 
 export type AgentApprovalRequest = {
@@ -356,9 +358,15 @@ export type AgentApprovalRequest = {
   label: string;
   provider?: string;
   arguments: Record<string, unknown>;
+  /** Price payload for this step: estimate_cents, cap_cents, lines[], balance_cents, ... */
+  billing?: Record<string, unknown>;
   decision?: "approve" | "reject";
   message?: string;
 };
+
+function billingRecord(value: unknown): Record<string, unknown> | undefined {
+  return value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : undefined;
+}
 
 function agentApprovals(value: unknown): AgentApprovalRequest[] {
   if (!Array.isArray(value)) return [];
@@ -375,6 +383,7 @@ function agentApprovals(value: unknown): AgentApprovalRequest[] {
         item.arguments && typeof item.arguments === "object" && !Array.isArray(item.arguments)
           ? (item.arguments as Record<string, unknown>)
           : {},
+      billing: billingRecord(item.billing),
       decision:
         item.decision === "approve" || item.decision === "reject" ? item.decision : undefined,
       message: typeof item.message === "string" ? item.message : undefined,
@@ -492,6 +501,7 @@ export async function fetchStudioExecutions(
       updatedAt: typeof item.updated_at === "number" ? item.updated_at : undefined,
       autonomous: item.autonomous === true,
       approvals: agentApprovals(item.approvals),
+      billing: billingRecord(item.billing),
     };
   });
 }
@@ -595,6 +605,7 @@ type AgentJobPayload = {
   updated_at?: number;
   autonomous?: boolean;
   approvals?: unknown[];
+  billing?: unknown;
 };
 
 export type AgentProgress = {
@@ -606,6 +617,7 @@ export type AgentProgress = {
   result?: AgentResultData;
   autonomous: boolean;
   approvals: AgentApprovalRequest[];
+  billing?: Record<string, unknown>;
 };
 
 export const AGENT_PROMPT_MAX_CHARS = 64_000;
@@ -672,6 +684,7 @@ function agentProgress(payload: AgentJobPayload): AgentProgress {
     ...(result ? { result } : {}),
     autonomous: payload.autonomous === true,
     approvals: agentApprovals(payload.approvals),
+    billing: billingRecord(payload.billing),
   };
 }
 
@@ -835,18 +848,34 @@ export async function decideAgentApproval(
   jobId: string,
   callId: string,
   decision: "approve" | "reject",
+  capCents?: number,
 ): Promise<AgentProgress> {
   const response = await studioFetch(
     `/api/studio/agent/${encodeURIComponent(jobId)}/approvals/${encodeURIComponent(callId)}`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ decision }),
+      body: JSON.stringify(capCents === undefined ? { decision } : { decision, cap_cents: capCents }),
     },
   );
   const payload = (await response.json().catch(() => ({}))) as AgentJobPayload;
   if (!response.ok) {
     throw new Error(payload.detail || payload.message || `approval ${response.status}`);
+  }
+  return agentProgress(payload);
+}
+
+/** Answer a "paused at cap" run: raise the cap to a new total (the run continues) or stop here. */
+export async function answerAgentCap(jobId: string, action: "raise" | "stop", capCents?: number): Promise<AgentProgress> {
+  const response = await studioFetch(`/api/studio/agent/${encodeURIComponent(jobId)}/cap`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(action === "raise" ? { action, cap_cents: capCents } : { action }),
+  });
+  const payload = (await response.json().catch(() => ({}))) as AgentJobPayload;
+  if (!response.ok) {
+    const detail = payload.detail as unknown;
+    throw new Error(typeof detail === "string" ? detail : "The cap could not be changed. Nothing more has been charged.");
   }
   return agentProgress(payload);
 }

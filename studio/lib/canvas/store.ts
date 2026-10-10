@@ -81,6 +81,16 @@ type CanvasStore = {
   inspectorOpen: boolean;
   asciiPanelOpen: boolean;
   agentOpen: boolean;
+  /** Third segment of the header capsule: the full timeline view. Mutually exclusive with agentOpen. */
+  timelineOpen: boolean;
+  /** The 250px timeline dock under the canvas. */
+  timelineDockOpen: boolean;
+  setWorkspaceView: (view: "canvas" | "agent" | "timeline") => void;
+  setTimelineDockOpen: (open: boolean) => void;
+  /** Timeline v1 edits: trim and order only. Each is one undoable step. */
+  trimSequenceClip: (id: string, trimIn: number, trimOut: number) => void;
+  reorderSequence: (ids: string[]) => void;
+  removeFromSequence: (id: string) => void;
   advancedOpen: boolean;
   connectionHint: string | null;
   agentMessage: string | null;
@@ -395,6 +405,8 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
   inspectorOpen: false,
   asciiPanelOpen: false,
   agentOpen: false,
+  timelineOpen: false,
+  timelineDockOpen: false,
   advancedOpen: false,
   connectionHint: null,
   agentMessage: null,
@@ -697,6 +709,40 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
         : { inspectorOpen: false },
     ),
   setAsciiPanelOpen: (open) => set({ asciiPanelOpen: open }),
+  setWorkspaceView: (view) => {
+    if (view === "agent") {
+      get().setAgentOpen(true);
+      set({ timelineOpen: false });
+      return;
+    }
+    get().setAgentOpen(false);
+    set((state) => ({ timelineOpen: view === "timeline", inspectorOpen: view === "canvas" && state.selectedNodeIds.length === 1 }));
+  },
+  setTimelineDockOpen: (open) => set({ timelineDockOpen: open }),
+  trimSequenceClip: (id, trimIn, trimOut) => {
+    get().pushHistory();
+    set({
+      nodes: get().nodes.map((node) => node.id === id
+        ? { ...node, data: { ...node.data, config: { ...node.data.config, trim_in_seconds: trimIn, trim_out_seconds: trimOut } } }
+        : node),
+    });
+    get().persist();
+  },
+  reorderSequence: (ids) => {
+    get().pushHistory();
+    const order = new Map(ids.map((id, index) => [id, index]));
+    set({
+      nodes: get().nodes.map((node) => order.has(node.id)
+        ? { ...node, data: { ...node.data, approved: true, storyOrder: order.get(node.id) } }
+        : node),
+    });
+    get().persist();
+  },
+  removeFromSequence: (id) => {
+    get().pushHistory();
+    set({ nodes: get().nodes.map((node) => node.id === id ? { ...node, data: { ...node.data, approved: false } } : node) });
+    get().persist();
+  },
   setAgentOpen: (open) =>
     set((state) =>
       open

@@ -8,6 +8,9 @@ import { variantPosition } from "@/lib/canvas/story";
 import { schemaFor } from "@/lib/canvas/types";
 import { selectedNode, useCanvasStore } from "@/lib/canvas/store";
 import { toolById } from "@/lib/canvas/tool-registry";
+import { CapRow, Ledger, LedgerRow, LedgerTotal, lineLabel } from "@/components/rh/Ledger";
+import { toNodeEstimate } from "@/lib/rh/billing";
+import { formatCents } from "@/lib/rh/money";
 
 export function NodeInspector() {
   const nodes = useCanvasStore((state) => state.nodes);
@@ -62,6 +65,7 @@ export function NodeInspector() {
   const busy = node.data.status === "running" || node.data.status === "queued";
   const generateDisabled = busy || blockers.length > 0;
   const variants = variantPosition(node.data);
+  const estimate = toNodeEstimate(node.data.estimate);
 
   return (
     <aside className="inspector">
@@ -125,6 +129,13 @@ export function NodeInspector() {
           ) : null}
         </>
       ) : null}
+      {node.data.toolId && estimate ? (
+        <Ledger className="rh-inspector-ledger">
+          {estimate.lines.map((line) => <LedgerRow key={`${line.kind}:${line.label}`} label={lineLabel(line, "estimate")} amount={formatCents(line.priceCents)} tone={line.kind === "orchestration" ? "muted" : undefined} />)}
+          <LedgerTotal label="Estimated total" amountCents={estimate.estimateCents} />
+          <CapRow capCents={estimate.capCents} />
+        </Ledger>
+      ) : null}
       {node.data.toolId ? (
         <>
           <button
@@ -136,8 +147,9 @@ export function NodeInspector() {
               void runNode(node.id);
             }}
           >
-            {node.data.output ? "Regenerate" : "Generate"}
+            {node.data.output ? "Regenerate" : "Generate"}{estimate ? ` · est. ${formatCents(estimate.estimateCents)}` : ""}
           </button>
+          <p className="rh-inspector-hint">You&apos;ll see the estimate and hard cap before it runs.</p>
           {blockers.length > 0 ? (
             <p className="generate-hint" role="status">
               {blockers.join(" ")}

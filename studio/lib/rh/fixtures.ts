@@ -3,7 +3,7 @@
  * cap_cents, raise_options_cents, balance_*_cents). All figures are example data used by the
  * landing page's example card, the design-shot kit and tests. Real runs never read this file.
  */
-import { toApprovalCardModel, type ApprovalCardModel, type RunPayload } from "./billing";
+import { toApprovalCardModel, type ApprovalCardModel, type RunPayload, type RunReceiptModel } from "./billing";
 
 const base = {
   id: "fixture-shot-1",
@@ -74,19 +74,6 @@ export const lowCreditCard = (): ApprovalCardModel => ({
     ...FIXTURE_APPROVAL_PAYLOAD, balance_cents: 120, lower_cap_option_cents: 120,
   }),
 });
-
-export type RunReceiptModel = {
-  title: string;
-  finishedLabel: string;
-  lines: ApprovalCardModel["lines"];
-  actualCents: number;
-  estimateCents: number;
-  capCents: number;
-  underEstimate: boolean;
-  balanceBeforeCents: number;
-  balanceAfterCents: number;
-  paidSteps: number;
-};
 
 export const FIXTURE_RECEIPT: RunReceiptModel = {
   title: "10s product film",

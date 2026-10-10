@@ -44,6 +44,8 @@ export async function wire(page: Page, screen?: Screen) {
     }
     if (route.request().method() !== "GET" && pathname !== "/api/studio/assets/demo-artifact-v1/playback") return route.abort("blockedbyclient");
     if (Object.hasOwn(overrides, pathname)) return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(overrides[pathname]) });
+    const fx = /^\/api\/studio\/assets\/fx-([a-z0-9-]+)\/playback$/.exec(pathname);
+    if (fx) return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ url: `/beta/${fx[1]}.jpg` }) });
     if (pathname === "/api/studio/account") return route.fulfill({ status: 200, contentType: "application/json", body: ACCOUNT });
     if (Object.hasOwn(DATA, pathname)) return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(DATA[pathname]) });
     if (pathname === "/api/studio/design-shot-artifact.svg") return route.fulfill({ status: 200, contentType: "image/svg+xml", body: readFileSync(path.join(HERE, "fixtures/artifact.svg"), "utf8") });
@@ -77,7 +79,7 @@ export async function settle(page: Page, screen: Screen) {
   if (screen.id === "03-home-projects-balance") await page.getByRole("button", { name: /Demo Studio/ }).waitFor();
   if (screen.prepare) await screen.prepare(page);
   if (screen.id === "09-agent-review-timeline-diff") await page.getByLabel("Timeline edit comparison").waitFor();
-  if (screen.url.includes("workspace=agent")) {
+  if (screen.url.includes("workspace=agent") && !screen.id.startsWith("m")) {
     await page.locator(".agent-approval").waitFor();
     const image = page.locator(".agent-artifact img").first();
     await image.waitFor();
