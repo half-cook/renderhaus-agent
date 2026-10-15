@@ -500,6 +500,9 @@ class PayloadTests(Fixture, unittest.TestCase):
         self.assertEqual(adopted["run_id"], "job-2")
         self.assertIsNone(self.repo.get_run_hold("job-1"))
         self.assertEqual(self.repo.available_credit(USER), 875)
+        # A new message continues under the same cap instead of inheriting the stale pause.
+        self.assertEqual(adopted["status"], "running")
+        self.assertIsNone(run_billing.stored_pause(self.repo, "job-2"))
 
     def test_autonomous_run_holds_a_media_allowance_too(self):
         hold = run_billing.start_run(self.repo, USER, "auto-1", None, autonomous_media_cents=rb.autonomous_media_cents())
