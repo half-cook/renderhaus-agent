@@ -1,0 +1,57 @@
+# Renderhaus web app (FastAPI :8000 + Next.js Studio :5174) for the t4g (Graviton) beta server.
+# Mirrors share/renderhaus-deploy/{userdata,build,install-ffmpeg}.sh: Ubuntu 24.04, Python 3.11 via uv,
+# Node 22, FFmpeg n7.1.1 built from source (6.1 and 8.x both break tests; see install-ffmpeg.sh).
+# Build natively on arm64 (GitHub ubuntu-24.04-arm). NEXT_PUBLIC_* are inlined at build time, so pass them as build args.
+ARG UBUNTU=ubuntu:24.04
+
+FROM ${UBUNTU} AS ffmpeg
+ARG DEBIAN_FRONTEND=noninteractive
+RUN apt-get update && apt-get install -y -q --no-install-recommends build-essential git ca-certificates nasm pkg-config \
+    libx264-dev libx265-dev libvpx-dev libopus-dev libmp3lame-dev libvorbis-dev libass-dev libfreetype-dev libfontconfig-dev \
+    libfribidi-dev libharfbuzz-dev libwebp-dev libdav1d-dev libzimg-dev libsoxr-dev libssl-dev && rm -rf /var/lib/apt/lists/*
+ENV V=/usr/local/lib/ffmpeg-7.1
+RUN git clone -q --depth 1 --branch n7.1.1 https://git.ffmpeg.org/ffmpeg.git /tmp/ffsrc && cd /tmp/ffsrc \
+ && ./configure --prefix=$V --enable-gpl --enable-version3 --enable-libx264 --enable-libx265 --enable-libvpx --enable-libopus \
+    --enable-libmp3lame --enable-libvorbis --enable-libass --enable-libfreetype --enable-libfontconfig --enable-libfribidi \
+    --enable-libharfbuzz --enable-libwebp --enable-libdav1d --enable-libzimg --enable-libsoxr --enable-openssl \
+    --disable-doc --disable-debug --extra-ldflags="-Wl,-rpath,$V/lib" >/dev/null \
+ && make -j"$(nproc)" >/dev/null && make install >/dev/null && rm -rf /tmp/ffsrc
+
+FROM ${UBUNTU} AS base
+ARG DEBIAN_FRONTEND=noninteractive
+RUN apt-get update && apt-get install -y -q --no-install-recommends ca-certificates curl xz-utils git bubblewrap sqlite3 jq \
+    libx264-164 libx265-199 libvpx9 libopus0 libmp3lame0 libvorbis0a libvorbisenc2 libass9 libfreetype6 libfontconfig1 \
+    libfribidi0 libharfbuzz0b libwebp7 libwebpmux3 libdav1d7 libzimg2 libsoxr0 libssl3t64 fonts-dejavu-core \
+ && rm -rf /var/lib/apt/lists/*
+RUN NV=$(curl -fsSL https://nodejs.org/dist/latest-v22.x/SHASUMS256.txt | awk '/linux-arm64.tar.xz/{print $2}' | head -1) \
+ && curl -fsSL "https://nodejs.org/dist/latest-v22.x/$NV" | tar -xJ -C /usr/local --strip-components=1
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /usr/local/bin/
+ENV UV_PYTHON=3.11 UV_PYTHON_INSTALL_DIR=/opt/uv-python UV_LINK_MODE=copy NEXT_TELEMETRY_DISABLED=1
+RUN uv python install 3.11
+COPY --from=ffmpeg /usr/local/lib/ffmpeg-7.1 /usr/local/lib/ffmpeg-7.1
+# Same placement as install-ffmpeg.sh: under /usr so the bubblewrap sandbox (binds /usr) sees it.
+RUN ln -sfn /usr/local/lib/ffmpeg-7.1/bin/ffmpeg /usr/bin/ffmpeg && ln -sfn /usr/local/lib/ffmpeg-7.1/bin/ffprobe /usr/bin/ffprobe \
+ && ffmpeg -hide_banner -filters | grep -q drawtext
+RUN useradd --create-home --uid 10001 renderhaus
+WORKDIR /srv/renderhaus/current
+
+FROM base AS app
+# Dependency layers first so code-only pushes reuse them from the gha cache.
+COPY --chown=renderhaus pyproject.toml uv.lock README.md ./
+RUN uv sync --frozen --no-install-project && uv pip install -q --python .venv/bin/python pip
+COPY --chown=renderhaus studio/package.json studio/package-lock.json studio/
+RUN cd studio && npm ci --no-audit --no-fund
+COPY --chown=renderhaus . .
+RUN uv sync --frozen
+ARG NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=""
+ARG NEXT_PUBLIC_RH_PAUSE_CARDS=""
+ARG NEXT_PUBLIC_TOPUPS_ENABLED=""
+RUN cd studio && npm run build
+ARG GIT_SHA=unknown
+ENV RENDERHAUS_GIT_SHA=${GIT_SHA} PYTHONUNBUFFERED=1 PATH=/srv/renderhaus/current/.venv/bin:/usr/local/bin:/usr/bin:/bin \
+    RENDERHAUS_STUDIO_DATABASE=/srv/renderhaus/data/studio.sqlite3 RENDERHAUS_MEDIA_DIR=/srv/renderhaus/data/media
+RUN chown -R renderhaus:renderhaus /srv/renderhaus
+USER renderhaus
+EXPOSE 8000 5174
+# Default: API. Studio container overrides: --workdir /srv/renderhaus/current/studio ... npx next start --port 5174 --hostname ::
+CMD ["uvicorn", "server.app:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1"]
