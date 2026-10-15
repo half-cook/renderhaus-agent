@@ -122,7 +122,7 @@ export function LaunchReviewV4({ screen }: { screen: string }) {
     return (
       <StudioFrame shot={screen} balance={over ? "$2.40" : "$10.00"} stageTitle="Current take" proposed chat={<>
         <p className="rh-v4-agent">Here’s the plan.</p>
-        <ApprovalCard focusOnMount={false} approveEnabled={!over} model={{ ...APPROVAL, lines, estimateCents: estimate, capCents: 450, upTo: true, balanceCents: over ? 240 : 1000, lowerCapOptionCents: null }} />
+        <ApprovalCard focusOnMount={false} approveEnabled={!over} model={{ ...APPROVAL, lines, estimateCents: estimate, capCents: estimate, upTo: true, balanceCents: over ? 240 : 1000, lowerCapOptionCents: over ? 240 : null }} />
       </>} />
     );
   }

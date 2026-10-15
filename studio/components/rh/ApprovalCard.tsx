@@ -68,7 +68,14 @@ function Notice({ tone, title, children }: { tone: "ember" | "danger"; title: st
  * It renders integer cents it is given. It never computes, reconciles or invents a price, and it never
  * shows a fee line or a vendor name: lines are already fee-inclusive, work-described strings.
  */
-export function ApprovalCard({ model, approveEnabled, busy = false, actions = {}, className = "", focusOnMount = true }: {
+/** An up-to step has one number: its hold. Total, cap, warning and lower-cap option all use it. */
+export function oneUpToAmount(model: ApprovalCardModel): ApprovalCardModel {
+  if (!model.upTo) return model;
+  const amount = Math.max(model.capCents, model.estimateCents);
+  return { ...model, capCents: amount, estimateCents: amount };
+}
+
+export function ApprovalCard({ model: input, approveEnabled, busy = false, actions = {}, className = "", focusOnMount = true }: {
   model: ApprovalCardModel;
   approveEnabled?: boolean;
   busy?: boolean;
@@ -76,6 +83,7 @@ export function ApprovalCard({ model, approveEnabled, busy = false, actions = {}
   className?: string;
   focusOnMount?: boolean;
 }) {
+  const model = oneUpToAmount(input);
   const titleId = useId();
   const headingRef = useRef<HTMLHeadingElement>(null);
   const header = HEADER[model.status];
@@ -88,7 +96,16 @@ export function ApprovalCard({ model, approveEnabled, busy = false, actions = {}
 
   // Focus lands on the heading, never on Approve, so Enter cannot approve by accident.
   useEffect(() => {
-    if (focusOnMount && model.status === "pending") headingRef.current?.focus({ preventScroll: true });
+    if (focusOnMount && model.status === "pending") {
+      headingRef.current?.focus({ preventScroll: true });
+      // Phones: bring the card's top (title, cost lines, cap options) into view, not just its buttons.
+      if (typeof window !== "undefined" && window.matchMedia?.("(max-width: 800px)").matches) {
+        // After the conversation's own stick-to-bottom scroll has run, so it does not undo this.
+        const card = headingRef.current?.closest(".rh-appr");
+        const timer = window.setTimeout(() => card?.scrollIntoView({ block: "start" }), 350);
+        return () => window.clearTimeout(timer);
+      }
+    }
   }, [model.id, model.status, focusOnMount]);
 
   const emphasised = model.status === "pending" || model.status === "paused_cap";
@@ -169,7 +186,7 @@ export function ApprovalCard({ model, approveEnabled, busy = false, actions = {}
         <Notice tone="ember" title={`Not enough credit for the ${formatCents(model.capCents)} cap`}>
           The cap is held from your credit while the step runs, so it can’t be higher than what you have.{" "}
           {credit === "lower_cap"
-            ? <>Add credit, or lower the cap to {formatCents(model.lowerCapOptionCents ?? model.balanceCents ?? 0)}. The {formatCents(model.estimateCents)} estimate still fits.</>
+            ? <>Add credit, or lower the cap to {formatCents(model.lowerCapOptionCents ?? model.balanceCents ?? 0)}.{model.upTo ? " The run stops there." : <> The {formatCents(model.estimateCents)} estimate still fits.</>}</>
             : <>Add credit to continue. The {formatCents(model.estimateCents)} estimate is more than your credit.</>}
         </Notice>
       ) : null}
@@ -314,7 +331,10 @@ function OverCredit({ model, credit: reported, titleId, actions }: {
 }) {
   const balance = model.balanceCents ?? 0;
   // The estimate fitting the credit is what decides 49 vs 49b, even if the server sent no lower-cap option.
-  const credit = model.estimateCents <= balance ? "lower_cap" : reported === "lower_cap" ? "lower_cap" : "add_credit";
+  // An up-to step stops at its cap, so a lower cap that fits the credit is always a valid choice (49 path).
+  const credit = model.upTo
+    ? (model.lowerCapOptionCents != null || reported === "lower_cap" ? "lower_cap" : "add_credit")
+    : model.estimateCents <= balance ? "lower_cap" : reported === "lower_cap" ? "lower_cap" : "add_credit";
   const lowered = model.lowerCapOptionCents ?? balance;
   const cheaper = credit === "add_credit" && model.cheaperOption && model.cheaperOption.capCents <= balance ? model.cheaperOption : null;
   const fits = credit === "lower_cap" || Boolean(cheaper);
@@ -323,8 +343,14 @@ function OverCredit({ model, credit: reported, titleId, actions }: {
   return (
     <div data-shot={credit === "lower_cap" ? "approval-over-cap" : "approval-over-estimate"}>
       {credit === "lower_cap" ? (
-        <Notice tone="ember" title={`Not enough credit for the ${formatCents(model.capCents)} cap`}>
-          The cap is held from your credit while the step runs, so it can’t be more than the {formatCents(balance)} you have.
+        <Notice tone="ember" title={model.upTo ? `Not enough credit for up to ${formatCents(model.capCents)}` : `Not enough credit for the ${formatCents(model.capCents)} cap`}>
+          {model.upTo
+            ? <>Up to {formatCents(model.capCents)} is held from your credit while the step runs, so it can’t be more than the {formatCents(balance)} you have.</>
+            : <>The cap is held from your credit while the step runs, so it can’t be more than the {formatCents(balance)} you have.</>}
+        </Notice>
+      ) : model.upTo ? (
+        <Notice tone="ember" title="This step can cost more than your credit">
+          Up to {formatCents(model.capCents)} is more than the {formatCents(balance)} you have.
         </Notice>
       ) : (
         <Notice tone="ember" title="This step costs more than your credit">
@@ -336,7 +362,9 @@ function OverCredit({ model, credit: reported, titleId, actions }: {
           <div className="rh-eyebrow">Fits your credit</div>
           <div className="rh-fg2" style={{ fontSize: 12.5, marginTop: 6 }}>
             {credit === "lower_cap"
-              ? <>Same step, cap lowered to <b className="rh-mono rh-num">{formatCents(lowered)}</b>.</>
+              ? model.upTo
+                ? <>Same step, up to <b className="rh-mono rh-num">{formatCents(lowered)}</b> · we’ll stop there.</>
+                : <>Same step, cap lowered to <b className="rh-mono rh-num">{formatCents(lowered)}</b>.</>
               : <>{cheaper!.label} · cap <b className="rh-mono rh-num">{formatCents(cheaper!.capCents)}</b></>}
           </div>
         </div>
