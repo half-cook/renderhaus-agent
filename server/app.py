@@ -498,6 +498,16 @@ async def not_found(request: Request, exc: HTTPException) -> Response:
     return JSONResponse({"detail": exc.detail}, status_code=404)
 
 
+def _agent_ready() -> bool:
+    # Was hardcoded False, so live config said the chat was down even when it worked (bug bash).
+    try:
+        from server.studio import agent_configured
+
+        return bool(agent_configured())
+    except Exception:  # noqa: BLE001 - config must never fail
+        return False
+
+
 @app.get("/api/config")
 async def config() -> dict[str, Any]:
     # Public config: never name underlying providers or models (Satya's rule).
@@ -508,7 +518,7 @@ async def config() -> dict[str, Any]:
             os.getenv("SEEDREAM_DRY_RUN", os.getenv("SEEDANCE_DRY_RUN", "true")).lower() == "false"
         ),
         "live_music_generation": os.getenv("ELEVENLABS_DRY_RUN", "true").lower() != "true",
-        "agent_ready": False,
+        "agent_ready": _agent_ready(),
         "langfuse_ready": False,
         "clerk_enabled": clerk_enabled(),
         "clerk_publishable_key": publishable_key(),
