@@ -35,6 +35,10 @@ class InviteFixture:
         return caught.exception
 
 
+def state_of(invites, code):
+    return next(row["state"] for row in invites.list() if row["hint"] == f"…{code[-4:]}")
+
+
 class InviteTests(InviteFixture, unittest.TestCase):
     def test_mint_stores_only_hashes_and_lists_by_hint(self):
         codes = self.invites.mint(3, "friends")
@@ -65,7 +69,8 @@ class InviteTests(InviteFixture, unittest.TestCase):
         self.invites.redeem("acct-1", first, email="a@example.com")
         self.denied(lambda: self.invites.redeem("acct-1", second, email="a@example.com"), ALREADY_CLAIMED)
         self.denied(lambda: self.invites.redeem("acct-9", third, email="A+x@Example.com"), EMAIL_TAKEN)
-        self.assertEqual(self.invites.list()[1]["state"], "open")  # failed redeem does not burn the code
+        self.assertEqual(state_of(self.invites, third), "open")  # failed redeem does not burn the code
+        self.assertEqual(state_of(self.invites, second), "open")
 
     def test_unknown_and_revoked_codes_are_invalid(self):
         code = self.invites.mint()[0]
@@ -79,7 +84,7 @@ class InviteTests(InviteFixture, unittest.TestCase):
         code = self.invites.mint()[0]
         held = self.invites.check(code, "1.1.1.1")
         self.assertTrue(held["valid"])
-        self.assertEqual(self.invites.list()[0]["state"], "open")
+        self.assertEqual(state_of(self.invites, code), "open")
         # Someone else can neither check nor redeem it while it is reserved.
         self.denied(lambda: self.invites.check(code, "2.2.2.2"), INVITE_USED)
         self.denied(lambda: self.invites.redeem("acct-2", code), INVITE_USED)
@@ -87,7 +92,7 @@ class InviteTests(InviteFixture, unittest.TestCase):
         again = self.invites.check(code, "1.1.1.1", held["reservation"])
         self.assertEqual(again["reservation"], held["reservation"])
         self.assertEqual(self.invites.redeem("acct-1", code, held["reservation"], "a@example.com")["balance_cents"], 1000)
-        self.assertEqual(self.invites.list()[0]["state"], "redeemed")
+        self.assertEqual(state_of(self.invites, code), "redeemed")
 
     def test_expired_reservation_frees_the_code(self):
         code = self.invites.mint()[0]
@@ -113,7 +118,7 @@ class InviteTests(InviteFixture, unittest.TestCase):
         a, b = invites.mint(2)
         invites.redeem("acct-1", a)
         self.denied(lambda: invites.redeem("acct-2", b), PROGRAMME_FULL)
-        self.assertEqual(invites.list()[1]["state"], "open")
+        self.assertEqual(state_of(invites, b), "open")
 
     def test_disabled_programme_grants_nothing(self):
         invites = BetaInvites(self.repo, BetaSettings(enabled=False))
