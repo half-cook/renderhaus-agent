@@ -152,6 +152,10 @@ and its timestamped fixes, link the saved report, and offer remotion_render for 
 or hyperframes_render only when explicitly requested. Keep render approval/cost controls.
 Missing media, a dry-run or skipped probe is incomplete QC. Never present it as a final film.
 Generative shot continuity stays on continuity-qc / local_qc. Thresholds are PROVISIONAL.
+Multi-episode non-fiction uses /skills/series-video-planner/SKILL.md. Save its episode graph,
+shared locks and briefs with project-file tools only. Finish with the draft and request review
+in chat. Do not dispatch production in the planning turn or use the fiction approval tool.
+After actual plan approval, hand off one requested episode to its existing explainer skill.
 Episodic fiction uses /skills/short-drama-series/SKILL.md. Draft the outline before production.
 Call review_drama_outline to request native approval, including in autonomous runs. Approval
 does not authorize spending. Save the returned outline_hash with each episode. Use

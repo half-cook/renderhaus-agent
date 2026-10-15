@@ -5987,5 +5987,43 @@
     "forbidden_skills": [
       "short-drama-series"
     ]
+  },
+  {
+    "test_id": "RT-189",
+    "prompt": "Turn this long article about ecosystems into a 6-part explainer playlist",
+    "expected_skill": "series-video-planner",
+    "expected_tool": "",
+    "suite": "series-video-planner",
+    "skip_reason": "",
+    "note": "Case authored from the series-video-planner draft and handoff item 2; this ID is absent from the supplied capability-map.routing.csv.",
+    "source_file": "/workspace/research/renderhaus-skills/series-video-planner/SKILL.md",
+    "source_read_date": "2026-10-15",
+    "expected_status": "ready",
+    "expected_required": {
+      "planning_only": true,
+      "plan_approval": true
+    },
+    "forbidden_skills": [
+      "short-drama-series"
+    ]
+  },
+  {
+    "test_id": "RT-190",
+    "prompt": "Plan a multi-episode non-fiction series from this course outline with whiteboard narration",
+    "expected_skill": "series-video-planner",
+    "expected_tool": "",
+    "suite": "series-video-planner",
+    "skip_reason": "",
+    "note": "Case authored from the series-video-planner draft and handoff item 2; this ID is absent from the supplied capability-map.routing.csv.",
+    "source_file": "/workspace/research/renderhaus-skills/series-video-planner/SKILL.md",
+    "source_read_date": "2026-10-15",
+    "expected_status": "ready",
+    "expected_required": {
+      "planning_only": true,
+      "plan_approval": true
+    },
+    "forbidden_skills": [
+      "short-drama-series"
+    ]
   }
 ]

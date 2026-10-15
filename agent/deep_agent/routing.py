@@ -105,6 +105,7 @@ _LOGO_REQUEST = next(rule["pattern"] for rule in POLICY["rules"] if rule["skill"
 _PLAN_REVIEW_REQUEST = next(rule["pattern"] for rule in POLICY["rules"] if rule["skill"] == "plan-to-video")
 _CHAT_STORY_REQUEST = next(rule["pattern"] for rule in POLICY["rules"] if rule["skill"] == "chat-story-video")
 _SHORT_DRAMA_REQUEST = next(rule["pattern"] for rule in POLICY["rules"] if rule["skill"] == "short-drama-series")
+_SERIES_PLANNER_RULE = next(rule for rule in POLICY["rules"] if rule["skill"] == "series-video-planner")
 _MODELSTUDIO_PREVIEW_WARNING = (
     "Alibaba preview terms permit internal testing, research and evaluation only until GA. "
     "Live customer use is blocked by the preview licence."
@@ -253,6 +254,8 @@ def _seedance_prompt_diagnosis(prompt: str) -> dict | None:
 
 
 def request_tool_blocker(prompt: str, name: str) -> str | None:
+    if name != "x_amz_bedrock_agentcore_search" and _series_planner_request(prompt):
+        return "Series planning produces documents only. Request episode production after plan review in a later turn."
     if _seedance_prompt_diagnosis(prompt) and not is_free_tool(name):
         return RETRY_NOTICE
     if lottie_request(prompt) and (job_type(name) in {
@@ -260,7 +263,7 @@ def request_tool_blocker(prompt: str, name: str) -> str | None:
         'lipsync', 'performance_transfer', 'lyrics_video',
     } or name == 'Remotion___render_timeline'):
         return 'UI vector animation requires JSON and dotLottie output through the local animation tools.'
-    if plan_text := _plan_review_instruction(prompt):
+    if plan_text := _planning_instruction(prompt, _PLAN_REVIEW_REQUEST):
         prompt = plan_text
     if refusal := editing_request_refusal(prompt):
         return refusal
@@ -793,13 +796,19 @@ def drama_cancelled(prompt: str) -> bool:
 def route_intent(prompt: str, *, region: str | None = None, tier: str | None = None,
                  confidential: bool = False, arguments: dict | None = None,
                  available_tools: set[str] | None = None, retry: bool = False, user_id: str | None = None) -> Route:
+    if _series_planner_request(prompt):
+        return Route(skill="series-video-planner", status="ready", basis="non-fiction series planning",
+                     reason="Draft the episode graph and briefs, then request plan review in chat before production.",
+                     required={"planning_only": True, "plan_approval": True},
+                     expected_output="series plan.md and per-episode briefs",
+                     disclosure="Planning creates no media. Plan approval does not authorize spending.")
     reference_rule = next(rule for rule in POLICY['rules'] if rule['skill'] == 'reference-shot-breakdown')
     if re.search(reference_rule['pattern'], _instruction_text(prompt), re.I):
         route = select_provider('reference_analysis', region=region, available_tools=available_tools)
         return replace(route, skill='reference-shot-breakdown',
                        expected_output='Measured shot table, JSON, CSV and interactive report',
                        disclosure='Measure reference cuts, durations and motion locally. Visual labels require a separate review; dry-run labels remain pending.')
-    drama_text = _instruction_text(prompt)
+    drama_text = re.sub(r"\bnon[ -]?fiction\b", "", _instruction_text(prompt), flags=re.I)
     if (re.search(_SHORT_DRAMA_REQUEST, drama_text, re.I)
             and not drama_cancelled(prompt)
             and not re.search(r"\b(?:podcast|audiogram|chat[ -]story|text[ -]message|ad campaign)\b", drama_text, re.I)
@@ -832,7 +841,7 @@ def route_intent(prompt: str, *, region: str | None = None, tier: str | None = N
         return replace(route, skill="conversational-edit")
     if podcast := _podcast_route(prompt, arguments=arguments, available_tools=available_tools, region=region):
         return podcast
-    if _plan_review_instruction(prompt) is not None:
+    if _planning_instruction(prompt, _PLAN_REVIEW_REQUEST) is not None:
         constraints = intent_constraints(prompt, tier=tier, confidential=confidential, arguments=arguments)
         route = select_provider("motion_graphics", region=region, available_tools=available_tools,
                                 arguments=arguments, **capability_constraints(constraints, "motion_graphics"))
@@ -897,7 +906,7 @@ def route_intent(prompt: str, *, region: str | None = None, tier: str | None = N
         or video_capabilities.intersection(POLICY["named_models"].get(constraints["named_model"], {}).get("aliases", {}))
     )
     for rule in POLICY["rules"]:
-        if rule["skill"] in {"lottie-animation", "logo-animation", "short-drama-series"}:
+        if rule["skill"] in {"lottie-animation", "logo-animation", "short-drama-series", "series-video-planner"}:
             continue
         if rule["skill"] == "chat-story-video" and not _chat_story_request(prompt):
             continue
@@ -1155,7 +1164,31 @@ def lottie_request(prompt: str) -> bool:
     return not video or bool(preview)
 
 
-def _plan_review_instruction(prompt: str) -> str | None:
+def _series_planner_request(prompt: str) -> bool:
+    if _planning_instruction(prompt, _PLAN_REVIEW_REQUEST) is not None:
+        return False
+    text = _planning_instruction(prompt, _SERIES_PLANNER_RULE["pattern"])
+    if text is None:
+        return False
+    excluded = _SERIES_PLANNER_RULE["exclude_pattern"]
+    text = re.sub(
+        rf"\b(?:do not|don['’]t|not|no|without|avoid)\s+(?:use\s+)?(?:{excluded})"
+        rf"(?:\s+(?:or|and)\s+(?:{excluded}))*", "", text, flags=re.I,
+    )
+    if re.search(_SERIES_PLANNER_RULE["explicit_fiction_pattern"], text, re.I):
+        return False
+    format_text = re.split(_SERIES_PLANNER_RULE["subject_pattern"], text, maxsplit=1, flags=re.I)[0]
+    for match in re.finditer(_SERIES_PLANNER_RULE["pattern"], text, re.I):
+        if re.search(r"\bseries[ -]video[ -]planner\b", match[0], re.I):
+            return True
+        if re.search(_SERIES_PLANNER_RULE["single_episode_pattern"], match[0], re.I):
+            continue
+        if re.search(r"\bnon[ -]?fiction\b", format_text, re.I) or not re.search(excluded, format_text, re.I):
+            return True
+    return False
+
+
+def _planning_instruction(prompt: str, pattern: str) -> str | None:
     instructions: list[str] = []
     fence: str | None = None
     for line in prompt.splitlines():
@@ -1171,12 +1204,12 @@ def _plan_review_instruction(prompt: str) -> str | None:
         instructions.append(line)
     text = _instruction_text("\n".join(instructions))
     text = re.sub(
-        r"\b(?:do not|don't|never|avoid)\s+(?:make|create|produce|render|generate|review|turn|convert)\b"
+        r"\b(?:do not|don['’]t|never|avoid)\s+\w+\b"
         r".*?(?=\.(?:\s|$)|[!?;\n]|$)",
-        lambda match: "" if re.search(_PLAN_REVIEW_REQUEST, match[0], re.I) else match[0],
+        lambda match: "" if re.search(pattern, match[0], re.I) else match[0],
         text, flags=re.I,
     )
-    if not re.search(_PLAN_REVIEW_REQUEST, text, re.I):
+    if not re.search(pattern, text, re.I):
         return None
     return re.sub(r"\b(?:not|no|avoid|without|never|don't|do not)(?:\s+(?:use|using))?(?:\s+any)?\s+hyperframes\b",
                   "", text, flags=re.I)
@@ -1201,7 +1234,7 @@ def intent_constraints(prompt: str, *, tier: str | None = None, confidential: bo
     from providers.heygen.voice_contracts import internal_gate, needs_text_normalisation
 
     args = arguments or {}
-    plan_text = _plan_review_instruction(prompt)
+    plan_text = _planning_instruction(prompt, _PLAN_REVIEW_REQUEST)
     if plan_text is not None:
         prompt = plan_text
     excluded_names = re.compile(

@@ -1510,6 +1510,9 @@ def _validate_video_delivery(
     from agent.deep_agent.motion_carry_gate import gate_motion_delivery
     from agent.deep_agent.logo_gate import gate_logo_delivery
 
+    if route_intent(request.prompt).required.get("planning_only"):
+        return True
+
     logo_verdict = gate_logo_delivery(request, studio, final)
     if logo_verdict is False:
         return False
