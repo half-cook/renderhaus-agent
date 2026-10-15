@@ -608,7 +608,21 @@ def _cinematic_route(prompt: str, constraints: dict, *, region: str | None,
     if any(row.get("capability") == "ad_variant_matrix" and re.search(row["pattern"], text, re.I)
            for row in POLICY["rules"]):
         return None
-    matched = re.search(rule["pattern"], text, re.I)
+    techniques = rule["techniques"]
+    technique_clause = (
+        rf"(?:(?:use|using|add|include|apply|feature|featuring|a|an|the|any)\s+)*(?:{techniques})\b"
+    )
+    technique_text = re.sub(
+        rf"\b(?:do not|don't|never|avoid|without|no|not)\s+{technique_clause}"
+        rf"(?:\s+(?:and|or|nor)\s+{technique_clause})*", "", text, flags=re.I,
+    )
+    technique_request = re.search(
+        rf"\b(?:with|using|featuring|use|apply|add|where)\s+(?:(?:a|an|the)\s+)?(?:{techniques})\b",
+        technique_text, re.I,
+    )
+    matched = re.search(rule["pattern"], text, re.I) or (
+        technique_request and re.search(rule["technique_subject"], technique_text, re.I)
+    )
     if not matched and not re.search(r"\b(?:use|choose|select|apply)\b", text, re.I):
         return None
     from providers.shot_recipes.library import find_named_card

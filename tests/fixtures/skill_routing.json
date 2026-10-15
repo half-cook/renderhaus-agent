@@ -6083,5 +6083,125 @@
     "forbidden_skills": [
       "short-drama-series"
     ]
+  },
+  {
+    "test_id": "RT-PLM001",
+    "suite": "radar-product-launch-motion",
+    "prompt": "Make a product launch video with one-shape morphs",
+    "expected_skill": "cinematic-product-promo",
+    "expected_tool": "shot_recipe_search then remotion_render",
+    "expected_output": "assembled MP4 from supplied technique shots; unsupported animation remains pending",
+    "expected_step_count": 2,
+    "expected_execution_groups": [
+      [
+        "shot_recipe_search"
+      ],
+      [
+        "remotion_render"
+      ]
+    ],
+    "forbidden_tools": "wan3_t2v, seedance25_t2v, hyperframes_render",
+    "skip_reason": "",
+    "note": "Radar handoff item 5, read 2026-10-15. Offline routing assertion; no generated artifact or visual acceptance implied."
+  },
+  {
+    "test_id": "RT-PLM002",
+    "suite": "radar-product-launch-motion",
+    "prompt": "Make a product film where one shape never cuts",
+    "expected_skill": "cinematic-product-promo",
+    "expected_tool": "shot_recipe_search then remotion_render",
+    "expected_output": "assembled MP4 from supplied technique shots; unsupported animation remains pending",
+    "expected_step_count": 2,
+    "expected_execution_groups": [
+      [
+        "shot_recipe_search"
+      ],
+      [
+        "remotion_render"
+      ]
+    ],
+    "forbidden_tools": "wan3_t2v, seedance25_t2v, hyperframes_render",
+    "skip_reason": "",
+    "note": "Radar handoff item 5, read 2026-10-15. Offline routing assertion; no generated artifact or visual acceptance implied."
+  },
+  {
+    "test_id": "RT-PLM003",
+    "suite": "radar-product-launch-motion",
+    "prompt": "Make an app promo video with spring physics",
+    "expected_skill": "cinematic-product-promo",
+    "expected_tool": "shot_recipe_search then remotion_render",
+    "expected_output": "assembled MP4 from supplied technique shots; unsupported animation remains pending",
+    "expected_step_count": 2,
+    "expected_execution_groups": [
+      [
+        "shot_recipe_search"
+      ],
+      [
+        "remotion_render"
+      ]
+    ],
+    "forbidden_tools": "wan3_t2v, seedance25_t2v, hyperframes_render",
+    "skip_reason": "",
+    "note": "Radar handoff item 5, read 2026-10-15. Offline routing assertion; no generated artifact or visual acceptance implied."
+  },
+  {
+    "test_id": "RT-PLM004",
+    "suite": "radar-product-launch-motion",
+    "prompt": "Make a software launch video with cursor-driven reveals",
+    "expected_skill": "cinematic-product-promo",
+    "expected_tool": "shot_recipe_search then remotion_render",
+    "expected_output": "assembled MP4 from supplied technique shots; unsupported animation remains pending",
+    "expected_step_count": 2,
+    "expected_execution_groups": [
+      [
+        "shot_recipe_search"
+      ],
+      [
+        "remotion_render"
+      ]
+    ],
+    "forbidden_tools": "wan3_t2v, seedance25_t2v, hyperframes_render",
+    "skip_reason": "",
+    "note": "Radar handoff item 5, read 2026-10-15. Offline routing assertion; no generated artifact or visual acceptance implied."
+  },
+  {
+    "test_id": "RT-PLM005",
+    "suite": "radar-product-launch-motion",
+    "prompt": "Make a product demo video with cursor-driven state changes",
+    "expected_skill": "cinematic-product-promo",
+    "expected_tool": "shot_recipe_search then remotion_render",
+    "expected_output": "assembled MP4 from supplied technique shots; unsupported animation remains pending",
+    "expected_step_count": 2,
+    "expected_execution_groups": [
+      [
+        "shot_recipe_search"
+      ],
+      [
+        "remotion_render"
+      ]
+    ],
+    "forbidden_tools": "wan3_t2v, seedance25_t2v, hyperframes_render",
+    "skip_reason": "",
+    "note": "Radar handoff item 5, read 2026-10-15. Offline routing assertion; no generated artifact or visual acceptance implied."
+  },
+  {
+    "test_id": "RT-PLM006",
+    "suite": "radar-product-launch-motion",
+    "prompt": "Use product-launch-motion for a product film",
+    "expected_skill": "cinematic-product-promo",
+    "expected_tool": "shot_recipe_search then remotion_render",
+    "expected_output": "assembled MP4 from supplied technique shots; unsupported animation remains pending",
+    "expected_step_count": 2,
+    "expected_execution_groups": [
+      [
+        "shot_recipe_search"
+      ],
+      [
+        "remotion_render"
+      ]
+    ],
+    "forbidden_tools": "wan3_t2v, seedance25_t2v, hyperframes_render",
+    "skip_reason": "",
+    "note": "Radar handoff item 5, read 2026-10-15. Offline routing assertion; no generated artifact or visual acceptance implied."
   }
 ]

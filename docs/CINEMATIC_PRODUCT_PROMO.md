@@ -8,6 +8,45 @@ network calls, model calls, rendering operation, dry-run flag or spending approv
 Its billing entry is zero. Existing rendering, music and narration retain their
 approval and cost controls, including autonomous paid-video approval.
 
+## Launch motion techniques
+
+The skill includes three optional
+[technique cards](../agent/deep_agent/skills/cinematic-product-promo/references/launch-motion-techniques.md)
+adapted from product-launch-motion. `one-shape-morph` preserves a container across UI
+states, `spring-settle` specifies a restrained physical response, and
+`cursor-driven-reveal` makes a visible interaction cause the next state. Each card
+provides planning guidance, realization limits and artifact review criteria. Musical
+accents use a supplied measured grid; sound cues account for the asset's measured peak
+or attack. The workflow installs no beat detector or SFX synthesizer.
+
+Product-film requests naming these techniques, or `product-launch-motion`, select
+recipe search followed by `remotion_render`. Explicit provider and alternate-renderer
+requests retain precedence. Generic website animation and physics explanations do not
+select this skill. Routing is a production plan, not proof that a film can be rendered.
+
+Technique IDs are separate from the 157 searchable shot-card IDs. Keep technique notes
+in a project file keyed by storyboard beat name. Do not pass them as `card_id`, extra
+storyboard fields or custom renderer arguments. The renderer cannot execute arbitrary
+shape morphs, spring tracks or cursor events. Full realization requires an actual
+supplied pre-rendered shot, assembled as one native visual with `motion: none`.
+Preserve and disclose a missing shot before submission. A customer-approved simplified
+treatment must be labeled as such. The default fps, source resolution and cost approvals
+remain in force. The source's HTML/browser/FFmpeg pipeline is not installed.
+
+The adapted prose comes from the source's
+[skill](https://github.com/AbubakrChan/product-launch-motion/blob/fc566955b073b62d13bd9f5a12b861d0a22cc781/SKILL.md)
+and [technique reference](https://github.com/AbubakrChan/product-launch-motion/blob/fc566955b073b62d13bd9f5a12b861d0a22cc781/references/technique.md),
+read 2026-10-15. Its
+[MIT licence](https://github.com/AbubakrChan/product-launch-motion/blob/fc566955b073b62d13bd9f5a12b861d0a22cc781/LICENSE)
+permits adaptation of authored guidance. Its
+[NOTICE](https://github.com/AbubakrChan/product-launch-motion/blob/fc566955b073b62d13bd9f5a12b861d0a22cc781/NOTICE)
+excludes sample films, frames and third-party assets. The retained
+[local notice](../agent/deep_agent/skills/cinematic-product-promo/NOTICE) contains the
+full copyright and MIT permission notice. No source runtime, sample media, fonts, audio,
+weights or new model/API integration is included. No additional billing entry, secret,
+Gateway schema or model policy is needed. See
+[radar decisions](radar-product-launch-motion-decisions.tsv) for scope and verification.
+
 ## Local contract
 
 Search arguments: `mode=search` (default), optional `query` (512 characters), `card_id`

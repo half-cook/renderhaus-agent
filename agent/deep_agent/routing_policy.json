@@ -2830,7 +2830,9 @@
       "pattern": "\\bcinematic[ -]product[ -]promo\\b|\\bshot[ -](?:recipe|card)s?\\b|\\blaunch[ -]film\\b|(?=[\\s\\S]*\\b(?:product|app|software|launch)\\b)(?=[\\s\\S]*\\b(?:promo|film|trailer|demo|video)\\b)[\\s\\S]*\\b(?:cinematic|apple[ -]style|hype|beat[ -]sync(?:ed)?|2\\.5d|camera[ -]moves?)\\b",
       "skill": "cinematic-product-promo",
       "abstract_tool": "shot_recipe_search",
-      "capability": "shot_recipes"
+      "capability": "shot_recipes",
+      "techniques": "one[ -]shape[ -]morphs?|one[ -]shape[ -]never[ -]cuts?|spring[ -](?:physics|settle)|(?:closed[ -]form|damped)[ -]springs?|cursor[ -]driven[ -](?:reveals?|state[ -]changes?)|product[ -]launch[ -]motion",
+      "technique_subject": "\\b(?:product|app|software)(?:[ -](?:launch|promo|demo)){0,2}[ -](?:film|video|trailer)\\b"
     },
     {
       "pattern": "(?:export|handoff).*(?:after (?:the )?agent cut|conversational[ -]edit|transcript[ -](?:driven|based) cut)",

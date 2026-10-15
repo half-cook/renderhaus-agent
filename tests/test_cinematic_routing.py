@@ -17,6 +17,49 @@ WALKTHROUGH = "Record a quick walkthrough of my dashboard with captions, nothing
 
 
 class CinematicRoutingTests(unittest.TestCase):
+    def test_product_launch_techniques_select_recipes_then_existing_renderer(self):
+        prompts = [
+            "Make a product launch video with one-shape morphs",
+            "Make a product film where one shape never cuts",
+            "Make an app promo video with spring physics",
+            "Make a software launch video with cursor-driven reveals",
+            "Make a product demo video with cursor-driven state changes",
+            "Use product-launch-motion for a product film",
+            "Use spring-settle for my product film",
+            "Make an app promo video using closed-form springs",
+            "Make a product film with cursor-driven-reveal",
+        ]
+        for prompt in prompts:
+            with self.subTest(prompt=prompt):
+                route = route_intent(prompt)
+                self.assertEqual(route.skill, "cinematic-product-promo")
+                self.assertEqual(route.status, "ready")
+                self.assertEqual([step.alias for step in route.steps],
+                                 ["shot_recipe_search", "remotion_render"])
+                self.assertEqual(route.steps[-1].tool, "Remotion___render_timeline")
+                self.assertEqual(route.public(), route_intent(prompt, confidential=True).public())
+
+    def test_technique_words_keep_other_workflows_and_explicit_requests(self):
+        for prompt in ["Animate the cursor on my landing page",
+                       "Explain spring physics in a video",
+                       "Make a one-shape morph for my website",
+                       "Add spring physics to my product website demo component",
+                       "Explain spring physics in a video for my learning app",
+                       "Make a product video without spring physics",
+                       "Make a product video without using spring physics",
+                       "Make a product video without using product-launch-motion",
+                       "Do not use spring physics in my product film",
+                       "Do not use spring physics or add cursor-driven reveals to my product film",
+                       "Build my product website using product-launch-motion",
+                       "Do not use product-launch-motion for my product film"]:
+            with self.subTest(prompt=prompt):
+                self.assertNotEqual(route_intent(prompt).skill, "cinematic-product-promo")
+        for provider, skill in [("Wan 3", "t2v"), ("HyperFrames", "hyperframes")]:
+            with self.subTest(provider=provider), patch.dict("os.environ", {"HYPERFRAMES_ENABLED": "true"}):
+                route = route_intent(f"Use {provider} for a product launch video with one-shape morphs")
+                self.assertEqual(route.skill, skill)
+                self.assertNotIn("shot_recipe_search", {step.alias for step in route.steps} | {route.alias})
+
     def test_launch_searches_before_assembly_without_video_generation(self):
         route = route_intent(LAUNCH)
         self.assertEqual(route.skill, "cinematic-product-promo")
