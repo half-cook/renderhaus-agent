@@ -56,12 +56,18 @@ def _image_bound(value: Any) -> tuple[Any, int]:
     return value, 0
 
 
+_MEDIA_BLOCKS = frozenset({"image", "image_url", "input_image", "document", "file", "input_file", "audio",
+                           "input_audio", "video", "video_url", "media", "search_result"})
+# Metadata objects that carry a "type" but are not content blocks.
+_METADATA_KEYS = frozenset({"cache_control", "caller", "citations", "source_metadata"})
+
+
 def _has_media(value: Any) -> bool:
+    """True when content holds a media block; metadata like cache_control or a tool caller is not media."""
     if isinstance(value, dict):
-        if isinstance(value.get("type"), str) and value["type"] not in _TEXT_BLOCKS:
+        if isinstance(value.get("type"), str) and value["type"] in _MEDIA_BLOCKS:
             return True
-        # cache_control ({"type": "ephemeral"}) is prompt-caching metadata, not a media block.
-        return any(_has_media(item) for key, item in value.items() if key != "cache_control")
+        return any(_has_media(item) for key, item in value.items() if key not in _METADATA_KEYS)
     if isinstance(value, list):
         return any(_has_media(item) for item in value)
     return False
