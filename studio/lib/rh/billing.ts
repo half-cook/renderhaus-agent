@@ -174,6 +174,8 @@ export type RunReceiptModel = {
   balanceAfterCents: number;
   paidSteps: number;
   status: "done" | "failed";
+  /** Optional filmstrip thumbnails shown at the top of the quiet v4 receipt. */
+  thumbStrip?: string[];
 };
 
 function text(value: unknown): string | undefined {
