@@ -15,6 +15,14 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class InventoryLiteralGuardTests(unittest.TestCase):
+    def test_pin_accepts_extras(self) -> None:
+        from unittest.mock import patch
+
+        from agent import inventory as module
+
+        with patch.object(Path, "read_text", return_value='deps = ["deepagents[video]==0.7.23"]'):
+            self.assertEqual(module._pinned("deepagents"), "0.7.23")
+
     def test_dockerfile_has_no_inline_count_asserts(self) -> None:
         text = (ROOT / "Dockerfile.agentcore").read_text()
         self.assertIn("python -m agent.inventory", text)
@@ -27,9 +35,9 @@ class InventoryLiteralGuardTests(unittest.TestCase):
 
     def test_inventory_is_derived_and_consistent(self) -> None:
         counts = inventory()
-        self.assertEqual(
-            set(counts),
+        self.assertLessEqual(
             {"providers", "tools", "skills", "catalog_styles", "shot_recipes", "routing_rows", "active_routes"},
+            set(counts),
         )
         self.assertTrue(all(isinstance(v, int) and v > 0 for v in counts.values()))
         skills = len(list((ROOT / "agent/deep_agent/skills").glob("*/SKILL.md")))

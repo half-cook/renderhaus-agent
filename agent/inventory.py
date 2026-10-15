@@ -20,11 +20,12 @@ ROOT = Path(__file__).resolve().parents[1]
 
 def _pinned(package: str) -> str | None:
     text = (ROOT / "pyproject.toml").read_text()
-    match = re.search(rf'"{re.escape(package)}==([^"]+)"', text)
+    match = re.search(rf'"{re.escape(package)}(?:\[[^\]]*\])?==([^"]+)"', text)
     return match.group(1) if match else None
 
 
 def inventory(root: Path = ROOT) -> dict[str, int]:
+    from agent.deep_agent import runner
     from agent.deep_agent.runner import SKILLS_ROOT
     from providers.catalog import PROVIDERS
     from providers.registry import load_committed_schemas
@@ -57,7 +58,7 @@ def inventory(root: Path = ROOT) -> dict[str, int]:
     assert len(ids) == len(set(ids)), "Routing fixture IDs must be unique."
     active = sum(not c["skip_reason"] for c in cases)
     assert active > 0
-    return {
+    counts = {
         "providers": len(PROVIDERS),
         "tools": tools,
         "skills": skills,
@@ -66,6 +67,11 @@ def inventory(root: Path = ROOT) -> dict[str, int]:
         "routing_rows": len(cases),
         "active_routes": active,
     }
+    harness_tools = getattr(runner, "HARNESS_TOOL_NAMES", None)
+    if harness_tools is not None:  # present once agent-harness-v2 is merged
+        assert harness_tools, "no harness tools registered"
+        counts["harness_tools"] = len(harness_tools)
+    return counts
 
 
 def main() -> None:
