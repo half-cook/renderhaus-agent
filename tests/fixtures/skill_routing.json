@@ -5793,5 +5793,17 @@
       "continuity-qc"
     ],
     "note": "Router coverage only. Real local analysis and static-camera gate exercised in test_reference_shots.py."
+  },
+  {
+    "test_id": "RT-195",
+    "suite": "audio-bed",
+    "prompt": "Mirelo SFX 2.0 video to audio synchronized foley, preserve speech and replace unwanted music",
+    "expected_skill": "audio-bed",
+    "expected_tool": "mirelo_v2a",
+    "expected_gateway_tool": "Fal___mirelo_v2a",
+    "skip_reason": "",
+    "source_status": "new; radar upgrade of existing default",
+    "source_read_date": "2026-10-15",
+    "note": "SFX 2.0 default, preserve_speech true; 1.6 remains explicit A/B. No quality claim from routing coverage."
   }
 ]

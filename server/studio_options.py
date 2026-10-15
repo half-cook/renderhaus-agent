@@ -66,7 +66,7 @@ STATIC_FIELD_OPTIONS: dict[str, dict[str, list[str | int]]] = {
     },
     "fal": {
         "character_orientation": ["video", "image"],
-        "model": list(FAL_MODELS) + list(wan3.ENDPOINTS) + ["fal-ai/kling-video/v3/pro/motion-control", mirelo.ENDPOINT_ID, *images.ENDPOINTS, *named_video.ENDPOINTS],
+        "model": list(FAL_MODELS) + list(wan3.ENDPOINTS) + ["fal-ai/kling-video/v3/pro/motion-control", *mirelo.ENDPOINTS, *images.ENDPOINTS, *named_video.ENDPOINTS],
         "edit_precision": ["high", "regular"],
         "quality": ["very_low", "low", "medium", "high"],
         "image_size": ["auto", "square_hd", "square", "portrait_4_3", "portrait_16_9", "landscape_4_3", "landscape_16_9"],

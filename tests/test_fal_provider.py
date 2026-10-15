@@ -589,8 +589,8 @@ class FalProviderTests(unittest.TestCase):
         del os.environ["FAL_KEY"]
         catalog = api.list_fal_models()
         self.assertEqual(catalog["status"], "ok")
-        self.assertEqual(len(catalog["models"]), 13)
-        self.assertEqual(len(catalog["endpoints"]), 23)
+        self.assertEqual(len(catalog["models"]), 15)
+        self.assertEqual(len(catalog["endpoints"]), 25)
         self.assertEqual(catalog["selected_model"], "alibaba/wan-3.0/text-to-video")
         for item in catalog["models"] + catalog["endpoints"]:
             if item["id"].startswith(("fal-ai/vidu/q4/", "alibaba/wan-3.0/", "fal-ai/kling-video/v3/", "mirelo-ai/", "ideogram/", "fal-ai/recraft/", "pixelcut/", "pixverse/")):

@@ -44,13 +44,16 @@ export function NodeInspector() {
   const tool = toolById(node.data.toolId);
   const schema = schemaFor(providers, node.data.providerId, node.data.toolName);
   const options = node.data.providerId ? fieldOptions[node.data.providerId] : undefined;
+  const pictureSound = node.data.providerId === "fal" && node.data.toolName === "mirelo_v2a";
   const toolOptions = node.data.providerId === "luma"
     ? {
         ...options,
         ...(node.data.toolName === "image_to_video" ? { duration_seconds: [5] } : {}),
         ...(node.data.toolName === "extend_video" ? { resolution: ["540p", "720p", "1080p"] } : {}),
       }
-    : options;
+    : pictureSound
+      ? { ...options, duration: [] }
+      : options;
   const connectedFields = edges
     .filter((edge) => edge.target === node.id)
     .map((edge) => edge.data?.targetField)
@@ -59,7 +62,8 @@ export function NodeInspector() {
     (field) => schema?.inputSchema.properties?.[field] && !connectedFields.includes(field),
   );
   const advanced = Object.keys(schema?.inputSchema.properties || {}).filter(
-    (field) => !primary.includes(field) && !connectedFields.includes(field),
+    (field) => !primary.includes(field) && !connectedFields.includes(field)
+      && !(pictureSound && ["model", "upload_audio_format", "upload_audio_bitrate_kbps"].includes(field)),
   );
   const blockers = generateBlockers(node.data, schema, connectedFields);
   const busy = node.data.status === "running" || node.data.status === "queued";

@@ -168,7 +168,9 @@ def _submit(tool: str, arguments: dict[str, Any]) -> dict[str, Any]:
         "error_type": payload.get("error_type"),
         **contract.TRAINING_METADATA,
         "note": ("Call get_video_task with this job_id until terminal; image results are validated and persisted, SVGs sanitized."
-                 if contract is images else "Call get_video_task with this job_id until terminal; use download=true for the MP4."),
+                 if contract is images else "Call get_video_task with this job_id until terminal; use download=true for the audio bed."
+                 if contract is mirelo and endpoint.output_kind == "audio"
+                 else "Call get_video_task with this job_id until terminal; use download=true for the MP4."),
     }
 
 
@@ -252,9 +254,14 @@ def mirelo_v2a(
     duration: float = 10,
     num_samples: int = 1,
     seed: int | None = None,
+    model: mirelo.Model = mirelo.ENDPOINT_ID,
+    preserve_speech: bool | None = None,
+    negative_prompt: str | None = None,
+    upload_audio_format: mirelo.AudioFormat | None = None,
+    upload_audio_bitrate_kbps: int | None = None,
 ) -> dict:
-    """Add picture-synced Mirelo SFX to video; cost approval then poll get_video_task."""
-    return _submit("mirelo_v2a", locals())
+    """Generate speech-preserving SFX 2.0 audio or selected video output; approve cost then poll get_video_task."""
+    return _submit("mirelo_v2a", {key: value for key, value in locals().items() if value is not None})
 
 
 def kling_motion_control(
@@ -438,7 +445,7 @@ def _download(video_url: str, output_path: Path) -> None:
 
 
 def get_video_task(job_id: str, download: bool = False) -> dict:
-    """Poll a saved fal image or video job; image outputs always persist safely, download=true saves MP4."""
+    """Poll a saved fal image, audio or video job; download=true saves the primary audio or MP4."""
     _validated("get_video_task", locals())
     endpoint_id, request_id = _parse_job(job_id)
     if (
@@ -502,6 +509,21 @@ def _poll_video_task(job_id: str, endpoint_id: str, request_id: str, *, download
         metadata = json.loads(metadata_path.read_text()) if metadata_path.exists() else {}
         _write_metadata(metadata_path, {**metadata, **normalized})
         return normalized
+    if contract is mirelo and endpoint.output_kind == "audio":
+        audios = mirelo.result_audio(result)
+        metadata_path, video_path = _paths(job_id)
+        output_path = video_path.parent.parent / "audio" / (video_path.stem + mirelo.audio_suffix(audios[0]))
+        if download and (not output_path.exists() or not output_path.stat().st_size):
+            output_path.parent.mkdir(parents=True, exist_ok=True)
+            _download(audios[0]["url"], output_path)
+        downloaded = output_path.is_file() and output_path.stat().st_size > 0
+        normalized = {
+            **base, "status": "succeeded", "audio_url": audios[0]["url"], "audios": audios,
+            "output_path": str(output_path) if downloaded else None, "downloaded": downloaded,
+        }
+        metadata = json.loads(metadata_path.read_text()) if metadata_path.exists() else {}
+        _write_metadata(metadata_path, {**metadata, **normalized})
+        return normalized
     videos = mirelo.result_videos(result) if contract is mirelo else None
     video = videos[0] if videos else result.get("video")
     video_url = video.get("url") if isinstance(video, dict) else None
@@ -535,6 +557,12 @@ def _poll_video_task(job_id: str, endpoint_id: str, request_id: str, *, download
 def list_fal_models() -> dict:
     """List documented fal endpoints and pricing without calling fal."""
     from server.billing_rates import (
+        MIRELO_CENTS_PER_SECOND,
+        MIRELO_LEGACY_CENTS_PER_SECOND,
+        MIRELO_PRICING_READ_DATE,
+        MIRELO_PROMO_EXPIRES_ON,
+        MIRELO_PROMO_STARTS_ON,
+        mirelo_rate,
         NAMED_FAL_VIDEO_PRICING_READ_DATE,
         PIXELCUT_CENTS_PER_SECOND,
         PIXVERSE_CENTS_PER_SECOND,
@@ -626,15 +654,25 @@ def list_fal_models() -> dict:
              "usd_per_unit": "0.168", "pricing_confirmed": True,
              **motion.TRAINING_METADATA}
         ] + [
-            {"id": mirelo.ENDPOINT_ID, "model": mirelo.ENDPOINT_ID,
-             "endpoint_id": mirelo.ENDPOINT_ID, "mode": "mirelo_v2a",
-             "api_url": f"https://fal.ai/models/{mirelo.ENDPOINT_ID}/api",
-             "pricing_url": f"https://fal.ai/models/{mirelo.ENDPOINT_ID}",
-             "price_unit": "generated_second_single_sample", "pricing_checked_at": "2026-10-09",
-             "usd_per_unit": "0.01", "pricing_confirmed": True,
-             "multi_sample_pricing": "UNVERIFIED; dry-run only; estimate unknown",
-             "duration_range": [1, 60], "num_samples_range": [1, 4],
+            {"id": endpoint.id, "model": endpoint.id,
+             "endpoint_id": endpoint.id, "mode": "mirelo_v2a", "output_kind": endpoint.output_kind,
+             "api_url": f"https://fal.ai/models/{endpoint.id}/api",
+             "pricing_url": f"https://fal.ai/models/{endpoint.id}",
+             "price_unit": "generated_second_single_sample" if endpoint.id == mirelo.LEGACY_ENDPOINT_ID else "output_second_per_sample",
+             "pricing_checked_at": MIRELO_PRICING_READ_DATE,
+             "usd_per_unit": str((MIRELO_LEGACY_CENTS_PER_SECOND if endpoint.id == mirelo.LEGACY_ENDPOINT_ID else mirelo_rate()) / 100),
+             "pricing_confirmed": True,
+             "multi_sample_pricing": "UNVERIFIED; dry-run only; estimate unknown" if endpoint.id == mirelo.LEGACY_ENDPOINT_ID else "total output seconds across all samples",
+             **({} if endpoint.id == mirelo.LEGACY_ENDPOINT_ID else {
+                 "standard_usd_per_unit": str(MIRELO_CENTS_PER_SECOND / 100),
+                 "promo_starts_on": MIRELO_PROMO_STARTS_ON.isoformat(),
+                 "promo_expires_on": MIRELO_PROMO_EXPIRES_ON.isoformat(),
+                 "preserve_speech_default": True,
+             }),
+             "duration_range": [1, endpoint.max_duration], "num_samples_range": [1, 4],
+             "explicit_only": endpoint.id == mirelo.LEGACY_ENDPOINT_ID,
              **mirelo.TRAINING_METADATA}
+            for endpoint in mirelo.ENDPOINTS.values()
         ] + [
             {"id": endpoint, "model": endpoint, "endpoint_id": endpoint, "mode": tool,
              "api_url": f"https://fal.ai/models/{endpoint}/api",

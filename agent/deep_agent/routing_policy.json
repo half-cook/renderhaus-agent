@@ -423,7 +423,9 @@
         "ideogram/v4.5/edit",
         "fal-ai/recraft/v4.1/pro/text-to-vector",
         "pixelcut/looping-video",
-        "pixverse/music-video/vibemv"
+        "pixverse/music-video/vibemv",
+        "mirelo-ai/sfx2.0/video-to-audio",
+        "mirelo-ai/sfx2.0/video-to-video"
       ],
       "default_model": "fal-ai/wan-vace-14b",
       "model_policies": {
@@ -573,6 +575,32 @@
           "read_date": "2026-10-10",
           "explicit_only": true,
           "allowed_regions": []
+        },
+        "mirelo-ai/sfx2.0/video-to-audio": {
+          "enabled": true,
+          "license": "service-terms",
+          "weights_license": "closed-weights",
+          "license_source": "https://fal.ai/models/mirelo-ai/sfx2.0/video-to-audio",
+          "hosted_terms_url": "https://fal.ai/legal/terms-of-service",
+          "training_eligible": false,
+          "training_reason": "No express output-training grant verified; fal terms restrict competing-model training.",
+          "commercial_status": "Commercial hosted API per fal model card; source media rights required.",
+          "consent_requirements": "Input rights and required real-face/voice permissions under fal terms 6(d). No Mirelo-specific recorded-consent field verified.",
+          "consent_source": "https://fal.ai/legal/terms-of-service",
+          "read_date": "2026-10-15"
+        },
+        "mirelo-ai/sfx2.0/video-to-video": {
+          "enabled": true,
+          "license": "service-terms",
+          "weights_license": "closed-weights",
+          "license_source": "https://fal.ai/models/mirelo-ai/sfx2.0/video-to-video",
+          "hosted_terms_url": "https://fal.ai/legal/terms-of-service",
+          "training_eligible": false,
+          "training_reason": "No express output-training grant verified; fal terms restrict competing-model training.",
+          "commercial_status": "Commercial hosted API per fal model card; source media rights required.",
+          "consent_requirements": "Input rights and required real-face/voice permissions under fal terms 6(d). No Mirelo-specific recorded-consent field verified.",
+          "consent_source": "https://fal.ai/legal/terms-of-service",
+          "read_date": "2026-10-15"
         }
       },
       "fixed_models": {
@@ -582,7 +610,6 @@
         "generate_wan3_i2v": "alibaba/wan-3.0/image-to-video",
         "generate_wan3_r2v": "alibaba/wan-3.0/reference-to-video",
         "kling_motion_control": "fal-ai/kling-video/v3/pro/motion-control",
-        "mirelo_v2a": "mirelo-ai/sfx1.6/video-to-video",
         "ideogram_edit": "ideogram/v4.5/edit",
         "recraft_text_to_vector": "fal-ai/recraft/v4.1/pro/text-to-vector",
         "pixelcut_looping_video": "pixelcut/looping-video",
@@ -595,7 +622,7 @@
         "generate_wan3_i2v": "alibaba/wan-3.0/image-to-video",
         "generate_wan3_r2v": "alibaba/wan-3.0/reference-to-video",
         "kling_motion_control": "fal-ai/kling-video/v3/pro/motion-control",
-        "mirelo_v2a": "mirelo-ai/sfx1.6/video-to-video",
+        "mirelo_v2a": "mirelo-ai/sfx2.0/video-to-audio",
         "ideogram_edit": "ideogram/v4.5/edit",
         "recraft_text_to_vector": "fal-ai/recraft/v4.1/pro/text-to-vector"
       },
@@ -1797,21 +1824,21 @@
       "gateway_tool": "Fal___mirelo_v2a",
       "status": "ready",
       "provider": "fal",
-      "reason": "Built Mirelo SFX 1.6 on fal; paid video cost approval; multi-sample billing unknown and dry-run only.",
-      "verification": "Official endpoint, schema, commercial label and single-sample price verified; live transport and output quality untested.",
+      "reason": "Built Mirelo SFX 2.0 with speech preservation; audio default, selectable muxed video and legacy 1.6 for A/B; cost approval retained.",
+      "verification": "Official schemas, commercial labels and per-sample price verified 2026-10-15; live transport, playback and quality untested.",
       "training_eligible": false,
-      "model": "mirelo-ai/sfx1.6/video-to-video",
+      "model": "mirelo-ai/sfx2.0/video-to-audio",
       "host": "fal",
       "us_available": "yes",
       "availability_source": "https://fal.ai/legal/terms-of-service",
-      "read_date": "2026-10-09",
+      "read_date": "2026-10-15",
       "license": "service-terms",
-      "license_source": "https://fal.ai/models/mirelo-ai/sfx1.6/video-to-video",
+      "license_source": "https://fal.ai/models/mirelo-ai/sfx2.0/video-to-audio",
       "training_reason": "No express output-training grant verified; fal terms restrict competing-model training.",
-      "source": "https://fal.ai/models/mirelo-ai/sfx1.6/video-to-video",
-      "price_source": "https://fal.ai/models/mirelo-ai/sfx1.6/video-to-video",
+      "source": "https://fal.ai/models/mirelo-ai/sfx2.0/video-to-audio",
+      "price_source": "https://fal.ai/models/mirelo-ai/sfx2.0/video-to-audio",
       "dry_run": true,
-      "produces_video": true
+      "produces_video": false
     },
     "topaz_interpolate": {
       "gateway_tool": "Topaz___interpolate_video",
@@ -5707,6 +5734,90 @@
     },
     {
       "provider": "fal",
+      "model": "mirelo-ai/sfx2.0/video-to-audio",
+      "label": "Mirelo SFX 2.0 via fal",
+      "tools": {
+        "sfx": "Fal___mirelo_v2a"
+      },
+      "jobs": {
+        "sfx": true,
+        "max_resolution": 0
+      },
+      "resolutions": [],
+      "policy_ref": "fal",
+      "price": {
+        "unit": "output second per sample",
+        "source": "https://fal.ai/models/mirelo-ai/sfx2.0/video-to-audio",
+        "read_date": "2026-10-15"
+      },
+      "controls": {
+        "sfx": [
+          "video_url",
+          "text_prompt",
+          "negative_prompt",
+          "preserve_speech",
+          "duration",
+          "num_samples",
+          "seed",
+          "model",
+          "upload_audio_format",
+          "upload_audio_bitrate_kbps"
+        ]
+      },
+      "durations": {
+        "sfx": [
+          1,
+          600
+        ]
+      },
+      "duration_field": "duration",
+      "duration_integer": false,
+      "native_audio_field": null,
+      "notes": "SFX 2.0, preserve_speech true by default; thin evidence, A/B first. Audio output requires final assembly for video delivery."
+    },
+    {
+      "provider": "fal",
+      "model": "mirelo-ai/sfx2.0/video-to-video",
+      "label": "Mirelo SFX 2.0 via fal",
+      "tools": {
+        "sfx": "Fal___mirelo_v2a"
+      },
+      "jobs": {
+        "sfx": true,
+        "max_resolution": 0
+      },
+      "resolutions": [],
+      "policy_ref": "fal",
+      "price": {
+        "unit": "output second per sample",
+        "source": "https://fal.ai/models/mirelo-ai/sfx2.0/video-to-video",
+        "read_date": "2026-10-15"
+      },
+      "controls": {
+        "sfx": [
+          "video_url",
+          "text_prompt",
+          "negative_prompt",
+          "preserve_speech",
+          "duration",
+          "num_samples",
+          "seed",
+          "model"
+        ]
+      },
+      "durations": {
+        "sfx": [
+          1,
+          600
+        ]
+      },
+      "duration_field": "duration",
+      "duration_integer": false,
+      "native_audio_field": null,
+      "notes": "SFX 2.0, preserve_speech true by default; thin evidence, A/B first. Audio output requires final assembly for video delivery."
+    },
+    {
+      "provider": "fal",
       "model": "mirelo-ai/sfx1.6/video-to-video",
       "label": "Mirelo SFX 1.6 via fal",
       "tools": {
@@ -5730,7 +5841,8 @@
           "text_prompt",
           "duration",
           "num_samples",
-          "seed"
+          "seed",
+          "model"
         ]
       },
       "durations": {
@@ -5742,7 +5854,8 @@
       "duration_field": "duration",
       "duration_integer": false,
       "native_audio_field": null,
-      "notes": "Video with SFX audio track. 1-60s, sliding-window above10. Thin evidence; A/B with ElevenLabs. Samples2-4 preview only until billing verified."
+      "notes": "Video with SFX audio track. 1-60s, sliding-window above10. Thin evidence; A/B with ElevenLabs. Samples2-4 preview only until billing verified.",
+      "explicit_only": true
     },
     {
       "provider": "fal",
@@ -6677,6 +6790,13 @@
         "lyrics_video": "mureka_lyrics_video"
       }
     },
+    "mirelo16": {
+      "pattern": "mirelo(?:[ -]sfx)?[ /-]*1\\.6|sfx[ -]*1\\.6",
+      "aliases": {
+        "sfx": "mirelo_v2a"
+      },
+      "model": "mirelo-ai/sfx1.6/video-to-video"
+    },
     "mirelo": {
       "pattern": "mirelo",
       "aliases": {
@@ -7141,14 +7261,14 @@
       "enabled": true,
       "license": "service-terms",
       "weights_license": "closed-weights",
-      "license_source": "https://fal.ai/models/mirelo-ai/sfx1.6/video-to-video",
+      "license_source": "https://fal.ai/models/mirelo-ai/sfx2.0/video-to-audio",
       "hosted_terms_url": "https://fal.ai/legal/terms-of-service",
       "training_eligible": false,
       "training_reason": "No express output-training grant verified; fal terms restrict competing-model training.",
       "commercial_status": "Commercial hosted API per fal model card; source media rights required.",
       "consent_requirements": "Input rights and required real-face/voice permissions under fal terms 6(d). No Mirelo-specific recorded-consent field verified.",
       "consent_source": "https://fal.ai/legal/terms-of-service",
-      "read_date": "2026-10-09"
+      "read_date": "2026-10-15"
     },
     "eleven_v4_turbo": {
       "license": "ElevenLabs paid commercial API; Terms of Service",

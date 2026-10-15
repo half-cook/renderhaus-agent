@@ -1,53 +1,111 @@
-# Mirelo picture-synchronized SFX
+# Mirelo picture-synced SFX
 
-`mirelo_v2a` maps to `Fal___mirelo_v2a` on the existing fal provider. Video-input SFX defaults to Mirelo SFX 1.6. Text-only effects use `ElevenLabs___text_to_sound_effects_convert`. Explicit provider requests take precedence, then the text-only exception, then the default. Attached video versions participate in Studio's route proposal. Confidential project metadata does not change selection. No canonical ID clashes were found.
+`mirelo_v2a` remains the capability-map SFX default and maps to `Fal___mirelo_v2a`.
+SFX 2.0 replaces 1.6 as the default. Explicit requests precede the text-only exception
+and default. Confidential metadata does not change routing. ElevenLabs SFX remains
+the text-only exception. No other provider defaults change.
 
-## Verified contract
+## Verified endpoints and contracts
 
-Official sources read **2026-10-09**:
+Official sources were read on **2026-10-15**. SFX 2.0 launched after the original
+October 8 capability map, so its verification date cannot be October 8 or 9.
 
-- [fal API reference](https://fal.ai/models/mirelo-ai/sfx1.6/video-to-video/api).
-- [fal OpenAPI schema](https://fal.ai/api/openapi/queue/openapi.json?endpoint_id=mirelo-ai/sfx1.6/video-to-video).
-- [fal model and pricing page](https://fal.ai/models/mirelo-ai/sfx1.6/video-to-video).
+| Selection through `model` | Output | Duration | Role |
+| --- | --- | --- | --- |
+| `mirelo-ai/sfx2.0/video-to-audio` | Audio bed | 1-600 seconds | Default |
+| `mirelo-ai/sfx2.0/video-to-video` | Muxed MP4 | 1-600 seconds | Explicit output selection; Studio video node |
+| `mirelo-ai/sfx1.6/video-to-video` | Muxed MP4 | 1-60 seconds | Explicit legacy A/B selection |
 
-The verified endpoint is `mirelo-ai/sfx1.6/video-to-video`. Arguments:
+The [2.0 audio schema](https://fal.ai/api/openapi/queue/openapi.json?endpoint_id=mirelo-ai/sfx2.0/video-to-audio),
+[2.0 video schema](https://fal.ai/api/openapi/queue/openapi.json?endpoint_id=mirelo-ai/sfx2.0/video-to-video)
+and [legacy schema](https://fal.ai/api/openapi/queue/openapi.json?endpoint_id=mirelo-ai/sfx1.6/video-to-video)
+verify these IDs and wire contracts. No ID or API remains UNVERIFIED for SFX 2.0.
+Live transport, playback and output quality remain untested.
 
-| Argument | Contract |
-| --- | --- |
-| `video_url` | Required public HTTPS media or an authorized `renderhaus-asset://<version>` handle. Studio resolves handles after approval, before the provider request. Unresolved handles cannot reach live HTTP. |
-| `text_prompt` | Optional sound description. Describe footsteps, impacts or ambience rather than visual edits. |
-| `duration` | Seconds, 1–60, default 10. Match the measured input duration. Above 10 seconds uses sliding windows. Fractional seconds are supported. |
-| `num_samples` | Integer 1–4. Renderhaus explicitly sends 1 by default; fal's schema defaults to 2. Samples 2–4 are dry-run-only until billing is verified. |
-| `seed` | Optional integer, -1 through the published maximum 18446744073709552000. Null or -1 selects random generation. |
+Both 2.0 endpoints accept authorized `video_url`, optional `text_prompt` up to 2000
+characters, `negative_prompt` up to 1000, `preserve_speech` default true, `duration`,
+`num_samples` from 1 through 4, and optional `seed`. Renderhaus defaults to one sample;
+fal defaults to two. Match duration to measured footage. The vendor clamps to video
+length and uses windows above 10 seconds. Sub-second video is unsupported.
 
-A strict Pydantic contract rejects invalid controls and extra arguments before any paid request. The queue submit saves an endpoint-qualified job handle. Reuse `Fal___get_video_task` with `download=true`. The official result contains `model: "sfx-1.6"` and a nonempty `video` list of file objects. These are MP4s with audio tracks. This endpoint does not return a separate audio file.
+Audio output supports WAV by default, MP3, AAC and FLAC. Optional bitrate applies only
+to lossy formats. MP3 accepts the documented CBR values from 32 through 320 kbps;
+AAC accepts 32 through 256. Video output rejects audio encoding controls. Legacy
+rejects speech preservation, negative prompts and encoding controls before HTTP.
+Never silently discard a requested control or fall back to the old version.
 
-The poll exposes the whole list as `videos`, preserving file metadata, and saves the first variant as the existing `video_url`/`output_path` result. Studio registers that primary artifact. Delivery requires a successful downloaded result and a saved local MP4 or registered video version. A worker-local path alone is insufficient when the agent runs on another host. Queued jobs and dry-run previews are incomplete media. Captions or other assembly requests still require a final render.
+[Mirelo's announcement](https://mirelo.ai/blog/mirelo-sfx-2-0) describes a post-stitch
+sound pass that removes unwanted music and generates coherent effects around dialogue.
+Speech preservation regenerates speech; it does not promise identical original bytes.
+Listen for altered words, timing, ducking, missing speech and artifacts.
 
-## Price and approval
+Submit once, retain the returned job ID and poll the existing `Fal___get_video_task`.
+The endpoint in the handle determines output kind, including saved 1.6 jobs. Audio
+results expose `audios`, primary `audio_url` and a downloaded audio `output_path`.
+Video results retain `videos`, primary `video_url` and MP4 `output_path`. All variants
+are URL-validated before download; the primary artifact is saved once. Dry handles
+remain dry even if configuration later changes.
 
-The [official model page](https://fal.ai/models/mirelo-ai/sfx1.6/video-to-video), read **2026-10-09**, publishes **$0.01 per second**. For one requested sample, a 10-second clip costs $0.10 before the existing Renderhaus fee. Billing rounds provider cents upward for fractional durations. Chat approval uses the published cost even in dry-run mode; dry-run ledger charges remain zero.
+Studio registers audio as audio, including AAC. An audio bed cannot complete a video
+request. Save the bed, then render the picture with that bed and poll the matching
+final render. A source-picture render from before SFX completion cannot satisfy this
+check. Audio-only completion requires a saved current audio version. For a combined
+soundtrack with preserved speech, mute the original soundtrack to avoid restoring
+unwanted music or doubling speech. Play the final artifact before delivery.
 
-**UNVERIFIED:** the page does not clearly state billing for multiple samples. Their estimate stays `unknown`, and live submission is blocked before HTTP. No multiplier is invented. Resolve this TODO against official billing documentation before enabling samples 2–4.
+## Pricing and approval
 
-Mirelo produces video, so it belongs to the paid-video approval gate. It pauses with provider/model and cost even in autonomous runs when the existing premium-video policy is enabled. The policy's global switch, approval exemptions and autonomous spend cap are unchanged. Direct Studio invocation returns a chat-approval requirement rather than bypassing the gate.
+The [official audio pricing page](https://fal.ai/models/mirelo-ai/sfx2.0/video-to-audio)
+and [video pricing page](https://fal.ai/models/mirelo-ai/sfx2.0/video-to-video), read
+**2026-10-15**, specify $0.010 per output second per sample from October 14 through
+December 13, 2026 inclusive. The standard $0.015 rate resumes December 14. Billing
+uses UTC dates, multiplies seconds by samples before rounding, and retains existing
+billing calculations. Two ten-second samples cost $0.20 during the promotion and
+$0.30 at standard rate before the existing platform fee.
+
+The [legacy price page](https://fal.ai/models/mirelo-ai/sfx1.6/video-to-video), re-read
+**2026-10-15**, specifies $0.01 per second. Its multi-sample multiplier remains
+**UNVERIFIED**. Legacy samples 2-4 have unknown estimates and remain dry-run-only.
+Quotes use published rates even in dry-run; dry-run ledger charges stay zero.
+
+Both output modes retain the existing costed approval pause, including autonomous
+runs under the paid-video policy. No approval exemption, global approval switch or
+autonomous spend cap changes. Direct Studio invocation still requires chat approval.
+Customer UI uses Studio Sound labels and total costs. Provider/model details and fee
+breakdowns stay in internal provenance and billing records.
 
 ## Licence and configuration
 
-Mirelo is a commercial hosted API, with `service-terms` licence classification and closed weights. Sources read **2026-10-09** are the [commercial model listing](https://fal.ai/models/mirelo-ai/sfx1.6/video-to-video), [fal terms](https://fal.ai/legal/terms-of-service) and [API supplemental terms](https://fal.ai/legal/api-services). US access is inferred from fal's US service provisions; no model-specific region guarantee is published. The fal terms restrict competing-model training. No affirmative general output-training grant was verified, so `training_eligible=false`.
+The commercial badges on the official model pages and [fal terms](https://fal.ai/legal/terms-of-service),
+read **2026-10-15**, support a commercial hosted API with `service-terms` and closed
+weights. Source rights and required real-face/voice permissions remain required.
+No Mirelo-specific recorded-consent API field was verified. US access is inferred
+from fal's service terms; no model-specific US guarantee is published. No express
+output-training grant was verified, so every version has `training_eligible=false`.
+No weights or upstream code are copied. MMAudio remains retired for NC weights.
 
-Input media rights and any required likeness/voice consent remain the customer's responsibility under fal's terms. This is sound-effects generation from existing footage, not voice cloning or identity generation. No weights or upstream implementation are copied.
+Reuse `FAL_KEY` from environment or Secrets Manager and `FAL_DRY_RUN`, default true.
+There are no new secrets, flags, providers, tools or skill directories. Existing
+`sync_secrets.py`, dispatch roles, Lambda routing and dry-run CI cover this upgrade.
+Inventory is 21 providers, 140 Gateway tools, 41 skills and 330 routing rows,
+324 active. Six unrelated dependency rows retain their skips. RT-195 is active;
+existing Mirelo rows were already active. Docker skill count remains 41.
 
-The text-only exception remains the existing ElevenLabs SFX tool. Its [official API](https://elevenlabs.io/docs/api-reference/text-to-sound-effects/convert), read **2026-10-09**, accepts `text` at `/v1/sound-generation`, optional 0.5–30 second duration and the `eleven_text_to_sound_v2` model. [ElevenLabs terms](https://elevenlabs.io/terms-of-use), read **2026-10-09**, provide commercial use on paid plans; free-plan outputs are non-commercial. Its existing `training_eligible=false` remains because no output-training grant was verified. This change does not revise its billing rates.
+## Validation limits and A/B follow-up
 
-MMAudio remains retired. Its [official checkpoint card](https://huggingface.co/hkchengrex/MMAudio), read **2026-10-09**, declares CC-BY-NC-4.0 weights. Non-commercial weights cannot be used in Renderhaus. No AGPL code is added.
+Offline tests use mocked HTTP and scripted Deep Agents 0.7.23 calls. They cover
+payloads, invalid controls, all output modes, promotion boundaries, known 2.0 and
+unknown legacy sample pricing, persistence, routing, native approval/resume/rejection,
+wrong-job rejection and final assembly ordering. They are not browser evidence.
 
-Reuse `FAL_KEY` through env/Secrets Manager and `FAL_DRY_RUN`, default `true`. `scripts/sync_secrets.py` already maps both. There are **no new secrets or environment variables**, and no change to ElevenLabs configuration. CI explicitly sets all existing dry-run flags. Do not disable dry-run to verify this offline branch.
+Comet E2E remains blocked because this session exposes no Comet control. Access was
+requested and the ignored `.renderhaus/e2e/` report records the blocker. The task
+prohibits live or paid API calls. No generated artifact or real synchronization was
+verified here.
 
-## Validation and quality follow-up
-
-Mocked HTTP tests cover schema boundaries, exact queue bodies, polling/error states, primary artifact saving, unknown multi-sample cost, routing, Studio asset context and native Deep Agents approval/resume/rejection. They use installed deepagents 0.7.23 and no provider keys or network calls. The three Mirelo fixture rows are active; 215 total routing cases are active and 5 retain their dependency or unverified-semantics skips. Inventory is 16 providers, 117 Gateway tools and 30 skills. The silent graphic workflow is documented in [Knowledge explainers](KNOWLEDGE_EXPLAINER.md).
-
-Comet browser E2E is **blocked** because no controllable Comet browser is available here. The task also prohibits live provider calls. Generated playback and real synchronization quality remain untested. The ignored `.renderhaus/e2e/` report records the blocker through `scripts/browser_e2e_hook.py`; offline tests are not browser evidence.
-
-Evidence for picture synchronization is thin. Run an approved A/B against text-described ElevenLabs SFX on the same short silent clips. Include footsteps, impacts and ambience, and compare alignment, sound appropriateness, artifacts and preservation of the source video. Record blinded human judgments and actual playback before claiming a quality advantage. No paid A/B was run in this task.
+Keep A/B-first. The announcement's comparisons are vendor-run, with no independent
+SFX arena. Use approved short clips with dialogue plus unwanted music, action cues
+and cuts. Compare 2.0 against explicit 1.6 and the text-only exception on appropriate
+material. Record model, job, blinded listening preference and `ab_arm` through the
+existing outcome recorder. Approval is spending authorization, not quality acceptance.
+No paid A/B or quality promotion claim is part of this branch.

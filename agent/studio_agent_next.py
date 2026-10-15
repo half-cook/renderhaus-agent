@@ -1603,12 +1603,14 @@ def _validate_video_delivery(
             final.summary = "Ad matrix is incomplete. First-aspect review or batch artifacts are still pending."
         return False
     mirelo_submissions = [event for event in current_events if event.name == "Fal___mirelo_v2a"]
+    from providers.fal import mirelo
+
     mirelo_job = None
     if mirelo_submissions:
         latest = mirelo_submissions[-1]
         mirelo_job = latest.provider_job_id or latest.result.get("job_id")
     mirelo_started = any(event.name == "Fal___mirelo_v2a" or (
-        event.name == "Fal___get_video_task" and event.result.get("model") == "mirelo-ai/sfx1.6/video-to-video"
+        event.name == "Fal___get_video_task" and event.result.get("model") in mirelo.ENDPOINTS
     ) for event in current_events)
     if delivery_alias == "elevenlabs_sfx_v2" and delivery_route.basis.startswith("explicit request"):
         mirelo_started = False
@@ -1634,6 +1636,16 @@ def _validate_video_delivery(
         r"\b(?:add|burn|overlay|insert|include|with)\b.*\b(?:captions?|subtitles?|titles?|music|b.?roll|graphics)\b",
         assembly_prompt, re.IGNORECASE,
     ))
+    mirelo_polls = [event for event in current_events if event.name == "Fal___get_video_task"
+                    and event.result.get("model") in mirelo.ENDPOINTS]
+    mirelo_model = delivery_route.model
+    if mirelo_submissions:
+        mirelo_model = (str(mirelo_job).partition(":")[0] if mirelo_job else
+                        mirelo_submissions[-1].arguments.get("model", mirelo.ENDPOINT_ID))
+    elif mirelo_polls:
+        mirelo_model = mirelo_polls[-1].result["model"]
+    if (delivery_alias == "mirelo_v2a" or mirelo_started) and mirelo_model == mirelo.ENDPOINT_ID:
+        return _validate_mirelo_audio_delivery(request, studio, current_events, mirelo_polls, mirelo_job, final)
     standalone_poll = {"mureka_lyrics_video": "Mureka___get_video_task",
                        "mirelo_v2a": "Fal___get_video_task",
                        "sync3_lipsync": "Sync___get_video_task",
@@ -1650,7 +1662,8 @@ def _validate_video_delivery(
                  and (event.provider_job_id or event.arguments.get("job_id") or event.result.get("job_id")) == dialogue_job))
             and (delivery_alias != "mirelo_v2a" or (
                 event in current_events
-                and event.result.get("model") == "mirelo-ai/sfx1.6/video-to-video"
+                and event.result.get("model") in mirelo.ENDPOINTS
+                and mirelo.ENDPOINTS[event.result["model"]].output_kind == "video"
                 and (not mirelo_submissions or mirelo_job and (
                     event.provider_job_id or event.arguments.get("job_id") or event.result.get("job_id")
                 ) == mirelo_job)
@@ -1690,6 +1703,51 @@ def _validate_video_delivery(
     if final is not None:
         final.summary = message[:320]
         notice = f"## Video export incomplete\n\n{message}"
+        if notice not in final.markdown:
+            final.markdown = f"{final.markdown.rstrip()}\n\n{notice}"[:30_000]
+    return False
+
+
+def _validate_mirelo_audio_delivery(
+    request: StudioAgentRequest, studio: StudioAgentContext, current_events: list[StudioToolEvent],
+    polls: list[StudioToolEvent], job_id: str | None, final: StudioAgentOutput | None,
+) -> bool:
+    from providers.fal.mirelo import ENDPOINT_ID
+
+    matching = [event for event in polls if event.result.get("model") == ENDPOINT_ID
+                and (not job_id or (event.provider_job_id or event.arguments.get("job_id") or event.result.get("job_id")) == job_id)]
+    if not job_id and any(event.name == "Fal___mirelo_v2a" for event in current_events):
+        matching = []
+    poll = matching[-1] if matching else None
+    saved = (poll is not None and poll.status == "succeeded" and poll.result.get("status") == "succeeded"
+             and poll.result.get("downloaded") is True
+             and any(asset.get("kind") == "audio" and asset.get("version_id") for asset in poll.assets))
+    audio_only = bool(re.search(r"video[- ]to[- ]audio|audio[- ]only|audio (?:file|bed) only|return an? audio file", request.prompt, re.I)) and not _requests_video_deliverable(request.prompt)
+    if saved and audio_only:
+        return True
+    if saved:
+        sources = {poll.result.get("audio_url"), poll.result.get("output_path")}
+        sources.update("renderhaus-asset://" + asset["version_id"] for asset in poll.assets
+                       if asset.get("kind") == "audio" and asset.get("version_id"))
+        sources.discard(None)
+        after_audio = current_events[current_events.index(poll) + 1:]
+        renders = [event for event in after_audio if event.name == "Remotion___render_timeline"
+                   and any(track.get("url") in sources or track.get("output_path") in sources
+                           for track in event.arguments.get("audio_tracks", []))]
+        for render in renders:
+            render_id = render.result.get("job_id") or render.result.get("render_id")
+            if render_id and any(event.name == "Remotion___get_render_progress"
+                                 and event.arguments.get("render_id") == render_id
+                                 and event.status == "succeeded" and event.result.get("status") == "succeeded"
+                                 and _completed_video_artifact(event.result)
+                                 for event in after_audio[after_audio.index(render) + 1:]):
+                return True
+    message = ("The requested audio is incomplete because no completed soundtrack was saved."
+               if audio_only else "The requested video is incomplete. Save the soundtrack and assemble it with the picture before delivery.")
+    _progress(studio, event_id="video-delivery", event_type="RUN_ERROR", title="Sound export incomplete", message=message, status="failed")
+    if final is not None:
+        final.summary = message
+        notice = f"## Sound export incomplete\n\n{message}"
         if notice not in final.markdown:
             final.markdown = f"{final.markdown.rstrip()}\n\n{notice}"[:30_000]
     return False
