@@ -60,7 +60,8 @@ def _has_media(value: Any) -> bool:
     if isinstance(value, dict):
         if isinstance(value.get("type"), str) and value["type"] not in _TEXT_BLOCKS:
             return True
-        return any(_has_media(item) for item in value.values())
+        # cache_control ({"type": "ephemeral"}) is prompt-caching metadata, not a media block.
+        return any(_has_media(item) for key, item in value.items() if key != "cache_control")
     if isinstance(value, list):
         return any(_has_media(item) for item in value)
     return False
