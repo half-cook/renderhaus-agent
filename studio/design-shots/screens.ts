@@ -197,3 +197,8 @@ SCREENS.push(
 const waitingChanges = changesDocument();
 waitingChanges.changes = [{ ...waitingChanges.changes[0]!, state: "awaiting_approval", taken: false, approval: waitingChanges.newTakeApproval }];
 SCREENS.push({ id: "m24-waiting-paid-change", url: changesUrl, ready: "[data-shot='agent-changes-ready']", fixtures: changesCase(waitingChanges), now: changesNow });
+
+// Design pass v5: a brand-new project with no shots yet, for the empty Studio strip placeholder.
+const emptyCanvas = { ...mugCanvas, document: { ...mugCanvas.document, nodes: [], edges: [] } };
+SCREENS.push({ id: "m03-agent-no-shots", url: agentUrl, ready: "[data-shot='studio-strip-empty']",
+  fixtures: mug({ [`/api/studio/projects/${MUG}/canvas`]: emptyCanvas, "/api/studio/agent": { items: [] }, ...account(1000, 0) }) });

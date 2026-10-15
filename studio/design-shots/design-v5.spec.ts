@@ -6,7 +6,7 @@ import { wire, settle } from "./fixture";
 
 // Design pass v5 screens: credit label, pricing lock, up-to one number + lower cap, phone low credit, empty Studio.
 const OUT = process.env.V5_OUT || "/workspace/share/launch-screens-v5";
-const LIVE = ["m02-home", "m03-agent-empty", "m04-agent-run", "m17-low-credit"];
+const LIVE = ["m02-home", "m03-agent-empty", "m03-agent-no-shots", "m04-agent-run", "m17-low-credit"];
 const REVIEW = ["v4-pricing", "v4-up-to", "v4-up-to-over", "v4-approval"];
 
 for (const screen of SCREENS.filter((s) => LIVE.includes(s.id))) {

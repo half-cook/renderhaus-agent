@@ -377,3 +377,8 @@ html[data-theme="light"] {
 /* Review gallery: the composer sticks to the bottom of the chat column instead of scrolling over a tall card. */
 .rh-v4-chat .rh-v4-composer { position: sticky; left: auto; right: auto; bottom: 0; margin-top: auto; padding: 12px 0 0; background: var(--rh-bg, #0b0a09); }
 .rh-v4-chat { padding-bottom: 20px; }
+/* Empty Studio: the welcome block never shrinks under its content (it was centring the overflow and pushing
+   "What are we making?" up under the Conversation saved line). Safe centring + top spacing at every viewport. */
+.rh-agent-dock .agent-empty { flex-shrink: 0; justify-content: safe center; padding-top: 16px; }
+/* Home on phones: one column. The fixed 360px side column was squeezing the project grid to 0px wide at 390. */
+@media (max-width: 800px) { .rh-home-cols { grid-template-columns: minmax(0, 1fr); } .rh-pgrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
