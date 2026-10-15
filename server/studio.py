@@ -50,6 +50,7 @@ from server.beta_credits import beta_billing_enabled
 from server.billing_rates import cost_for
 from server import run_billing, run_budget
 from server.config import ROOT
+from server.logo_artifacts import logo_artifact_path
 from server.studio_state import ACTIVE_EXECUTION_STATUSES, CanvasConflictError, InsufficientBalanceError, StudioAssetKind, repository
 from server.studio_options import LIVE_CHOICE_TOOLS, extract_choice_ids, static_field_options
 from server.uploads import bounded_upload_path, upload_limits_mb
@@ -2355,6 +2356,21 @@ async def studio_agent_job_events(
             "Cache-Control": "no-cache, no-transform",
             "X-Accel-Buffering": "no",
         },
+    )
+
+
+@router.get("/executions/{execution_id}/logo-artifacts/{tool_call_id}/{filename}")
+async def studio_logo_artifact(
+    execution_id: str, tool_call_id: str, filename: str, auth: AuthUser,
+) -> FileResponse:
+    execution = await asyncio.to_thread(repository.get_execution, current_workspace_id(auth), execution_id)
+    try:
+        path = await asyncio.to_thread(logo_artifact_path, execution, execution_id, tool_call_id, filename)
+    except (ValueError, OSError) as exc:
+        raise HTTPException(status_code=404, detail="Logo artifact not found.") from exc
+    return FileResponse(
+        path, filename=filename, content_disposition_type="attachment",
+        headers={"Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff"},
     )
 
 
