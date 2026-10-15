@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useRef, type ReactNode } from "react";
 import { Check, CircleAlert, CircleCheck, CirclePause, ImageOff, Info, Pencil, Play, Plus, RotateCw, ShieldCheck, Lock } from "lucide-react";
+import { OUT_OF_CREDIT_FULL, topupsEnabled } from "@/lib/launch";
 import { formatCents } from "@/lib/rh/money";
 import { a11yApproveName, creditState, type ApprovalCardModel } from "@/lib/rh/billing";
 import { BalanceNote, CapRow, Ledger, LedgerRow, LedgerTotal, lineLabel } from "./Ledger";
@@ -21,6 +22,9 @@ export type ApprovalCardActions = {
   onAddCredit?: () => void;
   onPreview?: () => void;
   onRegenerate?: () => void;
+  onUseCheaper?: () => void;
+  onTrim?: () => void;
+  onKeep?: () => void;
 };
 
 const HEADER: Record<ApprovalCardModel["status"], { label: string; tone: "ember" | "ok" | "danger"; icon: ReactNode; dot?: boolean }> = {
@@ -73,6 +77,7 @@ export function ApprovalCard({ model, approveEnabled, busy = false, actions = {}
   const headingRef = useRef<HTMLHeadingElement>(null);
   const header = HEADER[model.status];
   const credit = model.status === "pending" ? creditState(model, approveEnabled) : "ok";
+  const topups = topupsEnabled();
   const approveName = a11yApproveName(model, formatCents);
   const stepLabel = model.stepIndex && model.stepCount ? `Step ${model.stepIndex} of ${model.stepCount}` : null;
   const live = model.status === "approved" ? `Approved. Up to ${formatCents(model.capCents)} reserved.`
@@ -140,7 +145,9 @@ export function ApprovalCard({ model, approveEnabled, busy = false, actions = {}
         </>
       ) : null}
 
-      {credit !== "ok" ? (
+      {credit !== "ok" && !topups ? <OverCredit model={model} credit={credit} titleId={titleId} approveName={approveName} actions={actions} /> : null}
+
+      {credit !== "ok" && topups ? (
         <Notice tone="ember" title={`Not enough credit for the ${formatCents(model.capCents)} cap`}>
           The cap is held from your credit while the step runs, so it can’t be higher than what you have.{" "}
           {credit === "lower_cap"
@@ -162,7 +169,7 @@ export function ApprovalCard({ model, approveEnabled, busy = false, actions = {}
         </>
       ) : null}
 
-      {model.status === "pending" && credit !== "ok" ? (
+      {model.status === "pending" && credit !== "ok" && topups ? (
         <>
           <div className="rh-appr-ft">
             <button type="button" className="rh-btn rh-btn-primary rh-btn-act" style={{ flex: 1 }} onClick={actions.onAddCredit}><Plus size={14} aria-hidden="true" />Add credit</button>
@@ -233,7 +240,23 @@ export function ApprovalCard({ model, approveEnabled, busy = false, actions = {}
         </>
       ) : null}
 
-      {model.status === "paused_cap" ? (
+      {model.status === "paused_cap" && !topups && (model.raiseOptionsCents ?? []).length === 0 ? (
+        <>
+          <Notice tone="ember" title={`Stopped at your ${formatCents(model.capCents)} cap`}>{OUT_OF_CREDIT_FULL}</Notice>
+          <Ledger heading="Spent so far">
+            {estimateLines.map((line) => <LedgerRow key={`${line.kind}:${line.label}`} label={lineLabel(line, "so-far")} amount={formatCents(line.priceCents)} />)}
+            <LedgerTotal label="Charged · at cap" amountCents={model.chargedCents ?? model.capCents} />
+          </Ledger>
+          {model.balanceCents != null ? <BalanceNote>Balance now <b className="rh-num rh-mono">{formatCents(model.balanceCents)}</b>{model.walletTotalCents != null ? ` of ${formatCents(model.walletTotalCents)}` : ""}</BalanceNote> : null}
+          <div className="rh-appr-ft" data-shot="out-of-credit-actions">
+            <button type="button" className="rh-btn rh-btn-solid rh-btn-act" style={{ flex: 1 }} onClick={actions.onTrim}>Trim</button>
+            <button type="button" className="rh-btn rh-btn-act" onClick={actions.onKeep ?? actions.onStop}>Keep as is</button>
+          </div>
+          <div className="rh-footnote"><span>Both are free. Trim opens the timeline on the partial clip. Free edits (trim, reorder, export) still work.</span></div>
+        </>
+      ) : null}
+
+      {model.status === "paused_cap" && (topups || (model.raiseOptionsCents ?? []).length > 0) ? (
         <>
           <Notice tone="ember" title={`Stopped at your ${formatCents(model.capCents)} cap`}>
             {model.message ?? "The agent needed more attempts than estimated. Nothing more has been charged, and the step is paused so you decide."}
@@ -250,7 +273,7 @@ export function ApprovalCard({ model, approveEnabled, busy = false, actions = {}
                 {index === 0 ? `Raise cap to ${formatCents(option)}` : `Raise to ${formatCents(option)}`}
               </button>
             ))}
-            {(model.raiseOptionsCents ?? []).length === 0 ? <button type="button" className="rh-btn rh-btn-primary rh-btn-act" style={{ flex: 1 }} onClick={actions.onAddCredit}><Plus size={14} aria-hidden="true" />Add credit</button> : null}
+            {(model.raiseOptionsCents ?? []).length === 0 && topups ? <button type="button" className="rh-btn rh-btn-primary rh-btn-act" style={{ flex: 1 }} onClick={actions.onAddCredit}><Plus size={14} aria-hidden="true" />Add credit</button> : null}
             <button type="button" className="rh-btn rh-btn-quiet rh-btn-act" onClick={actions.onStop}>Stop here</button>
           </div>
           <div className="rh-footnote"><span>Raising the cap lets this step continue until the new total is reached. Stopping keeps what was made and charges nothing further.</span></div>
@@ -259,5 +282,57 @@ export function ApprovalCard({ model, approveEnabled, busy = false, actions = {}
 
       <span className="rh-sr-only" role="status" aria-live="polite">{live}</span>
     </article>
+  );
+}
+
+const OVER_CREDIT_FOOTNOTE = "Approve stays off while the hard cap is more than your credit. Top-ups are coming soon.";
+
+/** Quiet beta, top-ups off (spec 4.12.4, mockups 49 / 49b): Approve disabled, one option that fits the credit. */
+function OverCredit({ model, credit: reported, titleId, approveName, actions }: {
+  model: ApprovalCardModel; credit: "lower_cap" | "add_credit"; titleId: string; approveName: string; actions: ApprovalCardActions;
+}) {
+  const balance = model.balanceCents ?? 0;
+  // The estimate fitting the credit is what decides 49 vs 49b, even if the server sent no lower-cap option.
+  const credit = model.estimateCents <= balance ? "lower_cap" : reported === "lower_cap" ? "lower_cap" : "add_credit";
+  const lowered = model.lowerCapOptionCents ?? balance;
+  const cheaper = credit === "add_credit" && model.cheaperOption && model.cheaperOption.capCents <= balance ? model.cheaperOption : null;
+  return (
+    <div data-shot={credit === "lower_cap" ? "approval-over-cap" : "approval-over-estimate"}>
+      {credit === "lower_cap" ? (
+        <Notice tone="ember" title={`Not enough credit for the ${formatCents(model.capCents)} cap`}>
+          The cap is held from your credit while the step runs, so it can’t be more than the {formatCents(balance)} you have.
+        </Notice>
+      ) : (
+        <Notice tone="ember" title="This step costs more than your credit">
+          The {formatCents(model.estimateCents)} estimate is more than the {formatCents(balance)} you have.
+        </Notice>
+      )}
+      {model.status === "pending" && (credit === "lower_cap" || cheaper) ? (
+        <div className="rh-appr-bd rh-fits" style={{ paddingTop: 12 }}>
+          <div className="rh-eyebrow">Fits your credit</div>
+          <div className="rh-fg2" style={{ fontSize: 12.5, marginTop: 6 }}>
+            {credit === "lower_cap"
+              ? <>Same step, cap lowered to <b className="rh-mono rh-num">{formatCents(lowered)}</b>.</>
+              : <>{cheaper!.label} · cap <b className="rh-mono rh-num">{formatCents(cheaper!.capCents)}</b></>}
+          </div>
+        </div>
+      ) : null}
+      {model.status === "pending" ? (
+        <>
+          <div className="rh-appr-ft">
+            {credit === "lower_cap" ? (
+              <button type="button" className="rh-btn rh-btn-primary rh-btn-act" style={{ flex: 1 }} onClick={() => actions.onLowerCap?.(lowered)}>Use this · est. {formatCents(model.estimateCents)}</button>
+            ) : cheaper ? (
+              <button type="button" className="rh-btn rh-btn-primary rh-btn-act" style={{ flex: 1 }} onClick={actions.onUseCheaper}>Use this · est. {formatCents(cheaper.estimateCents)}</button>
+            ) : null}
+            <button type="button" className="rh-btn rh-btn-act rh-appr-locked" aria-label={approveName} aria-disabled="true" aria-describedby={`${titleId}-why`} disabled>
+              <Lock size={13} aria-hidden="true" />Approve · est. {formatCents(model.estimateCents)}
+            </button>
+            <button type="button" className="rh-btn rh-btn-quiet rh-btn-act" onClick={actions.onReject}>Reject</button>
+          </div>
+          <div className="rh-footnote" id={`${titleId}-why`}><span>{OVER_CREDIT_FOOTNOTE}</span></div>
+        </>
+      ) : null}
+    </div>
   );
 }

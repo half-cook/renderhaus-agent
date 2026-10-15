@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-import { BetaSignup } from "@/components/beta/BetaSignup";
+import { InviteSignup } from "@/components/beta/InviteSignup";
 
-export const metadata: Metadata = { title: "Renderhaus beta" };
+export const metadata: Metadata = { title: "Renderhaus beta · invite only" };
 
 export default function BetaPage() {
-  return <BetaSignup />;
+  return <InviteSignup />;
 }

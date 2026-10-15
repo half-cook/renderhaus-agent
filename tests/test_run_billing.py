@@ -5,6 +5,7 @@ import os
 import re
 import tempfile
 import unittest
+from unittest import mock
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from unittest.mock import patch
@@ -379,8 +380,12 @@ class PayloadTests(Fixture, unittest.TestCase):
         info = card["insufficient_credit"]
         self.assertEqual(info["type"], "insufficient_credit")
         self.assertEqual(info["balance_cents"], 150)
-        self.assertTrue(info["add_credit"])
+        self.assertFalse(info["add_credit"])  # top-ups are off for the invite-only beta
+        self.assertEqual(info["message"], "You've used your beta credit. Top-ups are coming soon.")
         self.assertIsNone(info["lower_cap_option_cents"])  # below the estimate: only add credit
+        with mock.patch.dict(os.environ, {"TOPUPS_ENABLED": "true"}):
+            info = self.view(self.sample())[0]["insufficient_credit"]
+        self.assertTrue(info["add_credit"])
 
     def test_lowering_the_cap_is_offered_when_balance_covers_the_estimate(self):
         self.repo.adjust_balance(USER, -700, "test_spend")  # 300 left; estimate 233, cap 350

@@ -42,6 +42,8 @@ export type ApprovalCardModel = {
   chargedCents?: number;
   raiseOptionsCents?: number[];
   lowerCapOptionCents?: number | null;
+  /** A cheaper version of the step that fits the remaining credit (spec 4.12.4, 49b). */
+  cheaperOption?: { label: string; estimateCents: number; capCents: number } | null;
   /** Done */
   actualCents?: number;
   balanceBeforeCents?: number;

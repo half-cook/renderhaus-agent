@@ -469,18 +469,22 @@ def paused_cap_payload(
 def insufficient_credit_payload(
     *, estimate_cents: int, cap_cents: int, available_cents: int, held_cents: int = 0,
 ) -> dict[str, Any]:
+    from server.launch_flags import topups_enabled
+
     extra_needed = max(0, estimate_cents - held_cents)
     can_lower = available_cents + held_cents
+    topups = topups_enabled()
     return {
         "type": "insufficient_credit",
         "reason": "insufficient_credit",
         "approve_enabled": False,
-        "message": "Not enough credit for this cap.",
+        "message": "Not enough credit for this cap." if topups else "You've used your beta credit. Top-ups are coming soon.",
         "balance_cents": available_cents,
         "estimate_cents": estimate_cents,
         "cap_cents": cap_cents,
         "lower_cap_option_cents": can_lower if can_lower >= estimate_cents and can_lower < cap_cents else None,
-        "add_credit": True,
+        "add_credit": topups,
+        "topups_available": topups,
         "shortfall_cents": max(0, cap_cents - held_cents - available_cents),
         "minimum_needed_cents": extra_needed,
     }
