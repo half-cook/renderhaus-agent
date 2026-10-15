@@ -63,3 +63,16 @@ neutral derivative names, search metadata, scrubbed prompts and camera notes.
 No upstream tooling, posters, frames, fonts or demo media are imported.
 MIT text permission grants no rights to third-party demo assets or film IP.
 See third_party/lemo-opuscar/LICENSE and NOTICE.md.
+
+Lottie animation guidance
+========================
+Source: https://github.com/diffusionstudio/lottie
+Revision: 3c72912fad543897f90045ed4d355813837927fc
+Read: 2026-10-14
+Copyright (c) 2026 Diffusion Studio Inc.
+Licence: MIT; complete notice in providers/lottie/NOTICE.
+
+The skill adapts grounding, transparent UI defaults, semantic scene ownership and
+pinned-frame review guidance. The local Python tools are independent work. No
+upstream app, runtime, fonts, demo assets or weights are included. User source fonts
+and brand assets require their own rights. See docs/LOTTIE_ANIMATION.md.

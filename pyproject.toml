@@ -54,5 +54,6 @@ license-files = ["third_party/video-use/LICENSE", "third_party/hyperframes/LICEN
 "providers.remotion" = ["ad_layouts.json", "delivery_presets.json", "motion_carry_calibration.json"]
 "providers.shot_recipes" = ["index.json", "LICENSE", "NOTICE.md", "ATTRIBUTION.md", "BRAND_SCAN.json", "cards/*/*.md"]
 "providers.footage_memory" = ["fixtures.json", "NOTICE.md", "sql/*.sql"]
+"providers.lottie" = ["NOTICE"]
 
 "agent.deep_agent" = ["AGENTS.md", "routing_policy.json", "continuity_qc_calibration.json", "continuity_qc_vlm_eval.json", "skills/*/SKILL.md", "skills/chat-story-video/NOTICE", "skills/hyperframes/templates/*.html", "skills/hyperframes/templates/*.json", "skills/hyperframes/references/*.md", "skills/knowledge-explainer/templates/*.json", "skills/art-style-motion/references/*.md", "skills/art-style-motion/references/catalog/*.json", "skills/art-style-motion/references/catalog/LICENSE"]

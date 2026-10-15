@@ -17,6 +17,10 @@ class ProviderSpec:
 
 PROVIDERS: tuple[ProviderSpec, ...] = (
     ProviderSpec(
+        id="lottie", target_name="Lottie", function_name="renderhaus-lottie-tools",
+        module_path="providers.lottie.api", env_keys=("RENDERHAUS_MEDIA_DIR",),
+    ),
+    ProviderSpec(
         id="footage_memory", target_name="FootageMemory", function_name="renderhaus-footage-memory-tools",
         module_path="providers.footage_memory.api", env_keys=("FOOTAGE_MEMORY_DRY_RUN", "FOOTAGE_MEMORY_BACKEND",
             "FOOTAGE_MEMORY_CALL_CENTS", "RENDERHAUS_VIDEO_INDEX_ROOT", "RENDERHAUS_MEDIA_DIR", "GEMINI_VLM_MODEL"),

@@ -286,7 +286,7 @@ async def loopback_gateway(gateway):
     with socket.socket() as sock:
         sock.bind(('127.0.0.1', 0))
         port = sock.getsockname()[1]
-        app = gateway.server.streamable_http_app(host='127.0.0.1')
+        app = gateway.server.streamable_http_app(host='127.0.0.1', json_response=True, stateless_http=True)
         server = uvicorn.Server(uvicorn.Config(app, log_level='error', access_log=False, lifespan='on'))
         task = asyncio.create_task(server.serve(sockets=[sock]))
         try:

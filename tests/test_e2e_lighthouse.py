@@ -17,6 +17,16 @@ from langchain_core.outputs import ChatGeneration, LLMResult
 
 
 class LighthouseSafetyTests(unittest.IsolatedAsyncioTestCase):
+    async def test_loopback_gateway_restarts_after_sse_shutdown(self):
+        from sse_starlette.sse import AppStatus
+        from scripts.e2e_lighthouse import loopback_gateway
+        from scripts.local_gateway import LocalGateway, SEARCH_NAME
+
+        with patch.object(AppStatus, 'should_exit', True):
+            for _ in range(2):
+                async with loopback_gateway(LocalGateway(max_spend_cents=0)) as client:
+                    self.assertEqual([tool.name for tool in await client.list_tools()], [SEARCH_NAME])
+
     async def test_scripted_lighthouse_corrects_unpriced_tts_without_unknown_cost_approval(self):
         from agent.studio_agent_next import run_studio_agent
         from scripts.e2e_lighthouse import LighthouseOptions, run_lighthouse

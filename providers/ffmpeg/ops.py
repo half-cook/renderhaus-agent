@@ -349,7 +349,7 @@ _REFRAME_PARAMS = {
 }
 
 
-from providers.ffmpeg import delivery, finishing
+from providers.ffmpeg import delivery, finishing, lottie_preview
 
 
 _LOUDNESS_PARAMS = {"I": number(-14, -30, -5), "TP": number(-1.5, -9, 0), "LRA": number(11, 1, 20)}
@@ -427,6 +427,14 @@ _PROXY_PARAMS = {
 
 
 OPS = {
+    "image_sequence_preview": OpSpec({
+        "frame_count": number(1, 1, 600, integer=True),
+        "sequence_fps": number(60, 1, 120),
+        "preview_format": {"type": "string", "enum": ["mp4", "gif"], "default": "mp4",
+                           "description": "Bounded animation preview, MP4 on white or quantized transparent GIF."},
+    }, lottie_preview.build, binary="ffmpeg", timeout_s=30,
+       description="Encode a confined frame-000000.png sequence, at most 600 frames and 20 seconds."),
+
     'audio_envelope': OpSpec({'start_seconds': number(0, 0, 86400),
                              'duration_seconds': number(1, .1, 90),
                              'fps': number(30, 12, 60, integer=True),

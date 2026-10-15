@@ -14,6 +14,7 @@ from agent.deep_agent.art_style_catalog import catalog_motion_request, style_ins
 POLICY = json.loads(Path(__file__).with_name("routing_policy.json").read_text())
 TOOL_MAP = POLICY["tools"]
 TARGET_PROVIDERS = {
+    "Lottie": "lottie",
     "FootageMemory": "footage_memory",
     "ShotRecipes": "shot_recipes",
     "Gemini": "gemini",
@@ -223,6 +224,11 @@ def _chat_story_route(prompt: str, *, region: str | None, available_tools: set[s
 
 
 def request_tool_blocker(prompt: str, name: str) -> str | None:
+    if lottie_request(prompt) and (job_type(name) in {
+        't2v', 'i2v', 'reference_video', 'v2v_edit', 'extend', 'motion_graphics',
+        'lipsync', 'performance_transfer', 'lyrics_video',
+    } or name == 'Remotion___render_timeline'):
+        return 'UI vector animation requires JSON and dotLottie output through the local animation tools.'
     if plan_text := _plan_review_instruction(prompt):
         prompt = plan_text
     if refusal := editing_request_refusal(prompt):
@@ -717,6 +723,10 @@ def _podcast_route(prompt: str, *, arguments: dict | None,
 def route_intent(prompt: str, *, region: str | None = None, tier: str | None = None,
                  confidential: bool = False, arguments: dict | None = None,
                  available_tools: set[str] | None = None, retry: bool = False, user_id: str | None = None) -> Route:
+    if lottie_request(prompt):
+        route = select_provider("lottie_animation", region=region, available_tools=available_tools)
+        return replace(route, skill="lottie-animation", expected_output="Lottie JSON and dotLottie",
+                       disclosure="Create the UI vector animation and validate its target players.")
     if re.search(_PODCAST_REQUEST, _instruction_text(prompt), re.I) and _visible_source_video(prompt):
         route = select_provider("transcript_edit", region=region, available_tools=available_tools,
                                 arguments=arguments)
@@ -788,6 +798,8 @@ def route_intent(prompt: str, *, region: str | None = None, tier: str | None = N
         or video_capabilities.intersection(POLICY["named_models"].get(constraints["named_model"], {}).get("aliases", {}))
     )
     for rule in POLICY["rules"]:
+        if rule["skill"] == "lottie-animation":
+            continue
         if rule["skill"] == "chat-story-video" and not _chat_story_request(prompt):
             continue
         if rule["skill"] == "footage-memory":
@@ -881,7 +893,7 @@ def route_intent(prompt: str, *, region: str | None = None, tier: str | None = N
 def _dispatch(tool: str | None) -> str | None:
     if not tool:
         return None
-    if tool.startswith(("Remotion___", "HyperFrames___", "Ffmpeg___", "ShotRecipes___", "FootageMemory___")):
+    if tool.startswith(("Remotion___", "HyperFrames___", "Ffmpeg___", "ShotRecipes___", "FootageMemory___", "Lottie___")):
         return "call_editor_tool"
     if tool in {"HeyGen___voice_clone", "HeyGen___voice_tts", "HeyGen___get_voice_status"}:
         return "call_audio_tool"
@@ -945,7 +957,7 @@ def _capability_price(row: dict):
     if price == "unknown":
         return price
     provider, model = row["provider"], row["model"]
-    if provider in {"ffmpeg", "shot_recipes"} or provider == "remotion" and all(is_free_tool(tool) for tool in row["tools"].values()):
+    if provider in {"ffmpeg", "shot_recipes", "lottie"} or provider == "remotion" and all(is_free_tool(tool) for tool in row["tools"].values()):
         return {**price, "rates": {"cents_per_call": 0}, "currency_unit": "USD cents"}
     if provider == "remotion" and model == "ad-variant-timeline":
         try:
@@ -1025,6 +1037,21 @@ def _capability_price(row: dict):
 
 def _instruction_text(prompt: str) -> str:
     return re.sub(r"\"[^\"]*\"|“[^”]*”|(?<!\w)'[^']*'(?!\w)", "", prompt)
+
+
+def lottie_request(prompt: str) -> bool:
+    text = _instruction_text(prompt)
+    negation = (r"\b(?:no(?:\s+need\s+for)?|not|without|avoid|don['’]t|do\s+not)"
+                r"(?:\s+(?:use|using|any|the|a|an|render|export|make|create))*\s+")
+    if re.search(negation + r"(?:lottie|dotlottie|bodymovin)\b", text, re.I):
+        return False
+    rule = next(row for row in POLICY["rules"] if row["skill"] == "lottie-animation")
+    if not re.search(rule["pattern"], text, re.I):
+        return False
+    video_text = re.sub(negation + r"(?:mp4|videos?)\b", "", text, flags=re.I)
+    video = re.search(r"\b(?:mp4|videos?)\b", video_text, re.I)
+    preview = re.search(r"\bpreview\b|\bboth\b|\balso\b", text, re.I)
+    return not video or bool(preview)
 
 
 def _plan_review_instruction(prompt: str) -> str | None:

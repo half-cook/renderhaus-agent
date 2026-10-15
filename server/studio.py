@@ -727,6 +727,8 @@ async def invoke_tool(body: InvokeBody, auth: AuthUser) -> dict[str, Any]:
         await asyncio.to_thread(repository.require_project, workspace_id, body.project_id)
     except KeyError as exc:
         raise HTTPException(status_code=404, detail="Project not found.") from exc
+    if body.provider == "lottie":
+        raise HTTPException(status_code=409, detail="Use chat to create and preview UI vector animations inside the current job.")
     if (body.provider, body.tool) in {("ffmpeg", "ffmpeg_tool"), ("remotion", "render_ad_variants"),
                                     ("remotion", "deliver_render"), ("remotion", "qc_deliverable"),
                                     ("remotion", "motion_carry_probe")}:

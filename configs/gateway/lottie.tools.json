@@ -1,0 +1,95 @@
+[
+  {
+    "name": "lottie_author",
+    "description": "Create or patch a vector animation in the job directory and save JSON plus a portable animation package.",
+    "inputSchema": {
+      "properties": {
+        "job_id": {
+          "type": "string"
+        },
+        "scene": {
+          "type": "object",
+          "description": "Strict scene object. Defaults width/height=256, fps=60, frames=90, transparent background. layers up to 64; each requires semantic name and shape rectangle, ellipse or path. Optional position/size pairs, #RRGGBB fill/stroke, stroke_width, opacity/rotation. Bezier path requires v/i/o equal arrays of xy pairs and boolean c. animate tracks use property position/scale/rotation/opacity/trim_end and strictly increasing keyframes {frame,value,easing}; easing linear/ease-in/ease-out/ease-in-out. Runtime rejects unknown fields. Canvas 16..2048, fps1..120, frames1..3600, duration<=120s."
+        },
+        "lottie": {
+          "type": "object"
+        },
+        "input_path": {
+          "type": "string",
+          "description": "File confined to the current job. Studio may stage an owned renderhaus-asset://version handle through its trusted resolver before invoking this provider; direct provider calls require a local path."
+        },
+        "svg_path": {
+          "type": "string",
+          "description": "File confined to the current job. Studio may stage an owned renderhaus-asset://version handle through its trusted resolver before invoking this provider; direct provider calls require a local path."
+        },
+        "patch": {
+          "type": "object"
+        },
+        "name": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "job_id"
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "name": "lottie_validate",
+    "description": "Validate vector animation structure, bounds, keyframes and compatibility with app and web players.",
+    "inputSchema": {
+      "properties": {
+        "job_id": {
+          "type": "string"
+        },
+        "input_path": {
+          "type": "string",
+          "description": "File confined to the current job. Studio may stage an owned renderhaus-asset://version handle through its trusted resolver before invoking this provider; direct provider calls require a local path."
+        },
+        "targets": {
+          "items": {
+            "type": "string",
+            "description": "One of: lottie-web, lottie-ios, lottie-android, dotlottie."
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "job_id",
+        "input_path"
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "name": "lottie_preview_render",
+    "description": "Create a scrubbable frame preview, contact sheet and MP4/GIF previews of supported vector animation features.",
+    "inputSchema": {
+      "properties": {
+        "job_id": {
+          "type": "string"
+        },
+        "input_path": {
+          "type": "string",
+          "description": "File confined to the current job. Studio may stage an owned renderhaus-asset://version handle through its trusted resolver before invoking this provider; direct provider calls require a local path."
+        },
+        "max_size": {
+          "type": "integer"
+        },
+        "formats": {
+          "items": {
+            "type": "string",
+            "description": "One of: mp4, gif."
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "job_id",
+        "input_path"
+      ],
+      "type": "object"
+    }
+  }
+]

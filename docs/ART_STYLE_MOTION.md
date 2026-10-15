@@ -82,8 +82,8 @@ No source date is backdated and no billing rates are changed in this skill-only 
 
 ## Routing coverage and remaining checks
 
-The packaged inventory is 38 skills, 18 providers and 134 Gateway tools. The routing fixture
-has 301 retained rows, 295 active and six unchanged skips. RT-160 and RT-161 cover named art
+The packaged inventory is 39 skills, 19 providers and 137 Gateway tools. The routing fixture
+has 313 retained rows, 307 active and six unchanged skips. RT-160 and RT-161 cover named art
 and grammar routing. RT-162 asserts that a silent explainer without a named style stays in
 knowledge-explainer. The input CSV has 148 data rows, no test IDs and no art-style cases;
 these three prompts are task/draft reconstructions and are labeled as such in the fixture.
@@ -180,9 +180,9 @@ Browser E2E is blocked because Comet is unavailable. Native graph tests use scri
 models and mocked Gateway services; they do not prove Studio UX or media quality.
 No live calls or rendered-media claims are made.
 
-## Offline verification on 2026-10-14
+## Catalog feature verification on 2026-10-14
 
-The final Python 3.11 run passes 2,491 pytest tests, with eight skips and 4,329 passing
+Before the Lottie merge, the Python 3.11 run passed 2,491 pytest tests, with eight skips and 4,329 passing
 subtests. The full unittest suite runs 2,499 tests, with the same eight skips. Ruff,
 `scripts/ci_check.py` with secrets lookup disabled and every dry-run flag enabled, and
 Studio `tsc --noEmit -p .` pass. The temporary Studio dependency link is removed.
