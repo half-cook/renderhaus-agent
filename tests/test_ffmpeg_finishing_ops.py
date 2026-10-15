@@ -398,7 +398,7 @@ class FinishingRealBinaryTests(FinishingFixture, unittest.TestCase):
         before = self.call("measure_loudness", target, input_path=peaky.name)["metrics"]
         self.assertGreater(before["true_peak_db"] + (-14 - before["integrated_lufs"]), -1.5)
         limited = self.exported(self.call("prelimit_mux_aac", {"gain_db": -14 - before["integrated_lufs"],
-                                                               "limit_db": -3}, input_path=peaky.name))[0]
+                                                               "limit_db": -4.5}, input_path=peaky.name))[0]
         measured = self.call("measure_loudness", target, input_path=limited.name)["metrics"]
         names = {"measured_I": "input_i", "measured_TP": "input_tp", "measured_LRA": "input_lra",
                  "measured_thresh": "input_thresh", "offset": "target_offset"}
