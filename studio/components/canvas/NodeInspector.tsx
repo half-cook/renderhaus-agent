@@ -136,7 +136,7 @@ export function NodeInspector() {
       ) : null}
       {node.data.toolId && estimate ? (
         <Ledger className="rh-inspector-ledger">
-          {estimate.lines.map((line) => <LedgerRow key={`${line.kind}:${line.label}`} label={lineLabel(line, "estimate")} amount={formatCents(line.priceCents)} tone={line.kind === "orchestration" ? "muted" : undefined} />)}
+          {estimate.lines.map((line) => <LedgerRow key={`${line.kind}:${line.label}`} label={lineLabel(line, "estimate")} amount={formatCents(line.priceCents)} />)}
           <LedgerTotal label="Estimated total" amountCents={estimate.estimateCents} />
           <CapRow capCents={estimate.capCents} />
         </Ledger>

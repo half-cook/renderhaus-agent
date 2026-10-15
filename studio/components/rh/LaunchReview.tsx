@@ -10,7 +10,7 @@ import type { ApprovalCardModel } from "@/lib/rh/billing";
 
 const LINES: ApprovalCardModel["lines"] = [
   { kind: "media", label: "Video clip · 5 s", priceCents: 120, basis: "estimate" },
-  { kind: "orchestration", label: "Agent orchestration", priceCents: 6, basis: "estimate" },
+  { kind: "orchestration", label: "Planning and checks", priceCents: 6, basis: "estimate" },
 ];
 const base: ApprovalCardModel = {
   id: "sample", status: "pending", title: "Shot 1 · push-in on the handle", tier: "Standard quality",

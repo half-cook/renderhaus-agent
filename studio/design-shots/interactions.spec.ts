@@ -44,7 +44,7 @@ test("approval arrives on its heading and announces estimate and cap", async ({ 
   await wire(page, fixture); await page.goto(fixture.url);
   const heading = page.locator(".rh-appr h3");
   await expect(heading).toBeFocused();
-  await expect(page.getByRole("button", { name: "Approve, estimated $1.31, hard cap $2.00" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Approve and run, estimated $1.31, hard cap $2.00" })).toBeVisible();
   await privacyGuard(page);
 });
 
@@ -179,7 +179,7 @@ test("Compare selects retained takes, switches views, holds before and opens sep
   await compare.getByRole("button", { name: /New take/ }).click();
   const dialog = page.getByRole("dialog"); await expect(dialog.getByRole("heading", { name: "Review the price" })).toBeFocused();
   await expect(dialog).toContainText("$1.05"); await expect(dialog).toContainText("$1.50");
-  await expect(dialog.getByRole("button", { name: /Approve, estimated/ })).toBeDisabled();
+  await expect(dialog.getByRole("button", { name: /Approve and run, estimated/ })).toBeDisabled();
   await page.keyboard.press("Escape");
   await compare.getByRole("button", { name: "Accept take 2" }).click(); await expect(compare.getByRole("button", { name: "Take 2 is in your cut" })).toBeDisabled();
   await privacyGuard(page);
@@ -273,6 +273,6 @@ test("A on an untaken paid change only focuses its price heading and cannot appr
   const panel = page.getByRole("region", { name: "Changeset review" }); await panel.locator('.rh-change-number').focus(); await page.keyboard.press("a");
   await expect(panel.locator('.rh-appr h3')).toBeFocused();
   await expect(panel).not.toContainText("Not enough credit");
-  await expect(panel.getByRole("button", { name: /Approve, estimated/ })).toBeDisabled();
+  await expect(panel.getByRole("button", { name: /Approve and run, estimated/ })).toBeDisabled();
   expect(mutations).toEqual([]); await privacyGuard(page);
 });

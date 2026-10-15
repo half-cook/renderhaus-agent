@@ -22,7 +22,7 @@ def changes_document():
             "title": "Warmer finish", "createdAt": 1, "checkpointCutId": "checkpoint", "estimateCents": 97,
             "capCents": 150, "actualCents": 95, "status": "open", "lines": [
                 {"kind": "media", "label": "Media", "priceCents": 67, "basis": "fixed"},
-                {"kind": "orchestration", "label": "Agent orchestration", "priceCents": 28, "basis": "fixed"}]},
+                {"kind": "orchestration", "label": "Planning and checks", "priceCents": 28, "basis": "fixed"}]},
             "changes": [{**base, "id": "change-1", "n": 1, "kind": "take", "title": "Warm light",
                          "beforeRef": {"kind": "take", "takeId": "take-1"}, "afterRef": {"kind": "take", "takeId": "take-2"},
                          "costCents": 65, "taken": True, "state": "ready"},

@@ -122,8 +122,8 @@ export function spendSummary(executions: Array<{ createdAt?: number; approvals: 
 }
 
 function lineText(line: { label: string; detail?: string; kind: string; basis: string }): string {
-  const base = line.detail ? `${line.label} · ${line.detail}` : line.label;
-  return line.kind === "orchestration" && line.basis === "estimate" ? `${base} · est.` : base;
+  // One price per line; the work is the label. No fee or "est." wording on any line.
+  return line.detail ? `${line.label} · ${line.detail}` : line.label;
 }
 
 export type TraceCost = { cents: number; capCents?: number; final: boolean };

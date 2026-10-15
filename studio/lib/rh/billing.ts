@@ -100,7 +100,7 @@ export function parseLines(value: unknown): BillingLine[] {
     const cents = item.price_cents ?? item.priceCents;
     if (!isCents(cents)) return [];
     const kind: BillingLineKind = item.kind === "orchestration" ? "orchestration" : "media";
-    const fallback = kind === "orchestration" ? "Agent orchestration" : "Media step";
+    const fallback = kind === "orchestration" ? "Planning and checks" : "Media step";
     return [{
       kind,
       label: safeCopy(item.label, fallback),
@@ -163,8 +163,9 @@ export function creditState(model: ApprovalCardModel, approveEnabled?: boolean):
 }
 
 export function a11yApproveName(model: ApprovalCardModel, format: (cents: number) => string): string {
-  if (model.upTo) return `Approve, up to ${format(model.capCents)}, the run stops there`;
-  return `Approve, estimated ${format(model.estimateCents)}, hard cap ${format(model.capCents)}`;
+  // Starts with the visible button text ("Approve and run") so voice control and the a11y name match (WCAG 2.5.3).
+  if (model.upTo) return `Approve and run, up to ${format(model.capCents)}, the run stops there`;
+  return `Approve and run, estimated ${format(model.estimateCents)}, hard cap ${format(model.capCents)}`;
 }
 
 // ---- Run-level payloads (plan, spend ledger, receipt) ---------------------------------------------------
