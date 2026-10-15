@@ -11,9 +11,9 @@ import {
 } from "@/lib/beta-credits";
 import { TOPUPS_COMING_SOON } from "@/lib/launch";
 import { CodeCells } from "./CodeCells";
+import { classifyConfirmError, confirmError, incompleteResult, WRONG_CODE } from "@/lib/signup-errors";
 
 const RESEND_SECONDS = 45;
-const WRONG_CODE = "That code didn’t match. Check the email we sent, or resend.";
 const INVALID = "We don’t recognise that code. Check for typos, or ask the person who invited you to send it again.";
 
 function friendly(error: unknown, fallback: string): string {
@@ -67,12 +67,14 @@ function useClerkEmailCode(): EmailCode {
     confirm: async (code) => {
       if (!signUp.isLoaded || !signIn.isLoaded) throw new Error("Still loading. Try again in a moment.");
       if (mode.current === "up") {
-        const result = await signUp.signUp.attemptEmailAddressVerification({ code });
-        if (result.status !== "complete" || !result.createdSessionId) throw new Error(WRONG_CODE);
+        let result;
+        try { result = await signUp.signUp.attemptEmailAddressVerification({ code }); } catch (error) { throw classifyConfirmError(error); }
+        if (result.status !== "complete" || !result.createdSessionId) throw incompleteResult(result);
         await signUp.setActive({ session: result.createdSessionId });
       } else {
-        const result = await signIn.signIn.attemptFirstFactor({ strategy: "email_code", code });
-        if (result.status !== "complete" || !result.createdSessionId) throw new Error(WRONG_CODE);
+        let result;
+        try { result = await signIn.signIn.attemptFirstFactor({ strategy: "email_code", code }); } catch (error) { throw classifyConfirmError(error); }
+        if (result.status !== "complete" || !result.createdSessionId) throw incompleteResult(result);
         await signIn.setActive({ session: result.createdSessionId });
       }
     },
@@ -83,7 +85,7 @@ const LOCAL_CODE = "424242";
 function useLocalEmailCode(): EmailCode {
   return {
     start: async (email) => `Local mode: no email was sent to ${email}. Use ${LOCAL_CODE}.`,
-    confirm: async (code) => { if (code !== LOCAL_CODE) throw new Error(WRONG_CODE); },
+    confirm: async (code) => { if (code !== LOCAL_CODE) throw confirmError("wrong_code"); },
   };
 }
 
@@ -193,7 +195,13 @@ function EmailStep({ phase, onDone, auth }: { phase: Phase; onDone: (balanceCent
     setSent(await auth.start(email.trim())); setCode(""); setWrong(false); setResendAt(Date.now() + RESEND_SECONDS * 1000);
   }); };
   const confirm = (event?: FormEvent) => { event?.preventDefault(); if (phase.kind !== "email") return; const invite = phase.invite; void run(async () => {
-    try { await auth.confirm(code); } catch { setWrong(true); setCode(""); return; }
+    try { await auth.confirm(code); } catch (cause) {
+      // Only a real wrong code marks the cells wrong; everything else gets its own plain message.
+      const failure = classifyConfirmError(cause);
+      if (failure.kind === "wrong_code") { setWrong(true); setCode(""); return; }
+      if (failure.kind === "expired") setCode("");
+      setError(failure.message); return;
+    }
     // The email is confirmed and the session is live: only now is the invite burned and the credit added.
     onDone((await redeemInvite(invite)).balanceCents);
   }); };
