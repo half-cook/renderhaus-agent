@@ -389,3 +389,5 @@ html[data-theme="light"] {
 .rh-or { display: flex; align-items: center; gap: 10px; margin: 12px 0; color: var(--rh-fg-3); font: 11px var(--font-geist-mono), monospace; text-transform: uppercase; }
 .rh-or::before, .rh-or::after { content: ""; flex: 1; height: 1px; background: var(--rh-line); }
 [data-shot="sign-in-form"] .rh-step-body { margin-left: 0; }
+.rh-clerk-captcha { margin-top: 12px; max-width: 100%; } .rh-clerk-captcha:empty { margin: 0; }
+.rh-form-v4 .rh-step-body { margin-left: 0; }

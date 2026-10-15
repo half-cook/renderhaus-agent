@@ -27,3 +27,17 @@ test("phone landing stacks steps, demo head and FAQ under 640px", () => {
   assert.match(block, /\.rh-faq \{ flex-direction: column;/);
   assert.match(block, /\.rh-demo-head \{ flex-direction: column;/);
 });
+
+test("Clerk captcha slot is rendered on both the sign-in shell and the invite sign-up flow", () => {
+  const form = read("components/beta/InviteSignup.tsx");
+  assert.match(form, /<div id="clerk-captcha"/);
+  assert.equal((form.match(/<ClerkCaptcha \/>/g) || []).length, 2);
+});
+
+test("Google button and copy only appear when Google OAuth is enabled in Clerk", () => {
+  const form = read("components/beta/InviteSignup.tsx");
+  assert.match(form, /if \(!enabled\) return null;/);
+  assert.match(form, /socialProviderStrategies\.includes\("oauth_google"\)/);
+  assert.match(form, /"Sign in with a code sent to your email\."/);
+  assert.match(read("app/revamp-v4.css"), /\.rh-form-v4 \.rh-step-body \{ margin-left: 0; \}/);
+});
