@@ -1,0 +1,71 @@
+name: Web image (arm64 → ECR)
+
+# Builds the beta web server image natively on arm64 and pushes it to ECR so the t4g server only pulls.
+on:
+  push:
+    branches: [staging]
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+concurrency:
+  group: web-image-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  AWS_REGION: us-east-1
+  ECR_REPOSITORY: renderhaus-agent
+  ROLE_ARN: arn:aws:iam::648597472910:role/RenderhausGitHubEcrPushStaging
+
+jobs:
+  build:
+    name: Build and push linux/arm64
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - uses: docker/setup-buildx-action@v3
+
+      - id: meta
+        run: |
+          echo "image=${{ steps.ecr.outputs.registry }}/${ECR_REPOSITORY}" >> "$GITHUB_OUTPUT"
+          echo "sha=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile.web
+          platforms: linux/arm64
+          push: true
+          provenance: false
+          tags: |
+            ${{ steps.meta.outputs.image }}:${{ steps.meta.outputs.sha }}
+            ${{ steps.meta.outputs.image }}:staging
+          build-args: |
+            GIT_SHA=${{ github.sha }}
+            NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=${{ vars.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
+            NEXT_PUBLIC_RH_PAUSE_CARDS=${{ vars.NEXT_PUBLIC_RH_PAUSE_CARDS }}
+            NEXT_PUBLIC_TOPUPS_ENABLED=${{ vars.NEXT_PUBLIC_TOPUPS_ENABLED }}
+          cache-from: type=gha,scope=web-arm64
+          cache-to: type=gha,mode=max,scope=web-arm64
+
+      - name: Verify arm64 manifest
+        run: |
+          docker buildx imagetools inspect "${{ steps.meta.outputs.image }}:${{ steps.meta.outputs.sha }}" --raw > m.json
+          cat m.json
+          docker pull -q "${{ steps.meta.outputs.image }}:${{ steps.meta.outputs.sha }}"
+          docker image inspect -f '{{.Os}}/{{.Architecture}}' "${{ steps.meta.outputs.image }}:${{ steps.meta.outputs.sha }}" | tee arch.txt
+          grep -qx 'linux/arm64' arch.txt
+          docker run --rm --entrypoint sh "${{ steps.meta.outputs.image }}:${{ steps.meta.outputs.sha }}" -c \
+            'ffmpeg -version | head -1 && python -c "import fastapi, uvicorn" && test -d studio/.next && echo IMAGE_OK'
