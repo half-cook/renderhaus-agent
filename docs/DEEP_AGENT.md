@@ -248,7 +248,7 @@ order. The short Studio summary also includes per-step costs when they fit its 3
 contract; larger runs refer to the complete breakdown. Unknown charges remain explicit,
 with a known subtotal. Model token charges are recorded separately by `ModelUsage`.
 
-The capability-map fixture contains 329 retained rows, with 323 active and 6 dependency skips.
+The capability-map fixture contains 341 retained rows, with 335 active and 6 dependency skips.
 Archived/confidential routes are dropped. Active rows cover built tools and declared interims;
 pending specialists keep named branch reasons. Editorial overrides retain the safe preparer,
 separate rendering approval, and existing export/HyperFrames narration workflow contracts.
@@ -412,7 +412,7 @@ See [the decisions record](fix-parallel-approvals-decisions.tsv) for reproductio
 ## AgentCore and verification
 
 `Dockerfile.agentcore` defaults to Deep Agents and retains Codex for explicit fallback.
-It installs pinned dependencies and verifies the Deep Agents version and all 41 packaged
+It installs pinned dependencies and verifies the Deep Agents version and all 42 packaged
 skills during the build. The entrypoint remains `python -m agent.studio_agent_next`.
 The existing Studio approval/review surfaces display the edit plan, subtitles, grade and
 audio fades. The database schema stays compatible.
@@ -621,8 +621,8 @@ presets, centre rotation and literal SRT captions share the timeline contract. C
 structured skill backend/feature claims against the executable capability table. Lambda
 parity is payload-level only; deployed rendering and Comet validation remain unverified.
 
-Inventory is 21 providers, 140 Gateway tools and 41 skills. The fixture has 323 active and
-6 deferred cases among 329 rows. Browser validation through Comet remains blocked here.
+Inventory is 21 providers, 140 Gateway tools and 42 skills. The fixture has 335 active and
+6 deferred cases among 341 rows. Browser validation through Comet remains blocked here.
 
 The free local `ffmpeg_tool` adds subtitle burning, SRT export, supplied LUT grading,
 audio cleanup and preview proxies. `local_finishing` routes these through the existing
@@ -660,8 +660,8 @@ or incomplete checks, and prevents a previous successful render from overriding 
 failed QC, including turn-limit recovery. Failure summaries preserve worker reasons
 verbatim. Existing ordinary assembly validation remains compatible.
 
-The three guides add delivery, loudness and deliverable QC routing. The 329 retained rows
-now contain 323 active cases and 6 skips. RT-E043 awaits exact OCR verification; the other
+The three guides add delivery, loudness and deliverable QC routing. The 341 retained rows
+now contain 335 active cases and 6 skips. RT-E043 awaits exact OCR verification; the other
 five are provider dependencies, including RT-176's pending capture. `project.confidential` never changes these routes.
 See [contracts and operator commands](REMOTION_EDITING.md). Offline real-binary verification
 is supporting evidence; Comet Studio E2E is blocked by unavailable browser control here.
@@ -674,7 +674,7 @@ reuse `Fal___get_video_task`, shared fal credentials and dry-run guard. They are
 defaults or exceptions; unnamed executor calls and direct Studio invokes are blocked.
 Both always interrupt with cost even in autonomous mode and with premium approval disabled.
 Measured VibeMV source duration stays local; consent flags never enter the provider payload.
-Inventory is 21 providers, 140 tools, 41 skills, 323 active fixtures and 6 dependency skips.
+Inventory is 21 providers, 140 tools, 42 skills, 335 active fixtures and 6 dependency skips.
 See [named fal video](providers/named-fal-video.md) for contracts, dated official prices,
 commercial hosted terms and training exclusion. Comet E2E remains blocked here.
 
@@ -693,8 +693,8 @@ recovery. A failure is quoted verbatim with timestamped fixes and an offered
 re-render through Remotion, or HyperFrames only if explicitly requested.
 Dry-run/skipped measurements are incomplete QC and preserve the existing render.
 Generative continuity remains `local_qc`. All thresholds are PROVISIONAL.
-Current inventory is 21 providers, 140 tools, 41 skills, 329 routing rows with
-323 active and six dependency skips. See [motion carry QC](MOTION_CARRY_QC.md).
+Current inventory is 21 providers, 140 tools, 42 skills, 341 routing rows with
+335 active and six dependency skips. See [motion carry QC](MOTION_CARRY_QC.md).
 
 ## Cinematic product launch planning
 
@@ -720,8 +720,8 @@ checksums. The cinematic skill joins the existing motion-carry completion gate.
 
 RT-174 and RT-175 are active. RT-176 remains skipped because capture is unbuilt, with an
 active negative check of its skill and forbidden search tool. Four fixture negatives
-protect the existing workflows. Current inventory is 21 providers, 140 tools, 41 skills,
-329 routing rows, 323 active and 6 skipped. Docker's existing `COPY providers` and the
+protect the existing workflows. Current inventory is 21 providers, 140 tools, 42 skills,
+341 routing rows, 335 active and 6 skipped. Docker's existing `COPY providers` and the
 Gateway deployment ZIP's recursive provider copy include all cards and index data;
 CI checks that the ZIP contains exactly 157 cards. Browser validation through Comet
 is blocked here. See [cinematic product promo](CINEMATIC_PRODUCT_PROMO.md).
@@ -750,7 +750,7 @@ precision/recall from synthetic fixtures and cannot promote a default. No new se
 required. See [Footage memory](FOOTAGE_MEMORY.md) and [decisions](footage-memory-decisions.tsv)
 for configured unknown estimates, licences, blocked live paths and the workbook reconciliation.
 
-Inventory is 21 providers, 140 tools, 41 packaged skills, and 329 routing rows, with 323
+Inventory is 21 providers, 140 tools, 42 packaged skills, and 341 routing rows, with 335
 active and six unchanged skips. Comet E2E is blocked in this environment.
 
 ## Chat-story routing and rendering
@@ -777,7 +777,7 @@ fallback. Final delivery requires loudness and deliverable QC reports that still
 the output checksums. First-render playback and still inspection require visual review.
 
 RT-180 and RT-181 plus six routing negatives remain active alongside the podcast cases.
-The combined fixture has 329 rows, with 323 active and six unchanged skips. The skill inventory is 41. The provider and tool inventories
+The combined fixture has 341 rows, with 335 active and six unchanged skips. The skill inventory is 42. The provider and tool inventories
 are 21 and 140. `docs/CHAT_STORY_VIDEO.md` describes the payload, timing and batch
 contract. Comet E2E and live Lambda chat rendering remain unverified here.
 
@@ -804,7 +804,7 @@ Local rendering accepts the bounded canonical plan; Lambda refuses named templat
 `REMOTION_TEMPLATE_CONTRACT_VERSION=1` declares the separately deployed matching composition.
 The skill gates extra aspects on first-render visual review and requires loudness/deliverable
 QC for every output. No new dispatch wrapper, target, paid provider, secret or training grant
-is introduced. Inventory is 41 skills, 329 fixture rows, 323 active and six unchanged skips.
+is introduced. Inventory is 42 skills, 341 fixture rows, 335 active and six unchanged skips.
 See [podcast audiograms](PODCAST_AUDIOGRAM.md) for exact contracts and UNVERIFIED limits.
 
 ## Descriptive art catalog
@@ -823,8 +823,8 @@ associations can create IP risk; prompts describe materials and motion only. All
 model, licence, training, price, approval, and dry-run policies remain unchanged. The
 renderer still requires authored assets for unsupported procedural motion.
 
-Inventory is 21 providers, 140 Gateway tools, 41 skills, 141 catalog treatments, and
-329 fixture rows, with 323 active and six skipped. RT-160 through RT-162 stay unchanged.
+Inventory is 21 providers, 140 Gateway tools, 42 skills, 141 catalog treatments, and
+341 fixture rows, with 335 active and six skipped. RT-160 through RT-162 stay unchanged.
 RT-CAT-001 through RT-CAT-012 are active. No provider-pending row is falsely activated.
 Comet E2E is blocked. See [art-style motion](ART_STYLE_MOTION.md) and
 [decisions](art-style-catalog-decisions.tsv) for counts, provenance, and limits.
@@ -851,8 +851,8 @@ no custom planning, filesystem or interrupt mechanism. See
 [Lottie tools](LOTTIE_ANIMATION.md) and the
 [decision trail](lottie-animation-decisions.tsv).
 
-Inventory is 21 providers, 140 Gateway tools, 41 skills and 329 fixture rows, with
-323 active and six dependency skips. The runtime image installs FFmpeg for local
+Inventory is 21 providers, 140 Gateway tools, 42 skills and 341 fixture rows, with
+335 active and six dependency skips. The runtime image installs FFmpeg for local
 preview encoding and includes the in-house Python implementation and MIT notice.
 
 
@@ -886,8 +886,8 @@ confirmation and leaves customer visual review explicit. See [contracts and limi
 
 RT-184 is active with the canonical `logo_vectorize then remotion_render` sequence.
 Eight added cases protect supplied-logo variants and the existing motion, vector-design
-and podcast routes. Inventory is 21 providers, 140 tools, 41 skills, 329 fixture rows,
-323 active and six dependency skips. Comet browser verification remains incomplete until
+and podcast routes. Inventory is 21 providers, 140 tools, 42 skills, 341 fixture rows,
+335 active and six dependency skips. Comet browser verification remains incomplete until
 the required Studio flow has been exercised.
 
 ## Seedance prompt diagnosis
@@ -903,7 +903,7 @@ The on-demand [t2v reference](../agent/deep_agent/skills/t2v/references/seedance
 and adjacent MIT notice are included in package data. Language, voice and camera directions
 stay inside the existing prompt field. The adapted French web-interface guidance is
 UNVERIFIED against the API until a live A/B. See [integration details](SEEDANCE_2_5.md#prompt-writing-and-failure-diagnosis).
-Current inventory is 21 providers, 140 tools, 41 skills and 329 fixture rows, with 323 active
+Current inventory is 21 providers, 140 tools, 42 skills and 341 fixture rows, with 335 active
 and six skipped. Comet browser validation is blocked by unavailable control; live calls
 are prohibited for this branch.
 
@@ -916,3 +916,20 @@ judge transport. `Gemini___get_task` keeps the continuity default and accepts
 `rubric="reference_shots"` with measured IDs for shot labels. Native approval, checkpoint
 and spending controls remain in the installed Deep Agents 0.7.23 harness. No custom graph
 is added. See [the analysis contract](REFERENCE_SHOT_BREAKDOWN.md) for integrity and review limits.
+
+## Episodic fiction planning and production
+
+The [short drama workflow](SHORT_DRAMA_SERIES.md) adds free `review_drama_outline` and
+`validate_drama_episode` tools to the manager and roles. Outline approval uses the existing
+Deep Agents 0.7.23 native interrupt/checkpointer/resume path. Its rejection stays local.
+The host-owned `drama_series` session snapshot stores the approved outline hash, validated
+episode, exact production jobs, continuity registry and submitted job IDs. Virtual files
+remain agent-editable project records and cannot prove approval.
+
+Role dispatch refuses unplanned or changed paid arguments. Every paid job in an active
+series requires cost approval, including autonomous images and audio. This leaves global
+approval exemptions and spending caps intact. Per-shot selection retains user-named models
+and real-person flags while applying dialogue and duration constraints from the shot.
+An explicit request to stop the series disables its gate without discarding its records.
+No provider, paid Gateway tool or model default is added. RT-188 is active; Comet browser
+validation and actual artifact playback are pending under the offline-only task constraint.

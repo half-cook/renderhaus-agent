@@ -1,0 +1,69 @@
+{
+  "episode_id": "ep01",
+  "outline_hash": "outline-v1",
+  "characters": [
+    {
+      "id": "mei",
+      "profile": "Fictional clockmaker",
+      "design_prompt": "Mei in red",
+      "voice_prompt": "Quiet alto"
+    }
+  ],
+  "art": [
+    {
+      "id": "shop",
+      "description": "Clock shop",
+      "design_prompt": "Amber clock shop"
+    }
+  ],
+  "locks": [
+    {
+      "id": "coat",
+      "subject_id": "mei",
+      "phrase": "red wool coat"
+    },
+    {
+      "id": "room",
+      "subject_id": "shop",
+      "phrase": "amber clock shop"
+    }
+  ],
+  "script": [
+    {
+      "id": "l1",
+      "kind": "dialogue",
+      "speaker_id": "mei",
+      "text": "Come back."
+    }
+  ],
+  "segments": [
+    {
+      "id": "s1",
+      "cuts": [
+        {
+          "id": "c1",
+          "duration_seconds": 4,
+          "subjects": [
+            "mei",
+            "shop"
+          ],
+          "lock_ids": [
+            "coat",
+            "room"
+          ],
+          "keyframe_prompt": "Mei, red wool coat, amber clock shop",
+          "video_prompt": "Mei, red wool coat, amber clock shop. She says Come back.",
+          "line_ids": [
+            "l1"
+          ]
+        }
+      ]
+    }
+  ],
+  "captions": [
+    {
+      "line_id": "l1",
+      "text": "Come back."
+    }
+  ]
+}

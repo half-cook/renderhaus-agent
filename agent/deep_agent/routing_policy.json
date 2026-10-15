@@ -2,6 +2,8 @@
   "premium_video_approval": true,
   "default_video_tool": "wan3_t2v",
   "free_tools": [
+    "review_drama_outline",
+    "validate_drama_episode",
     "get_video_task",
     "get_runway_task",
     "get_render_progress",
@@ -2543,6 +2545,11 @@
       "abstract_tool": "shot_breakdown",
       "capability": "reference_analysis",
       "pattern": "reference[ -]shot[ -]breakdown|\\bbreak\\b[^.!?]*\\bshot[ -]by[ -]shot\\b|\\bshot[ -]by[ -]shot\\b[^.!?]*\\b(?:breakdown|analysis|analy[sz]e|reference)\\b|\\bshot list\\b[^.!?]*\\b(?:reference|finished)\\b|\\b(?:what(?: is|\\x27s)|analy[sz]e|measure|tell me)\\b[^.!?]*\\bpacing\\b[^.!?]*\\b(?:reference|film|ad|trailer|spot|tiktok)\\b|\\b(?:how many|measure|calculate)\\b[^.!?]*\\bcuts per minute\\b"
+    },
+    {
+      "skill": "short-drama-series",
+      "pattern": "\\b(?:short[ -]drama(?:[ -]series)?|micro[ -]?dramas?)\\b|\u77ed\u5267|\u6f2b\u5267|\\b(?:\\d+[ -]episode|multi[ -]episode|episodic)\\b[^.;!?\\n]{0,100}\\b(?:drama|fiction|novel)\\b|\\b(?:novel|fiction|drama)\\b[^.;!?\\n]{0,100}\\b(?:\\d+[ -]episodes?|multi[ -]episode|episodic)\\b|\\bepisode\\s+\\d+\\b[^.;!?\\n]{0,90}\\b(?:script|storyboard|heroine|character bible|drama)\\b|\\b(?:heroine|character bible)\\b[^.;!?\\n]{0,90}\\b(?:episodes?|series)\\b",
+      "abstract_tool": null
     },
     {
       "pattern": "\\b(?:lottie|dotlottie|bodymovin)\\b|\\b(?:loaders?|loading|onboarding|empty[ -]states?|success[ -]checks?|microinteractions?)\\b[^.;!?]*\\b(?:app|website|web|ios|android|ui)\\b|\\banimat(?:e|ed|ion)\\b[^.;!?]*\\b(?:app|website|web)[ -]+ui\\b|\\banimat(?:e|ed|ion)\\b[^.;!?]*\\bjson\\b",

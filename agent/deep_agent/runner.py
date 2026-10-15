@@ -27,10 +27,12 @@ from agent.backend_config import configured_deep_agent_model
 from agent.deep_agent.art_style_catalog import style_context
 from agent.deep_agent.checkpoints import StudioCheckpointer
 from agent.deep_agent.costs import append_media_costs
+from agent.deep_agent.drama_gate import DramaGate
+from agent.deep_agent.short_drama import check_outline
 from agent.deep_agent.files import subagent_file_updates
 from agent.deep_agent.memory import ProjectMemory, append_only_middleware
 from agent.deep_agent.usage import ModelUsage
-from agent.deep_agent.routing import route_intent, capability_table
+from agent.deep_agent.routing import route_intent, capability_table, drama_cancelled
 from agent.gateway_executor import GatewayExecutor, tool_needs_approval
 from agent.errors import AgentRunLimitExceeded
 from agent.studio_agent_next import (
@@ -150,6 +152,16 @@ and its timestamped fixes, link the saved report, and offer remotion_render for 
 or hyperframes_render only when explicitly requested. Keep render approval/cost controls.
 Missing media, a dry-run or skipped probe is incomplete QC. Never present it as a final film.
 Generative shot continuity stays on continuity-qc / local_qc. Thresholds are PROVISIONAL.
+Episodic fiction uses /skills/short-drama-series/SKILL.md. Draft the outline before production.
+Call review_drama_outline to request native approval, including in autonomous runs. Approval
+does not authorize spending. Save the returned outline_hash with each episode. Use
+validate_drama_episode with the script, bibles, continuity locks, storyboard and exact next
+batch of existing Gateway jobs. Every cut is 2-5 seconds; each generation segment is at most
+15 seconds. The host refuses unplanned paid calls and changed arguments. Each paid job still
+pauses for approval with its cost, including images, voice and music in autonomous series runs.
+Prepare dependent batches only after real asset handles exist. Reuse approved bibles across
+episodes. A changed continuity lock requires a revised outline approval. Local checks produce
+no media and are not visual QC. Keep provider/model names and fees out of customer prose.
 Supplied logo animation uses /skills/logo-animation/SKILL.md. Keep logo pixels and vectors on
 this worker through Logo___logo_vectorize and the local logo-animation timeline template.
 Show the overlay strip and geometry audit before op=approve. That operation always pauses
@@ -205,7 +217,11 @@ async def run_with_servers(request, studio, servers, *, model=None):
     thread_id = _conversation_scope(request)
     if session and (session.get("version") != 1 or session.get("scope") != thread_id):
         raise ValueError("This Deep Agents conversation belongs to a different workspace or conversation.")
-    executor = GatewayExecutor(studio, servers, session, run_scope=_scope(request))
+    saved_drama = (session or {}).get("drama_series") or {}
+    drama = DramaGate(saved_drama, active=not drama_cancelled(request.prompt) and (
+        route_intent(request.prompt).skill == "short-drama-series" or saved_drama.get("active", False)))
+    executor = GatewayExecutor(studio, servers, session, run_scope=_scope(request),
+                               selection_constraints=drama.selection_constraints)
     await executor.connect_tools(session)
     initial = await executor.available()
     aliases = defaultdict(deque)
@@ -214,6 +230,7 @@ async def run_with_servers(request, studio, servers, *, model=None):
         studio.session_items = [{
             "type": SESSION_TYPE, "version": 1, "scope": thread_id, "thread_id": thread_id,
             "checkpoint": checkpoint, **executor.snapshot(),
+            "drama_series": drama.snapshot(),
         }]
         if studio.session_sink:
             studio.session_sink(studio.session_items)
@@ -254,6 +271,8 @@ async def run_with_servers(request, studio, servers, *, model=None):
             "render_jobs": executor.render_jobs,
             "tools": sorted(available),
         }
+        if drama.active:
+            result["drama_series"] = drama.snapshot()
         if route["skill"] == "art-style-motion":
             result["style_catalog"] = style_context(request.prompt)
         if tool_name:
@@ -275,6 +294,8 @@ async def run_with_servers(request, studio, servers, *, model=None):
             wrapper = dispatch.name
             if tool_name.split("___", 1)[0] not in DISPATCH_TARGETS[wrapper]:
                 return {"status": "failed", "error": "This role cannot call that provider."}
+            if blocker := drama.blocker(tool_name, arguments):
+                return {"status": "not_run", "error": blocker}
             key = _signature(tool_name, arguments)
             call_id = aliases[key].popleft() if aliases[key] else "tool-" + hashlib.sha256(
                 json.dumps([
@@ -282,9 +303,13 @@ async def run_with_servers(request, studio, servers, *, model=None):
                     runtime.tool_call_id,
                 ]).encode()
             ).hexdigest()
-            return await executor.execute(
+            claim = drama.claim_submission(tool_name, arguments)
+            result = await executor.execute(
                 {"tool_name": tool_name, "arguments": arguments, "call_id": call_id}, approved=True,
             )
+            if result.get("status") in {"not_run", "rejected"}:
+                drama.release_submission(claim)
+            return result
         return dispatch
 
     dispatch_tools = [dispatcher(name) for name in DISPATCH_TARGETS]
@@ -303,7 +328,18 @@ async def run_with_servers(request, studio, servers, *, model=None):
             ToolMessage(content="Studio artifact recorded.", tool_call_id=runtime.tool_call_id),
         ]})
 
-    common_tools = [progress, read_studio_context, record_media_outcome]
+    @tool
+    async def review_drama_outline(outline: dict) -> dict:
+        """Request human approval of this exact series outline before production, even autonomously."""
+        return drama.approve_outline(outline)
+
+    @tool
+    async def validate_drama_episode(episode: dict, jobs: list[dict]) -> dict:
+        """Check episode timing, continuity locks and exact production jobs locally. This approves no spending."""
+        return drama.prepare(episode, jobs)
+
+    common_tools = [progress, read_studio_context, record_media_outcome,
+                    review_drama_outline, validate_drama_episode]
     if _GATEWAY_SEARCH_TOOL in initial:
         schema = initial[_GATEWAY_SEARCH_TOOL][1]
 
@@ -326,13 +362,16 @@ async def run_with_servers(request, studio, servers, *, model=None):
             return False
         if output_repair:
             return False
+        if drama.blocker(arguments.tool_name, arguments.arguments):
+            return False
         if executor.tts_argument_error(arguments.tool_name, arguments.arguments):
             return False
         route = executor.media_selection(arguments.tool_name, arguments.arguments)
         if executor.selection_blocker(arguments.tool_name, arguments.arguments, route):
             return False
         executor.disclose_selection(route, call.tool_call["id"], arguments.tool_name, arguments.arguments)
-        return tool_needs_approval(arguments.tool_name, studio.autonomous, arguments.arguments)
+        return (drama.requires_approval(arguments.tool_name)
+                or tool_needs_approval(arguments.tool_name, studio.autonomous, arguments.arguments))
 
     def approval_description(tool_call, state, runtime):
         name, arguments = _gateway_action({"name": tool_call["name"], "args": tool_call["args"]})
@@ -353,6 +392,11 @@ async def run_with_servers(request, studio, servers, *, model=None):
                "description": approval_description}
         for name in DISPATCH_TARGETS
     }
+    interrupt_on["review_drama_outline"] = {
+        "allowed_decisions": ["approve", "reject"],
+        "when": lambda call: not output_repair and check_outline(call.tool_call["args"].get("outline", {}))["ok"],
+        "description": "Approve this series outline, cast and episode synopses. This does not authorize any spending.",
+    }
     roles = [
         ("planner", "Plan the routed media steps and editorial decisions without calling paid media tools.", []),
         ("media", "Generate, edit or refine stills and video through the host capability map and explicit provider requests.", [dispatch_tools[0]]),
@@ -369,6 +413,15 @@ async def run_with_servers(request, studio, servers, *, model=None):
     ]
     role_models = {name: injected_model if injected_model is not None else configured_deep_agent_model(name)
                    for name, _, _ in roles}
+    @wrap_tool_call
+    async def repair_guard(call, handler):
+        if output_repair and call.tool_call["name"] != "StudioAgentOutput":
+            return ToolMessage(content="Only StudioAgentOutput is allowed during completion repair.",
+                               tool_call_id=call.tool_call["id"], status="error")
+        if call.tool_call["name"] == "validate_drama_episode":
+            drama.invalidate_batch()
+        return await handler(call)
+
     subagents = [{
         "name": name, "description": description,
         "model": role_models[name],
@@ -379,19 +432,13 @@ async def run_with_servers(request, studio, servers, *, model=None):
         "skills": ["/skills/"],
         "middleware": [
             *append_only_middleware(role_models[name]),
+            repair_guard,
             TodoListMiddleware(),
             FilesystemMiddleware(backend=backend, tools=FS_TOOLS, _permissions=PERMISSIONS),
             SkillsMiddleware(backend=backend, sources=["/skills/"]),
 
         ],
     } for name, description, focused in roles]
-    @wrap_tool_call
-    async def repair_guard(call, handler):
-        if output_repair and call.tool_call["name"] != "StudioAgentOutput":
-            return ToolMessage(content="Only StudioAgentOutput is allowed during completion repair.",
-                               tool_call_id=call.tool_call["id"], status="error")
-        return await handler(call)
-
     graph = create_deep_agent(
         model=model, tools=[*common_tools, *dispatch_tools, finish],
         system_prompt=INSTRUCTIONS + MANAGER_OUTPUT_INSTRUCTIONS, subagents=subagents, backend=backend,
@@ -441,8 +488,14 @@ async def run_with_servers(request, studio, servers, *, model=None):
                 approval = _approval_request(SimpleNamespace(
                     name=name, call_id=call_id, arguments=json.dumps(arguments),
                 ))
-                route = executor.media_selection(name, arguments)
-                approval.description = executor.dispatch_disclosure(name, arguments, route)
+                if name == "review_drama_outline":
+                    approval.label = "Series outline · no spending"
+                    approval.provider = None
+                    approval.estimated_cost = {"total_cents": 0, "description": "Outline review creates no paid work."}
+                    approval.description = "Approve this series outline, cast and episode synopses. This does not authorize any spending."
+                else:
+                    route = executor.media_selection(name, arguments)
+                    approval.description = executor.dispatch_disclosure(name, arguments, route)
                 approvals.append(approval)
                 decisions.append((approval, action))
             groups[interrupt.id] = decisions
@@ -461,11 +514,12 @@ async def run_with_servers(request, studio, servers, *, model=None):
                 result = {"type": decision.decision}
                 if decision.decision == "reject":
                     result["message"] = decision.message or "The customer rejected this tool call."
-                    await executor.execute({
-                        "tool_name": approval.tool_name, "arguments": _gateway_action(action)[1],
-                        "call_id": approval.call_id,
-                    }, rejection=result["message"])
-                else:
+                    if approval.tool_name != "review_drama_outline":
+                        await executor.execute({
+                            "tool_name": approval.tool_name, "arguments": _gateway_action(action)[1],
+                            "call_id": approval.call_id,
+                        }, rejection=result["message"])
+                elif approval.tool_name != "review_drama_outline":
                     aliases[_signature(approval.tool_name, _gateway_action(action)[1])].append(approval.call_id)
                 resume[interrupt_id]["decisions"].append(result)
         graph_input = Command(resume=resume)

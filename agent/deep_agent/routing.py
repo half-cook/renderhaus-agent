@@ -104,6 +104,7 @@ _PODCAST_REQUEST = next(rule["pattern"] for rule in POLICY["rules"] if rule["ski
 _LOGO_REQUEST = next(rule["pattern"] for rule in POLICY["rules"] if rule["skill"] == "logo-animation")
 _PLAN_REVIEW_REQUEST = next(rule["pattern"] for rule in POLICY["rules"] if rule["skill"] == "plan-to-video")
 _CHAT_STORY_REQUEST = next(rule["pattern"] for rule in POLICY["rules"] if rule["skill"] == "chat-story-video")
+_SHORT_DRAMA_REQUEST = next(rule["pattern"] for rule in POLICY["rules"] if rule["skill"] == "short-drama-series")
 _MODELSTUDIO_PREVIEW_WARNING = (
     "Alibaba preview terms permit internal testing, research and evaluation only until GA. "
     "Live customer use is blocked by the preview licence."
@@ -785,6 +786,10 @@ def _logo_animation_route(*, region: str | None, available_tools: set[str] | Non
                    forbidden_tools=("wan3_t2v", "seedance25_t2v", "gpt_image25_edit"))
 
 
+def drama_cancelled(prompt: str) -> bool:
+    return bool(re.search(r"(?:^|[.;!?\n])\s*(?:please\s+)?(?:stop|cancel|end|leave|exit)\s+(?:(?:the|this|my|short|drama)\s+){0,3}(?:series|microdrama|short[ -]drama)\b", _instruction_text(prompt), re.I))
+
+
 def route_intent(prompt: str, *, region: str | None = None, tier: str | None = None,
                  confidential: bool = False, arguments: dict | None = None,
                  available_tools: set[str] | None = None, retry: bool = False, user_id: str | None = None) -> Route:
@@ -794,6 +799,17 @@ def route_intent(prompt: str, *, region: str | None = None, tier: str | None = N
         return replace(route, skill='reference-shot-breakdown',
                        expected_output='Measured shot table, JSON, CSV and interactive report',
                        disclosure='Measure reference cuts, durations and motion locally. Visual labels require a separate review; dry-run labels remain pending.')
+    drama_text = _instruction_text(prompt)
+    if (re.search(_SHORT_DRAMA_REQUEST, drama_text, re.I)
+            and not drama_cancelled(prompt)
+            and not re.search(r"\b(?:podcast|audiogram|chat[ -]story|text[ -]message|ad campaign)\b", drama_text, re.I)
+            and not re.search(r"\b(?:do not|don't|never|no)\s+(?:(?:make|create)\s+)?(?:a\s+)?(?:micro[ -]?drama|short[ -]drama)", drama_text, re.I)):
+        return Route(skill="short-drama-series", status="ready", basis="episodic fiction workflow",
+                     reason="Develop and approve the series outline before production.",
+                     required={"outline_approval": True, "max_segment_seconds": 15,
+                               "cut_seconds": [2, 5]},
+                     expected_output="series outline and per-episode production files",
+                     disclosure="Planning creates no media. Approve the outline and each exact production batch before spending.")
     if lottie_request(prompt):
         route = select_provider("lottie_animation", region=region, available_tools=available_tools)
         return replace(route, skill="lottie-animation", expected_output="Lottie JSON and dotLottie",
@@ -881,7 +897,7 @@ def route_intent(prompt: str, *, region: str | None = None, tier: str | None = N
         or video_capabilities.intersection(POLICY["named_models"].get(constraints["named_model"], {}).get("aliases", {}))
     )
     for rule in POLICY["rules"]:
-        if rule["skill"] in {"lottie-animation", "logo-animation"}:
+        if rule["skill"] in {"lottie-animation", "logo-animation", "short-drama-series"}:
             continue
         if rule["skill"] == "chat-story-video" and not _chat_story_request(prompt):
             continue

@@ -83,3 +83,13 @@ Licence: Apache-2.0. Read 2026-10-15.
 Renderhaus uses independently written Python code and instructions inspired by this workflow.
 No upstream code, media or verbatim skill text is included.
 Attribution: agent/deep_agent/skills/reference-shot-breakdown/NOTICE.md
+
+Short drama series workflow
+==========================
+Pattern sources read 2026-10-15:
+https://github.com/zenstory-ai/drama-skills at f53fb206507cb0cfb07fd29b692156dd4fb8fe7d (MIT)
+https://github.com/eternityspring/shuohao-skills at d28a9c539b40523d081794b25ff9113016bd98e0 (Apache-2.0)
+Renderhaus adapts workflow instructions in original wording and independently implements
+its validator and host approval integration. No upstream code, assets or weights are
+vendored. Copyright notices, modification notice and complete licences accompany
+agent/deep_agent/skills/short-drama-series/NOTICE and its references/ directory.

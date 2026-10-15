@@ -205,10 +205,13 @@ def tool_needs_approval(name: str, autonomous: bool, arguments: dict | None = No
 
 
 class GatewayExecutor:
-    def __init__(self, studio, servers, session=None, *, run_scope=None):
+    selection_constraints = None
+
+    def __init__(self, studio, servers, session=None, *, run_scope=None, selection_constraints=None):
         self.studio = studio
         self.servers = servers
         self.run_scope = run_scope or studio.job_id
+        self.selection_constraints = selection_constraints
         raw_cap = os.getenv("RENDERHAUS_AUTONOMOUS_RUN_CAP_CENTS", "").strip()
         self.cap_cents = int(raw_cap) if raw_cap and studio.autonomous else None
         if self.cap_cents is not None and self.cap_cents < 0:
@@ -392,6 +395,8 @@ class GatewayExecutor:
                 selection_arguments["real_face_refs"] = True
         constraints = intent_constraints(self.studio.prompt, confidential=self.studio.confidential,
                                          arguments=selection_arguments, user_id=getattr(self.studio, "user_id", None))
+        if self.selection_constraints:
+            constraints = self.selection_constraints(self.studio.prompt, name, selection_arguments, constraints)
         if job in {"motion_graphics", "nle_handoff", "nle_import"}:
             constraints["provider"] = constraints["model"] = constraints["named_model"] = None
         rejected_id = self.rejected_reviews.get(job)
