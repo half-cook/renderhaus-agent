@@ -214,7 +214,6 @@ class QuestionServerTests(unittest.IsolatedAsyncioTestCase):
                 return httpx.Response(200, json={"status": "healthy"})
             return httpx.Response(200, headers={"content-type": "text/event-stream"}, stream=ResultStream())
 
-        import server.studio as studio
         client = httpx.AsyncClient
         with patch.dict("os.environ", {"AGENTCORE_DEV_URL": "http://runtime.test"}), patch(
             "server.studio.httpx.AsyncClient", side_effect=lambda **kw: client(transport=httpx.MockTransport(route), **kw),

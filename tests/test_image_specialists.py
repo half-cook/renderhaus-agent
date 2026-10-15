@@ -17,7 +17,6 @@ from agent.studio_agent_next import (
     StudioAgentApprovalRequired, StudioAgentRequest, StudioApprovalDecision, StudioNode,
     _context_from_request,
 )
-from providers.fal import api as fal
 from providers.registry import dispatch, generate_schemas
 from providers.catalog import get_provider
 from server.billing_rates import cost_for

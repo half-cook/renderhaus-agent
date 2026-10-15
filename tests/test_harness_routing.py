@@ -1,4 +1,3 @@
-from agent.deep_agent.routing import route_intent
 from agent.gateway_executor import GatewayExecutor
 from agent.studio_agent_next import StudioAgentRequest, _context_from_request
 
