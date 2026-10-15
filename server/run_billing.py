@@ -49,7 +49,13 @@ def start_run(
         repo.touch_run_hold(run_id)
         return existing
     if conversation_id and repo.adopt_conversation_hold(user_id, conversation_id, run_id):
-        return repo.get_run_hold(run_id)
+        hold = repo.get_run_hold(run_id)
+        if hold and hold["status"] == "paused_cap":
+            # A new message is the user choosing to continue under the same hard cap; a stale
+            # pause would otherwise stop every later turn in this conversation before any work.
+            repo.set_run_pause(run_id, None)
+            hold = repo.get_run_hold(run_id)
+        return hold
     estimate = autonomous_media_cents + (rb.orchestration_estimate_cents() if rb.orchestration_billing_enabled() else 0)
     return repo.hold_run(user_id, run_id, rb.default_cap_cents(estimate) if estimate else 0,
                          estimate_cents=estimate, conversation_id=conversation_id)
