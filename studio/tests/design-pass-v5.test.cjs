@@ -45,3 +45,16 @@ test("6: empty Studio keeps a slim placeholder strip, stage centred (no empty ba
 test("no provider, model or fee wording in the changed card copy", () => {
   assert.ok(!/platform fee|service fee|markup|Seedance|ElevenLabs|Wan 3/i.test(card()));
 });
+
+test("empty Studio welcome never slides under the saved line, and a no-shots fixture exists", () => {
+  assert.match(read("app/revamp-v4.css"), /\.rh-agent-dock \.agent-empty \{ flex-shrink: 0; justify-content: safe center; padding-top: 16px; \}/);
+  assert.match(read("design-shots/screens.ts"), /id: "m03-agent-no-shots"/);
+});
+
+test("an empty conversation opens at the welcome heading, not scrolled to the bottom", () => {
+  assert.match(read("components/canvas/AgentDock.tsx"), /conversationExecutions\.length === 0 && !liveRun\) \{ transcript\.scrollTop = 0; return; \}/);
+});
+
+test("home stacks to one column on phones so the project grid is not squeezed to 0px", () => {
+  assert.match(read("app/revamp-v4.css"), /@media \(max-width: 800px\) \{ \.rh-home-cols \{ grid-template-columns: minmax\(0, 1fr\); \}/);
+});

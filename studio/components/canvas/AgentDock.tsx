@@ -725,7 +725,10 @@ export function AgentDock({ navigationBusy: externalBusy, onBusyChange, suggesti
 
   useEffect(() => {
     const transcript = transcriptRef.current;
-    if (transcript && stickToBottom.current) transcript.scrollTop = transcript.scrollHeight;
+    if (!transcript) return;
+    // Empty conversation: start at the welcome heading, not scrolled past it to the last starter card.
+    if (conversationExecutions.length === 0 && !liveRun) { transcript.scrollTop = 0; return; }
+    if (stickToBottom.current) transcript.scrollTop = transcript.scrollHeight;
   }, [agentOpen, liveRun, conversationExecutions]);
 
   useEffect(() => {
