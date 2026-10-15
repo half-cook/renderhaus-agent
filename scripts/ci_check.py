@@ -106,10 +106,10 @@ def check_routing_inventory() -> None:
     from providers.catalog import PROVIDERS
     from providers.registry import load_committed_schemas
 
-    assert len(PROVIDERS) == 18
-    assert sum(len(load_committed_schemas(spec)) for spec in PROVIDERS) == 134
+    assert len(PROVIDERS) == 19
+    assert sum(len(load_committed_schemas(spec)) for spec in PROVIDERS) == 135
     paths = list(SKILLS_ROOT.glob("*/SKILL.md"))
-    assert len(paths) == 38
+    assert len(paths) == 39
     from agent.deep_agent.art_style_catalog import search_styles
 
     catalog_path = SKILLS_ROOT / 'art-style-motion/references/catalog/index.json'
@@ -136,7 +136,7 @@ def check_routing_inventory() -> None:
         assert set(metadata["include_tools"].split()) <= DISPATCH_TARGETS.keys(), path
         assert all(TOOL_MAP[alias]["status"] != "retired" for alias in metadata["routing_tools"].split()), path
     cases = json.loads((ROOT / "tests/fixtures/skill_routing.json").read_text())
-    assert len(cases) == 301 and sum(not case["skip_reason"] for case in cases) == 295
+    assert len(cases) == 310 and sum(not case["skip_reason"] for case in cases) == 304
     assert sum(bool(case["skip_reason"]) for case in cases) == 6
     ids = [case["test_id"] for case in cases if case.get("test_id")]
     assert len(ids) == len(set(ids)), "Routing fixture IDs must be unique."
@@ -147,7 +147,7 @@ def check_routing_inventory() -> None:
 
         subprocess.run(["git", "ls-files", "--error-unmatch", str(EVAL_PATH.relative_to(ROOT))], check=True, capture_output=True)
         assert default_vlm_enabled(), "Committed VLM evidence does not qualify for promotion."
-    print("ok routing inventory (18 providers, 134 Gateway tools, 38 skills, 141 catalog styles, 301 routing rows, 295 active routing rows)")
+    print("ok routing inventory (19 providers, 135 Gateway tools, 39 skills, 141 catalog styles, 310 routing rows, 304 active routing rows)")
 
 
 def _assert_gateway_shape(schema: object) -> None:
@@ -168,6 +168,22 @@ def check_dry_run_dispatch() -> None:
     from providers.registry import dispatch, dummy_arguments, load_committed_schemas
 
     for spec in PROVIDERS:
+        if spec.id == "logo_animation":
+            import tempfile
+            from unittest.mock import patch
+            from PIL import Image, ImageDraw
+
+            with tempfile.TemporaryDirectory() as root, patch.dict(os.environ, {"RENDERHAUS_MEDIA_DIR": root}):
+                job = Path(root) / "ci-logo"
+                job.mkdir()
+                image = Image.new("RGB", (64, 64), "white")
+                ImageDraw.Draw(image).rectangle((16, 16, 48, 48), fill="black")
+                image.save(job / "logo.png")
+                result = dispatch(spec.id, "logo_vectorize", {"op": "vectorize", "job_id": "ci-logo", "input_path": "logo.png"})
+                assert result.get("status") == "needs_vector_approval" and result["geometry_qa"]["passed"], result
+                assert not (job / Path(result["svg_path"]).parent / "approval.json").exists()
+            print("ok local logo_animation.logo_vectorize (synthetic source; approval still required)")
+            continue
         if spec.id == "elevenlabs":
             # Upstream constraints need meaningful inputs, covered by test_elevenlabs.py.
             result = dispatch(spec.id, "music_compose", {"prompt": "Warm piano", "music_length_ms": 3000})

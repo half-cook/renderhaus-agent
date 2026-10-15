@@ -5369,5 +5369,200 @@
     "negative": true,
     "source_status": "task-derived",
     "note": "Offline catalog acceptance case; task-supplied examples and regression boundaries. No workbook row claimed."
+  },
+  {
+    "test_id": "RT-184",
+    "suite": "logo-animation",
+    "prompt": "Here's our logo PNG, give me a 2-second logo reveal sting for the start of our YouTube videos",
+    "expected_skill": "logo-animation",
+    "expected_tool": "logo_vectorize then remotion_render",
+    "skip_reason": "",
+    "source_status": "active",
+    "expected_step_count": 2,
+    "expected_execution_groups": [
+      [
+        "logo_vectorize"
+      ],
+      [
+        "remotion_render"
+      ]
+    ],
+    "expected_required": {
+      "template_name": "logo-animation",
+      "approved_vector_required": true,
+      "processing": "local",
+      "final_frame_matches_vector": true
+    },
+    "forbidden_tools": "wan3_t2v, seedance25_t2v, gpt_image25_edit",
+    "expected_output": "approved logo.svg then MP4 sting whose final frame matches the SVG",
+    "note": "Routing Tests workbook read 2026-10-14 with uv/openpyxl outside project venv. Supplied logo vector approval precedes the MP4 render."
+  },
+  {
+    "test_id": "RT-LOGO-001",
+    "suite": "logo-animation",
+    "prompt": "Animate our attached logo JPG as a splash screen",
+    "expected_skill": "logo-animation",
+    "expected_tool": "logo_vectorize then remotion_render",
+    "skip_reason": "",
+    "source_status": "task-derived",
+    "expected_step_count": 2,
+    "expected_execution_groups": [
+      [
+        "logo_vectorize"
+      ],
+      [
+        "remotion_render"
+      ]
+    ],
+    "expected_required": {
+      "template_name": "logo-animation",
+      "approved_vector_required": true,
+      "processing": "local",
+      "final_frame_matches_vector": true
+    },
+    "forbidden_tools": "wan3_t2v, seedance25_t2v, gpt_image25_edit",
+    "expected_output": "approved logo.svg then MP4 sting whose final frame matches the SVG",
+    "note": "Synthetic routing acceptance case for a supplied logo. No customer logo fixture."
+  },
+  {
+    "test_id": "RT-LOGO-002",
+    "suite": "logo-animation",
+    "prompt": "Turn this PNG logo into an animated SVG loader",
+    "expected_skill": "logo-animation",
+    "expected_tool": "logo_vectorize then remotion_render",
+    "skip_reason": "",
+    "source_status": "task-derived",
+    "expected_step_count": 2,
+    "expected_execution_groups": [
+      [
+        "logo_vectorize"
+      ],
+      [
+        "remotion_render"
+      ]
+    ],
+    "expected_required": {
+      "template_name": "logo-animation",
+      "approved_vector_required": true,
+      "processing": "local",
+      "final_frame_matches_vector": true
+    },
+    "forbidden_tools": "wan3_t2v, seedance25_t2v, gpt_image25_edit",
+    "expected_output": "approved logo.svg then MP4 sting whose final frame matches the SVG",
+    "note": "Synthetic routing acceptance case for a supplied logo. No customer logo fixture."
+  },
+  {
+    "test_id": "RT-LOGO-003",
+    "suite": "logo-animation",
+    "prompt": "Make a two-second reveal from our supplied logo screenshot",
+    "expected_skill": "logo-animation",
+    "expected_tool": "logo_vectorize then remotion_render",
+    "skip_reason": "",
+    "source_status": "task-derived",
+    "expected_step_count": 2,
+    "expected_execution_groups": [
+      [
+        "logo_vectorize"
+      ],
+      [
+        "remotion_render"
+      ]
+    ],
+    "expected_required": {
+      "template_name": "logo-animation",
+      "approved_vector_required": true,
+      "processing": "local",
+      "final_frame_matches_vector": true
+    },
+    "forbidden_tools": "wan3_t2v, seedance25_t2v, gpt_image25_edit",
+    "expected_output": "approved logo.svg then MP4 sting whose final frame matches the SVG",
+    "note": "Synthetic routing acceptance case for a supplied logo. No customer logo fixture."
+  },
+  {
+    "test_id": "RT-LOGO-004",
+    "suite": "logo-animation",
+    "prompt": "Add idle hover motion to this logo PNG",
+    "expected_skill": "logo-animation",
+    "expected_tool": "logo_vectorize then remotion_render",
+    "skip_reason": "",
+    "source_status": "task-derived",
+    "expected_step_count": 2,
+    "expected_execution_groups": [
+      [
+        "logo_vectorize"
+      ],
+      [
+        "remotion_render"
+      ]
+    ],
+    "expected_required": {
+      "template_name": "logo-animation",
+      "approved_vector_required": true,
+      "processing": "local",
+      "final_frame_matches_vector": true
+    },
+    "forbidden_tools": "wan3_t2v, seedance25_t2v, gpt_image25_edit",
+    "expected_output": "approved logo.svg then MP4 sting whose final frame matches the SVG",
+    "note": "Synthetic routing acceptance case for a supplied logo. No customer logo fixture."
+  },
+  {
+    "test_id": "RT-LOGO-005",
+    "suite": "logo-animation",
+    "prompt": "Make animated lower thirds for this interview",
+    "expected_skill": "motion-graphics",
+    "expected_tool": "remotion_render",
+    "skip_reason": "",
+    "source_status": "task-derived",
+    "negative": true,
+    "forbidden_tools": "logo_vectorize",
+    "forbidden_skills": [
+      "logo-animation"
+    ],
+    "note": "Keep existing motion, design and podcast routes outside supplied-logo animation."
+  },
+  {
+    "test_id": "RT-LOGO-006",
+    "suite": "logo-animation",
+    "prompt": "Make a channel intro sting without a supplied logo",
+    "expected_skill": "motion-graphics",
+    "expected_tool": "remotion_render",
+    "skip_reason": "",
+    "source_status": "task-derived",
+    "negative": true,
+    "forbidden_tools": "logo_vectorize",
+    "forbidden_skills": [
+      "logo-animation"
+    ],
+    "note": "Keep existing motion, design and podcast routes outside supplied-logo animation."
+  },
+  {
+    "test_id": "RT-LOGO-007",
+    "suite": "logo-animation",
+    "prompt": "Design me a new logo as an editable SVG",
+    "expected_skill": "image-gen",
+    "expected_tool": "recraft_v41_vector",
+    "skip_reason": "",
+    "source_status": "task-derived",
+    "negative": true,
+    "forbidden_tools": "logo_vectorize",
+    "forbidden_skills": [
+      "logo-animation"
+    ],
+    "note": "Keep existing motion, design and podcast routes outside supplied-logo animation."
+  },
+  {
+    "test_id": "RT-LOGO-008",
+    "suite": "logo-animation",
+    "prompt": "Make an audiogram from this podcast clip with a waveform",
+    "expected_skill": "podcast-audiogram",
+    "expected_tool": "elevenlabs_stt then remotion_render",
+    "skip_reason": "",
+    "source_status": "task-derived",
+    "negative": true,
+    "forbidden_tools": "logo_vectorize",
+    "forbidden_skills": [
+      "logo-animation"
+    ],
+    "note": "Keep existing motion, design and podcast routes outside supplied-logo animation."
   }
 ]

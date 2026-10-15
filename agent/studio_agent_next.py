@@ -485,6 +485,7 @@ _SECRET_ARGUMENT_PARTS = (
 )
 _TEXT_PART_KEYS = frozenset({"type", "text"})
 _TOOL_TITLES = {
+    "logo_vectorize": "Prepare logo animation",
     "shot_recipe_search": "Find shot recipes",
     "render_timeline": "Compose final MP4",
     "get_render_progress": "Poll Remotion render",
@@ -1496,6 +1497,11 @@ def _validate_video_delivery(
 ) -> bool:
     from agent.deep_agent.routing import route_intent
     from agent.deep_agent.motion_carry_gate import gate_motion_delivery
+    from agent.deep_agent.logo_gate import gate_logo_delivery
+
+    logo_verdict = gate_logo_delivery(request, studio, final)
+    if logo_verdict is False:
+        return False
 
     motion_verdict = gate_motion_delivery(request, studio, final)
     if motion_verdict is False:
@@ -1520,7 +1526,7 @@ def _validate_video_delivery(
                         and event.arguments.get("op") in finishing_ops]
     prior_delivery = any(event["name"] in {"Remotion___deliver_render", "Remotion___qc_deliverable"}
                          for event in request.prior_tool_events)
-    if workflow_events or delivery_alias in {"delivery_render", "deliverable_qc"} or (finishing_events and prior_delivery):
+    if workflow_events or logo_verdict is True or delivery_alias in {"delivery_render", "deliverable_qc"} or (finishing_events and prior_delivery):
         last = workflow_events[-1] if workflow_events else None
         latest = last.result if last else {}
         complete = False

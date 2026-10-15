@@ -871,6 +871,10 @@ def validate_tool_arguments(
     *, allow_empty_visuals: bool = False,
 ) -> dict[str, Any]:
     """Validate every Gateway call at the last boundary before provider I/O."""
+    if provider_id == "logo_animation":
+        from providers.logo_animation.contracts import validate_arguments
+
+        validate_arguments(arguments or {})
     if provider_id == "shot_recipes":
         from providers.shot_recipes.contracts import validate_arguments
 

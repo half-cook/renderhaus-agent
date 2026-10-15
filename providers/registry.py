@@ -20,6 +20,9 @@ FORBIDDEN_TOOL_RE = re.compile(r"^(wait_for_.*|.*_and_wait)$")
 
 
 TOOL_GUIDANCE: dict[str, dict[str, str]] = {
+    "logo_animation": {
+        "logo_vectorize": "Process a supplied logo locally without network or model calls. Use vectorize then audit and show logo.svg with the overlay strip and smoothness report. approve requires explicit rights_confirmed=true, exact params.sha256 and native human approval, even autonomously. Choreograph only that approved vector, then render the local logo-animation template. final_frame, easing and continuity check saved artifacts. Never regenerate the mark with an image model. Inputs and outputs stay in the current job.",
+    },
     "mureka": {
         "generate_song": "Music default Mureka V9.5 via fal. Use lyrics for lyrics-to-song, or prompt for prompt-to-song; prompt with lyrics supplies style. Paid audio requires approval unless autonomous. Poll get_music_task; save song_id and timed lyrics for lyrics-video. Dry-run is a preview; no training eligibility.",
         "generate_instrumental": "Music-bed default: Mureka V9.5 instrumental via fal. Exactly one of prompt or existing instrumental_id. Paid audio approval unless autonomous. Poll get_music_task with download=true; dry-run never produces audio.",
