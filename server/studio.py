@@ -2019,7 +2019,7 @@ async def _run_studio_agent_job_inner(
                 id="run",
                 type="RUN_ERROR",
                 title="Agent stopped",
-                message=f"The agent could not finish ({type(exc).__name__}).",
+                message="The agent stopped before finishing.",
                 status="failed",
             )
         )
@@ -2030,8 +2030,8 @@ async def _run_studio_agent_job_inner(
             job_id,
             status="error",
             message=(
-                f"The agent could not finish this request ({type(exc).__name__}); "
-                "completed tool outputs were preserved."
+                "The agent stopped before finishing. "
+                "Finished parts are saved in your project."
             ),
             result=_partial_agent_result(execution),
             error_type=type(exc).__name__,

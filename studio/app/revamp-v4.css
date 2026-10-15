@@ -382,3 +382,10 @@ html[data-theme="light"] {
 .rh-agent-dock .agent-empty { flex-shrink: 0; justify-content: safe center; padding-top: 16px; }
 /* Home on phones: one column. The fixed 360px side column was squeezing the project grid to 0px wide at 390. */
 @media (max-width: 800px) { .rh-home-cols { grid-template-columns: minmax(0, 1fr); } .rh-pgrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.rh-send-failed-line { margin: 4px 0 0; font-size: 13px; color: var(--color-ember-text); display: flex; align-items: center; gap: 8px; }
+.rh-send-failed-retry { font-size: 12px; padding: 2px 10px; border-radius: 999px; border: 1px solid var(--color-ember); color: var(--color-ember-text); background: transparent; cursor: pointer; }
+.rh-send-failed-retry:disabled { opacity: .5; cursor: default; }
+.rh-google { display: inline-flex; align-items: center; justify-content: center; gap: 10px; }
+.rh-or { display: flex; align-items: center; gap: 10px; margin: 12px 0; color: var(--rh-fg-3); font: 11px var(--font-geist-mono), monospace; text-transform: uppercase; }
+.rh-or::before, .rh-or::after { content: ""; flex: 1; height: 1px; background: var(--rh-line); }
+[data-shot="sign-in-form"] .rh-step-body { margin-left: 0; }
