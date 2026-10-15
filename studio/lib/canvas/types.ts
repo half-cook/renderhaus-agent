@@ -62,6 +62,7 @@ export type AgentToolEvent = {
   providerJobId?: string;
   arguments: Record<string, unknown>;
   assets: StudioAsset[];
+  logoArtifacts?: string[];
 };
 
 export type AgentProgressEvent = {

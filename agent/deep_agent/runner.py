@@ -61,7 +61,7 @@ SKILLS_ROOT = Path(__file__).parent / "skills"
 DISPATCH_TARGETS = {
     "call_media_tool": {"Gemini", "OpenAI", "Seedance", "Seedream", "Kling", "Runway", "Fal", "Luma", "ModelStudio", "Sync", "HeyGen", "Topaz"},
     "call_audio_tool": {"ElevenLabs", "FishAudio", "FishAudioProvider", "Fish_Audio", "Mureka", "HeyGen"},
-    "call_editor_tool": {"Remotion", "HyperFrames", "Ffmpeg", "ShotRecipes", "FootageMemory", "Lottie"},
+    "call_editor_tool": {"Remotion", "HyperFrames", "Ffmpeg", "ShotRecipes", "FootageMemory", "Lottie", "Logo"},
 }
 FS_TOOLS = ["ls", "read_file", "write_file", "edit_file", "glob", "grep"]
 PERMISSIONS = [FilesystemPermission(operations=["write"], paths=["/skills/**"], mode="deny")]
@@ -150,6 +150,13 @@ and its timestamped fixes, link the saved report, and offer remotion_render for 
 or hyperframes_render only when explicitly requested. Keep render approval/cost controls.
 Missing media, a dry-run or skipped probe is incomplete QC. Never present it as a final film.
 Generative shot continuity stays on continuity-qc / local_qc. Thresholds are PROVISIONAL.
+Supplied logo animation uses /skills/logo-animation/SKILL.md. Keep logo pixels and vectors on
+this worker through Logo___logo_vectorize and the local logo-animation timeline template.
+Show the overlay strip and geometry audit before op=approve. That operation always pauses
+for human approval of the exact SVG checksum, including autonomous runs. Never call approve
+and a render in parallel. Ask the user to confirm rights to animate any third-party mark.
+The final frame must match the approved vector. Run final_frame, easing and continuity
+checks, then saved-checksum deliverable QC before describing the MP4 as finished.
 """
 
 
@@ -330,6 +337,8 @@ async def run_with_servers(request, studio, servers, *, model=None):
     def approval_description(tool_call, state, runtime):
         name, arguments = _gateway_action({"name": tool_call["name"], "args": tool_call["args"]})
         route = executor.media_selection(name, arguments)
+        if name == "Logo___logo_vectorize":
+            return "Approve this logo vector. " + executor.dispatch_disclosure(name, arguments, route)
         if name.startswith("FootageMemory___"):
             label = "Footage memory" if name.endswith("footage_memory_build") else "Verify"
             return f"Approve {label}. {executor.dispatch_disclosure(name, arguments, route)}"

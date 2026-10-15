@@ -43,6 +43,7 @@ LOTTIE_TOOLS = frozenset("Lottie___" + verb for verb in (
     "lottie_author", "lottie_validate", "lottie_preview_render"))
 APPROVAL_EXEMPT_TOOLS = frozenset({"Remotion___export_nle_timeline"})
 LOCAL_DATA_TOOLS = frozenset({"ShotRecipes___shot_recipe_search"})
+LOGO_TOOLS = frozenset({"Logo___logo_vectorize"})
 FOOTAGE_TOOLS = frozenset('FootageMemory___' + name for name in (
     'footage_memory_status', 'footage_memory_build', 'footage_memory_query',
     'footage_watch_answer', 'footage_clip_extract'))
@@ -61,6 +62,29 @@ def _worker_remotion_tool(name: str, arguments: dict | None = None) -> bool:
     if name == 'Remotion___get_render_progress':
         return (arguments or {}).get('render_id', '').startswith('local-')
     return name == 'Remotion___render_timeline' and render_backend() == 'local'
+
+
+def _local_logo_arguments(studio, arguments: dict) -> dict:
+    source = arguments.get('input_path', '')
+    if arguments.get('op') != 'vectorize' or not source.startswith('renderhaus-asset://'):
+        return arguments
+    if arguments.get('job_id') != studio.job_id or studio.source_resolver is None:
+        raise ValueError('Logo input requires the owned current job and an asset resolver.')
+    from pathlib import Path
+    from providers.ffmpeg.sandbox import job_directory, output_file
+    from providers.logo_animation.geometry import decode, MAX_BYTES
+
+    version = source.removeprefix('renderhaus-asset://')
+    path = Path(studio.source_resolver(version))
+    decode(path)
+    directory = job_directory(studio.job_id)
+    target = output_file(directory, 'logo-source', path.suffix.lower() if path.suffix.lower() in {'.png', '.jpg', '.jpeg'} else '.png')
+    data = path.read_bytes()
+    if not 0 < len(data) <= MAX_BYTES:
+        raise ValueError('Logo source exceeds its input bound.')
+    with target.open('xb') as destination:
+        destination.write(data)
+    return {**arguments, 'input_path': target.name}
 
 
 def _local_remotion_arguments(studio, arguments: dict) -> dict:
@@ -105,6 +129,8 @@ def tool_needs_approval(name: str, autonomous: bool, arguments: dict | None = No
 
     if name in LOTTIE_TOOLS or name in {"lottie_author", "lottie_validate", "lottie_preview_render"}:
         return False
+    if name in LOGO_TOOLS or name == "logo_vectorize":
+        return (arguments or {}).get("op") == "approve"
     if name in FOOTAGE_TOOLS:
         if name.endswith('___footage_memory_build'):
             return (arguments or {}).get('stage', 'estimate') == 'build'
@@ -226,12 +252,12 @@ class GatewayExecutor:
         from providers.catalog import get_provider
         from providers.registry import generate_schemas
 
-        for provider in ("ffmpeg", "remotion", "shot_recipes", "footage_memory", "lottie"):
+        for provider in ("ffmpeg", "remotion", "shot_recipes", "footage_memory", "lottie", "logo_animation"):
             spec = get_provider(provider)
             for schema in generate_schemas(spec):
                 name = f"{spec.target_name}___{schema['name']}"
                 is_poll = name == 'Remotion___get_render_progress'
-                if (name not in LOCAL_MEDIA_TOOLS and name not in LOCAL_DATA_TOOLS and name not in FOOTAGE_TOOLS
+                if (name not in LOCAL_MEDIA_TOOLS and name not in LOCAL_DATA_TOOLS and name not in FOOTAGE_TOOLS and name not in LOGO_TOOLS
                         and not _worker_remotion_tool(name) and not is_poll):
                     continue
                 if request_tool_blocker(self.studio.prompt, name) is None:
@@ -344,6 +370,13 @@ class GatewayExecutor:
         return route
 
     def dispatch_disclosure(self, name, arguments, route):
+        if name == 'Remotion___render_timeline' and (arguments.get('template') or {}).get('name') == 'logo-animation':
+            return 'Render the approved logo locally. The final pose must match the reviewed vector. Inspect the saved animation and its QA before delivery.'
+        if name in LOGO_TOOLS:
+            if arguments.get("op") == "approve":
+                return ("Review the vector, source overlay and edge audit. Approval applies only to this exact SVG. "
+                        "Confirm that you have the rights to animate the mark. Logo processing stays on this worker.")
+            return "Logo processing stays on this worker. The source mark remains private and is never used for training."
         if name in FOOTAGE_TOOLS:
             if name.endswith(('___footage_memory_build', '___footage_watch_answer')):
                 from server.billing_rates import footage_memory_estimate
@@ -421,12 +454,25 @@ class GatewayExecutor:
         return f"{proposal} Provider {provider}; model {model}; default. {estimate_cost(name, arguments).description}".strip()
 
     def disclose_selection(self, route, event_id, name=None, arguments=None):
+        if name in LOGO_TOOLS or name == 'Remotion___render_timeline' and ((arguments or {}).get('template') or {}).get('name') == 'logo-animation':
+            _progress(self.studio, event_id=f"logo-{event_id}", event_type="MODEL_UPDATE",
+                      title="Logo animation", message=self.dispatch_disclosure(name, arguments or {}, route), status="completed")
+            return
         if route or (name and not is_free_tool(name)):
             message = self.dispatch_disclosure(name, arguments or {}, route)
             _progress(self.studio, event_id=f"provider-{event_id}", event_type="MODEL_UPDATE",
                       title="Provider choice", message=message, status="completed")
 
     def selection_blocker(self, name, arguments, route):
+        if name in LOGO_TOOLS:
+            from providers.logo_animation.contracts import validate_arguments
+
+            if not self.studio.job_id or arguments.get("job_id") != self.studio.job_id:
+                return "Logo processing requires the trusted current Studio job."
+            try:
+                validate_arguments(arguments)
+            except ValueError as exc:
+                return str(exc)
         if name in FOOTAGE_TOOLS:
             from providers.footage_memory.contracts import request_for
             from providers.footage_memory.service import build_plan, third_party_allowed
@@ -485,6 +531,12 @@ class GatewayExecutor:
             from providers.remotion.captions import srt_captions
 
             try:
+                template = arguments.get("template") or {}
+                if template.get("name") == "logo-animation":
+                    if not self.studio.job_id or template.get("logo_job_id") != self.studio.job_id:
+                        return "Logo animation requires the trusted current Studio job."
+                    if render_backend() != "local":
+                        return "Logo animation requires local rendering so private logo inputs stay on this worker."
                 prepared = {**arguments, 'subtitles': srt_captions(arguments.get('subtitles_srt'), arguments.get('subtitles'))}
                 validate_backend(prepared, render_backend())
                 if render_backend() == 'local':
@@ -753,7 +805,7 @@ class GatewayExecutor:
         )
         if previous:
             return previous.result
-        if name in LOCAL_MEDIA_TOOLS and (
+        if name in LOCAL_MEDIA_TOOLS | LOGO_TOOLS and (
             not studio.job_id or arguments.get("job_id") != studio.job_id
         ):
             return {"status": "not_run", "reason": "Local media tools must use the trusted current Studio job_id. Stage inputs inside that job directory; another Studio job cannot be read."}
@@ -837,7 +889,7 @@ class GatewayExecutor:
                 {},
             )
             try:
-                if name in LOCAL_MEDIA_TOOLS or name in LOCAL_DATA_TOOLS or name in FOOTAGE_TOOLS or _worker_remotion_tool(name, arguments):
+                if name in LOCAL_MEDIA_TOOLS or name in LOCAL_DATA_TOOLS or name in FOOTAGE_TOOLS or name in LOGO_TOOLS or _worker_remotion_tool(name, arguments):
                     from providers.registry import dispatch
                     from providers.remotion.ad_variants import authorize
                     from server.billing import stripe_enabled
@@ -857,7 +909,17 @@ class GatewayExecutor:
                                 name, arguments, call_id,
                             )
                     try:
-                        if name == 'FootageMemory___footage_memory_build':
+                        if name in LOGO_TOOLS:
+                            from providers.logo_animation.api import authorize as authorize_logo
+
+                            if arguments.get("op") == "approve":
+                                with authorize_logo((arguments.get("params") or {}).get("sha256", ""),
+                                                    f"human:{call_id}" if approved else ""):
+                                    output = await asyncio.to_thread(dispatch, provider, verb, arguments)
+                            else:
+                                worker_arguments = await asyncio.to_thread(_local_logo_arguments, studio, arguments)
+                                output = await asyncio.to_thread(dispatch, provider, verb, worker_arguments)
+                        elif name == 'FootageMemory___footage_memory_build':
                             from providers.footage_memory.service import authorize as authorize_footage
 
                             with authorize_footage(arguments.get('plan_hash') if approved else None):
@@ -929,6 +991,13 @@ class GatewayExecutor:
                 else:
                     output = {**payload, "status": "failed", "error": str(exc)[:400],
                               "transport_error": not bool(payload.get("render_id") and payload.get("status") == "failed")}
+        if name == "Remotion___render_timeline" and (arguments.get("template") or {}).get("name") == "logo-animation":
+            output = {**_unwrap_tool_output(output), "logo_animation_required": True}
+        if name == "Remotion___get_render_progress" and any(
+            event.name == "Remotion___render_timeline" and event.result.get("logo_animation_required") is True
+            and event.result.get("render_id") == arguments.get("render_id") for event in studio.tool_events
+        ):
+            output = {**_unwrap_tool_output(output), "logo_animation_required": True}
         if name in {"Remotion___render_timeline", "Remotion___get_render_progress", "HyperFrames___render_composition"}:
             from agent.deep_agent.motion_carry_gate import requires_motion_qc
 

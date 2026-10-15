@@ -1,5 +1,6 @@
 const MODEL_LABELS: Record<string, string> = {
   "local-vector-animation": "UI vector animation",
+  "logo-local": "Logo animation",
   "footage-memory-dry": "Footage memory",
   "shot-recipes-local": "Shot recipe library",
   "pixelcut/looping-video": "Studio Video · looping clip (named only)",
@@ -59,6 +60,7 @@ const VERSION_SUFFIX = /-(\d{6,})$/;
 // Unknown catalog ids still get a neutral label: the family is inferred from what the id does,
 // never from who makes it. (Patterns are regexes, not rendered strings.)
 const FAMILIES: Array<[RegExp, string]> = [
+  [/logo/i, "Logo animation"],
   [/footage.?memory/i, "Footage memory"],
   [/(video|vace|gen4|aleph|ray|motion|animate|i2v|t2v|r2v)/i, "Studio Video"],
   [/(image|img|vector|edit|seedream)/i, "Studio Image"],

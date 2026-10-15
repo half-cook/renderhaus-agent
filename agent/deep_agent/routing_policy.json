@@ -37,7 +37,8 @@
     "footage_clip_extract",
     "lottie_author",
     "lottie_validate",
-    "lottie_preview_render"
+    "lottie_preview_render",
+    "logo_vectorize"
   ],
   "providers": {
     "kling": {
@@ -1059,6 +1060,35 @@
           "training_reason": "No model or weights. Output rights depend on user-owned or licensed source vectors, fonts and brand assets.",
           "commercial_status": "Local in-house authoring with MIT-adapted guidance; source asset rights required.",
           "consent_requirements": "No face or voice synthesis. User must own or license supplied assets."
+        }
+      }
+    },
+    "logo_animation": {
+      "license": "MIT",
+      "license_id": "MIT",
+      "license_source": "https://github.com/nolangz/pixel2motion/blob/e9faedb28930df0da2acf17da00c80730a78cfe8/LICENSE",
+      "read_date": "2026-10-14",
+      "training_eligible": false,
+      "training_reason": "Private user-supplied marks are never used for training. Logo rights stay with the user or their licensor.",
+      "commercial_status": "Local implementation with MIT method attribution. User must confirm rights to animate third-party marks.",
+      "enabled": true,
+      "allowed_regions": [],
+      "default_model": "logo-local",
+      "models": [
+        "logo-local"
+      ],
+      "fixed_models": {
+        "logo_vectorize": "logo-local"
+      },
+      "model_policies": {
+        "logo-local": {
+          "license": "MIT",
+          "license_id": "MIT",
+          "license_source": "https://github.com/nolangz/pixel2motion/blob/e9faedb28930df0da2acf17da00c80730a78cfe8/LICENSE",
+          "read_date": "2026-10-14",
+          "training_eligible": false,
+          "training_reason": "Private user-supplied marks are never used for training. Logo rights stay with the user or their licensor.",
+          "commercial_status": "Local implementation with MIT method attribution. User must confirm rights to animate third-party marks."
         }
       }
     }
@@ -2412,6 +2442,26 @@
       "source": "docs/LOTTIE_ANIMATION.md",
       "price_source": "docs/LOTTIE_ANIMATION.md",
       "verification": "Free local deterministic tools; no model, API, weights or secrets."
+    },
+    "logo_vectorize": {
+      "license": "MIT",
+      "license_id": "MIT",
+      "license_source": "https://github.com/nolangz/pixel2motion/blob/e9faedb28930df0da2acf17da00c80730a78cfe8/LICENSE",
+      "read_date": "2026-10-14",
+      "training_eligible": false,
+      "training_reason": "Private user-supplied marks are never used for training. Logo rights stay with the user or their licensor.",
+      "commercial_status": "Local implementation with MIT method attribution. User must confirm rights to animate third-party marks.",
+      "gateway_tool": "Logo___logo_vectorize",
+      "provider": "logo_animation",
+      "model": "logo-local",
+      "skill": "logo-animation",
+      "status": "ready",
+      "host": "local worker only",
+      "us_available": "yes",
+      "availability_source": "docs/LOGO_ANIMATION.md",
+      "source": "docs/LOGO_ANIMATION.md",
+      "price_source": "docs/LOGO_ANIMATION.md",
+      "verification": "Local deterministic geometry and motion QA. No model, network, keys or paid requests."
     }
   },
   "rules": [
@@ -2420,6 +2470,12 @@
       "skill": "lottie-animation",
       "abstract_tool": "lottie_author",
       "capability": "lottie_animation"
+    },
+    {
+      "pattern": "\\blogo\\b[^.;!?\\n]*\\b(?:animat\\w*|reveal|sting|splash|loader|idle|hover|motion)\\b|\\b(?:animat\\w*|reveal|sting|splash|loader|idle|hover)\\b[^.;!?\\n]*\\blogo\\b",
+      "skill": "logo-animation",
+      "abstract_tool": "logo_vectorize",
+      "capability": "logo_animation"
     },
     {
       "pattern": "\\b(?:audiogram|podcast[ -]audiogram)\\b|\\b(?:reactive|moving|audio[ -]reactive|animated)\\s+waveform\\b|\\bwaveform\\s+(?:video|clip)\\b",
@@ -5956,6 +6012,36 @@
       },
       "durations": {},
       "explicit_only": false
+    },
+    {
+      "provider": "logo_animation",
+      "policy_ref": "logo_animation",
+      "model": "logo-local",
+      "label": "Logo animation",
+      "tools": {
+        "logo_animation": "Logo___logo_vectorize"
+      },
+      "jobs": {
+        "logo_animation": true
+      },
+      "resolutions": [],
+      "speed_class": "local-worker",
+      "price": {
+        "source": "docs/LOGO_ANIMATION.md",
+        "read_date": "2026-10-14",
+        "unit": "call"
+      },
+      "notes": "Private local raster tracing, geometry approval and motion QA. Never uploads source logos. No model calls.",
+      "controls": {
+        "logo_animation": [
+          "op",
+          "job_id",
+          "input_path",
+          "params"
+        ]
+      },
+      "durations": {},
+      "explicit_only": false
     }
   ],
   "image_default_size": "2K",
@@ -6225,6 +6311,12 @@
     },
     "lottie_animation": {
       "default": "lottie_author",
+      "exceptions": [],
+      "interim": null,
+      "ab_candidates": []
+    },
+    "logo_animation": {
+      "default": "logo_vectorize",
       "exceptions": [],
       "interim": null,
       "ab_candidates": []
@@ -7222,6 +7314,15 @@
       "training_reason": "No model or weights. Output rights depend on user-owned or licensed source vectors, fonts and brand assets.",
       "commercial_status": "Local in-house authoring with MIT-adapted guidance; source asset rights required.",
       "consent_requirements": "No face or voice synthesis. User must own or license supplied assets."
+    },
+    "logo_vectorize": {
+      "license": "MIT",
+      "license_id": "MIT",
+      "license_source": "https://github.com/nolangz/pixel2motion/blob/e9faedb28930df0da2acf17da00c80730a78cfe8/LICENSE",
+      "read_date": "2026-10-14",
+      "training_eligible": false,
+      "training_reason": "Private user-supplied marks are never used for training. Logo rights stay with the user or their licensor.",
+      "commercial_status": "Local implementation with MIT method attribution. User must confirm rights to animate third-party marks."
     }
   },
   "editing_refusals": [

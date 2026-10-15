@@ -193,7 +193,7 @@ See [the capability map](CAPABILITY_MAP.md) and [routing policy](SKILLS.md#capab
 
 ## Skills and delegation
 
-There are 39 packaged `SKILL.md` files under `agent/deep_agent/skills/`.
+There are 40 packaged `SKILL.md` files under `agent/deep_agent/skills/`.
 Deep Agents reads metadata first. Full instructions enter context when a relevant skill is read.
 `metadata.include_tools` documents real dispatch wrappers, which are stably bound per role. `metadata.routing_tools` holds
 canonical capability/workflow IDs, while `metadata.gateway_tools` lists built names only.
@@ -248,7 +248,7 @@ order. The short Studio summary also includes per-step costs when they fit its 3
 contract; larger runs refer to the complete breakdown. Unknown charges remain explicit,
 with a known subtotal. Model token charges are recorded separately by `ModelUsage`.
 
-The capability-map fixture contains 313 retained rows, with 307 active and 6 dependency skips.
+The capability-map fixture contains 322 retained rows, with 316 active and 6 dependency skips.
 Archived/confidential routes are dropped. Active rows cover built tools and declared interims;
 pending specialists keep named branch reasons. Editorial overrides retain the safe preparer,
 separate rendering approval, and existing export/HyperFrames narration workflow contracts.
@@ -412,7 +412,7 @@ See [the decisions record](fix-parallel-approvals-decisions.tsv) for reproductio
 ## AgentCore and verification
 
 `Dockerfile.agentcore` defaults to Deep Agents and retains Codex for explicit fallback.
-It installs pinned dependencies and verifies the Deep Agents version and all 39 packaged
+It installs pinned dependencies and verifies the Deep Agents version and all 40 packaged
 skills during the build. The entrypoint remains `python -m agent.studio_agent_next`.
 The existing Studio approval/review surfaces display the edit plan, subtitles, grade and
 audio fades. The database schema stays compatible.
@@ -621,8 +621,8 @@ presets, centre rotation and literal SRT captions share the timeline contract. C
 structured skill backend/feature claims against the executable capability table. Lambda
 parity is payload-level only; deployed rendering and Comet validation remain unverified.
 
-Inventory is 19 providers, 137 Gateway tools and 39 skills. The fixture has 307 active and
-6 deferred cases among 313 rows. Browser validation through Comet remains blocked here.
+Inventory is 20 providers, 138 Gateway tools and 40 skills. The fixture has 316 active and
+6 deferred cases among 322 rows. Browser validation through Comet remains blocked here.
 
 The free local `ffmpeg_tool` adds subtitle burning, SRT export, supplied LUT grading,
 audio cleanup and preview proxies. `local_finishing` routes these through the existing
@@ -660,8 +660,8 @@ or incomplete checks, and prevents a previous successful render from overriding 
 failed QC, including turn-limit recovery. Failure summaries preserve worker reasons
 verbatim. Existing ordinary assembly validation remains compatible.
 
-The three guides add delivery, loudness and deliverable QC routing. The 313 retained rows
-now contain 307 active cases and 6 skips. RT-E043 awaits exact OCR verification; the other
+The three guides add delivery, loudness and deliverable QC routing. The 322 retained rows
+now contain 316 active cases and 6 skips. RT-E043 awaits exact OCR verification; the other
 five are provider dependencies, including RT-176's pending capture. `project.confidential` never changes these routes.
 See [contracts and operator commands](REMOTION_EDITING.md). Offline real-binary verification
 is supporting evidence; Comet Studio E2E is blocked by unavailable browser control here.
@@ -674,7 +674,7 @@ reuse `Fal___get_video_task`, shared fal credentials and dry-run guard. They are
 defaults or exceptions; unnamed executor calls and direct Studio invokes are blocked.
 Both always interrupt with cost even in autonomous mode and with premium approval disabled.
 Measured VibeMV source duration stays local; consent flags never enter the provider payload.
-Inventory is 19 providers, 137 tools, 39 skills, 307 active fixtures and 6 dependency skips.
+Inventory is 20 providers, 138 tools, 40 skills, 316 active fixtures and 6 dependency skips.
 See [named fal video](providers/named-fal-video.md) for contracts, dated official prices,
 commercial hosted terms and training exclusion. Comet E2E remains blocked here.
 
@@ -693,8 +693,8 @@ recovery. A failure is quoted verbatim with timestamped fixes and an offered
 re-render through Remotion, or HyperFrames only if explicitly requested.
 Dry-run/skipped measurements are incomplete QC and preserve the existing render.
 Generative continuity remains `local_qc`. All thresholds are PROVISIONAL.
-Current inventory is 19 providers, 137 tools, 39 skills, 313 routing rows with
-307 active and six dependency skips. See [motion carry QC](MOTION_CARRY_QC.md).
+Current inventory is 20 providers, 138 tools, 40 skills, 322 routing rows with
+316 active and six dependency skips. See [motion carry QC](MOTION_CARRY_QC.md).
 
 ## Cinematic product launch planning
 
@@ -720,8 +720,8 @@ checksums. The cinematic skill joins the existing motion-carry completion gate.
 
 RT-174 and RT-175 are active. RT-176 remains skipped because capture is unbuilt, with an
 active negative check of its skill and forbidden search tool. Four fixture negatives
-protect the existing workflows. Current inventory is 19 providers, 137 tools, 39 skills,
-313 routing rows, 307 active and 6 skipped. Docker's existing `COPY providers` and the
+protect the existing workflows. Current inventory is 20 providers, 138 tools, 40 skills,
+322 routing rows, 316 active and 6 skipped. Docker's existing `COPY providers` and the
 Gateway deployment ZIP's recursive provider copy include all cards and index data;
 CI checks that the ZIP contains exactly 157 cards. Browser validation through Comet
 is blocked here. See [cinematic product promo](CINEMATIC_PRODUCT_PROMO.md).
@@ -750,7 +750,7 @@ precision/recall from synthetic fixtures and cannot promote a default. No new se
 required. See [Footage memory](FOOTAGE_MEMORY.md) and [decisions](footage-memory-decisions.tsv)
 for configured unknown estimates, licences, blocked live paths and the workbook reconciliation.
 
-Inventory is 19 providers, 137 tools, 39 packaged skills, and 313 routing rows, with 307
+Inventory is 20 providers, 138 tools, 40 packaged skills, and 322 routing rows, with 316
 active and six unchanged skips. Comet E2E is blocked in this environment.
 
 ## Chat-story routing and rendering
@@ -777,8 +777,8 @@ fallback. Final delivery requires loudness and deliverable QC reports that still
 the output checksums. First-render playback and still inspection require visual review.
 
 RT-180 and RT-181 plus six routing negatives remain active alongside the podcast cases.
-The combined fixture has 313 rows, with 307 active and six unchanged skips. The skill inventory is 39. The provider and tool inventories
-are 19 and 137. `docs/CHAT_STORY_VIDEO.md` describes the payload, timing and batch
+The combined fixture has 322 rows, with 316 active and six unchanged skips. The skill inventory is 40. The provider and tool inventories
+are 20 and 138. `docs/CHAT_STORY_VIDEO.md` describes the payload, timing and batch
 contract. Comet E2E and live Lambda chat rendering remain unverified here.
 
 ## Podcast audiogram routing and approval
@@ -804,7 +804,7 @@ Local rendering accepts the bounded canonical plan; Lambda refuses named templat
 `REMOTION_TEMPLATE_CONTRACT_VERSION=1` declares the separately deployed matching composition.
 The skill gates extra aspects on first-render visual review and requires loudness/deliverable
 QC for every output. No new dispatch wrapper, target, paid provider, secret or training grant
-is introduced. Inventory is 39 skills, 313 fixture rows, 307 active and six unchanged skips.
+is introduced. Inventory is 40 skills, 322 fixture rows, 316 active and six unchanged skips.
 See [podcast audiograms](PODCAST_AUDIOGRAM.md) for exact contracts and UNVERIFIED limits.
 
 ## Descriptive art catalog
@@ -823,8 +823,8 @@ associations can create IP risk; prompts describe materials and motion only. All
 model, licence, training, price, approval, and dry-run policies remain unchanged. The
 renderer still requires authored assets for unsupported procedural motion.
 
-Inventory is 19 providers, 137 Gateway tools, 39 skills, 141 catalog treatments, and
-313 fixture rows, with 307 active and six skipped. RT-160 through RT-162 stay unchanged.
+Inventory is 20 providers, 138 Gateway tools, 40 skills, 141 catalog treatments, and
+322 fixture rows, with 316 active and six skipped. RT-160 through RT-162 stay unchanged.
 RT-CAT-001 through RT-CAT-012 are active. No provider-pending row is falsely activated.
 Comet E2E is blocked. See [art-style motion](ART_STYLE_MOTION.md) and
 [decisions](art-style-catalog-decisions.tsv) for counts, provenance, and limits.
@@ -851,8 +851,8 @@ no custom planning, filesystem or interrupt mechanism. See
 [Lottie tools](LOTTIE_ANIMATION.md) and the
 [decision trail](lottie-animation-decisions.tsv).
 
-Inventory is 19 providers, 137 Gateway tools, 39 skills and 313 fixture rows, with
-307 active and six dependency skips. The runtime image installs FFmpeg for local
+Inventory is 20 providers, 138 Gateway tools, 40 skills and 322 fixture rows, with
+316 active and six dependency skips. The runtime image installs FFmpeg for local
 preview encoding and includes the in-house Python implementation and MIT notice.
 
 
@@ -860,3 +860,32 @@ For Lottie inputs, the existing owned Studio asset resolver can stage an attache
 handle into the trusted current job before provider validation and execution. The
 provider sees a confined path, and the event retains the owned source version ID.
 Unknown or unauthorized assets refuse without fallback to arbitrary host paths.
+
+## Local logo geometry approval
+
+The editor role admits `Logo___logo_vectorize`. Native Deep Agents approval applies only
+to its `approve` operation and always pauses, including autonomous runs. All operations
+are free. The approval description asks for review of the exact SVG, overlay, smoothness
+audit and mark rights. The executor supplies an approval context only after the human
+resumes the existing interrupt. The model cannot grant approval in tool arguments.
+Rejection performs no approval write. A worker restart requires vector reapproval.
+
+Local discovery overrides any remote tool with the same name. Catalog `local_only=true`
+prevents deployment to Gateway Lambda, and Lambda separately refuses direct invocation.
+Every Logo call and the `logo-animation` render template must match the trusted Studio
+job. The template requires local rendering so private source geometry stays on the worker.
+No new secret or spending exemption is introduced.
+
+The `logo-animation` skill keeps vector preparation and rendering in sequential execution
+groups across the exact-checksum approval. Studio completion requires a saved passing logo
+QA report bound to the MP4, approved SVG and motion specification. The report includes
+final-frame, decoded-motion, continuity and easing checks. Existing deliverable QC must
+certify that same final MP4, and later render or finishing work invalidates earlier QA.
+Failures replace premature completion copy verbatim. The skill requests user rights
+confirmation and leaves customer visual review explicit. See [contracts and limits](LOGO_ANIMATION.md).
+
+RT-184 is active with the canonical `logo_vectorize then remotion_render` sequence.
+Eight added cases protect supplied-logo variants and the existing motion, vector-design
+and podcast routes. Inventory is 20 providers, 138 tools, 40 skills, 322 fixture rows,
+316 active and six dependency skips. Comet browser verification remains incomplete until
+the required Studio flow has been exercised.

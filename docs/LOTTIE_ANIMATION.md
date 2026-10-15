@@ -262,8 +262,8 @@ The driver's spend ledger and client discovery behavior retain their existing st
 
 The Lottie feature branch passed offline verification with 2,728 pytest tests, 8 skips and 4,452
 subtests. Ruff, `scripts/ci_check.py`, Gateway schema checks and the exact Studio
-and Remotion `tsc --noEmit -p .` commands passed. The combined staging inventory is 19 providers,
-137 tools, 39 skills and 313 routing fixtures, with 307 active and 6 skipped.
+and Remotion `tsc --noEmit -p .` commands passed. The combined staging inventory is 20 providers,
+138 tools, 40 skills and 322 routing fixtures, with 316 active and 6 skipped.
 
 After merging into staging, the full suite passed with 2,781 tests, 8 skips and
 4,813 passing subtests. Ruff, `scripts/ci_check.py` and Studio `tsc --noEmit` passed.

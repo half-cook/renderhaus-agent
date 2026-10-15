@@ -561,6 +561,10 @@ def main() -> int:
             print(f"built lambda zip ({len(zip_bytes)} bytes)")
         return 0
 
+    specs = tuple(spec for spec in specs if not spec.local_only)
+    if not specs:
+        parser.error("Selected providers run only on the local worker and cannot be deployed to Gateway Lambda.")
+
     region = args.region
     secret_name = args.secret_name
     os.environ.setdefault("AWS_REGION", region)

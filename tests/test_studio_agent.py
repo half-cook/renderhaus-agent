@@ -740,7 +740,7 @@ class StudioAgentTests(unittest.IsolatedAsyncioTestCase):
                 for _ in range(100):
                     await asyncio.sleep(0.05)
                     payload = await studio_agent_job(queued["job_id"], None)
-                    if payload["status"] != "running":
+                    if payload["status"] not in {"queued", "running"}:
                         break
                 saved_items = test_repository.get_conversation_items(
                     "user:local", queued["conversation_id"]
@@ -822,7 +822,7 @@ class StudioAgentTests(unittest.IsolatedAsyncioTestCase):
                 for _ in range(100):
                     await asyncio.sleep(0.05)
                     paused = await studio_agent_job(queued["job_id"], None)
-                    if paused["status"] != "running":
+                    if paused["status"] not in {"queued", "running"}:
                         break
                 await decide_studio_agent_tool(
                     queued["job_id"],
@@ -833,7 +833,7 @@ class StudioAgentTests(unittest.IsolatedAsyncioTestCase):
                 for _ in range(100):
                     await asyncio.sleep(0.05)
                     resumed = await studio_agent_job(queued["job_id"], None)
-                    if resumed["status"] != "running":
+                    if resumed["status"] not in {"queued", "running"}:
                         break
 
         self.assertEqual(paused["status"], "awaiting_approval")

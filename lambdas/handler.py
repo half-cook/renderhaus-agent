@@ -45,6 +45,8 @@ def handler(event: dict[str, Any] | None, context: Any) -> dict[str, Any]:
     try:
         if not provider_id:
             raise ValueError("RENDERHAUS_PROVIDER is required on the Lambda.")
+        if provider_id == "logo_animation":
+            raise ValueError("Logo processing is local only. Private logo inputs must never be sent to Lambda.")
         tool_name = _tool_name_from_context(context)
         if not tool_name:
             tool_name = str(event.pop("_tool_name", "") or "")

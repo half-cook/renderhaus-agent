@@ -15,6 +15,7 @@ POLICY = json.loads(Path(__file__).with_name("routing_policy.json").read_text())
 TOOL_MAP = POLICY["tools"]
 TARGET_PROVIDERS = {
     "Lottie": "lottie",
+    "Logo": "logo_animation",
     "FootageMemory": "footage_memory",
     "ShotRecipes": "shot_recipes",
     "Gemini": "gemini",
@@ -97,6 +98,7 @@ _KNOWLEDGE_REQUEST = next(rule["pattern"] for rule in POLICY["rules"] if rule["s
 _ART_STYLE_REQUEST = next(rule["pattern"] for rule in POLICY["rules"] if rule["skill"] == "art-style-motion")
 _ART_STYLE_NAMES = next(rule["named_styles"] for rule in POLICY["rules"] if rule["skill"] == "art-style-motion")
 _PODCAST_REQUEST = next(rule["pattern"] for rule in POLICY["rules"] if rule["skill"] == "podcast-audiogram")
+_LOGO_REQUEST = next(rule["pattern"] for rule in POLICY["rules"] if rule["skill"] == "logo-animation")
 _PLAN_REVIEW_REQUEST = next(rule["pattern"] for rule in POLICY["rules"] if rule["skill"] == "plan-to-video")
 _CHAT_STORY_REQUEST = next(rule["pattern"] for rule in POLICY["rules"] if rule["skill"] == "chat-story-video")
 _MODELSTUDIO_PREVIEW_WARNING = (
@@ -233,6 +235,11 @@ def request_tool_blocker(prompt: str, name: str) -> str | None:
         prompt = plan_text
     if refusal := editing_request_refusal(prompt):
         return refusal
+    if _logo_animation_request(prompt) and (job_type(name) in {
+        "t2v", "i2v", "reference_video", "v2v_edit", "extend", "still_image", "image_edit",
+        "lipsync", "performance_transfer",
+    } or name.startswith(("OpenAI___", "Seedream___"))):
+        return "A supplied logo must keep its approved geometry. Use local logo processing and the logo animation template."
     if _chat_story_request(prompt) and job_type(name) in {
         "t2v", "i2v", "reference_video", "v2v_edit", "extend", "lipsync", "performance_transfer", "lyrics_video",
     }:
@@ -720,6 +727,36 @@ def _podcast_route(prompt: str, *, arguments: dict | None,
                    forbidden_tools=("wan3_t2v", "sync3_lipsync"))
 
 
+def _logo_animation_request(prompt: str) -> bool:
+    if lottie_request(prompt):
+        return False
+    text = _instruction_text(prompt)
+    if re.search(r"\b(?:without|no|do not use|don't use)\s+(?:(?:an?|the|our|any|supplied|attached)\s+)*logo\b", text, re.I):
+        return False
+    if re.search(r"\b(?:design|create|generate)\b[^.;!?\n]*\b(?:new|original)\s+(?:animated\s+)?logo\b", text, re.I):
+        return False
+    if not re.search(_LOGO_REQUEST, text, re.I):
+        return False
+    return bool(re.search(r"\b(?:png|jpe?g|screenshot|raster|attached|uploaded|supplied|existing)\b", text, re.I))
+
+
+def _logo_animation_route(*, region: str | None, available_tools: set[str] | None) -> Route:
+    required = {"template_name": "logo-animation", "approved_vector_required": True,
+                "processing": "local", "final_frame_matches_vector": True}
+    vector = replace(select_provider("logo_animation", region=region, available_tools=available_tools),
+                     skill="logo-animation", required=required,
+                     disclosure="Logo processing stays on this worker. Approve the exact vector after reviewing its overlay and edge audit.")
+    render = replace(select_provider("motion_graphics", region=region, available_tools=available_tools),
+                     skill="logo-animation", required=required,
+                     expected_output="approved logo.svg then MP4 sting whose final frame matches the SVG")
+    blocker = next((step for step in (vector, render) if step.status != "ready"), None)
+    return replace(vector, status=blocker.status if blocker else "ready",
+                   reason=blocker.reason if blocker else "Approve the static vector before choreography and rendering.",
+                   steps=(vector, render), execution_groups=(("logo_vectorize",), ("remotion_render",)),
+                   expected_output="approved logo.svg then MP4 sting whose final frame matches the SVG",
+                   forbidden_tools=("wan3_t2v", "seedance25_t2v", "gpt_image25_edit"))
+
+
 def route_intent(prompt: str, *, region: str | None = None, tier: str | None = None,
                  confidential: bool = False, arguments: dict | None = None,
                  available_tools: set[str] | None = None, retry: bool = False, user_id: str | None = None) -> Route:
@@ -727,6 +764,14 @@ def route_intent(prompt: str, *, region: str | None = None, tier: str | None = N
         route = select_provider("lottie_animation", region=region, available_tools=available_tools)
         return replace(route, skill="lottie-animation", expected_output="Lottie JSON and dotLottie",
                        disclosure="Create the UI vector animation and validate its target players.")
+    if _logo_animation_request(prompt):
+        requested = intent_constraints(prompt, arguments=arguments)
+        if (requested['predicates'].get('explicit_hyperframes')
+                or requested.get('provider') not in {None, 'remotion', 'logo_animation'}
+                or requested.get('named_model')):
+            reason = 'The explicitly requested renderer or model does not support this private logo workflow. No substitute was selected. Logo motion requires the approved vector and local rendering.'
+            return Route(skill='logo-animation', status='blocked', reason=reason, disclosure=reason)
+        return _logo_animation_route(region=region, available_tools=available_tools)
     if re.search(_PODCAST_REQUEST, _instruction_text(prompt), re.I) and _visible_source_video(prompt):
         route = select_provider("transcript_edit", region=region, available_tools=available_tools,
                                 arguments=arguments)
@@ -798,7 +843,7 @@ def route_intent(prompt: str, *, region: str | None = None, tier: str | None = N
         or video_capabilities.intersection(POLICY["named_models"].get(constraints["named_model"], {}).get("aliases", {}))
     )
     for rule in POLICY["rules"]:
-        if rule["skill"] == "lottie-animation":
+        if rule["skill"] in {"lottie-animation", "logo-animation"}:
             continue
         if rule["skill"] == "chat-story-video" and not _chat_story_request(prompt):
             continue
@@ -893,7 +938,7 @@ def route_intent(prompt: str, *, region: str | None = None, tier: str | None = N
 def _dispatch(tool: str | None) -> str | None:
     if not tool:
         return None
-    if tool.startswith(("Remotion___", "HyperFrames___", "Ffmpeg___", "ShotRecipes___", "FootageMemory___", "Lottie___")):
+    if tool.startswith(("Remotion___", "HyperFrames___", "Ffmpeg___", "ShotRecipes___", "FootageMemory___", "Lottie___", "Logo___")):
         return "call_editor_tool"
     if tool in {"HeyGen___voice_clone", "HeyGen___voice_tts", "HeyGen___get_voice_status"}:
         return "call_audio_tool"

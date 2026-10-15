@@ -38,6 +38,11 @@ Do not promise SVG from a raster tool.
 
 ## Channel intro and YouTube end-screen templates
 
+If the user supplies a raster logo for a reveal, sting, splash or loader, read
+[logo animation](../logo-animation/SKILL.md). That workflow traces and audits the logo
+locally, then requires explicit approval of the static SVG before rendering.
+Channel intros without a supplied logo remain in this skill.
+
 Keep these inside motion-graphics. Discover the existing timeline schema and set its
 `template.name` to `youtube-intro-sting` for a 3–5 second logo sting, or
 `youtube-end-screen` for an exactly 20-second 16:9 end-screen plate. Use `visuals=[]`,

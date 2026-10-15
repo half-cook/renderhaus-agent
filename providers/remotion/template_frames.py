@@ -77,6 +77,11 @@ def _waveform(image: Image.Image, plan: dict[str, Any], frame: int) -> None:
 
 def render_template_frame(plan: dict[str, Any], frame: int) -> Image.Image:
     """Draw one frame from a boundary-validated internal template plan without media I/O."""
+    if plan['name'] == 'logo-animation':
+        from providers.logo_animation.motion import render_frame
+
+        return render_frame(plan['svg'], plan['motion_spec'], frame, plan['fps'],
+                            plan['width'], plan['height'], plan['background_color'])
     width, height = plan['width'], plan['height']
     image = Image.new('RGB', (width, height), plan['background_color'])
     seconds = frame / plan['fps']
@@ -125,6 +130,7 @@ def write_template_video(plan: dict[str, Any], directory: Path) -> Path:
     command = [binary, '-hide_banner', '-nostdin', '-v', 'error', '-n',
                '-f', 'rawvideo', '-pixel_format', 'rgb24', '-video_size', f'{width}x{height}',
                '-framerate', str(fps), '-i', 'pipe:0', '-an', '-frames:v', str(frames),
+               '-vf', 'setsar=1',
                '-c:v', 'libx264', '-threads', '2', '-preset', 'veryfast', '-crf', '18',
                '-pix_fmt', 'yuv420p', '-movflags', '+faststart', '-fs', str(MAX_VIDEO_BYTES), str(target)]
     process = None

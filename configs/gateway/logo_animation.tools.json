@@ -1,0 +1,104 @@
+[
+  {
+    "name": "logo_vectorize",
+    "description": "Process a supplied logo locally without network or model calls. Use vectorize then audit and show logo.svg with the overlay strip and smoothness report. approve requires explicit rights_confirmed=true, exact params.sha256 and native human approval, even autonomously. Choreograph only that approved vector, then render the local logo-animation template. final_frame, easing and continuity check saved artifacts. Never regenerate the mark with an image model. Inputs and outputs stay in the current job.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "op": {
+          "type": "string",
+          "description": "Allowed values: vectorize, audit, approve, choreograph, final_frame, easing, continuity."
+        },
+        "job_id": {
+          "type": "string",
+          "description": "Trusted current job identifier."
+        },
+        "input_path": {
+          "type": "string",
+          "description": "Owned job-relative PNG/JPEG for vectorize, logo.svg for audit/approve/choreograph, rendered MP4/PNG for final_frame. Probes use an existing owned reference file."
+        },
+        "params": {
+          "type": "object",
+          "properties": {
+            "palette_size": {
+              "type": "integer"
+            },
+            "sha256": {
+              "type": "string"
+            },
+            "rights_confirmed": {
+              "type": "boolean"
+            },
+            "duration_seconds": {
+              "type": "number"
+            },
+            "style": {
+              "type": "string",
+              "description": "One of: reveal, splash, loader, idle-hover."
+            },
+            "personality": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "idle_loop": {
+              "type": "boolean"
+            },
+            "background_color": {
+              "type": "string"
+            },
+            "svg_path": {
+              "type": "string"
+            },
+            "template": {
+              "type": "object"
+            },
+            "token": {
+              "type": "string",
+              "description": "One of: enter, settle, linear."
+            },
+            "duration_ms": {
+              "type": "number"
+            },
+            "samples": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "part": {
+                    "type": "string"
+                  },
+                  "time_ms": {
+                    "type": "number"
+                  },
+                  "value": {
+                    "type": "number"
+                  },
+                  "x": {
+                    "type": "number"
+                  },
+                  "y": {
+                    "type": "number"
+                  },
+                  "scale": {
+                    "type": "number"
+                  },
+                  "opacity": {
+                    "type": "number"
+                  }
+                }
+              }
+            }
+          },
+          "description": "Operation-specific strict contract. approve requires sha256 and rights_confirmed; choreograph accepts duration_seconds 1..3, style, personality, idle_loop, background_color; final_frame requires svg_path and exact returned template; probes require observed samples."
+        }
+      },
+      "required": [
+        "op",
+        "job_id",
+        "input_path"
+      ]
+    }
+  }
+]

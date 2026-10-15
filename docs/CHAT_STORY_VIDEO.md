@@ -8,7 +8,7 @@ line breaks and never changes the message value.
 ## Existing tools, extended arguments
 
 No Gateway tools, providers, paid model adapters or dispatch IDs were added. The inventory
-is 19 providers, 137 tools and 39 skills. The existing contracts were extended:
+is 20 providers, 138 tools and 40 skills. The existing contracts were extended:
 
 | Tool | Chat arguments |
 | --- | --- |

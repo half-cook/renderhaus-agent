@@ -1,4 +1,4 @@
-"""Provider catalog: one spec per Gateway Lambda target."""
+"""Provider catalog for Gateway schemas and local worker tools."""
 
 from __future__ import annotations
 
@@ -13,12 +13,17 @@ class ProviderSpec:
     module_path: str
     env_keys: tuple[str, ...]
     default_env: dict[str, str] = field(default_factory=dict)
+    local_only: bool = False
 
 
 PROVIDERS: tuple[ProviderSpec, ...] = (
     ProviderSpec(
         id="lottie", target_name="Lottie", function_name="renderhaus-lottie-tools",
         module_path="providers.lottie.api", env_keys=("RENDERHAUS_MEDIA_DIR",),
+    ),
+    ProviderSpec(
+        id="logo_animation", target_name="Logo", function_name="renderhaus-logo-local-tools",
+        module_path="providers.logo_animation.api", env_keys=(), local_only=True,
     ),
     ProviderSpec(
         id="footage_memory", target_name="FootageMemory", function_name="renderhaus-footage-memory-tools",

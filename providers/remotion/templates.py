@@ -39,7 +39,7 @@ END_SCREEN_ZONES = [
     {'x': .44, 'y': .55, 'width': .50, 'height': .28},
     {'x': .05, 'y': .36, 'width': .25, 'height': .44},
 ]
-NAMES = ('podcast-audiogram', 'youtube-intro-sting', 'youtube-end-screen')
+NAMES = ('podcast-audiogram', 'youtube-intro-sting', 'youtube-end-screen', 'logo-animation')
 FIELDS = {'name', 'duration_seconds', 'words', 'captions_srt', 'amplitudes', 'waveform', 'bars',
           'smoothing', 'speaker_name', 'show_name', 'cover_url', 'logo_url', 'background_color',
           'accent_color', 'text_color', 'remove_fillers', 'correction_terms'}
@@ -151,6 +151,10 @@ def pcm_amplitudes(source: BinaryIO, *, duration: float, fps: int, smoothing: fl
 
 
 def template_plan(raw: dict, *, aspect_ratio: str, fps: float, width: int, height: int) -> dict:
+    if isinstance(raw, dict) and raw.get('name') == 'logo-animation':
+        from providers.logo_animation.delivery import logo_template_plan
+
+        return logo_template_plan(raw, aspect_ratio=aspect_ratio, fps=fps, width=width, height=height)
     if not isinstance(raw, dict) or set(raw) - FIELDS:
         raise ValueError('template contains unsupported fields.')
     name = raw.get('name')
@@ -246,6 +250,11 @@ def validate_template_arguments(arguments: dict):
     from providers.remotion.api import choose_canvas
 
     raw = arguments['template']
+    if isinstance(raw, dict) and raw.get('name') == 'logo-animation':
+        from providers.logo_animation.delivery import validate_logo_arguments
+
+        validate_logo_arguments(arguments)
+        return
     fps = arguments.get('fps') or 30
     aspect = arguments.get('aspect_ratio', '9:16')
     width, height = choose_canvas(aspect, [], arguments.get('output_resolution', 'source'))
@@ -288,6 +297,13 @@ def build_template_props(title: str, raw: dict, *, audio_tracks: list[dict], asp
                          fps: float, output_resolution: str, video_bitrate: int | None):
     from providers.remotion.api import choose_canvas
 
+    if raw.get('name') == 'logo-animation':
+        from providers.logo_animation.delivery import build_logo_props
+
+        if audio_tracks:
+            raise ValueError('Logo stings require a separate approved assembly for added audio.')
+        return build_logo_props(title, raw, aspect_ratio=aspect_ratio, fps=fps,
+            output_resolution=output_resolution, video_bitrate=video_bitrate)
     width, height = choose_canvas(aspect_ratio, [], output_resolution)
     plan = template_plan(raw, aspect_ratio=aspect_ratio, fps=fps, width=width, height=height)
     return {'template': plan,
@@ -302,6 +318,10 @@ def build_template_props(title: str, raw: dict, *, audio_tracks: list[dict], asp
 def validate_template_document(props: dict):
     plan, config, document = props['template'], props['renderConfig'], props['document']
     validate_plan(plan, config)
+    if plan['name'] == 'logo-animation':
+        if document['assets'] or document['tracks']:
+            raise ValueError('Logo templates cannot load additional media.')
+        return
     assets = {asset['id']: asset for asset in document['assets']}
     if len(assets) != len(document['assets']) or set(assets) - {'template-art', 'template-audio'}:
         raise ValueError('Template assets must contain only optional art and source audio.')
@@ -324,8 +344,11 @@ def template_schema() -> dict:
     return {'type': 'object', 'properties': {
         **{field: {'type': 'string'} for field in ('speaker_name', 'show_name', 'cover_url', 'logo_url',
             'background_color', 'accent_color', 'text_color', 'captions_srt')},
+        **{field: {'type': 'string'} for field in ('logo_job_id', 'logo_path', 'svg_sha256', 'style')},
+        'personality': {'type': 'array', 'items': {'type': 'string'}, 'description': 'Logo template only. One to three brand motion words.'},
+        'idle_loop': {'type': 'boolean', 'description': 'Logo HTML preview only. MP4 settles on the approved static vector.'},
         'name': {'type': 'string', 'description': 'Allowed values: ' + ', '.join(NAMES) + '.'},
-        'duration_seconds': {'type': 'number', 'description': 'Audiogram .1..90, intro 3..5, end screen exactly 20 seconds.'},
+        'duration_seconds': {'type': 'number', 'description': 'Audiogram .1..90, intro 3..5, logo 1..3, end screen exactly 20 seconds.'},
         'words': {'type': 'array', 'items': word, 'description': 'Verbatim measured words relative to the selected audio clip. 1..2000 words; no fabricated timings.'},
         'amplitudes': {'type': 'array', 'items': {'type': 'number'}, 'description': 'One measured amplitude in 0..1 per frame from audio_envelope. Already smoothed; never normalize the source audio.'},
         'waveform': {'type': 'string', 'description': 'Allowed values: bars, line.'},

@@ -394,6 +394,20 @@ function agentApprovals(value: unknown): AgentApprovalRequest[] {
   });
 }
 
+function logoArtifactNames(value: unknown): string[] {
+  if (!value || typeof value !== 'object' || !('outputs' in value) || !Array.isArray(value.outputs)) return [];
+  return value.outputs.flatMap((row: unknown) => {
+    if (!row || typeof row !== 'object' || !('filename' in row) || typeof row.filename !== 'string') return [];
+    return /^[A-Za-z0-9_.-]+\.(svg|png|html|md|json)$/.test(row.filename) ? [row.filename] : [];
+  });
+}
+
+export async function downloadLogoArtifact(executionId: string, callId: string, filename: string): Promise<Blob> {
+  const response = await studioFetch(`/api/studio/executions/${encodeURIComponent(executionId)}/logo-artifacts/${encodeURIComponent(callId)}/${encodeURIComponent(filename)}`);
+  if (!response.ok) throw new Error('This logo file is unavailable. Prepare the logo again.');
+  return response.blob();
+}
+
 function agentToolEvents(value: unknown): AgentToolEvent[] {
   if (!Array.isArray(value)) return [];
   return value.map((event) => {
@@ -412,6 +426,7 @@ function agentToolEvents(value: unknown): AgentToolEvent[] {
           ? (item.arguments as Record<string, unknown>)
           : {},
       assets: studioAssets(item.assets),
+      logoArtifacts: item.name === 'Logo___logo_vectorize' ? logoArtifactNames(item.result) : undefined,
     };
   });
 }

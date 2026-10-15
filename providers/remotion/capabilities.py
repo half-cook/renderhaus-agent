@@ -38,6 +38,8 @@ class Capability:
 
 
 CAPABILITIES = {
+    'logo_animation': Capability((), lambda_=REFUSED,
+        note='Logo vectors and choreography render only on the local worker. Lambda is refused before media I/O to keep supplied marks private. SVG/HTML and MP4/H.264 only; alpha and browser pixel parity UNVERIFIED.'),
     'named_templates': Capability(('template',), lambda_=REFUSED, template_v1=True,
         note='Audio-reactive PCM envelope, word highlight, progress and channel templates on local. Lambda template contract version 1 must be deployed and enabled; pixel parity UNVERIFIED.'),
     'identity': Capability(('title', 'output_filename', 'visuals.kind', 'visuals.url', 'visuals.output_path')),
@@ -186,6 +188,8 @@ def validate_backend(arguments: dict[str, Any], backend: Backend, *, overlay_ver
         raise ValueError('Remotion backend must be local or lambda.')
     version = overlay_version or os.getenv('REMOTION_OVERLAY_CONTRACT_VERSION', '1')
     if arguments.get('template') is not None:
+        if arguments['template'].get('name') == 'logo-animation' and backend != 'local':
+            raise ValueError(CAPABILITIES['logo_animation'].note)
         if backend == 'lambda' and os.getenv('REMOTION_TEMPLATE_CONTRACT_VERSION', '0') != '1':
             raise ValueError('Lambda template contract version 1 is not enabled. Use local/worker until the matching composition is deployed.')
         return
@@ -263,6 +267,8 @@ def validate_document(props: dict[str, Any], backend: Backend) -> None:
     if 'template' in props:
         from providers.remotion.templates import validate_template_document
 
+        if props['template'].get('name') == 'logo-animation' and backend != 'local':
+            raise ValueError(CAPABILITIES['logo_animation'].note)
         if backend == 'lambda' and os.getenv('REMOTION_TEMPLATE_CONTRACT_VERSION', '0') != '1':
             raise ValueError('Lambda template contract version 1 is not enabled. Use local/worker until deployed.')
         validate_template_document(props)

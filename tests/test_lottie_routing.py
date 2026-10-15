@@ -8,6 +8,7 @@ from agent.deep_agent.routing import route_intent
     'Animate this SVG checkmark as a success Lottie with ease-in-out and a transparent background',
     'Create a transparent loading icon for our app UI',
     'Animate our logo as JSON for the website UI',
+    'Animate our attached logo PNG as Lottie JSON for the website UI',
     'Create a dotLottie empty state for Android',
     'Make an onboarding animation for our app UI',
 ])
@@ -47,6 +48,14 @@ def test_vector_output_blocks_video_tools_but_can_source_a_vector():
     assert request_tool_blocker(prompt, 'Remotion___render_timeline')
     assert request_tool_blocker(prompt, 'Fal___generate_wan3_t2v')
     assert request_tool_blocker(prompt, 'Fal___recraft_text_to_vector') is None
+
+
+def test_explicit_lottie_logo_keeps_vector_sourcing_available():
+    from agent.deep_agent.routing import request_tool_blocker
+
+    prompt = 'Animate our attached logo PNG as Lottie JSON for the website UI'
+    assert request_tool_blocker(prompt, 'Fal___recraft_text_to_vector') is None
+    assert request_tool_blocker(prompt, 'Remotion___render_timeline')
 
 
 @pytest.mark.parametrize('prompt', [
