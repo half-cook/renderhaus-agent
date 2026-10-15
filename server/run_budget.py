@@ -518,7 +518,9 @@ def paused_cap_payload(
 
 def insufficient_credit_payload(
     *, estimate_cents: int, cap_cents: int, available_cents: int, held_cents: int = 0,
+    floor_cents: int | None = None,
 ) -> dict[str, Any]:
+    """floor_cents: lowest acceptable cap when it is below the estimate (an up-to step stops at its cap)."""
     from server.launch_flags import topups_enabled
 
     extra_needed = max(0, estimate_cents - held_cents)
@@ -532,7 +534,8 @@ def insufficient_credit_payload(
         "balance_cents": available_cents,
         "estimate_cents": estimate_cents,
         "cap_cents": cap_cents,
-        "lower_cap_option_cents": can_lower if can_lower >= estimate_cents and can_lower < cap_cents else None,
+        "lower_cap_option_cents": can_lower if can_lower >= (estimate_cents if floor_cents is None else floor_cents)
+                                  and can_lower < cap_cents else None,
         "add_credit": topups,
         "topups_available": topups,
         "shortfall_cents": max(0, cap_cents - held_cents - available_cents),
