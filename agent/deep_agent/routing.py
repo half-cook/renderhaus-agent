@@ -9,6 +9,8 @@ import re
 from dataclasses import dataclass, asdict, replace, field
 from pathlib import Path
 
+from agent.deep_agent.art_style_catalog import catalog_motion_request, style_instruction_text
+
 POLICY = json.loads(Path(__file__).with_name("routing_policy.json").read_text())
 TOOL_MAP = POLICY["tools"]
 TARGET_PROVIDERS = {
@@ -171,13 +173,10 @@ def _video_voiceover(prompt: str) -> bool:
 
 
 def _art_style_motion_text(prompt: str) -> str:
-    text = re.sub(_NEGATED_NARRATION, " ", _instruction_text(prompt), flags=re.I)
-    text = re.sub(
-        rf"\b(?:do not|don't|never|avoid|without|no|not)(?:\s+(?:use|using|a|the|any))*\s+(?:{_ART_STYLE_NAMES}|hyperframes|lip[ -]?sync\w*)\b(?:[ -]+(?:style|grammar))?",
-        "", text, flags=re.I,
-    )
+    text = style_instruction_text(_instruction_text(prompt), normalized=False)
+    text = re.sub(_NEGATED_NARRATION, " ", text, flags=re.I)
     return re.sub(
-        rf"\b(?:about|on|explaining|history of|life of|biography of)\s+(?:(?:the|ancient|art|life|history|of)\s+){{0,4}}(?:{_ART_STYLE_NAMES})\b",
+        rf"\b(?:do not|don't|never|avoid|without|no|not)(?:\s+(?:use|using|a|the|any))*\s+(?:{_ART_STYLE_NAMES}|hyperframes|lip[ -]?sync\w*)\b(?:[ -]+(?:style|grammar))?",
         "", text, flags=re.I,
     )
 
@@ -188,7 +187,7 @@ def _art_style_motion_request(prompt: str) -> bool:
         r"\b(?:restyle|relight|modify|edit)\b.*\b(?:existing|footage|clip|video)\b|\blip[ -]?sync\w*\b", text, re.I,
     ):
         return False
-    return bool(re.search(_ART_STYLE_REQUEST, text, re.I))
+    return bool(re.search(_ART_STYLE_REQUEST, text, re.I) or catalog_motion_request(prompt))
 
 
 def _chat_story_request(prompt: str) -> bool:
@@ -817,7 +816,7 @@ def route_intent(prompt: str, *, region: str | None = None, tier: str | None = N
             rule_prompt = _instruction_text(prompt)
         else:
             rule_prompt = prompt
-        if not re.search(rule["pattern"], rule_prompt, re.IGNORECASE):
+        if rule["skill"] != "art-style-motion" and not re.search(rule["pattern"], rule_prompt, re.IGNORECASE):
             continue
         skill, alias = rule["skill"], rule["abstract_tool"]
         capability = rule.get("capability")

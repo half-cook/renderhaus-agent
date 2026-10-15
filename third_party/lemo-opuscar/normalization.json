@@ -1,0 +1,388 @@
+{
+  "notice": "Renderhaus-authored derivative metadata. Internal build input; never returned to the planner or user. Dimension tags for the 43 guides describe their documented rendering treatment, not delivered-media resolution.",
+  "film_names": [
+    "Silent-era Tinted Aerial",
+    "Black-Gold Deco Revue",
+    "Expressionist Anti-war Woodcut",
+    "Sepia Albumen Panorama",
+    "Silver Monochrome Lobby",
+    "Ornamental Nouveau Panel",
+    "Monochrome Rubber-hose Cartoon",
+    "Nautical Copperplate Chart",
+    "Silver Monochrome Stage",
+    "Newsprint Letterpress Engraving",
+    "Six-ink Silkscreen Poster",
+    "Sunset Impasto Oil",
+    "Gothic Charcoal Drawing",
+    "Valley Gouache",
+    "Home-front Stone Lithograph",
+    "Studio Glamour Monochrome",
+    "Backlit Gothic Stained Glass",
+    "Typewriter Character Art",
+    "Magazine Halftone Spread",
+    "Graphite Magazine Illustration",
+    "Deep-focus Fog Castle",
+    "Wood-type Campaign Poster",
+    "Continuous-line Caricature",
+    "Offset Watercolor Ballet",
+    "Circus Stone Lithograph",
+    "High-key Beach Monochrome",
+    "Social-realist Tempera",
+    "Living-room Broadcast Screen",
+    "Modernist Cutout Cartoon",
+    "Cyanotype Engineering Blueprint",
+    "Belle-epoque Lithograph",
+    "Large-format Chariot Stage",
+    "Monochrome Line Titles",
+    "Saturated Color Stage",
+    "Epic Poster Gouache",
+    "Hand-colored Satirical Print",
+    "Expressive Fashion Illustration",
+    "Storybook Alpine Aerial",
+    "Court Portrait Oils",
+    "Three-ink Night Print",
+    "Victorian Toy Theatre",
+    "Repeated Photo Silkscreen",
+    "War-bond Lithograph",
+    "Grainy Urban Chase",
+    "Top-light Oil Painting",
+    "Mid-century Magazine Painting",
+    "Hand-tinted Sepia Photograph",
+    "Hard-light Domestic Realism",
+    "Sunrise Street Panorama",
+    "Editorial Ink-and-wash Cartoon",
+    "Rural Egg Tempera",
+    "Wax-crayon Drawing",
+    "Autumn Transparent Watercolor",
+    "Athletics Stone Lithograph",
+    "Cotton Hand-block Print",
+    "Instant-print Family Album",
+    "Gilt Candlelit Silhouettes",
+    "Warm Aerial Landscape",
+    "Combat Field Sketch",
+    "Court Painting on Silk",
+    "Airbrush Drafting Overlay",
+    "Narrative Oil Illustration",
+    "Pencil-and-watercolor Journal",
+    "Natural-history Copperplate",
+    "Western Sunset Oil",
+    "Monochrome with One Red Accent",
+    "Desk Pop-up Book",
+    "Gold-leaf Illuminated Manuscript",
+    "Watercolor Scrapbook",
+    "Blueprint-to-sunset Depth",
+    "Oval Court Miniature",
+    "Suburban Symmetry and Camcorder",
+    "Roman Floor Mosaic",
+    "Window Marker and Chalk",
+    "Red-and-black Stage",
+    "Watercolor Fantasy Map",
+    "Pixel Arcade Combat",
+    "Night Light Trails and Snow",
+    "Urban Brick Stencil",
+    "Quiet Desert Dusk",
+    "Quiz-stage Orange and Teal",
+    "Technical Manual Line Art",
+    "Peeling Wall Broadcast Booth",
+    "Polished Silent-film Monochrome",
+    "Four-color Energy Comics",
+    "Developing Cased Silver Plate",
+    "Backstage Long Take",
+    "Green Microfiche Halftone",
+    "Blue Night Oil Portrait",
+    "Underwater Teal Caustics",
+    "Linen Travel Postcard",
+    "Architectural Section Axonometric",
+    "Magic-hour Soft Pastel",
+    "Ivory-tone Needle Engraving",
+    "Ray-marched World Jump-cuts",
+    "Particle Fireball and Large-format Grain",
+    "Snowy Neon Night",
+    "Long-lens Undulating-road Chase"
+  ],
+  "guides": {
+    "art-deco": {
+      "slug": "art-deco",
+      "name": "Art Deco",
+      "dimension": "2D",
+      "aliases": []
+    },
+    "ascii-crt": {
+      "slug": "ascii-crt",
+      "name": "ASCII / CRT Terminal",
+      "dimension": "2D",
+      "aliases": []
+    },
+    "backrooms": {
+      "slug": "liminal-found-footage",
+      "name": "Liminal Found Footage",
+      "dimension": "3D",
+      "aliases": []
+    },
+    "blueprint": {
+      "slug": "blueprint",
+      "name": "Blueprint",
+      "dimension": "2D",
+      "aliases": []
+    },
+    "brick-toy": {
+      "slug": "brick-toy",
+      "name": "Brick Toy",
+      "dimension": "3D",
+      "aliases": []
+    },
+    "cel-anime-80s": {
+      "slug": "cel-anime-80s",
+      "name": "80s Cel Anime",
+      "dimension": "2D",
+      "aliases": []
+    },
+    "crayon-book": {
+      "slug": "crayon-book",
+      "name": "Crayon Picture Book",
+      "dimension": "2D",
+      "aliases": []
+    },
+    "dark-keynote": {
+      "slug": "dark-tech-presentation",
+      "name": "Dark Technology Presentation",
+      "dimension": "2.5D",
+      "aliases": []
+    },
+    "dataviz": {
+      "slug": "dataviz",
+      "name": "Data Storytelling",
+      "dimension": "2D",
+      "aliases": []
+    },
+    "engraving": {
+      "slug": "engraving",
+      "name": "Copperplate Engraving",
+      "dimension": "2D",
+      "aliases": []
+    },
+    "game-show": {
+      "slug": "game-show",
+      "name": "Game Show Flat",
+      "dimension": "2D",
+      "aliases": []
+    },
+    "glass-product": {
+      "slug": "glass-product",
+      "name": "Glass Product Render",
+      "dimension": "3D",
+      "aliases": []
+    },
+    "halftone-dossier": {
+      "slug": "halftone-dossier",
+      "name": "Halftone Dossier",
+      "dimension": "2D",
+      "aliases": []
+    },
+    "hd-2d": {
+      "slug": "pixel-sprites-with-depth",
+      "name": "Pixel Sprites with Depth",
+      "dimension": "3D",
+      "aliases": [
+        "pixel depth",
+        "sprite diorama"
+      ]
+    },
+    "hologram-hud": {
+      "slug": "hologram-hud",
+      "name": "Sci-fi Hologram HUD",
+      "dimension": "2.5D",
+      "aliases": []
+    },
+    "impasto": {
+      "slug": "impasto",
+      "name": "Impasto Oil Painting",
+      "dimension": "2D",
+      "aliases": []
+    },
+    "ink-wash": {
+      "slug": "ink-wash",
+      "name": "Chinese Ink Wash",
+      "dimension": "2D",
+      "aliases": []
+    },
+    "iso-infographic": {
+      "slug": "iso-infographic",
+      "name": "Isometric Infographic",
+      "dimension": "2.5D",
+      "aliases": []
+    },
+    "living-screencast": {
+      "slug": "living-screencast",
+      "name": "Living Screencast",
+      "dimension": "2D",
+      "aliases": []
+    },
+    "lowpoly-island": {
+      "slug": "lowpoly-island",
+      "name": "Low-poly Isometric Island",
+      "dimension": "3D",
+      "aliases": []
+    },
+    "microgame": {
+      "slug": "microgame",
+      "name": "Microgame Frenzy",
+      "dimension": "2D",
+      "aliases": []
+    },
+    "midcentury-toon": {
+      "slug": "midcentury-toon",
+      "name": "Mid-century Cartoon",
+      "dimension": "2D",
+      "aliases": []
+    },
+    "one-line": {
+      "slug": "one-line",
+      "name": "One-line Drawing",
+      "dimension": "2D",
+      "aliases": []
+    },
+    "paper-lantern": {
+      "slug": "paper-lantern",
+      "name": "Paper-cut Lightbox",
+      "dimension": "2.5D",
+      "aliases": []
+    },
+    "paper-popup": {
+      "slug": "paper-popup",
+      "name": "Paper Pop-up Book",
+      "dimension": "3D",
+      "aliases": []
+    },
+    "papercut-red": {
+      "slug": "papercut-red",
+      "name": "Red Paper-cut",
+      "dimension": "2D",
+      "aliases": []
+    },
+    "pictogram-motion": {
+      "slug": "pictogram-motion",
+      "name": "Pictogram Motion",
+      "dimension": "2D",
+      "aliases": []
+    },
+    "pixel-rpg": {
+      "slug": "pixel-rpg",
+      "name": "16-bit Pixel RPG",
+      "dimension": "2D",
+      "aliases": []
+    },
+    "risograph": {
+      "slug": "stencil-ink-print",
+      "name": "Stencil Ink Print",
+      "dimension": "2D",
+      "aliases": [
+        "spot ink",
+        "stencil print",
+        "overprint",
+        "misregistered ink"
+      ]
+    },
+    "rubber-hose": {
+      "slug": "rubber-hose",
+      "name": "1930s Rubber Hose Cartoon",
+      "dimension": "2D",
+      "aliases": []
+    },
+    "scifi-toon": {
+      "slug": "scifi-toon",
+      "name": "Sci-Fi Sitcom Toon",
+      "dimension": "2D",
+      "aliases": []
+    },
+    "shadow-puppet": {
+      "slug": "shadow-puppet",
+      "name": "Shadow Puppetry",
+      "dimension": "2D",
+      "aliases": []
+    },
+    "silent-film": {
+      "slug": "silent-film",
+      "name": "1920s Silent Film",
+      "dimension": "2D",
+      "aliases": []
+    },
+    "silkscreen-poster": {
+      "slug": "silkscreen-poster",
+      "name": "Silkscreen Travel Poster",
+      "dimension": "2D",
+      "aliases": []
+    },
+    "spy-titles": {
+      "slug": "spy-titles",
+      "name": "60s Spy Title Sequence",
+      "dimension": "2D",
+      "aliases": []
+    },
+    "stained-glass": {
+      "slug": "stained-glass",
+      "name": "Stained Glass",
+      "dimension": "2D",
+      "aliases": [
+        "leaded glass",
+        "backlit glass",
+        "colored glass"
+      ]
+    },
+    "swiss-motion": {
+      "slug": "grid-based-motion",
+      "name": "Grid-based Motion Graphics",
+      "dimension": "2D",
+      "aliases": []
+    },
+    "tilt-shift": {
+      "slug": "tilt-shift",
+      "name": "Tilt-Shift Miniature",
+      "dimension": "3D",
+      "aliases": []
+    },
+    "ukiyoe": {
+      "slug": "ukiyo-e-woodblock",
+      "name": "Ukiyo-e Woodblock",
+      "dimension": "2D",
+      "aliases": [
+        "woodblock",
+        "ukiyo e",
+        "ukiyo-e",
+        "woodblock print"
+      ]
+    },
+    "urban-sketch": {
+      "slug": "urban-sketch",
+      "name": "Urban Sketch Pen & Wash",
+      "dimension": "2D",
+      "aliases": []
+    },
+    "watercolor": {
+      "slug": "watercolor",
+      "name": "Watercolor Brush",
+      "dimension": "2D",
+      "aliases": []
+    },
+    "whiteboard": {
+      "slug": "whiteboard",
+      "name": "Whiteboard Explainer",
+      "dimension": "2D",
+      "aliases": []
+    },
+    "woodcut": {
+      "slug": "woodcut",
+      "name": "Woodcut Print",
+      "dimension": "2D",
+      "aliases": []
+    }
+  },
+  "dimension_notes": {
+    "dark-keynote": "STYLE.md explicitly describes 2.5D camera.",
+    "paper-lantern": "Inferred shallow layered sheet geometry with real shadows; guide says not a 3D diorama.",
+    "iso-infographic": "Inferred 2.5D illustrated projection. Guide uses depth-sorted projected solids through flat drawing.",
+    "hologram-hud": "Inferred 2.5D from projected wireframe meshes combined with flat UI. No explicit source dimension tag.",
+    "hd-2d": "Guide explicitly describes fully 3D diorama with flat pixel sprites. Public name must change because source name is a trademark candidate.",
+    "other_tags": "3D tags based on lit perspective scene geometry or miniature photography descriptions. 2D covers flat painting/print/vector styles. A projection effect does not imply a shipped renderer."
+  }
+}

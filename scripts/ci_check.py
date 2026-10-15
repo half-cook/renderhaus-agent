@@ -110,6 +110,14 @@ def check_routing_inventory() -> None:
     assert sum(len(load_committed_schemas(spec)) for spec in PROVIDERS) == 134
     paths = list(SKILLS_ROOT.glob("*/SKILL.md"))
     assert len(paths) == 38
+    from agent.deep_agent.art_style_catalog import search_styles
+
+    catalog_path = SKILLS_ROOT / 'art-style-motion/references/catalog/index.json'
+    catalog = json.loads(catalog_path.read_text())
+    assert catalog['counts'] == {'film_prompts': 98, 'style_guides': 43,
+                                'exact_duplicates': 0, 'catalog_styles': 141}
+    assert len(catalog['styles']) == 141
+    assert search_styles('stained glass', limit=1)[0]['slug'] == 'stained-glass'
     assert "ladder" not in POLICY and "premium_targets" not in POLICY
     assert "project_policy" not in POLICY and "flux2_klein4b_t2i" not in TOOL_MAP
     for capability, choice in POLICY["capability_map"].items():
@@ -128,7 +136,7 @@ def check_routing_inventory() -> None:
         assert set(metadata["include_tools"].split()) <= DISPATCH_TARGETS.keys(), path
         assert all(TOOL_MAP[alias]["status"] != "retired" for alias in metadata["routing_tools"].split()), path
     cases = json.loads((ROOT / "tests/fixtures/skill_routing.json").read_text())
-    assert len(cases) == 289 and sum(not case["skip_reason"] for case in cases) == 283
+    assert len(cases) == 301 and sum(not case["skip_reason"] for case in cases) == 295
     assert sum(bool(case["skip_reason"]) for case in cases) == 6
     ids = [case["test_id"] for case in cases if case.get("test_id")]
     assert len(ids) == len(set(ids)), "Routing fixture IDs must be unique."
@@ -139,7 +147,7 @@ def check_routing_inventory() -> None:
 
         subprocess.run(["git", "ls-files", "--error-unmatch", str(EVAL_PATH.relative_to(ROOT))], check=True, capture_output=True)
         assert default_vlm_enabled(), "Committed VLM evidence does not qualify for promotion."
-    print("ok routing inventory (18 providers, 134 Gateway tools, 38 skills, 283 active routing rows)")
+    print("ok routing inventory (18 providers, 134 Gateway tools, 38 skills, 141 catalog styles, 301 routing rows, 295 active routing rows)")
 
 
 def _assert_gateway_shape(schema: object) -> None:

@@ -244,7 +244,7 @@ class ArtStyleMotionApprovalTests(unittest.IsolatedAsyncioTestCase):
             skill = next(message for message in messages if isinstance(message, ToolMessage) and message.tool_call_id == 'skill')
             self.assertIn('Design one frame', skill.content)
             cards = next(message for message in messages if isinstance(message, ToolMessage) and message.tool_call_id == 'cards')
-            self.assertIn('Kurzgesagt', cards.content)
+            self.assertIn('Flat Concept Worlds', cards.content)
             context = next(json.loads(message.content) for message in messages if isinstance(message, ToolMessage) and message.name == 'read_studio_context')
             self.assertEqual(context['intent_route']['skill'], 'art-style-motion')
             approval = paused.exception.approvals[0]

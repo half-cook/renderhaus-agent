@@ -194,10 +194,10 @@ class SkillContracts(unittest.TestCase):
         )
 
     def test_fixture_preserves_active_workbook_rows_and_explains_pending_dependencies(self):
-        self.assertEqual(len(CASES), 289)
+        self.assertEqual(len(CASES), 301)
         ids = [case["test_id"] for case in CASES if case.get("test_id")]
         self.assertEqual(len(ids), len(set(ids)), "Routing fixture IDs must be unique.")
-        self.assertEqual(sum(not c["skip_reason"] for c in CASES), 283)
+        self.assertEqual(sum(not c["skip_reason"] for c in CASES), 295)
         self.assertEqual(sum(bool(c["skip_reason"]) for c in CASES), 6)
         self.assertTrue(all(c.get("source_status") != "archived" for c in CASES))
         self.assertTrue(all("[project.confidential=true]" not in c["prompt"] for c in CASES))

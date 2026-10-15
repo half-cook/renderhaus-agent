@@ -24,6 +24,7 @@ from langgraph.errors import GraphRecursionError
 from pydantic import ValidationError
 
 from agent.backend_config import configured_deep_agent_model
+from agent.deep_agent.art_style_catalog import style_context
 from agent.deep_agent.checkpoints import StudioCheckpointer
 from agent.deep_agent.costs import append_media_costs
 from agent.deep_agent.files import subagent_file_updates
@@ -246,6 +247,8 @@ async def run_with_servers(request, studio, servers, *, model=None):
             "render_jobs": executor.render_jobs,
             "tools": sorted(available),
         }
+        if route["skill"] == "art-style-motion":
+            result["style_catalog"] = style_context(request.prompt)
         if tool_name:
             found = available.get(tool_name)
             if found:

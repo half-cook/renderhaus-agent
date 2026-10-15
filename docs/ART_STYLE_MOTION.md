@@ -42,7 +42,7 @@ read 2026-10-10. The source is MIT. Each adapted file includes its copyright and
 [third_party/huashu-art-motion/LICENSE](../third_party/huashu-art-motion/LICENSE) and
 [THIRD_PARTY_NOTICES](../THIRD_PARTY_NOTICES) preserve attribution. The 35 style cards omit
 upstream number 07; the nine grammar cards include the illustrated-presenter method.
-Ukiyo-e is an additional user-reference style, not a nonexistent upstream card.
+Ukiyo-e now has a descriptive catalog card. It remains separate from the 35 upstream art cards.
 
 No Python renderer, runtime dependency, fonts, stroke data, character artwork, sprites or
 demo media were ported. The upstream README excludes its character/demo assets from MIT
@@ -82,13 +82,13 @@ No source date is backdated and no billing rates are changed in this skill-only 
 
 ## Routing coverage and remaining checks
 
-The packaged inventory is 32 skills, 16 providers and 120 Gateway tools. The routing fixture
-has 243 retained rows: 238 active, five unchanged skips. RT-160 and RT-161 cover named art
+The packaged inventory is 38 skills, 18 providers and 134 Gateway tools. The routing fixture
+has 301 retained rows, 295 active and six unchanged skips. RT-160 and RT-161 cover named art
 and grammar routing. RT-162 asserts that a silent explainer without a named style stays in
 knowledge-explainer. The input CSV has 148 data rows, no test IDs and no art-style cases;
 these three prompts are task/draft reconstructions and are labeled as such in the fixture.
 Exact workbook provenance remains pending the missing export. The unchanged skips are
-one HyperFrames-overlay case (`feat/hyperframes-overlays`), three `cutaway_record` demo
+one HyperFrames-overlay case (`feat/hyperframes-overlays`), four `cutaway_record` demo
 cases (`feat/product-demo-capture`), and RT-E043's exact end-card OCR comparison
 (`feat/remotion-ocr-verification`). No pending provider row was falsely activated.
 
@@ -107,11 +107,99 @@ cost-quote configuration remain operator responsibilities for a separately autho
 run. Keep every dry-run flag enabled. See
 [decisions](art-style-motion-decisions.tsv) for provenance and open production dependencies.
 
-Validation on 2026-10-10 passed Ruff (`agent lambdas scripts server providers`), the
-full unittest suite (2,084 tests, seven skips), `scripts/ci_check.py` with every provider
-dry-run flag enabled and secrets lookup disabled, Gateway schema drift checks, Studio
-`tsc --noEmit -p .`, and an offline wheel build/content/relative-link inspection. The
-starting commit passed 2,069 tests with the same seven skips. The focused skill suite has
-12 tests; routing/skill-contract verification has 255 tests with five fixture skips.
-Native review found no remaining blocking issue after its reproduced cases were added.
-The temporary Studio dependency symlink was removed. Browser E2E is still blocked.
+## Descriptive catalog
+
+The existing skill now has 141 catalog entries from 98 specialized film-look prompts
+and 43 general style guides. No exact duplicate source prompts or cross-set style names
+were found. Related media stay separate because their palettes, materials, shot grammar,
+and motion rules differ. The original styleboard tags are 77 2D, four 2.5D, and 17 3D.
+The 43 guide tags are derivative interpretations of their documented technique, comprising
+32 2D, four 2.5D, and seven 3D. These tags describe treatment, not delivered dimensions.
+
+`read_studio_context.style_catalog` supplies safe selection and browse results from
+[the index](../agent/deep_agent/skills/art-style-motion/references/catalog/index.json).
+A neutral name, slug, or input alias wins over a default. A user-named existing art or
+grammar card wins over an inferred catalog match. Unknown looks retain the original
+card-building fallback. Browse returns descriptive names and summaries without generating
+assets. The original 35 art and nine grammar cards now have descriptive display labels;
+legacy names remain accepted as inputs.
+
+The pure host lookup belongs in `agent/deep_agent/art_style_catalog.py`. It reads only
+safe index fields and sanitized card tables. There is no new Gateway tool. The existing
+planner has read-only skill access and no shell, so an unconnected Python helper would
+not run. The host context is the existing bridge. Search is deterministic, limits results
+to 1–20, rejects queries over 500 characters, and copies results to protect cached data.
+Studio briefs are capped at 64,000 characters. Browse summaries cover all 141 entries.
+Named style clauses after the topic remain explicit. Topics about using a material,
+negated looks, and quoted titles do not select a style. Inferred looks match descriptive
+names, aliases, and keywords; durations and generic planning terms cannot choose one.
+Deliberate searches also use prompt and direction prose. Unsupported nonempty queries
+return no matches.
+
+All 141 catalog entries have recorded prompt or direction adaptations. The committed
+[internal scan](../third_party/lemo-opuscar/BRAND_SCAN.json) records original and adapted
+fields, source mappings, denied terms, and source occurrences. There are zero remaining
+denied terms in the public index. The scan records 1,074 denied terms and 800 field
+adaptations across all 141 entries. Ordinary movement and material words that collide
+with short names use descriptive synonyms. The 302 example shots become reusable camera-direction
+notes, with source durations explicitly labeled as examples. No demo plot, character,
+film title, living artist, provider name, or service fee belongs in a card or generation
+prompt. Brand-derived input aliases are private lookup metadata and never echoed.
+Operational tool names and required provider/cost disclosures retain their existing contract.
+
+Verbatim original text is stored outside the agent's skill filesystem in
+[internal provenance](../third_party/lemo-opuscar/NOTICE.md). Each of 130 original text
+files is an unmodified string with a SHA-256. Only the normalized index and MIT licence
+ship as skill reference data. The attribution and licence also ship in wheel metadata.
+No posters, frames, fonts, music, voice, video, subtitles, executables, or upstream
+render tooling are imported. `_template` is excluded. Rebuild with
+`.venv/bin/python scripts/import_art_style_catalog.py`; add `--check` to detect drift.
+
+The source is MIT, copyright 2026 LemoLab, at
+[revision e3cb16f63768c68693ff0e15171d6e755457cc32](https://github.com/lemomo-ai/lemo-opuscar/tree/e3cb16f63768c68693ff0e15171d6e755457cc32),
+read 2026-10-10. The pinned MIT licence and source bytes were rechecked on 2026-10-14.
+Original data, guides, and demo descriptions are internal provenance.
+Neutral names, categories, aliases, keywords, prompts, direction notes, and guide dimension
+tags are derivative metadata. The [MIT notice](../third_party/lemo-opuscar/LICENSE) is kept.
+Mapping a named real film's look onto a user's topic can imply association or IP risk.
+Prompts must stay descriptive of style. MIT text permission grants no rights to films,
+characters, trademarks, music, likenesses, or third-party demo media.
+
+No model, endpoint, provider, rate, model licence, training eligibility, key, or dry-run
+flag is added or changed. No new price is used. The existing model policies in the table
+above remain false for training eligibility. Unknown media estimates remain unknown
+and existing approvals remain required. This catalog adds planning text, not a generative
+video model or a procedural animation renderer.
+
+RT-160 through RT-162 remain unchanged. RT-CAT-001 through RT-CAT-012 add six catalog or
+legacy-selection cases and six negative boundaries. No dependency skip is activated.
+The six retained skips are one HyperFrames overlay, four demo-capture cases, and exact
+end-card OCR verification. See [decisions](art-style-catalog-decisions.tsv).
+
+Browser E2E is blocked because Comet is unavailable. Native graph tests use scripted
+models and mocked Gateway services; they do not prove Studio UX or media quality.
+No live calls or rendered-media claims are made.
+
+## Offline verification on 2026-10-14
+
+The final Python 3.11 run passes 2,491 pytest tests, with eight skips and 4,329 passing
+subtests. The full unittest suite runs 2,499 tests, with the same eight skips. Ruff,
+`scripts/ci_check.py` with secrets lookup disabled and every dry-run flag enabled, and
+Studio `tsc --noEmit -p .` pass. The temporary Studio dependency link is removed.
+
+The source byte comparison covers all 130 imported text files and the MIT licence.
+The catalog rebuild has no drift. Every neutral catalog name selects its own card.
+The built wheel matches the current lookup, routing, safe index, and licence bytes.
+It excludes internal catalog source and scan data. Native review reproductions pass.
+These checks are offline contracts and artifact checks, not a scored model eval.
+
+Six fixture skips remain for one HyperFrames overlay, four `cutaway_record` cases,
+and exact end-card OCR. Two other tests remain skipped for optional GPU dependencies
+and unverified existing Seedance extension-output semantics. Procedural animation
+still needs supported authored assets; this feature does not add a renderer.
+
+Comet E2E is blocked, including Studio browsing/selection, visible approval/rejection,
+and actual media playback. No live provider calls or generated media were evaluated.
+External model-family review was skipped under the offline-only scope. No new tools,
+models, prices, model licences, training eligibility, environment variables, secrets, or
+dry-run flags are introduced.
