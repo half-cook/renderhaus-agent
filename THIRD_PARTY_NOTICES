@@ -51,3 +51,15 @@ works were not licensed to upstream authors. Their media, brands and audio are n
 licensed by this text import. No upstream code, previews, audio, fonts or textures
 are included. English index metadata and the cinematic workflow are separate
 Renderhaus-authored additions. See docs/CINEMATIC_PRODUCT_PROMO.md.
+
+lemo-opuscar style text
+---------------------
+Origin: https://github.com/lemomo-ai/lemo-opuscar
+Revision: e3cb16f63768c68693ff0e15171d6e755457cc32 (read 2026-10-10)
+Copyright (c) 2026 LemoLab. MIT licence.
+The original 98 style prompts and 43 style guides are preserved as internal
+text provenance under third_party/lemo-opuscar/source.json. Renderhaus authors
+neutral derivative names, search metadata, scrubbed prompts and camera notes.
+No upstream tooling, posters, frames, fonts or demo media are imported.
+MIT text permission grants no rights to third-party demo assets or film IP.
+See third_party/lemo-opuscar/LICENSE and NOTICE.md.

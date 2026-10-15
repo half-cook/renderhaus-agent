@@ -47,7 +47,7 @@ include = ["agent*", "server*", "lambdas*", "providers*"]
 
 [tool.setuptools]
 include-package-data = true
-license-files = ["third_party/video-use/LICENSE", "third_party/hyperframes/LICENSE", "third_party/hyperframes/NOTICE", "third_party/hyperframes-cinematic-caption/LICENSE", "third_party/hyperframes-tactile-collage/LICENSE", "third_party/hyfrme/LICENSE", "third_party/hyfrme/Remocn-LICENSE", "third_party/huashu-art-motion/LICENSE", "THIRD_PARTY_NOTICES"]
+license-files = ["third_party/video-use/LICENSE", "third_party/hyperframes/LICENSE", "third_party/hyperframes/NOTICE", "third_party/hyperframes-cinematic-caption/LICENSE", "third_party/hyperframes-tactile-collage/LICENSE", "third_party/hyfrme/LICENSE", "third_party/hyfrme/Remocn-LICENSE", "third_party/huashu-art-motion/LICENSE", "third_party/lemo-opuscar/LICENSE", "THIRD_PARTY_NOTICES"]
 
 [tool.setuptools.package-data]
 "providers.elevenlabs" = ["openapi.json"]
@@ -55,4 +55,4 @@ license-files = ["third_party/video-use/LICENSE", "third_party/hyperframes/LICEN
 "providers.shot_recipes" = ["index.json", "LICENSE", "NOTICE.md", "ATTRIBUTION.md", "BRAND_SCAN.json", "cards/*/*.md"]
 "providers.footage_memory" = ["fixtures.json", "NOTICE.md", "sql/*.sql"]
 
-"agent.deep_agent" = ["AGENTS.md", "routing_policy.json", "continuity_qc_calibration.json", "continuity_qc_vlm_eval.json", "skills/*/SKILL.md", "skills/hyperframes/templates/*.html", "skills/hyperframes/templates/*.json", "skills/hyperframes/references/*.md", "skills/knowledge-explainer/templates/*.json", "skills/art-style-motion/references/*.md"]
+"agent.deep_agent" = ["AGENTS.md", "routing_policy.json", "continuity_qc_calibration.json", "continuity_qc_vlm_eval.json", "skills/*/SKILL.md", "skills/hyperframes/templates/*.html", "skills/hyperframes/templates/*.json", "skills/hyperframes/references/*.md", "skills/knowledge-explainer/templates/*.json", "skills/art-style-motion/references/*.md", "skills/art-style-motion/references/catalog/*.json", "skills/art-style-motion/references/catalog/LICENSE"]
