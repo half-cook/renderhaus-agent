@@ -54,7 +54,20 @@ export function StudioStage({ onOpenReview }: { onOpenReview?: () => void }) {
           </div>
         ) : null}
         {onOpenReview ? <button type="button" className="rh-stage-review" onClick={onOpenReview}>Review changes</button> : null}
+        <div className="rh-stage-shade" aria-hidden="true" />
       </div>
+      {shots.length ? (
+        <div className="rh-strip" role="list" aria-label="Timeline" data-shot="studio-strip">
+          {shots.map((node, i) => (
+            <button key={node.id} type="button" role="listitem" className="rh-strip-clip" data-sel={node.id === selected?.id || undefined}
+              aria-label={`Shot ${i + 1}: ${node.data.title}`} aria-current={node.id === selected?.id || undefined}
+              onClick={() => useCanvasStore.getState().onSelectionChange([node.id])}>
+              <AssetMedia asset={node.data.output} alt="" className="rh-strip-media" muted preload="metadata" startTime={1} />
+              <span className="rh-strip-label">{node.data.title}</span>
+            </button>
+          ))}
+        </div>
+      ) : <div className="rh-strip" aria-hidden="true"><div className="rh-strip-empty" /></div>}
     </section>
   );
 }

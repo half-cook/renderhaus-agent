@@ -87,6 +87,14 @@ function StudioFrame({
           ) : (
             <div className="rh-v4-caption"><span>Shot 2 of 3</span><b>{stageTitle}</b></div>
           )}
+          <div className="rh-stage-shade" aria-hidden="true" />
+        </div>
+        <div className="rh-strip" role="list" aria-label="Timeline">
+          {[["/beta/still-mug.jpg","Open",2.2],["/beta/shot-lift-warm.jpg","Warm lift · 4.2 s",3.2],["/beta/shot-window.jpg","Window",1.5]].map(([url,label,flex],i)=>(
+            <button key={i} type="button" role="listitem" className="rh-strip-clip" data-sel={i===1||undefined} style={{ flex: `${flex} 1 0`, backgroundImage: `url(${url})`, backgroundSize: "cover", backgroundPosition: "center" }}>
+              <span className="rh-strip-label">{label}</span>
+            </button>
+          ))}
         </div>
       </section>
       <span className="rh-sample rh-mono rh-v4-sample">Sample</span>
