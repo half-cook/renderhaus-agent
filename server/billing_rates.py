@@ -891,7 +891,7 @@ def sync_dialogue_price_cents(tool: str, arguments: dict[str, Any]) -> Decimal:
     return frames * SYNC_DIALOGUE_BASE_CENTS_PER_FRAME
 
 
-# Official fal pricing examples, read 2026-10-09. Duration scaling is an estimate.
+# Official fal pricing examples, read 2026-10-09 and rechecked 2026-10-15. Duration scaling is an estimate.
 # https://fal.ai/models/topaz/upscale/video/generative
 # https://fal.ai/models/topaz/interpolate/video
 TOPAZ_UPSCALE_CENTS_PER_10_SECONDS = {"1080p": {30: 120, 60: 240}, "4K": {30: 260, 60: 510}}

@@ -1,0 +1,22 @@
+@layer theme, base, xyflow, legacy, components, utilities;
+
+@layer legacy {
+.card { padding: 16px; border: 1px solid var(--line); border-radius: 12px; min-width: 0; }
+.card h3 { margin: 0 0 8px; font-size: 15px; }
+.card p { font-size: 12px; line-height: 1.5; color: var(--muted); }
+.views, .transport, .actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.views { margin: 12px 0; }
+.views [aria-pressed="true"] { outline: 1px solid currentColor; outline-offset: -1px; }
+.frames { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.frames[data-view="before"], .frames[data-view="after"] { grid-template-columns: minmax(0, 1fr); }
+.frames figure { margin: 0; min-width: 0; }
+.frames figure[hidden] { display: none; }
+.frames figcaption { min-height: 32px; margin-bottom: 4px; font-size: 11px; line-height: 1.4; }
+.frames video { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: contain; background: #111; border-radius: 6px; }
+.transport { margin-top: 12px; font-size: 11px; }
+.scrubber { width: 100%; margin: 12px 0 0; }
+.actions { justify-content: flex-end; margin-top: 12px; }
+@media (max-width: 420px) {
+  .frames { grid-template-columns: minmax(0, 1fr); }
+}
+}
