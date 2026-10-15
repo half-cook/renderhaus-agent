@@ -24,7 +24,7 @@ from test_deep_agent import Gateway, ScriptedModel, call, final
 
 ENDPOINT = "mirelo-ai/sfx1.6/video-to-video"
 TOOL = "Fal___mirelo_v2a"
-ARGS = {"video_url": "https://example.com/silent.mp4", "duration": 12.5, "num_samples": 1}
+ARGS = {"video_url": "https://example.com/silent.mp4", "duration": 12.5, "num_samples": 1, "model": ENDPOINT}
 
 
 class MireloProviderTests(unittest.TestCase):
@@ -44,9 +44,9 @@ class MireloProviderTests(unittest.TestCase):
                     dispatch("fal", "mirelo_v2a", {**ARGS, **invalid})
             client.assert_not_called()
 
-    def test_default_dry_run_and_saved_dry_handle_never_touch_network(self):
+    def test_legacy_dry_run_and_saved_dry_handle_never_touch_network(self):
         with patch.dict(os.environ, {}, clear=True), patch.object(httpx, "Client") as client:
-            result = dispatch("fal", "mirelo_v2a", {"video_url": ARGS["video_url"]})
+            result = dispatch("fal", "mirelo_v2a", {"video_url": ARGS["video_url"], "model": ENDPOINT})
             self.assertEqual(result["status"], "dry_run")
             self.assertEqual(result["request_preview"], {"video_url": ARGS["video_url"], "duration": 10.0, "num_samples": 1})
             self.assertEqual(result["estimated_cost_usd"], 0.10)
@@ -67,7 +67,8 @@ class MireloProviderTests(unittest.TestCase):
             {"FAL_DRY_RUN": "false", "FAL_KEY": "fake", "RENDERHAUS_MEDIA_DIR": directory}), patch.object(httpx, "Client", return_value=client):
             result = dispatch("fal", "mirelo_v2a", {**ARGS, "text_prompt": "Footsteps on gravel, no music.", "seed": 42})
         self.assertEqual(str(requests[0].url), "https://queue.fal.run/" + ENDPOINT)
-        self.assertEqual(json.loads(requests[0].content), {**ARGS, "text_prompt": "Footsteps on gravel, no music.", "seed": 42})
+        self.assertEqual(json.loads(requests[0].content), {key: value for key, value in
+            {**ARGS, "text_prompt": "Footsteps on gravel, no music.", "seed": 42}.items() if key != "model"})
         self.assertEqual(result["job_id"], ENDPOINT + ":fake-mirelo")
         self.assertEqual(result["status"], "queued")
         self.assertEqual(result["estimated_cost_usd"], 0.125)
@@ -281,27 +282,30 @@ class MireloApprovalTests(unittest.IsolatedAsyncioTestCase):
     async def test_approved_native_interrupt_dispatches_exact_quote_once(self):
         from agent.deep_agent.runner import run_with_servers
 
+        args = {key: value for key, value in ARGS.items() if key != "model"}
+        args["preserve_speech"] = True
         schemas = json.loads(Path("configs/gateway/fal.tools.json").read_text())
         gateway = Gateway([Tool(name="Fal___" + t["name"], description=t["description"],
                                inputSchema=t["inputSchema"]) for t in schemas],
-                          result={"status": "dry_run", "provider": "fal", "model": ENDPOINT})
+                          result={"status": "dry_run", "provider": "fal", "model": fal.mirelo.ENDPOINT_ID})
         request = StudioAgentRequest(prompt="add foley from the video", autonomous=True, job_id="mirelo-approved")
         studio = _context_from_request(request)
         with tempfile.TemporaryDirectory() as directory, patch.dict(os.environ, {"RENDERHAUS_OUTCOME_DIR": directory, "FAL_DRY_RUN": "true"}):
             with self.assertRaises(StudioAgentApprovalRequired) as paused:
                 await run_with_servers(request, studio, [gateway], model=ScriptedModel([
                     call("read_file", {"file_path": "/skills/audio-bed/SKILL.md"}, "skill"),
-                    call("call_media_tool", {"tool_name": TOOL, "arguments": ARGS}, "sfx")]))
+                    call("call_media_tool", {"tool_name": TOOL, "arguments": args}, "sfx")]))
             approval = paused.exception.approvals[0]
             gateway.call_tool.assert_not_awaited()
             resumed = request.model_copy(update={"session_items": studio.session_items,
                 "resume_state": paused.exception.state, "approval_decisions": [
                     StudioApprovalDecision(call_id=approval.call_id, decision="approve")]})
             await run_with_servers(resumed, _context_from_request(resumed), [gateway], model=ScriptedModel([final()]))
-            gateway.call_tool.assert_awaited_once_with(TOOL, ARGS)
+            gateway.call_tool.assert_awaited_once_with(TOOL, args)
             rows = [json.loads(line) for line in (Path(directory) / "outcomes.jsonl").read_text().splitlines()]
             self.assertEqual((rows[-1]["provider"], rows[-1]["stage"], rows[-1]["outcome"]),
                              ("fal", "approval", "accepted"))
+            self.assertEqual(rows[-1]["ab_arm"], fal.mirelo.ENDPOINT_ID)
 
     async def test_autonomous_costed_interrupt_and_rejection_never_submit(self):
         from agent.deep_agent.runner import run_with_servers

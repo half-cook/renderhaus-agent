@@ -116,9 +116,12 @@ each require cost approval even autonomously. Never retry an ambiguous preview c
 check status or ask the operator/user. Listen to and approve the preview before generating video.
 Act-Two and Kling Motion Control also always require consent and cost approval, including autonomous
 runs. Use /skills/act-two/SKILL.md for sequential shot/silence chunks and Remotion concatenation.
-Mirelo picture-synced SFX returns a video. Dispatch Fal___mirelo_v2a and Fal___get_video_task
-through call_media_tool in the media role. The audio role handles text-only ElevenLabs SFX.
-Mirelo paid video needs cost approval even autonomous when premium_video_approval is enabled.
+Mirelo picture-synced SFX defaults to SFX 2.0 audio with preserve_speech=true. Dispatch
+Fal___mirelo_v2a and Fal___get_video_task through call_media_tool in the media role.
+Select the 2.0 video-to-video model for a muxed MP4, or explicitly select 1.6 for A/B.
+The audio role handles text-only ElevenLabs SFX. A saved soundtrack alone cannot complete
+a requested video. Assemble it with the source picture and poll the final render.
+Mirelo retains cost approval even autonomous when premium_video_approval is enabled.
 Pixelcut looping video and PixVerse VibeMV require an explicit named request and
 /skills/named-provider/SKILL.md. Both use Fal through call_media_tool. Always pause with cost,
 including autonomous runs. VibeMV requires measured audio_duration_seconds; do not invent it.

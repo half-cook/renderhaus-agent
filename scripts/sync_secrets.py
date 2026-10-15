@@ -14,7 +14,8 @@ Dialogue edits reuse SYNC_API_KEY/SYNC_DRY_RUN/SYNC_DIRECT_AUTHORIZED and option
 SYNC_DIALOGUE_PREVIEW_COST_CENTS (operator-confirmed quote; unpublished official rate).
 Act-Two reuses RUNWAYML_API_SECRET/RUNWAY_DRY_RUN and REMOTION_LOCAL_MEDIA_HOSTS for chunks.
 Kling Motion Control uses the existing FAL_KEY/FAL_DRY_RUN; no direct Kling secret is required.
-Mirelo and the Ideogram/Recraft image specialists reuse FAL_KEY/FAL_DRY_RUN.
+Mirelo SFX 2.0 (audio/video) and legacy 1.6 reuse FAL_KEY/FAL_DRY_RUN, default true.
+The Ideogram/Recraft image specialists reuse the same keys. No new Mirelo secrets or flags.
 Named-only Pixelcut and PixVerse VibeMV also reuse FAL_KEY/FAL_DRY_RUN, with no new secrets or flags.
 Fal images in Lambda require existing AWS_S3_BUCKET or REMOTION_APP_BUCKET_NAME for sanitized durable outputs.
 No additional image secret or dry-run flag is needed.

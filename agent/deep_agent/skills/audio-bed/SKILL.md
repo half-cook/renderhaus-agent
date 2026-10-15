@@ -79,23 +79,40 @@ Poll `Mureka___get_music_task` with the saved handle and `download=true`. Preser
 Paid audio pauses unless autonomous; the existing spend cap still applies. Outputs have commercial
 API usage rights but no verified training grant. MUREKA_DRY_RUN and FAL_DRY_RUN default true.
 Video-synchronized foley defaults to `mirelo_v2a` through `Fal___mirelo_v2a` on fal.
-The manager or media role uses `call_media_tool` for this video operation and `Fal___get_video_task`.
-The audio role returns this step to the manager; it handles text-only SFX through `call_audio_tool`.
-Use a silent, edited or assembled source clip. Generated Wan/Seedance shots already have native audio.
-Supply `video_url` as authorized HTTPS media or a current Studio asset handle and match `duration`
-to the measured clip length, 1-60 seconds. Above 10 seconds fal uses sliding-window generation.
-Use optional `text_prompt` to describe sounds such as footsteps, impacts or ambience, not visual edits.
-Renderhaus defaults `num_samples` to 1, while fal defaults to 2. Samples 2-4 are dry-run-only;
-their billing is UNVERIFIED, so disclose cost unknown and never promise a live result.
-Optional `seed` controls repeatability; -1 or null selects random generation.
-The official endpoint returns videos with audio tracks, not a separate audio file.
-Submit once after cost approval, save `job_id`, then poll with `download=true`.
-The poll exposes all `videos` and the first variant as `video_url` and `output_path`.
-Play the saved MP4 and check synchronization before delivery. A preview or queued job is incomplete.
+The manager or media role uses `call_media_tool` and `Fal___get_video_task` for this operation.
+The audio role returns this step to the manager and handles text-only SFX through `call_audio_tool`.
+Use a silent, edited or completed assembled clip. Generated shots already have native audio;
+request a new sound pass when unwanted music or discontinuous effects need replacement.
+Supply authorized `video_url` and measured `duration`, 1-600 seconds for SFX 2.0.
+`preserve_speech` defaults true. Keep it true for dialogue; false suppresses speech.
+Dialogue preservation is a vendor capability, not bit-identical speech. Listen before delivery.
+Optional `text_prompt` describes sounds, up to 2000 characters. `negative_prompt` excludes
+sounds, up to 1000 characters. There is no event-timestamp argument. `seed` accepts -1 or null
+for random generation. Renderhaus defaults `num_samples` to 1; fal defaults to 2.
+The default `model=mirelo-ai/sfx2.0/video-to-audio` returns a soundtrack bed. It supports
+`upload_audio_format` wav by default, mp3, aac or flac. Bitrate applies only to MP3 or AAC;
+use a documented MP3 CBR value from 32-320, or AAC 32-256 kbps. Omit bitrate for wav/flac.
+Choose `model=mirelo-ai/sfx2.0/video-to-video` for a muxed MP4 with the new soundtrack.
+For an explicit A/B request, select `model=mirelo-ai/sfx1.6/video-to-video`.
+Legacy 1.6 supports only 1-60 seconds and has no preserve_speech, negative prompt or encoding
+controls. Omit those controls on legacy; never discard a requested speech-preservation constraint
+or silently switch versions. Legacy samples 2-4 remain dry-run-only with unknown cost.
+SFX 2.0 bills total output seconds across samples at $0.010/second from October 14 through
+December 13, 2026 inclusive UTC, then $0.015/second from December 14. Sources read 2026-10-15.
+Submit once after cost approval, preserve `job_id`, and poll with `download=true`.
+Audio polling returns `audios`, primary `audio_url` and `output_path`. Video polling returns
+`videos`, primary `video_url` and `output_path`. A preview or queued job is incomplete.
+For audio-only delivery, save and play the actual audio. For a requested video using an audio
+bed, assemble that saved bed with source picture through Remotion and poll the final render.
+Mute the source non-dialogue soundtrack so unwanted music is not mixed back in. With preserved
+speech in the generated bed, avoid doubling the original dialogue. Check sync and speech by playback.
 FAL_DRY_RUN defaults true. Commercial fal API terms apply; outputs are not training eligible.
-All paid Mirelo video pauses with cost even autonomous under the paid-video approval policy.
-SFX evidence is thin. A/B Mirelo against ElevenLabs text-described SFX on the same clips before
-relying on picture synchronization quality; obtain normal approvals for each paid comparison.
+Cost approval remains required even autonomous under the existing paid-video policy for both
+output modes. Keep the existing spend cap and exemptions.
+Evidence is thin and the new comparisons are vendor-run. Keep A/B-first on the same clips,
+including dialogue plus music, footsteps, impacts and multi-cut ambience. Obtain normal cost
+approval for each comparison, retain the selected model in outcomes, and record actual listening
+preferences with `ab_arm`. No automated routing test proves audio quality.
 A text-only sound effect
 uses the built `elevenlabs_sfx_v2` exception through `ElevenLabs___text_to_sound_effects_convert`.
 Use native `text` and supported `duration_seconds`. Text-only SFX cannot synchronize to source picture.

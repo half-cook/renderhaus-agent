@@ -238,9 +238,9 @@ paid API output full usage rights and commercial authorization per FAQ; weights 
 
 ### Mirelo SFX1.6 — fal
 
-`mirelo_v2a` now binds `Fal___mirelo_v2a` at the verified endpoint `mirelo-ai/sfx1.6/video-to-video`. The [API schema](https://fal.ai/models/mirelo-ai/sfx1.6/video-to-video/api), [price](https://fal.ai/models/mirelo-ai/sfx1.6/video-to-video) and [terms](https://fal.ai/legal/terms-of-service) were rechecked **2026-10-09**.
+`mirelo_v2a` binds `Fal___mirelo_v2a` to SFX 2.0 audio by default, with speech preservation. Explicit model selection supports 2.0 muxed video and legacy 1.6 for A/B. The [audio schema](https://fal.ai/api/openapi/queue/openapi.json?endpoint_id=mirelo-ai/sfx2.0/video-to-audio), [price](https://fal.ai/models/mirelo-ai/sfx2.0/video-to-audio) and [terms](https://fal.ai/legal/terms-of-service) were verified on **2026-10-15**.
 
-Video input, optional sound prompt, duration 1–60 seconds and seed produce a list of muxed videos. Renderhaus explicitly defaults to one sample. The published rate is $0.01/second; multi-sample billing remains UNVERIFIED and samples 2–4 remain dry-run-only with an unknown quote. Commercial API terms apply, with `training_eligible=false`. Paid video approval includes autonomous runs. See [Mirelo contracts and decisions](MIRELO.md).
+SFX 2.0 accepts 1-600 measured seconds, optional sound and negative prompts, speech preservation and 1-4 samples. It bills total output seconds across samples at $0.010/second through December 13, 2026 inclusive UTC, then $0.015. Only legacy multi-sample billing remains UNVERIFIED and dry-run-only. Both output modes retain cost approval even autonomous. A saved audio bed needs final assembly for video delivery. Commercial API terms apply, with `training_eligible=false`. Evidence remains thin and A/B-first. See [Mirelo contracts and decisions](MIRELO.md).
 
 ### ElevenLabs Eleven v4 Turbo — ElevenLabs direct
 

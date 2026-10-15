@@ -12,7 +12,7 @@ and episode-specific fictional scripts/storyboards. It returns no paid tool. Sin
 podcasts and chat-thread compositions retain their existing routes. RT-188 was absent
 from both the starting fixture and supplied capability routing CSV. It is added from
 the task spec with eleven routing boundary cases. Inventory is 21 providers, 140 Gateway
-tools, 42 skills and 341 fixture rows, of which 335 are active and six remain skipped.
+tools, 42 skills and 342 fixture rows, of which 336 are active and six remain skipped.
 
 `review_drama_outline(outline)` uses native approve/reject interrupts with a zero-production
 cost quote. Only the approved tool execution stores the canonical outline and SHA-256

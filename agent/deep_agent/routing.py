@@ -1077,9 +1077,15 @@ def _capability_price(row: dict):
             values = {quality: str(value) for quality, value in rates.IDEOGRAM_CENTS_PER_IMAGE.items()}
         elif model == "fal-ai/recraft/v4.1/pro/text-to-vector":
             values = {"cents_per_image": str(rates.RECRAFT_VECTOR_CENTS_PER_IMAGE)}
-        elif model == "mirelo-ai/sfx1.6/video-to-video":
-            values = {"single_sample_cents_per_second": str(rates.MIRELO_CENTS_PER_SECOND),
-                      "multi_sample": "unknown"}
+        elif model.startswith("mirelo-ai/sfx"):
+            from providers.fal.mirelo import LEGACY_ENDPOINT_ID
+
+            values = ({"single_sample_cents_per_second": str(rates.MIRELO_LEGACY_CENTS_PER_SECOND),
+                       "multi_sample": "unknown"} if model == LEGACY_ENDPOINT_ID else {
+                           "cents_per_output_second_per_sample": str(rates.mirelo_rate()),
+                           "standard_cents_per_second": str(rates.MIRELO_CENTS_PER_SECOND),
+                           "promo_expires_on": rates.MIRELO_PROMO_EXPIRES_ON.isoformat(),
+                       })
         elif model.startswith("alibaba/wan-3.0/"):
             values = {resolution: str(value) for resolution, value in rates.WAN3_CENTS_PER_SECOND.items()}
         elif model.startswith("fal-ai/vidu/q4/"):
@@ -1423,6 +1429,8 @@ def select_provider(job: str, *, tier: str | None = None, required: dict | None 
     if capability in {"voice_clone", "cloned_tts"} and basis == "default" and predicates["heygen_voice_ab"] and predicates["voice_text_needs_normalisation"]:
         basis = "exception: abbreviation/number-heavy cloned speech requires text normalisation; use ElevenLabs"
     entry = TOOL_MAP[alias]
+    if alias == "mirelo_v2a":
+        model = POLICY["named_models"].get(named_model, {}).get("model") or args.get("model") or model or entry["model"]
     if entry.get("provider") == "topaz":
         from providers.topaz.contracts import configured_model
 

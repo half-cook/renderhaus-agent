@@ -63,7 +63,7 @@ logger = logging.getLogger(__name__)
 
 IMAGE_SUFFIXES = {".png", ".jpg", ".jpeg", ".webp", ".gif", ".svg"}
 VIDEO_SUFFIXES = {".mp4", ".webm", ".mov", ".m4v"}
-AUDIO_SUFFIXES = {".mp3", ".wav", ".m4a", ".ogg", ".flac"}
+AUDIO_SUFFIXES = {".mp3", ".wav", ".m4a", ".aac", ".ogg", ".flac"}
 URL_KEYS = {
     "image_url": "image",
     "video_url": "video",

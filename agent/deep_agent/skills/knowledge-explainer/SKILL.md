@@ -65,10 +65,11 @@ Choose SFX by input, following [audio-bed](../audio-bed/SKILL.md):
 
 - With completed silent picture, default to `mirelo_v2a` through
   `Fal___mirelo_v2a` using `call_media_tool`. Finish and poll the picture render
-  first. Supply its authorized `video_url`, measured `duration` of 1-60 seconds,
+  first. Supply its authorized `video_url`, measured `duration` of 1-600 seconds,
   `num_samples=1`, and optional `text_prompt` describing the planned sounds.
   Mirelo has no event-timestamp argument. Timing is a quality target that needs
-  playback inspection. It returns a video with audio, not a separate audio file.
+  playback inspection. SFX 2.0 defaults to a speech-preserving audio bed. Use its
+  video-to-video model for a muxed MP4, or assemble the saved audio with picture.
   Submit once after approval, preserve `job_id`, and poll `Fal___get_video_task`
   with `download=true`.
 - For text-described one-shots, use the `elevenlabs_sfx_v2` exception through

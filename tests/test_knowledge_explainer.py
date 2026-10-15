@@ -238,7 +238,7 @@ class KnowledgeExplainerApprovalTests(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(context["intent_route"]["tool"], "Remotion___render_timeline")
             approval = paused.exception.approvals[0]
             self.assertIn("Estimated cost $", approval.description)
-            self.assertIn("mirelo-ai/sfx1.6/video-to-video", approval.description)
+            self.assertIn("mirelo-ai/sfx2.0/video-to-audio", approval.description)
             gateway.call_tool.assert_not_awaited()
             resumed = request.model_copy(update={"session_items": studio.session_items,
                 "resume_state": paused.exception.state, "approval_decisions": [

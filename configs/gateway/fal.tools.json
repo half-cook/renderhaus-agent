@@ -238,7 +238,7 @@
   },
   {
     "name": "mirelo_v2a",
-    "description": "Video-input SFX default Mirelo SFX 1.6 via fal. Required video_url, optional text_prompt, duration 1-60 seconds, num_samples 1-4, optional seed. Renderhaus defaults to one sample; samples 2-4 are dry-run only with cost unknown. Returns videos with generated audio tracks, not a separate audio file. Paid video requires cost approval even autonomous when premium_video_approval is enabled. Poll get_video_task with download=true and play the saved MP4. Commercial API; outputs are not training eligible.",
+    "description": "Picture-synced SFX default Mirelo SFX 2.0 via fal, preserve_speech defaults true. Required video_url, measured duration 1-600, optional text_prompt/negative_prompt, num_samples 1-4 and seed. Default model mirelo-ai/sfx2.0/video-to-audio returns audio; wav default, mp3/aac/flac available with valid lossy bitrate. Select mirelo-ai/sfx2.0/video-to-video for an MP4, or explicitly select mirelo-ai/sfx1.6/video-to-video for A/B (1-60s, no speech/negative/encoding controls, multi-sample price unknown and dry-run only). Never silently switch versions. SFX 2.0 bills total output seconds across samples; introductory rate expires 2026-12-13 UTC. Cost approval stays required even autonomous under existing policy. Poll get_video_task with download=true; a saved audio bed needs final assembly for video delivery. Thin evidence; playback and dialogue preservation need A/B review. Commercial API, no training eligibility.",
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -252,15 +252,35 @@
         },
         "duration": {
           "type": "number",
-          "description": "Generated SFX seconds, 1-60. Above 10 uses sliding-window generation. Match the measured clip duration; no automatic duration detection."
+          "description": "Measured output seconds, 1-600 for 2.0 or 1-60 for 1.6. Clamped to video length; above 10 uses windows. No automatic duration detection."
         },
         "num_samples": {
           "type": "integer",
-          "description": "Variations, 1-4. Renderhaus defaults to 1; vendor default is 2. Samples 2-4 are dry-run-only until their billing is verified; estimate unknown."
+          "description": "Variations, 1-4. Renderhaus defaults to 1; vendor default is 2. SFX 2.0 bills total output seconds across samples. Legacy 1.6 samples 2-4 stay dry-run-only with unknown cost."
         },
         "seed": {
           "type": "integer",
           "description": "Optional integer seed. -1 or null selects random generation."
+        },
+        "model": {
+          "type": "string",
+          "description": "Default SFX 2.0 video-to-audio; choose 2.0 video-to-video for a muxed MP4 or explicitly select 1.6 video-to-video for A/B. Never silently fall back."
+        },
+        "preserve_speech": {
+          "type": "boolean",
+          "description": "SFX 2.0 only. Defaults true to preserve dialogue. False suppresses speech and generates effects only. Unsupported on 1.6."
+        },
+        "negative_prompt": {
+          "type": "string",
+          "description": "SFX 2.0 only. Optional sounds to exclude, up to 1000 characters."
+        },
+        "upload_audio_format": {
+          "type": "string",
+          "description": "SFX 2.0 video-to-audio only. Defaults wav; mp3, aac and flac also supported."
+        },
+        "upload_audio_bitrate_kbps": {
+          "type": "integer",
+          "description": "Audio-only lossy encoding. MP3 uses a documented CBR value from 32-320; AAC accepts 32-256. Omit for wav/flac."
         }
       },
       "required": [

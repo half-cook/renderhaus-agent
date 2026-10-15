@@ -1151,6 +1151,8 @@ class GatewayExecutor:
                 ab_arm = 'gemini_shot_labels'
             if route and route.alias in {"heygen_voice_clone", "heygen_voice_tts"}:
                 ab_arm = "heygen_voice_internal"
+            if name == "Fal___mirelo_v2a":
+                ab_arm = model
             self.outcomes.record(
                 event_id=f"approval-{self.run_scope}-{call_id}", provider=provider, model=model,
                 job_type=job_type(name), provider_job_id=provider_job_id,

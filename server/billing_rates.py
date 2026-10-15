@@ -666,21 +666,31 @@ def _luma_cost(tool: str, arguments: dict[str, Any]) -> GenerationCost:
 # https://fal.ai/models/fal-ai/wan-22-vace-fun-a14b/depth
 # (480p $0.05, 580p $0.075, 720p $0.10; same for inpainting/outpainting/reframe).
 # TODO: Confirm Wan 2.2 freeform and pose pricing, and auto/240p/360p rates.
-MIRELO_PRICING_URL = "https://fal.ai/models/mirelo-ai/sfx1.6/video-to-video"
-MIRELO_PRICING_READ_DATE = "2026-10-09"
-MIRELO_CENTS_PER_SECOND = Decimal("1")
+MIRELO_PRICING_URL = "https://fal.ai/models/mirelo-ai/sfx2.0/video-to-audio"
+MIRELO_PRICING_READ_DATE = "2026-10-15"
+MIRELO_CENTS_PER_SECOND = Decimal("1.5")
+MIRELO_PROMO_CENTS_PER_SECOND = Decimal("1")
+MIRELO_PROMO_STARTS_ON = date(2026, 10, 14)
+MIRELO_PROMO_EXPIRES_ON = date(2026, 12, 13)
+MIRELO_LEGACY_CENTS_PER_SECOND = Decimal("1")
 
 
-def mirelo_price_cents(arguments: dict[str, Any]) -> Decimal | None:
-    """Published $0.01/second; multi-sample billing is UNVERIFIED and stays unknown."""
-    from providers.fal.mirelo import ENDPOINT_ID, request_for
+def mirelo_rate(*, today: date | None = None) -> Decimal:
+    today = today or datetime.now(timezone.utc).date()
+    return (MIRELO_PROMO_CENTS_PER_SECOND
+            if MIRELO_PROMO_STARTS_ON <= today <= MIRELO_PROMO_EXPIRES_ON else MIRELO_CENTS_PER_SECOND)
 
-    if "model" in arguments and arguments["model"] != ENDPOINT_ID:
-        raise ValueError("Mirelo model must match its fixed verified endpoint.")
-    request = request_for({key: value for key, value in arguments.items() if key != "model"})
-    if request.num_samples != 1:
-        return None
-    return MIRELO_CENTS_PER_SECOND * Decimal(str(request.duration))
+
+def mirelo_price_cents(arguments: dict[str, Any], *, today: date | None = None) -> Decimal | None:
+    """Official SFX 2.0 total output seconds per sample; legacy multi-sample remains unknown."""
+    from providers.fal.mirelo import LEGACY_ENDPOINT_ID, request_for
+
+    request = request_for(arguments)
+    if request.model == LEGACY_ENDPOINT_ID:
+        if request.num_samples != 1:
+            return None
+        return MIRELO_LEGACY_CENTS_PER_SECOND * Decimal(str(request.duration))
+    return mirelo_rate(today=today) * Decimal(str(request.duration)) * request.num_samples
 
 
 PIXELCUT_PRICING_URL = "https://fal.ai/models/pixelcut/looping-video"
