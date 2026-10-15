@@ -489,6 +489,8 @@ _TOOL_TITLES = {
     "lottie_validate": "Check animation compatibility",
     "lottie_preview_render": "Preview UI animation",
     "logo_vectorize": "Prepare logo animation",
+    'shot_breakdown': 'Analyze reference shots',
+    'judge_shots': 'Review reference frames',
     "shot_recipe_search": "Find shot recipes",
     "render_timeline": "Compose final MP4",
     "get_render_progress": "Poll Remotion render",
@@ -940,7 +942,7 @@ def _gateway_tool_parts(name: str) -> tuple[str | None, str, str]:
         target, tool = raw.split("___", 1)
     else:
         target, tool = None, raw
-    if target == 'Lottie':
+    if target in {'Lottie', 'Reference'} or tool == 'judge_shots':
         return target, tool, _title_for_gateway_tool(target, tool)
     label = tool.replace("_", " ").strip() or "tool"
     label = f"{target} {label}" if target else label

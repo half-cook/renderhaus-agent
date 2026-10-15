@@ -63,6 +63,7 @@ export type AgentToolEvent = {
   arguments: Record<string, unknown>;
   assets: StudioAsset[];
   logoArtifacts?: string[];
+  referenceArtifacts?: string[];
 };
 
 export type AgentProgressEvent = {

@@ -38,7 +38,8 @@
     "lottie_author",
     "lottie_validate",
     "lottie_preview_render",
-    "logo_vectorize"
+    "logo_vectorize",
+    "shot_breakdown"
   ],
   "providers": {
     "kling": {
@@ -1089,6 +1090,37 @@
           "training_eligible": false,
           "training_reason": "Private user-supplied marks are never used for training. Logo rights stay with the user or their licensor.",
           "commercial_status": "Local implementation with MIT method attribution. User must confirm rights to animate third-party marks."
+        }
+      }
+    },
+    "reference_shots": {
+      "license": "service-terms",
+      "license_id": "Apache-2.0-pattern; FFmpeg-installed-build-LGPL-or-GPL",
+      "license_source": "https://github.com/eternityspring/reelbench-skills/blob/main/LICENSE",
+      "read_date": "2026-10-15",
+      "training_eligible": false,
+      "training_reason": "Reference media and analysis labels grant no source-media or model-training rights.",
+      "commercial_status": "In-house local analysis; Apache-2.0 workflow attribution. No upstream code, model weights or binary redistribution.",
+      "consent_requirements": "Rights to analyze supplied media and applicable personal-data permissions required. No face or voice synthesis.",
+      "enabled": true,
+      "allowed_regions": [],
+      "default_model": "reference-local",
+      "models": [
+        "reference-local"
+      ],
+      "fixed_models": {
+        "shot_breakdown": "reference-local"
+      },
+      "model_policies": {
+        "reference-local": {
+          "license": "service-terms",
+          "license_id": "Apache-2.0-pattern; FFmpeg-installed-build-LGPL-or-GPL",
+          "license_source": "https://github.com/eternityspring/reelbench-skills/blob/main/LICENSE",
+          "read_date": "2026-10-15",
+          "training_eligible": false,
+          "training_reason": "Reference media and analysis labels grant no source-media or model-training rights.",
+          "commercial_status": "In-house local analysis; Apache-2.0 workflow attribution. No upstream code, model weights or binary redistribution.",
+          "consent_requirements": "Rights to analyze supplied media and applicable personal-data permissions required. No face or voice synthesis."
         }
       }
     }
@@ -2462,9 +2494,56 @@
       "source": "docs/LOGO_ANIMATION.md",
       "price_source": "docs/LOGO_ANIMATION.md",
       "verification": "Local deterministic geometry and motion QA. No model, network, keys or paid requests."
+    },
+    "shot_breakdown": {
+      "license": "service-terms",
+      "license_id": "Apache-2.0-pattern; FFmpeg-installed-build-LGPL-or-GPL",
+      "license_source": "https://github.com/eternityspring/reelbench-skills/blob/main/LICENSE",
+      "read_date": "2026-10-15",
+      "training_eligible": false,
+      "training_reason": "Reference media and analysis labels grant no source-media or model-training rights.",
+      "commercial_status": "In-house local analysis; Apache-2.0 workflow attribution. No upstream code, model weights or binary redistribution.",
+      "consent_requirements": "Rights to analyze supplied media and applicable personal-data permissions required. No face or voice synthesis.",
+      "gateway_tool": "Reference___shot_breakdown",
+      "provider": "reference_shots",
+      "model": "reference-local",
+      "skill": "reference-shot-breakdown",
+      "status": "ready",
+      "host": "local worker only",
+      "us_available": "yes",
+      "availability_source": "https://ffmpeg.org/legal.html",
+      "source": "docs/REFERENCE_SHOT_BREAKDOWN.md",
+      "price_source": "docs/REFERENCE_SHOT_BREAKDOWN.md",
+      "verification": "Local measurement and deterministic gates; visual semantics and browser E2E require separate evidence."
+    },
+    "gemini_shot_labels": {
+      "gateway_tool": "Gemini___judge_shots",
+      "status": "ready",
+      "provider": "gemini",
+      "reason": "Auxiliary shot-label rubric on the existing gemini_vlm_judge model and transport; does not change continuity defaults.",
+      "verification": "Official model, image input, Interactions submit/poll and schema verified 2026-10-15; tests use mocked transport only.",
+      "training_eligible": false,
+      "model": "gemini-3.8-flash",
+      "host": "Gemini Developer API paid",
+      "us_available": "yes",
+      "availability_source": "https://ai.google.dev/gemini-api/docs/available-regions",
+      "read_date": "2026-10-15",
+      "license": "proprietary Gemini API terms; API model licence is distinct from documentation CC-BY/Apache sample licences",
+      "license_source": "https://ai.google.dev/gemini-api/terms",
+      "training_reason": "Gemini terms prohibit developing competing models; no clear Renderhaus continuity-training grant.",
+      "source": "https://ai.google.dev/api/interactions-api",
+      "price_source": "https://ai.google.dev/gemini-api/docs/pricing",
+      "dry_run": true,
+      "skill": "reference-shot-breakdown"
     }
   },
   "rules": [
+    {
+      "skill": "reference-shot-breakdown",
+      "abstract_tool": "shot_breakdown",
+      "capability": "reference_analysis",
+      "pattern": "reference[ -]shot[ -]breakdown|\\bbreak\\b[^.!?]*\\bshot[ -]by[ -]shot\\b|\\bshot[ -]by[ -]shot\\b[^.!?]*\\b(?:breakdown|analysis|analy[sz]e|reference)\\b|\\bshot list\\b[^.!?]*\\b(?:reference|finished)\\b|\\b(?:what(?: is|\\x27s)|analy[sz]e|measure|tell me)\\b[^.!?]*\\bpacing\\b[^.!?]*\\b(?:reference|film|ad|trailer|spot|tiktok)\\b|\\b(?:how many|measure|calculate)\\b[^.!?]*\\bcuts per minute\\b"
+    },
     {
       "pattern": "\\b(?:lottie|dotlottie|bodymovin)\\b|\\b(?:loaders?|loading|onboarding|empty[ -]states?|success[ -]checks?|microinteractions?)\\b[^.;!?]*\\b(?:app|website|web|ios|android|ui)\\b|\\banimat(?:e|ed|ion)\\b[^.;!?]*\\b(?:app|website|web)[ -]+ui\\b|\\banimat(?:e|ed|ion)\\b[^.;!?]*\\bjson\\b",
       "skill": "lottie-animation",
@@ -6042,6 +6121,36 @@
       },
       "durations": {},
       "explicit_only": false
+    },
+    {
+      "provider": "reference_shots",
+      "policy_ref": "reference_shots",
+      "model": "reference-local",
+      "label": "Reference shot breakdown",
+      "tools": {
+        "reference_analysis": "Reference___shot_breakdown"
+      },
+      "jobs": {
+        "reference_analysis": true
+      },
+      "resolutions": [],
+      "speed_class": "local-worker",
+      "price": {
+        "source": "docs/REFERENCE_SHOT_BREAKDOWN.md",
+        "read_date": "2026-10-15",
+        "unit": "call"
+      },
+      "notes": "Measured cuts and motion; separate visual review. No network from the local tool.",
+      "controls": {
+        "reference_analysis": [
+          "op",
+          "job_id",
+          "input_path",
+          "params"
+        ]
+      },
+      "durations": {},
+      "explicit_only": false
     }
   ],
   "image_default_size": "2K",
@@ -6320,6 +6429,18 @@
       "exceptions": [],
       "interim": null,
       "ab_candidates": []
+    },
+    "reference_analysis": {
+      "default": "shot_breakdown",
+      "exceptions": [],
+      "ab_candidates": [],
+      "interim": null
+    },
+    "reference_labels": {
+      "default": "gemini_shot_labels",
+      "exceptions": [],
+      "ab_candidates": [],
+      "interim": null
     }
   },
   "paid_video_tools": [
@@ -7323,6 +7444,27 @@
       "training_eligible": false,
       "training_reason": "Private user-supplied marks are never used for training. Logo rights stay with the user or their licensor.",
       "commercial_status": "Local implementation with MIT method attribution. User must confirm rights to animate third-party marks."
+    },
+    "shot_breakdown": {
+      "license": "service-terms",
+      "license_id": "Apache-2.0-pattern; FFmpeg-installed-build-LGPL-or-GPL",
+      "license_source": "https://github.com/eternityspring/reelbench-skills/blob/main/LICENSE",
+      "read_date": "2026-10-15",
+      "training_eligible": false,
+      "training_reason": "Reference media and analysis labels grant no source-media or model-training rights.",
+      "commercial_status": "In-house local analysis; Apache-2.0 workflow attribution. No upstream code, model weights or binary redistribution.",
+      "consent_requirements": "Rights to analyze supplied media and applicable personal-data permissions required. No face or voice synthesis."
+    },
+    "gemini_shot_labels": {
+      "enabled": true,
+      "license": "service-terms",
+      "weights_license": "closed-weights",
+      "training_eligible": false,
+      "commercial_status": "Commercial Gemini Developer API paid service; source rights required.",
+      "license_source": "https://ai.google.dev/gemini-api/terms",
+      "read_date": "2026-10-15",
+      "training_reason": "Gemini terms prohibit developing competing models; no clear Renderhaus continuity-training grant.",
+      "consent_requirements": "Input media rights and applicable personal-data permissions required. No Gemini-specific recorded likeness consent workflow verified."
     }
   },
   "editing_refusals": [

@@ -1,0 +1,27 @@
+[
+  {
+    "name": "shot_breakdown",
+    "description": "Measure a confined reference film locally, then add visual labels to its pinned report. Code measures all timings and motion. Visual labels never supply timing. Dry-run validates arguments only. Reports retain pending visual review.",
+    "inputSchema": {
+      "properties": {
+        "op": {
+          "type": "string",
+          "description": "One of: measure, report."
+        },
+        "job_id": {
+          "type": "string"
+        },
+        "input_path": {
+          "type": "string"
+        },
+        "params": {}
+      },
+      "required": [
+        "op",
+        "job_id",
+        "input_path"
+      ],
+      "type": "object"
+    }
+  }
+]

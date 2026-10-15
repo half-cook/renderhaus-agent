@@ -61,6 +61,7 @@ def _with_fee(provider_cents: int) -> GenerationCost:
 
 GEMINI_PRICING_URL = "https://ai.google.dev/gemini-api/docs/pricing"
 GEMINI_PRICING_READ_DATE = "2026-10-09"
+GEMINI_SHOT_PRICING_READ_DATE = '2026-10-15'
 GEMINI_PROMO_END = date(2026, 12, 31)
 
 
@@ -81,7 +82,7 @@ def gemini_usage_usd(usage: dict, *, as_of: date | None = None) -> float:
 def gemini_quote(tool: str, arguments: dict) -> GenerationCost:
     if tool == "get_task":
         return GenerationCost(0, 0)
-    if tool != "judge_continuity":
+    if tool not in {'judge_continuity', 'judge_shots'}:
         raise ValueError("Unknown Gemini tool.")
     from agent.deep_agent.routing import effective_model
 
@@ -957,7 +958,7 @@ def cost_for(provider: str, tool: str, arguments: dict[str, Any]) -> GenerationC
     (to charge the same amount), so it must be a pure function of the
     request, not of anything the provider returns.
     """
-    if provider in {"ffmpeg", "shot_recipes", "footage_memory", "lottie", "logo_animation"}:
+    if provider in {"ffmpeg", "shot_recipes", "footage_memory", "lottie", "logo_animation", 'reference_shots'}:
         return GenerationCost(0, 0)
     if provider == "remotion" and tool in {"deliver_render", "qc_deliverable", "motion_carry_probe"}:
         return GenerationCost(0, 0)

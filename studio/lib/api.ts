@@ -408,6 +408,20 @@ export async function downloadLogoArtifact(executionId: string, callId: string, 
   return response.blob();
 }
 
+function referenceArtifactNames(value: unknown): string[] {
+  if (!value || typeof value !== 'object' || !('outputs' in value) || !Array.isArray(value.outputs)) return [];
+  return value.outputs.flatMap((row: unknown) => {
+    if (!row || typeof row !== 'object' || !('filename' in row) || typeof row.filename !== 'string') return [];
+    return /^[A-Za-z0-9_.-]+\.(json|csv|html|jpg|png|mp4)$/.test(row.filename) ? [row.filename] : [];
+  });
+}
+
+export async function downloadReferenceArtifact(executionId: string, callId: string, filename: string): Promise<Blob> {
+  const response = await studioFetch(`/api/studio/executions/${encodeURIComponent(executionId)}/reference-artifacts/${encodeURIComponent(callId)}/${encodeURIComponent(filename)}`);
+  if (!response.ok) throw new Error('This reference file is unavailable. Analyze the reference again.');
+  return response.blob();
+}
+
 function agentToolEvents(value: unknown): AgentToolEvent[] {
   if (!Array.isArray(value)) return [];
   return value.map((event) => {
@@ -427,6 +441,7 @@ function agentToolEvents(value: unknown): AgentToolEvent[] {
           : {},
       assets: studioAssets(item.assets),
       logoArtifacts: item.name === 'Logo___logo_vectorize' ? logoArtifactNames(item.result) : undefined,
+      referenceArtifacts: item.name === 'Reference___shot_breakdown' ? referenceArtifactNames(item.result) : undefined,
     };
   });
 }

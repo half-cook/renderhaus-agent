@@ -61,7 +61,7 @@ SKILLS_ROOT = Path(__file__).parent / "skills"
 DISPATCH_TARGETS = {
     "call_media_tool": {"Gemini", "OpenAI", "Seedance", "Seedream", "Kling", "Runway", "Fal", "Luma", "ModelStudio", "Sync", "HeyGen", "Topaz"},
     "call_audio_tool": {"ElevenLabs", "FishAudio", "FishAudioProvider", "Fish_Audio", "Mureka", "HeyGen"},
-    "call_editor_tool": {"Remotion", "HyperFrames", "Ffmpeg", "ShotRecipes", "FootageMemory", "Lottie", "Logo"},
+    "call_editor_tool": {"Remotion", "HyperFrames", "Ffmpeg", "ShotRecipes", "FootageMemory", "Lottie", "Logo", 'Reference'},
 }
 FS_TOOLS = ["ls", "read_file", "write_file", "edit_file", "glob", "grep"]
 PERMISSIONS = [FilesystemPermission(operations=["write"], paths=["/skills/**"], mode="deny")]
@@ -339,6 +339,8 @@ async def run_with_servers(request, studio, servers, *, model=None):
         route = executor.media_selection(name, arguments)
         if name == "Logo___logo_vectorize":
             return "Approve this logo vector. " + executor.dispatch_disclosure(name, arguments, route)
+        if name == 'Gemini___judge_shots':
+            return 'Approve reference visual review. ' + executor.dispatch_disclosure(name, arguments, route)
         if name.startswith("FootageMemory___"):
             label = "Footage memory" if name.endswith("footage_memory_build") else "Verify"
             return f"Approve {label}. {executor.dispatch_disclosure(name, arguments, route)}"

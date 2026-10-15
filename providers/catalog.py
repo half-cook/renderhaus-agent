@@ -18,6 +18,12 @@ class ProviderSpec:
 
 PROVIDERS: tuple[ProviderSpec, ...] = (
     ProviderSpec(
+        id='reference_shots', target_name='Reference', function_name='renderhaus-reference-local-tools',
+        module_path='providers.reference_shots.api',
+        env_keys=('REFERENCE_SHOTS_DRY_RUN', 'RENDERHAUS_MEDIA_DIR'),
+        default_env={'REFERENCE_SHOTS_DRY_RUN': 'true'}, local_only=True,
+    ),
+    ProviderSpec(
         id="lottie", target_name="Lottie", function_name="renderhaus-lottie-tools",
         module_path="providers.lottie.api", env_keys=("RENDERHAUS_MEDIA_DIR",),
     ),

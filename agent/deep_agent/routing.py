@@ -14,6 +14,7 @@ from agent.deep_agent.art_style_catalog import catalog_motion_request, style_ins
 POLICY = json.loads(Path(__file__).with_name("routing_policy.json").read_text())
 TOOL_MAP = POLICY["tools"]
 TARGET_PROVIDERS = {
+    'Reference': 'reference_shots',
     "Lottie": "lottie",
     "Logo": "logo_animation",
     "FootageMemory": "footage_memory",
@@ -760,6 +761,12 @@ def _logo_animation_route(*, region: str | None, available_tools: set[str] | Non
 def route_intent(prompt: str, *, region: str | None = None, tier: str | None = None,
                  confidential: bool = False, arguments: dict | None = None,
                  available_tools: set[str] | None = None, retry: bool = False, user_id: str | None = None) -> Route:
+    reference_rule = next(rule for rule in POLICY['rules'] if rule['skill'] == 'reference-shot-breakdown')
+    if re.search(reference_rule['pattern'], _instruction_text(prompt), re.I):
+        route = select_provider('reference_analysis', region=region, available_tools=available_tools)
+        return replace(route, skill='reference-shot-breakdown',
+                       expected_output='Measured shot table, JSON, CSV and interactive report',
+                       disclosure='Measure reference cuts, durations and motion locally. Visual labels require a separate review; dry-run labels remain pending.')
     if lottie_request(prompt):
         route = select_provider("lottie_animation", region=region, available_tools=available_tools)
         return replace(route, skill="lottie-animation", expected_output="Lottie JSON and dotLottie",
@@ -938,7 +945,7 @@ def route_intent(prompt: str, *, region: str | None = None, tier: str | None = N
 def _dispatch(tool: str | None) -> str | None:
     if not tool:
         return None
-    if tool.startswith(("Remotion___", "HyperFrames___", "Ffmpeg___", "ShotRecipes___", "FootageMemory___", "Lottie___", "Logo___")):
+    if tool.startswith(("Remotion___", "HyperFrames___", "Ffmpeg___", "ShotRecipes___", "FootageMemory___", "Lottie___", "Logo___", 'Reference___')):
         return "call_editor_tool"
     if tool in {"HeyGen___voice_clone", "HeyGen___voice_tts", "HeyGen___get_voice_status"}:
         return "call_audio_tool"
@@ -948,6 +955,8 @@ def _dispatch(tool: str | None) -> str | None:
 
 
 def job_type(name: str | None) -> str | None:
+    if name == 'Gemini___judge_shots':
+        return 'reference_labels'
     if name and name.endswith(("reference_to_video", "vidu_q4_r2v")):
         return "reference_video"
     for row in POLICY["capabilities"]:

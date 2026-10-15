@@ -89,7 +89,7 @@ class GeminiWiringTests(unittest.TestCase):
 
     def test_schema_contract_and_dry_run_dispatch(self):
         schemas = generate_schemas(get_provider("gemini"))
-        self.assertEqual([row["name"] for row in schemas], ["judge_continuity", "get_task"])
+        self.assertEqual([row["name"] for row in schemas], ["judge_continuity", "get_task", "judge_shots"])
         with patch.dict(os.environ, {"GEMINI_DRY_RUN": "true"}):
             frame = image_b64()
             result = dispatch("gemini", "judge_continuity", {"before_image_b64": frame, "after_image_b64": frame})

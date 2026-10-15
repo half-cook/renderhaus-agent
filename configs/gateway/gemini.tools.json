@@ -37,11 +37,49 @@
         "model": {
           "type": "string",
           "description": "Optional Gemini model ID; empty uses GEMINI_VLM_MODEL. UNVERIFIED models are dry-run only."
+        },
+        "rubric": {
+          "type": "string"
+        },
+        "shot_ids": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
         }
       },
       "required": [
         "job_id"
       ]
+    }
+  },
+  {
+    "name": "judge_shots",
+    "description": "Label numbered 15%/85% contact-sheet pairs. No model timing. Normal paid non-video approval and spend limits apply. Poll get_task with rubric=reference_shots and the same shot_ids. Dry-run produces no labels.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "contact_sheet_b64": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "shot_ids": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
+        },
+        "model": {
+          "type": "string",
+          "description": "Optional Gemini model ID; empty uses GEMINI_VLM_MODEL. UNVERIFIED models are dry-run only."
+        },
+        "reference": {
+          "type": "object"
+        }
+      },
+      "required": []
     }
   }
 ]

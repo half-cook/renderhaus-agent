@@ -76,3 +76,10 @@ The skill adapts grounding, transparent UI defaults, semantic scene ownership an
 pinned-frame review guidance. The local Python tools are independent work. No
 upstream app, runtime, fonts, demo assets or weights are included. User source fonts
 and brand assets require their own rights. See docs/LOTTIE_ANIMATION.md.
+
+Reference shot breakdown workflow
+Source: https://github.com/eternityspring/reelbench-skills/tree/0d2743ade386195caeb6d156da2810cdf6e35a03/skills/video-shots
+Licence: Apache-2.0. Read 2026-10-15.
+Renderhaus uses independently written Python code and instructions inspired by this workflow.
+No upstream code, media or verbatim skill text is included.
+Attribution: agent/deep_agent/skills/reference-shot-breakdown/NOTICE.md
