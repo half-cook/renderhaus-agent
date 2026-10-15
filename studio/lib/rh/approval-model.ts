@@ -108,3 +108,19 @@ function lineText(line: { label: string; detail?: string; kind: string; basis: s
   const base = line.detail ? `${line.label} · ${line.detail}` : line.label;
   return line.kind === "orchestration" && line.basis === "estimate" ? `${base} · est.` : base;
 }
+
+export type TraceCost = { cents: number; capCents?: number; final: boolean };
+
+/** Cost so far for the agent trace line. Server cents only: the run receipt when it has ended,
+ *  the paused-at-cap charge, otherwise the sum of what approved steps report as charged or spent. */
+export function traceCost(execution: { approvals: AgentPendingRequest[]; pausedCap?: Record<string, unknown>; receipt?: Record<string, unknown> }): TraceCost | null {
+  const receipt = execution.receipt;
+  if (receipt && isCents(receipt.actual_cents)) return { cents: receipt.actual_cents, capCents: isCents(receipt.cap_cents) ? receipt.cap_cents : undefined, final: true };
+  const paused = execution.pausedCap;
+  if (paused && isCents(paused.charged_cents)) return { cents: paused.charged_cents, capCents: isCents(paused.cap_cents) ? paused.cap_cents : undefined, final: false };
+  const models = execution.approvals.map(approvalCardModel).filter((model): model is ApprovalCardModel => Boolean(model));
+  if (!models.length) return null;
+  const spent = models.reduce((sum, model) => sum + (model.actualCents ?? model.chargedCents ?? model.spentSoFarCents ?? 0), 0);
+  const capCents = models.filter((model) => model.status !== "failed").reduce((sum, model) => sum + (model.status === "pending" ? 0 : model.capCents), 0);
+  return { cents: spent, capCents: capCents || undefined, final: false };
+}

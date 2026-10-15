@@ -57,7 +57,8 @@ import { QuestionCard } from "@/components/rh/QuestionCard";
 import { PauseChatMessage } from "@/components/rh/PauseChatMessage";
 import { pauseCardsEnabled, stuckPauseMessage } from "@/lib/rh/pause-fallback";
 import { RunReceipt } from "@/components/rh/RunBilling";
-import { approvalCardModel, visibleParameters } from "@/lib/rh/approval-model";
+import { approvalCardModel, traceCost, visibleParameters, type TraceCost } from "@/lib/rh/approval-model";
+import { formatCents } from "@/lib/rh/money";
 import { toRunReceiptModel, toApprovalCardModel } from "@/lib/rh/billing";
 import { useCreditContext } from "@/lib/rh/credit-store";
 import { RH_ADD_CREDIT_EVENT } from "@/lib/rh/events";
@@ -140,8 +141,17 @@ export function IntermediateSteps({
   duration,
   recoveryAvailable = false,
   defaultOpen,
+  cost,
+  stepCosts,
+  showStop,
+  liveFrames,
 }: {
   defaultOpen?: boolean;
+  cost?: TraceCost | null;
+  /** Parallel to events: optional brass amount label per step ("$0.65" or "Free"). */
+  stepCosts?: Array<string | undefined>;
+  showStop?: boolean;
+  liveFrames?: string[];
   events: AgentToolEvent[];
   progressEvents: AgentProgressEvent[];
   status: string;
@@ -174,7 +184,7 @@ export function IntermediateSteps({
   const pct = total ? Math.round(((state === "running" ? doneCount : total) / total) * 100) : state === "running" ? 0 : 100;
   const finished = state !== "running" && status !== "awaiting_approval";
   const line = finished && state !== "failed" && state !== "incomplete"
-    ? `Delivered · ${total} ${total === 1 ? "step" : "steps"}`
+    ? `Delivered · ${total} ${total === 1 ? "step" : "steps"}${cost?.final ? ` · ${formatCents(cost.cents)}` : ""}`
     : label;
 
   /* Revamp v4 trace: one live status line that expands in place ("Details"). */
@@ -187,6 +197,7 @@ export function IntermediateSteps({
           <span className="rh-trace-meta rh-num">
             {!finished && total ? <span>Step {Math.max(1, current)} of {total}</span> : null}
             {duration ? <span>{duration}</span> : null}
+            {cost && !(finished && cost.final) ? <span className="rh-trace-cost" data-shot="trace-cost">{formatCents(cost.cents)} {cost.final ? "total" : "so far"}{cost.capCents ? ` · cap ${formatCents(cost.capCents)}` : ""}</span> : null}
           </span>
         </span>
         {total ? <span className="rh-trace-toggle">Details<ChevronRight className="agent-progress-chevron" size={14} aria-hidden="true" /></span> : null}
@@ -194,15 +205,28 @@ export function IntermediateSteps({
       </summary>
       {total ? (
         <ol className="agent-step-list rh-trace-steps">
-          {steps.map((step) => (
+          {steps.map((step, index) => (
             <li className={normalizedStatus(step.status)} key={step.id}>
               <span className="agent-step-icon"><StepIcon status={step.status} /></span>
-              <span>
-                <strong>{step.title}</strong>
+              <span className="rh-trace-step-body">
+                <span className="rh-trace-step-row">
+                  <strong>{step.title}</strong>
+                  {stepCosts?.[index] ? <b className="rh-trace-step-cost rh-num">{stepCosts[index]}</b> : null}
+                </span>
                 {step.message ? <small>{step.message}</small> : null}
+                {normalizedStatus(step.status) === "running" && liveFrames?.length ? (
+                  <span className="rh-trace-frames" aria-label="Live frames">
+                    {liveFrames.map((url, i) => <i key={i} style={{ backgroundImage: `url(${url})` }} />)}
+                  </span>
+                ) : null}
               </span>
             </li>
           ))}
+          {showStop ? (
+            <li className="rh-trace-stop">
+              <button type="button" className="rh-btn rh-btn-quiet rh-btn-sm">Stop after this step · unused cap is released</button>
+            </li>
+          ) : null}
         </ol>
       ) : null}
     </details>
@@ -476,6 +500,7 @@ function ExecutionTurn({
           message={execution.message}
           duration={runDuration(execution)}
           recoveryAvailable={execution.recoveryAvailable}
+          cost={traceCost(execution)}
         />
         <ApprovalCards
           approvals={execution.approvals}
@@ -576,6 +601,7 @@ function LiveExecutionTurn({ run }: { run: LiveRun }) {
           progressEvents={run.progress.progressEvents}
           status={run.progress.status}
           message={run.progress.message}
+          cost={traceCost(run.progress)}
         />
         {assets.length ? <div className="agent-artifacts" aria-label="Completed assets while working">{assets.map((asset) => <ArtifactCard key={asset.versionId} asset={asset} placed={false}/>)}</div> : null}
         {run.progress.result?.summary ? (
