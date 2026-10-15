@@ -89,6 +89,38 @@ class ShotRuntimeTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(events[0].result['results'][0]['id'], 'brand-ink-open')
         self.assertFalse(any(e.status == 'awaiting_approval' for e in studio.tool_events))
 
+    async def test_launch_techniques_are_readable_through_the_installed_skills_backend(self):
+        from agent.deep_agent.runner import run_with_servers
+
+        request = self.request()
+        studio = _context_from_request(request)
+
+        def inspect_reference(messages, tools):
+            reference = next(message for message in messages
+                             if getattr(message, 'tool_call_id', None) == 'techniques')
+            for card in ('one-shape-morph', 'spring-settle', 'cursor-driven-reveal'):
+                self.assertIn('## ' + card, reference.text)
+            self.assertIn('pre-rendered shot', reference.text)
+            return call('StudioAgentOutput', {
+                'title': 'Technique plan', 'summary': 'Technique shots still need supplied assets.',
+                'markdown': 'Production is pending supplied technique shots.',
+                'filename': 'technique-plan.md',
+            }, 'final')
+
+        model = ScriptedModel([
+            call('read_file', {'file_path': '/skills/cinematic-product-promo/SKILL.md'}, 'skill'),
+            call('read_file', {'file_path': '/skills/cinematic-product-promo/references/launch-motion-techniques.md'}, 'techniques'),
+            inspect_reference,
+        ])
+        with tempfile.TemporaryDirectory() as directory, patch.dict(os.environ, {
+            'RENDERHAUS_PROJECT_MEMORY_DIR': directory,
+            'RENDERHAUS_AUTONOMOUS_RUN_CAP_CENTS': '',
+        }), patch('socket.create_connection', side_effect=AssertionError('network forbidden')):
+            result = await run_with_servers(request, studio, [], model=model)
+        self.assertEqual(result.title, 'Technique plan')
+        self.assertFalse(model._steps)
+        self.assertFalse(studio.tool_events)
+
 
 class ShotMotionDeliveryTests(unittest.TestCase):
     def test_recipe_lookup_is_a_plan_but_rendering_keeps_motion_qc(self):

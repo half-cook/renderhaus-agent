@@ -1,6 +1,6 @@
 ---
 name: cinematic-product-promo
-description: Plan cinematic product launch films with shot recipes, deliberate camera moves, beat-synced cuts and separate sound tracks.
+description: Plan cinematic product launch films with shot recipes, one-shape morphs, spring physics, cursor-driven reveals and separate sound tracks.
 metadata:
   remotion_backend: configured
   remotion_features: clip_timing transitions fit_position scale motion titles captions audio_mix canvas encoding
@@ -18,6 +18,23 @@ deliberate reveals and beat-synced cuts. A plain dashboard walkthrough stays on
 stays on [HyperFrames](../hyperframes/SKILL.md). Art grammar, knowledge explainers and
 ad variants retain their own skills. A cinematic product brief does not request generative
 text-to-video or a change of provider, frame rate or resolution.
+
+## Choose launch motion techniques
+
+For one-shape morphs, spring physics or cursor-driven reveals, read the
+[launch motion technique cards](references/launch-motion-techniques.md) before planning.
+Use the requested technique on its chosen beat, or select one that explains the product's
+change of state. These cards supplement the indexed shot recipes. Their technique IDs
+are planning notes, never `card_id` values, Gateway tools or renderer parameters.
+Keep technique notes in a separate project file linked to the storyboard's beat names.
+Pass only the existing strict storyboard to validation and native arguments to rendering.
+
+Each card includes its realization limit. The current timeline renderer can assemble an
+actual pre-rendered technique shot but cannot synthesize these morphs, spring tracks or
+cursor interactions. Preserve the requested technique and disclose the missing shot before
+rendering. A supported pan or fade is a different creative choice and needs the customer's
+acceptance. Never claim that planning a technique implements it, install the source
+renderer or switch renderers to obtain it.
 
 ## Select recipes and preserve named cards
 
@@ -91,6 +108,8 @@ JSX, custom components, reference paths or arbitrary keyframes to this tool. A r
 requiring unsupported 2.5D camera movement, masking or typography needs a user-supplied
 pre-rendered shot or a future renderer integration. Report that limit before submission.
 Do not claim that card selection proves the animation was rendered.
+For a supplied continuous morph or cursor shot, keep its state changes inside one visual
+clip with `motion: none`. Avoid an extra camera move or transition that obscures the action.
 
 For a live web app, `cutaway_record` remains provider pending. It has no Gateway endpoint.
 Report that capture dependency or use actual user-supplied footage. Do not fabricate
@@ -154,3 +173,9 @@ works were not licensed to the upstream authors; recipe text grants no rights to
 works, brand assets, audio or preview media. No upstream code, TSX, textures, demos,
 gallery media or editor export is installed. Renderer terms remain those of the existing
 tools. Cards and validation do not grant training rights to customer source media.
+
+The launch motion technique cards adapt MIT-licensed guidance from
+[product-launch-motion](https://github.com/AbubakrChan/product-launch-motion/tree/fc566955b073b62d13bd9f5a12b861d0a22cc781),
+read 2026-10-15. They use Renderhaus-authored prose and retain the source's
+[copyright and permission notice](NOTICE). No source code, sample film, still, font,
+music or SFX asset is included. The source's MIT licence excludes its sample media.
