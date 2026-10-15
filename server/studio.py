@@ -2260,6 +2260,9 @@ async def decide_studio_agent_tool(
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     except ValueError as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
+    if body.decision == "reject" and ready:
+        # The card's hold was parked while it waited; the run keeps planning after Not now.
+        await asyncio.to_thread(run_billing.rehold_turn, repository, current_user_id(auth), job_id)
 
     return await _resume_studio_agent_decision(job_id, execution, ready, auth)
 

@@ -216,7 +216,8 @@ class ApprovalFlowTests(FlowFixture):
         self.assertIsNone(VENDOR_RE.search(json.dumps(execution["approvals"])), json.dumps(execution["approvals"]))
         self.assertEqual(card["estimate_cents"], 26 + 75)
         self.assertEqual(card["cap_cents"], 150)
-        self.assertEqual(self.repo.get_run_hold(self.job)["held_cents"], 125)  # default cap held at run start
+        hold = self.repo.get_run_hold(self.job)  # a waiting card parks its hold (bug bash)
+        self.assertEqual(hold["held_cents"], hold["charged_cents"])
 
     async def test_approving_holds_the_cap_and_low_credit_blocks_it_without_recording(self):
         execution = await self.pause_for_approval()
@@ -296,8 +297,8 @@ class ApprovalFlowTests(FlowFixture):
         """Not now on the over-credit card is the same server decline: no pending approval, hold released."""
         execution = await self.pause_for_approval()
         call_id = execution["approvals"][0]["call_id"]
-        self.assertEqual(self.repo.get_run_hold(self.job)["held_cents"], 125)
-        self.assertLess(self.repo.available_credit(self.user), self.repo.get_balance(self.user))
+        hold = self.repo.get_run_hold(self.job)  # parked while waiting
+        self.assertEqual(hold["held_cents"], hold["charged_cents"])
         self.steps = [final()]
         await studio.decide_studio_agent_tool(
             self.job, call_id, studio.AgentApprovalBody(decision="reject", message="not_now"), None)

@@ -69,6 +69,9 @@ def end_run(repo: Any, run_id: str, *, execution_status: str, error_type: str | 
     hold = repo.get_run_hold(run_id)
     if hold is None or hold["state"] != "held":
         return None
+    if execution_status == "awaiting_approval" and hold["status"] != "paused_cap":
+        repo.park_run_hold(run_id)
+        return None
     if execution_status == "awaiting_approval" or hold["status"] == "paused_cap":
         repo.touch_run_hold(run_id)
         return None
@@ -350,6 +353,25 @@ def approval_gate(
     if repo.get_run_hold(run_id) is None and conversation_id:
         repo.adopt_conversation_hold(user_id, conversation_id, run_id)
     return repo.hold_run(user_id, run_id, cap, estimate_cents=plan.estimate_cents, conversation_id=conversation_id)
+
+
+def rehold_turn(repo: Any, user_id: str | None, run_id: str) -> dict[str, Any] | None:
+    """After Not now on a parked card the run keeps planning: hold a turn's cap again (atomic check-and-hold)."""
+    if not billing_applies(repo, user_id):
+        return None
+    hold = repo.get_run_hold(run_id)
+    if hold is None or hold["state"] != "held":
+        return hold
+    estimate = rb.orchestration_estimate_cents() if rb.orchestration_billing_enabled() else 0
+    cap = rb.default_cap_cents(estimate) if estimate else 0
+    if cap and rb.start_cap_floor_cents() > cap:
+        cap = max(cap, min(rb.start_cap_floor_cents(), repo.available_credit(user_id, exclude_run=run_id)))
+    if not cap:
+        return hold
+    try:
+        return repo.hold_run(user_id, run_id, hold["charged_cents"] + cap)
+    except rb.InsufficientCreditError:
+        return hold
 
 
 def precheck_start(repo: Any, user_id: str | None, conversation_id: str | None) -> dict[str, Any] | None:
