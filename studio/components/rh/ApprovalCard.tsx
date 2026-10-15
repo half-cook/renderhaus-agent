@@ -158,10 +158,9 @@ export function ApprovalCard({ model, approveEnabled, busy = false, actions = {}
         <>
           <div className="rh-appr-ft">
             <button type="button" className="rh-btn rh-btn-primary rh-btn-act" style={{ flex: 1 }} aria-label={approveName} disabled={busy || approveEnabled === false} onClick={actions.onApprove}>
-              Approve · est. {formatCents(model.estimateCents)}
+              Approve and run
             </button>
             <button type="button" className="rh-btn rh-btn-act" onClick={actions.onEdit}><Pencil size={14} aria-hidden="true" />Edit</button>
-            <button type="button" className="rh-btn rh-btn-quiet rh-btn-act" disabled={busy} onClick={actions.onReject}>Reject</button>
           </div>
           <div className="rh-footnote"><Info size={12} aria-hidden="true" /><span>{APPROVAL_FOOTNOTE}</span></div>
         </>

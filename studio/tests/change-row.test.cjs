@@ -46,6 +46,7 @@ test('a disconnected paid approval with sufficient credit does not claim insuffi
   const change = { ...base, kind: 'take', state: 'awaiting_approval', costCents: 65, taken: false, beforeRef: { kind: 'take', takeId: '1' }, afterRef: { kind: 'take', takeId: '2' }, approval: { id: 'price', status: 'pending', title: 'New take', specs: [], estimateCents: 105, capCents: 150, balanceCents: 1000, lines: [] } };
   const text = html(change, { approvalEnabled: false });
   assert.doesNotMatch(text, /Not enough credit|Add credit to continue/);
-  assert.match(text, /Approve · est\. \$1\.05/);
+  assert.match(text, /Approve and run/);
+  assert.match(text, /aria-label="Approve, estimated \$1\.05/);
   assert.match(text, /disabled=""/);
 });
