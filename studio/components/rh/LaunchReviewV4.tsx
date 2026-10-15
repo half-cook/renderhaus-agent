@@ -106,7 +106,7 @@ export function LaunchReviewV4({ screen }: { screen: string }) {
   if (screen === "v4-not-now") return (
     <StudioFrame shot="v4-not-now" chat={<>
       <p className="rh-v4-agent">Here’s the plan.</p>
-      <p className="rh-paused-line" role="status" data-shot="not-now-paused">Paused · nothing charged · your credit is free to use.</p>
+      <p className="rh-paused-line" role="status" data-shot="not-now-paused">Paused · nothing more will be charged · your credit is free to use.</p>
     </>} />
   );
   if (screen === "v4-pricing") return (

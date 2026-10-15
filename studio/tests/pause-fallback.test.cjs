@@ -28,7 +28,7 @@ test("question becomes a chat message with lettered options and estimated prices
   assert.equal(model.text, "Keep the 9:16 cut or make a new 16:9 shot?");
   assert.deepEqual(model.options.map((o) => [o.letter, o.price]), [["A", "est. $0.00"], ["B", "est. $1.73"]]);
   assert.match(model.placeholder, /Reply A, B or describe/);
-  assert.match(model.footnote, /doesn't spend anything/);
+  assert.match(model.footnote, /only costs a few cents of planning/);
 });
 
 test("options without a server price show no price instead of a made-up one", () => {
