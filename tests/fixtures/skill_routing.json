@@ -5081,5 +5081,161 @@
     "negative": true,
     "note": "A conversation mention or approved quoted copy must not select chat-story rendering.",
     "source_status": "new"
+  },
+  {
+    "test_id": "RT-182",
+    "prompt": "Make an audiogram from this 60-second podcast clip with captions, sized for Reels and square",
+    "expected_skill": "podcast-audiogram",
+    "expected_tool": "elevenlabs_stt then remotion_render",
+    "suite": "podcast-audiogram",
+    "skip_reason": "",
+    "source_status": "active",
+    "expected_step_count": 2,
+    "expected_required": {
+      "aspects": [
+        "9:16",
+        "1:1"
+      ]
+    },
+    "forbidden_tools": "wan3_t2v, sync3_lipsync",
+    "expected_output": "assembled MP4; 9:16 and 1:1 waveform videos with word-timed captions",
+    "note": "Workbook transcribe_audio placeholder maps to existing ElevenLabs speech_to_text_convert. Read 2026-10-10 with uv/openpyxl outside project venv."
+  },
+  {
+    "test_id": "RT-PA001",
+    "prompt": "Turn this quote into a captioned waveform video",
+    "expected_skill": "podcast-audiogram",
+    "expected_tool": "elevenlabs_stt then remotion_render",
+    "suite": "podcast-audiogram",
+    "skip_reason": "",
+    "source_status": "active",
+    "expected_step_count": 2,
+    "forbidden_tools": "wan3_t2v, sync3_lipsync"
+  },
+  {
+    "test_id": "RT-PA002",
+    "prompt": "Add a moving waveform and captions to my voiceover",
+    "expected_skill": "podcast-audiogram",
+    "expected_tool": "elevenlabs_stt then remotion_render",
+    "suite": "podcast-audiogram",
+    "skip_reason": "",
+    "source_status": "active",
+    "forbidden_tools": "eleven_v4_turbo, wan3_t2v, sync3_lipsync",
+    "expected_step_count": 2
+  },
+  {
+    "test_id": "RT-PA003",
+    "prompt": "Make an audiogram from this clip with supplied word timings in 4:5",
+    "expected_skill": "podcast-audiogram",
+    "expected_tool": "remotion_render",
+    "suite": "podcast-audiogram",
+    "skip_reason": "",
+    "source_status": "active",
+    "arguments": {
+      "words": [
+        {
+          "text": "Hello",
+          "start": 0,
+          "end": 0.5
+        }
+      ]
+    },
+    "expected_required": {
+      "reuse_transcript": true,
+      "aspects": [
+        "4:5"
+      ]
+    },
+    "forbidden_tools": "elevenlabs_stt, wan3_t2v, sync3_lipsync"
+  },
+  {
+    "test_id": "RT-PA004",
+    "prompt": "Make a square audiogram from this clip with supplied SRT",
+    "expected_skill": "podcast-audiogram",
+    "expected_tool": "remotion_render",
+    "suite": "podcast-audiogram",
+    "skip_reason": "",
+    "source_status": "active",
+    "arguments": {
+      "captions_srt": "1\n00:00:00,000 --> 00:00:00,500\nHello"
+    },
+    "expected_required": {
+      "reuse_transcript": true,
+      "aspects": [
+        "1:1"
+      ]
+    },
+    "forbidden_tools": "elevenlabs_stt, wan3_t2v, sync3_lipsync"
+  },
+  {
+    "test_id": "RT-PA005",
+    "prompt": "Find the best 60-second moment from this 90-minute podcast episode for an audiogram",
+    "expected_skill": "footage-memory",
+    "expected_tool": "footage_memory_status then footage_memory_build then footage_memory_query",
+    "suite": "podcast-audiogram",
+    "skip_reason": "",
+    "source_status": "active",
+    "expected_step_count": 3,
+    "expected_required": {
+      "duration_s": 5400
+    },
+    "forbidden_tools": "elevenlabs_stt, wan3_t2v, sync3_lipsync"
+  },
+  {
+    "test_id": "RT-PA006",
+    "prompt": "Add captions to this talking-head video and show the speaker",
+    "expected_skill": "conversational-edit",
+    "expected_tool": "transcript_edit",
+    "suite": "podcast-audiogram",
+    "skip_reason": "",
+    "source_status": "active",
+    "forbidden_skills": [
+      "podcast-audiogram"
+    ],
+    "forbidden_tools": "wan3_t2v, sync3_lipsync"
+  },
+  {
+    "test_id": "RT-PA007",
+    "prompt": "Make a 4-second channel intro sting",
+    "expected_skill": "motion-graphics",
+    "expected_tool": "remotion_render",
+    "suite": "podcast-audiogram",
+    "skip_reason": "",
+    "source_status": "active",
+    "expected_required": {
+      "template_name": "youtube-intro-sting"
+    },
+    "forbidden_skills": [
+      "podcast-audiogram"
+    ],
+    "forbidden_tools": "wan3_t2v, sync3_lipsync"
+  },
+  {
+    "test_id": "RT-PA008",
+    "prompt": "Make a YouTube end screen",
+    "expected_skill": "motion-graphics",
+    "expected_tool": "remotion_render",
+    "suite": "podcast-audiogram",
+    "skip_reason": "",
+    "source_status": "active",
+    "expected_required": {
+      "template_name": "youtube-end-screen"
+    },
+    "forbidden_skills": [
+      "podcast-audiogram"
+    ],
+    "forbidden_tools": "wan3_t2v, sync3_lipsync"
+  },
+  {
+    "test_id": "RT-PA009",
+    "prompt": "Create ad variants from this approved master video",
+    "expected_skill": "remotion-ad-variant-matrix",
+    "expected_tool": "ad_variant_matrix",
+    "suite": "podcast-audiogram",
+    "skip_reason": "",
+    "source_status": "active",
+    "forbidden_skills": [
+      "podcast-audiogram"
+    ]
   }
 ]

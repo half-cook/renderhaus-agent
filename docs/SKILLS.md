@@ -13,7 +13,7 @@ refusals return `blocked`, retired requests return `retired`, and unknown intent
 
 ## Packaged skills
 
-The backend packages 37 skills. Some explain pending capabilities; installing their
+The backend packages 38 skills. Some explain pending capabilities; installing their
 instructions does not install a provider adapter. The original execution skills remain
 available. `image-gen` and `named-provider` cover the new still-image policy and explicit
 requests for providers retained outside automatic selection. The archived `vidu-q4` skill
@@ -52,6 +52,7 @@ exact Gateway names, native arguments, and operational constraints.
 | [motion-graphics](../agent/deep_agent/skills/motion-graphics/SKILL.md) | `call_editor_tool`<br>`call_media_tool` | `remotion_render`<br>`hyperframes_render` |
 | [named-provider](../agent/deep_agent/skills/named-provider/SKILL.md) | `call_media_tool`<br>`call_audio_tool` | `pixelcut_looping_video`<br>`pixverse_vibemv`<br>`kling_t2v`<br>`kling_i2v`<br>`runway_gen45_t2v`<br>`runway_aleph_edit`<br>`luma_ray3_t2v`<br>`luma_ray3_modify`<br>`vidu_q4_i2v`<br>`vidu_q4_r2v`<br>`seedream_t2i`<br>`fish_audio_tts`<br>`wan_vace_edit` |
 | [plan-to-video](../agent/deep_agent/skills/plan-to-video/SKILL.md) | `call_editor_tool`<br>`call_audio_tool` | `remotion_render`<br>`hyperframes_render`<br>`eleven_v4_turbo`<br>`fish_audio_tts`<br>`ffmpeg_tool`<br>`deliverable_qc` |
+| [podcast-audiogram](../agent/deep_agent/skills/podcast-audiogram/SKILL.md) | `call_editor_tool`<br>`call_audio_tool`<br>`call_media_tool` | `elevenlabs_stt`<br>`remotion_render`<br>`ffmpeg_tool`<br>`deliverable_qc`<br>`delivery_render`<br>`motion_carry_probe` |
 | [product-demo-video](../agent/deep_agent/skills/product-demo-video/SKILL.md) | `call_editor_tool` | `cutaway_record`<br>`remotion_render`<br>`hyperframes_render` |
 | [product-images](../agent/deep_agent/skills/product-images/SKILL.md) | `call_media_tool` | `gpt_image25_t2i`<br>`gpt_image25_edit`<br>`recraft_v41_vector`<br>`ideogram45_edit` |
 | [refinement](../agent/deep_agent/skills/refinement/SKILL.md) | `call_media_tool`<br>`call_audio_tool`<br>`call_editor_tool` | `gpt_image25_edit`<br>`wan3_edit`<br>`seedance25_edit`<br>`remotion_render` |
@@ -216,8 +217,8 @@ Topaz submissions always pause with cost, including autonomous runs. Dry-run pre
 and queued jobs never satisfy final delivery. See [Topaz](TOPAZ.md) for pricing, licence
 sources, unknown-price blockers and the blocked Comet check.
 
-`tests/fixtures/skill_routing.json` contains 279 retained routing rows.
-There are 273 active cases and 6 explicit skips. Five caption/collage cases cover the
+`tests/fixtures/skill_routing.json` contains 289 retained routing rows.
+There are 283 active cases and 6 explicit skips. Five caption/collage cases cover the
 new templates' renderer selection. Seven performance-transfer cases now use built tools. Three Mureka lyrics-video cases
 now use built tools; music routes use Mureka without an ElevenLabs interim. Five Topaz upscale/interpolation cases
 now use built tools. Seedance reference dialogue and two
@@ -673,8 +674,8 @@ refusals and delivery/loudness/QC chains. RT-E043 remains skipped: exact OCR ver
 is not implemented (`feat/remotion-ocr-verification`). The original four dependency skips
 remain. Routing checks establish selection and refusal; provider tests establish file checks.
 
-Current inventory is 18 providers, 134 Gateway tools, 37 packaged skills and 279 fixture
-rows, with 273 active and 6 skipped. See [Remotion editing](REMOTION_EDITING.md) for
+Current inventory is 18 providers, 134 Gateway tools, 38 packaged skills and 289 fixture
+rows, with 283 active and 6 skipped. See [Remotion editing](REMOTION_EDITING.md) for
 licensing, the real local pipeline and incomplete browser/deployed validation.
 
 ## Static aspect variants
@@ -737,8 +738,8 @@ Exact beat/element metadata takes priority over scene/audio detection. Failed
 reports gate completion and offer a Remotion re-render, with HyperFrames only
 when explicitly requested. Dry-run/skipped checks stay incomplete; generative
 continuity remains `continuity-qc` / `local_qc`. Thresholds are PROVISIONAL.
-Inventory is 18 providers, 134 Gateway tools, 37 skills and 273 active routing
-rows out of 279. The six dependency skips remain, including capture/HyperFrames
+Inventory is 18 providers, 134 Gateway tools, 38 skills and 283 active routing
+rows out of 289. The six dependency skips remain, including capture/HyperFrames
 provider dependencies and exact OCR semantics. RT-163 and RT-164 exercise motion
 carry, and RT-165 protects generative continuity. See [motion carry QC](MOTION_CARRY_QC.md)
 for the independent clean-room implementation, calibration script and licences.
@@ -766,7 +767,7 @@ RT-174 and RT-175 are active. RT-176 preserves the pending `cutaway_record` depe
 and remains skipped like the other capture cases. Its negative skill/tool guard runs as
 an active unit check. Four additional fixture negatives protect titles, explicit alternate
 rendering, knowledge explainers and ad variants. Inventory is 18 providers, 134 Gateway
-tools, 37 skills, 279 retained fixture rows, 273 active and 6 skipped. See
+tools, 38 skills, 289 retained fixture rows, 283 active and 6 skipped. See
 [cinematic product promo](CINEMATIC_PRODUCT_PROMO.md) for provenance, licences and limits.
 
 ## Footage memory
@@ -786,7 +787,7 @@ is preserved as `source_sheet_tool`. RT-178 watches once. RT-179 uses the existi
 `conversational-edit` / `transcript_edit` / `Remotion___prepare_conversational_edit` route in
 place of parked `resolve-tighten-dialogue` / `resolve_run_script`. Five added rows cover
 folders, repeated questions, reuse, transcript cleanup and continuity. Inventory is 18
-providers, 134 Gateway tools, 37 skills, 279 rows: 273 active and the same six dependency skips.
+providers, 134 Gateway tools, 38 skills, 289 rows: 283 active and the same six dependency skips.
 Comet E2E remains blocked here; dry-run outputs are previews, not completed selects.
 
 ## Fictional conversation shorts
@@ -814,6 +815,27 @@ A checksum manifest records the results. See `docs/CHAT_STORY_VIDEO.md` for the 
 RT-180 and RT-181 are active. Six new fixture negatives protect real footage edits,
 per-market ad swaps, lower thirds, unrelated conversation mentions, still images and quoted
 copy. Discovery and dispatch reject generative video for the thread. The inventory is
-18 providers, 134 Gateway tools, 37 skills and 279 routing rows, with 273 active and the
+18 providers, 134 Gateway tools, 38 skills and 289 routing rows, with 283 active and the
 same six dependency skips. Comet visual validation and live Lambda chat rendering remain
 unverified in this environment. The source pattern has MIT attribution in the skill's NOTICE.
+
+## Podcast audiograms and channel templates
+
+[Podcast audiogram](../agent/deep_agent/skills/podcast-audiogram/SKILL.md) reuses the existing
+source recording, transcript and Remotion timeline tool for bars/line waveforms, measured
+word highlights, progress and identity art. RT-182 maps the draft transcription placeholder
+to `ElevenLabs___speech_to_text_convert` (`elevenlabs_stt`) then `remotion_render`. Supplied
+word timings, exact-source indexed words and SRT avoid a paid transcription call; phrase SRT
+displays cues without invented word timing. Paid transcription/alignment pause in autonomous
+runs too, with an unknown estimate when the existing operator quote is unconfigured.
+
+The first full aspect render plus 10%/60% stills requires visual approval before more aspects.
+Loudness and deliverable QC run on every output. `youtube-intro-sting` and
+`youtube-end-screen` extend motion-graphics without adding another skill. Their exact
+YouTube element geometry is UNVERIFIED as an official limit; the reservations are internal
+layout data. Local rendering supports the templates, while Lambda requires an operator's
+checked composition deployment and `REMOTION_TEMPLATE_CONTRACT_VERSION=1`.
+See [the template and transcription contract](PODCAST_AUDIOGRAM.md).
+
+Inventory is 18 providers, 134 Gateway tools, 38 skills, 289 fixture rows: 283 active and six
+unchanged dependency skips. No new tool, provider, secret or dry-run flag is introduced.

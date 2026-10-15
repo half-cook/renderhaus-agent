@@ -258,6 +258,7 @@ accepts its payload. Lambda support remains **UNVERIFIED at runtime**. There are
 | `ad_matrix` | supported | refused-with-explicit-error | Owned local/worker job, unchanged plan hash and sample/batch approval; Lambda refuses. |
 | `delivery_qc` | supported | refused-with-explicit-error | Owned local/worker files and binaries; Lambda refuses. No upload/publishing or arbitrary codecs. |
 | `motion_carry_qc` | supported | refused-with-explicit-error | Local/worker binary QC only; keyframe boxes describe measurement, never render animation. |
+| `named_templates` | supported | refused-with-explicit-error | Bounded audiogram, 3–5s channel sting, 20s 16:9 end screen. Lambda requires template contract version 1; measured amplitude props, no render-time analysis. |
 | `progress` | supported | supported | Poll saved backend-specific render ID; no replacement render. |
 | Fixed post-render finishing ops (subtitle burn-in, SRT export, LUT/grade, audio cleanup, proxy) | Installed FFmpeg and confined job-local files required | Refused without the local files and binary; no binary bundled |
 
@@ -495,3 +496,30 @@ Open/play the actual final files and inspect the report, contact sheets and warn
 a customer summary. Say each delivered width/height, original `source_resolution` and
 resolution warnings; disclose pending editorial review and every failed check verbatim.
 No paid, Lambda, upload or posting call is made by these commands.
+
+
+## Named waveform and channel templates
+
+`Remotion___render_timeline` accepts a bounded `template` object for
+`podcast-audiogram`, `youtube-intro-sting` and `youtube-end-screen`. This extends the existing
+schema, render ID/poll path and aspect canvas selection. Templates own the layout and cannot
+mix top-level visuals/text/subtitle overlays. Audio retains unity gain until delivery QC.
+The local worker and checked-in Remotion composition consume the same validated plan;
+`REMOTION_TEMPLATE_CONTRACT_VERSION` defaults to 0 and refuses Lambda templates before
+media/AWS I/O. Version 1 declares the separately deployed compatible composition, including
+template-contained art; overlay contract version 2 is not a separate requirement for that art.
+Live Lambda support and pixel/perceptual equivalence remain UNVERIFIED.
+
+Audiograms use measured word groups with active-word highlights, or supplied SRT cue captions
+without invented word alignment. The fixed ffmpeg `audio_envelope` operation computes a
+bounded per-frame PCM RMS envelope for amplitude bars or a line. This replaces unsupported
+render-time audio analysis with the same data on both backends. The source recording and
+loudness remain unchanged. First-render approval uses stills at 10%/60% and the full MP4
+before extra aspects, followed by loudness/deliverable QC on every output.
+
+The motion-graphics skill owns the 3–5 second channel intro and 20-second 16:9 end-screen
+plate. Tests keep template text/logo boxes outside declared native element reservations.
+Official YouTube help read 2026-10-10 provides duration/element limits but no exact pixel
+geometry; those reservations remain UNVERIFIED as official zones and require current Studio
+placement review before shipping. See [podcast and channel contracts](PODCAST_AUDIOGRAM.md)
+for fields, normalized rectangles, transcription mapping, pricing TODO and licence sources.

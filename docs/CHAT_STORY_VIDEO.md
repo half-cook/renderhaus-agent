@@ -8,7 +8,7 @@ line breaks and never changes the message value.
 ## Existing tools, extended arguments
 
 No Gateway tools, providers, paid model adapters or dispatch IDs were added. The inventory
-is 18 providers, 134 tools and 37 skills. The existing contracts were extended:
+is 18 providers, 134 tools and 38 skills. The existing contracts were extended:
 
 | Tool | Chat arguments |
 | --- | --- |
@@ -173,7 +173,7 @@ environment cannot control Comet; local binary checks are supporting evidence on
 
 RT-180 and RT-181 are active. Six added negatives protect talking-head edits, per-market
 ad matrices, lower thirds and unrelated briefs mentioning text messages. The fixture has
-279 rows: 273 active and six unchanged dependency skips. Selection stays explicit request,
+289 combined rows with podcast-audiogram: 283 active and six unchanged dependency skips. Selection stays explicit request,
 exception predicate, default, without tiers or confidentiality-based routing. Existing
 demoted providers remain available under their existing policies.
 The skips are four capture/cutaway-record rows (`feat/product-demo-capture` pending), one

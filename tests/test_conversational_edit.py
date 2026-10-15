@@ -96,7 +96,7 @@ class ConversationalRoutingTests(unittest.TestCase):
         self.assertEqual(estimate_cost(PREPARE.name, ARGS).total_cents, 0)
         self.assertEqual(cost_for("remotion", "prepare_conversational_edit", ARGS).total_cents, 0)
         self.assertTrue(tool_needs_approval("ElevenLabs___speech_to_text_convert", False))
-        self.assertFalse(tool_needs_approval("ElevenLabs___speech_to_text_convert", True))
+        self.assertTrue(tool_needs_approval("ElevenLabs___speech_to_text_convert", True))
         self.assertIsNone(estimate_cost("ElevenLabs___speech_to_text_convert", {}).total_cents)
 
     def test_local_preparation_preserves_asset_handles_without_publication(self):
@@ -190,22 +190,85 @@ class ConversationalGraphTests(unittest.IsolatedAsyncioTestCase):
             self.assertIn("unknown", pending.exception.approvals[0].description.lower())
             gateway.call_tool.assert_not_awaited()
             with patch.dict(os.environ, {"RENDERHAUS_AUTONOMOUS_RUN_CAP_CENTS": "100"}):
-                await self.invoke(self.request(autonomous=True), [read_edit(), transcribe, final()], gateway)
+                request = self.request(autonomous=True)
+                studio = _context_from_request(request)
+                with self.assertRaises(StudioAgentApprovalRequired) as autonomous_pending:
+                    await run_with_servers(request, studio, [gateway],
+                                           model=ScriptedModel([read_edit(), transcribe]))
+                gateway.call_tool.assert_not_awaited()
+                approval = autonomous_pending.exception.approvals[0]
+                self.assertIn("unknown", approval.description.lower())
+
+                def cap_stopped(messages, tools):
+                    result = json.loads(messages[-1].text)
+                    self.assertEqual(result["status"], "not_run")
+                    self.assertIn("Autonomous spending cap", result["reason"])
+                    self.assertIn("unknown", result["reason"].lower())
+                    return final()
+
+                await self.invoke(self.request(
+                    autonomous=True, session_items=json.loads(json.dumps(studio.session_items)),
+                    resume_state=autonomous_pending.exception.state,
+                    approval_decisions=[StudioApprovalDecision(call_id=approval.call_id, decision="approve")],
+                ), [cap_stopped], gateway)
             gateway.call_tool.assert_not_awaited()
             self.assertFalse(list(Path(directory).glob("*.jsonl")))
 
     async def test_confidential_metadata_does_not_change_paid_scribe_dispatch(self):
         scribe = Tool(name="ElevenLabs___speech_to_text_convert", description="Transcribe",
-                      inputSchema={"type": "object", "properties": {}})
+                      inputSchema={"type": "object", "properties": {"model_id": {"type": "string"}},
+                                   "required": ["model_id"]})
+        args = {"model_id": "scribe_v2"}
         for confidential in (False, True):
-            with self.subTest(confidential=confidential):
+            with self.subTest(confidential=confidential), tempfile.TemporaryDirectory() as directory, \
+                    patch.dict(os.environ, {"RENDERHAUS_OUTCOME_DIR": directory,
+                        "ELEVENLABS_TOOL_COST_CENTS_JSON": '{"speech_to_text_convert":10}',
+                        "RENDERHAUS_AUTONOMOUS_RUN_CAP_CENTS": "100"}):
                 gateway = Gateway([scribe])
-                await self.invoke(self.request(autonomous=True, confidential=confidential), [
-                    read_edit(), call("call_audio_tool", {
-                        "tool_name": scribe.name, "arguments": {},
-                    }, "scribe"), final(),
-                ], gateway)
-                gateway.call_tool.assert_awaited_once_with(scribe.name, {})
+                request = self.request(autonomous=True, confidential=confidential)
+                studio = _context_from_request(request)
+                with self.assertRaises(StudioAgentApprovalRequired) as pending:
+                    await run_with_servers(request, studio, [gateway], model=ScriptedModel([
+                        read_edit(), call("call_audio_tool", {"tool_name": scribe.name,
+                                                              "arguments": args}, "scribe"),
+                    ]))
+                gateway.call_tool.assert_not_awaited()
+                approval = pending.exception.approvals[0]
+                self.assertEqual(approval.tool_name, scribe.name)
+                self.assertIn("scribe_v2", approval.description)
+                self.assertIn("$0.13", approval.description)
+                await self.invoke(self.request(
+                    autonomous=True, confidential=confidential,
+                    session_items=json.loads(json.dumps(studio.session_items)),
+                    resume_state=pending.exception.state,
+                    approval_decisions=[StudioApprovalDecision(call_id=approval.call_id, decision="approve")],
+                ), [final()], gateway)
+                gateway.call_tool.assert_awaited_once_with(scribe.name, args)
+
+    async def test_rejected_paid_transcription_never_dispatches_or_retries(self):
+        scribe = Tool(name="ElevenLabs___speech_to_text_convert", description="Transcribe",
+                      inputSchema={"type": "object", "properties": {"model_id": {"type": "string"}},
+                                   "required": ["model_id"]})
+        gateway = Gateway([scribe])
+        request = self.request(autonomous=True)
+        studio = _context_from_request(request)
+        with tempfile.TemporaryDirectory() as directory, patch.dict(os.environ, {
+            "RENDERHAUS_OUTCOME_DIR": directory, "ELEVENLABS_TOOL_COST_CENTS_JSON": "{}",
+        }):
+            with self.assertRaises(StudioAgentApprovalRequired) as pending:
+                await run_with_servers(request, studio, [gateway], model=ScriptedModel([
+                    read_edit(), call("call_audio_tool", {"tool_name": scribe.name,
+                                                          "arguments": {"model_id": "scribe_v2"}}, "scribe"),
+                ]))
+            approval = pending.exception.approvals[0]
+            restored = await self.invoke(self.request(
+                autonomous=True, session_items=json.loads(json.dumps(studio.session_items)),
+                resume_state=pending.exception.state,
+                approval_decisions=[StudioApprovalDecision(call_id=approval.call_id, decision="reject")],
+            ), [final()], gateway)
+        gateway.call_tool.assert_not_awaited()
+        self.assertEqual(restored.tool_events[0].status, "rejected")
+        self.assertEqual(restored.session_items[0]["rejected_reviews"], {})
 
     async def test_approved_plan_compiles_and_renders_only_a_dry_run(self):
         from providers.catalog import get_provider

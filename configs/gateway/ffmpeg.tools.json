@@ -7,7 +7,7 @@
       "properties": {
         "op": {
           "type": "string",
-          "description": "Allowed values: trim, measure_loudness, loudnorm_mux_aac, mux_aac, transcode_h264, frame_cadence, detect_black, detect_freeze, detect_silence, ssim, crop_plan_preview, reframe_crop, reframe_pad_blur, detect_scenes, probe, extract_frames, contact_sheet, sha256, check_faststart, volume_stats, burn_subtitles, export_srt, color_match_lut, audio_cleanup, make_proxy. One of: trim, measure_loudness, loudnorm_mux_aac, mux_aac, transcode_h264, frame_cadence, detect_black, detect_freeze, detect_silence, ssim, crop_plan_preview, reframe_crop, reframe_pad_blur, detect_scenes, probe, extract_frames, contact_sheet, sha256, check_faststart, volume_stats, burn_subtitles, export_srt, color_match_lut, audio_cleanup, make_proxy."
+          "description": "Allowed values: audio_envelope, trim, measure_loudness, loudnorm_mux_aac, mux_aac, transcode_h264, frame_cadence, detect_black, detect_freeze, detect_silence, ssim, crop_plan_preview, reframe_crop, reframe_pad_blur, detect_scenes, probe, extract_frames, contact_sheet, sha256, check_faststart, volume_stats, burn_subtitles, export_srt, color_match_lut, audio_cleanup, make_proxy. One of: audio_envelope, trim, measure_loudness, loudnorm_mux_aac, mux_aac, transcode_h264, frame_cadence, detect_black, detect_freeze, detect_silence, ssim, crop_plan_preview, reframe_crop, reframe_pad_blur, detect_scenes, probe, extract_frames, contact_sheet, sha256, check_faststart, volume_stats, burn_subtitles, export_srt, color_match_lut, audio_cleanup, make_proxy."
         },
         "job_id": {
           "type": "string",
@@ -20,6 +20,22 @@
         "params": {
           "type": "object",
           "properties": {
+            "start_seconds": {
+              "type": "number",
+              "description": "audio_envelope: Allowed range: 0 to 86400. Default 0. "
+            },
+            "duration_seconds": {
+              "type": "number",
+              "description": "audio_envelope: Allowed range: 0.1 to 90. Default 1. "
+            },
+            "fps": {
+              "type": "integer",
+              "description": "audio_envelope: Allowed range: 12 to 60. Default 30. "
+            },
+            "smoothing": {
+              "type": "number",
+              "description": "audio_envelope: Allowed range: 0 to 0.95. Default 0.65. "
+            },
             "t0_s": {
               "type": "number",
               "description": "trim: Allowed range: 0 to 86400. Default 0. "

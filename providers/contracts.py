@@ -343,6 +343,10 @@ def enrich_tool_schema(provider_id: str, tool: dict[str, Any]) -> dict[str, Any]
     enriched = deepcopy(tool)
     tool_name = str(enriched.get("name") or "")
     properties = (enriched.get("inputSchema") or {}).get("properties") or {}
+    if provider_id == 'remotion' and tool_name == 'render_timeline':
+        from providers.remotion.templates import template_schema
+
+        properties['template'].update(template_schema())
     if provider_id == "shot_recipes":
         from providers.shot_recipes.contracts import FIELD_DESCRIPTIONS
         from providers.shot_recipes.storyboard import Storyboard
@@ -702,9 +706,15 @@ def _validate_cross_fields(provider_id: str, tool_name: str, arguments: dict[str
         if arguments.get("chat_story") is not None:
             from providers.remotion.chat_story import normalize, plan
 
-            if arguments.get("visuals") or arguments.get("text_overlays") or arguments.get("subtitles") or arguments.get("subtitles_srt"):
-                raise ValueError("Chat stories cannot mix arbitrary visuals, overlays or subtitles.")
+            if (any(arguments.get(field) for field in ("visuals", "text_overlays", "subtitles", "subtitles_srt"))
+                    or arguments.get("template") is not None):
+                raise ValueError("Chat stories cannot mix arbitrary visuals, overlays, subtitles or named templates.")
             plan(normalize(arguments["chat_story"]), arguments.get("fps") or 30)
+        if arguments.get('template') is not None:
+            from providers.remotion.templates import validate_template_arguments
+
+            validate_template_arguments(arguments)
+            return
         for field in ("visuals", "audio_tracks"):
             for index, clip in enumerate(arguments.get(field) or []):
                 if bool(clip.get("url")) == bool(clip.get("output_path")):

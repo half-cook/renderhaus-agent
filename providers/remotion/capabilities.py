@@ -26,15 +26,20 @@ class Capability:
     lambda_: Status = SUPPORTED
     note: str = ''
     overlay_v2: bool = False
+    template_v1: bool = False
     tools: tuple[str, ...] = ('render_timeline',)
 
     def status(self, backend: Backend, overlay_version: str = '1') -> Status:
+        if backend == 'lambda' and self.template_v1 and os.getenv('REMOTION_TEMPLATE_CONTRACT_VERSION', '0') == '1':
+            return SUPPORTED
         if backend == 'lambda' and self.overlay_v2 and overlay_version == '2':
             return SUPPORTED
         return self.local if backend == 'local' else self.lambda_
 
 
 CAPABILITIES = {
+    'named_templates': Capability(('template',), lambda_=REFUSED, template_v1=True,
+        note='Audio-reactive PCM envelope, word highlight, progress and channel templates on local. Lambda template contract version 1 must be deployed and enabled; pixel parity UNVERIFIED.'),
     'identity': Capability(('title', 'output_filename', 'visuals.kind', 'visuals.url', 'visuals.output_path')),
     'clip_timing': Capability(('visuals.start_seconds', 'visuals.duration_seconds', 'visuals.source_in_seconds')),
     'speed': Capability(('visuals.playback_rate',), note='Video only; local source audio uses atempo.'),
@@ -123,6 +128,7 @@ STRUCTURES = {
 }
 FIELD_TYPES = {
     'chat_story': 'object',
+    'template': 'object',
     **{field: 'string' for field in (
         'title', 'output_filename', 'aspect_ratio', 'output_resolution', 'subtitles_srt',
         'visuals.kind', 'visuals.url', 'visuals.output_path', 'visuals.transition', 'visuals.fit',
@@ -179,6 +185,10 @@ def validate_backend(arguments: dict[str, Any], backend: Backend, *, overlay_ver
     if backend not in {'local', 'lambda'}:
         raise ValueError('Remotion backend must be local or lambda.')
     version = overlay_version or os.getenv('REMOTION_OVERLAY_CONTRACT_VERSION', '1')
+    if arguments.get('template') is not None:
+        if backend == 'lambda' and os.getenv('REMOTION_TEMPLATE_CONTRACT_VERSION', '0') != '1':
+            raise ValueError('Lambda template contract version 1 is not enabled. Use local/worker until the matching composition is deployed.')
+        return
     for name, capability in CAPABILITIES.items():
         if any(_present(arguments, field) for field in capability.fields) and capability.status(backend, version) != SUPPORTED:
             raise ValueError(f'{backend} refuses {name}. {capability.note}')
@@ -221,10 +231,12 @@ def validate_document(props: dict[str, Any], backend: Backend) -> None:
     if story is not None:
         from providers.remotion.chat_story import validate_story_document
 
+        if 'template' in props:
+            raise ValueError('Chat stories cannot mix named templates.')
         if backend == 'lambda':
             raise ValueError(CAPABILITIES['chat_story'].note)
         validate_story_document(props)
-    if backend == 'lambda':
+    if backend == 'lambda' and 'template' not in props:
         for track in props.get('document', {}).get('tracks', []):
             for item in track.get('items', []):
                 if {'cropBox', 'padBox', 'reframeSize', 'allowUpscale'}.intersection(item) or item.get('fit') == 'pad_blur':
@@ -248,6 +260,13 @@ def validate_document(props: dict[str, Any], backend: Backend) -> None:
             raise ValueError(f'{field} must be an integer.')
     if config['width'] % 2 or config['height'] % 2 or config['durationInFrames'] / config['fps'] > 600:
         raise ValueError('Remotion requires even canvas dimensions and at most 600 seconds on local or Lambda.')
+    if 'template' in props:
+        from providers.remotion.templates import validate_template_document
+
+        if backend == 'lambda' and os.getenv('REMOTION_TEMPLATE_CONTRACT_VERSION', '0') != '1':
+            raise ValueError('Lambda template contract version 1 is not enabled. Use local/worker until deployed.')
+        validate_template_document(props)
+        return
     if len(document['assets']) > 60:
         raise ValueError('Remotion allows at most 60 assets on local or Lambda.')
     assets = {asset['id']: asset for asset in document['assets']}

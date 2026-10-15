@@ -384,8 +384,18 @@ def build_timeline_props(
     video_bitrate: int | None = None,
     output_resolution: OutputResolution = "source",
     subtitles_srt: str | None = None,
+    template: dict[str, Any] | None = None,
     *, measure_remote: bool = False, measure_local: bool = True,
 ) -> dict[str, Any]:
+    if template is not None:
+        from providers.remotion.templates import build_template_props, validate_template_arguments
+
+        validate_template_arguments({'template': template, 'visuals': visuals, 'audio_tracks': audio_tracks,
+            'text_overlays': text_overlays, 'subtitles': subtitles, 'subtitles_srt': subtitles_srt,
+            'aspect_ratio': aspect_ratio, 'fps': fps, 'output_resolution': output_resolution})
+        return build_template_props(title, template, audio_tracks=audio_tracks or [], aspect_ratio=aspect_ratio,
+                                    fps=fps if fps is not None else 30,
+                                    output_resolution=output_resolution, video_bitrate=video_bitrate)
     subtitles = srt_captions(subtitles_srt, subtitles)
     validate_remotion_timeline_arguments({
         "visuals": visuals, "audio_tracks": audio_tracks,
@@ -656,7 +666,7 @@ def _start_lambda_render(
     needs_v2 = any(new_fields.intersection(item)
                    for track in input_props.get("document", {}).get("tracks", [])
                    for item in track.get("items", []))
-    if needs_v2 and os.getenv("REMOTION_OVERLAY_CONTRACT_VERSION", "1") != "2":
+    if needs_v2 and 'template' not in input_props and os.getenv("REMOTION_OVERLAY_CONTRACT_VERSION", "1") != "2":
         raise ValueError("Lambda requires overlay contract version 2 with matching font assets; "
                          "use REMOTION_RENDER_BACKEND=local until that composition is deployed.")
     settings = load_remotion_settings()
@@ -725,13 +735,14 @@ def render_timeline(
     output_resolution: OutputResolution = "source",
     subtitles_srt: str | None = None,
     chat_story: dict[str, Any] | None = None,
+    template: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Compose generated image, video, and audio clips into one final MP4, then poll get_render_progress."""
     if chat_story is not None:
         from providers.remotion.chat_story import build_props
 
-        if visuals or text_overlays or subtitles or subtitles_srt:
-            raise ValueError("Chat stories cannot mix arbitrary visuals, overlays or subtitles.")
+        if visuals or text_overlays or subtitles or subtitles_srt or template is not None:
+            raise ValueError("Chat stories cannot mix arbitrary visuals, overlays, subtitles or named templates.")
         if output_resolution != "source":
             raise ValueError("Chat stories use the native authored canvas; select aspect in chat_story.")
         props = build_props(title, chat_story, fps=30 if fps is None else fps, audio_tracks=audio_tracks)
@@ -749,7 +760,17 @@ def render_timeline(
     subtitles = srt_captions(subtitles_srt, subtitles)
     validate_backend({'visuals': visuals, 'audio_tracks': audio_tracks,
                       'text_overlays': text_overlays, 'subtitles': subtitles,
-                      'fps': fps, 'video_bitrate': video_bitrate}, render_backend())
+                      'fps': fps, 'video_bitrate': video_bitrate,
+                      'aspect_ratio': aspect_ratio, 'template': template,
+                      'output_resolution': output_resolution}, render_backend())
+    template_preview = None
+    if template is not None:
+        from providers.remotion.templates import template_plan
+
+        width, height = choose_canvas(str(aspect_ratio), [], output_resolution)
+        plan = template_plan(template, aspect_ratio=str(aspect_ratio), fps=fps or 30, width=width, height=height)
+        template_preview = {key: plan[key] for key in ('name', 'captions', 'correction_flags', 'warnings', 'layout', 'typography')}
+        template_preview['review_times_seconds'] = [plan['duration_seconds'] * fraction for fraction in (.1, .6)]
     if dry_run():
         return {
             "status": "dry_run",
@@ -759,6 +780,7 @@ def render_timeline(
             "filename": _safe_output_name(output_filename),
             "progress": 0.0,
             "note": "Dry run is enabled; set REMOTION_DRY_RUN=false to start the configured render backend.",
+            **({'template_preview': template_preview} if template_preview is not None else {}),
         }
     props = build_timeline_props(
         title,
@@ -771,8 +793,12 @@ def render_timeline(
         video_bitrate=video_bitrate,
         output_resolution=output_resolution,
         measure_remote=True,
+        template=template,
     )
-    return _start_render(props, output_filename=output_filename)
+    result = _start_render(props, output_filename=output_filename)
+    if template_preview is not None:
+        result['template_preview'] = template_preview
+    return result
 
 
 def prepare_conversational_edit(

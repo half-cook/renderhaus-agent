@@ -47,6 +47,17 @@ def font_path(item: dict[str, Any]) -> tuple[str, Path]:
     return family, path
 
 
+def validate_glyph_coverage(text: str, family: str, font: ImageFont.FreeTypeFont) -> None:
+    missing_mask = font.getmask('\uffff')
+    missing = (missing_mask.size, bytes(missing_mask))
+    for char in sorted(set(text)):
+        if char.isspace() or unicodedata.category(char) in {'Cf', 'Mn', 'Me'}:
+            continue
+        glyph = font.getmask(char)
+        if (glyph.size, bytes(glyph)) == missing:
+            raise ValueError(f'text_unsupported_glyph U+{ord(char):04X} in {family}.')
+
+
 def fit_text(item: dict[str, Any], width: int, height: int) -> dict[str, Any]:
     text = item.get('text')
     if not isinstance(text, str) or not text.strip() or len(text) > 500 or '\0' in text:
@@ -61,14 +72,7 @@ def fit_text(item: dict[str, Any], width: int, height: int) -> dict[str, Any]:
     else:
         box = {'x': width * .06, 'y': height * .06, 'width': width * .88, 'height': height * .88}
     check_font = ImageFont.truetype(str(path), int(minimum))
-    missing_mask = check_font.getmask('\uffff')
-    missing = (missing_mask.size, bytes(missing_mask))
-    for char in set(text):
-        if char.isspace() or unicodedata.category(char) in {'Cf', 'Mn', 'Me'}:
-            continue
-        glyph = check_font.getmask(char)
-        if (glyph.size, bytes(glyph)) == missing:
-            raise ValueError(f'text_unsupported_glyph U+{ord(char):04X} in {family}.')
+    validate_glyph_coverage(text, family, check_font)
     lines = text.split('\n')
     for size in range(int(maximum), int(minimum) - 1, -1):
         font = ImageFont.truetype(str(path), size)

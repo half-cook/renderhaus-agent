@@ -93,6 +93,7 @@ _DIALOGUE_EDIT_REQUEST = next(rule["pattern"] for rule in POLICY["rules"] if rul
 _KNOWLEDGE_REQUEST = next(rule["pattern"] for rule in POLICY["rules"] if rule["skill"] == "knowledge-explainer")
 _ART_STYLE_REQUEST = next(rule["pattern"] for rule in POLICY["rules"] if rule["skill"] == "art-style-motion")
 _ART_STYLE_NAMES = next(rule["named_styles"] for rule in POLICY["rules"] if rule["skill"] == "art-style-motion")
+_PODCAST_REQUEST = next(rule["pattern"] for rule in POLICY["rules"] if rule["skill"] == "podcast-audiogram")
 _PLAN_REVIEW_REQUEST = next(rule["pattern"] for rule in POLICY["rules"] if rule["skill"] == "plan-to-video")
 _CHAT_STORY_REQUEST = next(rule["pattern"] for rule in POLICY["rules"] if rule["skill"] == "chat-story-video")
 _MODELSTUDIO_PREVIEW_WARNING = (
@@ -231,6 +232,12 @@ def request_tool_blocker(prompt: str, name: str) -> str | None:
         "t2v", "i2v", "reference_video", "v2v_edit", "extend", "lipsync", "performance_transfer", "lyrics_video",
     }:
         return "A chat thread uses the chat-story composition; generative video tools cannot render the thread."
+    if re.search(_PODCAST_REQUEST, _instruction_text(prompt), re.I) and (
+        job_type(name) in {"tts", "cloned_tts", "voice_clone", "lipsync"}
+        or name in _SPEECH_PRODUCTION_TOOLS
+        or name in {"Sync___create_dialogue_edit", "Sync___create_dialogue_video"}
+    ):
+        return "An audiogram preserves its source recording; replacement speech, cloning and lip-sync are excluded."
     silent_art = (_art_style_motion_request(prompt)
                   and re.search(_NEGATED_NARRATION + r"|\b(?:silent|unnarrated|unvoiced)\b", _instruction_text(prompt), re.I)
                   and not re.search(_VOICEOVER, _narration_text(prompt), re.I))
@@ -641,9 +648,82 @@ def _footage_route(prompt: str, *, arguments: dict | None,
                    expected_output="Verified timestamped selects with handles" if cutting else "Timestamped retrieval requiring verification")
 
 
+def _visible_source_video(prompt: str) -> bool:
+    text = _instruction_text(prompt)
+    text = re.sub(r"\b(?:do not|don't|never)\s+(?:show|keep|retain)\b[^;.!?]*", "", text, flags=re.I)
+    return bool(re.search(r"\b(?:talking[ -]?head|interview)\b", text, re.I)
+                and re.search(r"\b(?:video|footage|speaker)\b", text, re.I)
+                and re.search(r"\bvisible\b|\bshow(?:ing)?\b.*\b(?:speaker|video|footage)\b", text, re.I))
+
+
+def _podcast_route(prompt: str, *, arguments: dict | None,
+                   available_tools: set[str] | None, region: str | None) -> Route | None:
+    text = _instruction_text(prompt)
+    if not re.search(_PODCAST_REQUEST, text, re.I):
+        return None
+    if (re.search(r"\b(?:episode|podcast)\b", text, re.I)
+            and re.search(r"\b(?:find|pick|choose|pull|extract)\b[^.;!?]*\b(?:moments?|clips?|excerpts?|segments?|highlights?)\b", text, re.I)):
+        args = dict(arguments or {})
+        episode = re.search(r"\b(\d+(?:\.\d+)?)[ -]*(hours?|minutes?|mins?)\s+(?:podcast\s+)?episode\b", text, re.I)
+        if episode and "source_duration_seconds" not in args:
+            args["source_duration_seconds"] = float(episode[1]) * (3600 if episode[2].lower().startswith("h") else 60)
+        return _footage_route("footage-memory find moments in existing footage. " + text,
+                              arguments=args, available_tools=available_tools)
+    args = arguments or {}
+    template = args.get("template") if isinstance(args.get("template"), dict) else {}
+    transcript = args.get("transcript") if isinstance(args.get("transcript"), dict) else {}
+    supplied = any(args.get(key) for key in ("words", "index_words", "captions_srt", "subtitles_srt", "transcription_id"))
+    supplied = bool(supplied or template.get("words") or template.get("captions_srt") or transcript.get("words"))
+    supplied = supplied or bool(re.search(r"\b(?:supplied|provided|existing)\s+(?:word[ -]timings?|timed transcript|srt)\b", text, re.I))
+    aspects = []
+    for aspect, pattern in (
+        ("9:16", r"9:16|\b(?:reels?|tiktok|shorts?|vertical)\b"),
+        ("1:1", r"1:1|\bsquare\b"),
+        ("4:5", r"4:5|\bportrait feed\b"),
+        ("16:9", r"16:9|\b(?:landscape|widescreen)\b"),
+    ):
+        if re.search(pattern, text, re.I):
+            aspects.append(aspect)
+    required = {"template_name": "podcast-audiogram", "aspects": aspects or ["9:16"],
+                "reuse_transcript": supplied, "first_render_review": True,
+                "preserve_source_voice": True}
+    constraints = intent_constraints(prompt, arguments=arguments)
+    if constraints["predicates"]["explicit_hyperframes"]:
+        reason = "The explicitly requested renderer cannot render named audiogram templates; they currently require Remotion. No substitute was selected."
+        return Route(skill="podcast-audiogram", status="blocked", reason=reason, disclosure=reason)
+    render = replace(select_provider("motion_graphics", arguments=arguments, region=region,
+                                    available_tools=available_tools,
+                                    **capability_constraints(constraints, "motion_graphics")),
+                     skill="podcast-audiogram", required=required, expected_output="assembled MP4")
+    if render.status != "ready" or supplied:
+        return render
+    alias = "elevenlabs_stt"
+    tool = TOOL_MAP[alias]["gateway_tool"]
+    if available_tools is not None and tool not in available_tools:
+        reason = "Word-timestamp transcription is unavailable; supply existing timings or SRT before rendering."
+        return Route(skill="podcast-audiogram", status="blocked", reason=reason, disclosure=reason)
+    quote = estimate_cost(tool, {"model_id": "scribe_v2"})
+    transcribe = Route(skill="podcast-audiogram", alias=alias, tool=tool,
+                       dispatch_tool="call_audio_tool", provider="elevenlabs", model="scribe_v2",
+                       status="ready", basis="existing word-timestamp transcription", job_type="transcription",
+                       required={"model_id": "scribe_v2", "timestamps_granularity": "word",
+                                 "no_verbatim": False, "webhook": False},
+                       estimated_cost=asdict(quote), disclosure=f"Provider elevenlabs; model scribe_v2; existing transcription. {quote.description}",
+                       reason="Reuse source-version timings first. Paid transcription requires approval.")
+    return replace(transcribe, required={**transcribe.required, **required}, steps=(transcribe, render),
+                   execution_groups=((alias,), ("remotion_render",)), expected_output="assembled MP4",
+                   forbidden_tools=("wan3_t2v", "sync3_lipsync"))
+
+
 def route_intent(prompt: str, *, region: str | None = None, tier: str | None = None,
                  confidential: bool = False, arguments: dict | None = None,
                  available_tools: set[str] | None = None, retry: bool = False, user_id: str | None = None) -> Route:
+    if re.search(_PODCAST_REQUEST, _instruction_text(prompt), re.I) and _visible_source_video(prompt):
+        route = select_provider("transcript_edit", region=region, available_tools=available_tools,
+                                arguments=arguments)
+        return replace(route, skill="conversational-edit")
+    if podcast := _podcast_route(prompt, arguments=arguments, available_tools=available_tools, region=region):
+        return podcast
     if _plan_review_instruction(prompt) is not None:
         constraints = intent_constraints(prompt, tier=tier, confidential=confidential, arguments=arguments)
         route = select_provider("motion_graphics", region=region, available_tools=available_tools,
@@ -778,6 +858,8 @@ def route_intent(prompt: str, *, region: str | None = None, tier: str | None = N
                 route = replace(route, required={"preset": _delivery_preset(prompt, arguments)})
             if rule.get("op"):
                 route = replace(route, required={**route.required, "op": rule["op"]})
+            if rule.get("template_name"):
+                route = replace(route, required={**route.required, "template_name": rule["template_name"]})
             if capability not in _FINISHING_CAPABILITIES | {"performance_transfer"} and (route.provider in {"kling", "runway", "luma", "seedream", "fish_audio", "alibaba_modelstudio"} or (
                 constraints["provider"] == "fal" and re.search(r"vidu|vace", prompt, re.I)
             ) or constraints["named_model"] == "wan3" and capability in {"v2v_edit", "extend"}):
@@ -1458,6 +1540,8 @@ def effective_model(provider: str, tool: str, arguments: dict) -> str | None:
         from providers.seedance.contracts import effective_model as seedance_model
 
         return seedance_model(tool, arguments)
+    if provider == "elevenlabs" and tool == "speech_to_text_convert":
+        return arguments.get("model_id")
     if provider == "elevenlabs" and tool.startswith("text_to_speech_"):
         from server.billing_rates import elevenlabs_tts_model
 

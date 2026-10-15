@@ -41,6 +41,26 @@ class ChatToolTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, 'visual'):
                 api.render_timeline('Bad', chat_story=PAYLOAD, visuals=[{'kind': 'image', 'url': 'x', 'duration_seconds': 1}])
 
+    def test_chat_and_named_template_are_mutually_exclusive_before_media_io(self):
+        from providers.contracts import validate_tool_arguments
+        from providers.remotion.capabilities import validate_document
+
+        template = {'name': 'youtube-intro-sting', 'duration_seconds': 3}
+        arguments = {'title': 'Fiction', 'chat_story': PAYLOAD, 'template': template}
+        schema = next(t['inputSchema'] for t in generate_schemas(get_provider('remotion'))
+                      if t['name'] == 'render_timeline')
+        props = chat_story.build_props('Fiction', PAYLOAD)
+        props['template'] = template
+        checks = {
+            'direct': lambda: api.render_timeline(**arguments),
+            'gateway': lambda: validate_tool_arguments('remotion', 'render_timeline', arguments, schema),
+            'worker': lambda: validate_document(props, 'local'),
+        }
+        with patch.dict(os.environ, {'REMOTION_RENDER_BACKEND': 'local', 'REMOTION_DRY_RUN': 'true'}):
+            for boundary, check in checks.items():
+                with self.subTest(boundary=boundary), self.assertRaisesRegex(ValueError, 'cannot.*template'):
+                    check()
+
     def test_lambda_refuses_chat_before_client_or_media(self):
         with patch.dict(os.environ, {'REMOTION_RENDER_BACKEND': 'lambda', 'REMOTION_DRY_RUN': 'true'}):
             with patch.object(api, 'RemotionClient') as client:

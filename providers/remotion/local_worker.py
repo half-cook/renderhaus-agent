@@ -12,8 +12,12 @@ from providers.ffmpeg.api import _bounded_run, _redact
 def run(directory: Path) -> None:
     job = json.loads((directory / 'worker.json').read_text())
     terminal = {'exit_code': None}
+    deadline = time.monotonic() + job['timeout']
     try:
-        deadline = time.monotonic() + job['timeout']
+        if 'template' in job:
+            from providers.remotion.template_frames import write_template_video
+
+            write_template_video(job['template'], directory)
         if 'props' in job:
             from providers.remotion.local import _command
 
