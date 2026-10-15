@@ -5,6 +5,38 @@ style, named animation grammars and characters walking through painting worlds. 
 instructions and routing, using the existing image, audio and render tools. There are no
 new provider adapters, Gateway tools, secrets, dry-run flags or Studio model labels.
 
+## Cut-paper explainers
+
+Papercut, paper-collage and paper-cutout animation requests select the existing skill and
+its neutral Document Evidence grammar. The existing Vox input alias uses the same grammar.
+Static paper artwork, footage restyling, style exclusions and topic or title mentions retain
+their existing routes. Generic collage assembly retains `motion-graphics`. An explicit
+provider or HyperFrames request keeps its precedence
+and availability gates. No catalog treatment is added to the 141-entry descriptive index.
+
+The [cut-paper recipe](../agent/deep_agent/skills/art-style-motion/references/grammar-cards.md#cut-paper-explainer)
+covers layered shading, consistent shadows, muted backgrounds, takeaway banners, measured
+speech cues or silent holds, smooth camera motion and subtle stepped labels. It distinguishes
+sourced evidence from illustrated metaphor sets. It also describes deterministic frame-based
+Remotion authoring for separately supplied clips. It is not an executable template. Custom
+paper filters, articulated cutouts, parallax, label boil and word-pop captions still require
+authored motion assets. Missing effects remain an incomplete storyboard or preview.
+
+The source is [sanat's papercut-explainer](https://github.com/0xS4N4TG/papercut-explainer/tree/5a342bf855160379b4684e1c49f2e3faaecd5d0b),
+read 2026-10-15. The official [MIT licence](https://github.com/0xS4N4TG/papercut-explainer/blob/5a342bf855160379b4684e1c49f2e3faaecd5d0b/LICENSE)
+and [third-party exclusions](https://github.com/0xS4N4TG/papercut-explainer/blob/5a342bf855160379b4684e1c49f2e3faaecd5d0b/THIRD_PARTY.md)
+were checked at that revision. Guidance from `style-guide.md`, `motion-principles.md` and
+`remotion-recipes.md` is adapted in our own words. The full copyright and licence notice is
+in the grammar reference, [THIRD_PARTY_NOTICES](../THIRD_PARTY_NOTICES) and
+[third_party/papercut-explainer/LICENSE](../third_party/papercut-explainer/LICENSE), including
+wheel licence metadata. No upstream runtime, code recipes, installer, voice system, media,
+fonts, dependencies, AGPL code or non-commercial weights are imported.
+
+This extension adds no model ID, endpoint, request schema, price, licence policy or training
+grant. Existing capability selection, paid-video cost approval and spending caps apply.
+The upstream vertical canvas is a design reference; output geometry follows the existing
+source-resolution policy. See [decisions and verification](papercut-explainer-decisions.tsv).
+
 ## Selection and tool contracts
 
 Explicit requests win, then a matching exception, then the quality-first default. Named art

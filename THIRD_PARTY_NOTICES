@@ -102,3 +102,41 @@ Copyright (c) 2026 Onur Gumus. MIT licence.
 Renderhaus adapts workflow ideas in original wording. No upstream engine, executable
 code, prompt templates, media or weights are copied.
 Complete licence and attribution: agent/deep_agent/skills/codebase-video/NOTICE.
+
+papercut-explainer grammar recipes
+---------------------------------
+Source: https://github.com/0xS4N4TG/papercut-explainer
+Revision: 5a342bf855160379b4684e1c49f2e3faaecd5d0b
+Read: 2026-10-15
+Copyright (c) 2026 sanat
+Licence: MIT; full text in third_party/papercut-explainer/LICENSE.
+
+Material, motion-principle and Remotion authoring guidance is adapted in our own
+words in agent/deep_agent/skills/art-style-motion/references/grammar-cards.md.
+The adaptation extends the existing Document Evidence paper-collage grammar.
+No upstream code, installer, voice pipeline, dependencies, fonts, textures,
+audio, backdrops or demo media are included. Remotion retains its own licence.
+The text licence grants no rights to third-party brands, likenesses, voices or
+training data. The existing provider licences and training policies still apply.
+
+MIT License
+
+Copyright (c) 2026 sanat
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.

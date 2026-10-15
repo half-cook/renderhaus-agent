@@ -19,6 +19,61 @@ SKILL = ROOT / 'agent/deep_agent/skills/art-style-motion'
 
 
 class ArtStyleMotionRoutingTests(unittest.TestCase):
+    def test_papercut_requests_select_document_grammar_and_remotion(self):
+        from agent.deep_agent.art_style_catalog import style_context
+
+        for prompt in [
+            'Make a papercut explainer about tides',
+            'Make a paper-cut explainer reel about tides',
+            'Make a cut-paper explainer reel about tides',
+            'Make a paper-collage explainer animation',
+            'Make a papercut-inspired animated video about tides',
+            'Make a paper-collage-inspired animated video about tides',
+            'Make a papercut stop motion animation about tides',
+            'Make a paper cutout animation about photosynthesis',
+            'Create a papercraft explainer video',
+            'Make a silent explainer video in papercut style without narration',
+            'Make a video about tides using paper collage style',
+            'Make a Vox-style paper-collage explainer over my recording',
+        ]:
+            with self.subTest(prompt=prompt):
+                route = route_intent(prompt)
+                self.assertEqual((route.skill, route.alias, route.tool),
+                                 ('art-style-motion', 'remotion_render', 'Remotion___render_timeline'))
+                self.assertEqual(style_context(prompt)['selected']['slug'], 'document-evidence')
+
+    def test_papercut_subjects_and_other_media_intents_keep_their_routes(self):
+        for prompt, arguments, skill in [
+            ('Make a silent explainer about papercut injuries', None, 'knowledge-explainer'),
+            ('Make a silent explainer titled "Papercut explainer"', None, 'knowledge-explainer'),
+            ('Make a silent explainer titled Papercut explainer', None, 'knowledge-explainer'),
+            ('Make a silent explainer called Papercut animation', None, 'knowledge-explainer'),
+            ('Make a silent explainer, not in papercut style', None, 'knowledge-explainer'),
+            ('Make a silent explainer; do not use paper collage style', None, 'knowledge-explainer'),
+            ('Make a silent explainer without papercut style', None, 'knowledge-explainer'),
+            ('Generate a papercut still image', None, 'image-gen'),
+            ('Restyle this existing footage in paper collage style',
+             {'video_url': 'https://example.invalid/source.mp4'}, 'edit-v2v'),
+            ('Add foley to this existing papercut explainer',
+             {'video_url': 'https://example.invalid/source.mp4'}, 'audio-bed'),
+        ]:
+            with self.subTest(prompt=prompt):
+                self.assertEqual(route_intent(prompt, arguments=arguments).skill, skill)
+
+    def test_papercut_explicit_provider_and_renderer_requests_win(self):
+        route = route_intent('Use Kling to make a papercut explainer')
+        self.assertEqual((route.skill, route.tool), ('named-provider', 'Kling___text_to_video'))
+        self.assertIn('explicit request', route.disclosure)
+        prompt = 'Make a paper-collage explainer animation with HyperFrames'
+        with patch.dict(os.environ, {'HYPERFRAMES_ENABLED': 'false'}):
+            self.assertEqual(route_intent(prompt).status, 'blocked')
+        with patch.dict(os.environ, {'HYPERFRAMES_ENABLED': 'true', 'HYPERFRAMES_DRY_RUN': 'true'}):
+            route = route_intent(prompt)
+            self.assertEqual((route.skill, route.tool),
+                             ('art-style-motion', 'HyperFrames___render_composition'))
+        self.assertEqual(route_intent('Make a papercut explainer with an HTML template').alias,
+                         'remotion_render')
+
     def test_published_card_titles_can_be_requested_by_name(self):
         for filename in ['style-cards.md', 'grammar-cards.md']:
             titles = [line.split('|')[1].strip() for line in (SKILL / 'references' / filename).read_text().splitlines()
@@ -41,6 +96,7 @@ class ArtStyleMotionRoutingTests(unittest.TestCase):
             'Make a 3Blue1Brown animation of gradient descent',
             'Make a 3b1b explainer animation',
             'Make a video without narration in Vox style',
+            'Make a silent papercut explainer without narration',
             'Make an animation without music in Bauhaus style',
             'Make a Vox-style explainer animation without HyperFrames',
             'Make a silent Bauhaus animation; do not lip-sync anyone',
@@ -176,6 +232,7 @@ class ArtStyleMotionSkillTests(unittest.TestCase):
                     for path in package_root.glob(pattern)}
         self.assertTrue(set(SKILL.glob('references/*.md')) <= included)
         self.assertIn('third_party/huashu-art-motion/LICENSE', config['license-files'])
+        self.assertIn('third_party/papercut-explainer/LICENSE', config['license-files'])
         self.assertIn('THIRD_PARTY_NOTICES', config['license-files'])
 
     def test_skill_is_parseable_and_all_local_references_are_shipped(self):
@@ -225,7 +282,7 @@ class ArtStyleMotionApprovalTests(unittest.IsolatedAsyncioTestCase):
         schema = next(row for row in json.loads((ROOT / 'configs/gateway/remotion.tools.json').read_text())
                       if row['name'] == 'render_timeline')
         gateway = Gateway([Tool(name='Remotion___render_timeline', description=schema['description'], inputSchema=schema['inputSchema'])])
-        request = StudioAgentRequest(prompt='Make a Vox-style explainer video with supplied character frames',
+        request = StudioAgentRequest(prompt='Make a papercut explainer video with supplied character frames',
                                      autonomous=True, job_id='art-render', workspace_id='workspace', project_id='project')
         studio = _context_from_request(request)
         model = ScriptedModel([

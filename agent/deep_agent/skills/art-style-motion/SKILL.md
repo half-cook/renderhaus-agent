@@ -1,6 +1,6 @@
 ---
 name: art-style-motion
-description: Plan animated art shorts, descriptive style catalogs, explainer grammars, and characters moving through painted worlds. Select materials, palette, camera direction, and meaningful motion; generic silent explainers use knowledge-explainer.
+description: Plan animated art shorts, descriptive style catalogs, papercut and paper-collage explainers, named animation grammars, and characters moving through painted worlds. Select materials and meaningful motion; generic silent explainers use knowledge-explainer.
 metadata:
   remotion_backend: configured
   remotion_features: clip_timing transitions fit_position scale motion titles captions audio_mix canvas encoding
@@ -21,6 +21,11 @@ Use this skill when the user names an art style and asks for motion, names an ex
 or asks for a character to walk through painting worlds. Read [method](references/method.md),
 then the relevant [style card](references/style-cards.md) or [grammar card](references/grammar-cards.md).
 Select a catalog card as described below. Recreate a reference only within the supplied rights.
+
+For papercut, paper-collage or paper-cutout explainers, read the
+[cut-paper recipe](references/grammar-cards.md#cut-paper-explainer) under Document Evidence.
+Use its neutral label in plans. The recipe is planning guidance for authored assets,
+not an installed template.
 
 For a silent explainer with no named style, read [knowledge-explainer](../knowledge-explainer/SKILL.md).
 Plain narrated whiteboard work uses [whiteboard-explainer](../whiteboard-explainer/SKILL.md).
