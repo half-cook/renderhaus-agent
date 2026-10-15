@@ -16,6 +16,7 @@ import type {
 import { safeCopy, workLabel } from "./rh/billing";
 import { studioFetch } from "./authenticated-fetch";
 import { checkUploadSize, parseUploadLimits, uploadKind, uploadSizeError } from "./upload-limits";
+import { directUpload, parseDirectUploadConfig, type DirectUploadConfig } from "./direct-upload";
 
 function studioAsset(value: unknown): StudioAsset | null {
   if (!value || typeof value !== "object") {
@@ -203,16 +204,38 @@ export async function invokeTool(
 export async function uploadStudioFile(
   file: File,
   projectId: string,
+  options?: { onProgress?: (uploadedBytes: number, totalBytes: number) => void },
 ): Promise<StudioAsset> {
   const kind = uploadKind(file.name);
   if (!kind) throw new Error("Use an image, video, or audio file.");
   let limits;
+  let direct: DirectUploadConfig;
   try {
     const health = await studioFetch("/api/health", { cache: "no-store" });
     if (!health.ok) throw new Error("Could not check upload limits. Please try again.");
-    limits = parseUploadLimits(await health.json());
+    const payload: unknown = await health.json();
+    limits = parseUploadLimits(payload);
+    direct = parseDirectUploadConfig(payload);
   } catch {
     throw new Error("Could not check upload limits. Please try again.");
+  }
+  // Video and audio go straight to storage in resumable parts when available,
+  // so a dropped connection resumes instead of starting over.
+  if (direct.enabled && (kind !== "image" || file.size > limits[kind] * 1024 * 1024)) {
+    checkUploadSize(file.size, direct.maxUploadMb);
+    const payload = await directUpload(file, projectId, {
+      api: (path, body) => studioFetch(path, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      }),
+      put: (url, body) => fetch(url, { method: "PUT", body }),
+      storage: typeof localStorage === "undefined" ? null : localStorage,
+      onProgress: options?.onProgress,
+    });
+    const asset = studioAsset(payload);
+    if (!asset) throw new Error("Upload was interrupted. Please try again.");
+    return asset;
   }
   checkUploadSize(file.size, limits[kind]);
   const body = new FormData();

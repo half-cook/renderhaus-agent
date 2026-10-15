@@ -149,3 +149,25 @@ deliberate local-development escape hatch. Never enable it in a shared deploymen
 On first load, the Studio reads the former local-storage canvas once. Saving it registers any known
 media with the backend, replaces URL/path fields with `{assetId, versionId, ...}`, and marks the
 browser migration complete. New writes are server-authoritative.
+
+## Direct resumable uploads (launch)
+
+When an ingest bucket is configured (`STUDIO_INGEST_BUCKET`, else `AWS_S3_BUCKET`) and
+`STUDIO_DIRECT_UPLOAD` is not `false`, video and audio (and images over the proxy limit)
+skip `POST /api/studio/upload`. The browser uploads straight to storage in parts:
+
+- `POST /api/studio/uploads/direct/create` starts a multipart upload (8 MiB parts, at most
+  10,000) and returns an HMAC-signed session token bound to the workspace and user.
+- `POST .../sign-parts` returns 15-minute presigned part URLs (up to 100 per call).
+- `POST .../status` lists the parts storage already holds; the browser resumes after them.
+  Resume state lives in `localStorage` keyed by project, name, size and lastModified.
+- `POST .../complete` checks storage's own part list and object size, completes, then
+  registers the file in the Studio repository. `POST .../abort` cancels.
+
+Limit: `STUDIO_MAX_DIRECT_UPLOAD_MB` (default 20480). `/api/health` reports
+`direct_upload: {enabled, max_upload_mb, min_part_bytes}`.
+
+Bucket prerequisites (not applied by code for a separate ingest bucket): CORS allowing `PUT`
+from the app origin and exposing `ETag`, and a lifecycle rule that aborts incomplete
+multipart uploads after a few days. `_ensure_s3_bucket` now sets the CORS part for
+`AWS_S3_BUCKET` only.
