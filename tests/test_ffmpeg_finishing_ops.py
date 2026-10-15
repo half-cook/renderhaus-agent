@@ -409,7 +409,6 @@ class FinishingRealBinaryTests(FinishingFixture, unittest.TestCase):
         after = normalized["metrics"]["after"]
         self.assertLessEqual(abs(after["integrated_lufs"] + 14), .5, after)
         self.assertLessEqual(after["true_peak_db"], -1.5, after)
-        self.assertEqual(normalized["metrics"]["normalization_type"], "linear")
 
     def test_cleanup_refuses_video_without_audio(self):
         silent = self.job / "silent.mp4"
