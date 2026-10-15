@@ -352,7 +352,10 @@ def approval_gate(
         raise ValueError("The cap cannot be lower than the estimated total.")
     if repo.get_run_hold(run_id) is None and conversation_id:
         repo.adopt_conversation_hold(user_id, conversation_id, run_id)
-    return repo.hold_run(user_id, run_id, cap, estimate_cents=plan.estimate_cents, conversation_id=conversation_id)
+    hold = repo.hold_run(user_id, run_id, cap, estimate_cents=plan.estimate_cents, conversation_id=conversation_id)
+    # The card's wait parked the hold; give planning back its start floor too, or the run pauses at
+    # the card cap right after Approve (live film5: paused at 125c after the first card).
+    return rehold_turn(repo, user_id, run_id) or hold
 
 
 def rehold_turn(repo: Any, user_id: str | None, run_id: str) -> dict[str, Any] | None:
