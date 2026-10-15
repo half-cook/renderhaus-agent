@@ -73,6 +73,58 @@ def end_run(repo: Any, run_id: str, *, execution_status: str, error_type: str | 
 
 # --------------------------------------------------------------------------- pricing of pending approvals
 
+# Worst-case holds for steps the price tables cannot quote (fee-inclusive integer cents).
+# With a hard $10 beta credit an unpriced step must never be approvable, so when a quote fails the
+# step is held at a conservative ceiling for its type instead.  That hold is the step's cap and the
+# runner cuts the step off there.  Derived from server/billing_rates.py (all fee-inclusive):
+# * video: the dearest per-second 1080p rate in the tables is 28 c/s (aleph2); 10 s plus the fee is
+#   about $3.64, rounded up to $4.00.  Lip-sync, avatar, upscale and edit jobs are video-sized too.
+# * image: dearest still is about 26 c with fee (high-quality edits); held at $0.50.
+# * audio (speech, voice, music, sound effects): dearest quoted track is under $0.40; held at $0.50.
+# Anything that matches none of these has no hold, so it cannot be approved at all.
+WORST_CASE_HOLD_CENTS = {"video": 400, "image": 50, "audio": 50}
+_VIDEO_WORDS = ("video", "lipsync", "lip_sync", "avatar", "dialogue", "upscale", "extend", "motion", "act_two", "aleph", "reframe", "v2a")
+_IMAGE_WORDS = ("image", "still", "vector", "rmbg", "background", "logo")
+_AUDIO_WORDS = ("speech", "tts", "voice", "music", "sfx", "sound", "audio", "song")
+UNPRICEABLE_MESSAGE = "This step can’t be priced, so it can’t be approved. Nothing was charged."
+
+
+def step_kind(tool_name: str) -> str | None:
+    name = (tool_name or "").lower()
+    if any(word in name for word in _VIDEO_WORDS):
+        return "video"
+    if any(word in name for word in _IMAGE_WORDS):
+        return "image"
+    if any(word in name for word in _AUDIO_WORDS):
+        return "audio"
+    return None
+
+
+def worst_case_hold_cents(tool_name: str) -> int | None:
+    kind = step_kind(tool_name)
+    return WORST_CASE_HOLD_CENTS.get(kind) if kind else None
+
+
+def step_quote(item: dict[str, Any]) -> tuple[int | None, str]:
+    """(cents, basis): "fixed" for a real price, "up_to" for a worst-case hold, "none" when neither exists."""
+    price = _step_price(item)
+    if price is not None:
+        return price, "fixed"
+    hold = worst_case_hold_cents(str(item.get("tool_name") or ""))
+    return (hold, "up_to") if hold is not None else (None, "none")
+
+
+def unpriceable(raw_approvals: list[dict[str, Any]], call_id: str | None = None) -> bool:
+    """True when a live paid step has neither a price nor a worst-case hold."""
+    for item in raw_approvals:
+        if item.get("kind") == "question" or item.get("decision") == "reject" or item.get("tool_name") == "review_finishing_preview":
+            continue
+        if call_id is not None and item.get("call_id") != call_id:
+            continue
+        if step_quote(item)[1] == "none":
+            return True
+    return False
+
 
 def _step_price(item: dict[str, Any]) -> int | None:
     from agent.deep_agent.routing import estimate_cost
@@ -103,9 +155,10 @@ def plan_for_pending(repo: Any, run_id: str, raw_approvals: list[dict[str, Any]]
         return None
     media_lines = []
     for item in pending:
-        price = _step_price(item)
+        cents, basis = step_quote(item)
         label, detail = rb.work_label(str(item.get("tool_name") or ""), item.get("arguments"))
-        media_lines.append(rb._line(label, price or 0, "media", "fixed" if price is not None else "estimate", detail))
+        # A worst-case hold enters the plan at its full amount, so the run cap always covers it.
+        media_lines.append(rb._line(label, cents or 0, "media", "fixed" if basis == "fixed" else "estimate", detail))
     hold = repo.get_run_hold(run_id)
     spent_rows = repo.run_lines(run_id) if hold else []
     return rb.plan_run(media_lines=media_lines, spent_rows=spent_rows,
@@ -182,7 +235,7 @@ def public_approvals(
                 "step_price_cents": 0, "approve_enabled": status == "pending",
             })
             continue
-        price = _step_price(item)
+        price, price_basis = step_quote(item)
         entry: dict[str, Any] = {
             "call_id": item.get("call_id"),
             "label": label,
@@ -190,11 +243,14 @@ def public_approvals(
             "decision": decision,
             "arguments": rb.scrub_arguments(item.get("arguments")),
             "step_price_cents": price,
+            "price_basis": price_basis,
             "step_index": (live.index(item) + 1) if item in live else None,
             "step_count": len(live),
         }
         if detail:
             entry["detail"] = detail
+        if price_basis == "none" and status == "pending":
+            entry.update({"approve_enabled": False, "unpriceable": True, "unpriceable_message": UNPRICEABLE_MESSAGE})
         if isinstance(item.get("message"), str):
             entry["message"] = item["message"]
         if item.get("tool_name") in {"HeyGen___voice_clone", "HeyGen___voice_tts"}:
@@ -214,10 +270,12 @@ def public_approvals(
                 "balance_cents": numbers["beyond"],
                 "balance_after_estimate_cents": max(0, numbers["spendable"] - remaining_estimate),
                 "balance_after_cap_cents": max(0, numbers["spendable"] - remaining_cap),
-                "approve_enabled": status == "pending" and insufficient is None,
+                "approve_enabled": status == "pending" and insufficient is None and price_basis != "none",
                 "insufficient_credit": insufficient if status == "pending" else None,
                 "raise_options_cents": [],
-                "estimate_incomplete": price is None or any(_step_price(a) is None for a in live),
+                "estimate_incomplete": price_basis == "none",
+                "up_to": price_basis == "up_to",
+                "hold_only": price_basis == "up_to",
             })
         output.append(entry)
     return output + questions
@@ -248,6 +306,8 @@ def approval_gate(
     raw_approvals: list[dict[str, Any]], requested_cap_cents: int | None,
 ) -> dict[str, Any] | None:
     """Hold the cap when the user approves.  Returns the hold, or raises InsufficientCreditError/ValueError."""
+    if unpriceable(raw_approvals):
+        raise ValueError(UNPRICEABLE_MESSAGE)
     if not billing_applies(repo, user_id):
         return None
     plan = plan_for_pending(repo, run_id, raw_approvals)
@@ -359,7 +419,9 @@ class RunMeter:
         """A transport error cannot prove that the model did no billable work."""
         self.repo.mark_run_work_ambiguous(self.run_id, work_id, usage)
 
-    def reserve_media(self, call_id: str, price_cents: int | None) -> dict[str, Any]:
+    def reserve_media(self, call_id: str, price_cents: int | None, tool_name: str | None = None) -> dict[str, Any]:
+        if price_cents is None and tool_name:
+            price_cents = worst_case_hold_cents(tool_name)  # the hold is the step's cap
         if price_cents is None:
             raise rb.RunPausedAtCap(self._pause())
         return self.reserve_work("media:" + call_id, price_cents, kind="media", role="paid_dispatch", allow_existing=False)
@@ -373,9 +435,9 @@ class RunMeter:
             self.fail_work(work_id)
 
     @contextmanager
-    def media_dispatch(self, call_id: str, price_cents: int | None):
-        """Bridge the preflight quote to the charge in the host's async dispatch stack."""
-        self.reserve_media(call_id, price_cents)
+    def media_dispatch(self, call_id: str, price_cents: int | None, tool_name: str | None = None):
+        """Bridge the preflight quote (or worst-case hold) to the charge in the host's async dispatch stack."""
+        self.reserve_media(call_id, price_cents, tool_name)
         token = _MEDIA_WORK.set((self.run_id, "media:" + call_id))
         try:
             yield
@@ -450,6 +512,13 @@ def charge_media(
         paused = meter.check_step(cost_cents)
         if paused:
             raise rb.RunPausedAtCap(paused)
+    if work_id is not None:
+        # Never charge a step more than what was reserved for it (its price or worst-case hold).
+        reserved = next((int(row["reserved_cents"]) for row in repo.run_work(run_id)
+                         if row["work_id"] == work_id and row["reserved_cents"] is not None), None)
+        if reserved is not None and cost_cents > reserved:
+            logger.warning("Clipped charge for %s to its %s c hold", work_id, reserved)
+            cost_cents = reserved
     label, detail = rb.work_label(tool_name, arguments)
     try:
         return repo.charge_usage(

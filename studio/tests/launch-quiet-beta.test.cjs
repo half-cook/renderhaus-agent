@@ -10,7 +10,9 @@ test("landing and sign-up carry the invite-only copy and none of the open-wave c
   const launch = read("lib/launch.ts");
   assert.match(launch, /Invite only · \$10 credit to start/);
   const landing = read("app/(marketing)/page.tsx");
-  assert.match(landing, /Enter invite code/);
+  assert.match(landing, /Use your invite/);
+  assert.match(landing, /\$10 credit · invite only/);
+  assert.doesNotMatch(landing, /30%|[Pp]latform fee/);
   const signup = read("components/beta/InviteSignup.tsx");
   for (const source of [landing, signup]) {
     assert.doesNotMatch(source, /spots left|First 50|wave 1|Verify your phone|Claim your|platform fee/i);
@@ -39,9 +41,15 @@ test("top-up UI is gated by the build flag and replaced by neutral copy", () => 
 
 test("over-credit approval card keeps Approve disabled and offers only an option that fits", () => {
   const card = read("components/rh/ApprovalCard.tsx");
-  assert.match(card, /Approve stays off while the hard cap is more than your credit\. Top-ups are coming soon\./);
+  assert.match(card, /Approve is off because this step.s hard cap is more than your credit\. Top-ups are coming soon\./);
   assert.match(card, /cheaperOption\.capCents <= balance/);
-  assert.match(card, /aria-disabled="true"[^>]*disabled>\s*<Lock/);
+  assert.match(card, /<Lock[^/]*\/>Approve/);
+  assert.match(card, />Use this/);
+  assert.match(card, />Edit</);
+  assert.match(card, />Not now</);
+  assert.doesNotMatch(card.slice(card.indexOf("function OverCredit")), /Reject/);
+  // Locked Approve never prints a price on the button.
+  assert.doesNotMatch(card.slice(card.indexOf("function OverCredit")), /Approve · est\./);
   assert.match(card, />Trim</);
   assert.match(card, />Keep as is</);
 });

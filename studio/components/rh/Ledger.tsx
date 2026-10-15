@@ -4,10 +4,11 @@ import { formatCents } from "@/lib/rh/money";
 import type { BillingLine } from "@/lib/rh/billing";
 
 export function LedgerRow({ label, amount, tone }: { label: ReactNode; amount: string; tone?: "money" | "muted" | "ember" }) {
+  const free = amount === "$0.00" || amount === "$0";
   return (
-    <dl className="rh-ledger-row" data-tone={tone}>
+    <dl className="rh-ledger-row" data-tone={free ? "muted" : tone}>
       <dt>{label}</dt>
-      <dd className="rh-num">{amount}</dd>
+      <dd className="rh-num">{free ? "Free" : amount}</dd>
     </dl>
   );
 }

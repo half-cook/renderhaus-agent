@@ -38,11 +38,11 @@ test('global style rules stay inside legacy except theme tokens and utility defi
   legacy.walkAtRules('import', () => assert.fail('imports must remain at top level'));
 });
 
-test('the Tailwind radius and shadow scales are removed with only a named pill exception', () => {
+test('the Tailwind radius and shadow scales are replaced by the revamp v4 radius tokens only', () => {
   const theme = css.nodes.filter((node) => node.name === 'theme').flatMap((node) => node.nodes).filter((node) => node.type === 'decl');
   assert.ok(theme.some((node) => node.prop === '--radius-*' && node.value === 'initial'));
   assert.ok(theme.some((node) => node.prop === '--shadow-*' && node.value === 'initial'));
-  assert.deepEqual(theme.filter((node) => node.prop.startsWith('--radius-') && node.prop !== '--radius-*').map((node) => [node.prop, node.value]), [['--radius-pill', '9999px']]);
+  assert.deepEqual(theme.filter((node) => node.prop.startsWith('--radius-') && node.prop !== '--radius-*').map((node) => [node.prop, node.value]), [['--radius-xs', '6px'], ['--radius-sm', '10px'], ['--radius-md', '14px'], ['--radius-lg', '20px'], ['--radius-xl', '28px'], ['--radius-pill', '9999px']]);
 });
 
 test('the opt-in dark beta surface defines every root token without changing the root palette', () => {
@@ -55,13 +55,13 @@ test('the opt-in dark beta surface defines every root token without changing the
   assert.equal(root.nodes.find((node) => node.prop === '--ease').value, 'cubic-bezier(0.32, 0.72, 0, 1)');
 });
 
-test('compiled Tailwind removes rounded-lg and shadow-md, emits pill and semantic utilities in the winning layer', async () => {
+test('compiled Tailwind maps rounded-lg to the v4 sheet radius, removes shadow-md, emits pill and semantic utilities in the winning layer', async () => {
   const tailwind = require('@tailwindcss/postcss');
   const fixture = source.replace('@import "tailwindcss";', '@import "tailwindcss" source(none);') + '\n@source inline("rounded-lg rounded-pill shadow-md bg-background duration-base ease-studio font-mono");\n';
   const result = await postcss([tailwind({ base: studio, optimize: false })]).process(fixture, { from: path.join(studio, 'app/globals.css') });
   const compiled = postcss.parse(result.css);
   const find = (selector) => { let found; compiled.walkRules(selector, (rule) => { found = rule; }); return found; };
-  assert.equal(find('.rounded-lg'), undefined);
+  assert.ok(find('.rounded-lg').nodes.some((node) => node.prop === 'border-radius' && /20px|var\(--radius-lg\)/.test(node.value)));
   assert.equal(find('.shadow-md'), undefined);
   assert.ok(find('.rounded-pill').nodes.some((node) => node.prop === 'border-radius' && /9999px|var\(--radius-pill\)/.test(node.value)));
   assert.ok(find('.bg-background').nodes.some((node) => node.prop === 'background-color' && node.value === 'var(--bg)'));

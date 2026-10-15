@@ -1,15 +1,12 @@
 "use client";
 
 import { useAuth } from "@clerk/nextjs";
-import { ArrowRight, Plus, Ticket } from "lucide-react";
+import { Plus } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
-import { ExampleCard } from "@/components/beta/ExampleCard";
-import { HeroClip } from "@/components/beta/HeroClip";
 import { LandingDemo } from "@/components/landing/LandingDemo";
 import { useClerkConfigured } from "@/components/StudioAuth";
-import { INVITE_LINE } from "@/lib/launch";
 
 function SignedInRedirect() {
   const { isLoaded, isSignedIn } = useAuth();
@@ -34,46 +31,39 @@ const STEPS = [
   ["03", "Trim and ship", "Reorder and trim the shots on a single timeline, or rewire them on the canvas. Export when it's right."],
 ] as const;
 
-function InviteButton({ size = "xl" }: { size?: "xl" | "lg" }) {
-  return (
-    <Link href="/beta" className={`rh-btn rh-btn-primary ${size === "xl" ? "rh-btn-xl" : "rh-btn-lg"}`}>
-      Enter invite code <ArrowRight size={size === "xl" ? 18 : 16} aria-hidden="true" />
-    </Link>
-  );
-}
-
 export default function MarketingPage() {
   const clerkConfigured = useClerkConfigured();
 
   return (
     <main className="rh-page" data-surface="beta" data-shot="landing-ready">
       {clerkConfigured ? <SignedInRedirect /> : null}
-      <header className="rh-nav">
-        <Link href="/" className="rh-brand"><span className="rh-mark" aria-hidden="true" /><span className="rh-wordmark" style={{ fontSize: 24 }}>Renderhaus</span></Link>
-        <nav aria-label="Primary" className="rh-nav-links"><a href="#how">Product</a><a href="#faq">FAQ</a></nav>
-        <Link href="/sign-in" className="rh-btn rh-btn-quiet" style={{ marginLeft: "auto", fontSize: 14 }}>Sign in</Link>
-      </header>
-
-      <section className="rh-hero">
-        <div className="rh-hero-head">
-          <div>
-            <span className="rh-chip rh-chip-accent rh-invite-pill" data-shot="invite-pill"><Ticket size={13} aria-hidden="true" />{INVITE_LINE}</span>
-            <h1 className="rh-display">Direct the video.<br /><em>Approve every dollar.</em></h1>
-          </div>
-          <p className="rh-hero-sub">A chat-first studio for product and ad video. The agent plans the shots, and you see the price of each paid step before anything runs.</p>
+      <section className="rh-bleed" aria-labelledby="landing-title" data-shot="landing-hero" style={{ backgroundImage: "url(/beta/p1-poster.jpg)", backgroundSize: "cover", backgroundPosition: "center" }}>
+        <video className="rh-bleed-media" src="/beta/p1-film.mp4" poster="/beta/p1-poster.jpg" muted loop playsInline autoPlay preload="metadata"
+          aria-label="Example film: a matte travel mug, made from one product photo" />
+        <div className="rh-bleed-shade" aria-hidden="true" />
+        <header className="rh-bleed-nav">
+          <Link href="/" className="rh-brand"><span className="rh-mark" aria-hidden="true" /><span className="rh-bleed-word">Renderhaus</span></Link>
+          <Link href="/sign-in" className="rh-bleed-signin">Sign in</Link>
+        </header>
+        <aside className="rh-glass rh-price-chip" aria-label="Sample approval line" data-shot="price-chip">
+          <span className="rh-sample rh-mono">Sample</span>
+          <div className="rh-price-chip-hd"><span>This shot</span><span className="rh-price-ok">Approved</span></div>
+          <div className="rh-price-chip-row"><span>Video clip · 5 s</span><b className="rh-num">$0.65</b></div>
+          <p>The approval card shows an estimate and a hard cap before anything paid runs.</p>
+        </aside>
+        <div className="rh-bleed-copy">
+          <h1 id="landing-title" className="rh-bleed-title">Describe it.<br />Get the film.</h1>
+          <p className="rh-bleed-sub">A chat that plans your video and shows you the price of every step before anything runs.</p>
         </div>
-        <div className="rh-hero-row">
-          <HeroClip />
-          <ExampleCard />
+        <div className="rh-bleed-cta" data-shot="landing-cta">
+          <Link href="/beta" className="rh-btn rh-btn-primary rh-btn-lg">Use your invite</Link>
+          <span className="rh-bleed-offer rh-num">$10 credit · invite only</span>
         </div>
-        <div className="rh-cta-row">
-          <InviteButton />
-          <div className="rh-offer">
-            <div>
-              <div className="rh-offer-line">{INVITE_LINE}</div>
-              <div className="rh-offer-sub">Got a code from a friend? Enter it, confirm your email, and you’re in the demo project. No code yet? We’re opening to more people soon.</div>
-            </div>
-          </div>
+        <div className="rh-scrub" aria-hidden="true">
+          <span className="rh-mono rh-num">00:04.6</span>
+          <span className="rh-scrub-shots"><i data-done /><i data-cur /><i /><i /></span>
+          <span className="rh-mono rh-num">00:09.2</span>
+          <span className="rh-scrub-cap">Matte travel mug · shot 2 of 3 · AI-generated</span>
         </div>
       </section>
 

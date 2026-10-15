@@ -2153,6 +2153,9 @@ async def decide_studio_agent_tool(
         raise HTTPException(status_code=404, detail="Approval request not found.")
     if target.get("kind") == "question":
         raise HTTPException(status_code=409, detail="Use the question answer action for this request.")
+    if body.decision == "approve" and run_billing.unpriceable(
+            [dict(item) for item in (checkpoint_for_cap or {}).get("approvals") or []], call_id):
+        raise HTTPException(status_code=409, detail=run_billing.UNPRICEABLE_MESSAGE)
     if body.decision == "approve":
         # Hold the hard cap from the user's credit before the approval counts; nothing is recorded if it fails.
         pending = [dict(item, decision=item.get("decision") or ("approve" if item.get("call_id") == call_id else None))

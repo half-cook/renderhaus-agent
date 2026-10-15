@@ -1,7 +1,7 @@
 "use client";
 
 import { useSignIn, useSignUp } from "@clerk/nextjs/legacy";
-import { ArrowRight, Check, Mail, ShieldCheck, Ticket } from "lucide-react";
+import { ArrowRight, Check } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
@@ -99,37 +99,23 @@ export function InviteSignup({ initialPhase }: { initialPhase?: Phase } = {}) {
   const welcome = phase.kind === "welcome";
   return (
     <main className="rh-page rh-signup" data-surface="beta" data-shot={`invite-${phase.kind}`}>
-      <header className="rh-nav">
-        <Link href="/" className="rh-brand"><span className="rh-mark" aria-hidden="true" /><span className="rh-wordmark" style={{ fontSize: 24 }}>Renderhaus</span></Link>
-        <Link href="/sign-in" className="rh-btn rh-btn-quiet" style={{ marginLeft: "auto", fontSize: 14 }}>Sign in</Link>
-      </header>
-      <div className="rh-signup-grid">
-        <section className="rh-signup-left" aria-labelledby="beta-title">
-          <div className="rh-signup-eyebrow">
-            <span className="rh-eyebrow">Renderhaus · quiet beta</span>
-            <span className="rh-chip rh-chip-accent"><Ticket size={12} aria-hidden="true" />Invite only</span>
-          </div>
-          <h1 id="beta-title" className="rh-display rh-signup-title">Your invite comes with <em>$10</em> in credit.</h1>
-          <p className="rh-signup-body">Enter your code, confirm your email, and you’re straight into the demo project. You approve every paid step, and see an estimate and a hard cap first.</p>
-          <div className="rh-invite-perks">
-            <span><Ticket size={15} aria-hidden="true" />One code, one account, one $10 credit</span>
-            <span><Mail size={15} aria-hidden="true" />Sign in with your email. No password.</span>
-            <span><ShieldCheck size={15} aria-hidden="true" />Nothing runs until you approve the price</span>
-          </div>
-        </section>
-        <section className="rh-signup-right">
+      <div className="rh-signup-v4 rh-signup-cinema">
+        <div className="rh-signup-bleed" aria-hidden="true" />
+        <Link href="/" className="rh-brand rh-signup-brand"><span className="rh-mark" /><span className="rh-bleed-word">Renderhaus</span></Link>
+        <p className="rh-signup-caption">Your first project opens with a demo film, so you see an approval card before you spend anything.</p>
+        <section className="rh-signup-pane" aria-labelledby="beta-title">
           {welcome ? <Welcome balanceCents={phase.balanceCents} /> : (
-            <div className="rh-card rh-form" data-shot="invite-form">
-              <div className="rh-form-title">Join with your invite</div>
-              <p className="rh-form-sub">Two quick steps, then you’re in the demo project.</p>
+            <div className="rh-form rh-form-v4" data-shot="invite-form">
+              <div className="rh-fg3 rh-num rh-signup-step">Step {phase.kind === "code" ? 1 : 2} of 2</div>
+              <h1 id="beta-title" className="rh-signup-h">{phase.kind === "code" ? "Enter your invite" : "Confirm your email"}</h1>
+              <p className="rh-form-sub">One code, one account, $10 in credit.</p>
               <CodeStep phase={phase} onReserved={(invite) => setPhase({ kind: "email", invite })} onChange={() => setPhase({ kind: "code" })} />
               <EmailStepSwitch phase={phase} onDone={(balanceCents) => setPhase({ kind: "welcome", balanceCents })} />
-              <p className="rh-form-fine">Your $10 credit is added when your email is confirmed. It pays for generation and agent orchestration. Every paid step shows an estimate and a hard cap, and waits for your approval.</p>
+              <p className="rh-form-fine">Already in? <Link href="/sign-in">Sign in</Link></p>
             </div>
           )}
         </section>
       </div>
-      <footer className="rh-foot"><span>© 2026 Renderhaus</span><span className="rh-foot-links"><Link href="/">Home</Link></span></footer>
     </main>
   );
 }
@@ -170,7 +156,7 @@ function CodeStep({ phase, onReserved, onChange }: { phase: Phase; onReserved: (
           ) : error?.kind === "invalid" ? (
             <p className="rh-err" role="alert" data-shot="invite-invalid">{INVALID}</p>
           ) : error ? <p className="rh-err" role="alert">{error.message}</p> : null}
-          <button type="submit" className="rh-btn rh-btn-solid rh-btn-lg rh-btn-block" disabled={busy || code.trim().length < 12}>{busy ? "Checking…" : "Check code"}</button>
+          <button type="submit" className="rh-btn rh-btn-solid rh-btn-lg rh-btn-block" disabled={busy || code.trim().length < 12}>{busy ? "Checking…" : <>Continue <ArrowRight size={16} aria-hidden="true" /></>}</button>
         </form>
       )}
     </div>

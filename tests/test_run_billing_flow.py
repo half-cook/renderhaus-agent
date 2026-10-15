@@ -292,5 +292,25 @@ class ApprovalFlowTests(FlowFixture):
         self.assertEqual(self.repo.get_balance(self.user), 1000)
 
 
+    async def test_not_now_declines_releases_the_hold_and_frees_credit(self):
+        """Not now on the over-credit card is the same server decline: no pending approval, hold released."""
+        execution = await self.pause_for_approval()
+        call_id = execution["approvals"][0]["call_id"]
+        self.assertEqual(self.repo.get_run_hold(self.job)["held_cents"], 125)
+        self.assertLess(self.repo.available_credit(self.user), self.repo.get_balance(self.user))
+        self.steps = [final()]
+        await studio.decide_studio_agent_tool(
+            self.job, call_id, studio.AgentApprovalBody(decision="reject", message="not_now"), None)
+        await asyncio.gather(*list(studio._AGENT_TASKS))
+        after = self.execution()
+        self.assertNotEqual(after["status"], "awaiting_approval")
+        self.assertFalse(any(item.get("status") == "pending" for item in after.get("approvals") or []))
+        self.assertEqual(self.repo.get_balance(self.user), 1000)  # nothing charged
+        self.assertEqual(self.repo.available_credit(self.user), 1000)  # hold released, credit spendable
+        self.assertEqual(after["receipt"]["actual_cents"], 0)
+        with self.assertRaises(HTTPException):  # the decision cannot be replayed
+            await studio.decide_studio_agent_tool(self.job, call_id, studio.AgentApprovalBody(decision="reject"), None)
+
+
 if __name__ == "__main__":
     unittest.main()

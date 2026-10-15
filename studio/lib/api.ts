@@ -956,13 +956,17 @@ export async function decideAgentApproval(
   callId: string,
   decision: "approve" | "reject",
   capCents?: number,
+  source?: "not_now",
 ): Promise<AgentProgress> {
+  const body: Record<string, unknown> = { decision };
+  if (capCents !== undefined) body.cap_cents = capCents;
+  if (source) body.message = source;
   const response = await studioFetch(
     `/api/studio/agent/${encodeURIComponent(jobId)}/approvals/${encodeURIComponent(callId)}`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(capCents === undefined ? { decision } : { decision, cap_cents: capCents }),
+      body: JSON.stringify(body),
     },
   );
   const payload = (await response.json().catch(() => ({}))) as AgentJobPayload;

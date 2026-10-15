@@ -57,7 +57,8 @@ import { QuestionCard } from "@/components/rh/QuestionCard";
 import { PauseChatMessage } from "@/components/rh/PauseChatMessage";
 import { pauseCardsEnabled, stuckPauseMessage } from "@/lib/rh/pause-fallback";
 import { RunReceipt } from "@/components/rh/RunBilling";
-import { approvalCardModel, visibleParameters } from "@/lib/rh/approval-model";
+import { approvalCardModel, pricingCardModel, traceCost, visibleParameters, type TraceCost } from "@/lib/rh/approval-model";
+import { formatCents } from "@/lib/rh/money";
 import { toRunReceiptModel, toApprovalCardModel } from "@/lib/rh/billing";
 import { useCreditContext } from "@/lib/rh/credit-store";
 import { RH_ADD_CREDIT_EVENT } from "@/lib/rh/events";
@@ -132,14 +133,27 @@ function StepIcon({ status }: { status: string }) {
   return <Check size={14} />;
 }
 
-function IntermediateSteps({
+export const NOT_NOW_LINE = "Paused · nothing charged · your credit is free to use.";
+
+export function IntermediateSteps({
   events,
   progressEvents,
   status,
   message,
   duration,
   recoveryAvailable = false,
+  defaultOpen,
+  cost,
+  stepCosts,
+  showStop,
+  liveFrames,
 }: {
+  defaultOpen?: boolean;
+  cost?: TraceCost | null;
+  /** Parallel to events: optional brass amount label per step ("$0.65" or "Free"). */
+  stepCosts?: Array<string | undefined>;
+  showStop?: boolean;
+  liveFrames?: string[];
   events: AgentToolEvent[];
   progressEvents: AgentProgressEvent[];
   status: string;
@@ -166,32 +180,58 @@ function IntermediateSteps({
     : state === "failed" ? (recoveryAvailable ? "Stopped · progress saved" : "Run failed")
     : `Completed${duration ? ` in ${duration}` : ""}`;
 
+  const doneCount = steps.filter((step) => ["completed", "done", "success"].includes(normalizedStatus(step.status))).length;
+  const total = steps.length;
+  const current = Math.min(total, doneCount + (state === "running" ? 1 : 0));
+  const pct = total ? Math.round(((state === "running" ? doneCount : total) / total) * 100) : state === "running" ? 0 : 100;
+  const finished = state !== "running" && status !== "awaiting_approval";
+  const line = finished && state !== "failed" && state !== "incomplete"
+    ? `Delivered · ${total} ${total === 1 ? "step" : "steps"}${cost?.final ? ` · ${formatCents(cost.cents)}` : ""}`
+    : label;
+
+  /* Revamp v4 trace: one live status line that expands in place ("Details"). */
   return (
-    <div className={`agent-progress-group ${state}`}>
-      <div className="agent-run-status" role="status"><StepIcon status={status} /><span>{label}</span></div>
-    <details>
+    <details className={`agent-progress-group rh-trace ${state}`} data-shot="agent-trace" open={defaultOpen}>
       <summary>
-        <span className="agent-progress-leading">
-          <span>{events.length} tool {events.length === 1 ? "step" : "steps"} · Updates & history</span>
+        <span className="rh-trace-dot" data-state={status === "awaiting_approval" ? "needs" : state} aria-hidden="true" />
+        <span className="rh-trace-main">
+          <span className="rh-trace-label" role="status">{line}</span>
+          <span className="rh-trace-meta rh-num">
+            {!finished && total ? <span>Step {Math.max(1, current)} of {total}</span> : null}
+            {duration ? <span>{duration}</span> : null}
+            {cost && !(finished && cost.final) ? <span className="rh-trace-cost" data-shot="trace-cost">{formatCents(cost.cents)} {cost.final ? "total" : "so far"}{cost.capCents ? ` · cap ${formatCents(cost.capCents)}` : ""}</span> : null}
+          </span>
         </span>
-        {steps.length ? <ChevronRight className="agent-progress-chevron" size={14} /> : null}
+        {total ? <span className="rh-trace-toggle">Details<ChevronRight className="agent-progress-chevron" size={14} aria-hidden="true" /></span> : null}
+        <span className="rh-trace-bar" aria-hidden="true"><b style={{ width: `${pct}%` }} /></span>
       </summary>
-      {steps.length ? (
-        <ol className="agent-step-list">
-          {steps.map((step) => (
+      {total ? (
+        <ol className="agent-step-list rh-trace-steps">
+          {steps.map((step, index) => (
             <li className={normalizedStatus(step.status)} key={step.id}>
               <span className="agent-step-icon"><StepIcon status={step.status} /></span>
-              <span>
-                <em>{step.kind}</em>
-                <strong>{step.title}</strong>
+              <span className="rh-trace-step-body">
+                <span className="rh-trace-step-row">
+                  <strong>{step.title}</strong>
+                  {stepCosts?.[index] ? <b className="rh-trace-step-cost rh-num">{stepCosts[index]}</b> : null}
+                </span>
                 {step.message ? <small>{step.message}</small> : null}
+                {normalizedStatus(step.status) === "running" && liveFrames?.length ? (
+                  <span className="rh-trace-frames" aria-label="Live frames">
+                    {liveFrames.map((url, i) => <i key={i} style={{ backgroundImage: `url(${url})` }} />)}
+                  </span>
+                ) : null}
               </span>
             </li>
           ))}
+          {showStop ? (
+            <li className="rh-trace-stop">
+              <button type="button" className="rh-btn rh-btn-quiet rh-btn-sm">Stop after this step · unused cap is released</button>
+            </li>
+          ) : null}
         </ol>
       ) : null}
     </details>
-    </div>
   );
 }
 
@@ -205,7 +245,7 @@ function ApprovalCards({
 }: {
   approvals: AgentPendingRequest[];
   onAnswer: (question: AgentQuestionRequest, answer: QuestionAnswer) => void;
-  onDecision: (approval: AgentApprovalRequest, decision: "approve" | "reject", capCents?: number) => void;
+  onDecision: (approval: AgentApprovalRequest, decision: "approve" | "reject", capCents?: number, source?: "not_now") => void;
   busyCallId: string | null;
   active: boolean;
   disabled: boolean;
@@ -227,39 +267,15 @@ function ApprovalCards({
         if (model && active && approval.decision !== "reject") {
           return <PricedApproval key={approval.callId} approval={approval} model={model} busy={disabled || busyCallId !== null} onDecision={onDecision} />;
         }
-        return approval.decision || !active ? <details className="agent-approval-record" key={approval.callId}>
+        if (!approval.decision && active) {
+          // No price yet: the same v4 card, pricing, with Approve locked until the server quotes or holds.
+          return <PricedApproval key={approval.callId} approval={approval} model={pricingCardModel(approval)} busy={disabled || busyCallId !== null} onDecision={onDecision} />;
+        }
+        return <details className="agent-approval-record" key={approval.callId}>
           <summary>{approval.decision === "approve" ? "Approved" : approval.decision === "reject" ? "Rejected" : "Not run · closed"} · {approval.label}</summary>
           <ApprovalSummary approval={approval}/>
           <div className="agent-approval-details"><Parameters args={approval.arguments} bare /></div>
-        </details> :
-        <article className="agent-approval" key={approval.callId}>
-          <header>
-            <span><ShieldCheck size={14} /> Tool approval</span>
-          </header>
-          <strong>{approval.label}</strong>
-          <ApprovalSummary approval={approval}/>
-          <p className="rh-fg3 rh-small">This step needs a server estimate and hard cap before you can approve.</p>
-          <details className="agent-approval-details"><summary>Review parameters</summary><Parameters args={approval.arguments} bare /></details>
-            <footer>
-              <button
-                type="button"
-                className="agent-approval-reject"
-                disabled={disabled || busyCallId !== null}
-                onClick={() => onDecision(approval, "reject")}
-              >
-                Reject
-              </button>
-              <button
-                type="button"
-                className="agent-approval-approve"
-                disabled
-                aria-label="Approval unavailable until an estimate and hard cap arrive"
-              >
-                {busyCallId === approval.callId ? <LoaderCircle className="spin" size={13} /> : null}
-                Estimate unavailable
-              </button>
-            </footer>
-        </article>;
+        </details>;
       })}
     </div>
   );
@@ -270,7 +286,7 @@ function PricedApproval({ approval, model, busy, onDecision }: {
   approval: AgentApprovalRequest;
   model: ReturnType<typeof approvalCardModel> & object;
   busy: boolean;
-  onDecision: (approval: AgentApprovalRequest, decision: "approve" | "reject", capCents?: number) => void;
+  onDecision: (approval: AgentApprovalRequest, decision: "approve" | "reject", capCents?: number, source?: "not_now") => void;
 }) {
   const [editing, setEditing] = useState(false);
   const [loweredCap, setLoweredCap] = useState<number | null>(null);
@@ -280,11 +296,13 @@ function PricedApproval({ approval, model, busy, onDecision }: {
     <div className="rh-appr-wrap">
       <ApprovalCard
         model={shown}
-        approveEnabled={model.approveEnabled !== false || loweredCap != null}
+        approveEnabled={!model.pricing && !model.unpriceable && (model.approveEnabled !== false || loweredCap != null)}
         busy={busy}
         actions={{
           onApprove: () => onDecision(approval, "approve", loweredCap ?? undefined),
           onReject: () => onDecision(approval, "reject"),
+          // Not now is the same server decline: the pending approval clears and the hold is released.
+          onNotNow: () => onDecision(approval, "reject", undefined, "not_now"),
           onEdit: () => setEditing((value) => !value),
           onAddCredit: () => window.dispatchEvent(new CustomEvent(RH_ADD_CREDIT_EVENT)),
           onLowerCap: (cap) => setLoweredCap(cap),
@@ -438,6 +456,7 @@ function ExecutionTurn({
     approval: AgentApprovalRequest,
     decision: "approve" | "reject",
     capCents?: number,
+    source?: "not_now",
   ) => void;
   onQuestion: (execution: StudioExecution, question: AgentQuestionRequest, answer: QuestionAnswer) => void;
   onCap: (execution: StudioExecution, action: "raise" | "stop", capCents?: number) => void;
@@ -462,13 +481,14 @@ function ExecutionTurn({
           message={execution.message}
           duration={runDuration(execution)}
           recoveryAvailable={execution.recoveryAvailable}
+          cost={traceCost(execution)}
         />
         <ApprovalCards
           approvals={execution.approvals}
           active={execution.status === "awaiting_approval"}
           busyCallId={busyApproval}
           disabled={actionsDisabled}
-          onDecision={(approval, decision, capCents) => onApproval(execution, approval, decision, capCents)}
+          onDecision={(approval, decision, capCents, source) => onApproval(execution, approval, decision, capCents, source)}
           onAnswer={(question, answer) => onQuestion(execution, question, answer)}
         />
         {(() => {
@@ -562,6 +582,7 @@ function LiveExecutionTurn({ run }: { run: LiveRun }) {
           progressEvents={run.progress.progressEvents}
           status={run.progress.status}
           message={run.progress.message}
+          cost={traceCost(run.progress)}
         />
         {assets.length ? <div className="agent-artifacts" aria-label="Completed assets while working">{assets.map((asset) => <ArtifactCard key={asset.versionId} asset={asset} placed={false}/>)}</div> : null}
         {run.progress.result?.summary ? (
@@ -597,6 +618,10 @@ export function AgentDock({ navigationBusy: externalBusy, onBusyChange, suggesti
   const executions = useCanvasStore((state) => state.executions);
   const conversations = useCanvasStore((state) => state.conversations);
   const conversationId = useCanvasStore((state) => state.conversationId);
+  const [pausedNote, setPausedNote] = useState<string | null>(null);
+  useEffect(() => setPausedNote(null), [conversationId]);
+  const [showEarlier, setShowEarlier] = useState(false);
+  useEffect(() => setShowEarlier(false), [conversationId]);
   const agentMessage = useCanvasStore((state) => state.agentMessage);
   const agentOpen = useCanvasStore((state) => state.agentOpen);
   const setAgentMessage = useCanvasStore((state) => state.setAgentMessage);
@@ -876,12 +901,14 @@ export function AgentDock({ navigationBusy: externalBusy, onBusyChange, suggesti
     approval: AgentApprovalRequest,
     decision: "approve" | "reject",
     capCents?: number,
+    source?: "not_now",
   ) => {
     if (externalBusy || navigationBusy) return;
     setBusyApproval(approval.callId);
     try {
-      const progress = await decideAgentApproval(execution.jobId, approval.callId, decision, capCents);
-      setAgentMessage(progress.message);
+      const progress = await decideAgentApproval(execution.jobId, approval.callId, decision, capCents, source);
+      setAgentMessage(source === "not_now" ? null : progress.message);
+      if (source === "not_now") setPausedNote(execution.jobId);
       await refreshExecutions();
     } catch (error) {
       setAgentMessage(error instanceof Error ? error.message : "The approval could not be saved.");
@@ -1026,7 +1053,16 @@ export function AgentDock({ navigationBusy: externalBusy, onBusyChange, suggesti
             {!conversationId ? <button type="button" className="agent-conversation-action" disabled={externalBusy || navigationBusy} onClick={() => void changeTask(createAgentConversation)}>Start a task</button> : null}
           </div>
         ) : null}
-        {conversationExecutions.filter((execution) => execution.jobId !== liveRun?.progress.jobId).map((execution) => (
+        {(() => {
+          const past = conversationExecutions.filter((execution) => execution.jobId !== liveRun?.progress.jobId);
+          const hidden = showEarlier ? 0 : Math.max(0, past.length - (liveRun ? 0 : 1));
+          return hidden > 0 ? (
+            <button type="button" className="rh-earlier" data-shot="earlier-messages" onClick={() => setShowEarlier(true)}>
+              {hidden} earlier {hidden === 1 ? "message" : "messages"}
+            </button>
+          ) : null;
+        })()}
+        {conversationExecutions.filter((execution) => execution.jobId !== liveRun?.progress.jobId).filter((_, i, past) => showEarlier || i >= past.length - (liveRun ? 0 : 1)).map((execution) => (
           <ExecutionTurn
             key={execution.jobId}
             execution={execution}
@@ -1047,6 +1083,7 @@ export function AgentDock({ navigationBusy: externalBusy, onBusyChange, suggesti
           />
         ))}
         {liveRun ? <LiveExecutionTurn run={liveRun} /> : null}
+        {pausedNote ? <p className="rh-paused-line" role="status" data-shot="not-now-paused">{NOT_NOW_LINE}</p> : null}
         {changesDocument ? <ChangesetCard document={changesDocument} onInsert={(n) => useChangesStore.getState().setComposerInsertion(`change ${n}`)} onOpen={() => { const store = useChangesStore.getState(); store.setTab("changes"); const take = changesDocument.changes.find((change) => change.kind === "take"); if (take) store.openCompare(take.n); }} /> : null}
       </div>
 

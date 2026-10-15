@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useId, useRef, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { Check, CircleAlert, CircleCheck, CirclePause, ImageOff, Info, Pencil, Play, Plus, RotateCw, ShieldCheck, Lock } from "lucide-react";
 import { OUT_OF_CREDIT_FULL, topupsEnabled } from "@/lib/launch";
 import { formatCents } from "@/lib/rh/money";
 import { a11yApproveName, creditState, type ApprovalCardModel } from "@/lib/rh/billing";
 import { BalanceNote, CapRow, Ledger, LedgerRow, LedgerTotal, lineLabel } from "./Ledger";
 
+export const UP_TO_FOOTNOTE = "We stop at this amount, you are never charged more.";
 export const APPROVAL_FOOTNOTE = "Estimate shown before anything runs. We stop at the cap, you are never charged more.";
 
 export type ApprovalCardActions = {
@@ -23,6 +24,8 @@ export type ApprovalCardActions = {
   onPreview?: () => void;
   onRegenerate?: () => void;
   onUseCheaper?: () => void;
+  /** Over-credit with nothing that fits: close the card without spending. */
+  onNotNow?: () => void;
   onTrim?: () => void;
   onKeep?: () => void;
 };
@@ -76,10 +79,10 @@ export function ApprovalCard({ model, approveEnabled, busy = false, actions = {}
   const titleId = useId();
   const headingRef = useRef<HTMLHeadingElement>(null);
   const header = HEADER[model.status];
-  const credit = model.status === "pending" ? creditState(model, approveEnabled) : "ok";
+  const credit = model.status === "pending" && !model.pricing ? creditState(model, approveEnabled) : "ok";
+  const locked = busy || approveEnabled === false || model.pricing === true || model.unpriceable === true;
   const topups = topupsEnabled();
   const approveName = a11yApproveName(model, formatCents);
-  const stepLabel = model.stepIndex && model.stepCount ? `Step ${model.stepIndex} of ${model.stepCount}` : null;
   const live = model.status === "approved" ? `Approved. Up to ${formatCents(model.capCents)} reserved.`
     : model.status === "paused_cap" ? `Paused. Cap of ${formatCents(model.capCents)} reached.` : "";
 
@@ -105,9 +108,8 @@ export function ApprovalCard({ model, approveEnabled, busy = false, actions = {}
       <div className="rh-appr-hd" data-tone={header.tone}>
         <span className="rh-appr-state">
           {header.dot ? <span className="rh-dot rh-dot-run" aria-hidden="true" /> : header.icon}
-          <span className="rh-eyebrow">{header.label}</span>
+          <span className="rh-appr-label">{header.label}</span>
         </span>
-        {stepLabel ? <span className="rh-mono rh-fg3 rh-appr-step">{stepLabel}</span> : null}
       </div>
 
       <div className="rh-appr-bd">
@@ -130,16 +132,32 @@ export function ApprovalCard({ model, approveEnabled, busy = false, actions = {}
             {estimateLines.map((line) => (
               <LedgerRow key={`${line.kind}:${line.label}`} label={lineLabel(line, "estimate")} amount={formatCents(line.priceCents)} tone={line.kind === "orchestration" ? "muted" : undefined} />
             ))}
-            <LedgerTotal label="Estimated total" amountCents={model.estimateCents} />
-            {credit === "ok" ? <CapRow capCents={model.capCents} bar={model.capCents ? (model.estimateCents / model.capCents) * 100 : 0} /> : (
+            {model.pricing ? (
+              <dl className="rh-ledger-total rh-pricing" data-big="true" data-shot="approval-pricing">
+                <dt>Pricing this step…</dt>
+                <dd><span className="rh-shimmer" aria-hidden="true" /></dd>
+              </dl>
+            ) : model.upTo ? (
+              <div data-shot="approval-up-to">
+                <dl className="rh-ledger-total rh-upto" data-big="true">
+                  <dt>Up to</dt>
+                  <dd className="rh-num">{formatCents(model.capCents)}</dd>
+                </dl>
+                <p className="rh-upto-stop">Up to {formatCents(model.capCents)} · we’ll stop there</p>
+              </div>
+            ) : model.unpriceable ? (
+              <dl className="rh-ledger-total" data-big="true"><dt>Can’t be priced</dt><dd className="rh-fg3">Approve is off</dd></dl>
+            ) : <LedgerTotal label="Estimated total" amountCents={model.estimateCents} />}
+            {model.pricing || model.unpriceable ? null : credit === "ok" && model.upTo ? null : credit === "ok" ? <CapRow capCents={model.capCents} bar={model.capCents ? (model.estimateCents / model.capCents) * 100 : 0} /> : (
               <>
                 <CapRow capCents={model.capCents} tone="ember" />
                 <div className="rh-cap-row"><span style={{ width: 12 }} /><span>Your credit</span><b className="rh-num rh-mono">{formatCents(model.balanceCents ?? 0)}</b></div>
               </>
             )}
           </Ledger>
-          {model.estimateIncomplete ? <div className="rh-note" role="status"><Info size={13} aria-hidden="true" /><span>One step couldn’t be priced yet. It is shown at {formatCents(0)}, which does not mean free.</span></div> : null}
-          {credit === "ok" && model.balanceAfterEstimateCents != null && model.balanceAfterCapCents != null ? (
+          {model.unpriceable ? <div className="rh-note" role="status"><Info size={13} aria-hidden="true" /><span>This step can’t be priced, so it can’t be approved. Nothing was charged.</span></div> : null}
+          {model.upTo && credit === "ok" ? <div className="rh-note" role="status"><Info size={13} aria-hidden="true" /><span>This step has no exact price. Its full amount is held from your credit, and the run stops if it reaches it.</span></div> : null}
+          {credit === "ok" && !model.pricing && !model.upTo && model.balanceAfterEstimateCents != null && model.balanceAfterCapCents != null ? (
             <BalanceNote>Balance after this step · est. <b className="rh-num rh-mono">{formatCents(model.balanceAfterEstimateCents)}</b>, at the cap <b className="rh-num rh-mono">{formatCents(model.balanceAfterCapCents)}</b></BalanceNote>
           ) : null}
         </>
@@ -159,13 +177,16 @@ export function ApprovalCard({ model, approveEnabled, busy = false, actions = {}
       {model.status === "pending" && credit === "ok" ? (
         <>
           <div className="rh-appr-ft">
-            <button type="button" className="rh-btn rh-btn-primary rh-btn-act" style={{ flex: 1 }} aria-label={approveName} disabled={busy || approveEnabled === false} onClick={actions.onApprove}>
-              Approve · est. {formatCents(model.estimateCents)}
+            <button type="button" className="rh-btn rh-btn-primary rh-btn-act" style={{ flex: 1 }} aria-label={model.pricing ? "Approve, locked while this step is priced" : approveName} disabled={locked} onClick={actions.onApprove}>
+              Approve and run
             </button>
             <button type="button" className="rh-btn rh-btn-act" onClick={actions.onEdit}><Pencil size={14} aria-hidden="true" />Edit</button>
-            <button type="button" className="rh-btn rh-btn-quiet rh-btn-act" disabled={busy} onClick={actions.onReject}>Reject</button>
+            {model.pricing || model.upTo || model.unpriceable ? (
+              // Same server decline as the over-credit card: clears the approval, releases any hold, posts the Paused line.
+              <button type="button" className="rh-btn rh-btn-quiet rh-btn-act" data-shot="not-now" disabled={busy} onClick={actions.onNotNow}>Not now</button>
+            ) : null}
           </div>
-          <div className="rh-footnote"><Info size={12} aria-hidden="true" /><span>{APPROVAL_FOOTNOTE}</span></div>
+          <div className="rh-footnote"><Info size={12} aria-hidden="true" /><span>{model.upTo ? UP_TO_FOOTNOTE : APPROVAL_FOOTNOTE}</span></div>
         </>
       ) : null}
 
@@ -180,7 +201,7 @@ export function ApprovalCard({ model, approveEnabled, busy = false, actions = {}
             ) : null}
           </div>
           <div className="rh-appr-ft" style={{ paddingTop: 0 }}>
-            <button type="button" className="rh-btn rh-btn-act" style={{ flex: 1 }} aria-label={approveName} aria-disabled="true" aria-describedby={`${titleId}-why`} disabled>Approve · est. {formatCents(model.estimateCents)}</button>
+            <button type="button" className="rh-btn rh-btn-act" style={{ flex: 1 }} aria-label={approveName} aria-disabled="true" aria-describedby={`${titleId}-why`} disabled><Lock size={13} aria-hidden="true" />Approve</button>
             <button type="button" className="rh-btn rh-btn-quiet rh-btn-act" onClick={actions.onReject}>Reject</button>
           </div>
           <div className="rh-footnote" id={`${titleId}-why`}><span>{credit === "lower_cap" ? "Approve turns on as soon as the cap fits your credit." : "Approve turns on once your credit covers the estimate."}</span></div>
@@ -285,17 +306,20 @@ export function ApprovalCard({ model, approveEnabled, busy = false, actions = {}
   );
 }
 
-const OVER_CREDIT_FOOTNOTE = "Approve stays off while the hard cap is more than your credit. Top-ups are coming soon.";
+const OVER_CREDIT_FOOTNOTE = "Approve is off because this step’s hard cap is more than your credit. Top-ups are coming soon.";
 
 /** Quiet beta, top-ups off (spec 4.12.4, mockups 49 / 49b): Approve disabled, one option that fits the credit. */
-function OverCredit({ model, credit: reported, titleId, approveName, actions }: {
-  model: ApprovalCardModel; credit: "lower_cap" | "add_credit"; titleId: string; approveName: string; actions: ApprovalCardActions;
+function OverCredit({ model, credit: reported, titleId, actions }: {
+  model: ApprovalCardModel; credit: "lower_cap" | "add_credit"; titleId: string; approveName?: string; actions: ApprovalCardActions;
 }) {
   const balance = model.balanceCents ?? 0;
   // The estimate fitting the credit is what decides 49 vs 49b, even if the server sent no lower-cap option.
   const credit = model.estimateCents <= balance ? "lower_cap" : reported === "lower_cap" ? "lower_cap" : "add_credit";
   const lowered = model.lowerCapOptionCents ?? balance;
   const cheaper = credit === "add_credit" && model.cheaperOption && model.cheaperOption.capCents <= balance ? model.cheaperOption : null;
+  const fits = credit === "lower_cap" || Boolean(cheaper);
+  const [closed, setClosed] = useState(false);
+  if (closed) return <p className="rh-footnote" role="status" data-shot="not-now-closed">Closed. Nothing was spent.</p>;
   return (
     <div data-shot={credit === "lower_cap" ? "approval-over-cap" : "approval-over-estimate"}>
       {credit === "lower_cap" ? (
@@ -321,14 +345,17 @@ function OverCredit({ model, credit: reported, titleId, approveName, actions }: 
         <>
           <div className="rh-appr-ft">
             {credit === "lower_cap" ? (
-              <button type="button" className="rh-btn rh-btn-primary rh-btn-act" style={{ flex: 1 }} onClick={() => actions.onLowerCap?.(lowered)}>Use this · est. {formatCents(model.estimateCents)}</button>
+              <button type="button" className="rh-btn rh-btn-primary rh-btn-act" style={{ flex: 1 }} onClick={() => actions.onLowerCap?.(lowered)}>Use this · lower the cap to {formatCents(lowered)}</button>
             ) : cheaper ? (
               <button type="button" className="rh-btn rh-btn-primary rh-btn-act" style={{ flex: 1 }} onClick={actions.onUseCheaper}>Use this · est. {formatCents(cheaper.estimateCents)}</button>
             ) : null}
-            <button type="button" className="rh-btn rh-btn-act rh-appr-locked" aria-label={approveName} aria-disabled="true" aria-describedby={`${titleId}-why`} disabled>
-              <Lock size={13} aria-hidden="true" />Approve · est. {formatCents(model.estimateCents)}
+            <button type="button" className="rh-btn rh-btn-act" onClick={actions.onEdit}><Pencil size={14} aria-hidden="true" />Edit</button>
+            {!fits ? <button type="button" className="rh-btn rh-btn-quiet rh-btn-act" data-shot="not-now" onClick={() => { if (actions.onNotNow) actions.onNotNow(); else setClosed(true); }}>Not now</button> : null}
+          </div>
+          <div className="rh-appr-ft rh-appr-locked-row" style={{ paddingTop: 0 }}>
+            <button type="button" className="rh-btn rh-btn-act rh-appr-locked" aria-label="Approve, unavailable: the hard cap is more than your credit" aria-disabled="true" aria-describedby={`${titleId}-why`} disabled>
+              <Lock size={13} aria-hidden="true" />Approve
             </button>
-            <button type="button" className="rh-btn rh-btn-quiet rh-btn-act" onClick={actions.onReject}>Reject</button>
           </div>
           <div className="rh-footnote" id={`${titleId}-why`}><span>{OVER_CREDIT_FOOTNOTE}</span></div>
         </>

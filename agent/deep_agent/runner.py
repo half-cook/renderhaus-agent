@@ -401,7 +401,7 @@ async def run_with_servers(request, studio, servers, *, model=None):
                 return {'status': 'not_run', 'reason': reason}
             claim = drama.claim_submission(tool_name, arguments)
             try:
-                with meter.media_dispatch(call_id, estimate_cost(tool_name, arguments).total_cents) if meter and paid else nullcontext():
+                with meter.media_dispatch(call_id, estimate_cost(tool_name, arguments).total_cents, tool_name) if meter and paid else nullcontext():
                     result = await executor.execute(
                         {"tool_name": tool_name, "arguments": arguments, "call_id": call_id,
                          'routing_reason': routing_reason, 'retry_of': retry_of},

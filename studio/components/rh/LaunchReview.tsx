@@ -3,6 +3,7 @@
 import { useSearchParams } from "next/navigation";
 import { InviteSignup } from "@/components/beta/InviteSignup";
 import { ApprovalCard } from "@/components/rh/ApprovalCard";
+import { LaunchReviewV4 } from "@/components/rh/LaunchReviewV4";
 import { UploadRow } from "@/components/rh/UploadRow";
 import { OUT_OF_CREDIT_FULL, TOPUPS_COMING_SOON } from "@/lib/launch";
 import type { ApprovalCardModel } from "@/lib/rh/billing";
@@ -17,10 +18,9 @@ const base: ApprovalCardModel = {
   lines: LINES, estimateCents: 126, capCents: 150, stepIndex: 2, stepCount: 4,
 };
 
-function Frame({ children, title }: { children: React.ReactNode; title: string }) {
+function Frame({ children }: { children: React.ReactNode; title?: string }) {
   return (
-    <main className="rh-page" data-surface="beta" style={{ padding: 40, minHeight: "100vh" }}>
-      <div className="rh-eyebrow" style={{ marginBottom: 16 }}>{title} · sample data</div>
+    <main className="rh-page" data-surface="beta" style={{ padding: 40, minHeight: "100vh" }} data-shot="over-credit">
       <div style={{ maxWidth: 460 }}>{children}</div>
     </main>
   );
@@ -28,6 +28,7 @@ function Frame({ children, title }: { children: React.ReactNode; title: string }
 
 export function LaunchReview() {
   const screen = useSearchParams().get("screen") ?? "49";
+  if (screen.startsWith("v4-")) return <LaunchReviewV4 screen={screen} />;
   if (screen === "46") return <InviteSignup initialPhase={{ kind: "welcome", balanceCents: 1000 }} />;
   if (screen === "47") return (
     <Frame title="47 · paused at cap, credit used up">
