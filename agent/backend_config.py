@@ -14,6 +14,21 @@ ADAPTIVE_MODELS = {"claude-haiku-5-5", "claude-opus-5-5", "claude-sonnet-5-5",
                    "claude-opus-5", "claude-sonnet-5", "claude-opus-4-8", "claude-opus-4-7",
                    "claude-opus-4-6", "claude-sonnet-4-6", "claude-fable-5", "claude-fable-5-1"}
 ANTHROPIC_EFFORTS = ("low", "medium", "high", "xhigh", "max")
+# Explicit output ceilings: the per-call credit reservation prices max_tokens, so the SDK's
+# 128k default made a single planner call cost more than a run's default cap.
+DEFAULT_MAX_TOKENS = {"media": 8_000, "audio": 8_000}
+DEFAULT_MAX_TOKENS_ANY = 16_000
+
+
+def agent_max_tokens(role: str | None = None) -> int:
+    raw = (os.getenv(_role_variable("RENDERHAUS_AGENT_MAX_TOKENS", role), "").strip()
+           or os.getenv("RENDERHAUS_AGENT_MAX_TOKENS", "").strip())
+    if not raw:
+        return DEFAULT_MAX_TOKENS.get(role or "", DEFAULT_MAX_TOKENS_ANY)
+    value = int(raw)
+    if not 1_024 <= value <= 128_000:
+        raise ValueError("RENDERHAUS_AGENT_MAX_TOKENS must be between 1024 and 128000.")
+    return value
 
 
 def agent_backend() -> str:
@@ -67,7 +82,7 @@ def configured_deep_agent_model(role: str | None = None) -> str | BaseChatModel:
     settings = {}
     if model.split(":", 1)[1] in ADAPTIVE_MODELS:
         settings = {"thinking": {"type": "adaptive"}, "output_config": {"effort": effort}}
-    return init_chat_model(model, **settings)
+    return init_chat_model(model, max_tokens=agent_max_tokens(role), **settings)
 
 
 
