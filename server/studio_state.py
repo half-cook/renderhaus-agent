@@ -2368,6 +2368,26 @@ class StudioRepository:
                 ("paused_cap" if payload else "running", json.dumps(payload) if payload else None, _now(), run_id),
             )
 
+    def park_run_hold(self, run_id: str) -> dict[str, Any] | None:
+        """A run waiting on the user (approval card, cap pause) keeps only what it has spent or reserved.
+
+        Bug bash: a waiting card held its full $3 cap, so the user's balance looked $3 lower while
+        nothing ran.  Approve / raise / resume re-holds through ``hold_run``, which checks available
+        credit and raises the hold in one BEGIN IMMEDIATE transaction.
+        """
+        with self._connect() as connection:
+            connection.execute("BEGIN IMMEDIATE")
+            row = connection.execute("SELECT * FROM run_holds WHERE run_id = ?", (run_id,)).fetchone()
+            if row is None or row["state"] != "held":
+                return None
+            floor = row["charged_cents"] + run_budget.work_reserved_cents(connection, run_id)
+            connection.execute(
+                "UPDATE run_holds SET held_cents = ?, updated_at = ? WHERE run_id = ? AND held_cents > ?",
+                (floor, _now(), run_id, floor),
+            )
+            row = connection.execute("SELECT * FROM run_holds WHERE run_id = ?", (run_id,)).fetchone()
+        return dict(row)
+
     def touch_run_hold(self, run_id: str) -> None:
         with self._connect() as connection:
             connection.execute("UPDATE run_holds SET updated_at = ? WHERE run_id = ? AND state = 'held'",

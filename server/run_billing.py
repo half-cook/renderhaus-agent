@@ -55,6 +55,16 @@ def start_run(
             # pause would otherwise stop every later turn in this conversation before any work.
             repo.set_run_pause(run_id, None)
             hold = repo.get_run_hold(run_id)
+        if hold:
+            # A parked hold only covers what was spent; hold a fresh turn's cap again (atomic check-and-hold).
+            estimate = rb.orchestration_estimate_cents() if rb.orchestration_billing_enabled() else 0
+            cap = rb.default_cap_cents(estimate) if estimate else 0
+            if cap and rb.start_cap_floor_cents() > cap:
+                cap = max(cap, min(rb.start_cap_floor_cents(), repo.available_credit(user_id, exclude_run=run_id)))
+            try:
+                hold = repo.hold_run(user_id, run_id, hold["charged_cents"] + cap) if cap else hold
+            except rb.InsufficientCreditError:
+                pass
         return hold
     estimate = autonomous_media_cents + (rb.orchestration_estimate_cents() if rb.orchestration_billing_enabled() else 0)
     cap = rb.default_cap_cents(estimate) if estimate else 0
@@ -70,7 +80,7 @@ def end_run(repo: Any, run_id: str, *, execution_status: str, error_type: str | 
     if hold is None or hold["state"] != "held":
         return None
     if execution_status == "awaiting_approval" or hold["status"] == "paused_cap":
-        repo.touch_run_hold(run_id)
+        repo.park_run_hold(run_id)
         return None
     if execution_status == "completed":
         status = "done"
