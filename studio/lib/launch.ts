@@ -6,5 +6,5 @@ export const OUT_OF_CREDIT_FULL = `${OUT_OF_CREDIT} Reply and tell us what you'd
 
 /** Top-ups stay hidden unless explicitly enabled at build time; the server blocks them too. */
 export function topupsEnabled(): boolean {
-  return process.env.NEXT_PUBLIC_TOPUPS_ENABLED === "true";
+  return typeof process !== "undefined" && process.env.NEXT_PUBLIC_TOPUPS_ENABLED === "true";
 }

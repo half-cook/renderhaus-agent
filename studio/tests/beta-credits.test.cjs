@@ -239,12 +239,14 @@ test("an existing grant shows remaining credit and hides repeat verification", a
   assert.doesNotMatch(ui.markup(), /Verify email|Claim free credit/);
 });
 
-test("empty-wallet guidance distinguishes spent beta credit from an ordinary empty wallet", () => {
+test("quiet beta: empty-wallet guidance never offers a top-up", () => {
   const ui = harness(responses());
   const { emptyWalletMessage } = ui.load("lib/beta-credits.ts");
-  assert.equal(emptyWalletMessage(emptyAccount), "Your wallet is empty. Top up to keep creating.");
-  assert.equal(emptyWalletMessage({ ...emptyAccount, beta_credit: { granted_cents: 1000, remaining_cents: 0, spent_cents: 1000 } }), "Your free beta credit is used up. Top up to keep creating.");
+  const used = "You've used your beta credit. Top-ups are coming soon.";
+  assert.equal(emptyWalletMessage(emptyAccount), used);
+  assert.equal(emptyWalletMessage({ ...emptyAccount, beta_credit: { granted_cents: 1000, remaining_cents: 0, spent_cents: 1000 } }), used);
   assert.equal(emptyWalletMessage({ ...emptyAccount, balance_cents: 1 }), null);
+  assert.doesNotMatch(emptyWalletMessage(emptyAccount), /Top up to/);
 });
 
 test("available daily plan allowance suppresses out-of-credit guidance", () => {
@@ -254,7 +256,7 @@ test("available daily plan allowance suppresses out-of-credit guidance", () => {
   assert.equal(emptyWalletMessage({ ...emptyAccount, subscription,
     beta_credit: { granted_cents: 1000, remaining_cents: 0, spent_cents: 1000 } }), null);
   assert.equal(emptyWalletMessage({ ...emptyAccount, subscription: { ...subscription, status: "past_due" } }),
-    "Your wallet is empty. Top up to keep creating.");
+    "You've used your beta credit. Top-ups are coming soon.");
 });
 
 test("an invalid public status cannot enable the claim flow", async () => {
