@@ -192,9 +192,10 @@ def _ensure_s3_bucket() -> None:
                 "CORSRules": [
                     {
                         "AllowedHeaders": ["*"],
-                        "AllowedMethods": ["GET", "HEAD"],
+                        "AllowedMethods": ["GET", "HEAD", "PUT"],
                         "AllowedOrigins": origins,
-                        "ExposeHeaders": ["Content-Length", "Content-Range", "Accept-Ranges"],
+                        # ETag must be exposed or browser multipart uploads cannot complete.
+                        "ExposeHeaders": ["Content-Length", "Content-Range", "Accept-Ranges", "ETag"],
                         "MaxAgeSeconds": 3000,
                     }
                 ]
