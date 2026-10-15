@@ -254,10 +254,25 @@ def _finish(job: Path, entry: dict, preset_name: str, args: dict) -> dict:
             within = (measured.get("integrated_lufs") is not None and measured.get("true_peak_db") is not None
                       and abs(measured["integrated_lufs"] - settings["I"]) <= tolerance
                       and measured["true_peak_db"] <= settings["TP"])
+            if not within and measured.get("integrated_lufs") is not None and measured.get("true_peak_db") is not None \
+                    and measured["true_peak_db"] + (settings["I"] - measured["integrated_lufs"]) > settings["TP"]:
+                # Linear gain would breach the true-peak ceiling: limit first, then re-measure.
+                limited = _operation(job, "prelimit_mux_aac", current, {
+                    "gain_db": max(-30, min(30, round(settings["I"] - measured["integrated_lufs"], 2))),
+                    "limit_db": max(-12, min(-1, settings["TP"] - 3)), "bitrate_kbps": bitrate})
+                current = Path(limited["outputs"][0]["path"])
+                temporary_outputs.append(current)
+                measured = _operation(job, "measure_loudness", current, settings)["metrics"]
+                within = (abs(measured["integrated_lufs"] - settings["I"]) <= tolerance
+                          and measured["true_peak_db"] <= settings["TP"])
             if within:
                 muxed = _operation(job, "mux_aac", current, {"bitrate_kbps": bitrate})
             else:
-                params = {**settings, "bitrate_kbps": bitrate,
+                # Aim the normalizer 0.3 dB under the ceiling: the AAC re-encode overshoots by ~0.04 dBTP
+                # and QC measures the encoded file against the real ceiling.
+                aim = {**settings, "TP": max(-9, settings["TP"] - 0.3)}
+                measured = _operation(job, "measure_loudness", current, aim)["metrics"]
+                params = {**aim, "bitrate_kbps": bitrate,
                     **{key: measured[value] for key, value in (("measured_I", "input_i"), ("measured_TP", "input_tp"),
                        ("measured_LRA", "input_lra"), ("measured_thresh", "input_thresh"), ("offset", "target_offset"))}}
                 muxed = _operation(job, "loudnorm_mux_aac", current, params)
