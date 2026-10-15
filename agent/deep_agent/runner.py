@@ -30,10 +30,12 @@ from agent.deep_agent.costs import append_media_costs
 from agent.deep_agent.drama_gate import DramaGate
 from agent.deep_agent.short_drama import check_outline
 from agent.deep_agent.files import subagent_file_updates
+from agent.deep_agent.finishing_preview import FINISHING_TOOLS
 from agent.deep_agent.memory import ProjectMemory, append_only_middleware
 from agent.deep_agent.usage import ModelUsage
 from agent.deep_agent.routing import route_intent, capability_table, drama_cancelled
 from agent.gateway_executor import GatewayExecutor, tool_needs_approval
+from agent.codex_harness import ToolApprovalPending
 from agent.errors import AgentRunLimitExceeded
 from agent.studio_agent_next import (
     STUDIO_MANAGER_INSTRUCTIONS,
@@ -240,6 +242,7 @@ async def run_with_servers(request, studio, servers, *, model=None):
     await executor.connect_tools(session)
     initial = await executor.available()
     aliases = defaultdict(deque)
+    finishing_review_approvals = defaultdict(deque)
 
     def save_checkpoint(checkpoint):
         studio.session_items = [{
@@ -313,16 +316,23 @@ async def run_with_servers(request, studio, servers, *, model=None):
             if blocker := drama.blocker(tool_name, arguments):
                 return {"status": "not_run", "error": blocker}
             key = _signature(tool_name, arguments)
-            call_id = aliases[key].popleft() if aliases[key] else "tool-" + hashlib.sha256(
+            approval_id = aliases[key].popleft() if aliases[key] else None
+            call_id = approval_id or "tool-" + hashlib.sha256(
                 json.dumps([
                     _scope(request), runtime.config["configurable"].get("checkpoint_ns", ""),
                     runtime.tool_call_id,
                 ]).encode()
             ).hexdigest()
             claim = drama.claim_submission(tool_name, arguments)
-            result = await executor.execute(
-                {"tool_name": tool_name, "arguments": arguments, "call_id": call_id}, approved=True,
-            )
+            try:
+                result = await executor.execute(
+                    {"tool_name": tool_name, "arguments": arguments, "call_id": call_id},
+                    approved=tool_name not in FINISHING_TOOLS or approval_id is not None,
+                )
+            except ToolApprovalPending:
+                drama.release_submission(claim)
+                return {"status": "not_run", "reason": "This finishing call needs its own spending approval. "
+                        "Make a fresh tool call to request the cost approval."}
             if result.get("status") in {"not_run", "rejected"}:
                 drama.release_submission(claim)
             return result
@@ -366,7 +376,11 @@ async def run_with_servers(request, studio, servers, *, model=None):
     @tool
     async def review_finishing_preview(preview_id: str) -> dict:
         """Request human review of the saved source and finished preview. Full spending needs separate approval."""
-        result = await asyncio.to_thread(executor.finishing_previews.approve, preview_id)
+        if not finishing_review_approvals[preview_id]:
+            return {"status": "not_run", "reason": "This preview has no human review decision. "
+                    "Make a fresh review call when the saved comparison is ready."}
+        comparison = finishing_review_approvals[preview_id].popleft()
+        result = await asyncio.to_thread(executor.finishing_previews.approve, preview_id, comparison)
         executor.publish_spending()
         return result
 
@@ -571,7 +585,10 @@ async def run_with_servers(request, studio, servers, *, model=None):
                             "tool_name": approval.tool_name, "arguments": _gateway_action(action)[1],
                             "call_id": approval.call_id,
                         }, rejection=result["message"])
-                elif approval.tool_name not in {"review_drama_outline", 'review_finishing_preview'}:
+                elif approval.tool_name == 'review_finishing_preview':
+                    finishing_review_approvals[approval.arguments['preview_id']].append(
+                        approval.arguments['comparison'])
+                elif approval.tool_name != "review_drama_outline":
                     aliases[_signature(approval.tool_name, _gateway_action(action)[1])].append(approval.call_id)
                 resume[interrupt_id]["decisions"].append(result)
         graph_input = Command(resume=resume)

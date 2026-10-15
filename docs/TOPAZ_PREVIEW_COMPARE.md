@@ -40,6 +40,10 @@ It binds source, sample, full processing arguments, and saved output checksums. 
 approve/reject interrupt uses the installed Deep Agents 0.7.23 middleware and the existing
 checkpoint and resume mechanism. Rejecting the review blocks the full request. Replay and
 restart use the stored job rather than creating a replacement paid job.
+Native tool execution requires the actual host review decision, bound to the comparison.
+Middleware eligibility alone grants no authority. A finishing dispatch similarly requires
+its own host spending decision. If another tool makes a batched action eligible after
+middleware checks, the action returns without running and requests a fresh approval call.
 The latest sample for the same full request controls approval. An older accepted sample
 cannot override a newer rejection. A failed or rejected sample retains its state when
 prepared again with the same range and settings. A customer-requested replacement needs

@@ -418,10 +418,11 @@ class GatewayExecutor:
         if job == "tts" and constraints["predicates"]["cloned_voice"]:
             job = "cloned_tts"
         constraints = capability_constraints(constraints, job)
-        preview = self.finishing_previews.preview_for(name, arguments)
-        if preview and self.finishing_previews.blocker(name, arguments) is None:
-            constraints["required"]["duration_seconds"] = preview.clip.duration_seconds
-            constraints["predicates"]["duration_over_30s"] = False
+        if name in FINISHING_TOOLS:
+            preview = self.finishing_previews.preview_for(name, arguments)
+            if preview and self.finishing_previews.blocker(name, arguments) is None:
+                constraints["required"]["duration_seconds"] = preview.clip.duration_seconds
+                constraints["predicates"]["duration_over_30s"] = False
         if (name == "Sync___lipsync_video" and route_intent(self.studio.prompt).skill == "dialogue-edit"
                 and any(event.result.get("status") == "requires_audio_fallback" for event in self.studio.tool_events)):
             constraints["predicates"]["presenter"] = False

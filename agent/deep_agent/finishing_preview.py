@@ -470,10 +470,12 @@ class FinishingPreviewGate:
             asset={'version_id': record.output_version_id, 'provider': 'topaz', 'model': model,
                    'status': 'succeeded', 'training_eligible': False})
 
-    def approve(self, preview_id: str) -> dict:
+    def approve(self, preview_id: str, expected_comparison: dict | None = None) -> dict:
         with self.lock:
             try:
                 comparison = self.comparison(preview_id)
+                if expected_comparison is not None and comparison != expected_comparison:
+                    raise ValueError('The comparison changed after human review. Request a fresh review.')
             except (ValueError, OSError, KeyError) as exc:
                 return {'status': 'not_run', 'error': str(exc)}
             record = self.previews[preview_id]

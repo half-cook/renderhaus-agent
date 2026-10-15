@@ -17,8 +17,9 @@ and `Chronos`. Direct API identifiers `slp-2.6`, `apo-8`, and `chr-2` normalize 
 A larger new generation does not upscale the supplied asset. SeedVR2 and RIFE remain retired.
 Run continuity-QC on the input before any paid finishing job. Evidence is vendor-only; A/B is pending.
 
-Read the source asset's measured duration, FPS, width, and height. Supply all four values with
-`video_url`. Use the current renderhaus-asset version handle. Never guess source measurements.
+Use the current `renderhaus-asset://` version handle. Supply measured duration, FPS, width,
+and height when available. Native preparation measures missing values locally. Never guess
+source measurements or submit incomplete arguments directly to the paid Gateway tool.
 Upscale accepts either `target_resolution` of 1080p or 4K, or `upscale_factor` of 1 through 4.
 Omitting both uses 2x. Preserve aspect ratio. Interpolate accepts either `target_fps` or
 `fps_multiplier`. Omitting both uses 60 FPS. Interpolation preserves source dimensions.
