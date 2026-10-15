@@ -4,7 +4,7 @@ import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { Check, CircleAlert, CircleCheck, CirclePause, ImageOff, Info, Pencil, Play, Plus, RotateCw, ShieldCheck, Lock } from "lucide-react";
 import { OUT_OF_CREDIT_FULL, topupsEnabled } from "@/lib/launch";
 import { formatCents } from "@/lib/rh/money";
-import { a11yApproveName, creditState, type ApprovalCardModel } from "@/lib/rh/billing";
+import { a11yApproveName, creditState, usableCreditCents, type ApprovalCardModel } from "@/lib/rh/billing";
 import { BalanceNote, CapRow, Ledger, LedgerRow, LedgerTotal, lineLabel } from "./Ledger";
 
 export const UP_TO_FOOTNOTE = "We stop at this amount, you are never charged more.";
@@ -168,7 +168,7 @@ export function ApprovalCard({ model: input, approveEnabled, busy = false, actio
             {model.pricing || model.unpriceable ? null : credit === "ok" && model.upTo ? null : credit === "ok" ? <CapRow capCents={model.capCents} bar={model.capCents ? (model.estimateCents / model.capCents) * 100 : 0} /> : (
               <>
                 <CapRow capCents={model.capCents} tone="ember" />
-                <div className="rh-cap-row"><span style={{ width: 12 }} /><span>Your credit</span><b className="rh-num rh-mono">{formatCents(model.balanceCents ?? 0)}</b></div>
+                <div className="rh-cap-row"><span style={{ width: 12 }} /><span>Your credit</span><b className="rh-num rh-mono">{formatCents(usableCreditCents(model) ?? 0)}</b></div>
               </>
             )}
           </Ledger>
@@ -329,7 +329,7 @@ const OVER_CREDIT_FOOTNOTE = "Approve is off because this step’s hard cap is m
 function OverCredit({ model, credit: reported, titleId, actions }: {
   model: ApprovalCardModel; credit: "lower_cap" | "add_credit"; titleId: string; approveName?: string; actions: ApprovalCardActions;
 }) {
-  const balance = model.balanceCents ?? 0;
+  const balance = usableCreditCents(model) ?? 0;
   // The estimate fitting the credit is what decides 49 vs 49b, even if the server sent no lower-cap option.
   // An up-to step stops at its cap, so a lower cap that fits the credit is always a valid choice (49 path).
   const credit = model.upTo

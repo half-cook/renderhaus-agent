@@ -782,6 +782,7 @@ export function AgentDock({ navigationBusy: externalBusy, onBusyChange, suggesti
   const submit = async (frameText?: string, frameSlotId?: string, retryPrompt?: string) => {
     const prompt = (retryPrompt ?? frameText ?? value).trim();
     let unreachable = false;
+    let refusal: string | undefined;
     const allowAutonomous = frameText ? false : autonomous;
     if (!prompt || runInFlight || externalBusy || !conversationId) return;
     setBusy(true);
@@ -834,6 +835,8 @@ export function AgentDock({ navigationBusy: externalBusy, onBusyChange, suggesti
         },
       );
       unreachable = result.status === "error" && Boolean("unreachable" in result && result.unreachable);
+      // Any refused start (402 credit, 4xx) must keep the message in the transcript too, never drop back to empty.
+      if (result.status === "error" && !unreachable && !("result" in result && result.result)) refusal = result.message;
       setAgentMessage(unreachable ? null : result.message);
       if ("result" in result && result.result) {
         setLiveRun({
@@ -866,7 +869,7 @@ export function AgentDock({ navigationBusy: externalBusy, onBusyChange, suggesti
         },
       });
     } finally {
-      setFailedTurn((previous) => (unreachable ? nextFailedTurn(previous, prompt) : null));
+      setFailedTurn((previous) => (unreachable ? nextFailedTurn(previous, prompt) : refusal ? nextFailedTurn(previous, prompt, refusal) : null));
       await refreshConversations().catch(() => undefined);
       setLiveRun(null);
       setBusy(false);
@@ -1104,10 +1107,10 @@ export function AgentDock({ navigationBusy: externalBusy, onBusyChange, suggesti
             <UserMessage text={failedTurn.prompt} />
             <div className="agent-response">
             <p className="rh-send-failed-line" role="alert">
-              {SEND_FAILED_LINE}{" "}
+              {failedTurn.note || SEND_FAILED_LINE}{" "}
               <button type="button" className="rh-send-failed-retry" disabled={runInFlight || externalBusy} onClick={() => void submit(undefined, undefined, failedTurn.prompt)}>{SEND_FAILED_RETRY}</button>
             </p>
-            {failedTurn.attempts > 1 ? <p className="rh-send-failed-line">{SEND_FAILED_AGAIN_LINE}</p> : null}
+            {failedTurn.attempts > 1 && !failedTurn.note ? <p className="rh-send-failed-line">{SEND_FAILED_AGAIN_LINE}</p> : null}
             </div>
           </section>
         ) : null}
