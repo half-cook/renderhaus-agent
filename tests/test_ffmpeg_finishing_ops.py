@@ -397,8 +397,8 @@ class FinishingRealBinaryTests(FinishingFixture, unittest.TestCase):
         target = {"I": -14, "TP": -1.5, "LRA": 11}
         before = self.call("measure_loudness", target, input_path=peaky.name)["metrics"]
         self.assertGreater(before["true_peak_db"] + (-14 - before["integrated_lufs"]), -1.5)
-        limited = self.exported(self.call("prelimit_mux_aac", {"gain_db": -14 - before["integrated_lufs"],
-                                                               "limit_db": -4.5}, input_path=peaky.name))[0]
+        limited = self.exported(self.call("prelimit_mux_aac", {"gain_db": -14 - before["integrated_lufs"] + 1.5,
+                                                               "limit_db": -2.5}, input_path=peaky.name))[0]
         aim = {**target, "TP": -1.8}
         measured = self.call("measure_loudness", aim, input_path=limited.name)["metrics"]
         names = {"measured_I": "input_i", "measured_TP": "input_tp", "measured_LRA": "input_lra",
@@ -409,6 +409,7 @@ class FinishingRealBinaryTests(FinishingFixture, unittest.TestCase):
         after = normalized["metrics"]["after"]
         self.assertLessEqual(abs(after["integrated_lufs"] + 14), .5, after)
         self.assertLessEqual(after["true_peak_db"], -1.5, after)
+        self.assertEqual(normalized["metrics"]["normalization_type"], "linear")
 
     def test_cleanup_refuses_video_without_audio(self):
         silent = self.job / "silent.mp4"
