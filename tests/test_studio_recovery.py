@@ -175,3 +175,14 @@ class StudioRecoveryTests(unittest.IsolatedAsyncioTestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+def test_agent_failure_copy_hides_exception_names():
+    import inspect
+
+    import server.studio as studio
+
+    source = inspect.getsource(studio)
+    assert "could not finish ({type(exc).__name__})" not in source
+    assert "this request ({type(exc).__name__})" not in source
+    assert "The agent stopped before finishing." in source

@@ -62,6 +62,7 @@ import { formatCents } from "@/lib/rh/money";
 import { toRunReceiptModel, toApprovalCardModel } from "@/lib/rh/billing";
 import { useCreditContext } from "@/lib/rh/credit-store";
 import { RH_ADD_CREDIT_EVENT } from "@/lib/rh/events";
+import { SEND_FAILED_AGAIN_LINE, SEND_FAILED_LINE, SEND_FAILED_RETRY, nextFailedTurn, type FailedTurn } from "@/lib/chat-failure";
 
 type LiveRun = {
   prompt: string;
@@ -640,6 +641,7 @@ export function AgentDock({ navigationBusy: externalBusy, onBusyChange, suggesti
     ...current, [draftKey]: typeof next === "function" ? next(current[draftKey] || "") : next,
   }));
   const [busy, setBusy] = useState(false);
+  const [failedTurn, setFailedTurn] = useState<FailedTurn | null>(null);
   const [liveRun, setLiveRun] = useState<LiveRun | null>(null);
   const [renaming, setRenaming] = useState<string | null>(null);
   const [archivePending, setArchivePending] = useState(false);
@@ -770,8 +772,9 @@ export function AgentDock({ navigationBusy: externalBusy, onBusyChange, suggesti
     finally { setChangingTask(false); onBusyChange(false); }
   };
 
-  const submit = async (frameText?: string, frameSlotId?: string) => {
-    const prompt = (frameText ?? value).trim();
+  const submit = async (frameText?: string, frameSlotId?: string, retryPrompt?: string) => {
+    const prompt = (retryPrompt ?? frameText ?? value).trim();
+    let unreachable = false;
     const allowAutonomous = frameText ? false : autonomous;
     if (!prompt || runInFlight || externalBusy || !conversationId) return;
     setBusy(true);
@@ -788,7 +791,7 @@ export function AgentDock({ navigationBusy: externalBusy, onBusyChange, suggesti
         approvals: [],
       },
     });
-    if (!frameText) setValue("");
+    if (!frameText && !retryPrompt) setValue("");
     const refs = mentions.map((node) => node.id);
     const ids = frameText ? frameSlotId ? [frameSlotId] : [] : refs.length ? refs : selectedNodeIds;
     const referencedNodes = nodes.filter((node) => ids.includes(node.id));
@@ -823,7 +826,8 @@ export function AgentDock({ navigationBusy: externalBusy, onBusyChange, suggesti
           setLiveRun({ prompt, progress });
         },
       );
-      setAgentMessage(result.message);
+      unreachable = result.status === "error" && Boolean("unreachable" in result && result.unreachable);
+      setAgentMessage(unreachable ? null : result.message);
       if ("result" in result && result.result) {
         setLiveRun({
           prompt,
@@ -841,7 +845,8 @@ export function AgentDock({ navigationBusy: externalBusy, onBusyChange, suggesti
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : "The agent could not run.";
-      setAgentMessage(message);
+      unreachable = true;
+      setAgentMessage(null);
       setLiveRun({
         prompt,
         progress: {
@@ -854,7 +859,8 @@ export function AgentDock({ navigationBusy: externalBusy, onBusyChange, suggesti
         },
       });
     } finally {
-      await refreshConversations();
+      setFailedTurn((previous) => (unreachable ? nextFailedTurn(previous, prompt) : null));
+      await refreshConversations().catch(() => undefined);
       setLiveRun(null);
       setBusy(false);
     }
@@ -1039,7 +1045,7 @@ export function AgentDock({ navigationBusy: externalBusy, onBusyChange, suggesti
         const el = event.currentTarget;
         stickToBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < 100;
       }}>
-        {conversationExecutions.length === 0 && !liveRun && !changesDocument ? (
+        {conversationExecutions.length === 0 && !liveRun && !failedTurn && !changesDocument ? (
           <div className="agent-empty">
             <p className="rh-eyebrow">Project · {projectName}</p>
             <h3>What are we <em>making</em>?</h3>
@@ -1086,6 +1092,18 @@ export function AgentDock({ navigationBusy: externalBusy, onBusyChange, suggesti
           />
         ))}
         {liveRun ? <LiveExecutionTurn run={liveRun} /> : null}
+        {failedTurn && !liveRun ? (
+          <section className="agent-turn rh-send-failed" data-shot="send-failed">
+            <UserMessage text={failedTurn.prompt} />
+            <div className="agent-response">
+            <p className="rh-send-failed-line" role="alert">
+              {SEND_FAILED_LINE}{" "}
+              <button type="button" className="rh-send-failed-retry" disabled={runInFlight || externalBusy} onClick={() => void submit(undefined, undefined, failedTurn.prompt)}>{SEND_FAILED_RETRY}</button>
+            </p>
+            {failedTurn.attempts > 1 ? <p className="rh-send-failed-line">{SEND_FAILED_AGAIN_LINE}</p> : null}
+            </div>
+          </section>
+        ) : null}
         {pausedNote ? <p className="rh-paused-line" role="status" data-shot="not-now-paused">{NOT_NOW_LINE}</p> : null}
         {changesDocument ? <ChangesetCard document={changesDocument} onInsert={(n) => useChangesStore.getState().setComposerInsertion(`change ${n}`)} onOpen={() => { const store = useChangesStore.getState(); store.setTab("changes"); const take = changesDocument.changes.find((change) => change.kind === "take"); if (take) store.openCompare(take.n); }} /> : null}
       </div>

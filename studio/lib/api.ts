@@ -682,7 +682,7 @@ export async function updateStudioConversation(
 export type AgentSubmissionResult =
   | { status: "completed"; message: string; result: AgentResultData }
   | { status: "awaiting_approval"; message: string; jobId: string }
-  | { status: "error"; message: string; result?: AgentResultData };
+  | { status: "error"; message: string; result?: AgentResultData; unreachable?: boolean };
 
 export type AgentNodeContext = {
   id: string;
@@ -741,7 +741,7 @@ function agentError(payload: AgentJobPayload, response: Response): AgentSubmissi
       : typeof payload.message === "string"
         ? payload.message
         : `The agent request failed (${response.status}).`;
-  return { status: "error", message };
+  return { status: "error", message, unreachable: response.status >= 500 };
 }
 
 function completedAgentResult(payload: AgentJobPayload): AgentSubmissionResult {
@@ -925,7 +925,9 @@ export async function submitAgentPrompt(
   autonomous: boolean,
   onProgress?: (progress: AgentProgress) => void,
 ): Promise<AgentSubmissionResult> {
-  const response = await studioFetch("/api/studio/agent", {
+  let response: Response;
+  try {
+    response = await studioFetch("/api/studio/agent", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -937,6 +939,9 @@ export async function submitAgentPrompt(
       autonomous,
     }),
   });
+  } catch {
+    return { status: "error", message: "Couldn't reach Renderhaus", unreachable: true };
+  }
   const payload = (await response.json().catch(() => ({}))) as AgentJobPayload;
   if (!response.ok) {
     return agentError(payload, response);
