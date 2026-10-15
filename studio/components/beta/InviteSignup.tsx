@@ -4,7 +4,7 @@ import { useSignIn, useSignUp } from "@clerk/nextjs/legacy";
 import { ArrowRight, Check } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useAuth } from "@clerk/nextjs";
+import { useAuth, useClerk } from "@clerk/nextjs";
 import { useCallback, useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { useClerkConfigured } from "@/components/StudioAuth";
 import {
@@ -85,9 +85,24 @@ function useClerkEmailCode(): EmailCode {
 type OAuthStart = (after: string) => Promise<void>;
 const SSO_CALLBACK = "/sso-callback";
 
-function useClerkGoogle(kind: "up" | "in"): OAuthStart {
+/** True only when the live Clerk instance has Google OAuth switched on. */
+export function googleEnabled(environment: unknown): boolean {
+  const settings = (environment as { userSettings?: { socialProviderStrategies?: string[]; social?: Record<string, { enabled?: boolean }> } } | undefined)?.userSettings;
+  if (!settings) return false;
+  if (Array.isArray(settings.socialProviderStrategies)) return settings.socialProviderStrategies.includes("oauth_google");
+  return Boolean(settings.social?.oauth_google?.enabled);
+}
+
+function useGoogleEnabled(): boolean {
+  const clerk = useClerk() as unknown as { loaded?: boolean; __unstable__environment?: unknown };
+  return Boolean(clerk.loaded) && googleEnabled(clerk.__unstable__environment);
+}
+
+function useClerkGoogle(kind: "up" | "in"): OAuthStart | null {
   const signUp = useSignUp();
   const signIn = useSignIn();
+  const enabled = useGoogleEnabled();
+  if (!enabled) return null;
   return async (after) => {
     if (!signUp.isLoaded || !signIn.isLoaded) throw new Error("Still loading. Try again in a moment.");
     const target = kind === "up" ? signUp.signUp : signIn.signIn;
@@ -139,6 +154,12 @@ export function InviteSignup({ initialPhase, mode = "sign-up" }: { initialPhase?
   return <InviteSignupFlow initialPhase={initialPhase} />;
 }
 
+/** Clerk bot protection mounts its Turnstile widget here; it must exist whenever signUp.create or a
+ *  Google redirect (which can transfer to sign-up) runs in our custom flow. */
+function ClerkCaptcha() {
+  return <div id="clerk-captcha" className="rh-clerk-captcha" data-cl-theme="dark" data-cl-size="flexible" />;
+}
+
 function AuthShell({ children, shot }: { children: ReactNode; shot: string }) {
   return (
     <main className="rh-page rh-signup" data-surface="beta" data-shot={shot}>
@@ -146,7 +167,7 @@ function AuthShell({ children, shot }: { children: ReactNode; shot: string }) {
         <div className="rh-signup-bleed" aria-hidden="true" />
         <Link href="/" className="rh-brand rh-signup-brand"><span className="rh-mark" /><span className="rh-bleed-word">Renderhaus</span></Link>
         <p className="rh-signup-caption">Sign in with your email. No password. Nothing runs until you approve the price.</p>
-        <section className="rh-signup-pane" aria-labelledby="beta-title">{children}</section>
+        <section className="rh-signup-pane" aria-labelledby="beta-title">{children}<ClerkCaptcha /></section>
       </div>
     </main>
   );
@@ -185,16 +206,20 @@ function SignInScreen() {
     <AuthShell shot="sign-in-ready">
       <div className="rh-form rh-form-v4" data-shot="sign-in-form">
         <h1 id="beta-title" className="rh-signup-h">Welcome back</h1>
-        <p className="rh-form-sub">Sign in with Google or a code sent to your email.</p>
-        {configured ? <ClerkSignIn /> : <SignInForm google={null} auth={useLocalEmailCode()} />}
+        {configured ? <ClerkSignIn /> : <><p className="rh-form-sub">{signInSub(false)}</p><SignInForm google={null} auth={useLocalEmailCode()} /></>}
         <p className="rh-form-fine">New here? <Link href="/sign-up">Use your invite</Link></p>
       </div>
     </AuthShell>
   );
 }
 
+export function signInSub(google: boolean): string {
+  return google ? "Sign in with Google or a code sent to your email." : "Sign in with a code sent to your email.";
+}
+
 function ClerkSignIn() {
-  return <SignInForm google={useClerkGoogle("in")} auth={useClerkSignInCode()} />;
+  const google = useClerkGoogle("in");
+  return <><p className="rh-form-sub">{signInSub(Boolean(google))}</p><SignInForm google={google} auth={useClerkSignInCode()} /></>;
 }
 
 function SignInForm({ google, auth }: { google: OAuthStart | null; auth: EmailCode }) {
@@ -297,6 +322,7 @@ function InviteSignupFlow({ initialPhase }: { initialPhase?: Phase }) {
               <p className="rh-form-fine">Already in? <Link href="/sign-in">Sign in</Link></p>
             </div>
           )}
+          <ClerkCaptcha />
         </section>
       </div>
     </main>
