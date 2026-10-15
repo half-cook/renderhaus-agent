@@ -67,7 +67,13 @@ export function StudioStage({ onOpenReview }: { onOpenReview?: () => void }) {
             </button>
           ))}
         </div>
-      ) : <div className="rh-strip" aria-hidden="true"><div className="rh-strip-empty" /></div>}
+      ) : (
+        // Empty project: keep the slim timeline visible with three quiet slots instead of a blank band.
+        <div className="rh-strip rh-strip-placeholder" data-shot="studio-strip-empty" aria-label="Timeline, no shots yet" role="note">
+          <div className="rh-strip-empty" /><div className="rh-strip-empty" /><div className="rh-strip-empty" />
+          <span className="rh-strip-hint">Shots appear here as they’re made</span>
+        </div>
+      )}
     </section>
   );
 }
