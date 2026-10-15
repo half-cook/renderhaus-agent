@@ -254,6 +254,17 @@ def _finish(job: Path, entry: dict, preset_name: str, args: dict) -> dict:
             within = (measured.get("integrated_lufs") is not None and measured.get("true_peak_db") is not None
                       and abs(measured["integrated_lufs"] - settings["I"]) <= tolerance
                       and measured["true_peak_db"] <= settings["TP"])
+            if not within and measured.get("integrated_lufs") is not None and measured.get("true_peak_db") is not None \
+                    and measured["true_peak_db"] + (settings["I"] - measured["integrated_lufs"]) > settings["TP"]:
+                # Linear gain would breach the true-peak ceiling: limit first, then re-measure.
+                limited = _operation(job, "prelimit_mux_aac", current, {
+                    "gain_db": max(-30, min(30, round(settings["I"] - measured["integrated_lufs"], 2))),
+                    "limit_db": max(-12, min(-1, settings["TP"] - 1.5)), "bitrate_kbps": bitrate})
+                current = Path(limited["outputs"][0]["path"])
+                temporary_outputs.append(current)
+                measured = _operation(job, "measure_loudness", current, settings)["metrics"]
+                within = (abs(measured["integrated_lufs"] - settings["I"]) <= tolerance
+                          and measured["true_peak_db"] <= settings["TP"])
             if within:
                 muxed = _operation(job, "mux_aac", current, {"bitrate_kbps": bitrate})
             else:

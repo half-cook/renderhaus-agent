@@ -387,6 +387,28 @@ class FinishingRealBinaryTests(FinishingFixture, unittest.TestCase):
         self.exported(normalized)
         self.assertLessEqual(abs(normalized["metrics"]["after"]["integrated_lufs"] + 16), .5)
 
+    def test_peaky_quiet_mix_is_prelimited_so_linear_loudnorm_reaches_target(self):
+        # Live bug-bash film: -16.3 LUFS with peaks at the ceiling; linear loudnorm could not lift it and QC withheld the film.
+        peaky = self.job / "peaky.mp4"
+        self.run_ffmpeg(["-f", "lavfi", "-i", "color=c=0x204060:size=320x180:rate=24:duration=8",
+                         "-f", "lavfi", "-i", "aevalsrc=0.06*sin(2*PI*440*t)+0.85*lt(mod(t\\,0.5)\\,0.003)*sin(2*PI*3000*t):s=48000:d=8",
+                         "-c:v", "libx264", "-threads", "1", "-crf", "18", "-c:a", "aac", "-b:a", "192k",
+                         "-shortest", "-movflags", "+faststart", str(peaky)])
+        target = {"I": -14, "TP": -1.5, "LRA": 11}
+        before = self.call("measure_loudness", target, input_path=peaky.name)["metrics"]
+        self.assertGreater(before["true_peak_db"] + (-14 - before["integrated_lufs"]), -1.5)
+        limited = self.exported(self.call("prelimit_mux_aac", {"gain_db": -14 - before["integrated_lufs"],
+                                                               "limit_db": -3}, input_path=peaky.name))[0]
+        measured = self.call("measure_loudness", target, input_path=limited.name)["metrics"]
+        names = {"measured_I": "input_i", "measured_TP": "input_tp", "measured_LRA": "input_lra",
+                 "measured_thresh": "input_thresh", "offset": "target_offset"}
+        params = {**target, **{name: measured[field] for name, field in names.items()}}
+        normalized = self.call("loudnorm_mux_aac", params, input_path=limited.name)
+        self.exported(normalized)
+        after = normalized["metrics"]["after"]
+        self.assertLessEqual(abs(after["integrated_lufs"] + 14), .5, after)
+        self.assertLessEqual(after["true_peak_db"], -1.5, after)
+
     def test_cleanup_refuses_video_without_audio(self):
         silent = self.job / "silent.mp4"
         self.run_ffmpeg(["-i", str(self.source), "-an", "-c:v", "copy", str(silent)])

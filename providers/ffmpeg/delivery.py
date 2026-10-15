@@ -168,6 +168,20 @@ def normalize(directory, source, params):
     return [_mux_command(directory, source, params, metrics, audio_filter=audio_filter)]
 
 
+def prelimit(directory, source, params):
+    """Apply a fixed gain behind a peak limiter so linear loudnorm can reach the target.
+
+    Linear loudnorm cannot raise a quiet mix whose peaks already sit near the true-peak ceiling
+    (live film: -16.3 LUFS / -1.47 dBTP against -14 / -1.5), and dynamic mode on short clips misses
+    the target too, so QC withheld a finished film. Gain + limiter first, then loudnorm as usual.
+    """
+    _, _, _, metrics = _delivery_source(directory, source, require_audio=True)
+    limit = 10 ** (params["limit_db"] / 20)
+    audio_filter = (f"volume={params['gain_db']:g}dB,"
+                    f"alimiter=limit={limit:.6f}:level=disabled:attack=5:release=50:asc=1")
+    return [_mux_command(directory, source, params, metrics, audio_filter=audio_filter)]
+
+
 def normalization_metrics(results):
     payload = _loudnorm_json(results[0])
     kind = payload["normalization_type"]
