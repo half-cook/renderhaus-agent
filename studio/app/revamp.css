@@ -1045,3 +1045,14 @@ button.rh-cut-ribbon-clip { cursor: pointer; }
 .rh-upload-bar[data-state="failed"] b { background: var(--rh-danger, #d9534f); }
 .rh-upload-detail { font-size: 11.5px; color: var(--rh-fg-3); }
 .rh-upload-actions { display: flex; gap: 4px; }
+
+/* Phone landing: stack How it works, the canvas demo and the FAQ into one column. */
+@media (max-width: 640px) {
+  .rh-section { padding-left: 20px; padding-right: 20px; }
+  .rh-section .rh-h1 { font-size: 36px !important; line-height: 1.05; }
+  .rh-steps { grid-template-columns: 1fr; gap: 24px; margin-top: 28px; }
+  .rh-demo-head { flex-direction: column; align-items: flex-start; gap: 12px; }
+  .rh-demo-wrap { min-height: 0; max-width: 100%; overflow-x: auto; }
+  .rh-faq { flex-direction: column; gap: 24px; }
+  .rh-faq-title { width: auto; }
+}

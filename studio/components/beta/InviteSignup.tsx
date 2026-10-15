@@ -3,7 +3,8 @@
 import { useSignIn, useSignUp } from "@clerk/nextjs/legacy";
 import { ArrowRight, Check } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useAuth } from "@clerk/nextjs";
 import { useCallback, useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { useClerkConfigured } from "@/components/StudioAuth";
 import {
@@ -81,6 +82,48 @@ function useClerkEmailCode(): EmailCode {
   };
 }
 
+type OAuthStart = (after: string) => Promise<void>;
+const SSO_CALLBACK = "/sso-callback";
+
+function useClerkGoogle(kind: "up" | "in"): OAuthStart {
+  const signUp = useSignUp();
+  const signIn = useSignIn();
+  return async (after) => {
+    if (!signUp.isLoaded || !signIn.isLoaded) throw new Error("Still loading. Try again in a moment.");
+    const target = kind === "up" ? signUp.signUp : signIn.signIn;
+    await target.authenticateWithRedirect({ strategy: "oauth_google", redirectUrl: SSO_CALLBACK, redirectUrlComplete: after });
+  };
+}
+
+/** Sign-in only: an email with no account is told to use an invite instead of silently creating one. */
+function useClerkSignInCode(): EmailCode {
+  const signIn = useSignIn();
+  return {
+    start: async (email) => {
+      if (!signIn.isLoaded) throw new Error("Still loading. Try again in a moment.");
+      let attempt;
+      try { attempt = await signIn.signIn.create({ identifier: email }); } catch (error) {
+        const code = (error as { errors?: Array<{ code?: string }> })?.errors?.[0]?.code;
+        if (code === "form_identifier_not_found") throw new Error(NO_ACCOUNT);
+        throw error;
+      }
+      const factor = attempt.supportedFirstFactors?.find((item) => item.strategy === "email_code");
+      if (!factor || !("emailAddressId" in factor)) throw new Error("Email sign-in isn’t available for this account.");
+      await signIn.signIn.prepareFirstFactor({ strategy: "email_code", emailAddressId: factor.emailAddressId });
+      return `Sent to ${email}. Type the code from the email.`;
+    },
+    confirm: async (code) => {
+      if (!signIn.isLoaded) throw new Error("Still loading. Try again in a moment.");
+      let result;
+      try { result = await signIn.signIn.attemptFirstFactor({ strategy: "email_code", code }); } catch (error) { throw classifyConfirmError(error); }
+      if (result.status !== "complete" || !result.createdSessionId) throw incompleteResult(result);
+      await signIn.setActive({ session: result.createdSessionId });
+    },
+  };
+}
+
+export const NO_ACCOUNT = "No account uses that email yet. Renderhaus is invite only, so start with your invite code.";
+
 const LOCAL_CODE = "424242";
 function useLocalEmailCode(): EmailCode {
   return {
@@ -91,8 +134,146 @@ function useLocalEmailCode(): EmailCode {
 
 type Phase = { kind: "code" } | { kind: "email"; invite: InviteReservation } | { kind: "welcome"; balanceCents: number };
 
-export function InviteSignup({ initialPhase }: { initialPhase?: Phase } = {}) {
+export function InviteSignup({ initialPhase, mode = "sign-up" }: { initialPhase?: Phase; mode?: "sign-up" | "sign-in" } = {}) {
+  if (mode === "sign-in") return <SignInScreen />;
+  return <InviteSignupFlow initialPhase={initialPhase} />;
+}
+
+function AuthShell({ children, shot }: { children: ReactNode; shot: string }) {
+  return (
+    <main className="rh-page rh-signup" data-surface="beta" data-shot={shot}>
+      <div className="rh-signup-v4 rh-signup-cinema">
+        <div className="rh-signup-bleed" aria-hidden="true" />
+        <Link href="/" className="rh-brand rh-signup-brand"><span className="rh-mark" /><span className="rh-bleed-word">Renderhaus</span></Link>
+        <p className="rh-signup-caption">Sign in with your email. No password. Nothing runs until you approve the price.</p>
+        <section className="rh-signup-pane" aria-labelledby="beta-title">{children}</section>
+      </div>
+    </main>
+  );
+}
+
+function GoogleButton({ start, after, label }: { start: OAuthStart | null; after: string; label: string }) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  if (!start) return null;
+  return (
+    <>
+      <button type="button" className="rh-btn rh-btn-lg rh-btn-block rh-google" disabled={busy} data-shot="google"
+        onClick={() => { setBusy(true); setError(null); start(after).catch((cause) => { setError(friendly(cause, "Google sign-in didn’t start. Try again.")); setBusy(false); }); }}>
+        <GoogleMark /> {busy ? "Opening Google…" : label}
+      </button>
+      {error ? <p className="rh-err" role="alert">{error}</p> : null}
+      <div className="rh-or" aria-hidden="true"><span>or</span></div>
+    </>
+  );
+}
+
+function GoogleMark() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 48 48" aria-hidden="true">
+      <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.1 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/>
+      <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.1 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/>
+      <path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/>
+      <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/>
+    </svg>
+  );
+}
+
+function SignInScreen() {
+  const configured = useClerkConfigured();
+  return (
+    <AuthShell shot="sign-in-ready">
+      <div className="rh-form rh-form-v4" data-shot="sign-in-form">
+        <h1 id="beta-title" className="rh-signup-h">Welcome back</h1>
+        <p className="rh-form-sub">Sign in with Google or a code sent to your email.</p>
+        {configured ? <ClerkSignIn /> : <SignInForm google={null} auth={useLocalEmailCode()} />}
+        <p className="rh-form-fine">New here? <Link href="/sign-up">Use your invite</Link></p>
+      </div>
+    </AuthShell>
+  );
+}
+
+function ClerkSignIn() {
+  return <SignInForm google={useClerkGoogle("in")} auth={useClerkSignInCode()} />;
+}
+
+function SignInForm({ google, auth }: { google: OAuthStart | null; auth: EmailCode }) {
+  const router = useRouter();
+  const [email, setEmail] = useState("");
+  const [sent, setSent] = useState(false);
+  const [code, setCode] = useState("");
+  const [wrong, setWrong] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [resendAt, setResendAt] = useState<number | null>(null);
+  const resendLeft = useCountdown(resendAt);
+  const run = async (action: () => Promise<void>) => {
+    if (busy) return;
+    setBusy(true); setError(null);
+    try { await action(); } catch (cause) { setError(friendly(cause, "Something went wrong. Try again.")); } finally { setBusy(false); }
+  };
+  const send = (event?: FormEvent) => { event?.preventDefault(); void run(async () => {
+    await auth.start(email.trim()); setSent(true); setCode(""); setWrong(false); setResendAt(Date.now() + RESEND_SECONDS * 1000);
+  }); };
+  const confirm = (event?: FormEvent) => { event?.preventDefault(); void run(async () => {
+    try { await auth.confirm(code); } catch (cause) {
+      const failure = classifyConfirmError(cause);
+      if (failure.kind === "wrong_code") { setWrong(true); setCode(""); return; }
+      if (failure.kind === "expired") setCode("");
+      setError(failure.message); return;
+    }
+    router.push("/home");
+  }); };
+  return (
+    <div className="rh-steps-form">
+      {!sent ? (
+        <>
+          <GoogleButton start={google} after="/home" label="Continue with Google" />
+          <form onSubmit={send} className="rh-step-body">
+            <label className="rh-label" htmlFor="signin-email">Email</label>
+            <input id="signin-email" className="rh-input" type="email" autoComplete="email" placeholder="you@example.com" value={email} onChange={(event) => setEmail(event.target.value)} />
+            <button type="submit" className="rh-btn rh-btn-solid rh-btn-lg rh-btn-block" disabled={busy || !email.trim()}>{busy ? "Sending…" : "Send code"}</button>
+          </form>
+        </>
+      ) : (
+        <form onSubmit={confirm} className="rh-step-body">
+          <div className="rh-fg3" style={{ fontSize: 12 }}>Sent to <b className="rh-mono" style={{ color: "var(--rh-fg)" }}>{email}</b>. Type the code from the email.</div>
+          <CodeCells value={code} onChange={(next) => { setCode(next); setWrong(false); }} invalid={wrong} disabled={busy} label="Email code" />
+          {wrong ? <p className="rh-err" role="alert">{WRONG_CODE}</p> : null}
+          <div className="rh-resend">
+            {resendLeft > 0 ? <span>Resend in {mmss(resendLeft)}</span> : <button type="button" className="rh-linkbtn" onClick={() => send()}>Resend code</button>}
+            <button type="button" className="rh-linkbtn" onClick={() => { setSent(false); setCode(""); setWrong(false); }}>Use a different email</button>
+          </div>
+          <button type="submit" className={`rh-btn rh-btn-lg rh-btn-block ${code.length < 6 ? "" : "rh-btn-primary"}`} disabled={busy || code.length < 6}>
+            {code.length < 6 ? "Enter the 6-digit code to continue" : "Sign in"}
+          </button>
+        </form>
+      )}
+      {error ? <p className="rh-err" role="alert">{error}</p> : null}
+    </div>
+  );
+}
+
+/** After Google returns to /sign-up?redeem=1 the session is live: burn the saved invite now. */
+function GoogleRedeem({ invite, onDone }: { invite: InviteReservation; onDone: (balanceCents: number) => void }) {
+  const { isLoaded, isSignedIn } = useAuth();
+  const [error, setError] = useState<string | null>(null);
+  const started = useRef(false);
+  useEffect(() => {
+    if (!isLoaded || !isSignedIn || started.current) return;
+    started.current = true;
+    redeemInvite(invite).then((result) => onDone(result.balanceCents)).catch((cause) => setError(friendly(cause, "Could not add your credit. Try again.")));
+  }, [isLoaded, isSignedIn, invite, onDone]);
+  if (isLoaded && !isSignedIn) return <p className="rh-err" role="alert">Google sign-in didn’t finish. Try again, or use your email.</p>;
+  return error ? <p className="rh-err" role="alert">{error}</p> : <p className="rh-fg3" role="status">Adding your credit…</p>;
+}
+
+function InviteSignupFlow({ initialPhase }: { initialPhase?: Phase }) {
   const [phase, setPhase] = useState<Phase>(initialPhase ?? { kind: "code" });
+  const params = useSearchParams();
+  const configured = useClerkConfigured();
+  const redeeming = configured && params?.get("redeem") === "1" && phase.kind === "email";
+  const finish = useCallback((balanceCents: number) => setPhase({ kind: "welcome", balanceCents }), []);
   useEffect(() => {
     if (initialPhase) return;
     const saved = savedInvite();
@@ -112,7 +293,7 @@ export function InviteSignup({ initialPhase }: { initialPhase?: Phase } = {}) {
               <h1 id="beta-title" className="rh-signup-h">{phase.kind === "code" ? "Enter your invite" : "Confirm your email"}</h1>
               <p className="rh-form-sub">One code, one account, $10 in credit.</p>
               <CodeStep phase={phase} onReserved={(invite) => setPhase({ kind: "email", invite })} onChange={() => setPhase({ kind: "code" })} />
-              <EmailStepSwitch phase={phase} onDone={(balanceCents) => setPhase({ kind: "welcome", balanceCents })} />
+              {redeeming && phase.kind === "email" ? <GoogleRedeem invite={phase.invite} onDone={finish} /> : <EmailStepSwitch phase={phase} onDone={finish} />}
               <p className="rh-form-fine">Already in? <Link href="/sign-in">Sign in</Link></p>
             </div>
           )}
@@ -169,13 +350,13 @@ function EmailStepSwitch(props: { phase: Phase; onDone: (balanceCents: number) =
   return useClerkConfigured() ? <ClerkEmailStep {...props} /> : <LocalEmailStep {...props} />;
 }
 function ClerkEmailStep(props: { phase: Phase; onDone: (balanceCents: number) => void }) {
-  return <EmailStep {...props} auth={useClerkEmailCode()} />;
+  return <EmailStep {...props} auth={useClerkEmailCode()} google={useClerkGoogle("up")} />;
 }
 function LocalEmailStep(props: { phase: Phase; onDone: (balanceCents: number) => void }) {
   return <EmailStep {...props} auth={useLocalEmailCode()} />;
 }
 
-function EmailStep({ phase, onDone, auth }: { phase: Phase; onDone: (balanceCents: number) => void; auth: EmailCode }) {
+function EmailStep({ phase, onDone, auth, google = null }: { phase: Phase; onDone: (balanceCents: number) => void; auth: EmailCode; google?: OAuthStart | null }) {
   const active = phase.kind === "email";
   const [email, setEmail] = useState("");
   const [sent, setSent] = useState<string | null>(null);
@@ -212,6 +393,7 @@ function EmailStep({ phase, onDone, auth }: { phase: Phase; onDone: (balanceCent
       </StepHead>
       {active && !sent ? (
         <form onSubmit={send} className="rh-step-body">
+          <GoogleButton start={google} after="/sign-up?redeem=1" label="Continue with Google" />
           <label className="rh-label" htmlFor="invite-email">Email</label>
           <input id="invite-email" className="rh-input" type="email" autoComplete="email" placeholder="you@example.com" value={email} onChange={(event) => setEmail(event.target.value)} />
           <button type="submit" className="rh-btn rh-btn-solid rh-btn-lg rh-btn-block" disabled={busy || !email.trim()}>Send code</button>

@@ -1,5 +1,6 @@
-import { AuthPanel } from "@/components/AuthPanel";
+import { Suspense } from "react";
+import { InviteSignup } from "@/components/beta/InviteSignup";
 
 export default function SignInPage() {
-  return <AuthPanel mode="sign-in" />;
+  return <Suspense><InviteSignup mode="sign-in" /></Suspense>;
 }
