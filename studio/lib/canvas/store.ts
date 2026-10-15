@@ -103,6 +103,10 @@ type CanvasStore = {
   loadError: string | null;
   uploadError: string | null;
   dismissUploadError: () => void;
+  /** Live progress for the upload in flight (null when idle). */
+  uploadProgress: { filename: string; loaded: number; total: number } | null;
+  /** Re-runs the last failed upload with the same file; resumable uploads continue from the last stored part. */
+  retryUpload: (() => Promise<boolean>) | null;
   hydrated: boolean;
   past: Snapshot[];
   future: Snapshot[];
@@ -418,7 +422,9 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
   conversationId: null,
   loadError: null,
   uploadError: null,
-  dismissUploadError: () => set({ uploadError: null }),
+  dismissUploadError: () => set({ uploadError: null, retryUpload: null }),
+  uploadProgress: null,
+  retryUpload: null,
   hydrated: false,
   past: [],
   future: [],
@@ -918,9 +924,12 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
   },
 
   addUploadNode: async (file, position) => {
-    set({ uploadError: null });
+    set({ uploadError: null, retryUpload: null, uploadProgress: { filename: file.name, loaded: 0, total: file.size } });
     try {
-      const uploaded = await uploadStudioFile(file, get().projectId);
+      const uploaded = await uploadStudioFile(file, get().projectId, {
+        onProgress: (loaded: number, total: number) => set({ uploadProgress: { filename: file.name, loaded, total } }),
+      });
+      set({ uploadProgress: null });
       get().addCreativeNode({
         kind: uploaded.kind,
         position,
@@ -930,7 +939,11 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
       });
       return true;
     } catch (error) {
-      set({ uploadError: error instanceof Error ? error.message : "Upload failed. Please try again." });
+      set({
+        uploadProgress: null,
+        uploadError: error instanceof Error ? error.message : "Upload failed. Please try again.",
+        retryUpload: () => get().addUploadNode(file, position),
+      });
       return false;
     }
   },

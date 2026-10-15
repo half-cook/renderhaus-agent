@@ -54,7 +54,7 @@ function detailOf(payload: Record<string, unknown>, fallback: string): string {
 export async function directUpload(file: File, projectId: string, deps: DirectUploadDeps): Promise<Record<string, unknown>> {
   const storage = deps.storage ?? null;
   const wait = deps.wait ?? ((ms) => new Promise((resolve) => setTimeout(resolve, ms)));
-  const maxAttempts = deps.maxAttempts ?? 5;
+  const maxAttempts = deps.maxAttempts ?? 8;
   const concurrency = Math.max(1, deps.concurrency ?? 4);
   const key = resumeKey(file, projectId);
 
@@ -138,6 +138,12 @@ export async function directUpload(file: File, projectId: string, deps: DirectUp
       } catch (error) {
         if (attempt >= maxAttempts) {
           throw new UploadError("Upload paused. Check your connection and try again; it will resume where it stopped.");
+        }
+        // Offline: wait for the connection to come back instead of burning retries.
+        if (typeof navigator !== "undefined" && navigator.onLine === false && typeof window !== "undefined") {
+          await new Promise<void>((resolve) => window.addEventListener("online", () => resolve(), { once: true }));
+          attempt -= 1;
+          continue;
         }
         await wait(Math.min(30_000, 500 * 2 ** (attempt - 1)));
       }
