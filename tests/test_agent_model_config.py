@@ -27,7 +27,7 @@ class AgentModelConfigTests(unittest.TestCase):
             self.assertEqual(backend_config.deep_agent_model(), "anthropic:claude-sonnet-5-5")
             self.assertIs(backend_config.configured_deep_agent_model(), fake)
         initialize.assert_called_once_with(
-            "anthropic:claude-sonnet-5-5", thinking={"type": "adaptive"},
+            "anthropic:claude-sonnet-5-5", max_tokens=16_000, thinking={"type": "adaptive"},
             output_config={"effort": "high"},
         )
 
@@ -50,7 +50,7 @@ class AgentModelConfigTests(unittest.TestCase):
                 self.assertEqual(initialize.call_args.kwargs["output_config"], {"effort": "high"})
             with patch.dict(os.environ, {"RENDERHAUS_AGENT_MODEL": "anthropic:claude-haiku-4-5"}):
                 backend_config.configured_deep_agent_model()
-                self.assertEqual(initialize.call_args.kwargs, {})
+                self.assertEqual(initialize.call_args.kwargs, {"max_tokens": 16_000})
 
     def test_previous_openai_model_aliases_remain_selectable(self):
         for value in ["openai:gpt-5.6-luna", "openai/gpt-5.6-luna", "gpt-5.6-luna"]:
