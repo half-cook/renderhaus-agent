@@ -1,6 +1,6 @@
 "use client";
 
-import { CircleCheck, Download, Film, Lock, Play } from "lucide-react";
+import { Download, Film, Lock, Play } from "lucide-react";
 import { formatCents } from "@/lib/rh/money";
 import type { RunReceiptModel } from "@/lib/rh/billing";
 import { Ledger, LedgerRow, LedgerTotal, lineLabel } from "./Ledger";
@@ -29,7 +29,7 @@ export function RunReceipt({ receipt, onOpen, onTimeline, onExport }: {
   return (
     <article className="rh-appr rh-receipt" role="group" aria-label={`Run receipt, ${receipt.title}`} data-state="done">
       <div className="rh-appr-hd" data-tone="ok">
-        <span className="rh-appr-state"><CircleCheck size={15} aria-hidden="true" /><span className="rh-eyebrow">{receipt.status === "failed" ? "Stopped · run receipt" : "Done · run receipt"}</span></span>
+        <span className="rh-appr-state"><span className="rh-dot rh-dot-ok" aria-hidden="true" /><span className="rh-appr-label">{receipt.status === "failed" ? "Stopped · run receipt" : "Done · run receipt"}</span></span>
         <span className="rh-mono rh-fg3 rh-appr-step">{receipt.paidSteps} paid steps</span>
       </div>
       <div className="rh-appr-bd">

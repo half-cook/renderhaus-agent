@@ -105,7 +105,7 @@ export function ApprovalCard({ model, approveEnabled, busy = false, actions = {}
       <div className="rh-appr-hd" data-tone={header.tone}>
         <span className="rh-appr-state">
           {header.dot ? <span className="rh-dot rh-dot-run" aria-hidden="true" /> : header.icon}
-          <span className="rh-eyebrow">{header.label}</span>
+          <span className="rh-appr-label">{header.label}</span>
         </span>
         {stepLabel ? <span className="rh-mono rh-fg3 rh-appr-step">{stepLabel}</span> : null}
       </div>

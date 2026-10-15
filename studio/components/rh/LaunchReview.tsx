@@ -3,6 +3,7 @@
 import { useSearchParams } from "next/navigation";
 import { InviteSignup } from "@/components/beta/InviteSignup";
 import { ApprovalCard } from "@/components/rh/ApprovalCard";
+import { LaunchReviewV4 } from "@/components/rh/LaunchReviewV4";
 import { UploadRow } from "@/components/rh/UploadRow";
 import { OUT_OF_CREDIT_FULL, TOPUPS_COMING_SOON } from "@/lib/launch";
 import type { ApprovalCardModel } from "@/lib/rh/billing";
@@ -28,6 +29,7 @@ function Frame({ children, title }: { children: React.ReactNode; title: string }
 
 export function LaunchReview() {
   const screen = useSearchParams().get("screen") ?? "49";
+  if (screen.startsWith("v4-")) return <LaunchReviewV4 screen={screen} />;
   if (screen === "46") return <InviteSignup initialPhase={{ kind: "welcome", balanceCents: 1000 }} />;
   if (screen === "47") return (
     <Frame title="47 · paused at cap, credit used up">

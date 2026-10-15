@@ -10,7 +10,9 @@ test("landing and sign-up carry the invite-only copy and none of the open-wave c
   const launch = read("lib/launch.ts");
   assert.match(launch, /Invite only · \$10 credit to start/);
   const landing = read("app/(marketing)/page.tsx");
-  assert.match(landing, /Enter invite code/);
+  assert.match(landing, /Use your invite/);
+  assert.match(landing, /\$10 credit · invite only/);
+  assert.doesNotMatch(landing, /30%|[Pp]latform fee/);
   const signup = read("components/beta/InviteSignup.tsx");
   for (const source of [landing, signup]) {
     assert.doesNotMatch(source, /spots left|First 50|wave 1|Verify your phone|Claim your|platform fee/i);

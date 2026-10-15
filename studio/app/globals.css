@@ -3,6 +3,7 @@
 @import "tailwindcss";
 @import "@xyflow/react/dist/style.css" layer(xyflow);
 @import "./revamp.css" layer(components);
+@import "./revamp-v4.css" layer(components);
 
 @theme {
   /* Port colours -- referenced from handle, edge, and node-tag icon; must agree. */
@@ -22,6 +23,12 @@
 @theme {
   --radius-*: initial;
   --shadow-*: initial;
+  /* Revamp v4: radii with intent (revamp-v3/tokens.md), replacing the radius-0 box system. */
+  --radius-xs: 6px;
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-xl: 28px;
   --radius-pill: 9999px;
   --duration-base: 160ms;
   --default-mono-font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
@@ -137,7 +144,7 @@
      dots and other genuinely circular indicators were left round on
      purpose -- that's shape-as-meaning (a dot), not decorative rounding,
      and stays functional whether or not the rest of the chrome is sharp. */
-  --radius: 0;
+  --radius: 14px;
   --ease: cubic-bezier(0.32, 0.72, 0, 1);
   --inspector-width: 320px;
   --z-flow: 1;
@@ -216,7 +223,7 @@
   --warn: var(--rh-money);
 
   --shadow: none;
-  --radius: 0;
+  --radius: 14px;
   --ease: cubic-bezier(0.32, 0.72, 0, 1);
   --inspector-width: 320px;
   --z-flow: 1;

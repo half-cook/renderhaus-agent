@@ -132,14 +132,16 @@ function StepIcon({ status }: { status: string }) {
   return <Check size={14} />;
 }
 
-function IntermediateSteps({
+export function IntermediateSteps({
   events,
   progressEvents,
   status,
   message,
   duration,
   recoveryAvailable = false,
+  defaultOpen,
 }: {
+  defaultOpen?: boolean;
   events: AgentToolEvent[];
   progressEvents: AgentProgressEvent[];
   status: string;
@@ -166,23 +168,36 @@ function IntermediateSteps({
     : state === "failed" ? (recoveryAvailable ? "Stopped · progress saved" : "Run failed")
     : `Completed${duration ? ` in ${duration}` : ""}`;
 
+  const doneCount = steps.filter((step) => ["completed", "done", "success"].includes(normalizedStatus(step.status))).length;
+  const total = steps.length;
+  const current = Math.min(total, doneCount + (state === "running" ? 1 : 0));
+  const pct = total ? Math.round(((state === "running" ? doneCount : total) / total) * 100) : state === "running" ? 0 : 100;
+  const finished = state !== "running" && status !== "awaiting_approval";
+  const line = finished && state !== "failed" && state !== "incomplete"
+    ? `Delivered · ${total} ${total === 1 ? "step" : "steps"}`
+    : label;
+
+  /* Revamp v4 trace: one live status line that expands in place ("Details"). */
   return (
-    <div className={`agent-progress-group ${state}`}>
-      <div className="agent-run-status" role="status"><StepIcon status={status} /><span>{label}</span></div>
-    <details>
+    <details className={`agent-progress-group rh-trace ${state}`} data-shot="agent-trace" open={defaultOpen}>
       <summary>
-        <span className="agent-progress-leading">
-          <span>{events.length} tool {events.length === 1 ? "step" : "steps"} · Updates & history</span>
+        <span className="rh-trace-dot" data-state={status === "awaiting_approval" ? "needs" : state} aria-hidden="true" />
+        <span className="rh-trace-main">
+          <span className="rh-trace-label" role="status">{line}</span>
+          <span className="rh-trace-meta rh-num">
+            {!finished && total ? <span>Step {Math.max(1, current)} of {total}</span> : null}
+            {duration ? <span>{duration}</span> : null}
+          </span>
         </span>
-        {steps.length ? <ChevronRight className="agent-progress-chevron" size={14} /> : null}
+        {total ? <span className="rh-trace-toggle">Details<ChevronRight className="agent-progress-chevron" size={14} aria-hidden="true" /></span> : null}
+        <span className="rh-trace-bar" aria-hidden="true"><b style={{ width: `${pct}%` }} /></span>
       </summary>
-      {steps.length ? (
-        <ol className="agent-step-list">
+      {total ? (
+        <ol className="agent-step-list rh-trace-steps">
           {steps.map((step) => (
             <li className={normalizedStatus(step.status)} key={step.id}>
               <span className="agent-step-icon"><StepIcon status={step.status} /></span>
               <span>
-                <em>{step.kind}</em>
                 <strong>{step.title}</strong>
                 {step.message ? <small>{step.message}</small> : null}
               </span>
@@ -191,7 +206,6 @@ function IntermediateSteps({
         </ol>
       ) : null}
     </details>
-    </div>
   );
 }
 
