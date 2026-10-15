@@ -363,8 +363,19 @@ def precheck_start(repo: Any, user_id: str | None, conversation_id: str | None) 
     cap = rb.default_cap_cents(estimate) if estimate else 0
     available = repo.available_credit(user_id)
     if cap > available:
-        return rb.insufficient_credit_payload(estimate_cents=estimate, cap_cents=cap, available_cents=available)
+        payload = rb.insufficient_credit_payload(estimate_cents=estimate, cap_cents=cap, available_cents=available)
+        balance = repo.get_balance(user_id)
+        if balance >= cap:
+            # The credit exists but is held by runs waiting on an approval card; say so instead of "used up".
+            payload["reason"] = "credit_held"
+            payload["message"] = HELD_MESSAGE
+            payload["held_cents"] = balance - available
+        return payload
     return None
+
+
+HELD_MESSAGE = ("Most of your credit is held by runs waiting for your approval. "
+                "Approve or choose Not now on those cards, then send this again.")
 
 
 def insufficient_for(

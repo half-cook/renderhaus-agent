@@ -639,3 +639,31 @@ class BetaBillingIntegrationTests(BetaFixture, unittest.IsolatedAsyncioTestCase)
 
 if __name__ == "__main__":
     unittest.main()
+
+
+def test_precheck_start_explains_credit_held_by_waiting_runs():
+    from server import run_billing
+
+    class Repo:
+        def conversation_has_hold(self, user_id, conversation_id):
+            return False
+
+        def available_credit(self, user_id):
+            return 50
+
+        def get_balance(self, user_id):
+            return 900
+
+    import server.run_budget as rb
+    orig = (run_billing.billing_applies, rb.orchestration_billing_enabled, rb.orchestration_estimate_cents, rb.default_cap_cents)
+    run_billing.billing_applies = lambda repo, user: True
+    rb.orchestration_billing_enabled = lambda: True
+    rb.orchestration_estimate_cents = lambda: 75
+    rb.default_cap_cents = lambda estimate: 300
+    try:
+        payload = run_billing.precheck_start(Repo(), "u1", "c1")
+    finally:
+        run_billing.billing_applies, rb.orchestration_billing_enabled, rb.orchestration_estimate_cents, rb.default_cap_cents = orig
+    assert payload["reason"] == "credit_held"
+    assert payload["held_cents"] == 850
+    assert "waiting for your approval" in payload["message"]

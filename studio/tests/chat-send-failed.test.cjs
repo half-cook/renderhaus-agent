@@ -32,3 +32,11 @@ test("5xx and network failures are marked unreachable; Try again resends the kep
   assert.match(dock, /role="alert"/);
   assert.match(dock, /!liveRun && !failedTurn && !changesDocument/);
 });
+
+test("a refused start (402 credit held) keeps the message and shows the server's plain reason", () => {
+  const turn = f.nextFailedTurn(null, "space heist", "Most of your credit is held by runs waiting for your approval.");
+  assert.deepEqual(f.failureLines(turn), ["Most of your credit is held by runs waiting for your approval."]);
+  assert.match(dock, /refusal \? nextFailedTurn\(previous, prompt, refusal\)/);
+  assert.match(dock, /\{failedTurn\.note \|\| SEND_FAILED_LINE\}/);
+  assert.match(api, /detailMessage/);
+});

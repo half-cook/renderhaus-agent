@@ -266,3 +266,11 @@ test("an invalid public status cannot enable the claim flow", async () => {
   assert.match(ui.markup(), /Could not load free beta credit status\./);
   assert.doesNotMatch(ui.markup(), /Verify email|Claim free credit/);
 });
+
+test("a card whose own hold covers the cap is not shown as over credit", () => {
+  const billing = require("./load-ts.cjs")("lib/rh/billing.ts");
+  const model = { status: "pending", capCents: 300, estimateCents: 140, balanceCents: 93, heldCents: 300, lowerCapOptionCents: null, lines: [] };
+  assert.equal(billing.usableCreditCents(model), 393);
+  assert.equal(billing.creditState(model), "ok");
+  assert.equal(billing.creditState({ ...model, heldCents: 0 }, undefined), "add_credit");
+});

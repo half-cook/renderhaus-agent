@@ -152,13 +152,21 @@ export function toApprovalCardModel(base: Partial<ApprovalCardModel> & { id: str
   return model;
 }
 
+/** Credit this card can use: what's free plus what this run already holds for itself. */
+export function usableCreditCents(model: ApprovalCardModel): number | undefined {
+  if (model.balanceCents == null) return undefined;
+  return model.balanceCents + (model.status === "pending" ? model.heldCents ?? 0 : 0);
+}
+
 /** Credit check from the spec: cap must be <= balance. The server also sends approve_enabled=false. */
 export function creditState(model: ApprovalCardModel, approveEnabled?: boolean): "ok" | "lower_cap" | "add_credit" {
-  if (model.balanceCents != null && model.balanceCents >= model.capCents) return "ok";
+  // This run's own hold counts toward its cap (the server does the same).
+  const usable = usableCreditCents(model);
+  if (usable != null && usable >= model.capCents) return "ok";
   if ((approveEnabled ?? model.approveEnabled) === false) {
     return model.lowerCapOptionCents != null ? "lower_cap" : "add_credit";
   }
-  if (model.balanceCents == null || model.balanceCents >= model.capCents) return "ok";
+  if (usable == null || usable >= model.capCents) return "ok";
   return model.lowerCapOptionCents != null ? "lower_cap" : "add_credit";
 }
 

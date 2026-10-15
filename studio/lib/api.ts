@@ -735,9 +735,14 @@ function isAgentFailureStatus(status: unknown): boolean {
 }
 
 function agentError(payload: AgentJobPayload, response: Response): AgentSubmissionResult {
+  const detail = payload.detail as unknown;
+  const detailMessage = detail && typeof detail === "object" && typeof (detail as { message?: unknown }).message === "string"
+    ? (detail as { message: string }).message : null;
   const message =
     typeof payload.detail === "string"
       ? payload.detail
+      : detailMessage
+        ? detailMessage
       : typeof payload.message === "string"
         ? payload.message
         : `The agent request failed (${response.status}).`;
