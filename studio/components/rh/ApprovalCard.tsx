@@ -323,12 +323,12 @@ function OverCredit({ model, credit: reported, titleId, actions }: {
         <>
           <div className="rh-appr-ft">
             {credit === "lower_cap" ? (
-              <button type="button" className="rh-btn rh-btn-primary rh-btn-act" style={{ flex: 1 }} onClick={() => actions.onLowerCap?.(lowered)}>Use this · est. {formatCents(model.estimateCents)}</button>
+              <button type="button" className="rh-btn rh-btn-primary rh-btn-act" style={{ flex: 1 }} onClick={() => actions.onLowerCap?.(lowered)}>Use this · lower the cap to {formatCents(lowered)}</button>
             ) : cheaper ? (
               <button type="button" className="rh-btn rh-btn-primary rh-btn-act" style={{ flex: 1 }} onClick={actions.onUseCheaper}>Use this · est. {formatCents(cheaper.estimateCents)}</button>
             ) : null}
             <button type="button" className="rh-btn rh-btn-act" onClick={actions.onEdit}><Pencil size={14} aria-hidden="true" />Edit</button>
-            {!fits ? <button type="button" className="rh-btn rh-btn-quiet rh-btn-act" data-shot="not-now" onClick={() => { setClosed(true); actions.onNotNow?.(); }}>Not now</button> : null}
+            {!fits ? <button type="button" className="rh-btn rh-btn-quiet rh-btn-act" data-shot="not-now" onClick={() => { if (actions.onNotNow) actions.onNotNow(); else setClosed(true); }}>Not now</button> : null}
           </div>
           <div className="rh-appr-ft rh-appr-locked-row" style={{ paddingTop: 0 }}>
             <button type="button" className="rh-btn rh-btn-act rh-appr-locked" aria-label="Approve, unavailable: the hard cap is more than your credit" aria-disabled="true" aria-describedby={`${titleId}-why`} disabled>

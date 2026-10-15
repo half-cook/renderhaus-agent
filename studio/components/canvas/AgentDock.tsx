@@ -133,6 +133,8 @@ function StepIcon({ status }: { status: string }) {
   return <Check size={14} />;
 }
 
+export const NOT_NOW_LINE = "Paused · nothing charged · your credit is free to use.";
+
 export function IntermediateSteps({
   events,
   progressEvents,
@@ -243,7 +245,7 @@ function ApprovalCards({
 }: {
   approvals: AgentPendingRequest[];
   onAnswer: (question: AgentQuestionRequest, answer: QuestionAnswer) => void;
-  onDecision: (approval: AgentApprovalRequest, decision: "approve" | "reject", capCents?: number) => void;
+  onDecision: (approval: AgentApprovalRequest, decision: "approve" | "reject", capCents?: number, source?: "not_now") => void;
   busyCallId: string | null;
   active: boolean;
   disabled: boolean;
@@ -308,7 +310,7 @@ function PricedApproval({ approval, model, busy, onDecision }: {
   approval: AgentApprovalRequest;
   model: ReturnType<typeof approvalCardModel> & object;
   busy: boolean;
-  onDecision: (approval: AgentApprovalRequest, decision: "approve" | "reject", capCents?: number) => void;
+  onDecision: (approval: AgentApprovalRequest, decision: "approve" | "reject", capCents?: number, source?: "not_now") => void;
 }) {
   const [editing, setEditing] = useState(false);
   const [loweredCap, setLoweredCap] = useState<number | null>(null);
@@ -323,6 +325,8 @@ function PricedApproval({ approval, model, busy, onDecision }: {
         actions={{
           onApprove: () => onDecision(approval, "approve", loweredCap ?? undefined),
           onReject: () => onDecision(approval, "reject"),
+          // Not now is the same server decline: the pending approval clears and the hold is released.
+          onNotNow: () => onDecision(approval, "reject", undefined, "not_now"),
           onEdit: () => setEditing((value) => !value),
           onAddCredit: () => window.dispatchEvent(new CustomEvent(RH_ADD_CREDIT_EVENT)),
           onLowerCap: (cap) => setLoweredCap(cap),
@@ -476,6 +480,7 @@ function ExecutionTurn({
     approval: AgentApprovalRequest,
     decision: "approve" | "reject",
     capCents?: number,
+    source?: "not_now",
   ) => void;
   onQuestion: (execution: StudioExecution, question: AgentQuestionRequest, answer: QuestionAnswer) => void;
   onCap: (execution: StudioExecution, action: "raise" | "stop", capCents?: number) => void;
@@ -507,7 +512,7 @@ function ExecutionTurn({
           active={execution.status === "awaiting_approval"}
           busyCallId={busyApproval}
           disabled={actionsDisabled}
-          onDecision={(approval, decision, capCents) => onApproval(execution, approval, decision, capCents)}
+          onDecision={(approval, decision, capCents, source) => onApproval(execution, approval, decision, capCents, source)}
           onAnswer={(question, answer) => onQuestion(execution, question, answer)}
         />
         {(() => {
@@ -637,6 +642,8 @@ export function AgentDock({ navigationBusy: externalBusy, onBusyChange, suggesti
   const executions = useCanvasStore((state) => state.executions);
   const conversations = useCanvasStore((state) => state.conversations);
   const conversationId = useCanvasStore((state) => state.conversationId);
+  const [pausedNote, setPausedNote] = useState<string | null>(null);
+  useEffect(() => setPausedNote(null), [conversationId]);
   const [showEarlier, setShowEarlier] = useState(false);
   useEffect(() => setShowEarlier(false), [conversationId]);
   const agentMessage = useCanvasStore((state) => state.agentMessage);
@@ -918,12 +925,14 @@ export function AgentDock({ navigationBusy: externalBusy, onBusyChange, suggesti
     approval: AgentApprovalRequest,
     decision: "approve" | "reject",
     capCents?: number,
+    source?: "not_now",
   ) => {
     if (externalBusy || navigationBusy) return;
     setBusyApproval(approval.callId);
     try {
-      const progress = await decideAgentApproval(execution.jobId, approval.callId, decision, capCents);
-      setAgentMessage(progress.message);
+      const progress = await decideAgentApproval(execution.jobId, approval.callId, decision, capCents, source);
+      setAgentMessage(source === "not_now" ? null : progress.message);
+      if (source === "not_now") setPausedNote(execution.jobId);
       await refreshExecutions();
     } catch (error) {
       setAgentMessage(error instanceof Error ? error.message : "The approval could not be saved.");
@@ -1098,6 +1107,7 @@ export function AgentDock({ navigationBusy: externalBusy, onBusyChange, suggesti
           />
         ))}
         {liveRun ? <LiveExecutionTurn run={liveRun} /> : null}
+        {pausedNote ? <p className="rh-paused-line" role="status" data-shot="not-now-paused">{NOT_NOW_LINE}</p> : null}
         {changesDocument ? <ChangesetCard document={changesDocument} onInsert={(n) => useChangesStore.getState().setComposerInsertion(`change ${n}`)} onOpen={() => { const store = useChangesStore.getState(); store.setTab("changes"); const take = changesDocument.changes.find((change) => change.kind === "take"); if (take) store.openCompare(take.n); }} /> : null}
       </div>
 
