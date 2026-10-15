@@ -283,3 +283,12 @@ html[data-theme="light"] {
 .rh-v4-frame .rh-proposed { z-index: 3; }
 .rh-strip-clip span.rh-strip-label { opacity: 1; }
 .rh-v4-stage .rh-strip { max-width: none; }
+
+/* Approval card: pricing (shimmer total, Approve locked) and worst-case "Up to $X · we'll stop there". */
+.rh-pricing dt { color: var(--rh-fg-2); }
+.rh-shimmer { display: inline-block; width: 84px; height: 22px; border-radius: var(--rh-r-xs, 6px);
+  background: linear-gradient(90deg, rgba(255,255,255,.06) 0%, rgba(255,255,255,.18) 50%, rgba(255,255,255,.06) 100%);
+  background-size: 200% 100%; animation: rh-shimmer 1.3s linear infinite; vertical-align: middle; }
+@keyframes rh-shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+@media (prefers-reduced-motion: reduce) { .rh-shimmer { animation: none; } }
+.rh-upto-stop { margin: 2px 0 0; text-align: right; font-size: 13px; font-weight: 500; color: var(--rh-fg-2); }

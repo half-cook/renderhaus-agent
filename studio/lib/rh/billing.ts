@@ -55,7 +55,12 @@ export type ApprovalCardModel = {
   failureTitle?: string;
   failureMessage?: string;
   message?: string;
-  /** The server could not price a step: shown at $0.00 and flagged, never treated as free. */
+  /** The server has not sent a price yet: "Pricing this step…" with a shimmer total and Approve locked. */
+  pricing?: boolean;
+  /** No exact price; the server held a worst-case amount. Shown as "Up to $X · we'll stop there". */
+  upTo?: boolean;
+  /** Neither a price nor a hold exists: Approve stays locked (the server rejects it too). */
+  unpriceable?: boolean;
   estimateIncomplete?: boolean;
   approveEnabled?: boolean;
 };
@@ -158,6 +163,7 @@ export function creditState(model: ApprovalCardModel, approveEnabled?: boolean):
 }
 
 export function a11yApproveName(model: ApprovalCardModel, format: (cents: number) => string): string {
+  if (model.upTo) return `Approve, up to ${format(model.capCents)}, the run stops there`;
   return `Approve, estimated ${format(model.estimateCents)}, hard cap ${format(model.capCents)}`;
 }
 

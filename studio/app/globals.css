@@ -1416,22 +1416,7 @@ a:focus-visible {
   font-weight: 600;
 }
 
-.agent-approval-reject {
-  border: 1px solid var(--line);
-  background: transparent;
-  color: var(--muted);
-  display: grid;
-  place-items: center;
-  width: 24px;
-  height: 24px;
-  border-radius: 0;
-}
 
-.agent-approval-approve {
-  border: 1px solid var(--text);
-  background: var(--text);
-  color: var(--bg);
-}
 
 .agent-approval button:disabled {
   opacity: 0.5;

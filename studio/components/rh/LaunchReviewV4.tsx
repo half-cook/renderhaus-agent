@@ -109,6 +109,23 @@ export function LaunchReviewV4({ screen }: { screen: string }) {
       <p className="rh-paused-line" role="status" data-shot="not-now-paused">Paused · nothing charged · your credit is free to use.</p>
     </>} />
   );
+  if (screen === "v4-pricing") return (
+    <StudioFrame shot="v4-pricing" stageTitle="Current take" proposed chat={<>
+      <p className="rh-v4-agent">Here’s the plan.</p>
+      <ApprovalCard focusOnMount={false} approveEnabled={false} model={{ ...APPROVAL, lines: [], estimateCents: 0, capCents: 0, pricing: true }} />
+    </>} />
+  );
+  if (screen === "v4-up-to" || screen === "v4-up-to-over") {
+    const over = screen === "v4-up-to-over";
+    const lines = APPROVAL.lines.map((line, i) => i === 0 ? { ...line, priceCents: 400, basis: "estimate" as const } : line);
+    const estimate = lines.reduce((sum, line) => sum + line.priceCents, 0);
+    return (
+      <StudioFrame shot={screen} balance={over ? "$2.40" : "$10.00"} stageTitle="Current take" proposed chat={<>
+        <p className="rh-v4-agent">Here’s the plan.</p>
+        <ApprovalCard focusOnMount={false} approveEnabled={!over} model={{ ...APPROVAL, lines, estimateCents: estimate, capCents: 450, upTo: true, balanceCents: over ? 240 : 1000, lowerCapOptionCents: null }} />
+      </>} />
+    );
+  }
   if (screen === "v4-approval") return (
     <StudioFrame shot="v4-approval" stageTitle="Current take" proposed chat={<>
       <p className="rh-v4-agent">Here’s the plan.</p>

@@ -57,7 +57,7 @@ import { QuestionCard } from "@/components/rh/QuestionCard";
 import { PauseChatMessage } from "@/components/rh/PauseChatMessage";
 import { pauseCardsEnabled, stuckPauseMessage } from "@/lib/rh/pause-fallback";
 import { RunReceipt } from "@/components/rh/RunBilling";
-import { approvalCardModel, traceCost, visibleParameters, type TraceCost } from "@/lib/rh/approval-model";
+import { approvalCardModel, pricingCardModel, traceCost, visibleParameters, type TraceCost } from "@/lib/rh/approval-model";
 import { formatCents } from "@/lib/rh/money";
 import { toRunReceiptModel, toApprovalCardModel } from "@/lib/rh/billing";
 import { useCreditContext } from "@/lib/rh/credit-store";
@@ -267,39 +267,15 @@ function ApprovalCards({
         if (model && active && approval.decision !== "reject") {
           return <PricedApproval key={approval.callId} approval={approval} model={model} busy={disabled || busyCallId !== null} onDecision={onDecision} />;
         }
-        return approval.decision || !active ? <details className="agent-approval-record" key={approval.callId}>
+        if (!approval.decision && active) {
+          // No price yet: the same v4 card, pricing, with Approve locked until the server quotes or holds.
+          return <PricedApproval key={approval.callId} approval={approval} model={pricingCardModel(approval)} busy={disabled || busyCallId !== null} onDecision={onDecision} />;
+        }
+        return <details className="agent-approval-record" key={approval.callId}>
           <summary>{approval.decision === "approve" ? "Approved" : approval.decision === "reject" ? "Rejected" : "Not run · closed"} · {approval.label}</summary>
           <ApprovalSummary approval={approval}/>
           <div className="agent-approval-details"><Parameters args={approval.arguments} bare /></div>
-        </details> :
-        <article className="agent-approval" key={approval.callId}>
-          <header>
-            <span><ShieldCheck size={14} /> Tool approval</span>
-          </header>
-          <strong>{approval.label}</strong>
-          <ApprovalSummary approval={approval}/>
-          <p className="rh-fg3 rh-small">This step needs a server estimate and hard cap before you can approve.</p>
-          <details className="agent-approval-details"><summary>Review parameters</summary><Parameters args={approval.arguments} bare /></details>
-            <footer>
-              <button
-                type="button"
-                className="agent-approval-reject"
-                disabled={disabled || busyCallId !== null}
-                onClick={() => onDecision(approval, "reject")}
-              >
-                Reject
-              </button>
-              <button
-                type="button"
-                className="agent-approval-approve"
-                disabled
-                aria-label="Approval unavailable until an estimate and hard cap arrive"
-              >
-                {busyCallId === approval.callId ? <LoaderCircle className="spin" size={13} /> : null}
-                Estimate unavailable
-              </button>
-            </footer>
-        </article>;
+        </details>;
       })}
     </div>
   );
@@ -320,7 +296,7 @@ function PricedApproval({ approval, model, busy, onDecision }: {
     <div className="rh-appr-wrap">
       <ApprovalCard
         model={shown}
-        approveEnabled={model.approveEnabled !== false || loweredCap != null}
+        approveEnabled={!model.pricing && !model.unpriceable && (model.approveEnabled !== false || loweredCap != null)}
         busy={busy}
         actions={{
           onApprove: () => onDecision(approval, "approve", loweredCap ?? undefined),

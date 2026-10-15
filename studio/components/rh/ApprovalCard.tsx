@@ -78,7 +78,8 @@ export function ApprovalCard({ model, approveEnabled, busy = false, actions = {}
   const titleId = useId();
   const headingRef = useRef<HTMLHeadingElement>(null);
   const header = HEADER[model.status];
-  const credit = model.status === "pending" ? creditState(model, approveEnabled) : "ok";
+  const credit = model.status === "pending" && !model.pricing ? creditState(model, approveEnabled) : "ok";
+  const locked = busy || approveEnabled === false || model.pricing === true || model.unpriceable === true;
   const topups = topupsEnabled();
   const approveName = a11yApproveName(model, formatCents);
   const live = model.status === "approved" ? `Approved. Up to ${formatCents(model.capCents)} reserved.`
@@ -130,16 +131,32 @@ export function ApprovalCard({ model, approveEnabled, busy = false, actions = {}
             {estimateLines.map((line) => (
               <LedgerRow key={`${line.kind}:${line.label}`} label={lineLabel(line, "estimate")} amount={formatCents(line.priceCents)} tone={line.kind === "orchestration" ? "muted" : undefined} />
             ))}
-            <LedgerTotal label="Estimated total" amountCents={model.estimateCents} />
-            {credit === "ok" ? <CapRow capCents={model.capCents} bar={model.capCents ? (model.estimateCents / model.capCents) * 100 : 0} /> : (
+            {model.pricing ? (
+              <dl className="rh-ledger-total rh-pricing" data-big="true" data-shot="approval-pricing">
+                <dt>Pricing this step…</dt>
+                <dd><span className="rh-shimmer" aria-hidden="true" /></dd>
+              </dl>
+            ) : model.upTo ? (
+              <div data-shot="approval-up-to">
+                <dl className="rh-ledger-total rh-upto" data-big="true">
+                  <dt>Up to</dt>
+                  <dd className="rh-num">{formatCents(model.capCents)}</dd>
+                </dl>
+                <p className="rh-upto-stop">Up to {formatCents(model.capCents)} · we’ll stop there</p>
+              </div>
+            ) : model.unpriceable ? (
+              <dl className="rh-ledger-total" data-big="true"><dt>Can’t be priced</dt><dd className="rh-fg3">Approve is off</dd></dl>
+            ) : <LedgerTotal label="Estimated total" amountCents={model.estimateCents} />}
+            {model.pricing || model.unpriceable ? null : credit === "ok" && model.upTo ? null : credit === "ok" ? <CapRow capCents={model.capCents} bar={model.capCents ? (model.estimateCents / model.capCents) * 100 : 0} /> : (
               <>
                 <CapRow capCents={model.capCents} tone="ember" />
                 <div className="rh-cap-row"><span style={{ width: 12 }} /><span>Your credit</span><b className="rh-num rh-mono">{formatCents(model.balanceCents ?? 0)}</b></div>
               </>
             )}
           </Ledger>
-          {model.estimateIncomplete ? <div className="rh-note" role="status"><Info size={13} aria-hidden="true" /><span>One step couldn’t be priced yet. It is shown at {formatCents(0)}, which does not mean free.</span></div> : null}
-          {credit === "ok" && model.balanceAfterEstimateCents != null && model.balanceAfterCapCents != null ? (
+          {model.unpriceable ? <div className="rh-note" role="status"><Info size={13} aria-hidden="true" /><span>This step can’t be priced, so it can’t be approved. Nothing was charged.</span></div> : null}
+          {model.upTo && credit === "ok" ? <div className="rh-note" role="status"><Info size={13} aria-hidden="true" /><span>This step has no exact price. Its full amount is held from your credit, and the run stops if it reaches it.</span></div> : null}
+          {credit === "ok" && !model.pricing && !model.upTo && model.balanceAfterEstimateCents != null && model.balanceAfterCapCents != null ? (
             <BalanceNote>Balance after this step · est. <b className="rh-num rh-mono">{formatCents(model.balanceAfterEstimateCents)}</b>, at the cap <b className="rh-num rh-mono">{formatCents(model.balanceAfterCapCents)}</b></BalanceNote>
           ) : null}
         </>
@@ -159,7 +176,7 @@ export function ApprovalCard({ model, approveEnabled, busy = false, actions = {}
       {model.status === "pending" && credit === "ok" ? (
         <>
           <div className="rh-appr-ft">
-            <button type="button" className="rh-btn rh-btn-primary rh-btn-act" style={{ flex: 1 }} aria-label={approveName} disabled={busy || approveEnabled === false} onClick={actions.onApprove}>
+            <button type="button" className="rh-btn rh-btn-primary rh-btn-act" style={{ flex: 1 }} aria-label={model.pricing ? "Approve, locked while this step is priced" : approveName} disabled={locked} onClick={actions.onApprove}>
               Approve and run
             </button>
             <button type="button" className="rh-btn rh-btn-act" onClick={actions.onEdit}><Pencil size={14} aria-hidden="true" />Edit</button>

@@ -60,7 +60,24 @@ export function approvalCardModel(approval: AgentPendingRequest): ApprovalCardMo
     spentSoFarCents: isCents(item.spent_so_far_cents) ? item.spent_so_far_cents : undefined,
   }, payload);
   model.estimateIncomplete = item.estimate_incomplete === true;
-  model.approveEnabled = item.approve_enabled !== false && !insufficient;
+  model.upTo = item.price_basis === "up_to" || item.up_to === true;
+  model.unpriceable = item.unpriceable === true || item.price_basis === "none";
+  model.approveEnabled = item.approve_enabled !== false && !insufficient && !model.unpriceable;
+  return model;
+}
+
+/** A paid step whose price has not arrived yet: the v4 card in its "Pricing this step…" state, Approve locked. */
+export function pricingCardModel(approval: AgentPendingRequest): ApprovalCardModel {
+  const args = approval.kind === "question" ? {} : approval.arguments;
+  const model = toApprovalCardModel({
+    id: approval.callId,
+    status: "pending",
+    title: safeCopy(approval.kind === "question" ? "" : approval.label, "Paid step"),
+    prompt: typeof args.prompt === "string" ? safeCopy(args.prompt, "") || undefined : undefined,
+    specs: specsFrom(args),
+  }, { estimate_cents: 0, cap_cents: 0, lines: [] } as RunPayload);
+  model.pricing = true;
+  model.approveEnabled = false;
   return model;
 }
 
