@@ -32,6 +32,9 @@ _BUILTIN_INPUT_ALIASES = {
     'shinkai': 'layered-cel-lighting', 'shinkai like light': 'layered-cel-lighting',
     'picasso': 'elongated-blue-forms', 'picasso blue period': 'elongated-blue-forms',
     'kurzgesagt': 'flat-concept-worlds', 'vox': 'document-evidence',
+    'papercut': 'document-evidence', 'paper cut': 'document-evidence',
+    'paper collage': 'document-evidence', 'paper cutout': 'document-evidence',
+    'cut paper explainer': 'document-evidence', 'papercraft': 'document-evidence',
     '3blue1brown': 'continuous-mathematical-objects', '3b1b': 'continuous-mathematical-objects',
     'keynote': 'product-presentation', 'kinetic typography': 'kinetic-type',
     '8 bit': '8-bit', 'early cgi': 'early-ray-traced-cgi',
@@ -47,11 +50,11 @@ _DESCRIPTION_STOPWORDS = _STOPWORDS | frozenset(
     'promos render rendering second seconds sequence sequences shot shots silhouette silhouettes '
     'zero one two three four five six seven eight nine ten'.split())
 _QUOTES = re.compile(r'"([^"]*)"|“([^”]*)”|(?<!\w)\'([^\']*)\'(?!\w)')
-_NEGATIVE = re.compile(r"\b(?:do not|don t|never|avoid|without|no|not)(?:\s+(?:use|using|a|the|any|style))*\s*$", re.I)
+_NEGATIVE = re.compile(r"\b(?:do not|don t|never|avoid|without|no|not)(?:\s+(?:use|using|a|the|any|style|in))*\s*$", re.I)
 _SUBJECT = re.compile(r'\b(?:about|on|explain|explaining|history of|life of|biography of)\s+'
                       r'(?:(?:the|ancient|art|life|history|of)\s+){0,4}$', re.I)
 _SUBJECT_CLAUSE = re.compile(
-    r'\b(?:about|on|explain|explaining|history of|life of|biography of)\b([^.;!?\n]*)', re.I)
+    r'\b(?:about|on|explain|explaining|history of|life of|biography of|titled|called|named)\b([^.;!?\n]*)', re.I)
 _NEGATED_DESCRIPTION = re.compile(
     r"\b(?:do\s+not|don't|don t|never|avoid|without|no|not)\b"
     r'(?:\s+(?:use|using|a|the|any|style))*\s*([^.;!?\n]*?)'
@@ -120,6 +123,8 @@ def style_instruction_text(prompt: str, *, normalized: bool = True) -> str:
     """Remove topic and title mentions while retaining explicit style instructions."""
     def subject(match):
         prefix = _normalize(text[:match.start()])
+        if match[0].split()[0].lower() in {'called', 'named'} and re.search(r'\b(?:style|look|grammar)$', prefix):
+            return match[0]
         position = len(prefix) + bool(prefix)
         if any(start < position < end for start, end in named_spans):
             return match[0]

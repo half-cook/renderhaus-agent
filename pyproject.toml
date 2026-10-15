@@ -47,7 +47,7 @@ include = ["agent*", "server*", "lambdas*", "providers*"]
 
 [tool.setuptools]
 include-package-data = true
-license-files = ["third_party/video-use/LICENSE", "third_party/hyperframes/LICENSE", "third_party/hyperframes/NOTICE", "third_party/hyperframes-cinematic-caption/LICENSE", "third_party/hyperframes-tactile-collage/LICENSE", "third_party/hyfrme/LICENSE", "third_party/hyfrme/Remocn-LICENSE", "third_party/huashu-art-motion/LICENSE", "third_party/lemo-opuscar/LICENSE", "THIRD_PARTY_NOTICES"]
+license-files = ["third_party/video-use/LICENSE", "third_party/hyperframes/LICENSE", "third_party/hyperframes/NOTICE", "third_party/hyperframes-cinematic-caption/LICENSE", "third_party/hyperframes-tactile-collage/LICENSE", "third_party/hyfrme/LICENSE", "third_party/hyfrme/Remocn-LICENSE", "third_party/huashu-art-motion/LICENSE", "third_party/lemo-opuscar/LICENSE", "third_party/papercut-explainer/LICENSE", "THIRD_PARTY_NOTICES"]
 
 [tool.setuptools.package-data]
 "providers.elevenlabs" = ["openapi.json"]

@@ -185,7 +185,7 @@ def _art_style_motion_text(prompt: str) -> str:
     text = style_instruction_text(_instruction_text(prompt), normalized=False)
     text = re.sub(_NEGATED_NARRATION, " ", text, flags=re.I)
     return re.sub(
-        rf"\b(?:do not|don't|never|avoid|without|no|not)(?:\s+(?:use|using|a|the|any))*\s+(?:{_ART_STYLE_NAMES}|hyperframes|lip[ -]?sync\w*)\b(?:[ -]+(?:style|grammar))?",
+        rf"\b(?:do not|don't|never|avoid|without|no|not)(?:\s+(?:use|using|a|the|any|in))*\s+(?:{_ART_STYLE_NAMES}|hyperframes|lip[ -]?sync\w*)\b(?:[ -]+(?:style|grammar))?",
         "", text, flags=re.I,
     )
 

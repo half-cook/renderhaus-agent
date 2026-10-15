@@ -6203,5 +6203,50 @@
     "forbidden_tools": "wan3_t2v, seedance25_t2v, hyperframes_render",
     "skip_reason": "",
     "note": "Radar handoff item 5, read 2026-10-15. Offline routing assertion; no generated artifact or visual acceptance implied."
+  },
+  {
+    "test_id": "RADAR-PAPERCUT-01",
+    "suite": "art-style-motion",
+    "prompt": "Make a papercut explainer about tides",
+    "expected_skill": "art-style-motion",
+    "expected_tool": "remotion_render",
+    "skip_reason": "",
+    "source_read_date": "2026-10-15",
+    "note": "Authored from radar handoff item 6 and art-style-motion draft. No papercut seed ID or provider-pending row exists; routing coverage does not prove animation or playback."
+  },
+  {
+    "test_id": "RADAR-PAPERCUT-02",
+    "suite": "art-style-motion",
+    "prompt": "Make a paper-collage explainer animation over my recording",
+    "expected_skill": "art-style-motion",
+    "expected_tool": "remotion_render",
+    "skip_reason": "",
+    "source_read_date": "2026-10-15",
+    "note": "Authored from radar handoff item 6 and art-style-motion draft. No papercut seed ID or provider-pending row exists; routing coverage does not prove animation or playback."
+  },
+  {
+    "test_id": "RADAR-PAPERCUT-03",
+    "suite": "art-style-motion",
+    "prompt": "Make a silent explainer; do not use paper collage style",
+    "expected_skill": "knowledge-explainer",
+    "expected_tool": "remotion_render",
+    "skip_reason": "",
+    "source_read_date": "2026-10-15",
+    "note": "Authored from radar handoff item 6 and art-style-motion draft. No papercut seed ID or provider-pending row exists; routing coverage does not prove animation or playback."
+  },
+  {
+    "test_id": "RADAR-PAPERCUT-04",
+    "suite": "art-style-motion",
+    "prompt": "Make a papercut explainer with HyperFrames",
+    "expected_skill": "art-style-motion",
+    "expected_tool": "hyperframes_render",
+    "skip_reason": "",
+    "source_read_date": "2026-10-15",
+    "note": "Authored from radar handoff item 6 and art-style-motion draft. No papercut seed ID or provider-pending row exists; routing coverage does not prove animation or playback.",
+    "env": {
+      "HYPERFRAMES_ENABLED": "false"
+    },
+    "expected_status": "blocked",
+    "expected_reason": "disabled"
   }
 ]

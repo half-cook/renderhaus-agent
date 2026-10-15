@@ -53,6 +53,19 @@ class ArtCatalogHostTests(unittest.IsolatedAsyncioTestCase):
 
         await self.read_context('Make a risograph animated explainer with the catalog', inspect)
 
+    async def test_native_context_resolves_papercut_to_neutral_grammar_without_dispatch(self):
+        def inspect(context):
+            self.assertEqual(context['intent_route']['skill'], 'art-style-motion')
+            self.assertEqual(context['intent_route']['alias'], 'remotion_render')
+            catalog = context['style_catalog']
+            self.assertEqual(catalog['selected']['slug'], 'document-evidence')
+            self.assertEqual(catalog['selected']['name'], 'Document Evidence')
+            self.assertEqual(catalog['basis'], 'explicit built-in style')
+            self.assertNotIn('vox', json.dumps(catalog).lower())
+            self.assertNotIn('source_path', json.dumps(catalog))
+
+        await self.read_context('Make a silent papercut explainer about tides', inspect)
+
     async def test_native_context_lists_every_safe_style_without_selecting_a_render(self):
         def inspect(context):
             self.assertEqual(context['intent_route']['skill'], 'art-style-motion')
@@ -77,6 +90,32 @@ class ArtCatalogHostTests(unittest.IsolatedAsyncioTestCase):
 
 
 class ArtCatalogSelectionTests(unittest.TestCase):
+    def test_named_style_clauses_are_not_video_titles(self):
+        from agent.deep_agent.art_style_catalog import style_context
+        from agent.deep_agent.routing import route_intent
+
+        for prompt in [
+            'Make an animation in the style called Stained Glass',
+            'Make a silent explainer using a style called Stained Glass',
+            'Make an animation using a look named Stained Glass',
+        ]:
+            with self.subTest(prompt=prompt):
+                self.assertEqual(style_context(prompt)['selected']['slug'], 'stained-glass')
+                self.assertEqual(route_intent(prompt).skill, 'art-style-motion')
+
+    def test_papercut_titles_and_negated_looks_do_not_select_a_style(self):
+        from agent.deep_agent.art_style_catalog import style_context
+
+        for prompt in [
+            'Make a silent explainer titled Papercut explainer',
+            'Make a silent explainer called Papercut animation',
+            'Make a silent explainer, not in papercut style',
+        ]:
+            with self.subTest(prompt=prompt):
+                self.assertIsNone(style_context(prompt)['selected'])
+        self.assertEqual(style_context('Make an animated video titled Papercut explainer '
+                                       'using stained glass style')['selected']['slug'], 'stained-glass')
+
     def test_named_style_later_in_full_length_brief_is_selected(self):
         from agent.deep_agent.art_style_catalog import style_context
 
