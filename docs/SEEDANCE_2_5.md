@@ -5,8 +5,9 @@ Wan 3.0 remains the generation default. Satya chose Seedance 2.5 as the permanen
 extend default on 2026-10-09. Wan 3 edit/extend remain named-only, preview-blocked options.
 
 The adapter keeps the `Seedance` Gateway target and reuses fal's queue client and poll implementation.
-There are no new provider targets or new dry-run flags. All documented source reads below are
-2026-10-09. No authenticated provider request was made during this upgrade.
+There are no new provider targets or new dry-run flags. Original integration sources were read
+2026-10-09; later source checks are dated in their sections. No authenticated provider request
+was made during this upgrade.
 
 ## Gateway tools
 
@@ -80,6 +81,57 @@ and [BytePlus task API](https://docs.byteplus.com/en/docs/modelark/create-video-
 The [BytePlus 2.5 tutorial](https://docs.byteplus.com/en/docs/modelark/seedance-2-5)
 documents editing and extension constraints. Its public server-rendered document data was
 read when the text browser returned only a JavaScript shell; no authenticated request was used.
+
+## Prompt writing and failure diagnosis
+
+The t2v skill loads [the prompt reference](../agent/deep_agent/skills/t2v/references/seedance-prompts.md)
+for synthetic-character dialogue and explicit Seedance 2.5 requests. It adapts shot grammar,
+causal motion, object continuity, camera endpoints, attributed dialogue, voice descriptions,
+spoken language and pacing. A table covers identity drift, ignored camera moves, wrong language,
+voice changes, duplicated objects, mouth/line alignment, missing actions, physical discontinuities,
+framing and unwanted text. Each fix is conditional on the tested prompt and attributed evidence.
+
+The pattern source is French and designed for web interfaces:
+[MMMProd-Org/seedance-2-5 at 7329444](https://github.com/MMMProd-Org/seedance-2-5/tree/7329444a2652a35741497c2299f87e875a7aa7f2),
+read 2026-10-14. Renderhaus rewrites selected ideas in English and includes the complete
+[MIT notice beside the reference](../agent/deep_agent/skills/t2v/references/NOTICE).
+Every adapted claim about model behavior is **UNVERIFIED against the API until a live A/B**.
+No generation, live A/B or quality measurement occurred in this branch.
+
+Web credits, upload widgets and slots, surface-specific reference tokens, brace-delimited
+speech, web finishing controls and copy/paste delivery conventions were dropped. Automatic
+image-anchor generation, low-resolution draft selection and speculative extension-length
+interpretation were also excluded. The repo's typed contracts remain authoritative.
+Language, voice, camera and physics are prompt prose, not invented fields. The example validates
+against the existing T2V contract. The
+[official fal text schema](https://fal.ai/models/bytedance/seedance-2.5/us/text-to-video/api),
+read 2026-10-14, confirms prompt, duration, aspect, resolution and generated audio controls.
+The adapter uses its own accepted field names and does not expose every vendor control.
+Prices, endpoints, models, credentials and provider policies are untouched.
+
+`agent/deep_agent/seedance_diagnosis.py` returns a fixed key, neutral suggestion and rewritten-prompt
+guidance. It performs no I/O and returns no tool call or approval decision. Untrusted feedback
+is never echoed into the result. The router exposes it as `intent_route.prompt_diagnosis`
+for explicit failure reports or prompt repairs. These routes select t2v with no Gateway tool,
+dispatch wrapper, alias or media execution steps. Discovery and the shared executor block paid
+media dispatch during the request, even when a caller marks it approved. Free saved-job polling
+remains available.
+
+Diagnosis can only propose changes. A paid retry always needs fresh user approval and a new
+cost estimate through the existing approval card, including autonomous runs. An old approval
+cannot resume a new interrupt. Lighthouse's changed-argument and provider-fallback paid-retry
+refusals, parallel approvals, approval exemptions and run_budget are unchanged. Diagnosis does
+not call `record_media_outcome` or enter the separate artifact-rejection training retry.
+Ordinary T2V stays on Wan 3.0; named requests and permanent edit/extend defaults stay intact.
+
+Offline tests cover classification, bounded neutral output, real reference loading, executor
+refusal and a revised prompt's fresh native interrupt after an earlier approved call.
+Five active fixture rows make the new routes observable. Inventory is 20 providers,
+138 Gateway tools, 40 skills and 327 fixture rows, with 321 active and six unchanged skips.
+Browser E2E is pending because no Comet control is available; access was requested.
+The ignored receipt is `.renderhaus/e2e/seedance-prompt-diagnostics.json`.
+No mock check is presented as browser or video-quality evidence.
+See [the decisions](seedance-prompt-diagnostics-decisions.tsv).
 
 ## Transport and credentials
 

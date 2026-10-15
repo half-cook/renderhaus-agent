@@ -83,7 +83,7 @@ No source date is backdated and no billing rates are changed in this skill-only 
 ## Routing coverage and remaining checks
 
 The packaged inventory is 40 skills, 20 providers and 138 Gateway tools. The routing fixture
-has 322 retained rows, 316 active and six unchanged skips. RT-160 and RT-161 cover named art
+has 327 retained rows, 321 active and six unchanged skips. RT-160 and RT-161 cover named art
 and grammar routing. RT-162 asserts that a silent explainer without a named style stays in
 knowledge-explainer. The input CSV has 148 data rows, no test IDs and no art-style cases;
 these three prompts are task/draft reconstructions and are labeled as such in the fixture.

@@ -133,7 +133,7 @@ rows retain their choices. Generic logo animation keeps its existing route until
 identifies a supplied raster or existing logo. Explicit Lottie or JSON UI output uses
 `lottie-animation`, including when the source is an attached logo PNG.
 Current inventory is 20 providers, 138 Gateway tools, 40 skills,
-322 routing rows, 316 active and 6 dependency skips.
+327 routing rows, 321 active and 6 dependency skips.
 
 UNVERIFIED items are customer-logo fidelity outside the synthetic calibration set,
 customer visual acceptance, browser playback through Comet and deployed Studio behavior.

@@ -10,6 +10,7 @@ from dataclasses import dataclass, asdict, replace, field
 from pathlib import Path
 
 from agent.deep_agent.art_style_catalog import catalog_motion_request, style_instruction_text
+from agent.deep_agent.seedance_diagnosis import diagnosis_request, diagnose_failure, RETRY_NOTICE
 
 POLICY = json.loads(Path(__file__).with_name("routing_policy.json").read_text())
 TOOL_MAP = POLICY["tools"]
@@ -64,6 +65,7 @@ class Route:
     execution_groups: tuple[tuple[str, ...], ...] = ()
     expected_output: str | None = None
     forbidden_tools: tuple[str, ...] = ()
+    prompt_diagnosis: dict | None = None
 
     def public(self):
         payload = asdict(self)
@@ -225,7 +227,32 @@ def _chat_story_route(prompt: str, *, region: str | None, available_tools: set[s
                    disclosure=f"{route.disclosure} {disclosure}".strip())
 
 
+def _seedance_prompt_diagnosis(prompt: str) -> dict | None:
+    instructions, fence = [], None
+    for line in prompt.splitlines():
+        if fence is not None:
+            if re.fullmatch(rf' {{0,3}}{re.escape(fence[0])}{{{len(fence)},}}[ \t]*', line):
+                fence = None
+            continue
+        if re.match(r'(?: {4}|\t| {0,3}>)', line):
+            continue
+        if opening := re.match(r' {0,3}(`{3,}|~{3,})', line):
+            fence = opening[1]
+            continue
+        instructions.append(line)
+    text = _instruction_text('\n'.join(instructions))
+    if not diagnosis_request(text):
+        return None
+    constraints = intent_constraints(text)
+    if (set(constraints['provider_candidates']) - {'seedance', 'fal'}
+            or constraints['named_model'] not in {None, 'seedance25'}):
+        return None
+    return asdict(diagnose_failure(text))
+
+
 def request_tool_blocker(prompt: str, name: str) -> str | None:
+    if _seedance_prompt_diagnosis(prompt) and not is_free_tool(name):
+        return RETRY_NOTICE
     if lottie_request(prompt) and (job_type(name) in {
         't2v', 'i2v', 'reference_video', 'v2v_edit', 'extend', 'motion_graphics',
         'lipsync', 'performance_transfer', 'lyrics_video',
@@ -764,6 +791,10 @@ def route_intent(prompt: str, *, region: str | None = None, tier: str | None = N
         route = select_provider("lottie_animation", region=region, available_tools=available_tools)
         return replace(route, skill="lottie-animation", expected_output="Lottie JSON and dotLottie",
                        disclosure="Create the UI vector animation and validate its target players.")
+    if diagnosis := _seedance_prompt_diagnosis(prompt):
+        return Route(skill='t2v', status='ready', basis='prompt diagnosis',
+                     reason=RETRY_NOTICE, disclosure=RETRY_NOTICE, prompt_diagnosis=diagnosis,
+                     expected_output='prompt advice only; no media generated')
     if _logo_animation_request(prompt):
         requested = intent_constraints(prompt, arguments=arguments)
         if (requested['predicates'].get('explicit_hyperframes')

@@ -1,0 +1,40 @@
+Adapted prompt-writing and diagnosis patterns from:
+https://github.com/MMMProd-Org/seedance-2-5
+Revision: 7329444a2652a35741497c2299f87e875a7aa7f2
+Read: 2026-10-14
+
+Source files under skills/seedance-2-5/:
+SKILL.md; references/00-quickref.md; references/01-write-shot.md;
+references/01b-motion-physics.md; references/07-spec.md;
+references/08-templates.md; references/09-diagnose.md;
+references/10-syntax.md; references/15-camera-techniques.md;
+references/17-delivery.md.
+
+The source is French and oriented to web interfaces. Renderhaus translated
+and rewrote selected patterns for its existing API contracts. No source
+runtime, packaging code, web-interface controls or service pricing was copied.
+Every adapted claim about model behavior remains UNVERIFIED against the API
+until an authorized live A/B. The MIT licence covers the source material,
+not model weights or service output rights.
+
+MIT License
+
+Copyright (c) 2026 MMMProd
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
