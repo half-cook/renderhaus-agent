@@ -93,9 +93,15 @@ export function googleEnabled(environment: unknown): boolean {
   return Boolean(settings.social?.oauth_google?.enabled);
 }
 
+type ClerkEnvHost = { __internal_environment?: unknown; environment?: unknown; __unstable__environment?: unknown };
+
 function useGoogleEnabled(): boolean {
-  const clerk = useClerk() as unknown as { loaded?: boolean; __unstable__environment?: unknown };
-  return Boolean(clerk.loaded) && googleEnabled(clerk.__unstable__environment);
+  const clerk = useClerk() as unknown as ClerkEnvHost;
+  const { isLoaded } = useAuth();
+  if (!isLoaded) return false;
+  // The isomorphic wrapper from useClerk doesn't forward the environment; the loaded instance on window does.
+  const hosts = [clerk, typeof window !== "undefined" ? (window as unknown as { Clerk?: ClerkEnvHost }).Clerk : undefined];
+  return hosts.some((host) => host && googleEnabled(host.__internal_environment ?? host.environment ?? host.__unstable__environment));
 }
 
 function useClerkGoogle(kind: "up" | "in"): OAuthStart | null {
@@ -167,7 +173,7 @@ function AuthShell({ children, shot }: { children: ReactNode; shot: string }) {
         <div className="rh-signup-bleed" aria-hidden="true" />
         <Link href="/" className="rh-brand rh-signup-brand"><span className="rh-mark" /><span className="rh-bleed-word">Renderhaus</span></Link>
         <p className="rh-signup-caption">Sign in with your email. No password. Nothing runs until you approve the price.</p>
-        <section className="rh-signup-pane" aria-labelledby="beta-title">{children}<ClerkCaptcha /></section>
+        <section className="rh-signup-pane" aria-labelledby="beta-title">{children}</section>
       </div>
     </main>
   );
@@ -207,6 +213,7 @@ function SignInScreen() {
       <div className="rh-form rh-form-v4" data-shot="sign-in-form">
         <h1 id="beta-title" className="rh-signup-h">Welcome back</h1>
         {configured ? <ClerkSignIn /> : <><p className="rh-form-sub">{signInSub(false)}</p><SignInForm google={null} auth={useLocalEmailCode()} /></>}
+        <ClerkCaptcha />
         <p className="rh-form-fine">New here? <Link href="/sign-up">Use your invite</Link></p>
       </div>
     </AuthShell>
@@ -319,10 +326,10 @@ function InviteSignupFlow({ initialPhase }: { initialPhase?: Phase }) {
               <p className="rh-form-sub">One code, one account, $10 in credit.</p>
               <CodeStep phase={phase} onReserved={(invite) => setPhase({ kind: "email", invite })} onChange={() => setPhase({ kind: "code" })} />
               {redeeming && phase.kind === "email" ? <GoogleRedeem invite={phase.invite} onDone={finish} /> : <EmailStepSwitch phase={phase} onDone={finish} />}
+              <ClerkCaptcha />
               <p className="rh-form-fine">Already in? <Link href="/sign-in">Sign in</Link></p>
             </div>
           )}
-          <ClerkCaptcha />
         </section>
       </div>
     </main>

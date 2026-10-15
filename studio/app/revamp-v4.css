@@ -391,3 +391,9 @@ html[data-theme="light"] {
 [data-shot="sign-in-form"] .rh-step-body { margin-left: 0; }
 .rh-clerk-captcha { margin-top: 12px; max-width: 100%; } .rh-clerk-captcha:empty { margin: 0; }
 .rh-form-v4 .rh-step-body { margin-left: 0; }
+/* Auth polish: Google matches the email field width; disabled primary keeps readable text. */
+.rh-form-v4 .rh-btn-block.rh-google { width: 100%; align-self: stretch; }
+.rh-form-v4 .rh-btn-solid[disabled] { opacity: 1; background: var(--rh-raised); border-color: var(--rh-line-strong); color: var(--rh-fg-2); }
+/* Reserved invite: show the done step row (code · credit · Change) instead of a floating chip over the email field. */
+.rh-form-v4 .rh-stephead:has(.rh-stepmark[data-done]) { display: flex; margin-bottom: 4px; }
+.rh-form-v4 .rh-verified { position: static; align-self: flex-start; margin: 4px 0 0 32px; }
