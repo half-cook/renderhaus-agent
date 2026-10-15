@@ -9,6 +9,7 @@ import { AgentDock } from "./AgentDock";
 import { BetaCreditCard } from "@/components/rh/BetaCreditCard";
 import { safeCopy, workLabel } from "@/lib/rh/billing";
 import { AgentReviewPanel } from "./AgentReviewPanel";
+import { useChangesStore } from "@/lib/rh/changes-store";
 import styles from "./AgentWorkspace.module.css";
 
 const STARTERS = [
@@ -19,6 +20,7 @@ const STARTERS = [
 type Section = "files" | "skills" | "connections" | "memory" | null;
 
 export function AgentWorkspace({ busy, onBusyChange }: { busy: boolean; onBusyChange: (busy: boolean) => void }) {
+  const comparing = useChangesStore((state) => state.compareN !== null);
   const open = useCanvasStore((s) => s.agentOpen);
   const projects = useCanvasStore((s) => s.projects);
   const projectId = useCanvasStore((s) => s.projectId);
@@ -78,7 +80,7 @@ export function AgentWorkspace({ busy, onBusyChange }: { busy: boolean; onBusyCh
   const mediaNodes = nodes.filter((node) => node.data.output);
   const memoryNodes = nodes.filter((node) => node.data.kind === "text");
 
-  return <div className={`${styles.workspace} rh-agent-workspace ${sidebarOpen ? "" : styles.noSidebar} ${reviewOpen ? "" : styles.noReview}`} hidden={!open}>
+  return <div className={`${styles.workspace} rh-agent-workspace ${sidebarOpen ? "" : styles.noSidebar} ${reviewOpen ? "" : styles.noReview}`} hidden={!open || comparing}>
     <div className={`${styles.toolbar} rh-agent-toolbar`}>
       <button type="button" aria-label="Toggle projects sidebar" aria-expanded={sidebarOpen} onClick={() => { setSidebarOpen(!sidebarOpen); if (window.innerWidth <= 800) setReviewOpen(false); }}><PanelLeft size={16} /></button>
       <span>Agent workspace</span>

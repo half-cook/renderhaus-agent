@@ -42,6 +42,8 @@ import {
   type StudioExecution,
 } from "@/lib/api";
 import { useCanvasStore } from "@/lib/canvas/store";
+import { useChangesStore } from "@/lib/rh/changes-store";
+import { ChangesetCard } from "@/components/changes/ChangesetCard";
 import type { AgentProgressEvent, AgentToolEvent } from "@/lib/canvas/types";
 import type { StudioAsset } from "@/lib/types";
 import { AssetDownloadLink, AssetMedia } from "./AssetMedia";
@@ -561,6 +563,9 @@ export function AgentDock({ navigationBusy: externalBusy, onBusyChange, suggesti
 }) {
   const nodes = useCanvasStore((state) => state.nodes);
   const projectId = useCanvasStore((state) => state.projectId);
+  const changesDocument = useChangesStore((state) => state.document);
+  const frameMessage = useChangesStore((state) => state.frameMessage);
+  const composerInsertion = useChangesStore((state) => state.composerInsertion);
   const projectName = useCanvasStore((state) => state.projectName);
   const selectedNodeIds = useCanvasStore((state) => state.selectedNodeIds);
   const executions = useCanvasStore((state) => state.executions);
@@ -632,6 +637,16 @@ export function AgentDock({ navigationBusy: externalBusy, onBusyChange, suggesti
     onSuggestionUsed();
     inputRef.current?.focus();
   }, [suggestion, draftKey, onSuggestionUsed]);
+  useEffect(() => {
+    if (!composerInsertion) return;
+    const text = useChangesStore.getState().consumeComposerInsertion();
+    if (!text) return;
+    const at = inputRef.current?.selectionStart ?? value.length;
+    const separator = at && !/\s$/.test(value.slice(0, at)) ? " " : "";
+    setValue((current) => `${current.slice(0, at)}${separator}${text} ${current.slice(at)}`);
+    const caret = at + separator.length + text.length + 1;
+    requestAnimationFrame(() => { inputRef.current?.focus(); inputRef.current?.setSelectionRange(caret, caret); });
+  }, [composerInsertion, draftKey]);
   const placedVersionIds = useMemo(
     () => new Set(
       nodes
@@ -701,8 +716,9 @@ export function AgentDock({ navigationBusy: externalBusy, onBusyChange, suggesti
     finally { setChangingTask(false); onBusyChange(false); }
   };
 
-  const submit = async () => {
-    const prompt = value.trim();
+  const submit = async (frameText?: string, frameSlotId?: string) => {
+    const prompt = (frameText ?? value).trim();
+    const allowAutonomous = frameText ? false : autonomous;
     if (!prompt || runInFlight || externalBusy || !conversationId) return;
     setBusy(true);
     stickToBottom.current = true;
@@ -714,13 +730,13 @@ export function AgentDock({ navigationBusy: externalBusy, onBusyChange, suggesti
         message: "Queued",
         toolEvents: [],
         progressEvents: [],
-        autonomous,
+        autonomous: allowAutonomous,
         approvals: [],
       },
     });
-    setValue("");
+    if (!frameText) setValue("");
     const refs = mentions.map((node) => node.id);
-    const ids = refs.length ? refs : selectedNodeIds;
+    const ids = frameText ? frameSlotId ? [frameSlotId] : [] : refs.length ? refs : selectedNodeIds;
     const referencedNodes = nodes.filter((node) => ids.includes(node.id));
     const contexts = referencedNodes.map((node) => {
       const promptValue = ["prompt", "text", "script", "lyrics"]
@@ -747,7 +763,7 @@ export function AgentDock({ navigationBusy: externalBusy, onBusyChange, suggesti
         conversationId,
         ids,
         contexts,
-        autonomous,
+        allowAutonomous,
         (progress) => {
           setAgentMessage(progress.message);
           setLiveRun({ prompt, progress });
@@ -764,7 +780,7 @@ export function AgentDock({ navigationBusy: externalBusy, onBusyChange, suggesti
             toolEvents: result.result.toolEvents,
             progressEvents: liveRun?.progress.progressEvents || [],
             result: result.result,
-            autonomous,
+            autonomous: allowAutonomous,
             approvals: [],
           },
         });
@@ -779,7 +795,7 @@ export function AgentDock({ navigationBusy: externalBusy, onBusyChange, suggesti
           message,
           toolEvents: [],
           progressEvents: [],
-          autonomous,
+          autonomous: allowAutonomous,
           approvals: [],
         },
       });
@@ -789,6 +805,17 @@ export function AgentDock({ navigationBusy: externalBusy, onBusyChange, suggesti
       setBusy(false);
     }
   };
+
+  useEffect(() => {
+    if (!frameMessage || runInFlight || externalBusy || !conversationId) return;
+    const message = useChangesStore.getState().consumeFrameMessage();
+    if (!message) return;
+    if (message.projectId !== projectId || message.conversationId !== conversationId) {
+      setAgentMessage("The task changed before the frame note could be sent. Return to the original task to send it.");
+      return;
+    }
+    void submit(message.text, message.slotId);
+  }, [frameMessage, runInFlight, externalBusy, projectId, conversationId]);
 
   const onCap = async (execution: StudioExecution, action: "raise" | "stop", capCents?: number) => {
     if (externalBusy || navigationBusy) return;
@@ -942,7 +969,7 @@ export function AgentDock({ navigationBusy: externalBusy, onBusyChange, suggesti
         const el = event.currentTarget;
         stickToBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < 100;
       }}>
-        {conversationExecutions.length === 0 && !liveRun ? (
+        {conversationExecutions.length === 0 && !liveRun && !changesDocument ? (
           <div className="agent-empty">
             <p className="rh-eyebrow">Project · {projectName}</p>
             <h3>What are we <em>making</em>?</h3>
@@ -979,6 +1006,7 @@ export function AgentDock({ navigationBusy: externalBusy, onBusyChange, suggesti
           />
         ))}
         {liveRun ? <LiveExecutionTurn run={liveRun} /> : null}
+        {changesDocument ? <ChangesetCard document={changesDocument} onInsert={(n) => useChangesStore.getState().setComposerInsertion(`change ${n}`)} onOpen={() => { const store = useChangesStore.getState(); store.setTab("changes"); const take = changesDocument.changes.find((change) => change.kind === "take"); if (take) store.openCompare(take.n); }} /> : null}
       </div>
 
       <div className="agent-composer">

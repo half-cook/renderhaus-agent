@@ -18,6 +18,7 @@ export const DEMO_TASK = process.env.SHOT_TASK ?? "demo-task";
 export type Screen = {
   id: string;
   theme?: "light" | "dark";
+  now?: string;
   url: string;
   ready: string;
   prepare?: (page: Page) => Promise<void>;
@@ -157,3 +158,42 @@ const twelveRun = structuredClone(midRun);
 const sourceApproval = twelveRun.items[0]!.approvals[0]!;
 twelveRun.items[0]!.approvals = Array.from({ length: 12 }, (_, index) => ({ ...sourceApproval, call_id: `plan-step-${index + 1}`, label: `Shot ${index + 1} · product sequence`, step_index: index + 1, step_count: 12 }));
 SCREENS.push({ id: "m04-agent-plan-12", url: agentUrl, ready: ".rh-appr", fixtures: mug({ "/api/studio/agent": twelveRun, ...account(974, 26) }) });
+
+
+import { changesDocument } from "./rh-fixtures";
+const changes = () => mug({
+  [`/api/studio/projects/${MUG}/changesets`]: { items: [changesDocument()] },
+  "/api/studio/agent": { items: [] }, ...account(905, 95),
+});
+const changesNow = "2026-10-10T20:20:00-04:00";
+const changesUrl = `${agentUrl}&review=changes`;
+SCREENS.push(
+  { id: "m24-agent-changes", url: changesUrl, ready: "[data-shot='agent-changes-ready']", fixtures: changes(), now: changesNow },
+  { id: "m24-agent-changes-light", url: changesUrl, ready: "[data-shot='agent-changes-ready']", fixtures: changes(), now: changesNow, theme: "light" },
+  { id: "m25-compare-swipe", url: `${changesUrl}&compare=1`, ready: ".rh-compare", fixtures: changes(), now: changesNow },
+  { id: "m26-compare-side-by-side", url: `${changesUrl}&compare=1&compare-mode=side-by-side`, ready: ".rh-compare", fixtures: changes(), now: changesNow },
+  { id: "m27-timeline-changes", url: `/canvas?project=${MUG}&workspace=timeline&review=changes&monitor=changes`, ready: "[data-shot='timeline-changes']", fixtures: changes(), now: changesNow },
+  { id: "m28-change-states", url: "/design/change-states", ready: "[data-shot='change-states-ready']", fullPage: true },
+);
+
+const oneShotChanges = changesDocument();
+for (const cut of [oneShotChanges.currentCut, oneShotChanges.checkpointCut]) {
+  cut.slots = cut.slots.filter((slot) => slot.slotId === "n-shot2"); cut.order = ["n-shot2"];
+}
+oneShotChanges.changes = oneShotChanges.changes.slice(0, 2);
+const heavyTrim = oneShotChanges.changes[1];
+if (heavyTrim?.kind === "trim") heavyTrim.afterRef.outMs = 500;
+const twelveChanges = changesDocument();
+const trimChange = twelveChanges.changes[1];
+if (trimChange) twelveChanges.changes = Array.from({ length: 12 }, (_, index) => ({ ...trimChange, id: `change-12-${index}`, n: index + 1, title: index === 0 ? "A very long title to check how an edit list wraps on a smaller screen without hiding its status or actions" : `Trim Shot 2 · option ${index + 1}` }));
+const noFreeChanges = changesDocument();
+noFreeChanges.changes = noFreeChanges.changes.filter((change) => change.costCents > 0);
+const changesCase = (document: ReturnType<typeof changesDocument>) => ({ ...changes(), [`/api/studio/projects/${MUG}/changesets`]: { items: [document] } });
+SCREENS.push(
+  { id: "m27-one-shot-heavy-trim", url: `/canvas?project=${MUG}&workspace=timeline&review=changes&monitor=changes`, ready: "[data-shot='timeline-changes']", now: changesNow, fixtures: changesCase(oneShotChanges) },
+  { id: "m24-twelve-changes", url: changesUrl, ready: "[data-shot='agent-changes-ready']", now: changesNow, fixtures: changesCase(twelveChanges) },
+  { id: "m24-zero-free-changes", url: changesUrl, ready: "[data-shot='agent-changes-ready']", now: changesNow, fixtures: changesCase(noFreeChanges) },
+);
+const waitingChanges = changesDocument();
+waitingChanges.changes = [{ ...waitingChanges.changes[0]!, state: "awaiting_approval", taken: false, approval: waitingChanges.newTakeApproval }];
+SCREENS.push({ id: "m24-waiting-paid-change", url: changesUrl, ready: "[data-shot='agent-changes-ready']", fixtures: changesCase(waitingChanges), now: changesNow });

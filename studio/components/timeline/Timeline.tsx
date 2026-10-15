@@ -3,7 +3,7 @@
 import {
   ChevronDown, GripVertical, Mic, Pause, Play, SkipBack, SkipForward, Trash2, ZoomIn, ZoomOut, Magnet, EyeOff, Eye, Film,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState, type KeyboardEvent, type PointerEvent as ReactPointerEvent } from "react";
+import { useCallback, useEffect, useMemo, useState, type KeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import { useCanvasStore } from "@/lib/canvas/store";
 import {
   FRAME_SECONDS, PX_PER_SECOND, clipLength, clipsFromNodes, dropIndex, moveClip, secondsLabel, timecode, totalSeconds,
@@ -96,12 +96,17 @@ function Ruler({ seconds, pxPerSecond }: { seconds: number; pxPerSecond: number 
   );
 }
 
-export function TimelineTrack({ model, transport, pxPerSecond, snapOn, height }: {
+export function TimelineTrack({ model, transport, pxPerSecond, snapOn, height, changesRow, clipDecoration, clipClassName, thumbnailMode, readOnly = false }: {
   model: TimelineModel;
   transport: Transport;
   pxPerSecond: number;
   snapOn: boolean;
   height: number;
+  changesRow?: ReactNode;
+  clipDecoration?: (clip: TimelineClip) => ReactNode;
+  clipClassName?: (clip: TimelineClip) => string;
+  thumbnailMode?: "repeat-cover";
+  readOnly?: boolean;
 }) {
   const { clips, trim, reorder, remove, move } = model;
   const { selectedId, select, playhead, setPlayhead, total } = transport;
@@ -154,6 +159,7 @@ export function TimelineTrack({ model, transport, pxPerSecond, snapOn, height }:
   };
 
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (readOnly) return;
     const clip = clips.find((candidate) => candidate.id === selectedId);
     if (!clip) return;
     const edge = event.altKey ? "in" : "out";
@@ -175,6 +181,8 @@ export function TimelineTrack({ model, transport, pxPerSecond, snapOn, height }:
   return (
     <div className="rh-tl-scroll" data-shot="timeline-track">
       <div className="rh-tl-canvas" style={{ width: rulerSeconds * pxPerSecond + 120 }}>
+        {changesRow ? <div className="rh-tl-changes-row"><div className="rh-tl-gutter rh-eyebrow">Changes</div>{changesRow}</div> : null}
+        <div className="rh-tl-timed-region">
         <div className="rh-tl-rulerrow">
           <div className="rh-tl-gutter rh-eyebrow">Shots · {clips.length}</div>
           <Ruler seconds={rulerSeconds} pxPerSecond={pxPerSecond} />
@@ -187,7 +195,7 @@ export function TimelineTrack({ model, transport, pxPerSecond, snapOn, height }:
           <div
             className="rh-tl-lane"
             role="listbox"
-            aria-label="Video track. Drag a clip to reorder, drag an end to trim. Arrow keys trim by a frame, brackets reorder, Backspace removes."
+            aria-label={readOnly ? "Video track with proposed changes. Select a shot to preview. Switch to Current cut to edit." : "Video track. Drag a clip to reorder, drag an end to trim. Arrow keys trim by a frame, brackets reorder, Backspace removes."}
             aria-orientation="horizontal"
             tabIndex={0}
             onKeyDown={onKeyDown}
@@ -209,18 +217,21 @@ export function TimelineTrack({ model, transport, pxPerSecond, snapOn, height }:
                   role="option"
                   aria-selected={selected}
                   aria-label={`${String(clip.order).padStart(2, "0")} ${clip.title}, ${secondsLabel(clipLength(clip))}`}
-                  className="rh-tl-clip rh-ticks"
+                  className={`rh-tl-clip rh-ticks${clipClassName ? ` ${clipClassName(clip)}` : ""}`}
                   data-selected={selected}
                   data-moving={moving}
                   style={{ left: left + (gapAt >= 0 && position >= gapAt && !moving ? 0 : 0), width, transform: moving ? `translateX(${drag.delta}px)` : undefined, zIndex: moving ? 5 : undefined }}
                   onPointerDown={() => select(clip.id)}
                 >
-                  <div className="rh-tl-strip" style={clip.thumbUrl ? { backgroundImage: `url(${clip.thumbUrl})`, backgroundSize: `${Math.max(60, height * 1.7)}px 100%` } : undefined} />
-                  <span className="rh-tl-grip" aria-hidden="true" onPointerDown={(event) => beginMove(event, clip)}><GripVertical size={11} /></span>
+                  {thumbnailMode === "repeat-cover" ? <div className="rh-tl-strip rh-tl-strip-cover" aria-hidden="true">
+                    {clip.thumbUrl ? Array.from({ length: Math.ceil(width / (height * 16 / 9)) + 1 }, (_, index) => <img key={index} src={clip.thumbUrl} alt="" draggable={false} />) : null}
+                  </div> : <div className="rh-tl-strip" style={clip.thumbUrl ? { backgroundImage: `url(${clip.thumbUrl})`, backgroundSize: `${Math.max(60, height * 1.7)}px 100%` } : undefined} />}
+                  {!readOnly ? <><span className="rh-tl-grip" aria-hidden="true" onPointerDown={(event) => beginMove(event, clip)}><GripVertical size={11} /></span>
                   <span className="rh-tl-handle" data-edge="in" role="presentation" onPointerDown={(event) => beginTrim(event, clip, "in")} />
-                  <span className="rh-tl-handle" data-edge="out" role="presentation" onPointerDown={(event) => beginTrim(event, clip, "out")} />
+                  <span className="rh-tl-handle" data-edge="out" role="presentation" onPointerDown={(event) => beginTrim(event, clip, "out")} /></> : null}
                   <span className="rh-tl-cliplabel rh-mono"><b>{String(clip.order).padStart(2, "0")}</b> · {clip.title}</span>
                   <span className="rh-tl-cliplen rh-mono rh-num">{secondsLabel(clipLength(clip))}</span>
+                  {clipDecoration?.(clip)}
                   <span className="rh-tk" />
                 </div>
               );
@@ -230,13 +241,16 @@ export function TimelineTrack({ model, transport, pxPerSecond, snapOn, height }:
         </div>
         <div className="rh-tl-playhead" style={{ left: 112 + playhead * pxPerSecond }} aria-hidden="true"><i /></div>
         <button type="button" className="rh-tl-seek" style={{ left: 112, width: rulerSeconds * pxPerSecond }} aria-label="Move the playhead" tabIndex={-1} onClick={(event) => { const rect = event.currentTarget.getBoundingClientRect(); setPlayhead(Math.min(total, Math.max(0, (event.clientX - rect.left) / pxPerSecond))); }} />
+        </div>
       </div>
     </div>
   );
 }
 
-export function TransportBar({ model, transport, snapOn, onSnap, zoom, onZoom }: {
+export function TransportBar({ model, transport, snapOn, onSnap, zoom, onZoom, children, playbackAvailable = true }: {
   model: TimelineModel; transport: Transport; snapOn: boolean; onSnap: () => void; zoom: number; onZoom: (value: number) => void;
+  children?: ReactNode;
+  playbackAvailable?: boolean;
 }) {
   const { playing, setPlaying, playhead, total, step } = transport;
   return (
@@ -245,10 +259,11 @@ export function TransportBar({ model, transport, snapOn, onSnap, zoom, onZoom }:
       <span className="rh-chip rh-chip-mono">Single track · trim and reorder</span>
       <div className="rh-tl-transport">
         <button type="button" className="rh-icon-btn" aria-label="Previous shot" onClick={() => step(-1)}><SkipBack size={14} /></button>
-        <button type="button" className="rh-icon-btn rh-tl-play" aria-label={playing ? "Pause" : "Play"} aria-pressed={playing} onClick={() => { if (!playing && playhead >= total) transport.setPlayhead(0); setPlaying(!playing); }}>{playing ? <Pause size={15} /> : <Play size={15} />}</button>
+        <button type="button" className="rh-icon-btn rh-tl-play" disabled={!playbackAvailable} aria-label={!playbackAvailable ? "Playback unavailable for still preview" : playing ? "Pause" : "Play"} aria-pressed={playing} onClick={() => { if (!playing && playhead >= total) transport.setPlayhead(0); setPlaying(!playing); }}>{playing ? <Pause size={15} /> : <Play size={15} />}</button>
         <button type="button" className="rh-icon-btn" aria-label="Next shot" onClick={() => step(1)}><SkipForward size={14} /></button>
       </div>
-      <span className="rh-tl-time rh-mono rh-num"><b>{timecode(playhead)}</b> / {timecode(Math.max(total, RULER_MIN_SECONDS))}</span>
+      <span className="rh-tl-time rh-mono rh-num"><b>{timecode(playhead)}</b> / {timecode(total)}</span>
+      {children}
       <span className="rh-tl-spacer" />
       {model.voiceover ? <span className="rh-chip"><Mic size={12} aria-hidden="true" />Voiceover attached{model.voiceover.seconds ? ` · 0:${String(Math.round(model.voiceover.seconds)).padStart(2, "0")}` : ""}</span> : null}
       <button type="button" className="rh-btn rh-btn-quiet rh-btn-sm" aria-pressed={snapOn} onClick={onSnap}><Magnet size={13} aria-hidden="true" />Snap <span className="rh-kbd">S</span></button>
@@ -297,4 +312,3 @@ export function TimelineDock() {
     </section>
   );
 }
-

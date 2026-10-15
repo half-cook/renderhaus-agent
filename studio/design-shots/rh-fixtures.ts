@@ -140,3 +140,5 @@ export const lowRun = { items: [{ ...midRun.items[0]!, approvals: [{ ...shot1App
 export const lowAccount = { balance_cents: 150, display_name: "Satya", beta_credit: { granted_cents: 1000, remaining_cents: 150, spent_cents: 850 }, recent_ledger: [], subscription: null };
 
 export { camel };
+
+export { changesDocument, changesStateVariants } from "../lib/rh/changes-fixtures";

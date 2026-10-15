@@ -13,6 +13,9 @@ import styles from "./AgentReviewPanel.module.css";
 import { SpendLedger } from "@/components/rh/RunBilling";
 import { spendSummary } from "@/lib/rh/approval-model";
 import { TimelineMini } from "@/components/timeline/TimelineMini";
+import { ChangesPanel } from "@/components/changes/ChangesPanel";
+import { useChangesReview } from "@/components/changes/ChangesReview";
+import { useChangesStore } from "@/lib/rh/changes-store";
 
 function FileIcon({ kind }: { kind: StudioAsset["kind"] }) {
   const Icon = kind === "video" ? FileVideo : kind === "audio" ? FileAudio : FileImage;
@@ -156,7 +159,15 @@ export function AgentReviewPanel() {
   const selectedNodeIds = useCanvasStore((state) => state.selectedNodeIds);
   const conversationId = useCanvasStore((state) => state.conversationId);
   const projectId = useCanvasStore((state) => state.projectId);
-  const [tab, setTab] = useState<"changes" | "preview" | "timeline">(() => useCanvasStore.getState().executions.some((execution) => execution.approvals.length || execution.receipt || execution.pausedCap) ? "preview" : "changes");
+  const [legacyTab, setLegacyTab] = useState<"changes" | "preview" | "timeline">(() => useCanvasStore.getState().executions.some((execution) => execution.approvals.length || execution.receipt || execution.pausedCap) ? "preview" : "changes");
+  const changesDocument = useChangesStore((state) => state.document);
+  const changesTab = useChangesStore((state) => state.tab);
+  const selectedN = useChangesStore((state) => state.selectedN);
+  const changesBusy = useChangesStore((state) => state.busy);
+  const changesError = useChangesStore((state) => state.error);
+  const changesReview = useChangesReview();
+  const tab = changesDocument ? changesTab : legacyTab;
+  const setTab = (value: "changes" | "preview" | "timeline") => changesDocument ? useChangesStore.getState().setTab(value) : setLegacyTab(value);
   const spend = useMemo(() => spendSummary(executions), [executions]);
   const [sourceId, setSourceId] = useState<string | null>(null);
   const [resultId, setResultId] = useState<string | null>(null);
@@ -223,13 +234,13 @@ export function AgentReviewPanel() {
     </section>;
   }
 
-  return <aside className={`${styles.panel} rh-review-panel`} aria-label="Agent review">
+  return <aside className={`${styles.panel} rh-review-panel`} aria-label="Agent review" data-has-changes={!!changesDocument}>
     <div className={`${styles.tabs} rh-review-tabs`} role="tablist" aria-label="Review mode">
-      {(["changes", "preview", "timeline"] as const).map((value) => <button
+      {(changesDocument ? ["preview", "changes", "timeline"] as const : ["changes", "preview", "timeline"] as const).map((value) => <button
         type="button" key={value} id={`${id}-${value}`} role="tab" aria-selected={tab === value}
         aria-controls={`${id}-panel`} tabIndex={tab === value ? 0 : -1}
         onClick={() => setTab(value)} onKeyDown={(event) => {
-          const order = ["changes", "preview", "timeline"] as const;
+          const order = changesDocument ? ["preview", "changes", "timeline"] as const : ["changes", "preview", "timeline"] as const;
           if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
           event.preventDefault();
           const at = order.indexOf(tab);
@@ -238,10 +249,13 @@ export function AgentReviewPanel() {
         }}>
         {value === "changes" ? <GitCompareArrows size={15} /> : value === "preview" ? <Play size={15} /> : <Film size={15} />}
         {value === "changes" ? "Changes" : value === "preview" ? "Preview" : "Timeline"}
+        {value === "changes" && changesDocument ? <span className="rh-change-count">{changesDocument.changes.length}</span> : null}
       </button>)}
     </div>
     <div className={`${styles.content} rh-review-content`} id={`${id}-panel`} role="tabpanel" aria-labelledby={`${id}-${tab}`}>
-      {tab === "changes" ? <>
+      {!changesDocument && changesError ? <div className="rh-change-notice" role="alert"><p>{changesError}</p><button type="button" className="rh-btn rh-btn-sm" disabled={changesBusy} onClick={() => void useChangesStore.getState().load(projectId)}>Reload changes</button></div> : null}
+      {tab === "changes" && changesDocument ? <ChangesPanel document={changesDocument} selectedN={selectedN ?? 0} busy={changesBusy} error={changesError} rowProps={changesReview.rowProps}
+        onAcceptFree={() => void useChangesStore.getState().acceptFree()} onRejectAll={() => void useChangesStore.getState().rejectAll()} onRestore={async () => { await useChangesStore.getState().restore(); return !useChangesStore.getState().error; }} /> : tab === "changes" ? <>
         <div className={`${styles.heading} rh-review-heading`}><div><h2>Changes</h2><p>{timeline ? "Saved edit plans and task media." : "Media created in this task."}</p></div><span className={`${styles.count} rh-review-count`}>{files.filter((file) => file.currentTask).length} created</span></div>
         {timeline ? <>
           {timeline.comparisons.length ? <label className={`${styles.comparisonSelector} rh-review-comparison-selector`}>Compare with
@@ -278,7 +292,8 @@ export function AgentReviewPanel() {
           <details className="rh-review-compare"><summary>Compare with source</summary><Viewer label="Source / current" files={files} value={source} startTime={sourceTime} onChange={(value) => { setSourceId(value); setSourceTime(undefined); }} empty="Select a canvas clip or choose source media." /></details>
         </div>
       </>}
-      {spend ? <div className="rh-spend-dock"><SpendLedger rows={spend.rows} totalLabel={spend.totalLabel} totalCents={spend.totalCents} /></div> : null}
+      {spend && (!changesDocument || tab !== "changes") ? <div className="rh-spend-dock"><SpendLedger rows={spend.rows} totalLabel={spend.totalLabel} totalCents={spend.totalCents} /></div> : null}
     </div>
+    {changesReview.dialogs}
   </aside>;
 }

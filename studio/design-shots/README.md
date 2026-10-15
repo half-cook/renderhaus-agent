@@ -28,7 +28,11 @@ clock, theme storage, locale, font readiness, and disabled CSS animations keep
 captures repeatable. The theme applies before paint.
 
 `screens.ts` includes all revamp screens m01 through m18, the light agent run,
-the approval edge-case board and a twelve-step run. Set `SHOT_ONLY='^m'` to capture
+the approval edge-case board and a twelve-step run. Changes & Timeline v1 adds
+m24–m28, a light m24, and four stress cases: twelve changes with a long title,
+zero free changes, an untaken paid change, and one heavily trimmed shot with a
+long voiceover. The twelve-state board uses the real numbered row component.
+Set `SHOT_ONLY='^m'` to capture
 the revamp set. Auth screens require real configuration and remain outside this
 fixture kit. Each capture runs the privacy and product-copy guards.
 
@@ -36,6 +40,11 @@ Run `node design-shots/run.mjs verify` for the fixture interaction checks: appro
 focus, keyboard trim/reorder/remove, export focus trap and JSON download, welcome
 dismissal, signup redirect and local example-film playback. This is separate from
 real-backend Comet E2E. No mock action authorizes live generation.
+The Changes checks cover paid exclusion from bulk acceptance, reversible
+decisions, restore confirmation, numbered composer insertion, compare modes,
+retained takes, voiceover length, failed requests, safe paid keyboard handling,
+timecoded agent notes that preserve the composer draft, and actual local video
+playback through an extensionless media URL with a trimmed initial frame.
 
 To build once and reuse the output for all checks, run
 `RH_SHOT_BUILD_DIR=.next-design-shots npm run build` with empty Clerk key variables,

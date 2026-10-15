@@ -4,7 +4,8 @@ import { fileURLToPath } from "node:url";
 import { expect, type Page } from "@playwright/test";
 import type { Screen } from "./screens";
 import { assertCapturePrivacy } from "./privacy.mjs";
-import { findCopyLeaks } from "./copy-rules.mjs";
+import { acceptFreeChanges, editChangesCut, parseChangesDocument, rejectAllChanges, restoreCheckpoint, transitionChange, trimVoiceToFit, type ChangeAction, type Cut } from "../lib/rh/changes";
+import { findCopyLeaks, findChangesVocabularyLeaks } from "./copy-rules.mjs";
 
 export const HERE = path.dirname(fileURLToPath(import.meta.url));
 export const OUT = path.resolve(process.env.SHOT_OUT_DIR || path.join(HERE, "out"));
@@ -27,17 +28,29 @@ function betaPost(pathname: string, body: Record<string, unknown>): { status: nu
 }
 
 export async function wire(page: Page, screen?: Screen) {
-  const overrides = screen?.fixtures ?? {};
+  const overrides = { ...screen?.fixtures };
+  const changesPath = Object.keys(overrides).find((key) => /\/projects\/[^/]+\/changesets$/.test(key));
+  const changesPayload = changesPath ? overrides[changesPath] as { items: unknown[] } : undefined;
+  let changesDocument = parseChangesDocument(changesPayload?.items[0]);
   await page.addInitScript((theme) => {
     localStorage.setItem("renderhaus.studio.theme", theme);
     localStorage.setItem("renderhaus.studio.server-migration.v2", "true");
   }, screen?.theme ?? THEME);
-  await page.clock.setFixedTime(FIXED_NOW);
+  await page.clock.setFixedTime(screen?.now ? new Date(screen.now) : FIXED_NOW);
   await page.route("**/api/**", (route) => route.abort("blockedbyclient"));
   const har = path.join(HERE, "fixtures/studio.har");
   if (existsSync(har)) await page.routeFromHAR(har, { url: /\/api\//, notFound: "fallback" });
   await page.route("**/api/**", async (route) => {
     const pathname = new URL(route.request().url()).pathname;
+    if (route.request().method() === "GET" && /\/projects\/[^/]+\/changesets$/.test(pathname)) return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ items: changesDocument ? [changesDocument] : [] }) });
+    const changeAction = /^\/api\/studio\/changesets\/([^/]+)\/(?:changes\/(\d+)\/([^/]+)|(restore))$/.exec(pathname);
+    if (route.request().method() === "POST" && changeAction && changesDocument && changeAction[1] === changesDocument.changeset.id) {
+      const body = JSON.parse(route.request().postData() || "{}");
+      if (body.expected_revision !== changesDocument.revision) return route.fulfill({ status: 409, contentType: "application/json", body: JSON.stringify({ detail: "The cut changed. Reload before deciding." }) });
+      const action = changeAction[4] ?? changeAction[3];
+      changesDocument = action === "restore" ? restoreCheckpoint(changesDocument) : action === "acceptFree" ? acceptFreeChanges(changesDocument) : action === "rejectAll" ? rejectAllChanges(changesDocument) : action === "trimToFit" ? trimVoiceToFit(changesDocument, body.max_duration_ms !== undefined ? { ...changesDocument.currentCut, slots: [{ slotId: "voice-fit", takeId: "voice-fit", inMs: 0, outMs: body.max_duration_ms }], order: ["voice-fit"] } : undefined) : action === "editCut" ? editChangesCut(changesDocument, body.cut as Cut) : transitionChange(changesDocument, Number(changeAction[2]), action as ChangeAction, { takeId: body.take_id });
+      return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(changesDocument) });
+    }
     if (route.request().method() !== "GET") {
       const mocked = betaPost(pathname, JSON.parse(route.request().postData() || "{}"));
       if (mocked) return route.fulfill({ status: mocked.status, contentType: "application/json", body: JSON.stringify(mocked.json) });
@@ -59,7 +72,9 @@ export async function privacyGuard(page: Page) {
   const urls = await page.evaluate(() => Array.from(document.querySelectorAll<HTMLImageElement | HTMLMediaElement | HTMLSourceElement | HTMLAnchorElement>("img,video,source,a,audio")).map((element) => "href" in element ? element.href : ("currentSrc" in element ? element.currentSrc : "") || element.src));
   assertCapturePrivacy(text, urls);
   const attributes = await page.evaluate(() => Array.from(document.querySelectorAll("[title],[aria-label],[alt],[placeholder]")).flatMap((element) => ["title", "aria-label", "alt", "placeholder"].map((name) => element.getAttribute(name) || "")));
-  const leaks = findCopyLeaks([text, ...attributes].join("\n"));
+  const allCopy = [text, ...attributes].join("\n");
+  const changesVisible = await page.locator("[data-shot='agent-changes-ready'],.rh-compare,[data-shot='timeline-changes'],[data-shot='change-states-ready']").count() > 0;
+  const leaks = [...findCopyLeaks(allCopy), ...(changesVisible ? findChangesVocabularyLeaks(allCopy) : [])];
   const label = process.env.SHOT_LABEL || "after";
   const dir = path.join(OUT, "copy-leaks", label, THEME);
   mkdirSync(dir, { recursive: true });
@@ -91,7 +106,7 @@ export async function settle(page: Page, screen: Screen) {
       if (transcript) transcript.scrollTop = transcript.scrollHeight;
     });
   }
-  if (screen.id === "08-canvas-node-selected") {
+  if (["08-canvas-node-selected", "m06-canvas-timeline"].includes(screen.id)) {
     await page.waitForFunction(() => {
       const viewport = document.querySelector<HTMLElement>(".react-flow__viewport");
       if (!viewport) return false;

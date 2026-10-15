@@ -100,3 +100,5 @@ export const edgeCards = (): Array<{ title: string; model: ApprovalCardModel }> 
   { title: "Actual above estimate", model: { ...doneCard(), actualCents: 125, underEstimate: false, balanceAfterCents: 849, lines: [{ kind: "media", label: "Video clip", priceCents: 65, basis: "fixed" }, { kind: "orchestration", label: "Agent orchestration", priceCents: 60, basis: "fixed" }] } },
   { title: "Twelve-step plan", model: { ...pendingCard(), stepIndex: 12, stepCount: 12 } },
 ];
+
+export { changesDocument, changesStateVariants } from "./changes-fixtures";

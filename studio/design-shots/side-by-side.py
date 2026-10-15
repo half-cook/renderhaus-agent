@@ -53,7 +53,12 @@ def main() -> None:
         pair(args.mockups / f"{mockup}.png", source, args.captures / "side-by-side" / f"{screen}.png")
     pair(args.mockups / "13-agent-run-light.png", args.captures / "light/desktop-1920x1200/m04-agent-run.png",
          args.captures / "side-by-side/m04-agent-run-light.png")
-    print("Created 18 labelled comparisons. Export has no designer mockup.")
+    changes_mockups = Path("/workspace/renderhaus-ui/changes/mockups")
+    changes = {"m24-agent-changes": "24-v1-agent-changes", "m25-compare-swipe": "25-v1-compare-swipe", "m26-compare-side-by-side": "26-v1-compare-side-by-side", "m27-timeline-changes": "27-v1-timeline-changes", "m28-change-states": "28-v1-change-states"}
+    for screen, mockup in changes.items():
+        source = args.captures / "dark" / "desktop-1920x1200" / f"{screen}.png"
+        pair(changes_mockups / f"{mockup}.png", source, args.captures / "side-by-side" / f"{screen}.png")
+    print("Created 23 labelled comparisons. Export has no designer mockup.")
 
 
 if __name__ == "__main__":
