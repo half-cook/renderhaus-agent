@@ -46,11 +46,16 @@ def dry_run() -> bool:
     return os.getenv("GEMINI_DRY_RUN", "true").lower() != "false"
 
 
-def _base(settings: GeminiSettings) -> dict:
+def _base(settings: GeminiSettings, *, rubric: str = 'continuity') -> dict:
+    if rubric == 'reference_shots':
+        from providers.gemini.shots import RUBRIC_HASH as rubric_hash
+    else:
+        rubric_hash = RUBRIC_HASH
     return {
         "provider": "gemini",
         "model": settings.model,
-        "rubric_hash": RUBRIC_HASH,
+        "rubric_hash": rubric_hash,
+        "rubric": rubric,
         "verification": "verified" if settings.model == VERIFIED_MODEL else "UNVERIFIED",
         **TRAINING_METADATA,
     }
@@ -136,7 +141,8 @@ def _unique_fields(pairs: list[tuple[str, object]]) -> dict:
     return parsed
 
 
-def _normalized(payload: dict, settings: GeminiSettings, expected_job_id: str | None = None) -> dict:
+def _normalized(payload: dict, settings: GeminiSettings, expected_job_id: str | None = None,
+                *, rubric: str = 'continuity', expected_shot_ids: list[int] | None = None) -> dict:
     job_id = payload.get("id")
     try:
         validate_job_id(job_id)
@@ -148,7 +154,7 @@ def _normalized(payload: dict, settings: GeminiSettings, expected_job_id: str | 
         raise GeminiError("Gemini returned an unexpected model; evaluation skipped.")
     if expected_job_id is not None and job_id != expected_job_id:
         raise GeminiError("Gemini returned a different interaction; evaluation skipped.")
-    base = {**_base(settings), "job_id": job_id, "dry_run": False}
+    base = {**_base(settings, rubric=rubric), "job_id": job_id, "dry_run": False}
     status = payload.get("status")
     if not isinstance(status, str):
         raise GeminiError("Gemini returned an invalid status; evaluation skipped.")
@@ -171,11 +177,22 @@ def _normalized(payload: dict, settings: GeminiSettings, expected_job_id: str | 
             for part in content
             if isinstance(part, dict) and part.get("type") == "text"
         )
-    if len(texts) != 1 or not isinstance(texts[0], str) or len(texts[0]) > 16_384:
+    if len(texts) != 1 or not isinstance(texts[0], str) or len(texts[0]) > (131_072 if rubric == 'reference_shots' else 16_384):
         raise GeminiError("Gemini returned no unique bounded judgement; evaluation skipped.")
     try:
         parsed = json.loads(texts[0], object_pairs_hook=_unique_fields)
-        judgement = GeminiJudgement.model_validate(parsed)
+        if rubric == 'reference_shots':
+            from providers.reference_shots.contracts import ShotLabels
+
+            judgement = ShotLabels.model_validate(parsed)
+            ids = [shot.shot_id for shot in judgement.shots]
+            from providers.gemini.shots import validate_shot_ids
+
+            validate_shot_ids(ids)
+            if expected_shot_ids is not None and ids != expected_shot_ids:
+                raise ValueError('Shot labels do not match the requested shot IDs.')
+        else:
+            judgement = GeminiJudgement.model_validate(parsed)
     except (ValidationError, ValueError, RecursionError):
         raise GeminiError("Gemini judgement failed strict parsing; evaluation skipped.") from None
     usage = payload.get("usage", {})
@@ -222,12 +239,13 @@ def submit(before_image_b64: str, after_image_b64: str, model: str = "") -> dict
         return {**_base(settings), "status": "skipped", "dry_run": False, "reason": str(exc)}
 
 
-def poll(job_id: str, model: str = "") -> dict:
+def poll(job_id: str, model: str = "", *, rubric: str = 'continuity',
+         shot_ids: list[int] | None = None) -> dict:
     validate_job_id(job_id)
     settings = GeminiSettings.from_env(model)
     if settings.dry_run or job_id.startswith("gemini_dry_"):
         return {
-            **_base(settings),
+            **_base(settings, rubric=rubric),
             "job_id": job_id,
             "status": "skipped",
             "dry_run": True,
@@ -243,10 +261,12 @@ def poll(job_id: str, model: str = "") -> dict:
             ),
             settings,
             job_id,
+            rubric=rubric,
+            expected_shot_ids=shot_ids,
         )
     except GeminiError as exc:
         return {
-            **_base(settings),
+            **_base(settings, rubric=rubric),
             "job_id": job_id,
             "status": "skipped",
             "dry_run": False,

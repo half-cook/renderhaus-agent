@@ -2,6 +2,8 @@
 """Sync non-empty application secrets and config, including ANTHROPIC_API_KEY,
 GEMINI_API_KEY, GEMINI_DRY_RUN=true, GEMINI_VLM_MODEL=gemini-3.8-flash,
 GEMINI_VLM_TIMEOUT_SECONDS, GEMINI_VLM_MAX_RETRIES and GEMINI_TOOL_COST_CENTS_JSON.
+Reference analysis adds REFERENCE_SHOTS_DRY_RUN=true and no new secret.
+Its separate judge_shots operation reuses GEMINI_API_KEY and the same token pricing/quote config.
 OPENAI_API_KEY (shared by planning and Images), OPENAI_IMAGES_MODEL,
 OPENAI_IMAGES_DRY_RUN and optional OPENAI_IMAGES_TOOL_COST_CENTS_JSON,
 RENDERHAUS_AGENT_MODEL (Sonnet 5.5 default), RENDERHAUS_AGENT_EFFORT, their per-role overrides, ELEVENLABS_TTS_MODEL,

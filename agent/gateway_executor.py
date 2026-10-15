@@ -20,6 +20,7 @@ from agent.deep_agent.routing import (
     request_tool_blocker,
     capability_constraints,
     route_intent,
+    Route,
 )
 from agent.deep_agent.outcomes import OutcomeStore
 from agent.hyperframes import HYPERFRAMES_TOOL
@@ -44,10 +45,12 @@ LOTTIE_TOOLS = frozenset("Lottie___" + verb for verb in (
 APPROVAL_EXEMPT_TOOLS = frozenset({"Remotion___export_nle_timeline"})
 LOCAL_DATA_TOOLS = frozenset({"ShotRecipes___shot_recipe_search"})
 LOGO_TOOLS = frozenset({"Logo___logo_vectorize"})
+REFERENCE_TOOL = 'Reference___shot_breakdown'
 FOOTAGE_TOOLS = frozenset('FootageMemory___' + name for name in (
     'footage_memory_status', 'footage_memory_build', 'footage_memory_query',
     'footage_watch_answer', 'footage_clip_extract'))
 LOCAL_MEDIA_TOOLS = LOTTIE_TOOLS | frozenset({
+    REFERENCE_TOOL,
     "Remotion___motion_carry_probe",
     "Remotion___render_ad_variants", "Ffmpeg___ffmpeg_tool",
     "Remotion___deliver_render", "Remotion___qc_deliverable",
@@ -84,6 +87,41 @@ def _local_logo_arguments(studio, arguments: dict) -> dict:
         raise ValueError('Logo source exceeds its input bound.')
     with target.open('xb') as destination:
         destination.write(data)
+    return {**arguments, 'input_path': target.name}
+
+
+def _local_reference_arguments(studio, arguments: dict) -> dict:
+    source = arguments.get('input_path', '')
+    if arguments.get('op') != 'measure' or not source.startswith('renderhaus-asset://'):
+        return arguments
+    if os.getenv('REFERENCE_SHOTS_DRY_RUN', 'true').lower() != 'false':
+        return arguments
+    if arguments.get('job_id') != studio.job_id or studio.source_resolver is None:
+        raise ValueError('Reference input requires the owned current job and an asset resolver.')
+    from pathlib import Path
+    from providers.ffmpeg.sandbox import job_directory, output_file, validate_job_id, MAX_INPUT_BYTES
+
+    path = Path(studio.source_resolver(source.removeprefix('renderhaus-asset://')))
+    if path.suffix.lower() not in {'.mp4', '.mov', '.mkv', '.webm'}:
+        raise ValueError('Select a supported reference video.')
+    if not path.is_file() or not 0 < path.stat().st_size <= MAX_INPUT_BYTES:
+        raise ValueError('The reference source is missing or exceeds the local input bound.')
+    validate_job_id(studio.job_id)
+    root = Path(os.getenv('RENDERHAUS_MEDIA_DIR', '.renderhaus/media')).expanduser().resolve()
+    directory = root / studio.job_id
+    if directory.is_symlink() or not directory.resolve().is_relative_to(root):
+        raise ValueError('Reference job directory must stay inside the media root without symlinks.')
+    directory.mkdir(parents=True, exist_ok=True, mode=0o700)
+    target = output_file(job_directory(studio.job_id), 'reference-source', path.suffix.lower())
+    try:
+        with path.open('rb') as handle, target.open('xb') as output:
+            while chunk := handle.read(min(1024 * 1024, MAX_INPUT_BYTES - output.tell() + 1)):
+                if output.tell() + len(chunk) > MAX_INPUT_BYTES:
+                    raise ValueError('The reference source exceeds the local input bound.')
+                output.write(chunk)
+    except Exception:
+        target.unlink(missing_ok=True)
+        raise
     return {**arguments, 'input_path': target.name}
 
 
@@ -127,6 +165,8 @@ def _local_remotion_arguments(studio, arguments: dict) -> dict:
 def tool_needs_approval(name: str, autonomous: bool, arguments: dict | None = None) -> bool:
     from providers.elevenlabs.catalog import requires_approval
 
+    if name in {REFERENCE_TOOL, 'shot_breakdown'}:
+        return False
     if name in LOTTIE_TOOLS or name in {"lottie_author", "lottie_validate", "lottie_preview_render"}:
         return False
     if name in LOGO_TOOLS or name == "logo_vectorize":
@@ -252,12 +292,13 @@ class GatewayExecutor:
         from providers.catalog import get_provider
         from providers.registry import generate_schemas
 
-        for provider in ("ffmpeg", "remotion", "shot_recipes", "footage_memory", "lottie", "logo_animation"):
+        for provider in ("ffmpeg", "remotion", "shot_recipes", "footage_memory", "lottie", "logo_animation", 'reference_shots', 'gemini'):
             spec = get_provider(provider)
             for schema in generate_schemas(spec):
                 name = f"{spec.target_name}___{schema['name']}"
-                is_poll = name == 'Remotion___get_render_progress'
+                is_poll = name in {'Remotion___get_render_progress', 'Gemini___get_task'}
                 if (name not in LOCAL_MEDIA_TOOLS and name not in LOCAL_DATA_TOOLS and name not in FOOTAGE_TOOLS and name not in LOGO_TOOLS
+                        and name != 'Gemini___judge_shots'
                         and not _worker_remotion_tool(name) and not is_poll):
                     continue
                 if request_tool_blocker(self.studio.prompt, name) is None:
@@ -319,6 +360,12 @@ class GatewayExecutor:
         return None
 
     def media_selection(self, name, arguments):
+        if name == 'Gemini___judge_shots':
+            return Route(skill='reference-shot-breakdown', tool=name, alias='gemini_shot_labels',
+                         dispatch_tool='call_media_tool', status='ready', provider='gemini',
+                         model=effective_model('gemini', 'judge_shots', arguments),
+                         job_type='reference_labels', basis='default visual-label review',
+                         disclosure=self.dispatch_disclosure(name, arguments, None))
         if name in FOOTAGE_TOOLS:
             return None
         if name in LOCAL_MEDIA_TOOLS:
@@ -370,6 +417,17 @@ class GatewayExecutor:
         return route
 
     def dispatch_disclosure(self, name, arguments, route):
+        if name == REFERENCE_TOOL:
+            return 'Measure the reference locally and check every camera claim against its pixels. Visual labels remain pending until reviewed.'
+        if name == 'Gemini___judge_shots':
+            from server.billing_rates import gemini_quote
+
+            try:
+                cents = gemini_quote('judge_shots', arguments).total_cents
+                quote = f'Estimated cost ${cents / 100:.2f} USD.' if cents is not None else 'Estimated cost unknown.'
+            except ValueError:
+                quote = 'Estimated cost unknown.'
+            return 'Review the numbered reference contact sheets. ' + quote + ' Images are sent to the review service and stored with the background request. Dry-run produces no labels.'
         if name == 'Remotion___render_timeline' and (arguments.get('template') or {}).get('name') == 'logo-animation':
             return 'Render the approved logo locally. The final pose must match the reviewed vector. Inspect the saved animation and its QA before delivery.'
         if name in LOGO_TOOLS:
@@ -464,6 +522,15 @@ class GatewayExecutor:
                       title="Provider choice", message=message, status="completed")
 
     def selection_blocker(self, name, arguments, route):
+        if name == REFERENCE_TOOL:
+            from providers.reference_shots.contracts import validate_arguments
+
+            if not self.studio.job_id or arguments.get('job_id') != self.studio.job_id:
+                return 'Reference analysis requires the trusted current Studio job.'
+            try:
+                validate_arguments(arguments)
+            except ValueError as exc:
+                return str(exc)
         if name in LOGO_TOOLS:
             from providers.logo_animation.contracts import validate_arguments
 
@@ -604,6 +671,9 @@ class GatewayExecutor:
 
             try:
                 validate_arguments(tool, arguments)
+                reference = arguments.get('reference')
+                if reference is not None and reference.get('job_id') != self.studio.job_id:
+                    return 'Reference review requires the trusted current Studio job.'
             except ValueError as exc:
                 return str(exc)
         if provider == "mureka":
@@ -889,7 +959,10 @@ class GatewayExecutor:
                 {},
             )
             try:
-                if name in LOCAL_MEDIA_TOOLS or name in LOCAL_DATA_TOOLS or name in FOOTAGE_TOOLS or name in LOGO_TOOLS or _worker_remotion_tool(name, arguments):
+                if (name in LOCAL_MEDIA_TOOLS or name in LOCAL_DATA_TOOLS or name in FOOTAGE_TOOLS
+                        or name in LOGO_TOOLS or _worker_remotion_tool(name, arguments)
+                        or name == 'Gemini___judge_shots'
+                        or name == 'Gemini___get_task' and (arguments.get('rubric') == 'reference_shots' or server is None)):
                     from providers.registry import dispatch
                     from providers.remotion.ad_variants import authorize
                     from server.billing import stripe_enabled
@@ -930,7 +1003,9 @@ class GatewayExecutor:
                                 output = await asyncio.to_thread(dispatch, provider, verb, arguments)
                         else:
                             worker_arguments = (_local_remotion_arguments(studio, arguments)
-                                                if name == 'Remotion___render_timeline' else arguments)
+                                                if name == 'Remotion___render_timeline' else
+                                                _local_reference_arguments(studio, arguments)
+                                                if name == REFERENCE_TOOL else arguments)
                             output = await asyncio.to_thread(dispatch, provider, verb, worker_arguments)
                         payload = _unwrap_tool_output(output)
                         if payload.get("error") or (payload.get("status") in {"failed", "error", "blocked", "not_run"}
@@ -970,7 +1045,8 @@ class GatewayExecutor:
                             break
                         interval = 15 if name == "ModelStudio___get_task" else 8
                         await asyncio.sleep(min(interval, max(0, deadline - time.monotonic())))
-                        if _worker_remotion_tool(name, arguments):
+                        if (_worker_remotion_tool(name, arguments)
+                                or name == 'Gemini___get_task' and (arguments.get('rubric') == 'reference_shots' or server is None)):
                             output = await asyncio.to_thread(dispatch, provider, verb, arguments)
                         else:
                             output = await server.call_tool(name, arguments)
@@ -1066,6 +1142,8 @@ class GatewayExecutor:
             ab_arm = route.alias if route.job_type == "image_edit" and intent_constraints(studio.prompt, arguments=arguments)["predicates"]["text_only_edit"] else None
             if route.job_type == "continuity_qc":
                 ab_arm = "gemini_vlm_judge"
+            if route.job_type == 'reference_labels':
+                ab_arm = 'gemini_shot_labels'
             if route and route.alias in {"heygen_voice_clone", "heygen_voice_tts"}:
                 ab_arm = "heygen_voice_internal"
             self.outcomes.record(
@@ -1140,6 +1218,8 @@ class GatewayExecutor:
 
 
 def completed_label(name: str) -> str:
+    if name == 'Gemini___get_task':
+        return 'The visual review is processing the frames'
     if name.endswith("get_render_progress"):
         return "Remotion is assembling the MP4"
     if name.endswith(("query_music_task", "get_music_task")):

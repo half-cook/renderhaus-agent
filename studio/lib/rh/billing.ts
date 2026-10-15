@@ -62,6 +62,7 @@ const VENDOR_OR_FEE = /(?:^|[^a-z0-9])(wan|gpt|openai|eleven\s?labs|seedance|see
 
 /** Work labels for tool ids; the generic fallback never exposes an id. */
 const WORK_LABELS: Array<[RegExp, string]> = [
+  [/(shot_breakdown|judge_shots)/i, 'Reference analysis'],
   [/(image|still|t2i|edit_image)/i, "Product image"],
   [/(voice|tts|speech|narrat)/i, "Voiceover"],
   [/(music|song|audio_gen)/i, "Music"],

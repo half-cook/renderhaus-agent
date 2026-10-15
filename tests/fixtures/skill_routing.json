@@ -5761,5 +5761,37 @@
     "skip_reason": "",
     "source_status": "new",
     "note": "Prompt diagnosis never authorizes media; generation defaults stay unchanged."
+  },
+  {
+    "test_id": "RT-186",
+    "suite": "reference-shot-breakdown",
+    "prompt": "Break this finished reference ad down shot by shot for a remake brief.",
+    "expected_skill": "reference-shot-breakdown",
+    "expected_tool": "shot_breakdown",
+    "skip_reason": "",
+    "source_status": "new; requested IDs absent from seed fixture and routing CSVs",
+    "source_file": "/workspace/research/renderhaus-skills/reference-shot-breakdown/SKILL.md",
+    "source_read_date": "2026-10-15",
+    "forbidden_skills": [
+      "footage-memory",
+      "continuity-qc"
+    ],
+    "note": "Router coverage only. Real local analysis and static-camera gate exercised in test_reference_shots.py."
+  },
+  {
+    "test_id": "RT-187",
+    "suite": "reference-shot-breakdown",
+    "prompt": "What is the pacing of this reference trailer? Pixel-check camera claims against measured motion.",
+    "expected_skill": "reference-shot-breakdown",
+    "expected_tool": "shot_breakdown",
+    "skip_reason": "",
+    "source_status": "new; requested IDs absent from seed fixture and routing CSVs",
+    "source_file": "/workspace/research/renderhaus-skills/reference-shot-breakdown/SKILL.md",
+    "source_read_date": "2026-10-15",
+    "forbidden_skills": [
+      "footage-memory",
+      "continuity-qc"
+    ],
+    "note": "Router coverage only. Real local analysis and static-camera gate exercised in test_reference_shots.py."
   }
 ]

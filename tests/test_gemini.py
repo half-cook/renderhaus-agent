@@ -423,6 +423,6 @@ class GeminiTests(unittest.TestCase):
             client.assert_not_called()
 
     def test_gateway_export_names_match(self):
-        self.assertEqual(set(tools.TOOL_HANDLERS), {"judge_continuity", "get_task"})
+        self.assertEqual(set(tools.TOOL_HANDLERS), {"judge_continuity", "get_task", "judge_shots"})
         self.assertEqual(tuple(tools.TOOL_HANDLERS), tools.GATEWAY_TOOLS)
         self.assertEqual(tools.GATEWAY_TOOLS, tools.GATEWAY_TOOL_NAMES)

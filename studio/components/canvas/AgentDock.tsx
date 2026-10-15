@@ -33,6 +33,7 @@ import {
   answerAgentCap,
   decideAgentApproval,
   downloadLogoArtifact,
+  downloadReferenceArtifact,
   resumeAgentRun,
   stopAgentRun,
   submitAgentPrompt,
@@ -447,7 +448,8 @@ function ExecutionTurn({
           onDecision={(approval, decision, capCents) => onApproval(execution, approval, decision, capCents)}
         />
         <RunBillingBlocks execution={execution} disabled={actionsDisabled} onCap={onCap} />
-        <LogoDownloads executionId={execution.jobId} events={execution.toolEvents}/>
+        <ArtifactDownloads kind="logo" executionId={execution.jobId} events={execution.toolEvents}/>
+        <ArtifactDownloads kind="reference" executionId={execution.jobId} events={execution.toolEvents}/>
         {execution.title ? <h3 className="agent-result-title">{execution.title}</h3> : null}
         {execution.summary ? <p className="agent-response-summary">{execution.summary}</p> : null}
         {state === "failed" ? (
@@ -490,16 +492,16 @@ function ExecutionTurn({
   );
 }
 
-function LogoDownloads({executionId, events}: {executionId: string; events: AgentToolEvent[]}) {
+function ArtifactDownloads({kind, executionId, events}: {kind: 'logo' | 'reference'; executionId: string; events: AgentToolEvent[]}) {
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState('');
-  const files = events.flatMap((event) => (event.logoArtifacts ?? []).map((filename) => ({callId: event.id, filename})));
+  const files = events.flatMap((event) => ((kind === 'logo' ? event.logoArtifacts : event.referenceArtifacts) ?? []).map((filename) => ({callId: event.id, filename})));
   if (!files.length) return null;
   async function download(callId: string, filename: string) {
     setBusy(`${callId}/${filename}`);
     setError('');
     try {
-      const blob = await downloadLogoArtifact(executionId, callId, filename);
+      const blob = await (kind === 'logo' ? downloadLogoArtifact : downloadReferenceArtifact)(executionId, callId, filename);
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
@@ -507,12 +509,12 @@ function LogoDownloads({executionId, events}: {executionId: string; events: Agen
       link.click();
       setTimeout(() => URL.revokeObjectURL(url), 1000);
     } catch {
-      setError('This logo file is unavailable. Prepare the logo again.');
+      setError(kind === 'logo' ? 'This logo file is unavailable. Prepare the logo again.' : 'This reference file is unavailable. Analyze the reference again.');
     } finally {
       setBusy(null);
     }
   }
-  return <div aria-label="Logo files">
+  return <div aria-label={kind === 'logo' ? 'Logo files' : 'Reference analysis files'}>
     {files.map(({callId, filename}) => <button className="agent-artifact-place" type="button" key={`${callId}/${filename}`}
       disabled={busy !== null} onClick={() => void download(callId, filename)} aria-label={`Download ${filename}`}>
       {busy === `${callId}/${filename}` ? <LoaderCircle size={13} className="spin"/> : <Download size={13}/>} {filename}

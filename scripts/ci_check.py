@@ -23,6 +23,7 @@ def _force_dry_run() -> None:
     os.environ["AWS_S3_BUCKET"] = ""
     os.environ["BETA_VERIFICATION_DRY_RUN"] = "true"
     os.environ["GEMINI_DRY_RUN"] = "true"
+    os.environ['REFERENCE_SHOTS_DRY_RUN'] = 'true'
     os.environ["FOOTAGE_MEMORY_DRY_RUN"] = "true"
     os.environ["FOOTAGE_MEMORY_BACKEND"] = "mock"
     os.environ["KLING_DRY_RUN"] = "true"
@@ -106,10 +107,10 @@ def check_routing_inventory() -> None:
     from providers.catalog import PROVIDERS
     from providers.registry import load_committed_schemas
 
-    assert len(PROVIDERS) == 20
-    assert sum(len(load_committed_schemas(spec)) for spec in PROVIDERS) == 138
+    assert len(PROVIDERS) == 21
+    assert sum(len(load_committed_schemas(spec)) for spec in PROVIDERS) == 140
     paths = list(SKILLS_ROOT.glob("*/SKILL.md"))
-    assert len(paths) == 40
+    assert len(paths) == 41
     from agent.deep_agent.art_style_catalog import search_styles
 
     catalog_path = SKILLS_ROOT / 'art-style-motion/references/catalog/index.json'
@@ -136,7 +137,7 @@ def check_routing_inventory() -> None:
         assert set(metadata["include_tools"].split()) <= DISPATCH_TARGETS.keys(), path
         assert all(TOOL_MAP[alias]["status"] != "retired" for alias in metadata["routing_tools"].split()), path
     cases = json.loads((ROOT / "tests/fixtures/skill_routing.json").read_text())
-    assert len(cases) == 327 and sum(not case["skip_reason"] for case in cases) == 321
+    assert len(cases) == 329 and sum(not case["skip_reason"] for case in cases) == 323
     assert sum(bool(case["skip_reason"]) for case in cases) == 6
     ids = [case["test_id"] for case in cases if case.get("test_id")]
     assert len(ids) == len(set(ids)), "Routing fixture IDs must be unique."
@@ -147,7 +148,7 @@ def check_routing_inventory() -> None:
 
         subprocess.run(["git", "ls-files", "--error-unmatch", str(EVAL_PATH.relative_to(ROOT))], check=True, capture_output=True)
         assert default_vlm_enabled(), "Committed VLM evidence does not qualify for promotion."
-    print("ok routing inventory (20 providers, 138 Gateway tools, 40 skills, 141 catalog styles, 327 routing rows, 321 active routing rows)")
+    print("ok routing inventory (21 providers, 140 Gateway tools, 41 skills, 141 catalog styles, 329 routing rows, 323 active routing rows)")
 
 
 def _assert_gateway_shape(schema: object) -> None:
@@ -216,6 +217,8 @@ def check_dry_run_dispatch() -> None:
         for schema in load_committed_schemas(spec):
             name = schema["name"]
             arguments = dummy_arguments(schema)
+            if spec.id == 'reference_shots':
+                arguments = {'op': 'measure', 'job_id': 'ci-smoke', 'input_path': 'reference.mp4'}
             if spec.id == "footage_memory":
                 arguments = {"project_id": "ci-project", "workspace_id": "ci-workspace"}
                 if name == "footage_memory_query":
@@ -256,14 +259,15 @@ def check_dry_run_dispatch() -> None:
                                                  "renderConfig": {"fps": 24}}),
                 }
             if spec.id == "gemini":
-                if name == "judge_continuity":
+                if name in {'judge_continuity', 'judge_shots'}:
                     import base64
                     from PIL import Image
 
                     frame = io.BytesIO()
                     Image.new("RGB", (16, 16), "blue").save(frame, format="PNG")
                     encoded = base64.b64encode(frame.getvalue()).decode("ascii")
-                    arguments = {"before_image_b64": encoded, "after_image_b64": encoded}
+                    arguments = ({'contact_sheet_b64': [encoded], 'shot_ids': [1]} if name == 'judge_shots'
+                                 else {"before_image_b64": encoded, "after_image_b64": encoded})
                 else:
                     assert gemini_job_id, "Gemini poll must reuse a submitted dry-run handle"
                     arguments = {"job_id": gemini_job_id}

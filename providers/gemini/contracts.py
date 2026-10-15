@@ -147,7 +147,22 @@ def validate_arguments(tool: str, arguments: dict) -> None:
             arguments.get("after_image_b64"),
             model or VERIFIED_MODEL,
         )
+    elif tool == 'judge_shots':
+        from providers.gemini.shots import validate_submission
+
+        validate_submission(arguments.get('contact_sheet_b64'), arguments.get('shot_ids'),
+                            model or VERIFIED_MODEL, arguments.get('reference'))
     elif tool == "get_task":
         validate_job_id(arguments.get("job_id"))
+        rubric = arguments.get('rubric', 'continuity')
+        if rubric not in {'continuity', 'reference_shots'}:
+            raise ValueError('Unknown judge rubric.')
+        ids = arguments.get('shot_ids')
+        if rubric == 'reference_shots':
+            from providers.gemini.shots import validate_shot_ids
+
+            validate_shot_ids(ids)
+        elif ids is not None:
+            raise ValueError('shot_ids are only valid for the reference_shots rubric.')
     else:
         raise ValueError("Unknown Gemini tool.")

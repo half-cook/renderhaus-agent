@@ -51,6 +51,7 @@ from server.billing_rates import cost_for
 from server import run_billing, run_budget
 from server.config import ROOT
 from server.logo_artifacts import logo_artifact_content
+from server.reference_artifacts import reference_artifact_content
 from server.studio_state import ACTIVE_EXECUTION_STATUSES, CanvasConflictError, InsufficientBalanceError, StudioAssetKind, repository
 from server.studio_options import LIVE_CHOICE_TOOLS, extract_choice_ids, static_field_options
 from server.uploads import bounded_upload_path, upload_limits_mb
@@ -1525,8 +1526,14 @@ async def run_studio_agent(
         resume_tool_names=resume_tool_names,
     )
     request.prior_tool_events = [event.public() for event in prior_tool_events or []]
+    from agent.deep_agent.routing import route_intent
+
+    reference_host = (route_intent(prompt).skill == 'reference-shot-breakdown'
+                      or any(item.get('execution_host') == 'studio_reference' for item in request.session_items)
+                      or any(event.name in {'Reference___shot_breakdown', 'Gemini___judge_shots'}
+                             for event in prior_tool_events or []))
     runtime_url = _agentcore_dev_url()
-    if runtime_url:
+    if runtime_url and not reference_host:
         if source_publisher:
             published_nodes: list[StudioNode] = []
             for node in request.nodes:
@@ -1570,10 +1577,16 @@ async def run_studio_agent(
         prompt=request.prompt,
     )
     studio.restore_events(list(prior_tool_events or []))
-    if request.workspace_id and request.conversation_id and request.job_id:
-        studio.session_sink = lambda items: repository.save_agent_checkpoint(
-            request.workspace_id, request.conversation_id, request.job_id, items
-        )
+    def save_local_checkpoint(items):
+        if reference_host:
+            for item in items:
+                if item.get('type') in {'renderhaus_deepagents_session', 'renderhaus_codex_session'}:
+                    item['execution_host'] = 'studio_reference'
+        if request.workspace_id and request.conversation_id and request.job_id:
+            repository.save_agent_checkpoint(request.workspace_id, request.conversation_id, request.job_id, items)
+
+    if reference_host or request.workspace_id and request.conversation_id and request.job_id:
+        studio.session_sink = save_local_checkpoint
     output = await run_studio_agent_runtime(request, studio=studio)
     return StudioAgentRun(
         final=output,
@@ -2375,6 +2388,20 @@ async def studio_logo_artifact(
         headers={"Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff",
                  "Content-Disposition": f'attachment; filename="{filename}"'},
     )
+
+
+@router.get('/executions/{execution_id}/reference-artifacts/{tool_call_id}/{filename}')
+async def studio_reference_artifact(
+    execution_id: str, tool_call_id: str, filename: str, auth: AuthUser,
+) -> Response:
+    execution = await asyncio.to_thread(repository.get_execution, current_workspace_id(auth), execution_id)
+    try:
+        content = await asyncio.to_thread(reference_artifact_content, execution, execution_id, tool_call_id, filename)
+    except (ValueError, OSError) as exc:
+        raise HTTPException(status_code=404, detail='Reference file not found.') from exc
+    return Response(content, media_type=mimetypes.guess_type(filename)[0] or 'application/octet-stream',
+                    headers={'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff',
+                             'Content-Disposition': f'attachment; filename="{filename}"'})
 
 
 @router.get("/media")

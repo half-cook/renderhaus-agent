@@ -561,6 +561,7 @@ export function toolForAgentArtifact(
   // agent used an input asset or a composition tool, placing the result must
   // not create an invisible dependency on another artifact in the run.
   const provider = `${event?.provider || ""} ${event?.name || ""} ${event?.providerJobId || ""}`.toLowerCase();
+  if (provider.includes('reference_shots') || provider.includes('reference___')) return undefined;
   if (provider.includes("logo") || provider.includes("remotion") || provider.includes("ffmpeg") || provider.includes("footage_memory") || provider.includes("footagememory") || provider.includes("lottie")) return undefined;
   if (provider.includes("pixelcut") || provider.includes("pixverse")) return undefined;
   const runway = provider.includes("runway");

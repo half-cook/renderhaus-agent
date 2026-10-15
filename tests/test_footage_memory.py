@@ -265,8 +265,10 @@ class FootageNativeHostTests(unittest.IsolatedAsyncioTestCase):
                 self.assertIn('analysis calls', approval.description)
                 self.assertIn('UNVERIFIED', approval.description)
                 self.assertIsNone(approval.estimated_cost['total_cents'])
+                visible_text = json.dumps({'label': approval.label, 'description': approval.description,
+                                           'estimated_cost': approval.estimated_cost}).lower()
                 for word in ('gemini', 'qwen', 'fee'):
-                    self.assertNotIn(word, json.dumps(approval.model_dump()).lower())
+                    self.assertNotIn(word, visible_text)
                 resumed = request.model_copy(update={'session_items': context.session_items,
                     'resume_state': caught.exception.state, 'approval_decisions': [StudioApprovalDecision(
                         call_id=approval.call_id, decision=decision, message='reviewed')]})

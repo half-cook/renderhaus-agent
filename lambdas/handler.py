@@ -45,13 +45,17 @@ def handler(event: dict[str, Any] | None, context: Any) -> dict[str, Any]:
     try:
         if not provider_id:
             raise ValueError("RENDERHAUS_PROVIDER is required on the Lambda.")
-        if provider_id == "logo_animation":
-            raise ValueError("Logo processing is local only. Private logo inputs must never be sent to Lambda.")
+        from providers.catalog import get_provider
+
+        if get_provider(provider_id).local_only:
+            raise ValueError('This media analysis tool is local only and cannot run in Lambda.')
         tool_name = _tool_name_from_context(context)
         if not tool_name:
             tool_name = str(event.pop("_tool_name", "") or "")
         if not tool_name:
             raise ValueError("Missing bedrockAgentCoreToolName in Lambda context.")
+        if provider_id == 'gemini' and tool_name == 'judge_shots' and event.get('reference') is not None:
+            raise ValueError('Owned reference sheets require the local media worker.')
         args = {key: value for key, value in event.items() if not str(key).startswith("_")}
         result = dispatch(provider_id, tool_name, args)
         if not isinstance(result, dict):
