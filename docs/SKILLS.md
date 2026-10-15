@@ -220,15 +220,18 @@ See [decisions and verification](conversational-edit-decisions.tsv) and
 
 The [upscale skill](../agent/deep_agent/skills/upscale/SKILL.md) now dispatches
 `Topaz___upscale_video` and `Topaz___interpolate_video`, then polls
-`Topaz___get_video_task`. Starlight Precise 2.6 and Apollo are the quality-first defaults;
+`Topaz___get_video_task`. Native `prepare_finishing_preview` first saves a measured sample
+of at most three seconds. Native `review_finishing_preview` shows the saved source and result
+for visual approval before a separate full-job spending approval. RT-194 covers routing to
+this workflow. Starlight Precise 2.6 and Apollo are the quality-first defaults;
 Chronos applies to plain linear-motion FPS conversion unless a model is explicitly named.
 Measured input dimensions, duration and FPS bind the quote to the submitted request.
 Topaz submissions always pause with cost, including autonomous runs. Dry-run previews
 and queued jobs never satisfy final delivery. See [Topaz](TOPAZ.md) for pricing, licence
 sources, unknown-price blockers and the blocked Comet check.
 
-`tests/fixtures/skill_routing.json` contains 352 retained routing rows.
-There are 346 active cases and 6 explicit skips. Five caption/collage cases cover the
+`tests/fixtures/skill_routing.json` contains 353 retained routing rows.
+There are 347 active cases and 6 explicit skips. Five caption/collage cases cover the
 new templates' renderer selection. Seven performance-transfer cases now use built tools. Three Mureka lyrics-video cases
 now use built tools; music routes use Mureka without an ElevenLabs interim. Five Topaz upscale/interpolation cases
 now use built tools. Seedance reference dialogue and two

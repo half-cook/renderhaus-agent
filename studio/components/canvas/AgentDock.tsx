@@ -47,6 +47,7 @@ import { ChangesetCard } from "@/components/changes/ChangesetCard";
 import type { AgentProgressEvent, AgentToolEvent } from "@/lib/canvas/types";
 import type { StudioAsset } from "@/lib/types";
 import { AssetDownloadLink, AssetMedia } from "./AssetMedia";
+import { FinishingPreviewReview } from "./FinishingPreviewReview";
 import { ApprovalCard } from "@/components/rh/ApprovalCard";
 import { RunReceipt } from "@/components/rh/RunBilling";
 import { approvalCardModel, visibleParameters } from "@/lib/rh/approval-model";
@@ -204,6 +205,10 @@ function ApprovalCards({
   return (
     <div className="agent-approvals" aria-label="Tool approvals">
       {approvals.map((approval) => {
+        if (approval.toolName === "review_finishing_preview") {
+          return <FinishingPreviewReview key={approval.callId} approval={approval} active={active}
+            busy={disabled || busyCallId !== null} onDecision={onDecision} />;
+        }
         const model = approvalCardModel(approval);
         if (model && active && approval.decision !== "reject") {
           return <PricedApproval key={approval.callId} approval={approval} model={model} busy={disabled || busyCallId !== null} onDecision={onDecision} />;

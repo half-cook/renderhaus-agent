@@ -5,6 +5,11 @@ Topaz finishes existing video through fal. The capability IDs are `topaz_upscale
 replacement footage. Evidence for visual quality is thin and vendor supplied. A/B testing on
 Renderhaus footage remains pending. `local_qc` remains the continuity-QC default.
 
+Studio now requires a short processed sample and native visual-review approval before
+full finishing. Preview and full processing each retain their separate cost approval.
+See [Preview a finishing pass](TOPAZ_PREVIEW_COMPARE.md) for the workflow, sources, and
+current browser validation limits.
+
 ## Tools and limits
 
 | Gateway tool | Arguments and behavior |

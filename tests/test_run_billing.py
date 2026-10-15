@@ -311,6 +311,36 @@ class MeterTests(Fixture, unittest.TestCase):
 
 
 class PayloadTests(Fixture, unittest.TestCase):
+    def test_finishing_review_with_malformed_arguments_still_offers_rejection(self):
+        for arguments in (None, "malformed", ["comparison"]):
+            with self.subTest(arguments=arguments):
+                raw = approval("review", "review_finishing_preview")
+                raw["arguments"] = arguments
+                card = self.view([raw])[0]
+                self.assertIsNone(card["arguments"]["comparison"])
+                self.assertEqual(card["tool_name"], "review_finishing_preview")
+
+    def test_finishing_review_preserves_comparison_without_holding_credit(self):
+        comparison = {
+            "before_version_id": "source-preview", "after_version_id": "finished-preview",
+            "duration_seconds": 3.0, "source_start_seconds": 2.0,
+            "full_estimated_cost_cents": 156, "source_width": 960, "source_height": 540,
+            "output_width": 1920, "output_height": 1080, "source_fps": 30.0, "output_fps": 30.0,
+        }
+        raw = [approval("review", "review_finishing_preview", {
+            "preview_id": "preview-1", "comparison": comparison})]
+        self.repo.adjust_balance(USER, -1000, "empty account")
+        card = self.view(raw)[0]
+        self.assertEqual(card["tool_name"], "review_finishing_preview")
+        self.assertEqual(card["arguments"]["comparison"], comparison)
+        self.assertEqual(card["step_price_cents"], 0)
+        self.assertTrue(card["approve_enabled"])
+        self.assertNotIn("estimate_cents", card)
+        self.assertIsNone(run_billing.approval_gate(
+            self.repo, run_id="run-1", user_id=USER, conversation_id="conv",
+            raw_approvals=raw, requested_cap_cents=None))
+        self.assertIsNone(self.repo.get_run_hold("run-1"))
+
     def view(self, approvals, **overrides):
         options = dict(run_id="run-1", user_id=USER, execution_status="awaiting_approval", error_type=None)
         options.update(overrides)

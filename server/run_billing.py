@@ -74,6 +74,8 @@ def end_run(repo: Any, run_id: str, *, execution_status: str, error_type: str | 
 def _step_price(item: dict[str, Any]) -> int | None:
     from agent.deep_agent.routing import estimate_cost
 
+    if item.get("tool_name") == "review_finishing_preview":
+        return 0
     try:
         return estimate_cost(str(item.get("tool_name") or ""), item.get("arguments") or {}).total_cents
     except Exception:  # noqa: BLE001 - an unpriceable step is reported as unknown, never guessed
@@ -92,7 +94,8 @@ def _hold_numbers(repo: Any, user_id: str | None, run_id: str) -> dict[str, int]
 
 
 def plan_for_pending(repo: Any, run_id: str, raw_approvals: list[dict[str, Any]]) -> rb.RunPlan | None:
-    pending = [a for a in raw_approvals if a.get("decision") != "reject"]
+    pending = [a for a in raw_approvals if a.get("decision") != "reject"
+               and a.get("tool_name") != "review_finishing_preview"]
     if not pending:
         return None
     media_lines = []
@@ -128,7 +131,8 @@ def public_approvals(
             estimate_cents=plan.estimate_cents, cap_cents=plan.cap_cents,
             available_cents=numbers["beyond"], held_cents=numbers["held"],
         )
-    live = [a for a in raw_approvals if a.get("decision") != "reject"]
+    live = [a for a in raw_approvals if a.get("decision") != "reject"
+            and a.get("tool_name") != "review_finishing_preview"]
     output = []
     for item in raw_approvals:
         label, detail = rb.work_label(str(item.get("tool_name") or ""), item.get("arguments"))
@@ -140,6 +144,22 @@ def public_approvals(
                 execution_status, "running" if execution_status in {"running", "queued"} else "approved")
         else:
             status = "pending" if execution_status == "awaiting_approval" else "failed"
+        if item.get("tool_name") == "review_finishing_preview":
+            comparison = rb.scrub_arguments(item.get("arguments")).get("comparison")
+            fields = {
+                "before_version_id", "after_version_id", "duration_seconds", "source_start_seconds",
+                "full_estimated_cost_cents", "source_width", "source_height", "output_width",
+                "output_height", "source_fps", "output_fps",
+                "covers_full_source",
+            }
+            output.append({
+                "call_id": item.get("call_id"), "tool_name": "review_finishing_preview",
+                "label": "Review finishing preview", "status": status, "decision": decision,
+                "arguments": {"comparison": {key: value for key, value in comparison.items() if key in fields}
+                              if isinstance(comparison, dict) else None},
+                "step_price_cents": 0, "approve_enabled": status == "pending",
+            })
+            continue
         price = _step_price(item)
         entry: dict[str, Any] = {
             "call_id": item.get("call_id"),

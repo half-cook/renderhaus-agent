@@ -7,7 +7,8 @@ type PlaybackTicket = { url: string; expiresAt: number };
 const playbackTickets = new Map<string, PlaybackTicket>();
 const playbackRequests = new Map<string, Promise<PlaybackTicket>>();
 
-async function studioAssetPlaybackUrl(asset: StudioAsset): Promise<string> {
+async function studioAssetPlaybackUrl(asset: StudioAsset, refresh = false): Promise<string> {
+  if (refresh) playbackTickets.delete(asset.versionId);
   const cached = playbackTickets.get(asset.versionId);
   if (cached && cached.expiresAt > Date.now() + 30_000) {
     return cached.url;
@@ -43,30 +44,42 @@ async function studioAssetPlaybackUrl(asset: StudioAsset): Promise<string> {
   }
 }
 
-export function useStudioAssetPlaybackUrl(asset?: StudioAsset): string | undefined {
-  const [url, setUrl] = useState<string>();
+type AssetPlayback = { status: "loading" } | { status: "ready"; url: string } | { status: "error"; message: string };
+
+export function useStudioAssetPlayback(asset?: StudioAsset, attempt = 0): AssetPlayback {
+  const [result, setResult] = useState<{ versionId?: string; attempt: number; playback: AssetPlayback }>({
+    attempt, playback: { status: "loading" },
+  });
 
   useEffect(() => {
     let active = true;
     if (!asset) {
-      setUrl(undefined);
       return () => {
         active = false;
       };
     }
-    void studioAssetPlaybackUrl(asset)
+    setResult({ versionId: asset.versionId, attempt, playback: { status: "loading" } });
+    void studioAssetPlaybackUrl(asset, attempt > 0)
       .then((next) => {
-        if (active) setUrl(next);
+        if (active) setResult({ versionId: asset.versionId, attempt, playback: { status: "ready", url: next } });
       })
       .catch(() => {
-        if (active) setUrl(undefined);
+        if (active) setResult({ versionId: asset.versionId, attempt, playback: {
+          status: "error", message: "A saved preview could not be loaded. Reload it or keep the original.",
+        } });
       });
     return () => {
       active = false;
     };
-  }, [asset?.versionId]);
+  }, [asset?.versionId, attempt]);
 
-  return url;
+  return asset && result.versionId === asset.versionId && result.attempt === attempt
+    ? result.playback : { status: "loading" };
+}
+
+export function useStudioAssetPlaybackUrl(asset?: StudioAsset): string | undefined {
+  const playback = useStudioAssetPlayback(asset);
+  return playback.status === "ready" ? playback.url : undefined;
 }
 
 export function studioAssetHandle(asset: StudioAsset): string {

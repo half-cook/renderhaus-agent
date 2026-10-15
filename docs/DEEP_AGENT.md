@@ -974,3 +974,23 @@ RT-189/190 add two planning cases without changing the six existing skips. Inven
 is 21 providers, 140 Gateway tools, 44 skills, 352 routing rows and 346 active rows.
 Comet browser validation is pending because browser control is unavailable and live
 API calls are prohibited.
+
+
+## Finishing preview review
+
+The upscale skill uses native `prepare_finishing_preview` and `review_finishing_preview`
+with the existing Topaz Gateway tools. The host clips an owned source to at most three
+seconds, then requests the ordinary paid-preview approval. Only a saved, measured processed
+artifact can reach the native visual-review interrupt. Studio displays linked original and
+enhanced playback, scrubbing, and side-by-side or A/B views.
+
+Accepting the comparison permits the exact source and settings to reach a separate full-job
+cost approval. Rejecting it blocks that full request. Source, sample, or artifact checksum
+changes invalidate review. A sample that covers the entire source can finish after approval
+without another paid request. Dry-run responses and partial samples never complete a full
+source request. See [Topaz preview review](TOPAZ_PREVIEW_COMPARE.md) for the contract and
+validation limits.
+
+This adds two native agent tools, no provider or Gateway endpoint. Current inventory is
+21 registered providers, 140 Gateway tools, 44 skills, and 353 routing rows. There are
+347 active routes and six unchanged skips. RT-194 is a new radar workflow route.

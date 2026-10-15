@@ -6203,5 +6203,16 @@
     "forbidden_tools": "wan3_t2v, seedance25_t2v, hyperframes_render",
     "skip_reason": "",
     "note": "Radar handoff item 5, read 2026-10-15. Offline routing assertion; no generated artifact or visual acceptance implied."
+  },
+  {
+    "test_id": "RT-194",
+    "suite": "upscale",
+    "category": "radar",
+    "prompt": "Upscale this saved clip to 4K. Show a short preview and compare it with the original before finishing the full clip.",
+    "expected_skill": "upscale",
+    "expected_tool": "topaz_upscale",
+    "skip_reason": "",
+    "expected_behaviour": "Use an actual short preview, compare owned source and processed artifacts, confirm the exact settings, then request separate full-job cost approval. Dry-run is not produced media.",
+    "note": "Radar handoff item 7, 2026-10-14. Workflow enforcement is tested separately in test_finishing_preview.py. Starlight fal default unchanged."
   }
 ]
