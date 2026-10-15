@@ -141,6 +141,23 @@ def deliverable_duration(prompt: str) -> DeliverableDuration | None:
     return None
 
 
+_SHOT_WORDS = {"two": 2, "three": 3, "four": 4, "five": 5, "six": 6, "seven": 7, "eight": 8, "nine": 9, "ten": 10}
+
+
+def planned_shot_count(prompt: str) -> int:
+    """Count of shots the customer asked for ("3 shots", numbered shot list), or 1."""
+    counts = [1]
+    for match in re.finditer(r"\b(\d+|two|three|four|five|six|seven|eight|nine|ten)[ -]+shots?\b", prompt, re.I):
+        counts.append(int(_SHOT_WORDS.get(match[1].lower(), match[1])))
+    numbered = re.findall(r"(?m)^\s*(\d+)[).]\s+\S", prompt)
+    if len(numbered) > 1:
+        counts.append(len(numbered))
+    return max(counts)
+
+
+_ON_SCREEN_TEXT = r"(?:logo|title|caption|on[ -]screen|overlay|tag ?line|slogan|super|lower[ -]third)(?:\s+(?:text|line|card|copy))?\s*:?\s*[\'\"“][^\'\"”]*[\'\"”]"
+
+
 def _narration_text(prompt: str) -> str:
     return re.sub(_NEGATED_NARRATION, " ", _instruction_text(prompt), flags=re.I)
 
@@ -1391,7 +1408,11 @@ def intent_constraints(prompt: str, *, tier: str | None = None, confidential: bo
     duration = deliverable_duration(prompt)
     seconds = duration.seconds if duration else None
     if seconds is not None:
-        required["duration_seconds"] = seconds
+        if planned_shot_count(prompt) > 1:
+            # A multi-shot film's length is the cut total, not each clip's length.
+            required["total_duration_seconds"] = seconds
+        else:
+            required["duration_seconds"] = seconds
     extension = re.search(r"(?:extend|continue).*\bby\s+(\d+(?:\.\d+)?)\s*(seconds?|secs?|s)\b", prompt, re.I)
     if extension:
         added = float(extension[1])
@@ -1408,7 +1429,8 @@ def intent_constraints(prompt: str, *, tier: str | None = None, confidential: bo
     real_face = bool(args.get("real_face_refs") or args.get("user_supplied_real_person_refs") or re.search(
         r"real[ -](?:person|human|actor)|my (?:ceo|face|selfie)|(?:photo|video).*(?:of me|of my|real person)|(?:user.supplied|uploaded).*(?:person|face)", prompt, re.I))
     dialogue_prompt = re.sub(r"(?:voice[ -]?over|narration|\bvo\b)\s*:?\s*[\'\"“].*?[\'\"”]", "", prompt, flags=re.I)
-    dialogue = bool(re.search(r'["“][^"”]+["”]|\b(?:says?|saying|talking|talks?|dialogue|speaking)\b', dialogue_prompt, re.I))
+    dialogue_prompt = re.sub(_ON_SCREEN_TEXT, "", dialogue_prompt, flags=re.I)
+    dialogue = bool(re.search(r'["“][^"”]*\s[^"”]*["”]|\b(?:says?|saying|talking|talks?|dialogue|speaking)\b', dialogue_prompt, re.I))
     if re.search(r"\b(?:no|without) dialogue\b|\bnot talking\b|silent scene", prompt, re.I):
         dialogue = False
     knowledge_explainer = _knowledge_explainer_request(prompt)
@@ -1686,7 +1708,7 @@ def select_provider(job: str, *, tier: str | None = None, required: dict | None 
         limits = row["durations"].get(variant)
         values = row.get("duration_values", {}).get(variant)
         unsupported = any(row["jobs"].get(k, False) < value for k, value in required.items()
-                          if k not in {"duration_seconds", "extension_seconds", "target_fps", "aspect_ratio"})
+                          if k not in {"duration_seconds", "total_duration_seconds", "extension_seconds", "target_fps", "aspect_ratio"})
         unsupported |= duration is not None and limits is not None and not limits[0] <= duration <= limits[1]
         unsupported |= bool(duration is not None and values and duration not in values)
         unsupported |= bool(row.get("duration_field") and row.get("duration_integer", True)
@@ -1955,7 +1977,7 @@ class CostEstimate:
     def description(self):
         if self.total_cents is None:
             return f"Estimated cost unknown. {self.reason}"
-        return f"Estimated cost ${self.total_cents / 100:.2f} USD including platform fee."
+        return f"Estimated cost ${self.total_cents / 100:.2f} USD."
 
     def public(self):
         return {**asdict(self), "description": self.description}

@@ -1278,6 +1278,36 @@ def _media_generation_failed(outcome: Any, result: dict[str, Any]) -> bool:
     return False
 
 
+_VIDEO_REQUEST_RE = re.compile(r"\b(?:film|video|clip|mp4|trailer|promo|commercial|ad spot|reel)\b", re.I)
+_SELF_REPORTED_INCOMPLETE_RE = re.compile(r"^\W*(?:incomplete|blocked|failed|not delivered|could not)\b|\bblocked at\b", re.I)
+
+
+def _deliverable_missing(prompt: str, result: dict[str, Any]) -> bool:
+    """A run that did not produce what was asked for is never shown as Delivered.
+
+    The first live run asked for a 10-second film, made only a voiceover, and the agent itself
+    wrote "Incomplete"; the server still stored status=completed, so Studio said "Delivered · 17 steps".
+    Missing means: a video was asked for and no video asset exists, or the agent reported the
+    run incomplete and nothing at all was saved.
+    """
+    title, summary = str(result.get("title") or ""), str(result.get("summary") or "")
+    assets = [asset for asset in result.get("assets") or [] if isinstance(asset, dict)]
+    self_reported = bool(_SELF_REPORTED_INCOMPLETE_RE.search(summary) or _SELF_REPORTED_INCOMPLETE_RE.search(title))
+    if self_reported and not assets:
+        return True
+    try:
+        from agent.deep_agent.routing import route_intent
+
+        if route_intent(prompt).required.get("planning_only"):
+            return False
+    except Exception:  # routing must never turn a finished run into an error
+        pass
+    if not _VIDEO_REQUEST_RE.search(prompt or ""):
+        return False
+    kinds = {str(asset.get("kind") or asset.get("mime_type") or "").split("/")[0] for asset in assets}
+    return "video" not in kinds
+
+
 def _partial_agent_result(execution: dict[str, Any]) -> dict[str, Any]:
     calls = execution.get("tool_calls") or []
     assets: list[dict[str, Any]] = []
@@ -2011,9 +2041,12 @@ async def _run_studio_agent_job_inner(
     result = _agent_result(outcome)
     incomplete_video = any(event.id == "video-delivery" and event.status == "failed"
                            for event in getattr(outcome, "progress_events", []))
-    if incomplete_video or _media_generation_failed(outcome, result):
+    missing = not incomplete_video and not _media_generation_failed(outcome, result) and _deliverable_missing(prompt, result)
+    if incomplete_video or missing or _media_generation_failed(outcome, result):
         message = ("Video export is incomplete. Your assets and conversation are saved; resume to finish the MP4."
-                   if incomplete_video else "Media generation failed; no image, audio, video, or render was produced.")
+                   if incomplete_video else
+                   "Incomplete · the film was not delivered. Finished parts are saved in your project."
+                   if missing else "Media generation failed; no image, audio, video, or render was produced.")
         result["partial"] = True
         record_progress(
             StudioProgressEvent(
@@ -2031,7 +2064,8 @@ async def _run_studio_agent_job_inner(
             status="error",
             message=message,
             result=result,
-            error_type="VideoExportIncomplete" if incomplete_video else "MediaGenerationFailed",
+            error_type=("VideoExportIncomplete" if incomplete_video else "DeliverableIncomplete" if missing
+                        else "MediaGenerationFailed"),
         )
         return
 

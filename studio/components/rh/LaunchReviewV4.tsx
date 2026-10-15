@@ -34,7 +34,7 @@ const APPROVAL: ApprovalCardModel = {
     { kind: "media", label: "Warmer take of Shot 2", priceCents: 65, basis: "estimate" },
     { kind: "media", label: "Voiceover line 3", priceCents: 2, basis: "estimate" },
     { kind: "media", label: "Trim Shot 2 to 4.2 s", priceCents: 0, basis: "estimate" },
-    { kind: "orchestration", label: "Agent orchestration", priceCents: 30, basis: "estimate" },
+    { kind: "orchestration", label: "Planning and checks", priceCents: 30, basis: "estimate" },
   ],
   estimateCents: 97, capCents: 150,
 };
@@ -45,7 +45,7 @@ const RECEIPT: RunReceiptModel = {
     { kind: "media", label: "Warmer take of Shot 2", priceCents: 65, basis: "fixed" },
     { kind: "media", label: "Voiceover line 3", priceCents: 2, basis: "fixed" },
     { kind: "media", label: "Trim Shot 2", priceCents: 0, basis: "fixed" },
-    { kind: "orchestration", label: "Agent orchestration", priceCents: 28, basis: "fixed" },
+    { kind: "orchestration", label: "Planning and checks", priceCents: 28, basis: "fixed" },
   ],
   actualCents: 95, estimateCents: 97, capCents: 150, underEstimate: true,
   balanceBeforeCents: 1000, balanceAfterCents: 905, paidSteps: 3, status: "done",

@@ -292,3 +292,65 @@ html[data-theme="light"] {
 @keyframes rh-shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
 @media (prefers-reduced-motion: reduce) { .rh-shimmer { animation: none; } }
 .rh-upto-stop { margin: 2px 0 0; text-align: right; font-size: 13px; font-weight: 500; color: var(--rh-fg-2); }
+
+/* Launch layout pass (fix/launch-live-e2e) -----------------------------------------------------
+   Live run at 1280x800: the chat column was 300px with 12px body text. Ratios now:
+   chat clamp(360px, 28vw, 440px) · stage keeps exactly 16:9 and fits the viewport height ·
+   timeline strip stays slim (52px) and matches the stage width · body text >= 14px, lines <= 68ch. */
+.rh-agent-workspace {
+  --rh-chat-w: clamp(360px, 28vw, 440px);
+  --rh-side-w: clamp(200px, 15vw, 240px);
+  --rh-stage-w: min(100%, 1280px, calc((100dvh - 38px - 52px - 20px - 48px) * 16 / 9));
+}
+.rh-agent-workspace.rh-v4-stage-open[data-sidebar="closed"] { grid-template-columns: var(--rh-chat-w) minmax(0, 1fr); column-gap: clamp(20px, 2vw, 32px); }
+.rh-agent-workspace.rh-v4-stage-open[data-sidebar="open"] { grid-template-columns: var(--rh-side-w) var(--rh-chat-w) minmax(0, 1fr); column-gap: clamp(16px, 1.6vw, 28px); }
+@media (max-width: 1366px) {
+  /* 1280-1366 wide with the projects list open: chat keeps its 360px floor, the stage gives way. */
+  .rh-agent-workspace.rh-v4-stage-open[data-sidebar="open"] { --rh-side-w: 200px; --rh-chat-w: 360px; }
+}
+.rh-stage { justify-content: flex-start; padding: 8px clamp(16px, 2vw, 32px) 20px 0; }
+.rh-stage-frame { width: var(--rh-stage-w); max-width: none; max-height: none; aspect-ratio: 16 / 9; flex: none; }
+.rh-strip { width: var(--rh-stage-w); max-width: none; height: 52px; flex: none; }
+.rh-strip-label { font-size: 12px; }
+.rh-stage-caption span { font-size: 13px; }
+.rh-stage-caption b { font-size: clamp(28px, 2.6vw, 44px); }
+.rh-stage-empty { font-size: 14px; }
+
+/* Readable chat column. */
+.rh-agent-conversation { font-size: 14px; }
+.rh-agent-conversation .agent-markdown,
+.rh-agent-conversation .agent-response-summary,
+.rh-agent-conversation .agent-approval-summary,
+.rh-agent-conversation .agent-run-status,
+.rh-v4-agent, .rh-v4-bubble { font-size: 14.5px; line-height: 1.6; }
+.rh-agent-conversation .agent-markdown, .rh-agent-conversation .agent-response-summary { max-width: 68ch; }
+.rh-agent-conversation .agent-approval-details, .rh-agent-conversation .agent-approval-record,
+.rh-agent-conversation .agent-audio-timing { font-size: 13px; }
+.rh-agent-conversation .agent-markdown h1 { font-size: 20px; line-height: 1.3; }
+.rh-agent-conversation .agent-markdown h2 { font-size: 16.5px; line-height: 1.35; }
+.rh-agent-conversation .agent-markdown table { font-size: 13.5px; }
+.rh-trace-label { font-size: 14px; }
+.rh-trace-meta { font-size: 12.5px; }
+
+/* Approval / receipt cards: comfortable, consistent controls. */
+.rh-appr { font-size: 14px; }
+.rh-appr .rh-ledger-row dt, .rh-appr .rh-ledger-row dd, .rh-receipt .rh-ledger-row dt, .rh-receipt .rh-ledger-row dd { font-size: 14px; }
+.rh-appr .rh-footnote { font-size: 12.5px; line-height: 1.5; }
+.rh-appr-ft { gap: 8px; }
+.rh-btn-act { min-height: 38px; padding: 0 14px; font-size: 14px; }
+.rh-appr-ft .rh-btn-primary { min-width: 0; }
+
+/* Phone (390px): one column; the stage sits above the conversation instead of disappearing. */
+@media (max-width: 800px) {
+  .rh-agent-workspace { --rh-stage-w: 100%; }
+  .rh-agent-workspace.rh-v4-stage-open[data-sidebar] { grid-template-columns: minmax(0, 1fr); grid-template-rows: 38px auto minmax(0, 1fr); }
+  .rh-agent-workspace.rh-v4-stage-open .rh-stage { display: flex; order: -1; gap: 8px; padding: 8px 12px 4px; grid-row: 2; }
+  .rh-agent-workspace.rh-v4-stage-open .rh-agent-conversation { grid-row: 3; min-height: 0; }
+  .rh-strip { height: 40px; }
+  .rh-stage-caption { left: 14px; bottom: 10px; }
+  .rh-btn-act { min-height: 44px; }
+  .rh-appr-ft .rh-btn-act { flex: 1 1 auto; }
+}
+/* Primary action never truncates: it keeps its full label and the quieter actions wrap beside or below it. */
+.rh-appr-ft .rh-btn-primary.rh-btn-act { flex: 1 0 auto !important; min-width: max-content; white-space: nowrap; }
+.rh-appr-ft .rh-btn-act:not(.rh-btn-primary) { flex: 0 0 auto; white-space: nowrap; }

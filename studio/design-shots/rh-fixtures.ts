@@ -19,7 +19,7 @@ const VIDEO_ESTIMATE = {
   estimate_cents: 105, cap_cents: 150,
   lines: [
     { kind: "media", label: "Video clip", detail: "5 s · 720p", price_cents: 65, basis: "fixed" },
-    { kind: "orchestration", label: "Agent orchestration", price_cents: 40, basis: "estimate" },
+    { kind: "orchestration", label: "Planning and checks", price_cents: 40, basis: "estimate" },
   ],
 };
 
@@ -87,7 +87,7 @@ const stillEvent = {
 const midLines = [
   { label: "Product still", detail: "image", price_cents: 26, kind: "media", basis: "fixed" },
   { label: "Video clip", detail: "5 s · 720p", price_cents: 65, kind: "media", basis: "fixed" },
-  { label: "Agent orchestration", price_cents: 40, kind: "orchestration", basis: "estimate" },
+  { label: "Planning and checks", price_cents: 40, kind: "orchestration", basis: "estimate" },
 ];
 const shot1Approval = {
   call_id: "ap-shot1", label: "Shot 1 · push-in on the handle", detail: "Studio Video · Standard quality", status: "pending", decision: null,
@@ -115,7 +115,7 @@ export const receiptRun = { items: [runBase("run-done", {
       { kind: "media", label: "Shot 1", detail: "video clip · 5 s · 720p", price_cents: 65, basis: "fixed" },
       { kind: "media", label: "Shot 2", detail: "video clip · 5 s · 720p", price_cents: 65, basis: "fixed" },
       { kind: "media", label: "Voiceover", detail: "library voice · 24 words", price_cents: 2, basis: "fixed" },
-      { kind: "orchestration", label: "Agent orchestration", price_cents: 71, basis: "fixed" },
+      { kind: "orchestration", label: "Planning and checks", price_cents: 71, basis: "fixed" },
     ],
   },
 })] };
@@ -129,7 +129,7 @@ export const pausedRun = { items: [runBase("run-paused", {
     charged_cents: 150, cap_cents: 150, held_cents: 150, balance_cents: 824, choices: ["raise_cap", "stop"], add_credit: false, raise_options_cents: [200, 250],
     lines: [
       { kind: "media", label: "Video clip", detail: "5 s · 720p", price_cents: 65, basis: "fixed" },
-      { kind: "orchestration", label: "Agent orchestration", price_cents: 85, basis: "fixed" },
+      { kind: "orchestration", label: "Planning and checks", price_cents: 85, basis: "fixed" },
     ],
   },
 })] };

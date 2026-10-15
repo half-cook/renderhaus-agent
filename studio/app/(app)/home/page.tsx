@@ -47,7 +47,7 @@ function reasonLabel(reason: string, delta: number): string {
   if (/refund|release/.test(reason)) return "Released hold";
   if (/image|still/.test(reason)) return "Product still · Studio Image";
   if (/video|clip|shot/.test(reason)) return "Video clip · Studio Video";
-  if (/orchestrat|agent/.test(reason)) return "Agent orchestration";
+  if (/orchestrat|agent/.test(reason)) return "Planning and checks";
   return delta < 0 ? "Studio step" : "Credit added";
 }
 

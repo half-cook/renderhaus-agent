@@ -359,8 +359,8 @@ class PayloadTests(Fixture, unittest.TestCase):
         self.assertEqual(card["cap_cents"], rb.default_cap_cents(card["estimate_cents"]))
         self.assertEqual(sum(line["price_cents"] for line in card["lines"]), card["estimate_cents"])
         self.assertEqual([line["label"] for line in card["lines"]],
-                         ["Image", "Video clip", "Video clip", "Voiceover", "Agent orchestration"])
-        self.assertEqual(card["lines"][-1], {"label": "Agent orchestration", "price_cents": 75, "kind": "orchestration",
+                         ["Image", "Video clip", "Video clip", "Voiceover", "Planning and checks"])
+        self.assertEqual(card["lines"][-1], {"label": "Planning and checks", "price_cents": 75, "kind": "orchestration",
                                              "basis": "estimate"})
         self.assertEqual(card["status"], "pending")
         self.assertTrue(card["approve_enabled"])
@@ -464,7 +464,7 @@ class PayloadTests(Fixture, unittest.TestCase):
             "lines": [
                 {"label": "Image", "price_cents": 26, "kind": "media", "basis": "fixed"},
                 {"label": "Video clip", "detail": "5 s", "price_cents": 65, "kind": "media", "basis": "fixed"},
-                {"label": "Agent orchestration", "price_cents": 71, "kind": "orchestration", "basis": "fixed"},
+                {"label": "Planning and checks", "price_cents": 71, "kind": "orchestration", "basis": "fixed"},
             ],
             "actual_cents": 162, "estimate_cents": 233, "cap_cents": 325, "under_estimate": True,
             "balance_before_cents": 1000, "balance_after_cents": 838,

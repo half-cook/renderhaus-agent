@@ -234,9 +234,11 @@ class DeepAgentExecutionTests(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(sorted(row["total_estimate_cents"] for row in ledger.values()
                                     if row["total_estimate_cents"] is not None), [2, 130])
             self.assertIn("$0.02", output.markdown)
-            self.assertIn(TTS.name, output.markdown)
-            self.assertIn(VIDEO.name, output.markdown)
-            self.assertIn(RENDER.name, output.markdown)
+            # Cost lines name the work, never internal tool ids (launch rule).
+            for tool in (TTS.name, VIDEO.name, RENDER.name):
+                self.assertNotIn(tool, output.markdown)
+            for label in ("Voiceover", "Video", "Assembly"):
+                self.assertIn(label, output.markdown)
             self.assertIn("$1.32", output.summary)
             self.assertIn("Voiceover $0.02", output.summary)
             self.assertIn("Video $1.30", output.summary)

@@ -176,7 +176,7 @@ export function IntermediateSteps({
   const currentUpdate = progressEvents.filter((event) => event.type === "MODEL_UPDATE").at(-1);
   const label = status === "awaiting_approval" ? (message === "Waiting for your answer." ? "Your answer is needed" : "Your approval is needed")
     : state === "running" ? currentWait?.message || currentUpdate?.message || message || "Starting…"
-    : state === "incomplete" ? `Export incomplete${recoveryAvailable ? " · progress saved" : ""}`
+    : state === "incomplete" ? `Incomplete · not delivered${recoveryAvailable ? " · progress saved" : ""}`
     : state === "failed" ? (recoveryAvailable ? "Stopped · progress saved" : "Run failed")
     : `Completed${duration ? ` in ${duration}` : ""}`;
 
@@ -186,7 +186,7 @@ export function IntermediateSteps({
   const pct = total ? Math.round(((state === "running" ? doneCount : total) / total) * 100) : state === "running" ? 0 : 100;
   const finished = state !== "running" && status !== "awaiting_approval";
   const line = finished && state !== "failed" && state !== "incomplete"
-    ? `Delivered · ${total} ${total === 1 ? "step" : "steps"}${cost?.final ? ` · ${formatCents(cost.cents)}` : ""}`
+    ? `Delivered${total ? ` · ${total} ${total === 1 ? "step" : "steps"}` : ""}${cost?.final ? ` · ${formatCents(cost.cents)}` : ""}`
     : label;
 
   /* Revamp v4 trace: one live status line that expands in place ("Details"). */
@@ -467,7 +467,7 @@ function ExecutionTurn({
   actionsDisabled: boolean;
 }) {
   const displayStatus = execution.progressEvents.some((event) => event.id === "video-delivery" && event.status === "failed")
-    || execution.errorType === "VideoExportIncomplete" ? "incomplete" : execution.status;
+    || execution.errorType === "VideoExportIncomplete" || execution.errorType === "DeliverableIncomplete" ? "incomplete" : execution.status;
   const state = normalizedStatus(displayStatus);
   const assets = execution.assets;
   return (

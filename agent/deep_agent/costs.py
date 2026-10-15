@@ -19,6 +19,12 @@ class MediaCostRecord(TypedDict):
     currency: str
 
 
+def _work_label(tool: str) -> str:
+    from server.run_budget import work_label
+
+    return work_label(tool, None)[0] or "Production step"
+
+
 def append_media_costs(output: StudioAgentOutput, ledger: dict[str, MediaCostRecord], scope: str) -> None:
     records = [row for _, row in sorted(ledger.items()) if row["request_id"] == scope]
     if not records:
@@ -33,12 +39,11 @@ def append_media_costs(output: StudioAgentOutput, ledger: dict[str, MediaCostRec
     for row in records:
         cents = row["total_estimate_cents"]
         cost = "unknown" if cents is None else f"${cents / 100:.2f} USD"
-        model = f" ({row['model']})" if row["model"] else ""
-        lines.append(f"- {row['tool']}{model}: {cost}.")
-        label = labels.get(job_type(row["tool"]), row["provider"])
+        label = labels.get(job_type(row["tool"])) or _work_label(row["tool"])
+        lines.append(f"- {label}: {cost}.")
         brief.append(f"{label} {cost.removesuffix(' USD')}")
     section = "## Estimated media costs\n\n" + "\n".join(lines) + f"\n\n{total}\n"
-    section += "Recorded estimates include platform fees. Model token costs are separate."
+    section += "Each price already includes everything for that step."
     narrative = re.sub(
         r"^#{1,6}\s+(?:(?:estimated\s+)?(?:media\s+)?)?(?:costs?|pricing|spend|budget)\b.*?(?=^#{1,6}\s|\Z)",
         "", output.markdown, flags=re.MULTILINE | re.IGNORECASE | re.DOTALL,

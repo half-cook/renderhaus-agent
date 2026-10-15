@@ -82,7 +82,21 @@ class BetaSettings:
 
 
 def beta_billing_enabled(repository: StudioRepository, user_id: str) -> bool:
-    return BetaSettings.from_env().enabled or repository.get_beta_credit(user_id) is not None
+    """Credit is metered for beta accounts, every invite-only account, and any prepaid balance.
+
+    The first live run granted $5 directly (no beta grant row, Stripe off), so this gate
+    returned False and approved paid steps ran free while the balance stayed $5.00.
+    """
+    if BetaSettings.from_env().enabled or repository.get_beta_credit(user_id) is not None:
+        return True
+    try:
+        from server.beta_invites import invite_only_enabled
+
+        if invite_only_enabled():
+            return True
+    except (ImportError, ValueError):
+        return True  # misconfigured invite-only flag: fail closed and meter
+    return repository.get_balance(user_id) > 0
 
 
 def normalize_email(email: str) -> str:

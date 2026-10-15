@@ -99,7 +99,7 @@ class MeteringFlowTests(FlowFixture):
         execution = self.execution()
         self.assertEqual(execution["status"], "completed")
         receipt = execution["receipt"]
-        self.assertEqual(receipt["lines"], [{"label": "Agent orchestration", "price_cents": 78, "kind": "orchestration",
+        self.assertEqual(receipt["lines"], [{"label": "Planning and checks", "price_cents": 78, "kind": "orchestration",
                                              "basis": "fixed"}])
         self.assertEqual(receipt["actual_cents"], 78)  # $0.60 x 1.3
         self.assertEqual((receipt["balance_before_cents"], receipt["balance_after_cents"]), (1000, 922))

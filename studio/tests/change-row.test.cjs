@@ -47,6 +47,6 @@ test('a disconnected paid approval with sufficient credit does not claim insuffi
   const text = html(change, { approvalEnabled: false });
   assert.doesNotMatch(text, /Not enough credit|Add credit to continue/);
   assert.match(text, /Approve and run/);
-  assert.match(text, /aria-label="Approve, estimated \$1\.05/);
+  assert.match(text, /aria-label="Approve and run, estimated \$1\.05/);
   assert.match(text, /disabled=""/);
 });

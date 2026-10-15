@@ -130,7 +130,7 @@ export function ApprovalCard({ model, approveEnabled, busy = false, actions = {}
         <>
           <Ledger heading="Cost">
             {estimateLines.map((line) => (
-              <LedgerRow key={`${line.kind}:${line.label}`} label={lineLabel(line, "estimate")} amount={formatCents(line.priceCents)} tone={line.kind === "orchestration" ? "muted" : undefined} />
+              <LedgerRow key={`${line.kind}:${line.label}`} label={lineLabel(line, "estimate")} amount={formatCents(line.priceCents)} />
             ))}
             {model.pricing ? (
               <dl className="rh-ledger-total rh-pricing" data-big="true" data-shot="approval-pricing">
@@ -177,12 +177,12 @@ export function ApprovalCard({ model, approveEnabled, busy = false, actions = {}
       {model.status === "pending" && credit === "ok" ? (
         <>
           <div className="rh-appr-ft">
-            <button type="button" className="rh-btn rh-btn-primary rh-btn-act" style={{ flex: 1 }} aria-label={model.pricing ? "Approve, locked while this step is priced" : approveName} disabled={locked} onClick={actions.onApprove}>
+            <button type="button" className="rh-btn rh-btn-primary rh-btn-act" style={{ flex: 1 }} aria-label={model.pricing ? "Approve and run, locked while this step is priced" : approveName} disabled={locked} onClick={actions.onApprove}>
               Approve and run
             </button>
             <button type="button" className="rh-btn rh-btn-act" onClick={actions.onEdit}><Pencil size={14} aria-hidden="true" />Edit</button>
-            {model.pricing || model.upTo || model.unpriceable ? (
-              // Same server decline as the over-credit card: clears the approval, releases any hold, posts the Paused line.
+            {actions.onNotNow || model.pricing || model.upTo || model.unpriceable ? (
+              // Every live card can be declined: same server decline as over-credit (clears approval, releases hold).
               <button type="button" className="rh-btn rh-btn-quiet rh-btn-act" data-shot="not-now" disabled={busy} onClick={actions.onNotNow}>Not now</button>
             ) : null}
           </div>

@@ -306,7 +306,7 @@ class NamedFalApprovalTests(unittest.IsolatedAsyncioTestCase):
             message = context.progress_events[-1].message
             self.assertIn(endpoint, message)
             self.assertIn("explicit request", message)
-            self.assertIn("including platform fee", message)
+            self.assertNotIn("fee", message)
             with tempfile.TemporaryDirectory() as directory, patch.dict(os.environ, {"RENDERHAUS_OUTCOME_DIR": directory}):
                 result = await executor.execute(request, rejection="Skip this")
             self.assertEqual(result["status"], "rejected")

@@ -64,7 +64,7 @@ class IntentGraphTests(unittest.IsolatedAsyncioTestCase):
             cents = cost_for("kling", "text_to_video", {"prompt": "forest"}).total_cents
             self.assertEqual(approval.estimated_cost["total_cents"], cents)
             self.assertIn(f"${cents / 100:.2f}", approval.label)
-            self.assertIn("platform fee", approval.description)
+            self.assertNotIn("fee", approval.description)
             self.assertIn("Estimated cost", studio.tool_events[-1].label)
 
     async def test_autonomous_premium_approved_resume_dispatches_once(self):

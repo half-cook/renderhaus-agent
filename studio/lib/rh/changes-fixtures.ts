@@ -5,7 +5,7 @@ const createdAt = 1791677520000;
 const quote = (): ApprovalCardModel => ({
   id: "changes-new-take-quote", status: "pending", title: "New take", specs: ["5 s", "16:9"],
   estimateCents: 105, capCents: 150, balanceCents: 1000,
-  lines: [{ kind: "media", label: "Video clip", priceCents: 65, basis: "fixed" }, { kind: "orchestration", label: "Agent orchestration", priceCents: 40, basis: "estimate" }],
+  lines: [{ kind: "media", label: "Video clip", priceCents: 65, basis: "fixed" }, { kind: "orchestration", label: "Planning and checks", priceCents: 40, basis: "estimate" }],
 });
 
 export function changesDocument(): ChangesDocument {
@@ -16,7 +16,7 @@ export function changesDocument(): ChangesDocument {
   };
   return {
     revision: 1,
-    changeset: { id: "changeset-7", projectId: "demo-matte-mug", n: 7, title: "Warmer finish", createdAt, checkpointCutId: checkpointCut.id, estimateCents: 97, capCents: 150, actualCents: 95, status: "open", lines: [{ kind: "media", label: "Media", priceCents: 67, basis: "fixed" }, { kind: "orchestration", label: "Agent orchestration", priceCents: 28, basis: "fixed" }] },
+    changeset: { id: "changeset-7", projectId: "demo-matte-mug", n: 7, title: "Warmer finish", createdAt, checkpointCutId: checkpointCut.id, estimateCents: 97, capCents: 150, actualCents: 95, status: "open", lines: [{ kind: "media", label: "Media", priceCents: 67, basis: "fixed" }, { kind: "orchestration", label: "Planning and checks", priceCents: 28, basis: "fixed" }] },
     changes: [
       { id: "change-7-1", changesetId: "changeset-7", n: 1, kind: "take", slotId: "n-shot2", title: "Warmer light on the handle", description: "A softer finish for Shot 2, with the same framing.", beforeRef: { kind: "take", takeId: "shot-2-take-1" }, afterRef: { kind: "take", takeId: "shot-2-take-2" }, costCents: 65, taken: true, state: "ready" },
       { id: "change-7-2", changesetId: "changeset-7", n: 2, kind: "trim", slotId: "n-shot2", title: "Shorter ending", description: "Lose the final pause and finish on the lift.", beforeRef: { kind: "trim", inMs: 0, outMs: 5000 }, afterRef: { kind: "trim", inMs: 0, outMs: 4200 }, costCents: 0, taken: false, state: "proposed" },
@@ -51,7 +51,7 @@ export function changesStateVariants(): ChangesStateFixture[] {
       if (state === "failed") { approval.chargedCents = 0; approval.failureMessage = "No output was produced."; }
       if (state === "paused_at_cap") {
         approval.heldCents = 150; approval.chargedCents = 150; approval.balanceCents = 850; approval.raiseOptionsCents = [200];
-        approval.lines = [{ kind: "media", label: "Video clip", priceCents: 110, basis: "fixed" }, { kind: "orchestration", label: "Agent orchestration", priceCents: 40, basis: "fixed" }];
+        approval.lines = [{ kind: "media", label: "Video clip", priceCents: 110, basis: "fixed" }, { kind: "orchestration", label: "Planning and checks", priceCents: 40, basis: "fixed" }];
       }
       change = { ...change, taken: false, approval };
     }

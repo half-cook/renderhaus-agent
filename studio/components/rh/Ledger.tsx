@@ -13,10 +13,10 @@ export function LedgerRow({ label, amount, tone }: { label: ReactNode; amount: s
   );
 }
 
-/** Line label as shown in the ledger. Estimates are marked "est." and actuals "actual". */
-export function lineLabel(line: BillingLine, mode: "estimate" | "actual" | "so-far"): string {
-  if (line.kind !== "orchestration") return line.detail ? `${line.label} · ${line.detail}` : line.label;
-  return mode === "estimate" ? `${line.label} · est.` : mode === "actual" ? `${line.label} · actual` : `${line.label} · actual so far`;
+/** Line label as shown in the ledger: the work it paid for, never a fee. The total carries est./actual. */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export function lineLabel(line: BillingLine, _mode: "estimate" | "actual" | "so-far"): string {
+  return line.detail ? `${line.label} · ${line.detail}` : line.label;
 }
 
 export function Ledger({ heading, children, className = "" }: { heading?: string; children: ReactNode; className?: string }) {

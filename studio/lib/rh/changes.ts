@@ -189,7 +189,7 @@ function media(value: unknown): string | undefined {
 function billingLines(value: unknown): BillingLine[] | null {
   if (!Array.isArray(value)) return null;
   const lines = parseLines(value);
-  return lines.length === value.length ? lines.map((line) => ({ ...line, label: safeChangeCopy(line.label, line.kind === "orchestration" ? "Agent orchestration" : "Media"), detail: safeChangeCopy(line.detail, "") || undefined })) : null;
+  return lines.length === value.length ? lines.map((line) => ({ ...line, label: safeChangeCopy(line.label, line.kind === "orchestration" ? "Planning and checks" : "Media"), detail: safeChangeCopy(line.detail, "") || undefined })) : null;
 }
 function parseApproval(value: unknown): ApprovalCardModel | undefined {
   const item = record(value);

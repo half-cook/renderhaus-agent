@@ -23,7 +23,7 @@ export const FIXTURE_APPROVAL_PAYLOAD: RunPayload = {
   balance_cents: 974,
   lines: [
     { kind: "media", label: "Video clip", detail: "5 s · 720p", price_cents: 65, basis: "fixed" },
-    { kind: "orchestration", label: "Agent orchestration", price_cents: 40, basis: "estimate" },
+    { kind: "orchestration", label: "Planning and checks", price_cents: 40, basis: "estimate" },
   ],
 };
 
@@ -45,7 +45,7 @@ export const doneCard = (): ApprovalCardModel => ({
     balance_before_cents: 974, balance_after_cents: 875,
     lines: [
       { kind: "media", label: "Video clip", detail: "5 s · 720p", price_cents: 65, basis: "fixed" },
-      { kind: "orchestration", label: "Agent orchestration", price_cents: 34, basis: "fixed" },
+      { kind: "orchestration", label: "Planning and checks", price_cents: 34, basis: "fixed" },
     ],
   }),
   walletTotalCents: 1000,
@@ -63,7 +63,7 @@ export const pausedCard = (): ApprovalCardModel => ({
     raise_options_cents: [200, 250],
     lines: [
       { kind: "media", label: "Video clip", detail: "5 s · 720p", price_cents: 65, basis: "fixed" },
-      { kind: "orchestration", label: "Agent orchestration", price_cents: 85, basis: "fixed" },
+      { kind: "orchestration", label: "Planning and checks", price_cents: 85, basis: "fixed" },
     ],
   }),
   walletTotalCents: 1000,
@@ -83,7 +83,7 @@ export const FIXTURE_RECEIPT: RunReceiptModel = {
     { kind: "media", label: "Shot 1", detail: "video clip · 5 s · 720p", priceCents: 65, basis: "fixed" },
     { kind: "media", label: "Shot 2", detail: "video clip · 5 s · 720p", priceCents: 65, basis: "fixed" },
     { kind: "media", label: "Voiceover", detail: "library voice · 24 words", priceCents: 2, basis: "fixed" },
-    { kind: "orchestration", label: "Agent orchestration", priceCents: 71, basis: "fixed" },
+    { kind: "orchestration", label: "Planning and checks", priceCents: 71, basis: "fixed" },
   ],
   actualCents: 229, estimateCents: 258, capCents: 350, underEstimate: true,
   balanceBeforeCents: 1000, balanceAfterCents: 771, paidSteps: 4, status: "done",
@@ -92,12 +92,12 @@ export const FIXTURE_RECEIPT: RunReceiptModel = {
 /** Spec 4.5 stress cases; explicit examples, never loaded by real runs. */
 export const edgeCards = (): Array<{ title: string; model: ApprovalCardModel }> => [
   { title: "Free step", model: { ...pendingCard(), title: "Included finishing pass", estimateCents: 0, capCents: 0, lines: [{ kind: "media", label: "Finishing pass", priceCents: 0, basis: "fixed" }], balanceAfterEstimateCents: 974, balanceAfterCapCents: 974 } },
-  { title: "Four-digit total", model: { ...pendingCard(), estimateCents: 124050, capCents: 130000, balanceCents: 150000, balanceAfterEstimateCents: 25950, balanceAfterCapCents: 20000, lines: [{ kind: "media", label: "Production sequence", priceCents: 124000, basis: "fixed" }, { kind: "orchestration", label: "Agent orchestration", priceCents: 50, basis: "estimate" }] } },
+  { title: "Four-digit total", model: { ...pendingCard(), estimateCents: 124050, capCents: 130000, balanceCents: 150000, balanceAfterEstimateCents: 25950, balanceAfterCapCents: 20000, lines: [{ kind: "media", label: "Production sequence", priceCents: 124000, basis: "fixed" }, { kind: "orchestration", label: "Planning and checks", priceCents: 50, basis: "estimate" }] } },
   { title: "Long title", model: { ...pendingCard(), title: "A very long product film title with a carefully framed push-in on the handle, matte texture and pale stone counter in warm morning light" } },
   { title: "Three-line prompt", model: { ...pendingCard(), prompt: "Slow push-in on the handle.\nKeep the warm morning light and matte texture.\nNo text; finish on the pale stone counter." } },
   { title: "Balance below cap", model: { ...lowCreditCard(), approveEnabled: false } },
   { title: "Cap reached · zero left", model: { ...pausedCard(), balanceCents: 0, raiseOptionsCents: [] } },
-  { title: "Actual above estimate", model: { ...doneCard(), actualCents: 125, underEstimate: false, balanceAfterCents: 849, lines: [{ kind: "media", label: "Video clip", priceCents: 65, basis: "fixed" }, { kind: "orchestration", label: "Agent orchestration", priceCents: 60, basis: "fixed" }] } },
+  { title: "Actual above estimate", model: { ...doneCard(), actualCents: 125, underEstimate: false, balanceAfterCents: 849, lines: [{ kind: "media", label: "Video clip", priceCents: 65, basis: "fixed" }, { kind: "orchestration", label: "Planning and checks", priceCents: 60, basis: "fixed" }] } },
   { title: "Twelve-step plan", model: { ...pendingCard(), stepIndex: 12, stepCount: 12 } },
 ];
 
