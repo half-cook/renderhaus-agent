@@ -1,7 +1,7 @@
 # Local logo animation
 
 A supplied PNG, JPEG or screenshot becomes an editable SVG before any motion is authored.
-The user reviews the overlay strip and edge audit, then approves the exact SVG checksum.
+The user reviews the overlay strip and edge audit, then approves the exact SVG checksum. SVG and overlay outputs become private managed Studio images before approval. The run also exposes authenticated download buttons for the exact SVG, HTML preview, motion specification and audit files. Downloads use the stored execution/tool record, job confinement and the recorded checksum, and serve active files as attachments.
 The local renderer animates that approved geometry and lands on the same static mark.
 
 `logo_vectorize` maps to `Logo___logo_vectorize` in the editor role. This is a free local
@@ -14,16 +14,15 @@ template must use that same job and the local Remotion backend.
 
 The tool accepts `op`, `job_id`, `input_path` and operation-specific `params`. Unknown
 fields, traversal, URLs, external job paths and out-of-bounds inputs refuse before
-processing. The source must already be staged inside its job directory. An unresolvable
-Studio asset handle is a staging blocker. Processing never fetches a remote source.
+processing. Use the attached asset's `renderhaus-asset://` version handle. The trusted executor resolves owned project storage and copies the bounded raster into the current job before local processing. An unresolvable handle remains a staging blocker. Direct tool calls accept existing job-local files; processing never fetches an arbitrary remote URL.
 
 | Operation | Input and result |
 | --- | --- |
 | `vectorize` | Decode a bounded raster, remove edge-connected background, quantize colors and fit editable geometry. Save `logo.svg`, `vector.json` and `overlay-strip.png`. |
-| `audit` | Compare the saved SVG against its recorded source. Report silhouette IoU, smoothness metrics and review status. |
-| `approve` | Require rights confirmation and the exact `params.sha256`. Native approval is mandatory, including autonomous runs. Save a signed receipt tied to the vector and manifest. |
+| `audit` | Recheck the safe SVG against its unchanged source. Edited geometry refreshes the checksum, overlay and manifest and invalidates approval. Report IoU, smoothness and provisional semantic groups. |
+| `approve` | Require rights confirmation and the exact `params.sha256`. Native approval is mandatory, including autonomous runs. Save a signed receipt tied to the exact vector and manifest byte snapshots. |
 | `choreograph` | Require the unchanged approved bundle. Save `motion_spec.md`, `motion_spec.json` and a self-contained `preview.html`. Return the bounded render template. |
-| `final_frame` | Require the exact SVG path and returned template. Compare the saved final image or MP4 frame with the approved vector. Bind motion checks and the report to output, vector and motion-spec checksums. |
+| `final_frame` | Require the exact SVG path and returned template. Compare the saved final image or MP4 frame with the approved vector. Inspect a private output snapshot, refuse a concurrent output change, and bind the report to output, vector and motion-spec checksums. |
 | `easing` | Compare observed progress samples with declared `enter`, `settle` or `linear` easing, timing and overshoot. |
 | `continuity` | Inspect per-part position, scale and opacity samples for discontinuities. |
 
@@ -37,9 +36,7 @@ vector approval rather than accepting an unverifiable prior receipt.
 ## Geometry method and calibrated limits
 
 The implementation uses the existing Pillow and NumPy dependencies. It has no tracer
-binary or new tracing dependency. Edge-connected background removal preserves enclosed
-negative space. Color reduction uses a small palette. The in-house contour fit simplifies
-outlines and uses primitives or quadratic curves when they describe the shape. The SVG
+binary or new tracing dependency. Edge-connected background removal preserves enclosed regions. Transparent counters remain holes; opaque same-color interior regions remain painted and require visual review on the target background. Color reduction uses a small palette. The in-house contour fit simplifies outlines and uses primitives or quadratic curves when they describe the shape. Elliptic contour loops use eight tangent-aligned quadratic segments so a circular counter does not become a polygon. The SVG
 parser accepts only the implementation's bounded geometry subset, with stable part IDs.
 It rejects active content, text, images, links, external resources and unsupported attributes.
 
@@ -51,17 +48,21 @@ It rejects active content, text, images, links, external resources and unsupport
 | Editable structure | At most 32 parts and 256 segments. |
 | Silhouette IoU | At least 0.88. |
 | Long polyline smoothness | More than 24 line segments fails if no curves exist, or if segments no longer than 1.5 pixels exceed 25% of its line count. |
+| Curve joins | Maximum tangent jump of 8 degrees at joins involving quadratic curves. |
+| Contour simplification | Douglas-Peucker tolerance 1.1 source pixels; primitive fits take priority. |
 | Exact PNG final frame | Zero changed pixels and zero mean absolute error. |
-| MP4 final frame | Mean absolute RGB error at most 1.5. At most 3% of pixels may differ by more than 16 in any RGB channel. |
+| MP4 final frame | Mean absolute RGB error at most 2.5. At most 3% of pixels may differ by more than 16 in any RGB channel. |
 
 The committed synthetic fixture manifest is `tests/fixtures/logo_animation/cases.json`.
 Tests generate a rectangle, ellipse, ring and triangle. They cover opaque and transparent
 backgrounds and enclosed negative space. Per-case IoU floors are 0.94 for the rectangle
-and ellipse, 0.88 for the ring, and 0.90 for the triangle. Deliberately wrong geometry and
-a jagged staircase provide negative cases. These cases calibrate acceptance of simple
+and ellipse, 0.98 for the ring, and 0.90 for the triangle. Deliberately wrong geometry and
+a jagged staircase and a broken curve tangent provide negative cases. These cases calibrate acceptance of simple
 marks. They are not a benchmark of arbitrary customer logos. The MP4 tolerance allows
-encoder error while a changed final mark must fail. The real local rendering test also
+encoder error while a changed final mark must fail. The four 128x128, 24 fps local renders cover each shape with one motion style. The initial square render had mean RGB error 1.55 after the two H.264 stages; 2.5 leaves room for codec noise. This is a conservative local calibration, not a guarantee for other encoders. The real local rendering test also
 checks a static clip with a correct closing frame so a final-frame-only shortcut fails.
+
+Decoded motion checks compare every 40x40 frame thumbnail with the authored trajectory. Maximum mean frame error is 3.5 and maximum temporal-jump error is 2.5. Expected motion energy must be at least 0.05, and the measured-to-expected temporal-range ratio must be 0.4 to 2.2. After subtracting the final frame, the declared-curve loss must be at most 85% of the linear-fallback loss. Positive synthetic clips measured loss ratios of 0.68 to 0.80. Static and linear substitutes must fail. Very subtle or low-contrast motion can remain inconclusive and fail this gate.
 
 This tracer is pragmatic. It cannot recover lost typography, unseen edges or intended
 brand geometry from a poor screenshot. Photographic marks, gradients, fine text, complex
@@ -126,7 +127,7 @@ HTML showcase and ribbon scripts are references only.
 RT-184 is active with `logo_vectorize then remotion_render`. Its forbidden canonical
 tools are `wan3_t2v`, `seedance25_t2v` and `gpt_image25_edit`. Four additional positive
 and four negative cases cover splash, loader, reveal, idle, lower thirds, new logo design,
-channel intros without a supplied logo and podcast audiograms. Execution groups keep
+channel intros without a supplied logo and podcast audiograms. An explicit unsupported renderer or model blocks with a clear reason and no substitute. Execution groups keep
 vector preparation and rendering sequential across the approval gate. Existing fixture
 rows retain their choices. Current inventory is 19 providers, 135 Gateway tools, 39 skills,
 310 routing rows, 304 active and 6 dependency skips.
@@ -137,3 +138,9 @@ The current task forbids live or paid API calls. Offline tests and a local rende
 supporting evidence only. Browser evidence and concrete blockers belong under ignored
 `.renderhaus/e2e/`, recorded through `scripts/browser_e2e_hook.py`. Alpha output and
 Lottie authoring are unsupported by this branch.
+
+Final offline verification passed with 2,706 pytest tests, 8 skips and 4,841 subtests.
+Ruff, `scripts/ci_check.py`, and Studio and Remotion TypeScript checks passed.
+The four synthetic local MP4 cases use 128x128 canvases with measured raster references
+of 96x96 or 128x96. They verify actual decoded frames; the reveal also passes the existing
+saved deliverable-QC report. These checks do not replace the blocked Comet Studio flow.

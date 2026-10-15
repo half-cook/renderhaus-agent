@@ -19,8 +19,9 @@ Never recreate, improve or reinterpret an existing mark with an image or video m
 Read `read_studio_context` and discover the exact schemas before dispatch. All logo
 processing uses `Logo___logo_vectorize` through `call_editor_tool`. Use its `op`
 discriminator with the trusted current `job_id`, an in-job `input_path` and `params`.
-The source must already be staged inside this job. A remote URL or asset handle is not a
-local path. If owned local staging is unavailable, report that dependency as blocked.
+For `vectorize`, use the attached asset's `renderhaus-asset://` version handle. The trusted
+executor stages an owned raster inside this job. Direct calls require an existing local
+path. If owned local staging is unavailable, report that dependency as blocked.
 Never upload the raster, SVG or preview to another service. Never use customer marks
 as training data or test fixtures. Outputs stay in the job directory or private project storage.
 
@@ -70,7 +71,7 @@ They do not implement arbitrary morphing, ribbon fitting or a stroke draw-on ren
 Use the same approved geometry for every preview. Reduced-motion preview shows the
 finished static vector immediately.
 
-The HTML preview makes no external requests. Inspect its first frame, entrance, settle,
+The run exposes private SVG/overlay previews and authenticated file downloads. The HTML preview makes no external requests. Inspect its first frame, entrance, settle,
 final pose and any loop seam. A loader or idle cycle must end at its starting state and
 the exported sting must settle on the static vector. Never place vectorization, approval
 and rendering in one parallel execution group.

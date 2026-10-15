@@ -1,0 +1,70 @@
+[
+  {
+    "name": "square",
+    "shape": "rectangle",
+    "size": [
+      96,
+      96
+    ],
+    "box": [
+      20,
+      20,
+      76,
+      76
+    ],
+    "foreground": "#163f72",
+    "background": "white",
+    "minimum_iou": 0.94
+  },
+  {
+    "name": "disc",
+    "shape": "ellipse",
+    "size": [
+      128,
+      96
+    ],
+    "box": [
+      28,
+      12,
+      100,
+      84
+    ],
+    "foreground": "#dc542a",
+    "background": "transparent",
+    "minimum_iou": 0.94
+  },
+  {
+    "name": "ring",
+    "shape": "ring",
+    "size": [
+      96,
+      96
+    ],
+    "box": [
+      12,
+      12,
+      84,
+      84
+    ],
+    "foreground": "#176c56",
+    "background": "transparent",
+    "minimum_iou": 0.98
+  },
+  {
+    "name": "triangle",
+    "shape": "triangle",
+    "size": [
+      96,
+      96
+    ],
+    "box": [
+      16,
+      16,
+      80,
+      80
+    ],
+    "foreground": "#452e71",
+    "background": "white",
+    "minimum_iou": 0.9
+  }
+]

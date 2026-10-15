@@ -1,11 +1,13 @@
 import {useEffect, useState} from 'react';
+import {LogoAnimation} from './LogoAnimation';
+import type {LogoTemplatePlan} from './LogoAnimation';
 import type {CSSProperties} from 'react';
 import {AbsoluteFill, cancelRender, continueRender, delayRender, staticFile, useCurrentFrame} from 'remotion';
 
 type Rectangle = {x: number; y: number; width: number; height: number};
 type TimedWord = {text: string; start: number; end: number};
 type Caption = {text: string; start: number; end: number; words: TimedWord[]};
-export type TemplatePlan = {
+type ChannelTemplatePlan = {
   name: 'podcast-audiogram' | 'youtube-intro-sting' | 'youtube-end-screen';
   duration_seconds: number; fps: number; width: number; height: number;
   layout: Record<'safe' | 'art' | 'waveform' | 'captions' | 'identity' | 'progress', Rectangle>;
@@ -18,12 +20,12 @@ export type TemplatePlan = {
 const clamp = (value: number) => Math.max(0, Math.min(1, value));
 let fontLoad: Promise<FontFace> | undefined;
 
-const boxStyle = (box: Rectangle, plan: TemplatePlan): CSSProperties => ({
+const boxStyle = (box: Rectangle, plan: ChannelTemplatePlan): CSSProperties => ({
   position: 'absolute', left: Math.round(box.x * plan.width), top: Math.round(box.y * plan.height),
   width: Math.round(box.width * plan.width), height: Math.round(box.height * plan.height), overflow: 'hidden',
 });
 
-function Waveform({plan, frame}: {plan: TemplatePlan; frame: number}) {
+function Waveform({plan, frame}: {plan: ChannelTemplatePlan; frame: number}) {
   const box = plan.layout.waveform;
   const width = Math.round(box.width * plan.width);
   const height = Math.round(box.height * plan.height);
@@ -47,7 +49,7 @@ function Waveform({plan, frame}: {plan: TemplatePlan; frame: number}) {
   </svg>;
 }
 
-export function TemplateBackdrop({plan}: {plan: TemplatePlan}) {
+function ChannelTemplateBackdrop({plan}: {plan: ChannelTemplatePlan}) {
   const frame = useCurrentFrame();
   const [handle] = useState(() => delayRender('Loading template font'));
   useEffect(() => {
@@ -92,4 +94,10 @@ export function TemplateBackdrop({plan}: {plan: TemplatePlan}) {
         backgroundColor: plan.accent_color}}/>
     </> : null}
   </AbsoluteFill>;
+}
+
+export type TemplatePlan = ChannelTemplatePlan | LogoTemplatePlan;
+
+export function TemplateBackdrop({plan}: {plan: TemplatePlan}) {
+  return plan.name === 'logo-animation' ? <LogoAnimation plan={plan}/> : <ChannelTemplateBackdrop plan={plan}/>;
 }

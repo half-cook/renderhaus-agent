@@ -754,6 +754,12 @@ def route_intent(prompt: str, *, region: str | None = None, tier: str | None = N
                  confidential: bool = False, arguments: dict | None = None,
                  available_tools: set[str] | None = None, retry: bool = False, user_id: str | None = None) -> Route:
     if _logo_animation_request(prompt):
+        requested = intent_constraints(prompt, arguments=arguments)
+        if (requested['predicates'].get('explicit_hyperframes')
+                or requested.get('provider') not in {None, 'remotion', 'logo_animation'}
+                or requested.get('named_model')):
+            reason = 'The explicitly requested renderer or model does not support this private logo workflow. No substitute was selected. Logo motion requires the approved vector and local rendering.'
+            return Route(skill='logo-animation', status='blocked', reason=reason, disclosure=reason)
         return _logo_animation_route(region=region, available_tools=available_tools)
     if re.search(_PODCAST_REQUEST, _instruction_text(prompt), re.I) and _visible_source_video(prompt):
         route = select_provider("transcript_edit", region=region, available_tools=available_tools,

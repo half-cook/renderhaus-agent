@@ -180,7 +180,7 @@ def check_dry_run_dispatch() -> None:
                 ImageDraw.Draw(image).rectangle((16, 16, 48, 48), fill="black")
                 image.save(job / "logo.png")
                 result = dispatch(spec.id, "logo_vectorize", {"op": "vectorize", "job_id": "ci-logo", "input_path": "logo.png"})
-                assert result.get("status") == "needs_vector_approval" and result["geometry_qa"]["passed"], result
+                assert result.get("status") == "succeeded" and result.get("phase") == "needs_vector_approval" and result["geometry_qa"]["passed"], result
                 assert not (job / Path(result["svg_path"]).parent / "approval.json").exists()
             print("ok local logo_animation.logo_vectorize (synthetic source; approval still required)")
             continue

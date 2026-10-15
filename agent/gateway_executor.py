@@ -62,6 +62,29 @@ def _worker_remotion_tool(name: str, arguments: dict | None = None) -> bool:
     return name == 'Remotion___render_timeline' and render_backend() == 'local'
 
 
+def _local_logo_arguments(studio, arguments: dict) -> dict:
+    source = arguments.get('input_path', '')
+    if arguments.get('op') != 'vectorize' or not source.startswith('renderhaus-asset://'):
+        return arguments
+    if arguments.get('job_id') != studio.job_id or studio.source_resolver is None:
+        raise ValueError('Logo input requires the owned current job and an asset resolver.')
+    from pathlib import Path
+    from providers.ffmpeg.sandbox import job_directory, output_file
+    from providers.logo_animation.geometry import decode, MAX_BYTES
+
+    version = source.removeprefix('renderhaus-asset://')
+    path = Path(studio.source_resolver(version))
+    decode(path)
+    directory = job_directory(studio.job_id)
+    target = output_file(directory, 'logo-source', path.suffix.lower() if path.suffix.lower() in {'.png', '.jpg', '.jpeg'} else '.png')
+    data = path.read_bytes()
+    if not 0 < len(data) <= MAX_BYTES:
+        raise ValueError('Logo source exceeds its input bound.')
+    with target.open('xb') as destination:
+        destination.write(data)
+    return {**arguments, 'input_path': target.name}
+
+
 def _local_remotion_arguments(studio, arguments: dict) -> dict:
     def resolve_source(source):
         version = studio.source_versions.get(source)
@@ -343,6 +366,8 @@ class GatewayExecutor:
         return route
 
     def dispatch_disclosure(self, name, arguments, route):
+        if name == 'Remotion___render_timeline' and (arguments.get('template') or {}).get('name') == 'logo-animation':
+            return 'Render the approved logo locally. The final pose must match the reviewed vector. Inspect the saved animation and its QA before delivery.'
         if name in LOGO_TOOLS:
             if arguments.get("op") == "approve":
                 return ("Review the vector, source overlay and edge audit. Approval applies only to this exact SVG. "
@@ -425,7 +450,7 @@ class GatewayExecutor:
         return f"{proposal} Provider {provider}; model {model}; default. {estimate_cost(name, arguments).description}".strip()
 
     def disclose_selection(self, route, event_id, name=None, arguments=None):
-        if name in LOGO_TOOLS:
+        if name in LOGO_TOOLS or name == 'Remotion___render_timeline' and ((arguments or {}).get('template') or {}).get('name') == 'logo-animation':
             _progress(self.studio, event_id=f"logo-{event_id}", event_type="MODEL_UPDATE",
                       title="Logo animation", message=self.dispatch_disclosure(name, arguments or {}, route), status="completed")
             return
@@ -885,7 +910,8 @@ class GatewayExecutor:
                                 output = await asyncio.to_thread(dispatch, provider, verb, arguments)
                         else:
                             worker_arguments = (_local_remotion_arguments(studio, arguments)
-                                                if name == 'Remotion___render_timeline' else arguments)
+                                                if name == 'Remotion___render_timeline' else
+                                                _local_logo_arguments(studio, arguments) if name in LOGO_TOOLS else arguments)
                             output = await asyncio.to_thread(dispatch, provider, verb, worker_arguments)
                         payload = _unwrap_tool_output(output)
                         if payload.get("error") or (payload.get("status") in {"failed", "error", "blocked", "not_run"}
