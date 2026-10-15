@@ -4,6 +4,7 @@ import asyncio
 import json
 import logging
 import os
+from pathlib import Path
 import re
 import time
 from types import SimpleNamespace
@@ -816,6 +817,12 @@ class GatewayExecutor:
                 actual = resolution_value(value)
             if actual < route.required["max_resolution"]:
                 return "Required output resolution must be set in the selected tool's native arguments."
+        total = route.required.get("total_duration_seconds")
+        if total and not route.required.get("duration_seconds"):
+            clip = next((arguments[k] for k in ("duration", "duration_seconds") if isinstance(arguments.get(k), (int, float))
+                         and not isinstance(arguments.get(k), bool)), None)
+            if clip is not None and clip > total:
+                return f"Each shot must fit inside the {total:g}-second film; shorten this shot's duration."
         if route.required.get("duration_seconds"):
             actual = (topaz_request.output_duration if topaz_request else sync_request.output_duration if sync_request else
                       arguments.get("performance_duration_seconds", arguments.get("duration", arguments.get("duration_seconds", arguments.get("video_duration_seconds",
@@ -1155,6 +1162,8 @@ class GatewayExecutor:
                          if event.name in {"Remotion___render_timeline", "Remotion___render_composition"}}
             output = await asyncio.to_thread(stage_local_render, studio.job_id,
                                             _unwrap_tool_output(output), owned_ids)
+        if studio.job_id and _unwrap_tool_output(output).get("status") == "succeeded":
+            output = await asyncio.to_thread(stage_outputs_in_job, studio.job_id, _unwrap_tool_output(output))
         if name in FINISHING_TOOLS:
             self.finishing_previews.record_submission(name, arguments, call_id, _unwrap_tool_output(output))
         output = self.finishing_previews.decorate_output(name, arguments, _unwrap_tool_output(output))
@@ -1302,3 +1311,46 @@ def completed_label(name: str) -> str:
     if name.endswith(("query_music_task", "get_music_task")):
         return "The audio provider is preparing the soundtrack"
     return "The video provider is processing the clip"
+
+
+_OUTPUT_PATH_KEYS = {"output_path", "local_path", "video_path", "audio_path", "image_path", "file_path"}
+
+
+def stage_outputs_in_job(job_id, payload):
+    """Copy provider media saved elsewhere under the media root into the job directory.
+
+    Providers (ElevenLabs, fal, HeyGen...) save under RENDERHAUS_MEDIA_DIR/<provider>/, which the
+    job sandbox refuses ("Absolute input paths must stay inside the job directory"), so the agent
+    could not inspect its own voiceover. The copy is rewritten in place so every later tool,
+    inspect_media and the asset registrar see a path inside the job.
+    """
+    import shutil
+    from agent.deep_agent.sandbox import workspace_directory
+
+    root = Path(os.getenv("RENDERHAUS_MEDIA_DIR", ".renderhaus/media")).expanduser().resolve()
+    try:
+        job_dir = workspace_directory(job_id, job_id)
+    except ValueError:
+        return payload
+
+    def move(value):
+        try:
+            source = Path(value).expanduser().resolve()
+        except (OSError, RuntimeError, TypeError):
+            return value
+        if (not source.is_file() or not source.is_relative_to(root) or source.is_relative_to(job_dir)):
+            return value
+        target = job_dir / source.name
+        if not target.exists():
+            shutil.copy2(source, target)
+        return str(target)
+
+    def walk(node):
+        if isinstance(node, dict):
+            return {key: move(value) if key in _OUTPUT_PATH_KEYS and isinstance(value, str) else walk(value)
+                    for key, value in node.items()}
+        if isinstance(node, list):
+            return [walk(item) for item in node]
+        return node
+
+    return walk(payload)
