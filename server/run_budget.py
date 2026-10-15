@@ -151,6 +151,12 @@ def cap_round_cents() -> int:
     return _env_int("ORCHESTRATION_CAP_ROUND_CENTS", 25, minimum=1)
 
 
+def start_cap_floor_cents() -> int:
+    """Lowest hold a new run starts with. Each planner call reserves its worst case (often $1-2) before
+    it starts and is refunded to the actual (a few cents), so a smaller start cap pauses real first turns."""
+    return _env_int("ORCHESTRATION_START_CAP_FLOOR_CENTS", 0)
+
+
 def raise_step_cents() -> int:
     return _env_int("ORCHESTRATION_RAISE_STEP_CENTS", 50, minimum=1)
 

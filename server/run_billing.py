@@ -57,8 +57,11 @@ def start_run(
             hold = repo.get_run_hold(run_id)
         return hold
     estimate = autonomous_media_cents + (rb.orchestration_estimate_cents() if rb.orchestration_billing_enabled() else 0)
-    return repo.hold_run(user_id, run_id, rb.default_cap_cents(estimate) if estimate else 0,
-                         estimate_cents=estimate, conversation_id=conversation_id)
+    cap = rb.default_cap_cents(estimate) if estimate else 0
+    if cap and rb.start_cap_floor_cents() > cap:
+        # Never more than the user has; the default cap still decides whether the run may start.
+        cap = max(cap, min(rb.start_cap_floor_cents(), repo.available_credit(user_id)))
+    return repo.hold_run(user_id, run_id, cap, estimate_cents=estimate, conversation_id=conversation_id)
 
 
 def end_run(repo: Any, run_id: str, *, execution_status: str, error_type: str | None = None) -> dict[str, Any] | None:

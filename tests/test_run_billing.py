@@ -504,6 +504,12 @@ class PayloadTests(Fixture, unittest.TestCase):
         self.assertEqual(adopted["status"], "running")
         self.assertIsNone(run_billing.stored_pause(self.repo, "job-2"))
 
+    def test_start_cap_floor_lifts_the_first_hold_within_available_credit(self):
+        with patch.dict(os.environ, {"ORCHESTRATION_START_CAP_FLOOR_CENTS": "300"}):
+            self.assertEqual(run_billing.start_run(self.repo, USER, "f-1", "conv-f1")["held_cents"], 300)
+            self.repo.adjust_balance(USER, -500, "test_spend")
+            self.assertEqual(run_billing.start_run(self.repo, USER, "f-2", "conv-f2")["held_cents"], 200)
+
     def test_autonomous_run_holds_a_media_allowance_too(self):
         hold = run_billing.start_run(self.repo, USER, "auto-1", None, autonomous_media_cents=rb.autonomous_media_cents())
         self.assertEqual(hold["held_cents"], rb.default_cap_cents(75 + 300))
