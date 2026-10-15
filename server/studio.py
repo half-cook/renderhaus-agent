@@ -1282,6 +1282,37 @@ _VIDEO_REQUEST_RE = re.compile(r"\b(?:film|video|clip|mp4|trailer|promo|commerci
 _SELF_REPORTED_INCOMPLETE_RE = re.compile(r"^\W*(?:incomplete|blocked|failed|not delivered|could not)\b|\bblocked at\b", re.I)
 
 
+def _reply_only_run(result: dict[str, Any]) -> tuple[bool, bool]:
+    """(reply_only, declined): the agent only talked - asked, refused, or the user said Not now.
+
+    Bug bash: "Use the logo I sent earlier", a refused env dump and a Not-now on the first card all
+    ended as status=error "Incomplete · the film was not delivered", so a normal answer looked like a crash.
+    Only provider/media tools count as work; tool search and other built-ins (no "___") do not.
+    """
+    if any(isinstance(asset, dict) for asset in result.get("assets") or []):
+        return False, False
+    declined = False
+    for event in result.get("tool_events") or []:
+        if not isinstance(event, dict):
+            continue
+        name, status = str(event.get("name") or ""), str(event.get("status") or "").lower()
+        if "___" not in name:
+            continue
+        if status in {"rejected", "declined", "cancelled", "canceled"}:
+            declined = True
+            continue
+        return False, False
+    return True, declined
+
+
+_DECLINED_SUMMARY = ("No problem, I didn't make it and nothing was charged for it. "
+                     "Want it shorter, cheaper or with a different look? Tell me and I'll price it again.")
+
+
+def _reply_text(summary: str) -> str:
+    return re.sub(r"^\W*(?:incomplete|blocked|failed|not delivered)\W+", "", summary or "", flags=re.I).strip() or summary
+
+
 def _deliverable_missing(prompt: str, result: dict[str, Any]) -> bool:
     """A run that did not produce what was asked for is never shown as Delivered.
 
@@ -2042,7 +2073,17 @@ async def _run_studio_agent_job_inner(
     incomplete_video = any(event.id == "video-delivery" and event.status == "failed"
                            for event in getattr(outcome, "progress_events", []))
     missing = not incomplete_video and not _media_generation_failed(outcome, result) and _deliverable_missing(prompt, result)
-    if incomplete_video or missing or _media_generation_failed(outcome, result):
+    reply_only, declined = _reply_only_run(result)
+    replied = reply_only and (incomplete_video or missing or _media_generation_failed(outcome, result))
+    if replied:
+        result["partial"] = False
+        if declined:
+            result["summary"] = _DECLINED_SUMMARY
+            result["title"] = "Not now"
+        else:
+            result["summary"] = _reply_text(str(result.get("summary") or ""))
+        incomplete_video = missing = False
+    if not replied and (incomplete_video or missing or _media_generation_failed(outcome, result)):
         message = ("Video export is incomplete. Your assets and conversation are saved; resume to finish the MP4."
                    if incomplete_video else
                    "Incomplete · the film was not delivered. Finished parts are saved in your project."
@@ -2083,7 +2124,7 @@ async def _run_studio_agent_job_inner(
         workspace_id,
         job_id,
         status="completed",
-        message=f"Completed {outcome.final.title}.",
+        message="Replied." if replied else f"Completed {outcome.final.title}.",
         result=result,
     )
     await asyncio.to_thread(repository.clear_execution_checkpoint, workspace_id, job_id)
