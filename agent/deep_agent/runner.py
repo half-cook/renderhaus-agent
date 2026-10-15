@@ -109,6 +109,14 @@ The host discloses provider/model, selection reason and estimated list cost befo
 dispatch. Unknown means unknown, not free. All paid video requires approval even in autonomous
 runs when premium_video_approval is enabled. Sync and HeyGen always require consent and cost approval
 independently of that switch. Keep all existing approval and spending gates.
+Before finishing video, call prepare_finishing_preview with the full discovered finishing arguments
+and an owned source handle. Submit only its returned preview_arguments, with the normal cost approval.
+Poll that saved job with download=true. Then call review_finishing_preview with preview_id so the
+customer can compare the actual source and result. Never author comparison data or treat a tool result,
+dry run, generic media acceptance or chat message as this native review approval. Submit the returned
+full_arguments only after native review approval and a separate full-cost approval. Changed source or
+settings need a new preview. If covers_full_source is true, the approved saved preview is the final clip;
+do not submit a duplicate full job. Reuse saved finishing_previews and poll jobs before preparing again.
 For word-level changes/removals in existing footage, read dialogue-edit and use direct Sync
 transcription, then preview creation/polling, then sync-3 dialogue video. Require one speaker,
 whole source <=600 seconds, measured media metadata and voice/likeness consent. Preview and video
@@ -228,7 +236,7 @@ async def run_with_servers(request, studio, servers, *, model=None):
     drama = DramaGate(saved_drama, active=not drama_cancelled(request.prompt) and (
         route_intent(request.prompt).skill == "short-drama-series" or saved_drama.get("active", False)))
     executor = GatewayExecutor(studio, servers, session, run_scope=_scope(request),
-                               selection_constraints=drama.selection_constraints)
+                               selection_constraints=drama.selection_constraints, finishing_scope=thread_id)
     await executor.connect_tools(session)
     initial = await executor.available()
     aliases = defaultdict(deque)
@@ -273,6 +281,7 @@ async def run_with_servers(request, studio, servers, *, model=None):
                 and any(step.get("model") in {None, row.get("model")} for step in steps)
             ],
             "media_jobs": executor.media_jobs,
+            "finishing_previews": executor.finishing_previews.summaries(),
             "references": _input_for("", list(studio.nodes)),
             "assets": list(studio.working_assets.values()),
             "render_jobs": executor.render_jobs,
@@ -345,8 +354,25 @@ async def run_with_servers(request, studio, servers, *, model=None):
         """Check episode timing, continuity locks and exact production jobs locally. This approves no spending."""
         return drama.prepare(episode, jobs)
 
+    @tool
+    async def prepare_finishing_preview(tool_name: str, arguments: dict,
+                                        start_seconds: float = 0, duration_seconds: float = 3) -> dict:
+        """Measure an owned source and save a preview of at most three seconds. Fill absent source measurements, check supplied values, and create no paid job."""
+        result = await asyncio.to_thread(executor.finishing_previews.prepare, tool_name, arguments,
+                                         start_seconds, duration_seconds)
+        executor.publish_spending()
+        return result
+
+    @tool
+    async def review_finishing_preview(preview_id: str) -> dict:
+        """Request human review of the saved source and finished preview. Full spending needs separate approval."""
+        result = await asyncio.to_thread(executor.finishing_previews.approve, preview_id)
+        executor.publish_spending()
+        return result
+
     common_tools = [progress, read_studio_context, record_media_outcome,
-                    review_drama_outline, validate_drama_episode]
+                    review_drama_outline, validate_drama_episode,
+                    prepare_finishing_preview, review_finishing_preview]
     if _GATEWAY_SEARCH_TOOL in initial:
         schema = initial[_GATEWAY_SEARCH_TOOL][1]
 
@@ -376,6 +402,8 @@ async def run_with_servers(request, studio, servers, *, model=None):
         route = executor.media_selection(arguments.tool_name, arguments.arguments)
         if executor.selection_blocker(arguments.tool_name, arguments.arguments, route):
             return False
+        if executor.finishing_previews.replay(arguments.tool_name, arguments.arguments) is not None:
+            return False
         executor.disclose_selection(route, call.tool_call["id"], arguments.tool_name, arguments.arguments)
         return (drama.requires_approval(arguments.tool_name)
                 or tool_needs_approval(arguments.tool_name, studio.autonomous, arguments.arguments))
@@ -403,6 +431,12 @@ async def run_with_servers(request, studio, servers, *, model=None):
         "allowed_decisions": ["approve", "reject"],
         "when": lambda call: not output_repair and check_outline(call.tool_call["args"].get("outline", {}))["ok"],
         "description": "Approve this series outline, cast and episode synopses. This does not authorize any spending.",
+    }
+    interrupt_on['review_finishing_preview'] = {
+        'allowed_decisions': ['approve', 'reject'],
+        'when': lambda call: not output_repair and executor.finishing_previews.can_review(
+            call.tool_call['args'].get('preview_id', '')),
+        'description': 'Compare the source and finishing preview. Full finishing requires a separate cost approval.',
     }
     roles = [
         ("planner", "Plan the routed media steps and editorial decisions without calling paid media tools.", []),
@@ -500,6 +534,14 @@ async def run_with_servers(request, studio, servers, *, model=None):
                     approval.provider = None
                     approval.estimated_cost = {"total_cents": 0, "description": "Outline review creates no paid work."}
                     approval.description = "Approve this series outline, cast and episode synopses. This does not authorize any spending."
+                elif name == 'review_finishing_preview':
+                    preview_id = arguments.get('preview_id', '')
+                    approval.arguments = {'preview_id': preview_id,
+                                          'comparison': executor.finishing_previews.comparison(preview_id)}
+                    approval.label = 'Review finishing preview'
+                    approval.provider = None
+                    approval.estimated_cost = {'total_cents': 0, 'description': 'Preview review creates no paid work.'}
+                    approval.description = 'Compare the original and finishing preview. Full finishing requires a separate cost approval.'
                 else:
                     route = executor.media_selection(name, arguments)
                     approval.description = executor.dispatch_disclosure(name, arguments, route)
@@ -521,12 +563,15 @@ async def run_with_servers(request, studio, servers, *, model=None):
                 result = {"type": decision.decision}
                 if decision.decision == "reject":
                     result["message"] = decision.message or "The customer rejected this tool call."
-                    if approval.tool_name != "review_drama_outline":
+                    if approval.tool_name == 'review_finishing_preview':
+                        executor.finishing_previews.reject(approval.arguments['preview_id'])
+                        executor.publish_spending()
+                    elif approval.tool_name != "review_drama_outline":
                         await executor.execute({
                             "tool_name": approval.tool_name, "arguments": _gateway_action(action)[1],
                             "call_id": approval.call_id,
                         }, rejection=result["message"])
-                elif approval.tool_name != "review_drama_outline":
+                elif approval.tool_name not in {"review_drama_outline", 'review_finishing_preview'}:
                     aliases[_signature(approval.tool_name, _gateway_action(action)[1])].append(approval.call_id)
                 resume[interrupt_id]["decisions"].append(result)
         graph_input = Command(resume=resume)

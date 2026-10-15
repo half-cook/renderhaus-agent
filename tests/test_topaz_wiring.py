@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+import asyncio
 import json
 import os
+import shutil
+import subprocess
 import tempfile
 import unittest
 from pathlib import Path
@@ -11,7 +14,9 @@ from unittest.mock import patch
 from mcp import Tool
 
 from agent.deep_agent import routing
-from agent.deep_agent.runner import run_with_servers
+from agent.deep_agent.runner import SESSION_TYPE, run_with_servers
+from agent.deep_agent.finishing_preview import FinishingPreviewGate
+from agent.session_scope import conversation_scope
 from agent.gateway_executor import GatewayExecutor, tool_needs_approval
 from agent.studio_agent_next import (
     StudioAgentApprovalRequired, StudioAgentRequest, StudioApprovalDecision,
@@ -100,6 +105,7 @@ class TopazWiringTests(unittest.TestCase):
     def test_native_scale_and_fps_controls_cannot_weaken_selected_route(self):
         executor = object.__new__(GatewayExecutor)
         executor.studio = SimpleNamespace(prompt="upscale to 4K deliverable")
+        executor.finishing_previews = SimpleNamespace(blocker=lambda *_: None)
         route = routing.route_intent(executor.studio.prompt, arguments=ARGS)
         self.assertIsNotNone(executor.selection_blocker(UPSCALE, ARGS, route))
         self.assertIsNone(executor.selection_blocker(UPSCALE, {**ARGS, "target_resolution": "4K"}, route))
@@ -136,7 +142,219 @@ class TopazWiringTests(unittest.TestCase):
             self.assertEqual(_validate_video_delivery(request, studio), expected)
 
 
+def approved_finishing_fixture(request, args, directory, *, approve=True):
+    root = Path(directory)
+    paths = {"original": root / "original.mp4"}
+    subprocess.run(["ffmpeg", "-v", "error", "-f", "lavfi", "-i",
+                    f"color=c=red:s={args['source_width']}x{args['source_height']}:r=30:d=10",
+                    "-c:v", "libx264", "-preset", "ultrafast", "-pix_fmt", "yuv420p",
+                    str(paths["original"])], check=True)
+
+    def register(**kwargs):
+        version = f"version-{len(paths)}"
+        target = root / f"{version}.mp4"
+        shutil.copyfile(kwargs["result"]["output_path"], target)
+        paths[version] = target
+        return [{"version_id": version, "kind": "video"}]
+
+    studio = _context_from_request(request, source_resolver=lambda version: str(paths[version]),
+                                   asset_registrar=register)
+    studio.add_assets([{"version_id": "original", "kind": "video"}])
+    gate = FinishingPreviewGate(studio, scope=conversation_scope(request))
+    prepared = gate.prepare(UPSCALE, {**args, "video_url": "renderhaus-asset://original"})
+    if not prepared["ok"]:
+        raise AssertionError(prepared)
+    gate.claim_submission(UPSCALE, prepared["preview_arguments"], "preview")
+    gate.record_submission(UPSCALE, prepared["preview_arguments"], "preview",
+                           {"status": "queued", "job_id": "topaz:upscale:fixture"})
+    clip = paths[prepared["source_clip_version_id"]]
+    processed = root / "processed.mp4"
+    from providers.topaz.contracts import request_for
+
+    output = request_for("upscale_video", prepared["preview_arguments"])
+    subprocess.run(["ffmpeg", "-v", "error", "-i", str(clip), "-vf",
+                    f"scale={output.output_width}:{output.output_height}", "-c:v", "libx264",
+                    "-preset", "ultrafast", "-pix_fmt", "yuv420p", str(processed)], check=True)
+    result = {"status": "succeeded", "downloaded": True, "job_id": "topaz:upscale:fixture",
+              "output_path": str(processed)}
+    assets = register(result=result)
+    studio.add_assets(assets)
+    event = StudioToolEvent(id="fixture-poll", name="Topaz___get_video_task", label="Status",
+        summary="Saved", status="succeeded", provider_job_id=result["job_id"],
+        arguments={"job_id": result["job_id"], "download": True}, result=result, assets=assets)
+    studio.tool_events.append(event)
+    gate.observe(event)
+    if approve and gate.approve(prepared["preview_id"])["status"] != "approved":
+        raise AssertionError(gate.snapshot())
+    session = {"type": SESSION_TYPE, "version": 1, "scope": conversation_scope(request),
+               "finishing_previews": gate.snapshot(), "working_assets": studio.working_assets}
+    request.session_items.append(session)
+    studio.session_items = list(request.session_items)
+    return studio, prepared["full_arguments"]
+
+
 class TopazApprovalTests(unittest.IsolatedAsyncioTestCase):
+    async def test_approved_dispatch_cannot_bypass_preview_review(self):
+        request = StudioAgentRequest(prompt="upscale this clip", job_id="topaz-bypass")
+        studio = _context_from_request(request)
+        tools = json.loads(Path("configs/gateway/topaz.tools.json").read_text())
+        gateway = Gateway([Tool(name="Topaz___" + t["name"], description=t["description"],
+                               inputSchema=t["inputSchema"]) for t in tools],
+                          result={"status": "dry_run"})
+        executor = GatewayExecutor(studio, [gateway])
+        result = await executor.execute({"tool_name": UPSCALE, "arguments": ARGS,
+                                         "call_id": "bypass"}, approved=True)
+        self.assertEqual(result["status"], "not_run")
+        gateway.call_tool.assert_not_awaited()
+
+    async def test_native_preparation_uses_measured_clip_and_preserves_preview_cost_interrupt(self):
+        request = StudioAgentRequest(prompt="upscale this 10 second clip", autonomous=True,
+                                     job_id="native-preview")
+        tools = json.loads(Path("configs/gateway/topaz.tools.json").read_text())
+        gateway = Gateway([Tool(name="Topaz___" + t["name"], description=t["description"],
+                               inputSchema=t["inputSchema"]) for t in tools],
+                          result={"status": "queued", "job_id": "topaz:upscale:native-preview"})
+        with tempfile.TemporaryDirectory() as directory, patch.dict(os.environ, {
+                "RENDERHAUS_OUTCOME_DIR": directory, "RENDERHAUS_MEDIA_DIR": directory + "/media",
+                "RENDERHAUS_PREMIUM_VIDEO_APPROVAL": "false"}):
+            studio, args = approved_finishing_fixture(request, ARGS, directory)
+            request.session_items.clear()
+            studio.session_items.clear()
+            studio.tool_events.clear()
+            prepared = {}
+
+            def submit_preview(messages, available):
+                self.assertIn("prepare_finishing_preview", available)
+                prepared.update(json.loads(messages[-1].content))
+                self.assertTrue(prepared["ok"], prepared)
+                return call("call_media_tool", {"tool_name": UPSCALE,
+                    "arguments": prepared["preview_arguments"]}, "preview-submit")
+
+            with self.assertRaises(StudioAgentApprovalRequired) as paused:
+                await run_with_servers(request, studio, [gateway], model=ScriptedModel([
+                    call("read_file", {"file_path": "/skills/upscale/SKILL.md"}, "skill"),
+                    call("prepare_finishing_preview", {"tool_name": UPSCALE, "arguments": args}, "prepare"),
+                    submit_preview]))
+            approval = paused.exception.approvals[0]
+            self.assertEqual(approval.tool_name, UPSCALE)
+            self.assertLessEqual(approval.arguments["source_duration_seconds"], 3)
+            self.assertNotEqual(approval.arguments["video_url"], args["video_url"])
+            self.assertGreater(approval.estimated_cost["total_cents"], 0)
+            gateway.call_tool.assert_not_awaited()
+            resumed = request.model_copy(update={"session_items": studio.session_items,
+                "resume_state": paused.exception.state, "approval_decisions": [
+                    StudioApprovalDecision(call_id=approval.call_id, decision="approve")]})
+            resumed_studio = _context_from_request(resumed, source_resolver=studio.source_resolver,
+                                                   asset_registrar=studio.asset_registrar)
+            await run_with_servers(resumed, resumed_studio, [gateway], model=ScriptedModel([final()]))
+            gateway.call_tool.assert_awaited_once_with(UPSCALE, prepared["preview_arguments"])
+
+    async def test_native_review_has_host_comparison_and_rejection_blocks_full_job(self):
+        request = StudioAgentRequest(prompt="upscale this clip", autonomous=True, job_id="native-reject")
+        gateway = Gateway()
+        with tempfile.TemporaryDirectory() as directory, patch.dict(os.environ, {
+                "RENDERHAUS_OUTCOME_DIR": directory, "RENDERHAUS_MEDIA_DIR": directory + "/media"}):
+            studio, args = approved_finishing_fixture(request, ARGS, directory, approve=False)
+            record = next(iter(request.session_items[0]["finishing_previews"]["previews"].values()))
+            with self.assertRaises(StudioAgentApprovalRequired) as paused:
+                await run_with_servers(request, studio, [gateway], model=ScriptedModel([
+                    call("review_finishing_preview", {"preview_id": record["preview_id"],
+                        "comparison": {"before_version_id": "invented"}}, "review")]))
+            approval = paused.exception.approvals[0]
+            self.assertEqual(approval.tool_name, "review_finishing_preview")
+            self.assertEqual(approval.estimated_cost["total_cents"], 0)
+            self.assertIsNone(approval.provider)
+            self.assertEqual(approval.arguments["comparison"]["before_version_id"], record["source_clip_version_id"])
+            self.assertEqual(approval.arguments["comparison"]["after_version_id"], record["output_version_id"])
+            self.assertFalse(approval.arguments["comparison"]["covers_full_source"])
+            resumed = request.model_copy(update={"session_items": studio.session_items,
+                "resume_state": paused.exception.state, "approval_decisions": [
+                    StudioApprovalDecision(call_id=approval.call_id, decision="reject")]})
+            resumed_studio = _context_from_request(resumed, source_resolver=studio.source_resolver,
+                                                   asset_registrar=studio.asset_registrar)
+            await run_with_servers(resumed, resumed_studio, [gateway], model=ScriptedModel([
+                call("call_media_tool", {"tool_name": UPSCALE, "arguments": args}, "blocked-full"), final()]))
+            gate = resumed_studio.session_items[0]["finishing_previews"]["previews"][record["preview_id"]]
+            self.assertEqual(gate["status"], "rejected")
+            gateway.call_tool.assert_not_awaited()
+
+    async def test_native_review_approval_requires_a_separate_full_cost_approval(self):
+        request = StudioAgentRequest(prompt="upscale this clip", autonomous=True, job_id="native-accept")
+        tools = json.loads(Path("configs/gateway/topaz.tools.json").read_text())
+        gateway = Gateway([Tool(name="Topaz___" + t["name"], description=t["description"],
+                               inputSchema=t["inputSchema"]) for t in tools], result={"status": "dry_run"})
+        with tempfile.TemporaryDirectory() as directory, patch.dict(os.environ, {
+                "RENDERHAUS_OUTCOME_DIR": directory, "RENDERHAUS_MEDIA_DIR": directory + "/media"}):
+            studio, args = approved_finishing_fixture(request, ARGS, directory, approve=False)
+            preview_id = next(iter(request.session_items[0]["finishing_previews"]["previews"]))
+            with self.assertRaises(StudioAgentApprovalRequired) as reviewed:
+                await run_with_servers(request, studio, [gateway], model=ScriptedModel([
+                    call("review_finishing_preview", {"preview_id": preview_id}, "review")]))
+            review = reviewed.exception.approvals[0]
+            resume_review = request.model_copy(update={"session_items": studio.session_items,
+                "resume_state": reviewed.exception.state, "approval_decisions": [
+                    StudioApprovalDecision(call_id=review.call_id, decision="approve")]})
+            approved_studio = _context_from_request(resume_review, source_resolver=studio.source_resolver,
+                                                    asset_registrar=studio.asset_registrar)
+            with self.assertRaises(StudioAgentApprovalRequired) as full:
+                await run_with_servers(resume_review, approved_studio, [gateway], model=ScriptedModel([
+                    call("read_file", {"file_path": "/skills/upscale/SKILL.md"}, "skill"),
+                    call("call_media_tool", {"tool_name": UPSCALE, "arguments": args}, "full")]))
+            full_approval = full.exception.approvals[0]
+            self.assertEqual(full_approval.tool_name, UPSCALE)
+            self.assertEqual(full_approval.arguments, args)
+            self.assertGreater(full_approval.estimated_cost["total_cents"], 0)
+            gateway.call_tool.assert_not_awaited()
+            resume_full = resume_review.model_copy(update={"session_items": approved_studio.session_items,
+                "resume_state": full.exception.state, "approval_decisions": [
+                    StudioApprovalDecision(call_id=full_approval.call_id, decision="approve")]})
+            await run_with_servers(resume_full, _context_from_request(resume_full,
+                source_resolver=studio.source_resolver, asset_registrar=studio.asset_registrar),
+                [gateway], model=ScriptedModel([final()]))
+            gateway.call_tool.assert_awaited_once_with(UPSCALE, args)
+
+    async def test_review_resume_rechecks_the_actual_saved_result(self):
+        request = StudioAgentRequest(prompt="upscale this clip", autonomous=True, job_id="native-changed")
+        gateway = Gateway()
+        with tempfile.TemporaryDirectory() as directory, patch.dict(os.environ, {
+                "RENDERHAUS_OUTCOME_DIR": directory, "RENDERHAUS_MEDIA_DIR": directory + "/media"}):
+            studio, _ = approved_finishing_fixture(request, ARGS, directory, approve=False)
+            record = next(iter(request.session_items[0]["finishing_previews"]["previews"].values()))
+            with self.assertRaises(StudioAgentApprovalRequired) as paused:
+                await run_with_servers(request, studio, [gateway], model=ScriptedModel([
+                    call("review_finishing_preview", {"preview_id": record["preview_id"]}, "review")]))
+            path = Path(studio.source_resolver(record["output_version_id"]))
+            path.write_bytes(path.read_bytes() + b"changed")
+            approval = paused.exception.approvals[0]
+            resumed = request.model_copy(update={"session_items": studio.session_items,
+                "resume_state": paused.exception.state, "approval_decisions": [
+                    StudioApprovalDecision(call_id=approval.call_id, decision="approve")]})
+            with self.assertRaisesRegex(ValueError, "changed"):
+                await run_with_servers(resumed, _context_from_request(resumed,
+                    source_resolver=studio.source_resolver, asset_registrar=studio.asset_registrar),
+                    [gateway], model=ScriptedModel([final()]))
+            gateway.call_tool.assert_not_awaited()
+
+    async def test_concurrent_full_replays_leave_one_paid_request_and_one_reservation(self):
+        request = StudioAgentRequest(prompt="upscale this clip", autonomous=True, job_id="concurrent-finish")
+        tools = json.loads(Path("configs/gateway/topaz.tools.json").read_text())
+        gateway = Gateway([Tool(name="Topaz___" + t["name"], description=t["description"],
+                               inputSchema=t["inputSchema"]) for t in tools],
+                          result={"status": "queued", "job_id": "topaz:upscale:concurrent-full"})
+        with tempfile.TemporaryDirectory() as directory, patch.dict(os.environ, {
+                "RENDERHAUS_OUTCOME_DIR": directory, "RENDERHAUS_MEDIA_DIR": directory + "/media",
+                "RENDERHAUS_AUTONOMOUS_RUN_CAP_CENTS": "160"}):
+            studio, args = approved_finishing_fixture(request, ARGS, directory)
+            studio.run_meter = SimpleNamespace(check_step=lambda cents: None)
+            executor = GatewayExecutor(studio, [gateway], request.session_items[0],
+                                       finishing_scope=conversation_scope(request))
+            await asyncio.gather(*(executor.execute({"tool_name": UPSCALE, "arguments": args,
+                "call_id": call_id}, approved=True) for call_id in ("full-a", "full-b")))
+            gateway.call_tool.assert_awaited_once_with(UPSCALE, args)
+            self.assertEqual(len(executor.reservations), 1)
+            self.assertEqual(sum(executor.reservations.values()), 156)
+            self.assertFalse(executor.cap_stopped)
+
     async def test_manual_studio_invoke_cannot_bypass_finishing_approval(self):
         from fastapi import HTTPException
         from server import studio as studio_api
@@ -155,12 +373,13 @@ class TopazApprovalTests(unittest.IsolatedAsyncioTestCase):
     async def test_approved_native_interrupt_dispatches_exact_quoted_request_once(self):
         args = {**ARGS, "source_width": 1920, "source_height": 1080}
         request = StudioAgentRequest(prompt="upscale this clip to 1080p", autonomous=True, job_id="topaz-approved")
-        studio = _context_from_request(request)
         tools = json.loads(Path("configs/gateway/topaz.tools.json").read_text())
         gateway = Gateway([Tool(name="Topaz___" + t["name"], description=t["description"],
                                inputSchema=t["inputSchema"]) for t in tools], result={
                                    "status": "dry_run", "provider": "topaz", "model": "Starlight Precise 2.6"})
-        with tempfile.TemporaryDirectory() as directory, patch.dict(os.environ, {"RENDERHAUS_OUTCOME_DIR": directory}):
+        with tempfile.TemporaryDirectory() as directory, patch.dict(os.environ, {
+                "RENDERHAUS_OUTCOME_DIR": directory, "RENDERHAUS_MEDIA_DIR": directory + "/media"}):
+            studio, args = approved_finishing_fixture(request, args, directory)
             with self.assertRaises(StudioAgentApprovalRequired) as paused:
                 await run_with_servers(request, studio, [gateway], model=ScriptedModel([
                     call("read_file", {"file_path": "/skills/upscale/SKILL.md"}, "skill"),
@@ -171,7 +390,8 @@ class TopazApprovalTests(unittest.IsolatedAsyncioTestCase):
             resumed = request.model_copy(update={"session_items": studio.session_items,
                 "resume_state": paused.exception.state, "approval_decisions": [
                     StudioApprovalDecision(call_id=approval.call_id, decision="approve")]})
-            await run_with_servers(resumed, _context_from_request(resumed), [gateway], model=ScriptedModel([final()]))
+            await run_with_servers(resumed, _context_from_request(resumed, source_resolver=studio.source_resolver,
+                asset_registrar=studio.asset_registrar), [gateway], model=ScriptedModel([final()]))
             gateway.call_tool.assert_awaited_once_with(UPSCALE, args)
             rows = [json.loads(line) for line in (Path(directory) / "outcomes.jsonl").read_text().splitlines()]
             self.assertEqual((rows[-1]["provider"], rows[-1]["stage"], rows[-1]["outcome"]),
@@ -179,15 +399,16 @@ class TopazApprovalTests(unittest.IsolatedAsyncioTestCase):
 
     async def test_native_interrupt_has_cost_and_rejection_never_submits(self):
         request = StudioAgentRequest(prompt="upscale this clip", autonomous=True, job_id="topaz-approval")
-        studio = _context_from_request(request)
         tools = json.loads(Path("configs/gateway/topaz.tools.json").read_text())
         gateway = Gateway([Tool(name="Topaz___" + t["name"], description=t["description"],
                            inputSchema=t["inputSchema"]) for t in tools])
-        with tempfile.TemporaryDirectory() as directory, patch.dict(os.environ, {"RENDERHAUS_OUTCOME_DIR": directory}):
+        with tempfile.TemporaryDirectory() as directory, patch.dict(os.environ, {
+                "RENDERHAUS_OUTCOME_DIR": directory, "RENDERHAUS_MEDIA_DIR": directory + "/media"}):
+            studio, args = approved_finishing_fixture(request, ARGS, directory)
             with self.assertRaises(StudioAgentApprovalRequired) as paused:
                 await run_with_servers(request, studio, [gateway], model=ScriptedModel([
                     call("read_file", {"file_path": "/skills/upscale/SKILL.md"}, "skill"),
-                    call("call_media_tool", {"tool_name": UPSCALE, "arguments": ARGS}, "finish-video")]))
+                    call("call_media_tool", {"tool_name": UPSCALE, "arguments": args}, "finish-video")]))
             approval = paused.exception.approvals[0]
             self.assertIn("$1.56", approval.description)
             self.assertTrue(any("Starlight Precise 2.6" in e.message and "default" in e.message
@@ -196,7 +417,8 @@ class TopazApprovalTests(unittest.IsolatedAsyncioTestCase):
             resumed = request.model_copy(update={"session_items": studio.session_items,
                 "resume_state": paused.exception.state, "approval_decisions": [
                 StudioApprovalDecision(call_id=approval.call_id, decision="reject")]})
-            await run_with_servers(resumed, _context_from_request(resumed), [gateway], model=ScriptedModel([final()]))
+            await run_with_servers(resumed, _context_from_request(resumed, source_resolver=studio.source_resolver,
+                asset_registrar=studio.asset_registrar), [gateway], model=ScriptedModel([final()]))
             gateway.call_tool.assert_not_awaited()
             rows = [json.loads(line) for line in (Path(directory) / "outcomes.jsonl").read_text().splitlines()]
             self.assertEqual((rows[-1]["provider"], rows[-1]["stage"], rows[-1]["outcome"]),

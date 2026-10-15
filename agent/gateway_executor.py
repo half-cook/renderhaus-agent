@@ -23,6 +23,7 @@ from agent.deep_agent.routing import (
     Route,
 )
 from agent.deep_agent.outcomes import OutcomeStore
+from agent.deep_agent.finishing_preview import FinishingPreviewGate, FINISHING_TOOLS
 from agent.hyperframes import HYPERFRAMES_TOOL
 
 from agent.codex_harness import ToolApprovalPending
@@ -207,7 +208,8 @@ def tool_needs_approval(name: str, autonomous: bool, arguments: dict | None = No
 class GatewayExecutor:
     selection_constraints = None
 
-    def __init__(self, studio, servers, session=None, *, run_scope=None, selection_constraints=None):
+    def __init__(self, studio, servers, session=None, *, run_scope=None, selection_constraints=None,
+                 finishing_scope=None):
         self.studio = studio
         self.servers = servers
         self.run_scope = run_scope or studio.job_id
@@ -227,6 +229,8 @@ class GatewayExecutor:
         self.media_jobs = dict((session or {}).get("media_jobs") or {})
         self.rejected_reviews = dict((session or {}).get("rejected_reviews") or {})
         self.cost_ledger = dict((session or {}).get("cost_ledger") or {})
+        self.finishing_previews = FinishingPreviewGate(
+            studio, (session or {}).get("finishing_previews"), scope=finishing_scope)
         self.outcomes = OutcomeStore()
         for event in studio.tool_events:
             self.restore_media_review(self.media_jobs, event)
@@ -239,6 +243,8 @@ class GatewayExecutor:
         if session:
             studio.source_versions.update(session.get("source_versions") or {})
             studio.add_assets(list((session.get("working_assets") or {}).values()))
+        for event in studio.tool_events:
+            self.finishing_previews.observe(event)
 
     @classmethod
     def restore_media_review(cls, media_jobs, event):
@@ -265,6 +271,8 @@ class GatewayExecutor:
                 snapshot["media_jobs"] = dict(self.media_jobs)
                 snapshot["rejected_reviews"] = dict(self.rejected_reviews)
                 snapshot["cost_ledger"] = dict(self.cost_ledger)
+                snapshot["finishing_previews"] = self.finishing_previews.snapshot()
+                snapshot["working_assets"] = dict(self.studio.working_assets)
         spending = self.snapshot()["spending"]
         self.studio.session_items = [item for item in self.studio.session_items
                                      if item.get("type") != SPENDING_SESSION_TYPE] + [
@@ -342,6 +350,7 @@ class GatewayExecutor:
             "media_jobs": self.media_jobs,
             "rejected_reviews": self.rejected_reviews,
             "cost_ledger": dict(self.cost_ledger),
+            "finishing_previews": self.finishing_previews.snapshot(),
             "gateway_tools": [
                 tool.model_dump(by_alias=True, exclude_none=True)
                 for server in self.servers
@@ -409,6 +418,10 @@ class GatewayExecutor:
         if job == "tts" and constraints["predicates"]["cloned_voice"]:
             job = "cloned_tts"
         constraints = capability_constraints(constraints, job)
+        preview = self.finishing_previews.preview_for(name, arguments)
+        if preview and self.finishing_previews.blocker(name, arguments) is None:
+            constraints["required"]["duration_seconds"] = preview.clip.duration_seconds
+            constraints["predicates"]["duration_over_30s"] = False
         if (name == "Sync___lipsync_video" and route_intent(self.studio.prompt).skill == "dialogue-edit"
                 and any(event.result.get("status") == "requires_audio_fallback" for event in self.studio.tool_events)):
             constraints["predicates"]["presenter"] = False
@@ -695,6 +708,11 @@ class GatewayExecutor:
                 topaz_request = request_for(tool, arguments)
             except ValueError as exc:
                 return str(exc)
+            gate = getattr(self, "finishing_previews", None)
+            if gate is None:
+                return "Prepare and review an owned finishing preview before full finishing."
+            if blocker := gate.blocker(name, arguments):
+                return blocker
         if provider == "heygen" and tool in {"voice_clone", "voice_tts", "get_voice_status"}:
             from providers.heygen.voice_contracts import request_for
             from providers.heygen.voice import _read
@@ -880,6 +898,8 @@ class GatewayExecutor:
         )
         if previous:
             return previous.result
+        if reused := self.finishing_previews.replay(name, arguments):
+            return reused
         if name in LOCAL_MEDIA_TOOLS | LOGO_TOOLS and (
             not studio.job_id or arguments.get("job_id") != studio.job_id
         ):
@@ -913,6 +933,7 @@ class GatewayExecutor:
         if rejection is not None:
             output = {"status": "rejected", "message": rejection}
         else:
+            reserved_for_this_call = False
             free_dispatch = is_free_tool(name) or (
                 name == 'FootageMemory___footage_memory_build' and arguments.get('stage', 'estimate') == 'estimate')
             meter = getattr(studio, "run_meter", None)
@@ -923,6 +944,8 @@ class GatewayExecutor:
                 step_quote = estimate_cost(name, arguments)
                 if await asyncio.to_thread(meter.check_step, step_quote.total_cents):
                     return {"status": "not_run", "reason": PAUSED_MESSAGE}
+            if reused := self.finishing_previews.replay(name, arguments):
+                return reused
             if self.cap_cents is not None and not free_dispatch:
                 quote = estimate_cost(name, arguments)
                 spent = sum(self.reservations.values())
@@ -938,9 +961,19 @@ class GatewayExecutor:
                 if call_id in self.reservations:
                     return {"status": "not_run", "reason": "This paid call was already reserved; reconcile its saved job before retrying."}
                 self.reservations[call_id] = quote.total_cents
+                reserved_for_this_call = True
                 self.publish_spending()
             if route:
                 self.rejected_reviews.pop(route.job_type, None)
+            try:
+                self.finishing_previews.claim_submission(name, arguments, call_id)
+            except ValueError as exc:
+                if reserved_for_this_call:
+                    self.reservations.pop(call_id)
+                    self.publish_spending()
+                return {"status": "not_run", "reason": str(exc)}
+            if name in FINISHING_TOOLS:
+                self.publish_spending()
             if name in LOTTIE_TOOLS:
                 from providers.lottie.api import stage_owned_inputs
 
@@ -1091,6 +1124,9 @@ class GatewayExecutor:
                          if event.name in {"Remotion___render_timeline", "Remotion___render_composition"}}
             output = await asyncio.to_thread(stage_local_render, studio.job_id,
                                             _unwrap_tool_output(output), owned_ids)
+        if name in FINISHING_TOOLS:
+            self.finishing_previews.record_submission(name, arguments, call_id, _unwrap_tool_output(output))
+        output = self.finishing_previews.decorate_output(name, arguments, _unwrap_tool_output(output))
         saving_media = bool(studio.asset_registrar and _unwrap_tool_output(output).get("status") == "succeeded")
         if saving_media:
             _progress(studio, event_id=f"save-{call_id}", event_type="MEDIA_WAIT", title="Saving media",
@@ -1113,6 +1149,9 @@ class GatewayExecutor:
             _progress(studio, event_id=f"save-{call_id}", event_type="MEDIA_WAIT", title="Media saved",
                       message="Completed media saved to your project.", status="completed")
         completed = next(event for event in studio.tool_events if event.id == call_id)
+        await asyncio.to_thread(self.finishing_previews.observe, completed)
+        if name in FINISHING_TOOLS or name == 'Topaz___get_video_task':
+            self.publish_spending()
         if name != _GATEWAY_SEARCH_TOOL:
             provider, raw_tool = tool_parts(name)
             quote = estimate_cost(name, arguments, list_price=True)

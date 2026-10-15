@@ -1656,11 +1656,14 @@ def _validate_video_delivery(
                        "topaz_upscale": "Topaz___get_video_task",
                        "topaz_interpolate": "Topaz___get_video_task"}.get(delivery_alias)
     if not requires_assembly and standalone_poll:
+        from agent.deep_agent.finishing_preview import preview_delivery_valid
+
         if any(
             event.name == standalone_poll
             and event.status.lower() in {"succeeded", "success", "completed"}
             and event.result.get("status") == "succeeded"
             and event.result.get("downloaded") is True
+            and (standalone_poll != 'Topaz___get_video_task' or preview_delivery_valid(studio, event.result))
             and (not dialogue_requested or (event in current_events and dialogue_job
                  and (event.provider_job_id or event.arguments.get("job_id") or event.result.get("job_id")) == dialogue_job))
             and (delivery_alias != "mirelo_v2a" or (
