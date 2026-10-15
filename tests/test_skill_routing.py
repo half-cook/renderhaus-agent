@@ -62,6 +62,9 @@ def routing_case(case):
             self.assertEqual([list(group) for group in route.execution_groups], case["expected_execution_groups"])
         for key, value in case.get("expected_required", {}).items():
             self.assertEqual(route.required.get(key), value, key)
+        if case.get("expected_diagnosis"):
+            self.assertEqual(route.prompt_diagnosis["key"], case["expected_diagnosis"])
+            self.assertIsNone(route.dispatch_tool)
         for alias, limit in parse_max_calls(case.get("max_calls")).items():
             planned = [step.alias for step in steps if step.alias == alias]
             if route.status != "ready":
@@ -194,10 +197,10 @@ class SkillContracts(unittest.TestCase):
         )
 
     def test_fixture_preserves_active_workbook_rows_and_explains_pending_dependencies(self):
-        self.assertEqual(len(CASES), 313)
+        self.assertEqual(len(CASES), 318)
         ids = [case["test_id"] for case in CASES if case.get("test_id")]
         self.assertEqual(len(ids), len(set(ids)), "Routing fixture IDs must be unique.")
-        self.assertEqual(sum(not c["skip_reason"] for c in CASES), 307)
+        self.assertEqual(sum(not c["skip_reason"] for c in CASES), 312)
         self.assertEqual(sum(bool(c["skip_reason"]) for c in CASES), 6)
         self.assertTrue(all(c.get("source_status") != "archived" for c in CASES))
         self.assertTrue(all("[project.confidential=true]" not in c["prompt"] for c in CASES))

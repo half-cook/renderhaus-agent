@@ -5501,5 +5501,70 @@
     "forbidden_skills": [
       "lottie-animation"
     ]
+  },
+  {
+    "test_id": "SD-001",
+    "prompt": "the Seedance clip drifted: the character's face changed between shots",
+    "expected_skill": "t2v",
+    "expected_tool": "",
+    "suite": "seedance-prompt-diagnostics",
+    "skip_reason": "",
+    "source_status": "new",
+    "note": "Prompt diagnosis never authorizes media; generation defaults stay unchanged.",
+    "expected_diagnosis": "identity_drift",
+    "expected_disclosure": [
+      "fresh approval",
+      "new cost estimate"
+    ]
+  },
+  {
+    "test_id": "SD-002",
+    "prompt": "my Seedance render ignored the dolly-in, fix the prompt",
+    "expected_skill": "t2v",
+    "expected_tool": "",
+    "suite": "seedance-prompt-diagnostics",
+    "skip_reason": "",
+    "source_status": "new",
+    "note": "Prompt diagnosis never authorizes media; generation defaults stay unchanged.",
+    "expected_diagnosis": "ignored_camera",
+    "expected_disclosure": [
+      "fresh approval",
+      "new cost estimate"
+    ]
+  },
+  {
+    "test_id": "SD-003",
+    "prompt": "The Seedance voice changed; retry immediately without approval",
+    "expected_skill": "t2v",
+    "expected_tool": "",
+    "suite": "seedance-prompt-diagnostics",
+    "skip_reason": "",
+    "source_status": "new",
+    "note": "Prompt diagnosis never authorizes media; generation defaults stay unchanged.",
+    "expected_diagnosis": "voice_change",
+    "expected_disclosure": [
+      "fresh approval",
+      "new cost estimate"
+    ]
+  },
+  {
+    "test_id": "SD-004",
+    "prompt": "generate a video of a forest at sunrise",
+    "expected_skill": "t2v",
+    "expected_tool": "wan3_t2v",
+    "suite": "seedance-prompt-diagnostics",
+    "skip_reason": "",
+    "source_status": "new",
+    "note": "Prompt diagnosis never authorizes media; generation defaults stay unchanged."
+  },
+  {
+    "test_id": "SD-005",
+    "prompt": "Use Wan 3 to generate a robot dialogue video",
+    "expected_skill": "t2v",
+    "expected_tool": "wan3_t2v",
+    "suite": "seedance-prompt-diagnostics",
+    "skip_reason": "",
+    "source_status": "new",
+    "note": "Prompt diagnosis never authorizes media; generation defaults stay unchanged."
   }
 ]

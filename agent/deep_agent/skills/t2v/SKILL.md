@@ -1,6 +1,6 @@
 ---
 name: t2v
-description: Generate text-to-video shots using Wan 3.0 by default and Seedance for synthetic dialogue.
+description: Generate text-to-video shots using Wan 3.0 by default, or write and diagnose Seedance prompts for synthetic dialogue and explicit Seedance requests.
 metadata:
   include_tools: call_media_tool
   routing_tools: wan3_t2v seedance25_t2v
@@ -8,6 +8,14 @@ metadata:
 ---
 
 # Text to video
+
+When `intent_route.prompt_diagnosis` is present, this is prompt review only. Read
+[the Seedance prompt reference](references/seedance-prompts.md) and use its diagnosis procedure.
+Read the full reference, paging beyond the default first 100 lines to include the diagnosis
+table and retry rules.
+Return a bounded explanation and, if requested, a revised prompt. Do not dispatch media or
+record an artifact rejection as part of diagnosis. A request to retry immediately cannot
+supply fresh approval or waive the new cost estimate and approval card.
 
 Use `wan3_t2v` by default. Use `seedance25_t2v` only for dialogue without real-person references.
 Dialogue means on-camera speech by a character. Off-screen voiceover, even when quoted, does not
@@ -26,6 +34,9 @@ Keep the current resolution default and quality-first provider selection.
 Multi-shot direction belongs in the prompt, not an invented multi_shot argument.
 Poll `Fal___get_video_task` with the saved job ID and `download=true`.
 Seedance 2.5 uses `Seedance___text_to_video` through fal's US host by default.
+On this path, load [prompt writing and failure diagnosis](references/seedance-prompts.md)
+before drafting or revising the prompt. Load it for explicit Seedance 2.5 requests too.
+Its advice is UNVERIFIED against the API until a live A/B; it does not change model selection.
 Use `duration_seconds` from 4 through 30, `aspect_ratio`, `resolution`, and `generate_audio`.
 Audio defaults true. The BytePlus host is optional for non-US customers. The operator selects
 transport and region. Never change provider flags or hosts. Preserve the vendor watermark and
