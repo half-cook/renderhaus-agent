@@ -2568,6 +2568,15 @@
   },
   "rules": [
     {
+      "skill": "series-video-planner",
+      "pattern": "\\bseries[ -]video[ -]planner\\b|(?=[^.;!?\\n]*\\b(?:non[ -]?fiction|explainers?|educational|science|course|articles?|topics?|tutorials?|documentary|lessons?)\\b)\\b(?:plan|draft|outline|design|develop|split|divide|break|turn|convert|make|create|produce|generate|build)\\b[^.;!?\\n]{0,180}\\b(?:multi[ -]episode|episodic|(?:[2-9]|[1-9]\\d+)[ -](?:parts?|episodes?)|(?:two|three|four|five|six|seven|eight|nine|ten)[ -](?:parts?|episodes?)|series|playlist|anthology|episodes)\\b|(?=[\\s\\S]*(?:\u79d1\u666e|\u77e5\u8bc6|\u8bfe\u7a0b|\u957f\u6587|\u4e07\u5b57|\u4e3b\u9898))(?:\u628a|\u62c6|\u5206\u6210|\u89c4\u5212|\u5236\u4f5c|\u505a|\u521b\u5efa)[^\u3002\uff01\uff1f\\n]{0,180}(?:\u7cfb\u5217|\u5408\u96c6|\u5206\u96c6|\u591a\u96c6|[\u4e8c\u4e09\u56db\u4e94\u516d\u4e03\u516b\u4e5d\u5341]+\u96c6)",
+      "exclude_pattern": "\\b(?:short[ -]drama|micro[ -]?dramas?|drama|fiction(?:al)?|novels?)\\b|\u77ed\u5267|\u6f2b\u5267|\u5c0f\u8bf4|\u865a\u6784",
+      "abstract_tool": null,
+      "single_episode_pattern": "\\b(?:plan|draft|outline|make|create|produce|generate|render|animate)\\s+(?:(?:just|only|a|an|the)\\s+)*(?:1|one|single)[ -]+(?:[\\w-]+\\s+){0,4}(?:episode|part|explainer|video)\\b|\\bepisode\\s+(?:\\d+|one|two|three)\\b|\\b(?:first|next|second|third)\\s+episode\\b",
+      "subject_pattern": "\\b(?:about|on|regarding)\\b",
+      "explicit_fiction_pattern": "\\b(?:use|using)\\s+(?:the\\s+)?short[ -]drama[ -]series\\b|(?<!not )\\b(?:as|into)\\b[^.;!?\\n]{0,80}\\b(?:fiction(?:al)?|drama|micro[ -]?dramas?|short[ -]drama)\\b"
+    },
+    {
       "skill": "codebase-video",
       "pattern": "\\bcodebase[ -]video\\b|(?=[^.;!?\\n]*\\b(?:repo(?:sitory)?|codebase)\\b)(?=[^.;!?\\n]*\\b(?:videos?|walkthrough|tour|mp4)\\b)[^.;!?\\n]*\\b(?:onboarding|teach(?:ing)?|tutorial|explain(?:ing)?|architecture|request[ -]flow|how[^.;!?\\n]{0,60}works|progress|what (?:changed|shipped)|since)\\b",
       "abstract_tool": "remotion_render",

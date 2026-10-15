@@ -64,7 +64,7 @@ RT-191 and RT-192 were named in the supplied radar handoff but were absent from 
 original fixture and supplied capability-map CSV. The new prompts were authored
 from the draft skill, with provenance recorded on each row. They are active routing
 checks, not evidence that a video was generated. The six existing dependency skips
-remain. Inventory is 21 providers, 140 tools, 43 skills, 344 rows and 338 active rows.
+remain. Inventory is 21 providers, 140 tools, 44 skills, 346 rows and 340 active rows.
 
 Focused offline checks run with:
 

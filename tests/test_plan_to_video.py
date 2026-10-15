@@ -42,7 +42,12 @@ class PlanReviewRoutingTests(unittest.TestCase):
         for prompt in ["review this plan as a video with Remotion, not HyperFrames",
                        "review this plan as a video without HyperFrames",
                        "review this plan as a video; do not use HyperFrames",
-                       "review this plan as a video; do not use any HyperFrames"]:
+                       "review this plan as a video; do not use any HyperFrames",
+                       "Do not use HyperFrames, turn this plan.md into a narrated review video.",
+                       "Do not use any HyperFrames, turn this plan.md into a narrated review video.",
+                       "Do not use HyperFrames when you turn this plan.md into a narrated review video.",
+                       "Avoid fancy transitions when you turn this plan.md into a narrated review video.",
+                       "Avoid using HyperFrames for this plan review video."]:
             with self.subTest(prompt=prompt), patch.dict(os.environ, {"HYPERFRAMES_ENABLED": "false"}):
                 route = route_intent(prompt)
                 self.assertEqual((route.skill, route.alias, route.status),
@@ -91,8 +96,13 @@ class PlanReviewRoutingTests(unittest.TestCase):
                                     "plan-to-video")
 
     def test_negated_plan_review_does_not_override_actual_video_request(self):
-        route = route_intent("Do not make a plan review video. Make a video of a forest.")
-        self.assertNotEqual(route.skill, "plan-to-video")
+        for prompt in [
+            "Do not make a plan review video. Make a video of a forest.",
+            "Do not make a flashy, narrated plan review video. Make a video of a forest.",
+            "Do not make a plan review video, a plan explainer, or a review reel; make a video of a forest.",
+        ]:
+            with self.subTest(prompt=prompt):
+                self.assertNotEqual(route_intent(prompt).skill, "plan-to-video")
         route = route_intent("Do not make a video of a forest. Review this plan as a video.")
         self.assertEqual((route.skill, route.alias), ("plan-to-video", "remotion_render"))
 
