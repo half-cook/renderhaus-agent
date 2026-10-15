@@ -39,6 +39,8 @@ function Workspace() {
   const addUploadNode = useCanvasStore((state) => state.addUploadNode);
   const uploadError = useCanvasStore((state) => state.uploadError);
   const dismissUploadError = useCanvasStore((state) => state.dismissUploadError);
+  const retryUpload = useCanvasStore((state) => state.retryUpload);
+  const uploadProgress = useCanvasStore((state) => state.uploadProgress);
   const undo = useCanvasStore((state) => state.undo);
   const redo = useCanvasStore((state) => state.redo);
   const setActiveTool = useCanvasStore((state) => state.setActiveTool);
@@ -230,7 +232,7 @@ function Workspace() {
         Skip to {agentOpen ? "agent" : "canvas"}
       </a>
       <CanvasHeader navigationBusy={agentBusy} onBusyChange={setAgentBusy} />
-      <UploadError message={uploadError} onDismiss={dismissUploadError} />
+      <UploadError message={uploadError} onDismiss={dismissUploadError} progress={uploadProgress} onRetry={retryUpload ? () => void retryUpload() : null} />
       <div className="canvas-surface" hidden={agentOpen || timelineOpen || compareN !== null}>
       <SceneList />
       <ToolRail

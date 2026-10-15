@@ -125,7 +125,7 @@ test("upload alert renders the message and can be dismissed", () => {
   assert.match(markup, /role="alert"/);
   assert.match(markup, /File is larger than 15 MB\./);
   const children = tree.props.children;
-  children.find((child) => child.type === "button").props.onClick();
+  children.find((child) => child && child.type === "button" && child.props["aria-label"] === "Dismiss upload error").props.onClick();
   assert.equal(dismissed, true);
   assert.equal(UploadError({ message: null, onDismiss: () => {} }), null);
 });
