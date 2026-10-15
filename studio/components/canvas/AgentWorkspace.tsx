@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { fetchStudioConversations, type StudioConversation } from "@/lib/api";
 import { useCanvasStore } from "@/lib/canvas/store";
 import { AssetMedia } from "./AssetMedia";
+import { StudioStage } from "./StudioStage";
 import { AgentDock } from "./AgentDock";
 import { BetaCreditCard } from "@/components/rh/BetaCreditCard";
 import { safeCopy, workLabel } from "@/lib/rh/billing";
@@ -33,8 +34,9 @@ export function AgentWorkspace({ busy, onBusyChange }: { busy: boolean; onBusyCh
   const [query, setQuery] = useState("");
   const [section, setSection] = useState<Section>(null);
   const [taskCache, setTaskCache] = useState<Record<string, StudioConversation[]>>({});
-  const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [reviewOpen, setReviewOpen] = useState(true);
+  // v4: projects sidebar and review panel start closed; their toggles show on hover.
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [reviewOpen, setReviewOpen] = useState(false);
   const [suggestion, setSuggestion] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
@@ -47,7 +49,7 @@ export function AgentWorkspace({ busy, onBusyChange }: { busy: boolean; onBusyCh
   }, [open, section, reviewOpen]);
   useEffect(() => {
     const narrow = window.matchMedia("(max-width: 800px)");
-    const adapt = () => { setSidebarOpen(!narrow.matches); setReviewOpen(!narrow.matches); };
+    const adapt = () => { if (narrow.matches) { setSidebarOpen(false); setReviewOpen(false); } };
     adapt();
     narrow.addEventListener("change", adapt);
     return () => narrow.removeEventListener("change", adapt);
@@ -80,10 +82,10 @@ export function AgentWorkspace({ busy, onBusyChange }: { busy: boolean; onBusyCh
   const mediaNodes = nodes.filter((node) => node.data.output);
   const memoryNodes = nodes.filter((node) => node.data.kind === "text");
 
-  return <div className={`${styles.workspace} rh-agent-workspace ${sidebarOpen ? "" : styles.noSidebar} ${reviewOpen ? "" : styles.noReview}`} hidden={!open || comparing}>
+  return <div className={`${styles.workspace} rh-agent-workspace ${sidebarOpen ? "" : styles.noSidebar} ${reviewOpen ? "" : "rh-v4-stage-open"}`} hidden={!open || comparing} data-sidebar={sidebarOpen ? "open" : "closed"} data-review={reviewOpen ? "open" : "closed"}>
     <div className={`${styles.toolbar} rh-agent-toolbar`}>
       <button type="button" aria-label="Toggle projects sidebar" aria-expanded={sidebarOpen} onClick={() => { setSidebarOpen(!sidebarOpen); if (window.innerWidth <= 800) setReviewOpen(false); }}><PanelLeft size={16} /></button>
-      <span>Agent workspace</span>
+      <span>{projects.find((p) => p.id === projectId)?.name ?? "Studio"}</span>
       <button type="button" aria-label="Toggle review panel" aria-expanded={reviewOpen} onClick={() => { setReviewOpen(!reviewOpen); if (window.innerWidth <= 800) setSidebarOpen(false); }}><PanelRight size={16} /></button>
     </div>
     <aside className={`${styles.sidebar} rh-agent-sidebar`} aria-label="Projects and tasks" hidden={!sidebarOpen}>
@@ -126,6 +128,7 @@ export function AgentWorkspace({ busy, onBusyChange }: { busy: boolean; onBusyCh
       <input ref={fileInput} type="file" hidden accept="image/*,video/*,audio/*" onChange={(e) => { const file = e.target.files?.[0]; e.target.value = ""; if (file) void navigate(() => useCanvasStore.getState().addUploadNode(file, { x: 80 + nodes.length * 40, y: 80 })); }} />
       <div className={`${styles.dockHost} rh-agent-dock-host`} hidden={section !== null}><AgentDock navigationBusy={busy} onBusyChange={onBusyChange} suggestion={suggestion} onSuggestionUsed={clearSuggestion} onAttach={() => fileInput.current?.click()} /></div>
     </main>
+    {reviewOpen ? null : <StudioStage onOpenReview={() => setReviewOpen(true)} />}
     <div className={`${styles.review} rh-agent-review`} hidden={!reviewOpen}><AgentReviewPanel /></div>
   </div>;
 }

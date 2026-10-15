@@ -611,6 +611,8 @@ export function AgentDock({ navigationBusy: externalBusy, onBusyChange, suggesti
   const executions = useCanvasStore((state) => state.executions);
   const conversations = useCanvasStore((state) => state.conversations);
   const conversationId = useCanvasStore((state) => state.conversationId);
+  const [showEarlier, setShowEarlier] = useState(false);
+  useEffect(() => setShowEarlier(false), [conversationId]);
   const agentMessage = useCanvasStore((state) => state.agentMessage);
   const agentOpen = useCanvasStore((state) => state.agentOpen);
   const setAgentMessage = useCanvasStore((state) => state.setAgentMessage);
@@ -1040,7 +1042,16 @@ export function AgentDock({ navigationBusy: externalBusy, onBusyChange, suggesti
             {!conversationId ? <button type="button" className="agent-conversation-action" disabled={externalBusy || navigationBusy} onClick={() => void changeTask(createAgentConversation)}>Start a task</button> : null}
           </div>
         ) : null}
-        {conversationExecutions.filter((execution) => execution.jobId !== liveRun?.progress.jobId).map((execution) => (
+        {(() => {
+          const past = conversationExecutions.filter((execution) => execution.jobId !== liveRun?.progress.jobId);
+          const hidden = showEarlier ? 0 : Math.max(0, past.length - (liveRun ? 0 : 1));
+          return hidden > 0 ? (
+            <button type="button" className="rh-earlier" data-shot="earlier-messages" onClick={() => setShowEarlier(true)}>
+              {hidden} earlier {hidden === 1 ? "message" : "messages"}
+            </button>
+          ) : null;
+        })()}
+        {conversationExecutions.filter((execution) => execution.jobId !== liveRun?.progress.jobId).filter((_, i, past) => showEarlier || i >= past.length - (liveRun ? 0 : 1)).map((execution) => (
           <ExecutionTurn
             key={execution.jobId}
             execution={execution}
