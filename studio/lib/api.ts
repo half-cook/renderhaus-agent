@@ -362,7 +362,7 @@ export type AgentQuestionRequest = {
   callId: string;
   question: string;
   reason: "cost_difference" | "irreversible_outcome";
-  options: Array<{ id: string; label: string; description: string }>;
+  options: Array<{ id: string; label: string; description: string; estimateCents?: number }>;
   allowFreeText: boolean;
   decision?: "answer";
   answer?: QuestionAnswer;
@@ -406,15 +406,19 @@ function agentApprovals(value: unknown): AgentPendingRequest[] {
     const callId = item.call_id;
     if (typeof callId !== "string" || !callId) return [];
     if (item.kind === "question") {
-      if (item.reason !== "cost_difference" && item.reason !== "irreversible_outcome") return [];
+      // An unknown reason must not hide the question: a hidden question leaves the run stuck.
       const options = Array.isArray(item.options) ? item.options.flatMap((value) => {
         const option = billingRecord(value);
         if (!option || typeof option.id !== "string" || typeof option.label !== "string") return [];
-        return [{ id: option.id, label: safeCopy(option.label, "Option"), description: safeCopy(option.description, "") }];
+        const estimate = option.estimate_cents;
+        return [{
+          id: option.id, label: safeCopy(option.label, "Option"), description: safeCopy(option.description, ""),
+          ...(typeof estimate === "number" && Number.isSafeInteger(estimate) && estimate >= 0 ? { estimateCents: estimate } : {}),
+        }];
       }) : [];
       return [{
         kind: "question", callId, question: safeCopy(item.question, "Which outcome should I use?"),
-        reason: item.reason, options, allowFreeText: item.allow_free_text === true,
+        reason: item.reason === "irreversible_outcome" ? "irreversible_outcome" : "cost_difference", options, allowFreeText: item.allow_free_text === true,
         decision: item.decision === "answer" ? "answer" : undefined,
         answer: questionAnswer(item.answer),
       }];

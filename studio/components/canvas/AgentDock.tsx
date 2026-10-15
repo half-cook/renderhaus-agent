@@ -49,6 +49,8 @@ import type { StudioAsset } from "@/lib/types";
 import { AssetDownloadLink, AssetMedia } from "./AssetMedia";
 import { ApprovalCard } from "@/components/rh/ApprovalCard";
 import { QuestionCard } from "@/components/rh/QuestionCard";
+import { PauseChatMessage } from "@/components/rh/PauseChatMessage";
+import { pauseCardsEnabled, stuckPauseMessage } from "@/lib/rh/pause-fallback";
 import { RunReceipt } from "@/components/rh/RunBilling";
 import { approvalCardModel, visibleParameters } from "@/lib/rh/approval-model";
 import { toRunReceiptModel, toApprovalCardModel } from "@/lib/rh/billing";
@@ -207,8 +209,11 @@ function ApprovalCards({
   return (
     <div className="agent-approvals" aria-label="Questions and approvals">
       {approvals.map((approval) => {
-        if (approval.kind === "question") return <QuestionCard key={approval.callId} question={approval}
-          active={active} busy={disabled || busyCallId !== null} onAnswer={(answer) => onAnswer(approval, answer)} />;
+        if (approval.kind === "question") {
+          const Question = pauseCardsEnabled() ? QuestionCard : PauseChatMessage;
+          return <Question key={approval.callId} question={approval}
+            active={active} busy={disabled || busyCallId !== null} onAnswer={(answer) => onAnswer(approval, answer)} />;
+        }
         const model = approvalCardModel(approval);
         if (model && active && approval.decision !== "reject") {
           return <PricedApproval key={approval.callId} approval={approval} model={model} busy={disabled || busyCallId !== null} onDecision={onDecision} />;
@@ -457,6 +462,10 @@ function ExecutionTurn({
           onDecision={(approval, decision, capCents) => onApproval(execution, approval, decision, capCents)}
           onAnswer={(question, answer) => onQuestion(execution, question, answer)}
         />
+        {(() => {
+          const stuck = stuckPauseMessage(execution.status, execution.approvals, Boolean(execution.pausedCap));
+          return stuck ? <p className="agent-response-summary" role="status">{stuck}</p> : null;
+        })()}
         <RunBillingBlocks execution={execution} disabled={actionsDisabled} onCap={onCap} />
         {execution.title ? <h3 className="agent-result-title">{execution.title}</h3> : null}
         {execution.summary ? <p className="agent-response-summary">{execution.summary}</p> : null}
