@@ -194,11 +194,7 @@ html[data-theme="light"] {
 .rh-agent-workspace.rh-v4-stage-open[data-sidebar="open"] { grid-template-columns: 232px minmax(300px, 340px) minmax(0, 1fr); column-gap: 28px; }
 .rh-agent-workspace { background: radial-gradient(60% 50% at 72% 38%, rgba(227,181,92,.07), transparent 70%), var(--v4-l0); }
 /* Chrome hides until hover or keyboard focus (Linear move). */
-.rh-agent-toolbar { border-bottom: 0 !important; opacity: 0; transition: opacity 120ms var(--v4-ease); }
-.rh-agent-workspace:hover .rh-agent-toolbar, .rh-agent-toolbar:focus-within { opacity: 1; }
 .rh-agent-sidebar { border-right: 0 !important; background: var(--v4-l1) !important; }
-.rh-agent-dock .agent-dock-head { opacity: .0; transition: opacity 120ms var(--v4-ease); border-bottom: 0; }
-.rh-agent-dock:hover .agent-dock-head, .rh-agent-dock .agent-dock-head:focus-within { opacity: 1; }
 .rh-earlier { align-self: center; margin: 4px auto 8px; padding: 2px 10px; border: 0; border-radius: var(--radius-pill); background: transparent; color: var(--rh-fg-3); font: 400 11.5px var(--font-geist), sans-serif; cursor: pointer; }
 .rh-earlier:hover { color: var(--rh-fg); background: rgba(242,238,230,.06); }
 .rh-hover-only { opacity: 0; transition: opacity 120ms var(--v4-ease); }
@@ -223,6 +219,57 @@ html[data-theme="light"] {
 .rh-strip-empty { flex: 1; border-radius: 12px; background: var(--v4-l1); }
 @media (max-width: 800px) { .rh-agent-workspace.rh-v4-stage-open[data-sidebar] { grid-template-columns: 1fr; } .rh-stage { display: none; } }
 @media (prefers-reduced-motion: reduce) { .rh-strip-clip, .rh-strip .rh-strip-clip:hover { transform: none; transition: none; } }
-.rh-canvas-header { border-bottom: 0 !important; }
-.rh-canvas-header .workspace-tabs { opacity: 0; transition: opacity 120ms var(--v4-ease); }
-.rh-canvas-header:hover .workspace-tabs, .rh-canvas-header .workspace-tabs:focus-within { opacity: 1; }
+
+/* Sign-up cinema (06): full-bleed shot, form overlaid --------------------------------------- */
+.rh-signup-cinema { position: relative; display: block; min-height: 100vh; min-height: 100svh; }
+.rh-signup-bleed { position: absolute; inset: 0; background:
+  linear-gradient(90deg, rgba(11,10,9,.15) 0%, rgba(11,10,9,.55) 42%, rgba(11,10,9,.92) 68%, #0B0A09 100%),
+  url(/beta/still-mug.jpg) center/cover no-repeat; z-index: 0; }
+.rh-signup-cinema .rh-signup-brand { position: absolute; top: 16px; left: 32px; z-index: 2; color: #F2EEE6; text-decoration: none; }
+.rh-signup-cinema .rh-signup-caption { position: absolute; left: 32px; bottom: 40px; z-index: 2; max-width: 360px; margin: 0;
+  font-family: var(--font-serif); font-size: 24px; line-height: 1.2; letter-spacing: -.01em; color: #F2EEE6; }
+.rh-signup-cinema .rh-signup-pane { position: relative; z-index: 1; min-height: 100vh; min-height: 100svh; display: flex; align-items: center; justify-content: flex-end; padding: 64px 8% 64px 0; }
+.rh-signup-cinema .rh-form-v4 { position: relative; padding: 28px 32px; border-radius: var(--radius-xl); background: rgba(11,10,9,.72); -webkit-backdrop-filter: blur(20px) saturate(1.2); backdrop-filter: blur(20px) saturate(1.2); box-shadow: var(--v4-e3); }
+.rh-signup-cinema .rh-form-v4 .rh-sample { position: absolute; top: -18px; right: 24px; }
+.rh-signup-cinema .rh-btn-block { display: inline-flex; align-items: center; gap: 8px; }
+@media (max-width: 860px) {
+  .rh-signup-cinema .rh-signup-caption { display: none; }
+  .rh-signup-cinema .rh-signup-pane { justify-content: center; padding: 80px 20px 40px; }
+}
+
+/* Landing mobile: keep the full-bleed shot (not a flat dark fill) --------------------------- */
+@media (max-width: 860px) {
+  .rh-bleed-media { display: block !important; opacity: 1; }
+  .rh-bleed { background: #0B0A09; }
+}
+
+/* Proposed look PiP on the stage ----------------------------------------------------------- */
+.rh-proposed { position: absolute; top: 14px; right: 14px; width: 148px; border-radius: var(--radius-md); overflow: hidden; outline: 2px solid var(--rh-accent); outline-offset: 2px; box-shadow: var(--v4-e2); background: #0B0A09; }
+.rh-proposed img { display: block; width: 100%; aspect-ratio: 16/9; object-fit: cover; }
+.rh-proposed span { display: block; padding: 5px 8px; font-size: 11px; color: #F2EEE6; background: rgba(11,10,9,.72); }
+
+/* Live "Shooting…" overlay ----------------------------------------------------------------- */
+.rh-shooting { position: absolute; left: 24px; bottom: 20px; display: flex; flex-direction: column; gap: 4px; color: #F2EEE6; text-shadow: 0 1px 12px rgba(0,0,0,.5); }
+.rh-shooting-title { font-family: var(--font-serif); font-size: 44px; line-height: 1; letter-spacing: -.015em; }
+.rh-shooting-meta { font-size: 12.5px; color: rgba(242,238,230,.72); }
+.rh-stage-frame[data-shooting] .rh-stage-media { filter: saturate(.9) brightness(.92); }
+
+/* Quiet receipt ---------------------------------------------------------------------------- */
+.rh-receipt-v4 .rh-appr-hd { display: none; }
+.rh-receipt-strip { display: flex; gap: 3px; padding: 14px 14px 0; }
+.rh-receipt-strip i { flex: 1; height: 36px; border-radius: 8px; background: center/cover; }
+
+/* Trace step costs + live frames + stop ---------------------------------------------------- */
+.rh-trace-step-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+.rh-trace-step-row { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; }
+.rh-trace-step-cost { font-weight: 500; color: var(--rh-money); font-size: 12.5px; }
+.rh-trace-frames { display: flex; gap: 3px; margin-top: 6px; }
+.rh-trace-frames i { width: 44px; height: 28px; border-radius: 6px; background: center/cover; opacity: .85; }
+.rh-trace-stop { list-style: none; padding: 8px 0 0; border: 0; }
+.rh-trace-stop .rh-btn { width: 100%; justify-content: flex-start; color: var(--rh-fg-3); font-size: 12px; }
+.rh-trace-cost { color: var(--rh-money); }
+
+/* Landing mobile: force media visible under the shade -------------------------------------- */
+@media (max-width: 860px) {
+  .rh-bleed-media { position: absolute !important; inset: 0 !important; width: 100% !important; height: 100% !important; object-fit: cover !important; z-index: -2 !important; display: block !important; }
+}

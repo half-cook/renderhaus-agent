@@ -1,37 +1,42 @@
 "use client";
 
 /* Revamp v4 review board (sample data, noindex via /launch-review). Composes the real components
-   (agent trace, approval card, receipt) inside the v4 Studio frame so the screens can be checked
-   without a backend. Not a live run. */
+   inside the v4 Studio frame so screens can be checked without a backend. Not a live run. */
 import { IntermediateSteps } from "@/components/canvas/AgentDock";
 import { ApprovalCard } from "@/components/rh/ApprovalCard";
 import { RunReceipt } from "@/components/rh/RunBilling";
 import type { AgentProgressEvent, AgentToolEvent } from "@/lib/canvas/types";
 import type { ApprovalCardModel, RunReceiptModel } from "@/lib/rh/billing";
 
-const tool = (id: string, label: string, status: string, summary = ""): AgentToolEvent =>
-  ({ id, name: id, label, status, summary, arguments: {}, assets: [] }) as AgentToolEvent;
+const tool = (id: string, label: string, status: string, summary = "", cost?: string): AgentToolEvent & { costLabel?: string } =>
+  ({ id, name: id, label, status, summary, arguments: {}, assets: [], costLabel: cost }) as AgentToolEvent & { costLabel?: string };
 
 const STEPS_DONE = [
-  tool("t1", "Planned the change", "completed"),
-  tool("t2", "Approved by you", "completed"),
-  tool("t3", "Shooting a warmer take of Shot 2", "completed", "5 s · 126 frames"),
-  tool("t4", "Recording voiceover line 3", "completed"),
-  tool("t5", "Checking its work", "completed"),
-  tool("t6", "Putting the cut together", "completed"),
+  tool("t1", "Planned the change", "completed", "", "Free"),
+  tool("t2", "Approved by you", "completed", "", "Free"),
+  tool("t3", "Shooting a warmer take of Shot 2", "completed", "5 s · 126 frames", "$0.65"),
+  tool("t4", "Recording voiceover line 3", "completed", "", "$0.02"),
+  tool("t5", "Checking its work", "completed", "", "$0.04"),
+  tool("t6", "Putting the cut together", "completed", "", "$0.24"),
 ];
-const STEPS_LIVE = STEPS_DONE.map((step, index) => (index < 2 ? step : index === 2 ? { ...step, status: "running", summary: "78 / 126 frames" } : { ...step, status: "pending" }));
+const STEPS_LIVE = STEPS_DONE.map((step, index) => (
+  index < 2 ? step
+    : index === 2 ? { ...step, status: "running", summary: "78 / 126 frames" }
+    : { ...step, status: "pending", costLabel: undefined }
+));
 const NO_PROGRESS: AgentProgressEvent[] = [];
 
 const APPROVAL: ApprovalCardModel = {
   id: "v4", status: "pending", title: "Warmer ending", tier: "2 paid · 1 free", specs: [],
+  thumbUrl: "/beta/shot-lift.jpg",
+  resultThumbUrl: "/beta/shot-lift-warm.jpg",
   lines: [
     { kind: "media", label: "Warmer take of Shot 2", priceCents: 65, basis: "estimate" },
     { kind: "media", label: "Voiceover line 3", priceCents: 2, basis: "estimate" },
     { kind: "media", label: "Trim Shot 2 to 4.2 s", priceCents: 0, basis: "estimate" },
     { kind: "orchestration", label: "Agent orchestration", priceCents: 30, basis: "estimate" },
   ],
-  estimateCents: 97, capCents: 150, stepIndex: 1, stepCount: 3,
+  estimateCents: 97, capCents: 150,
 };
 
 const RECEIPT: RunReceiptModel = {
@@ -44,9 +49,15 @@ const RECEIPT: RunReceiptModel = {
   ],
   actualCents: 95, estimateCents: 97, capCents: 150, underEstimate: true,
   balanceBeforeCents: 1000, balanceAfterCents: 905, paidSteps: 3, status: "done",
+  thumbStrip: ["/beta/still-mug.jpg", "/beta/shot-lift-warm.jpg", "/beta/shot-window.jpg"],
 };
 
-function StudioFrame({ chat, balance = "$8.64", stageTitle = "Warm lift", shot }: { chat: React.ReactNode; balance?: string; stageTitle?: string; shot: string }) {
+function StudioFrame({
+  chat, balance = "$8.64", stageTitle = "Warm lift", shot, proposed, shooting,
+}: {
+  chat: React.ReactNode; balance?: string; stageTitle?: string; shot: string;
+  proposed?: boolean; shooting?: { frames: string; shotLabel: string };
+}) {
   return (
     <main className="rh-page rh-v4-studio" data-surface="beta" data-shot={shot}>
       <header className="rh-v4-top">
@@ -61,13 +72,21 @@ function StudioFrame({ chat, balance = "$8.64", stageTitle = "Warm lift", shot }
         <div className="rh-v4-composer"><input className="rh-v4-ask" placeholder="Ask for a change" aria-label="Ask for a change" /></div>
       </section>
       <section className="rh-v4-stage" aria-label="Preview">
-        <div className="rh-v4-frame" style={{ backgroundImage: "url(/beta/shot-lift-warm.jpg)" }}>
-          <div className="rh-v4-caption"><span>Shot 2 of 3</span><b>{stageTitle}</b></div>
-        </div>
-        <div className="rh-v4-strip" aria-label="Timeline">
-          <i style={{ flex: 2.2, backgroundImage: "url(/beta/still-mug.jpg)" }} />
-          <i data-sel style={{ flex: 3.2, backgroundImage: "url(/beta/shot-lift.jpg)" }}><span>Warm lift · 4.2 s</span></i>
-          <i style={{ flex: 1.5, backgroundImage: "url(/beta/shot-window.jpg)" }} />
+        <div className="rh-v4-frame" style={{ backgroundImage: `url(${shooting ? "/beta/shot-lift.jpg" : "/beta/shot-lift-warm.jpg"})` }}>
+          {proposed ? (
+            <aside className="rh-proposed" aria-label="Proposed look">
+              <img src="/beta/shot-lift-warm.jpg" alt="" />
+              <span>Proposed look</span>
+            </aside>
+          ) : null}
+          {shooting ? (
+            <div className="rh-shooting" role="status">
+              <span className="rh-shooting-title">Shooting…</span>
+              <span className="rh-shooting-meta rh-num">{shooting.shotLabel} · {shooting.frames}</span>
+            </div>
+          ) : (
+            <div className="rh-v4-caption"><span>Shot 2 of 3</span><b>{stageTitle}</b></div>
+          )}
         </div>
       </section>
       <span className="rh-sample rh-mono rh-v4-sample">Sample</span>
@@ -77,7 +96,7 @@ function StudioFrame({ chat, balance = "$8.64", stageTitle = "Warm lift", shot }
 
 export function LaunchReviewV4({ screen }: { screen: string }) {
   if (screen === "v4-approval") return (
-    <StudioFrame shot="v4-approval" stageTitle="Current take" chat={<>
+    <StudioFrame shot="v4-approval" stageTitle="Current take" proposed chat={<>
       <p className="rh-v4-agent">Here’s the plan.</p>
       <ApprovalCard focusOnMount={false} model={APPROVAL} />
     </>} />
@@ -88,15 +107,30 @@ export function LaunchReviewV4({ screen }: { screen: string }) {
       <RunReceipt receipt={RECEIPT} />
     </>} />
   );
-  const live = screen === "v4-trace-live";
-  const expanded = screen === "v4-trace-expanded";
+  const live = screen === "v4-trace-live" || screen === "v4-trace-expanded-live";
+  const expanded = screen === "v4-trace-expanded" || screen === "v4-trace-expanded-live";
   return (
-    <StudioFrame shot={screen} chat={<>
-      <p className="rh-v4-agent">{live ? "Working on it. I’ll show you before anything touches your cut." : "Done. Shot 2 has a warmer take and the new line is in. Nothing touches your cut until you accept."}</p>
-      <div data-open={expanded || undefined} className="rh-v4-trace-wrap">
-        <IntermediateSteps defaultOpen={expanded} events={live ? STEPS_LIVE : STEPS_DONE} progressEvents={NO_PROGRESS} status={live ? "running" : "completed"} message={live ? "Shooting a warmer take of Shot 2" : ""} duration={live ? "0:42" : "1 min 48 s"} />
-      </div>
-      {!live ? <span className="rh-v4-needs"><span className="rh-dot" aria-hidden="true" />2 changes need you</span> : null}
-    </>} />
+    <StudioFrame
+      shot={screen}
+      shooting={live ? { frames: "78 of 126 frames", shotLabel: "Shot 2" } : undefined}
+      chat={<>
+        <p className="rh-v4-agent">{live ? "Working on it. I’ll show you before anything touches your cut." : "Done. Shot 2 has a warmer take and the new line is in. Nothing touches your cut until you accept."}</p>
+        <div className="rh-v4-trace-wrap">
+          <IntermediateSteps
+            defaultOpen={expanded}
+            events={live ? STEPS_LIVE : STEPS_DONE}
+            progressEvents={NO_PROGRESS}
+            status={live ? "running" : "completed"}
+            message={live ? "Shooting a warmer take of Shot 2" : ""}
+            duration={live ? "0:42" : "1 min 48 s"}
+            cost={live ? { cents: 48, capCents: 150, final: false } : { cents: 95, final: true }}
+            stepCosts={live || expanded ? (live ? STEPS_LIVE : STEPS_DONE).map((s) => (s as { costLabel?: string }).costLabel) : undefined}
+            showStop={live}
+            liveFrames={live ? ["/beta/shot-lift.jpg", "/beta/shot-lift-warm.jpg", "/beta/shot-lift-cool.jpg", "/beta/shot-macro.jpg"] : undefined}
+          />
+        </div>
+        {!live ? <span className="rh-v4-needs"><span className="rh-dot" aria-hidden="true" />2 changes need you</span> : null}
+      </>}
+    />
   );
 }

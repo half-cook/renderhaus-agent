@@ -37,7 +37,7 @@ export default function MarketingPage() {
   return (
     <main className="rh-page" data-surface="beta" data-shot="landing-ready">
       {clerkConfigured ? <SignedInRedirect /> : null}
-      <section className="rh-bleed" aria-labelledby="landing-title" data-shot="landing-hero">
+      <section className="rh-bleed" aria-labelledby="landing-title" data-shot="landing-hero" style={{ backgroundImage: "url(/beta/p1-poster.jpg)", backgroundSize: "cover", backgroundPosition: "center" }}>
         <video className="rh-bleed-media" src="/beta/p1-film.mp4" poster="/beta/p1-poster.jpg" muted loop playsInline autoPlay preload="metadata"
           aria-label="Example film: a matte travel mug, made from one product photo" />
         <div className="rh-bleed-shade" aria-hidden="true" />

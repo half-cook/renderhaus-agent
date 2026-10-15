@@ -18,10 +18,9 @@ const base: ApprovalCardModel = {
   lines: LINES, estimateCents: 126, capCents: 150, stepIndex: 2, stepCount: 4,
 };
 
-function Frame({ children, title }: { children: React.ReactNode; title: string }) {
+function Frame({ children }: { children: React.ReactNode; title?: string }) {
   return (
-    <main className="rh-page" data-surface="beta" style={{ padding: 40, minHeight: "100vh" }}>
-      <div className="rh-eyebrow" style={{ marginBottom: 16 }}>{title} · sample data</div>
+    <main className="rh-page" data-surface="beta" style={{ padding: 40, minHeight: "100vh" }} data-shot="over-credit">
       <div style={{ maxWidth: 460 }}>{children}</div>
     </main>
   );
