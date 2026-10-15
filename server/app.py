@@ -500,6 +500,7 @@ async def not_found(request: Request, exc: HTTPException) -> Response:
 
 @app.get("/api/config")
 async def config() -> dict[str, Any]:
+    # Public config: never name underlying providers or models (Satya's rule).
     limits = upload_limits_mb()
     return {
         "live_generation": os.getenv("SEEDANCE_DRY_RUN", "true").lower() == "false",
@@ -511,9 +512,6 @@ async def config() -> dict[str, Any]:
         "langfuse_ready": False,
         "clerk_enabled": clerk_enabled(),
         "clerk_publishable_key": publishable_key(),
-        "video_model": os.getenv("SEEDANCE_MODEL", "dreamina-seedance-2-5-260628"),
-        "image_model": os.getenv("SEEDREAM_MODEL", "seedream-5-0-lite-260128"),
-        "music_model": "music_v2_5",
         "max_upload_mb": limits["image"],
         "max_upload_mb_by_kind": limits,
     }

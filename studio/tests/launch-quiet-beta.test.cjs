@@ -41,9 +41,15 @@ test("top-up UI is gated by the build flag and replaced by neutral copy", () => 
 
 test("over-credit approval card keeps Approve disabled and offers only an option that fits", () => {
   const card = read("components/rh/ApprovalCard.tsx");
-  assert.match(card, /Approve stays off while the hard cap is more than your credit\. Top-ups are coming soon\./);
+  assert.match(card, /Approve is off because this step.s hard cap is more than your credit\. Top-ups are coming soon\./);
   assert.match(card, /cheaperOption\.capCents <= balance/);
-  assert.match(card, /aria-disabled="true"[^>]*disabled>\s*<Lock/);
+  assert.match(card, /<Lock[^/]*\/>Approve/);
+  assert.match(card, />Use this/);
+  assert.match(card, />Edit</);
+  assert.match(card, />Not now</);
+  assert.doesNotMatch(card.slice(card.indexOf("function OverCredit")), /Reject/);
+  // Locked Approve never prints a price on the button.
+  assert.doesNotMatch(card.slice(card.indexOf("function OverCredit")), /Approve · est\./);
   assert.match(card, />Trim</);
   assert.match(card, />Keep as is</);
 });

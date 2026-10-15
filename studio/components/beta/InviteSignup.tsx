@@ -106,7 +106,6 @@ export function InviteSignup({ initialPhase }: { initialPhase?: Phase } = {}) {
         <section className="rh-signup-pane" aria-labelledby="beta-title">
           {welcome ? <Welcome balanceCents={phase.balanceCents} /> : (
             <div className="rh-form rh-form-v4" data-shot="invite-form">
-              <span className="rh-sample rh-mono">Sample</span>
               <div className="rh-fg3 rh-num rh-signup-step">Step {phase.kind === "code" ? 1 : 2} of 2</div>
               <h1 id="beta-title" className="rh-signup-h">{phase.kind === "code" ? "Enter your invite" : "Confirm your email"}</h1>
               <p className="rh-form-sub">One code, one account, $10 in credit.</p>

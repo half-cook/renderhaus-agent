@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useRef, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { Check, CircleAlert, CircleCheck, CirclePause, ImageOff, Info, Pencil, Play, Plus, RotateCw, ShieldCheck, Lock } from "lucide-react";
 import { OUT_OF_CREDIT_FULL, topupsEnabled } from "@/lib/launch";
 import { formatCents } from "@/lib/rh/money";
@@ -23,6 +23,8 @@ export type ApprovalCardActions = {
   onPreview?: () => void;
   onRegenerate?: () => void;
   onUseCheaper?: () => void;
+  /** Over-credit with nothing that fits: close the card without spending. */
+  onNotNow?: () => void;
   onTrim?: () => void;
   onKeep?: () => void;
 };
@@ -177,7 +179,7 @@ export function ApprovalCard({ model, approveEnabled, busy = false, actions = {}
             ) : null}
           </div>
           <div className="rh-appr-ft" style={{ paddingTop: 0 }}>
-            <button type="button" className="rh-btn rh-btn-act" style={{ flex: 1 }} aria-label={approveName} aria-disabled="true" aria-describedby={`${titleId}-why`} disabled>Approve · est. {formatCents(model.estimateCents)}</button>
+            <button type="button" className="rh-btn rh-btn-act" style={{ flex: 1 }} aria-label={approveName} aria-disabled="true" aria-describedby={`${titleId}-why`} disabled><Lock size={13} aria-hidden="true" />Approve</button>
             <button type="button" className="rh-btn rh-btn-quiet rh-btn-act" onClick={actions.onReject}>Reject</button>
           </div>
           <div className="rh-footnote" id={`${titleId}-why`}><span>{credit === "lower_cap" ? "Approve turns on as soon as the cap fits your credit." : "Approve turns on once your credit covers the estimate."}</span></div>
@@ -282,17 +284,20 @@ export function ApprovalCard({ model, approveEnabled, busy = false, actions = {}
   );
 }
 
-const OVER_CREDIT_FOOTNOTE = "Approve stays off while the hard cap is more than your credit. Top-ups are coming soon.";
+const OVER_CREDIT_FOOTNOTE = "Approve is off because this step’s hard cap is more than your credit. Top-ups are coming soon.";
 
 /** Quiet beta, top-ups off (spec 4.12.4, mockups 49 / 49b): Approve disabled, one option that fits the credit. */
-function OverCredit({ model, credit: reported, titleId, approveName, actions }: {
-  model: ApprovalCardModel; credit: "lower_cap" | "add_credit"; titleId: string; approveName: string; actions: ApprovalCardActions;
+function OverCredit({ model, credit: reported, titleId, actions }: {
+  model: ApprovalCardModel; credit: "lower_cap" | "add_credit"; titleId: string; approveName?: string; actions: ApprovalCardActions;
 }) {
   const balance = model.balanceCents ?? 0;
   // The estimate fitting the credit is what decides 49 vs 49b, even if the server sent no lower-cap option.
   const credit = model.estimateCents <= balance ? "lower_cap" : reported === "lower_cap" ? "lower_cap" : "add_credit";
   const lowered = model.lowerCapOptionCents ?? balance;
   const cheaper = credit === "add_credit" && model.cheaperOption && model.cheaperOption.capCents <= balance ? model.cheaperOption : null;
+  const fits = credit === "lower_cap" || Boolean(cheaper);
+  const [closed, setClosed] = useState(false);
+  if (closed) return <p className="rh-footnote" role="status" data-shot="not-now-closed">Closed. Nothing was spent.</p>;
   return (
     <div data-shot={credit === "lower_cap" ? "approval-over-cap" : "approval-over-estimate"}>
       {credit === "lower_cap" ? (
@@ -322,10 +327,13 @@ function OverCredit({ model, credit: reported, titleId, approveName, actions }: 
             ) : cheaper ? (
               <button type="button" className="rh-btn rh-btn-primary rh-btn-act" style={{ flex: 1 }} onClick={actions.onUseCheaper}>Use this · est. {formatCents(cheaper.estimateCents)}</button>
             ) : null}
-            <button type="button" className="rh-btn rh-btn-act rh-appr-locked" aria-label={approveName} aria-disabled="true" aria-describedby={`${titleId}-why`} disabled>
-              <Lock size={13} aria-hidden="true" />Approve · est. {formatCents(model.estimateCents)}
+            <button type="button" className="rh-btn rh-btn-act" onClick={actions.onEdit}><Pencil size={14} aria-hidden="true" />Edit</button>
+            {!fits ? <button type="button" className="rh-btn rh-btn-quiet rh-btn-act" data-shot="not-now" onClick={() => { setClosed(true); actions.onNotNow?.(); }}>Not now</button> : null}
+          </div>
+          <div className="rh-appr-ft rh-appr-locked-row" style={{ paddingTop: 0 }}>
+            <button type="button" className="rh-btn rh-btn-act rh-appr-locked" aria-label="Approve, unavailable: the hard cap is more than your credit" aria-disabled="true" aria-describedby={`${titleId}-why`} disabled>
+              <Lock size={13} aria-hidden="true" />Approve
             </button>
-            <button type="button" className="rh-btn rh-btn-quiet rh-btn-act" onClick={actions.onReject}>Reject</button>
           </div>
           <div className="rh-footnote" id={`${titleId}-why`}><span>{OVER_CREDIT_FOOTNOTE}</span></div>
         </>
