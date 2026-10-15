@@ -145,7 +145,7 @@ class ViduGraphTests(unittest.IsolatedAsyncioTestCase):
                 approval = paused.exception.approvals[0]
                 self.assertEqual(approval.tool_name, I2V)
                 self.assertIn("Estimated cost $", approval.description)
-                self.assertIn("platform fee", approval.description)
+                self.assertNotIn("fee", approval.description)
                 self.assertTrue(any(I2V_MODEL in event.message for event in studio.progress_events))
                 gateway.call_tool.assert_not_awaited()
                 resumed = request.model_copy(update={"session_items": studio.session_items,

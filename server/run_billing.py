@@ -252,7 +252,7 @@ def public_approvals(
         if price_basis == "none" and status == "pending":
             entry.update({"approve_enabled": False, "unpriceable": True, "unpriceable_message": UNPRICEABLE_MESSAGE})
         if isinstance(item.get("message"), str):
-            entry["message"] = item["message"]
+            entry["message"] = rb.scrub_client_text(item["message"], "Review this step before it runs.")
         if item.get("tool_name") in {"HeyGen___voice_clone", "HeyGen___voice_tts"}:
             _, marker, notice = str(item.get("description") or "").partition("Voice owner:")
             if marker:
@@ -541,12 +541,26 @@ def stored_pause(repo: Any, run_id: str | None) -> dict[str, Any] | None:
 
 
 _TEXT_KEYS = frozenset({"error", "reason", "message", "note", "detail", "summary", "status_message", "warning"})
+# Agent-written prose shown to the customer: scrubbed sentence-by-sentence instead of replaced.
+_PROSE_KEYS = frozenset({"title", "summary", "markdown", "text", "content", "response", "final_response", "message", "body"})
+_PATH_KEYS = frozenset({"output_path", "local_path", "path", "file_path", "video_path", "audio_path", "image_path"})
 
 
 def _clean_result(value: Any) -> Any:
     if isinstance(value, dict):
-        return {key: (rb.neutral_error(item) if key in _TEXT_KEYS and isinstance(item, str) and item else _clean_result(item))
-                for key, item in value.items()}
+        out = {}
+        for key, item in value.items():
+            if key in _PATH_KEYS and isinstance(item, str):
+                continue
+            if isinstance(item, str) and item and key in _PROSE_KEYS:
+                out[key] = rb.scrub_client_text(item, rb.NEUTRAL_ERROR if key in _TEXT_KEYS else "")
+            elif isinstance(item, str) and item and key in _TEXT_KEYS:
+                out[key] = rb.neutral_error(rb.scrub_client_text(item, rb.NEUTRAL_ERROR))
+            elif key in {"provider", "model", "model_id", "voice_id", "endpoint_id"}:
+                continue
+            else:
+                out[key] = _clean_result(item)
+        return out
     if isinstance(value, list):
         return [_clean_result(item) for item in value]
     return value
@@ -570,9 +584,20 @@ def public_execution(execution: dict[str, Any] | None) -> dict[str, Any] | None:
     if "tool_calls" in cleaned:
         cleaned["tool_calls"] = calls
     if "events" in cleaned:
-        cleaned["events"] = [{**event, "title": rb.neutral_error(event.get("title"), "Update"),
-                              "message": rb.neutral_error(event.get("message"), "Working on it.")}
-                             for event in execution.get("events") or []]
+        events = []
+        for event in execution.get("events") or []:
+            title = event.get("title")
+            if event.get("tool_call_name"):
+                label, _ = rb.work_label(str(event["tool_call_name"]), None)
+                title = rb.scrub_client_text(title) or label
+            events.append({**event, "title": rb.scrub_client_text(title, "Update"),
+                           "message": rb.scrub_client_text(event.get("message"), "Working on it."),
+                           **({"tool_call_name": event.get("tool_call_name")} if "tool_call_name" in event else {})})
+        cleaned["events"] = events
+    if isinstance(cleaned.get("message"), str):
+        cleaned["message"] = rb.scrub_client_text(cleaned["message"], "Update")
     if isinstance(cleaned.get("result"), dict):
         cleaned["result"] = _clean_result(cleaned["result"])
+    if isinstance(cleaned.get("result"), str):
+        cleaned["result"] = rb.scrub_client_text(cleaned["result"])
     return cleaned

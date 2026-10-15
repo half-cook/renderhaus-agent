@@ -28,7 +28,7 @@ import uuid
 from dataclasses import dataclass
 from typing import Any
 
-ORCHESTRATION_LABEL = "Agent orchestration"
+ORCHESTRATION_LABEL = "Planning and checks"
 NEUTRAL_ERROR = "This step could not be completed."
 PAUSED_MESSAGE = "Stopped at your cap. Nothing more has been charged, and the run is paused so you decide."
 
@@ -210,6 +210,56 @@ def neutral_error(text: object, fallback: str = NEUTRAL_ERROR) -> str:
     if isinstance(text, str) and text.strip() and is_client_safe(text):
         return text
     return fallback
+
+
+_TOOL_ID_RE = re.compile(r"`?\b[A-Za-z][A-Za-z0-9]*___[A-Za-z0-9_]+\b`?")
+_PATH_RE = re.compile(r"`?(?:file://)?(?:~|\.{1,2})?/(?:[\w.@+-]+/)+[\w.@+-]*`?")
+_MODEL_ID_RE = re.compile(r"`?\b(?:" + "|".join(re.escape(word) for word in sorted(
+    (w for w in CLIENT_DENY_LIST if re.fullmatch(r"[a-z0-9]+", w)), key=len, reverse=True)) + r")[_.-][\w.-]+`?", re.I)
+_INTERNAL_TERMS_RE = re.compile(
+    r"\b(?:inspect_media|stage_media|report_progress|read_file|write_file|not_run|job directory|native arguments|"
+    r"capability map|routing policy|gateway|mcp|sandbox|checkpoint)\b", re.I)
+_TOKEN_COST_RE = re.compile(r"\b(?:model|token|llm)s?\b[^.\n]{0,40}\bcosts?\b|\bestimates? include\b", re.I)
+_SENTENCE_SPLIT_RE = re.compile(r"(?:(?<=[.!?])|(?<=[.!?][\"”')\]]))\s+(?=[\"“(*`]*[A-Z0-9])")
+_MARK = "\u2063internal\u2063"
+
+
+def scrub_client_text(text: object, fallback: str = "") -> str:
+    """Remove vendor/model names, internal tool ids, file paths and fee wording from agent text.
+
+    Tool ids and paths are replaced with neutral words first; any sentence (or table row, list
+    item, heading) that still names a vendor, model, fee or model-token cost is dropped whole, so
+    the customer never sees half a sentence. Returns ``fallback`` if nothing safe is left.
+    """
+    if not isinstance(text, str) or not text.strip():
+        return fallback if not isinstance(text, str) else text
+    # Sentences that cite an internal tool id or a model id are dropped whole; a path is reworded.
+    text = _TOOL_ID_RE.sub(_MARK, text)
+    text = _MODEL_ID_RE.sub(_MARK, text)
+    text = _PATH_RE.sub("your project", text)
+    text = _INTERNAL_TERMS_RE.sub(_MARK, text)
+    kept_lines = []
+    for line in text.split("\n"):
+        if not line.strip():
+            kept_lines.append(line)
+            continue
+        if line.lstrip().startswith("|") or line.lstrip().startswith("#"):
+            if _MARK not in line and _DENY_RE.search(line) is None and _TOKEN_COST_RE.search(line) is None:
+                kept_lines.append(line)
+            continue
+        sentences = _SENTENCE_SPLIT_RE.split(line)
+        safe = [part for part in sentences if _MARK not in part and _DENY_RE.search(part) is None
+                and _TOKEN_COST_RE.search(part) is None]
+        joined = " ".join(part.strip() for part in safe).strip()
+        if joined and re.search(r"\w", joined.strip("-*• ")):
+            indent = line[: len(line) - len(line.lstrip())]
+            prefix = re.match(r"\s*(?:[-*•]|\d+[.)])\s+", line)
+            if prefix and not joined.startswith(prefix.group(0).strip()):
+                joined = prefix.group(0).strip() + " " + joined
+            kept_lines.append(indent + joined)
+    cleaned = re.sub(r"\n{3,}", "\n\n", "\n".join(kept_lines)).strip()
+    cleaned = re.sub(r"[ \t]{2,}", " ", cleaned)
+    return cleaned if cleaned and _MARK not in cleaned and is_client_safe(cleaned) else fallback
 
 
 def scrub_arguments(arguments: Any) -> dict[str, Any]:
@@ -426,7 +476,7 @@ def _line(label: str, price_cents: int, kind: str, basis: str, detail: str | Non
 
 
 def lines_from_rows(rows: list[sqlite3.Row] | list[dict[str, Any]]) -> list[dict[str, Any]]:
-    """Fee-inclusive run lines; orchestration turns are folded into one 'Agent orchestration' line."""
+    """Fee-inclusive run lines; orchestration turns are folded into one 'Planning and checks' line."""
     media = [_line(r["label"], r["cents"], "media", "fixed", r["detail"]) for r in rows
              if r["kind"] == "media" and not r["refunded_at"]]
     orchestration = sum(int(r["cents"]) for r in rows if r["kind"] == "orchestration" and not r["refunded_at"])
