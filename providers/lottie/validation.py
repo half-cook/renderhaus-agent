@@ -219,6 +219,7 @@ class _Validator:
             return
         self.keyframes += len(keys)
         previous = None
+        components = None
         for index, key in enumerate(keys):
             key_path = f"{path}.k[{index}]"
             if not isinstance(key, dict):
@@ -240,6 +241,13 @@ class _Validator:
             for field in ("s", "e"):
                 if field in key:
                     self.property_value(key[field], key_path + "." + field, kind, animated=True)
+                    value = key[field]
+                    if kind in {"vector", "size", "color"} and isinstance(value, list):
+                        if components is None:
+                            components = len(value)
+                        elif len(value) != components:
+                            self.error(key_path + "." + field,
+                                       f"must preserve keyframe component count {components}")
             if key.get("h", 0) not in (0, 1) or type(key.get("h", 0)) is not int:
                 self.error(key_path + ".h", "must be 0 or 1")
             for handle in ("o", "i"):
@@ -308,6 +316,14 @@ class _Validator:
             self.error(path, "must be an array")
             return
         types = [shape.get("ty") for shape in shapes if isinstance(shape, dict)]
+        seen_style = False
+        for kind in types:
+            if not isinstance(kind, str):
+                continue
+            if kind in {"fl", "st", "tm", "tr"}:
+                seen_style = True
+            elif seen_style and kind in {"rc", "el", "sh"}:
+                self.unsupported(path, "geometry after styles is not previewed")
         if self.has_stroke(shapes) and any(isinstance(shape, dict) and shape.get("ty") == "tr"
                                           and self.nonuniform_scale(shape) for shape in shapes):
             self.unsupported(path, "nonuniform scaled strokes are not previewed")
@@ -588,6 +604,8 @@ def validate_document(document: dict, targets: tuple[str, ...] = TARGETS) -> dic
         validator.unsupported("document.ddd", "3D compositions are not previewed")
     validator.assets(document.get("assets"))
     validator.layers(document.get("layers"), "layers")
+    if isinstance(document.get("layers"), list) and len(document["layers"]) > 64:
+        validator.unsupported("layers", "local preview supports at most 64 layers")
     validator.remaining_properties(document)
     if validator.keyframes > MAX_KEYFRAMES:
         validator.error("document", f"must contain at most {MAX_KEYFRAMES} keyframes")

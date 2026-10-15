@@ -60,7 +60,7 @@ SKILLS_ROOT = Path(__file__).parent / "skills"
 DISPATCH_TARGETS = {
     "call_media_tool": {"Gemini", "OpenAI", "Seedance", "Seedream", "Kling", "Runway", "Fal", "Luma", "ModelStudio", "Sync", "HeyGen", "Topaz"},
     "call_audio_tool": {"ElevenLabs", "FishAudio", "FishAudioProvider", "Fish_Audio", "Mureka", "HeyGen"},
-    "call_editor_tool": {"Remotion", "HyperFrames", "Ffmpeg", "ShotRecipes", "FootageMemory"},
+    "call_editor_tool": {"Remotion", "HyperFrames", "Ffmpeg", "ShotRecipes", "FootageMemory", "Lottie"},
 }
 FS_TOOLS = ["ls", "read_file", "write_file", "edit_file", "glob", "grep"]
 PERMISSIONS = [FilesystemPermission(operations=["write"], paths=["/skills/**"], mode="deny")]
@@ -349,6 +349,7 @@ async def run_with_servers(request, studio, servers, *, model=None):
                    "or preview an explicitly requested HyperFrames HTML composition when enabled, "
                    "or export an NLE handoff (OTIO/FCPXML/EDL) for DaVinci Resolve, "
                    "or import an editor's FCPXML/OTIO onto the existing project assembly, "
+                   "or author, validate and preview UI vector animations as JSON and dotLottie, "
                    "or finish existing local media and verify its final-file delivery QC.", [dispatch_tools[2]]),
         ("general-purpose", "Plan or research the current project without provider dispatch.", []),
     ]

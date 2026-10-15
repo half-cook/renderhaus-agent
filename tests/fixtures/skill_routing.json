@@ -5237,5 +5237,137 @@
     "forbidden_skills": [
       "podcast-audiogram"
     ]
+  },
+  {
+    "test_id": "RT-183",
+    "prompt": "Make a Lottie loading animation of our app icon for the iOS and web onboarding screen",
+    "expected_skill": "lottie-animation",
+    "expected_tool": "lottie_author",
+    "suite": "lottie-animation",
+    "skip_reason": "",
+    "source_status": "active",
+    "forbidden_tools": "remotion_render, wan3_t2v"
+  },
+  {
+    "test_id": "RT-185",
+    "prompt": "Animate this SVG checkmark as a success Lottie with ease-in-out and a transparent background",
+    "expected_skill": "lottie-animation",
+    "expected_tool": "lottie_author",
+    "suite": "lottie-animation",
+    "skip_reason": "",
+    "source_status": "active",
+    "forbidden_tools": "remotion_render, wan3_t2v"
+  },
+  {
+    "test_id": "RT-L001",
+    "prompt": "Create a transparent loading icon for our app UI",
+    "expected_skill": "lottie-animation",
+    "expected_tool": "lottie_author",
+    "suite": "lottie-animation",
+    "skip_reason": "",
+    "source_status": "active",
+    "forbidden_tools": "remotion_render, wan3_t2v"
+  },
+  {
+    "test_id": "RT-L002",
+    "prompt": "Animate our logo as JSON for the website UI",
+    "expected_skill": "lottie-animation",
+    "expected_tool": "lottie_author",
+    "suite": "lottie-animation",
+    "skip_reason": "",
+    "source_status": "active",
+    "forbidden_tools": "remotion_render, wan3_t2v"
+  },
+  {
+    "test_id": "RT-L003",
+    "prompt": "Create a dotLottie empty state for Android",
+    "expected_skill": "lottie-animation",
+    "expected_tool": "lottie_author",
+    "suite": "lottie-animation",
+    "skip_reason": "",
+    "source_status": "active",
+    "forbidden_tools": "remotion_render, wan3_t2v"
+  },
+  {
+    "test_id": "RT-L004",
+    "prompt": "Make an onboarding animation for our app UI",
+    "expected_skill": "lottie-animation",
+    "expected_tool": "lottie_author",
+    "suite": "lottie-animation",
+    "skip_reason": "",
+    "source_status": "active",
+    "forbidden_tools": "remotion_render, wan3_t2v"
+  },
+  {
+    "test_id": "RT-L005",
+    "prompt": "Make an MP4 title card for our website",
+    "expected_skill": "motion-graphics",
+    "expected_tool": "remotion_render",
+    "suite": "lottie-animation",
+    "skip_reason": "",
+    "source_status": "active",
+    "forbidden_skills": [
+      "lottie-animation"
+    ]
+  },
+  {
+    "test_id": "RT-L006",
+    "prompt": "Create a lower third for our product launch",
+    "expected_skill": "motion-graphics",
+    "expected_tool": "remotion_render",
+    "suite": "lottie-animation",
+    "skip_reason": "",
+    "source_status": "active",
+    "forbidden_skills": [
+      "lottie-animation"
+    ]
+  },
+  {
+    "test_id": "RT-L007",
+    "prompt": "animate our logo",
+    "expected_skill": "i2v",
+    "expected_tool": "wan3_i2v",
+    "suite": "lottie-animation",
+    "skip_reason": "",
+    "source_status": "active",
+    "forbidden_skills": [
+      "lottie-animation"
+    ]
+  },
+  {
+    "test_id": "RT-L008",
+    "prompt": "Animate our logo for a video",
+    "expected_skill": "i2v",
+    "expected_tool": "wan3_i2v",
+    "suite": "lottie-animation",
+    "skip_reason": "",
+    "source_status": "active",
+    "forbidden_skills": [
+      "lottie-animation"
+    ]
+  },
+  {
+    "test_id": "RT-L009",
+    "prompt": "Generate an SVG app icon",
+    "expected_skill": "image-gen",
+    "expected_tool": "recraft_v41_vector",
+    "suite": "lottie-animation",
+    "skip_reason": "",
+    "source_status": "active",
+    "forbidden_skills": [
+      "lottie-animation"
+    ]
+  },
+  {
+    "test_id": "RT-L010",
+    "prompt": "Create a title card with the words \"Lottie UI\"",
+    "expected_skill": "motion-graphics",
+    "expected_tool": "remotion_render",
+    "suite": "lottie-animation",
+    "skip_reason": "",
+    "source_status": "active",
+    "forbidden_skills": [
+      "lottie-animation"
+    ]
   }
 ]

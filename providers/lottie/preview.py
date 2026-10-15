@@ -1,4 +1,3 @@
-"""Render bounded real native-Lottie frames and portable local preview artifacts."""
 from __future__ import annotations
 
 import base64
@@ -64,7 +63,7 @@ requestAnimationFrame(tick);
 def render_preview(document: dict, directory: Path, *, max_size: int = 256,
                    formats: tuple[str, ...] = ('mp4', 'gif')) -> dict:
     """Return checksummed frames, contact sheet, strip, self-contained scrubber and previews."""
-    result = {'ok': False, 'outputs': [], 'not_previewed': [], 'errors': []}
+    result = {'ok': False, 'complete': False, 'outputs': [], 'not_previewed': [], 'errors': []}
     staging = None
     started = time.monotonic()
     try:
@@ -126,7 +125,9 @@ def render_preview(document: dict, directory: Path, *, max_size: int = 256,
         outputs.append(scrubber)
         metadata = {'width': width, 'height': height, 'frame_count': count, 'fps': fps,
                     'duration_seconds': count/fps, 'sample_frames': [first+index for index in sample_indices],
-                    'mp4_background': 'white', 'gif_palette': 'quantized', 'transparent_json': True}
+                    'mp4_background': 'white', 'mp4_width': width+(width % 2),
+                    'mp4_height': height+(height % 2), 'gif_palette': 'quantized',
+                    'gif_timing': 'centisecond quantized', 'transparent_json': True}
         errors = []
         for format_name in formats:
             encoded = execute('image_sequence_preview', staging, 'frame-000000.png',
@@ -138,7 +139,7 @@ def render_preview(document: dict, directory: Path, *, max_size: int = 256,
         records = [_record(path) for path in outputs]
         if sum(record['bytes'] for record in records) > 64*1024*1024:
             raise ValueError('Combined preview artifacts exceed the 64 MiB output limit.')
-        result.update(ok=not errors, outputs=records, scrubber_path=str(scrubber),
+        result.update(ok=not errors, complete=not errors, outputs=records, scrubber_path=str(scrubber),
                       metadata=metadata, errors=errors, status='incomplete' if errors else 'succeeded')
         return result
     except (ValueError, TypeError, OSError, KeyError, OverflowError) as exc:

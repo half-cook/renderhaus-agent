@@ -1,4 +1,3 @@
-"""Encode a bounded, confined numbered PNG sequence using fixed FFmpeg arguments."""
 from __future__ import annotations
 
 from pathlib import Path

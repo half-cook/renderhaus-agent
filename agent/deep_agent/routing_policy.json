@@ -34,7 +34,10 @@
     "shot_recipe_search",
     "footage_memory_status",
     "footage_memory_query",
-    "footage_clip_extract"
+    "footage_clip_extract",
+    "lottie_author",
+    "lottie_validate",
+    "lottie_preview_render"
   ],
   "providers": {
     "kling": {
@@ -1023,6 +1026,39 @@
           "training_eligible": false,
           "training_reason": "Retrieval and source footage do not grant media training rights. Hosted model terms do not clearly allow competing-model training.",
           "commercial_status": "Offline memory tools; all understanding backends mocked on this branch. No live service or weights added."
+        }
+      }
+    },
+    "lottie": {
+      "license": "MIT pattern attribution; in-house local tools",
+      "license_id": "MIT",
+      "license_source": "https://github.com/diffusionstudio/lottie/blob/3c72912/LICENSE",
+      "read_date": "2026-10-14",
+      "training_eligible": false,
+      "training_reason": "No model or weights. Output rights depend on user-owned or licensed source vectors, fonts and brand assets.",
+      "commercial_status": "Local in-house authoring with MIT-adapted guidance; source asset rights required.",
+      "consent_requirements": "No face or voice synthesis. User must own or license supplied assets.",
+      "enabled": true,
+      "allowed_regions": [],
+      "default_model": "local-vector-animation",
+      "models": [
+        "local-vector-animation"
+      ],
+      "fixed_models": {
+        "lottie_author": "local-vector-animation",
+        "lottie_validate": "local-vector-animation",
+        "lottie_preview_render": "local-vector-animation"
+      },
+      "model_policies": {
+        "local-vector-animation": {
+          "license": "MIT pattern attribution; in-house local tools",
+          "license_id": "MIT",
+          "license_source": "https://github.com/diffusionstudio/lottie/blob/3c72912/LICENSE",
+          "read_date": "2026-10-14",
+          "training_eligible": false,
+          "training_reason": "No model or weights. Output rights depend on user-owned or licensed source vectors, fonts and brand assets.",
+          "commercial_status": "Local in-house authoring with MIT-adapted guidance; source asset rights required.",
+          "consent_requirements": "No face or voice synthesis. User must own or license supplied assets."
         }
       }
     }
@@ -2313,9 +2349,78 @@
       "price_source": "https://elevenlabs.io/pricing/api",
       "read_date": "2026-10-10",
       "verification": "Existing scribe_v2 API and word timestamps verified; per-call quote TODO/unknown without measured duration or operator quote."
+    },
+    "lottie_author": {
+      "license": "MIT pattern attribution; in-house local tools",
+      "license_id": "MIT",
+      "license_source": "https://github.com/diffusionstudio/lottie/blob/3c72912/LICENSE",
+      "read_date": "2026-10-14",
+      "training_eligible": false,
+      "training_reason": "No model or weights. Output rights depend on user-owned or licensed source vectors, fonts and brand assets.",
+      "commercial_status": "Local in-house authoring with MIT-adapted guidance; source asset rights required.",
+      "consent_requirements": "No face or voice synthesis. User must own or license supplied assets.",
+      "gateway_tool": "Lottie___lottie_author",
+      "provider": "lottie",
+      "model": "local-vector-animation",
+      "skill": "lottie-animation",
+      "status": "ready",
+      "host": "local worker",
+      "us_available": "yes",
+      "availability_source": "docs/LOTTIE_ANIMATION.md",
+      "source": "docs/LOTTIE_ANIMATION.md",
+      "price_source": "docs/LOTTIE_ANIMATION.md",
+      "verification": "Free local deterministic tools; no model, API, weights or secrets."
+    },
+    "lottie_validate": {
+      "license": "MIT pattern attribution; in-house local tools",
+      "license_id": "MIT",
+      "license_source": "https://github.com/diffusionstudio/lottie/blob/3c72912/LICENSE",
+      "read_date": "2026-10-14",
+      "training_eligible": false,
+      "training_reason": "No model or weights. Output rights depend on user-owned or licensed source vectors, fonts and brand assets.",
+      "commercial_status": "Local in-house authoring with MIT-adapted guidance; source asset rights required.",
+      "consent_requirements": "No face or voice synthesis. User must own or license supplied assets.",
+      "gateway_tool": "Lottie___lottie_validate",
+      "provider": "lottie",
+      "model": "local-vector-animation",
+      "skill": "lottie-animation",
+      "status": "ready",
+      "host": "local worker",
+      "us_available": "yes",
+      "availability_source": "docs/LOTTIE_ANIMATION.md",
+      "source": "docs/LOTTIE_ANIMATION.md",
+      "price_source": "docs/LOTTIE_ANIMATION.md",
+      "verification": "Free local deterministic tools; no model, API, weights or secrets."
+    },
+    "lottie_preview_render": {
+      "license": "MIT pattern attribution; in-house local tools",
+      "license_id": "MIT",
+      "license_source": "https://github.com/diffusionstudio/lottie/blob/3c72912/LICENSE",
+      "read_date": "2026-10-14",
+      "training_eligible": false,
+      "training_reason": "No model or weights. Output rights depend on user-owned or licensed source vectors, fonts and brand assets.",
+      "commercial_status": "Local in-house authoring with MIT-adapted guidance; source asset rights required.",
+      "consent_requirements": "No face or voice synthesis. User must own or license supplied assets.",
+      "gateway_tool": "Lottie___lottie_preview_render",
+      "provider": "lottie",
+      "model": "local-vector-animation",
+      "skill": "lottie-animation",
+      "status": "ready",
+      "host": "local worker",
+      "us_available": "yes",
+      "availability_source": "docs/LOTTIE_ANIMATION.md",
+      "source": "docs/LOTTIE_ANIMATION.md",
+      "price_source": "docs/LOTTIE_ANIMATION.md",
+      "verification": "Free local deterministic tools; no model, API, weights or secrets."
     }
   },
   "rules": [
+    {
+      "pattern": "\\b(?:lottie|dotlottie|bodymovin)\\b|\\b(?:loaders?|loading|onboarding|empty[ -]states?|success[ -]checks?|microinteractions?)\\b[^.;!?]*\\b(?:app|website|web|ios|android|ui)\\b|\\banimat(?:e|ed|ion)\\b[^.;!?]*\\b(?:app|website|web)[ -]+ui\\b|\\banimat(?:e|ed|ion)\\b[^.;!?]*\\bjson\\b",
+      "skill": "lottie-animation",
+      "abstract_tool": "lottie_author",
+      "capability": "lottie_animation"
+    },
     {
       "pattern": "\\b(?:audiogram|podcast[ -]audiogram)\\b|\\b(?:reactive|moving|audio[ -]reactive|animated)\\s+waveform\\b|\\bwaveform\\s+(?:video|clip)\\b",
       "skill": "podcast-audiogram",
@@ -5818,6 +5923,39 @@
       },
       "durations": {},
       "explicit_only": false
+    },
+    {
+      "provider": "lottie",
+      "policy_ref": "lottie",
+      "model": "local-vector-animation",
+      "label": "UI vector animation",
+      "tools": {
+        "lottie_animation": "Lottie___lottie_author"
+      },
+      "jobs": {
+        "lottie_animation": true
+      },
+      "resolutions": [],
+      "speed_class": "local",
+      "price": {
+        "source": "docs/LOTTIE_ANIMATION.md",
+        "read_date": "2026-10-14",
+        "unit": "call"
+      },
+      "notes": "Agent-authored Lottie JSON and dotLottie deliverables. Local previews are not rendered-video deliverables.",
+      "controls": {
+        "lottie_animation": [
+          "job_id",
+          "scene",
+          "lottie",
+          "input_path",
+          "svg_path",
+          "patch",
+          "name"
+        ]
+      },
+      "durations": {},
+      "explicit_only": false
     }
   ],
   "image_default_size": "2K",
@@ -6081,6 +6219,12 @@
     },
     "shot_recipes": {
       "default": "shot_recipe_search",
+      "exceptions": [],
+      "interim": null,
+      "ab_candidates": []
+    },
+    "lottie_animation": {
+      "default": "lottie_author",
       "exceptions": [],
       "interim": null,
       "ab_candidates": []
@@ -7048,6 +7192,36 @@
       "commercial_status": "commercial service; user must have all necessary input recording rights",
       "consent_requirements": "Authorized source recording only. No voice model, cloning or synthetic speech is created.",
       "read_date": "2026-10-10"
+    },
+    "lottie_author": {
+      "license": "MIT pattern attribution; in-house local tools",
+      "license_id": "MIT",
+      "license_source": "https://github.com/diffusionstudio/lottie/blob/3c72912/LICENSE",
+      "read_date": "2026-10-14",
+      "training_eligible": false,
+      "training_reason": "No model or weights. Output rights depend on user-owned or licensed source vectors, fonts and brand assets.",
+      "commercial_status": "Local in-house authoring with MIT-adapted guidance; source asset rights required.",
+      "consent_requirements": "No face or voice synthesis. User must own or license supplied assets."
+    },
+    "lottie_validate": {
+      "license": "MIT pattern attribution; in-house local tools",
+      "license_id": "MIT",
+      "license_source": "https://github.com/diffusionstudio/lottie/blob/3c72912/LICENSE",
+      "read_date": "2026-10-14",
+      "training_eligible": false,
+      "training_reason": "No model or weights. Output rights depend on user-owned or licensed source vectors, fonts and brand assets.",
+      "commercial_status": "Local in-house authoring with MIT-adapted guidance; source asset rights required.",
+      "consent_requirements": "No face or voice synthesis. User must own or license supplied assets."
+    },
+    "lottie_preview_render": {
+      "license": "MIT pattern attribution; in-house local tools",
+      "license_id": "MIT",
+      "license_source": "https://github.com/diffusionstudio/lottie/blob/3c72912/LICENSE",
+      "read_date": "2026-10-14",
+      "training_eligible": false,
+      "training_reason": "No model or weights. Output rights depend on user-owned or licensed source vectors, fonts and brand assets.",
+      "commercial_status": "Local in-house authoring with MIT-adapted guidance; source asset rights required.",
+      "consent_requirements": "No face or voice synthesis. User must own or license supplied assets."
     }
   },
   "editing_refusals": [

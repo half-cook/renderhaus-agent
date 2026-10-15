@@ -1,5 +1,3 @@
-"""Convert a strict, self-contained SVG subset into native animated paths."""
-
 from __future__ import annotations
 
 import math

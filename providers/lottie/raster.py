@@ -1,4 +1,3 @@
-"""A deterministic native-Lottie raster subset for small transparent UI animations."""
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -44,6 +43,8 @@ def _mix(start, end, progress):
 
 def _component(value, index):
     if isinstance(value, list):
+        if not value:
+            _refuse('easing component arrays cannot be empty')
         return _number(value[min(index, len(value) - 1)])
     return _number(value)
 
@@ -51,6 +52,8 @@ def _component(value, index):
 def _ease(key, progress, index):
     outgoing = key.get('o', {'x': 0, 'y': 0})
     incoming = key.get('i', {'x': 1, 'y': 1})
+    if not isinstance(outgoing, dict) or not isinstance(incoming, dict):
+        _refuse('temporal easing needs native x/y control objects')
     x1, y1 = (_component(outgoing.get(name), index) for name in ('x', 'y'))
     x2, y2 = (_component(incoming.get(name), index) for name in ('x', 'y'))
     if not 0 <= x1 <= 1 or not 0 <= x2 <= 1 or not -4 <= y1 <= 4 or not -4 <= y2 <= 4:
@@ -303,6 +306,10 @@ def _inspect(document):
         if nodes > MAX_NODES or depth > 24:
             _refuse('animation exceeds the bounded preview complexity')
         if isinstance(value, dict):
+            if 'k' in value and set(value) - {'a', 'k', 'ix', 'l'}:
+                _refuse('expressions, slots, separated dimensions and unknown property features')
+            if 't' in value and ('to' in value or 'ti' in value):
+                _refuse('spatial interpolation')
             for child in value.values():
                 visit(child, depth+1)
         elif isinstance(value, list):

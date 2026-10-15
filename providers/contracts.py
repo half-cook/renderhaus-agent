@@ -622,6 +622,10 @@ def _validate_rule(path: str, value: Any, rule: ArgumentRule) -> None:
 
 
 def _validate_cross_fields(provider_id: str, tool_name: str, arguments: dict[str, Any], *, allow_empty_visuals: bool = False) -> None:
+    if provider_id == "lottie":
+        from providers.lottie.contracts import request_for
+
+        request_for(tool_name, arguments)
     if provider_id == "footage_memory":
         from providers.footage_memory.contracts import validate_arguments
 

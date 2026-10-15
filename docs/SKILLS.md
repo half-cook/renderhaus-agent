@@ -13,7 +13,7 @@ refusals return `blocked`, retired requests return `retired`, and unknown intent
 
 ## Packaged skills
 
-The backend packages 38 skills. Some explain pending capabilities; installing their
+The backend packages 39 skills. Some explain pending capabilities; installing their
 instructions does not install a provider adapter. The original execution skills remain
 available. `image-gen` and `named-provider` cover the new still-image policy and explicit
 requests for providers retained outside automatic selection. The archived `vidu-q4` skill
@@ -217,8 +217,8 @@ Topaz submissions always pause with cost, including autonomous runs. Dry-run pre
 and queued jobs never satisfy final delivery. See [Topaz](TOPAZ.md) for pricing, licence
 sources, unknown-price blockers and the blocked Comet check.
 
-`tests/fixtures/skill_routing.json` contains 289 retained routing rows.
-There are 283 active cases and 6 explicit skips. Five caption/collage cases cover the
+`tests/fixtures/skill_routing.json` contains 301 retained routing rows.
+There are 295 active cases and 6 explicit skips. Five caption/collage cases cover the
 new templates' renderer selection. Seven performance-transfer cases now use built tools. Three Mureka lyrics-video cases
 now use built tools; music routes use Mureka without an ElevenLabs interim. Five Topaz upscale/interpolation cases
 now use built tools. Seedance reference dialogue and two
@@ -674,8 +674,8 @@ refusals and delivery/loudness/QC chains. RT-E043 remains skipped: exact OCR ver
 is not implemented (`feat/remotion-ocr-verification`). The original four dependency skips
 remain. Routing checks establish selection and refusal; provider tests establish file checks.
 
-Current inventory is 18 providers, 134 Gateway tools, 38 packaged skills and 289 fixture
-rows, with 283 active and 6 skipped. See [Remotion editing](REMOTION_EDITING.md) for
+Current inventory is 19 providers, 137 Gateway tools, 39 packaged skills and 301 fixture
+rows, with 295 active and 6 skipped. See [Remotion editing](REMOTION_EDITING.md) for
 licensing, the real local pipeline and incomplete browser/deployed validation.
 
 ## Static aspect variants
@@ -738,8 +738,8 @@ Exact beat/element metadata takes priority over scene/audio detection. Failed
 reports gate completion and offer a Remotion re-render, with HyperFrames only
 when explicitly requested. Dry-run/skipped checks stay incomplete; generative
 continuity remains `continuity-qc` / `local_qc`. Thresholds are PROVISIONAL.
-Inventory is 18 providers, 134 Gateway tools, 38 skills and 283 active routing
-rows out of 289. The six dependency skips remain, including capture/HyperFrames
+Inventory is 19 providers, 137 Gateway tools, 39 skills and 295 active routing
+rows out of 301. The six dependency skips remain, including capture/HyperFrames
 provider dependencies and exact OCR semantics. RT-163 and RT-164 exercise motion
 carry, and RT-165 protects generative continuity. See [motion carry QC](MOTION_CARRY_QC.md)
 for the independent clean-room implementation, calibration script and licences.
@@ -766,8 +766,8 @@ cannot certify exported stems, actual animation, visual acceptance or training r
 RT-174 and RT-175 are active. RT-176 preserves the pending `cutaway_record` dependency
 and remains skipped like the other capture cases. Its negative skill/tool guard runs as
 an active unit check. Four additional fixture negatives protect titles, explicit alternate
-rendering, knowledge explainers and ad variants. Inventory is 18 providers, 134 Gateway
-tools, 38 skills, 289 retained fixture rows, 283 active and 6 skipped. See
+rendering, knowledge explainers and ad variants. Inventory is 19 providers, 137 Gateway
+tools, 39 skills, 301 retained fixture rows, 295 active and 6 skipped. See
 [cinematic product promo](CINEMATIC_PRODUCT_PROMO.md) for provenance, licences and limits.
 
 ## Footage memory
@@ -787,7 +787,7 @@ is preserved as `source_sheet_tool`. RT-178 watches once. RT-179 uses the existi
 `conversational-edit` / `transcript_edit` / `Remotion___prepare_conversational_edit` route in
 place of parked `resolve-tighten-dialogue` / `resolve_run_script`. Five added rows cover
 folders, repeated questions, reuse, transcript cleanup and continuity. Inventory is 18
-providers, 134 Gateway tools, 38 skills, 289 rows: 283 active and the same six dependency skips.
+providers, 137 Gateway tools, 39 skills, 301 rows: 295 active and the same six dependency skips.
 Comet E2E remains blocked here; dry-run outputs are previews, not completed selects.
 
 ## Fictional conversation shorts
@@ -815,7 +815,7 @@ A checksum manifest records the results. See `docs/CHAT_STORY_VIDEO.md` for the 
 RT-180 and RT-181 are active. Six new fixture negatives protect real footage edits,
 per-market ad swaps, lower thirds, unrelated conversation mentions, still images and quoted
 copy. Discovery and dispatch reject generative video for the thread. The inventory is
-18 providers, 134 Gateway tools, 38 skills and 289 routing rows, with 283 active and the
+19 providers, 137 Gateway tools, 39 skills and 301 routing rows, with 295 active and the
 same six dependency skips. Comet visual validation and live Lambda chat rendering remain
 unverified in this environment. The source pattern has MIT attribution in the skill's NOTICE.
 
@@ -837,5 +837,24 @@ layout data. Local rendering supports the templates, while Lambda requires an op
 checked composition deployment and `REMOTION_TEMPLATE_CONTRACT_VERSION=1`.
 See [the template and transcription contract](PODCAST_AUDIOGRAM.md).
 
-Inventory is 18 providers, 134 Gateway tools, 38 skills, 289 fixture rows: 283 active and six
+Inventory is 19 providers, 137 Gateway tools, 39 skills, 301 fixture rows: 295 active and six
 unchanged dependency skips. No new tool, provider, secret or dry-run flag is introduced.
+
+## UI vector animation
+
+[lottie-animation](../agent/deep_agent/skills/lottie-animation/SKILL.md) adds local
+JSON and dotLottie deliverables for app and web UI. The editor calls
+`Lottie___lottie_author`, `Lottie___lottie_validate` and
+`Lottie___lottie_preview_render`. These tools have no keys, model calls or charges.
+The agent authors a bounded scene or supplies Lottie JSON; safe SVG path reveals,
+platform compatibility checks and a declared local preview subset are supported.
+
+RT-183 and RT-185 are active, with ten added routing regressions. Generic logo
+animation keeps its existing route unless Lottie, JSON or UI output is explicit.
+MP4 titles and lower thirds stay on motion-graphics. New vector art uses the existing
+`recraft_v41_vector` route under its separate paid-action policy. Fonts and brand
+assets must be owned or licensed. See [Lottie tools](LOTTIE_ANIMATION.md) for limits,
+packaging, documented platform snippets and incomplete-preview reporting.
+
+Current inventory is 19 providers, 137 Gateway tools, 39 skills and 301 routing
+fixture rows, with 295 active and six unchanged dependency skips.

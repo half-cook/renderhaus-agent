@@ -1,5 +1,3 @@
-"""Turn a bounded scene into native Lottie JSON without model calls."""
-
 from __future__ import annotations
 
 from copy import deepcopy

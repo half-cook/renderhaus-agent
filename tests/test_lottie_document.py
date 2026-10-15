@@ -1,5 +1,3 @@
-"""Offline contracts for confined Lottie document authoring and validation."""
-
 from copy import deepcopy
 
 import pytest
@@ -33,6 +31,30 @@ def test_minimal_document_is_valid_and_has_exact_metadata():
         "lottie-web": [], "lottie-ios": [], "lottie-android": [], "dotlottie": []},
         "not_previewed": [], "metadata": {"width": 128, "height": 128,
         "fps": 30, "frame_count": 30, "duration_seconds": 1.0}}
+
+
+def test_keyframes_cannot_change_vector_component_count():
+    document = author_document({'layers': [{'name': 'Dot', 'shape': 'ellipse'}]})
+    document['layers'][0]['ks']['p'] = {'a': 1, 'k': [
+        {'t': 0, 's': [0, 0], 'o': {'x': [0], 'y': [0]}, 'i': {'x': [1], 'y': [1]}},
+        {'t': 60, 's': [64, 64, 0]}]}
+    report = validate_document(document)
+    assert not report['ok']
+    assert 'layers[0].ks.p.k[1].s must preserve keyframe component count 2' in report['errors']
+
+
+def test_validator_reports_layer_and_style_order_preview_limits():
+    document = author_document({'layers': [{'name': 'Dot', 'shape': 'ellipse'}]})
+    document['layers'][0]['shapes'].reverse()
+    report = validate_document(document)
+    assert report['ok']
+    assert any('geometry after styles' in item for item in report['not_previewed'])
+    document = minimal_document()
+    for index in range(65):
+        document['layers'].append({'ind': index, 'ty': 3, 'ip': 0, 'op': 30, 'ks': {}})
+    report = validate_document(document)
+    assert report['ok']
+    assert any('64 layers' in item for item in report['not_previewed'])
 
 
 @pytest.mark.parametrize(("key", "value", "message"), [

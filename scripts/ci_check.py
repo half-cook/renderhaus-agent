@@ -106,10 +106,10 @@ def check_routing_inventory() -> None:
     from providers.catalog import PROVIDERS
     from providers.registry import load_committed_schemas
 
-    assert len(PROVIDERS) == 18
-    assert sum(len(load_committed_schemas(spec)) for spec in PROVIDERS) == 134
+    assert len(PROVIDERS) == 19
+    assert sum(len(load_committed_schemas(spec)) for spec in PROVIDERS) == 137
     paths = list(SKILLS_ROOT.glob("*/SKILL.md"))
-    assert len(paths) == 38
+    assert len(paths) == 39
     assert "ladder" not in POLICY and "premium_targets" not in POLICY
     assert "project_policy" not in POLICY and "flux2_klein4b_t2i" not in TOOL_MAP
     for capability, choice in POLICY["capability_map"].items():
@@ -128,7 +128,7 @@ def check_routing_inventory() -> None:
         assert set(metadata["include_tools"].split()) <= DISPATCH_TARGETS.keys(), path
         assert all(TOOL_MAP[alias]["status"] != "retired" for alias in metadata["routing_tools"].split()), path
     cases = json.loads((ROOT / "tests/fixtures/skill_routing.json").read_text())
-    assert len(cases) == 289 and sum(not case["skip_reason"] for case in cases) == 283
+    assert len(cases) == 301 and sum(not case["skip_reason"] for case in cases) == 295
     assert sum(bool(case["skip_reason"]) for case in cases) == 6
     ids = [case["test_id"] for case in cases if case.get("test_id")]
     assert len(ids) == len(set(ids)), "Routing fixture IDs must be unique."
@@ -139,7 +139,7 @@ def check_routing_inventory() -> None:
 
         subprocess.run(["git", "ls-files", "--error-unmatch", str(EVAL_PATH.relative_to(ROOT))], check=True, capture_output=True)
         assert default_vlm_enabled(), "Committed VLM evidence does not qualify for promotion."
-    print("ok routing inventory (18 providers, 134 Gateway tools, 38 skills, 283 active routing rows)")
+    print("ok routing inventory (19 providers, 137 Gateway tools, 39 skills, 295 active routing rows)")
 
 
 def _assert_gateway_shape(schema: object) -> None:
@@ -160,6 +160,23 @@ def check_dry_run_dispatch() -> None:
     from providers.registry import dispatch, dummy_arguments, load_committed_schemas
 
     for spec in PROVIDERS:
+        if spec.id == "lottie":
+            import tempfile
+            from unittest.mock import patch
+
+            with tempfile.TemporaryDirectory() as root, patch.dict(os.environ, {'RENDERHAUS_MEDIA_DIR': root}):
+                result = dispatch('lottie', 'lottie_author', {'job_id': 'ci-lottie', 'scene': {
+                    'width': 32, 'height': 32, 'frames': 4, 'layers': [
+                        {'name': 'Status dot', 'shape': 'ellipse', 'fill': '#168B52'}]}})
+                assert result['ok'] and len(result['outputs']) == 2, result
+                source = result['outputs'][0]['path']
+                result = dispatch('lottie', 'lottie_validate', {'job_id': 'ci-lottie', 'input_path': source})
+                assert result['ok'], result
+                result = dispatch('lottie', 'lottie_preview_render', {
+                    'job_id': 'ci-lottie', 'input_path': source, 'max_size': 32, 'formats': []})
+                assert result['ok'] and result['outputs'], result
+            print('ok local lottie author, validate and PNG scrubber preview')
+            continue
         if spec.id == "elevenlabs":
             # Upstream constraints need meaningful inputs, covered by test_elevenlabs.py.
             result = dispatch(spec.id, "music_compose", {"prompt": "Warm piano", "music_length_ms": 3000})

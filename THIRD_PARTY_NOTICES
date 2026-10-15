@@ -51,3 +51,16 @@ works were not licensed to upstream authors. Their media, brands and audio are n
 licensed by this text import. No upstream code, previews, audio, fonts or textures
 are included. English index metadata and the cinematic workflow are separate
 Renderhaus-authored additions. See docs/CINEMATIC_PRODUCT_PROMO.md.
+
+Lottie animation guidance
+========================
+Source: https://github.com/diffusionstudio/lottie
+Revision: 3c72912fad543897f90045ed4d355813837927fc
+Read: 2026-10-14
+Copyright (c) 2026 Diffusion Studio Inc.
+Licence: MIT; complete notice in providers/lottie/NOTICE.
+
+The skill adapts grounding, transparent UI defaults, semantic scene ownership and
+pinned-frame review guidance. The local Python tools are independent work. No
+upstream app, runtime, fonts, demo assets or weights are included. User source fonts
+and brand assets require their own rights. See docs/LOTTIE_ANIMATION.md.

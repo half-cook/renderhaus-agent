@@ -1,4 +1,5 @@
 const MODEL_LABELS: Record<string, string> = {
+  "local-vector-animation": "UI vector animation",
   "footage-memory-dry": "Footage memory",
   "shot-recipes-local": "Shot recipe library",
   "pixelcut/looping-video": "Studio Video · looping clip (named only)",

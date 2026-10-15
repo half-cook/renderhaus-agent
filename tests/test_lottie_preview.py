@@ -45,7 +45,7 @@ def test_container_is_deterministic_and_round_trips():
     with zipfile.ZipFile(io.BytesIO(payload)) as packed:
         assert packed.namelist() == ['manifest.json', 'animations/success.json']
         manifest = json.loads(packed.read('manifest.json'))
-        assert manifest['version'] == '1.0'
+        assert manifest['version'] == '1'
         assert manifest['animations'][0]['id'] == 'success'
 
 
@@ -250,3 +250,43 @@ def test_sequence_encoder_refuses_symlinks_leaving_the_job(tmp_path):
     result = execute('image_sequence_preview', tmp_path, 'frame-000000.png')
     assert not result['ok']
     assert 'inside' in result['error']
+
+
+def test_hidden_layer_expressions_are_still_reported(tmp_path):
+    value = document()
+    value['layers'][0]['hd'] = True
+    value['layers'][0]['ks']['p']['x'] = 'time * 100'
+    result = render_preview(value, tmp_path, formats=())
+    assert result['status'] == 'not_previewed'
+    assert 'expressions' in result['not_previewed'][0]
+    assert not list(tmp_path.iterdir())
+
+
+def test_container_refuses_unresolved_assets_and_excessive_json_depth():
+    value = document()
+    value['layers'][0]['refId'] = 'missing'
+    with pytest.raises(ValueError, match='asset references'):
+        pack_lottie(value)
+    value = document()
+    nested = value
+    for _ in range(26):
+        nested['extra'] = {}
+        nested = nested['extra']
+    with pytest.raises(ValueError, match='complexity'):
+        pack_lottie(value)
+
+
+def test_self_contained_precomposition_round_trips_with_v1_metadata():
+    value = document()
+    value['assets'] = [{'id': 'badge', 'layers': value['layers']}]
+    value['layers'] = [{'ty': 0, 'ind': 1, 'nm': 'Badge instance', 'ip': 0, 'op': 10,
+                       'ks': {}, 'refId': 'badge'}]
+    packed = pack_lottie(value)
+    assert unpack_lottie(packed) == value
+    with zipfile.ZipFile(io.BytesIO(packed)) as source:
+        animation = source.read('animations/animation.json')
+    manifest = {'version': '1', 'generator': 'Example app', 'author': 'Asset owner',
+                'activeAnimationId': 'animation', 'animations': [{'id': 'animation',
+                'loop': True, 'autoplay': False, 'speed': 1.0}]}
+    supplied = archive([('manifest.json', json.dumps(manifest)), ('animations/animation.json', animation)])
+    assert unpack_lottie(supplied) == value

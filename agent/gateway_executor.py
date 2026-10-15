@@ -39,12 +39,14 @@ from agent.studio_agent_next import (
 
 # Free, non-generative tools that only package existing project media. They
 # create no paid provider work, so they never pause for customer approval.
+LOTTIE_TOOLS = frozenset("Lottie___" + verb for verb in (
+    "lottie_author", "lottie_validate", "lottie_preview_render"))
 APPROVAL_EXEMPT_TOOLS = frozenset({"Remotion___export_nle_timeline"})
 LOCAL_DATA_TOOLS = frozenset({"ShotRecipes___shot_recipe_search"})
 FOOTAGE_TOOLS = frozenset('FootageMemory___' + name for name in (
     'footage_memory_status', 'footage_memory_build', 'footage_memory_query',
     'footage_watch_answer', 'footage_clip_extract'))
-LOCAL_MEDIA_TOOLS = frozenset({
+LOCAL_MEDIA_TOOLS = LOTTIE_TOOLS | frozenset({
     "Remotion___motion_carry_probe",
     "Remotion___render_ad_variants", "Ffmpeg___ffmpeg_tool",
     "Remotion___deliver_render", "Remotion___qc_deliverable",
@@ -101,6 +103,8 @@ def _local_remotion_arguments(studio, arguments: dict) -> dict:
 def tool_needs_approval(name: str, autonomous: bool, arguments: dict | None = None) -> bool:
     from providers.elevenlabs.catalog import requires_approval
 
+    if name in LOTTIE_TOOLS or name in {"lottie_author", "lottie_validate", "lottie_preview_render"}:
+        return False
     if name in FOOTAGE_TOOLS:
         if name.endswith('___footage_memory_build'):
             return (arguments or {}).get('stage', 'estimate') == 'build'
@@ -222,7 +226,7 @@ class GatewayExecutor:
         from providers.catalog import get_provider
         from providers.registry import generate_schemas
 
-        for provider in ("ffmpeg", "remotion", "shot_recipes", "footage_memory"):
+        for provider in ("ffmpeg", "remotion", "shot_recipes", "footage_memory", "lottie"):
             spec = get_provider(provider)
             for schema in generate_schemas(spec):
                 name = f"{spec.target_name}___{schema['name']}"
@@ -509,7 +513,12 @@ class GatewayExecutor:
             from server.billing_rates import ad_matrix_estimate
 
             try:
-                validate_tool_arguments(provider, tool, arguments, {})
+                contract_arguments = arguments
+                if name in LOTTIE_TOOLS:
+                    from providers.lottie.contracts import owned_input_placeholders
+
+                    contract_arguments = owned_input_placeholders(arguments)
+                validate_tool_arguments(provider, tool, contract_arguments, {})
                 if name == "Remotion___render_ad_variants":
                     ad_matrix_estimate(arguments)
                     if arguments.get("stage") != "plan" and not arguments.get("plan_hash"):
@@ -700,6 +709,7 @@ class GatewayExecutor:
     async def execute(self, call, *, approved=False, rejection=None):
         studio, render_jobs = self.studio, self.render_jobs
         name, arguments, call_id = call["tool_name"], call["arguments"], call["call_id"]
+        lottie_sources = _asset_version_ids(arguments) if name in LOTTIE_TOOLS else []
         if name == "Sync___create_dialogue_edit":
             edit = {key: value for key, value in _compact_tool_arguments(arguments).items() if key != "action_id"}
             uncertain = next((event for event in studio.tool_events if event.name == name
@@ -804,6 +814,15 @@ class GatewayExecutor:
                 self.publish_spending()
             if route:
                 self.rejected_reviews.pop(route.job_type, None)
+            if name in LOTTIE_TOOLS:
+                from providers.lottie.api import stage_owned_inputs
+
+                try:
+                    arguments = await asyncio.to_thread(stage_owned_inputs, name.split('___', 1)[1],
+                                                        arguments, studio.source_resolver)
+                except (ValueError, OSError, KeyError) as exc:
+                    return {'status': 'not_run', 'reason': str(exc) if isinstance(exc, ValueError)
+                            else 'The owned animation asset could not be staged inside this job.'}
             started_at = time.monotonic()
             _record_stream_event(
                 SimpleNamespace(
@@ -926,7 +945,7 @@ class GatewayExecutor:
         if saving_media:
             _progress(studio, event_id=f"save-{call_id}", event_type="MEDIA_WAIT", title="Saving media",
                       message="Saving completed media to your project…", status="running")
-        source_version_ids = _asset_version_ids(arguments)
+        source_version_ids = list(dict.fromkeys(lottie_sources + _asset_version_ids(arguments)))
         if is_free_tool(name) and arguments.get("job_id"):
             for job in self.media_jobs.values():
                 if self.matches_media_job(job, name, arguments["job_id"]):

@@ -1,5 +1,3 @@
-"""Strict local tool and scene boundaries. No credentials or network access."""
-
 from __future__ import annotations
 
 import os
@@ -173,7 +171,7 @@ class ValidateRequest(JobRequest):
 class PreviewRequest(JobRequest):
     input_path: str
     max_size: int = Field(default=256, ge=32, le=512)
-    formats: list[Literal["mp4", "gif"]] | None = Field(default=None, min_length=1, max_length=2)
+    formats: list[Literal["mp4", "gif"]] | None = Field(default=None, max_length=2)
 
     @field_validator("input_path")
     @classmethod
@@ -196,13 +194,22 @@ DESCRIPTIONS = {
 }
 
 
+def owned_input_placeholders(arguments: dict) -> dict:
+    return {**arguments, **{field: 'owned-source.svg' if field == 'svg_path' else 'owned-source.json'
+            for field in ('svg_path', 'input_path') if isinstance(arguments.get(field), str)
+            and arguments[field].startswith('renderhaus-asset://')}}
+
+
 def request_for(tool: str, arguments: dict) -> AuthorRequest | ValidateRequest | PreviewRequest:
     if tool not in REQUESTS:
         raise ValueError(f"unknown local animation tool {tool!r}")
     request = REQUESTS[tool].model_validate(arguments)
     validate_job_id(request.job_id)
     root = Path(os.getenv("RENDERHAUS_MEDIA_DIR", ".renderhaus/media")).expanduser().resolve()
-    directory = (root / request.job_id).resolve()
+    candidate = root / request.job_id
+    if candidate.is_symlink():
+        raise ValueError("job directory must not be a symlink")
+    directory = candidate.resolve()
     if directory == root or not directory.is_relative_to(root):
         raise ValueError("job directory must stay inside the local media root")
     for field in ("input_path", "svg_path"):
@@ -233,4 +240,10 @@ def tool_schema(tool: str) -> dict:
             "keyframes {frame,value,easing}; easing linear/ease-in/ease-out/ease-in-out. "
             "Runtime rejects unknown fields. Canvas 16..2048, fps1..120, frames1..3600, duration<=120s."
         )
+    for field in ("svg_path", "input_path"):
+        if field in schema["properties"]:
+            schema["properties"][field]["description"] = (
+                "File confined to the current job. Studio may stage an owned renderhaus-asset://version handle "
+                "through its trusted resolver before invoking this provider; direct provider calls require a local path."
+            )
     return {"name": tool, "description": DESCRIPTIONS[tool], "inputSchema": schema}

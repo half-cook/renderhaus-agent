@@ -485,6 +485,9 @@ _SECRET_ARGUMENT_PARTS = (
 )
 _TEXT_PART_KEYS = frozenset({"type", "text"})
 _TOOL_TITLES = {
+    "lottie_author": "Create UI vector animation",
+    "lottie_validate": "Check animation compatibility",
+    "lottie_preview_render": "Preview UI animation",
     "shot_recipe_search": "Find shot recipes",
     "render_timeline": "Compose final MP4",
     "get_render_progress": "Poll Remotion render",
@@ -936,6 +939,8 @@ def _gateway_tool_parts(name: str) -> tuple[str | None, str, str]:
         target, tool = raw.split("___", 1)
     else:
         target, tool = None, raw
+    if target == 'Lottie':
+        return target, tool, _title_for_gateway_tool(target, tool)
     label = tool.replace("_", " ").strip() or "tool"
     label = f"{target} {label}" if target else label
     return target, tool, label[0].upper() + label[1:]
@@ -1451,6 +1456,10 @@ def _record_approval_requests(
 
 def _requests_video_deliverable(prompt: str) -> bool:
     """Identify an explicit request for a video file, not merely video-related work."""
+    from agent.deep_agent.routing import lottie_request
+
+    if lottie_request(prompt):
+        return False
     for match in _VIDEO_DELIVERABLE_PATTERN.finditer(prompt):
         suffix = re.split(r"\b(?:with|without|and|include|add)\b", prompt[match.end():match.end() + 24],
                           maxsplit=1, flags=re.IGNORECASE)[0]
