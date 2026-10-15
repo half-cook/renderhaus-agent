@@ -41,3 +41,22 @@ test("Google button and copy only appear when Google OAuth is enabled in Clerk",
   assert.match(form, /"Sign in with a code sent to your email\."/);
   assert.match(read("app/revamp-v4.css"), /\.rh-form-v4 \.rh-step-body \{ margin-left: 0; \}/);
 });
+
+test("Google is full width and disabled Send code stays readable", () => {
+  const css = read("app/revamp-v4.css");
+  assert.match(css, /\.rh-form-v4 \.rh-btn-block\.rh-google \{ width: 100%;/);
+  assert.match(css, /\.rh-form-v4 \.rh-btn-solid\[disabled\] \{ opacity: 1;[^}]*color: var\(--rh-fg-2\)/);
+});
+
+test("googleEnabled reads socialProviderStrategies from the loaded Clerk environment", () => {
+  const form = read("components/beta/InviteSignup.tsx");
+  assert.match(form, /__internal_environment \?\? host\.environment \?\? host\.__unstable__environment/);
+  assert.match(form, /window as unknown as \{ Clerk\?: ClerkEnvHost \}/);
+});
+
+test("captcha sits inside the form card, not beside it", () => {
+  const form = read("components/beta/InviteSignup.tsx");
+  assert.doesNotMatch(form, /\{children\}<ClerkCaptcha \/>/);
+  assert.match(form, /<ClerkCaptcha \/>\s*<p className="rh-form-fine">Already in\?/);
+  assert.match(form, /<ClerkCaptcha \/>\s*<p className="rh-form-fine">New here\?/);
+});

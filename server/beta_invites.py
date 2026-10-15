@@ -34,6 +34,8 @@ RATE_WINDOW_SECONDS = 15 * 60
 CHECK_LIMIT_PER_IP = 10
 REDEEM_LIMIT = 5
 INVITE_ONLY = "Renderhaus is invite only right now."
+INVITE_HELD = ("This code is in the middle of a sign-up in another browser or tab. Finish there, "
+               "or try again here in about 30 minutes.")
 ALREADY_CLAIMED = "This account already has its beta credit."
 PROGRAMME_FULL = "The beta credit is fully allocated."
 _ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"
@@ -179,7 +181,7 @@ class BetaInvites:
                 token_hash = identity_hash("reservation", reservation, self.salt) if reservation else ""
                 held = row["reserved_until"] and row["reserved_until"] > now
                 if held and not (token_hash and hmac.compare_digest(token_hash, row["reservation_hash"] or "")):
-                    raise BetaError(INVITE_USED, 409)
+                    raise BetaError(INVITE_HELD, 423)
                 if not token_hash:
                     reservation = secrets.token_urlsafe(24)
                     token_hash = identity_hash("reservation", reservation, self.salt)

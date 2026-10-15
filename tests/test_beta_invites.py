@@ -13,7 +13,7 @@ from fastapi.testclient import TestClient
 from server.auth import require_auth
 from server.beta_credits import BetaError, BetaSettings
 from server.beta_invites import (
-    ALREADY_CLAIMED, EMAIL_TAKEN, INVITE_INVALID, INVITE_USED, PROGRAMME_FULL, RATE_LIMITED, BetaInvites, normalize_code,
+    ALREADY_CLAIMED, EMAIL_TAKEN, INVITE_HELD, INVITE_INVALID, INVITE_USED, PROGRAMME_FULL, RATE_LIMITED, BetaInvites, normalize_code,
 )
 from server.studio_state import StudioRepository
 
@@ -86,7 +86,7 @@ class InviteTests(InviteFixture, unittest.TestCase):
         self.assertTrue(held["valid"])
         self.assertEqual(state_of(self.invites, code), "open")
         # Someone else can neither check nor redeem it while it is reserved.
-        self.denied(lambda: self.invites.check(code, "2.2.2.2"), INVITE_USED)
+        self.denied(lambda: self.invites.check(code, "2.2.2.2"), INVITE_HELD)
         self.denied(lambda: self.invites.redeem("acct-2", code), INVITE_USED)
         # The same browser re-checks (e.g. after a typo'd email) and still holds it.
         again = self.invites.check(code, "1.1.1.1", held["reservation"])
