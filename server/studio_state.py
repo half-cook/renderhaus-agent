@@ -1438,7 +1438,8 @@ class StudioRepository:
                 "run_state_json = ?, approvals_json = ?, updated_at = ? "
                 "WHERE id = ? AND workspace_id = ?",
                 (
-                    "Waiting for tool approval.",
+                    "Waiting for your answer." if all(item.get("kind") == "question" for item in normalized)
+                    else "Waiting for tool approval.",
                     run_state,
                     json.dumps(normalized, ensure_ascii=False),
                     now,
@@ -1457,9 +1458,10 @@ class StudioRepository:
         *,
         decision: str,
         message: str | None = None,
+        answer: dict[str, Any] | None = None,
     ) -> tuple[dict[str, Any], bool]:
-        if decision not in {"approve", "reject"}:
-            raise ValueError("Approval decision must be approve or reject.")
+        if decision not in {"approve", "reject", "answer"}:
+            raise ValueError("A request needs an approval decision or question answer.")
         with self._lock, self._connect() as connection:
             row = connection.execute(
                 "SELECT status, approvals_json FROM executions WHERE id = ? AND workspace_id = ?",
@@ -1478,6 +1480,13 @@ class StudioRepository:
                 raise KeyError("Approval request not found")
             if target.get("decision") is not None:
                 raise ValueError("This tool call already has a decision.")
+            if target.get("kind") == "question":
+                from agent.deep_agent.questions import StudioQuestionRequest
+                if decision != "answer":
+                    raise ValueError("A question needs an answer, not a spending decision.")
+                target["answer"] = StudioQuestionRequest.model_validate(target).validate_answer(answer).model_dump()
+            elif decision == "answer" or answer is not None:
+                raise ValueError("A tool approval needs an approval decision, not a question answer.")
             target["decision"] = decision
             if message:
                 target["message"] = message[:1_000]
@@ -1487,7 +1496,10 @@ class StudioRepository:
                 "WHERE id = ? AND workspace_id = ?",
                 (
                     "queued" if ready else "awaiting_approval",
-                    "Resuming the agent." if ready else "Waiting for tool approval.",
+                    "Resuming the agent." if ready else (
+                        "Waiting for your answer." if all(item.get("kind") == "question" or item.get("decision") for item in approvals)
+                        else "Waiting for tool approval."
+                    ),
                     json.dumps(approvals, ensure_ascii=False),
                     _now(),
                     execution_id,
@@ -1888,6 +1900,8 @@ class StudioRepository:
         self, user_id: str, cost_cents: int, reason: str, *, run_id: str | None = None,
         line_kind: str | None = None, line_label: str | None = None, line_detail: str | None = None,
         call_id: str | None = None,
+        _work_id: str | None = None, _model_usd: float = 0, _compute_usd: float = 0,
+        _work_usage: dict[str, Any] | None = None,
     ) -> UsageCharge:
         """Atomically debit daily allowance, then beta credit, then purchased credit.
 
@@ -1903,6 +1917,40 @@ class StudioRepository:
         charge_id = uuid.uuid4().hex
         with self._connect() as connection:
             connection.execute("BEGIN IMMEDIATE")
+            if _work_id is not None:
+                hold = connection.execute("SELECT * FROM run_holds WHERE run_id = ?", (run_id,)).fetchone()
+                if hold is None or hold["user_id"] != user_id:
+                    raise run_budget.RunBudgetError("This run has no active credit hold.")
+                work = connection.execute("SELECT * FROM run_work WHERE run_id = ? AND work_id = ?",
+                                          (run_id, _work_id)).fetchone()
+                if work is None:
+                    raise run_budget.RunBudgetError("This work has no budget reservation.")
+                if work["state"] == "settled":
+                    event = connection.execute("SELECT * FROM usage_events WHERE id = ?", (work["charge_id"],)).fetchone()
+                    return UsageCharge(event["daily_cents"], event["wallet_cents"], event["charge_date"],
+                                       event["beta_cents"], event["id"])
+                if hold["state"] != "held":
+                    raise run_budget.RunBudgetError("This run has no active credit hold.")
+                if work["kind"] != "media":
+                    cumulative_usd = float(hold["model_usd"]) + float(hold["compute_usd"]) + _model_usd + _compute_usd
+                    already = connection.execute(
+                        "SELECT COALESCE(SUM(cents), 0) FROM run_lines WHERE run_id = ? AND kind = 'orchestration' "
+                        "AND refunded_at IS NULL", (run_id,),
+                    ).fetchone()[0]
+                    cost_cents = max(0, run_budget.orchestration_total_cents(cumulative_usd) - int(already))
+                    if not run_budget.orchestration_billing_enabled():
+                        cost_cents = 0
+                if cost_cents > work["reserved_cents"]:
+                    raise run_budget.RunBudgetError("Actual usage exceeds the reserved envelope; billing needs reconciliation.")
+                connection.execute(
+                    "UPDATE run_work SET state = 'settled', model_usd = ?, compute_usd = ?, usage_json = ?, "
+                    "charge_id = ?, updated_at = ? WHERE run_id = ? AND work_id = ?",
+                    (_model_usd, _compute_usd, json.dumps(_work_usage or {}, sort_keys=True), charge_id, now, run_id, _work_id),
+                )
+                connection.execute(
+                    "UPDATE run_holds SET model_usd = model_usd + ?, compute_usd = compute_usd + ? WHERE run_id = ?",
+                    (_model_usd, _compute_usd, run_id),
+                )
             sub = connection.execute("SELECT * FROM subscriptions WHERE user_id = ?", (user_id,)).fetchone()
             used_today = 0
             daily_remaining = 0
@@ -2177,12 +2225,79 @@ class StudioRepository:
                                (run_id, _now(), row["run_id"]))
             connection.execute("UPDATE run_lines SET run_id = ? WHERE run_id = ?", (run_id, row["run_id"]))
             connection.execute("UPDATE usage_events SET run_id = ? WHERE run_id = ?", (run_id, row["run_id"]))
+            connection.execute("UPDATE run_work SET run_id = ? WHERE run_id = ?", (run_id, row["run_id"]))
         return True
 
     def get_run_hold(self, run_id: str) -> dict[str, Any] | None:
         with self._connect() as connection:
             row = connection.execute("SELECT * FROM run_holds WHERE run_id = ?", (run_id,)).fetchone()
         return dict(row) if row else None
+
+    def run_work(self, run_id: str) -> list[dict[str, Any]]:
+        with self._connect() as connection:
+            rows = connection.execute("SELECT * FROM run_work WHERE run_id = ? ORDER BY created_at, rowid", (run_id,)).fetchall()
+        return [dict(row) for row in rows]
+
+    def run_budget_snapshot(self, run_id: str) -> dict[str, Any]:
+        with self._connect() as connection:
+            connection.execute("BEGIN")
+            hold = connection.execute("SELECT * FROM run_holds WHERE run_id = ?", (run_id,)).fetchone()
+            if hold is None or hold["state"] != "held":
+                raise run_budget.RunBudgetError("This run has no active credit hold.")
+            reserved = run_budget.work_reserved_cents(connection, run_id)
+        return {"cap_cents": hold["held_cents"], "charged_cents": hold["charged_cents"],
+                "reserved_cents": reserved, "remaining_cents": max(0, hold["held_cents"] - hold["charged_cents"] - reserved)}
+
+    def reserve_run_work(
+        self, user_id: str, run_id: str, work_id: str, cost_cents: int, *, kind: str, role: str,
+        allow_existing: bool = True,
+    ) -> dict[str, Any]:
+        if type(cost_cents) is not int or cost_cents < 0 or kind not in {"model", "local", "media"}:
+            raise ValueError("Work needs non-negative integer cents and a known usage kind.")
+        now = _now()
+        with self._connect() as connection:
+            connection.execute("BEGIN IMMEDIATE")
+            hold = connection.execute("SELECT * FROM run_holds WHERE run_id = ?", (run_id,)).fetchone()
+            if hold is None or hold["state"] != "held" or hold["user_id"] != user_id:
+                raise run_budget.RunBudgetError("This run has no active credit hold.")
+            if hold['status'] == 'paused_cap':
+                raise run_budget.RunCapExceededError(hold['charged_cents'], hold['held_cents'], cost_cents)
+            existing = connection.execute("SELECT * FROM run_work WHERE run_id = ? AND work_id = ?", (run_id, work_id)).fetchone()
+            if existing:
+                if not allow_existing or existing["state"] != "reserved" or existing["reserved_cents"] != cost_cents:
+                    raise run_budget.RunBudgetError("This work already has a different or completed reservation.")
+                return dict(existing)
+            reserved = run_budget.work_reserved_cents(connection, run_id)
+            if hold["charged_cents"] + reserved + cost_cents > hold["held_cents"]:
+                raise run_budget.RunCapExceededError(hold["charged_cents"] + reserved, hold["held_cents"], cost_cents)
+            connection.execute(
+                "INSERT INTO run_work(run_id, work_id, kind, role, reserved_cents, created_at, updated_at) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?)", (run_id, work_id, kind, role, cost_cents, now, now),
+            )
+            connection.execute("UPDATE run_holds SET updated_at = ? WHERE run_id = ?", (now, run_id))
+            row = connection.execute("SELECT * FROM run_work WHERE run_id = ? AND work_id = ?", (run_id, work_id)).fetchone()
+        return dict(row)
+
+    def settle_run_work(
+        self, user_id: str, run_id: str, work_id: str, *, model_cost_usd: float = 0,
+        compute_cost_usd: float = 0, usage: dict[str, Any] | None = None,
+    ) -> UsageCharge:
+        import math
+
+        if any(not math.isfinite(value) or value < 0 for value in (model_cost_usd, compute_cost_usd)):
+            raise ValueError("Actual usage costs must be finite and non-negative.")
+        return self.charge_usage(
+            user_id, 0, "orchestration", run_id=run_id, line_kind="orchestration", line_label=run_budget.ORCHESTRATION_LABEL,
+            call_id=work_id, _work_id=work_id, _model_usd=model_cost_usd, _compute_usd=compute_cost_usd, _work_usage=usage,
+        )
+
+    def mark_run_work_ambiguous(self, run_id: str, work_id: str, usage: dict[str, Any] | None = None) -> None:
+        with self._connect() as connection:
+            connection.execute(
+                "UPDATE run_work SET state = 'ambiguous', usage_json = COALESCE(?, usage_json), updated_at = ? "
+                "WHERE run_id = ? AND work_id = ? AND state = 'reserved'",
+                (json.dumps(usage, sort_keys=True) if usage is not None else None, _now(), run_id, work_id),
+            )
 
     def run_lines(self, run_id: str) -> list[dict[str, Any]]:
         with self._connect() as connection:
@@ -2226,6 +2341,7 @@ class StudioRepository:
             if cursor.rowcount:
                 connection.execute("UPDATE run_lines SET run_id = ? WHERE run_id = ?", (new_run_id, old_run_id))
                 connection.execute("UPDATE usage_events SET run_id = ? WHERE run_id = ?", (new_run_id, old_run_id))
+                connection.execute("UPDATE run_work SET run_id = ? WHERE run_id = ?", (new_run_id, old_run_id))
 
     def release_run(self, run_id: str, *, status: str = "done") -> dict[str, Any] | None:
         """End a run: release the unused part of its hold and store the customer receipt.
@@ -2241,6 +2357,9 @@ class StudioRepository:
                 return None
             if row["state"] == "released":
                 return json.loads(row["receipt_json"]) if row["receipt_json"] else None
+            if connection.execute("SELECT 1 FROM run_work WHERE run_id = ? AND state != 'settled' LIMIT 1", (run_id,)).fetchone():
+                connection.execute("UPDATE run_holds SET updated_at = ? WHERE run_id = ?", (now, run_id))
+                return None
             lines = run_budget.lines_from_rows(connection.execute(
                 "SELECT kind, label, detail, cents, refunded_at FROM run_lines WHERE run_id = ? "
                 "ORDER BY created_at, rowid", (run_id,)).fetchall())

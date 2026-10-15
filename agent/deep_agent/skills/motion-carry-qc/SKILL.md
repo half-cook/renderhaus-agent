@@ -11,6 +11,10 @@ metadata:
 
 # Motion carry QC
 
+The harness finish rubric uses this skill for relevant renders. Run `inspect_media` on the
+current local file and view sampled frames with `read_file`. These harness tools supplement
+the saved motion probe. A rubric verdict cannot override a failing or stale probe report.
+
 Run this after a completed motion-graphics, product-demo-video,
 knowledge-explainer or explicit HyperFrames MP4 render. Also use it when a
 customer says a motion video feels like a slideshow or PowerPoint, has no

@@ -1,4 +1,5 @@
 {
+  "selection_mode": "ranked_suggestions",
   "premium_video_approval": true,
   "default_video_tool": "wan3_t2v",
   "free_tools": [

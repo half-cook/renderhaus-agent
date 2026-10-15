@@ -102,11 +102,13 @@ def check_routing_inventory() -> None:
     import yaml
 
     from agent.deep_agent.routing import POLICY, TOOL_MAP
-    from agent.deep_agent.runner import DISPATCH_TARGETS, SKILLS_ROOT
+    from agent.deep_agent.runner import DISPATCH_TARGETS, HARNESS_TOOL_NAMES, SKILLS_ROOT
     from providers.catalog import PROVIDERS
     from providers.registry import load_committed_schemas
 
     assert len(PROVIDERS) == 19
+    assert HARNESS_TOOL_NAMES == {'execute', 'stage_media', 'inspect_media', 'ask_user', 'web_search', 'web_fetch'}
+    assert POLICY['selection_mode'] == 'ranked_suggestions'
     assert sum(len(load_committed_schemas(spec)) for spec in PROVIDERS) == 137
     paths = list(SKILLS_ROOT.glob("*/SKILL.md"))
     assert len(paths) == 39

@@ -26,6 +26,7 @@ from urllib.parse import urlsplit
 
 from agent.codex_harness import CodexHarness
 from agent.backend_config import agent_backend
+from agent.deep_agent.questions import StudioQuestionAnswer, StudioQuestionRequest
 from agent.gateway_client import GatewayClient
 from bedrock_agentcore.runtime import BedrockAgentCoreApp
 from mcp import Tool as MCPTool
@@ -188,18 +189,20 @@ class StudioAgentRequest(BaseModel):
     confidential: bool = False
     quality_tier: Literal["draft", "standard", "premium"] = "standard"
     resume_state: str | None = None
-    approval_decisions: list["StudioApprovalDecision"] = Field(default_factory=list, max_length=32)
+    approval_decisions: list["StudioApprovalDecision | StudioQuestionAnswer"] = Field(default_factory=list, max_length=32)
     resume_tool_names: list[str] = Field(default_factory=list, max_length=64)
     prior_tool_events: list[dict[str, Any]] = Field(default_factory=list)
 
 
 class StudioApprovalDecision(BaseModel):
+    kind: Literal["approval"] = "approval"
     call_id: str = Field(min_length=1, max_length=200)
     decision: str = Field(pattern="^(approve|reject)$")
     message: str | None = Field(default=None, max_length=1_000)
 
 
 class StudioApprovalRequest(BaseModel):
+    kind: Literal["approval"] = "approval"
     call_id: str = Field(min_length=1, max_length=200)
     tool_name: str = Field(min_length=1, max_length=240)
     label: str = Field(min_length=1, max_length=240)
@@ -409,11 +412,11 @@ class StudioAgentApprovalRequired(Exception):
     def __init__(
         self,
         state: str,
-        approvals: list[StudioApprovalRequest],
+        approvals: list[StudioApprovalRequest | StudioQuestionRequest],
         session_items: list[dict[str, Any]] | None = None,
         tool_events: list[StudioToolEvent] | None = None,
     ) -> None:
-        super().__init__("Tool approval is required to continue this agent run.")
+        super().__init__("A response is required to continue this agent run.")
         self.state = state
         self.approvals = approvals
         self.session_items = list(session_items or [])
@@ -1423,9 +1426,13 @@ def _approval_request(item: Any) -> StudioApprovalRequest:
 
 
 def _record_approval_requests(
-    studio: StudioAgentContext, approvals: list[StudioApprovalRequest]
+    studio: StudioAgentContext, approvals: list[StudioApprovalRequest | StudioQuestionRequest]
 ) -> None:
     for approval in approvals:
+        if isinstance(approval, StudioQuestionRequest):
+            _progress(studio, event_id=f"question-{approval.call_id}", event_type="QUESTION_REQUIRED",
+                      title="Your answer is needed", message=approval.question, status="awaiting_approval")
+            continue
         existing = next(
             (event for event in studio.tool_events if event.id == approval.call_id),
             None,

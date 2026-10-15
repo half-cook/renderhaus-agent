@@ -22,8 +22,9 @@ from agent.errors import AgentRunLimitExceeded
 from agent.backend_config import agent_configured
 from fastapi import APIRouter, File, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse, StreamingResponse
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
+from agent.deep_agent.questions import QuestionAnswer, StudioQuestionAnswer, StudioQuestionRequest
 from agent.studio_agent_next import StudioNode as StudioNodeReference
 from agent.studio_agent_next import (
     MAX_AGENT_PROMPT_CHARS,
@@ -941,6 +942,12 @@ class AgentApprovalBody(BaseModel):
     cap_cents: int | None = Field(default=None, ge=0, le=10_000_000)
 
 
+class AgentQuestionBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    answer: QuestionAnswer
+
+
 class AgentCapBody(BaseModel):
     action: Literal["raise", "stop"]
     cap_cents: int | None = Field(default=None, ge=0, le=10_000_000)
@@ -1309,7 +1316,7 @@ def _studio_agent_request(
     user_id: str | None = None,
     autonomous: bool = False,
     resume_state: str | None = None,
-    approval_decisions: list[StudioApprovalDecision] | None = None,
+    approval_decisions: list[StudioApprovalDecision | StudioQuestionAnswer] | None = None,
     resume_tool_names: list[str] | None = None,
 ) -> StudioAgentRequest:
     policy = ProjectProviderPolicy()
@@ -1470,7 +1477,8 @@ async def _invoke_agentcore_runtime(
         )
     if payload.get("status") == "awaiting_approval":
         approvals = [
-            StudioApprovalRequest.model_validate(item) for item in payload.get("approvals") or []
+            (StudioQuestionRequest.model_validate(item) if item.get("kind") == "question"
+             else StudioApprovalRequest.model_validate(item)) for item in payload.get("approvals") or []
         ]
         raise StudioAgentApprovalRequired(
             str(payload.get("run_state") or ""),
@@ -1504,7 +1512,7 @@ async def run_studio_agent(
     session_items: list[dict[str, Any]] | None = None,
     autonomous: bool = False,
     resume_state: str | None = None,
-    approval_decisions: list[StudioApprovalDecision] | None = None,
+    approval_decisions: list[StudioApprovalDecision | StudioQuestionAnswer] | None = None,
     resume_tool_names: list[str] | None = None,
     prior_tool_events: list[StudioToolEvent] | None = None,
     **_unused: Any,
@@ -1641,7 +1649,7 @@ async def _run_studio_agent_job_inner(
     user_id: str,
     autonomous: bool = False,
     resume_state: str | None = None,
-    approval_decisions: list[StudioApprovalDecision] | None = None,
+    approval_decisions: list[StudioApprovalDecision | StudioQuestionAnswer] | None = None,
     prior_tool_events: list[StudioToolEvent] | None = None,
     resume_tool_names: list[str] | None = None,
 ) -> None:
@@ -2094,9 +2102,15 @@ async def decide_studio_agent_tool(
     auth: AuthUser,
 ) -> dict[str, Any]:
     workspace_id = current_workspace_id(auth)
+    checkpoint_for_cap = await asyncio.to_thread(repository.execution_checkpoint, workspace_id, job_id)
+    target = next((item for item in (checkpoint_for_cap or {}).get("approvals") or []
+                   if item.get("call_id") == call_id), None)
+    if target is None:
+        raise HTTPException(status_code=404, detail="Approval request not found.")
+    if target.get("kind") == "question":
+        raise HTTPException(status_code=409, detail="Use the question answer action for this request.")
     if body.decision == "approve":
         # Hold the hard cap from the user's credit before the approval counts; nothing is recorded if it fails.
-        checkpoint_for_cap = await asyncio.to_thread(repository.execution_checkpoint, workspace_id, job_id)
         pending = [dict(item, decision=item.get("decision") or ("approve" if item.get("call_id") == call_id else None))
                    for item in (checkpoint_for_cap or {}).get("approvals") or []]
         if pending:
@@ -2125,6 +2139,30 @@ async def decide_studio_agent_tool(
     except ValueError as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
 
+    return await _resume_studio_agent_decision(job_id, execution, ready, auth)
+
+
+@router.post("/agent/{job_id}/questions/{call_id}")
+async def answer_studio_agent_question(
+    job_id: str, call_id: str, body: AgentQuestionBody, auth: AuthUser,
+) -> dict[str, Any]:
+    workspace_id = current_workspace_id(auth)
+    try:
+        execution, ready = await asyncio.to_thread(
+            repository.decide_execution_approval, workspace_id, job_id, call_id,
+            decision="answer", answer=body.answer.model_dump(),
+        )
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    return await _resume_studio_agent_decision(job_id, execution, ready, auth)
+
+
+async def _resume_studio_agent_decision(
+    job_id: str, execution: dict[str, Any], ready: bool, auth: AuthUser,
+) -> dict[str, Any]:
+    workspace_id = current_workspace_id(auth)
     if not ready:
         return run_billing.public_execution(execution)
 
@@ -2133,7 +2171,8 @@ async def decide_studio_agent_tool(
         raise HTTPException(status_code=409, detail="The resumable agent checkpoint is missing.")
     request = StudioAgentRequest.model_validate(checkpoint.get("request") or {})
     decisions = [
-        StudioApprovalDecision(
+        StudioQuestionAnswer(call_id=str(item.get("call_id") or ""), answer=item.get("answer"))
+        if item.get("kind") == "question" else StudioApprovalDecision(
             call_id=str(item.get("call_id") or ""),
             decision=str(item.get("decision") or "reject"),
             message=item.get("message") if isinstance(item.get("message"), str) else None,
@@ -2169,7 +2208,7 @@ async def decide_studio_agent_tool(
             resume_tool_names=[
                 str(item.get("tool_name") or "")
                 for item in checkpoint.get("approvals") or []
-                if item.get("tool_name")
+                if item.get("tool_name") and item.get("kind") != "question"
             ],
         ),
         name=f"studio-agent-resume-{job_id}",

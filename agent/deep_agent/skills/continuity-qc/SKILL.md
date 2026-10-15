@@ -9,6 +9,10 @@ metadata:
 
 # Continuity QC
 
+Before finishing a media deliverable, run the harness `inspect_media` on its current local file
+and use `read_file` to view sampled frames. The finish rubric applies this skill where relevant.
+Inspection never replaces continuity scoring, consent, training provenance or customer review.
+
 `local_qc` remains the default for every project. `gemini_vlm_judge` is an explicit,
 experimental alternative; it must beat 0.85 on all 420 labelled pairs before promotion.
 A project confidentiality field has no routing or approval effect.

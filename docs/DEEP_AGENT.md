@@ -1,5 +1,8 @@
 # Studio Deep Agents backend
 
+[Harness v2](HARNESS_V2.md) extends this runner with isolated local execution, measured
+inspection, an SDK finish rubric, clarification cards, ranked routing hints and per-call budgets.
+
 Word-level footage corrections use [dialogue-edit](DIALOGUE_EDIT.md) on existing sync-3.
 Preview and video each pause for consent/cost approval; ambiguous preview creation cannot
 be automatically retried. The flow uses the existing media dispatch and native approval resume.
@@ -14,7 +17,7 @@ request, job, approval, progress, asset, and conversation contracts remain in pl
 | --- | --- |
 | `RENDERHAUS_AGENT_BACKEND` | `deepagents` by default; `codex` selects the retained app-server backend. Other values fail explicitly. |
 | `RENDERHAUS_AGENT_MODEL` | LangChain `provider:model`, default `anthropic:claude-sonnet-5-5`. Supported prefixes are `anthropic`, `openai`, `bedrock`, and `bedrock_converse`. Unknown prefixes and empty model IDs fail explicitly. |
-| `RENDERHAUS_AGENT_EFFORT` | Anthropic effort, default `medium` for manager/planner/general-purpose and `low` for media/audio/editor. Accepts `low`, `medium`, `high`, `xhigh`, or `max`; maps to `output_config.effort`. Ignored for OpenAI, Bedrock, Codex, and injected test models. |
+| `RENDERHAUS_AGENT_EFFORT` | Anthropic effort, default `high` for manager/planner/general-purpose, `medium` for editor, and `low` for media/audio. Accepts `low`, `medium`, `high`, `xhigh`, or `max`; maps to `output_config.effort`. Ignored for OpenAI, Bedrock, Codex, and injected test models. |
 | `RENDERHAUS_AGENT_MODEL_<ROLE>` | Optional override for `PLANNER`, `MEDIA`, `AUDIO`, `EDITOR`, or `GENERAL_PURPOSE`; falls back to the global model. |
 | `RENDERHAUS_AGENT_EFFORT_<ROLE>` | Optional matching effort override; falls back to the global effort, then the role default. |
 | `AGENT_MODEL` | Explicit legacy fallback when the new model variable is absent or blank. Unqualified names and `openai/` names select OpenAI. Codex still uses this variable and defaults to `gpt-5.6-luna`. |
@@ -24,8 +27,8 @@ request, job, approval, progress, asset, and conversation contracts remain in pl
 | Provider `*_DRY_RUN` variables | Keep their existing provider behavior. The agent cannot change configuration. Dry runs never satisfy video delivery. |
 
 Satya chose Claude Sonnet 5.5 after Haiku 5.5 for the manager and every subagent. Manager, planner and
-research roles use medium effort for decisions across multiple steps. Media, audio and editor
-roles use low effort for focused dispatch. Set a role override such as
+research roles use high effort for decisions across multiple steps. Media and audio
+roles use low effort for focused dispatch. The editor uses medium effort. Set a role override such as
 `RENDERHAUS_AGENT_MODEL_PLANNER=anthropic:claude-opus-5-5` to change the planner independently.
 The global model applies to the manager and inherited role models.
 The global effort overrides every role default unless that role has its own setting. Set
@@ -34,8 +37,8 @@ first nonblank value of `RENDERHAUS_AGENT_MODEL`, then `AGENT_MODEL`, then the S
 Studio no longer injects a legacy `AGENT_MODEL` value that would mask this default.
 
 These effort choices are workload defaults, not measured Sonnet quality claims.
-Medium leaves the manager and planner room for dependency and approval decisions.
-Low keeps focused media, audio and editor dispatch responsive. Both retain adaptive thinking.
+High gives the manager and planner more reasoning effort for dependency and approval decisions.
+Low keeps focused media and audio dispatch responsive. All roles retain adaptive thinking.
 Anthropic recommends medium for multistep tool use and low for scoped work on its
 [effort page](https://platform.claude.com/docs/en/build-with-claude/effort), read 2026-10-09.
 Live effort calibration remains pending because this branch was tested offline.
@@ -52,7 +55,7 @@ server and AgentCore worker must use matching backend, model, and effort configu
 
 Anthropic's [Sonnet 5.5 overview](https://platform.claude.com/docs/en/models/sonnet-5-5/overview),
 read 2026-10-09, verifies `claude-sonnet-5-5`, a 1M context window and 128K output limit.
-Adaptive thinking runs by default. The API effort default is high; Renderhaus sets medium or low explicitly.
+Adaptive thinking runs by default. Renderhaus explicitly sets each role's high, medium or low effort.
 
 The [migration guide](https://platform.claude.com/docs/en/models/sonnet-5-5/migration-guide),
 read 2026-10-09, rejects manual `thinking: {type: enabled, budget_tokens: ...}` and assistant
@@ -283,7 +286,8 @@ including `Remotion___export_nle_timeline` for the DaVinci Resolve handoff. That
 only packages existing project media, so it is exempt from approval (`APPROVAL_EXEMPT_TOOLS` in
 `agent/gateway_executor.py`); every paid tool still follows the native approval policy. The overridden
 `general-purpose` subagent also has no provider dispatch. All roles share project files and
-read-only Studio context. They inherit native approval policy and have no shell tool.
+read-only Studio context. They inherit native approval policy. The manager and editor can use
+the isolated job shell. Planning, media, audio and research roles use read-only local tools.
 Each role explicitly receives its configured model and effort. Per-role settings override the
 global settings. Injected test models are reused across roles without credentials.
 The pure `Remotion___prepare_conversational_edit` requires cut-plan approval even when
@@ -321,8 +325,9 @@ and the pending and retired provider references.
 ## Memory and durable threads
 
 The `CompositeBackend` routes `/skills/` to a virtual, protected filesystem rooted at the
-packaged skills directory. Everything else uses `StateBackend`. Model file tools cannot write
-shipped skills, execute commands, or access host files. The initial `/AGENTS.md` records the
+packaged skills directory. `/work/` exposes the current job's local files for protected reads.
+Other file paths use `StateBackend`. Model file tools cannot write shipped skills or host files.
+`execute` runs inside the kernel-isolated job workspace. The initial `/AGENTS.md` records the
 production rules. It can then hold project direction, plans, asset versions, and job IDs.
 `ProjectMemory` retains its initial system prefix. Changed memory enters the next user turn; the upstream middleware caches its
 loaded content in checkpoint state.

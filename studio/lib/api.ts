@@ -348,14 +348,30 @@ export type StudioExecution = {
   createdAt?: number;
   updatedAt?: number;
   autonomous: boolean;
-  approvals: AgentApprovalRequest[];
+  approvals: AgentPendingRequest[];
   /** `execution.paused_cap`: present while the run is stopped at its hard cap. Cents only. */
   pausedCap?: Record<string, unknown>;
   /** `execution.receipt`: present once the run has ended. Cents only. */
   receipt?: Record<string, unknown>;
 };
 
+export type QuestionAnswer = { kind: "choice"; option_id: string } | { kind: "text"; text: string };
+
+export type AgentQuestionRequest = {
+  kind: "question";
+  callId: string;
+  question: string;
+  reason: "cost_difference" | "irreversible_outcome";
+  options: Array<{ id: string; label: string; description: string }>;
+  allowFreeText: boolean;
+  decision?: "answer";
+  answer?: QuestionAnswer;
+};
+
+export type AgentPendingRequest = AgentApprovalRequest | AgentQuestionRequest;
+
 export type AgentApprovalRequest = {
+  kind: "approval";
   callId: string;
   toolName: string;
   label: string;
@@ -371,13 +387,40 @@ function billingRecord(value: unknown): Record<string, unknown> | undefined {
   return value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : undefined;
 }
 
-function agentApprovals(value: unknown): AgentApprovalRequest[] {
+function questionAnswer(value: unknown): QuestionAnswer | undefined {
+  const answer = billingRecord(value);
+  if (answer?.kind === "choice" && typeof answer.option_id === "string" && answer.option_id.trim()) {
+    return { kind: "choice", option_id: answer.option_id };
+  }
+  if (answer?.kind === "text" && typeof answer.text === "string" && answer.text.trim()) {
+    return { kind: "text", text: answer.text };
+  }
+  return undefined;
+}
+
+function agentApprovals(value: unknown): AgentPendingRequest[] {
   if (!Array.isArray(value)) return [];
-  return value.flatMap((approval) => {
-    const item = approval as Record<string, unknown>;
+  return value.flatMap((approval): AgentPendingRequest[] => {
+    const item = billingRecord(approval);
+    if (!item) return [];
     const callId = item.call_id;
     if (typeof callId !== "string" || !callId) return [];
+    if (item.kind === "question") {
+      if (item.reason !== "cost_difference" && item.reason !== "irreversible_outcome") return [];
+      const options = Array.isArray(item.options) ? item.options.flatMap((value) => {
+        const option = billingRecord(value);
+        if (!option || typeof option.id !== "string" || typeof option.label !== "string") return [];
+        return [{ id: option.id, label: safeCopy(option.label, "Option"), description: safeCopy(option.description, "") }];
+      }) : [];
+      return [{
+        kind: "question", callId, question: safeCopy(item.question, "Which outcome should I use?"),
+        reason: item.reason, options, allowFreeText: item.allow_free_text === true,
+        decision: item.decision === "answer" ? "answer" : undefined,
+        answer: questionAnswer(item.answer),
+      }];
+    }
     return [{
+      kind: "approval",
       callId,
       toolName: String(item.tool_name || "tool"),
       label: item.label === item.tool_name ? workLabel(String(item.tool_name)) : safeCopy(item.label, workLabel(String(item.tool_name))),
@@ -621,7 +664,7 @@ export type AgentProgress = {
   progressEvents: AgentProgressEvent[];
   result?: AgentResultData;
   autonomous: boolean;
-  approvals: AgentApprovalRequest[];
+  approvals: AgentPendingRequest[];
   pausedCap?: Record<string, unknown>;
   receipt?: Record<string, unknown>;
 };
@@ -869,6 +912,16 @@ export async function decideAgentApproval(
   if (!response.ok) {
     throw new Error(payload.detail || payload.message || `approval ${response.status}`);
   }
+  return agentProgress(payload);
+}
+
+export async function answerAgentQuestion(jobId: string, callId: string, answer: QuestionAnswer): Promise<AgentProgress> {
+  const response = await studioFetch(
+    `/api/studio/agent/${encodeURIComponent(jobId)}/questions/${encodeURIComponent(callId)}`,
+    { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ answer }) },
+  );
+  const payload = (await response.json().catch(() => ({}))) as AgentJobPayload;
+  if (!response.ok) throw new Error(payload.detail || payload.message || "The answer could not be saved.");
   return agentProgress(payload);
 }
 

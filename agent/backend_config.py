@@ -55,7 +55,7 @@ def configured_deep_agent_model(role: str | None = None) -> str | BaseChatModel:
     effort_var = _role_variable("RENDERHAUS_AGENT_EFFORT", role)
     effort = (os.getenv(effort_var, "").strip().lower()
               or os.getenv("RENDERHAUS_AGENT_EFFORT", "").strip().lower()
-              or ("low" if role in {"media", "audio", "editor"} else "medium"))
+              or ("low" if role in {"media", "audio"} else "medium" if role == "editor" else "high"))
     if effort not in ANTHROPIC_EFFORTS:
         raise ValueError(effort_var + " must be " + ", ".join(ANTHROPIC_EFFORTS) + ".")
     if not os.getenv("ANTHROPIC_API_KEY", "").strip():

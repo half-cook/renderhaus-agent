@@ -948,6 +948,27 @@ def capability_table() -> list[dict]:
     return rows
 
 
+def ranked_suggestions(prompt: str, *, arguments: dict | None = None, user_id: str | None = None) -> list[dict]:
+    """Quality-first map as advice; policy, consent, explicit-only and caps remain hard."""
+    route = route_intent(prompt, arguments=arguments, user_id=user_id)
+    suggestions = []
+    for step in route.steps or (route,):
+        if not step.job_type:
+            continue
+        choice = POLICY['capability_map'].get(step.job_type, {})
+        entries = [(step.alias, step.basis, step.reason)]
+        entries += [(choice.get('default'), 'capability default', 'Quality-first capability default.')]
+        entries += [(ex['tool'], 'named exception', ex['reason']) for ex in choice.get('exceptions', [])]
+        for alias, basis, reason in entries:
+            entry = TOOL_MAP.get(alias, {})
+            name = entry.get('gateway_tool')
+            if not name or any(row['tool'] == name for row in suggestions):
+                continue
+            suggestions.append({'rank': len(suggestions) + 1, 'tool': name, 'alias': alias,
+                                'basis': basis, 'reason': reason, 'status': entry.get('status')})
+    return suggestions
+
+
 def _capability_price(row: dict):
     if "performance_transfer" in row["tools"]:
         return row["price"]

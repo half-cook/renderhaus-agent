@@ -104,13 +104,36 @@ def orchestration_billing_enabled() -> bool:
 
 
 def orchestration_estimate_cents() -> int:
-    """Fee-inclusive orchestration estimate per run (ORCHESTRATION_ESTIMATE_CENTS, default 75).
+    """Planning estimate, not a measurement or authorization to exceed the hard cap."""
+    return _env_int("ORCHESTRATION_ESTIMATE_CENTS", orchestration_estimate_assumptions()["total_cents"])
 
-    Basis: observed planner cost on clean lighthouse runs was about $0.41-$0.69 of model cost
-    (/workspace/rh-e2e/out-sonnet*, 11-22 calls) and $0.98 on the retry-heavy P1 film; with the
-    platform markup that is about $0.55-$0.90, so 75 cents covers a typical clean run.
-    """
-    return _env_int("ORCHESTRATION_ESTIMATE_CENTS", 75)
+
+def local_compute_usd_per_second() -> float:
+    """Optional configured compute estimate. Zero records usage without assigning a price."""
+    value = float(os.getenv("ORCHESTRATION_LOCAL_USD_PER_SECOND", "0"))
+    if not math.isfinite(value) or value < 0:
+        raise ValueError("ORCHESTRATION_LOCAL_USD_PER_SECOND must be finite and non-negative.")
+    return value
+
+
+def orchestration_estimate_assumptions() -> dict[str, Any]:
+    from agent.deep_agent.usage import MODEL_RATES
+
+    rates = MODEL_RATES["claude-sonnet-5-5"]
+    calls, rubric_calls, summary_calls, local_actions = 16, 3, 2, 12
+    input_tokens, output_tokens = 6_000, 4_000
+    model_usd = (calls + rubric_calls + summary_calls) * (input_tokens * rates.input + output_tokens * rates.output) / 1_000_000
+    local_seconds = local_actions * 10
+    compute_usd = local_seconds * local_compute_usd_per_second()
+    return {
+        "basis": "planning_assumptions_not_measurements", "manager_and_subagent_calls": calls,
+        "rubric_calls": rubric_calls, "summary_calls": summary_calls, "input_tokens_per_call": input_tokens,
+        "output_tokens_per_call_including_thinking": output_tokens, "effort": "high",
+        "local_actions": local_actions, "local_seconds": local_seconds,
+        "local_compute_usd_per_second": local_compute_usd_per_second(),
+        "local_compute_basis": "configured_estimate" if compute_usd else "unpriced_usage_units_only",
+        "total_cents": orchestration_total_cents(model_usd + compute_usd),
+    }
 
 
 def cap_factor() -> float:
@@ -275,11 +298,36 @@ def init_run_budget_schema(connection: sqlite3.Connection) -> None:
         );
         CREATE INDEX IF NOT EXISTS run_lines_run ON run_lines(run_id);
         CREATE INDEX IF NOT EXISTS run_lines_charge ON run_lines(charge_id);
+        CREATE TABLE IF NOT EXISTS run_work (
+            run_id TEXT NOT NULL,
+            work_id TEXT NOT NULL,
+            kind TEXT NOT NULL CHECK(kind IN ('model', 'local', 'media')),
+            role TEXT NOT NULL,
+            reserved_cents INTEGER NOT NULL CHECK(reserved_cents >= 0),
+            state TEXT NOT NULL DEFAULT 'reserved' CHECK(state IN ('reserved', 'ambiguous', 'settled')),
+            model_usd REAL NOT NULL DEFAULT 0,
+            compute_usd REAL NOT NULL DEFAULT 0,
+            usage_json TEXT,
+            charge_id TEXT,
+            created_at INTEGER NOT NULL,
+            updated_at INTEGER NOT NULL,
+            PRIMARY KEY(run_id, work_id)
+        );
+        CREATE INDEX IF NOT EXISTS run_work_state ON run_work(run_id, state);
         """
     )
     present = {str(row[1]) for row in connection.execute("PRAGMA table_info(usage_events)")}
     if "run_id" not in present:
         connection.execute("ALTER TABLE usage_events ADD COLUMN run_id TEXT")
+    if "compute_usd" not in {str(row[1]) for row in connection.execute("PRAGMA table_info(run_holds)")}:
+        connection.execute("ALTER TABLE run_holds ADD COLUMN compute_usd REAL NOT NULL DEFAULT 0")
+
+
+def work_reserved_cents(connection: sqlite3.Connection, run_id: str) -> int:
+    row = connection.execute(
+        "SELECT COALESCE(SUM(reserved_cents), 0) FROM run_work WHERE run_id = ? AND state != 'settled'", (run_id,),
+    ).fetchone()
+    return int(row[0])
 
 
 def spendable_cents(connection: sqlite3.Connection, user_id: str, today: str) -> int:
@@ -306,7 +354,9 @@ def sweep_stale_holds(connection: sqlite3.Connection, user_id: str | None = None
     """Release holds nobody has touched for ORCHESTRATION_HOLD_TTL_SECONDS (crashed runs)."""
     now = int(time.time()) if now is None else now
     cutoff = now - hold_ttl_seconds()
-    where = "state = 'held' AND updated_at < ?" + (" AND user_id = ?" if user_id else "")
+    where = ("state = 'held' AND updated_at < ? AND NOT EXISTS "
+             "(SELECT 1 FROM run_work WHERE run_work.run_id = run_holds.run_id AND run_work.state != 'settled')"
+             + (" AND user_id = ?" if user_id else ""))
     args: tuple[Any, ...] = (cutoff, user_id) if user_id else (cutoff,)
     rows = connection.execute(f"SELECT run_id FROM run_holds WHERE {where}", args).fetchall()
     for row in rows:
@@ -328,7 +378,7 @@ def apply_run_charge(
     ).fetchone()
     if hold is None or hold["state"] != "held" or hold["user_id"] != user_id:
         raise RunBudgetError("This run has no active credit hold.")
-    if hold["charged_cents"] + cost_cents > hold["held_cents"]:
+    if hold["charged_cents"] + work_reserved_cents(connection, run_id) + cost_cents > hold["held_cents"]:
         raise RunCapExceededError(hold["charged_cents"], hold["held_cents"], cost_cents)
     connection.execute(
         "UPDATE run_holds SET charged_cents = charged_cents + ?, updated_at = ? WHERE run_id = ?",

@@ -7,6 +7,12 @@ that proposal in the user message and `read_studio_context`. The model reads the
 The shared Gateway executor enforces provider/model policy, approvals, and spending limits
 on manager calls, subagent calls, and approved resumes.
 
+Harness v2 exposes ranked quality-first suggestions with reasons. A model can explain and
+choose another allowed automatic route. Explicit customer requests, explicit-only providers,
+required capabilities, licences, region restrictions, approvals and caps remain hard constraints.
+The packaged count stays 39. Execution, inspection, questions and web references are harness
+tools, not new Gateway providers or skills. See [the harness reference](HARNESS_V2.md).
+
 A route is a proposal, not evidence of live output. Unbuilt tools return `pending`, policy
 refusals return `blocked`, retired requests return `retired`, and unknown intents return
 `unrouted`. No status invents a Gateway target or authorizes a substitute paid provider.
