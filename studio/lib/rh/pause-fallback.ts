@@ -48,7 +48,7 @@ export function questionChatModel(question: AgentQuestionRequest): PauseChatMode
     options,
     allowFreeText: question.allowFreeText || options.length === 0,
     placeholder,
-    footnote: "Answering doesn't spend anything. Any paid step still asks for your approval first.",
+    footnote: "Answering only costs a few cents of planning. Any paid step still asks for your approval first.",
   };
 }
 

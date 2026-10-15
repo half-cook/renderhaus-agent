@@ -134,7 +134,8 @@ function StepIcon({ status }: { status: string }) {
   return <Check size={14} />;
 }
 
-export const NOT_NOW_LINE = "Paused · nothing charged · your credit is free to use.";
+// Planning that already ran is billed (see the receipt above); declining stops any further charge.
+export const NOT_NOW_LINE = "Paused · nothing more will be charged · your credit is free to use.";
 
 export function IntermediateSteps({
   events,
@@ -143,6 +144,7 @@ export function IntermediateSteps({
   message,
   duration,
   recoveryAvailable = false,
+  declined = false,
   defaultOpen,
   cost,
   stepCosts,
@@ -150,6 +152,8 @@ export function IntermediateSteps({
   liveFrames,
 }: {
   defaultOpen?: boolean;
+  /** The user chose Not now / Reject: this is a pause they asked for, not a failed delivery. */
+  declined?: boolean;
   cost?: TraceCost | null;
   /** Parallel to events: optional brass amount label per step ("$0.65" or "Free"). */
   stepCosts?: Array<string | undefined>;
@@ -177,6 +181,7 @@ export function IntermediateSteps({
   const currentUpdate = progressEvents.filter((event) => event.type === "MODEL_UPDATE").at(-1);
   const label = status === "awaiting_approval" ? (message === "Waiting for your answer." ? "Your answer is needed" : "Your approval is needed")
     : state === "running" ? currentWait?.message || currentUpdate?.message || message || "Starting…"
+    : state === "incomplete" && declined ? "Paused · you chose Not now"
     : state === "incomplete" ? `Incomplete · not delivered${recoveryAvailable ? " · progress saved" : ""}`
     : state === "failed" ? (recoveryAvailable ? "Stopped · progress saved" : "Run failed")
     : `Completed${duration ? ` in ${duration}` : ""}`;
@@ -471,6 +476,7 @@ function ExecutionTurn({
     || execution.errorType === "VideoExportIncomplete" || execution.errorType === "DeliverableIncomplete" ? "incomplete" : execution.status;
   const state = normalizedStatus(displayStatus);
   const assets = execution.assets;
+  const declined = !assets.length && execution.approvals.some((approval) => approval.decision === "reject");
   return (
     <section className="agent-turn" aria-label={`Agent run ${execution.title || execution.status}`}>
       {execution.prompt ? <UserMessage text={execution.prompt} /> : null}
@@ -482,6 +488,7 @@ function ExecutionTurn({
           message={execution.message}
           duration={runDuration(execution)}
           recoveryAvailable={execution.recoveryAvailable}
+          declined={declined}
           cost={traceCost(execution)}
         />
         <ApprovalCards
