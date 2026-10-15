@@ -41,10 +41,21 @@ _STOPWORDS = frozenset('a an and art animated animation as available by catalog 
                       'do don t never avoid no not without explainer film for from in look make me '
                       'motion of or please short show silent style styles the title titles titled '
                       'caption headline to use using video with'.split())
+_DESCRIPTION_STOPWORDS = _STOPWORDS | frozenset(
+    'brief choice color colors colour colours composition duration explain explanation graphics '
+    'hour hours image images length long minute minutes palette planning product products promo '
+    'promos render rendering second seconds sequence sequences shot shots silhouette silhouettes '
+    'zero one two three four five six seven eight nine ten'.split())
 _QUOTES = re.compile(r'"([^"]*)"|“([^”]*)”|(?<!\w)\'([^\']*)\'(?!\w)')
 _NEGATIVE = re.compile(r"\b(?:do not|don t|never|avoid|without|no|not)(?:\s+(?:use|using|a|the|any|style))*\s*$", re.I)
-_SUBJECT = re.compile(r'\b(?:about|on|explaining|history of|life of|biography of)\s+'
+_SUBJECT = re.compile(r'\b(?:about|on|explain|explaining|history of|life of|biography of)\s+'
                       r'(?:(?:the|ancient|art|life|history|of)\s+){0,4}$', re.I)
+_SUBJECT_CLAUSE = re.compile(
+    r'\b(?:about|on|explain|explaining|history of|life of|biography of)\b([^.;!?\n]*)', re.I)
+_NEGATED_DESCRIPTION = re.compile(
+    r"\b(?:do\s+not|don't|don t|never|avoid|without|no|not)\b"
+    r'(?:\s+(?:use|using|a|the|any|style))*\s*([^.;!?\n]*?)'
+    r'(?=\b(?:but|instead|however|with)\b|[.;!?\n]|$)', re.I)
 
 
 def _normalize(value: str) -> str:
@@ -105,7 +116,29 @@ def _selection_patterns() -> tuple[re.Pattern, re.Pattern]:
     return pattern, negative_list
 
 
-def _selection_text(prompt: str) -> str:
+def style_instruction_text(prompt: str, *, normalized: bool = True) -> str:
+    """Remove topic and title mentions while retaining explicit style instructions."""
+    def subject(match):
+        topic = match[1]
+        for marker in re.finditer(r'\b(?:using|choose|select|apply|in the style of|in)\b', topic, re.I):
+            before = topic[:marker.start()].strip()
+            if not before or re.search(r'\b(?:how|to|of|for|by|the|an?|\w+ly)$', before, re.I):
+                continue
+            if re.search(r'\bhow\s+to\b', before, re.I) or _NEGATIVE.search(_normalize(before)):
+                continue
+            if marker[0].lower() in {'in', 'using'}:
+                tail = re.sub(r'^the\s+', '', _normalize(topic[marker.end():]))
+                pattern, _ = _selection_patterns()
+                named = pattern.match(tail)
+                if not named:
+                    continue
+                suffix = tail[named.end():]
+                qualified = re.match(r'\s+(?:style|look|grammar)\b', suffix)
+                if not qualified and (marker[0].lower() == 'in' or suffix):
+                    continue
+            return topic[marker.start():]
+        return ' '
+
     def quoted(match):
         before, after = prompt[:match.start()], prompt[match.end():]
         title = re.search(r'\b(?:title[ds]?|caption|headline|called|named)\s*$', before, re.I)
@@ -114,7 +147,10 @@ def _selection_text(prompt: str) -> str:
         styled = re.match(r'\s*(?:style|look|grammar)\b', after, re.I)
         return next((value for value in match.groups() if value is not None), '') if not title and (selected or styled) else ''
 
-    text = _normalize(_QUOTES.sub(quoted, prompt))
+    text = _SUBJECT_CLAUSE.sub(subject, _QUOTES.sub(quoted, prompt))
+    if not normalized:
+        return text
+    text = _normalize(text)
     pattern, negative_list = _selection_patterns()
     excluded = [(match.start(), match.end()) for match in pattern.finditer(text)
                 if _NEGATIVE.search(text[:match.start()]) or negative_list.search(text[:match.start()])
@@ -122,12 +158,6 @@ def _selection_text(prompt: str) -> str:
     for start, end in reversed(excluded):
         text = text[:start] + ' ' + text[end:]
     return _normalize(text)
-
-
-def _explicit(text: str, *, builtins: bool = False) -> dict | None:
-    names, pattern = _names(builtins)
-    match = pattern.search(text)
-    return names[match[0]] if match else None
 
 
 def _named_style(text: str) -> tuple[dict | None, bool]:
@@ -142,25 +172,39 @@ def _named_style(text: str) -> tuple[dict | None, bool]:
     return selected, not catalog
 
 
-def _rank(query: str) -> list[dict]:
+def _rank(query: str, *, described: bool = False) -> list[dict]:
+    excluded_terms = set()
+    if described:
+        excluded_terms = set(_normalize(' '.join(match[1] for match in _NEGATED_DESCRIPTION.finditer(query))).split())
+        excluded_terms -= _DESCRIPTION_STOPWORDS
+        excluded_terms = {term for term in excluded_terms if len(term) > 1 and not any(char.isdigit() for char in term)}
+        query = _NEGATED_DESCRIPTION.sub(' ', query)
     text = _normalize(query)
     if not text:
-        return list(_catalog())
-    terms = set(text.split()) - _STOPWORDS
+        return [] if described or query.strip() else list(_catalog())
+    terms = set(text.split()) - (_DESCRIPTION_STOPWORDS if described else _STOPWORDS)
+    if described:
+        terms = {term for term in terms if len(term) > 1 and not any(char.isdigit() for char in term)}
     if not terms:
         return []
     exact = _names()[0].get(text)
     ranked = []
+    fields = [(['slug', 'name'], 20), (['aliases'], 15), (['keywords'], 10)]
+    if not described:
+        fields += [(['typical_uses'], 2), (['style_prompt', 'shot_direction_notes'], 1)]
     for row in _catalog():
         score = 0
         matched = set()
-        for fields, weight in [(['slug', 'name'], 20), (['aliases'], 15), (['keywords'], 10),
-                               (['typical_uses'], 2), (['style_prompt', 'shot_direction_notes'], 1)]:
-            values = [value for field in fields for value in (row[field] if isinstance(row[field], list) else [row[field]])]
+        metadata_words = set()
+        for group, weight in fields:
+            values = [value for field in group for value in (row[field] if isinstance(row[field], list) else [row[field]])]
             words = set(_normalize(' '.join(values)).split())
+            metadata_words |= words
             overlap = words & terms
             score += len(overlap) * weight
             matched |= overlap
+        if metadata_words & excluded_terms:
+            continue
         if row is exact:
             score += 10_000
         if matched or row is exact:
@@ -178,9 +222,9 @@ def search_styles(query: str, limit: int = 8) -> list[dict]:
 def select_style(query: str, default_slug: str | None = None) -> dict:
     """Prefer a requested style, then a described look, then a configured default."""
     _validate_query(query)
-    text = _selection_text(query)
+    text = style_instruction_text(query)
     explicit, is_builtin = _named_style(text)
-    matches = _rank(text)[:8] if text else []
+    matches = _rank(style_instruction_text(query, normalized=False), described=True)[:8] if text else []
     selected = explicit or (matches[0] if matches else None)
     basis = ('explicit built-in style' if is_builtin else 'explicit style') if explicit else (
         'described look' if selected else 'no matching style')
@@ -194,13 +238,13 @@ def select_style(query: str, default_slug: str | None = None) -> dict:
 
 def _browse_request(text: str) -> bool:
     return bool(re.search(r'\b(?:show|list|browse|what|which)\b.*\bstyles\b', text)
-                and re.search(r'\b(?:available|catalog|catalogue|film look|styles)\b', text)
+                and re.search(r'\b(?:catalog|catalogue|film look|art styles|animation styles|visual styles)\b', text)
                 and not re.search(r'\b(?:do not|not|never|avoid)\s+(?:show|list|browse)\b', text))
 
 
 def catalog_motion_request(prompt: str) -> bool:
     """Recognize catalog browsing and named styles without claiming subject mentions."""
-    text = _selection_text(prompt)
+    text = style_instruction_text(prompt)
     if _browse_request(text):
         return True
     motion = re.search(r'\b(?:animat\w*|videos?|shorts?|motion|move|moving|explainer)\b', text)
@@ -226,7 +270,7 @@ def style_context(prompt: str) -> dict:
     """Read a full Studio brief and return only safe planning cards and summaries."""
     if not isinstance(prompt, str) or len(prompt) > 64_000:
         raise ValueError('Style briefs must be strings of at most 64000 characters.')
-    text = _selection_text(prompt)
+    text = style_instruction_text(prompt)
     named, is_builtin = _named_style(text)
     if _browse_request(text):
         selected, basis, mode, matches = None, 'available styles', 'browse', list(_catalog())
@@ -234,8 +278,7 @@ def style_context(prompt: str) -> dict:
         selected, basis, mode = named, 'explicit built-in style' if is_builtin else 'explicit style', 'select'
         matches = [] if is_builtin else [named]
     else:
-        description = re.sub(r'\b(?:about|on|explaining)\b.*', '', text)[:500]
-        matches = _rank(description)[:8] if description.strip() else []
+        matches = _rank(style_instruction_text(prompt, normalized=False)[:500], described=True)[:8] if text else []
         selected = matches[0] if matches else None
         basis, mode = 'described look' if selected else 'no matching style', 'select'
     return {'mode': mode, 'total': len(_catalog()), 'selected': deepcopy(selected), 'basis': basis,

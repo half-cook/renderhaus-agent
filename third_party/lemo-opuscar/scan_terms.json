@@ -971,6 +971,7 @@
     "fal.ai",
     "faster-whisper",
     "fee",
+    "minifig",
     "minifigure",
     "minutephysics",
     "platform fee",
@@ -1950,7 +1951,8 @@
     "Mickey": "character",
     "VT323": "monospaced display lettering",
     "B612": "technical sans-serif lettering",
-    "Ben-Day": "halftone"
+    "Ben-Day": "halftone",
+    "minifig": "toy figure"
   },
   "context_replacements": {
     "rose window": "radial tracery window",

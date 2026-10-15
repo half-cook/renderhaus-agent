@@ -10,8 +10,8 @@ it does not add a procedural renderer to Renderhaus.
 ## A frame that can move
 
 Start from the subject and the chosen medium. Define the focal silhouette, negative space,
-three to five recognizable motifs and regional palettes. A Monet bridge needs its own contrast
-against water; a Van Gogh floor should not inherit the sky's blue flow field. Do not add an
+three to five recognizable motifs and regional palettes. A painted bridge needs its own contrast
+against water; a post-impressionist floor should not inherit the sky's blue flow field. Do not add an
 artist's name to a generic room and expect the style to read.
 
 Give each motif a job: direct attention, reveal information, express material or support the

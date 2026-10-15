@@ -974,6 +974,7 @@
     "fal.ai",
     "faster-whisper",
     "fee",
+    "minifig",
     "minifigure",
     "minutephysics",
     "platform fee",
@@ -5605,6 +5606,11 @@
     {
       "source_path": "styles/brick-toy/STYLE.md",
       "term": "Whisper",
+      "count": 1
+    },
+    {
+      "source_path": "styles/brick-toy/STYLE.md",
+      "term": "minifig",
       "count": 1
     },
     {
@@ -17550,10 +17556,11 @@
       "field": "shot_direction_notes[6]",
       "reason": "descriptive-only adaptation",
       "terms": [
+        "minifig",
         "ANGLE"
       ],
       "before": "A vocabulary, not a route. Opening and ending come from the topic.\n\n| Move | Expresses | Can serve |\n|---|---|---|\n| Extreme macro on one brick or stud, real room blurred behind | The toy scale is the world | a beginning; a detail that matters; a single part |\n| Low angle at minifig eye level | A tiny character made heroic | ambition; pride; standing up to something big |\n| High wide over the whole surface | The scale reveal: it was a toy all along | a summing-up; irony; a finished build |\n| Low, wide, lonely frame, character small in a corner | Smallness, failure | a setback; waiting; loss |\n| Frontal close-up, hands and brick in focus | Intimacy, decision | a choice; a repair; a gift |\n| Handheld shake on impact | Physical shock | a collapse; an arrival; a collision |\n| Tracking alongside a moving object, destination ahead | Momentum toward a goal | a journey; a race; a launch |\n| Top-down plan view | Order, layout, a map | a plan; sorting parts; a city from above |\n| Rack focus from a real object to a brick (or back) | Two scales in one frame | \"big world, small maker\"; a comparison |\n| Orbit around a finished build | Pride, inspection | a product; a monument; a result |\n\nFraming: keep foreground clutter out of the frame edges (piles of parts love to block the lens); check headroom in every shot; check every real prop against every camera, because an object placed on one shot's axis sneaks into the background of another. Cut on beats or bars; a snap can be a cut point. No generic dissolves; transitions can be a hand-placed brick covering the lens, a whip along the desk, or a pull out of one set into the next.",
-      "after": "A vocabulary, not a route. Opening and ending come from the topic. | Move | Expresses | Can serve | |---|---|---| | Extreme macro on one brick or stud, real room blurred behind | The toy scale is the world | a beginning; a detail that matters; a single part | | Low orientation at minifig eye level | A tiny character made heroic | ambition; pride; standing up to something big | | High wide over the whole surface | The scale reveal: it was a toy all along | a summing-up; irony; a finished build | | Low, wide, lonely frame, character small in a corner | Smallness, failure | a setback; waiting; loss | | Frontal close-up, hands and brick in focus | Intimacy, decision | a choice; a repair; a gift | | Handheld shake on impact | Physical shock | a collapse; an arrival; a collision | | Tracking alongside a moving object, destination ahead | Momentum toward a goal | a journey; a race; a launch | | Top-down plan view | Order, layout, a map | a plan; sorting parts; a city from above | | Rack focus from a real object to a brick (or back) | Two scales in one frame | \"big world, small maker\"; a comparison | | Orbit around a finished build | Pride, inspection | a product; a monument; a result | Framing: keep foreground clutter out of the frame edges (piles of parts love to block the lens); check headroom in every shot; check every real prop against every camera, because an object placed on one shot's axis sneaks into the background of another. Cut on beats or bars; a snap can be a cut point. No generic dissolves; transitions can be a hand-placed brick covering the lens, a whip along the desk, or a pull out of one set into the next."
+      "after": "A vocabulary, not a route. Opening and ending come from the topic. | Move | Expresses | Can serve | |---|---|---| | Extreme macro on one brick or stud, real room blurred behind | The toy scale is the world | a beginning; a detail that matters; a single part | | Low orientation at toy figure eye level | A tiny character made heroic | ambition; pride; standing up to something big | | High wide over the whole surface | The scale reveal: it was a toy all along | a summing-up; irony; a finished build | | Low, wide, lonely frame, character small in a corner | Smallness, failure | a setback; waiting; loss | | Frontal close-up, hands and brick in focus | Intimacy, decision | a choice; a repair; a gift | | Handheld shake on impact | Physical shock | a collapse; an arrival; a collision | | Tracking alongside a moving object, destination ahead | Momentum toward a goal | a journey; a race; a launch | | Top-down plan view | Order, layout, a map | a plan; sorting parts; a city from above | | Rack focus from a real object to a brick (or back) | Two scales in one frame | \"big world, small maker\"; a comparison | | Orbit around a finished build | Pride, inspection | a product; a monument; a result | Framing: keep foreground clutter out of the frame edges (piles of parts love to block the lens); check headroom in every shot; check every real prop against every camera, because an object placed on one shot's axis sneaks into the background of another. Cut on beats or bars; a snap can be a cut point. No generic dissolves; transitions can be a hand-placed brick covering the lens, a whip along the desk, or a pull out of one set into the next."
     },
     {
       "slug": "brick-toy",

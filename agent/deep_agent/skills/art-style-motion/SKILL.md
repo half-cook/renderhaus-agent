@@ -1,6 +1,6 @@
 ---
 name: art-style-motion
-description: Plan animated art shorts, named explainer grammars such as Kurzgesagt, Vox or 3b1b, and characters walking through painting worlds. Compose supplied or authored motion with Remotion by default; generic silent explainers use knowledge-explainer.
+description: Plan animated art shorts, descriptive style catalogs, explainer grammars, and characters moving through painted worlds. Select materials, palette, camera direction, and meaningful motion; generic silent explainers use knowledge-explainer.
 metadata:
   remotion_backend: configured
   remotion_features: clip_timing transitions fit_position scale motion titles captions audio_mix canvas encoding
@@ -20,14 +20,43 @@ The upstream renderer, character artwork, demo media, fonts and stroke data are 
 Use this skill when the user names an art style and asks for motion, names an explainer grammar,
 or asks for a character to walk through painting worlds. Read [method](references/method.md),
 then the relevant [style card](references/style-cards.md) or [grammar card](references/grammar-cards.md).
-For an additional style such as ukiyo-e, build an original card from the user's references;
-do not claim it is one of the upstream cards. Recreate a reference only within the supplied rights.
+Select a catalog card as described below. Recreate a reference only within the supplied rights.
 
 For a silent explainer with no named style, read [knowledge-explainer](../knowledge-explainer/SKILL.md).
 Plain narrated whiteboard work uses [whiteboard-explainer](../whiteboard-explainer/SKILL.md).
 Static art uses [image-gen](../image-gen/SKILL.md), existing-footage restyling uses
 [edit-v2v](../edit-v2v/SKILL.md), and photoreal generated footage uses [t2v](../t2v/SKILL.md)
 or [i2v](../i2v/SKILL.md). Adding foley to an existing clip uses [audio-bed](../audio-bed/SKILL.md).
+
+## Select a descriptive style
+
+Read `read_studio_context.style_catalog`. It contains the selected safe card, selection basis,
+and neutral search summaries. An explicit neutral name, slug, or accepted input alias wins
+over a default. A user-named existing art or grammar card also wins; its returned label is
+descriptive. Use a described look to find relevant catalog cards when no name was requested.
+If no catalog match exists, use the existing 35 art cards and nine grammar cards. A missing
+style requires an original descriptive card based on the user's authorized references.
+
+The [catalog index](references/catalog/index.json) contains 141 treatments from 98 specialized
+prompts and 43 general style guides. It is safe descriptive data. For a request to show available
+styles, return its neutral names grouped by category. Browse requests do not generate assets
+or submit renders. Use only the safe card fields in prompts and plans. Do not echo the user's
+film, artist, character, product, or provider reference as a style label. Translate it into
+material, palette, lighting, composition, and motion characteristics. Keep internal provenance
+and scan reports out of all user-visible text and model generation prompts.
+
+For the selected card, use `style_prompt` to design the frame and `shot_direction_notes` to
+choose framing, camera purpose, rhythm, transitions, and reading holds. Write a new story for
+the user's subject. Source pacing examples are planning references; align timing to the actual
+recording and duration. `2D`, `2.5D`, and `3D` describe a visual treatment, not a renderer,
+model, available template, or export resolution. No catalog card adds executable animation.
+
+Use the native material for the turning point and make the final frame answer the opening.
+Choose purposeful changes in framing and enough time to understand each action. Keep speech,
+music, and sound requests under the existing narration policy. Do not infer them from the
+upstream demos. MIT text permission does not grant film, trademark, character, likeness,
+soundtrack, or reference-media rights. A named film look can imply association; prompts
+must stay descriptive of style.
 
 ## Design one frame
 

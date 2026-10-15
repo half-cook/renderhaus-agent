@@ -4965,5 +4965,137 @@
     "expected_skill": "continuity-qc",
     "expected_tool": "local_qc",
     "forbidden_tools": "footage_memory_status, footage_memory_build, footage_memory_query, footage_watch_answer, footage_clip_extract"
+  },
+  {
+    "test_id": "RT-CAT-001",
+    "suite": "art-style-catalog",
+    "prompt": "Make an ukiyo-e woodblock animated explainer with the catalog",
+    "expected_skill": "art-style-motion",
+    "expected_tool": "remotion_render",
+    "skip_reason": "",
+    "negative": false,
+    "source_status": "task-derived",
+    "note": "Offline catalog acceptance case; task-supplied examples and regression boundaries. No workbook row claimed."
+  },
+  {
+    "test_id": "RT-CAT-002",
+    "suite": "art-style-catalog",
+    "prompt": "Make a stained glass animated explainer with the catalog",
+    "expected_skill": "art-style-motion",
+    "expected_tool": "remotion_render",
+    "skip_reason": "",
+    "negative": false,
+    "source_status": "task-derived",
+    "note": "Offline catalog acceptance case; task-supplied examples and regression boundaries. No workbook row claimed."
+  },
+  {
+    "test_id": "RT-CAT-003",
+    "suite": "art-style-catalog",
+    "prompt": "Make a risograph animated explainer with the catalog",
+    "expected_skill": "art-style-motion",
+    "expected_tool": "remotion_render",
+    "skip_reason": "",
+    "negative": false,
+    "source_status": "task-derived",
+    "note": "Offline catalog acceptance case; task-supplied examples and regression boundaries. No workbook row claimed."
+  },
+  {
+    "test_id": "RT-CAT-004",
+    "suite": "art-style-catalog",
+    "prompt": "Show me the available film-look styles",
+    "expected_skill": "art-style-motion",
+    "expected_tool": "remotion_render",
+    "skip_reason": "",
+    "negative": false,
+    "source_status": "task-derived",
+    "note": "Offline catalog acceptance case; task-supplied examples and regression boundaries. No workbook row claimed."
+  },
+  {
+    "test_id": "RT-CAT-005",
+    "suite": "art-style-catalog",
+    "prompt": "Make an animated short using Snowy Neon Night style from the catalog",
+    "expected_skill": "art-style-motion",
+    "expected_tool": "remotion_render",
+    "skip_reason": "",
+    "negative": false,
+    "source_status": "task-derived",
+    "note": "Offline catalog acceptance case; task-supplied examples and regression boundaries. No workbook row claimed."
+  },
+  {
+    "test_id": "RT-CAT-006",
+    "suite": "art-style-catalog",
+    "prompt": "Make a Bauhaus animation using the catalog",
+    "expected_skill": "art-style-motion",
+    "expected_tool": "remotion_render",
+    "skip_reason": "",
+    "negative": false,
+    "source_status": "task-derived",
+    "note": "Offline catalog acceptance case; task-supplied examples and regression boundaries. No workbook row claimed."
+  },
+  {
+    "test_id": "RT-CAT-007",
+    "suite": "art-style-catalog",
+    "prompt": "Make a cinematic product promo for headphones",
+    "expected_skill": "cinematic-product-promo",
+    "expected_tool": "shot_recipe_search",
+    "skip_reason": "",
+    "negative": true,
+    "source_status": "task-derived",
+    "note": "Offline catalog acceptance case; task-supplied examples and regression boundaries. No workbook row claimed."
+  },
+  {
+    "test_id": "RT-CAT-008",
+    "suite": "art-style-catalog",
+    "prompt": "Make a silent knowledge explainer about tides",
+    "expected_skill": "knowledge-explainer",
+    "expected_tool": "remotion_render",
+    "skip_reason": "",
+    "negative": true,
+    "source_status": "task-derived",
+    "note": "Offline catalog acceptance case; task-supplied examples and regression boundaries. No workbook row claimed."
+  },
+  {
+    "test_id": "RT-CAT-009",
+    "suite": "art-style-catalog",
+    "prompt": "Make plain motion graphics titles",
+    "expected_skill": "motion-graphics",
+    "expected_tool": "remotion_render",
+    "skip_reason": "",
+    "negative": true,
+    "source_status": "task-derived",
+    "note": "Offline catalog acceptance case; task-supplied examples and regression boundaries. No workbook row claimed."
+  },
+  {
+    "test_id": "RT-CAT-010",
+    "suite": "art-style-catalog",
+    "prompt": "Make a silent explainer about stained glass manufacture",
+    "expected_skill": "knowledge-explainer",
+    "expected_tool": "remotion_render",
+    "skip_reason": "",
+    "negative": true,
+    "source_status": "task-derived",
+    "note": "Offline catalog acceptance case; task-supplied examples and regression boundaries. No workbook row claimed."
+  },
+  {
+    "test_id": "RT-CAT-011",
+    "suite": "art-style-catalog",
+    "prompt": "Make a silent explainer; do not use stained glass style",
+    "expected_skill": "knowledge-explainer",
+    "expected_tool": "remotion_render",
+    "skip_reason": "",
+    "negative": true,
+    "source_status": "task-derived",
+    "note": "Offline catalog acceptance case; task-supplied examples and regression boundaries. No workbook row claimed."
+  },
+  {
+    "test_id": "RT-CAT-012",
+    "suite": "art-style-catalog",
+    "prompt": "Make a silent explainer titled \"Stained Glass\"",
+    "expected_skill": "knowledge-explainer",
+    "expected_tool": "remotion_render",
+    "skip_reason": "",
+    "negative": true,
+    "source_status": "task-derived",
+    "note": "Offline catalog acceptance case; task-supplied examples and regression boundaries. No workbook row claimed."
   }
 ]

@@ -9,7 +9,7 @@ import re
 from dataclasses import dataclass, asdict, replace, field
 from pathlib import Path
 
-from agent.deep_agent.art_style_catalog import catalog_motion_request
+from agent.deep_agent.art_style_catalog import catalog_motion_request, style_instruction_text
 
 POLICY = json.loads(Path(__file__).with_name("routing_policy.json").read_text())
 TOOL_MAP = POLICY["tools"]
@@ -171,13 +171,10 @@ def _video_voiceover(prompt: str) -> bool:
 
 
 def _art_style_motion_text(prompt: str) -> str:
-    text = re.sub(_NEGATED_NARRATION, " ", _instruction_text(prompt), flags=re.I)
-    text = re.sub(
-        rf"\b(?:do not|don't|never|avoid|without|no|not)(?:\s+(?:use|using|a|the|any))*\s+(?:{_ART_STYLE_NAMES}|hyperframes|lip[ -]?sync\w*)\b(?:[ -]+(?:style|grammar))?",
-        "", text, flags=re.I,
-    )
+    text = style_instruction_text(_instruction_text(prompt), normalized=False)
+    text = re.sub(_NEGATED_NARRATION, " ", text, flags=re.I)
     return re.sub(
-        rf"\b(?:about|on|explaining|history of|life of|biography of)\s+(?:(?:the|ancient|art|life|history|of)\s+){{0,4}}(?:{_ART_STYLE_NAMES})\b",
+        rf"\b(?:do not|don't|never|avoid|without|no|not)(?:\s+(?:use|using|a|the|any))*\s+(?:{_ART_STYLE_NAMES}|hyperframes|lip[ -]?sync\w*)\b(?:[ -]+(?:style|grammar))?",
         "", text, flags=re.I,
     )
 
