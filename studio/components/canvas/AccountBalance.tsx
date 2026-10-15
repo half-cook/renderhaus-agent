@@ -16,6 +16,7 @@ import {
   openBillingPortalRedirect,
 } from "@/lib/api";
 import type { StudioAccount, SubscriptionPlan, TopUpPack } from "@/lib/types";
+import { TOPUPS_COMING_SOON, topupsEnabled } from "@/lib/launch";
 import styles from "./AccountBalance.module.css";
 
 /** Sums today's charges from the ledger rows the API sent. Display only; no price is derived. */
@@ -72,7 +73,7 @@ export function AccountBalance({ refreshKey }: { refreshKey?: number | string })
   // failure as "loaded, nothing here" with no way to retry short of a page
   // reload.
   useEffect(() => {
-    if (!open || packs) {
+    if (!open || packs || !topupsEnabled()) {
       return;
     }
     setPacksError(false);
@@ -82,7 +83,7 @@ export function AccountBalance({ refreshKey }: { refreshKey?: number | string })
   }, [open, packs]);
 
   useEffect(() => {
-    if (!open || plans || subscription) {
+    if (!open || plans || subscription || !topupsEnabled()) {
       return;
     }
     setPlansError(false);
@@ -159,6 +160,8 @@ export function AccountBalance({ refreshKey }: { refreshKey?: number | string })
           <p className="rh-pop-note">Media and agent orchestration come out of your credit.</p>
           {emptyWalletMessage(account) ? <p className="inspector-note">{emptyWalletMessage(account)}</p> : null}
           <BetaCredits account={account} compact />
+          {topupsEnabled() ? (
+            <>
           {subscription ? (
             <>
               <p className={styles["section-label"]}>Plan</p>
@@ -236,6 +239,10 @@ export function AccountBalance({ refreshKey }: { refreshKey?: number | string })
                 </span>
               </button>
             ))
+          )}
+            </>
+          ) : (
+            <p className="inspector-note" data-shot="topups-soon">{TOPUPS_COMING_SOON}</p>
           )}
           {error ? <p className="generate-hint">{error}</p> : null}
         </div>
