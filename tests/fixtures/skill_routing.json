@@ -5999,5 +5999,51 @@
     "source_status": "new; radar upgrade of existing default",
     "source_read_date": "2026-10-15",
     "note": "SFX 2.0 default, preserve_speech true; 1.6 remains explicit A/B. No quality claim from routing coverage."
+  },
+  {
+    "test_id": "RT-191",
+    "suite": "codebase-video",
+    "prompt": "Make an onboarding video of this repo explaining how request flow works with real code.",
+    "expected_skill": "codebase-video",
+    "expected_tool": "remotion_render",
+    "expected_required": {
+      "codebase_kind": "teach",
+      "repository_evidence": true,
+      "fresh_agent_audit": true,
+      "local_render": true
+    },
+    "forbidden_tools": "wan3_t2v,wan3_i2v,wan3_r2v,seedance25_t2v,seedance25_i2v,seedance25_r2v,gpt_image25_t2i,gpt_image25_edit",
+    "skip_reason": "",
+    "env": {
+      "REMOTION_RENDER_BACKEND": "local",
+      "REMOTION_DRY_RUN": "true"
+    },
+    "source_file": "/workspace/research/renderhaus-skills/codebase-video/SKILL.md",
+    "source_read_date": "2026-10-15",
+    "source_status": "new",
+    "note": "Radar RT-191/192 IDs from the 2026-10-14 handoff. Exact prompts authored from spec; absent from supplied CSV and original fixture. Routing checks only; no repository audit or rendered video is implied."
+  },
+  {
+    "test_id": "RT-192",
+    "suite": "codebase-video",
+    "prompt": "Make a progress video of what shipped in this repository since v1.2.",
+    "expected_skill": "codebase-video",
+    "expected_tool": "remotion_render",
+    "expected_required": {
+      "codebase_kind": "progress",
+      "repository_evidence": true,
+      "fresh_agent_audit": true,
+      "local_render": true
+    },
+    "forbidden_tools": "wan3_t2v,wan3_i2v,wan3_r2v,seedance25_t2v,seedance25_i2v,seedance25_r2v,gpt_image25_t2i,gpt_image25_edit",
+    "skip_reason": "",
+    "env": {
+      "REMOTION_RENDER_BACKEND": "local",
+      "REMOTION_DRY_RUN": "true"
+    },
+    "source_file": "/workspace/research/renderhaus-skills/codebase-video/SKILL.md",
+    "source_read_date": "2026-10-15",
+    "source_status": "new",
+    "note": "Radar RT-191/192 IDs from the 2026-10-14 handoff. Exact prompts authored from spec; absent from supplied CSV and original fixture. Routing checks only; no repository audit or rendered video is implied."
   }
 ]

@@ -2568,6 +2568,12 @@
   },
   "rules": [
     {
+      "skill": "codebase-video",
+      "pattern": "\\bcodebase[ -]video\\b|(?=[^.;!?\\n]*\\b(?:repo(?:sitory)?|codebase)\\b)(?=[^.;!?\\n]*\\b(?:videos?|walkthrough|tour|mp4)\\b)[^.;!?\\n]*\\b(?:onboarding|teach(?:ing)?|tutorial|explain(?:ing)?|architecture|request[ -]flow|how[^.;!?\\n]{0,60}works|progress|what (?:changed|shipped)|since)\\b",
+      "abstract_tool": "remotion_render",
+      "capability": "motion_graphics"
+    },
+    {
       "skill": "reference-shot-breakdown",
       "abstract_tool": "shot_breakdown",
       "capability": "reference_analysis",
@@ -2928,7 +2934,7 @@
       "capability": "upscale"
     },
     {
-      "pattern": "record.*demo|repo.*launch.*video|ui demo|\\b(?:record|capture)\\b.*\\bwalkthrough\\b.*\\b(?:dashboard|app|product|ui)\\b|\\b(?:record|capture)\\b.*\\b(?:dashboard|app|product|ui)\\b.*\\bwalkthrough\\b",
+      "pattern": "record.*demo|repo.*launch.*video|ui demo|\\bproduct\\s+demo\\b|\\b(?:record|capture)\\b.*\\bwalkthrough\\b.*\\b(?:dashboard|app|product|ui)\\b|\\b(?:record|capture)\\b.*\\b(?:dashboard|app|product|ui)\\b.*\\bwalkthrough\\b",
       "skill": "product-demo-video",
       "abstract_tool": "cutaway_record"
     },

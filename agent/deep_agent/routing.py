@@ -105,6 +105,7 @@ _LOGO_REQUEST = next(rule["pattern"] for rule in POLICY["rules"] if rule["skill"
 _PLAN_REVIEW_REQUEST = next(rule["pattern"] for rule in POLICY["rules"] if rule["skill"] == "plan-to-video")
 _CHAT_STORY_REQUEST = next(rule["pattern"] for rule in POLICY["rules"] if rule["skill"] == "chat-story-video")
 _SHORT_DRAMA_REQUEST = next(rule["pattern"] for rule in POLICY["rules"] if rule["skill"] == "short-drama-series")
+_CODEBASE_REQUEST = next(rule["pattern"] for rule in POLICY["rules"] if rule["skill"] == "codebase-video")
 _MODELSTUDIO_PREVIEW_WARNING = (
     "Alibaba preview terms permit internal testing, research and evaluation only until GA. "
     "Live customer use is blocked by the preview licence."
@@ -252,7 +253,43 @@ def _seedance_prompt_diagnosis(prompt: str) -> dict | None:
     return asdict(diagnose_failure(text))
 
 
+def _codebase_instruction(prompt: str) -> str:
+    text = _instruction_text(prompt)
+    text = re.sub(r"\b(?:do not|don't|never|avoid)\s+(?:use|make|create|render)\b[^,.;!?\n]*", "", text, flags=re.I)
+    text = re.sub(r"\b(?:no|without|avoid)\s+(?:using\s+)?hyperframes\b", "", text, flags=re.I)
+    return re.sub(r"\b(?:no|without)\s+(?:a\s+)?codebase[ -]video\b", "", text, flags=re.I)
+
+
+def codebase_video_request(prompt: str) -> bool:
+    text = _codebase_instruction(prompt)
+    if re.search(r"\b(?:product|ui)\s+demo\b|\b(?:record|capture)\b[^.;!?\n]{0,80}\b(?:ui|app|dashboard|product)\b", text, re.I):
+        return False
+    text = re.sub(r"(?<=\d)\.(?=\d)", "_", text)
+    return bool(re.search(_CODEBASE_REQUEST, text, re.I))
+
+
+def _codebase_selection_text(prompt: str) -> str:
+    selections = []
+    text = re.sub(r"\buse\s+(?:the\s+)?codebase[ -]video(?:\s+skill)?\b", "", _codebase_instruction(prompt), flags=re.I)
+    for clause in re.split(r"[.;!?\n]", text):
+        selection = re.search(r"\b(?:use|using|with|via)\b", clause, re.I)
+        if selection and not re.search(r"\b(?:how|explain\w*|teach\w*|requests?|calls?)\b", clause[:selection.start()], re.I):
+            selections.append(re.split(r"\b(?:to|for|about|when|while|and|then)\b", clause[selection.start():], maxsplit=1, flags=re.I)[0])
+    return " ".join(selections)
+
+
 def request_tool_blocker(prompt: str, name: str) -> str | None:
+    if codebase_video_request(prompt):
+        if job_type(name) in {
+            "t2v", "i2v", "reference_video", "v2v_edit", "extend", "still_image", "image_edit",
+            "lipsync", "performance_transfer", "lyrics_video",
+        }:
+            return "Code cards must typeset verified repository text locally; generated images and video cannot depict code."
+        if name in {"Remotion___render_timeline", "Remotion___render_ad_variants"}:
+            from providers.remotion.api import render_backend
+
+            if render_backend() != "local":
+                return "Codebase video requires a configured local renderer. Repository cards must not be uploaded for cloud rendering."
     if _seedance_prompt_diagnosis(prompt) and not is_free_tool(name):
         return RETRY_NOTICE
     if lottie_request(prompt) and (job_type(name) in {
@@ -793,6 +830,28 @@ def drama_cancelled(prompt: str) -> bool:
 def route_intent(prompt: str, *, region: str | None = None, tier: str | None = None,
                  confidential: bool = False, arguments: dict | None = None,
                  available_tools: set[str] | None = None, retry: bool = False, user_id: str | None = None) -> Route:
+    if codebase_video_request(prompt):
+        text = _codebase_instruction(prompt)
+        constraints = intent_constraints(text, arguments=arguments)
+        visual_providers = set(constraints["provider_candidates"]) - {"elevenlabs", "fish_audio", "mureka"}
+        named = POLICY["named_models"].get(constraints["named_model"], {})
+        if visual_providers or set(named.get("aliases", {})) - {"tts", "voice_clone", "music"}:
+            reason = "Code cards require verified repository text and local rendering. The requested generation model cannot render code cards."
+            return Route(skill="codebase-video", status="blocked", reason=reason, disclosure=reason)
+        constraints = {**constraints, "provider": None, "named_model": None, "model": None}
+        route = select_provider("motion_graphics", region=region, available_tools=available_tools,
+                                arguments=arguments, **capability_constraints(constraints, "motion_graphics"))
+        blocker = request_tool_blocker(prompt, route.tool) if route.tool else None
+        if blocker:
+            return replace(route, skill="codebase-video", tool=None, dispatch_tool=None,
+                           status="blocked", reason=blocker, disclosure=blocker)
+        kind = "progress" if re.search(r"\bprogress\b|\bwhat (?:changed|shipped)\b|\bsince\b", _instruction_text(prompt), re.I) else "teach"
+        return replace(route, skill="codebase-video",
+                       required={**route.required, "codebase_kind": kind, "repository_evidence": True,
+                                 "fresh_agent_audit": True, "local_render": True},
+                       expected_output="fact-checked MP4 and citation appendix",
+                       disclosure="Repository access, a fresh-agent claim audit and local rendering are required. A route is not a verified video."
+                       + (" The requested HTML renderer provides an incomplete dry-run preview only." if route.alias == "hyperframes_render" else ""))
     reference_rule = next(rule for rule in POLICY['rules'] if rule['skill'] == 'reference-shot-breakdown')
     if re.search(reference_rule['pattern'], _instruction_text(prompt), re.I):
         route = select_provider('reference_analysis', region=region, available_tools=available_tools)
@@ -897,7 +956,7 @@ def route_intent(prompt: str, *, region: str | None = None, tier: str | None = N
         or video_capabilities.intersection(POLICY["named_models"].get(constraints["named_model"], {}).get("aliases", {}))
     )
     for rule in POLICY["rules"]:
-        if rule["skill"] in {"lottie-animation", "logo-animation", "short-drama-series"}:
+        if rule["skill"] in {"lottie-animation", "logo-animation", "short-drama-series", "codebase-video"}:
             continue
         if rule["skill"] == "chat-story-video" and not _chat_story_request(prompt):
             continue
@@ -1220,6 +1279,9 @@ def intent_constraints(prompt: str, *, tier: str | None = None, confidential: bo
     excluded_aliases = [alias for name, alias in (("ideogram", "ideogram45_edit"), ("recraft", "recraft_v41_vector"))
                         if any(exclusion.startswith(name) for exclusion in exclusions)]
     provider_prompt = excluded_names.sub("", _instruction_text(prompt))
+    codebase = codebase_video_request(prompt)
+    if codebase:
+        provider_prompt = _codebase_selection_text(prompt)
     provider_candidates = [p for pattern, p in [
         (r"\bvidu\b|\bvace\b|\bfal\b|\bwan[ -]?2", "fal"), (r"\bseedance\b", "seedance"),
         (r"\bseedream\b", "seedream"), (r"\bkling\b", "kling"),
@@ -1303,7 +1365,7 @@ def intent_constraints(prompt: str, *, tier: str | None = None, confidential: bo
     predicates["real_face_refs"] = real_face
     predicates["heygen_voice_ab"] = internal_gate(user_id)
     predicates["voice_text_needs_normalisation"] = needs_text_normalisation(_voice_script(prompt, args))
-    predicates["explicit_hyperframes"] = bool(re.search(r"\bhyperframes\b", prompt, re.I))
+    predicates["explicit_hyperframes"] = bool(re.search(r"\bhyperframes\b", _codebase_instruction(prompt) if codebase else prompt, re.I))
     model = None
     if provider == "fal":
         if re.search(r"vidu", prompt, re.I):
@@ -1311,8 +1373,9 @@ def intent_constraints(prompt: str, *, tier: str | None = None, confidential: bo
             model = POLICY["providers"]["fal"]["default_models"]["vidu_q4_r2v" if reference else "vidu_q4_i2v"]
         elif re.search(r"vace|\bwan[ -]?2", prompt, re.I):
             model = "fal-ai/wan-22-vace-fun-a14b" if re.search(r"wan[ -]?2\.2", prompt, re.I) else POLICY["providers"]["fal"]["default_model"]
-    if re.search(r"kling.*(?:turbo|omni)", prompt, re.I):
-        model = "kling-3.0-omni" if re.search("omni", prompt, re.I) else "kling-3.0-turbo"
+    model_prompt = provider_prompt if codebase else prompt
+    if re.search(r"kling.*(?:turbo|omni)", model_prompt, re.I):
+        model = "kling-3.0-omni" if re.search("omni", model_prompt, re.I) else "kling-3.0-turbo"
     named_model = next((key for key, entry in POLICY["named_models"].items()
                         if re.search(entry["pattern"], provider_prompt, re.I)), None)
     video_capabilities = {"t2v", "i2v", "reference_video"}
