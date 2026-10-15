@@ -19,7 +19,7 @@ class AgentModelConfigTests(unittest.TestCase):
         env.start()
         self.addCleanup(env.stop)
 
-    def test_default_is_sonnet_with_medium_adaptive_thinking(self):
+    def test_default_is_sonnet_with_high_adaptive_thinking(self):
         fake = object()
         with patch.dict(os.environ, {"ANTHROPIC_API_KEY": "test-only"}), patch(
             "langchain.chat_models.init_chat_model", return_value=fake,
@@ -28,7 +28,7 @@ class AgentModelConfigTests(unittest.TestCase):
             self.assertIs(backend_config.configured_deep_agent_model(), fake)
         initialize.assert_called_once_with(
             "anthropic:claude-sonnet-5-5", thinking={"type": "adaptive"},
-            output_config={"effort": "medium"},
+            output_config={"effort": "high"},
         )
 
     def test_role_overrides_and_dispatch_effort_defaults(self):
@@ -39,7 +39,7 @@ class AgentModelConfigTests(unittest.TestCase):
                 with self.subTest(role=role):
                     backend_config.configured_deep_agent_model(role)
                     self.assertEqual(initialize.call_args.args, ("anthropic:claude-sonnet-5-5",))
-                    expected = "medium" if role in {"planner", "general-purpose"} else "low"
+                    expected = "low" if role in {"media", "audio"} else "medium" if role == "editor" else "high"
                     self.assertEqual(initialize.call_args.kwargs["output_config"], {"effort": expected})
             with patch.dict(os.environ, {
                 "RENDERHAUS_AGENT_MODEL_PLANNER": "anthropic:claude-opus-5-5",
@@ -99,12 +99,12 @@ class AgentModelConfigTests(unittest.TestCase):
                 backend_config.configured_deep_agent_model()
                 self.assertEqual(initialize.call_args.kwargs["output_config"], {"effort": effort})
 
-    def test_blank_effort_uses_medium(self):
+    def test_blank_effort_uses_high(self):
         with patch.dict(os.environ, {"ANTHROPIC_API_KEY": "test-only", "RENDERHAUS_AGENT_EFFORT": " "}), patch(
             "langchain.chat_models.init_chat_model", return_value=object(),
         ) as initialize:
             backend_config.configured_deep_agent_model()
-        self.assertEqual(initialize.call_args.kwargs["output_config"], {"effort": "medium"})
+        self.assertEqual(initialize.call_args.kwargs["output_config"], {"effort": "high"})
 
     def test_invalid_effort_fails_before_model_construction(self):
         with patch.dict(os.environ, {"ANTHROPIC_API_KEY": "test-only", "RENDERHAUS_AGENT_EFFORT": "extreme"}), patch(
@@ -426,7 +426,7 @@ class AgentModelGraphTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(result.title, FINAL["title"])
         self.assertEqual(len(payloads), 1)
         self.assertEqual(payloads[0]["thinking"], {"type": "adaptive"})
-        self.assertEqual(payloads[0]["output_config"], {"effort": "medium"})
+        self.assertEqual(payloads[0]["output_config"], {"effort": "high"})
         self.assertEqual(payloads[0]["model"], "claude-sonnet-5-5")
         self.assertGreater(payloads[0]["max_tokens"], 0)
         for parameter in ("temperature", "top_p", "top_k"):

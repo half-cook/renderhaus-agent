@@ -19,11 +19,20 @@ COPY docs/continuity_qc_benchmark_scores.json ./docs/
 COPY server ./server
 COPY third_party ./third_party
 
-RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg \
+RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg bubblewrap nodejs npm chromium \
     && rm -rf /var/lib/apt/lists/*
 
+COPY remotion/package.json remotion/package-lock.json ./remotion/
+RUN npm ci --prefix remotion --omit=dev
+
 RUN pip install --no-cache-dir -e . \
-    && python -c "import importlib.metadata, json; from pathlib import Path; from agent.deep_agent.runner import SKILLS_ROOT; from providers.catalog import PROVIDERS; from providers.registry import load_committed_schemas; assert importlib.metadata.version('deepagents') == '0.7.23'; assert len(list(SKILLS_ROOT.glob('*/SKILL.md'))) == 44; assert len(json.loads((SKILLS_ROOT / 'art-style-motion/references/catalog/index.json').read_text())['styles']) == 141; assert len(PROVIDERS) == 21; assert len(list(Path('providers/shot_recipes/cards').glob('*/*.md'))) == 157; assert Path('providers/shot_recipes/index.json').is_file(); assert sum(len(load_committed_schemas(p)) for p in PROVIDERS) == 140; cases = json.loads(Path('tests/fixtures/skill_routing.json').read_text()); assert len(cases) == 357; assert sum(not c['skip_reason'] for c in cases) == 351; assert sum(bool(c['skip_reason']) for c in cases) == 6"
+    && python -c "import importlib.metadata, json; from pathlib import Path; from agent.deep_agent.runner import SKILLS_ROOT, HARNESS_TOOL_NAMES; from providers.catalog import PROVIDERS; from providers.registry import load_committed_schemas; assert importlib.metadata.version('deepagents') == '0.7.23'; assert len(list(SKILLS_ROOT.glob('*/SKILL.md'))) == 44; assert len(HARNESS_TOOL_NAMES) == 6; assert len(json.loads((SKILLS_ROOT / 'art-style-motion/references/catalog/index.json').read_text())['styles']) == 141; assert len(PROVIDERS) == 21; assert len(list(Path('providers/shot_recipes/cards').glob('*/*.md'))) == 157; assert Path('providers/shot_recipes/index.json').is_file(); assert sum(len(load_committed_schemas(p)) for p in PROVIDERS) == 140; cases = json.loads(Path('tests/fixtures/skill_routing.json').read_text()); assert len(cases) == 357; assert sum(not c['skip_reason'] for c in cases) == 351; assert sum(bool(c['skip_reason']) for c in cases) == 6"
+
+RUN useradd --create-home --uid 10001 renderhaus \
+    && mkdir -p /app/.renderhaus /tmp/renderhaus \
+    && chown -R renderhaus:renderhaus /app/.renderhaus /tmp/renderhaus
+
+USER renderhaus
 
 EXPOSE 8080
 

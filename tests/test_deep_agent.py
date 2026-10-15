@@ -32,6 +32,10 @@ IMAGE = Tool(name="Seedream___text_to_image", description="Generate a still",
 
 
 class ScriptedModel(BaseChatModel):
+    model_name: str = 'claude-sonnet-5-5'
+    max_tokens: int = 12_000
+    max_retries: int = 0
+    profile: dict = {'max_input_tokens': 200_000}
     _steps: list = PrivateAttr()
     _seen: list = PrivateAttr(default_factory=list)
 
@@ -50,10 +54,15 @@ class ScriptedModel(BaseChatModel):
     def _generate(self, messages, stop=None, run_manager=None, **kwargs):
         self._seen.append((messages, kwargs.get("available_tools", set())))
         if not self._steps:
-            raise AssertionError("Unexpected model call")
+            from langchain_core.messages import ToolMessage
+            results = [message.text for message in messages if isinstance(message, ToolMessage)]
+            raise AssertionError('Unexpected model call. Last tool results: ' + repr(results[-3:])[:1800])
         step = self._steps.pop(0)
         if callable(step):
             step = step(messages, kwargs.get("available_tools", set()))
+        if step.usage_metadata is None:
+            step.usage_metadata = {'input_tokens': 0, 'output_tokens': 0, 'total_tokens': 0}
+        step.response_metadata.setdefault('model_name', self.model_name)
         return ChatResult(generations=[ChatGeneration(message=step)])
 
 
@@ -167,7 +176,7 @@ class DeepAgentTests(unittest.IsolatedAsyncioTestCase):
         def before(messages, tools):
             self.assertIn("call_media_tool", tools)
             self.assertIn("call_audio_tool", tools)
-            self.assertNotIn("execute", tools)
+            self.assertIn("execute", tools)
             prompt = messages[0].text
             self.assertIn("product-images", prompt)
             self.assertNotIn("# Product images", prompt)
@@ -185,7 +194,8 @@ class DeepAgentTests(unittest.IsolatedAsyncioTestCase):
         gateway.call_tool.assert_awaited_once_with(IMAGE.name, {"prompt": "Product hero"})
         self.assertEqual(studio.tool_events[0].status, "succeeded")
         self.assertEqual(studio.session_items[0]["type"], SESSION_TYPE)
-        self.assertEqual(studio.progress_events[-1].type, "RUN_FINISHED")
+        self.assertEqual(studio.progress_events[-1].type, "RUN_ERROR")
+        self.assertIn('inspection', result.summary)
 
     async def test_new_turn_keeps_skill_metadata_prefix_and_reads_latest_body(self):
         with tempfile.TemporaryDirectory() as directory:

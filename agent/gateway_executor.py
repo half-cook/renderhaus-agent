@@ -21,9 +21,11 @@ from agent.deep_agent.routing import (
     capability_constraints,
     route_intent,
     Route,
+    TOOL_MAP,
 )
 from agent.deep_agent.outcomes import OutcomeStore
 from agent.deep_agent.finishing_preview import FinishingPreviewGate, FINISHING_TOOLS
+from agent.deep_agent.recovery import RecoveryPolicy
 from agent.hyperframes import HYPERFRAMES_TOOL
 
 from agent.codex_harness import ToolApprovalPending
@@ -231,6 +233,7 @@ class GatewayExecutor:
         self.cost_ledger = dict((session or {}).get("cost_ledger") or {})
         self.finishing_previews = FinishingPreviewGate(
             studio, (session or {}).get("finishing_previews"), scope=finishing_scope)
+        self.recovery = RecoveryPolicy((session or {}).get('recovery'), scope=self.run_scope)
         self.outcomes = OutcomeStore()
         for event in studio.tool_events:
             self.restore_media_review(self.media_jobs, event)
@@ -351,6 +354,7 @@ class GatewayExecutor:
             "rejected_reviews": self.rejected_reviews,
             "cost_ledger": dict(self.cost_ledger),
             "finishing_previews": self.finishing_previews.snapshot(),
+            "recovery": self.recovery.snapshot(),
             "gateway_tools": [
                 tool.model_dump(by_alias=True, exclude_none=True)
                 for server in self.servers
@@ -540,7 +544,7 @@ class GatewayExecutor:
             _progress(self.studio, event_id=f"provider-{event_id}", event_type="MODEL_UPDATE",
                       title="Provider choice", message=message, status="completed")
 
-    def selection_blocker(self, name, arguments, route):
+    def selection_blocker(self, name, arguments, route, *, routing_reason=''):
         if name == REFERENCE_TOOL:
             from providers.reference_shots.contracts import validate_arguments
 
@@ -750,14 +754,28 @@ class GatewayExecutor:
                 return str(exc)
         if route is None:
             return None
-        if route.status != "ready":
+        alternative = name != route.tool or effective_model(provider, tool, arguments) != route.model
+        candidate = next((row for row in POLICY['capabilities'] if name in row['tools'].values()
+                          and row['model'] == effective_model(provider, tool, arguments)), {})
+        if alternative and routing_reason.strip() and not route.basis.startswith('explicit request'):
+            aliases = [entry for entry in TOOL_MAP.values() if name in
+                       [entry.get('gateway_tool'), *entry.get('gateway_variants', [])]]
+            if (not candidate or candidate.get('explicit_only') or not aliases
+                    or all(entry.get('explicit_only') or entry.get('status') != 'ready' for entry in aliases)
+                    or job_type(name) != route.job_type):
+                return 'This alternative is explicit-only, unavailable, or does not support the requested capability.'
+            if blocker := policy_blocker(name, arguments):
+                return blocker
+        elif alternative:
+            return f"Capability map selected {route.tool} ({route.model}). Use it or explain an allowed alternative with routing_reason. {route.reason}"
+        if route.status != "ready" and not alternative:
             return route.reason
-        if name != route.tool or effective_model(provider, tool, arguments) != route.model:
-            return f"Capability map selected {route.tool} ({route.model}). Discover its schema and use that route. {route.reason}"
         if route.required.get("aspect_ratio") and arguments.get("aspect_ratio", "16:9" if tool == "pixverse_vibemv" else "9:16") != route.required["aspect_ratio"]:
             return "Lyrics video must use the requested aspect_ratio."
-        row = next((row for row in POLICY["capabilities"]
-                    if row["model"] == route.model and name in row["tools"].values()), {})
+        row = candidate
+        for feature, required in route.required.items():
+            if required and feature in {'native_audio', 'multi_shot', 'start_end_frame', 'reference_elements'} and not row.get('jobs', {}).get(feature):
+                return f'The chosen tool cannot preserve required capability {feature}.'
         if provider not in {"sync", "heygen"} and route.required.get("real_face_refs") and arguments.get("likeness_consent") is not True:
             return "Real-person likeness references require explicit likeness_consent=true acknowledgement."
         audio_field = row.get("native_audio_field", "generate_audio")
@@ -925,16 +943,18 @@ class GatewayExecutor:
             }
         blocker = policy_blocker(name, arguments)
         route = self.media_selection(name, arguments)
-        blocker = self.selection_blocker(name, arguments, route) or blocker
+        blocker = self.selection_blocker(name, arguments, route, routing_reason=call.get('routing_reason', '')) or blocker
         if blocker and rejection is None:
             return {"status": "not_run", "reason": blocker, "route": route.public() if route else None}
         self.disclose_selection(route, call_id, name, arguments)
-        if tool_needs_approval(name, studio.autonomous, arguments) and not approved and rejection is None:
+        if (tool_needs_approval(name, studio.autonomous, arguments) or self.recovery.needs_approval(name)) and not approved and rejection is None:
             raise ToolApprovalPending(call)
         if rejection is not None:
             output = {"status": "rejected", "message": rejection}
         else:
             reserved_for_this_call = False
+            if reason := self.recovery.authorize_call(call_id, name, call.get('retry_of', '')):
+                return {'status': 'not_run', 'reason': reason}
             free_dispatch = is_free_tool(name) or (
                 name == 'FootageMemory___footage_memory_build' and arguments.get('stage', 'estimate') == 'estimate')
             meter = getattr(studio, "run_meter", None)
@@ -943,7 +963,11 @@ class GatewayExecutor:
                 from server.run_budget import PAUSED_MESSAGE
 
                 step_quote = estimate_cost(name, arguments)
-                if await asyncio.to_thread(meter.check_step, step_quote.total_cents):
+                repo = getattr(meter, 'repo', None)
+                reserved = repo is not None and any(
+                    row['work_id'] == 'media:' + call_id and row['state'] == 'reserved'
+                    for row in await asyncio.to_thread(repo.run_work, meter.run_id))
+                if not reserved and await asyncio.to_thread(meter.check_step, step_quote.total_cents):
                     return {"status": "not_run", "reason": PAUSED_MESSAGE}
             if reused := self.finishing_previews.replay(name, arguments):
                 return reused
@@ -1113,6 +1137,12 @@ class GatewayExecutor:
             and event.result.get("render_id") == arguments.get("render_id") for event in studio.tool_events
         ):
             output = {**_unwrap_tool_output(output), "logo_animation_required": True}
+        payload = _unwrap_tool_output(output)
+        recovery = None
+        if payload.get('status') in {'failed', 'error', 'submission_unknown'}:
+            recovery = self.recovery.failure(call_id, name, payload)['recovery']
+        elif payload.get('status') not in {'rejected', 'not_run'}:
+            self.recovery.success(call_id, name)
         if name in {"Remotion___render_timeline", "Remotion___get_render_progress", "HyperFrames___render_composition"}:
             from agent.deep_agent.motion_carry_gate import requires_motion_qc
 
@@ -1243,7 +1273,7 @@ class GatewayExecutor:
                     if tool.name != _GATEWAY_SEARCH_TOOL
                 ],
             }
-        return completed.result
+        return {**completed.result, 'recovery': recovery} if recovery else completed.result
 
     @staticmethod
     def review_asset(completed, provider, model, previous=None):

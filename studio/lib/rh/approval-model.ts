@@ -1,4 +1,4 @@
-import type { AgentApprovalRequest } from "@/lib/api";
+import type { AgentPendingRequest } from "@/lib/api";
 import { isCents } from "./money";
 import { parseLines, safeCopy, toApprovalCardModel, type ApprovalCardModel, type ApprovalStatus, type RunPayload } from "./billing";
 
@@ -29,7 +29,8 @@ export function specsFrom(args: Record<string, unknown>): string[] {
  * call_id, label, detail, status, estimate_cents, cap_cents, lines[], balance_*, approve_enabled,
  * insufficient_credit, raise_options_cents, estimate_incomplete. Null when no price was sent (no card to show).
  */
-export function approvalCardModel(approval: AgentApprovalRequest): ApprovalCardModel | null {
+export function approvalCardModel(approval: AgentPendingRequest): ApprovalCardModel | null {
+  if (approval.kind === "question") return null;
   const item = approval.billing;
   if (!item || !isCents(item.estimate_cents) || !isCents(item.cap_cents)) return null;
   const status = str(item.status);
@@ -84,7 +85,7 @@ export type SpendSummary = { rows: Array<{ label: string; amountCents: number; t
  * the receipt (actual), the paused-at-cap payload (charged so far) or the waiting approval card (estimate).
  * Rows are the server's lines in order; the total is the server's total. Nothing is added up here.
  */
-export function spendSummary(executions: Array<{ createdAt?: number; approvals: AgentApprovalRequest[]; pausedCap?: Record<string, unknown>; receipt?: Record<string, unknown> }>): SpendSummary | null {
+export function spendSummary(executions: Array<{ createdAt?: number; approvals: AgentPendingRequest[]; pausedCap?: Record<string, unknown>; receipt?: Record<string, unknown> }>): SpendSummary | null {
   const newest = [...executions].sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0));
   for (const execution of newest) {
     const receipt = execution.receipt;

@@ -31,6 +31,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   AGENT_PROMPT_MAX_CHARS,
   answerAgentCap,
+  answerAgentQuestion,
   decideAgentApproval,
   downloadLogoArtifact,
   downloadReferenceArtifact,
@@ -38,6 +39,9 @@ import {
   stopAgentRun,
   submitAgentPrompt,
   type AgentApprovalRequest,
+  type AgentPendingRequest,
+  type AgentQuestionRequest,
+  type QuestionAnswer,
   type AgentProgress,
   type StudioExecution,
 } from "@/lib/api";
@@ -49,6 +53,7 @@ import type { StudioAsset } from "@/lib/types";
 import { AssetDownloadLink, AssetMedia } from "./AssetMedia";
 import { FinishingPreviewReview } from "./FinishingPreviewReview";
 import { ApprovalCard } from "@/components/rh/ApprovalCard";
+import { QuestionCard } from "@/components/rh/QuestionCard";
 import { RunReceipt } from "@/components/rh/RunBilling";
 import { approvalCardModel, visibleParameters } from "@/lib/rh/approval-model";
 import { toRunReceiptModel, toApprovalCardModel } from "@/lib/rh/billing";
@@ -153,7 +158,7 @@ function IntermediateSteps({
   ];
   const currentWait = progressEvents.filter((event) => event.type === "MEDIA_WAIT" && event.status === "running").at(-1);
   const currentUpdate = progressEvents.filter((event) => event.type === "MODEL_UPDATE").at(-1);
-  const label = status === "awaiting_approval" ? "Your approval is needed"
+  const label = status === "awaiting_approval" ? (message === "Waiting for your answer." ? "Your answer is needed" : "Your approval is needed")
     : state === "running" ? currentWait?.message || currentUpdate?.message || message || "Starting…"
     : state === "incomplete" ? `Export incomplete${recoveryAvailable ? " · progress saved" : ""}`
     : state === "failed" ? (recoveryAvailable ? "Stopped · progress saved" : "Run failed")
@@ -191,11 +196,13 @@ function IntermediateSteps({
 function ApprovalCards({
   approvals,
   onDecision,
+  onAnswer,
   busyCallId,
   active,
   disabled,
 }: {
-  approvals: AgentApprovalRequest[];
+  approvals: AgentPendingRequest[];
+  onAnswer: (question: AgentQuestionRequest, answer: QuestionAnswer) => void;
   onDecision: (approval: AgentApprovalRequest, decision: "approve" | "reject", capCents?: number) => void;
   busyCallId: string | null;
   active: boolean;
@@ -203,8 +210,10 @@ function ApprovalCards({
 }) {
   if (!approvals.length) return null;
   return (
-    <div className="agent-approvals" aria-label="Tool approvals">
+    <div className="agent-approvals" aria-label="Questions and approvals">
       {approvals.map((approval) => {
+        if (approval.kind === "question") return <QuestionCard key={approval.callId} question={approval}
+          active={active} busy={disabled || busyCallId !== null} onAnswer={(answer) => onAnswer(approval, answer)} />;
         if (approval.toolName === "review_finishing_preview") {
           return <FinishingPreviewReview key={approval.callId} approval={approval} active={active}
             busy={disabled || busyCallId !== null} onDecision={onDecision} />;
@@ -408,6 +417,7 @@ function ExecutionTurn({
   placedVersionIds,
   onPlace,
   onApproval,
+  onQuestion,
   onCap,
   busyApproval,
   onResume,
@@ -424,6 +434,7 @@ function ExecutionTurn({
     decision: "approve" | "reject",
     capCents?: number,
   ) => void;
+  onQuestion: (execution: StudioExecution, question: AgentQuestionRequest, answer: QuestionAnswer) => void;
   onCap: (execution: StudioExecution, action: "raise" | "stop", capCents?: number) => void;
   busyApproval: string | null;
   onResume: () => void;
@@ -453,6 +464,7 @@ function ExecutionTurn({
           busyCallId={busyApproval}
           disabled={actionsDisabled}
           onDecision={(approval, decision, capCents) => onApproval(execution, approval, decision, capCents)}
+          onAnswer={(question, answer) => onQuestion(execution, question, answer)}
         />
         <RunBillingBlocks execution={execution} disabled={actionsDisabled} onCap={onCap} />
         <ArtifactDownloads kind="logo" executionId={execution.jobId} events={execution.toolEvents}/>
@@ -619,10 +631,10 @@ export function AgentDock({ navigationBusy: externalBusy, onBusyChange, suggesti
   const setPendingCap = useCreditContext((state) => state.setPendingCap);
   const setHeld = useCreditContext((state) => state.setHeld);
   useEffect(() => {
-    const waiting = conversationExecutions.flatMap((execution) => execution.status === "awaiting_approval" ? execution.approvals.filter((approval) => !approval.decision) : []);
+    const waiting = conversationExecutions.flatMap((execution) => execution.status === "awaiting_approval" ? execution.approvals.filter((approval): approval is AgentApprovalRequest => approval.kind === "approval" && !approval.decision) : []);
     const cap = waiting.map((approval) => approval.billing?.cap_cents).find((value): value is number => typeof value === "number");
     setPendingCap(cap ?? null);
-    const held = conversationExecutions.map((execution) => execution.pausedCap?.held_cents ?? execution.approvals.find((approval) => approval.billing?.status === "running")?.billing?.held_cents).find((value): value is number => typeof value === "number");
+    const held = conversationExecutions.map((execution) => execution.pausedCap?.held_cents ?? execution.approvals.find((approval): approval is AgentApprovalRequest => approval.kind === "approval" && approval.billing?.status === "running")?.billing?.held_cents).find((value): value is number => typeof value === "number");
     setHeld(held ?? 0);
   }, [conversationExecutions, setHeld, setPendingCap]);
   const activeConversation = conversations.find((item) => item.id === conversationId);
@@ -836,6 +848,20 @@ export function AgentDock({ navigationBusy: externalBusy, onBusyChange, suggesti
     }
   };
 
+  const onQuestion = async (execution: StudioExecution, question: AgentQuestionRequest, answer: QuestionAnswer) => {
+    if (externalBusy || navigationBusy) return;
+    setBusyApproval(question.callId);
+    try {
+      const progress = await answerAgentQuestion(execution.jobId, question.callId, answer);
+      setAgentMessage(progress.message);
+      await refreshExecutions();
+    } catch (error) {
+      setAgentMessage(error instanceof Error ? error.message : "The answer could not be saved.");
+    } finally {
+      setBusyApproval(null);
+    }
+  };
+
   const onApproval = async (
     execution: StudioExecution,
     approval: AgentApprovalRequest,
@@ -998,6 +1024,7 @@ export function AgentDock({ navigationBusy: externalBusy, onBusyChange, suggesti
             placedVersionIds={placedVersionIds}
             onPlace={onPlace}
             onApproval={onApproval}
+            onQuestion={onQuestion}
             onCap={onCap}
             busyApproval={busyApproval}
             actionsDisabled={externalBusy || navigationBusy}

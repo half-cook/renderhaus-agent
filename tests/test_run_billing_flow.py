@@ -46,7 +46,8 @@ class FlowFixture(unittest.IsolatedAsyncioTestCase):
         self.repo.create_project("user:local", "local", "Deep Agent", project_id="project")
         self.conversation = self.repo.create_conversation("user:local", "project", "local")["id"]
         self.job = self._job("Make a product still with Seedream")
-        image_path = Path(directory.name) / "hero.png"
+        image_path = self.repo.media_root / self.job / 'hero.png'
+        image_path.parent.mkdir(parents=True, exist_ok=True)
         Image.new("RGB", (16, 16), "blue").save(image_path)
         self.gateway = Gateway(result={"status": "succeeded", "output_path": str(image_path)})
         self.steps = [final()]
@@ -62,6 +63,7 @@ class FlowFixture(unittest.IsolatedAsyncioTestCase):
             patch("agent.studio_agent_next.gateway_mcp_server", gateway),
             patch("agent.deep_agent.runner.configured_deep_agent_model", side_effect=lambda role=None: ScriptedModel(self.steps)),
             patch.dict(os.environ, {"RENDERHAUS_AGENT_BACKEND": "deepagents", "AGENTCORE_DEV_URL": "",
+                                    'RENDERHAUS_MEDIA_DIR': str(self.repo.media_root),
                                     "ORCHESTRATION_BILLING_ENABLED": "true", "ORCHESTRATION_ESTIMATE_CENTS": "75"}),
         ]:
             p.start()
@@ -123,9 +125,9 @@ class MeteringFlowTests(FlowFixture):
         self.assertEqual(execution["error_type"], "PausedAtCap")
         self.assertEqual(execution["message"], rb.PAUSED_MESSAGE)
         paused = execution["paused_cap"]
-        self.assertEqual((paused["type"], paused["cap_cents"], paused["charged_cents"]), ("paused_cap", 50, 50))
+        self.assertEqual((paused["type"], paused["cap_cents"], paused["charged_cents"]), ("paused_cap", 50, 39))
         self.assertEqual(paused["raise_options_cents"], [100, 150])
-        self.assertEqual(self.repo.get_balance(self.user), 950)  # exactly the cap, never more
+        self.assertEqual(self.repo.get_balance(self.user), 961)
         self.assertIsNone(execution["receipt"])
         self.assertEqual(self.repo.get_run_hold(self.job)["state"], "held")
         self.assertIsNone(VENDOR_RE.search(json.dumps(paused)))
@@ -136,14 +138,14 @@ class MeteringFlowTests(FlowFixture):
             await self.run_job()
         result = await studio.studio_agent_cap(self.job, studio.AgentCapBody(action="stop"), None)
         self.assertEqual(result["status"], "stopped")
-        self.assertEqual(result["receipt"]["actual_cents"], 50)
+        self.assertEqual(result["receipt"]["actual_cents"], 39)
         self.assertEqual(result["receipt"]["status"], "failed")
-        self.assertEqual(self.repo.available_credit(self.user), 950)
+        self.assertEqual(self.repo.available_credit(self.user), 961)
         with self.assertRaises(HTTPException) as caught:
             await studio.studio_agent_cap(self.job, studio.AgentCapBody(action="stop"), None)
         self.assertEqual(caught.exception.status_code, 409)
         receipt = await studio.studio_agent_receipt(self.job, None)
-        self.assertEqual(receipt["actual_cents"], 50)
+        self.assertEqual(receipt["actual_cents"], 39)
 
     async def test_raising_the_cap_checks_credit_and_resumes(self):
         with patch.dict(os.environ, {"ORCHESTRATION_ESTIMATE_CENTS": "20"}):
@@ -241,13 +243,38 @@ class ApprovalFlowTests(FlowFixture):
 
     @patch("server.studio_state.httpx.stream")
     async def test_approval_resumes_with_the_chosen_cap_and_receipt_follows(self, remote_download):
+        from agent.deep_agent.routing import CostEstimate
+        from langchain_core.messages import ToolMessage
+        from test_deep_agent import call, FINAL
+
         execution = await self.pause_for_approval()
         card = execution["approvals"][0]
-        self.steps = [final()]
-        await studio.decide_studio_agent_tool(
-            self.job, card["call_id"], studio.AgentApprovalBody(decision="approve", cap_cents=card["cap_cents"]), None)
-        self.assertEqual(self.repo.get_run_hold(self.job)["held_cents"], card["cap_cents"])
-        await asyncio.gather(*list(studio._AGENT_TASKS))
+        result = self.gateway.call_tool.return_value
+        async def billed(*_):
+            run_billing.charge_media(self.repo, self.user, self.job, 26, 'Seedream___text_to_image', {})
+            return result
+        self.gateway.call_tool.side_effect = billed
+        saved = {}
+        def last_result(messages):
+            return json.loads(next(m.text for m in reversed(messages) if isinstance(m, ToolMessage)))
+        def stage(messages, _):
+            assets = last_result(messages)['assets']
+            assert assets, self.execution()
+            asset = assets[-1]
+            return call('stage_media', {'asset_ref': 'renderhaus-asset://' + asset['version_id']}, 'stage')
+        def inspect(messages, _):
+            saved['path'] = last_result(messages)['path']
+            return call('inspect_media', {'path': saved['path']}, 'inspect')
+        self.steps = [call('read_studio_context', {}, 'context'), stage, inspect,
+            lambda *_: call('read_file', {'file_path': saved['path']}, 'view'),
+            lambda *_: call('StudioAgentOutput', {**FINAL, 'media_paths': [saved['path']]}, 'finish'),
+            call('GraderResponse', {'result': 'satisfied', 'explanation': 'The still was inspected and viewed.',
+                 'criteria': [{'name': 'Current still inspected', 'passed': True}]}, 'grade')]
+        with patch('agent.deep_agent.routing.estimate_cost', return_value=CostEstimate(26, 'Known mock price')):
+            await studio.decide_studio_agent_tool(
+                self.job, card["call_id"], studio.AgentApprovalBody(decision="approve", cap_cents=card["cap_cents"]), None)
+            self.assertEqual(self.repo.get_run_hold(self.job)["held_cents"], card["cap_cents"])
+            await asyncio.gather(*list(studio._AGENT_TASKS))
         final_state = self.execution()
         self.assertEqual(final_state["status"], "completed")
         self.assertEqual(final_state["receipt"]["cap_cents"], card["cap_cents"])

@@ -10,11 +10,14 @@ Voice consent notices name the upload destination as required for recorded conse
 from __future__ import annotations
 
 import logging
+from contextlib import contextmanager
+from contextvars import ContextVar
 from typing import Any
 
 from server import run_budget as rb
 
 logger = logging.getLogger(__name__)
+_MEDIA_WORK: ContextVar[tuple[str, str] | None] = ContextVar("run_billing_media_work", default=None)
 
 
 def billing_applies(repo: Any, user_id: str | None) -> bool:
@@ -94,7 +97,7 @@ def _hold_numbers(repo: Any, user_id: str | None, run_id: str) -> dict[str, int]
 
 
 def plan_for_pending(repo: Any, run_id: str, raw_approvals: list[dict[str, Any]]) -> rb.RunPlan | None:
-    pending = [a for a in raw_approvals if a.get("decision") != "reject"
+    pending = [a for a in raw_approvals if a.get("kind") != "question" and a.get("decision") != "reject"
                and a.get("tool_name") != "review_finishing_preview"]
     if not pending:
         return None
@@ -116,6 +119,25 @@ def public_approvals(
     """Client approval cards with neutral billing data and required voice consent notices."""
     if not raw_approvals:
         return []
+    questions = []
+    for item in raw_approvals:
+        if item.get("kind") == "question":
+            from agent.deep_agent.questions import StudioQuestionRequest
+            safe = {**item, 'question': rb.neutral_error(item.get('question'), 'Which outcome do you prefer?'),
+                    'options': [{**option,
+                        'label': rb.neutral_error(option.get('label'), f'Option {index + 1}'),
+                        'description': rb.neutral_error(option.get('description'), '')}
+                        for index, option in enumerate(item.get('options') or [])]}
+            question = StudioQuestionRequest.model_validate(safe).model_dump()
+            question["decision"] = item.get("decision")
+            question["status"] = "answered" if item.get("decision") == "answer" else (
+                "pending" if execution_status == "awaiting_approval" else "closed")
+            if item.get("answer") is not None:
+                question["answer"] = StudioQuestionRequest.model_validate(safe).validate_answer(item["answer"]).model_dump()
+            questions.append(question)
+    raw_approvals = [item for item in raw_approvals if item.get("kind") != "question"]
+    if not raw_approvals:
+        return questions
     plan = plan_for_pending(repo, run_id, raw_approvals)
     numbers = _hold_numbers(repo, user_id, run_id)
     hold = repo.get_run_hold(run_id)
@@ -198,7 +220,7 @@ def public_approvals(
                 "estimate_incomplete": price is None or any(_step_price(a) is None for a in live),
             })
         output.append(entry)
-    return output
+    return output + questions
 
 
 def paused_cap_view(repo: Any, run_id: str) -> dict[str, Any] | None:
@@ -312,8 +334,54 @@ class RunMeter:
         return hold
 
     def remaining_cap_cents(self) -> int:
-        hold = self._hold()
-        return max(0, hold["held_cents"] - hold["charged_cents"])
+        return self.snapshot()["remaining_cents"]
+
+    def snapshot(self) -> dict[str, int]:
+        return self.repo.run_budget_snapshot(self.run_id)
+
+    def reserve_work(
+        self, work_id: str, cost_cents: int, *, kind: str, role: str, allow_existing: bool = True,
+    ) -> dict[str, Any]:
+        try:
+            return self.repo.reserve_run_work(self.user_id, self.run_id, work_id, cost_cents, kind=kind,
+                                              role=role, allow_existing=allow_existing)
+        except rb.RunCapExceededError:
+            raise rb.RunPausedAtCap(self._pause()) from None
+
+    def settle_work(
+        self, work_id: str, *, model_cost_usd: float = 0, compute_cost_usd: float = 0,
+        usage: dict[str, Any] | None = None,
+    ) -> Any:
+        return self.repo.settle_run_work(self.user_id, self.run_id, work_id, model_cost_usd=model_cost_usd,
+                                         compute_cost_usd=compute_cost_usd, usage=usage)
+
+    def fail_work(self, work_id: str, usage: dict[str, Any] | None = None) -> None:
+        """A transport error cannot prove that the model did no billable work."""
+        self.repo.mark_run_work_ambiguous(self.run_id, work_id, usage)
+
+    def reserve_media(self, call_id: str, price_cents: int | None) -> dict[str, Any]:
+        if price_cents is None:
+            raise rb.RunPausedAtCap(self._pause())
+        return self.reserve_work("media:" + call_id, price_cents, kind="media", role="paid_dispatch", allow_existing=False)
+
+    def complete_media(self, call_id: str, *, definitely_not_started: bool = False) -> None:
+        work_id = "media:" + call_id
+        if definitely_not_started:
+            self.repo.charge_usage(self.user_id, 0, "generation", run_id=self.run_id, _work_id=work_id,
+                                   _work_usage={"status": "not_started"})
+        else:
+            self.fail_work(work_id)
+
+    @contextmanager
+    def media_dispatch(self, call_id: str, price_cents: int | None):
+        """Bridge the preflight quote to the charge in the host's async dispatch stack."""
+        self.reserve_media(call_id, price_cents)
+        token = _MEDIA_WORK.set((self.run_id, "media:" + call_id))
+        try:
+            yield
+        finally:
+            _MEDIA_WORK.reset(token)
+            self.complete_media(call_id)
 
     def _pause(self) -> dict[str, Any]:
         hold = self._hold()
@@ -326,7 +394,7 @@ class RunMeter:
     def check_step(self, price_cents: int | None) -> dict[str, Any] | None:
         """Before a paid step: run spend + step must fit the cap.  Returns a paused_cap payload if not."""
         if price_cents is None:
-            return None
+            return self._pause()
         if price_cents > self.remaining_cap_cents():
             return self._pause()
         return None
@@ -372,14 +440,22 @@ def charge_media(
     meter = RunMeter.for_run(repo, user_id, run_id)
     if meter is None:
         return repo.charge_usage(user_id, cost_cents, "generation")
-    paused = meter.check_step(cost_cents)
-    if paused:
-        raise rb.RunPausedAtCap(paused)
+    scope = _MEDIA_WORK.get()
+    work_id = scope[1] if scope is not None and scope[0] == run_id else None
+    if work_id is None and call_id is not None:
+        existing = next((row for row in repo.run_work(run_id) if row["work_id"] == "media:" + call_id), None)
+        if existing:
+            work_id = existing["work_id"]
+    if work_id is None:
+        paused = meter.check_step(cost_cents)
+        if paused:
+            raise rb.RunPausedAtCap(paused)
     label, detail = rb.work_label(tool_name, arguments)
     try:
         return repo.charge_usage(
             user_id, cost_cents, "generation", run_id=run_id, line_kind="media", line_label=label,
             line_detail=detail, call_id=call_id,
+            _work_id=work_id,
         )
     except rb.RunCapExceededError:
         raise rb.RunPausedAtCap(meter._pause()) from None

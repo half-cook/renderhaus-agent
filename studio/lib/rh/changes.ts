@@ -201,7 +201,7 @@ function parseApproval(value: unknown): ApprovalCardModel | undefined {
     const id = text(item.id) ?? text(payload.call_id);
     if (!id) return undefined;
     if (settled) return parseApproval(toApprovalCardModel({ id, title: safeChangeCopy(item.title, "Paid step"), estimateCents: isCents(item.estimateCents) ? item.estimateCents : undefined, estimateIncomplete: payload.estimate_cents === undefined && !isCents(item.estimateCents) }, payload));
-    const model = approvalCardModel({ callId: id, toolName: "", label: safeChangeCopy(item.title ?? payload.label, "Paid step"), arguments: record(payload.arguments) ?? {}, billing: payload });
+    const model = approvalCardModel({ kind: "approval", callId: id, toolName: "", label: safeChangeCopy(item.title ?? payload.label, "Paid step"), arguments: record(payload.arguments) ?? {}, billing: payload });
     return model ? parseApproval(model) : undefined;
   }
   if (!text(item.id) || !isCents(item.estimateCents) || !isCents(item.capCents)) return undefined;
