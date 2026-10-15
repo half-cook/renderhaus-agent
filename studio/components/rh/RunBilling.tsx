@@ -44,10 +44,6 @@ export function RunReceipt({ receipt, onOpen, onTimeline, onExport }: {
           {receipt.underEstimate && receipt.status === "done" ? <span className="rh-chip rh-chip-ok">Under estimate</span> : null}
         </div>
       </Ledger>
-      <Ledger>
-        <LedgerRow label="Balance before" amount={formatCents(receipt.balanceBeforeCents)} />
-        <LedgerRow label="Balance after" amount={formatCents(receipt.balanceAfterCents)} tone="money" />
-      </Ledger>
       <div className="rh-appr-ft">
         {receipt.status === "done" ? <button type="button" className="rh-btn rh-btn-solid" style={{ flex: 1 }} onClick={onOpen}><Play size={13} aria-hidden="true" />Open the film</button> : null}
         <button type="button" className="rh-btn" onClick={onTimeline}><Film size={14} aria-hidden="true" />Timeline</button>

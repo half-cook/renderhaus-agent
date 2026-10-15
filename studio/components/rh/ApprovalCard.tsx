@@ -79,7 +79,6 @@ export function ApprovalCard({ model, approveEnabled, busy = false, actions = {}
   const credit = model.status === "pending" ? creditState(model, approveEnabled) : "ok";
   const topups = topupsEnabled();
   const approveName = a11yApproveName(model, formatCents);
-  const stepLabel = model.stepIndex && model.stepCount ? `Step ${model.stepIndex} of ${model.stepCount}` : null;
   const live = model.status === "approved" ? `Approved. Up to ${formatCents(model.capCents)} reserved.`
     : model.status === "paused_cap" ? `Paused. Cap of ${formatCents(model.capCents)} reached.` : "";
 
@@ -107,7 +106,6 @@ export function ApprovalCard({ model, approveEnabled, busy = false, actions = {}
           {header.dot ? <span className="rh-dot rh-dot-run" aria-hidden="true" /> : header.icon}
           <span className="rh-appr-label">{header.label}</span>
         </span>
-        {stepLabel ? <span className="rh-mono rh-fg3 rh-appr-step">{stepLabel}</span> : null}
       </div>
 
       <div className="rh-appr-bd">
