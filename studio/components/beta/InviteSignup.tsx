@@ -99,20 +99,20 @@ export function InviteSignup({ initialPhase }: { initialPhase?: Phase } = {}) {
   const welcome = phase.kind === "welcome";
   return (
     <main className="rh-page rh-signup" data-surface="beta" data-shot={`invite-${phase.kind}`}>
-      <div className="rh-signup-v4">
-        <aside className="rh-signup-art" aria-hidden="true">
-          <Link href="/" className="rh-brand rh-signup-brand" tabIndex={-1}><span className="rh-mark" /><span className="rh-bleed-word">Renderhaus</span></Link>
-          <p className="rh-signup-caption">Your first project opens with a demo film, so you see an approval card before you spend anything.</p>
-        </aside>
+      <div className="rh-signup-v4 rh-signup-cinema">
+        <div className="rh-signup-bleed" aria-hidden="true" />
+        <Link href="/" className="rh-brand rh-signup-brand"><span className="rh-mark" /><span className="rh-bleed-word">Renderhaus</span></Link>
+        <p className="rh-signup-caption">Your first project opens with a demo film, so you see an approval card before you spend anything.</p>
         <section className="rh-signup-pane" aria-labelledby="beta-title">
           {welcome ? <Welcome balanceCents={phase.balanceCents} /> : (
             <div className="rh-form rh-form-v4" data-shot="invite-form">
+              <span className="rh-sample rh-mono">Sample</span>
               <div className="rh-fg3 rh-num rh-signup-step">Step {phase.kind === "code" ? 1 : 2} of 2</div>
               <h1 id="beta-title" className="rh-signup-h">{phase.kind === "code" ? "Enter your invite" : "Confirm your email"}</h1>
-              <p className="rh-form-sub">One code, one account, $10 in credit. No password.</p>
+              <p className="rh-form-sub">One code, one account, $10 in credit.</p>
               <CodeStep phase={phase} onReserved={(invite) => setPhase({ kind: "email", invite })} onChange={() => setPhase({ kind: "code" })} />
               <EmailStepSwitch phase={phase} onDone={(balanceCents) => setPhase({ kind: "welcome", balanceCents })} />
-              <p className="rh-form-fine">Nothing paid runs until you approve its estimate and hard cap. Already in? <Link href="/sign-in">Sign in</Link></p>
+              <p className="rh-form-fine">Already in? <Link href="/sign-in">Sign in</Link></p>
             </div>
           )}
         </section>
@@ -157,7 +157,7 @@ function CodeStep({ phase, onReserved, onChange }: { phase: Phase; onReserved: (
           ) : error?.kind === "invalid" ? (
             <p className="rh-err" role="alert" data-shot="invite-invalid">{INVALID}</p>
           ) : error ? <p className="rh-err" role="alert">{error.message}</p> : null}
-          <button type="submit" className="rh-btn rh-btn-solid rh-btn-lg rh-btn-block" disabled={busy || code.trim().length < 12}>{busy ? "Checking…" : "Check code"}</button>
+          <button type="submit" className="rh-btn rh-btn-solid rh-btn-lg rh-btn-block" disabled={busy || code.trim().length < 12}>{busy ? "Checking…" : <>Continue <ArrowRight size={16} aria-hidden="true" /></>}</button>
         </form>
       )}
     </div>
