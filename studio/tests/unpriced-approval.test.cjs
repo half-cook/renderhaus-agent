@@ -29,3 +29,11 @@ test("up-to hold reads 'Up to $X · we’ll stop there' and unpriceable never en
   assert.match(model, /!insufficient && !model\.unpriceable/);
   assert.ok(!card.includes("does not mean free"));
 });
+
+test("pricing, up-to and unpriceable cards can always be declined with the quiet Not now", () => {
+  const card = read("components/rh/ApprovalCard.tsx");
+  assert.match(card, /model\.pricing \|\| model\.upTo \|\| model\.unpriceable \? \(\s*\/\/[^\n]*\n\s*<button[^>]*rh-btn-quiet[^>]*onClick=\{actions\.onNotNow\}>Not now/);
+  assert.match(card, /UP_TO_FOOTNOTE = "We stop at this amount, you are never charged more\."/);
+  assert.ok(!/30%|platform fee/i.test(card));
+  assert.match(read("components/canvas/AgentDock.tsx"), /onNotNow: \(\) => onDecision\(approval, "reject", undefined, "not_now"\)/);
+});

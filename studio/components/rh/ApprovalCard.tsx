@@ -7,6 +7,7 @@ import { formatCents } from "@/lib/rh/money";
 import { a11yApproveName, creditState, type ApprovalCardModel } from "@/lib/rh/billing";
 import { BalanceNote, CapRow, Ledger, LedgerRow, LedgerTotal, lineLabel } from "./Ledger";
 
+export const UP_TO_FOOTNOTE = "We stop at this amount, you are never charged more.";
 export const APPROVAL_FOOTNOTE = "Estimate shown before anything runs. We stop at the cap, you are never charged more.";
 
 export type ApprovalCardActions = {
@@ -180,8 +181,12 @@ export function ApprovalCard({ model, approveEnabled, busy = false, actions = {}
               Approve and run
             </button>
             <button type="button" className="rh-btn rh-btn-act" onClick={actions.onEdit}><Pencil size={14} aria-hidden="true" />Edit</button>
+            {model.pricing || model.upTo || model.unpriceable ? (
+              // Same server decline as the over-credit card: clears the approval, releases any hold, posts the Paused line.
+              <button type="button" className="rh-btn rh-btn-quiet rh-btn-act" data-shot="not-now" disabled={busy} onClick={actions.onNotNow}>Not now</button>
+            ) : null}
           </div>
-          <div className="rh-footnote"><Info size={12} aria-hidden="true" /><span>{APPROVAL_FOOTNOTE}</span></div>
+          <div className="rh-footnote"><Info size={12} aria-hidden="true" /><span>{model.upTo ? UP_TO_FOOTNOTE : APPROVAL_FOOTNOTE}</span></div>
         </>
       ) : null}
 
