@@ -354,3 +354,26 @@ html[data-theme="light"] {
 /* Primary action never truncates: it keeps its full label and the quieter actions wrap beside or below it. */
 .rh-appr-ft .rh-btn-primary.rh-btn-act { flex: 1 0 auto !important; min-width: max-content; white-space: nowrap; }
 .rh-appr-ft .rh-btn-act:not(.rh-btn-primary) { flex: 0 0 auto; white-space: nowrap; }
+
+/* Design pass v5 ---------------------------------------------------------------------------- */
+/* Phones with a decision waiting: the stage shrinks to a compact preview so the whole card
+   (cost lines, cap, lower-cap option) fits on screen like desktop (m17). */
+@media (max-width: 800px) {
+  .rh-agent-workspace.rh-v4-stage-open:has(.rh-appr-pending) .rh-stage-frame { width: min(100%, 220px); border-radius: 12px; }
+  .rh-agent-workspace.rh-v4-stage-open:has(.rh-appr-pending) .rh-stage-caption b { font-size: 18px; }
+  .rh-agent-workspace.rh-v4-stage-open:has(.rh-appr-pending) .rh-stage-caption span,
+  .rh-agent-workspace.rh-v4-stage-open:has(.rh-appr-pending) .rh-stage-review,
+  .rh-agent-workspace.rh-v4-stage-open:has(.rh-appr-pending) .rh-strip { display: none; }
+  .rh-agent-workspace.rh-v4-stage-open:has(.rh-appr-pending) .rh-stage { flex-direction: row; }
+}
+/* Live Studio: stage + strip sit centred in their column, so a width-limited 16:9 stage never leaves
+   one empty band underneath (live empty Studio). */
+@media (min-width: 801px) { .rh-agent-workspace .rh-stage { justify-content: center; padding-top: 0; padding-bottom: 24px; } }
+.rh-strip-placeholder { position: relative; }
+.rh-strip-placeholder .rh-strip-empty { flex: 1 1 0; border: 1px dashed rgba(242,238,230,.12); background: transparent; }
+.rh-strip-hint { position: absolute; inset: 0; display: grid; place-items: center; font-size: 13px; color: var(--rh-fg-3); pointer-events: none; }
+/* A tall approval card never shrinks inside a flex chat column (it was clipping the "Fits your credit" option). */
+.rh-appr { flex-shrink: 0; }
+/* Review gallery: the composer sticks to the bottom of the chat column instead of scrolling over a tall card. */
+.rh-v4-chat .rh-v4-composer { position: sticky; left: auto; right: auto; bottom: 0; margin-top: auto; padding: 12px 0 0; background: var(--rh-bg, #0b0a09); }
+.rh-v4-chat { padding-bottom: 20px; }

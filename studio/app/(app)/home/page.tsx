@@ -42,7 +42,7 @@ function clock(unixSeconds: number): string {
 
 /** Ledger reasons arrive as snake_case ids. Show a plain label; never an id and never a provider. */
 function reasonLabel(reason: string, delta: number): string {
-  if (/beta/.test(reason)) return "Beta credit · wave 1";
+  if (/beta/.test(reason)) return "Beta credit";
   if (/top.?up|purchase/.test(reason)) return "Credit added";
   if (/refund|release/.test(reason)) return "Released hold";
   if (/image|still/.test(reason)) return "Product still · Studio Image";

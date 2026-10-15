@@ -66,8 +66,12 @@ class UnpricedApprovalTests(FlowFixture):
                                       raw_approvals=raw, requested_cap_cents=None)
 
     async def test_over_credit_hold_routes_to_the_over_credit_state(self):
+        # The up-to total is the cap, so make the worst case outgrow the run's opening hold plus the credit left.
+        table = patch.dict(run_billing.WORST_CASE_HOLD_CENTS, {"image": 400})
+        table.start()
+        self.addCleanup(table.stop)
         await self.pause()
-        self.repo.adjust_balance(self.user, -(1000 - 130), "test_spend")  # 130 left, cap needs more
+        self.repo.adjust_balance(self.user, -(1000 - 130), "test_spend")  # 130 left, the up-to total needs more
         card = self.execution()["approvals"][0]
         self.assertEqual(card["price_basis"], "up_to")
         self.assertFalse(card["approve_enabled"])

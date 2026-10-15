@@ -12,6 +12,7 @@ from __future__ import annotations
 import logging
 from contextlib import contextmanager
 from contextvars import ContextVar
+from dataclasses import replace
 from typing import Any
 
 from server import run_budget as rb
@@ -161,8 +162,27 @@ def plan_for_pending(repo: Any, run_id: str, raw_approvals: list[dict[str, Any]]
         media_lines.append(rb._line(label, cents or 0, "media", "fixed" if basis == "fixed" else "estimate", detail))
     hold = repo.get_run_hold(run_id)
     spent_rows = repo.run_lines(run_id) if hold else []
-    return rb.plan_run(media_lines=media_lines, spent_rows=spent_rows,
+    plan = rb.plan_run(media_lines=media_lines, spent_rows=spent_rows,
                        existing_held_cents=hold["held_cents"] if hold and hold["state"] == "held" else 0)
+    if any(step_quote(item)[1] == "up_to" for item in pending):
+        # One number: an up-to step is already its worst case, so the cap IS the "Up to" total.
+        # (Before: "Up to $4.50" cap vs a "$4.32" estimate in the warning.)
+        plan = replace(plan, cap_cents=max(plan.estimate_cents, plan.spent_cents))
+    return plan
+
+
+def up_to_floor_cents(repo: Any, run_id: str, raw_approvals: list[dict[str, Any]]) -> int | None:
+    """Lowest cap an up-to plan accepts: the fixed-priced part plus 1 cent of the up-to work.
+
+    The runner stops at the cap, so "Up to $X · we'll stop there" stays true at a lower cap.
+    """
+    pending = [a for a in raw_approvals if a.get("kind") != "question" and a.get("decision") != "reject"
+               and a.get("tool_name") != "review_finishing_preview"]
+    holds = [step_quote(item)[0] or 0 for item in pending if step_quote(item)[1] == "up_to"]
+    if not holds:
+        return None
+    plan = plan_for_pending(repo, run_id, raw_approvals)
+    return max(1, plan.estimate_cents - sum(holds) + 1) if plan else None
 
 
 def public_approvals(
@@ -205,6 +225,7 @@ def public_approvals(
         insufficient = rb.insufficient_credit_payload(
             estimate_cents=plan.estimate_cents, cap_cents=plan.cap_cents,
             available_cents=numbers["beyond"], held_cents=numbers["held"],
+            floor_cents=up_to_floor_cents(repo, run_id, raw_approvals),
         )
     live = [a for a in raw_approvals if a.get("decision") != "reject"
             and a.get("tool_name") != "review_finishing_preview"]
@@ -314,7 +335,8 @@ def approval_gate(
     if plan is None:
         return None
     cap = plan.cap_cents if requested_cap_cents is None else requested_cap_cents
-    if cap < plan.estimate_cents:
+    floor = up_to_floor_cents(repo, run_id, raw_approvals)
+    if cap < (plan.estimate_cents if floor is None else floor):
         raise ValueError("The cap cannot be lower than the estimated total.")
     if repo.get_run_hold(run_id) is None and conversation_id:
         repo.adopt_conversation_hold(user_id, conversation_id, run_id)
