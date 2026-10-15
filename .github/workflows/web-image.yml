@@ -3,7 +3,7 @@ name: Web image (arm64 → ECR)
 # Builds the beta web server image natively on arm64 and pushes it to ECR so the t4g server only pulls.
 on:
   push:
-    branches: [staging]
+    branches: [staging, feat/ci-arm-ecr]  # TEMP for verification; drop feat/ci-arm-ecr before merge
   workflow_dispatch:
 
 permissions:
