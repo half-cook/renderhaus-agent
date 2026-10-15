@@ -1,0 +1,22 @@
+Short drama series workflow
+Read 2026-10-15.
+
+Pattern sources:
+https://github.com/zenstory-ai/drama-skills
+Revision f53fb206507cb0cfb07fd29b692156dd4fb8fe7d
+MIT. Copyright (c) 2026 drama-skills contributors.
+Licence: https://github.com/zenstory-ai/drama-skills/blob/f53fb206507cb0cfb07fd29b692156dd4fb8fe7d/LICENSE
+
+https://github.com/eternityspring/shuohao-skills
+Revision d28a9c539b40523d081794b25ff9113016bd98e0
+Apache-2.0.
+Licence: https://github.com/eternityspring/shuohao-skills/blob/d28a9c539b40523d081794b25ff9113016bd98e0/LICENSE
+
+Renderhaus changed the workflow instructions into original English wording and
+implemented its own typed checker, host approvals and existing-tool integration.
+The adaptations concern episodic planning, character/art bibles, continuity
+phrases, staged production and factual editorial review. No upstream executable
+code, sample media, reference artwork, fonts or model weights are included.
+Source text licences confer no rights to novels, characters, faces or voices.
+Complete licence texts accompany this notice in references/LICENSE-MIT and
+references/LICENSE-Apache-2.0.

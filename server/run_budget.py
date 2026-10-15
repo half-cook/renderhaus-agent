@@ -206,6 +206,10 @@ def work_label(tool_name: str, arguments: dict[str, Any] | None = None) -> tuple
     arguments = arguments if isinstance(arguments, dict) else {}
     name = str(tool_name or "").lower().replace("-", "_")
     verb = name.rsplit("___", 1)[-1]
+    if verb == "review_drama_outline":
+        return "Series outline", "Review the cast, story beats and episode synopses. No production spending."
+    if verb == "validate_drama_episode":
+        return "Episode plan", "Check cut timing, continuity locks and production arguments."
     seconds = next((arguments[k] for k in ("duration_seconds", "duration", "seconds", "source_duration_seconds")
                     if isinstance(arguments.get(k), (int, float)) and not isinstance(arguments.get(k), bool)), None)
     resolution = arguments.get("resolution") if isinstance(arguments.get("resolution"), str) else None

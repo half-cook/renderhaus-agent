@@ -219,7 +219,7 @@
     "expected_tool": "gpt_image25_t2i",
     "suite": "motion-graphics",
     "skip_reason": "",
-    "note": "Ideogram named \u2192 edit tool; ambiguous if generation intended; binding decision (d): no existing edit image, use generation default",
+    "note": "Ideogram named → edit tool; ambiguous if generation intended; binding decision (d): no existing edit image, use generation default",
     "source_status": "updated"
   },
   {
@@ -516,7 +516,7 @@
     "expected_tool": "vidu_q4_i2v",
     "suite": "vidu-q4",
     "skip_reason": "",
-    "note": "vidu-q4 archived \u2192 named-provider",
+    "note": "vidu-q4 archived → named-provider",
     "source_status": "moved"
   },
   {
@@ -525,7 +525,7 @@
     "expected_tool": "vidu_q4_r2v",
     "suite": "vidu-q4",
     "skip_reason": "",
-    "note": "vidu-q4 archived \u2192 named-provider",
+    "note": "vidu-q4 archived → named-provider",
     "source_status": "moved"
   },
   {
@@ -534,7 +534,7 @@
     "expected_tool": "vidu_q4_i2v",
     "suite": "vidu-q4",
     "skip_reason": "",
-    "note": "vidu-q4 archived \u2192 named-provider",
+    "note": "vidu-q4 archived → named-provider",
     "source_status": "moved"
   },
   {
@@ -733,7 +733,7 @@
     "expected_tool": "wan3_r2v",
     "suite": "i2v",
     "skip_reason": "",
-    "note": "real_face_refs \u2192 Wan",
+    "note": "real_face_refs → Wan",
     "source_status": "new"
   },
   {
@@ -779,7 +779,7 @@
     "expected_tool": "wan3_t2v",
     "suite": "t2v",
     "skip_reason": "",
-    "note": "duration > 30 s \u2192 split or refuse",
+    "note": "duration > 30 s → split or refuse",
     "source_status": "new",
     "expected_status": "blocked",
     "expected_reason": "30 seconds"
@@ -1127,7 +1127,7 @@
     "expected_tool": "mureka_v95",
     "suite": "lyrics-video",
     "skip_reason": "",
-    "note": "no song supplied \u2192 Mureka V9.5 first",
+    "note": "no song supplied → Mureka V9.5 first",
     "source_status": "new"
   },
   {
@@ -5761,5 +5761,199 @@
     "skip_reason": "",
     "source_status": "new",
     "note": "Prompt diagnosis never authorizes media; generation defaults stay unchanged."
+  },
+  {
+    "test_id": "RT-188",
+    "prompt": "Turn this novel into a 10-episode vertical drama with a character bible",
+    "expected_skill": "short-drama-series",
+    "expected_tool": "",
+    "suite": "short-drama-series",
+    "skip_reason": "",
+    "note": "RT-188 added from the task spec; absent from the supplied seed CSV.",
+    "expected_status": "ready",
+    "expected_required": {
+      "outline_approval": true,
+      "max_segment_seconds": 15,
+      "cut_seconds": [
+        2,
+        5
+      ]
+    }
+  },
+  {
+    "test_id": "DRAMA-01",
+    "prompt": "Develop a microdrama series",
+    "expected_skill": "short-drama-series",
+    "expected_tool": "",
+    "suite": "short-drama-series",
+    "skip_reason": "",
+    "note": "Episodic fiction routing boundary.",
+    "expected_status": "ready",
+    "expected_required": {
+      "outline_approval": true,
+      "max_segment_seconds": 15,
+      "cut_seconds": [
+        2,
+        5
+      ]
+    }
+  },
+  {
+    "test_id": "DRAMA-02",
+    "prompt": "Write episode 3 and storyboard it",
+    "expected_skill": "short-drama-series",
+    "expected_tool": "",
+    "suite": "short-drama-series",
+    "skip_reason": "",
+    "note": "Episodic fiction routing boundary.",
+    "expected_status": "ready",
+    "expected_required": {
+      "outline_approval": true,
+      "max_segment_seconds": 15,
+      "cut_seconds": [
+        2,
+        5
+      ]
+    }
+  },
+  {
+    "test_id": "DRAMA-03",
+    "prompt": "Keep the heroine's outfit consistent across all episodes",
+    "expected_skill": "short-drama-series",
+    "expected_tool": "",
+    "suite": "short-drama-series",
+    "skip_reason": "",
+    "note": "Episodic fiction routing boundary.",
+    "expected_status": "ready",
+    "expected_required": {
+      "outline_approval": true,
+      "max_segment_seconds": 15,
+      "cut_seconds": [
+        2,
+        5
+      ]
+    }
+  },
+  {
+    "test_id": "DRAMA-04",
+    "prompt": "把这个故事改编成十集短剧",
+    "expected_skill": "short-drama-series",
+    "expected_tool": "",
+    "suite": "short-drama-series",
+    "skip_reason": "",
+    "note": "Episodic fiction routing boundary.",
+    "expected_status": "ready",
+    "expected_required": {
+      "outline_approval": true,
+      "max_segment_seconds": 15,
+      "cut_seconds": [
+        2,
+        5
+      ]
+    }
+  },
+  {
+    "test_id": "DRAMA-05",
+    "prompt": "制作漫剧系列的大纲和人物设定",
+    "expected_skill": "short-drama-series",
+    "expected_tool": "",
+    "suite": "short-drama-series",
+    "skip_reason": "",
+    "note": "Episodic fiction routing boundary.",
+    "expected_status": "ready",
+    "expected_required": {
+      "outline_approval": true,
+      "max_segment_seconds": 15,
+      "cut_seconds": [
+        2,
+        5
+      ]
+    }
+  },
+  {
+    "test_id": "DRAMA-06",
+    "prompt": "Outline an episodic fiction series",
+    "expected_skill": "short-drama-series",
+    "expected_tool": "",
+    "suite": "short-drama-series",
+    "skip_reason": "",
+    "note": "Episodic fiction routing boundary.",
+    "expected_status": "ready",
+    "expected_required": {
+      "outline_approval": true,
+      "max_segment_seconds": 15,
+      "cut_seconds": [
+        2,
+        5
+      ]
+    }
+  },
+  {
+    "test_id": "DRAMA-07",
+    "prompt": "Make a single product ad",
+    "expected_skill": "",
+    "expected_tool": "",
+    "suite": "short-drama-series",
+    "skip_reason": "",
+    "note": "Episodic fiction routing boundary.",
+    "expected_status": "unrouted",
+    "forbidden_skills": [
+      "short-drama-series"
+    ],
+    "expected_reason": "No media intent matched; ask or plan before dispatch."
+  },
+  {
+    "test_id": "DRAMA-08",
+    "prompt": "Make a podcast episode 3 script",
+    "expected_skill": "",
+    "expected_tool": "",
+    "suite": "short-drama-series",
+    "skip_reason": "",
+    "note": "Episodic fiction routing boundary.",
+    "expected_status": "unrouted",
+    "forbidden_skills": [
+      "short-drama-series"
+    ],
+    "expected_reason": "No media intent matched; ask or plan before dispatch."
+  },
+  {
+    "test_id": "DRAMA-09",
+    "prompt": "Make a chat story video for one fictional thread",
+    "expected_skill": "chat-story-video",
+    "expected_tool": "remotion_render",
+    "suite": "short-drama-series",
+    "skip_reason": "",
+    "note": "Episodic fiction routing boundary.",
+    "expected_status": "ready",
+    "forbidden_skills": [
+      "short-drama-series"
+    ]
+  },
+  {
+    "test_id": "DRAMA-10",
+    "prompt": "Plan a series of product ads",
+    "expected_skill": "",
+    "expected_tool": "",
+    "suite": "short-drama-series",
+    "skip_reason": "",
+    "note": "Episodic fiction routing boundary.",
+    "expected_status": "unrouted",
+    "forbidden_skills": [
+      "short-drama-series"
+    ],
+    "expected_reason": "No media intent matched; ask or plan before dispatch."
+  },
+  {
+    "test_id": "DRAMA-11",
+    "prompt": "Do not make a microdrama. Generate a video of a forest",
+    "expected_skill": "t2v",
+    "expected_tool": "wan3_t2v",
+    "suite": "short-drama-series",
+    "skip_reason": "",
+    "note": "Episodic fiction routing boundary.",
+    "expected_status": "ready",
+    "forbidden_skills": [
+      "short-drama-series"
+    ]
   }
 ]

@@ -916,3 +916,14 @@ See [the integration and validation limits](SEEDANCE_2_5.md#prompt-writing-and-f
 Inventory is 20 providers, 138 Gateway tools, 40 skills and 327 fixture rows, with 321 active
 and six unchanged skips. Five diagnosis/default regression rows were added; no tool or skill
 was added. Comet validation and live quality A/B remain pending.
+
+## Episodic short drama
+
+[short-drama-series](../agent/deep_agent/skills/short-drama-series/SKILL.md) develops fictional
+series from outline and bibles through script, locked storyboard, staged production and
+factual edit/review. RT-188 starts with free planning and a native outline approval, followed
+by exact-job validation and cost approval for every paid job, including autonomous still,
+voice and music work. Cuts are 2-5 seconds and generation segments are at most 15 seconds.
+Existing model defaults, consent gates, local continuity QC and final deliverable QC remain.
+See [runtime, provenance and validation limits](SHORT_DRAMA_SERIES.md). Inventory is 41 skills,
+339 routing rows and 333 active routes. Comet E2E and generated-media playback remain pending.

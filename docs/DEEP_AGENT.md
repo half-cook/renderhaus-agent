@@ -906,3 +906,20 @@ UNVERIFIED against the API until a live A/B. See [integration details](SEEDANCE_
 Current inventory is 20 providers, 138 tools, 40 skills and 327 fixture rows, with 321 active
 and six skipped. Comet browser validation is blocked by unavailable control; live calls
 are prohibited for this branch.
+
+## Episodic fiction planning and production
+
+The [short drama workflow](SHORT_DRAMA_SERIES.md) adds free `review_drama_outline` and
+`validate_drama_episode` tools to the manager and roles. Outline approval uses the existing
+Deep Agents 0.7.23 native interrupt/checkpointer/resume path. Its rejection stays local.
+The host-owned `drama_series` session snapshot stores the approved outline hash, validated
+episode, exact production jobs, continuity registry and submitted job IDs. Virtual files
+remain agent-editable project records and cannot prove approval.
+
+Role dispatch refuses unplanned or changed paid arguments. Every paid job in an active
+series requires cost approval, including autonomous images and audio. This leaves global
+approval exemptions and spending caps intact. Per-shot selection retains user-named models
+and real-person flags while applying dialogue and duration constraints from the shot.
+An explicit request to stop the series disables its gate without discarding its records.
+No provider, paid Gateway tool or model default is added. RT-188 is active; Comet browser
+validation and actual artifact playback are pending under the offline-only task constraint.
