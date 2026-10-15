@@ -13,7 +13,7 @@ refusals return `blocked`, retired requests return `retired`, and unknown intent
 
 ## Packaged skills
 
-The backend packages 42 skills. Some explain pending capabilities; installing their
+The backend packages 43 skills. Some explain pending capabilities; installing their
 instructions does not install a provider adapter. The original execution skills remain
 available. `image-gen` and `named-provider` cover the new still-image policy and explicit
 requests for providers retained outside automatic selection. The archived `vidu-q4` skill
@@ -37,6 +37,7 @@ exact Gateway names, native arguments, and operational constraints.
 | [audio-bed](../agent/deep_agent/skills/audio-bed/SKILL.md) | `call_audio_tool`<br>`call_media_tool` | `eleven_v4_turbo`<br>`voices_ivc_create`<br>`heygen_voice_clone` (gated)<br>`heygen_voice_tts` (gated)<br>`mureka_v95`<br>`mirelo_v2a`<br>`elevenlabs_sfx_v2` |
 | [chat-story-video](../agent/deep_agent/skills/chat-story-video/SKILL.md) | `call_editor_tool` | `remotion_render`<br>`ffmpeg_tool`<br>`ad_variant_matrix`<br>`delivery_render`<br>`deliverable_qc` |
 | [cinematic-product-promo](../agent/deep_agent/skills/cinematic-product-promo/SKILL.md) | `call_editor_tool`<br>`call_audio_tool` | `shot_recipe_search`<br>`remotion_render`<br>`cutaway_record` (pending)<br>`eleven_v4_turbo`<br>`mureka_v95`<br>`ffmpeg_tool`<br>`delivery_render`<br>`deliverable_qc`<br>`motion_carry_probe` |
+| [codebase-video](../agent/deep_agent/skills/codebase-video/SKILL.md) | `call_editor_tool`<br>`call_audio_tool` | `remotion_render`<br>`eleven_v4_turbo`<br>`cutaway_record` (pending)<br>`hyperframes_render` (preview)<br>`ffmpeg_tool`<br>`deliverable_qc` |
 | [continuity-qc](../agent/deep_agent/skills/continuity-qc/SKILL.md) | `call_media_tool` | `local_qc`<br>`gemini_vlm_judge` |
 | [conversational-edit](../agent/deep_agent/skills/conversational-edit/SKILL.md) | `call_editor_tool`<br>`call_audio_tool` | `remotion_render`<br>`hyperframes_render` |
 | [dialogue-edit](../agent/deep_agent/skills/dialogue-edit/SKILL.md) | `call_media_tool`<br>`call_audio_tool` | `sync3_lipsync`<br>`eleven_v4_turbo` |
@@ -219,8 +220,8 @@ Topaz submissions always pause with cost, including autonomous runs. Dry-run pre
 and queued jobs never satisfy final delivery. See [Topaz](TOPAZ.md) for pricing, licence
 sources, unknown-price blockers and the blocked Comet check.
 
-`tests/fixtures/skill_routing.json` contains 342 retained routing rows.
-There are 336 active cases and 6 explicit skips. Five caption/collage cases cover the
+`tests/fixtures/skill_routing.json` contains 344 retained routing rows.
+There are 338 active cases and 6 explicit skips. Five caption/collage cases cover the
 new templates' renderer selection. Seven performance-transfer cases now use built tools. Three Mureka lyrics-video cases
 now use built tools; music routes use Mureka without an ElevenLabs interim. Five Topaz upscale/interpolation cases
 now use built tools. Seedance reference dialogue and two
@@ -676,8 +677,8 @@ refusals and delivery/loudness/QC chains. RT-E043 remains skipped: exact OCR ver
 is not implemented (`feat/remotion-ocr-verification`). The original four dependency skips
 remain. Routing checks establish selection and refusal; provider tests establish file checks.
 
-Current inventory is 21 providers, 140 Gateway tools, 42 packaged skills and 342 fixture
-rows, with 336 active and 6 skipped. See [Remotion editing](REMOTION_EDITING.md) for
+Current inventory is 21 providers, 140 Gateway tools, 43 packaged skills and 344 fixture
+rows, with 338 active and 6 skipped. See [Remotion editing](REMOTION_EDITING.md) for
 licensing, the real local pipeline and incomplete browser/deployed validation.
 
 ## Static aspect variants
@@ -740,8 +741,8 @@ Exact beat/element metadata takes priority over scene/audio detection. Failed
 reports gate completion and offer a Remotion re-render, with HyperFrames only
 when explicitly requested. Dry-run/skipped checks stay incomplete; generative
 continuity remains `continuity-qc` / `local_qc`. Thresholds are PROVISIONAL.
-Inventory is 21 providers, 140 Gateway tools, 42 skills and 336 active routing
-rows out of 342. The six dependency skips remain, including capture/HyperFrames
+Inventory is 21 providers, 140 Gateway tools, 43 skills and 338 active routing
+rows out of 344. The six dependency skips remain, including capture/HyperFrames
 provider dependencies and exact OCR semantics. RT-163 and RT-164 exercise motion
 carry, and RT-165 protects generative continuity. See [motion carry QC](MOTION_CARRY_QC.md)
 for the independent clean-room implementation, calibration script and licences.
@@ -769,7 +770,7 @@ RT-174 and RT-175 are active. RT-176 preserves the pending `cutaway_record` depe
 and remains skipped like the other capture cases. Its negative skill/tool guard runs as
 an active unit check. Four additional fixture negatives protect titles, explicit alternate
 rendering, knowledge explainers and ad variants. Inventory is 21 providers, 140 Gateway
-tools, 42 skills, 342 retained fixture rows, 336 active and 6 skipped. See
+tools, 43 skills, 344 retained fixture rows, 338 active and 6 skipped. See
 [cinematic product promo](CINEMATIC_PRODUCT_PROMO.md) for provenance, licences and limits.
 
 ## Footage memory
@@ -789,7 +790,7 @@ is preserved as `source_sheet_tool`. RT-178 watches once. RT-179 uses the existi
 `conversational-edit` / `transcript_edit` / `Remotion___prepare_conversational_edit` route in
 place of parked `resolve-tighten-dialogue` / `resolve_run_script`. Five added rows cover
 folders, repeated questions, reuse, transcript cleanup and continuity. Inventory is 21
-providers, 140 Gateway tools, 42 skills, 342 rows: 336 active and the same six dependency skips.
+providers, 140 Gateway tools, 43 skills, 344 rows: 338 active and the same six dependency skips.
 Comet E2E remains blocked here; dry-run outputs are previews, not completed selects.
 
 ## Fictional conversation shorts
@@ -817,7 +818,7 @@ A checksum manifest records the results. See `docs/CHAT_STORY_VIDEO.md` for the 
 RT-180 and RT-181 are active. Six new fixture negatives protect real footage edits,
 per-market ad swaps, lower thirds, unrelated conversation mentions, still images and quoted
 copy. Discovery and dispatch reject generative video for the thread. The inventory is
-21 providers, 140 Gateway tools, 42 skills and 342 routing rows, with 336 active and the
+21 providers, 140 Gateway tools, 43 skills and 344 routing rows, with 338 active and the
 same six dependency skips. Comet visual validation and live Lambda chat rendering remain
 unverified in this environment. The source pattern has MIT attribution in the skill's NOTICE.
 
@@ -839,7 +840,7 @@ layout data. Local rendering supports the templates, while Lambda requires an op
 checked composition deployment and `REMOTION_TEMPLATE_CONTRACT_VERSION=1`.
 See [the template and transcription contract](PODCAST_AUDIOGRAM.md).
 
-Inventory is 21 providers, 140 Gateway tools, 42 skills, 342 fixture rows: 336 active and six
+Inventory is 21 providers, 140 Gateway tools, 43 skills, 344 fixture rows: 338 active and six
 unchanged dependency skips. No new tool, provider, secret or dry-run flag is introduced.
 
 ## Descriptive art catalog
@@ -858,8 +859,8 @@ associations can create IP risk; prompts describe materials and motion only. All
 model, licence, training, price, approval, and dry-run policies remain unchanged. The
 renderer still requires authored assets for unsupported procedural motion.
 
-Inventory is 21 providers, 140 Gateway tools, 42 skills, 141 catalog treatments, and
-342 fixture rows, with 336 active and six skipped. RT-160 through RT-162 stay unchanged.
+Inventory is 21 providers, 140 Gateway tools, 43 skills, 141 catalog treatments, and
+344 fixture rows, with 338 active and six skipped. RT-160 through RT-162 stay unchanged.
 RT-CAT-001 through RT-CAT-012 are active. No provider-pending row is falsely activated.
 Comet E2E is blocked. See [art-style motion](ART_STYLE_MOTION.md) and
 [decisions](art-style-catalog-decisions.tsv) for counts, provenance, and limits.
@@ -880,8 +881,8 @@ MP4 titles and lower thirds stay on motion-graphics. New vector art uses the exi
 assets must be owned or licensed. See [Lottie tools](LOTTIE_ANIMATION.md) for limits,
 packaging, documented platform snippets and incomplete-preview reporting.
 
-Current inventory is 21 providers, 140 Gateway tools, 42 skills and 342 routing
-fixture rows, with 336 active and six unchanged dependency skips.
+Current inventory is 21 providers, 140 Gateway tools, 43 skills and 344 routing
+fixture rows, with 338 active and six unchanged dependency skips.
 
 ## Supplied logo animation
 
@@ -897,8 +898,8 @@ to the trusted current Studio job. Deployment excludes its `local_only` catalog 
 and Lambda refuses it. The completion gate checks the saved logo report, approved SVG,
 motion specification and actual final MP4 checksums, plus the existing saved deliverable QC.
 Failures remain visible verbatim. RT-184 and eight additional positive/negative cases are
-active. Inventory is 21 providers, 140 Gateway tools, 42 skills and 342 routing rows,
-with 336 active and six unchanged dependency skips. Alpha output is unsupported and the
+active. Inventory is 21 providers, 140 Gateway tools, 43 skills and 344 routing rows,
+with 338 active and six unchanged dependency skips. Alpha output is unsupported and the
 Lottie authoring hand-off remains a follow-up TODO. See [method and limits](LOGO_ANIMATION.md)
 and [decisions](logo-animation-decisions.tsv). Browser validation remains incomplete until
 the required Comet flow is observed.
@@ -914,7 +915,7 @@ Lighthouse paid-retry refusal remain unchanged. The French MIT source is attribu
 the reference; all adapted behavior claims remain UNVERIFIED against the API until a live A/B.
 See [the integration and validation limits](SEEDANCE_2_5.md#prompt-writing-and-failure-diagnosis).
 
-Inventory is 21 providers, 140 Gateway tools, 42 skills and 342 fixture rows, with 336 active
+Inventory is 21 providers, 140 Gateway tools, 43 skills and 344 fixture rows, with 338 active
 and six unchanged skips. Five diagnosis/default regression rows were added; no tool or skill
 was added. Comet validation and live quality A/B remain pending.
 
@@ -935,5 +936,23 @@ factual edit/review. RT-188 starts with free planning and a native outline appro
 by exact-job validation and cost approval for every paid job, including autonomous still,
 voice and music work. Cuts are 2-5 seconds and generation segments are at most 15 seconds.
 Existing model defaults, consent gates, local continuity QC and final deliverable QC remain.
-See [runtime, provenance and validation limits](SHORT_DRAMA_SERIES.md). Inventory is 42 skills,
-342 routing rows and 336 active routes. Comet E2E and generated-media playback remain pending.
+See [runtime, provenance and validation limits](SHORT_DRAMA_SERIES.md). Inventory is 43 skills,
+344 routing rows and 338 active routes. Comet E2E and generated-media playback remain pending.
+
+## Repository teaching and progress videos
+
+[codebase-video](../agent/deep_agent/skills/codebase-video/SKILL.md) separates teaching
+how a repository works from reporting changes since a resolved tag, commit or date.
+Claims, literal code cards, diagram edges and git totals require pinned source evidence
+and an independent fresh-planner audit before narration or rendering. Missing checkout
+access or audit evidence blocks the workflow. Studio has virtual conversation files,
+not shell or git access to arbitrary repository paths. An authorized local executor
+can supply sanitized source/history evidence and typeset PNG cards.
+
+The host blocks generative image/video tools for these requests and refuses cloud
+rendering. Assembly reuses the existing local renderer, narration and QC tools with
+unchanged approval and spending gates. It adds no provider, tool, model ID, price or
+secret. RT-191 and RT-192 are active offline routing cases, authored from the radar
+spec because those rows were absent from the supplied CSV and original fixture.
+Inventory is 21 providers, 140 tools, 43 skills, 344 fixture rows, 338 active and
+six unchanged skips. See [runtime and validation limits](CODEBASE_VIDEO.md).
