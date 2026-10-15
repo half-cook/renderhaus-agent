@@ -14,13 +14,19 @@ import os
 from dataclasses import dataclass
 
 import stripe
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
 
 from server.auth import AuthUser, current_user_id
+from server.launch_flags import TOPUPS_COMING_SOON, topups_enabled
 from server.studio_state import repository
 
-router = APIRouter(prefix="/api/studio/billing", tags=["billing"])
+def require_topups_enabled() -> None:
+    if not topups_enabled():
+        raise HTTPException(status_code=403, detail=TOPUPS_COMING_SOON)
+
+
+router = APIRouter(prefix="/api/studio/billing", tags=["billing"], dependencies=[Depends(require_topups_enabled)])
 logger = logging.getLogger(__name__)
 
 

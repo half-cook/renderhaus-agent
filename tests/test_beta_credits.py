@@ -449,7 +449,7 @@ class BetaApiTests(BetaFixture, unittest.TestCase):
         self.app.dependency_overrides[require_auth] = lambda: None
         response = self.client.get("/api/beta/status")
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(set(response.json()), {"enabled", "wave", "wave_size", "spots_left", "programme_full", "message"})
+        self.assertEqual(set(response.json()), {"enabled", "wave", "wave_size", "spots_left", "programme_full", "message", "invite_only"})
         self.assertNotIn("hash", json.dumps(response.json()))
         self.assertEqual(self.client.post("/api/beta/claim", json={}).status_code, 401)
 
