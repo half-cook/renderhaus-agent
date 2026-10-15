@@ -35,6 +35,7 @@ from server.beta_credits import BetaSettings
 from server.studio import router as studio_router
 from server.studio_state import repository as studio_repository
 from server.uploads import bounded_upload_path, upload_limits_mb
+from server.direct_uploads import public_config as direct_upload_config, router as direct_upload_router
 from server.productions import ProductionStore, public_production
 from server.projects import (
     ProjectStore,
@@ -481,6 +482,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.include_router(studio_router)
+app.include_router(direct_upload_router)
 app.include_router(billing_router)
 app.include_router(beta_router)
 app.include_router(demo_project_router)
@@ -524,6 +526,7 @@ async def health() -> dict[str, Any]:
         "status": "ok",
         "max_upload_mb": max(limits.values()),
         "max_upload_mb_by_kind": limits,
+        "direct_upload": direct_upload_config(),
     }
 
 
