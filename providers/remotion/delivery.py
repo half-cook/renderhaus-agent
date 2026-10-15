@@ -268,7 +268,11 @@ def _finish(job: Path, entry: dict, preset_name: str, args: dict) -> dict:
             if within:
                 muxed = _operation(job, "mux_aac", current, {"bitrate_kbps": bitrate})
             else:
-                params = {**settings, "bitrate_kbps": bitrate,
+                # Aim the normalizer 0.3 dB under the ceiling: the AAC re-encode overshoots by ~0.04 dBTP
+                # and QC measures the encoded file against the real ceiling.
+                aim = {**settings, "TP": max(-9, settings["TP"] - 0.3)}
+                measured = _operation(job, "measure_loudness", current, aim)["metrics"]
+                params = {**aim, "bitrate_kbps": bitrate,
                     **{key: measured[value] for key, value in (("measured_I", "input_i"), ("measured_TP", "input_tp"),
                        ("measured_LRA", "input_lra"), ("measured_thresh", "input_thresh"), ("offset", "target_offset"))}}
                 muxed = _operation(job, "loudnorm_mux_aac", current, params)
