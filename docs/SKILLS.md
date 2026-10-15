@@ -215,8 +215,8 @@ Topaz submissions always pause with cost, including autonomous runs. Dry-run pre
 and queued jobs never satisfy final delivery. See [Topaz](TOPAZ.md) for pricing, licence
 sources, unknown-price blockers and the blocked Comet check.
 
-`tests/fixtures/skill_routing.json` contains 271 retained routing rows.
-There are 265 active cases and 6 explicit skips. Five caption/collage cases cover the
+`tests/fixtures/skill_routing.json` contains 283 retained routing rows.
+There are 277 active cases and 6 explicit skips. Five caption/collage cases cover the
 new templates' renderer selection. Seven performance-transfer cases now use built tools. Three Mureka lyrics-video cases
 now use built tools; music routes use Mureka without an ElevenLabs interim. Five Topaz upscale/interpolation cases
 now use built tools. Seedance reference dialogue and two
@@ -672,8 +672,8 @@ refusals and delivery/loudness/QC chains. RT-E043 remains skipped: exact OCR ver
 is not implemented (`feat/remotion-ocr-verification`). The original four dependency skips
 remain. Routing checks establish selection and refusal; provider tests establish file checks.
 
-Current inventory is 18 providers, 134 Gateway tools, 36 packaged skills and 271 fixture
-rows, with 265 active and 6 skipped. See [Remotion editing](REMOTION_EDITING.md) for
+Current inventory is 18 providers, 134 Gateway tools, 36 packaged skills and 283 fixture
+rows, with 277 active and 6 skipped. See [Remotion editing](REMOTION_EDITING.md) for
 licensing, the real local pipeline and incomplete browser/deployed validation.
 
 ## Static aspect variants
@@ -736,8 +736,8 @@ Exact beat/element metadata takes priority over scene/audio detection. Failed
 reports gate completion and offer a Remotion re-render, with HyperFrames only
 when explicitly requested. Dry-run/skipped checks stay incomplete; generative
 continuity remains `continuity-qc` / `local_qc`. Thresholds are PROVISIONAL.
-Inventory is 18 providers, 134 Gateway tools, 36 skills and 265 active routing
-rows out of 271. The six dependency skips remain, including capture/HyperFrames
+Inventory is 18 providers, 134 Gateway tools, 36 skills and 277 active routing
+rows out of 283. The six dependency skips remain, including capture/HyperFrames
 provider dependencies and exact OCR semantics. RT-163 and RT-164 exercise motion
 carry, and RT-165 protects generative continuity. See [motion carry QC](MOTION_CARRY_QC.md)
 for the independent clean-room implementation, calibration script and licences.
@@ -765,7 +765,7 @@ RT-174 and RT-175 are active. RT-176 preserves the pending `cutaway_record` depe
 and remains skipped like the other capture cases. Its negative skill/tool guard runs as
 an active unit check. Four additional fixture negatives protect titles, explicit alternate
 rendering, knowledge explainers and ad variants. Inventory is 18 providers, 134 Gateway
-tools, 36 skills, 271 retained fixture rows, 265 active and 6 skipped. See
+tools, 36 skills, 283 retained fixture rows, 277 active and 6 skipped. See
 [cinematic product promo](CINEMATIC_PRODUCT_PROMO.md) for provenance, licences and limits.
 
 ## Footage memory
@@ -785,5 +785,27 @@ is preserved as `source_sheet_tool`. RT-178 watches once. RT-179 uses the existi
 `conversational-edit` / `transcript_edit` / `Remotion___prepare_conversational_edit` route in
 place of parked `resolve-tighten-dialogue` / `resolve_run_script`. Five added rows cover
 folders, repeated questions, reuse, transcript cleanup and continuity. Inventory is 18
-providers, 134 Gateway tools, 36 skills, 271 rows: 265 active and the same six dependency skips.
+providers, 134 Gateway tools, 36 skills, 283 rows: 277 active and the same six dependency skips.
 Comet E2E remains blocked here; dry-run outputs are previews, not completed selects.
+
+## Descriptive art catalog
+
+The existing art-style-motion skill selects from 141 neutral treatments, imported as
+text from 98 specialized prompts and 43 general guides. All 141 entries have recorded
+prompt or direction adaptations. No identical prompts or source style names overlap
+between the sets; related media remain distinct treatments. Safe selection is returned
+through `read_studio_context.style_catalog`, using a pure deterministic helper and no
+new tools. Verbatim source and the scan report are internal provenance outside the
+agent skill filesystem. User-named existing cards retain precedence and descriptive
+labels. Browse requests do not generate assets.
+
+The MIT notice is retained. No source demo assets or tooling are included. Named-film
+associations can create IP risk; prompts describe materials and motion only. All existing
+model, licence, training, price, approval, and dry-run policies remain unchanged. The
+renderer still requires authored assets for unsupported procedural motion.
+
+Inventory is 18 providers, 134 Gateway tools, 36 skills, 141 catalog treatments, and
+283 fixture rows, with 277 active and six skipped. RT-160 through RT-162 stay unchanged.
+RT-CAT-001 through RT-CAT-012 are active. No provider-pending row is falsely activated.
+Comet E2E is blocked. See [art-style motion](ART_STYLE_MOTION.md) and
+[decisions](art-style-catalog-decisions.tsv) for counts, provenance, and limits.
