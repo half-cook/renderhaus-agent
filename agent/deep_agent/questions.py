@@ -13,6 +13,9 @@ class QuestionOption(BaseModel):
     id: str = Field(min_length=1, max_length=80)
     label: str = Field(min_length=1, max_length=160)
     description: str = Field(default="", max_length=500)
+    # Customer price for choosing this option, integer cents, fee-inclusive (the same
+    # units as the run budget snapshot). Shown as an estimate; it authorizes nothing.
+    estimate_cents: int | None = Field(default=None, ge=0, le=1_000_000, strict=True, exclude_if=lambda value: value is None)
 
 
 class ChoiceAnswer(BaseModel):
@@ -86,6 +89,8 @@ async def ask_user(question: str, reason: str, options: list[QuestionOption] | N
     Make routine creative and implementation choices yourself. This question does not
     authorize spending or change the run cap. Offer clear options or allow a text answer.
     Describe outcomes without naming providers, models or platform fees.
+    When options differ in cost, give each option estimate_cents: the customer price in
+    integer cents from your budget snapshot and step estimates, all fees included.
     """
     payload = AskUserInput(question=question, reason=reason, options=options or [], allow_free_text=allow_free_text)
     response = interrupt({"kind": "question", **payload.model_dump()})

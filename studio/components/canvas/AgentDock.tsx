@@ -54,6 +54,8 @@ import { AssetDownloadLink, AssetMedia } from "./AssetMedia";
 import { FinishingPreviewReview } from "./FinishingPreviewReview";
 import { ApprovalCard } from "@/components/rh/ApprovalCard";
 import { QuestionCard } from "@/components/rh/QuestionCard";
+import { PauseChatMessage } from "@/components/rh/PauseChatMessage";
+import { pauseCardsEnabled, stuckPauseMessage } from "@/lib/rh/pause-fallback";
 import { RunReceipt } from "@/components/rh/RunBilling";
 import { approvalCardModel, visibleParameters } from "@/lib/rh/approval-model";
 import { toRunReceiptModel, toApprovalCardModel } from "@/lib/rh/billing";
@@ -212,8 +214,11 @@ function ApprovalCards({
   return (
     <div className="agent-approvals" aria-label="Questions and approvals">
       {approvals.map((approval) => {
-        if (approval.kind === "question") return <QuestionCard key={approval.callId} question={approval}
-          active={active} busy={disabled || busyCallId !== null} onAnswer={(answer) => onAnswer(approval, answer)} />;
+        if (approval.kind === "question") {
+          const Question = pauseCardsEnabled() ? QuestionCard : PauseChatMessage;
+          return <Question key={approval.callId} question={approval}
+            active={active} busy={disabled || busyCallId !== null} onAnswer={(answer) => onAnswer(approval, answer)} />;
+        }
         if (approval.toolName === "review_finishing_preview") {
           return <FinishingPreviewReview key={approval.callId} approval={approval} active={active}
             busy={disabled || busyCallId !== null} onDecision={onDecision} />;
@@ -466,6 +471,10 @@ function ExecutionTurn({
           onDecision={(approval, decision, capCents) => onApproval(execution, approval, decision, capCents)}
           onAnswer={(question, answer) => onQuestion(execution, question, answer)}
         />
+        {(() => {
+          const stuck = stuckPauseMessage(execution.status, execution.approvals, Boolean(execution.pausedCap));
+          return stuck ? <p className="agent-response-summary" role="status">{stuck}</p> : null;
+        })()}
         <RunBillingBlocks execution={execution} disabled={actionsDisabled} onCap={onCap} />
         <ArtifactDownloads kind="logo" executionId={execution.jobId} events={execution.toolEvents}/>
         <ArtifactDownloads kind="reference" executionId={execution.jobId} events={execution.toolEvents}/>
