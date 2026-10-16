@@ -348,9 +348,6 @@
 .rh-recent { margin-top: 40px; }
 .rh-recent-grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; max-width: calc(100% - 400px); }
 .rh-recent-grid li { display: flex; flex-direction: column; gap: 4px; font-size: 12.5px; }
-.rh-recent-img { display: block; aspect-ratio: 16 / 9; background-size: cover; background-position: center; background-color: var(--rh-raised); margin-bottom: 6px; }
-
-.rh-avatar-btn { display: inline-flex; padding: 0; border: 0; background: transparent; border-radius: 9999px; cursor: pointer; }
 .rh-pop-rows { display: grid; gap: 10px; margin: 16px 0; }
 .rh-pop-rows > div { display: flex; justify-content: space-between; gap: 16px; font-size: 13px; }
 .rh-pop-rows dt { color: var(--rh-fg-2); }
@@ -545,7 +542,7 @@
 .rh-canvas-workspace.timeline-dock-open[data-dock="bottom"] { --safe-bottom: 334px; }
 .rh-canvas-workspace.timeline-dock-open .scene-rail, .rh-canvas-workspace.timeline-dock-open .inspector { bottom: 250px; }
 .rh-canvas-workspace.timeline-dock-open .tool-rail[data-dock="bottom"] { bottom: 266px; }
-.rh-canvas-workspace.timeline-dock-open .tool-rail:is([data-dock="left"],[data-dock="right"]) { top:calc(var(--header-height) + 16px); bottom:266px; height:max-content; max-height:calc(100% - var(--header-height) - 282px); margin-block:auto; transform:none; overflow-y:auto; overscroll-behavior:contain; }
+.rh-canvas-workspace.timeline-dock-open .tool-rail:is([data-dock="left"],[data-dock="right"]) { top:calc(var(--header-height) + 16px); bottom:266px; max-height:calc(100% - var(--header-height) - 282px); }
 .rh-canvas-workspace.timeline-dock-open .inspector-toggle { bottom: 266px; }
 
 @media (max-width: 1100px) {
@@ -585,7 +582,13 @@
 .rh-agent-dock .agent-user-message, .rh-agent-dock .agent-run-status { border-radius:0; }
 .rh-agent-dock .agent-artifact-media img { width:56px; height:56px; object-fit:cover; }
 .rh-tool-rail { border-radius:999px; padding:14px 6px; width:70px; background:var(--rh-surface); border:1px solid var(--rh-line); box-shadow:none; }
-.rh-tool-rail .rail-group { padding:7px 0; gap:4px; }
+.rh-tool-rail .rail-tools { display:flex; min-width:0; }
+.rh-tool-rail:is([data-dock="left"],[data-dock="right"]) { top:calc(var(--header-height) + 16px); height:max-content; margin-block:auto; transform:none; }
+.rh-tool-rail[data-dock="left"] { bottom:16px; max-height:calc(100% - var(--header-height) - 32px); }
+.rh-tool-rail[data-dock="right"] { max-height:calc(100% - var(--header-height) - 272px); }
+/* Scroll the tools, keeping the move control and its popup outside clipping. */
+.rh-tool-rail:is([data-dock="left"],[data-dock="right"]) .rail-tools { display:flex; flex-direction:column; min-height:0; overflow-y:auto; overscroll-behavior:contain; }
+.rh-tool-rail .rail-group { flex-shrink:0; padding:7px 0; gap:4px; }
 .rh-tool-rail .rail-group-label { display:block; margin:0 0 6px; font:9px var(--font-sans); color:var(--rh-fg-3); text-transform:uppercase; letter-spacing:.08em; text-align:center; }
 .rh-tool-rail .rail-btn { width:56px; height:46px; border-radius:0; gap:3px; flex-direction:column; color:var(--rh-fg-2); }
 .rh-tool-rail .rail-btn-label { position:static; display:block; padding:0; background:none; border:0; font:10px var(--font-sans); opacity:1; pointer-events:none; transform:none; white-space:normal; }
@@ -610,7 +613,8 @@
 
 .rh-tool-rail .rail-btn-label { visibility:visible; }
 .rh-tool-rail .rail-group-label { position:static; width:auto; height:auto; clip-path:none; overflow:visible; }
-.rh-tool-rail:is([data-dock="top"],[data-dock="bottom"]) { width:max-content; max-width:calc(100% - 300px); }
+.rh-tool-rail:is([data-dock="top"],[data-dock="bottom"],[data-dock="free"]) { width:max-content; max-width:calc(100% - var(--safe-left) - var(--safe-right) - 32px); }
+.rh-tool-rail:is([data-dock="top"],[data-dock="bottom"],[data-dock="free"]) .rail-tools { overflow-x:auto; overscroll-behavior:contain; }
 .rh-canvas-workspace .rh-canvas-controls { margin-bottom:16px; bottom:128px; }
 .rh-ledger-row dt { flex:1; display:flex; align-items:baseline; gap:8px; }
 .rh-ledger-row dt::after { content:""; flex:1; min-width:12px; border-bottom:1px dotted var(--rh-line-strong); }

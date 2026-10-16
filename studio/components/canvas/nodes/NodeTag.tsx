@@ -35,6 +35,8 @@ export function NodeTag({ title, status, selected, badge, onRename }: Props) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(title);
   const inputRef = useRef<HTMLInputElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const returnFocus = useRef(false);
   const zoom = useStore(selectZoom);
 
   useEffect(() => {
@@ -45,6 +47,9 @@ export function NodeTag({ title, status, selected, badge, onRename }: Props) {
     if (editing) {
       inputRef.current?.focus();
       inputRef.current?.select();
+    } else if (returnFocus.current) {
+      returnFocus.current = false;
+      buttonRef.current?.focus();
     }
   }, [editing]);
 
@@ -63,10 +68,12 @@ export function NodeTag({ title, status, selected, badge, onRename }: Props) {
   const onKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
     if (event.key === "Enter") {
       event.preventDefault();
+      returnFocus.current = true;
       commit();
     }
     if (event.key === "Escape") {
       event.preventDefault();
+      returnFocus.current = true;
       cancel();
     }
   };
@@ -91,9 +98,17 @@ export function NodeTag({ title, status, selected, badge, onRename }: Props) {
         />
       ) : (
         <button
+          ref={buttonRef}
           className="node-tag-name"
           type="button"
           title="Double click to rename"
+          onKeyDown={(event) => {
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              event.stopPropagation();
+              setEditing(true);
+            }
+          }}
           onDoubleClick={(event) => {
             event.stopPropagation();
             setEditing(true);

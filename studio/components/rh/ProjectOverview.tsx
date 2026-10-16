@@ -12,7 +12,7 @@ import { clipsFromNodes, clipLength } from "@/lib/rh/timeline";
 import { safeCopy, toNodeEstimate } from "@/lib/rh/billing";
 import { formatCents } from "@/lib/rh/money";
 import { AppNav } from "./AppNav";
-import { CreditChip } from "./CreditChip";
+import { AccountBalance } from "@/components/canvas/AccountBalance";
 import { CapRow, Ledger, LedgerRow, LedgerTotal, lineLabel } from "./Ledger";
 
 export function ProjectOverview({ projectId }: { projectId: string }) {
@@ -41,13 +41,14 @@ export function ProjectOverview({ projectId }: { projectId: string }) {
   const demo = projectId.startsWith("demo-");
   const title = safeCopy(document?.projectName, "Project");
   const still = nodes.find((node) => node.data.kind === "image");
+  const files = nodes.filter((node) => node.data.output || node.data.config.thumbnail_url);
   const estimate = toNodeEstimate(still?.data.estimate);
   const dismissWelcome = () => {
     setWelcome(false); toast.dismiss(`welcome-${projectId}`);
     const url = new URL(window.location.href); url.searchParams.delete("welcome"); window.history.replaceState(null, "", url);
   };
   return <div className="rh-app rh-project" data-shot={document ? "project-ready" : undefined}>
-    <AppNav active="Projects" name={account?.display_name} credit={account ? <CreditChip balanceCents={account.balance_cents} /> : undefined} />
+    <AppNav active="Projects" name={account?.display_name} credit={<AccountBalance />} />
     <main className="rh-project-main" id="main">
       {welcome && grant != null ? <section className="rh-welcome" aria-label="Welcome to Renderhaus">
         <Check size={18} aria-hidden="true" /><div><b>You’re in. {formatCents(grant)} beta credit added.</b><p>Your demo project is ready. Explore, then try a paid step when you’re ready.</p></div>
@@ -60,7 +61,7 @@ export function ProjectOverview({ projectId }: { projectId: string }) {
         <div className="rh-project-cols"><div>
           <section aria-labelledby="storyboard-title"><div className="rh-sec-head"><h2 id="storyboard-title" className="rh-eyebrow">Storyboard</h2><Link href={`${canvas}&workspace=canvas`} className="rh-sec-link">Open canvas <ArrowRight size={12} aria-hidden="true" /></Link></div><div className="rh-storyboard">{clips.map((clip) => <Link key={clip.id} href={`${canvas}&workspace=timeline`} className="rh-shot-card"><div className="rh-ticks"><div className="rh-shot-thumb" style={clip.thumbUrl ? { backgroundImage: `url(${clip.thumbUrl})` } : undefined} role="img" aria-label={safeCopy(clip.title, "Video shot")} /><span className="rh-tk" /></div><div className="rh-pcard-row"><b>{safeCopy(clip.title, "Video shot")}</b><span className="rh-mono rh-fg3">{clipLength(clip)} s</span></div><p className="rh-fg3 rh-small">{demo ? "Included in demo" : "On the timeline"}</p></Link>)}</div>{!clips.length ? <p className="rh-fg3 rh-small">No shots on the timeline yet.</p> : null}</section>
           <section className="rh-project-tasks" aria-labelledby="tasks-title"><div className="rh-sec-head"><h2 id="tasks-title" className="rh-eyebrow">Tasks in this project</h2><Link href={`${canvas}&workspace=agent`} className="rh-sec-link">New task <ArrowRight size={12} aria-hidden="true" /></Link></div>{tasks.length ? <ul>{tasks.map((task) => <li key={task.id}><Link href={`${canvas}&workspace=agent&task=${encodeURIComponent(task.id)}`}><Sparkles size={14} aria-hidden="true" /><b>{safeCopy(task.title, "Project task")}</b><ArrowRight size={13} aria-hidden="true" /></Link></li>)}</ul> : <p className="rh-fg3 rh-small">No tasks yet. Open the agent to start one.</p>}</section>
-        </div><aside className="rh-project-details"><section><h2 className="rh-eyebrow">Details</h2><dl><div><dt>Project</dt><dd>{demo ? "Demo · your copy" : "Your project"}</dd></div><div><dt>Shots</dt><dd className="rh-mono">{clips.length}</dd></div><div><dt>Canvas</dt><dd><Link href={`${canvas}&workspace=canvas`}>Open canvas</Link></dd></div></dl></section><section><h2 className="rh-eyebrow">Files</h2><ul>{nodes.filter((node) => node.data.output || node.data.config.thumbnail_url).map((node) => <li key={node.id}>{node.data.kind === "image" ? <FileImage size={14} aria-hidden="true" /> : <Film size={14} aria-hidden="true" />}<span>{safeCopy(node.data.title, "Project media")}</span></li>)}</ul></section></aside></div>
+        </div><aside className="rh-project-details"><section><h2 className="rh-eyebrow">Details</h2><dl><div><dt>Project</dt><dd>{demo ? "Demo · your copy" : "Your project"}</dd></div><div><dt>Shots</dt><dd className="rh-mono">{clips.length}</dd></div><div><dt>Canvas</dt><dd><Link href={`${canvas}&workspace=canvas`}>Open canvas</Link></dd></div></dl></section><section id="files" aria-label="Project files"><h2 className="rh-eyebrow">Files</h2><ul>{files.map((node) => <li key={node.id}>{node.data.kind === "image" ? <FileImage size={14} aria-hidden="true" /> : <Film size={14} aria-hidden="true" />}<span>{safeCopy(node.data.title, "Project media")}</span></li>)}</ul>{files.length === 0 ? <p className="rh-fg3 rh-small">No files yet. Add media on the canvas.</p> : null}</section></aside></div>
       </>}
     </main>
   </div>;

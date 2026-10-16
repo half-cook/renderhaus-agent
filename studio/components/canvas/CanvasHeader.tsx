@@ -1,13 +1,12 @@
 "use client";
 
-import { SignOutButton } from "@clerk/nextjs";
 import { ChevronDown, Ellipsis, Film, LayoutGrid, PanelBottom, Redo2, Share2, Sparkles, Undo2 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { ExportSheet } from "@/components/rh/ExportSheet";
 import { Avatar } from "@/components/rh/AppNav";
 import { fetchAccount } from "@/lib/api";
-import { useClerkConfigured } from "@/components/StudioAuth";
+import { StudioAccountMenu, useClerkConfigured } from "@/components/StudioAuth";
 import { queueSize, useCanvasStore } from "@/lib/canvas/store";
 import { approvedSequence } from "@/lib/canvas/story";
 import type { StudioAsset } from "@/lib/types";
@@ -110,7 +109,14 @@ export function CanvasHeader({ navigationBusy, onBusyChange }: {
 
 
   return (
-    <header className="chrome-header rh-canvas-header" ref={headerRef}>
+    <header className="chrome-header rh-canvas-header" ref={headerRef} onKeyDown={(event) => {
+      if (menu && event.key === "Escape") {
+        event.stopPropagation();
+        const trigger = headerRef.current?.querySelector<HTMLButtonElement>('button[aria-expanded="true"]');
+        setMenu(null);
+        trigger?.focus();
+      }
+    }}>
       <div className="header-left">
         <Link href="/home" className="rh-brand" aria-label="Renderhaus home">
           <span className="rh-mark" aria-hidden="true" />
@@ -196,13 +202,9 @@ export function CanvasHeader({ navigationBusy, onBusyChange }: {
           {menu === "status" ? (
             <div className="popover status-pop">
               {loadError ? <p>{loadError}. Is the API running?</p> : <p>Connected to local tools.</p>}
-              {status
-                ? Object.entries(status.dry_run).map(([id, dry]) => (
-                    <p key={id}>
-                      Studio tools: {dry ? "dry run" : "live"}
-                    </p>
-                  ))
-                : null}
+              {status && Object.values(status.dry_run).some(Boolean) ? (
+                <p>Some tools are in preview mode. Preview steps do not produce finished media.</p>
+              ) : null}
               {executions.length > 0 ? (
                 <div className="execution-list" aria-label="Recent agent jobs">
                   <strong>Recent agent jobs</strong>
@@ -291,11 +293,7 @@ export function CanvasHeader({ navigationBusy, onBusyChange }: {
         </div>
         <AccountBalance refreshKey={balanceRefreshKey} />
         <ThemeToggle />
-        {clerkConfigured ? (
-          <SignOutButton redirectUrl="/">
-            <button className="rh-avatar-btn" type="button" aria-label="Sign out"><Avatar name={accountName} /></button>
-          </SignOutButton>
-        ) : <Avatar name={accountName} />}
+        {clerkConfigured ? <StudioAccountMenu /> : <Avatar name={accountName} />}
       </div>
     </header>
   );

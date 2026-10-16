@@ -7,7 +7,7 @@ import styles from "./StudioAuth.module.css";
 
 // Single source of truth for the UserButton avatar's size -- pinned
 // explicitly below (elements.userButtonAvatarBox) rather than left to
-// Clerk's own default, since UserAvatarButton's default-avatar overlay
+// Clerk's own default, since our default-avatar overlay
 // has to match it exactly and can't read it back out of Clerk itself.
 const USER_AVATAR_SIZE = 32;
 
@@ -126,7 +126,7 @@ export function useClerkConfigured(): boolean {
 // our own image on top (pointer-events: none, so clicks fall through to
 // Clerk's real button underneath) gets the same visual result without
 // reimplementing the popover's manage-account/sign-out menu ourselves.
-function UserAvatarButton() {
+export function StudioAccountMenu() {
   const { user } = useUser();
   const showDefaultAvatar = Boolean(user) && !user!.hasImage;
   return (
@@ -188,9 +188,6 @@ export function StudioAppGate({ children }: { children: ReactNode }) {
   return (
     <Fragment key={userId || "personal"}>
       {children}
-      <div className={styles["studio-account-controls"]} aria-label="Account">
-        <UserAvatarButton />
-      </div>
     </Fragment>
   );
 }

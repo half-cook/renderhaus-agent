@@ -142,7 +142,13 @@ export function AccountBalance({ refreshKey }: { refreshKey?: number | string })
   };
 
   return (
-    <div className="header-menu-wrap" ref={wrapRef}>
+    <div className="header-menu-wrap" ref={wrapRef} onKeyDown={(event) => {
+      if (open && event.key === "Escape") {
+        event.stopPropagation();
+        setOpen(false);
+        wrapRef.current?.querySelector("button")?.focus();
+      }
+    }}>
       <CreditChip
         balanceCents={account.balance_cents}
         state={creditState(account.balance_cents, pendingCap, heldCents)}

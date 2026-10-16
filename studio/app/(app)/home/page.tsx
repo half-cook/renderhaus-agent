@@ -6,10 +6,10 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { useUser } from "@clerk/nextjs";
 import { AppNav } from "@/components/rh/AppNav";
-import { CreditChip } from "@/components/rh/CreditChip";
+import { AccountBalance } from "@/components/canvas/AccountBalance";
 import { useClerkConfigured } from "@/components/StudioAuth";
 import { createStudioProject, fetchAccount, fetchStudioProjects, type StudioProject } from "@/lib/api";
-import { creditState } from "@/lib/rh/credit-store";
+import { formatActivityTime } from "@/lib/rh/dates";
 import { formatCents } from "@/lib/rh/money";
 import { safeCopy } from "@/lib/rh/billing";
 import type { StudioAccount } from "@/lib/types";
@@ -34,10 +34,6 @@ function ago(unixSeconds?: number): string {
   if (hours < 24) return `${hours} h ago`;
   const days = Math.floor(hours / 24);
   return days === 1 ? "yesterday" : `${days} days ago`;
-}
-
-function clock(unixSeconds: number): string {
-  return new Date(unixSeconds * 1000).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
 }
 
 /** Ledger reasons arrive as snake_case ids. Show a plain label; never an id and never a provider. */
@@ -117,12 +113,11 @@ export default function HomePage() {
   const currentStep = checklist.findIndex((step) => !step.done);
   const granted = account?.beta_credit?.granted_cents ?? 0;
   const spent = account?.beta_credit?.spent_cents ?? 0;
-  const state = account ? creditState(account.balance_cents, null, 0) : "normal";
 
   return (
     <div className="rh-app rh-home" data-shot="home-ready">
       {clerkConfigured ? <ClerkName onName={setName} /> : null}
-      <AppNav credit={account ? <CreditChip balanceCents={account.balance_cents} state={state} /> : null} name={displayName} />
+      <AppNav credit={<AccountBalance />} name={displayName} />
       <main className="rh-home-main" id="main">
         <div className="rh-home-head">
           <div>
@@ -140,7 +135,7 @@ export default function HomePage() {
                 <p className="rh-fg3 rh-small">No projects yet. Start one with the button above.</p>
               ) : (
                 <div className="rh-pgrid">
-                  {projects.slice(0, 3).map((project) => <ProjectCard key={project.id} project={project} onOpen={() => open(project.id)} />)}
+                  {projects.map((project) => <ProjectCard key={project.id} project={project} onOpen={() => open(project.id)} />)}
                 </div>
               )}
               {error ? <p className="rh-err" role="alert">{error}</p> : null}
@@ -164,7 +159,7 @@ export default function HomePage() {
                     <ul className="rh-ledger-list">
                       {ledger.slice(0, 2).map((entry) => (
                         <li key={entry.id}>
-                          <span><b>{safeCopy(reasonLabel(entry.reason, entry.delta), "Studio step")}</b><i>{`Today ${clock(entry.created_at)}`}</i></span>
+                          <span><b>{safeCopy(reasonLabel(entry.reason, entry.delta), "Studio step")}</b><i>{formatActivityTime(entry.created_at * 1000)}</i></span>
                           <span className={`rh-mono rh-num ${entry.delta < 0 ? "" : "rh-ok-text"}`}>{entry.delta < 0 ? "−" : "+"}{formatCents(Math.abs(entry.delta))}</span>
                         </li>
                       ))}
@@ -189,25 +184,18 @@ export default function HomePage() {
           </aside>
         </div>
 
-        {hasDemo ? (
-          <section aria-labelledby="recent-h" id="library" className="rh-recent">
-            <div className="rh-sec-head"><h2 className="rh-eyebrow" id="recent-h">Recent outputs</h2><span className="rh-fg3 rh-small">Last 24 hours</span></div>
+          <section aria-labelledby="library-h" id="library" className="rh-recent">
+            <div className="rh-sec-head"><h2 className="rh-eyebrow" id="library-h">Project libraries</h2><span className="rh-fg3 rh-small">Browse files in your projects</span></div>
+            {projects === null ? <p className="rh-fg3 rh-small">Loading libraries…</p> : projects.length === 0 ? <p className="rh-fg3 rh-small">No projects yet. Create a project to add media.</p> : (
             <ul className="rh-recent-grid">
-              {[
-                { title: lastCharge ? "Product still" : "Matte mug · wide", src: DEMO_THUMBS[0]!, meta: lastCharge ? clock(lastCharge.created_at) : "Demo project", price: lastCharge ? formatCents(Math.abs(lastCharge.delta)) : "demo" },
-                { title: "Shot 1 · macro", src: DEMO_THUMBS[1]!, meta: "included", price: "demo" },
-                { title: "Shot 2 · lift", src: DEMO_THUMBS[2]!, meta: "included", price: "demo" },
-                { title: "Window tilt", src: DEMO_THUMBS[3]!, meta: "included", price: "demo" },
-              ].map((item) => (
-                <li key={item.title}>
-                  <span className="rh-recent-img" style={{ backgroundImage: `url(${item.src})` }} role="img" aria-label={item.title} />
-                  <span className="rh-pcard-row"><b>{item.title}</b><span className="rh-mono rh-num rh-money">{item.price}</span></span>
-                  <span className="rh-pcard-meta">{item.meta}</span>
+              {projects.map((project) => (
+                <li key={project.id}>
+                  <Link href={`/project/${encodeURIComponent(project.id)}#files`} className="rh-btn" aria-label={`Files in ${project.name}`} title={project.name}><span className="truncate">{project.name}</span><ArrowRight size={12} className="shrink-0" aria-hidden="true" /></Link>
                 </li>
               ))}
             </ul>
+            )}
           </section>
-        ) : null}
       </main>
     </div>
   );

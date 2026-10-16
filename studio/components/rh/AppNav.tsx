@@ -3,6 +3,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { ThemeToggle } from "@/components/canvas/ThemeToggle";
+import { StudioAccountMenu, useClerkConfigured } from "@/components/StudioAuth";
 
 export function Avatar({ name }: { name?: string }) {
   const initials = (name || "").split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]!.toUpperCase()).join("") || "·";
@@ -18,6 +19,7 @@ const LINKS: Array<{ href: string; label: string }> = [
 
 /** App-surface top bar for the home screen. The canvas has its own header (CanvasHeader). */
 export function AppNav({ active = "Home", credit, name }: { active?: string; credit?: ReactNode; name?: string }) {
+  const clerkConfigured = useClerkConfigured();
   return (
     <header className="rh-appnav">
       <Link href="/home" className="rh-brand"><span className="rh-mark" aria-hidden="true" /><span className="rh-wordmark">Renderhaus</span></Link>
@@ -29,7 +31,7 @@ export function AppNav({ active = "Home", credit, name }: { active?: string; cre
       <div className="rh-appnav-right">
         {credit}
         <ThemeToggle />
-        <Avatar name={name} />
+        {clerkConfigured ? <StudioAccountMenu /> : <Avatar name={name} />}
       </div>
     </header>
   );

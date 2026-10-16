@@ -12,6 +12,7 @@ export function TextNode({ id, data, selected }: NodeProps) {
     <BaseNode id={id} data={nodeData} selected={selected} widthClass="node-text">
       <textarea
         className="nodrag nopan text-stage"
+        aria-label="Scene note"
         value={String(nodeData.config.prompt ?? "")}
         placeholder="Write a prompt or scene note"
         onChange={(event) => updateNodeConfig(id, "prompt", event.target.value)}
