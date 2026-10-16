@@ -193,7 +193,9 @@ async def run_with_servers(request, studio, harness: CodexHarness, servers):
                "the host will pause this execution and display an approval card if required. "
                "Never finish by claiming to await approval without making the tool call.")
     if _GATEWAY_SEARCH_TOOL not in initial:
-        prompt += "\nAvailable Gateway tools (data):\n" + json.dumps(
+        prompt += ("\nThis Gateway connection supplies tool schemas directly. Search is unavailable "
+                   "and is not a prerequisite. Call the exact available tool through call_gateway_tool.\n"
+                   "Available Gateway tools (data):\n") + json.dumps(
             [
                 {
                     "name": tool.name,

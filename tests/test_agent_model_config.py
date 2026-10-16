@@ -15,9 +15,16 @@ from agent import backend_config
 
 class AgentModelConfigTests(unittest.TestCase):
     def setUp(self):
-        env = patch.dict(os.environ, {}, clear=True)
+        env = patch.dict(os.environ, {"RENDERHAUS_AGENT_BACKEND": "deepagents"}, clear=True)
         env.start()
         self.addCleanup(env.stop)
+
+    def test_codex_is_default_and_uses_openai_credentials(self):
+        with patch.dict(os.environ, {}, clear=True):
+            self.assertEqual(backend_config.agent_backend(), "codex")
+            self.assertFalse(backend_config.agent_configured())
+            with patch.dict(os.environ, {"OPENAI_API_KEY": "test-only"}):
+                self.assertTrue(backend_config.agent_configured())
 
     def test_default_is_sonnet_with_high_adaptive_thinking(self):
         fake = object()
@@ -149,7 +156,7 @@ class AgentModelConfigTests(unittest.TestCase):
             ({"RENDERHAUS_AGENT_MODEL": "anthropic:test", "ANTHROPIC_API_KEY": " "}, False),
         ]
         for env, expected in cases:
-            with self.subTest(env=list(env)), patch.dict(os.environ, env, clear=True):
+            with self.subTest(env=list(env)), patch.dict(os.environ, {"RENDERHAUS_AGENT_BACKEND": "deepagents", **env}, clear=True):
                 self.assertEqual(backend_config.agent_configured(), expected)
 
     def test_studio_env_loading_keeps_sonnet_default_and_explicit_legacy_selection(self):
@@ -203,7 +210,7 @@ class AgentModelConfigTests(unittest.TestCase):
             ({"RENDERHAUS_AGENT_BACKEND": "codex", "ANTHROPIC_API_KEY": "test-only"}, False),
         ]
         for env, configured in cases:
-            with self.subTest(env=list(env)), patch.dict(os.environ, env, clear=True), patch(
+            with self.subTest(env=list(env)), patch.dict(os.environ, {"RENDERHAUS_AGENT_BACKEND": "deepagents", **env}, clear=True), patch(
                 "sys.argv", ["deploy_agentcore.py"],
             ), patch.object(deploy_agentcore, "load_bootstrap_env", return_value={"AWS_S3_BUCKET": "test-bucket"}), patch.object(
                 deploy_agentcore.boto3.session, "Session", side_effect=RuntimeError("AWS boundary stopped"),
@@ -238,7 +245,7 @@ class AgentModelGraphTests(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
         directory = tempfile.TemporaryDirectory()
         self.addCleanup(directory.cleanup)
-        env = patch.dict(os.environ, {"RENDERHAUS_OUTCOME_DIR": str(Path(directory.name) / "outcomes")}, clear=True)
+        env = patch.dict(os.environ, {"RENDERHAUS_AGENT_BACKEND": "deepagents", "RENDERHAUS_OUTCOME_DIR": str(Path(directory.name) / "outcomes")}, clear=True)
         env.start()
         self.addCleanup(env.stop)
 

@@ -450,12 +450,17 @@ npm run dev -- --port 5174
 Open `http://localhost:5174`. The backend loads `.env.local` and, when configured, the Renderhaus
 Secrets Manager JSON secret. Do not commit secrets.
 
+The retained Codex adapter does not yet settle inference token usage through `RunMeter`.
+A `$0.00` Studio receipt therefore does not mean zero OpenAI API cost. Paid media still
+uses the Gateway's approval and billing gates.
+
 ### Relevant environment variables
 
 | Variable | Purpose |
 | --- | --- |
-| `RENDERHAUS_AGENT_BACKEND` | `deepagents` by default; `codex` retains the app-server backend. |
-| `RENDERHAUS_AGENT_MODEL` | LangChain `provider:model`, default `anthropic:claude-opus-5-5`; explicit `AGENT_MODEL` is the legacy fallback. `openai:gpt-5.6-luna` selects the previous model. |
+| `RENDERHAUS_AGENT_BACKEND` | `codex` by default, using the retained app-server backend. `deepagents` is opt-in. |
+| `AGENT_MODEL` | Codex model, default `gpt-5.6-luna`. Existing explicit selections are preserved. |
+| `RENDERHAUS_AGENT_MODEL` | Deep Agents only: LangChain `provider:model`, default `anthropic:claude-sonnet-5-5`; explicit `AGENT_MODEL` is its legacy fallback. |
 | `RENDERHAUS_AGENT_EFFORT` | Anthropic `output_config.effort`, default `high`; `low`, `medium`, `high`, `xhigh`, or `max`. See [planning-model configuration](DEEP_AGENT.md#configuration). |
 | `OPENAI_API_KEY`, `ANTHROPIC_API_KEY` | Credential for the selected provider. Bedrock uses IAM. Missing configured-provider credentials produce HTTP 503. |
 | `RENDERHAUS_AGENT_TIMEOUT_SECONDS` | Deep Agents deadline, default 1800 seconds; graph recursion limit is 180. |

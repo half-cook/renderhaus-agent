@@ -7,7 +7,8 @@ Word-level footage corrections use [dialogue-edit](DIALOGUE_EDIT.md) on existing
 Preview and video each pause for consent/cost approval; ambiguous preview creation cannot
 be automatically retried. The flow uses the existing media dispatch and native approval resume.
 
-Renderhaus uses `deepagents==0.7.23` by default. One chat handles planning, media generation,
+Renderhaus uses the Codex app-server harness by default. The optional
+`deepagents==0.7.23` backend handles planning, media generation,
 refinement, and final Remotion assembly. Canvas references are optional. The existing Studio
 request, job, approval, progress, asset, and conversation contracts remain in place.
 
@@ -15,7 +16,7 @@ request, job, approval, progress, asset, and conversation contracts remain in pl
 
 | Variable | Behavior |
 | --- | --- |
-| `RENDERHAUS_AGENT_BACKEND` | `deepagents` by default; `codex` selects the retained app-server backend. Other values fail explicitly. |
+| `RENDERHAUS_AGENT_BACKEND` | `codex` by default; `deepagents` explicitly selects this optional backend. Other values fail explicitly. |
 | `RENDERHAUS_AGENT_MODEL` | LangChain `provider:model`, default `anthropic:claude-sonnet-5-5`. Supported prefixes are `anthropic`, `openai`, `bedrock`, and `bedrock_converse`. Unknown prefixes and empty model IDs fail explicitly. |
 | `RENDERHAUS_AGENT_EFFORT` | Anthropic effort, default `high` for manager/planner/general-purpose, `medium` for editor, and `low` for media/audio. Accepts `low`, `medium`, `high`, `xhigh`, or `max`; maps to `output_config.effort`. Ignored for OpenAI, Bedrock, Codex, and injected test models. |
 | `RENDERHAUS_AGENT_MODEL_<ROLE>` | Optional override for `PLANNER`, `MEDIA`, `AUDIO`, `EDITOR`, or `GENERAL_PURPOSE`; falls back to the global model. |

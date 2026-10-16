@@ -117,6 +117,17 @@ class FakeGateway:
 
 
 class StudioCodexTests(unittest.IsolatedAsyncioTestCase):
+    async def test_unconfigured_backend_dispatches_to_codex(self):
+        from agent.studio_agent_next import StudioAgentOutput
+
+        output = StudioAgentOutput.model_validate(FINAL)
+        with patch.dict(os.environ, {}, clear=True), patch(
+            "agent.studio_codex_runner.run_with_servers", new=AsyncMock(return_value=output),
+        ) as run:
+            result = await run_studio_agent(StudioAgentRequest(prompt="Make an outline"), mcp_servers=[])
+        self.assertEqual(result, output)
+        run.assert_awaited_once()
+
     async def test_elevenlabs_admin_pauses_even_when_autonomous(self):
         tool = Tool(name="ElevenLabs___workspace_groups_list", description="List workspace groups",
                     inputSchema={"type": "object", "properties": {}})

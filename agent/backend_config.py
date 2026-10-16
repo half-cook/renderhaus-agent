@@ -32,7 +32,7 @@ def agent_max_tokens(role: str | None = None) -> int:
 
 
 def agent_backend() -> str:
-    backend = os.getenv("RENDERHAUS_AGENT_BACKEND", "deepagents").strip().lower()
+    backend = os.getenv("RENDERHAUS_AGENT_BACKEND", "codex").strip().lower()
     if backend not in {"deepagents", "codex"}:
         raise ValueError("RENDERHAUS_AGENT_BACKEND must be deepagents or codex.")
     return backend

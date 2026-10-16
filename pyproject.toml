@@ -1,7 +1,7 @@
 [project]
 name = "renderhaus-agent"
 version = "0.1.0"
-description = "Renderhaus API and Deep Agents backend."
+description = "Renderhaus API and Codex agent backend."
 requires-python = ">=3.11"
 dependencies = [
   "bedrock-agentcore>=1.0.0",
