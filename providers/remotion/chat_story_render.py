@@ -14,14 +14,15 @@ import unicodedata
 from typing import Any
 import wave
 
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFont, features
 
 from providers.ffmpeg.api import _bounded_run
 from providers.remotion.chat_story import graphemes
+from providers.remotion.text import FONT_FILES, _font_file
 
 
-EMOJI_FONT = Path('/usr/share/fonts/truetype/noto/NotoColorEmoji.ttf')
-TEXT_FONT = Path('/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf')
+EMOJI_FONT = _font_file('/usr/share/fonts/truetype/noto/NotoColorEmoji.ttf', 109)
+TEXT_FONT = FONT_FILES['dejavu-sans']
 MAX_FRAME_BYTES = 384 * 1024 * 1024
 
 
@@ -93,9 +94,11 @@ def _text(image: Image.Image, text: str, xy: tuple[float, float], *, size: int,
         raise ValueError('Local chat-story rendering does not support mixed text direction with emoji. '
                          'Supply separately approved lines; the original text will not be reordered or rewritten.')
     rtl = _rtl(text)
+    if directions.intersection({'R', 'AL', 'AN'}) and not features.check_feature('raqm'):
+        raise ValueError('Right-to-left chat-story text requires Pillow with libraqm on this render worker.')
     if rtl:
         runs.reverse()
-    widths = [size * 1.25 if emoji else draw.textlength(run, font=font, direction='rtl' if rtl else 'ltr')
+    widths = [size * 1.25 if emoji else draw.textlength(run, font=font, direction='rtl' if rtl else None)
               for run, emoji in runs]
     if max_width is not None and sum(widths) > max_width + 1:
         raise ValueError('Chat-story text exceeds its measured bubble width. Supply approved replacement text; the original will not be clipped.')
@@ -104,6 +107,8 @@ def _text(image: Image.Image, text: str, xy: tuple[float, float], *, size: int,
         x += max(0, max_width - sum(widths))
     for (run, emoji), run_width in zip(runs, widths, strict=True):
         if emoji:
+            if len(run) > 1 and not features.check_feature('raqm'):
+                raise ValueError('Joined emoji require Pillow with libraqm on this render worker; the original will not be split or replaced.')
             emoji_font = _emoji_font(str(EMOJI_FONT))
             if draw.textlength(run, font=emoji_font) > 150:
                 raise ValueError('Unsupported joined emoji cannot fit the installed glyph renderer. Supply an approved supported emoji; the original will not be cropped.')
@@ -116,7 +121,7 @@ def _text(image: Image.Image, text: str, xy: tuple[float, float], *, size: int,
                 image.alpha_composite(glyph, (round(x), round(y)))
         else:
             draw.text((x, y), run, font=font, fill=fill,
-                      direction='rtl' if rtl else 'ltr', anchor='lt')
+                      direction='rtl' if rtl else None, anchor='lt')
         x += run_width
 
 

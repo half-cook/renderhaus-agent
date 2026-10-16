@@ -1,4 +1,4 @@
-import type { AgentPendingRequest } from "@/lib/api";
+import type { AgentApprovalRequest, AgentPendingRequest, StudioExecution } from "@/lib/api";
 import { isCents } from "./money";
 import { parseLines, safeCopy, toApprovalCardModel, type ApprovalCardModel, type ApprovalStatus, type RunPayload } from "./billing";
 
@@ -93,6 +93,19 @@ export function visibleParameters(args: Record<string, unknown>): Array<[string,
     const clean = safeCopy(text, "");
     return clean ? [[label, clean.length > 400 ? `${clean.slice(0, 400)}…` : clean]] : [];
   });
+}
+
+/** The wallet already excludes charges; only the unspent part of an active run's cap is held. */
+export function heldCreditCents(executions: Array<Pick<StudioExecution, "status" | "errorType" | "approvals" | "pausedCap" | "receipt">>): number {
+  return executions.reduce((total, execution) => {
+    if (execution.receipt || (!["queued", "running", "awaiting_approval"].includes(execution.status)
+      && !(execution.status === "error" && execution.errorType === "PausedAtCap"))) return total;
+    const payload = execution.pausedCap ?? execution.approvals.find((item): item is AgentApprovalRequest => item.kind === "approval"
+      && ["pending", "approved", "running"].includes(String(item.billing?.status)))?.billing;
+    const spent = payload?.charged_cents ?? payload?.spent_so_far_cents;
+    return isCents(payload?.held_cents) && isCents(spent)
+      ? total + Math.max(0, payload.held_cents - spent) : total;
+  }, 0);
 }
 
 export type SpendSummary = { rows: Array<{ label: string; amountCents: number; tone?: "awaiting" }>; totalLabel: string; totalCents: number };

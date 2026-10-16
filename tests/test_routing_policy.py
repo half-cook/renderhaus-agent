@@ -16,17 +16,31 @@ class PolicyTests(unittest.TestCase):
             self.assertFalse(tool_needs_approval("Kling___text_to_video", True))
             self.assertTrue(tool_needs_approval("Kling___text_to_video", False))
 
-    def test_reads_never_trigger_premium_approval_and_keep_non_autonomous_behavior(self):
+    def test_free_reads_and_status_checks_do_not_interrupt_either_mode(self):
         for name in [
             "Kling___get_video_task",
             "Runway___list_runway_models",
             "Fal___get_video_task",
+            "Remotion___get_render_progress",
+            "ElevenLabs___voices_search",
+            "ElevenLabs___models_list",
             "Remotion___export_nle_timeline",
         ]:
-            self.assertEqual(
-                tool_needs_approval(name, False), name != "Remotion___export_nle_timeline"
-            )
+            self.assertFalse(tool_needs_approval(name, False), name)
             self.assertFalse(tool_needs_approval(name, True))
+
+    def test_free_classification_does_not_override_explicit_review_or_consent(self):
+        for autonomous in (False, True):
+            for name, arguments in [
+                ("Remotion___prepare_conversational_edit", {}),
+                ("Logo___logo_vectorize", {"op": "approve"}),
+                ("FootageMemory___footage_memory_build", {"stage": "build"}),
+                ("Remotion___render_ad_variants", {"stage": "render_batch"}),
+                ("Sync___create_dialogue_edit", {}),
+                ("ElevenLabs___voices_delete", {}),
+            ]:
+                self.assertTrue(tool_needs_approval(name, autonomous, arguments), name)
+            self.assertTrue(tool_needs_approval("Unknown___unknown_operation", False))
 
     def test_unknown_price_is_not_a_dry_run_zero(self):
         from agent.deep_agent.routing import estimate_cost

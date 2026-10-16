@@ -78,6 +78,11 @@ export async function directUpload(file: File, projectId: string, deps: DirectUp
   if (token) {
     try {
       const status = await call("status", { token });
+      if (status.completed_asset && typeof status.completed_asset === "object") {
+        storage?.removeItem(key);
+        deps.onProgress?.(file.size, file.size);
+        return status.completed_asset as Record<string, unknown>;
+      }
       partSize = Number(status.part_size);
       partCount = Number(status.part_count);
       for (const part of (status.completed_parts as { part_number: number; etag: string }[]) || []) {

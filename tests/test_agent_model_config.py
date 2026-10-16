@@ -293,13 +293,14 @@ class AgentModelGraphTests(unittest.IsolatedAsyncioTestCase):
 
         video = Tool(name="Fal___wan3_text_to_video", description="Generate Wan", inputSchema={"type": "object"})
         huge = Tool(name="ElevenLabs___models_list", description="x" * 30_000, inputSchema={"type": "object"})
-        request = StudioAgentRequest(prompt="Make a 5-second cinematic shot")
+        request = StudioAgentRequest(prompt="Make a 5-second cinematic shot", job_id="current-job")
 
         def compact(messages, tools):
             context = json.loads(messages[-1].text)
             self.assertLess(len(messages[-1].text), 10_000)
             self.assertTrue(all(isinstance(name, str) for name in context["tools"]))
             self.assertLessEqual(len(context["capabilities"]), 3)
+            self.assertEqual(context["job_id"], request.job_id)
             return call("read_studio_context", {"tool_name": video.name}, "named-context")
 
         def named(messages, tools):

@@ -3,7 +3,7 @@
  * unit-testable; the canvas store owns persistence. Time is seconds; trims snap to a quarter second by default.
  */
 import type { CanvasNode } from "@/lib/canvas/connection-validation";
-import { approvedSequence } from "@/lib/canvas/story";
+import { approvedSequence, sourceDuration } from "@/lib/canvas/story";
 
 export const PX_PER_SECOND = 124;
 export const SNAP_SECONDS = 0.25;
@@ -37,10 +37,11 @@ export function clipsFromNodes(nodes: CanvasNode[]): TimelineClip[] {
     ? approved
     : nodes.filter((node) => node.data.kind === "video" && (node.data.output || typeof node.data.config.thumbnail_url === "string")).sort((a, b) => a.position.x - b.position.x);
   return source.flatMap((node, index): TimelineClip[] => {
-    const sourceSeconds = numberConfig(node, "duration_seconds");
+    const sourceSeconds = sourceDuration(node.data);
     if (!sourceSeconds || sourceSeconds <= 0) return [];
-    const trimIn = clamp(numberConfig(node, "trim_in_seconds") ?? 0, 0, sourceSeconds - MIN_CLIP_SECONDS);
-    const trimOut = clamp(numberConfig(node, "trim_out_seconds") ?? sourceSeconds, trimIn + MIN_CLIP_SECONDS, sourceSeconds);
+    const minimumLength = Math.min(MIN_CLIP_SECONDS, sourceSeconds);
+    const trimIn = clamp(numberConfig(node, "trim_in_seconds") ?? 0, 0, sourceSeconds - minimumLength);
+    const trimOut = clamp(numberConfig(node, "trim_out_seconds") ?? sourceSeconds, trimIn + minimumLength, sourceSeconds);
     const thumb = node.data.config.thumbnail_url;
     return [{
       id: node.id,
@@ -62,11 +63,12 @@ export function snap(value: number, step = SNAP_SECONDS): number {
 
 /** Move one trim edge by `deltaSeconds`. The clip never gets shorter than MIN_CLIP_SECONDS and stays inside its source. */
 export function trimEdge(clip: TimelineClip, edge: "in" | "out", deltaSeconds: number, snapStep: number = SNAP_SECONDS): Pick<TimelineClip, "trimIn" | "trimOut"> {
+  const minimumLength = Math.min(MIN_CLIP_SECONDS, clip.sourceSeconds);
   if (edge === "in") {
-    const next = clamp(snap(clip.trimIn + deltaSeconds, snapStep), 0, clip.trimOut - MIN_CLIP_SECONDS);
+    const next = clamp(snap(clip.trimIn + deltaSeconds, snapStep), 0, clip.trimOut - minimumLength);
     return { trimIn: round3(next), trimOut: clip.trimOut };
   }
-  const next = clamp(snap(clip.trimOut + deltaSeconds, snapStep), clip.trimIn + MIN_CLIP_SECONDS, clip.sourceSeconds);
+  const next = clamp(snap(clip.trimOut + deltaSeconds, snapStep), clip.trimIn + minimumLength, clip.sourceSeconds);
   return { trimIn: clip.trimIn, trimOut: round3(next) };
 }
 
@@ -104,6 +106,33 @@ export function dropIndex(clips: Pick<TimelineClip, "id" | "trimIn" | "trimOut">
 
 export function totalSeconds(clips: Pick<TimelineClip, "trimIn" | "trimOut">[]): number {
   return round3(clips.reduce((sum, clip) => sum + clipLength(clip), 0));
+}
+
+/** Map the edit's clock to one source clip; exact cut boundaries select the next shot. */
+export function timelinePosition(clips: TimelineClip[], seconds: number): { clip: TimelineClip; timelineStart: number; sourceTime: number } | undefined {
+  const target = clamp(Number.isFinite(seconds) ? seconds : 0, 0, totalSeconds(clips));
+  let timelineStart = 0;
+  for (const [index, clip] of clips.entries()) {
+    const end = round3(timelineStart + clipLength(clip));
+    if (target < end || index === clips.length - 1) {
+      return { clip, timelineStart, sourceTime: clamp(clip.trimIn + target - timelineStart, clip.trimIn, clip.trimOut) };
+    }
+    timelineStart = end;
+  }
+}
+
+/** Apply a seek only after metadata exists; the real media clock drives playback. */
+export function syncTimelineVideo(
+  video: Pick<HTMLVideoElement, "readyState" | "currentTime" | "duration" | "paused" | "play" | "pause">,
+  sourceTime: number,
+  playing: boolean,
+  seek = true,
+): Promise<void> | undefined {
+  if (!playing) video.pause();
+  if (video.readyState < 1) return;
+  const target = Math.min(sourceTime, Number.isFinite(video.duration) ? video.duration : sourceTime);
+  if (seek && Math.abs(video.currentTime - target) > 0.01) video.currentTime = target;
+  if (playing && video.paused) return video.play();
 }
 
 /** 0:03:06 style: minutes:seconds:frames at 24 fps. */

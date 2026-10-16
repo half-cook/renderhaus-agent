@@ -8,7 +8,9 @@ const card = fs.readFileSync(path.join(__dirname, "../components/rh/ApprovalCard
 
 test("the agent dock wires Not now to the existing reject decline path", () => {
   assert.match(dock, /onNotNow:\s*\(\)\s*=>\s*onDecision\(approval,\s*"reject",\s*undefined,\s*"not_now"\)/);
-  assert.match(dock, /NOT_NOW_LINE\s*=\s*"Paused · nothing more will be charged · your credit is free to use\."/);
+  assert.match(dock, /NOT_NOW_LINE\s*=\s*"Paid step skipped · finishing your response\."/);
+  assert.match(dock, /pausedNote && activeExecution\?\.jobId === pausedNote/);
+  assert.doesNotMatch(dock, /nothing more will be charged/);
   assert.match(dock, /source === "not_now"[\s\S]*setPausedNote/);
   assert.match(api, /if \(source\) body\.message = source/);
   assert.match(api, /decision: "approve" \| "reject"/);

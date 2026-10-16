@@ -205,7 +205,7 @@ def tool_needs_approval(name: str, autonomous: bool, arguments: dict | None = No
         return True
     if name in {"Fal___pixelcut_looping_video", "Fal___pixverse_vibemv", "pixelcut_looping_video", "pixverse_vibemv"}:
         return True
-    return not autonomous or requires_approval(name) or premium_video(name)
+    return (not autonomous and not is_free_tool(name)) or requires_approval(name) or premium_video(name)
 
 
 class GatewayExecutor:
@@ -1134,6 +1134,8 @@ class GatewayExecutor:
                               "note": "Gateway response was lost; preview may be billed. Never automatically retry creation."}
                 elif name in {"Sync___create_dialogue_edit", "Sync___create_dialogue_video"} and payload.get("status") == "requires_audio_fallback":
                     output = {key: value for key, value in payload.items() if key != "error"}
+                elif isinstance(exc, GatewayToolError):
+                    output = {**payload, "status": "failed", "transport_error": False}
                 else:
                     output = {**payload, "status": "failed", "error": str(exc)[:400],
                               "transport_error": not bool(payload.get("render_id") and payload.get("status") == "failed")}

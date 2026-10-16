@@ -192,9 +192,10 @@ def _audio_postprocess_request(prompt: str) -> bool:
 
 
 def _video_voiceover(prompt: str) -> bool:
-    return bool(re.search(_VIDEO_DELIVERABLE, _instruction_text(prompt), re.I)
-                and (re.search(_VOICEOVER, _narration_text(prompt), re.I)
-                     or re.search(r"\b(?:read|speak)\b.*\bscript\b", _narration_text(prompt), re.I))
+    text = media_production_text(prompt)
+    return bool(re.search(_VIDEO_DELIVERABLE, text, re.I)
+                and (re.search(_VOICEOVER, _narration_text(text), re.I)
+                     or re.search(r"\b(?:read|speak)\b.*\bscript\b", _narration_text(text), re.I))
                 and not _knowledge_explainer_request(prompt))
 
 
@@ -423,6 +424,7 @@ def _finishing_instruction(prompt: str) -> str:
 
 def _delivery_route(prompt: str, constraints: dict, *, region: str | None,
                     available_tools: set[str] | None, arguments: dict | None) -> Route | None:
+    prompt = media_production_text(prompt)
     if _knowledge_explainer_request(prompt) or constraints["predicates"]["art_style_motion"]:
         return None
     if any(rule.get("capability") in _FINISHING_CAPABILITIES and re.search(
@@ -1020,6 +1022,8 @@ def route_intent(prompt: str, *, region: str | None = None, tier: str | None = N
             continue
         if rule.get("capability") == "tts":
             rule_prompt = _narration_text(prompt)
+        elif rule.get("capability") in video_capabilities:
+            rule_prompt = media_production_text(prompt)
         elif rule.get("op"):
             rule_prompt = _finishing_instruction(prompt)
         elif rule.get("capability") in {"still_image", "image_edit"} or rule["skill"] == "knowledge-explainer":
@@ -1264,6 +1268,19 @@ def _capability_price(row: dict):
 
 def _instruction_text(prompt: str) -> str:
     return re.sub(r"\"[^\"]*\"|“[^”]*”|(?<!\w)'[^']*'(?!\w)", "", prompt)
+
+
+def media_production_text(prompt: str) -> str:
+    """Keep positive production instructions, without quoted scripts or negated actions."""
+    actions = (r"(?:create|make|generate|produce|render|assemble|combine|merge|stitch|edit|export|"
+               r"deliver|cut|compose|retry|finish|complete|resume|turn|convert|upscale|interpolate|add|include)")
+    text = re.sub(
+        rf"\b(?:do not|don['’]t|never|avoid)\s+{actions}\b.*?"
+        rf"(?=,\s*(?:(?:but|instead|just|then)\s+)?{actions}\b|\s+(?:but|instead)\b|\.(?:\s|$)|[!?;\n]|$)",
+        "", _instruction_text(prompt), flags=re.I,
+    )
+    return re.sub(r"\b(?:no|not|without)\s+(?:(?:any|a|an|the|new)\s+)*(?:videos?|images?|mp4)\b",
+                  "", text, flags=re.I)
 
 
 def lottie_request(prompt: str) -> bool:

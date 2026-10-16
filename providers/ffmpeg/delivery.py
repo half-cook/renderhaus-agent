@@ -98,7 +98,9 @@ def measure(directory, source, params):
     target = {key: params[key] for key in ("I", "TP", "LRA")}
     return [Command(base + ["-af", _loudnorm_filter(params) + ":print_format=json", "-f", "null", "-"],
                     metrics={"target": target, "source_duration": duration}, stderr_bytes=65536),
-            Command(base + ["-af", "ebur128=peak=true:framelog=verbose", "-f", "null", "-"], stderr_bytes=65536)]
+            Command(base + ["-af", "ebur128=peak=true:metadata=1:framelog=verbose,"
+                            "ametadata=mode=print:key=lavfi.r128.I", "-f", "null", "-"],
+                    stderr_bytes=2 * 1024 * 1024)]  # At most 6000 metadata frames for the bounded 600 s input.
 
 
 def measure_metrics(results):
@@ -114,8 +116,15 @@ def measure_metrics(results):
         if not found:
             raise ValueError("The EBU R128 summary lacks finite audio measurements.")
         ebur128[key] = float(found.group(1))
-    return {**{key: payload[key] for key in _PASS1}, "integrated_lufs": payload["input_i"],
-            "true_peak_db": payload["input_tp"], "lra": payload["input_lra"], "ebur128": ebur128}
+    precise = re.findall(rf"lavfi\.r128\.I=({_NUMBER})", results[1].stderr.decode("utf-8", errors="replace"))
+    if not precise or not math.isfinite(float(precise[-1])):
+        raise ValueError("The EBU R128 programme measurement lacks finite precise integrated loudness.")
+    ebur128["summary_integrated_lufs"] = ebur128["integrated_lufs"]
+    ebur128["integrated_lufs"] = float(precise[-1])
+    # Dynamic loudnorm re-counts its EOF lookahead; only its raw fields belong in pass two.
+    # Programme acceptance uses the independent EBU pass; oversampled peak keeps its precision.
+    return {**{key: payload[key] for key in _PASS1}, "integrated_lufs": ebur128["integrated_lufs"],
+            "true_peak_db": payload["input_tp"], "lra": ebur128["lra"], "ebur128": ebur128}
 
 
 def _delivery_source(directory, source, *, require_audio):
@@ -178,7 +187,7 @@ def prelimit(directory, source, params):
     _, _, _, metrics = _delivery_source(directory, source, require_audio=True)
     limit = 10 ** (params["limit_db"] / 20)
     audio_filter = (f"volume={params['gain_db']:g}dB,"
-                    f"alimiter=limit={limit:.6f}:level=disabled:attack=5:release=50:asc=1")
+                    f"alimiter=limit={limit:.6f}:level=disabled:attack=5:release=50:asc=1:latency=1")
     return [_mux_command(directory, source, params, metrics, audio_filter=audio_filter)]
 
 

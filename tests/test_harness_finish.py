@@ -1,3 +1,6 @@
+import subprocess
+import sys
+
 import pytest
 
 from langchain_core.messages import AIMessage
@@ -7,13 +10,16 @@ from agent.deep_agent.sandbox import JobSandbox
 from agent.studio_agent_next import StudioAgentRequest, _context_from_request
 from test_deep_agent import ScriptedModel, Gateway, call
 
+linux_sandbox = pytest.mark.skipif(sys.platform != 'linux', reason='Requires Linux bubblewrap execution; other workers fail closed.')
+
 
 @pytest.mark.asyncio
 async def test_real_graph_inspects_views_and_grades_final_file(tmp_path, monkeypatch):
     monkeypatch.setenv('RENDERHAUS_MEDIA_DIR', str(tmp_path))
     directory = tmp_path / 'finish-test'
-    sandbox = JobSandbox(directory)
-    assert sandbox.execute('ffmpeg -v error -f lavfi -i color=c=blue:s=64x64:d=1 -c:v libx264 clip.mp4').exit_code == 0
+    directory.mkdir()
+    subprocess.run(['ffmpeg', '-v', 'error', '-f', 'lavfi', '-i', 'color=c=blue:s=64x64:d=1',
+                    '-c:v', 'libx264', str(directory / 'clip.mp4')], check=True)
     payload = {'title': 'Clip', 'summary': 'The clip was inspected.', 'markdown': '# Clip',
                'filename': 'clip.md', 'media_paths': ['/work/clip.mp4']}
     verdict = {'result': 'satisfied', 'explanation': 'The current file was measured and viewed; unrelated rubrics do not apply.',
@@ -34,6 +40,34 @@ async def test_real_graph_inspects_views_and_grades_final_file(tmp_path, monkeyp
 
 
 @pytest.mark.asyncio
+async def test_completion_repair_can_stage_inspect_and_view_owned_media(tmp_path, monkeypatch):
+    import base64
+    import hashlib
+
+    monkeypatch.setenv('RENDERHAUS_MEDIA_DIR', str(tmp_path))
+    source = tmp_path / 'source.png'
+    source.write_bytes(base64.b64decode(
+        'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jrXcAAAAASUVORK5CYII='))
+    asset_ref = 'renderhaus-asset://owned-version'
+    path = '/work/asset-' + hashlib.sha256(asset_ref.encode()).hexdigest()[:20] + '.png'
+    payload = {'title': 'Clip', 'summary': 'The saved clip was inspected.', 'markdown': '# Clip',
+               'filename': 'clip.md', 'media_paths': [path]}
+    model = ScriptedModel([
+        AIMessage(content='The saved clip is ready.'),
+        call('stage_media', {'asset_ref': asset_ref}, 'stage'),
+        call('inspect_media', {'path': path}, 'inspect'),
+        call('read_file', {'file_path': path, 'limit': 1}, 'view'),
+        call('StudioAgentOutput', payload, 'finish'), grade('satisfied'),
+    ])
+    request = StudioAgentRequest(prompt='Inspect my saved clip.', job_id='repair-inspection')
+    studio = _context_from_request(request, source_resolver=lambda version: source)
+    result = await run_with_servers(request, studio, [Gateway()], model=model)
+    assert not model._steps
+    assert result.summary == payload['summary']
+    assert any(event.name == 'Local___artifact' for event in studio.tool_events)
+
+
+@pytest.mark.asyncio
 async def test_finish_gate_allows_only_two_repairs_then_reports_blocker(tmp_path, monkeypatch):
     monkeypatch.setenv('RENDERHAUS_MEDIA_DIR', str(tmp_path))
     payload = {'title': 'Clip', 'summary': 'Ready.', 'markdown': '# Clip',
@@ -46,6 +80,7 @@ async def test_finish_gate_allows_only_two_repairs_then_reports_blocker(tmp_path
 
 
 @pytest.mark.asyncio
+@linux_sandbox
 async def test_shell_output_cannot_omit_paths_to_skip_inspection(tmp_path, monkeypatch):
     monkeypatch.setenv('RENDERHAUS_MEDIA_DIR', str(tmp_path))
     payload = {'title': 'Clip', 'summary': 'Ready.', 'markdown': '# Clip', 'filename': 'clip.md'}
@@ -62,6 +97,7 @@ async def test_shell_output_cannot_omit_paths_to_skip_inspection(tmp_path, monke
 
 
 @pytest.mark.asyncio
+@linux_sandbox
 async def test_inspected_decoy_cannot_certify_a_different_linked_deliverable(tmp_path, monkeypatch):
     monkeypatch.setenv('RENDERHAUS_MEDIA_DIR', str(tmp_path))
     sandbox = JobSandbox(tmp_path / 'decoy')
@@ -90,6 +126,7 @@ def grade(result):
 
 
 @pytest.mark.asyncio
+@linux_sandbox
 async def test_grader_cannot_publish_a_stale_finish_after_revision(tmp_path, monkeypatch):
     monkeypatch.setenv('RENDERHAUS_MEDIA_DIR', str(tmp_path))
     sandbox = JobSandbox(tmp_path / 'revision')
@@ -110,6 +147,7 @@ async def test_grader_cannot_publish_a_stale_finish_after_revision(tmp_path, mon
 
 
 @pytest.mark.asyncio
+@linux_sandbox
 async def test_new_turn_has_a_fresh_rubric_revision_allowance(tmp_path, monkeypatch):
     monkeypatch.setenv('RENDERHAUS_MEDIA_DIR', str(tmp_path))
     sandbox = JobSandbox(tmp_path / 'fresh-rubric')
@@ -134,6 +172,7 @@ async def test_new_turn_has_a_fresh_rubric_revision_allowance(tmp_path, monkeypa
 
 
 @pytest.mark.asyncio
+@linux_sandbox
 async def test_grader_budget_stop_propagates_even_without_an_update_message(tmp_path, monkeypatch):
     from server import studio_state
     from server.run_budget import RunPausedAtCap

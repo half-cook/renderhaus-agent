@@ -12,7 +12,7 @@ function load(file, mocks = {}) {
   return exported;
 }
 const timeline = load('lib/rh/timeline.ts', {
-  '@/lib/canvas/story': { approvedSequence: (nodes) => nodes.filter((n) => n.data.approved).sort((a, b) => (a.data.storyOrder ?? 0) - (b.data.storyOrder ?? 0)) },
+  '@/lib/canvas/story': require('./load-ts.cjs')('lib/canvas/story.ts'),
 });
 
 const clip = (patch = {}) => ({ id: 'a', order: 1, title: 'Shot 1', sourceSeconds: 5, trimIn: 0, trimOut: 5, ...patch });

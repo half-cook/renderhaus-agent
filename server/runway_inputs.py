@@ -126,8 +126,9 @@ def prepare_runway_arguments(
     source_resolver: Callable[[str], str] | None = None,
     source_versions: dict[str, str] | None = None,
     workspace_id: str | None = None,
+    publish_inputs: bool = True,
 ) -> dict[str, Any]:
-    """Resolve scoped handles and submit the exact Aleph bytes used for the price quote."""
+    """Resolve scoped handles, measure Aleph bytes, and optionally publish inputs."""
     if workspace_id and not source_resolver and tool_name not in {"get_runway_task", "list_runway_models"}:
         raise ValueError("Runway generation requires the scoped Studio asset and task context. The separate AgentCore runtime is unsupported.")
     if tool_name == "get_runway_task" and workspace_id:
@@ -188,8 +189,9 @@ def prepare_runway_arguments(
                 return _publish_file(source.path, source.filename, source.mime_type)
             return value
 
-        resolved = publish(resolved)
-        if measured_video is not None and video_placeholder not in owned:
-            resolved["video_path_or_url"] = _publish_file(measured_video, "source", captured_mime)
+        if publish_inputs:
+            resolved = publish(resolved)
+            if measured_video is not None and video_placeholder not in owned:
+                resolved["video_path_or_url"] = _publish_file(measured_video, "source", captured_mime)
     validate_runway_arguments(tool_name, resolved)
     return resolved

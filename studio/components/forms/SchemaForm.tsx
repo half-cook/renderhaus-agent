@@ -1,6 +1,7 @@
 "use client";
 
 import type { JsonSchema } from "@/lib/types";
+import { RadioGroup } from "radix-ui";
 import { fieldLabel, isPromptField } from "@/lib/canvas/field-labels";
 import { safeCopy } from "@/lib/rh/billing";
 import { choiceLabels } from "@/lib/canvas/model-labels";
@@ -182,30 +183,32 @@ export function SchemaForm({ schema, values, options, hiddenFields, onlyFields, 
           const extras =
             selected && !choices.some((choice) => String(choice) === selected) ? [value as string | number] : [];
           return (
-            <label className={`field ${needsInput ? "needs-input" : ""}`} key={name}>
+            <div className={`field ${needsInput ? "needs-input" : ""}`} key={name}>
               <span>
                 {label}
                 {requiredMark}
               </span>
-              <div className="field-pill-row" role="radiogroup" aria-label={label}>
+              <RadioGroup.Root
+                className="field-pill-row"
+                aria-label={label}
+                value={selected}
+                onValueChange={(next) => onChange(name, coerceChoice(next, field, choices))}
+              >
                 {(() => {
                   const optionValues = [...choices, ...extras].map(String);
                   const labels = choiceLabels(name, optionValues);
                   return optionValues.map((optionValue) => (
-                    <button
+                    <RadioGroup.Item
                       key={optionValue}
-                      type="button"
-                      role="radio"
-                      aria-checked={selected === optionValue}
+                      value={optionValue}
                       className={`field-pill${selected === optionValue ? " selected" : ""}`}
-                      onClick={() => onChange(name, coerceChoice(optionValue, field, choices))}
                     >
                       {labels.get(optionValue)}
-                    </button>
+                    </RadioGroup.Item>
                   ));
                 })()}
-              </div>
-            </label>
+              </RadioGroup.Root>
+            </div>
           );
         }
 

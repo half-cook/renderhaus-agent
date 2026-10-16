@@ -9,7 +9,7 @@ from providers.remotion.motion_carry import validate_report
 
 MOTION_SKILLS = {"motion-graphics", "product-demo-video", "cinematic-product-promo", "knowledge-explainer", "hyperframes", "motion-carry-qc"}
 PROBE = "Remotion___motion_carry_probe"
-FINISHING_OPS = {"transcode_h264", "mux_aac", "loudnorm_mux_aac", "reframe_crop", "reframe_pad_blur"}
+FINISHING_OPS = {"transcode_h264", "mux_aac", "loudnorm_mux_aac", "prelimit_mux_aac", "reframe_crop", "reframe_pad_blur"}
 
 
 def _changes_output(event) -> bool:
@@ -43,23 +43,28 @@ def gate_motion_delivery(request, studio, final=None) -> bool | None:
     route = route_intent(request.prompt)
     prior_events = {event["id"]: event for event in request.prior_tool_events}
     current_events = [event for event in studio.tool_events if event.public() != prior_events.get(event.id)]
-    probes = [event for event in current_events if event.name == PROBE]
+    events = studio.tool_events if request.delivery_continuation else current_events
+    probes = [event for event in events if event.name == PROBE]
     if not requires_motion_qc(request.prompt, studio.tool_events) and not probes:
         return None
     last = probes[-1] if probes else None
     result = last.result if last else {}
-    passed = bool(last and result.get("job_id") == studio.job_id and validate_report(result))
+    report_job = studio.job_id
+    if request.delivery_continuation and last and last.public() == prior_events.get(last.id):
+        report_job = last.arguments.get("job_id")
+    passed = bool(last and last.status in {"passed", "succeeded", "completed"}
+                  and result.get("job_id") == report_job and validate_report(result))
     reasons = list(result.get("failures") or [])
     if passed:
-        probe_index = studio.tool_events.index(last)
-        if any(_changes_output(event) for event in studio.tool_events[probe_index+1:]):
+        probe_index = events.index(last)
+        if any(_changes_output(event) for event in events[probe_index+1:]):
             passed = False
             reasons.append("New render or finishing work started after motion QC; probe the new output before delivery.")
-        work = [event for event in current_events if _changes_output(event)]
+        work = [event for event in events if _changes_output(event)]
         if work:
             latest = work[-1]
             if latest.name.endswith(("render_timeline", "render_composition")):
-                polls = [event for event in current_events[current_events.index(latest)+1:]
+                polls = [event for event in events[events.index(latest)+1:]
                          if event.name.endswith("get_render_progress") and event.result.get("status") == "succeeded"
                          and latest.result.get("render_id")
                          and event.result.get("render_id") == latest.result["render_id"]]
@@ -69,7 +74,7 @@ def gate_motion_delivery(request, studio, final=None) -> bool | None:
             if targets != {Path(result["input_path"]).resolve()}:
                 passed = False
                 reasons.append("The motion report must match the latest rendered or finished output. Multi-output motion delivery needs separate verified reports and remains incomplete here.")
-        artifacts = [event for event in current_events if event.name.endswith("get_render_progress")
+        artifacts = [event for event in events if event.name.endswith("get_render_progress")
                      and event.result.get("status") == "succeeded"]
         if artifacts and not work:
             current = artifacts[-1].result.get("output_path")

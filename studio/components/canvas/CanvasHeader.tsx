@@ -75,6 +75,14 @@ export function CanvasHeader({ navigationBusy, onBusyChange }: {
         execution.projectId === projectId &&
         ["queued", "running", "pending"].includes(execution.status.toLowerCase()),
     ).length;
+  // Jobs can replace one another without changing the queue count.
+  const balanceRefreshKey = JSON.stringify([
+    projectId,
+    nodes.map(({ id, data }) => [id, data.status, data.jobId, data.output?.versionId]),
+    executions.map((execution) => [execution.jobId, execution.status,
+      execution.toolEvents.map((event) => [event.id, event.status]),
+      execution.receipt?.actual_cents, execution.receipt?.balance_after_cents]),
+  ]);
   const hasSelection = selectedNodeIds.length > 0;
   const hasSequence = approvedSequence(nodes).length > 0;
 
@@ -281,7 +289,7 @@ export function CanvasHeader({ navigationBusy, onBusyChange }: {
             </div>
           ) : null}
         </div>
-        <AccountBalance refreshKey={queued} />
+        <AccountBalance refreshKey={balanceRefreshKey} />
         <ThemeToggle />
         {clerkConfigured ? (
           <SignOutButton redirectUrl="/">

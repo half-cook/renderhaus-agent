@@ -9,6 +9,7 @@ import tempfile
 import unittest
 import wave
 from unittest.mock import Mock, patch
+from PIL import features
 
 
 def sample_story() -> dict:
@@ -19,7 +20,7 @@ def sample_story() -> dict:
             "dramatization": True,
             "messages": [
                 {"from": "me", "text": "Are you coming?", "status": "read", "reaction": ""},
-                {"from": "them", "text": "On my way!", "status": "", "reaction": "❤️"},
+                {"from": "them", "text": "On my way!", "status": "", "reaction": "👍"},
             ],
         },
         "plan": {
@@ -48,6 +49,30 @@ class ChatStoryFrameTests(unittest.TestCase):
         from providers.remotion import chat_story_render
         return chat_story_render
 
+    def test_latin_frames_use_the_shared_font_without_raqm(self):
+        from providers.remotion.text import FONT_FILES
+        renderer = self.renderer()
+        self.assertEqual(renderer.TEXT_FONT, FONT_FILES['dejavu-sans'])
+        with patch.object(renderer.features, 'check_feature', return_value=False):
+            image = renderer.draw_chat_frame(sample_story(), 30)
+        self.assertEqual(image.size, (320, 568))
+
+    def test_rtl_text_requires_raqm_instead_of_rendering_unshaped(self):
+        from PIL import Image
+        renderer = self.renderer()
+        with patch.object(renderer.features, 'check_feature', return_value=False):
+            with self.assertRaisesRegex(ValueError, 'Right-to-left.*libraqm'):
+                renderer._text(Image.new('RGBA', (320, 80)), 'שלום', (4, 4), size=24, fill='#ffffff')
+
+    def test_joined_emoji_require_raqm_instead_of_rendering_different_glyphs(self):
+        from PIL import Image
+        renderer = self.renderer()
+        england = "🏴\U000e0067\U000e0062\U000e0065\U000e006e\U000e0067\U000e007f"
+        with patch.object(renderer.features, 'check_feature', return_value=False):
+            for text in ('❤️', '1️⃣', england):
+                with self.subTest(text=text), self.assertRaisesRegex(ValueError, 'Joined emoji.*libraqm'):
+                    renderer._text(Image.new('RGBA', (320, 80)), text, (4, 4), size=24, fill='#ffffff')
+
     def test_measured_text_width_refuses_clipping(self):
         renderer = self.renderer()
         story = sample_story()
@@ -59,7 +84,7 @@ class ChatStoryFrameTests(unittest.TestCase):
         renderer = self.renderer()
         story = sample_story()
         story['plan']['bubbles'][0]['lines'] = ['👩\u200d👩\u200d👩']
-        with self.assertRaisesRegex(ValueError, 'joined emoji'):
+        with self.assertRaisesRegex(ValueError, '[Jj]oined emoji'):
             renderer.draw_chat_frame(story, 30)
 
     def test_drip_reveal_sent_right_received_left(self):
@@ -130,6 +155,7 @@ class ChatStoryFrameTests(unittest.TestCase):
         self.assertNotEqual(before.crop((130, 140, 160, 160)).tobytes(),
                             after.crop((130, 140, 160, 160)).tobytes())
 
+    @unittest.skipUnless(features.check_feature('raqm'), 'Joined color emoji require Pillow libraqm shaping.')
     def test_keycaps_and_tagged_flags_use_complete_color_glyphs(self):
         from PIL import Image
         renderer = self.renderer()
@@ -157,7 +183,11 @@ class ChatStoryFrameTests(unittest.TestCase):
                     renderer.draw_chat_frame(story, 30)
         story["payload"]["messages"][0]["text"] = "שלום 😊"
         story["plan"]["bubbles"][0]["lines"] = ["שלום 😊"]
-        self.assertEqual(renderer.draw_chat_frame(story, 30).size, (320, 568))
+        if renderer.features.check_feature('raqm'):
+            self.assertEqual(renderer.draw_chat_frame(story, 30).size, (320, 568))
+        else:
+            with self.assertRaisesRegex(ValueError, 'Right-to-left.*libraqm'):
+                renderer.draw_chat_frame(story, 30)
 
     def test_header_uses_the_bounded_contact_font_in_the_plan(self):
         renderer = self.renderer()

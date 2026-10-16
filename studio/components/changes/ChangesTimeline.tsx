@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   TimelineHints, TimelineTrack, TransportBar, useTransport, type TimelineModel,
 } from "@/components/timeline/Timeline";
+import { useTimelinePlayback } from "@/components/timeline/useTimelinePlayback";
 import {
   cutClips, cutDurationMs, needYou, withChangesCut, type ChangeItem, type ChangesDocument, type Cut, type Take,
 } from "@/lib/rh/changes";
@@ -106,7 +107,7 @@ export function ChangesTimeline({ document, selectedN, monitorMode, onMonitorMod
   const [beforeHeld, setBeforeHeld] = useState(false);
   const [previewTakeId, setPreviewTakeId] = useState<string | null>(null);
   const [keepLongVoice, setKeepLongVoice] = useState(false);
-  const videoRef = useRef<HTMLVideoElement>(null);
+  const [previewAttempt, setPreviewAttempt] = useState(0);
   const proposedCut = useMemo(() => withChangesCut(document), [document]);
   const visibleMode = beforeHeld ? "current" : monitorMode;
   const cut = visibleMode === "current" ? document.currentCut : proposedCut;
@@ -121,21 +122,16 @@ export function ChangesTimeline({ document, selectedN, monitorMode, onMonitorMod
     move: (id, offset) => actions.reorder(moveClip(clips.map((clip) => clip.id), id, offset)),
   };
   const currentSlot = document.currentCut.slots.find((slot) => slot.slotId === transport.selectedId);
-  let monitorSlotId = transport.selectedId;
-  if (transport.playing) {
-    let start = 0;
-    for (const clip of clips) {
-      if (transport.playhead >= start && transport.playhead < start + clipLength(clip)) { monitorSlotId = clip.id; break; }
-      start += clipLength(clip);
-    }
-  }
-  const selectedSlot = cut.slots.find((slot) => slot.slotId === monitorSlotId);
+  const selectedSlot = cut.slots.find((slot) => slot.slotId === transport.selectedId);
   const previewTake = document.takes.find((take) => take.id === previewTakeId && take.slotId === transport.selectedId)
     ?? document.takes.find((take) => take.id === selectedSlot?.takeId);
   const selectedTakes = document.takes.filter((take) => take.slotId === transport.selectedId);
   const selectedTakeChange = document.changes.find((change) => change.slotId === transport.selectedId && change.kind === "take" && isPending(change));
   const videoUrl = previewTake?.mediaKind === "video" ? previewTake.mediaRef : undefined;
-  const sourceClock = selectedSlot ? Math.max(0, transport.playhead - transport.startOf(selectedSlot.slotId)) + selectedSlot.inMs / 1000 : 0;
+  const playback = useTimelinePlayback(clips, transport, {
+    sourceKey: `${previewTake?.id ?? ""}:${videoUrl ?? ""}:${previewAttempt}`,
+    active: Boolean(videoUrl), stopAtSourceEnd: Boolean(previewTakeId && previewTake?.id !== selectedSlot?.takeId),
+  });
   const voiceDuration = cut.voiceDurationMs;
   const voiceTooLong = cut.voiceRef && voiceDuration !== undefined && voiceDuration > cutDurationMs(cut);
   const quote = document.newTakeApproval;
@@ -164,14 +160,6 @@ export function ChangesTimeline({ document, selectedN, monitorMode, onMonitorMod
     return () => { window.removeEventListener("keydown", keyDown); window.removeEventListener("keyup", release); window.removeEventListener("blur", blur); };
   }, []);
 
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
-    if (Number.isFinite(video.duration) && Math.abs(video.currentTime - sourceClock) > 0.15) video.currentTime = Math.min(video.duration, sourceClock);
-    if (transport.playing) void video.play().catch(() => transport.setPlaying(false));
-    else video.pause();
-  }, [sourceClock, transport.playing, transport.setPlaying, videoUrl]);
-
   const selectChange = (n: number) => { setPreviewTakeId(null); onSelectChange(n); };
   const decoration = (clip: TimelineClip) => {
     const slot = cut.slots.find((candidate) => candidate.slotId === clip.id);
@@ -190,7 +178,10 @@ export function ChangesTimeline({ document, selectedN, monitorMode, onMonitorMod
     <div className="rh-ch-timeline-top">
       <section className="rh-ch-timeline-monitorwrap" aria-label="Cut monitor">
         <div className="rh-ch-timeline-monitor rh-ticks" data-mode={visibleMode}>
-          {videoUrl ? <video key={previewTake?.id} ref={videoRef} src={videoUrl} poster={previewTake?.posterUrl} muted playsInline preload="metadata" onLoadedMetadata={(event) => { event.currentTarget.currentTime = Math.min(event.currentTarget.duration, sourceClock); }} aria-label={`${transport.selected?.title ?? "Shot"}, Take ${previewTake?.n}`} />
+          {videoUrl ? <video key={`${previewTake?.id}:${videoUrl}:${previewAttempt}`} ref={playback.mediaProps.videoRef} src={videoUrl} poster={previewTake?.posterUrl} playsInline preload="metadata"
+            onLoadedMetadata={playback.mediaProps.onMetadata} onTimeUpdate={playback.mediaProps.onTimeUpdate}
+            onEnded={playback.mediaProps.onEnded} onError={playback.mediaProps.onError}
+            aria-label={`${transport.selected?.title ?? "Shot"}, Take ${previewTake?.n}`} />
             : previewTake?.posterUrl ? <img src={previewTake.posterUrl} alt={`${transport.selected?.title ?? "Shot"}, Take ${previewTake.n} preview`} />
               : <div className="rh-ch-timeline-no-preview">Select a shot with a preview.</div>}
           <span className="rh-ch-timeline-preview-label rh-mono">{previewTakeId && previewTake?.id !== selectedSlot?.takeId ? "Take preview" : visibleMode === "changes" ? "With changes" : "Current cut"}{previewTake ? ` · Take ${previewTake.n}` : ""}</span>
@@ -206,6 +197,8 @@ export function ChangesTimeline({ document, selectedN, monitorMode, onMonitorMod
           <button type="button" className="rh-linkbtn rh-small" aria-pressed={safeArea} onClick={() => setSafeArea((value) => !value)}>Safe area {safeArea ? "on" : "off"}</button>
         </div>
         {!videoUrl ? <p className="rh-ch-timeline-preview-note">Still preview. Playback is not available for this take.</p> : null}
+        {playback.error ? <p role="alert" className="rh-ch-timeline-preview-note">{playback.error} <button type="button" className="rh-btn rh-btn-sm" onClick={() => setPreviewAttempt((value) => value + 1)}>Reload preview</button></p> : null}
+        {playback.endedEarly ? <p role="status" className="rh-ch-timeline-preview-note">This take ended before the cut&apos;s out-point. Your cut is unchanged.</p> : null}
       </section>
       {reviewPanel}
     </div>

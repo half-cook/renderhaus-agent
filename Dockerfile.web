@@ -21,7 +21,7 @@ FROM ${UBUNTU} AS base
 ARG DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y -q --no-install-recommends ca-certificates curl xz-utils git bubblewrap sqlite3 jq \
     libx264-164 libx265-199 libvpx9 libopus0 libmp3lame0 libvorbis0a libvorbisenc2 libass9 libfreetype6 libfontconfig1 \
-    libfribidi0 libharfbuzz0b libwebp7 libwebpmux3 libdav1d7 libzimg2 libsoxr0 libssl3t64 fonts-dejavu-core \
+    libfribidi0 libharfbuzz0b libwebp7 libwebpmux3 libdav1d7 libzimg2 libsoxr0 libssl3t64 fonts-dejavu-core fonts-noto-color-emoji \
  && rm -rf /var/lib/apt/lists/*
 RUN NV=$(curl -fsSL https://nodejs.org/dist/latest-v22.x/SHASUMS256.txt | awk '/linux-arm64.tar.xz/{print $2}' | head -1) \
  && curl -fsSL "https://nodejs.org/dist/latest-v22.x/$NV" | tar -xJ -C /usr/local --strip-components=1

@@ -13,6 +13,7 @@ import { SceneList } from "./SceneList";
 import { StudioCanvas } from "./StudioCanvas";
 import { ToolRail } from "./ToolRail";
 import { UploadError } from "./UploadError";
+import { ManualRunApproval } from "./ManualRunApproval";
 import { TimelineDock } from "@/components/timeline/Timeline";
 import { TimelineView } from "@/components/timeline/TimelineView";
 
@@ -233,6 +234,7 @@ function Workspace() {
       </a>
       <CanvasHeader navigationBusy={agentBusy} onBusyChange={setAgentBusy} />
       <UploadError message={uploadError} onDismiss={dismissUploadError} progress={uploadProgress} onRetry={retryUpload ? () => void retryUpload() : null} />
+      <ManualRunApproval />
       <div className="canvas-surface" hidden={agentOpen || timelineOpen || compareN !== null}>
       <SceneList />
       <ToolRail
@@ -253,7 +255,7 @@ function Workspace() {
       </main>
       <NodeInspector />
       <AsciiPanel />
-      <TimelineDock />
+      <TimelineDock active={!agentOpen && !timelineOpen && compareN === null} />
       </div>
       {timelineOpen && !changesDocument && compareN === null ? <TimelineView /> : null}
       {changesDocument ? <ChangesWorkspace timeline={timelineOpen} /> : null}

@@ -1,5 +1,6 @@
 import asyncio
 import json
+import os
 import tempfile
 import unittest
 from pathlib import Path
@@ -9,6 +10,7 @@ from fastapi import HTTPException
 
 import server.studio as studio
 from agent.codex_harness import CodexRunLimitExceeded
+from server import run_billing
 from server.studio_state import StudioRepository
 
 
@@ -45,9 +47,9 @@ class StudioRecoveryTests(unittest.IsolatedAsyncioTestCase):
             "result": {"render_id": "render-1", "bucket_name": "bucket-1"}, **changes,
         })
 
-    async def run_job(self):
+    async def run_job(self, **kwargs):
         await studio._run_studio_agent_job(self.job, "Finish my video", [], self.conversation,
-                                          workspace_id="user:local", project_id="untitled", user_id="local")
+                                          workspace_id="user:local", project_id="untitled", user_id="local", **kwargs)
 
     async def test_empty_or_failed_checkpoint_does_not_offer_resume(self):
         self.repo.save_agent_checkpoint("user:local", self.conversation, self.job, [])
@@ -103,8 +105,35 @@ class StudioRecoveryTests(unittest.IsolatedAsyncioTestCase):
         self.job = self.create_job()
         with patch.object(studio, "run_studio_agent", side_effect=CodexRunLimitExceeded()) as runner:
             with self.assertLogs(studio.logger, level="ERROR"):
-                await self.run_job()
+                await self.run_job(delivery_continuation=True)
         self.assertEqual(runner.call_args.kwargs["prior_tool_events"][0].result["render_id"], "render-1")
+
+    async def test_historical_completed_qc_failure_can_resume_only_with_latest_active_recovery(self):
+        self.save_items()
+        for title in ("Motion carry QC failed", "Motion carry QC incomplete", "Logo animation QC incomplete"):
+            with self.subTest(title=title):
+                self.update("completed", result={"title": title, "summary": "A saved report is available.",
+                                                 "assets": [{"kind": "video"}]})
+                execution = self.execution()
+                self.assertEqual(execution["status"], "completed")
+                self.assertTrue(execution["can_resume"])
+                public = run_billing.public_execution(execution)
+                self.assertEqual(public["status"], "error")
+                self.assertTrue(public["can_resume"])
+                with patch.object(studio, "studio_agent", new_callable=AsyncMock,
+                                  return_value={"job_id": self.job}) as submit:
+                    await studio.resume_studio_agent_job(self.job, None)
+                    self.assertTrue(submit.call_args.args[0]._delivery_continuation)
+        self.repo.update_conversation("user:local", self.conversation, status="archived")
+        self.assertFalse(self.execution()["can_resume"])
+        self.assertFalse(run_billing.public_execution(self.execution())["can_resume"])
+        self.repo.update_conversation("user:local", self.conversation, status="active")
+        self.create_job()
+        self.assertFalse(self.execution()["can_resume"])
+
+    def test_historical_completed_qc_failure_without_recovery_cannot_resume(self):
+        self.update("completed", result={"title": "Motion carry QC failed"})
+        self.assertFalse(self.execution()["can_resume"])
 
     def test_only_latest_run_can_resume_and_history_can_supply_recovery(self):
         self.save_tool()
@@ -171,6 +200,38 @@ class StudioRecoveryTests(unittest.IsolatedAsyncioTestCase):
                 result = await studio.stop_studio_agent_job(self.job, None)
         self.assertEqual(result["error_type"], "UserStopped")
         self.assertTrue(result["can_resume"])
+
+    async def test_stop_parked_approval_releases_credit_and_resume_holds_a_fresh_cap(self):
+        self.repo.adjust_balance("local", 1000, "test_credit")
+        self.repo.hold_run("local", self.job, 125, conversation_id=self.conversation)
+        self.repo.charge_usage("local", 20, "generation", run_id=self.job, line_kind="media", line_label="Video clip")
+        self.repo.park_run_hold(self.job)
+        self.save_items()
+        self.update("awaiting_approval")
+        with patch.object(studio, "_AGENT_TASKS", set()):
+            result = await studio.stop_studio_agent_job(self.job, None)
+            repeated = await studio.stop_studio_agent_job(self.job, None)
+        self.assertEqual(result["error_type"], "UserStopped")
+        self.assertTrue(result["can_resume"])
+        self.assertEqual(self.repo.get_run_hold(self.job)["state"], "released")
+        self.assertEqual(result["receipt"]["actual_cents"], 20)
+        self.assertEqual(repeated["receipt"], result["receipt"])
+        self.assertEqual(self.repo.available_credit("local"), 980)
+
+        async def start_resumed(job_id, prompt, references, conversation_id, **kwargs):
+            run_billing.start_run(self.repo, "local", job_id, conversation_id)
+
+        with patch.object(studio, "agent_configured", return_value=True), \
+                patch.object(run_billing, "billing_applies", return_value=True), \
+                patch.object(studio, "_run_studio_agent_job", side_effect=start_resumed), \
+                patch.object(studio, "_AGENT_TASKS", set()), \
+                patch.dict(os.environ, {"ORCHESTRATION_BILLING_ENABLED": "true", "ORCHESTRATION_ESTIMATE_CENTS": "75"}):
+            resumed = await studio.resume_studio_agent_job(self.job, None)
+            await asyncio.gather(*list(studio._AGENT_TASKS))
+        hold = self.repo.get_run_hold(resumed["job_id"])
+        self.assertEqual((hold["held_cents"], hold["charged_cents"]), (125, 0))
+        self.assertEqual(self.repo.get_balance("local"), 980)
+        self.assertEqual(self.repo.get_run_receipt(self.job)["actual_cents"], 20)
 
 
 if __name__ == "__main__":

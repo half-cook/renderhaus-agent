@@ -506,11 +506,12 @@ class BetaBillingIntegrationTests(BetaFixture, unittest.IsolatedAsyncioTestCase)
 
     async def test_studio_invocation_debits_and_rejects_when_free_credit_exhausted_without_stripe(self):
         from fastapi import HTTPException
-        from server.studio import InvokeBody, invoke_tool
+        from server.studio import InvokeBody, invoke_tool, quote_tool
         body = InvokeBody(provider="seedream", tool="text_to_image", arguments={"prompt": "robot"}, project_id="beta-project")
         from server.billing_rates import GenerationCost
         with patch("server.studio.repository", self.repo), patch("server.studio.cost_for", return_value=GenerationCost(1000, 0)), \
-                patch("server.studio.dispatch", return_value={"status": "dry_run"}):
+                patch("server.studio.dispatch", return_value={"status": "queued", "job_id": "offline"}):
+            body.approval_token = (await quote_tool(body, SimpleNamespace(payload={"sub": "one"})))["approval_token"]
             await invoke_tool(body, SimpleNamespace(payload={"sub": "one"}))
             self.assertEqual(self.repo.get_balance("one"), 0)
             with self.assertRaises(HTTPException) as caught:
@@ -615,13 +616,14 @@ class BetaBillingIntegrationTests(BetaFixture, unittest.IsolatedAsyncioTestCase)
                 self.assertEqual(sum(row["delta"] for row in self.repo.list_ledger("one")), 1000)
 
     async def test_studio_no_work_results_refund_the_grant(self):
-        from server.studio import InvokeBody, invoke_tool
+        from server.studio import InvokeBody, invoke_tool, quote_tool
         from server.billing_rates import GenerationCost
         body = InvokeBody(provider="seedream", tool="text_to_image", arguments={"prompt": "robot"}, project_id="beta-project")
         for status in ("failed", "error", "blocked", "not_run"):
             with self.subTest(status=status), patch("server.studio.repository", self.repo), \
                     patch("server.studio.cost_for", return_value=GenerationCost(300, 0)), \
                     patch("server.studio.dispatch", return_value={"status": status, "reason": "No work performed."}):
+                body.approval_token = (await quote_tool(body, SimpleNamespace(payload={"sub": "one"})))["approval_token"]
                 result = await invoke_tool(body, SimpleNamespace(payload={"sub": "one"}))
                 self.assertEqual(result["result"]["status"], status)
                 self.assertEqual(result["assets"], [])

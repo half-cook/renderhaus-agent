@@ -3,7 +3,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 from fractions import Fraction
 import math
-from pathlib import Path
 import re
 import shutil
 import time
@@ -11,12 +10,13 @@ import time
 from providers.ffmpeg import delivery
 from providers.ffmpeg.commands import Command, THREADS, _ffmpeg_input, _input
 from providers.ffmpeg.sandbox import MAX_OUTPUT_BYTES, input_file, output_file, sha256_file
+from providers.remotion.text import FONT_FILES, _font_file
 
 
 FONTS = {
-    "dejavu_sans": ("DejaVu Sans", Path("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf")),
-    "dejavu_serif": ("DejaVu Serif", Path("/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf")),
-    "dejavu_mono": ("DejaVu Sans Mono", Path("/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf")),
+    "dejavu_sans": ("DejaVu Sans", FONT_FILES["dejavu-sans"]),
+    "dejavu_serif": ("DejaVu Serif", _font_file("DejaVuSerif.ttf")),
+    "dejavu_mono": ("DejaVu Sans Mono", _font_file("DejaVuSansMono.ttf")),
 }
 GRADE_PRESETS = {
     "none": (1, 1, 0, 0),
@@ -270,7 +270,7 @@ def _filters(directory, names):
         raise ValueError("Operation exceeded its hard timeout.")
     result = _bounded_run([binary, "-hide_banner", "-filters"], directory, remaining)
     delivery._complete(result)
-    available = set(re.findall(r"^\s*[TSC.]{3}\s+(\w+)\s", result.stdout.decode("utf-8", errors="replace"), re.MULTILINE))
+    available = set(re.findall(r"^\s*[TSC.]{2,3}\s+(\w+)\s", result.stdout.decode("utf-8", errors="replace"), re.MULTILINE))
     if result.returncode or not names <= available:
         raise ValueError("The installed local ffmpeg build lacks required finishing filters.")
 

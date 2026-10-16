@@ -79,7 +79,7 @@ class MotionHostTests(unittest.TestCase):
 
         fixtures = Path(__file__).parent / "fixtures" / "motion_carry"
         with tempfile.TemporaryDirectory() as root:
-            job = Path(root) / "job"
+            job = Path(root).resolve() / "job"
             job.mkdir()
             shutil.copyfile(fixtures / "carrying.mp4", job / "film.mp4")
             timeline = json.loads((fixtures / "manifest.json").read_text())["films"][0]["timeline"]
@@ -92,6 +92,32 @@ class MotionHostTests(unittest.TestCase):
                     result={"status": "succeeded", "output_path": str(job / "film.mp4")}))
                 self.event(context, report)
                 self.assertTrue(_validate_video_delivery(request, context, self.final()))
+                continued = request.model_copy(update={"job_id": "resumed", "delivery_continuation": True,
+                    "prior_tool_events": [event.public() for event in context.tool_events]})
+                restored = _context_from_request(continued)
+                self.assertTrue(_validate_video_delivery(continued, restored, self.final()))
+                fresh = continued.model_copy(update={"delivery_continuation": False})
+                self.assertFalse(_validate_video_delivery(fresh, _context_from_request(fresh), self.final()))
+                for status in ("failed", "cancelled", "running"):
+                    with self.subTest(event_status=status):
+                        restored.tool_events[-1].status = status
+                        invalid = continued.model_copy(update={
+                            "prior_tool_events": [event.public() for event in restored.tool_events]})
+                        self.assertFalse(_validate_video_delivery(invalid, _context_from_request(invalid), self.final()))
+                restored.tool_events[-1].status = "passed"
+                original = (job / "film.mp4").read_bytes()
+                (job / "film.mp4").write_bytes(b"changed output")
+                self.assertFalse(_validate_video_delivery(continued, restored, self.final()))
+                (job / "film.mp4").write_bytes(original)
+                saved = Path(report["report_path"])
+                original_report = saved.read_bytes()
+                saved.write_text("{}")
+                self.assertFalse(_validate_video_delivery(continued, restored, self.final()))
+                saved.write_bytes(original_report)
+                restored.record_event(StudioToolEvent(id="new-prelimit", name="Ffmpeg___ffmpeg_tool",
+                    label="Finishing", status="succeeded", summary="Changed output",
+                    arguments={"op": "prelimit_mux_aac"}, result={"status": "succeeded"}))
+                self.assertFalse(_validate_video_delivery(continued, restored, self.final()))
                 (job / "other.mp4").write_bytes(b"different output")
                 context.tool_events[0].result["output_path"] = str(job / "other.mp4")
                 self.assertFalse(_validate_video_delivery(request, context, self.final()))
@@ -132,7 +158,7 @@ class MotionDeepAgentTests(unittest.IsolatedAsyncioTestCase):
         request = StudioAgentRequest(prompt="Check why my motion video feels like PowerPoint", job_id="job")
         context = _context_from_request(request)
         with tempfile.TemporaryDirectory() as root:
-            job = Path(root)/"job"
+            job = Path(root).resolve()/"job"
             job.mkdir()
             shutil.copyfile(fixtures / "slideshow.mp4", job / "film.mp4")
             with patch.dict(os.environ, {"RENDERHAUS_MEDIA_DIR": root, "MOTION_CARRY_QC_DRY_RUN": "false"}):
@@ -157,7 +183,7 @@ class MotionDeepAgentTests(unittest.IsolatedAsyncioTestCase):
             status="queued", summary="Owned render", result={"status": "queued", "render_id": render_id,
                                                              "bucket_name": "local", "output_key": ""}))
         with tempfile.TemporaryDirectory() as root:
-            source = Path(root)/"remotion"/"local"/render_id/"film.mp4"
+            source = Path(root).resolve()/"remotion"/"local"/render_id/"film.mp4"
             source.parent.mkdir(parents=True)
             shutil.copyfile(Path(__file__).parent/"fixtures"/"motion_carry"/"carrying.mp4", source)
             gateway = Gateway([Tool(name="Remotion___get_render_progress", inputSchema={"type": "object"})])
@@ -170,7 +196,7 @@ class MotionDeepAgentTests(unittest.IsolatedAsyncioTestCase):
                         "tool_name": "Remotion___get_render_progress", "arguments": {
                             "render_id": render_id, 'bucket_name': 'local'}, "call_id": "poll"})
                 gateway.call_tool.assert_not_called()
-                self.assertEqual(Path(result["output_path"]).parent, Path(root)/"job")
+                self.assertEqual(Path(result["output_path"]).parent, Path(root).resolve()/"job")
                 self.assertEqual(Path(result["output_path"]).read_bytes(), source.read_bytes())
                 self.assertEqual(result["motion_carry_timeline"], timeline)
 

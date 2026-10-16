@@ -163,11 +163,7 @@ def _ensure_s3_bucket() -> None:
         client.head_bucket(Bucket=bucket)
     except ClientError as exc:
         code = exc.response.get("Error", {}).get("Code", "")
-        if code not in {"404", "NoSuchBucket", "NotFound", "403"}:
-            # 403 can mean exists but no Head permission; try create only on 404.
-            if code == "403":
-                logger.warning("Cannot head S3 bucket %s (403); assuming it exists", bucket)
-                return
+        if code not in {"404", "NoSuchBucket", "NotFound"}:
             raise
         logger.info("Creating S3 bucket %s in %s", bucket, region)
         if region == "us-east-1":
@@ -181,6 +177,8 @@ def _ensure_s3_bucket() -> None:
     origins = [
         "http://127.0.0.1:8000",
         "http://localhost:8000",
+        "http://127.0.0.1:5174",
+        "http://localhost:5174",
     ]
     app_url = (os.getenv("APP_URL") or "").rstrip("/")
     if app_url and app_url not in origins:

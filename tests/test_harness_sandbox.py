@@ -1,8 +1,11 @@
 from __future__ import annotations
 
 import importlib
+import sys
 
 import pytest
+
+linux_sandbox = pytest.mark.skipif(sys.platform != 'linux', reason='Requires Linux bubblewrap isolation; other workers fail closed.')
 
 
 def sandbox(directory, **kwargs):
@@ -15,6 +18,7 @@ def test_sandbox_exists():
     assert 'execute' in runner.FS_TOOLS
 
 
+@linux_sandbox
 def test_shell_persists_only_job_files_and_scrubs_secrets(tmp_path, monkeypatch):
     monkeypatch.setenv('FAL_KEY', 'canary-not-a-real-key')
     monkeypatch.setenv('ANTHROPIC_API_KEY', 'canary-not-a-real-key')
@@ -25,6 +29,7 @@ def test_shell_persists_only_job_files_and_scrubs_secrets(tmp_path, monkeypatch)
     assert sandbox(tmp_path).execute('cat result.txt').output.strip() == 'hello'
 
 
+@linux_sandbox
 def test_shell_cannot_read_host_or_connect(tmp_path):
     outside = tmp_path.parent / 'private-test.txt'
     outside.write_text('outside-canary')
@@ -34,6 +39,7 @@ def test_shell_cannot_read_host_or_connect(tmp_path):
     assert not (tmp_path / 'private-test.txt').exists()
 
 
+@linux_sandbox
 def test_symlink_and_traversal_cannot_escape(tmp_path):
     outside = tmp_path.parent / 'untouched.txt'
     outside.write_text('keep')
@@ -43,6 +49,7 @@ def test_symlink_and_traversal_cannot_escape(tmp_path):
     assert outside.read_text() == 'keep'
 
 
+@linux_sandbox
 def test_wall_and_output_are_bounded(tmp_path):
     result = sandbox(tmp_path, wall_seconds=1, output_bytes=1024).execute('yes output')
     assert len(result.output.encode()) < 1400
@@ -50,12 +57,14 @@ def test_wall_and_output_are_bounded(tmp_path):
     assert result.exit_code != 0
 
 
+@linux_sandbox
 def test_disk_is_bounded(tmp_path):
     result = sandbox(tmp_path, disk_bytes=2 * 1024 * 1024).execute('dd if=/dev/zero of=huge.bin bs=1M count=8')
     assert result.exit_code != 0
     assert sum(p.stat().st_size for p in tmp_path.rglob('*') if p.is_file()) <= 2 * 1024 * 1024
 
 
+@linux_sandbox
 def test_ffmpeg_and_ffprobe_run_without_network(tmp_path):
     result = sandbox(tmp_path).execute('ffmpeg -v error -f lavfi -i color=c=blue:s=32x32:d=0.2 -c:v libx264 tiny.mp4 && ffprobe -v error -show_entries stream=width,height -of json tiny.mp4')
     assert result.exit_code == 0, result.output
@@ -71,6 +80,7 @@ def test_missing_isolator_fails_closed(tmp_path, monkeypatch):
     assert 'unsafe' not in result.output
 
 
+@linux_sandbox
 def test_sandbox_does_not_mount_repository_secrets(tmp_path):
     result = sandbox(tmp_path).execute('test ! -e /workspace/rh-agent-harness-v2/.env && test ! -e /home/box/.aws && test ! -e /proc/1/root/workspace')
     assert result.exit_code == 0, result.output
@@ -90,6 +100,7 @@ def test_staging_enforces_total_quota_and_refuses_links(tmp_path):
 
 
 @pytest.mark.parametrize('path', ['/escape', '/dev/escape', '/dev/shm/escape'])
+@linux_sandbox
 def test_only_work_is_writable_and_other_mounts_cannot_bypass_quota(tmp_path, path):
     result = sandbox(tmp_path, disk_bytes=2 * 1024**2).execute(f'dd if=/dev/zero of={path} bs=1M count=1 status=none')
     assert result.exit_code != 0, result.output

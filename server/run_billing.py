@@ -10,6 +10,7 @@ Voice consent notices name the upload destination as required for recorded conse
 from __future__ import annotations
 
 import logging
+import re
 from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import replace
@@ -55,7 +56,9 @@ def start_run(
             # pause would otherwise stop every later turn in this conversation before any work.
             repo.set_run_pause(run_id, None)
             hold = repo.get_run_hold(run_id)
-        return hold
+            return hold
+        # A waiting card parked the hold at spent/reserved work; a new turn needs its own cap.
+        return rehold_turn(repo, user_id, run_id) or hold
     estimate = autonomous_media_cents + (rb.orchestration_estimate_cents() if rb.orchestration_billing_enabled() else 0)
     cap = rb.default_cap_cents(estimate) if estimate else 0
     if cap and rb.start_cap_floor_cents() > cap:
@@ -69,6 +72,8 @@ def end_run(repo: Any, run_id: str, *, execution_status: str, error_type: str | 
     hold = repo.get_run_hold(run_id)
     if hold is None or hold["state"] != "held":
         return None
+    if error_type == "UserStopped":
+        return repo.release_run(run_id, status="stopped")
     if execution_status == "awaiting_approval" and hold["status"] != "paused_cap":
         repo.park_run_hold(run_id)
         return None
@@ -77,8 +82,6 @@ def end_run(repo: Any, run_id: str, *, execution_status: str, error_type: str | 
         return None
     if execution_status == "completed":
         status = "done"
-    elif error_type == "UserStopped":
-        status = "stopped"
     else:
         status = "failed"
     return repo.release_run(run_id, status=status)
@@ -508,6 +511,10 @@ class RunMeter:
         token = _MEDIA_WORK.set((self.run_id, "media:" + call_id))
         try:
             yield
+            if price_cents == 0:
+                # Free native dispatch skips provider charging but still completes its reservation.
+                self.repo.charge_usage(self.user_id, 0, "generation", run_id=self.run_id,
+                                       _work_id="media:" + call_id, _work_usage={"status": "completed"})
         finally:
             _MEDIA_WORK.reset(token)
             self.complete_media(call_id)
@@ -611,12 +618,23 @@ _TEXT_KEYS = frozenset({"error", "reason", "message", "note", "detail", "summary
 # Agent-written prose shown to the customer: scrubbed sentence-by-sentence instead of replaced.
 _PROSE_KEYS = frozenset({"title", "summary", "markdown", "text", "content", "response", "final_response", "message", "body"})
 _PATH_KEYS = frozenset({"output_path", "local_path", "path", "file_path", "video_path", "audio_path", "image_path"})
+_SELF_REPORTED_INCOMPLETE_RE = re.compile(
+    r"^\W*(?:incomplete|blocked|failed|not delivered|could not|motion carry QC (?:failed|incomplete)|logo animation QC incomplete)\b|\bblocked at\b", re.I)
+
+
+def self_reported_incomplete(result: Any) -> bool:
+    return isinstance(result, dict) and any(
+        _SELF_REPORTED_INCOMPLETE_RE.search(str(result.get(key) or "")) for key in ("title", "summary")
+    )
 
 
 def _clean_result(value: Any) -> Any:
     if isinstance(value, dict):
         out = {}
         for key, item in value.items():
+            if key == "tool_events" and isinstance(item, list):
+                out[key] = [_public_tool_event(event) if isinstance(event, dict) else _clean_result(event) for event in item]
+                continue
             if key in _PATH_KEYS and isinstance(item, str):
                 continue
             if isinstance(item, str) and item and key in _PROSE_KEYS:
@@ -633,6 +651,22 @@ def _clean_result(value: Any) -> Any:
     return value
 
 
+def _public_tool_event(call: dict[str, Any]) -> dict[str, Any]:
+    label, detail = rb.work_label(str(call.get("name") or ""), call.get("arguments"))
+    status = str(call.get("status") or "").lower()
+    if status in {"failed", "error"}:
+        fallback = rb.NEUTRAL_ERROR
+    else:
+        suffix = {"queued": "queued.", "running": "in progress.", "awaiting_approval": "needs approval.",
+                  "succeeded": "finished.", "success": "finished.", "completed": "finished.",
+                  "completed_partial": "partially finished.", "cancelled": "stopped.", "canceled": "stopped.",
+                  "declined": "not started.", "rejected": "not started."}.get(status, "updated.")
+        fallback = f"{label} {suffix}"
+    return {**_clean_result(call), "label": f"{label} · {detail}" if detail else label, "provider": None,
+            "summary": rb.neutral_error(call.get("summary"), fallback),
+            "result": _clean_result(call.get("result") or {})}
+
+
 def public_execution(execution: dict[str, Any] | None) -> dict[str, Any] | None:
     """Client view of an execution: tool labels describe the work, vendor fields and vendor/fee text are removed.
 
@@ -641,15 +675,13 @@ def public_execution(execution: dict[str, Any] | None) -> dict[str, Any] | None:
     if execution is None:
         return None
     cleaned = dict(execution)
-    calls = []
-    for call in execution.get("tool_calls") or []:
-        label, detail = rb.work_label(str(call.get("name") or ""), call.get("arguments"))
-        shown = f"{label} · {detail}" if detail else label
-        calls.append({**call, "label": shown, "provider": None,
-                      "summary": rb.neutral_error(call.get("summary"), f"{label} finished."),
-                      "result": _clean_result(call.get("result") or {})})
+    # Historical runs may have saved useful artifacts while explicitly reporting incomplete.
+    if execution.get("status") == "completed" and self_reported_incomplete(execution.get("result")):
+        cleaned.update(status="error", error_type="DeliverableIncomplete",
+                       message=str(execution["result"].get("summary") or "Incomplete · progress saved."))
+        cleaned["result"] = {**execution["result"], "partial": True}
     if "tool_calls" in cleaned:
-        cleaned["tool_calls"] = calls
+        cleaned["tool_calls"] = [_public_tool_event(call) for call in execution.get("tool_calls") or []]
     if "events" in cleaned:
         events = []
         for event in execution.get("events") or []:

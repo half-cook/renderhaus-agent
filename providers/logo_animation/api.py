@@ -134,9 +134,10 @@ def _inspect_final_frame(directory: Path, source: Path, params: dict, *, origina
     compressed = source.suffix.lower() == '.mp4'
     actual_motion = {'passed': False, 'failures': ['Observed motion requires the rendered MP4.']}
     if compressed:
-        if not shutil.which('ffmpeg') or not shutil.which('ffprobe'):
+        encoder, prober = shutil.which('ffmpeg'), shutil.which('ffprobe')
+        if not encoder or not prober:
             raise ValueError('Final-frame MP4 verification requires the local encoder and probe.')
-        probe = _bounded_run(['ffprobe', '-v', 'error', '-protocol_whitelist', 'file,pipe',
+        probe = _bounded_run([prober, '-v', 'error', '-protocol_whitelist', 'file,pipe',
             '-f', 'mov', '-show_streams', '-of', 'json', str(source)], directory, 15)
         if probe.returncode or probe.stdout_truncated:
             raise ValueError('Final-frame media probe failed.')
@@ -151,7 +152,7 @@ def _inspect_final_frame(directory: Path, source: Path, params: dict, *, origina
         if abs(duration-template['duration_seconds']) > .1:
             raise ValueError('Final-frame output duration differs from the approved motion specification.')
         target = source.parent / ('logo-final-' + uuid.uuid4().hex + '.png')
-        decoded = _bounded_run(['ffmpeg', '-v', 'error', '-nostdin', '-y', '-protocol_whitelist', 'file,pipe',
+        decoded = _bounded_run([encoder, '-v', 'error', '-nostdin', '-y', '-protocol_whitelist', 'file,pipe',
             '-f', 'mov', '-i', str(source), '-an', '-update', '1', str(target)], directory, 30)
         if decoded.returncode or not target.is_file():
             raise ValueError('Final-frame decode failed.')
@@ -170,7 +171,7 @@ def _inspect_final_frame(directory: Path, source: Path, params: dict, *, origina
         if not 12 <= fps <= 60 or not 1 <= frames <= 180:
             raise ValueError('Observed motion requires 12..60 fps and at most 180 frames.')
         thumb_size = 40
-        decoded = _bounded_run(['ffmpeg', '-v', 'error', '-nostdin', '-protocol_whitelist', 'file,pipe',
+        decoded = _bounded_run([encoder, '-v', 'error', '-nostdin', '-protocol_whitelist', 'file,pipe',
             '-f', 'mov', '-i', str(source), '-vf', f'scale={thumb_size}:{thumb_size}', '-an', '-f', 'rawvideo',
             '-pix_fmt', 'rgb24', 'pipe:1'], directory, 30)
         frame_bytes = thumb_size*thumb_size*3

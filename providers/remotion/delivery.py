@@ -258,7 +258,7 @@ def _finish(job: Path, entry: dict, preset_name: str, args: dict) -> dict:
                     and measured["true_peak_db"] + (settings["I"] - measured["integrated_lufs"]) > settings["TP"]:
                 # Linear gain would breach the true-peak ceiling: limit first, then re-measure.
                 limited = _operation(job, "prelimit_mux_aac", current, {
-                    # Overshoot by 1.5 dB so loudnorm only ever turns it down (always linear-feasible).
+                    # Extra gain compensates for limiting; the requested LRA can still require dynamic mode.
                     "gain_db": max(-30, min(30, round(settings["I"] - measured["integrated_lufs"] + 1.5, 2))),
                     "limit_db": max(-12, min(-1, settings["TP"] - 1.0)), "bitrate_kbps": bitrate})
                 current = Path(limited["outputs"][0]["path"])
@@ -280,9 +280,28 @@ def _finish(job: Path, entry: dict, preset_name: str, args: dict) -> dict:
             current = Path(muxed["outputs"][0]["path"])
             temporary_outputs.append(current)
             after = _operation(job, "measure_loudness", current, settings)["metrics"]
+            correction = None
+            if duration >= 3 and (abs(after["integrated_lufs"] - settings["I"]) > tolerance
+                                 or after["true_peak_db"] > settings["TP"]):
+                # Short dynamic passes can miss after AAC: try one measured correction, never a retry loop.
+                gain = settings["I"] - after["integrated_lufs"]
+                limit = max(-12, min(-1, settings["TP"] - .5))
+                if gain > 0 and after["true_peak_db"] + gain > limit:
+                    gain += 1.5  # The existing prelimit compensation for gain consumed by peak limiting.
+                params = {"gain_db": max(-30, min(30, round(gain, 2))), "limit_db": limit,
+                          "bitrate_kbps": bitrate}
+                candidate = _operation(job, "prelimit_mux_aac", current, params)
+                candidate_path = Path(candidate["outputs"][0]["path"])
+                temporary_outputs.append(candidate_path)
+                corrected = _operation(job, "measure_loudness", candidate_path, settings)["metrics"]
+                accepted = (abs(corrected["integrated_lufs"] - settings["I"]) <= tolerance
+                            and corrected["true_peak_db"] <= settings["TP"])
+                correction = {**params, "before": after, "after": corrected, "accepted": accepted}
+                if accepted:
+                    current, after = candidate_path, corrected
             loudness = {"before": measured, "after": after, "target": settings,
                         "action": "none" if within else muxed["metrics"].get("normalization_type", "unknown"),
-                        "dynamic_fallback": muxed["metrics"].get("dynamic_fallback", False)}
+                        "dynamic_fallback": muxed["metrics"].get("dynamic_fallback", False), "correction": correction}
         else:
             muxed = _operation(job, "mux_aac", current, {"bitrate_kbps": bitrate})
             current = Path(muxed["outputs"][0]["path"])

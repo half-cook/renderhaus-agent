@@ -123,6 +123,29 @@ test("an expired saved session starts a fresh upload", async () => {
   assert.equal(server.calls.filter(([u]) => u.endsWith("/create")).length, 1);
 });
 
+test("a lost completion response recovers the saved asset without uploading again", async () => {
+  const storage = memoryStorage();
+  const f = file("take.mp4", 9 * MB);
+  storage.setItem(resumeKey(f, "p"), "saved-token");
+  const asset = { asset_id: "saved", version_id: "saved-version", kind: "video" };
+  const calls = [];
+  const progress = [];
+  const result = await directUpload(f, "p", {
+    storage,
+    api: async (url) => {
+      calls.push(url);
+      return new Response(JSON.stringify({ completed_asset: asset }));
+    },
+    put: async () => assert.fail("Completed file must not be uploaded again"),
+    onProgress: (uploaded, total) => progress.push([uploaded, total]),
+  });
+  assert.equal(result.version_id, "saved-version");
+  assert.equal(calls.length, 1);
+  assert.ok(calls[0].endsWith("/status"));
+  assert.deepEqual(progress, [[f.size, f.size]]);
+  assert.equal(storage.map.size, 0);
+});
+
 test("transient part failure retries without failing the upload", async () => {
   const server = fakeServer();
   let first = true;

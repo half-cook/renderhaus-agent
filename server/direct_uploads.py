@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import asyncio
 import base64
+import fcntl
 import hashlib
 import hmac
 import json
@@ -34,6 +35,7 @@ from pydantic import BaseModel, Field
 
 from server import assets
 from server.auth import AuthUser, current_user_id, current_workspace_id
+from server.uploads import validate_uploaded_media
 
 router = APIRouter(prefix="/api/studio/uploads/direct", tags=["studio-uploads"])
 
@@ -248,12 +250,79 @@ def _expected_part_size(session: dict[str, Any], number: int) -> int:
     return session["size"] - session["part"] * (part_count - 1)
 
 
+def _upload_asset_id(session: dict[str, Any]) -> str:
+    identity = json.dumps([session[k] for k in ("ws", "uid", "pid", "key", "uploadId")])
+    return "ingest_" + hashlib.sha256(identity.encode()).hexdigest()
+
+
+def _completed_asset(session: dict[str, Any]):
+    repository = _repository()
+    reference = repository.get_first_asset_version(session["ws"], _upload_asset_id(session))
+    if reference is not None and reference.size_bytes == session["size"]:
+        try:
+            repository.version_path(session["ws"], reference.version_id)
+        except (KeyError, FileNotFoundError, ValueError):
+            return None
+        return reference
+    return None
+
+
+def _register_completed_upload(session: dict[str, Any]) -> dict[str, Any]:
+    repository = _repository()
+    asset_id = _upload_asset_id(session)
+    lock_path = repository.media_root / ".direct-uploads" / f"{asset_id}.lock"
+    lock_path.parent.mkdir(parents=True, exist_ok=True)
+    # shortcut: locks share the current local SQLite/media store; use a shared lock with remote storage.
+    with lock_path.open("a") as handle:
+        fcntl.flock(handle, fcntl.LOCK_EX)
+        if reference := _completed_asset(session):
+            return reference.public()
+        bucket = ingest_bucket()
+        try:
+            head = _s3().head_object(Bucket=bucket, Key=session["key"])
+        except ClientError as exc:
+            if exc.response.get("Error", {}).get("Code") in {"NoSuchKey", "404", "NotFound"}:
+                raise HTTPException(status_code=410, detail="This upload expired. Please start it again.") from exc
+            raise HTTPException(status_code=502, detail="Upload status is unavailable. Please try again.") from exc
+        if int(head["ContentLength"]) != int(session["size"]):
+            raise HTTPException(status_code=422, detail="The uploaded file is incomplete. Please start it again.")
+        try:
+            with tempfile.TemporaryDirectory(prefix="renderhaus-direct-") as directory:
+                local = Path(directory) / f"original{Path(session['name']).suffix.lower()}"
+                _s3().download_file(bucket, session["key"], str(local))
+                validate_uploaded_media(local, filename=session["name"], kind=session["kind"])
+                reference = repository.register_file(
+                    workspace_id=session["ws"],
+                    project_id=session["pid"],
+                    user_id=session["uid"],
+                    path=local,
+                    filename=session["name"],
+                    kind=session["kind"],
+                    asset_id=asset_id,
+                )
+        except HTTPException:
+            raise
+        except KeyError as exc:
+            raise HTTPException(status_code=404, detail="Project not found.") from exc
+        except Exception as exc:  # Registration can be retried against the completed object.
+            raise HTTPException(status_code=502, detail="Upload could not be saved. Please try again.") from exc
+        return reference.public()
+
+
 @router.post("/status")
 async def upload_status(body: TokenBody, auth: AuthUser) -> dict[str, Any]:
     """Parts S3 already holds. The browser resumes after the last of these."""
     _require_enabled()
     session = _verify(body.token, workspace_id=current_workspace_id(auth), user_id=current_user_id(auth))
-    parts = [p for p in await _list_parts(session) if p["size"] == _expected_part_size(session, p["part_number"])]
+    if reference := await asyncio.to_thread(_completed_asset, session):
+        return {"completed_asset": reference.public()}
+    try:
+        stored = await _list_parts(session)
+    except HTTPException as exc:
+        if exc.status_code != 410:
+            raise
+        return {"completed_asset": await asyncio.to_thread(_register_completed_upload, session)}
+    parts = [p for p in stored if p["size"] == _expected_part_size(session, p["part_number"])]
     return {
         "part_size": session["part"],
         "part_count": math.ceil(session["size"] / session["part"]),
@@ -268,9 +337,21 @@ async def complete_upload(body: CompleteBody, auth: AuthUser) -> dict[str, Any]:
     workspace_id = current_workspace_id(auth)
     user_id = current_user_id(auth)
     session = _verify(body.token, workspace_id=workspace_id, user_id=user_id)
+    if reference := await asyncio.to_thread(_completed_asset, session):
+        return reference.public()
     part_count = math.ceil(session["size"] / session["part"])
     # S3's own part list is the source of truth; the browser's ETags are only a hint.
-    stored = {p["part_number"]: p for p in await _list_parts(session)}
+    try:
+        listed = await _list_parts(session)
+    except HTTPException as exc:
+        if exc.status_code != 410:
+            raise
+        return await asyncio.to_thread(_register_completed_upload, session)
+    stored = {
+        p["part_number"]: p
+        for p in listed
+        if p["size"] == _expected_part_size(session, p["part_number"])
+    }
     missing = [n for n in range(1, part_count + 1) if n not in stored]
     if missing:
         raise HTTPException(status_code=409, detail={"message": "Some parts are missing.", "missing_parts": missing[:100]})
@@ -283,24 +364,10 @@ async def complete_upload(body: CompleteBody, auth: AuthUser) -> dict[str, Any]:
             UploadId=session["uploadId"],
             MultipartUpload={"Parts": [{"PartNumber": n, "ETag": stored[n]["etag"]} for n in range(1, part_count + 1)]},
         )
-        head = await asyncio.to_thread(_s3().head_object, Bucket=bucket, Key=session["key"])
     except ClientError as exc:
-        raise HTTPException(status_code=502, detail="Upload could not be finished. Please try again.") from exc
-    if int(head["ContentLength"]) != int(session["size"]):
-        raise HTTPException(status_code=422, detail="The uploaded file is incomplete. Please start it again.")
-    with tempfile.TemporaryDirectory(prefix="renderhaus-direct-") as directory:
-        local = Path(directory) / f"original{Path(session['name']).suffix.lower()}"
-        await asyncio.to_thread(_s3().download_file, bucket, session["key"], str(local))
-        reference = await asyncio.to_thread(
-            _repository().register_file,
-            workspace_id=workspace_id,
-            project_id=session["pid"],
-            user_id=user_id,
-            path=local,
-            filename=session["name"],
-            kind=session["kind"],
-        )
-    return reference.public()
+        if exc.response.get("Error", {}).get("Code") not in {"NoSuchUpload", "404"}:
+            raise HTTPException(status_code=502, detail="Upload could not be finished. Please try again.") from exc
+    return await asyncio.to_thread(_register_completed_upload, session)
 
 
 @router.post("/abort")

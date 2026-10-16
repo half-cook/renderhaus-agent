@@ -15,6 +15,66 @@ from PIL import Image, ImageChops
 from providers.remotion import api, local
 
 
+class FontDiscoveryTests(unittest.TestCase):
+    def test_existing_linux_font_path_stays_preferred(self) -> None:
+        from providers.remotion.text import _font_file
+        with patch('providers.remotion.text.Path.is_file', return_value=True), patch(
+            'providers.remotion.text.ImageFont.truetype'
+        ) as native_lookup:
+            self.assertEqual(_font_file('DejaVuSans.ttf'), Path('/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf'))
+        native_lookup.assert_not_called()
+
+    def test_missing_linux_path_uses_native_exact_filename_lookup(self) -> None:
+        from providers.remotion.text import _font_file
+        font = unittest.mock.Mock(path='/Users/local/Library/Fonts/DejaVuSans.ttf')
+        with patch('providers.remotion.text.Path.is_file', return_value=False), patch(
+            'providers.remotion.text.ImageFont.truetype', return_value=font
+        ) as native_lookup:
+            self.assertEqual(_font_file('DejaVuSans.ttf'), Path(font.path))
+        native_lookup.assert_called_once_with('DejaVuSans.ttf', 16)
+
+    def test_unavailable_exact_font_keeps_explicit_missing_font_validation(self) -> None:
+        from providers.remotion.text import _font_file, font_path
+        with patch('providers.remotion.text.Path.is_file', return_value=False), patch(
+            'providers.remotion.text.ImageFont.truetype', side_effect=OSError('font missing')
+        ):
+            path = _font_file('DejaVuSans.ttf')
+            with patch.dict('providers.remotion.text.FONT_FILES', {'dejavu-sans': path}):
+                with self.assertRaisesRegex(ValueError, 'unavailable on this render worker'):
+                    font_path({'fontFamily': 'dejavu-sans'})
+
+    def test_bitmap_emoji_lookup_keeps_exact_filename_and_fixed_size(self) -> None:
+        from providers.remotion.text import _font_file
+        font = unittest.mock.Mock(path='/Users/local/Library/Fonts/NotoColorEmoji.ttf')
+        with patch('providers.remotion.text.Path.is_file', return_value=False), patch(
+            'providers.remotion.text.ImageFont.truetype', return_value=font
+        ) as native_lookup:
+            self.assertEqual(_font_file('/usr/share/fonts/truetype/noto/NotoColorEmoji.ttf', 109), Path(font.path))
+        native_lookup.assert_called_once_with('NotoColorEmoji.ttf', 109)
+
+
+class LocalSourceRootTests(unittest.TestCase):
+    def test_authorized_root_alias_works_but_symlink_escape_is_rejected(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            media = root / 'media'
+            media.mkdir()
+            source = media / 'clip.mp4'
+            source.write_bytes(b'media')
+            alias = root / 'alias'
+            alias.symlink_to(media, target_is_directory=True)
+            resolved = local._source(str(alias / source.name), directory=root, index=1,
+                                     media_roots=(alias,), source_root=alias)
+            self.assertEqual(resolved, source.resolve())
+            outside = root / 'outside.mp4'
+            outside.write_bytes(b'outside')
+            escape = media / 'escape.mp4'
+            escape.symlink_to(outside)
+            with self.assertRaisesRegex(ValueError, 'inside Renderhaus media roots'):
+                local._source(str(escape), directory=root, index=1,
+                              media_roots=(alias,), source_root=alias)
+
+
 def props_for(source: Path, *, text: str | None = None) -> dict:
     items = [{'id': 'base', 'type': 'clip', 'assetId': 'master', 'start': 0,
               'duration': 1, 'fit': 'cover', 'volume': 0}]
@@ -36,6 +96,30 @@ def props_for(source: Path, *, text: str | None = None) -> dict:
 
 
 class OverlayContractTests(unittest.TestCase):
+    def test_latin_overlay_does_not_require_optional_text_shaping_filter(self) -> None:
+        with tempfile.TemporaryDirectory() as directory, patch.object(
+            local, '_supports_text_shaping', side_effect=AssertionError('Latin needs no capability probe')
+        ):
+            chain, _ = local._text_layer({'text': 'Sale', 'duration': 1, 'start': 0},
+                Path(directory), 1, width=320, height=180, frame_rate='16/1')
+        self.assertIn('drawtext=', chain)
+        self.assertNotIn('text_shaping=', chain)
+
+    def test_rtl_overlay_requires_worker_shaping_and_uses_supported_default(self) -> None:
+        with tempfile.TemporaryDirectory() as directory, patch.object(
+            local, '_supports_text_shaping', return_value=False
+        ):
+            with self.assertRaisesRegex(ValueError, 'libfribidi text shaping enabled'):
+                local._text_layer({'text': 'اشتر الآن', 'duration': 1, 'start': 0},
+                    Path(directory), 1, width=320, height=180, frame_rate='16/1')
+        with tempfile.TemporaryDirectory() as directory, patch.object(
+            local, '_supports_text_shaping', return_value=True
+        ), patch.object(local.shutil, 'which', return_value='/worker/ffmpeg'):
+            chain, _ = local._text_layer({'text': 'اشتر الآن', 'duration': 1, 'start': 0},
+                Path(directory), 1, width=320, height=180, frame_rate='16/1')
+        self.assertIn('drawtext=', chain)
+        self.assertNotIn('text_shaping=', chain)
+
     def test_copy_keeps_spaces_and_newlines_verbatim(self) -> None:
         props = api.build_timeline_props('ad', [{'kind': 'image', 'url': 'logo.png',
             'duration_seconds': 1}], text_overlays=[{'text': '  $1,99\nNow  ',
@@ -172,7 +256,9 @@ class RealOverlayTests(unittest.TestCase):
 
     def test_drawtext_draws_literal_adversarial_copy_without_filter_injection(self) -> None:
         texts = ["$1,99: 'Buy' \\ 100%\n%{metadata:key}",
-                 'SALE\nFrançais 😀', 'اشتر الآن', "x'[v];movie=/etc/passwd[v];'y"]
+                 'SALE\nFrançais 😀', "x'[v];movie=/etc/passwd[v];'y"]
+        if local._supports_text_shaping(shutil.which('ffmpeg')):
+            texts.append('اشتر الآن')
         baseline = self.frame(self.render(props_for(self.source), 'base.mp4'))
         for index, text in enumerate(texts):
             with self.subTest(text=text):

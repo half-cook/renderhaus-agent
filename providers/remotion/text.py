@@ -12,9 +12,19 @@ from typing import Any
 
 from PIL import ImageFont
 
+def _font_file(filename: str, size: int = 16) -> Path:
+    linux_path = Path('/usr/share/fonts/truetype/dejavu') / filename
+    if linux_path.is_file():
+        return linux_path
+    try:
+        return Path(ImageFont.truetype(linux_path.name, size).path)
+    except OSError:
+        return linux_path
+
+
 FONT_FILES = {
-    'dejavu-sans': Path('/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf'),
-    'dejavu-sans-bold': Path('/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf'),
+    'dejavu-sans': _font_file('DejaVuSans.ttf'),
+    'dejavu-sans-bold': _font_file('DejaVuSans-Bold.ttf'),
 }
 
 

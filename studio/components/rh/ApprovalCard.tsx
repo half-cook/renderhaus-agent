@@ -2,13 +2,14 @@
 
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { Check, CircleAlert, CircleCheck, CirclePause, ImageOff, Info, Pencil, Play, Plus, RotateCw, ShieldCheck, Lock } from "lucide-react";
-import { OUT_OF_CREDIT_FULL, topupsEnabled } from "@/lib/launch";
+import { topupsEnabled } from "@/lib/launch";
 import { formatCents } from "@/lib/rh/money";
 import { a11yApproveName, creditState, usableCreditCents, type ApprovalCardModel } from "@/lib/rh/billing";
 import { BalanceNote, CapRow, Ledger, LedgerRow, LedgerTotal, lineLabel } from "./Ledger";
 
 export const UP_TO_FOOTNOTE = "We stop at this amount, you are never charged more.";
 export const APPROVAL_FOOTNOTE = "Estimate shown before anything runs. We stop at the cap, you are never charged more.";
+const PAUSED_MESSAGE = "The next step needs more than the remaining cap. No further work has started.";
 
 export type ApprovalCardActions = {
   onApprove?: () => void;
@@ -36,7 +37,7 @@ const HEADER: Record<ApprovalCardModel["status"], { label: string; tone: "ember"
   running: { label: "Running", tone: "ember", icon: null, dot: true },
   done: { label: "Done · receipt", tone: "ok", icon: <CircleCheck size={15} aria-hidden="true" /> },
   failed: { label: "Failed", tone: "danger", icon: <CircleAlert size={15} aria-hidden="true" /> },
-  paused_cap: { label: "Paused · cap reached", tone: "ember", icon: <CirclePause size={15} aria-hidden="true" /> },
+  paused_cap: { label: "Paused · next step exceeds cap", tone: "ember", icon: <CirclePause size={15} aria-hidden="true" /> },
 };
 
 function Thumb({ url, failed }: { url?: string; failed?: boolean }) {
@@ -92,7 +93,7 @@ export function ApprovalCard({ model: input, approveEnabled, busy = false, actio
   const topups = topupsEnabled();
   const approveName = a11yApproveName(model, formatCents);
   const live = model.status === "approved" ? `Approved. Up to ${formatCents(model.capCents)} reserved.`
-    : model.status === "paused_cap" ? `Paused. Cap of ${formatCents(model.capCents)} reached.` : "";
+    : model.status === "paused_cap" ? `Paused. Next step exceeds your ${formatCents(model.capCents)} cap.` : "";
 
   // Focus lands on the heading, never on Approve, so Enter cannot approve by accident.
   useEffect(() => {
@@ -280,10 +281,10 @@ export function ApprovalCard({ model: input, approveEnabled, busy = false, actio
 
       {model.status === "paused_cap" && !topups && (model.raiseOptionsCents ?? []).length === 0 ? (
         <>
-          <Notice tone="ember" title={`Stopped at your ${formatCents(model.capCents)} cap`}>{OUT_OF_CREDIT_FULL}</Notice>
+          <Notice tone="ember" title={`Next step exceeds your ${formatCents(model.capCents)} cap`}>{PAUSED_MESSAGE}</Notice>
           <Ledger heading="Spent so far">
             {estimateLines.map((line) => <LedgerRow key={`${line.kind}:${line.label}`} label={lineLabel(line, "so-far")} amount={formatCents(line.priceCents)} />)}
-            <LedgerTotal label="Charged · at cap" amountCents={model.chargedCents ?? model.capCents} />
+            {model.chargedCents != null ? <LedgerTotal label="Charged so far" amountCents={model.chargedCents} /> : <LedgerRow label="Charged so far" amount="Unavailable" tone="muted" />}
           </Ledger>
           {model.balanceCents != null ? <BalanceNote>Balance now <b className="rh-num rh-mono">{formatCents(model.balanceCents)}</b>{model.walletTotalCents != null ? ` of ${formatCents(model.walletTotalCents)}` : ""}</BalanceNote> : null}
           <div className="rh-appr-ft" data-shot="out-of-credit-actions">
@@ -296,13 +297,13 @@ export function ApprovalCard({ model: input, approveEnabled, busy = false, actio
 
       {model.status === "paused_cap" && (topups || (model.raiseOptionsCents ?? []).length > 0) ? (
         <>
-          <Notice tone="ember" title={`Stopped at your ${formatCents(model.capCents)} cap`}>
-            {model.message ?? "The agent needed more attempts than estimated. Nothing more has been charged, and the step is paused so you decide."}
+          <Notice tone="ember" title={`Next step exceeds your ${formatCents(model.capCents)} cap`}>
+            {PAUSED_MESSAGE}
           </Notice>
           <Ledger heading="Spent so far">
             {estimateLines.map((line) => <LedgerRow key={`${line.kind}:${line.label}`} label={lineLabel(line, "so-far")} amount={formatCents(line.priceCents)} />)}
-            <LedgerTotal label="Charged · at cap" amountCents={model.chargedCents ?? model.capCents} />
-            <div className="rh-bar rh-bar-acc" style={{ marginTop: 8 }}><b style={{ width: "100%" }} /></div>
+            {model.chargedCents != null ? <LedgerTotal label="Charged so far" amountCents={model.chargedCents} /> : <LedgerRow label="Charged so far" amount="Unavailable" tone="muted" />}
+            {model.chargedCents != null && model.capCents > 0 ? <div className="rh-bar rh-bar-acc" role="presentation" style={{ marginTop: 8 }}><b style={{ width: `${Math.min(100, Math.max(0, model.chargedCents / model.capCents * 100))}%` }} /></div> : null}
           </Ledger>
           {model.balanceCents != null ? <BalanceNote>Balance now <b className="rh-num rh-mono">{formatCents(model.balanceCents)}</b>{model.walletTotalCents != null ? ` of ${formatCents(model.walletTotalCents)}` : ""}</BalanceNote> : null}
           <div className="rh-appr-ft">

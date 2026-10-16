@@ -64,6 +64,15 @@ The available technical ops are `probe`, `frame_cadence`, `volume_stats`, `measu
 Use the [loudness guide](../remotion-loudness-qc/SKILL.md) for programme targets and re-measurement.
 Do not normalise a file merely to inspect it.
 
+An unavailable `execute` shell does not block native inspection or hashing. `inspect_media`
+returns the measured SHA256 of an owned media file. For another owned artifact, use the existing
+`ffmpeg_tool` with `op="sha256"`, the current `job_id`, job-relative `input_path` and `params={}`;
+this operation uses Python and needs no ffmpeg binary. The finish gate also rehashes every
+output and review image against the saved QC report. Preserve the required inspection and
+visual checks, but do not add a shell requirement. Distinguish report-recorded checksums from
+independent tool measurements. Refer to the saved report unless exact hash values are requested;
+when requested, copy the complete returned values without guessing, reconstructing or inventing them.
+
 ## Keep visual review explicit
 
 Safe-zone geometry checks supplied Remotion overlay boxes against the configured margins.

@@ -30,7 +30,7 @@ DELIVERY_PROMPT = "Deliver the finished MP4 for social-feed."
 def owned_job(test):
     directory = tempfile.TemporaryDirectory()
     test.addCleanup(directory.cleanup)
-    media_root = Path(directory.name)
+    media_root = Path(directory.name).resolve()
     job = media_root / ARGS["job_id"]
     job.mkdir()
     environment = patch.dict(os.environ, {"RENDERHAUS_MEDIA_DIR": str(media_root)})
@@ -127,6 +127,68 @@ class DeliveryHostTests(unittest.IsolatedAsyncioTestCase):
                 self.assertEqual(result["status"], "dry_run")
                 self.assertEqual(context.tool_events[-1].result["reason"], "No file was inspected.")
                 self.assertEqual(executor.cost_ledger, {})
+
+    async def test_failed_worker_qc_preserves_structured_report_without_transport_or_json_error(self):
+        failure = 'loudness: Integrated -15.1 LUFS; target -14 +/- 0.5.'
+        for name in (DELIVERY, QC):
+            with self.subTest(name=name):
+                report = bound_report(self.root, name=name.split('___')[1])
+                report.update(status='failed', passed=False, failures=[failure])
+                report['files'][0].update(passed=False, technical_passed=False, failures=[failure])
+                next(check for check in report['files'][0]['checks'] if check['name'] == 'loudness').update(
+                    {'pass': False, 'detail': failure})
+                report_path = Path(report['report_path'])
+                report_path.write_text(json.dumps(report))
+                saved_report = report_path.read_bytes()
+                context = _context_from_request(self.request())
+                executor = GatewayExecutor(context, [])
+                with patch('providers.registry.dispatch', return_value=report):
+                    result = await executor.execute({'tool_name': name, 'arguments': ARGS, 'call_id': 'failed-qc'})
+                self.assertEqual(result['status'], 'failed')
+                self.assertFalse(result.get('transport_error'))
+                self.assertNotIn('error', result)
+                self.assertEqual(result['files'], report['files'])
+                self.assertEqual(result['failures'], [failure])
+                self.assertEqual(result['report_path'], str(report_path))
+                output = StudioAgentOutput(title='Finished', summary='The export is delivered.',
+                                           markdown='# Finished', filename='export.md')
+                self.assertFalse(_validate_video_delivery(self.request(), context, output))
+                self.assertEqual(output.summary, 'Delivery QC is incomplete. ' + failure)
+                self.assertEqual(report_path.read_bytes(), saved_report)
+                artifact = report['files'][0]
+                self.assertEqual(hashlib.sha256(Path(artifact['output_path']).read_bytes()).hexdigest(),
+                                 artifact['sha256'])
+
+    async def test_worker_transport_exception_stays_distinct_from_a_returned_qc_failure(self):
+        context = _context_from_request(self.request())
+        executor = GatewayExecutor(context, [])
+        with patch('providers.registry.dispatch', side_effect=TimeoutError('Worker response was lost.')):
+            result = await executor.execute({'tool_name': QC, 'arguments': ARGS, 'call_id': 'transport'})
+        self.assertEqual(result['status'], 'failed')
+        self.assertTrue(result['transport_error'])
+        self.assertEqual(result['error'], 'Worker response was lost.')
+        self.assertEqual(context.tool_events[-1].status, 'failed')
+
+    async def test_native_checksum_dispatch_needs_no_model_shell_or_ffmpeg_process(self):
+        image = self.root / 'review-frame.png'
+        image.write_bytes(b'owned review image bytes for native checksum dispatch')
+        context = _context_from_request(self.request())
+        executor = GatewayExecutor(context, [])
+        with patch.dict(os.environ, {'FFMPEG_DRY_RUN': 'false'}), patch(
+            'agent.deep_agent.sandbox.JobSandbox.execute', side_effect=AssertionError('Model shell is unavailable.'),
+        ) as shell, patch(
+            'providers.ffmpeg.api._bounded_run', side_effect=AssertionError('Native ffmpeg execution is unavailable.'),
+        ) as process:
+            result = await executor.execute({'tool_name': 'Ffmpeg___ffmpeg_tool', 'call_id': 'hash',
+                'arguments': {'job_id': 'owned-job', 'op': 'sha256', 'input_path': image.name, 'params': {}}})
+        self.assertEqual(result['status'], 'succeeded')
+        self.assertTrue(result['ok'])
+        self.assertEqual(result['metrics'], {'sha256': hashlib.sha256(image.read_bytes()).hexdigest(),
+                                             'bytes': image.stat().st_size})
+        self.assertIsNone(result.get('ffmpeg_version'))
+        shell.assert_not_called()
+        process.assert_not_called()
+        self.assertEqual(context.tool_events[-1].result['metrics'], result['metrics'])
 
     async def test_worker_scope_refuses_another_job_before_dispatch(self):
         for name in (DELIVERY, QC):

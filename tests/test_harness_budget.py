@@ -147,6 +147,35 @@ class HarnessBudgetTests(unittest.TestCase):
         self.assertLess(multimedia.input_tokens, 1_000_000)
         self.assertIn('bounded_images', multimedia.input_basis)
 
+    def test_cache_reservation_prices_only_the_requested_ttl(self):
+        model = RecordingModel()
+        for control, input_rate in ((None, 2), ({"type": "ephemeral"}, 2.5),
+                                    ({"type": "ephemeral", "ttl": "5m"}, 2.5),
+                                    ({"type": "ephemeral", "ttl": "1h"}, 4)):
+            with self.subTest(control=control):
+                envelope = model_envelope(model, [[HumanMessage(content="hello")]],
+                                          {"cache_control": control} if control else {})
+                self.assertAlmostEqual(envelope.cost_usd,
+                                       (envelope.input_tokens * input_rate + envelope.output_tokens * 10) / 1_000_000)
+
+    def test_cache_bound_finds_nested_longest_ttl_and_ignores_tool_input_schema(self):
+        tools = [{"name": "example", "input_schema": {"properties": {"cache_control": {"type": "string"}}},
+                  "cache_control": {"type": "ephemeral", "ttl": "1h"}}]
+        envelope = model_envelope(RecordingModel(), [[HumanMessage(content="hello")]],
+                                  {"tools": tools, "cache_control": {"type": "ephemeral"}})
+        self.assertAlmostEqual(envelope.cost_usd,
+                               (envelope.input_tokens * 4 + envelope.output_tokens * 10) / 1_000_000)
+        with self.assertRaises(rb.RunBudgetError):
+            model_envelope(RecordingModel(), [[HumanMessage(content="hello")]],
+                           {"cache_control": {"type": "ephemeral", "ttl": "2h"}})
+
+    def test_native_anthropic_payload_uses_five_minute_reservation(self):
+        model = ChatAnthropic(model="claude-sonnet-5-5", api_key="test", max_tokens=16_000)
+        envelope = model_envelope(model, [[HumanMessage(content="hello")]],
+                                  {"cache_control": {"type": "ephemeral", "ttl": "5m"}})
+        self.assertAlmostEqual(envelope.cost_usd,
+                               (envelope.input_tokens * 2.5 + envelope.output_tokens * 10) / 1_000_000)
+
     def test_guard_is_on_the_model_and_preserves_binding_and_existing_callbacks(self):
         events = []
         class Existing(BaseCallbackHandler):
@@ -247,6 +276,28 @@ class HarnessBudgetTests(unittest.TestCase):
         self.meter.reserve_media("never-started", 40)
         self.meter.complete_media("never-started", definitely_not_started=True)
         self.assertEqual(self.meter.remaining_cap_cents(), 40)
+
+    def test_free_media_return_settles_once_without_debiting_the_wallet(self):
+        async def dispatch():
+            with self.meter.media_dispatch("native-render", 0, "Remotion___render_timeline"):
+                return await asyncio.to_thread(lambda: {"status": "queued", "render_id": "local-render"})
+        self.assertEqual(asyncio.run(dispatch())["status"], "queued")
+        work = self.repo.run_work("r")[0]
+        self.assertEqual((work["state"], work["reserved_cents"]), ("settled", 0))
+        self.assertEqual(self.repo.get_balance("u"), 10_000)
+        with self.assertRaises(rb.RunBudgetError):
+            with self.meter.media_dispatch("native-render", 0, "Remotion___render_timeline"):
+                self.fail("A returned native submission must not be dispatched twice")
+        self.assertEqual(self.repo.release_run("r")["actual_cents"], 0)
+
+    def test_free_media_without_a_response_remains_ambiguous(self):
+        for call_id, error in (("timeout", TimeoutError), ("cancelled", asyncio.CancelledError)):
+            with self.subTest(call_id=call_id), self.assertRaises(error):
+                with self.meter.media_dispatch(call_id, 0, "Remotion___render_timeline"):
+                    raise error("No confirmed response")
+        self.assertEqual([work["state"] for work in self.repo.run_work("r")], ["ambiguous", "ambiguous"])
+        self.assertIsNone(self.repo.release_run("r"))
+        self.assertEqual(self.repo.get_balance("u"), 10_000)
 
     def test_unknown_media_quote_stops_and_missing_charge_keeps_reservation(self):
         with self.assertRaises(rb.RunPausedAtCap):

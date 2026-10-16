@@ -22,7 +22,7 @@ from agent.errors import AgentRunLimitExceeded
 from agent.backend_config import agent_configured
 from fastapi import APIRouter, File, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse, StreamingResponse, Response
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, PrivateAttr
 
 from agent.deep_agent.questions import QuestionAnswer, StudioQuestionAnswer, StudioQuestionRequest
 from agent.studio_agent_next import StudioNode as StudioNodeReference
@@ -38,6 +38,7 @@ from agent.studio_agent_next import (
     StudioNode,
     StudioProgressEvent,
     StudioToolEvent,
+    _context_from_request,
     _requests_video_deliverable,
     _validate_video_delivery,
     run_studio_agent as run_studio_agent_runtime,
@@ -55,7 +56,7 @@ from server.logo_artifacts import logo_artifact_content
 from server.reference_artifacts import reference_artifact_content
 from server.studio_state import ACTIVE_EXECUTION_STATUSES, CanvasConflictError, InsufficientBalanceError, StudioAssetKind, repository
 from server.studio_options import LIVE_CHOICE_TOOLS, extract_choice_ids, static_field_options
-from server.uploads import bounded_upload_path, upload_limits_mb
+from server.uploads import bounded_upload_path, upload_limits_mb, validate_uploaded_media
 from server.studio_changes import Action as ChangesAction, ChangesActionBody, ChangesConflictError
 
 
@@ -92,6 +93,7 @@ class InvokeBody(BaseModel):
     project_id: str = Field(default="untitled", min_length=1, max_length=120)
     asset_id: str | None = Field(default=None, max_length=120)
     source_version_ids: list[str] = Field(default_factory=list, max_length=32)
+    approval_token: str | None = Field(default=None, max_length=2048)
 
 
 def media_root() -> Path:
@@ -752,10 +754,8 @@ def _tool_arguments(provider: str, tool: str, arguments: dict[str, Any]) -> dict
     return {key: value for key, value in cleaned.items() if key in allowed}
 
 
-@router.post("/invoke")
-async def invoke_tool(body: InvokeBody, auth: AuthUser) -> dict[str, Any]:
+async def _manual_arguments(body: InvokeBody, auth: AuthUser, *, publish_inputs: bool = True) -> tuple[dict[str, Any], list[str], bool]:
     workspace_id = current_workspace_id(auth)
-    user_id = current_user_id(auth)
     try:
         await asyncio.to_thread(repository.require_project, workspace_id, body.project_id)
     except KeyError as exc:
@@ -797,15 +797,70 @@ async def invoke_tool(body: InvokeBody, auth: AuthUser) -> dict[str, Any]:
                 prepare_runway_arguments, body.tool, cleaned,
                 source_resolver=lambda version_id: str(repository.version_path(workspace_id, version_id)),
                 workspace_id=workspace_id,
+                publish_inputs=publish_inputs,
             )
         except (ValueError, KeyError, FileNotFoundError) as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
     elif not preparing_edit:
         cleaned = _resolve_asset_handles(cleaned, workspace_id)
+    return cleaned, source_version_ids, preparing_edit
+
+
+def _manual_quote_signature(body: InvokeBody, auth: AuthUser, cents: int, expires_at: int) -> str:
+    payload = {
+        "workspace": current_workspace_id(auth), "user": current_user_id(auth),
+        "request": body.model_dump(exclude={"approval_token"}),
+        "cents": cents, "expires_at": expires_at,
+    }
+    message = b"manual-generation-quote:" + json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
+    return hmac.new(_playback_secret(), message, hashlib.sha256).hexdigest()
+
+
+def _require_manual_approval(body: InvokeBody, auth: AuthUser, cents: int) -> None:
+    # shortcut: quotes bind a per-invocation price, not retries; add durable request IDs before paid retries.
+    if cents <= 0:
+        return
+    try:
+        raw_expiry, signature = (body.approval_token or "").split(".", 1)
+        expiry = int(raw_expiry)
+        valid = int(time.time()) < expiry and hmac.compare_digest(
+            signature, _manual_quote_signature(body, auth, cents, expiry),
+        )
+    except (ValueError, TypeError):
+        valid = False
+    if not valid:
+        raise HTTPException(status_code=409, detail="Review and approve a fresh price before this generation can run.")
+
+
+@router.post("/quote")
+async def quote_tool(body: InvokeBody, auth: AuthUser) -> dict[str, Any]:
+    cleaned, _, _ = await _manual_arguments(body, auth, publish_inputs=False)
     try:
         cost = cost_for(body.provider, body.tool, cleaned)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+    expiry = int(time.time()) + 10 * 60
+    result: dict[str, Any] = {
+        "estimate_cents": cost.total_cents, "cap_cents": cost.total_cents,
+        "approval_token": f"{expiry}.{_manual_quote_signature(body, auth, cost.total_cents, expiry)}",
+        "expires_at": expiry,
+    }
+    user_id = current_user_id(auth)
+    if stripe_enabled() or beta_billing_enabled(repository, user_id):
+        result["balance_cents"] = await asyncio.to_thread(repository.available_credit, user_id)
+    return result
+
+
+@router.post("/invoke")
+async def invoke_tool(body: InvokeBody, auth: AuthUser) -> dict[str, Any]:
+    workspace_id = current_workspace_id(auth)
+    user_id = current_user_id(auth)
+    cleaned, source_version_ids, preparing_edit = await _manual_arguments(body, auth)
+    try:
+        cost = cost_for(body.provider, body.tool, cleaned)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    _require_manual_approval(body, auth, cost.total_cents)
     billed = cost.total_cents > 0 and (stripe_enabled() or beta_billing_enabled(repository, user_id))
     charge = None
     if billed:
@@ -848,7 +903,7 @@ async def invoke_tool(body: InvokeBody, auth: AuthUser) -> dict[str, Any]:
         if billed:
             await refund("dispatch failed")
         raise HTTPException(status_code=500, detail=str(exc)) from exc
-    if result.get("error") or result.get("status") in {"failed", "error", "blocked", "not_run"}:
+    if result.get("error") or result.get("status") in {"failed", "error", "blocked", "not_run", "dry_run"}:
         await refund("provider returned a failed or no-work result")
         return {"provider": body.provider, "tool": body.tool, "result": result, "assets": [], "cost": cost.public()}
     if body.provider == "runway" and body.tool != "get_runway_task" and result.get("job_id"):
@@ -897,6 +952,7 @@ async def studio_upload(
     if kind is None:
         raise HTTPException(status_code=415, detail="Use an image, video, or audio file.")
     async with bounded_upload_path(file, limit_mb=upload_limits_mb()[kind]) as path:
+        await asyncio.to_thread(validate_uploaded_media, path, filename=filename, kind=kind)
         reference = await asyncio.to_thread(
             repository.register_file,
             workspace_id=workspace_id,
@@ -959,6 +1015,7 @@ async def studio_asset_content(
 
 
 class AgentBody(BaseModel):
+    _delivery_continuation: bool = PrivateAttr(default=False)
     prompt: str = Field(min_length=1, max_length=MAX_AGENT_PROMPT_CHARS)
     project_id: str = Field(default="untitled", min_length=1, max_length=120)
     conversation_id: str | None = Field(default=None, max_length=120)
@@ -1278,10 +1335,6 @@ def _media_generation_failed(outcome: Any, result: dict[str, Any]) -> bool:
     return False
 
 
-_VIDEO_REQUEST_RE = re.compile(r"\b(?:film|video|clip|mp4|trailer|promo|commercial|ad spot|reel)\b", re.I)
-_SELF_REPORTED_INCOMPLETE_RE = re.compile(r"^\W*(?:incomplete|blocked|failed|not delivered|could not)\b|\bblocked at\b", re.I)
-
-
 def _reply_only_run(result: dict[str, Any]) -> tuple[bool, bool]:
     """(reply_only, declined): the agent only talked - asked, refused, or the user said Not now.
 
@@ -1318,13 +1371,11 @@ def _deliverable_missing(prompt: str, result: dict[str, Any]) -> bool:
 
     The first live run asked for a 10-second film, made only a voiceover, and the agent itself
     wrote "Incomplete"; the server still stored status=completed, so Studio said "Delivered · 17 steps".
-    Missing means: a video was asked for and no video asset exists, or the agent reported the
-    run incomplete and nothing at all was saved.
+    Missing means: a video was asked for and no video asset exists, or the agent explicitly
+    reported the request incomplete, even if intermediate media was saved.
     """
-    title, summary = str(result.get("title") or ""), str(result.get("summary") or "")
     assets = [asset for asset in result.get("assets") or [] if isinstance(asset, dict)]
-    self_reported = bool(_SELF_REPORTED_INCOMPLETE_RE.search(summary) or _SELF_REPORTED_INCOMPLETE_RE.search(title))
-    if self_reported and not assets:
+    if run_billing.self_reported_incomplete(result):
         return True
     try:
         from agent.deep_agent.routing import route_intent
@@ -1333,7 +1384,7 @@ def _deliverable_missing(prompt: str, result: dict[str, Any]) -> bool:
             return False
     except Exception:  # routing must never turn a finished run into an error
         pass
-    if not _VIDEO_REQUEST_RE.search(prompt or ""):
+    if not _requests_video_deliverable(prompt or ""):
         return False
     kinds = {str(asset.get("kind") or asset.get("mime_type") or "").split("/")[0] for asset in assets}
     return "video" not in kinds
@@ -1411,6 +1462,7 @@ def _studio_agent_request(
     resume_state: str | None = None,
     approval_decisions: list[StudioApprovalDecision | StudioQuestionAnswer] | None = None,
     resume_tool_names: list[str] | None = None,
+    delivery_continuation: bool = False,
 ) -> StudioAgentRequest:
     policy = ProjectProviderPolicy()
     if workspace_id and project_id:
@@ -1441,6 +1493,7 @@ def _studio_agent_request(
         resume_state=resume_state,
         approval_decisions=list(approval_decisions or []),
         resume_tool_names=list(resume_tool_names or []),
+        delivery_continuation=delivery_continuation,
     )
 
 
@@ -1608,6 +1661,7 @@ async def run_studio_agent(
     approval_decisions: list[StudioApprovalDecision | StudioQuestionAnswer] | None = None,
     resume_tool_names: list[str] | None = None,
     prior_tool_events: list[StudioToolEvent] | None = None,
+    delivery_continuation: bool = False,
     **_unused: Any,
 ) -> StudioAgentRun:
     request = _studio_agent_request(
@@ -1623,6 +1677,7 @@ async def run_studio_agent(
         resume_state=resume_state,
         approval_decisions=approval_decisions,
         resume_tool_names=resume_tool_names,
+        delivery_continuation=delivery_continuation,
     )
     request.prior_tool_events = [event.public() for event in prior_tool_events or []]
     from agent.deep_agent.routing import route_intent
@@ -1658,24 +1713,30 @@ async def run_studio_agent(
                         event_sink(event)
 
         return await _invoke_agentcore_runtime(runtime_url, request, progress_sink, save_runtime_checkpoint)
-    studio = StudioAgentContext(
-        nodes=list(request.nodes),
+    studio = _context_from_request(
+        request,
         asset_registrar=asset_registrar,
         source_resolver=source_resolver,
         source_publisher=source_publisher,
         event_sink=event_sink,
         progress_sink=progress_sink,
-        job_id=request.job_id,
-        workspace_id=request.workspace_id,
-        project_id=request.project_id,
-        user_id=request.user_id,
-        session_items=list(request.session_items),
-        autonomous=request.autonomous,
-        confidential=request.confidential,
-        quality_tier=request.quality_tier,
-        prompt=request.prompt,
     )
-    studio.restore_events(list(prior_tool_events or []))
+    if workspace_id and project_id:
+        inventory = await asyncio.to_thread(repository.list_project_assets, workspace_id, project_id)
+        by_version = {asset["version_id"]: asset for asset in inventory}
+        canvas = await asyncio.to_thread(repository.get_canvas, workspace_id, project_id)
+        for node in canvas["document"].get("nodes") or []:
+            if not isinstance(node, dict) or not isinstance(node.get("data"), dict):
+                continue
+            data = node["data"]
+            output = data.get("output")
+            version = output.get("versionId") if isinstance(output, dict) else None
+            asset = by_version.get(version) if isinstance(version, str) else None
+            if asset is not None:
+                asset["title"] = str(data.get("title") or asset["title"])[:160]
+                config = data.get("config")
+                asset["prompt"] = str(config.get("prompt") or "")[:4_000] if isinstance(config, dict) else ""
+        studio.add_assets([asset for asset in inventory if asset["version_id"] not in studio.working_assets])
     def save_local_checkpoint(items):
         if reference_host:
             for item in items:
@@ -1743,6 +1804,19 @@ async def _run_studio_agent_job(
             logger.exception("Could not settle the credit hold for run %s", job_id)
 
 
+async def _continuation_runs(workspace_id: str, history: list[dict[str, Any]], *, exclude_job_id: str | None = None) -> list[dict[str, Any]]:
+    chain = []
+    for run in history:
+        if run["job_id"] == exclude_job_id:
+            continue
+        checkpoint = await asyncio.to_thread(repository.execution_checkpoint, workspace_id, run["job_id"])
+        request = (checkpoint or {}).get("request") or {}
+        chain.append({**run, "request": request})
+        if request.get("delivery_continuation") is not True:
+            break
+    return chain
+
+
 async def _run_studio_agent_job_inner(
     job_id: str,
     prompt: str,
@@ -1757,6 +1831,7 @@ async def _run_studio_agent_job_inner(
     approval_decisions: list[StudioApprovalDecision | StudioQuestionAnswer] | None = None,
     prior_tool_events: list[StudioToolEvent] | None = None,
     resume_tool_names: list[str] | None = None,
+    delivery_continuation: bool = False,
 ) -> None:
     from agent.gateway_executor import GatewayExecutor
 
@@ -1767,11 +1842,15 @@ async def _run_studio_agent_job_inner(
     # checkpoints. The ledger is scoped by conversation/workspace, never client data.
     previous_runs = await asyncio.to_thread(repository.list_executions, workspace_id,
                                            conversation_id=conversation_id, limit=12)
-    if not session_items and not prior_tool_events:
-        prior_tool_events = _events_from_payload([
+    if delivery_continuation:
+        previous_runs = await _continuation_runs(workspace_id, previous_runs, exclude_job_id=job_id)
+    else:
+        previous_runs = [run for run in previous_runs if run["job_id"] == job_id]
+    if prior_tool_events is None and (delivery_continuation or not session_items):
+        prior_tool_events = list({event.id: event for event in _events_from_payload([
             call for run in reversed(previous_runs) if run["job_id"] != job_id
             for call in run.get("tool_calls", [])
-        ])
+        ])}.values())
     for snapshot in session_items:
         if snapshot.get("type") not in {"renderhaus_codex_session", "renderhaus_deepagents_session"}:
             continue
@@ -1887,6 +1966,7 @@ async def _run_studio_agent_job_inner(
             approval_decisions=approval_decisions,
             resume_tool_names=resume_tool_names,
             prior_tool_events=prior_tool_events,
+            delivery_continuation=delivery_continuation,
         )
         await asyncio.to_thread(
             _hydrate_tool_event_assets,
@@ -1965,6 +2045,9 @@ async def _run_studio_agent_job_inner(
         # Hard stop at the run's cap: not a failure. The hold stays until the user raises the cap or stops.
         logger.info("Studio agent job %s paused at its credit cap", job_id)
         execution = await asyncio.to_thread(repository.get_execution, workspace_id, job_id) or {}
+        if delivery_continuation:
+            calls = [event.public() for event in prior_tool_events or []] + list(execution.get("tool_calls") or [])
+            execution = {**execution, "tool_calls": list({call["id"]: call for call in calls}.values())}
         await asyncio.to_thread(
             repository.update_execution, workspace_id, job_id, status="error", message=run_budget.PAUSED_MESSAGE,
             result=_partial_agent_result(execution), error_type="PausedAtCap",
@@ -1975,6 +2058,9 @@ async def _run_studio_agent_job_inner(
 
         logger.exception("Studio agent job %s reached its turn limit", job_id)
         execution = await asyncio.to_thread(repository.get_execution, workspace_id, job_id) or {}
+        if delivery_continuation:
+            calls = [event.public() for event in prior_tool_events or []] + list(execution.get("tool_calls") or [])
+            execution = {**execution, "tool_calls": list({call["id"]: call for call in calls}.values())}
         partial = _partial_agent_result(execution)
         recovered_render = any(
             call.get("name") in {"Remotion___get_render_progress", "render_remotion_video"}
@@ -1996,7 +2082,8 @@ async def _run_studio_agent_job_inner(
         if (current_delivery or delivery_alias in {"delivery_render", "deliverable_qc"}
                 or requires_motion_qc(prompt, recovered_events) or any(event.name == PROBE for event in recovered_events)):
             request = StudioAgentRequest(prompt=prompt, job_id=job_id,
-                                         prior_tool_events=list(prior_events.values()))
+                                         prior_tool_events=list(prior_events.values()),
+                                         delivery_continuation=delivery_continuation)
             context = StudioAgentContext(nodes=references, job_id=job_id, progress_sink=record_progress)
             context.restore_events(recovered_events)
             report = StudioAgentOutput(title="Delivery QC incomplete", summary="Delivery QC is incomplete.",
@@ -2074,7 +2161,8 @@ async def _run_studio_agent_job_inner(
                            for event in getattr(outcome, "progress_events", []))
     missing = not incomplete_video and not _media_generation_failed(outcome, result) and _deliverable_missing(prompt, result)
     reply_only, declined = _reply_only_run(result)
-    replied = reply_only and (incomplete_video or missing or _media_generation_failed(outcome, result))
+    replied = (reply_only and (declined or not _requests_video_deliverable(prompt))
+               and (incomplete_video or missing or _media_generation_failed(outcome, result)))
     if replied:
         result["partial"] = False
         if declined:
@@ -2171,6 +2259,7 @@ async def studio_agent(body: AgentBody, auth: AuthUser) -> dict[str, Any]:
         project_id=body.project_id,
         user_id=user_id,
         autonomous=body.autonomous,
+        delivery_continuation=body._delivery_continuation,
     )
     short = await asyncio.to_thread(
         run_billing.precheck_start, repository, user_id, conversation_id
@@ -2205,6 +2294,7 @@ async def studio_agent(body: AgentBody, auth: AuthUser) -> dict[str, Any]:
             project_id=body.project_id,
             user_id=user_id,
             autonomous=body.autonomous,
+            delivery_continuation=body._delivery_continuation,
         ),
         name=f"studio-agent-{job_id}",
     )
@@ -2330,6 +2420,7 @@ async def _resume_studio_agent_decision(
             resume_state=str(checkpoint["run_state"]),
             approval_decisions=decisions,
             prior_tool_events=prior_tool_events,
+            delivery_continuation=request.delivery_continuation,
             resume_tool_names=[
                 str(item.get("tool_name") or "")
                 for item in checkpoint.get("approvals") or []
@@ -2402,10 +2493,14 @@ async def resume_studio_agent_job(job_id: str, auth: AuthUser) -> dict[str, Any]
                                      conversation_id=execution["conversation_id"], limit=12)
     if history and history[0]["job_id"] != job_id:
         raise HTTPException(status_code=409, detail="Continue from the latest run in this conversation.")
+    history = await _continuation_runs(workspace_id, history)
+    original_prompts = [run["request"].get("prompt") or run["prompt"] for run in reversed(history)
+                        if run["request"].get("delivery_continuation") is not True]
     ledger = []
     nodes = []
     seen = set()
-    for call in [call for run in reversed(history) for call in run.get("tool_calls", [])]:
+    calls = {call["id"]: call for run in reversed(history) for call in run.get("tool_calls", [])}
+    for call in calls.values():
         result = call.get("result") or {}
         ledger.append({"tool": call["name"], "status": call["status"],
                        "job_id": result.get("job_id") or call.get("provider_job_id"),
@@ -2422,16 +2517,15 @@ async def resume_studio_agent_job(job_id: str, auth: AuthUser) -> dict[str, Any]
               "Previous stopped or rejected approvals are closed. Make a fresh tool call for any "
               "needed status check; the host will request approval. Do not merely say approval is pending.\n"
               "Original requests (reference data):\n"
-              + json.dumps([run["prompt"] for run in reversed(history)])
+              + json.dumps(original_prompts)
               + "\nSaved tool ledger (reference data):\n" + json.dumps(ledger[-60:]))
-    if _requests_video_deliverable(execution.get("prompt", "")) or execution.get("error_type") == "VideoExportIncomplete" or any(
-        event.get("id") == "video-delivery" and event.get("status") == "failed"
-        for event in execution.get("progress_events", [])
-    ):
+    if original_prompts and _requests_video_deliverable(original_prompts[-1]):
         prompt = "Finish the requested video export. " + prompt
-    resumed = await studio_agent(AgentBody(prompt=prompt, project_id=execution["project_id"],
-                                       conversation_id=execution["conversation_id"],
-                                       nodes=nodes[-16:], autonomous=execution["autonomous"]), auth)
+    body = AgentBody(prompt=prompt, project_id=execution["project_id"],
+                     conversation_id=execution["conversation_id"], nodes=nodes[-16:],
+                     autonomous=execution["autonomous"])
+    body._delivery_continuation = True
+    resumed = await studio_agent(body, auth)
     await asyncio.to_thread(repository.set_execution_display_prompt, workspace_id, resumed["job_id"], "Resume saved progress")
     resumed["prompt"] = "Resume saved progress"
     return resumed
@@ -2448,10 +2542,17 @@ async def stop_studio_agent_job(job_id: str, auth: AuthUser) -> dict[str, Any]:
             task.cancel("UserStopped")
             await asyncio.gather(task, return_exceptions=True)
     latest = await asyncio.to_thread(repository.get_execution, workspace_id, job_id)
+    stopped = bool(latest and latest.get("error_type") == "UserStopped")
     if latest and latest["status"] in ACTIVE_EXECUTION_STATUSES:
-        await asyncio.to_thread(repository.update_execution, workspace_id, job_id,
-                               status="error", message="Stopped. Provider jobs already started may still finish.",
-                               result=_partial_agent_result(latest), error_type="UserStopped", only_if_active=True)
+        stopped = await asyncio.to_thread(
+            repository.update_execution, workspace_id, job_id, status="error",
+            message="Stopped. Provider jobs already started may still finish.",
+            result=_partial_agent_result(latest), error_type="UserStopped", only_if_active=True,
+        )
+    if stopped:
+        await asyncio.to_thread(
+            run_billing.end_run, repository, job_id, execution_status="error", error_type="UserStopped",
+        )
     return run_billing.public_execution(await asyncio.to_thread(repository.get_execution, workspace_id, job_id))
 
 

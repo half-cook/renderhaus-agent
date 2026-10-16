@@ -988,6 +988,30 @@ class StudioRepository:
             ).fetchone()
         return self._asset_ref(row) if row else None
 
+    def list_project_assets(self, workspace_id: str, project_id: str, limit: int = 100) -> list[dict[str, Any]]:
+        """Current saved media metadata, never paths or published URLs."""
+        self.require_project(workspace_id, project_id)
+        # shortcut: inventory covers 100 latest assets; add scoped search when larger projects need older unselected media.
+        with self._connect() as connection:
+            rows = connection.execute(
+                "SELECT v.*, a.name FROM assets a JOIN asset_versions v ON v.id = a.current_version_id "
+                "AND v.workspace_id = a.workspace_id WHERE a.workspace_id = ? AND a.project_id = ? "
+                "ORDER BY a.updated_at DESC, a.rowid DESC LIMIT ?",
+                (workspace_id, project_id, max(1, min(limit, 100))),
+            ).fetchall()
+        return [{**self._asset_ref(row).public(), "title": row["name"],
+                 "source_ref": "renderhaus-asset://" + row["id"]} for row in rows]
+
+    def get_first_asset_version(self, workspace_id: str, asset_id: str) -> StudioAssetRef | None:
+        with self._connect() as connection:
+            row = connection.execute(
+                "SELECT v.* FROM asset_versions v JOIN assets a ON a.id = v.asset_id "
+                "AND a.workspace_id = v.workspace_id WHERE a.id = ? AND a.workspace_id = ? "
+                "ORDER BY v.created_at, v.rowid LIMIT 1",
+                (asset_id, workspace_id),
+            ).fetchone()
+        return self._asset_ref(row) if row else None
+
     def version_path(self, workspace_id: str, version_id: str) -> Path:
         with self._connect() as connection:
             row = connection.execute(
@@ -1723,6 +1747,8 @@ class StudioRepository:
         ]
 
     def get_execution(self, workspace_id: str, execution_id: str) -> dict[str, Any] | None:
+        from server import run_billing
+
         with self._connect() as connection:
             row = connection.execute(
                 "SELECT * FROM executions WHERE id = ? AND workspace_id = ?",
@@ -1730,6 +1756,7 @@ class StudioRepository:
             ).fetchone()
             if row is None:
                 return None
+            result = json.loads(row["result_json"]) if row["result_json"] else None
             calls = self._tool_calls(connection, execution_id)
             events = self._agent_events(connection, execution_id)
             checkpoint = connection.execute(
@@ -1764,15 +1791,13 @@ class StudioRepository:
                         )
                     can_resume = bool(
                         recovery_available and conversation["status"] == "active"
-                        and row["status"] in RECOVERABLE_EXECUTION_STATUSES
+                        and (row["status"] in RECOVERABLE_EXECUTION_STATUSES
+                             or row["status"] == "completed" and run_billing.self_reported_incomplete(result))
                         and history and history[0]["id"] == execution_id
                     )
-        result = json.loads(row["result_json"]) if row["result_json"] else None
         approvals = json.loads(row["approvals_json"] or "[]")
         if not isinstance(approvals, list):
             approvals = []
-        from server import run_billing
-
         # Client-facing money view: one fee-inclusive price per step, estimate and hard cap, and no
         # vendor, model, tool-vendor or fee data (see docs/BILLING.md "Client payloads").
         approvals = run_billing.public_approvals(

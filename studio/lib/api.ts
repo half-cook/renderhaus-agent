@@ -169,15 +169,48 @@ export async function fetchOptions(): Promise<FieldOptions> {
   return payload.providers || {};
 }
 
+export type ToolInvocationOptions = {
+  projectId: string;
+  assetId?: string;
+  sourceVersionIds?: string[];
+  approvalToken?: string;
+};
+
+export type ToolQuote = {
+  estimate_cents: number;
+  cap_cents: number;
+  approval_token: string;
+  expires_at: number;
+  balance_cents?: number;
+};
+
+export async function quoteTool(
+  provider: string,
+  tool: string,
+  arguments_: Record<string, unknown>,
+  options: ToolInvocationOptions,
+): Promise<ToolQuote> {
+  const response = await studioFetch("/api/studio/quote", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ provider, tool, arguments: arguments_, project_id: options.projectId,
+      asset_id: options.assetId, source_version_ids: options.sourceVersionIds || [] }),
+  });
+  const payload = await readJson(response);
+  if (!response.ok) throw new Error(String(payload.detail || `quote ${response.status}`));
+  if (typeof payload.estimate_cents !== "number" || !Number.isSafeInteger(payload.estimate_cents) || payload.estimate_cents < 0
+    || typeof payload.cap_cents !== "number" || !Number.isSafeInteger(payload.cap_cents) || payload.cap_cents < payload.estimate_cents
+    || typeof payload.approval_token !== "string" || !payload.approval_token) {
+    throw new Error("Could not price this generation. Nothing has run.");
+  }
+  return payload as ToolQuote;
+}
+
 export async function invokeTool(
   provider: string,
   tool: string,
   arguments_: Record<string, unknown>,
-  options: {
-    projectId: string;
-    assetId?: string;
-    sourceVersionIds?: string[];
-  },
+  options: ToolInvocationOptions,
 ): Promise<{ result: unknown; assets: StudioAsset[] }> {
   const response = await studioFetch("/api/studio/invoke", {
     method: "POST",
@@ -189,6 +222,7 @@ export async function invokeTool(
       project_id: options.projectId,
       asset_id: options.assetId,
       source_version_ids: options.sourceVersionIds || [],
+      approval_token: options.approvalToken,
     }),
   });
   const payload = await readJson(response);

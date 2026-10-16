@@ -18,12 +18,14 @@ import {
   fetchStudioExecutions,
   fetchStudioProjects,
   fetchTools,
+  quoteTool,
   saveStudioCanvas,
   updateStudioConversation,
   uploadStudioFile,
   type StudioCanvasDocument,
   type StudioExecution,
   type StudioConversation,
+  type ToolQuote,
 } from "@/lib/api";
 import type { FieldOptions, ProviderCatalog, StudioAsset, StudioStatus } from "@/lib/types";
 import {
@@ -32,7 +34,8 @@ import {
   type CanvasEdge,
   type CanvasNode,
 } from "./connection-validation";
-import { pollCreativeNode, runCreativeNode } from "./graph-execution";
+import { creativeNodeRequest, pollCreativeNode, runCreativeNode, type CreativeNodeRequest } from "./graph-execution";
+import { newNodePosition } from "./new-node-placement";
 import { approvedSequence, isSceneKind, SCENE_CARD_GAP, SCENE_CARD_WIDTH } from "./story";
 import { toolById, toolForAgentArtifact } from "./tool-registry";
 import {
@@ -158,6 +161,11 @@ type CanvasStore = {
   cycleVariant: (id: string, direction: 1 | -1) => void;
   focusNode: (id: string) => void;
   runNode: (id: string) => Promise<void>;
+  quotingNodeId: string | null;
+  pendingManualRun: { node: CanvasNode; request: CreativeNodeRequest; quote: ToolQuote } | null;
+  approveManualRun: () => Promise<void>;
+  cancelManualRun: () => void;
+  executeManualRun: (node: CanvasNode, request: CreativeNodeRequest) => Promise<void>;
   undo: () => void;
   redo: () => void;
   pushHistory: () => void;
@@ -428,6 +436,8 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
   hydrated: false,
   past: [],
   future: [],
+  quotingNodeId: null,
+  pendingManualRun: null,
 
   hydrate: async () => {
     const legacyProjects = readProjects();
@@ -638,6 +648,7 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
 
   switchProject: async (id) => {
     if (id === get().projectId) return;
+    get().cancelManualRun();
     await get().persist();
     try {
       const snapshot = await fetchStudioCanvas(id);
@@ -670,6 +681,7 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
   },
 
   createProject: async () => {
+    get().cancelManualRun();
     await get().persist();
     try {
       const record = await createStudioProject("Untitled");
@@ -885,6 +897,7 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
       output,
       fieldOptions: get().fieldOptions,
     });
+    node.position = newNodePosition(node, get().nodes, get().viewport.zoom);
     node.selected = true;
     set({
       nodes: [...get().nodes.map((item) => ({ ...item, selected: false })), node],
@@ -907,6 +920,7 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
       output: asset,
       fieldOptions: get().fieldOptions,
     });
+    node.position = newNodePosition(node, get().nodes, get().viewport.zoom);
     node.selected = true;
     if (executionId) {
       node.data.agentRunId = executionId;
@@ -1078,12 +1092,46 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
 
   runNode: async (id) => {
     const node = get().nodes.find((item) => item.id === id);
-    if (!node) {
+    if (!node || get().quotingNodeId || get().pendingManualRun || node.data.status === "running" || node.data.status === "queued") {
       return;
     }
+    set({ quotingNodeId: id });
+    try {
+      const snapshot = structuredClone(node);
+      const request = creativeNodeRequest(snapshot, get().nodes, get().edges, get().projectId);
+      const quote = await quoteTool(request.provider, request.tool, request.arguments, request.options);
+      if (get().projectId !== request.options.projectId || !get().nodes.some((item) => item.id === id)) return;
+      if (quote.cap_cents > 0) set({ pendingManualRun: { node: snapshot, request, quote } });
+      else await get().executeManualRun(snapshot, request);
+    } catch (error) {
+      get().updateNodeData(id, { error: error instanceof Error ? error.message : "Could not price this generation. Nothing has run." });
+    } finally {
+      set({ quotingNodeId: null });
+    }
+  },
+
+  cancelManualRun: () => set({ pendingManualRun: null }),
+
+  approveManualRun: async () => {
+    const pending = get().pendingManualRun;
+    if (!pending) return;
+    set({ pendingManualRun: null });
+    const current = get().nodes.find((item) => item.id === pending.node.id);
+    if (!current || get().projectId !== pending.request.options.projectId) return;
+    const request = creativeNodeRequest(current, get().nodes, get().edges, get().projectId);
+    if (JSON.stringify(request) !== JSON.stringify(pending.request)) {
+      get().updateNodeData(current.id, { error: "Settings changed. Review a fresh price before generating." });
+      return;
+    }
+    await get().executeManualRun(pending.node, { ...pending.request,
+      options: { ...pending.request.options, approvalToken: pending.quote.approval_token } });
+  },
+
+  executeManualRun: async (node, request) => {
+    const id = node.id;
     get().updateNodeData(id, { status: "running", error: undefined });
     try {
-      const patch = await runCreativeNode(node, get().nodes, get().edges, get().projectId);
+      const patch = await runCreativeNode(node, request);
       get().updateNodeData(id, patch);
       if (patch.status === "queued" && patch.jobId) {
         const tick = async () => {
@@ -1092,7 +1140,7 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
             return;
           }
           try {
-            const next = await pollCreativeNode(current, get().projectId);
+            const next = await pollCreativeNode(current, request.options.projectId);
             if (!next) {
               return;
             }

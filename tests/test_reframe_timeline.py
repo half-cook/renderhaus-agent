@@ -90,7 +90,7 @@ class ReframeTimelineRenderTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.temporary = tempfile.TemporaryDirectory()
-        cls.root = Path(cls.temporary.name)
+        cls.root = Path(cls.temporary.name).resolve()
         cls.source = cls.root / "master.mp4"
         subprocess.run(["ffmpeg", "-nostdin", "-hide_banner", "-v", "error", "-f", "lavfi", "-i",
             "color=c=red:s=320x180:r=24:d=1,drawbox=x=160:y=0:w=160:h=180:color=blue:t=fill",

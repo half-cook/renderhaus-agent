@@ -9,6 +9,7 @@ import ipaddress
 import json
 import os
 from fractions import Fraction
+from functools import lru_cache
 from pathlib import Path
 import re
 import shutil
@@ -17,6 +18,7 @@ import subprocess
 import sys
 import threading
 import time
+import unicodedata
 from typing import Any
 from urllib.parse import urlsplit
 import uuid
@@ -45,7 +47,7 @@ def _source(source: str, *, directory: Path, index: int,
     if not parsed.scheme:
         path = Path(source).expanduser()
         path = (path if path.is_absolute() else source_root / path).resolve()
-        if not any(path == root or root in path.parents for root in media_roots):
+        if not any(path.is_relative_to(root.expanduser().resolve()) for root in media_roots):
             raise ValueError('Local render sources must stay inside Renderhaus media roots.')
         if not path.is_file() or not 0 < path.stat().st_size <= MAX_MEDIA_BYTES:
             raise ValueError('Local render sources must be nonempty media files within the size limit.')
@@ -134,9 +136,20 @@ def _visual_layer(label: str, item: dict[str, Any], *, duration: float, fps: flo
     return chain
 
 
+@lru_cache(maxsize=1)
+def _supports_text_shaping(binary: str) -> bool:
+    result = subprocess.run([binary, '-hide_banner', '-h', 'filter=drawtext'],
+                            capture_output=True, text=True, timeout=5, check=False)
+    return result.returncode == 0 and 'text_shaping' in result.stdout
+
+
 def _text_layer(item: dict[str, Any], directory: Path, index: int, *, width: int,
                 height: int, frame_rate: str) -> tuple[str, dict[str, float]]:
     layout = fit_text(item, width, height)
+    if any(unicodedata.bidirectional(char) in {'R', 'AL', 'AN'} for char in item['text']):
+        binary = shutil.which('ffmpeg')
+        if not binary or not _supports_text_shaping(binary):
+            raise ValueError('Right-to-left text requires an FFmpeg worker with libfribidi text shaping enabled.')
     _, path = font_path(layout)
     font_name = f'font-{path.name}'
     if not (directory / font_name).exists():
@@ -153,7 +166,7 @@ def _text_layer(item: dict[str, Any], directory: Path, index: int, *, width: int
         chain.append(f'drawbox=x=0:y=0:w=iw:h=ih:color={background}:t=fill:replace=1')
     chain.append(f'drawtext=fontfile={font_name}:textfile={text_name}:expansion=none:'
                  f'fontsize={layout["fontSize"]}:fontcolor={_colour(item.get("color", "#ffffff"))}:'
-                 'x=(w-text_w)/2:y=(h-text_h)/2:text_shaping=1')
+                 'x=(w-text_w)/2:y=(h-text_h)/2')
     chain += _visual_layer(f'text{index}', item, duration=duration, fps=float(Fraction(frame_rate)))
     return ','.join(chain), box
 

@@ -5,8 +5,10 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState, type KeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import { useCanvasStore } from "@/lib/canvas/store";
+import { AssetMedia } from "@/components/canvas/AssetMedia";
+import { useTimelinePlayback } from "./useTimelinePlayback";
 import {
-  FRAME_SECONDS, PX_PER_SECOND, clipLength, clipsFromNodes, dropIndex, moveClip, secondsLabel, timecode, totalSeconds,
+  FRAME_SECONDS, PX_PER_SECOND, clipLength, clipsFromNodes, dropIndex, moveClip, round3, secondsLabel, timecode, totalSeconds, timelinePosition,
   trimEdge, type TimelineClip,
 } from "@/lib/rh/timeline";
 
@@ -38,39 +40,18 @@ export type TimelineModel = ReturnType<typeof useTimelineModel>;
 
 /** Playhead, selection and transport. Shared by the dock and the full view so both show the same state. */
 export function useTransport(clips: TimelineClip[]) {
-  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [playhead, setPlayhead] = useState(0);
   const [playing, setPlaying] = useState(false);
   const total = totalSeconds(clips);
-  const selected = clips.find((clip) => clip.id === selectedId) ?? clips[0] ?? null;
-
-  useEffect(() => {
-    if (!playing) return;
-    let frame = 0;
-    let last = performance.now();
-    const tick = (now: number) => {
-      const elapsed = (now - last) / 1000;
-      last = now;
-      let reachedEnd = false;
-      setPlayhead((current) => {
-        const next = current + elapsed;
-        if (next >= total) { reachedEnd = true; return total; }
-        return next;
-      });
-      if (reachedEnd) setPlaying(false);
-      else frame = requestAnimationFrame(tick);
-    };
-    frame = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(frame);
-  }, [playing, total]);
+  const selected = timelinePosition(clips, playhead)?.clip ?? null;
 
   const startOf = useCallback((id: string) => {
     let cursor = 0;
-    for (const clip of clips) { if (clip.id === id) return cursor; cursor += clipLength(clip); }
+    for (const clip of clips) { if (clip.id === id) return round3(cursor); cursor += clipLength(clip); }
     return 0;
   }, [clips]);
 
-  const select = useCallback((id: string) => { setSelectedId(id); setPlayhead(startOf(id)); }, [startOf]);
+  const select = useCallback((id: string) => setPlayhead(startOf(id)), [startOf]);
   const step = useCallback((direction: 1 | -1) => {
     const index = Math.max(0, clips.findIndex((clip) => clip.id === selected?.id));
     const target = clips[Math.min(clips.length - 1, Math.max(0, index + direction))];
@@ -286,13 +267,17 @@ export function TimelineHints({ onRemove, canRemove }: { onRemove: () => void; c
 }
 
 /** The 250px dock under the canvas. */
-export function TimelineDock() {
+export function TimelineDock({ active = true }: { active?: boolean }) {
   const open = useCanvasStore((state) => state.timelineDockOpen);
   const setOpen = useCanvasStore((state) => state.setTimelineDockOpen);
   const model = useTimelineModel();
   const transport = useTransport(model.clips);
   const [snapOn, setSnapOn] = useState(true);
   const [zoom, setZoom] = useState(PX_PER_SECOND);
+  const asset = transport.selected ? model.mediaFor(transport.selected.id) : undefined;
+  const playback = useTimelinePlayback(model.clips, transport, {
+    sourceKey: asset?.versionId, active: active && open && asset?.kind === "video",
+  });
   useEffect(() => {
     const onKey = (event: globalThis.KeyboardEvent) => {
       if (event.key.toLowerCase() !== "s" || event.metaKey || event.ctrlKey) return;
@@ -305,7 +290,14 @@ export function TimelineDock() {
   if (!open) return null;
   return (
     <section className="rh-tl-dock" aria-label="Timeline">
-      <TransportBar model={model} transport={transport} snapOn={snapOn} onSnap={() => setSnapOn((value) => !value)} zoom={zoom} onZoom={setZoom} />
+      <TransportBar model={model} transport={transport} snapOn={snapOn} onSnap={() => setSnapOn((value) => !value)} zoom={zoom} onZoom={setZoom} playbackAvailable={asset?.kind === "video"}>
+        <div className="rh-tl-dock-preview" aria-label="Timeline preview">
+          {asset?.kind === "video" ? <AssetMedia key={asset.versionId} asset={asset} alt={transport.selected?.title ?? "Timeline preview"}
+            className="media-preview" {...playback.mediaProps} startTime={playback.sourceTime} preload="metadata" />
+            : <span>No video selected</span>}
+        </div>
+        {playback.error ? <span role="alert" className="rh-small">{playback.error}</span> : null}
+      </TransportBar>
       <TimelineTrack model={model} transport={transport} pxPerSecond={zoom} snapOn={snapOn} height={56} />
       <TimelineHints canRemove={Boolean(transport.selectedId)} onRemove={() => transport.selectedId && model.remove(transport.selectedId)} />
       <button type="button" className="rh-icon-btn rh-tl-collapse" aria-label="Collapse timeline" onClick={() => setOpen(false)}><ChevronDown size={15} /></button>

@@ -74,7 +74,7 @@ class BackendSelectionTests(unittest.IsolatedAsyncioTestCase):
 
     async def test_chat_audio_is_confined_to_the_owned_job_before_dispatch(self):
         with tempfile.TemporaryDirectory() as temporary:
-            root = Path(temporary)
+            root = Path(temporary).resolve()
             (root / 'parity').mkdir()
             (root / 'sibling').mkdir()
             (root / 'parity' / 'bed.wav').write_bytes(b'owned audio')
@@ -120,7 +120,7 @@ class BackendSelectionTests(unittest.IsolatedAsyncioTestCase):
 
     async def test_local_accepts_raw_source_inside_trusted_current_job(self):
         with tempfile.TemporaryDirectory() as folder:
-            source = Path(folder) / 'parity' / 'source.png'
+            source = Path(folder).resolve() / 'parity' / 'source.png'
             source.parent.mkdir()
             source.write_bytes(b'fixture')
             gateway = self.gateway()

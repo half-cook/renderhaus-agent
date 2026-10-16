@@ -41,27 +41,27 @@ class DeepAgentExecutionTests(unittest.IsolatedAsyncioTestCase):
         await self.parallel_subagent_approvals()
 
     async def test_rejected_parallel_call_does_not_dispatch_approved_sibling_does(self):
-        for rejected_tool in (VIDEO, VOICES):
+        for rejected_tool in (VIDEO, TTS):
             with self.subTest(rejected_tool=rejected_tool.name):
                 await self.parallel_subagent_approvals(rejected_tool)
 
     async def parallel_subagent_approvals(self, rejected_tool=None):
-        gateway = Gateway([VIDEO, VOICES])
-        voice_args = {"search": "narrator"}
+        gateway = Gateway([VIDEO, TTS])
+        voice_args = TTS_ARGS
         tasks = AIMessage(content="", tool_calls=[
             call("task", {"subagent_type": "media", "description": "Generate the lighthouse"}, "media-task").tool_calls[0],
-            call("task", {"subagent_type": "audio", "description": "Find a narrator"}, "audio-task").tool_calls[0],
+            call("task", {"subagent_type": "audio", "description": "Record the narration"}, "audio-task").tool_calls[0],
         ])
 
         def propose(messages, tools):
             if "call_media_tool" in tools:
                 return dispatch(VIDEO, VIDEO_ARGS, "wan-call")
-            return dispatch(VOICES, voice_args, "voices-call")
+            return dispatch(TTS, voice_args, "voice-call")
 
         def completed(messages, tools):
             self.assertIsInstance(messages[-1], ToolMessage, "Approval resume re-invoked the subagent model before dispatch")
-            expected_tool = VIDEO if "call_media_tool" in tools else VOICES
-            expected_id = "wan-call" if expected_tool == VIDEO else "voices-call"
+            expected_tool = VIDEO if "call_media_tool" in tools else TTS
+            expected_id = "wan-call" if expected_tool == VIDEO else "voice-call"
             self.assertEqual(messages[-1].tool_call_id, expected_id)
             if expected_tool == rejected_tool:
                 self.assertEqual(messages[-1].status, "error")
@@ -74,7 +74,7 @@ class DeepAgentExecutionTests(unittest.IsolatedAsyncioTestCase):
             with self.assertRaises(StudioAgentApprovalRequired) as paused:
                 await run_with_servers(request, studio, [gateway], model=ScriptedModel([tasks, propose, propose]))
             approvals = paused.exception.approvals
-            self.assertCountEqual([item.tool_name for item in approvals], [VIDEO.name, VOICES.name])
+            self.assertCountEqual([item.tool_name for item in approvals], [VIDEO.name, TTS.name])
             gateway.call_tool.assert_not_awaited()
             resumed = request.model_copy(update={
                 "session_items": json.loads(json.dumps(paused.exception.session_items)),
@@ -94,19 +94,19 @@ class DeepAgentExecutionTests(unittest.IsolatedAsyncioTestCase):
             self.assertFalse(model._steps)
             self.assertCountEqual([event.id for event in restored.tool_events], [item.call_id for item in approvals])
         self.assertCountEqual([(item.args[0], item.args[1]) for item in gateway.call_tool.await_args_list],
-                              [(tool.name, args) for tool, args in ((VIDEO, VIDEO_ARGS), (VOICES, voice_args))
+                              [(tool.name, args) for tool, args in ((VIDEO, VIDEO_ARGS), (TTS, voice_args))
                                if tool != rejected_tool])
 
     async def test_serial_subagent_approvals_dispatch_once_or_report_rejection(self):
         for decision in ("approve", "reject"):
             with self.subTest(decision=decision):
-                gateway = Gateway([VIDEO, VOICES])
-                voice_args = {"search": "narrator"}
+                gateway = Gateway([VIDEO, TTS])
+                voice_args = TTS_ARGS
 
                 def completed(messages, tools):
                     self.assertIsInstance(messages[-1], ToolMessage, "Serial resume replayed the proposed call")
                     self.assertEqual(messages[-1].tool_call_id,
-                                     "wan-call" if "call_media_tool" in tools else "voices-call")
+                                     "wan-call" if "call_media_tool" in tools else "voice-call")
                     if decision == "reject":
                         self.assertEqual(messages[-1].status, "error")
                         self.assertIn("Skip this call", messages[-1].text)
@@ -115,8 +115,8 @@ class DeepAgentExecutionTests(unittest.IsolatedAsyncioTestCase):
                 model = ScriptedModel([
                     call("task", {"subagent_type": "media", "description": "Generate the lighthouse"}, "media-task"),
                     dispatch(VIDEO, VIDEO_ARGS, "wan-call"), completed,
-                    call("task", {"subagent_type": "audio", "description": "Find a narrator"}, "audio-task"),
-                    dispatch(VOICES, voice_args, "voices-call"), completed,
+                    call("task", {"subagent_type": "audio", "description": "Record the narration"}, "audio-task"),
+                    dispatch(TTS, voice_args, "voice-call"), completed,
                     call("StudioAgentOutput", FINAL, "finish"),
                 ])
                 request = self.request()
@@ -142,10 +142,26 @@ class DeepAgentExecutionTests(unittest.IsolatedAsyncioTestCase):
                     else:
                         self.fail("Serial approval calls were reissued instead of completing")
                 self.assertEqual(output.title, FINAL["title"])
-                self.assertEqual(batches, [VIDEO.name, VOICES.name])
+                self.assertEqual(batches, [VIDEO.name, TTS.name])
                 self.assertFalse(model._steps)
                 self.assertCountEqual([(item.args[0], item.args[1]) for item in gateway.call_tool.await_args_list],
-                                      [(VIDEO.name, VIDEO_ARGS), (VOICES.name, voice_args)] if decision == "approve" else [])
+                                      [(VIDEO.name, VIDEO_ARGS), (TTS.name, voice_args)] if decision == "approve" else [])
+
+    async def test_free_voice_lookup_and_video_poll_continue_without_approval(self):
+        gateway = Gateway([VOICES, POLL])
+        voice_args = {"search": "narrator"}
+        poll_args = {"job_id": "saved-job", "download": True}
+        request = self.request()
+        studio = _context_from_request(request)
+        model = ScriptedModel([
+            dispatch(VOICES, voice_args, "voices"),
+            dispatch(POLL, poll_args, "poll"),
+            call("StudioAgentOutput", FINAL, "finish"),
+        ])
+        with tempfile.TemporaryDirectory() as directory, patch.dict("os.environ", {"RENDERHAUS_OUTCOME_DIR": directory}):
+            await run_with_servers(request, studio, [gateway], model=model)
+        self.assertEqual(gateway.call_tool.await_count, 2)
+        self.assertFalse(model._steps)
 
     async def drive(self, request, model, gateway):
         for _ in range(10):

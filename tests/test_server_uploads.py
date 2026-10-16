@@ -61,7 +61,8 @@ class ServerUploadTests(unittest.TestCase):
         for filename, kind, limit in (("frame.png", "image", 1), ("clip.mp4", "video", 2), ("sound.wav", "audio", 3)):
             with self.subTest(kind=kind):
                 content = b"x" * (limit * MB)
-                response = self.upload(filename, content)
+                with patch.object(studio_module, "validate_uploaded_media"):
+                    response = self.upload(filename, content)
                 self.assertEqual(response.status_code, 200, response.text)
                 asset = response.json()
                 self.assertEqual(asset["kind"], kind)
@@ -81,7 +82,7 @@ class ServerUploadTests(unittest.TestCase):
 
         with patch.object(UploadFile, "read", bounded_read), patch.object(
             self.repository, "register_bytes", side_effect=AssertionError("Use a file path")
-        ):
+        ), patch.object(studio_module, "validate_uploaded_media"):
             response = self.upload("clip.mp4", b"x" * (MB + 100))
         self.assertEqual(response.status_code, 200, response.text)
         self.assertGreater(len(sizes), 1)
@@ -121,7 +122,7 @@ class ServerUploadTests(unittest.TestCase):
 
         with patch.object(UploadFile, "read", bounded_read), patch.object(
             app_module, "register_upload", return_value=SimpleNamespace(id="asset", filename="frame.png")
-        ):
+        ), patch.object(app_module, "validate_uploaded_media"):
             response = self.client.post("/api/uploads", files={"file": ("frame.png", PNG + b"x" * (MB - len(PNG)), "image/png")})
         self.assertEqual(response.status_code, 201, response.text)
 
@@ -141,7 +142,9 @@ class ServerUploadTests(unittest.TestCase):
             paths.append(path)
             raise RuntimeError("storage failed")
 
-        with patch.object(self.repository, "register_file", side_effect=failed_registration):
+        with patch.object(self.repository, "register_file", side_effect=failed_registration), patch.object(
+            studio_module, "validate_uploaded_media"
+        ):
             with self.assertRaisesRegex(RuntimeError, "storage failed"):
                 self.upload("clip.mp4", b"media")
         self.assertEqual(len(paths), 1)

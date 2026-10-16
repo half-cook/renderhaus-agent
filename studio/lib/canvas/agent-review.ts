@@ -2,7 +2,7 @@ import type { StudioExecution } from "@/lib/api";
 import type { StudioAsset } from "@/lib/types";
 import type { CanvasNode } from "./connection-validation";
 import type { AgentToolEvent } from "./types";
-import { approvedSequence } from "./story";
+import { approvedSequence, sourceDuration } from "./story";
 
 export type ReviewFile = {
   asset: StudioAsset;
@@ -90,7 +90,7 @@ export function diffReviewLines(before: ReviewLine[] | undefined, after: ReviewL
 
 export function sequenceReviewLines(nodes: CanvasNode[]): ReviewLine[] {
   return approvedSequence(nodes).map((node, index) => {
-    const duration = node.data.config.duration_seconds;
+    const duration = sourceDuration(node.data);
     const durationText = typeof duration === "number" && Number.isFinite(duration)
       ? `${duration}s` : node.data.kind === "image" ? "still" : "duration unset";
     return {

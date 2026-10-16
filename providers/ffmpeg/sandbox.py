@@ -40,10 +40,17 @@ def validate_input_path(directory: Path, value: str, *, must_exist: bool = True,
     path = Path(value)
     directory = directory.resolve()
     if path.is_absolute():
+        if ".." in path.parts:
+            raise ValueError("Input names must be ASCII names without traversal, URLs, or option prefixes.")
         try:
             relative = path.relative_to(directory)
         except ValueError:
-            raise ValueError("Absolute input paths must stay inside the job directory.") from None
+            for parent in path.parents:
+                if parent.resolve() == directory:
+                    relative = path.relative_to(parent)
+                    break
+            else:
+                raise ValueError("Absolute input paths must stay inside the job directory.") from None
     else:
         relative = path
     if (not relative.parts or any(part in {".", ".."} or not re.fullmatch(NAME_PATTERN, part)

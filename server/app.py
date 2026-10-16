@@ -34,7 +34,7 @@ from server.demo_project import router as demo_project_router
 from server.beta_credits import BetaSettings
 from server.studio import router as studio_router
 from server.studio_state import repository as studio_repository
-from server.uploads import bounded_upload_path, upload_limits_mb
+from server.uploads import bounded_upload_path, upload_limits_mb, validate_uploaded_media
 from server.direct_uploads import public_config as direct_upload_config, router as direct_upload_router
 from server.productions import ProductionStore, public_production
 from server.projects import (
@@ -564,6 +564,7 @@ async def upload_reference(
                 status_code=415, detail="Use a valid PNG, JPEG, or WebP reference image."
             )
         suffix, mime_type = image_type
+        await asyncio.to_thread(validate_uploaded_media, path, filename=f"reference{suffix}", kind="image")
         asset = await asyncio.to_thread(
             register_upload,
             user_id=user_id,

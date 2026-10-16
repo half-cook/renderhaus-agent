@@ -21,7 +21,7 @@ class FfmpegFixture:
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
-        self.root = Path(self.tmp.name)
+        self.root = Path(self.tmp.name).resolve()
         self.job = self.root / "job-1"
         self.job.mkdir()
         self.source = self.job / "source.mp4"
@@ -93,6 +93,17 @@ class FfmpegToolTests(FfmpegFixture, unittest.TestCase):
         (self.job / "link.mp4").symlink_to(self.source)
         self.assertTrue(self.call(input_path=str(self.source))["ok"])
         self.assertTrue(self.call(input_path="link.mp4")["ok"])
+
+    def test_absolute_job_alias_keeps_traversal_and_symlink_escape_guards(self):
+        alias = self.root / "job-alias"
+        alias.symlink_to(self.job, target_is_directory=True)
+        self.assertTrue(self.call(input_path=str(alias / "source.mp4"))["ok"])
+        outside = self.root / "outside.mp4"
+        outside.write_bytes(b"outside")
+        (self.job / "escape.mp4").symlink_to(outside)
+        for value in (str(alias / "escape.mp4"), str(alias / "child" / ".." / "source.mp4")):
+            with self.subTest(path=value):
+                self.assertFalse(self.call(input_path=value)["ok"])
 
     def test_default_dry_run_does_not_read_or_run_media(self):
         with patch.dict(os.environ, {"FFMPEG_DRY_RUN": "true"}):

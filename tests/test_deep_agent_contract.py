@@ -198,7 +198,11 @@ class DeepAgentContractTests(unittest.IsolatedAsyncioTestCase):
                 workspace_id="user:local", project_id="project", user_id="local", autonomous=True,
             )
         execution = self.repo.get_execution("user:local", self.job)
-        self.assertEqual(execution["status"], "completed")
+        # The scripted remote worker never stages or inspects its generated image.
+        self.assertEqual(execution["status"], "error")
+        self.assertEqual(execution["error_type"], "DeliverableIncomplete")
+        self.assertTrue(execution["result"]["partial"])
+        self.assertIn("no owned local file available for inspection", execution["result"]["summary"])
         self.assertEqual(ingest.call_count, 1)
         self.assertEqual(len(execution["result"]["assets"]), 1)
         self.assertEqual(execution["result"]["assets"][0]["version_id"], execution["tool_calls"][0]["assets"][0]["version_id"])

@@ -12,14 +12,14 @@ import unittest
 from unittest.mock import patch
 import wave
 
-from providers.ffmpeg import api, ops
+from providers.ffmpeg import api, finishing, ops
 
 
 class FinishingFixture:
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
-        self.root = Path(self.tmp.name)
+        self.root = Path(self.tmp.name).resolve()
         self.job = self.root / "finishing"
         self.job.mkdir()
         self.source = self.job / "source.mp4"
@@ -51,6 +51,17 @@ class FinishingFixture:
 
 
 class FinishingContractTests(FinishingFixture, unittest.TestCase):
+    def test_filter_discovery_accepts_current_and_legacy_flag_columns(self):
+        token = api._EXECUTION_DEADLINE.set(float('inf'))
+        self.addCleanup(api._EXECUTION_DEADLINE.reset, token)
+        for flags in ("..", ".S", "TS", "...", ".S.", "TSC"):
+            with self.subTest(flags=flags), patch("providers.ffmpeg.api._bounded_run", return_value=
+                    api.ProcessResult(0, f" {flags} scale V->V Scale video.\n".encode(), b"")), \
+                    patch("providers.ffmpeg.finishing.shutil.which", return_value="ffmpeg"):
+                finishing._filters(self.job, {"scale"})
+                with self.assertRaisesRegex(ValueError, "lacks required finishing filters"):
+                    finishing._filters(self.job, {"unavailable_filter"})
+
     def test_export_srt_has_exact_milliseconds_unicode_and_no_media_dependency(self):
         with patch("providers.ffmpeg.api._bounded_run", side_effect=AssertionError("No binary")):
             result = self.call("export_srt", {"cues": self.cues}, input_path="unused.mp4")

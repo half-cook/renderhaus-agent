@@ -3,6 +3,9 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const load = require('./load-ts.cjs');
+const React = require('react');
+const { renderToStaticMarkup } = require('react-dom/server');
+const { ApprovalCard } = load('components/rh/ApprovalCard.tsx');
 const billing = load('lib/rh/billing.ts');
 const approval = load('lib/rh/approval-model.ts');
 const money = load('lib/rh/money.ts');
@@ -47,6 +50,66 @@ test('documented paused cap preserves totals, affordable options and exact zero 
   assert.equal(card.balanceCents, 0);
   assert.deepEqual(card.raiseOptionsCents, []);
 });
+test('the credit chip does not subtract a fully charged paused cap from the wallet again', () => {
+  const { CreditChip } = load('components/rh/CreditChip.tsx');
+  const { creditState } = load('lib/rh/credit-store.ts');
+  const heldCents = approval.heldCreditCents([{ status: 'error', errorType: 'PausedAtCap', approvals: [],
+    pausedCap: { held_cents: 20, charged_cents: 20 } }]);
+  assert.equal(heldCents, 0);
+  const html = renderToStaticMarkup(React.createElement(CreditChip, {
+    balanceCents: 815, heldCents, state: creditState(815, null, heldCents),
+  }));
+  assert.match(html, /Credit \$8\.15/);
+  assert.doesNotMatch(html, />Held</);
+});
+test('held credit counts each active run once and excludes stopped or historical snapshots', () => {
+  const running = { status: 'running', approvals: [{ kind: 'approval', ...request({ status: 'running', held_cents: 150, spent_so_far_cents: 28 }) },
+    { kind: 'approval', ...request({ status: 'running', held_cents: 150, spent_so_far_cents: 28 }) }] };
+  const pausedRun = { status: 'error', errorType: 'PausedAtCap', approvals: [],
+    pausedCap: { held_cents: 50, charged_cents: 39 } };
+  assert.equal(approval.heldCreditCents([running, pausedRun]), 133);
+  for (const status of ['completed', 'stopped', 'cancelled', 'failed', 'error']) {
+    assert.equal(approval.heldCreditCents([{ ...pausedRun, status, errorType: 'UserStopped' }, running]), 122);
+  }
+  assert.equal(approval.heldCreditCents([{ ...pausedRun, receipt: { actual_cents: 39 } }]), 0);
+  assert.equal(approval.heldCreditCents([{ ...pausedRun, pausedCap: { held_cents: 20, charged_cents: 25 } }]), 0);
+  assert.equal(approval.heldCreditCents([{ ...pausedRun, pausedCap: { held_cents: 20 } }]), 0);
+});
+for (const raiseOptions of [[200], []]) {
+  for (const charged of [26, 0, undefined]) {
+    test(`paused next-step reservation shows actual ${charged ?? 'unknown'} charge with ${raiseOptions.length ? 'raise' : 'free-edit'} actions`, () => {
+      const model = billing.toApprovalCardModel({ id: 'partial-pause', title: 'Voice test' }, {
+        type: 'paused_cap', cap_cents: 144, charged_cents: charged, raise_options_cents: raiseOptions,
+        message: 'Stopped at your cap. Nothing more has been charged, and the run is paused so you decide.',
+      });
+      const previous = process.env.NEXT_PUBLIC_TOPUPS_ENABLED;
+      process.env.NEXT_PUBLIC_TOPUPS_ENABLED = 'false';
+      let html;
+      try {
+        html = renderToStaticMarkup(React.createElement(ApprovalCard, { model, focusOnMount: false }));
+      } finally {
+        if (previous === undefined) delete process.env.NEXT_PUBLIC_TOPUPS_ENABLED;
+        else process.env.NEXT_PUBLIC_TOPUPS_ENABLED = previous;
+      }
+      assert.match(html, /Paused · next step exceeds cap/);
+      assert.match(html, /Next step exceeds your \$1\.44 cap/);
+      assert.match(html, /The next step needs more than the remaining cap\. No further work has started\./);
+      assert.doesNotMatch(html, /cap reached|Stopped at your|Charged · at cap/);
+      const total = html.match(/<dt>Charged so far<\/dt><dd class="rh-num">(.*?)<\/dd>/)?.[1];
+      assert.equal(total, charged == null ? 'Unavailable' : money.formatCents(charged));
+      const bar = html.match(/class="rh-bar rh-bar-acc"[^>]*><b style="width:([^%]+)%"/);
+      if (raiseOptions.length && charged != null) assert.ok(Math.abs(Number(bar?.[1]) - charged / 144 * 100) < 0.0001);
+      else assert.equal(bar, null);
+      if (raiseOptions.length) {
+        assert.match(html, /Raise cap to \$2\.00/);
+        assert.match(html, /Stop here/);
+      } else {
+        assert.match(html, />Trim<\/button>/);
+        assert.match(html, />Keep as is<\/button>/);
+      }
+    });
+  }
+}
 for (const status of ['done', 'failed']) test(`documented ${status} receipt lists exactly what was charged`, () => {
   const model = billing.toRunReceiptModel({ ...receipt, status });
   assert.equal(model.status, status);

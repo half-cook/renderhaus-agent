@@ -1,15 +1,15 @@
 
 import pytest
+import subprocess
 
 from agent.deep_agent.sandbox import JobSandbox
 
 
 @pytest.fixture
 def clip(tmp_path):
-    result = JobSandbox(tmp_path).execute(
-        'ffmpeg -v error -f lavfi -i color=c=black:s=64x64:d=1 '
-        '-f lavfi -i anullsrc=r=48000:cl=mono -t 1 -c:v libx264 -c:a aac black.mp4')
-    assert result.exit_code == 0, result.output
+    subprocess.run(['ffmpeg', '-v', 'error', '-f', 'lavfi', '-i', 'color=c=black:s=64x64:d=1',
+                    '-f', 'lavfi', '-i', 'anullsrc=r=48000:cl=mono', '-t', '1',
+                    '-c:v', 'libx264', '-c:a', 'aac', str(tmp_path / 'black.mp4')], check=True)
     return tmp_path / 'black.mp4'
 
 
@@ -21,6 +21,8 @@ def test_inspection_measures_black_and_silence_and_binds_hash(clip):
     assert report['width'] == 64 and report['height'] == 64
     assert report['duration_seconds'] == pytest.approx(1, abs=.1)
     assert report['black_intervals'] and report['silence_intervals']
+    assert report['loudness_lufs'] is None
+    assert report['warnings']
     assert 'loudness_lufs' in report
     assert report['speech_sample']['status'] == 'skipped'
     assert 'read_file' in report['visual_check']
@@ -50,18 +52,47 @@ def test_inspection_does_not_accept_prior_turn_receipts(clip):
     assert MediaInspection(JobSandbox(clip.parent)).blocker([clip.name])
 
 
+def test_fixed_inspection_does_not_invoke_model_shell(clip, monkeypatch):
+    from agent.deep_agent.inspection import MediaInspection
+
+    def forbidden(*args, **kwargs):
+        raise AssertionError('Inspection must use fixed media operations, never the model shell.')
+
+    monkeypatch.setattr(JobSandbox, 'execute', forbidden)
+    report = MediaInspection(JobSandbox(clip.parent)).inspect(clip.name)
+    assert report['status'] == 'inspected'
+
+
+def test_failed_fixed_operation_does_not_leave_inspection_receipt(clip, monkeypatch):
+    from agent.deep_agent.inspection import MediaInspection
+
+    monkeypatch.setattr('agent.deep_agent.inspection.execute',
+                        lambda *args: {'ok': False, 'error': 'The fixed probe failed.'})
+    inspector = MediaInspection(JobSandbox(clip.parent))
+    with pytest.raises(ValueError, match='The fixed probe failed'):
+        inspector.inspect(clip.name)
+    assert not inspector.reports
+    assert inspector.blocker([clip.name])
+
+
 def test_inspection_measures_loudness(tmp_path):
     from agent.deep_agent.inspection import MediaInspection
     sandbox = JobSandbox(tmp_path)
-    assert sandbox.execute('ffmpeg -v error -f lavfi -i sine=frequency=440:duration=3 -af loudnorm=I=-14:TP=-1:LRA=11 tone.wav').exit_code == 0
+    subprocess.run(['ffmpeg', '-v', 'error', '-f', 'lavfi', '-i', 'sine=frequency=440:duration=3',
+                    '-af', 'loudnorm=I=-14:TP=-1:LRA=11', str(tmp_path / 'tone.wav')], check=True)
     report = MediaInspection(sandbox).inspect('tone.wav')
     assert report['loudness_lufs'] == pytest.approx(-14, abs=1)
+    from providers.ffmpeg.api import execute
+    metrics = execute('measure_loudness', tmp_path, 'tone.wav')['metrics']
+    assert report['loudness_lufs'] == metrics['integrated_lufs']
+    assert report['true_peak_dbfs'] == metrics['true_peak_db']
 
 
 def test_minute_of_audio_keeps_measurement_logs_within_output_limit(tmp_path):
     from agent.deep_agent.inspection import MediaInspection
     sandbox = JobSandbox(tmp_path)
-    assert sandbox.execute('ffmpeg -v error -f lavfi -i sine=frequency=440:duration=60 tone.wav').exit_code == 0
+    subprocess.run(['ffmpeg', '-v', 'error', '-f', 'lavfi', '-i', 'sine=frequency=440:duration=60',
+                    str(tmp_path / 'tone.wav')], check=True)
     report = MediaInspection(sandbox).inspect('tone.wav')
     assert report['duration_seconds'] == pytest.approx(60, abs=.1)
     assert report['loudness_lufs'] is not None

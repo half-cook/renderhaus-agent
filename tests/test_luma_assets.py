@@ -13,6 +13,7 @@ from server.studio import (
     _normalize_canvas_document,
     _register_payload_assets,
     invoke_tool,
+    quote_tool,
 )
 from server.studio_state import StudioRepository
 
@@ -93,6 +94,7 @@ class LumaAssetPolicyTests(unittest.IsolatedAsyncioTestCase):
             patch("server.studio.dispatch", return_value={"status": "succeeded", "output_path": str(self.source)}),
             patch("server.studio._resolved_media_file", return_value=self.source),
         ):
+            body.approval_token = (await quote_tool(body, SimpleNamespace()))["approval_token"]
             result = await invoke_tool(body, SimpleNamespace())
         self.assertIs(result["assets"][0]["training_eligible"], False)
 

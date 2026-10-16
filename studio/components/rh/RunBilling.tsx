@@ -25,7 +25,6 @@ export function RunReceipt({ receipt }: {
   onTimeline?: () => void;
   onExport?: () => void;
 }) {
-  const released = Math.max(0, receipt.estimateCents - receipt.actualCents);
   return (
     <article className="rh-appr rh-receipt rh-receipt-v4" role="group" aria-label={`Run receipt, ${receipt.title}`} data-state="done" data-shot="receipt-v4">
       {receipt.thumbStrip?.length ? (
@@ -41,7 +40,6 @@ export function RunReceipt({ receipt }: {
         {receipt.lines.map((line) => <LedgerRow key={`${line.kind}:${line.label}:${line.detail ?? ""}`} label={lineLabel(line, "actual")} amount={formatCents(line.priceCents)} />)}
         <LedgerTotal label="Total charged" amountCents={receipt.actualCents} />
         <div className="rh-receipt-est">
-          {released > 0 ? <span>{formatCents(released)} released back · </span> : null}
           <span>estimate {formatCents(receipt.estimateCents)} · cap {formatCents(receipt.capCents)}</span>
         </div>
       </Ledger>

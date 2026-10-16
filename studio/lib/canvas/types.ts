@@ -107,6 +107,13 @@ export type CanvasNodeData = {
   toolName?: string;
   config: Record<string, unknown>;
   output?: StudioAsset;
+  /** Intrinsic media metadata belongs to this output, never to the next generation's settings. */
+  outputMetadata?: {
+    versionId: string;
+    width?: number;
+    height?: number;
+    durationSeconds?: number;
+  };
   variants?: StudioAsset[];
   result?: unknown;
   status: JobStatus;

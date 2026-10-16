@@ -1,7 +1,7 @@
 "use client";
 
 /* Revamp v4 Studio stage: dominant ~976×576 frame with the shot title in Instrument Serif.
-   While the agent is shooting, overlays "Shooting…" and frame progress. Film-strip timeline and
+   While the agent works, overlays its status and explicit frame progress. Film-strip timeline and
    hover-only chrome are deferred until after launch. */
 import { Film } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -23,14 +23,16 @@ export function StudioStage({ onOpenReview }: { onOpenReview?: () => void }) {
     ?? shots.at(-1);
   const index = selected ? shots.indexOf(selected) : -1;
   const live = executions.find((execution) => execution.conversationId === conversationId && ["running", "queued", "pending"].includes(execution.status.toLowerCase()));
-  const frameRaw = live?.toolEvents.find((event) => /running|pending/i.test(event.status) && /\d/.test(event.summary || ""))?.summary
-    || live?.progressEvents.find((event) => /\d/.test(event.message || ""))?.message
-    || "";
-  const frameMatch = frameRaw.match(/(\d+)\s*\/?\s*(\d+)/);
+  const frameMatch = [
+    ...(live?.toolEvents.filter((event) => /^(running|pending)$/i.test(event.status)).map((event) => event.summary) || []),
+    ...(live?.progressEvents.filter((event) => event.type === "MEDIA_WAIT" && event.status === "running").map((event) => event.message) || []),
+  ].reverse().map((message) => message.match(/\b(\d+)\s*(?:of|\/)\s*(\d+)\s+frames?\b/i))
+    .find((match) => match && Number.isSafeInteger(Number(match[1])) && Number.isSafeInteger(Number(match[2]))
+      && Number(match[2]) > 0 && Number(match[1]) <= Number(match[2]));
   const frames = frameMatch ? `${frameMatch[1]} of ${frameMatch[2]} frames` : "";
   const shooting = live ? {
-    title: "Shooting…",
-    meta: [index >= 0 ? `Shot ${index + 1}` : null, frames].filter(Boolean).join(" · ") || "Working",
+    title: frames ? "Rendering…" : "Working…",
+    meta: frames ? [index >= 0 ? `Shot ${index + 1}` : null, frames].filter(Boolean).join(" · ") : "",
   } : null;
 
   return (
@@ -45,7 +47,7 @@ export function StudioStage({ onOpenReview }: { onOpenReview?: () => void }) {
         {shooting ? (
           <div className="rh-shooting" role="status">
             <span className="rh-shooting-title">{shooting.title}</span>
-            <span className="rh-shooting-meta rh-num">{shooting.meta}</span>
+            {shooting.meta ? <span className="rh-shooting-meta rh-num">{shooting.meta}</span> : null}
           </div>
         ) : selected ? (
           <div className="rh-stage-caption" aria-hidden={hot || undefined}>

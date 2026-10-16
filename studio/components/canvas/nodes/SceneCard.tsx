@@ -7,7 +7,6 @@ import { NodeTag } from "./NodeTag";
 import { generateBlockers } from "@/lib/canvas/generate-readiness";
 import {
   aspectLabel,
-  aspectRatioFromDimensions,
   durationLabel,
   nodeFrameSize,
   sceneBadge,
@@ -48,6 +47,21 @@ export function SceneCard({ id, data, selected }: Props) {
   const meta = [duration, aspect].filter(Boolean).join(" · ");
   const frame = nodeFrameSize(data);
   const estimate = toNodeEstimate(data.estimate);
+  const recordMetadata = ({ width, height, durationSeconds }: Omit<NonNullable<CanvasNodeData["outputMetadata"]>, "versionId">) => {
+    const versionId = data.output?.versionId;
+    const current = useCanvasStore.getState().nodes.find((node) => node.id === id)?.data;
+    if (!versionId || current?.output?.versionId !== versionId) return;
+    const metadata = {
+      versionId,
+      width: width && Number.isFinite(width) && width > 0 ? width : undefined,
+      height: height && Number.isFinite(height) && height > 0 ? height : undefined,
+      durationSeconds: durationSeconds && Number.isFinite(durationSeconds) && durationSeconds > 0 ? durationSeconds : undefined,
+    };
+    const previous = current.outputMetadata;
+    if (previous?.versionId === versionId && previous.width === metadata.width
+      && previous.height === metadata.height && previous.durationSeconds === metadata.durationSeconds) return;
+    updateNodeData(id, { outputMetadata: metadata });
+  };
 
   return (
     <div className="flow-node-wrap node-media" style={{ width: frame.width }}>
@@ -85,46 +99,13 @@ export function SceneCard({ id, data, selected }: Props) {
           />
         ))}
         <div className="scene-stage" style={frame}>
-          {data.kind === "video" && data.output ? (
+          {data.output ? (
             <AssetMedia
               asset={data.output}
               className="media-preview"
               alt={data.title}
-              controls
-              onMetadata={({ width, height, durationSeconds }) => {
-                const aspectRatio = width && height
-                  ? aspectRatioFromDimensions(width, height)
-                  : undefined;
-                const duration = durationSeconds && Number.isFinite(durationSeconds)
-                  ? Math.max(1, Math.round(durationSeconds))
-                  : undefined;
-                const aspectChanged = Boolean(
-                  aspectRatio && data.config.aspect_ratio !== aspectRatio,
-                );
-                const durationChanged = Boolean(
-                  duration && data.config.duration_seconds !== duration,
-                );
-                if (!aspectChanged && !durationChanged) return;
-                updateNodeData(id, {
-                  config: {
-                    ...data.config,
-                    ...(aspectChanged ? { aspect_ratio: aspectRatio } : {}),
-                    ...(durationChanged ? { duration_seconds: duration } : {}),
-                  },
-                });
-              }}
-            />
-          ) : data.output ? (
-            <AssetMedia
-              asset={data.output}
-              className="media-preview"
-              alt={data.title}
-              onMetadata={({ width, height }) => {
-                if (!width || !height) return;
-                const aspectRatio = aspectRatioFromDimensions(width, height);
-                if (!aspectRatio || data.config.aspect_ratio === aspectRatio) return;
-                updateNodeData(id, { config: { ...data.config, aspect_ratio: aspectRatio } });
-              }}
+              controls={data.kind === "video"}
+              onMetadata={recordMetadata}
             />
           ) : (
             <div className="media-placeholder">

@@ -1,4 +1,4 @@
-import { invokeTool } from "@/lib/api";
+import { invokeTool, type ToolInvocationOptions } from "@/lib/api";
 import { studioAssetHandle } from "@/lib/assets";
 import type { StudioAsset } from "@/lib/types";
 import type { CanvasEdge } from "./connection-validation";
@@ -8,6 +8,8 @@ import type { CanvasNodeData, PortDataType } from "./types";
 
 const TERMINAL = new Set([
   "succeeded",
+  "completed",
+  "success",
   "failed",
   "cancelled",
   "canceled",
@@ -21,6 +23,9 @@ const TERMINAL = new Set([
 
 const FAILED = new Set([
   "failed",
+  "error",
+  "blocked",
+  "not_run",
   "cancelled",
   "canceled",
   "deleted",
@@ -104,27 +109,54 @@ function statusFrom(result: unknown): string | undefined {
   return typeof status === "string" ? status.toLowerCase() : undefined;
 }
 
-export async function runCreativeNode(
+function failureMessage(result: unknown, status?: string): string {
+  if (status === "dry_run") return "Preview mode is enabled. No media was generated.";
+  const record = result && typeof result === "object" ? result as Record<string, unknown> : {};
+  const reason = record.error ?? record.reason;
+  return typeof reason === "string" && reason.trim()
+    ? reason.replace(/https?:\/\/\S+/g, "[provider link]").slice(0, 500)
+    : "Generation did not produce a saved result.";
+}
+
+function hasError(result: unknown): boolean {
+  return Boolean(result && typeof result === "object" && (result as Record<string, unknown>).error);
+}
+
+export type CreativeNodeRequest = {
+  provider: string;
+  tool: string;
+  arguments: Record<string, unknown>;
+  options: ToolInvocationOptions;
+};
+
+export function creativeNodeRequest(
   node: CanvasNode,
   nodes: CanvasNode[],
   edges: CanvasEdge[],
   projectId: string,
-  invoke: typeof invokeTool = invokeTool,
-): Promise<Partial<CanvasNodeData>> {
+): CreativeNodeRequest {
   const tool = toolById(node.data.toolId);
   if (!tool) {
     throw new Error("This node has no generation tool.");
   }
-  const arguments_ = resolveConfig(node, nodes, edges);
+  const arguments_ = structuredClone(resolveConfig(node, nodes, edges));
   const sourceVersionIds = edges
     .filter((edge) => edge.target === node.id)
     .map((edge) => nodes.find((candidate) => candidate.id === edge.source)?.data.output?.versionId)
     .filter((value): value is string => Boolean(value));
-  const payload = await invoke(tool.providerId, tool.toolName, arguments_, {
-    projectId,
-    assetId: node.data.output?.assetId,
-    sourceVersionIds,
-  });
+  return { provider: tool.providerId, tool: tool.toolName, arguments: arguments_,
+    options: { projectId, assetId: node.data.output?.assetId, sourceVersionIds } };
+}
+
+export async function runCreativeNode(
+  node: CanvasNode,
+  request: CreativeNodeRequest,
+  invoke: typeof invokeTool = invokeTool,
+): Promise<Partial<CanvasNodeData>> {
+  const tool = toolById(node.data.toolId);
+  if (!tool) throw new Error("This node has no generation tool.");
+  const sourceVersionIds = request.options.sourceVersionIds;
+  const payload = await invoke(request.provider, request.tool, request.arguments, request.options);
   const assets = payload.assets;
   const jobId = jobIdFrom(payload.result);
   const providerStatus = statusFrom(payload.result);
@@ -139,17 +171,15 @@ export async function runCreativeNode(
       jobId,
     };
   }
-  if (providerStatus && FAILED.has(providerStatus)) {
+  if (hasError(payload.result) || (providerStatus && FAILED.has(providerStatus))) {
     return {
       status: "failed",
       result: payload.result,
       jobId,
-      output: undefined,
-      variants: assets,
-      error: "Generation failed.",
+      error: failureMessage(payload.result, providerStatus),
     };
   }
-  if (jobId && tool.pollTool && providerStatus !== "dry_run") {
+  if (jobId && tool.pollTool && !TERMINAL.has(providerStatus || "")) {
     return {
       status: "queued",
       sourceVersionIds,
@@ -159,12 +189,10 @@ export async function runCreativeNode(
     };
   }
   return {
-    status: "completed",
+    status: "failed",
     result: payload.result,
     jobId,
-    output: undefined,
-    variants: assets,
-    error: undefined,
+    error: failureMessage(payload.result, providerStatus),
   };
 }
 
@@ -195,11 +223,11 @@ export async function pollCreativeNode(
       error: undefined,
     };
   }
-  if (FAILED.has(providerStatus)) {
-    return { status: "failed", result: payload.result, error: "Generation failed." };
+  if (hasError(payload.result) || FAILED.has(providerStatus)) {
+    return { status: "failed", result: payload.result, error: failureMessage(payload.result, providerStatus) };
   }
   if (TERMINAL.has(providerStatus)) {
-    return { status: "completed", result: payload.result };
+    return { status: "failed", result: payload.result, error: failureMessage(payload.result, providerStatus) };
   }
   return { status: "running", result: payload.result };
 }

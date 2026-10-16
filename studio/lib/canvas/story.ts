@@ -51,8 +51,8 @@ export function sceneBadge(data: CanvasNodeData): string | undefined {
 }
 
 export function durationLabel(data: CanvasNodeData): string {
-  const value = data.config.duration_seconds;
-  if (typeof value === "number" && Number.isFinite(value)) {
+  const value = sourceDuration(data);
+  if (value !== undefined) {
     return `${value}s`;
   }
   if (data.kind === "image") {
@@ -62,8 +62,46 @@ export function durationLabel(data: CanvasNodeData): string {
 }
 
 export function aspectLabel(data: CanvasNodeData): string {
+  const metadata = outputMetadata(data);
+  if (metadata?.width && metadata.height) {
+    const ratio = aspectRatioFromDimensions(metadata.width, metadata.height);
+    if (ratio) return ratio;
+  }
   const value = data.config.aspect_ratio;
   return typeof value === "string" ? value : "";
+}
+
+function outputMetadata(data: CanvasNodeData): CanvasNodeData["outputMetadata"] {
+  return data.output && data.outputMetadata?.versionId === data.output.versionId
+    ? data.outputMetadata : undefined;
+}
+
+export function sourceDuration(data: CanvasNodeData): number | undefined {
+  const actual = outputMetadata(data)?.durationSeconds;
+  if (typeof actual === "number" && Number.isFinite(actual) && actual > 0) return actual;
+  const requested = data.config.duration_seconds;
+  return typeof requested === "number" && Number.isFinite(requested) && requested > 0
+    ? requested : undefined;
+}
+
+export function sourceAspectRatio(data: CanvasNodeData): number | undefined {
+  const metadata = outputMetadata(data);
+  if (metadata?.width && metadata.height && metadata.width > 0 && metadata.height > 0) {
+    const ratio = metadata.width / metadata.height;
+    if (Number.isFinite(ratio) && ratio > 0) return ratio;
+  }
+  return numericAspectRatio(data.config.aspect_ratio);
+}
+
+export function numericAspectRatio(value: unknown): number | undefined {
+  const match = typeof value === "string"
+    ? /^(\d+(?:\.\d+)?):(\d+(?:\.\d+)?)$/.exec(value.trim()) : null;
+  if (!match) return undefined;
+  const width = Number(match[1]);
+  const height = Number(match[2]);
+  const ratio = width / height;
+  return width > 0 && height > 0 && Number.isFinite(width) && Number.isFinite(height)
+    && ratio > 0 && Number.isFinite(ratio) ? ratio : undefined;
 }
 
 // Video's `resolution` and image's `size` are different fields with
@@ -83,6 +121,7 @@ const MIN_FRAME_PX = 96; // floor so small frames still fit their Generate butto
 const MAX_FRAME_PX = 420; // ceiling so a high-res wide frame doesn't dominate the canvas
 
 export function aspectRatioFromDimensions(width: number, height: number): string | undefined {
+  if (!Number.isFinite(width) || !Number.isFinite(height)) return undefined;
   const roundedWidth = Math.round(width);
   const roundedHeight = Math.round(height);
   if (roundedWidth <= 0 || roundedHeight <= 0) return undefined;
@@ -114,36 +153,22 @@ export function aspectRatioFromDimensions(width: number, height: number): string
 // 1920x1080 frame looks bigger than a 428x926 one in Figma, at any given
 // zoom level, without needing letterbox padding to fake the comparison.
 export function nodeFrameSize(data: CanvasNodeData): { width: number; height: number } {
-  const ratioValue = data.config.aspect_ratio;
-  const ratio = typeof ratioValue === "string" ? ratioValue.trim() : "";
-  const match = /^(\d+(?:\.\d+)?):(\d+(?:\.\d+)?)$/.exec(ratio);
-  const [rw, rh] = match ? [Number(match[1]), Number(match[2])] : [1, 1];
+  const ratio = sourceAspectRatio(data) ?? 1;
 
   const resValue = data.config.resolution ?? data.config.size;
   const shortSide = (typeof resValue === "string" && RESOLUTION_SHORT_SIDE[resValue]) || 720;
 
-  const isPortrait = rh > rw;
-  const realWidth = isPortrait ? shortSide : (shortSide * rw) / rh;
-  const realHeight = isPortrait ? (shortSide * rh) / rw : shortSide;
+  const metadata = outputMetadata(data);
+  // Known media fills the card's 200px minimum width at ordinary ratios.
+  const minimum = metadata?.width && metadata.height ? 200 : MIN_FRAME_PX;
+  const shortFrame = Math.max(minimum, shortSide * CANVAS_ZOOM);
+  // The longest edge wins when an extreme ratio cannot meet both bounds.
+  const width = ratio >= 1
+    ? Math.min(MAX_FRAME_PX, shortFrame * ratio)
+    : Math.min(shortFrame, MAX_FRAME_PX * ratio);
+  const height = width / ratio;
 
-  let width = realWidth * CANVAS_ZOOM;
-  let height = realHeight * CANVAS_ZOOM;
-
-  // Scale the WHOLE box uniformly against whichever bound binds -- clamping
-  // each axis independently would distort the ratio instead of preserving it.
-  const longest = Math.max(width, height);
-  const shortest = Math.min(width, height);
-  if (longest > MAX_FRAME_PX) {
-    const factor = MAX_FRAME_PX / longest;
-    width *= factor;
-    height *= factor;
-  } else if (shortest < MIN_FRAME_PX) {
-    const factor = MIN_FRAME_PX / shortest;
-    width *= factor;
-    height *= factor;
-  }
-
-  return { width: Math.round(width), height: Math.round(height) };
+  return { width: Math.max(1, Math.round(width)), height: Math.max(1, Math.round(height)) };
 }
 
 export function variantPosition(data: CanvasNodeData): { current: number; total: number } {

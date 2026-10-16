@@ -12,6 +12,9 @@ from unittest.mock import patch
 
 from providers.remotion import api
 from providers.registry import dispatch
+from server.billing_rates import cost_for
+from server.run_billing import RunMeter
+from server.studio_state import StudioRepository
 
 
 @unittest.skipUnless(shutil.which('ffmpeg') and shutil.which('ffprobe'), 'ffmpeg/ffprobe required')
@@ -21,7 +24,11 @@ class LocalAssemblyTests(unittest.TestCase):
             'REMOTION_RENDER_BACKEND': 'local', 'REMOTION_DRY_RUN': 'false',
             'RENDERHAUS_MEDIA_DIR': folder,
         }), patch.dict(api.ASPECT_SIZES, {'16:9': (320, 180)}):
-            root = Path(folder)
+            root = Path(folder).resolve()
+            repository = StudioRepository(root / 'billing.sqlite3', root)
+            repository.adjust_balance('native-user', 1000, 'test_credit')
+            repository.hold_run('native-user', 'submit-run', 125)
+            meter = RunMeter(repository, 'native-user', 'submit-run')
             clip, voice = root / 'clip.mp4', root / 'voice.wav'
             subprocess.run(['ffmpeg', '-v', 'error', '-f', 'lavfi', '-i',
                             'color=c=red:s=160x160:r=16:d=1', '-f', 'lavfi', '-i',
@@ -32,15 +39,20 @@ class LocalAssemblyTests(unittest.TestCase):
             subprocess.run(['ffmpeg', '-v', 'error', '-f', 'lavfi', '-i',
                             'sine=frequency=440:duration=1', str(voice)], check=True, timeout=20)
             with patch.object(api, 'load_remotion_settings', side_effect=AssertionError('AWS called')):
-                started = dispatch('remotion', 'render_timeline', {'title': 'Local shot', 'visuals': [{
-                    'kind': 'video', 'output_path': str(clip), 'duration_seconds': 1,
-                    'source_in_seconds': 1, 'fit': 'contain', 'fade_in_seconds': .1,
-                    'fade_out_seconds': .1,
-                }], 'audio_tracks': [{'output_path': str(voice), 'duration_seconds': .5,
-                                  'start_seconds': .25, 'volume': .5,
-                                  'fade_in_seconds': .05, 'fade_out_seconds': .05}],
-                                             'aspect_ratio': '16:9', 'fps': 16})
+                price = cost_for('remotion', 'render_timeline', {}).total_cents
+                self.assertEqual(price, 0)
+                with meter.media_dispatch('native-render', price, 'Remotion___render_timeline'):
+                    started = dispatch('remotion', 'render_timeline', {'title': 'Local shot', 'visuals': [{
+                        'kind': 'video', 'output_path': str(clip), 'duration_seconds': 1,
+                        'source_in_seconds': 1, 'fit': 'contain', 'fade_in_seconds': .1,
+                        'fade_out_seconds': .1,
+                    }], 'audio_tracks': [{'output_path': str(voice), 'duration_seconds': .5,
+                                      'start_seconds': .25, 'volume': .5,
+                                      'fade_in_seconds': .05, 'fade_out_seconds': .05}],
+                                                 'aspect_ratio': '16:9', 'fps': 16})
                 self.assertEqual(started['status'], 'queued')
+                self.assertEqual(repository.run_work('submit-run')[0]['state'], 'settled')
+                repository.rekey_run('submit-run', 'poll-run')
                 deadline = time.monotonic() + 20
                 while time.monotonic() < deadline:
                     finished = dispatch('remotion', 'get_render_progress', {
@@ -49,6 +61,12 @@ class LocalAssemblyTests(unittest.TestCase):
                         break
                     time.sleep(.05)
             self.assertEqual(finished['status'], 'succeeded', finished)
+            self.assertEqual(repository.run_work('poll-run')[0]['work_id'], 'media:native-render')
+            receipt = repository.release_run('poll-run')
+            self.assertEqual(receipt['actual_cents'], 0)
+            self.assertEqual(repository.available_credit('native-user'), 1000)
+            self.assertEqual(repository.get_balance('native-user'), 1000)
+            self.assertEqual(repository.release_run('poll-run'), receipt)
             self.assertEqual([(e['start_s'], e['end_s']) for e in finished['motion_carry_timeline']['elements']], [(0, 1)])
             from providers.remotion import local
             with patch.dict(local._PROCESSES, {}, clear=True):

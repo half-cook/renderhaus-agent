@@ -164,15 +164,30 @@ class FfmpegDeliveryTests(unittest.TestCase):
         assert "channel_layout" in audio
         assert audio["channel_layout"] in {None, "mono"}
 
+    def test_peak_limiter_compensates_lookahead_without_shifting_audio(self):
+        self.create_media()
+        pulse = render_fixture(self.job / "pulse.mkv", "-i", str(self.job / "source.mkv"),
+            "-f", "lavfi", "-i", r"aevalsrc=0.25*eq(n\,24000):s=48000:d=6",
+            "-map", "0:v:0", "-map", "1:a:0", "-c:v", "copy", "-c:a", "pcm_s16le", "-shortest")
+        result = call("prelimit_mux_aac", {"gain_db": 0, "limit_db": -3}, source=pulse.name)
+        assert result["ok"], result
+        import array
+        def peak_sample(path):
+            raw = subprocess.check_output(["ffmpeg", "-v", "error", "-i", str(path),
+                "-map", "0:a:0", "-f", "f32le", "-acodec", "pcm_f32le", "-"])
+            samples = array.array("f", raw)
+            return max(range(len(samples)), key=lambda index: abs(samples[index]))
+        assert abs(peak_sample(result["outputs"][0]["path"]) - peak_sample(pulse)) <= 1
+
 
     def test_measure_then_normalize_remeasures_aac_and_preserves_video(self):
         self.create_media()
         measured = call("measure_loudness")
         assert measured["ok"], measured
         metrics = measured["metrics"]
-        assert metrics["integrated_lufs"] == metrics["input_i"]
+        assert metrics["integrated_lufs"] == metrics["ebur128"]["integrated_lufs"]
         assert metrics["true_peak_db"] == metrics["input_tp"]
-        assert metrics["lra"] == metrics["input_lra"]
+        assert metrics["lra"] == metrics["ebur128"]["lra"]
         assert abs(metrics["ebur128"]["integrated_lufs"] - metrics["integrated_lufs"]) < .2
         finished = call("loudnorm_mux_aac", pass2_params(metrics))
         assert finished["ok"], finished
@@ -189,6 +204,32 @@ class FfmpegDeliveryTests(unittest.TestCase):
         assert audio["sample_rate"] == "48000"
         assert audio["channels"] == 1
         assert call("check_faststart", source=output)["metrics"]["faststart"]
+
+    def test_programme_meter_does_not_count_the_dynamic_normalizer_tail_twice(self):
+        self.create_media()
+        source = render_fixture(self.job / "voiced-tail.mkv", "-f", "lavfi", "-i",
+            "testsrc2=size=160x90:rate=24:duration=4", "-f", "lavfi", "-i",
+            r"aevalsrc=if(lt(t\,0.5)\,0.2\,0.06)*sin(2*PI*1000*t)*lt(t\,1.5):s=48000:d=4",
+            "-c:v", "libx264", "-pix_fmt", "yuv420p", "-c:a", "pcm_s16le", "-shortest")
+        measured = call("measure_loudness", source=source.name)
+        assert measured["ok"], measured
+        metrics = measured["metrics"]
+        assert abs(metrics["input_i"] - metrics["ebur128"]["integrated_lufs"]) > 1
+        assert metrics["integrated_lufs"] == metrics["ebur128"]["integrated_lufs"]
+        assert metrics["lra"] == metrics["ebur128"]["lra"]
+        assert metrics["true_peak_db"] == metrics["input_tp"]
+
+    def test_programme_gate_uses_metadata_precision_instead_of_rounded_display(self):
+        self.create_media()
+        source = render_fixture(self.job / "boundary.mkv", "-f", "lavfi", "-i",
+            "testsrc2=size=160x90:rate=24:duration=4", "-f", "lavfi", "-i",
+            "aevalsrc=0.3*sin(2*PI*1000*t):s=48000:d=4",
+            "-c:v", "libx264", "-pix_fmt", "yuv420p", "-c:a", "pcm_s16le", "-shortest")
+        measured = call("measure_loudness", source=source.name)
+        assert measured["ok"], measured
+        value = measured["metrics"]["integrated_lufs"]
+        assert -13.48 < value < -13.46
+        assert abs(value - (-14)) > .5  # The one-decimal display rounds to -13.5, hiding this miss.
 
 
     def test_normalization_rejects_stale_or_other_target_measurements(self):

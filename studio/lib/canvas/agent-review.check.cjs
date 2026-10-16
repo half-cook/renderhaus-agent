@@ -30,6 +30,9 @@ const changed = { ...node, data: { ...node.data, config: { duration_seconds: 6 }
 assert.deepEqual(diffReviewLines(sequenceReviewLines([node]), sequenceReviewLines([changed])).map((line) => line.change), ["removed", "added"]);
 assert.equal(diffReviewLines(sequenceReviewLines([node]), [])[0].change, "removed");
 assert.equal(sequenceReviewLines([{ ...node, data: { ...node.data, approved: false } }]).length, 0);
+assert.match(sequenceReviewLines([{ ...node, data: { ...node.data, config: { duration_seconds: 10 },
+  outputMetadata: { versionId: source.versionId, durationSeconds: 4.73 } } }])[0].text, /4\.73s/,
+  "Sequence review reports the measured output duration instead of next-generation settings");
 
 const lines = timelineSegments(event(4).arguments, [source]);
 assert.match(lines.at(-1).source, /source\.mp4/);

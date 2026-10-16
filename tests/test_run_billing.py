@@ -258,6 +258,15 @@ class MeterTests(Fixture, unittest.TestCase):
         self.assertEqual(paused["raise_options_cents"], [150, 200])
         self.assertEqual(paused["choices"], ["raise_cap", "stop"])
 
+    def test_next_step_can_pause_before_the_cap_is_charged(self):
+        meter = self.meter(cap=144)
+        self.assertIsNone(meter.meter_turn(0.20))  # 26 cents charged, 118 remain
+        paused = meter.check_step(119)
+        self.assertEqual((paused["cap_cents"], paused["charged_cents"]), (144, 26))
+        self.assertEqual(paused["message"], "The next step needs more than the remaining cap. No further work has started.")
+        self.assertEqual(self.repo.get_balance(USER), 974)
+        self.assertEqual(paused["choices"], ["raise_cap", "stop"])
+
     def test_check_turn_stops_when_nothing_is_left(self):
         meter = self.meter(cap=65)
         meter.meter_turn(0.50)
@@ -504,6 +513,63 @@ class PayloadTests(Fixture, unittest.TestCase):
         self.assertEqual(adopted["status"], "running")
         self.assertIsNone(run_billing.stored_pause(self.repo, "job-2"))
 
+    def test_resume_reholds_a_parked_turn_without_recharging_completed_work(self):
+        run_billing.start_run(self.repo, USER, "job-1", "conv-1")
+        self.repo.reserve_run_work(USER, "job-1", "media:done", 20, kind="media", role="paid_dispatch")
+        charge = self.repo.charge_usage(
+            USER, 20, "generation", run_id="job-1", _work_id="media:done", line_kind="media", line_label="Video clip",
+        )
+        run_billing.end_run(self.repo, "job-1", execution_status="awaiting_approval")
+        self.assertEqual(self.repo.get_run_hold("job-1")["held_cents"], 20)
+
+        adopted = run_billing.start_run(self.repo, USER, "job-2", "conv-1")
+        self.assertEqual((adopted["held_cents"], adopted["charged_cents"]), (145, 20))
+        self.assertEqual(run_billing.RunMeter(self.repo, USER, "job-2").remaining_cap_cents(), 125)
+        again = run_billing.start_run(self.repo, USER, "job-2", "conv-1")
+        self.assertEqual(again["held_cents"], 145)
+        retried = self.repo.charge_usage(USER, 20, "generation", run_id="job-2", _work_id="media:done")
+        self.assertEqual(retried.charge_id, charge.charge_id)
+        self.assertEqual(self.repo.get_balance(USER), 980)
+        self.assertEqual(len(self.repo.run_lines("job-2")), 1)
+        self.assertIsNone(self.repo.get_run_hold("job-1"))
+        with self.assertRaises(rb.RunCapExceededError):
+            self.repo.charge_usage(USER, 126, "generation", run_id="job-2")
+        self.assertEqual(self.repo.get_balance(USER), 980)
+
+    def test_resume_does_not_raise_a_real_paused_cap(self):
+        self.repo.hold_run(USER, "job-1", 125, conversation_id="conv-1")
+        self.repo.charge_usage(USER, 125, "generation", run_id="job-1")
+        self.repo.set_run_pause("job-1", {"type": "paused_cap"})
+        adopted = run_billing.start_run(self.repo, USER, "job-2", "conv-1")
+        self.assertEqual((adopted["held_cents"], adopted["charged_cents"]), (125, 125))
+        self.assertEqual(run_billing.RunMeter(self.repo, USER, "job-2").check_step(1)["type"], "paused_cap")
+        self.assertEqual(self.repo.get_balance(USER), 875)
+
+    def test_resume_rehold_still_checks_credit_reserved_by_other_runs(self):
+        run_billing.start_run(self.repo, USER, "job-1", "conv-1")
+        self.repo.charge_usage(USER, 20, "generation", run_id="job-1")
+        run_billing.end_run(self.repo, "job-1", execution_status="awaiting_approval")
+        self.repo.hold_run(USER, "other", 900)
+        adopted = run_billing.start_run(self.repo, USER, "job-2", "conv-1")
+        self.assertEqual((adopted["held_cents"], adopted["charged_cents"]), (20, 20))
+        self.assertEqual(self.repo.available_credit(USER), 80)
+        self.assertEqual(run_billing.RunMeter(self.repo, USER, "job-2").check_step(1)["type"], "paused_cap")
+        self.assertEqual(self.repo.get_balance(USER), 980)
+
+    def test_explicit_stop_releases_a_cap_pause_but_not_unsettled_work(self):
+        self.repo.hold_run(USER, "job-1", 125)
+        self.repo.set_run_pause("job-1", {"type": "paused_cap"})
+        receipt = run_billing.end_run(self.repo, "job-1", execution_status="error", error_type="UserStopped")
+        self.assertEqual(receipt["status"], "failed")
+        self.assertEqual(self.repo.get_run_hold("job-1")["status"], "stopped")
+        self.assertEqual(self.repo.get_run_hold("job-1")["state"], "released")
+        self.repo.hold_run(USER, "job-2", 125)
+        self.repo.reserve_run_work(USER, "job-2", "media:pending", 30, kind="media", role="paid_dispatch")
+        self.repo.set_run_pause("job-2", {"type": "paused_cap"})
+        self.assertIsNone(run_billing.end_run(self.repo, "job-2", execution_status="error", error_type="UserStopped"))
+        self.assertEqual(self.repo.get_run_hold("job-2")["state"], "held")
+        self.assertEqual(self.repo.run_work("job-2")[0]["state"], "reserved")
+
     def test_start_cap_floor_lifts_the_first_hold_within_available_credit(self):
         with patch.dict(os.environ, {"ORCHESTRATION_START_CAP_FLOOR_CENTS": "300"}):
             self.assertEqual(run_billing.start_run(self.repo, USER, "f-1", "conv-f1")["held_cents"], 300)
@@ -606,6 +672,38 @@ class ScrubbingTests(Fixture, unittest.TestCase):
         self.assertEqual(call["result"]["job_id"], "abc")  # ids are kept
         self.assertEqual(call["result"]["error"], rb.NEUTRAL_ERROR)
         self.assertIsNone(run_billing.public_execution(None))
+
+    def test_partial_result_tool_events_keep_the_same_status_aware_public_summaries(self):
+        calls = [{"id": status, "name": "Remotion___get_render_progress", "status": status,
+                  "summary": f"Remotion get render progress: {status}.", "result": {"status": status}}
+                 for status in ("queued", "running", "succeeded", "failed")]
+        public = run_billing.public_execution({"status": "error", "tool_calls": calls,
+                                               "result": {"partial": True, "tool_events": calls}})
+        self.assertEqual(public["tool_calls"], public["result"]["tool_events"])
+        self.assertEqual([call["status"] for call in public["tool_calls"]],
+                         ["queued", "running", "succeeded", "failed"])
+        self.assertEqual([call["summary"] for call in public["tool_calls"]],
+                         ["Final render queued.", "Final render in progress.", "Final render finished.", rb.NEUTRAL_ERROR])
+
+    def test_historical_completed_result_is_publicly_incomplete_without_rewriting_artifacts(self):
+        for summary, expected in [("Incomplete. Loudness failed the default target.", "error"),
+                                  ("Motion carry QC failed. Add a held moment.", "error"),
+                                  ("Motion carry QC incomplete. Measurement unavailable.", "error"),
+                                  ("Logo animation QC incomplete. Measurement unavailable.", "error"),
+                                  ("Motion carry QC passed; editorial review warnings remain.", "completed"),
+                                  ("Finished. QC passed; editorial review warnings remain.", "completed")]:
+            with self.subTest(summary=summary):
+                result = {"title": "Assembled video", "summary": summary, "assets": [{"kind": "video"}]}
+                execution = {"status": "completed", "message": "Completed Assembled video.", "result": result}
+                public = run_billing.public_execution(execution)
+                self.assertEqual(public["status"], expected)
+                self.assertEqual(public["result"]["assets"], result["assets"])
+                self.assertEqual(execution["status"], "completed")
+                self.assertNotIn("partial", result)
+                if expected == "error":
+                    self.assertEqual(public["error_type"], "DeliverableIncomplete")
+                    self.assertTrue(public["result"]["partial"])
+                    self.assertEqual(public["message"], summary)
 
 
 if __name__ == "__main__":

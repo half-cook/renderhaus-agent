@@ -4,8 +4,11 @@ import { ArrowLeft, ArrowRight, Mic } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { AssetMedia } from "@/components/canvas/AssetMedia";
 import { useCanvasStore } from "@/lib/canvas/store";
+import { aspectLabel, sourceAspectRatio, sourceDuration } from "@/lib/canvas/story";
+import type { CSSProperties } from "react";
 import { PX_PER_SECOND, parseSeconds, clipLength, setTrimField, timecode, type TimelineClip } from "@/lib/rh/timeline";
 import { TimelineHints, TimelineTrack, TransportBar, useTimelineModel, useTransport } from "./Timeline";
+import { useTimelinePlayback } from "./useTimelinePlayback";
 
 const fieldText = (seconds: number) => `${Math.floor(seconds / 60)}:${(seconds % 60).toFixed(1).padStart(4, "0")}`;
 
@@ -77,7 +80,12 @@ export function TimelineView() {
   const bin = useMemo(() => nodes.filter((node) => (node.data.kind === "image" || node.data.kind === "video") && (node.data.output || typeof node.data.config.thumbnail_url === "string")), [nodes]);
   const audio = nodes.filter((node) => node.data.kind === "audio");
   const asset = selected ? model.mediaFor(selected.id) : undefined;
-  const aspect = selected ? String(nodes.find((node) => node.id === selected.id)?.data.config.aspect_ratio ?? "16:9") : "16:9";
+  const selectedNode = selected ? nodes.find((node) => node.id === selected.id) : undefined;
+  const selectedAspect = selectedNode ? aspectLabel(selectedNode.data) : "";
+  const selectedRatio = selectedNode ? sourceAspectRatio(selectedNode.data) : undefined;
+  const previewRatio = selectedRatio ?? 16 / 9;
+  const aspect = selectedRatio ? selectedAspect : "16:9";
+  const playback = useTimelinePlayback(model.clips, transport, { sourceKey: asset?.versionId, active: asset?.kind === "video" });
 
   return (
     <div className="rh-tl-view" data-shot="timeline-ready">
@@ -88,12 +96,12 @@ export function TimelineView() {
             {bin.map((node) => {
               const clip = model.clips.find((candidate) => candidate.id === node.id);
               const thumb = typeof node.data.config.thumbnail_url === "string" ? node.data.config.thumbnail_url : undefined;
-              const seconds = typeof node.data.config.duration_seconds === "number" ? node.data.config.duration_seconds : undefined;
+              const seconds = sourceDuration(node.data);
               return (
                 <li key={node.id}>
                   <button type="button" className="rh-tl-bin-item" aria-current={selected?.id === node.id ? "true" : undefined} onClick={() => clip && transport.select(clip.id)} disabled={!clip}>
                     <span className="rh-thumb rh-tl-bin-thumb" style={thumb ? { backgroundImage: `url(${thumb})` } : undefined} />
-                    <span><b>{node.data.title}</b><i className="rh-mono">{seconds ? `0:${String(Math.round(seconds)).padStart(2, "0")}` : aspectOf(node.data.config.aspect_ratio)}</i></span>
+                    <span><b>{node.data.title}</b><i className="rh-mono">{seconds ? `0:${String(Math.round(seconds)).padStart(2, "0")}` : aspectLabel(node.data)}</i></span>
                   </button>
                 </li>
               );
@@ -111,8 +119,9 @@ export function TimelineView() {
           ) : null}
         </aside>
         <section className="rh-tl-monitorwrap" aria-label="Monitor">
-          <div className="rh-tl-monitor rh-ticks" data-aspect={aspect}>
-            {asset && asset.kind === "video" ? <AssetMedia asset={asset} alt={selected?.title ?? "Preview"} className="rh-tl-media" muted />
+          <div className="rh-tl-monitor rh-ticks" data-aspect={aspect} style={{ "--rh-preview-ratio": previewRatio } as CSSProperties}>
+            {asset && asset.kind === "video" ? <AssetMedia key={asset.versionId} asset={asset} alt={selected?.title ?? "Preview"} className="rh-tl-media"
+              {...playback.mediaProps} startTime={playback.sourceTime} preload="auto" />
               : selected?.thumbUrl ? <div className="rh-tl-media rh-thumb" style={{ backgroundImage: `url(${selected.thumbUrl})` }} role="img" aria-label={selected.title} />
                 : <div className="rh-tl-media rh-tl-nomedia rh-fg3">Nothing to preview yet</div>}
             {safeArea ? <span className="rh-tl-safe" aria-hidden="true" /> : null}
@@ -122,18 +131,15 @@ export function TimelineView() {
             {selected ? <>{selected.title.split(" · ")[0]} · {timecode(transport.playhead)} · {aspect} preview · </> : null}
             <button type="button" className="rh-linkbtn" aria-pressed={safeArea} onClick={() => setSafeArea((value) => !value)}>Safe area {safeArea ? "on" : "off"}</button>
           </div>
+          {playback.error ? <p role="alert" className="rh-fg2 rh-small">{playback.error}</p> : null}
         </section>
         <Inspector clip={selected} count={model.clips.length} onTrim={(trimIn, trimOut) => selected && useCanvasStore.getState().trimSequenceClip(selected.id, trimIn, trimOut)} onMove={(offset) => selected && model.move(selected.id, offset)} />
       </div>
       <section className="rh-tl-bottom" aria-label="Timeline">
-        <TransportBar model={model} transport={transport} snapOn={snapOn} onSnap={() => setSnapOn((value) => !value)} zoom={zoom} onZoom={setZoom} />
+        <TransportBar model={model} transport={transport} snapOn={snapOn} onSnap={() => setSnapOn((value) => !value)} zoom={zoom} onZoom={setZoom} playbackAvailable={asset?.kind === "video"} />
         <TimelineTrack model={model} transport={transport} pxPerSecond={zoom} snapOn={snapOn} height={72} />
         <TimelineHints canRemove={Boolean(transport.selectedId)} onRemove={() => transport.selectedId && model.remove(transport.selectedId)} />
       </section>
     </div>
   );
-}
-
-function aspectOf(value: unknown): string {
-  return typeof value === "string" ? value : "";
 }

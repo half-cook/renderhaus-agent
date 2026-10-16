@@ -35,8 +35,18 @@ def with_usage(message: AIMessage, input_tokens: int, output_tokens: int) -> AIM
     return message
 
 
+class LargeContextScriptedModel(ScriptedModel):
+    profile: dict = {"max_input_tokens": 100_000}
+
+    def _get_request_payload(self, messages, **kwargs):
+        # The metering scenarios report 100k input tokens, so their fixture needs that context bound.
+        return {"messages": [message.model_dump(mode="json") for message in messages],
+                "fixture_context": "x" * 100_000, **kwargs}
+
+
 class FlowFixture(unittest.IsolatedAsyncioTestCase):
     user = "local"
+    model_class = ScriptedModel
 
     def setUp(self):
         directory = tempfile.TemporaryDirectory()
@@ -61,7 +71,7 @@ class FlowFixture(unittest.IsolatedAsyncioTestCase):
             patch.object(studio_state, "repository", self.repo),
             patch.object(run_billing, "billing_applies", return_value=True),
             patch("agent.studio_agent_next.gateway_mcp_server", gateway),
-            patch("agent.deep_agent.runner.configured_deep_agent_model", side_effect=lambda role=None: ScriptedModel(self.steps)),
+            patch("agent.deep_agent.runner.configured_deep_agent_model", side_effect=lambda role=None: self.model_class(self.steps)),
             patch.dict(os.environ, {"RENDERHAUS_AGENT_BACKEND": "deepagents", "AGENTCORE_DEV_URL": "",
                                     'RENDERHAUS_MEDIA_DIR': str(self.repo.media_root),
                                     "ORCHESTRATION_BILLING_ENABLED": "true", "ORCHESTRATION_ESTIMATE_CENTS": "75"}),
@@ -92,6 +102,8 @@ class FlowFixture(unittest.IsolatedAsyncioTestCase):
 
 
 class MeteringFlowTests(FlowFixture):
+    model_class = LargeContextScriptedModel
+
     async def test_planner_turns_are_billed_and_the_receipt_shows_orchestration(self):
         # 100k in + 10k out on the default planner = $0.30 model cost per turn.
         self.steps = [with_usage(read_skill(), 100_000, 10_000), with_usage(final(), 100_000, 10_000)]

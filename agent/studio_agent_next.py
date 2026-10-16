@@ -69,9 +69,9 @@ MAX_AGENT_PROMPT_CHARS = 64_000
 _GATEWAY_SEARCH_TOOL = "x_amz_bedrock_agentcore_search"
 _VIDEO_DELIVERABLE_PATTERN = re.compile(
     r"\b(create|make|generate|produce|render|assemble|combine|merge|stitch|edit|export|"
-    r"deliver|cut|compose|retry|finish|complete|resume|turn|convert|upscale|interpolate)\b"
+    r"deliver|cut|compose|retry|finish|complete|resume|turn|convert|upscale|interpolate|add|include)\b"
     r"(?:\W+\w+){0,12}?\W+"
-    r"\b(video|videos|shot|shots|clip|clips|ad|advert|commercial|reel|spot|motion graphic|trailer|promo|montage|mp4)\b",
+    r"\b(video|videos|film|films|shot|shots|clip|clips|ad|advert|commercial|reel|spot|motion graphic|trailer|promo|montage|mp4)\b",
     re.IGNORECASE,
 )
 _NON_VIDEO_DELIVERABLE_PATTERN = re.compile(
@@ -192,6 +192,7 @@ class StudioAgentRequest(BaseModel):
     approval_decisions: list["StudioApprovalDecision | StudioQuestionAnswer"] = Field(default_factory=list, max_length=32)
     resume_tool_names: list[str] = Field(default_factory=list, max_length=64)
     prior_tool_events: list[dict[str, Any]] = Field(default_factory=list)
+    delivery_continuation: bool = False
 
 
 class StudioApprovalDecision(BaseModel):
@@ -1466,10 +1467,11 @@ def _record_approval_requests(
 
 def _requests_video_deliverable(prompt: str) -> bool:
     """Identify an explicit request for a video file, not merely video-related work."""
-    from agent.deep_agent.routing import lottie_request
+    from agent.deep_agent.routing import lottie_request, media_production_text
 
     if lottie_request(prompt):
         return False
+    prompt = media_production_text(prompt)
     for match in _VIDEO_DELIVERABLE_PATTERN.finditer(prompt):
         suffix = re.split(r"\b(?:with|without|and|include|add)\b", prompt[match.end():match.end() + 24],
                           maxsplit=1, flags=re.IGNORECASE)[0]
@@ -1538,12 +1540,13 @@ def _validate_video_delivery(
     dialogue_requested = delivery_route.skill == "dialogue-edit" and delivery_route.status == "ready"
     prior_events = {event["id"]: event for event in request.prior_tool_events}
     current_events = [event for event in studio.tool_events if event.public() != prior_events.get(event.id)]
-    workflow_events = [event for event in current_events if event.name in {
+    delivery_events = studio.tool_events if request.delivery_continuation else current_events
+    workflow_events = [event for event in delivery_events if event.name in {
         "Remotion___deliver_render", "Remotion___qc_deliverable",
     }]
-    finishing_ops = {"transcode_h264", "mux_aac", "loudnorm_mux_aac", "reframe_crop", "reframe_pad_blur",
+    finishing_ops = {"transcode_h264", "mux_aac", "loudnorm_mux_aac", "prelimit_mux_aac", "reframe_crop", "reframe_pad_blur",
                      "burn_subtitles", "color_match_lut", "audio_cleanup", "make_proxy"}
-    finishing_events = [event for event in current_events if event.name == "Ffmpeg___ffmpeg_tool"
+    finishing_events = [event for event in delivery_events if event.name == "Ffmpeg___ffmpeg_tool"
                         and event.arguments.get("op") in finishing_ops]
     prior_delivery = any(event["name"] in {"Remotion___deliver_render", "Remotion___qc_deliverable"}
                          for event in request.prior_tool_events)
@@ -1553,7 +1556,7 @@ def _validate_video_delivery(
         complete = False
         newer_work = []
         if last:
-            newer_work = [event for event in current_events[current_events.index(last) + 1:] if
+            newer_work = [event for event in delivery_events[delivery_events.index(last) + 1:] if
                           event.name in {"Remotion___render_timeline", "Remotion___render_ad_variants"} or
                           event in finishing_events]
         if last and last.status == "succeeded":
@@ -1561,9 +1564,9 @@ def _validate_video_delivery(
 
             complete = validate_delivery_report(latest)
             deliveries = [event for event in workflow_events if event.name == "Remotion___deliver_render"]
-            delivery_index = current_events.index(deliveries[-1]) if deliveries else -1
+            delivery_index = delivery_events.index(deliveries[-1]) if deliveries else -1
             preceding_finishing = [event for event in finishing_events
-                                   if delivery_index < current_events.index(event) < current_events.index(last)]
+                                   if delivery_index < delivery_events.index(event) < delivery_events.index(last)]
             if complete and last.name == "Remotion___qc_deliverable" and preceding_finishing:
                 finishing = preceding_finishing[-1]
                 outputs = finishing.result.get("outputs")

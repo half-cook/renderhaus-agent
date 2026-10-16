@@ -19,12 +19,38 @@ function load(relative) {
   return module.exports;
 }
 const { SchemaForm } = load("components/forms/SchemaForm.tsx");
+const { RadioGroup } = require("radix-ui");
+const React = require("react");
+const { renderToStaticMarkup } = require("react-dom/server");
 
 function elements(tree) {
   if (Array.isArray(tree)) return tree.flatMap(elements);
   if (!tree || typeof tree !== "object") return [];
   return [tree, ...elements(tree.props?.children)];
 }
+
+test("ratio choices have their own accessible labels outside an implicit field label", () => {
+  const props = {
+    schema: { type: "object", properties: { aspect_ratio: { type: "string", enum: ["1:1", "16:9", "9:16"] } } },
+    values: { aspect_ratio: "1:1" }, onChange() {},
+  };
+  const html = renderToStaticMarkup(React.createElement(SchemaForm, props));
+  assert.match(html, /role="radiogroup"[^>]*aria-label="Aspect ratio"/);
+  assert.match(html, /role="radio"[^>]*aria-checked="true"[^>]*>1:1<\/button>/);
+  assert.equal(html.includes("<label"), false, "a group label must not replace the first choice's name");
+});
+
+test("keyboard radio selection preserves numeric field values", () => {
+  const changes = [];
+  const tree = elements(SchemaForm({
+    schema: { type: "object", properties: { duration_seconds: { type: "number", enum: [4, 5.5, 8] } } },
+    values: { duration_seconds: 4 }, onChange: (name, value) => changes.push([name, value]),
+  }));
+  const group = tree.find((element) => element.type === RadioGroup.Root);
+  assert.ok(group, "use the installed radio group's keyboard and focus behavior");
+  group.props.onValueChange("5.5");
+  assert.deepEqual(changes, [["duration_seconds", 5.5]]);
+});
 
 for (const [field, type, value, label] of [
   ["reference_image_urls", "string", "https://example.invalid/frame.png", "Additional image references"],

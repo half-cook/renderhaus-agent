@@ -38,14 +38,17 @@ certify a target. Further cleanup invalidates the earlier measurements and QC re
 1. Call `probe` on the job-relative file. Require an audio stream before checking a target
    that needs audio. A silent mix or non-finite integrated value cannot pass that target.
 2. Call `measure_loudness` with numeric `I`, `TP` and `LRA` parameters. Their validated
-   bounds are `I=-30..-5`, `TP=-9..0` and `LRA=1..20`. Inspect integrated LUFS, true peak,
-   loudness range, threshold and target offset from the actual result.
+   bounds are `I=-30..-5`, `TP=-9..0` and `LRA=1..20`. Use canonical `integrated_lufs`,
+   `true_peak_db` and `lra` for programme acceptance. The `input_*` and `target_offset`
+   fields are raw normalizer diagnostics; they are not the programme compliance reading.
 3. For a report-only request, return those measurements and the pass/fail comparison
    without modifying the file. For an explicit normalisation or a delivery preset, finish
    once when the target or true peak fails. If the encoded file already meets both gates,
    leave the audio unchanged. A PCM intermediate still needs its single AAC mux.
-4. Call `loudnorm_mux_aac` with the measured pass-one values in `measured_I`, `measured_TP`,
-   `measured_LRA`, `measured_thresh` and `offset`, plus the numeric target `I`, `TP`, `LRA`
+4. Call `loudnorm_mux_aac` with the raw pass-one mapping: `measured_I=input_i`,
+   `measured_TP=input_tp`, `measured_LRA=input_lra`, `measured_thresh=input_thresh`,
+   and `offset=target_offset`. Never substitute canonical programme values into these
+   coefficients. Also pass the numeric target `I`, `TP`, `LRA`
    and `bitrate_kbps`. The bitrate is 64 to 320 kbit/s. The fixed op copies video, encodes
    AAC at 48 kHz, and puts `moov` before `mdat`. Use `mux_aac` when no loudness target
    applies. Never send a filter string, raw arguments, codec or output filename.

@@ -341,7 +341,7 @@ def test_small_real_local_render_finishes_and_final_frame_gate_reads_actual_mp4(
         from providers.ffmpeg.api import _bounded_run
         def replace_output_after_probe(argv, *args, **kwargs):
             result = _bounded_run(argv, *args, **kwargs)
-            if argv[0] == 'ffprobe':
+            if Path(argv[0]).name == 'ffprobe':
                 (job/'render.mp4').write_bytes(b'changed during QA')
             return result
         with patch('providers.ffmpeg.api._bounded_run', side_effect=replace_output_after_probe), pytest.raises(ValueError, match='checksum changed'):

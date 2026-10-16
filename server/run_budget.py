@@ -30,7 +30,7 @@ from typing import Any
 
 ORCHESTRATION_LABEL = "Planning and checks"
 NEUTRAL_ERROR = "This step could not be completed."
-PAUSED_MESSAGE = "Stopped at your cap. Nothing more has been charged, and the run is paused so you decide."
+PAUSED_MESSAGE = "The next step needs more than the remaining cap. No further work has started."
 
 # Words that must never reach a client.  Vendor / model / infrastructure names,
 # plus fee wording.  Matched case-insensitively on word boundaries.

@@ -127,7 +127,7 @@ class PodcastRoutingTests(unittest.TestCase):
 
     def test_template_art_local_paths_are_job_confined(self):
         with TemporaryDirectory() as directory, patch.dict(os.environ, {"RENDERHAUS_MEDIA_DIR": directory}):
-            job = Path(directory) / "job"
+            job = Path(directory).resolve() / "job"
             job.mkdir()
             (job / "cover.png").write_bytes(b"owned cover")
             studio = SimpleNamespace(source_versions={}, source_resolver=None, job_id="job")

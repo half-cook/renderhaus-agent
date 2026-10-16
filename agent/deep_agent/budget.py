@@ -73,10 +73,26 @@ def _has_media(value: Any) -> bool:
     return False
 
 
+def _cache_input_rate(value: Any, rates: ModelRates) -> float:
+    if isinstance(value, list):
+        return max((_cache_input_rate(item, rates) for item in value), default=rates.input)
+    if not isinstance(value, dict):
+        return rates.input
+    rate = rates.input
+    control = value.get("cache_control")
+    if control is not None:
+        if not isinstance(control, dict) or control.get("type") != "ephemeral" or control.get("ttl", "5m") not in ("5m", "1h"):
+            raise rb.RunBudgetError("This request has unpriced prompt caching; the call was not started.")
+        rate = rates.cache_write_1h if control.get("ttl") == "1h" else rates.cache_write_5m
+    # Tool schemas and tool-use arguments are customer data, not cache directives.
+    return max(rate, max((_cache_input_rate(item, rates) for key, item in value.items()
+                         if key not in {"cache_control", "input_schema", "input"}), default=rates.input))
+
+
 def model_envelope(model: Any, messages: list[list[Any]], invocation_params: dict[str, Any]) -> ModelEnvelope:
     """One token per serialized UTF-8 byte plus protocol overhead; media uses the context ceiling.
 
-    Output includes hidden thinking. Cache writes use the highest supported TTL rate.
+    Output includes hidden thinking. Cache writes use the highest requested TTL rate.
     The 4096-token protocol allowance, 1024 tokens per message and documented
     286-token overhead per tool overestimate normal text requests.
     """
@@ -103,19 +119,19 @@ def model_envelope(model: Any, messages: list[list[Any]], invocation_params: dic
     if len(messages) != 1:
         raise rb.RunBudgetError("Each model call needs its own budget reservation.")
     serialized = [message.model_dump(mode="json") for message in messages[0]]
+    if hasattr(model, "_get_request_payload"):
+        # Pinned langchain-anthropic's payload builder performs no network I/O.
+        payload = model._get_request_payload(messages[0], **{**params, "max_tokens": output})
+    else:
+        payload = {"messages": serialized, **params}
     bounded_content, image_count = _image_bound([message.content for message in messages[0]])
     if _has_media(bounded_content):
         if type(context_limit) is not int or context_limit <= 0:
             raise rb.RunBudgetError("Media input has no known token ceiling; the call was not started.")
         input_tokens, basis = context_limit, "multimodal_context_ceiling"
     else:
-        if hasattr(model, "_get_request_payload"):
-            # Pinned langchain-anthropic's payload builder performs no network I/O.
-            payload = model._get_request_payload(messages[0], **{**params, "max_tokens": output})
-        else:
-            payload = {"messages": serialized, **params}
-        payload, _ = _image_bound(payload)
-        byte_count = len(json.dumps(payload, ensure_ascii=False, sort_keys=True).encode("utf-8"))
+        bounded_payload, _ = _image_bound(payload)
+        byte_count = len(json.dumps(bounded_payload, ensure_ascii=False, sort_keys=True).encode("utf-8"))
         # Official vision limit is 4784 visual tokens per image on Claude 4.7+.
         # https://platform.claude.com/docs/en/build-with-claude/vision (2026-10-15).
         input_tokens = byte_count + 4096 + 1024 * len(serialized) + 286 * len(params.get("tools", [])) + image_count * (4784 + 1024)
@@ -124,7 +140,7 @@ def model_envelope(model: Any, messages: list[list[Any]], invocation_params: dic
         basis = "serialized_utf8_bytes_plus_protocol_allowance" + ('_and_bounded_images' if image_count else '')
     if model_name == "claude-haiku-5-5" and input_tokens > 100_000:
         rates = ModelRates(0.50, 2.50, 0.625, 1.0, 0.05)
-    input_rate = max(rates.input, rates.cache_write_5m, rates.cache_write_1h, rates.cache_read)
+    input_rate = _cache_input_rate(payload, rates)
     cost_usd = (input_tokens * input_rate + output * rates.output) / 1_000_000
     return ModelEnvelope(model_name, input_tokens, output, cost_usd, basis)
 

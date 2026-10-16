@@ -47,9 +47,27 @@ class RunwayInputTests(unittest.TestCase):
         path = self.root / "source.webm"
         subprocess.run(["ffmpeg", "-v", "error", "-f", "lavfi", "-i", "color=c=blue:s=64x64:r=24", "-t", "2", "-c:v", "libvpx-vp9", str(path)], check=True, timeout=30)
         uri = "data:video/webm;base64," + base64.b64encode(path.read_bytes()).decode()
-        prepared = inputs.prepare_runway_arguments("video_to_video", self.video_args(uri))
-        self.assertEqual(prepared["video_path_or_url"], uri)
-        self.assertAlmostEqual(prepared["video_duration_seconds"], 2, places=1)
+        for publish_inputs in (True, False):
+            with self.subTest(publish_inputs=publish_inputs):
+                prepared = inputs.prepare_runway_arguments("video_to_video", self.video_args(uri), publish_inputs=publish_inputs)
+                self.assertEqual(prepared["video_path_or_url"], uri)
+                self.assertAlmostEqual(prepared["video_duration_seconds"], 2, places=1)
+
+    def test_quote_mode_measures_owned_and_external_video_without_publishing(self):
+        source = self.root / "source.mp4"
+        source.write_bytes(b"owned video fixture")
+        for uri in ("renderhaus-asset://source", "https://media.example.com/video.mp4"):
+            with self.subTest(uri=uri), patch.object(inputs, "_probe_video", return_value=8.5) as probe, \
+                    patch.object(inputs, "_capture_video", return_value="video/mp4") as capture, \
+                    patch.object(inputs, "_publish_file") as publish:
+                prepared = inputs.prepare_runway_arguments(
+                    "video_to_video", self.video_args(uri), publish_inputs=False,
+                    source_resolver=lambda version: str(source),
+                )
+                self.assertEqual(prepared["video_duration_seconds"], 8.5)
+                probe.assert_called_once()
+                self.assertEqual(capture.call_count, int(uri.startswith("https://")))
+                publish.assert_not_called()
 
     def test_bad_declared_args_fail_before_any_upload_or_source_fetch(self):
         arguments = {**self.video_args("https://example.com/source.mp4"), "seed": -1}

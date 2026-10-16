@@ -76,32 +76,32 @@ class LighthouseSafetyTests(unittest.IsolatedAsyncioTestCase):
         from agent.studio_agent_next import run_studio_agent
         from scripts.e2e_lighthouse import LighthouseOptions, run_lighthouse
         from test_deep_agent import ScriptedModel, call
-        from test_deep_agent_execution import FINAL, VIDEO, VIDEO_ARGS, VOICES, dispatch
+        from test_deep_agent_execution import FINAL, TTS, TTS_ARGS, VIDEO, VIDEO_ARGS, dispatch
 
-        voice_args = {"search": "narrator"}
+        voice_args = TTS_ARGS
         tasks = AIMessage(content="", tool_calls=[
             call("task", {"subagent_type": "media", "description": "Generate the lighthouse"}, "media-task").tool_calls[0],
-            call("task", {"subagent_type": "audio", "description": "Find a narrator"}, "audio-task").tool_calls[0],
+            call("task", {"subagent_type": "audio", "description": "Record the narration"}, "audio-task").tool_calls[0],
         ])
 
         def propose(messages, tools):
             if "call_media_tool" in tools:
                 return dispatch(VIDEO, VIDEO_ARGS, "wan-call")
-            return dispatch(VOICES, voice_args, "voices-call")
+            return dispatch(TTS, voice_args, "voice-call")
 
         def completed(messages, tools):
             from langchain_core.messages import ToolMessage
 
             self.assertIsInstance(messages[-1], ToolMessage, "Approval resume replayed the proposed call")
             self.assertEqual(messages[-1].tool_call_id,
-                             "wan-call" if "call_media_tool" in tools else "voices-call")
+                             "wan-call" if "call_media_tool" in tools else "voice-call")
             result = json.loads(messages[-1].text)
             self.assertNotEqual(result.get("status"), "failed", result)
             return AIMessage(content="Task completed.")
 
         model = ScriptedModel([
             call("x_amz_bedrock_agentcore_search", {
-                "query": f"{VIDEO.name} {VOICES.name}", "limit": 2,
+                "query": f"{VIDEO.name} {TTS.name}", "limit": 2,
             }, "search"), tasks, propose, propose, completed, completed,
             call("StudioAgentOutput", FINAL, "finish"),
         ])
@@ -130,11 +130,11 @@ class LighthouseSafetyTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(len(batches), 1)
         self.assertEqual([item.decision for item in batches[0]], ["approve", "approve"])
         self.assertCountEqual([row["tool"] for row in rows if row["kind"] == "approval"],
-                              [VIDEO.name, VOICES.name])
+                              [VIDEO.name, TTS.name])
         self.assertFalse(any("retries" in row.get("reason", "").lower() for row in rows))
-        self.assertCountEqual([row["tool"] for row in ledger if row["attempted"]], [VIDEO.name, VOICES.name])
+        self.assertCountEqual([row["tool"] for row in ledger if row["attempted"]], [VIDEO.name, TTS.name])
         self.assertCountEqual([item.args for item in provider.call_args_list],
-                              [("fal", "generate_wan3_t2v", VIDEO_ARGS), ("elevenlabs", "voices_search", voice_args)])
+                              [("fal", "generate_wan3_t2v", VIDEO_ARGS), ("elevenlabs", "text_to_speech_convert", voice_args)])
         self.assertFalse(model._steps)
 
     async def test_operator_run_disables_inherited_external_tracing(self):

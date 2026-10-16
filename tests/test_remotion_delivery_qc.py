@@ -18,7 +18,7 @@ class DeliveryFixture(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
-        self.root = Path(self.tmp.name)
+        self.root = Path(self.tmp.name).resolve()
         self.job = self.root / "delivery-job"
         self.job.mkdir()
         env = patch.dict(os.environ, {"RENDERHAUS_MEDIA_DIR": str(self.root),
@@ -266,6 +266,43 @@ class DeliveryRealBinaryTests(DeliveryFixture):
         self.assertTrue(result["passed"], result["failures"])
         self.assertAlmostEqual(result["files"][0]["duration_s"], 4, delta=1 / 24)
         self.assertTrue(result["files"][0]["loudness"]["dynamic_fallback"])
+
+    def test_short_voice_with_silent_tail_corrects_measured_aac_once(self):
+        source = self.job / "short-voice.mp4"
+        subprocess.run(["ffmpeg", "-nostdin", "-hide_banner", "-v", "error", "-n", "-f", "lavfi", "-i",
+            "testsrc2=size=320x180:rate=24:duration=4", "-f", "lavfi", "-i",
+            r"aevalsrc=0.4*sin(2*PI*220*t)*(0.02+0.98*pow(sin(PI*t/1.5)\,8))*lt(t\,1.5):s=48000:d=4",
+            "-c:v", "libx264", "-threads", "1", "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "192k",
+            "-shortest", "-movflags", "+faststart", str(source)], check=True, capture_output=True, timeout=30)
+        api = self.api()
+        with patch.object(api, "_operation", wraps=api._operation) as operations:
+            result = api.deliver_render("delivery-job", input_path=source.name, preset="email-720p",
+                spec={"allowed_silence": [{"start_s": 1.4, "end_s": 4}]})
+        self.assertTrue(result["passed"], result["failures"])
+        file = result["files"][0]
+        self.assertTrue(file["loudness"]["dynamic_fallback"])
+        self.assertTrue(file["loudness"]["correction"]["accepted"])
+        self.assertAlmostEqual(file["loudness"]["after"]["integrated_lufs"], -14, delta=.5)
+        self.assertLessEqual(file["loudness"]["after"]["true_peak_db"], -1.5)
+        self.assertAlmostEqual(file["duration_s"], 4, delta=1 / 24)
+        self.assertEqual(sum(call.args[1] == "prelimit_mux_aac" for call in operations.call_args_list), 1)
+        self.assertTrue(api.validate_delivery_report(result))
+
+        operation = api._operation
+        def ineffective_correction(job, name, current, params=None):
+            if name == "prelimit_mux_aac":
+                return {"outputs": [{"path": str(current)}]}
+            return operation(job, name, current, params)
+        with patch.object(api, "_operation", side_effect=ineffective_correction) as operations:
+            failed = api.deliver_render("delivery-job", input_path=source.name, preset="email-720p",
+                spec={"allowed_silence": [{"start_s": 1.4, "end_s": 4}]})
+        self.assertFalse(failed["passed"])
+        loudness = failed["files"][0]["loudness"]
+        self.assertFalse(loudness["correction"]["accepted"])
+        self.assertEqual(loudness["after"], loudness["correction"]["before"])
+        self.assertTrue(any(failure.startswith("loudness:") for failure in failed["failures"]))
+        self.assertEqual(sum(call.args[1] == "prelimit_mux_aac" for call in operations.call_args_list), 1)
+        self.assertFalse(api.validate_delivery_report(failed))
 
     def test_vision_is_pending_and_requested_pixel_certification_fails(self):
         delivered = self.deliver()

@@ -412,6 +412,10 @@ class NativeProtocolTests(unittest.IsolatedAsyncioTestCase):
                     }
                     if not second_page:
                         result["nextCursor"] = "second"
+                elif method == "tools/call" and body["params"]["name"] == _GATEWAY_SEARCH_TOOL:
+                    result = {"content": [{"type": "text", "text": json.dumps({
+                        "tools": [IMAGE_TOOL.model_dump(by_alias=True)],
+                    })}]}
                 else:
                     result = {"content": [{"type": "text", "text": '{"status":"succeeded"}'}]}
                 encoded = json.dumps(
@@ -458,22 +462,26 @@ class NativeProtocolTests(unittest.IsolatedAsyncioTestCase):
     async def test_real_mcp_transport_preserves_approval_pause(self):
         async with self.mcp_fixture() as (url, calls):
             gateway = GatewayMCPServer({"url": url, "allow_loopback_http": True}, name="fixture")
-            tool_call = {
+            search_call = {
                 "callId": "search-1",
                 "tool": _GATEWAY_SEARCH_TOOL,
                 "arguments": {"query": "image generation"},
             }
+            paid_call = image_call()
             with patch("agent.studio_agent_next.gateway_mcp_server", return_value=gateway):
                 with self.assertRaises(StudioAgentApprovalRequired) as paused:
                     await run_studio_agent(
                         StudioAgentRequest(prompt="Make an image with Seedream", autonomous=False),
-                        harness=FakeHarness([tool_call]),
+                        harness=FakeHarness([search_call, paid_call]),
                     )
-            self.assertEqual(paused.exception.approvals[0].call_id, "search-1")
-            self.assertEqual(paused.exception.approvals[0].arguments, tool_call["arguments"])
+            self.assertEqual(paused.exception.approvals[0].call_id, paid_call["callId"])
+            self.assertEqual(paused.exception.approvals[0].arguments,
+                             json.loads(paid_call["arguments"]["arguments_json"]))
             self.assertEqual(json.loads(paused.exception.state)["harness"], "codex")
             self.assertEqual(paused.exception.session_items[0]["thread_id"], "thread-1")
-            self.assertFalse(any(call["method"] == "tools/call" for call in calls))
+            self.assertEqual([(call["params"]["name"], call["params"]["arguments"])
+                              for call in calls if call["method"] == "tools/call"],
+                             [(_GATEWAY_SEARCH_TOOL, search_call["arguments"])])
             self.assertIsNone(gateway._session)
             self.assertIsNone(gateway._stack)
 

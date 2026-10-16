@@ -57,7 +57,7 @@ import { QuestionCard } from "@/components/rh/QuestionCard";
 import { PauseChatMessage } from "@/components/rh/PauseChatMessage";
 import { pauseCardsEnabled, stuckPauseMessage } from "@/lib/rh/pause-fallback";
 import { RunReceipt } from "@/components/rh/RunBilling";
-import { approvalCardModel, pricingCardModel, traceCost, visibleParameters, type TraceCost } from "@/lib/rh/approval-model";
+import { approvalCardModel, heldCreditCents, pricingCardModel, traceCost, visibleParameters, type TraceCost } from "@/lib/rh/approval-model";
 import { formatCents } from "@/lib/rh/money";
 import { toRunReceiptModel, toApprovalCardModel } from "@/lib/rh/billing";
 import { useCreditContext } from "@/lib/rh/credit-store";
@@ -78,8 +78,10 @@ function normalizedStatus(status: string): "running" | "completed" | "failed" | 
 }
 
 function runDuration(execution: StudioExecution): string | null {
-  if (!execution.createdAt || !execution.updatedAt) return null;
-  const seconds = Math.max(1, execution.updatedAt - execution.createdAt);
+  const active = ["queued", "running", "pending"].includes(execution.status.toLowerCase());
+  const end = active ? Date.now() / 1000 : execution.updatedAt;
+  if (!execution.createdAt || !end) return null;
+  const seconds = Math.max(1, Math.floor(end - execution.createdAt));
   if (seconds < 60) return `${seconds}s`;
   return `${Math.floor(seconds / 60)}m ${seconds % 60}s`;
 }
@@ -134,8 +136,8 @@ function StepIcon({ status }: { status: string }) {
   return <Check size={14} />;
 }
 
-// Planning that already ran is billed (see the receipt above); declining stops any further charge.
-export const NOT_NOW_LINE = "Paused · nothing more will be charged · your credit is free to use.";
+// Declining skips the paid action; planning can still run to finish the response.
+export const NOT_NOW_LINE = "Paid step skipped · finishing your response.";
 
 export function IntermediateSteps({
   events,
@@ -369,7 +371,7 @@ function ArtifactCard({
   disabled?: boolean;
 }) {
   return (
-    <article className={`agent-artifact ${asset.kind === "video" ? "agent-artifact-video" : ""}`}>
+    <article className={`agent-artifact agent-artifact-${asset.kind}`}>
       <AssetMedia
         asset={asset}
         alt={asset.filename}
@@ -409,18 +411,18 @@ function RunBillingBlocks({ execution, disabled, onCap }: {
   onCap: (execution: StudioExecution, action: "raise" | "stop", capCents?: number) => void;
 }) {
   const paused = execution.pausedCap;
+  const pausedModel = paused ? toApprovalCardModel({
+    id: `${execution.jobId}:paused`,
+    status: "paused_cap",
+    walletTotalCents: undefined,
+  }, paused) : null;
   const receipt = toRunReceiptModel(execution.receipt);
   const finished = execution.updatedAt ? new Date(execution.updatedAt * 1000).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }) : "";
   return (
     <>
-      {paused ? (
+      {pausedModel ? (
         <ApprovalCard
-          model={toApprovalCardModel({
-            id: `${execution.jobId}:paused`,
-            status: "paused_cap",
-            title: "Paused at your cap",
-            walletTotalCents: undefined,
-          }, paused)}
+          model={{ ...pausedModel, title: `Next step exceeds your ${formatCents(pausedModel.capCents)} cap` }}
           busy={disabled}
           actions={{
             onRaise: (cap) => onCap(execution, "raise", cap),
@@ -677,13 +679,13 @@ export function AgentDock({ navigationBusy: externalBusy, onBusyChange, suggesti
     const waiting = conversationExecutions.flatMap((execution) => execution.status === "awaiting_approval" ? execution.approvals.filter((approval): approval is AgentApprovalRequest => approval.kind === "approval" && !approval.decision) : []);
     const cap = waiting.map((approval) => approval.billing?.cap_cents).find((value): value is number => typeof value === "number");
     setPendingCap(cap ?? null);
-    const held = conversationExecutions.map((execution) => execution.pausedCap?.held_cents ?? execution.approvals.find((approval): approval is AgentApprovalRequest => approval.kind === "approval" && approval.billing?.status === "running")?.billing?.held_cents).find((value): value is number => typeof value === "number");
-    setHeld(held ?? 0);
+    setHeld(heldCreditCents(conversationExecutions));
   }, [conversationExecutions, setHeld, setPendingCap]);
   const activeConversation = conversations.find((item) => item.id === conversationId);
   const activeExecution = conversationExecutions.find(
     (execution) => normalizedStatus(execution.status) === "running",
   );
+  const refreshingJobId = liveRun?.progress.jobId || activeExecution?.jobId;
   const runInFlight = busy || Boolean(activeExecution);
   const navigationBusy = busy || recovering || busyApproval !== null || changingTask;
   useEffect(() => {
@@ -741,10 +743,11 @@ export function AgentDock({ navigationBusy: externalBusy, onBusyChange, suggesti
   }, [agentOpen, liveRun, conversationExecutions]);
 
   useEffect(() => {
-    if (!activeExecution || liveRun) return;
+    if (!refreshingJobId) return;
+    void refreshExecutions();
     const timer = window.setInterval(() => void refreshExecutions(), 1_000);
     return () => window.clearInterval(timer);
-  }, [activeExecution?.jobId, liveRun, refreshExecutions]);
+  }, [refreshingJobId, refreshExecutions]);
 
   const placementPosition = () => {
     const selected = nodes.filter((node) => selectedNodeIds.includes(node.id));
@@ -1114,7 +1117,7 @@ export function AgentDock({ navigationBusy: externalBusy, onBusyChange, suggesti
             </div>
           </section>
         ) : null}
-        {pausedNote ? <p className="rh-paused-line" role="status" data-shot="not-now-paused">{NOT_NOW_LINE}</p> : null}
+        {pausedNote && activeExecution?.jobId === pausedNote ? <p className="rh-paused-line" role="status" data-shot="not-now-paused">{NOT_NOW_LINE}</p> : null}
         {changesDocument ? <ChangesetCard document={changesDocument} onInsert={(n) => useChangesStore.getState().setComposerInsertion(`change ${n}`)} onOpen={() => { const store = useChangesStore.getState(); store.setTab("changes"); const take = changesDocument.changes.find((change) => change.kind === "take"); if (take) store.openCompare(take.n); }} /> : null}
       </div>
 
