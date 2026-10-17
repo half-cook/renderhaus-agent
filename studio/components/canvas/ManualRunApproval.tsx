@@ -4,7 +4,6 @@ import { useRef } from "react";
 import { ApprovalCard } from "@/components/rh/ApprovalCard";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { useCanvasStore } from "@/lib/canvas/store";
-import { RH_ADD_CREDIT_EVENT } from "@/lib/rh/events";
 import { workLabel } from "@/lib/rh/billing";
 
 export function ManualRunApproval() {
@@ -38,8 +37,7 @@ export function ManualRunApproval() {
         specs, estimateCents: pending.quote.estimate_cents, capCents: pending.quote.cap_cents,
         balanceCents: pending.quote.balance_cents,
         lines: [{ kind: "media", label, priceCents: pending.quote.estimate_cents, basis: "fixed" }],
-      }} actions={{ onApprove: () => void approve(), onReject: cancel, onNotNow: cancel, onEdit: cancel,
-        onAddCredit: () => window.dispatchEvent(new CustomEvent(RH_ADD_CREDIT_EVENT)) }} />
+      }} actions={{ onApprove: () => void approve(), onReject: cancel, onNotNow: cancel, onEdit: cancel }} />
     </DialogContent>
   </Dialog>;
 }

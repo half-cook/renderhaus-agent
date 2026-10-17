@@ -47,7 +47,6 @@ from providers.catalog import PROVIDERS, get_provider
 from providers.registry import dispatch, load_committed_schemas
 from server.assets import publish_provider_input_url
 from server.auth import AuthUser, OptionalAuthUser, current_user_id, current_workspace_id
-from server.billing import stripe_enabled
 from server.beta_credits import beta_billing_enabled
 from server.billing_rates import cost_for
 from server import run_billing, run_budget
@@ -402,8 +401,6 @@ def _source_version_ids(value: Any) -> list[str]:
 async def studio_status() -> dict[str, Any]:
     from providers.seedance.api import dry_run as seedance_dry_run
     from providers.sync.api import dry_run as sync_dry_run
-    from providers.heygen.api import dry_run as heygen_dry_run
-    from providers.heygen.voice import dry_run as heygen_voice_dry_run
     from providers.topaz.api import dry_run as topaz_dry_run
 
     return {
@@ -412,15 +409,9 @@ async def studio_status() -> dict[str, Any]:
         "dry_run": {
             "gemini": os.getenv("GEMINI_DRY_RUN", "true").lower() != "false",
             "topaz": topaz_dry_run(),
-            "heygen": heygen_dry_run(),
-            "heygen_voice": heygen_voice_dry_run(),
             "sync": sync_dry_run(),
             "openai_images": os.getenv("OPENAI_IMAGES_DRY_RUN", "true").lower() != "false",
-            "kling": os.getenv("KLING_DRY_RUN", "true").lower() != "false",
-            "runway": os.getenv("RUNWAY_DRY_RUN", "true").lower() != "false",
             "fal": os.getenv("FAL_DRY_RUN", "true").lower() != "false",
-            "luma": os.getenv("LUMA_DRY_RUN", "true").lower() != "false",
-            "alibaba_modelstudio": os.getenv("MODELSTUDIO_DRY_RUN", "true").lower() != "false",
             "seedance": seedance_dry_run(),
             "seedream": os.getenv("SEEDREAM_DRY_RUN", os.getenv("SEEDANCE_DRY_RUN", "true")).lower()
             != "false",
@@ -549,12 +540,11 @@ def _normalize_canvas_document(
 async def studio_account(auth: AuthUser) -> dict[str, Any]:
     user_id = current_user_id(auth)
     balance = await asyncio.to_thread(repository.get_balance, user_id)
-    ledger, subscription, beta_credit = await asyncio.gather(
+    ledger, beta_credit = await asyncio.gather(
         asyncio.to_thread(repository.list_ledger, user_id, limit=20),
-        asyncio.to_thread(repository.get_subscription_state, user_id),
         asyncio.to_thread(repository.get_beta_credit, user_id),
     )
-    return {"balance_cents": balance, "recent_ledger": ledger, "subscription": subscription, "beta_credit": beta_credit}
+    return {"balance_cents": balance, "recent_ledger": ledger, "beta_credit": beta_credit}
 
 
 @router.get("/projects")
@@ -755,6 +745,8 @@ def _tool_arguments(provider: str, tool: str, arguments: dict[str, Any]) -> dict
 
 
 async def _manual_arguments(body: InvokeBody, auth: AuthUser, *, publish_inputs: bool = True) -> tuple[dict[str, Any], list[str], bool]:
+    if body.provider not in {spec.id for spec in PROVIDERS}:
+        raise HTTPException(status_code=409, detail="This integration is not supported.")
     workspace_id = current_workspace_id(auth)
     try:
         await asyncio.to_thread(repository.require_project, workspace_id, body.project_id)
@@ -766,15 +758,10 @@ async def _manual_arguments(body: InvokeBody, auth: AuthUser, *, publish_inputs:
                                     ("remotion", "deliver_render"), ("remotion", "qc_deliverable"),
                                     ("remotion", "motion_carry_probe")}:
         raise HTTPException(status_code=409, detail="Use the agent local-media workflow with its owned Studio job directory and stage approvals.")
-    if body.provider == "sync" and body.tool in {"lipsync_video", "create_dialogue_edit", "create_dialogue_video"}:
+    if body.provider == "sync" and body.tool == "lipsync_video":
         raise HTTPException(
             status_code=409,
             detail="Use the agent lip-sync workflow for required consent and cost approval before Sync generation.",
-        )
-    if body.provider == "heygen" and body.tool in {"create_avatar_video", "voice_clone", "voice_tts", "get_voice_status"}:
-        raise HTTPException(
-            status_code=409,
-            detail="Use the agent HeyGen workflow for recorded consent and cost approval before generation.",
         )
     if body.provider == "topaz" and body.tool in {"upscale_video", "interpolate_video"}:
         raise HTTPException(status_code=409, detail="Use the agent finishing workflow for required cost approval before Topaz processing.")
@@ -784,24 +771,12 @@ async def _manual_arguments(body: InvokeBody, auth: AuthUser, *, publish_inputs:
         raise HTTPException(status_code=409, detail="Use the agent SFX workflow for required cost approval before Mirelo video processing.")
     if body.provider == "fal" and body.tool in {"pixelcut_looping_video", "pixverse_vibemv"}:
         raise HTTPException(status_code=409, detail="Use the agent named-provider skill with an explicit provider request and cost approval before video generation.")
-    if (body.provider, body.tool) in {("runway", "act_two"), ("fal", "kling_motion_control")}:
+    if (body.provider, body.tool) == ("fal", "kling_motion_control"):
         raise HTTPException(status_code=409, detail="Use the agent performance-transfer workflow for required consent and cost approval.")
     cleaned = _tool_arguments(body.provider, body.tool, body.arguments)
     source_version_ids = list(dict.fromkeys([*body.source_version_ids, *_source_version_ids(cleaned)]))
     preparing_edit = (body.provider, body.tool) == ("remotion", "prepare_conversational_edit")
-    if body.provider == "runway":
-        from server.runway_inputs import prepare_runway_arguments
-
-        try:
-            cleaned = await asyncio.to_thread(
-                prepare_runway_arguments, body.tool, cleaned,
-                source_resolver=lambda version_id: str(repository.version_path(workspace_id, version_id)),
-                workspace_id=workspace_id,
-                publish_inputs=publish_inputs,
-            )
-        except (ValueError, KeyError, FileNotFoundError) as exc:
-            raise HTTPException(status_code=400, detail=str(exc)) from exc
-    elif not preparing_edit:
+    if not preparing_edit:
         cleaned = _resolve_asset_handles(cleaned, workspace_id)
     return cleaned, source_version_ids, preparing_edit
 
@@ -846,7 +821,7 @@ async def quote_tool(body: InvokeBody, auth: AuthUser) -> dict[str, Any]:
         "expires_at": expiry,
     }
     user_id = current_user_id(auth)
-    if stripe_enabled() or beta_billing_enabled(repository, user_id):
+    if beta_billing_enabled(repository, user_id):
         result["balance_cents"] = await asyncio.to_thread(repository.available_credit, user_id)
     return result
 
@@ -861,7 +836,7 @@ async def invoke_tool(body: InvokeBody, auth: AuthUser) -> dict[str, Any]:
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     _require_manual_approval(body, auth, cost.total_cents)
-    billed = cost.total_cents > 0 and (stripe_enabled() or beta_billing_enabled(repository, user_id))
+    billed = cost.total_cents > 0 and (beta_billing_enabled(repository, user_id))
     charge = None
     if billed:
         try:
@@ -906,8 +881,6 @@ async def invoke_tool(body: InvokeBody, auth: AuthUser) -> dict[str, Any]:
     if result.get("error") or result.get("status") in {"failed", "error", "blocked", "not_run", "dry_run"}:
         await refund("provider returned a failed or no-work result")
         return {"provider": body.provider, "tool": body.tool, "result": result, "assets": [], "cost": cost.public()}
-    if body.provider == "runway" and body.tool != "get_runway_task" and result.get("job_id"):
-        await asyncio.to_thread(repository.record_provider_task, workspace_id, body.project_id, "runway", result["job_id"])
     if preparing_edit:
         return {"provider": body.provider, "tool": body.tool, "result": result, "assets": [], "cost": cost.public()}
     try:
@@ -1923,8 +1896,6 @@ async def _run_studio_agent_job_inner(
     def record_event(event: Any) -> None:
         payload = event.public()
         payload["result"] = event.result
-        if event.name.startswith("Runway___") and not event.name.endswith("get_runway_task") and event.result.get("job_id"):
-            repository.record_provider_task(workspace_id, project_id, "runway", event.result["job_id"])
         repository.append_tool_call(
             workspace_id=workspace_id,
             execution_id=job_id,

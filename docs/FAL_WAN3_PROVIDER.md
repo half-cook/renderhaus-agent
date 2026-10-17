@@ -26,7 +26,6 @@ R2V accepts up to 10 images, 5 videos and 5 audio references. Video references t
 most 15 seconds, with each video at least 16 fps. Audio references total at most 15 seconds.
 `file_url` and `web_url` require `enable_thinking=true`. Web pages must be public.
 These are reference-conditioning inputs. They do not promise duration-preserving edits
-or video extension. Those use the built direct [Model Studio tools](ALIBABA_MODELSTUDIO.md).
 
 The contracts require caller-measured `reference_video_durations`, `reference_video_fps`
 and `reference_audio_durations` parallel to their URL lists. They check counts, positive
@@ -63,16 +62,6 @@ surcharge is published. No such extra rate is invented. Prices are list estimate
 For example, 10 output seconds plus 5 reference-video seconds at 1080p costs $3.00 provider
 plus $0.90 platform fee. Dry-run billing is zero; approval disclosure still shows the list estimate.
 Missing reference-video measurements and smart duration disclose unknown cost, never free cost.
-
-All three tools pause for native approval with the estimate, including autonomous runs.
-The existing spend cap and `APPROVAL_EXEMPT_TOOLS` are unchanged.
-Selection stays explicit request, then named exception, then default. Seedance 2.5 remains
-the `dialogue && !real_face_refs` exception. Its T2V, I2V and reference tools now run
-Seedance 2.5 through fal US by default. BytePlus 1.5 remains an explicit optional model.
-See [Seedance transport and policy](SEEDANCE_2_5.md). Real-face references force Wan.
-The stored `project.confidential` field has no routing effect.
-Luma, Seedream, Fish, Vidu, Kling generation, Runway generation and legacy VACE code remain.
-`local_qc` stays the continuity-QC default.
 
 ## Licence and consent
 
@@ -146,5 +135,4 @@ new target or separate poller. No secret values or read-only research files are 
 | Existing skills | `agent/deep_agent/skills/t2v/SKILL.md`, `agent/deep_agent/skills/i2v/SKILL.md`, `agent/deep_agent/skills/still-then-video/SKILL.md`, `agent/deep_agent/skills/storyboard-shots/SKILL.md` |
 | Studio | `server/studio_options.py`, `studio/components/canvas/StudioCanvas.tsx`, `studio/lib/canvas/model-labels.ts`, `studio/lib/canvas/store.ts`, `studio/lib/canvas/tool-registry.ts`, `studio/lib/canvas/types.ts` |
 | Inventory and configuration | `scripts/ci_check.py`, `scripts/sync_secrets.py`, `.github/workflows/deploy.yml`, `Dockerfile.agentcore` |
-| Documentation | `docs/FAL_WAN3_PROVIDER.md`, `docs/fal-wan3-decisions.tsv`, `docs/CAPABILITY_MAP.md`, `docs/SKILLS.md`, `docs/DEEP_AGENT.md` |
 | Tests and fixtures | `tests/fixtures/skill_routing.json`, `tests/test_fal_wan3.py`, `tests/test_wan3_billing.py`, `tests/test_wan3_routing.py`, `tests/test_fal_provider.py`, `tests/test_capability_evidence.py`, `tests/test_capability_selection_edges.py`, `tests/test_deep_agent.py`, `tests/test_intent_graph.py`, `tests/test_provider_ladder.py`, `tests/test_skill_routing.py`, `tests/test_vidu_q4_routing.py` |

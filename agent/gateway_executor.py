@@ -27,7 +27,6 @@ from agent.deep_agent.routing import (
 from agent.deep_agent.outcomes import OutcomeStore
 from agent.deep_agent.finishing_preview import FinishingPreviewGate, FINISHING_TOOLS
 from agent.deep_agent.recovery import RecoveryPolicy
-from agent.hyperframes import HYPERFRAMES_TOOL
 
 from agent.codex_harness import ToolApprovalPending
 from agent.studio_agent_next import (
@@ -50,9 +49,6 @@ APPROVAL_EXEMPT_TOOLS = frozenset({"Remotion___export_nle_timeline"})
 LOCAL_DATA_TOOLS = frozenset({"ShotRecipes___shot_recipe_search"})
 LOGO_TOOLS = frozenset({"Logo___logo_vectorize"})
 REFERENCE_TOOL = 'Reference___shot_breakdown'
-FOOTAGE_TOOLS = frozenset('FootageMemory___' + name for name in (
-    'footage_memory_status', 'footage_memory_build', 'footage_memory_query',
-    'footage_watch_answer', 'footage_clip_extract'))
 LOCAL_MEDIA_TOOLS = LOTTIE_TOOLS | frozenset({
     REFERENCE_TOOL,
     "Remotion___motion_carry_probe",
@@ -175,10 +171,6 @@ def tool_needs_approval(name: str, autonomous: bool, arguments: dict | None = No
         return False
     if name in LOGO_TOOLS or name == "logo_vectorize":
         return (arguments or {}).get("op") == "approve"
-    if name in FOOTAGE_TOOLS:
-        if name.endswith('___footage_memory_build'):
-            return (arguments or {}).get('stage', 'estimate') == 'build'
-        return name.endswith('___footage_watch_answer') and not autonomous
 
     if name in {"Remotion___render_ad_variants", "ad_variant_matrix"}:
         return (arguments or {}).get("stage") != "plan"
@@ -193,15 +185,11 @@ def tool_needs_approval(name: str, autonomous: bool, arguments: dict | None = No
         return False
     if name in {"ElevenLabs___speech_to_text_convert", "ElevenLabs___forced_alignment_create"}:
         return True
-    if name in {"Sync___transcribe_video", "Sync___get_transcription", "Sync___get_dialogue_edit"}:
-        return False
     if name in {"Remotion___prepare_conversational_edit", "Sync___lipsync_video", "sync3_lipsync",
-                "Sync___create_dialogue_edit", "Sync___create_dialogue_video",
-                "HeyGen___create_avatar_video", "heygen_avatar_v", "Topaz___upscale_video",
-                "Topaz___interpolate_video", "topaz_upscale", "topaz_interpolate",
+                "Topaz___upscale_video", "Topaz___interpolate_video", "topaz_upscale", "topaz_interpolate",
                 "Mureka___generate_lyrics_video", "mureka_lyrics_video"}:
         return True
-    if name in {"Runway___act_two", "Fal___kling_motion_control", "runway_act_two", "kling_motion_control"}:
+    if name in { "Fal___kling_motion_control",  "kling_motion_control"}:
         return True
     if name in {"Fal___pixelcut_looping_video", "Fal___pixverse_vibemv", "pixelcut_looping_video", "pixverse_vibemv"}:
         return True
@@ -292,7 +280,7 @@ class GatewayExecutor:
                 cached = {tool.name: tool for tool in (server._tools_list or [])}
                 for item in session.get("gateway_tools", []):
                     tool = Tool.model_validate(item)
-                    if tool.name == HYPERFRAMES_TOOL.name:
+                    if request_tool_blocker(self.studio.prompt, tool.name):
                         continue
                     cached.setdefault(tool.name, tool)
                     server._discovered_tool_names.add(tool.name)
@@ -307,14 +295,13 @@ class GatewayExecutor:
         from providers.catalog import get_provider
         from providers.registry import generate_schemas
 
-        for provider in ("ffmpeg", "remotion", "shot_recipes", "footage_memory", "lottie", "logo_animation", 'reference_shots', 'gemini'):
+        for provider in ("ffmpeg", "remotion", "shot_recipes",  "lottie", "logo_animation", 'reference_shots', 'gemini'):
             spec = get_provider(provider)
             for schema in generate_schemas(spec):
                 name = f"{spec.target_name}___{schema['name']}"
                 is_poll = name in {'Remotion___get_render_progress', 'Gemini___get_task'}
-                if (name not in LOCAL_MEDIA_TOOLS and name not in LOCAL_DATA_TOOLS and name not in FOOTAGE_TOOLS and name not in LOGO_TOOLS
-                        and name != 'Gemini___judge_shots'
-                        and not _worker_remotion_tool(name) and not is_poll):
+                if (name not in LOCAL_MEDIA_TOOLS and name not in LOCAL_DATA_TOOLS and name not in LOGO_TOOLS
+                        and name != 'Gemini___judge_shots' and not _worker_remotion_tool(name) and not is_poll):
                     continue
                 if request_tool_blocker(self.studio.prompt, name) is None:
                     entry = (None, Tool(name=name, description=schema["description"],
@@ -360,7 +347,7 @@ class GatewayExecutor:
                 tool.model_dump(by_alias=True, exclude_none=True)
                 for server in self.servers
                 for tool in (getattr(server, "_tools_list", None) or [])
-                if tool.name not in {_GATEWAY_SEARCH_TOOL, HYPERFRAMES_TOOL.name}
+                if tool.name != _GATEWAY_SEARCH_TOOL
                 and request_tool_blocker(self.studio.prompt, tool.name) is None
             ],
         }
@@ -377,14 +364,17 @@ class GatewayExecutor:
         return None
 
     def media_selection(self, name, arguments):
-        if name == 'Gemini___judge_shots':
-            return Route(skill='reference-shot-breakdown', tool=name, alias='gemini_shot_labels',
+        if name in {'Gemini___judge_shots', 'Gemini___judge_continuity'}:
+            continuity = name == 'Gemini___judge_continuity'
+            if continuity and not re.search(r'\b(?:gemini|vlm)\b', self.studio.prompt, re.I):
+                return Route(status='blocked', reason='Request the experimental visual judge explicitly.')
+            return Route(skill='named-provider' if continuity else 'reference-shot-breakdown', tool=name,
+                         alias='gemini_vlm_judge' if continuity else 'gemini_shot_labels',
                          dispatch_tool='call_media_tool', status='ready', provider='gemini',
-                         model=effective_model('gemini', 'judge_shots', arguments),
-                         job_type='reference_labels', basis='default visual-label review',
+                         model=effective_model('gemini', name.split('___')[1], arguments),
+                         job_type='continuity_qc' if continuity else 'reference_labels',
+                         basis='explicit experimental visual review' if continuity else 'default visual-label review',
                          disclosure=self.dispatch_disclosure(name, arguments, None))
-        if name in FOOTAGE_TOOLS:
-            return None
         if name in LOCAL_MEDIA_TOOLS:
             return None
         job = job_type(name)
@@ -428,14 +418,6 @@ class GatewayExecutor:
             if preview and self.finishing_previews.blocker(name, arguments) is None:
                 constraints["required"]["duration_seconds"] = preview.clip.duration_seconds
                 constraints["predicates"]["duration_over_30s"] = False
-        if (name == "Sync___lipsync_video" and route_intent(self.studio.prompt).skill == "dialogue-edit"
-                and any(event.result.get("status") == "requires_audio_fallback" for event in self.studio.tool_events)):
-            constraints["predicates"]["presenter"] = False
-        if job == "performance_transfer" and name == "Runway___act_two" and arguments.get("source_duration_seconds") is not None:
-            duration = arguments.get("performance_duration_seconds")
-            if isinstance(duration, (int, float)) and not isinstance(duration, bool) and 3 <= duration <= 30:
-                constraints["required"]["duration_seconds"] = duration
-                constraints["predicates"]["duration_over_30s"] = False
         variant = tool_variant(name)
         route = select_provider(job, arguments=selection_arguments, tool_variant=variant, retry=retry, **constraints)
         return route
@@ -459,27 +441,11 @@ class GatewayExecutor:
                 return ("Review the vector, source overlay and edge audit. Approval applies only to this exact SVG. "
                         "Confirm that you have the rights to animate the mark. Logo processing stays on this worker.")
             return "Logo processing stays on this worker. The source mark remains private and is never used for training."
-        if name in FOOTAGE_TOOLS:
-            if name.endswith(('___footage_memory_build', '___footage_watch_answer')):
-                from server.billing_rates import footage_memory_estimate
-
-                try:
-                    return footage_memory_estimate(name.split('___', 1)[1], arguments)['estimate_description']
-                except (ValueError, OSError):
-                    return 'Footage memory. Estimate unknown, UNVERIFIED. Check the local source and build settings.'
-            return 'Footage memory. Local retrieval and selects require verification before cutting.'
-        if name in {"Sync___create_dialogue_edit", "Sync___create_dialogue_video"}:
-            return (f"Provider sync via direct; model sync-3; {route.basis if route else 'default dialogue editing'}. "
-                    f"{estimate_cost(name, arguments, list_price=True).description} "
-                    f"Cloned source voice and face: {arguments.get('subjects') or 'identify the speaker'}. "
-                    f"Voice and likeness consent {'confirmed' if arguments.get('consent_confirmed') is True else 'required'}. "
-                    "Only edited spans are re-spoken. Direct Sync terms permit upload reuse for service improvement. "
-                    "Outputs are not training eligible. Listen to the preview before approving video generation.")
         if name == "Remotion___render_ad_variants":
             from providers.remotion.ad_variants import approval_description
 
             return approval_description(arguments)
-        if name in {"Runway___act_two", "Fal___kling_motion_control"}:
+        if name in { "Fal___kling_motion_control"}:
             provider, tool = tool_parts(name)
             segment = (f" Sequential source segment at {arguments.get('performance_start_seconds', 0)}s, "
                        f"length {arguments.get('performance_duration_seconds')}s of {arguments['source_duration_seconds']}s. "
@@ -490,44 +456,12 @@ class GatewayExecutor:
                     f"Faces, voices and bodies: {arguments.get('subjects') or 'identify every subject'}. "
                     f"Consent {'confirmed' if arguments.get('consent_confirmed') is True else 'required'}. "
                     "Outputs are not training eligible." + segment)
-        if name in {"HeyGen___voice_clone", "HeyGen___voice_tts"}:
-            from providers.heygen.voice_contracts import TRAINING_STATEMENT
-
-            owner = arguments.get("subjects") or "saved project voice owner"
-            if name == "HeyGen___voice_tts":
-                from providers.heygen.voice import _read
-                from providers.heygen.voice_contracts import PollRequest
-
-                try:
-                    owner = _read(PollRequest.model_validate({key: arguments[key] for key in
-                        ("voice_id", "account_id", "workspace_id", "project_id")}))["subjects"]
-                except (ValueError, KeyError, RuntimeError):
-                    pass
-            return (f"Provider HeyGen Voice; model {effective_model('heygen', name.split('___')[1], arguments)}. "
-                    f"{route.basis if route else 'explicit request'}. {estimate_cost(name, arguments).description} "
-                    f"Voice owner: {owner}. Consent record: {arguments.get('consent_record_id') or 'saved project consent'}. "
-                    "Recorded consent is required. Reference audio is uploaded to HeyGen on live activation. "
-                    f"{TRAINING_STATEMENT} Dry-run preview uploads nothing and costs $0.00.")
-        if name == "HeyGen___create_avatar_video":
-            consent = "confirmed with a recorded acknowledgement" if arguments.get("consent_confirmed") is True else "required"
-            return (f"Provider HeyGen direct; model {effective_model('heygen', 'create_avatar_video', arguments)}. "
-                    f"{route.basis if route else 'exception for long presenters'}. {estimate_cost(name, arguments).description} "
-                    f"Faces and voices: {arguments.get('subjects') or 'identify every subject'}. Consent {consent}. "
-                    "API billing is separate from HeyGen app plans. Non-enterprise uploads may train HeyGen models "
-                    "unless the account has opted out; Enterprise data is excluded under vendor terms. "
-                    "Outputs are not training eligible. Script duration is an estimate, not a render-length control.")
         if name == "Sync___lipsync_video":
-            from providers.sync.contracts import configured_transport
-
             consent = "confirmed" if arguments.get("consent_confirmed") is True else "required"
-            terms = ("Direct Sync terms permit upload reuse for service improvement. "
-                     if configured_transport() == "direct" else
-                     "fal API terms restrict training on client content except excluded models. ")
-            return (f"Provider sync via {configured_transport()}; model {effective_model('sync', 'lipsync_video', arguments)}. "
+            return (f"Provider sync via fal; model {effective_model('sync', 'lipsync_video', arguments)}. "
                     f"{route.basis if route else 'default'}. {estimate_cost(name, arguments).description} "
                     f"Faces and voices: {arguments.get('subjects') or 'identify every subject'}. Consent {consent}. "
-                    f"Uploads are processed by the host and Sync. {terms}"
-                    "Outputs are not training eligible.")
+                    "Uploads are processed by fal and Sync. Outputs are not training eligible.")
         if route:
             return route.disclosure or route.reason
         provider, tool = tool_parts(name)
@@ -564,30 +498,6 @@ class GatewayExecutor:
                 validate_arguments(arguments)
             except ValueError as exc:
                 return str(exc)
-        if name in FOOTAGE_TOOLS:
-            from providers.footage_memory.contracts import request_for
-            from providers.footage_memory.service import build_plan, third_party_allowed
-
-            try:
-                request = request_for(name.split('___', 1)[1], arguments)
-                if (not self.studio.project_id or request.project_id != self.studio.project_id
-                        or request.workspace_id != (self.studio.workspace_id or 'local')):
-                    return 'Footage memory requires the trusted current Studio project and workspace.'
-                if hasattr(request, 'job_id') and request.job_id != self.studio.job_id:
-                    return 'Footage memory requires the trusted current Studio job.'
-                if name.endswith('___footage_memory_build') and request.stage == 'build':
-                    plan, _ = build_plan(request)
-                    if plan['plan_hash'] != request.plan_hash:
-                        return 'Footage or build settings changed. Request a new estimate.'
-                if name.endswith(('___footage_memory_build', '___footage_watch_answer')):
-                    from providers.footage_memory.backends import get_backend
-
-                    if not name.endswith('___footage_memory_build') or request.stage == 'build':
-                        get_backend(allow_third_party_vlm=not self.studio.confidential and third_party_allowed(request))
-            except ValueError as exc:
-                return str(exc)
-            except (OSError, KeyError):
-                return 'Footage memory is unavailable on this local host.'
         if blocker := request_tool_blocker(self.studio.prompt, name):
             return blocker
         provider, tool = tool_parts(name)
@@ -641,16 +551,6 @@ class GatewayExecutor:
                 _validated(tool, arguments)
             except ValueError as exc:
                 return str(exc)
-        dialogue_request = None
-        if provider == "sync" and tool in {"transcribe_video", "get_transcription", "create_dialogue_edit", "get_dialogue_edit", "create_dialogue_video"}:
-            from providers.sync.dialogue_contracts import request_for
-
-            try:
-                request = request_for(tool, arguments)
-                if tool == "create_dialogue_video":
-                    dialogue_request = request
-            except ValueError as exc:
-                return str(exc)
         if name in LOCAL_MEDIA_TOOLS:
             from providers.contracts import validate_tool_arguments
             from server.billing_rates import ad_matrix_estimate
@@ -675,19 +575,13 @@ class GatewayExecutor:
                 request_for(tool, arguments)
             except ValueError as exc:
                 return str(exc)
-        if name in {"Runway___act_two", "Fal___kling_motion_control"}:
-            from providers.runway.performance import request_for as act_request
+        if name in { "Fal___kling_motion_control"}:
             from providers.fal.motion import request_for as motion_request
 
             try:
-                (act_request if name == "Runway___act_two" else motion_request)(arguments)
+                motion_request(arguments)
             except ValueError as exc:
                 return str(exc)
-            if name == "Runway___act_two" and arguments.get("source_duration_seconds") is not None:
-                if any(job.get("provider") == "runway" and job.get("model") == "act_two"
-                       and job.get("status") in {"queued", "running", "preparing"}
-                       for job in self.media_jobs.values()):
-                    return "Process Act-Two chunks sequentially. Poll the accepted chunk to completion before submitting another."
         sync_request = None
         topaz_request = None
         if provider == "gemini":
@@ -719,27 +613,6 @@ class GatewayExecutor:
                 return "Prepare and review an owned finishing preview before full finishing."
             if blocker := gate.blocker(name, arguments):
                 return blocker
-        if provider == "heygen" and tool in {"voice_clone", "voice_tts", "get_voice_status"}:
-            from providers.heygen.voice_contracts import request_for
-            from providers.heygen.voice import _read
-
-            try:
-                request = request_for(tool, arguments)
-                expected = {"account_id": self.studio.user_id, "workspace_id": self.studio.workspace_id,
-                            "project_id": self.studio.project_id}
-                if any(not value or arguments.get(key) != value for key, value in expected.items()):
-                    return "HeyGen Voice scope must match the authenticated account, workspace and project."
-                if tool != "voice_clone":
-                    _read(request)
-            except (ValueError, RuntimeError) as exc:
-                return str(exc)
-        if name == "HeyGen___create_avatar_video":
-            from providers.heygen.contracts import request_for
-
-            try:
-                request_for(arguments)
-            except ValueError as exc:
-                return str(exc)
         if name == "Sync___lipsync_video" and (
             arguments.get("consent_confirmed") is not True
             or not isinstance(arguments.get("subjects"), str)
@@ -777,7 +650,7 @@ class GatewayExecutor:
         for feature, required in route.required.items():
             if required and feature in {'native_audio', 'multi_shot', 'start_end_frame', 'reference_elements'} and not row.get('jobs', {}).get(feature):
                 return f'The chosen tool cannot preserve required capability {feature}.'
-        if provider not in {"sync", "heygen"} and route.required.get("real_face_refs") and arguments.get("likeness_consent") is not True:
+        if provider not in {"sync"} and route.required.get("real_face_refs") and arguments.get("likeness_consent") is not True:
             return "Real-person likeness references require explicit likeness_consent=true acknowledgement."
         audio_field = row.get("native_audio_field", "generate_audio")
         for field, feature in [(audio_field, "native_audio"), (row.get("multi_shot_field", "multi_shot"), "multi_shot")]:
@@ -799,10 +672,6 @@ class GatewayExecutor:
         if route.required.get("max_resolution"):
             if topaz_request:
                 actual = min(topaz_request.output_width, topaz_request.output_height)
-            elif dialogue_request:
-                actual = min(dialogue_request.source_width or 0, dialogue_request.source_height or 0)
-                if actual < route.required["max_resolution"]:
-                    return "Sync dialogue video inherits source resolution: supply measured source_width/source_height."
             elif sync_request:
                 from providers.sync.chunks import plan_for
 
@@ -812,8 +681,7 @@ class GatewayExecutor:
                 if actual < route.required["max_resolution"]:
                     return "Sync inherits source resolution: supply measured source_width/source_height. Chunked output is limited to 720p."
             else:
-                value = (arguments.get("ratio", "1280:720") if provider == "runway" else
-                         arguments.get("size", "2K") if provider in {"seedream", "openai_images"} else arguments.get("resolution", row.get("resolution_default", "720p")))
+                value = (arguments.get("size", "2K") if provider in {"seedream", "openai_images"} else arguments.get("resolution", row.get("resolution_default", "720p")))
                 actual = resolution_value(value)
             if actual < route.required["max_resolution"]:
                 return "Required output resolution must be set in the selected tool's native arguments."
@@ -881,14 +749,6 @@ class GatewayExecutor:
         studio, render_jobs = self.studio, self.render_jobs
         name, arguments, call_id = call["tool_name"], call["arguments"], call["call_id"]
         lottie_sources = _asset_version_ids(arguments) if name in LOTTIE_TOOLS else []
-        if name == "Sync___create_dialogue_edit":
-            edit = {key: value for key, value in _compact_tool_arguments(arguments).items() if key != "action_id"}
-            uncertain = next((event for event in studio.tool_events if event.name == name
-                              and (event.result.get("status") == "submission_unknown" or event.status == "running")
-                              and {key: value for key, value in event.arguments.items() if key != "action_id"} == edit), None)
-            if uncertain:
-                return {**uncertain.result, "status": "submission_unknown", "next_action": "check_status_or_ask_user",
-                        "note": "Preview submission may already be billed. Check status with the operator or ask the user; never automatically resubmit."}
         if name.endswith("___render_timeline"):
             unfinished = [job for job in render_jobs.values()
                           if job.get("status") in {"queued", "running", "preparing"}]
@@ -963,7 +823,7 @@ class GatewayExecutor:
             if reason := self.recovery.authorize_call(call_id, name, call.get('retry_of', '')):
                 return {'status': 'not_run', 'reason': reason}
             free_dispatch = is_free_tool(name) or (
-                name == 'FootageMemory___footage_memory_build' and arguments.get('stage', 'estimate') == 'estimate')
+                False)
             meter = getattr(studio, "run_meter", None)
             if meter is not None and not free_dispatch:
                 # Hard stop at the run's cap: run spend + this step must fit before anything paid is dispatched.
@@ -1029,20 +889,19 @@ class GatewayExecutor:
                 {},
             )
             try:
-                if (name in LOCAL_MEDIA_TOOLS or name in LOCAL_DATA_TOOLS or name in FOOTAGE_TOOLS
+                if (name in LOCAL_MEDIA_TOOLS or name in LOCAL_DATA_TOOLS
                         or name in LOGO_TOOLS or _worker_remotion_tool(name, arguments)
                         or name == 'Gemini___judge_shots'
                         or name == 'Gemini___get_task' and (arguments.get('rubric') == 'reference_shots' or server is None)):
                     from providers.registry import dispatch
                     from providers.remotion.ad_variants import authorize
-                    from server.billing import stripe_enabled
                     from server.billing_rates import cost_for
                     from server.beta_credits import beta_billing_enabled
                     from server.studio_state import repository
 
                     provider, verb = tool_parts(name)
                     charge = None
-                    if studio.user_id and (stripe_enabled() or beta_billing_enabled(repository, studio.user_id)):
+                    if studio.user_id and beta_billing_enabled(repository, studio.user_id):
                         cost = cost_for(provider, verb, arguments)
                         if cost.total_cents > 0:
                             from server.run_billing import charge_media
@@ -1062,11 +921,6 @@ class GatewayExecutor:
                             else:
                                 worker_arguments = await asyncio.to_thread(_local_logo_arguments, studio, arguments)
                                 output = await asyncio.to_thread(dispatch, provider, verb, worker_arguments)
-                        elif name == 'FootageMemory___footage_memory_build':
-                            from providers.footage_memory.service import authorize as authorize_footage
-
-                            with authorize_footage(arguments.get('plan_hash') if approved else None):
-                                output = await asyncio.to_thread(dispatch, provider, verb, arguments)
                         elif name == "Remotion___render_ad_variants":
                             with authorize(arguments.get("stage", "plan"), arguments.get("plan_hash", ""),
                                            f"human:{call_id}" if approved else ""):
@@ -1090,9 +944,9 @@ class GatewayExecutor:
                 if name == _GATEWAY_SEARCH_TOOL:
                     output = self.filter_discovery(_unwrap_tool_output(output))
                 if name.rsplit("___", 1)[-1] in {
-                    "query_music_task", "get_music_task", "get_video_task", "get_runway_task",
+                    "query_music_task", "get_music_task", "get_video_task",
                     "get_render_progress", "get_task",
-                    "get_transcription", "get_dialogue_edit",
+
                 }:
                     started = time.monotonic()
                     deadline = started + float(os.getenv("STUDIO_MEDIA_WAIT_SECONDS", "600"))
@@ -1113,7 +967,7 @@ class GatewayExecutor:
                             output = {**payload, "wait_timed_out": True,
                                       "note": "The existing job is still running. Its id is saved; resume to check it without generating again."}
                             break
-                        interval = 15 if name == "ModelStudio___get_task" else 8
+                        interval = 8
                         await asyncio.sleep(min(interval, max(0, deadline - time.monotonic())))
                         if (_worker_remotion_tool(name, arguments)
                                 or name == 'Gemini___get_task' and (arguments.get('rubric') == 'reference_shots' or server is None)):
@@ -1127,14 +981,7 @@ class GatewayExecutor:
                     )
             except Exception as exc:
                 payload = getattr(exc, "payload", {})
-                if name == "Sync___create_dialogue_edit" and (not payload or payload.get("status") == "submission_unknown"):
-                    output = {**{key: value for key, value in payload.items() if key != "error"},
-                              "status": "submission_unknown", "action_id": arguments["action_id"],
-                              "next_action": "check_status_or_ask_user",
-                              "note": "Gateway response was lost; preview may be billed. Never automatically retry creation."}
-                elif name in {"Sync___create_dialogue_edit", "Sync___create_dialogue_video"} and payload.get("status") == "requires_audio_fallback":
-                    output = {key: value for key, value in payload.items() if key != "error"}
-                elif isinstance(exc, GatewayToolError):
+                if isinstance(exc, GatewayToolError):
                     output = {**payload, "status": "failed", "transport_error": False}
                 else:
                     output = {**payload, "status": "failed", "error": str(exc)[:400],
@@ -1152,7 +999,7 @@ class GatewayExecutor:
             recovery = self.recovery.failure(call_id, name, payload)['recovery']
         elif payload.get('status') not in {'rejected', 'not_run'}:
             self.recovery.success(call_id, name)
-        if name in {"Remotion___render_timeline", "Remotion___get_render_progress", "HyperFrames___render_composition"}:
+        if name in {"Remotion___render_timeline", "Remotion___get_render_progress"}:
             from agent.deep_agent.motion_carry_gate import requires_motion_qc
 
             if requires_motion_qc(studio.prompt, studio.tool_events):
@@ -1226,12 +1073,8 @@ class GatewayExecutor:
             payload = _unwrap_tool_output(output)
             provider_job_id = completed.provider_job_id or payload.get("job_id")
             ab_arm = route.alias if route.job_type == "image_edit" and intent_constraints(studio.prompt, arguments=arguments)["predicates"]["text_only_edit"] else None
-            if route.job_type == "continuity_qc":
-                ab_arm = "gemini_vlm_judge"
             if route.job_type == 'reference_labels':
                 ab_arm = 'gemini_shot_labels'
-            if route and route.alias in {"heygen_voice_clone", "heygen_voice_tts"}:
-                ab_arm = "heygen_voice_internal"
             if name == "Fal___mirelo_v2a":
                 ab_arm = model
             self.outcomes.record(
@@ -1321,7 +1164,7 @@ _OUTPUT_PATH_KEYS = {"output_path", "local_path", "video_path", "audio_path", "i
 def stage_outputs_in_job(job_id, payload):
     """Copy provider media saved elsewhere under the media root into the job directory.
 
-    Providers (ElevenLabs, fal, HeyGen...) save under RENDERHAUS_MEDIA_DIR/<provider>/, which the
+    Providers (ElevenLabs, fal...) save under RENDERHAUS_MEDIA_DIR/<provider>/, which the
     job sandbox refuses ("Absolute input paths must stay inside the job directory"), so the agent
     could not inspect its own voiceover. The copy is rewritten in place so every later tool,
     inspect_media and the asset registrar see a path inside the job.

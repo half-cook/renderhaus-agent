@@ -1,9 +1,5 @@
 # Motion carry QC
 
-`motion_carry_probe` is a free local post-render gate for motion graphics,
-product demos, knowledge explainers, and explicitly requested HyperFrames films.
-Generative shot continuity still uses `local_qc`.
-
 This is an independent clean-room implementation of a published idea. No
 third-party code, animation library, look, template, or external threshold was
 read or copied. The non-commercial source project and prohibited research
@@ -93,12 +89,6 @@ faults, plus blurred-fast-move and intentional-exit controls. The manifest recor
 hashes, exact timing and independent per-check labels. A fault variant can also
 fail an unlabelled check. No labels come from the analyzer's predictions.
 
-Local Remotion rejects motion/grade/rotation and its browser runtime is absent.
-HyperFrames has no renderer. The set uses the authorized synthetic fallback
-through Pillow, NumPy and installed ffmpeg's native MPEG-4 encoder and ALAC audio.
-It is not claimed as Remotion or HyperFrames rendered output. No external template
-or new renderer download is involved.
-
 ```bash
 .venv/bin/python scripts/calibrate_motion_carry.py \
   --build-fixtures tests/fixtures/motion_carry \
@@ -160,13 +150,6 @@ Another job's report or another rendered output cannot certify this film.
 Run-limit recovery uses the same gate. A failed probe preserves the rendered
 intermediate and never submits a paid replacement automatically.
 
-The agent surfaces failures verbatim, links the report and offers `remotion_render`
-after fixes. `hyperframes_render` is offered only when explicitly requested and
-retains its renderer blocker. Missing media, dry-run, invalid report or skipped
-measurement is incomplete QC. Re-renders retain approval and spending caps.
-`APPROVAL_EXEMPT_TOOLS` and the cap are unchanged; this tool has its own explicit
-free exemption. Explicit request, exception and default selection order is unchanged.
-
 ## Price, licence and validation
 
 No provider, endpoint, model ID or weights are added. Price is $0 locally; no
@@ -189,84 +172,13 @@ here. No browser pass is claimed.
 
 ## Changed files
 
-- [.github/workflows/deploy.yml](../.github/workflows/deploy.yml)
-- [Dockerfile.agentcore](../Dockerfile.agentcore)
-- [agent/deep_agent/motion_carry_gate.py](../agent/deep_agent/motion_carry_gate.py)
-- [agent/deep_agent/routing.py](../agent/deep_agent/routing.py)
-- [agent/deep_agent/routing_policy.json](../agent/deep_agent/routing_policy.json)
-- [agent/deep_agent/runner.py](../agent/deep_agent/runner.py)
-- [agent/deep_agent/skills/hyperframes/SKILL.md](../agent/deep_agent/skills/hyperframes/SKILL.md)
-- [agent/deep_agent/skills/knowledge-explainer/SKILL.md](../agent/deep_agent/skills/knowledge-explainer/SKILL.md)
-- [agent/deep_agent/skills/motion-carry-qc/SKILL.md](../agent/deep_agent/skills/motion-carry-qc/SKILL.md)
-- [agent/deep_agent/skills/motion-graphics/SKILL.md](../agent/deep_agent/skills/motion-graphics/SKILL.md)
-- [agent/deep_agent/skills/product-demo-video/SKILL.md](../agent/deep_agent/skills/product-demo-video/SKILL.md)
-- [agent/gateway_executor.py](../agent/gateway_executor.py)
-- [agent/studio_agent_next.py](../agent/studio_agent_next.py)
-- [configs/gateway/remotion.tools.json](../configs/gateway/remotion.tools.json)
-- [docs/DEEP_AGENT.md](../docs/DEEP_AGENT.md)
-- [docs/MOTION_CARRY_QC.md](../docs/MOTION_CARRY_QC.md)
-- [docs/SKILLS.md](../docs/SKILLS.md)
-- [docs/motion-carry-qc-decisions.tsv](../docs/motion-carry-qc-decisions.tsv)
-- [providers/catalog.py](../providers/catalog.py)
-- [providers/contracts.py](../providers/contracts.py)
-- [providers/registry.py](../providers/registry.py)
-- [providers/remotion/api.py](../providers/remotion/api.py)
-- [providers/remotion/local.py](../providers/remotion/local.py)
-- [providers/remotion/motion_carry.py](../providers/remotion/motion_carry.py)
-- [providers/remotion/motion_carry_calibration.json](../providers/remotion/motion_carry_calibration.json)
-- [pyproject.toml](../pyproject.toml)
-- [scripts/calibrate_motion_carry.py](../scripts/calibrate_motion_carry.py)
-- [scripts/ci_check.py](../scripts/ci_check.py)
-- [server/billing_rates.py](../server/billing_rates.py)
-- [server/studio.py](../server/studio.py)
-- [tests/fixtures/motion_carry/blurred_fast_move.mp4](../tests/fixtures/motion_carry/blurred_fast_move.mp4)
-- [tests/fixtures/motion_carry/carrying.mp4](../tests/fixtures/motion_carry/carrying.mp4)
-- [tests/fixtures/motion_carry/clipped_audio.mp4](../tests/fixtures/motion_carry/clipped_audio.mp4)
-- [tests/fixtures/motion_carry/fade_replace.mp4](../tests/fixtures/motion_carry/fade_replace.mp4)
-- [tests/fixtures/motion_carry/intentional_exit.mp4](../tests/fixtures/motion_carry/intentional_exit.mp4)
-- [tests/fixtures/motion_carry/manifest.json](../tests/fixtures/motion_carry/manifest.json)
-- [tests/fixtures/motion_carry/no_rests.mp4](../tests/fixtures/motion_carry/no_rests.mp4)
-- [tests/fixtures/motion_carry/slideshow.mp4](../tests/fixtures/motion_carry/slideshow.mp4)
-- [tests/fixtures/motion_carry/subject_exit.mp4](../tests/fixtures/motion_carry/subject_exit.mp4)
-- [tests/fixtures/motion_carry/unblurred_fast_move.mp4](../tests/fixtures/motion_carry/unblurred_fast_move.mp4)
-- [tests/fixtures/motion_carry/uniform_cadence.mp4](../tests/fixtures/motion_carry/uniform_cadence.mp4)
-- [tests/fixtures/skill_routing.json](../tests/fixtures/skill_routing.json)
-- [tests/test_hyperframes.py](../tests/test_hyperframes.py)
-- [tests/test_local_assembly.py](../tests/test_local_assembly.py)
-- [tests/test_motion_carry_host.py](../tests/test_motion_carry_host.py)
-- [tests/test_motion_carry_qc.py](../tests/test_motion_carry_qc.py)
-- [tests/test_provider_ladder.py](../tests/test_provider_ladder.py)
-- [tests/test_skill_routing.py](../tests/test_skill_routing.py)
-
 No new provider, vendor model, Studio model-picker entry or secret is added.
 The internal policy label `motion-carry-local` represents this analyzer, not model weights.
 Remotion already routes to the editor through `DISPATCH_TARGETS`.
 
 ## Verification outcome, 2026-10-10
 
-- Starting commit: 2,089 unittests passed, seven skipped.
-- Final suite: 2,114 tests passed, seven skipped, including 22 motion probe/host tests.
-- Ruff passed over `agent lambdas scripts server providers`.
-- `scripts/ci_check.py` passed, including actual ARM Lambda packaging and all dry-run dispatches.
-  Offline packaging used cached wheel bytes and their declared platform tags with
-  `PIP_NO_INDEX=1` and `PIP_FIND_LINKS=/tmp/motion-wheel-cache`. No download or packaging mock.
-- Studio `tsc --noEmit -p .` passed using the authorized temporary dependency symlink,
-  which was removed after the check.
-- Rebuilding all ten films reproduced every MP4 checksum and the calibration JSON exactly.
-- A parent-run 120-second stereo control peaked at 244,836 KiB RSS and correctly remained
-  skipped because its black, silent frames offered no beats or subject to certify.
-- RT-163 and RT-164 are active motion-carry rows. RT-165 is active generative-continuity protection.
-  Five skips remain unchanged: one HyperFrames-overlay dependency, three capture dependencies,
-  and RT-E043's unverified exact end-card OCR semantics.
-- Browser E2E is blocked. The ignored receipt `.renderhaus/e2e/motion-carry-blocked.json`
-  records the missing Comet access and pending real Studio flow and playback.
-
 Only `MOTION_CARRY_QC_DRY_RUN` is new, defaulting true. No secrets are added.
 Existing provider dry-run flags remained true for the required checks; tests only
 activate authorized local binary paths or mocked provider calls. No paid/live provider
 API, push, PR or deployment was performed.
-
-Open work is real-deliverable calibration, Comet Studio E2E and playback,
-remote-only artifact staging, and multi-output motion-report aggregation.
-The existing HyperFrames renderer remains unavailable. No new vendor model ID,
-endpoint or price is unverified, because this feature adds none.

@@ -141,10 +141,6 @@ class SyncProviderTests(unittest.TestCase):
         self.route("GET", f"{FAL_REQUESTS}/{request_id}/status", {"status": "COMPLETED"})
         self.route("GET", f"{FAL_REQUESTS}/{request_id}", {"video": {"url": output_url}})
 
-    def direct_submit(self):
-        os.environ["SYNC_TRANSPORT"] = "direct"
-        self.route("POST", DIRECT_GENERATE, {"id": "direct_1", "status": "PENDING"})
-        return self.submit()
 
     def sync_metadata(self):
         return list(Path(self.directory.name).glob("video/.tasks/sync/*.json"))
@@ -260,19 +256,6 @@ class SyncProviderTests(unittest.TestCase):
         self.assertEqual(output["status"], "dry_run")
         self.assertEqual(self.requests, [])
 
-    def test_direct_live_requires_written_authorization_and_known_plan(self):
-        os.environ["SYNC_TRANSPORT"] = "direct"
-        os.environ.pop("SYNC_DIRECT_AUTHORIZED")
-        self.assertIn("permission", self.contracts.live_blocker({}))
-        with self.assertRaisesRegex(ValueError, "permission"):
-            self.submit()
-        os.environ["SYNC_DIRECT_AUTHORIZED"] = "true"
-        os.environ["SYNC_BILLING_PLAN"] = "credits"
-        with self.assertRaisesRegex(ValueError, "billing"):
-            self.submit()
-        os.environ["SYNC_DRY_RUN"] = "true"
-        self.assertEqual(self.submit()["status"], "dry_run")
-        self.assertEqual(self.requests, [])
 
     def test_renderhaus_handles_are_accepted_for_preview_and_require_live_resolution(self):
         os.environ["SYNC_DRY_RUN"] = "true"
@@ -319,48 +302,9 @@ class SyncProviderTests(unittest.TestCase):
         self.assertEqual(self.api.get_video_task(job["job_id"], download=True)["status"], "succeeded")
         self.assertEqual(len(self.requests), count)
 
-    def test_direct_submission_matches_official_body_and_header(self):
-        output = self.direct_submit()
-        request = self.requests[0]
-        self.assertEqual(request.headers["x-api-key"], "offline-sync-key")
-        self.assertEqual(json.loads(request.content), {
-            "model": "sync-3", "input": [
-                {"type": "video", "url": VIDEO_URL},
-                {"type": "audio", "url": AUDIO_URL},
-            ], "options": {"sync_mode": "cut_off"},
-        })
-        self.assertEqual(output["status"], "queued")
-        self.assertEqual(output["transport"], "direct")
-
-    def test_direct_poll_maps_all_official_states_and_never_resubmits(self):
-        for state, expected in (
-            ("PENDING", "queued"), ("PROCESSING", "running"),
-            ("FAILED", "failed"), ("REJECTED", "failed"),
-        ):
-            with self.subTest(state=state):
-                job = self.direct_submit()
-                self.route("GET", DIRECT_GENERATE + "/direct_1", {
-                    "id": "direct_1", "status": state,
-                    "error": "contains https://private.test/token?signature=secret",
-                })
-                output = self.api.get_video_task(job["job_id"])
-                self.assertEqual(output["status"], expected)
-                self.assertNotIn("signature=secret", json.dumps(output))
-        self.assertEqual(sum(request.method == "POST" for request in self.requests), 4)
-        self.assertEqual(sum(request.method == "GET" for request in self.requests), 4)
-
-    def test_direct_completed_artifact_downloads(self):
-        job = self.direct_submit()
-        self.route("GET", DIRECT_GENERATE + "/direct_1", {
-            "id": "direct_1", "status": "COMPLETED", "outputUrl": OUTPUT_URL,
-        })
-        self.download_route()
-        output = self.api.get_video_task(job["job_id"], download=True)
-        self.assertEqual(output["status"], "succeeded")
-        self.assertEqual(Path(output["output_path"]).read_bytes(), MP4_BYTES)
 
     def test_provider_http_errors_never_echo_urls_keys_or_response_text(self):
-        for transport, submit_url in (("fal", FAL_SUBMIT), ("direct", DIRECT_GENERATE)):
+        for transport, submit_url in (("fal", FAL_SUBMIT),):
             with self.subTest(transport=transport):
                 os.environ["SYNC_TRANSPORT"] = transport
                 self.route("POST", submit_url, {
@@ -387,19 +331,13 @@ class SyncProviderTests(unittest.TestCase):
         self.assertNotIn("unsafe-secret", json.dumps(output))
 
     def test_invalid_completed_output_is_refused_before_download(self):
-        for transport in ("fal", "direct"):
+        for transport in ("fal",):
             for url in (None, 3, "file:///tmp/private", "http://cdn.test/file", "https:///file"):
                 with self.subTest(transport=transport, url=url):
                     os.environ["SYNC_TRANSPORT"] = transport
-                    if transport == "fal":
-                        self.fal_submit_route()
-                        job = self.submit()
-                        self.fal_completed_routes(output_url=url)
-                    else:
-                        job = self.direct_submit()
-                        self.route("GET", DIRECT_GENERATE + "/direct_1", {
-                            "status": "COMPLETED", "outputUrl": url,
-                        })
+                    self.fal_submit_route()
+                    job = self.submit()
+                    self.fal_completed_routes(output_url=url)
                     with self.assertRaises(RuntimeError):
                         self.api.get_video_task(job["job_id"], download=True)
         self.assertEqual(list(Path(self.directory.name).rglob("*.mp4")), [])

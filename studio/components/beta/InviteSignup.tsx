@@ -10,7 +10,6 @@ import { useClerkConfigured } from "@/components/StudioAuth";
 import {
   checkInvite, InviteCheckError, openDemoProject, redeemInvite, savedInvite, type InviteError, type InviteReservation,
 } from "@/lib/beta-credits";
-import { TOPUPS_COMING_SOON } from "@/lib/launch";
 import { CodeCells } from "./CodeCells";
 import { classifyConfirmError, confirmError, incompleteResult, WRONG_CODE } from "@/lib/signup-errors";
 
@@ -472,7 +471,7 @@ function Welcome({ balanceCents }: { balanceCents: number }) {
       <button type="button" className="rh-btn rh-btn-primary rh-btn-lg rh-btn-block" style={{ marginTop: 16 }} disabled={busy} onClick={() => void open()}>
         Open the demo project <ArrowRight size={16} aria-hidden="true" />
       </button>
-      <p className="rh-form-fine">This is a quiet beta. {TOPUPS_COMING_SOON.replace(".", ",")} so your $10 is the credit for now.</p>
+      <p className="rh-form-fine">This is a quiet beta. Your invite includes $10 of credit.</p>
     </div>
   );
 }

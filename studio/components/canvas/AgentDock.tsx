@@ -61,7 +61,6 @@ import { approvalCardModel, heldCreditCents, pricingCardModel, traceCost, visibl
 import { formatCents } from "@/lib/rh/money";
 import { toRunReceiptModel, toApprovalCardModel } from "@/lib/rh/billing";
 import { useCreditContext } from "@/lib/rh/credit-store";
-import { RH_ADD_CREDIT_EVENT } from "@/lib/rh/events";
 import { SEND_FAILED_AGAIN_LINE, SEND_FAILED_LINE, SEND_FAILED_RETRY, nextFailedTurn, type FailedTurn } from "@/lib/chat-failure";
 
 type LiveRun = {
@@ -98,7 +97,6 @@ function isFollowUpToolEvent(event: AgentToolEvent): boolean {
   const name = event.name.toLowerCase();
   return (
     name.includes("get_video_task") ||
-    name.includes("get_runway_task") ||
     name.includes("query_music_task") ||
     name.includes("get_render_progress") ||
     name.includes("poll")
@@ -312,7 +310,6 @@ function PricedApproval({ approval, model, busy, onDecision }: {
           // Not now is the same server decline: the pending approval clears and the hold is released.
           onNotNow: () => onDecision(approval, "reject", undefined, "not_now"),
           onEdit: () => setEditing((value) => !value),
-          onAddCredit: () => window.dispatchEvent(new CustomEvent(RH_ADD_CREDIT_EVENT)),
           onLowerCap: (cap) => setLoweredCap(cap),
         }}
       />
@@ -427,7 +424,6 @@ function RunBillingBlocks({ execution, disabled, onCap }: {
           actions={{
             onRaise: (cap) => onCap(execution, "raise", cap),
             onStop: () => onCap(execution, "stop"),
-            onAddCredit: () => window.dispatchEvent(new CustomEvent(RH_ADD_CREDIT_EVENT)),
           }}
         />
       ) : null}

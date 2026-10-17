@@ -5,7 +5,7 @@ metadata:
   remotion_backend: configured
   remotion_features: identity clip_timing audio_mix captions canvas encoding
   include_tools: call_media_tool call_audio_tool call_editor_tool
-  routing_tools: gpt_image25_t2i gpt_image25_edit wan3_t2v wan3_i2v wan3_r2v seedance25_t2v seedance25_i2v seedance25_r2v seedance25_edit seedance25_extend eleven_v4_turbo mureka_v95 remotion_render local_qc ffmpeg_tool deliverable_qc delivery_render
+  routing_tools: gpt_image25_t2i gpt_image25_edit wan3_t2v wan3_i2v wan3_r2v seedance25_t2v seedance25_i2v seedance25_r2v seedance25_edit seedance25_extend eleven_v4_turbo mureka_v95 remotion_render ffmpeg_tool deliverable_qc delivery_render
   gateway_tools: OpenAI___generate_image OpenAI___edit_image Fal___generate_wan3_t2v Fal___generate_wan3_i2v Fal___generate_wan3_r2v Fal___get_video_task Seedance___text_to_video Seedance___image_to_video Seedance___reference_to_video Seedance___edit_video Seedance___extend_video Seedance___get_video_task ElevenLabs___text_to_speech_convert Mureka___generate_song Mureka___generate_instrumental Mureka___get_music_task Remotion___render_timeline Remotion___get_render_progress Ffmpeg___ffmpeg_tool Remotion___deliver_render Remotion___qc_deliverable
 ---
 
@@ -116,11 +116,6 @@ dialogue when suitable rather than layering a second speaking track. Save every 
 poll to completion before retrying. Dry-run results are input previews, never produced media.
 For extension, source inclusion in the returned clip remains UNVERIFIED. Inspect the actual
 artifact and measure it before choosing edit points. Never infer a final stitched duration.
-
-Use [continuity QC](../continuity-qc/SKILL.md) with `local_qc` for actual shots. Compare
-identity, clothing, props, staging, lighting and voice against approved references and the
-prior episode's final state. Report missing or failed checks explicitly. A prompt lock
-checker cannot establish visual identity. Do not promote the experimental VLM judge.
 
 Log selected asset versions, source in/out points, entry/exit reasons, cut timing and
 continuity state in `edit.md`. Assemble through [final assembly](../final-assembly/SKILL.md).

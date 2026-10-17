@@ -36,7 +36,6 @@ FAL_DRY_RUN=false ELEVENLABS_DRY_RUN=false REMOTION_DRY_RUN=false \
 other provider dry-run settings intact. The embedded Gateway is bound to
 loopback and is closed after the run. Local assembly needs ffmpeg and ffprobe.
 Gateway metadata measurement without ffprobe supports unfragmented MP4/MOV
-through the [stdlib parser](DROP_PYAV.md). WebM/MKV needs ffprobe or measured
 `source_fps`; malformed or fragmented MP4 remains blocked.
 The driver sets the local media directory beneath `--out`; provider-generated
 artifacts must be available there before assembly. Existing per-role model and

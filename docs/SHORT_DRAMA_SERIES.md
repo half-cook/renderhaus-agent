@@ -62,13 +62,6 @@ series job contract refuse rather than bypass segment checks. All other workflow
 those tools. Only independent jobs in the current batch can run together. Dependent
 reference/shot/assembly batches use real completed asset handles.
 
-Per-shot selection preserves explicit user provider/model requests and real-person
-flags. It derives dialogue and duration constraints from the shot rather than an episode's
-overall length. Wan 3.0 remains the generation default; Seedance 2.5 is the synthetic
-dialogue exception and existing edit/extend default. Real-face Seedance prohibitions,
-consent, commercial status, dry-run configuration and training policies are unchanged.
-`local_qc` remains the continuity judge. Confidential metadata does not affect selection.
-
 ## Provider evidence
 
 Official pages were re-read on **2026-10-15**. Existing billing tables retain their original

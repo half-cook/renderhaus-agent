@@ -42,11 +42,6 @@ BytePlus is optional for non-US customers. Vendor watermark and AUP rules apply.
 All Seedance outputs are ineligible for training.
 Omni and Vidu are A/B candidates only. An explicit Vidu request belongs in named-provider.
 
-Discover native arguments. Wan uses `start_image_url`; Seedance uses `image_path_or_url`. Retain
-`renderhaus-asset://` version handles for Studio to resolve. Do not send local paths or invented URLs.
-Poll `Seedance___get_video_task` with the saved ID and `download=true`.
-Inspect the actual result against the approved image and use continuity-qc for comparisons.
-
 Follow `read_studio_context.intent_route`. Selection uses the explicit requested provider/model,
 then a named exception, then the capability default. Cost estimates support approval and disclosure;
 they never select a provider. Pending or commercially blocked defaults use only the policy's declared interim tool.

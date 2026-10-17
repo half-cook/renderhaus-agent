@@ -26,16 +26,6 @@ identity, order and bounds before composing. Spacing/audio-event tokens are not 
 The official [speech-to-text API](https://elevenlabs.io/docs/api-reference/speech-to-text/convert),
 read 2026-10-10, verifies this model and word-timing path. No new transcription API is invented.
 
-Prefer supplied words, exact-source-version indexed word records, or supplied SRT. A saved
-transcription ID uses the existing `ElevenLabs___speech_to_text_transcripts_get` with
-`transcription_id`. These reuse paths do not purchase transcription. Footage-memory's
-`dialogue` events have millisecond phrase timing; they are usable for selection and text
-review, but word highlights require actual word-timing attributes. See
-[VideoIndex](VIDEO_INDEX.md). Conversational editing already uses this transcription path
-and caches timings by source version; audiograms reuse those results. Sync's
-`transcribe_video` is tied to its consented whole-video dialogue-edit workflow, so it is
-not the standalone podcast-audio default.
-
 An SRT with phrase cues shows supplied whole-cue captions. It reports that measured word
 highlighting is missing rather than inventing alignment. If exact highlighting is needed
 and only text is available, the existing `ElevenLabs___forced_alignment_create` accepts
@@ -183,28 +173,12 @@ was read as a pattern source, pinned to `f3df381d65abe5078f5ed410bbc3ed72e7cb92b
 No upstream code, scripts, dependency or assets are copied; adapted guidance is attributed
 in [NOTICE](../providers/remotion/NOTICE.md). No AGPL or non-commercial material is introduced.
 
-RT-182 and nine ownership/reuse cases are active alongside the chat-story cases. The combined
-fixture has 289 retained rows, 283 active and the same
-six dependency skips. A long-episode best-moment request starts in footage-memory;
-talking-head captions remain conversational-edit, lower thirds remain motion-graphics,
-and ad variants retain their matrix skill. User-facing product labels use “Podcast audiogram”,
-“Channel intro” and “YouTube end screen”; provider and cost disclosure remains in the existing
-approval messages. Comet browser E2E is **blocked** in this environment and cannot be claimed
-as passed. See [decisions](podcast-audiogram-decisions.tsv).
-
 Remotion's standalone TypeScript build remains **UNVERIFIED** in this offline clone.
 Its dependencies are absent, and the offline npm cache lacks a required package.
 The Studio TypeScript check uses a complete local dependency tree and does not establish
 the Remotion build or Lambda playback. These are separate pending checks.
 
 ## Recorded validation
-
-The stable revision `1592194` passed full unittest discovery: 2,506 tests in 384.429 seconds,
-with eight skips. This includes 58 additional tests compared with the starting revision.
-Ruff and `scripts/ci_check.py` passed with the required dry-run flags and an empty
-`RENDERHAUS_SECRETS_NAME`. Studio `tsc --noEmit -p .` passed using the complete local
-`/workspace/rh-staging/studio/node_modules` tree; the temporary symlink was removed.
-The prescribed `rh-runway-aleph` tree lacked five existing Studio dependencies.
 
 Real FFmpeg/FFprobe checks rendered and decoded all four aspects with the expected
 dimensions, duration and audio stream. A separate synthetic local-worker smoke render
@@ -236,7 +210,6 @@ The tracked diff from `47b2ac7` changes 35 files. Providers and Gateway tools re
 - [`docs/PODCAST_AUDIOGRAM.md`](../docs/PODCAST_AUDIOGRAM.md)
 - [`docs/REMOTION_EDITING.md`](../docs/REMOTION_EDITING.md)
 - [`docs/SKILLS.md`](../docs/SKILLS.md)
-- [`docs/podcast-audiogram-decisions.tsv`](../docs/podcast-audiogram-decisions.tsv)
 - [`providers/contracts.py`](../providers/contracts.py)
 - [`providers/ffmpeg/ops.py`](../providers/ffmpeg/ops.py)
 - [`providers/remotion/NOTICE.md`](../providers/remotion/NOTICE.md)

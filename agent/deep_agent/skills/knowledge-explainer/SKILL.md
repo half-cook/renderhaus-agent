@@ -1,12 +1,12 @@
 ---
 name: knowledge-explainer
-description: Create silent graphic knowledge or science explainers with on-screen text and event-synced sound effects. No narration or TTS. Remotion is the default; use HyperFrames only when explicitly named.
+description: Create silent graphic knowledge or science explainers with on-screen text and event-synced sound effects. No narration or TTS. Use Remotion.
 metadata:
   remotion_backend: configured
   remotion_features: clip_timing transitions fit_position scale motion titles captions audio_mix canvas encoding
   include_tools: call_editor_tool call_media_tool call_audio_tool
-  routing_tools: remotion_render hyperframes_render mirelo_v2a elevenlabs_sfx_v2 motion_carry_probe
-  gateway_tools: Remotion___render_timeline Remotion___get_render_progress HyperFrames___render_composition Fal___mirelo_v2a Fal___get_video_task ElevenLabs___text_to_sound_effects_convert Remotion___motion_carry_probe
+  routing_tools: remotion_render mirelo_v2a elevenlabs_sfx_v2 motion_carry_probe
+  gateway_tools: Remotion___render_timeline Remotion___get_render_progress Fal___mirelo_v2a Fal___get_video_task ElevenLabs___text_to_sound_effects_convert Remotion___motion_carry_probe
 ---
 
 # Silent knowledge explainer
@@ -55,12 +55,6 @@ hands, or an event-list API. Report unsupported motion or missing assets.
 For diagram art, read [image-gen](../image-gen/SKILL.md), which uses GPT Image 2.5
 by default and Recraft V4.1 for editable SVGs.
 
-Use `hyperframes_render` only when the user names HyperFrames. Read
-[hyperframes](../hyperframes/SKILL.md) for a seekable HTML composition. Derive all
-animation state from time, so any frame can be inspected. Report disabled or
-unavailable tools as blockers. The current HyperFrames tool validates inputs
-only. Rendering, audio mixing, and MP4 export remain pending.
-
 Choose SFX by input, following [audio-bed](../audio-bed/SKILL.md):
 
 - With completed silent picture, default to `mirelo_v2a` through
@@ -85,12 +79,6 @@ music or vocals by default. Avoid generating both a Mirelo track and duplicate
 one-shots for the same events unless the user requested the combination. Mute
 original visual audio with `volume=0` when replacing it. Preserve Mirelo's muxed
 soundtrack when using that result.
-
-Paid generative B-roll is outside the default graphic path. If the user requests
-AI B-roll, read the appropriate video skill and obtain its existing cost approval.
-Honor an explicitly named built video provider through
-[named-provider](../named-provider/SKILL.md). Keep Remotion as the assembly
-default unless HyperFrames is explicitly named. Cost never selects a provider.
 
 ## Render and verify
 

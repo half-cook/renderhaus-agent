@@ -37,7 +37,6 @@ from providers.contracts import SEEDREAM_SIZES
 from providers.registry import load_committed_schemas
 from providers.seedream.api import _size_for_ratio
 from server import run_billing
-from server.billing import stripe_enabled
 from server.beta_credits import beta_billing_enabled
 from server.billing_rates import cost_for
 from server.config import (
@@ -357,14 +356,6 @@ class StudioAgentContext:
         """Resolve opaque Studio asset handles only at the provider boundary."""
         if _tool_name in {"Remotion___prepare_conversational_edit", "Remotion___import_nle_timeline"}:
             return dict(arguments)
-        if _tool_name.startswith("Runway___"):
-            from server.runway_inputs import prepare_runway_arguments
-
-            return prepare_runway_arguments(
-                _tool_name.split("___", 1)[1], arguments,
-                source_resolver=self.source_resolver, source_versions=self.source_versions,
-                workspace_id=self.workspace_id,
-            )
         prefix = "renderhaus-asset://"
 
         def resolve(value: Any) -> Any:
@@ -457,8 +448,6 @@ async def report_progress(
         status="completed",
     )
     return "Update shown to the customer."
-
-
 
 
 app = BedrockAgentCoreApp()
@@ -749,7 +738,7 @@ class GatewayMCPServer(GatewayClient):
         """
         if not self._user_id or "___" not in tool_name:
             return None
-        if not (stripe_enabled() or beta_billing_enabled(repository, self._user_id)):
+        if not beta_billing_enabled(repository, self._user_id):
             return None
         target_name, raw_tool = tool_name.split("___", 1)
         provider_id = _PROVIDER_ID_BY_TARGET_NAME.get(target_name)
@@ -809,11 +798,6 @@ class GatewayMCPServer(GatewayClient):
                 raise GatewayToolError(payload)
         except Exception as exc:
             payload = getattr(exc, "payload", {})
-            if tool_name == "Sync___create_dialogue_edit" and (not payload or payload.get("status") == "submission_unknown"):
-                return {**{key: value for key, value in payload.items() if key != "error"},
-                        "status": "submission_unknown", "action_id": resolved_arguments.get("action_id"),
-                        "next_action": "check_status_or_ask_user",
-                        "note": "Preview may already be billed. Check status or ask the user; no automatic retry or refund was made."}
             if charge is not None:
                 try:
                     await asyncio.to_thread(
@@ -1166,9 +1150,7 @@ def _append_harvested_event(
     else:
         summary = str(payload.get("note") or payload.get("summary") or f"{label}: {status}.")
     assets: list[dict[str, Any]] = []
-    partial_preview = (name in {"Sync___get_dialogue_edit", "Sync___create_dialogue_edit"}
-                       and status == "completed_partial" and bool(payload.get("audio_url")))
-    if studio.asset_registrar and (status in {"succeeded", "success", "completed"} or partial_preview):
+    if studio.asset_registrar and status in {"succeeded", "success", "completed"}:
         try:
             assets = studio.asset_registrar(
                 result=payload,
@@ -1539,7 +1521,6 @@ def _validate_video_delivery(
 
     delivery_route = route_intent(request.prompt, arguments=_media_input_arguments(studio.nodes))
     delivery_alias = delivery_route.steps[-1].alias if delivery_route.steps else delivery_route.alias
-    dialogue_requested = delivery_route.skill == "dialogue-edit" and delivery_route.status == "ready"
     prior_events = {event["id"]: event for event in request.prior_tool_events}
     current_events = [event for event in studio.tool_events if event.public() != prior_events.get(event.id)]
     delivery_events = studio.tool_events if request.delivery_continuation else current_events
@@ -1631,14 +1612,9 @@ def _validate_video_delivery(
         mirelo_started = False
     if mirelo_started and delivery_alias in {"mirelo_v2a", "elevenlabs_sfx_v2"}:
         delivery_alias = "mirelo_v2a"
-    dialogue_actions = [event for event in studio.tool_events if event.name in {
-        "Sync___create_dialogue_edit", "Sync___create_dialogue_video", "Sync___lipsync_video",
-    }] if dialogue_requested else []
-    dialogue_job = (dialogue_actions[-1].result.get("job_id") if dialogue_actions
-                    and dialogue_actions[-1].name != "Sync___create_dialogue_edit" else None)
-    delivery_events = current_events if dialogue_requested or delivery_alias == "mirelo_v2a" or mirelo_started else studio.tool_events
+    delivery_events = current_events if delivery_alias == "mirelo_v2a" or mirelo_started else studio.tool_events
     render_started = any(event.name.endswith(("render_timeline", "render_composition")) for event in delivery_events)
-    wants_video = dialogue_requested or _requests_video_deliverable(request.prompt) or render_started or delivery_alias == "mirelo_v2a" or mirelo_started
+    wants_video = _requests_video_deliverable(request.prompt) or render_started or delivery_alias == "mirelo_v2a" or mirelo_started
     if not wants_video:
         return True
     assembly_prompt = re.sub(
@@ -1664,7 +1640,7 @@ def _validate_video_delivery(
     standalone_poll = {"mureka_lyrics_video": "Mureka___get_video_task",
                        "mirelo_v2a": "Fal___get_video_task",
                        "sync3_lipsync": "Sync___get_video_task",
-                       "heygen_avatar_v": "HeyGen___get_video_status",
+
                        "topaz_upscale": "Topaz___get_video_task",
                        "topaz_interpolate": "Topaz___get_video_task"}.get(delivery_alias)
     if not requires_assembly and standalone_poll:
@@ -1676,8 +1652,6 @@ def _validate_video_delivery(
             and event.result.get("status") == "succeeded"
             and event.result.get("downloaded") is True
             and (standalone_poll != 'Topaz___get_video_task' or preview_delivery_valid(studio, event.result))
-            and (not dialogue_requested or (event in current_events and dialogue_job
-                 and (event.provider_job_id or event.arguments.get("job_id") or event.result.get("job_id")) == dialogue_job))
             and (delivery_alias != "mirelo_v2a" or (
                 event in current_events
                 and event.result.get("model") in mirelo.ENDPOINTS
@@ -1694,11 +1668,7 @@ def _validate_video_delivery(
             for event in studio.tool_events
         ):
             return True
-    hyperframes_export = bool(re.search(r"\bhyperframes\b", request.prompt, re.IGNORECASE))
-    if hyperframes_export:
-        route = route_intent(request.prompt)
-        hyperframes_export = route.skill == "hyperframes"
-    rendered = not hyperframes_export and any(
+    rendered = any(
         event.name.endswith("get_render_progress")
         and event.status.lower() in {"succeeded", "success", "completed"}
         and str(event.result.get("status") or event.status).lower()
@@ -1831,10 +1801,6 @@ async def run_studio_agent(
     async def run(servers):
         if backend == "codex":
             return await run_with_servers(request, studio, harness or CodexHarness(), servers)
-        from agent.hyperframes import HyperFramesServer, enabled
-
-        if enabled():
-            servers = [*servers, HyperFramesServer()]
         return await run_deep_agent(request, studio, servers)
 
     if mcp_servers is not None:

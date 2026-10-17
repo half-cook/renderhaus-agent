@@ -19,8 +19,8 @@ ROOT = Path(__file__).resolve().parents[1]
 GENERATION = {
     "Fal___generate_wan3_t2v", "Fal___generate_wan3_i2v", "Fal___generate_wan3_r2v",
     "Seedance___text_to_video", "Seedance___image_to_video", "Seedance___reference_to_video",
-    "OpenAI___generate_image", "OpenAI___edit_image", "Runway___text_to_video",
-    "Kling___text_to_video", "Luma___text_to_video",
+    "OpenAI___generate_image", "OpenAI___edit_image",
+
 }
 
 
@@ -82,20 +82,9 @@ def test_code_cards_never_use_image_or_video_generation_even_when_named():
     assert route.tool is None
 
 
-def test_explicit_html_renderer_is_preserved_as_an_incomplete_preview():
-    with patch.dict("os.environ", {"REMOTION_RENDER_BACKEND": "local",
-                                   "HYPERFRAMES_ENABLED": "true", "HYPERFRAMES_DRY_RUN": "true"}):
-        route = route_intent(TEACH + " Use HyperFrames.")
-    assert route.skill == "codebase-video"
-    assert route.alias == "hyperframes_render"
-    assert route.tool == "HyperFrames___render_composition"
-    assert "preview" in route.disclosure.lower()
-
-
 @pytest.mark.parametrize("prompt,skill", [
-    ("Record a quick walkthrough of my dashboard with captions, nothing fancy", "product-demo-video"),
-    ("turn this repo into a short launch share video", "product-demo-video"),
-    ("Make a product demo video explaining the dashboard UI in this repository.", "product-demo-video"),
+
+
     ("Make a whiteboard video explaining sorting algorithms with narration", "whiteboard-explainer"),
     ("Make a silent science explainer video", "knowledge-explainer"),
     ('Make a video of a forest; title it "codebase-video".', "t2v"),

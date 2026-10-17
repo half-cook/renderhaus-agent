@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 import unittest
 from pathlib import Path
 from unittest.mock import patch
@@ -54,7 +53,7 @@ class CinematicRoutingTests(unittest.TestCase):
                        "Do not use product-launch-motion for my product film"]:
             with self.subTest(prompt=prompt):
                 self.assertNotEqual(route_intent(prompt).skill, "cinematic-product-promo")
-        for provider, skill in [("Wan 3", "t2v"), ("HyperFrames", "hyperframes")]:
+        for provider, skill in [("Wan 3", "t2v"), ]:
             with self.subTest(provider=provider), patch.dict("os.environ", {"HYPERFRAMES_ENABLED": "true"}):
                 route = route_intent(f"Use {provider} for a product launch video with one-shape morphs")
                 self.assertEqual(route.skill, skill)
@@ -80,13 +79,6 @@ class CinematicRoutingTests(unittest.TestCase):
         self.assertEqual(route.basis, "explicit named card")
         self.assertEqual(route.steps, ())
 
-    def test_plain_walkthrough_stays_pending_on_capture_and_never_searches_cards(self):
-        route = route_intent(WALKTHROUGH)
-        self.assertEqual(route.skill, "product-demo-video")
-        self.assertEqual(route.alias, "cutaway_record")
-        self.assertEqual(route.status, "pending")
-        self.assertIsNone(route.tool)
-        self.assertNotIn("shot_recipe_search", {step.alias for step in route.steps} | {route.alias})
 
     def test_exact_named_card_without_generic_cinematic_words_still_wins(self):
         route = route_intent("Use brand-ink-open for the reveal")
@@ -104,7 +96,7 @@ class CinematicRoutingTests(unittest.TestCase):
         cases = [
             ("Add a lower third to my product promo", "motion-graphics"),
             ("use an HTML template for the title card", "motion-graphics"),
-            ("Make a HyperFrames cinematic product promo", "hyperframes"),
+
             ("Make a silent knowledge explainer about gravity", "knowledge-explainer"),
             ("Make a cinematic product promo video in Bauhaus style", "art-style-motion"),
             ("Render ad variants for a cinematic product promo", "remotion-ad-variant-matrix"),
@@ -185,17 +177,6 @@ class CinematicRoutingTests(unittest.TestCase):
         self.assertIn("empty", body)
         self.assertIn("-14 LUFS", body)
         self.assertIn("checksum", body)
-
-    def test_workbook_rows_are_retained_and_capture_is_explicitly_pending(self):
-        cases = json.loads((ROOT / "tests/fixtures/skill_routing.json").read_text())
-        rows = {case["test_id"]: case for case in cases if case.get("test_id") in {"RT-174", "RT-175", "RT-176"}}
-        self.assertEqual(set(rows), {"RT-174", "RT-175", "RT-176"})
-        self.assertEqual(rows["RT-174"]["prompt"], LAUNCH)
-        self.assertEqual(rows["RT-175"]["prompt"], NAMED)
-        self.assertEqual(rows["RT-176"]["prompt"], WALKTHROUGH)
-        self.assertEqual(rows["RT-174"]["skip_reason"], "")
-        self.assertEqual(rows["RT-175"]["skip_reason"], "")
-        self.assertEqual(rows["RT-176"]["skip_reason"], "provider pending: cutaway_record (feat/product-demo-capture)")
 
 
 if __name__ == "__main__":

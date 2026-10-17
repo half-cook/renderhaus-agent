@@ -37,58 +37,9 @@ TOOL_GUIDANCE: dict[str, dict[str, str]] = {
         "get_video_task": "Poll the exact saved Topaz job_id once without resubmitting. download=true saves and validates the completed MP4. Dry-run handles remain previews across configuration changes. Output provenance retains Topaz and the selected model.",
         "list_topaz_models": "List verified finishing models, endpoint identifiers, service licences and documented price examples locally. Free, no credentials or network calls. Does not verify account access or live behavior.",
     },
-    "heygen": {
-        "create_avatar_video": "Make a presenter video using official HeyGen Avatar V and an existing eligible digital-twin look avatar_id. Require subjects, consent_confirmed=true and recorded consent_record_id for every face and voice. Supply script with voice_id or audio_url, language locale, resolution and aspect_ratio. duration_seconds is a measured audio length or script duration estimate, not a vendor render control. All paid video pauses with cost even in autonomous runs. API billing is separate from app plans; self-serve list price is $0.12/s; enterprise estimates remain unknown. Default dry-run produces no media. Live checks engine eligibility and accepted vendor consent. Poll get_video_status with download=true; completion requires the saved MP4. Outputs are not training eligible.",
-        "get_video_status": "Poll the exact saved HeyGen job_id once. download=true saves completed MP4 media. Never submits another generation. Dry-run jobs stay previews even after configuration changes.",
-        "list_avatars": "List one page of digital-twin looks for avatar_id discovery. Inspect supported_api_engines for avatar_v eligibility. Default dry-run returns no invented avatar IDs. No generation.",
-        "list_voices": "List one page of HeyGen voice IDs and language metadata. Default dry-run returns no invented voice IDs. No generation or voice cloning.",
-    },
     "sync": {
-        "transcribe_video": "Transcribe a consented whole video already on assets.sync.so, at most 600 seconds and one speaker. Uses direct Sync even if regular lip-sync uses fal. No generation credit charge. Preserve transcription_id and poll get_transcription; dry-run produces no transcript.",
-        "get_transcription": "GET an existing transcription for unchanged transcript, original word IDs and speaker metadata. Never creates another job. Dry-run produces no transcript; dry IDs cannot be used live.",
-        "create_dialogue_edit": "Create a paid preview of 1-100 word changes/removals in the consented source-cloned voice using the unchanged fetched transcript. Requires cost approval even autonomously; preview price TODO/unknown unless operator-confirmed. Save action_id before submission. NEVER retry a lost create response: submission_unknown requires check status or ask user. Preserve dialogue_edit_id and poll get_dialogue_edit.",
-        "get_dialogue_edit": "GET an existing dialogue preview. Open/listen to previewAudioUrl; COMPLETED_PARTIAL remains partial and requires explicit acceptance. Preserve previewDurationMs, source/rollout metadata and voiceId. GET may retry; never retry preview creation to check status.",
-        "create_dialogue_video": "Generate sync-3 with dialogueEdit and the same original whole video, at most 600 seconds and one speaker. Requires voice/likeness consent, user-reviewed preview, measured matching preview duration/fps and a saved Idempotency-Key. Paid video always requires cost approval even autonomously. Retime-required falls back to regular lipsync with independent approved audio and separate cost approval. Poll existing get_video_task with download=true; preview and queued jobs cannot finish a video.",
-        "lipsync_video": "Put replacement audio on existing footage using sync-3 via fal by default. Requires measured video/audio durations, source fps, every face/voice subject and explicit consent_confirmed=true. Script only: create authorized ElevenLabs TTS first. All paid requests pause with a cost estimate even in autonomous runs. Large equal-length cut_off inputs require supplied silence/shot chunk boundaries plus ffmpeg and S3. Dry-run is an input preview. Poll get_video_task with download=true; never claim completion until the saved MP4 plays. No training eligibility.",
+        "lipsync_video": "Put replacement audio on existing footage using sync-3 via fal. Requires measured video/audio durations, source fps, every face/voice subject and explicit consent_confirmed=true. Script only: create authorized ElevenLabs TTS first. All paid requests pause with a cost estimate even in autonomous runs. Large equal-length cut_off inputs require supplied silence/shot chunk boundaries plus ffmpeg and S3. Dry-run is an input preview. Poll get_video_task with download=true; never claim completion until the saved MP4 plays. No training eligibility.",
         "get_video_task": "Poll a saved Sync job or chunk manifest once; download=true persists completed MP4 media and provenance. Reuse the exact job_id, never submit another lip-sync job to check status. No paid generation. Dry-run never produces an artifact.",
-    },
-    "alibaba_modelstudio": {
-        "edit_wan3_video": "Dry-run preview of Alibaba Model Studio Wan 3 editing. The preview licence allows only internal testing, research and evaluation, so customer live requests are blocked even with approval. Requires video_url, prompt, measured source_duration_seconds and source_fps. Default duration=-1 has unknown cost; explicit total output seconds quote input plus output. Outputs are not training eligible. A preview is not generated media.",
-        "extend_wan3_video": "Dry-run preview of Alibaba Model Studio Wan 3 extension. Customer live use is blocked by its internal-evaluation preview licence, which spending approval cannot override. duration is TOTAL output length: a 5s source extended by 2s uses duration=7 and bills 12s. Default -1 has unknown cost. Uses adaptive ratio and prompt-based direction. Outputs are not training eligible.",
-        "get_task": "Inspect a saved Model Studio task or dry-run handle without submitting work. Preview licensing currently blocks live task polling. In a permitted future workflow, download=true persists a completed MP4 and provenance. Reuse saved jobs instead of resubmitting; previews are not generated media.",
-    },
-    "kling": {
-        "text_to_video": (
-            "Use for a new Kling video from text, including native audio and multi-shot prompts. "
-            "Returns a queued job_id; follow with get_video_task until terminal."
-        ),
-        "image_to_video": (
-            "Use to animate an existing first frame, optionally with a last frame or elements. "
-            "Returns a queued job_id; follow with get_video_task until terminal."
-        ),
-        "omni_video": (
-            "Use for Kling Omni video with multiple reference images or elements. "
-            "Returns a queued job_id; follow with get_video_task until terminal."
-        ),
-        "get_video_task": (
-            "Use only with the exact job_id returned by a Kling generation tool. "
-            "Poll once per call until succeeded, failed, or dry_run; download saves completed video. "
-            "It does not create a new video."
-        ),
-        "list_kling_models": (
-            "List documented Kling video models and capabilities without creating media. "
-            "Use when model selection matters; prefer the configured default otherwise."
-        ),
-    },
-    "runway": {
-        "act_two": "Performance transfer default Act-Two. Require character_uri (image/video), performance_uri, measured performance_duration_seconds 3-30, subjects and consent_confirmed=true for every face, voice and body. body_control and expression_intensity 1-5 are optional; character video requires body_control=false. Always pause with cost even autonomous. For long sources use approved shot/silence segments with source_duration_seconds, performance_start_seconds and boundary_kind; process sequentially then assemble through Remotion. Poll get_runway_task with download=true. Dry-run produces no media; outputs never enter training.",
-        "text_to_video": "Create a Gen-4.5 video from text. Starts paid work unless dry-run. Poll get_runway_task with the returned job_id at least five seconds apart.",
-        "image_to_video": "Animate a supplied image with Gen-4.5. Starts paid work unless dry-run. Poll get_runway_task with the returned job_id at least five seconds apart.",
-        "video_to_video": "Edit an existing 2-30 second clip with Aleph 2.0 and a text instruction, optionally guided by a timed reference image. Supply the actual source duration for the cost estimate. Poll get_runway_task.",
-        "text_to_image": "Create a Gen-4 image from text. Returns a queued task, not a finished image. Poll get_runway_task at least five seconds apart and save its completed image.",
-        "image_to_image": "Generate a Gen-4 reference image using a source image and text instruction, optionally additional references. Returns a queued task. Poll get_runway_task and save its completed image.",
-        "get_runway_task": "Poll an existing Runway job_id once. Never submit another generation to check status. Wait at least five seconds between calls. Completed media URLs expire and must be saved.",
-        "list_runway_models": "List locally documented supported Runway models and limits. Free, no API request. This catalog does not verify account access or live model availability.",
     },
     "fal": {
         "pixelcut_looping_video": "Named-only Pixelcut loop from image_url. Requires an explicit Pixelcut request and named-provider skill. Optional prompt, integer duration 5-15, resolution 480p/768p/1080p, motion subtle/spin, include_audio=false. Always pause with cost, including autonomous runs. Default FAL_DRY_RUN=true previews inputs only. Poll get_video_task with download=true, then inspect the MP4 and loop seam. Outputs are not training eligible.",
@@ -108,14 +59,6 @@ TOOL_GUIDANCE: dict[str, dict[str, str]] = {
         "vidu_q4_r2v": "Generate Vidu Q4 video using an optional list of up to 12 reference images and 3 MP3 voice clips. Refer to images with [@reference_image_1] and voices with [reference_audio_1]. Audio defaults to false; set audio=true for dialogue and sound effects. Returns job_id; poll get_video_task with download=true until terminal. Outputs are not training eligible.",
         "get_video_task": "Poll an existing fal image or video job_id once. Image outputs always persist after content validation; SVGs are sanitized. download=true saves completed MP4s. Never submits another generation.",
         "list_fal_models": "List documented fal models, endpoints, licences and published pricing, including named-only Pixelcut and PixVerse VibeMV. Static catalog; no network or generation.",
-    },
-    "luma": {
-        "text_to_video": "Generate a Ray 3.2 clip from text. Returns a queued job_id; poll get_video_task until terminal. Outputs are not training eligible.",
-        "image_to_video": "Animate a start image, end image, or both with Ray 3.2. Anchor clips are 5 seconds. Returns job_id; poll get_video_task. Outputs are not training eligible.",
-        "extend_video": "Continue or prepend a completed Luma generation using its generation UUID. Returns job_id; poll get_video_task. Extend bills one 5-second block. Outputs are not training eligible.",
-        "modify_video": "Restyle or edit an existing MP4 video with Ray 3.2. Supply exactly one video source and its measured 5s or 10s duration for pricing. Returns job_id; poll get_video_task. Outputs are not training eligible.",
-        "get_video_task": "Poll a Luma generation UUID. Call with download=true to persist the completed MP4. Polling is free; processing maps to running, completed to succeeded. Do not resubmit while a job is pending.",
-        "list_luma_models": "List documented Luma video models and their supported settings. This is an offline capability catalog, not an account access check. Ray 3.2 has no separate Flash identifier.",
     },
     "seedream": {
         "text_to_image": (
@@ -141,7 +84,7 @@ TOOL_GUIDANCE: dict[str, dict[str, str]] = {
         "list_seedance_models": "List verified Seedance models, transports, and API sources offline. No credential or network request. BytePlus is unavailable to US customers and requires written platform authorization for live integration.",
     },
     "remotion": {
-        "motion_carry_probe": "Free local post-render motion carry and rhythm QC for motion graphics, product demos, knowledge explainers and explicit HyperFrames films. Requires owned job_id and in-job MP4 input_path, optional exact timeline. No network or model calls. Default MOTION_CARRY_QC_DRY_RUN=true. Reports per-boundary scores, cadence, rests, audio peaks, sharp fast moves and possible subject exits with timestamps/fixes. A failed report gates delivery and requires an offered re-render. PROVISIONAL calibration; human visual review stays pending. Generative continuity uses local_qc instead.",
+        "motion_carry_probe": "Free local post-render motion carry and rhythm QC for motion graphics, product demos, knowledge explainers and whiteboard explainers. Requires owned job_id and in-job MP4 input_path, optional exact timeline. No network or model calls. Default MOTION_CARRY_QC_DRY_RUN=true. Reports per-boundary scores, cadence, rests, audio peaks, sharp fast moves and possible subject exits with timestamps/fixes. A failed report gates delivery and requires an offered re-render. PROVISIONAL calibration; human visual review stays pending. This probe does not assess generative shot identity.",
         "deliver_render": "Finish an existing local render or checksum matrix manifest using a named placeholder delivery preset. Uses fixed system ffmpeg ops, measured FPS/native geometry, loudness normalization and AAC faststart mux; never enlarges. Versioned campaign__sku__locale__aspect__v<n>.mp4 files never overwrite. Actual final-file QC must pass before a finished claim. Reports per-file failures verbatim. Free local worker job; Lambda refused. Respect REMOTION_DRY_RUN. Upload=true is refused; no S3/public/platform upload is available here.",
         "qc_deliverable": "Free technical QC of final local files or matrix manifest against a named preset/spec. Probes codec/profile/pix_fmt/resolution/SAR/FPS/duration/audio, decoded cadence, full black/freeze/silence intervals, loudness/true peak/clipping, faststart, size/naming/checksum, and actual frames/contact sheet. Failed or incomplete checks fail the report. Caption/price/legal pixel review is a planner vision pass, never inferred from geometry. Confined job directory, local worker only; Lambda refused. Dry-run does no media inspection.",
         "render_ad_variants": (

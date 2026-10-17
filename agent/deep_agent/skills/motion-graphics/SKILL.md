@@ -5,14 +5,11 @@ metadata:
   remotion_backend: configured
   remotion_features: named_templates clip_timing transitions fit_position scale motion titles captions audio_mix canvas encoding
   include_tools: call_editor_tool call_media_tool
-  gateway_tools: Ffmpeg___ffmpeg_tool Remotion___render_timeline Remotion___get_render_progress Remotion___export_nle_timeline HyperFrames___render_composition Remotion___motion_carry_probe
-  routing_tools: remotion_render hyperframes_render ffmpeg_tool motion_carry_probe
+  gateway_tools: Ffmpeg___ffmpeg_tool Remotion___render_timeline Remotion___get_render_progress Remotion___export_nle_timeline Remotion___motion_carry_probe
+  routing_tools: remotion_render ffmpeg_tool motion_carry_probe
 ---
 
 # Motion graphics
-
-Remotion is the default renderer. For a request explicitly naming HyperFrames, read
-[HyperFrames](../hyperframes/SKILL.md) and follow the host's optional-tool route.
 
 Read `read_studio_context` and reuse existing assets. Search Gateway for Remotion's
 exact `render_timeline` schema. `remotion_render` maps to `Remotion___render_timeline`

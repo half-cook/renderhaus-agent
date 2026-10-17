@@ -7,7 +7,7 @@ from agent.deep_agent.routing import route_intent
 from providers.remotion.motion_carry import validate_report
 
 
-MOTION_SKILLS = {"motion-graphics", "product-demo-video", "cinematic-product-promo", "knowledge-explainer", "hyperframes", "motion-carry-qc"}
+MOTION_SKILLS = {"motion-graphics", "product-demo-video", "cinematic-product-promo", "knowledge-explainer", "motion-carry-qc"}
 PROBE = "Remotion___motion_carry_probe"
 FINISHING_OPS = {"transcode_h264", "mux_aac", "loudnorm_mux_aac", "prelimit_mux_aac", "reframe_crop", "reframe_pad_blur"}
 
@@ -40,7 +40,6 @@ def _output_paths(result) -> set[Path]:
 
 
 def gate_motion_delivery(request, studio, final=None) -> bool | None:
-    route = route_intent(request.prompt)
     prior_events = {event["id"]: event for event in request.prior_tool_events}
     current_events = [event for event in studio.tool_events if event.public() != prior_events.get(event.id)]
     events = studio.tool_events if request.delivery_continuation else current_events
@@ -87,7 +86,7 @@ def gate_motion_delivery(request, studio, final=None) -> bool | None:
     title = "Motion carry QC failed" if failed else "Motion carry QC incomplete"
     if not reasons:
         reasons = [result.get("reason") or "No current saved passing motion report and matching MP4 checksum were verified."]
-    renderer = "hyperframes_render" if route.skill == "hyperframes" or "hyperframes" in request.prompt.lower() else "remotion_render"
+    renderer = "remotion_render"
     message = title + ". " + reasons[0]
     from agent.studio_agent_next import _progress
 

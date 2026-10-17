@@ -20,7 +20,7 @@ class ManualGenerationApprovalTests(unittest.IsolatedAsyncioTestCase):
         self.repo = Mock()
         self.repo.available_credit.return_value = 1000
         self.enterContext(patch.object(studio, "repository", self.repo))
-        self.enterContext(patch.object(studio, "stripe_enabled", return_value=True))
+        self.enterContext(patch.object(studio, "beta_billing_enabled", return_value=True))
         self.enterContext(patch.object(studio, "cost_for", return_value=GenerationCost(40, 10)))
         self.dispatch = self.enterContext(patch.object(studio, "dispatch", return_value={"status": "queued", "job_id": "job"}))
         self.enterContext(patch.object(studio, "_register_payload_assets", return_value=[]))
@@ -44,24 +44,21 @@ class ManualGenerationApprovalTests(unittest.IsolatedAsyncioTestCase):
         self.dispatch.assert_not_called()
         self.repo.charge_usage.assert_not_called()
 
-    async def test_quote_counts_daily_allowance_and_subtracts_other_run_holds(self):
+    async def test_quote_counts_wallet_and_subtracts_other_run_holds(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             repository = StudioRepository(root / "studio.sqlite3", root / "media")
             repository.create_project("user:one", "one", "Quote credit", project_id="project")
-            repository.sync_subscription(
-                "one", stripe_subscription_id="subscription", plan_id="plan", status="active",
-                monthly_budget_cents=15000, current_period_end=None,
-            )
+            repository.adjust_balance("one", 500, "test credit")
             with patch.object(studio, "repository", repository):
-                self.assertEqual(repository.get_balance("one"), 0)
+                self.assertEqual(repository.get_balance("one"), 500)
                 quote = await studio.quote_tool(self.body, self.auth)
                 self.assertEqual(quote["balance_cents"], 500)
                 repository.hold_run("one", "other-run", 480)
                 quote = await studio.quote_tool(self.body, self.auth)
                 self.assertEqual(quote["balance_cents"], 20)
                 self.assertLess(quote["balance_cents"], quote["cap_cents"])
-                self.assertEqual(repository.get_subscription_state("one")["daily_allowance_remaining_cents"], 500)
+                self.assertEqual(repository.get_balance("one"), 500)
         self.dispatch.assert_not_called()
 
     async def test_paid_call_without_approval_never_charges_or_dispatches(self):
@@ -74,24 +71,6 @@ class ManualGenerationApprovalTests(unittest.IsolatedAsyncioTestCase):
         self.repo.charge_usage.assert_called_once_with("one", 50, "generation")
         self.dispatch.assert_called_once_with("seedream", "text_to_image", {"prompt": "A square"})
 
-    async def test_runway_quote_publishes_nothing_and_approved_invoke_publishes_once(self):
-        from server import runway_inputs
-
-        with tempfile.TemporaryDirectory() as temporary:
-            path = Path(temporary) / "portrait.png"
-            path.write_bytes(b"owned image fixture")
-            self.repo.version_path.return_value = path
-            self.repo.get_version.return_value = SimpleNamespace(filename="portrait.png", mime_type="image/png")
-            body = studio.InvokeBody(provider="runway", tool="image_to_video", project_id="project",
-                                     arguments={"prompt": "Animate", "image_path_or_url": "renderhaus-asset://portrait"})
-            with patch.object(runway_inputs, "_publish_file", return_value="runway://published") as publish:
-                quote = await studio.quote_tool(body, self.auth)
-                publish.assert_not_called()
-                self.dispatch.assert_not_called()
-                await studio.invoke_tool(body.model_copy(update={"approval_token": quote["approval_token"]}), self.auth)
-                publish.assert_called_once_with(path, "portrait.png", "image/png")
-        self.dispatch.assert_called_once_with("runway", "image_to_video",
-                                             {"prompt": "Animate", "image_path_or_url": "runway://published"})
 
     async def test_changed_inputs_identity_price_and_expiry_fail_closed(self):
         approved = await self.approved()

@@ -7,7 +7,7 @@ import threading
 import time
 import uuid
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Literal
+from typing import Any, Literal
 
 import httpx
 from botocore.exceptions import ClientError
@@ -16,16 +16,8 @@ from pydantic import BaseModel, ConfigDict, Field
 from providers.fal import queue
 from providers.sync import chunks, contracts, media
 
-if TYPE_CHECKING:
-    from providers.sync.dialogue import ActionRecord
 
-
-DIRECT_URL = "https://api.sync.so/v2/generate"
-DIRECT_STATES = {
-    "PENDING": "queued", "PROCESSING": "running", "COMPLETED": "succeeded",
-    "FAILED": "failed", "REJECTED": "failed",
-}
-JOB_PATTERN = re.compile(r"sync:(?:(fal|direct|dry):[a-f0-9]{32}|chunks:(fal|direct):[a-f0-9]{32})")
+JOB_PATTERN = re.compile(r"sync:(?:(fal|dry):[a-f0-9]{32}|chunks:(fal):[a-f0-9]{32})")
 _LOCKS: dict[str, threading.RLock] = {}
 _LOCKS_LOCK = threading.Lock()
 
@@ -46,14 +38,11 @@ class JobManifest(BaseModel):
     model_config = ConfigDict(strict=True, extra="forbid", allow_inf_nan=False, hide_input_in_errors=True)
 
     version: Literal[1] = 1
-    mode: Literal["lipsync_video", "dialogue_edit_video"] = "lipsync_video"
-    dialogue_edit_id: str | None = None
-    idempotency_key: str | None = None
-    partial_completion: bool = False
+    mode: Literal["lipsync_video"] = "lipsync_video"
     submission_unknown: bool = False
     provider: Literal["sync"] = "sync"
     job_id: str
-    transport: Literal["fal", "direct"]
+    transport: Literal["fal"]
     model: str
     endpoint_id: str | None = None
     endpoint_handle: str | None = None
@@ -96,7 +85,7 @@ def _is_dry(transport: str) -> bool:
 
 
 def dry_run() -> bool:
-    return _is_dry(contracts.configured_transport())
+    return _is_dry("fal")
 
 
 def _paths(job_id: str) -> tuple[Path, Path]:
@@ -121,7 +110,7 @@ def _artifact_key(job_id: str) -> str:
     return "renderhaus-sync-outputs/" + hashlib.sha256(job_id.encode()).hexdigest() + ".mp4"
 
 
-def _write_local(manifest: JobManifest | ActionRecord) -> None:
+def _write_local(manifest: JobManifest) -> None:
     path, _ = _paths(manifest.job_id)
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary = path.with_suffix(f".{uuid.uuid4().hex}.tmp")
@@ -135,7 +124,7 @@ def _write_local(manifest: JobManifest | ActionRecord) -> None:
         temporary.unlink(missing_ok=True)
 
 
-def _write(manifest: JobManifest | ActionRecord, *, create_only: bool = False) -> None:
+def _write(manifest: JobManifest, *, create_only: bool = False) -> None:
     local_error = False
     try:
         _write_local(manifest)
@@ -303,10 +292,6 @@ def _summary(manifest: JobManifest) -> dict[str, Any]:
     }
     if manifest.submission_unknown:
         result["status"] = "submission_unknown"
-    if manifest.partial_completion:
-        result.update(partial_completion=True, warning="Generated from an explicitly accepted partial dialogue preview. Some requested edits were not completed.")
-    if manifest.dialogue_edit_id:
-        result["dialogue_edit_id"] = manifest.dialogue_edit_id
     if manifest.error:
         result["error"] = manifest.error
     if manifest.request_id:
@@ -377,27 +362,6 @@ def _request_id(value: Any) -> str:
     return value
 
 
-def _direct_request(method: str, request_id: str | None = None, body: dict[str, Any] | None = None) -> dict[str, Any]:
-    key = os.getenv("SYNC_API_KEY")
-    if not key:
-        raise RuntimeError("SYNC_API_KEY is required for live direct Sync calls.")
-    url = DIRECT_URL if request_id is None else f"{DIRECT_URL}/{_request_id(request_id)}"
-    try:
-        with httpx.Client(timeout=60, follow_redirects=False, trust_env=False) as client:
-            response = client.request(method, url, headers={"x-api-key": key, "Content-Type": "application/json"}, json=body)
-    except httpx.HTTPError:
-        raise RuntimeError("Direct Sync request failed; no automatic retry was made.") from None
-    if response.is_error:
-        raise RuntimeError(f"Direct Sync API error HTTP {response.status_code}.")
-    try:
-        payload = response.json()
-    except ValueError:
-        raise RuntimeError("Direct Sync returned a non-JSON response.") from None
-    if not isinstance(payload, dict):
-        raise RuntimeError("Direct Sync returned a non-object response.")
-    return payload
-
-
 def _fal_submit(body: dict[str, Any]) -> dict[str, Any]:
     try:
         return queue.submit(contracts.FAL_ENDPOINT, body)
@@ -413,13 +377,10 @@ def _submit_single(request: contracts.SyncRequest, transport: str) -> JobManifes
     _write(manifest)
     try:
         body = contracts.request_body(request, transport)
-        payload = _fal_submit(body) if transport == "fal" else _direct_request("POST", body=body)
-        manifest.request_id = _request_id(payload.get("request_id" if transport == "fal" else "id"))
-        if transport == "fal":
-            manifest.endpoint_handle = f"{contracts.FAL_ENDPOINT}:{manifest.request_id}"
-            failed = bool(payload.get("error") or payload.get("error_type"))
-        else:
-            failed = payload.get("status") in {"FAILED", "REJECTED"}
+        payload = _fal_submit(body)
+        manifest.request_id = _request_id(payload.get("request_id"))
+        manifest.endpoint_handle = f"{contracts.FAL_ENDPOINT}:{manifest.request_id}"
+        failed = bool(payload.get("error") or payload.get("error_type"))
         manifest.status = "failed" if failed else "queued"
         manifest.error = "Sync generation failed." if failed else None
         manifest.submission_complete = True
@@ -495,7 +456,7 @@ def lipsync_video(
 ) -> dict:
     """Synchronize an existing video's lips to consented speech; poll get_video_task for the MP4."""
     request = contracts.request_for(locals())
-    transport = contracts.configured_transport()
+    transport = "fal"
     plan = chunks.plan_for(request)
     blocker = contracts.live_blocker(request.model_dump(), transport=transport)
     if _is_dry(transport):
@@ -528,23 +489,14 @@ def lipsync_video(
 
 
 def _poll_remote(manifest: JobManifest) -> dict[str, Any]:
-    if manifest.transport == "fal":
-        from providers.fal.api import get_video_task as get_fal_video_task
+    from providers.fal.api import get_video_task as get_fal_video_task
 
-        try:
-            return get_fal_video_task(manifest.endpoint_handle, download=False)
-        except queue.FalAPIError as exc:
-            raise RuntimeError(f"Sync fal API error HTTP {exc.status_code}.") from None
-        except (httpx.HTTPError, RuntimeError, ValueError):
-            raise RuntimeError("Sync fal polling returned an invalid result or could not complete.") from None
-    payload = _direct_request("GET", manifest.request_id)
-    status = DIRECT_STATES.get(payload.get("status"))
-    if status is None:
-        raise RuntimeError("Direct Sync returned an unknown task state.")
-    if payload.get("id", manifest.request_id) != manifest.request_id:
-        raise RuntimeError("Direct Sync returned a different task identifier.")
-    return {"status": status, "video_url": payload.get("outputUrl")}
-
+    try:
+        return get_fal_video_task(manifest.endpoint_handle, download=False)
+    except queue.FalAPIError as exc:
+        raise RuntimeError(f"Sync fal API error HTTP {exc.status_code}.") from None
+    except (httpx.HTTPError, RuntimeError, ValueError):
+        raise RuntimeError("Sync fal polling returned an invalid result or could not complete.") from None
 
 def _download(video_url: str, output: Path) -> None:
     output.parent.mkdir(parents=True, exist_ok=True)
@@ -640,7 +592,7 @@ def get_video_task(job_id: str, download: bool = False) -> dict:
     request = contracts.PollRequest.model_validate(locals())
     kind = _kind(request.job_id)
     if kind == "dry":
-        return {"job_id": job_id, "status": "dry_run", "provider": "sync", **contracts.training_metadata(contracts.configured_transport())}
+        return {"job_id": job_id, "status": "dry_run", "provider": "sync", **contracts.training_metadata("fal")}
     transport = _saved_transport(job_id, kind)
     if _is_dry(transport):
         return {"job_id": job_id, "status": "dry_run", "provider": "sync", "transport": transport, **contracts.training_metadata(transport)}
@@ -663,8 +615,5 @@ def get_video_task(job_id: str, download: bool = False) -> dict:
         return _poll_single(manifest, download=request.download)
 
 
-from providers.sync.dialogue import TOOL_HANDLERS as DIALOGUE_TOOL_HANDLERS
-
-
-TOOL_HANDLERS = {"lipsync_video": lipsync_video, "get_video_task": get_video_task, **DIALOGUE_TOOL_HANDLERS}
+TOOL_HANDLERS = {"lipsync_video": lipsync_video, "get_video_task": get_video_task}
 GATEWAY_TOOLS = tuple(TOOL_HANDLERS)

@@ -281,10 +281,6 @@ configs/gateway/remotion.tools.json
 docs/DEEP_AGENT.md
 docs/NLE_EXPORT.md
 docs/SKILLS.md
-docs/nle-import-decisions.tsv
-docs/provider-ladder-decisions.tsv
-docs/skills-drafts/resolve-handoff.md
-docs/skills-drafts/resolve-roundtrip.md
 providers/contracts.py
 providers/nle/formats.py
 providers/nle/importer.py

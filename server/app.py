@@ -28,7 +28,6 @@ from server.assets import (
 )
 from server.auth import AuthUser, clerk_enabled, current_user_id, optional_user, publishable_key
 from server.config import ROOT, load_local_env
-from server.billing import router as billing_router
 from server.beta import router as beta_router
 from server.demo_project import router as demo_project_router
 from server.beta_credits import BetaSettings
@@ -483,7 +482,6 @@ app.add_middleware(
 )
 app.include_router(studio_router)
 app.include_router(direct_upload_router)
-app.include_router(billing_router)
 app.include_router(beta_router)
 app.include_router(demo_project_router)
 

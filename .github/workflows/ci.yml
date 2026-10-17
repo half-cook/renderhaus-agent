@@ -35,14 +35,11 @@ jobs:
         run: python -m pytest -q
         env:
           RENDERHAUS_SECRETS_NAME: ""
-          RUNWAY_DRY_RUN: "true"
           SEEDANCE_DRY_RUN: "true"
-          LUMA_DRY_RUN: "true"
           SEEDREAM_DRY_RUN: "true"
           ELEVENLABS_DRY_RUN: "true"
           FISH_AUDIO_DRY_RUN: "true"
           REMOTION_DRY_RUN: "true"
-          KLING_DRY_RUN: "true"
           FAL_DRY_RUN: "true"
           OPENAI_IMAGES_DRY_RUN: "true"
 
@@ -51,14 +48,11 @@ jobs:
         env:
           # Keep CI free of Secrets Manager / paid providers.
           RENDERHAUS_SECRETS_NAME: ""
-          RUNWAY_DRY_RUN: "true"
           SEEDANCE_DRY_RUN: "true"
-          LUMA_DRY_RUN: "true"
           SEEDREAM_DRY_RUN: "true"
           ELEVENLABS_DRY_RUN: "true"
           FISH_AUDIO_DRY_RUN: "true"
           REMOTION_DRY_RUN: "true"
-          KLING_DRY_RUN: "true"
           FAL_DRY_RUN: "true"
           OPENAI_IMAGES_DRY_RUN: "true"
 

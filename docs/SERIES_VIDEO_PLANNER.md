@@ -101,4 +101,3 @@ and the user prohibits live or paid API calls. The pending scenario is to submit
 a non-fiction series request through Studio, inspect the saved draft and briefs,
 request a revision, reject production, and observe that no media was submitted.
 Mocks and routing assertions are supporting checks, not browser evidence.
-See [decisions](series-video-planner-decisions.tsv).

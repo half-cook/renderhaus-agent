@@ -25,13 +25,11 @@ GENERATION = {
     "Seedance___reference_to_video",
     "Seedance___edit_video",
     "Seedance___extend_video",
-    "Kling___text_to_video",
-    "Runway___video_to_video",
-    "Luma___modify_video",
-    "Runway___act_two",
+
+
     "Fal___kling_motion_control",
     "Sync___lipsync_video",
-    "HeyGen___create_avatar_video",
+
     "Mureka___generate_lyrics_video",
 }
 

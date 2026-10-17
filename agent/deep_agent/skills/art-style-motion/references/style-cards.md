@@ -6,11 +6,6 @@ read 2026-10-10. Preserve the MIT notice below and
 [licence](https://github.com/alchaincyf/huashu-art-motion/blob/d861767d180008d27675819932070a670a3ae43f/LICENSE).
 Upstream numbering omits 07. No upstream characters, sprites or demo media are supplied.
 
-Each row describes a frame, motion brief and review risk. Procedural effects require an authored
-asset; these cards are not executable templates for the current Remotion or HyperFrames tools.
-Use broad visual characteristics and original subjects. Named contemporary aesthetics do not
-grant rights to branded characters, reference images or proprietary artwork.
-
 | Card | Palette and material | Living elements and boundary | Inspect |
 |---|---|---|---|
 | 01 Cave painting | Ochre, charcoal, rough rock; irregular hand-drawn animal silhouettes | Two-pose animals and firelight; opening in the rock | Figures must retain rough simplicity rather than cartoon polish. |

@@ -24,10 +24,10 @@ class CapabilityApprovalTests(unittest.TestCase):
         for name in (
             "Seedance___text_to_video", "Seedance___image_to_video",
             "Fal___text_to_video", "Fal___video_to_video", "Fal___vidu_q4_i2v",
-            "Fal___vidu_q4_r2v", "Kling___text_to_video", "Runway___video_to_video",
-            "Luma___extend_video", "Remotion___render_timeline",
-            "wan3_t2v", "wan3_edit", "sync3_lipsync", "heygen_avatar_v",
-            "runway_act_two", "kling_motion_control", "topaz_upscale", "topaz_interpolate", "mirelo_v2a", "mureka_lyrics_video",
+            "Fal___vidu_q4_r2v",
+             "Remotion___render_timeline",
+            "wan3_t2v",  "sync3_lipsync",
+             "kling_motion_control", "topaz_upscale", "topaz_interpolate", "mirelo_v2a", "mureka_lyrics_video",
         ):
             with self.subTest(name=name):
                 self.assertTrue(tool_needs_approval(name, autonomous=True))
@@ -76,17 +76,15 @@ class CapabilityExecutorTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn("default", event.message)
 
 
-
-
 class ConfidentialMetadataTests(unittest.IsolatedAsyncioTestCase):
     async def test_confidential_metadata_does_not_change_dispatch_or_approval(self):
         for confidential in [False, True]:
             with self.subTest(confidential=confidential):
                 studio = _context_from_request(StudioAgentRequest(
-                    prompt="use Runway for a video", confidential=confidential,
+                    prompt="use Wan 3 for a video", confidential=confidential,
                     autonomous=True, job_id="metadata-test",
                 ))
-                name = "Runway___text_to_video"
+                name = "Fal___generate_wan3_t2v"
                 gateway = Gateway([Tool(name=name, inputSchema={"type": "object"})])
                 executor = GatewayExecutor(studio, [gateway])
                 with self.assertRaises(ToolApprovalPending):

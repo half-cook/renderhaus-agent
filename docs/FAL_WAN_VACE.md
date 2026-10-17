@@ -125,8 +125,8 @@ published rates and remain blocked for live submission. No rate is interpolated.
 
 The provider catalog, submit results, poll results, and task records carry
 `training_eligible=true` and `weights_license="Apache-2.0"`. These fields mark
-provider outputs eligible for the continuity-QC training flywheel. The existing
-tool-result ledger retains them without an asset database migration.
+provider licensing metadata only. Native continuity training is unavailable; these fields
+do not constitute visual acceptance or authorize training. The tool-result ledger retains them.
 Weight licence sources are the [official VACE repository](https://github.com/ali-vilab/VACE)
 and [Alibaba-PAI model card](https://huggingface.co/alibaba-pai/Wan2.2-VACE-Fun-A14B).
 fal's [hosted-service Terms of Service](https://fal.ai/legal/terms-of-service)

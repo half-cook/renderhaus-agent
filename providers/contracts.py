@@ -13,16 +13,6 @@ from copy import deepcopy
 from dataclasses import dataclass
 from typing import Any
 
-from providers.runway.contracts import I2V_RATIOS, IMAGE_RATIOS, T2V_RATIOS
-from providers.luma.catalog import (
-    ASPECT_RATIOS as LUMA_RATIOS,
-    DURATIONS as LUMA_DURATIONS,
-    EDIT_STRENGTHS as LUMA_EDIT_STRENGTHS,
-    EXTEND_RESOLUTIONS as LUMA_EXTEND_RESOLUTIONS,
-    MODEL_IDS as LUMA_MODELS,
-    RESOLUTIONS as LUMA_RESOLUTIONS,
-)
-
 
 @dataclass(frozen=True, slots=True)
 class ArgumentRule:
@@ -57,100 +47,7 @@ def _rules_for_fields(
     return {tool_name: dict(rules) for tool_name in tool_names}
 
 
-LUMA_VIDEO_ARGUMENT_RULES = {
-    "model": ArgumentRule(choices=LUMA_MODELS),
-    "aspect_ratio": ArgumentRule(choices=LUMA_RATIOS),
-    "resolution": ArgumentRule(choices=LUMA_RESOLUTIONS),
-    "prompt": ArgumentRule(
-        pattern=r"[\s\S]{1,6000}", pattern_hint="Must contain 1 to 6000 characters"
-    ),
-}
-
-
 TOOL_ARGUMENT_RULES: dict[str, dict[str, dict[str, ArgumentRule]]] = {
-    "kling": {
-        **_rules_for_fields(
-            ("text_to_video", "image_to_video"),
-            {
-                "duration_seconds": ArgumentRule(minimum=3, maximum=15),
-                "aspect_ratio": ArgumentRule(choices=("16:9", "9:16", "1:1")),
-                "resolution": ArgumentRule(choices=("720p", "1080p", "4k")),
-                "model": ArgumentRule(choices=("kling-3.0", "kling-3.0-turbo")),
-            },
-        ),
-        "omni_video": {
-            "duration_seconds": ArgumentRule(minimum=3, maximum=15),
-            "aspect_ratio": ArgumentRule(choices=("16:9", "9:16", "1:1")),
-            "resolution": ArgumentRule(choices=("720p", "1080p", "4k")),
-        },
-    },
-    "runway": {
-        "act_two": {
-            "performance_duration_seconds": ArgumentRule(minimum=3, maximum=30),
-            "ratio": ArgumentRule(choices=I2V_RATIOS),
-            "expression_intensity": ArgumentRule(minimum=1, maximum=5),
-            "seed": ArgumentRule(minimum=0, maximum=4294967295),
-            "performance_start_seconds": ArgumentRule(minimum=0),
-            "source_duration_seconds": ArgumentRule(minimum=3),
-            "body_control": ArgumentRule(pattern_hint="Gesture transfer requires a character image; false is required for character video"),
-        },
-        "text_to_video": {
-            "model": ArgumentRule(choices=("gen4.5",)),
-            "duration_seconds": ArgumentRule(minimum=2, maximum=10),
-            "ratio": ArgumentRule(choices=T2V_RATIOS),
-            "seed": ArgumentRule(minimum=0, maximum=4294967295),
-        },
-        "image_to_video": {
-            "model": ArgumentRule(choices=("gen4.5",)),
-            "duration_seconds": ArgumentRule(minimum=2, maximum=10),
-            "ratio": ArgumentRule(choices=I2V_RATIOS),
-            "seed": ArgumentRule(minimum=0, maximum=4294967295),
-        },
-        "video_to_video": {
-            "model": ArgumentRule(choices=("aleph2",)),
-            "video_duration_seconds": ArgumentRule(minimum=2, maximum=30),
-            "reference_seconds": ArgumentRule(minimum=0, maximum=30),
-            "seed": ArgumentRule(minimum=0, maximum=4294967295),
-        },
-        "text_to_image": {
-            "model": ArgumentRule(choices=("gen4_image",)),
-            "ratio": ArgumentRule(choices=IMAGE_RATIOS),
-            "seed": ArgumentRule(minimum=0, maximum=4294967295),
-        },
-        "image_to_image": {
-            "model": ArgumentRule(choices=("gen4_image", "gen4_image_turbo")),
-            "ratio": ArgumentRule(choices=IMAGE_RATIOS),
-            "seed": ArgumentRule(minimum=0, maximum=4294967295),
-        },
-    },
-    "luma": {
-        "text_to_video": {
-            **LUMA_VIDEO_ARGUMENT_RULES,
-            "duration_seconds": ArgumentRule(choices=LUMA_DURATIONS),
-        },
-        "image_to_video": {
-            **LUMA_VIDEO_ARGUMENT_RULES,
-            "duration_seconds": ArgumentRule(choices=(5,)),
-        },
-        "extend_video": {
-            "model": ArgumentRule(choices=LUMA_MODELS),
-            "resolution": ArgumentRule(choices=LUMA_EXTEND_RESOLUTIONS),
-            "direction": ArgumentRule(choices=("forward", "backward")),
-            "generation_id": ArgumentRule(pattern=r"[a-fA-F0-9]{8}(?:-[a-fA-F0-9]{4}){3}-[a-fA-F0-9]{12}", pattern_hint="Must be a generation UUID"),
-            "prompt": ArgumentRule(pattern=r"[\s\S]{1,6000}", pattern_hint="Must contain 1 to 6000 characters"),
-        },
-        "modify_video": {
-            "model": ArgumentRule(choices=LUMA_MODELS),
-            "resolution": ArgumentRule(choices=LUMA_RESOLUTIONS),
-            "source_duration_seconds": ArgumentRule(choices=LUMA_DURATIONS),
-            "strength": ArgumentRule(choices=LUMA_EDIT_STRENGTHS),
-            "source_generation_id": ArgumentRule(pattern=r"[a-fA-F0-9]{8}(?:-[a-fA-F0-9]{4}){3}-[a-fA-F0-9]{12}", pattern_hint="Must be a generation UUID"),
-            "prompt": ArgumentRule(pattern=r"[\s\S]{1,6000}", pattern_hint="Must contain 1 to 6000 characters"),
-        },
-        "get_video_task": {
-            "job_id": ArgumentRule(pattern=r"[a-fA-F0-9]{8}(?:-[a-fA-F0-9]{4}){3}-[a-fA-F0-9]{12}", pattern_hint="Must be a generation UUID"),
-        },
-    },
     "seedream": {
         **_rules_for_fields(
             ("text_to_image", "image_to_image"),
@@ -389,11 +286,8 @@ def enrich_tool_schema(provider_id: str, tool: dict[str, Any]) -> dict[str, Any]
                 properties[field]["description"] = description
     if provider_id == "sync":
         from providers.sync.contracts import FIELD_DESCRIPTIONS
-        from providers.sync.dialogue_contracts import FIELD_DESCRIPTIONS as DIALOGUE_FIELDS, EDIT_SCHEMA
 
-        if "edits" in properties:
-            properties["edits"].update(deepcopy(EDIT_SCHEMA))
-        for field, description in {**FIELD_DESCRIPTIONS, **DIALOGUE_FIELDS}.items():
+        for field, description in FIELD_DESCRIPTIONS.items():
             if field in properties:
                 properties[field]["description"] = description
     for field, rule in argument_rules(provider_id, tool_name).items():
@@ -404,16 +298,6 @@ def enrich_tool_schema(provider_id: str, tool: dict[str, Any]) -> dict[str, Any]
         existing = str(schema.get("description") or "").strip()
         if note and note not in existing:
             schema["description"] = f"{existing} {note}".strip()
-    if provider_id == "runway" and "reference_images" in properties:
-        properties["reference_images"]["items"] = {
-            "type": "object",
-            "properties": {
-                "uri": {"type": "string", "description": "HTTPS domain URL, runway upload URI, or base64 image data URI up to 5 MB."},
-                "tag": {"type": "string", "description": "Optional reference name, 3-16 lowercase letters, digits, or underscores, starting with a letter."},
-            },
-            "required": ["uri"],
-        }
-        properties["reference_images"]["description"] = "Up to two additional references, for at most three images including image_path_or_url."
     if provider_id == "remotion" and tool_name == "render_timeline":
         if "chat_story" in properties:
             properties["chat_story"].update(deepcopy(CHAT_STORY_SCHEMA))
@@ -541,20 +425,6 @@ def enrich_tool_schema(provider_id: str, tool: dict[str, Any]) -> dict[str, Any]
         for field, description in contracts.FIELD_DESCRIPTIONS.items():
             if field in properties:
                 properties[field]["description"] = description
-    if provider_id == "alibaba_modelstudio":
-        from providers.alibaba_modelstudio import contracts
-
-        for field, description in contracts.FIELD_DESCRIPTIONS.items():
-            if field in properties:
-                properties[field]["description"] = description
-    if provider_id == "heygen":
-        from providers.heygen.contracts import FIELD_DESCRIPTIONS
-        from providers.heygen.voice_contracts import FIELD_DESCRIPTIONS as VOICE_FIELDS, VOICE_TOOLS
-
-        descriptions = VOICE_FIELDS if tool_name in VOICE_TOOLS else FIELD_DESCRIPTIONS
-        for field, description in descriptions.items():
-            if field in properties:
-                properties[field]["description"] = description
     return enriched
 
 
@@ -630,10 +500,6 @@ def _validate_cross_fields(provider_id: str, tool_name: str, arguments: dict[str
         from providers.lottie.contracts import request_for
 
         request_for(tool_name, arguments)
-    if provider_id == "footage_memory":
-        from providers.footage_memory.contracts import validate_arguments
-
-        validate_arguments(tool_name, arguments)
     if provider_id == "remotion" and tool_name == "motion_carry_probe":
         from providers.remotion.motion_carry import validate_arguments
 
@@ -667,10 +533,6 @@ def _validate_cross_fields(provider_id: str, tool_name: str, arguments: dict[str
         from providers.topaz.contracts import validate_arguments
 
         validate_arguments(tool_name, arguments)
-    if provider_id == "heygen":
-        from providers.heygen.contracts import validate_arguments
-
-        validate_arguments(tool_name, arguments)
     if provider_id == "sync":
         from providers.sync.contracts import validate_arguments
 
@@ -683,14 +545,6 @@ def _validate_cross_fields(provider_id: str, tool_name: str, arguments: dict[str
         from providers.seedance.contracts import validate_arguments
 
         validate_arguments(tool_name, arguments)
-    if provider_id == "alibaba_modelstudio":
-        from providers.alibaba_modelstudio.contracts import validate_arguments
-
-        validate_arguments(tool_name, arguments)
-    if provider_id == "runway":
-        from providers.runway.contracts import validate_runway_arguments
-
-        validate_runway_arguments(tool_name, arguments)
     if provider_id == "fal":
         from providers.fal import vidu, wan, wan3, motion, mirelo, images
 
@@ -700,12 +554,6 @@ def _validate_cross_fields(provider_id: str, tool_name: str, arguments: dict[str
         wan3.validate_arguments(tool_name, arguments)
         wan.validate_arguments(tool_name, arguments)
         vidu.validate_arguments(tool_name, arguments)
-    if provider_id == "luma" and tool_name in {
-        "text_to_video", "image_to_video", "extend_video", "modify_video"
-    }:
-        from providers.luma.api import validate_generation_arguments
-
-        validate_generation_arguments(tool_name, arguments)
     if provider_id == "remotion" and tool_name == "prepare_conversational_edit":
         from providers.remotion.transcript import build_conversational_edit
 
@@ -895,10 +743,6 @@ def validate_tool_arguments(
         from providers.fal.mirelo import validate_arguments
 
         validate_arguments(tool_name, arguments or {})
-    if provider_id == "heygen":
-        from providers.heygen.contracts import validate_arguments
-
-        validate_arguments(tool_name, arguments or {})
     if provider_id == "sync":
         for field, value in (arguments or {}).items():
             if value is None and field not in {"model", "chunk_boundaries_seconds", "voice_id", "rerun_of_job_id", "source_width", "source_height"}:
@@ -911,11 +755,6 @@ def validate_tool_arguments(
         optional = {"model", "service_tier", "seed", "end_image_path_or_url", "source_aspect_ratio",
                     "reference_image_urls", "reference_video_urls", "reference_audio_urls",
                     "reference_video_durations", "reference_video_fps", "reference_audio_durations"}
-        for field, value in (arguments or {}).items():
-            if value is None and field not in optional:
-                raise ValueError(f"arguments.{field} cannot be null.")
-    if provider_id == "alibaba_modelstudio":
-        optional = {"seed", "reference_image_urls", "reference_audio_urls", "reference_audio_durations"}
         for field, value in (arguments or {}).items():
             if value is None and field not in optional:
                 raise ValueError(f"arguments.{field} cannot be null.")
@@ -943,10 +782,6 @@ def argument_rules(provider_id: str, tool_name: str) -> dict[str, ArgumentRule]:
         return ARGUMENT_RULES.get(tool_name, {})
     if provider_id == "seedance":
         from providers.seedance.contracts import ARGUMENT_RULES
-
-        return ARGUMENT_RULES.get(tool_name, {})
-    if provider_id == "alibaba_modelstudio":
-        from providers.alibaba_modelstudio.contracts import ARGUMENT_RULES
 
         return ARGUMENT_RULES.get(tool_name, {})
     if provider_id == "fal":

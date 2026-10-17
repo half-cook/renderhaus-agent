@@ -2019,14 +2019,8 @@ class StudioRepository:
                     "UPDATE run_holds SET model_usd = model_usd + ?, compute_usd = compute_usd + ? WHERE run_id = ?",
                     (_model_usd, _compute_usd, run_id),
                 )
-            sub = connection.execute("SELECT * FROM subscriptions WHERE user_id = ?", (user_id,)).fetchone()
-            used_today = 0
-            daily_remaining = 0
-            if sub and sub["status"] == "active":
-                used_today = sub["daily_allowance_used_cents"] if sub["daily_allowance_reset_date"] == today else 0
-                daily_remaining = max(0, sub["daily_allowance_cents"] - used_today)
-            daily_portion = min(cost_cents, daily_remaining)
-            wallet_portion = cost_cents - daily_portion
+            daily_remaining = daily_portion = 0
+            wallet_portion = cost_cents
             wallet_balance = connection.execute("SELECT balance_cents FROM accounts WHERE user_id = ?", (user_id,)).fetchone()[0]
             held_by_others = run_budget.reserved_cents(connection, user_id, exclude_run=run_id)
             if wallet_portion > wallet_balance or (
@@ -2035,20 +2029,13 @@ class StudioRepository:
                 grant = connection.execute("SELECT remaining_cents FROM beta_grants WHERE user_id = ?", (user_id,)).fetchone()
                 message = (
                     f"Not enough balance: this generation costs ${cost_cents / 100:.2f}, "
-                    f"you have ${daily_remaining / 100:.2f} left in today's plan allowance "
-                    f"and ${wallet_balance / 100:.2f} in your wallet."
+                    f"you have ${wallet_balance / 100:.2f} in your wallet."
                 )
                 if grant and grant["remaining_cents"] == 0:
-                    message += " Your free beta credit is used up. Top up to keep creating."
+                    message += " Your free beta credit is used up."
                 elif wallet_balance == 0:
-                    message += " Your wallet is empty. Top up to keep creating."
+                    message += " Your wallet is empty."
                 raise InsufficientBalanceError(message, daily_remaining_cents=daily_remaining, wallet_cents=wallet_balance)
-            if sub and sub["status"] == "active":
-                connection.execute(
-                    "UPDATE subscriptions SET daily_allowance_used_cents = ?, daily_allowance_reset_date = ?, "
-                    "updated_at = ? WHERE user_id = ?",
-                    (used_today + daily_portion, today, now, user_id),
-                )
             beta_portion = self._debit_beta_credit(connection, user_id, wallet_portion)
             if wallet_portion:
                 self._apply_balance_delta(connection, user_id, -wallet_portion, now)
@@ -2470,150 +2457,6 @@ class StudioRepository:
             return None
         return json.loads(hold["receipt_json"])
 
-    def claim_pending_subscription_checkout(self, user_id: str, *, ttl_seconds: int = 24 * 3600) -> bool:
-        """Atomically claims the one pending-checkout slot for this user, so
-        two concurrent /subscribe calls (double-click, two tabs) can't both
-        create a Stripe subscription before either webhook lands. Returns
-        False if a still-fresh claim already exists; the caller should tell
-        the user a checkout is already in progress rather than starting a
-        second one. A claim older than ttl_seconds (Stripe Checkout Sessions
-        themselves expire after 24h) is treated as abandoned and can be
-        stolen by a fresh attempt.
-        """
-        self.ensure_account(user_id)
-        now = _now()
-        with self._connect() as connection:
-            cursor = connection.execute(
-                "UPDATE pending_subscription_checkouts SET created_at = ? "
-                "WHERE user_id = ? AND created_at < ?",
-                (now, user_id, now - ttl_seconds),
-            )
-            if cursor.rowcount:
-                return True
-            try:
-                connection.execute(
-                    "INSERT INTO pending_subscription_checkouts(user_id, created_at) VALUES (?, ?)",
-                    (user_id, now),
-                )
-                return True
-            except sqlite3.IntegrityError:
-                return False
-
-    def release_pending_subscription_checkout(self, user_id: str) -> None:
-        """Releases a claim taken by claim_pending_subscription_checkout
-        without waiting for its TTL -- for when the checkout attempt itself
-        never made it to Stripe (e.g. the Session.create call failed), so
-        the user isn't locked out of retrying for up to 24h over an error
-        that left no actual pending checkout behind."""
-        with self._connect() as connection:
-            connection.execute("DELETE FROM pending_subscription_checkouts WHERE user_id = ?", (user_id,))
-
-    def sync_subscription(
-        self,
-        user_id: str,
-        *,
-        stripe_subscription_id: str | None,
-        plan_id: str,
-        status: str,
-        monthly_budget_cents: int,
-        current_period_end: int | None,
-    ) -> bool:
-        """Upsert subscription state from a Stripe webhook event. Does not
-        touch daily_allowance_used_cents/daily_allowance_reset_date on an
-        existing row -- a plan change updates the budget going forward
-        only, with no attempt to prorate the current day's already-spent
-        allowance.
-
-        Returns False (a no-op) instead of applying the update when the
-        user already has a *different*, still-live subscription on file.
-        Stripe does not guarantee webhook delivery order, so a delayed
-        event for a subscription that's since been superseded (canceled and
-        replaced by a new one) must not be allowed to clobber the live one
-        -- e.g. a late `customer.subscription.deleted` for the old
-        subscription arriving after the new one's `created` event has
-        already been applied. The caller (server/billing.py) additionally
-        re-fetches the authoritative subscription object from Stripe before
-        calling this, which handles the same-subscription-id ordering case
-        (two events for the *same* id arriving out of order).
-        """
-        self.ensure_account(user_id)
-        now = _now()
-        daily_allowance_cents = monthly_budget_cents // 30 if status == "active" else 0
-        with self._connect() as connection:
-            existing = connection.execute(
-                "SELECT stripe_subscription_id, status FROM subscriptions WHERE user_id = ?", (user_id,)
-            ).fetchone()
-            if (
-                existing
-                and existing["stripe_subscription_id"] is not None
-                and existing["stripe_subscription_id"] != stripe_subscription_id
-                and existing["status"] in ("active", "past_due")
-            ):
-                logger.warning(
-                    "Ignoring stale subscription event for %s: event subscription %s "
-                    "does not match live subscription %s",
-                    user_id,
-                    stripe_subscription_id,
-                    existing["stripe_subscription_id"],
-                )
-                return False
-            connection.execute(
-                "INSERT INTO subscriptions(user_id, stripe_subscription_id, plan_id, status, "
-                "monthly_budget_cents, daily_allowance_cents, daily_allowance_used_cents, "
-                "daily_allowance_reset_date, current_period_end, created_at, updated_at) "
-                "VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?) "
-                "ON CONFLICT(user_id) DO UPDATE SET "
-                "  stripe_subscription_id = excluded.stripe_subscription_id, "
-                "  plan_id = excluded.plan_id, "
-                "  status = excluded.status, "
-                "  monthly_budget_cents = excluded.monthly_budget_cents, "
-                "  daily_allowance_cents = excluded.daily_allowance_cents, "
-                "  current_period_end = excluded.current_period_end, "
-                "  updated_at = excluded.updated_at",
-                (
-                    user_id,
-                    stripe_subscription_id,
-                    plan_id,
-                    status,
-                    monthly_budget_cents,
-                    daily_allowance_cents,
-                    _today_utc(),
-                    current_period_end,
-                    now,
-                    now,
-                ),
-            )
-            # A definitive subscription event has now landed for this user
-            # (successfully or as a cancellation) -- any earlier in-flight
-            # checkout claim is resolved either way.
-            connection.execute("DELETE FROM pending_subscription_checkouts WHERE user_id = ?", (user_id,))
-        return True
-
-    def get_subscription_state(self, user_id: str) -> dict[str, Any] | None:
-        """Read-only peek at subscription state, applying the same lazy
-        daily reset charge_usage does but without writing -- so a dashboard
-        read after a day boundary shows the correct remaining allowance
-        even before the next real charge persists a reset."""
-        with self._connect() as connection:
-            row = connection.execute(
-                "SELECT plan_id, status, monthly_budget_cents, daily_allowance_cents, "
-                "daily_allowance_used_cents, daily_allowance_reset_date, current_period_end "
-                "FROM subscriptions WHERE user_id = ?",
-                (user_id,),
-            ).fetchone()
-        if not row or row["status"] not in ("active", "past_due"):
-            return None
-        today = _today_utc()
-        used_today = row["daily_allowance_used_cents"] if row["daily_allowance_reset_date"] == today else 0
-        remaining = max(0, row["daily_allowance_cents"] - used_today)
-        return {
-            "plan_id": row["plan_id"],
-            "status": row["status"],
-            "monthly_budget_cents": row["monthly_budget_cents"],
-            "daily_allowance_cents": row["daily_allowance_cents"],
-            "daily_allowance_remaining_cents": remaining,
-            "current_period_end": row["current_period_end"],
-        }
 
     def list_ledger(self, user_id: str, *, limit: int = 20) -> list[dict[str, Any]]:
         with self._connect() as connection:
@@ -2632,21 +2475,6 @@ class StudioRepository:
             }
             for row in rows
         ]
-
-    def set_stripe_customer(self, user_id: str, stripe_customer_id: str) -> None:
-        self.ensure_account(user_id)
-        with self._connect() as connection:
-            connection.execute(
-                "UPDATE accounts SET stripe_customer_id = ?, updated_at = ? WHERE user_id = ?",
-                (stripe_customer_id, _now(), user_id),
-            )
-
-    def get_stripe_customer(self, user_id: str) -> str | None:
-        with self._connect() as connection:
-            row = connection.execute(
-                "SELECT stripe_customer_id FROM accounts WHERE user_id = ?", (user_id,)
-            ).fetchone()
-        return row["stripe_customer_id"] if row else None
 
 
 repository = StudioRepository()

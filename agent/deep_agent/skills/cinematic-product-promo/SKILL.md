@@ -5,19 +5,11 @@ metadata:
   remotion_backend: configured
   remotion_features: clip_timing transitions fit_position scale motion titles captions audio_mix canvas encoding
   include_tools: call_editor_tool call_audio_tool
-  routing_tools: shot_recipe_search remotion_render cutaway_record eleven_v4_turbo mureka_v95 ffmpeg_tool delivery_render deliverable_qc motion_carry_probe
+  routing_tools: shot_recipe_search remotion_render eleven_v4_turbo mureka_v95 ffmpeg_tool delivery_render deliverable_qc motion_carry_probe
   gateway_tools: ShotRecipes___shot_recipe_search Remotion___render_timeline Remotion___get_render_progress ElevenLabs___text_to_speech_convert Mureka___generate_instrumental Mureka___generate_song Mureka___get_music_task Ffmpeg___ffmpeg_tool Remotion___deliver_render Remotion___qc_deliverable Remotion___motion_carry_probe
 ---
 
 # Cinematic product promo
-
-Use this skill for a product launch film, cinematic app promo or product trailer with
-deliberate reveals and beat-synced cuts. A plain dashboard walkthrough stays on
-[product demo](../product-demo-video/SKILL.md). Generic titles and lower thirds stay on
-[motion graphics](../motion-graphics/SKILL.md). An explicitly requested alternate renderer
-stays on [HyperFrames](../hyperframes/SKILL.md). Art grammar, knowledge explainers and
-ad variants retain their own skills. A cinematic product brief does not request generative
-text-to-video or a change of provider, frame rate or resolution.
 
 ## Choose launch motion techniques
 
@@ -110,10 +102,6 @@ pre-rendered shot or a future renderer integration. Report that limit before sub
 Do not claim that card selection proves the animation was rendered.
 For a supplied continuous morph or cursor shot, keep its state changes inside one visual
 clip with `motion: none`. Avoid an extra camera move or transition that obscures the action.
-
-For a live web app, `cutaway_record` remains provider pending. It has no Gateway endpoint.
-Report that capture dependency or use actual user-supplied footage. Do not fabricate
-screenshots, browser recordings or a capture tool. Keep its routing tests pending.
 
 Voiceover uses the existing `eleven_v4_turbo` route with the approved script and voice.
 Music uses `mureka_v95` or a user track. Paid steps retain their usual approval and cost

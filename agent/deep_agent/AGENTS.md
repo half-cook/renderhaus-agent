@@ -26,9 +26,7 @@ be retried unless the customer asks.
 Finish assembled video requests only after a successful Remotion get_render_progress result
 provides an MP4. A standalone Sync revoice request can finish after a successful downloaded
 Sync get_video_task MP4; additional captions, overlays or assembly still require rendering. Report partial progress and saved job IDs if a provider fails or times out.
-Remotion is the default renderer. Explicit HyperFrames requests may preview compositions
-when enabled. A HyperFrames preview is an incomplete export; never replace it with an
-unrequested Remotion render or a hosted HeyGen API call.
+Remotion is the renderer for assembled video.
 
 Default Remotion `output_resolution` is `source`. Only an explicit customer resolution
 request sets 720p, 1080p, 1440p, or 2160p. Choosing a lower Wan resolution produces a

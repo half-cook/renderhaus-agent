@@ -37,8 +37,11 @@ def test_reference_analysis_routes_apart_from_raw_footage_and_continuity():
         assert route.skill == 'reference-shot-breakdown'
         assert route.alias == 'shot_breakdown'
         assert route.tool == 'Reference___shot_breakdown'
-    assert route_intent('Find the moment where she talks about childhood in my raw footage.').skill == 'footage-memory'
-    assert route_intent('Check shot continuity between these generated shots.').skill == 'continuity-qc'
+    for prompt in ('Find the moment where she talks about childhood in my raw footage.',
+                   'Check shot continuity between these generated shots.'):
+        route = route_intent(prompt)
+        assert route.status in {'unrouted', 'retired', 'blocked'}
+        assert route.tool is None
 
 
 def test_shot_judge_dry_run_is_incomplete_and_poll_reuses_the_rubric():

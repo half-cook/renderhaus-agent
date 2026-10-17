@@ -27,7 +27,6 @@ import math
 import os
 from typing import Any
 
-from providers.alibaba_modelstudio import contracts as modelstudio_contracts
 
 # Flat percentage added on top of the provider's own cost. A tunable
 # constant, not logic -- change PLATFORM_FEE_RATE to retune margin
@@ -279,70 +278,12 @@ def _seedream_cost(arguments: dict[str, Any]) -> GenerationCost:
     return _with_fee(provider_cents)
 
 
-# Runway developer pricing verified 2026-10-08.
-# https://docs.dev.runwayml.com/guides/pricing/
-# One credit is $0.01. Default MP4 only; no professional-format surcharge.
-RUNWAY_CENTS_PER_SECOND = {"gen4.5": 12, "aleph2": 28, "act_two": 5}
-RUNWAY_IMAGE_CENTS = {"gen4_image": {"720p": 5, "1080p": 8}, "gen4_image_turbo": 2}
-
-
-def _runway_cost(tool: str, arguments: dict[str, Any]) -> GenerationCost:
-    from providers.runway.api import dry_run
-    from providers.runway.contracts import IMAGE_720_RATIOS, IMAGE_1080_RATIOS
-
-    if tool in {"get_runway_task", "list_runway_models"}:
-        return GenerationCost(0, 0)
-    if tool == "act_two":
-        cents = performance_price_cents(arguments)
-        return GenerationCost(0, 0) if dry_run() else _with_fee(math.ceil(cents))
-    if tool in {"text_to_video", "image_to_video", "video_to_video"}:
-        edit = tool == "video_to_video"
-        model = arguments.get("model") or ("aleph2" if edit else "gen4.5")
-        if model != ("aleph2" if edit else "gen4.5"):
-            raise ValueError("Unsupported Runway model for this video tool.")
-        duration = arguments.get("video_duration_seconds") if edit else arguments.get("duration_seconds", 5)
-        if (
-            isinstance(duration, bool)
-            or not isinstance(duration, (int, float))
-            or not math.isfinite(duration)
-            or not 2 <= duration <= (30 if edit else 10)
-            or (not edit and not isinstance(duration, int))
-        ):
-            raise ValueError("Supply a valid Runway duration before quoting cost.")
-        # Aleph preserves input duration. This quote uses the caller's measured duration.
-        # TODO: reconcile fractional-second charging against a real task cost/invoice.
-        cents = math.ceil(duration * RUNWAY_CENTS_PER_SECOND[model])
-    elif tool in {"text_to_image", "image_to_image"}:
-        model = arguments.get("model") or "gen4_image"
-        ratio = arguments.get("ratio") or "1280:720"
-        if ratio not in IMAGE_720_RATIOS + IMAGE_1080_RATIOS:
-            # TODO: official pricing does not map legacy dimensions to resolution tiers.
-            raise ValueError("Runway pricing is unconfirmed for these image dimensions.")
-        if model == "gen4_image":
-            cents = RUNWAY_IMAGE_CENTS[model]["720p" if ratio in IMAGE_720_RATIOS else "1080p"]
-        elif model == "gen4_image_turbo" and tool == "image_to_image":
-            cents = RUNWAY_IMAGE_CENTS[model]
-        else:
-            raise ValueError("Unsupported Runway model for this image tool.")
-    else:
-        raise ValueError("Unknown Runway tool. No fallback price is available.")
-    return GenerationCost(0, 0) if dry_run() else _with_fee(cents)
-
-
 def _performance_seconds(arguments: dict[str, Any], maximum: float = 30) -> Decimal:
     duration = arguments.get("performance_duration_seconds")
     if (isinstance(duration, bool) or not isinstance(duration, (int, float))
             or not math.isfinite(duration) or not 3 <= duration <= maximum):
         raise ValueError("Performance cost unknown without measured supported driving duration.")
     return Decimal(str(duration))
-
-
-def performance_price_cents(arguments: dict[str, Any]) -> Decimal:
-    # https://docs.dev.runwayml.com/guides/pricing/ read 2026-10-09.
-    # act_two is 5 credits/s; credits cost $0.01. Whole-credit rounding is an estimate.
-    if arguments.get("model", "act_two") != "act_two":
-        raise ValueError("UNVERIFIED Act-Two model; cost unknown.")
-    return _performance_seconds(arguments) * 5
 
 
 def motion_control_price_cents(arguments: dict[str, Any]) -> Decimal:
@@ -434,56 +375,6 @@ def ad_matrix_estimate(arguments: dict[str, Any]) -> dict[str, Any]:
             "compute_pricing_source": AWS_LAMBDA_PRICING_URL,
             "read_date": REMOTION_MATRIX_PRICING_READ_DATE}
 
-# Official API list prices, USD/second, checked 2026-10-08.
-# https://kling.ai/document-api/pricing/base/video
-# Native audio prices exclude voice control; Omni prices exclude reference videos.
-# TODO: Turbo lists only native-audio prices, but its current request schema has no
-# audio control. Its default audio semantics remain unconfirmed, so do not quote it.
-KLING_RATES_USD_PER_SECOND = {
-    ("kling-3.0", False): {"720p": "0.084", "1080p": "0.112", "4k": "0.42"},
-    ("kling-3.0", True): {"720p": "0.126", "1080p": "0.168", "4k": "0.42"},
-    ("kling-3.0-omni", False): {"720p": "0.084", "1080p": "0.112", "4k": "0.42"},
-    ("kling-3.0-omni", True): {"720p": "0.112", "1080p": "0.14", "4k": "0.42"},
-}
-KLING_GENERATION_TOOLS = frozenset({"text_to_video", "image_to_video", "omni_video"})
-KLING_READ_TOOLS = frozenset({"get_video_task", "list_kling_models"})
-
-
-def _kling_cost(tool: str, arguments: dict[str, Any]) -> GenerationCost:
-    if tool in KLING_READ_TOOLS:
-        return GenerationCost(0, 0)
-    if tool not in KLING_GENERATION_TOOLS:
-        raise ValueError("Unknown Kling tool.")
-    model = arguments.get("model")
-    if tool == "omni_video":
-        model = "kling-3.0-omni"
-    elif model is None or model == "":
-        model = os.getenv("KLING_MODEL") or "kling-3.0"
-    allowed_models = (
-        {"kling-3.0-omni"} if tool == "omni_video" else {"kling-3.0", "kling-3.0-turbo"}
-    )
-    if not isinstance(model, str) or model not in allowed_models:
-        raise ValueError("Unsupported Kling model for this tool.")
-    resolution = arguments.get("resolution", "720p")
-    audio = arguments.get("generate_audio", False)
-    duration = arguments.get("duration_seconds", 5)
-    if (
-        not isinstance(resolution, str)
-        or resolution not in {"720p", "1080p", "4k"}
-        or not isinstance(audio, bool)
-    ):
-        raise ValueError("Invalid Kling resolution or generate_audio.")
-    if not isinstance(duration, int) or isinstance(duration, bool) or not 3 <= duration <= 15:
-        raise ValueError("Kling duration_seconds must be an integer from 3 to 15.")
-    if os.getenv("KLING_DRY_RUN", "true").lower() != "false":
-        return GenerationCost(0, 0)
-    rates = KLING_RATES_USD_PER_SECOND.get((model, audio))
-    if rates is None:
-        raise ValueError("Kling Turbo pricing is unconfirmed for the documented API audio behavior.")
-    provider_cents = round(Decimal(rates[resolution]) * duration * 100)
-    return _with_fee(provider_cents)
-
-
 # Status/download polls, not generations -- the canvas calls these
 # immediately after dispatch and then every ~2.5s until the underlying job
 # reaches a terminal state. Pricing them like a fresh call would charge one
@@ -491,30 +382,17 @@ def _kling_cost(tool: str, arguments: dict[str, Any]) -> GenerationCost:
 # a job that was already paid for and completed on the provider's side).
 POLLING_TOOLS = {"get_video_task", "query_music_task", "get_music_task", "get_render_progress"}
 
-# SDR Ray 3.2 list prices, verified 2026-10-08 against the official API pricing reference.
-# https://docs.agents.lumalabs.ai/guides/pricing/
-# The marketing table at https://lumalabs.ai/api disagrees on some edit rates.
-# This table follows the detailed API reference; confirm against invoices before rollout.
-LUMA_GENERATION_CENTS = {
-    "360p": {5: 6, 10: 18},
-    "540p": {5: 15, 10: 45},
-    "720p": {5: 30, 10: 90},
-    "1080p": {5: 120, 10: 360},
-}
-LUMA_EDIT_CENTS = {
-    "360p": {5: 54, 10: 108},
-    "540p": {5: 72, 10: 144},
-    "720p": {5: 108, 10: 216},
-    "1080p": {5: 216, 10: 432},
-}
-LUMA_EXTEND_CENTS = {"540p": 15, "720p": 30, "1080p": 120}
+def vidu_q4_rates(*, as_of: date | None = None) -> dict[str, Decimal]:
+    """Provider cents per video second, using the inclusive UTC promotion cutoff."""
+    day = as_of if as_of is not None else datetime.now(timezone.utc).date()
+    rates = (
+        VIDU_Q4_PROMO_CENTS_PER_SECOND
+        if day <= VIDU_Q4_PROMO_EXPIRES_ON
+        else VIDU_Q4_LIST_CENTS_PER_SECOND
+    )
+    return dict(rates)
 
 
-# fal Q4 rates per video second, checked 2026-10-08 on these pricing pages:
-# https://fal.ai/models/fal-ai/vidu/q4/image-to-video
-# https://fal.ai/models/fal-ai/vidu/q4/reference-to-video
-# Both pages list 30% off through November 30 with no R2V audio surcharge.
-# The user bound the omitted year to 2026 and the cutoff to inclusive UTC dates.
 VIDU_Q4_PROMO_EXPIRES_ON = date(2026, 11, 30)
 VIDU_Q4_PROMO_CENTS_PER_SECOND = {
     "540p": Decimal("3.15"),
@@ -530,17 +408,6 @@ VIDU_Q4_LIST_CENTS_PER_SECOND = {
     "2K": Decimal("19"),
     "4K": Decimal("39"),
 }
-
-
-def vidu_q4_rates(*, as_of: date | None = None) -> dict[str, Decimal]:
-    """Provider cents per video second, using the inclusive UTC promotion cutoff."""
-    day = as_of if as_of is not None else datetime.now(timezone.utc).date()
-    rates = (
-        VIDU_Q4_PROMO_CENTS_PER_SECOND
-        if day <= VIDU_Q4_PROMO_EXPIRES_ON
-        else VIDU_Q4_LIST_CENTS_PER_SECOND
-    )
-    return dict(rates)
 
 
 def vidu_q4_price_cents(arguments: dict[str, Any], *, as_of: date | None = None) -> Decimal:
@@ -568,41 +435,6 @@ def vidu_q4_price_cents(arguments: dict[str, Any], *, as_of: date | None = None)
 WAN3_CENTS_PER_SECOND = {"480p": Decimal("5"), "720p": Decimal("10"), "1080p": Decimal("20")}
 WAN3_PRICING_URL = "https://fal.ai/wan-3"
 WAN3_PRICING_READ_DATE = "2026-10-09"
-
-MODELSTUDIO_CENTS_PER_SECOND = modelstudio_contracts.CENTS_PER_SECOND
-MODELSTUDIO_PRICING_URL = modelstudio_contracts.PRICING_URL
-MODELSTUDIO_PRICING_READ_DATE = "2026-10-09"
-
-def modelstudio_price_cents(tool: str, arguments: dict[str, Any], *, region: str | None = None) -> Decimal:
-    """Quote documented regional input-plus-output billing, before the platform fee."""
-    from providers.alibaba_modelstudio import api, config, contracts
-
-    configuration = config.settings()
-    model = arguments.get("model", configuration.model)
-    if model != configuration.model:
-        raise ValueError("Model Studio quote model must match DASHSCOPE_MODEL.")
-    cleaned = api._validated(tool, {key: value for key, value in arguments.items() if key != "model"})
-    return contracts.price_cents(tool, cleaned, region=region or configuration.region, model=model)
-
-
-def _modelstudio_cost(tool: str, arguments: dict[str, Any]) -> GenerationCost:
-    from providers.alibaba_modelstudio import api, config
-
-    if tool == "get_task":
-        return GenerationCost(0, 0)
-    if tool not in {"edit_wan3_video", "extend_wan3_video"}:
-        raise ValueError("Unknown Model Studio tool.")
-    configuration = config.settings()
-    if arguments.get("model", configuration.model) != configuration.model:
-        raise ValueError("Model Studio quote model must match DASHSCOPE_MODEL.")
-    cleaned = api._validated(tool, {key: value for key, value in arguments.items() if key != "model"})
-    if config.dry_run():
-        return GenerationCost(0, 0)
-    blocker = config.live_blocker()
-    if blocker:
-        raise ValueError(blocker)
-    quote_arguments = {**cleaned, "model": configuration.model}
-    return _with_fee(round(modelstudio_price_cents(tool, quote_arguments)))
 
 
 def wan3_price_cents(arguments: dict[str, Any]) -> Decimal:
@@ -634,31 +466,6 @@ def wan3_price_cents(arguments: dict[str, Any]) -> Decimal:
     if input_seconds > 15:
         raise ValueError("Wan 3 reference videos must total at most 15 seconds.")
     return WAN3_CENTS_PER_SECOND[resolution] * (duration + input_seconds)
-
-
-def _luma_cost(tool: str, arguments: dict[str, Any]) -> GenerationCost:
-    if tool == "list_luma_models":
-        return GenerationCost(0, 0)
-    if tool not in {"text_to_video", "image_to_video", "extend_video", "modify_video"}:
-        raise ValueError("Unknown Luma tool.")
-    if arguments.get("model", "ray-3.2") not in {None, "ray-3.2"}:
-        raise ValueError("Luma video model must be ray-3.2.")
-    resolution = arguments.get("resolution") or "720p"
-    duration = arguments.get("source_duration_seconds") if tool == "modify_video" else arguments.get("duration_seconds", 5)
-    if tool == "extend_video":
-        cents = LUMA_EXTEND_CENTS.get(resolution)
-    else:
-        # TODO: official API pricing does not specify edits of arbitrary source lengths <=18s.
-        # Accept only the published 5s/10s tiers, verified from the MP4 before submission.
-        rates = LUMA_EDIT_CENTS if tool == "modify_video" else LUMA_GENERATION_CENTS
-        cents = rates.get(resolution, {}).get(duration) if type(duration) is int else None
-        if tool == "image_to_video" and duration != 5:
-            cents = None
-    if cents is None:
-        raise ValueError("Luma request has no documented price for these settings.")
-    if os.getenv("LUMA_DRY_RUN", "true").lower() != "false":
-        return GenerationCost(0, 0)
-    return _with_fee(cents)
 
 
 # fal published per-video-second rates checked 2026-10-08, using num_frames / 16:
@@ -808,87 +615,18 @@ def _openai_images_cost(tool: str, arguments: dict[str, Any]) -> GenerationCost:
 
 
 SYNC_FAL_CENTS_PER_MINUTE = Decimal("800")
-SYNC_DIRECT_BASE_CENTS_PER_SECOND_25FPS = Decimal("13.3")
 SYNC_PRICING_READ_DATE = "2026-10-09"
 SYNC_FAL_PRICING_URL = "https://fal.ai/models/fal-ai/sync-lipsync/v3"
-SYNC_DIRECT_PRICING_URL = "https://sync.so/docs/product/billing"
-SYNC_DIALOGUE_PRICING_URL = "https://sync.so/pricing"
-SYNC_DIALOGUE_PRICING_READ_DATE = "2026-10-10"
-SYNC_DIALOGUE_BASE_CENTS_PER_FRAME = Decimal("0.534")
-
-HEYGEN_PRICING_URL = "https://help.heygen.com/en/articles/10060327-heygen-api-pricing-explained"
-HEYGEN_PRICING_READ_DATE = "2026-10-09"
-# Official Avatar V Digital Twin API PAYG rate: $7.20/min, charged per actual second.
-HEYGEN_AVATAR_V_CENTS_PER_SECOND = Decimal("12")
-
-
-# UNVERIFIED non-promo HeyGen Voice prices. Official pages read 2026-10-09.
-# https://developers.heygen.com/docs/models/heygen-voice only states preview creation is free.
-# https://www.heygen.com/api-pricing redirects to an account dashboard. No character list rate verified.
-HEYGEN_VOICE_PRICING_URL = "https://www.heygen.com/api-pricing"
-HEYGEN_VOICE_PRICING_READ_DATE = "2026-10-09"
-HEYGEN_VOICE_LIST_USD_PER_MILLION = None
-HEYGEN_VOICE_CLONE_LIST_USD = None
-
-
-def heygen_voice_price_cents(tool: str, arguments: dict) -> Decimal:
-    from providers.heygen.voice_contracts import DEFAULT_MODEL, configured_model
-
-    if configured_model(arguments) != DEFAULT_MODEL:
-        raise ValueError("UNVERIFIED HeyGen Voice model; estimate unknown.")
-    if tool == "voice_clone" and HEYGEN_VOICE_CLONE_LIST_USD is not None:
-        return Decimal(str(HEYGEN_VOICE_CLONE_LIST_USD)) * 100
-    if tool == "voice_tts" and HEYGEN_VOICE_LIST_USD_PER_MILLION is not None:
-        text = arguments.get("text")
-        if not isinstance(text, str) or not 1 <= len(text) <= 5000 or not text.strip():
-            raise ValueError("HeyGen Voice text must contain 1-5000 characters.")
-        return Decimal(len(text)) * Decimal(str(HEYGEN_VOICE_LIST_USD_PER_MILLION)) * 100 / 1000000
-    raise ValueError("UNVERIFIED HeyGen Voice non-promo list price; estimate unknown. Official rate TODO.")
-
-
-def heygen_price_cents(arguments: dict[str, Any]) -> Decimal:
-    """Self-serve list quote; script duration is an estimate, not a render control."""
-    from providers.heygen.contracts import request_for
-
-    request = request_for(arguments)
-    if request.model != "avatar_v":
-        raise ValueError("UNVERIFIED HeyGen model; estimate unknown.")
-    if os.getenv("HEYGEN_API_PLAN", "unknown") == "enterprise":
-        raise ValueError("HeyGen enterprise negotiated price is unknown.")
-    return Decimal(str(request.duration_seconds)) * HEYGEN_AVATAR_V_CENTS_PER_SECOND
-
 
 def sync_price_cents(arguments: dict[str, Any]) -> Decimal:
     """Published usage estimate; subscriptions, storage and concat compute are excluded."""
-    from providers.sync.contracts import configured_transport, request_for
+    from providers.sync.contracts import request_for
 
     request = request_for(arguments)
     if request.model != "sync-3":
         raise ValueError("UNVERIFIED Sync model; estimate unknown.")
     duration = Decimal(str(request.output_duration))
-    if configured_transport() == "fal":
-        return duration * SYNC_FAL_CENTS_PER_MINUTE / 60
-    if os.getenv("SYNC_BILLING_PLAN", "legacy_base") != "legacy_base":
-        raise ValueError("Sync credit/negotiated billing estimate unknown; verify the account rate.")
-    frames = Decimal(math.ceil(float(duration) * request.source_fps))
-    return frames * SYNC_DIRECT_BASE_CENTS_PER_SECOND_25FPS / 25
-
-
-def sync_dialogue_price_cents(tool: str, arguments: dict[str, Any]) -> Decimal:
-    """Quote direct Sync edits; an unpublished preview price stays unknown."""
-    from providers.sync.dialogue_contracts import request_for, preview_quote_cents
-
-    request = request_for(tool, arguments)
-    if tool == "create_dialogue_edit":
-        return Decimal(preview_quote_cents())
-    if tool != "create_dialogue_video":
-        raise ValueError("Unknown paid Sync dialogue tool.")
-    if os.getenv("SYNC_BILLING_PLAN", "legacy_base") != "legacy_base":
-        raise ValueError("Sync credit/negotiated billing estimate unknown; verify the account rate.")
-    # Official pricing read 2026-10-10 lists $0.00534/frame. Billing
-    # counts output frames; per-second page values are rounded differently.
-    frames = Decimal(math.ceil(request.preview_duration_seconds * request.source_fps))
-    return frames * SYNC_DIALOGUE_BASE_CENTS_PER_FRAME
+    return duration * SYNC_FAL_CENTS_PER_MINUTE / 60
 
 
 # Official fal pricing examples, read 2026-10-09 and rechecked 2026-10-15. Duration scaling is an estimate.
@@ -945,30 +683,13 @@ def mureka_price_cents(tool: str, arguments: dict[str, Any]) -> Decimal | None:
     return MUREKA_INSTRUMENTAL_CENTS
 
 
-def footage_memory_estimate(tool: str, arguments: dict[str, Any]) -> dict:
-    """Configured per-window estimate, never an invented official per-call rate.
-
-    Official token pricing https://ai.google.dev/gemini-api/docs/pricing,
-    read 2026-10-10. Token usage per footage window is unknown. TODO live quote.
-    """
-    from providers.footage_memory.contracts import request_for
-    from providers.footage_memory.service import build_plan, call_estimate
-
-    request = request_for(tool, arguments)
-    if tool == 'footage_memory_build':
-        return build_plan(request)[0]
-    if tool == 'footage_watch_answer':
-        return call_estimate(1)
-    return call_estimate(0)
-
-
 def cost_for(provider: str, tool: str, arguments: dict[str, Any]) -> GenerationCost:
     """Real cost (provider + disclosed fee) for one call to `provider`/`tool`.
     Called both before dispatch (to check affordability) and after success
     (to charge the same amount), so it must be a pure function of the
     request, not of anything the provider returns.
     """
-    if provider in {"ffmpeg", "shot_recipes", "footage_memory", "lottie", "logo_animation", 'reference_shots'}:
+    if provider in {"ffmpeg", "shot_recipes",  "lottie", "logo_animation", 'reference_shots'}:
         return GenerationCost(0, 0)
     if provider == "remotion" and tool in {"deliver_render", "qc_deliverable", "motion_carry_probe"}:
         return GenerationCost(0, 0)
@@ -1005,50 +726,18 @@ def cost_for(provider: str, tool: str, arguments: dict[str, Any]) -> GenerationC
         if cents is None:
             raise ValueError("Topaz price unknown for these dimensions, FPS or slowdown; official quote TODO.")
         return _with_fee(math.ceil(cents))
-    if provider == "heygen":
-        if tool in {"voice_clone", "voice_tts", "get_voice_status"}:
-            from providers.heygen.voice import dry_run
-            from providers.heygen.voice_contracts import live_blocker
-
-            if tool == "get_voice_status" or dry_run():
-                return GenerationCost(0, 0)
-            raise ValueError(live_blocker(arguments))
-        if tool in {"get_video_status", "list_avatars", "list_voices"}:
-            return GenerationCost(0, 0)
-        if tool != "create_avatar_video":
-            raise ValueError("Unknown HeyGen tool.")
-        from providers.heygen.api import dry_run
-
-        cents = heygen_price_cents(arguments) if not dry_run(arguments) else None
-        if cents is None:
-            return GenerationCost(0, 0)
-        return _with_fee(math.ceil(cents))
     if provider == "sync":
-        if tool in {"get_video_task", "transcribe_video", "get_transcription", "get_dialogue_edit"}:
+        if tool in {"get_video_task"}:
             return GenerationCost(0, 0)
-        if tool in {"create_dialogue_edit", "create_dialogue_video"}:
-            from providers.sync.api import _is_dry
-            from providers.sync.dialogue_contracts import validate_arguments
-
-            validate_arguments(tool, arguments)
-            if _is_dry("direct"):
-                return GenerationCost(0, 0)
-            return _with_fee(math.ceil(sync_dialogue_price_cents(tool, arguments)))
         if tool != "lipsync_video":
             raise ValueError("Unknown Sync tool.")
         return _with_fee(math.ceil(sync_price_cents(arguments)))
     if provider == "openai_images":
         return _openai_images_cost(tool, arguments)
-    if provider == "kling":
-        return _kling_cost(tool, arguments)
-    if provider == "alibaba_modelstudio":
-        return _modelstudio_cost(tool, arguments)
     if tool in POLLING_TOOLS or (provider == "remotion" and tool in {
         "export_nle_timeline", "import_nle_timeline", "prepare_conversational_edit",
     }):
         return GenerationCost(provider_cents=0, fee_cents=0)
-    if provider == "runway":
-        return _runway_cost(tool, arguments)
     if provider == "fal":
         if tool in {"ideogram_edit", "recraft_text_to_vector"}:
             from providers.fal.queue import dry_run
@@ -1070,8 +759,6 @@ def cost_for(provider: str, tool: str, arguments: dict[str, Any]) -> GenerationC
             cents = motion_control_price_cents(arguments)
             return GenerationCost(0, 0) if dry_run() else _with_fee(math.ceil(cents))
         return _fal_cost(tool, arguments)
-    if provider == "luma":
-        return _luma_cost(tool, arguments)
     if provider == "seedance":
         return _seedance_cost(arguments, tool)
     if provider == "seedream":

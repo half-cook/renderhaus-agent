@@ -52,7 +52,7 @@ class GeminiTests(unittest.TestCase):
             os.environ,
             {
                 "GEMINI_DRY_RUN": "false",
-                "GEMINI_API_KEY": "test-secret",
+                "GOOGLE_API_KEY": "test-secret",
                 "GEMINI_VLM_MODEL": contracts.VERIFIED_MODEL,
                 "GEMINI_VLM_TIMEOUT_SECONDS": "30",
                 "GEMINI_VLM_MAX_RETRIES": "2",
@@ -302,7 +302,7 @@ class GeminiTests(unittest.TestCase):
 
     def test_missing_api_key_fails_soft(self):
         with (
-            patch.dict(os.environ, {"GEMINI_API_KEY": ""}),
+            patch.dict(os.environ, {"GOOGLE_API_KEY": ""}),
             patch("providers.gemini.api.httpx.Client") as client,
         ):
             self.assertEqual(tools.judge_continuity(self.frame, self.frame)["status"], "skipped")

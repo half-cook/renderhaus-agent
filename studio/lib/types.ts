@@ -34,15 +34,6 @@ type CreditLedgerEntry = {
   created_at: number;
 };
 
-export type SubscriptionState = {
-  plan_id: string;
-  status: "active" | "past_due";
-  monthly_budget_cents: number;
-  daily_allowance_cents: number;
-  daily_allowance_remaining_cents: number;
-  current_period_end: number | null;
-};
-
 export type StudioAccount = {
   balance_cents: number;
   /** Optional: the greeting falls back to a plain "Good evening." when the API sends no name. */
@@ -55,19 +46,6 @@ export type StudioAccount = {
   } | null;
   // Nullable/optional: deploy-skew safety against an older backend that
   // doesn't send this field yet.
-  subscription?: SubscriptionState | null;
-};
-
-export type TopUpPack = {
-  id: string;
-  label: string;
-  price_usd_cents: number;
-};
-
-export type SubscriptionPlan = {
-  id: string;
-  label: string;
-  price_usd_cents: number;
 };
 
 export type StudioAsset = {

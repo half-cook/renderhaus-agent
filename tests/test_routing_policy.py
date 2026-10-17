@@ -9,17 +9,15 @@ from agent.gateway_executor import tool_needs_approval
 
 class PolicyTests(unittest.TestCase):
     def test_premium_video_approval_is_required_in_autonomous_runs(self):
-        for name in ["Kling___text_to_video", "Runway___image_to_video", "Runway___video_to_video"]:
+        for name in ["Fal___generate_wan3_t2v", "Seedance___image_to_video"]:
             self.assertTrue(tool_needs_approval(name, True), name)
         self.assertTrue(tool_needs_approval("Fal___text_to_video", True))
         with patch.dict(os.environ, {"RENDERHAUS_PREMIUM_VIDEO_APPROVAL": "false"}):
-            self.assertFalse(tool_needs_approval("Kling___text_to_video", True))
-            self.assertTrue(tool_needs_approval("Kling___text_to_video", False))
+            self.assertFalse(tool_needs_approval("Fal___text_to_video", True))
+            self.assertTrue(tool_needs_approval("Fal___text_to_video", False))
 
     def test_free_reads_and_status_checks_do_not_interrupt_either_mode(self):
         for name in [
-            "Kling___get_video_task",
-            "Runway___list_runway_models",
             "Fal___get_video_task",
             "Remotion___get_render_progress",
             "ElevenLabs___voices_search",
@@ -34,9 +32,7 @@ class PolicyTests(unittest.TestCase):
             for name, arguments in [
                 ("Remotion___prepare_conversational_edit", {}),
                 ("Logo___logo_vectorize", {"op": "approve"}),
-                ("FootageMemory___footage_memory_build", {"stage": "build"}),
                 ("Remotion___render_ad_variants", {"stage": "render_batch"}),
-                ("Sync___create_dialogue_edit", {}),
                 ("ElevenLabs___voices_delete", {}),
             ]:
                 self.assertTrue(tool_needs_approval(name, autonomous, arguments), name)
@@ -56,20 +52,6 @@ class PolicyTests(unittest.TestCase):
             self.assertIn("unknown", quote.description.lower())
         self.assertEqual(estimate_cost("Fal___get_video_task", {}).total_cents, 0)
 
-    def test_quotes_use_billing_rates(self):
-        from agent.deep_agent.routing import estimate_cost
-        from server.billing_rates import cost_for
-
-        with patch.dict(os.environ, {"KLING_DRY_RUN": "false", "RUNWAY_DRY_RUN": "false"}):
-            for name, provider, args in [
-                ("Kling___text_to_video", "kling", {"duration_seconds": 5}),
-                ("Runway___text_to_video", "runway", {"duration_seconds": 5}),
-            ]:
-                quote = estimate_cost(name, args)
-                self.assertEqual(
-                    quote.total_cents, cost_for(provider, "text_to_video", args).total_cents
-                )
-                self.assertIn(f"${quote.total_cents / 100:.2f}", quote.description)
 
     def test_training_requires_wan_apache_provenance(self):
         from agent.deep_agent.routing import training_eligible
@@ -109,15 +91,11 @@ class PolicyTests(unittest.TestCase):
         )
 
     def test_region_and_model_gates(self):
-        from agent.deep_agent.routing import policy_blocker, POLICY
+        from agent.deep_agent.routing import policy_blocker
 
         self.assertIsNotNone(policy_blocker("MiniMaxH3___text_to_video", {}, region="US"))
         self.assertIsNotNone(policy_blocker("Hunyuan___text_to_video", {}, region="CA"))
         self.assertIsNotNone(policy_blocker("Fal___text_to_video", {"model": "minimax-h3"}))
-        with patch.dict(POLICY["providers"]["kling"], {"allowed_regions": ["CA"]}):
-            self.assertIsNone(policy_blocker("Kling___text_to_video", {}, region="CA"))
-            self.assertIsNotNone(policy_blocker("Kling___text_to_video", {}, region="US"))
-            self.assertIsNotNone(policy_blocker("Kling___text_to_video", {}, region=None))
 
     def test_env_models_and_unknown_models_cannot_bypass_gates(self):
         from agent.deep_agent.routing import policy_blocker
@@ -192,46 +170,3 @@ class PolicyTests(unittest.TestCase):
                 self.assertIsNone(
                     estimate_cost("ElevenLabs___text_to_speech_convert", {}).total_cents
                 )
-
-
-class LumaPolicyTests(unittest.TestCase):
-    def test_luma_routes_to_real_gateway_tools(self):
-        from agent.deep_agent.routing import route_intent
-
-        modify = route_intent("change look keep performance Luma")
-        self.assertEqual((modify.skill, modify.tool, modify.status), ("named-provider", "Luma___modify_video", "ready"))
-        t2v = route_intent("Luma Ray text to video of a beach at dawn")
-        self.assertEqual((t2v.skill, t2v.tool, t2v.status), ("named-provider", "Luma___text_to_video", "ready"))
-        i2v = route_intent("luma image to video from this start frame")
-        self.assertEqual((i2v.skill, i2v.tool), ("named-provider", "Luma___image_to_video"))
-        for route in (modify, t2v, i2v):
-            self.assertIn("explicit request; not the default", route.disclosure)
-
-    def test_luma_is_explicit_only_paid_video_and_never_training_eligible(self):
-        from agent.deep_agent.routing import is_free_tool, policy_blocker, premium_video, training_eligible
-
-        for tool in ("text_to_video", "image_to_video", "extend_video", "modify_video"):
-            name = f"Luma___{tool}"
-            self.assertIsNone(policy_blocker(name, {}))
-            self.assertTrue(premium_video(name))
-            self.assertTrue(tool_needs_approval(name, autonomous=True))
-            self.assertTrue(tool_needs_approval(name, autonomous=False))
-        self.assertTrue(is_free_tool("Luma___list_luma_models"))
-        self.assertTrue(is_free_tool("Luma___get_video_task"))
-        self.assertFalse(tool_needs_approval("Luma___list_luma_models", autonomous=True))
-        self.assertFalse(training_eligible({
-            "provider": "luma", "model": "ray-3.2", "weights_license": "Apache-2.0",
-            "training_eligible": True, "status": "succeeded",
-        }))
-        self.assertIsNotNone(policy_blocker("Luma___text_to_video", {"model": "ray-9"}))
-
-    def test_luma_cost_estimate_uses_billing_rates_or_unknown(self):
-        from agent.deep_agent.routing import estimate_cost
-
-        with patch.dict(os.environ, {"LUMA_DRY_RUN": "false"}):
-            quote = estimate_cost("Luma___modify_video", {"source_duration_seconds": 5, "resolution": "720p"})
-            self.assertEqual(quote.total_cents, 108 + 32)
-            self.assertIn("$1.40", quote.description)
-            unknown = estimate_cost("Luma___extend_video", {"resolution": "360p", "generation_id": "x"})
-            self.assertIsNone(unknown.total_cents)
-            self.assertIn("unknown", unknown.description)

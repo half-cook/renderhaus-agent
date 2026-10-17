@@ -58,15 +58,15 @@ async def test_gateway_enforces_retry_limit_without_model_supplied_metadata(tmp_
     from test_deep_agent import Gateway
 
     monkeypatch.setenv('RENDERHAUS_OUTCOME_DIR', str(tmp_path))
-    name = 'Runway___get_runway_task'
+    name = 'Fal___get_video_task'
     gateway = Gateway(tools=[Tool(name=name, description='Check a saved task', inputSchema={
-        'type': 'object', 'properties': {'task_id': {'type': 'string'}}, 'required': ['task_id'],
+        'type': 'object', 'properties': {'job_id': {'type': 'string'}}, 'required': ['job_id'],
     })], result={'status': 'failed', 'error': 'Task status unavailable'})
     request = StudioAgentRequest(prompt='Check the saved task.', job_id='free-retry')
     executor = GatewayExecutor(_context_from_request(request), [gateway], run_scope='turn')
     await executor.connect_tools()
     for index in range(3):
-        result = await executor.execute({'tool_name': name, 'arguments': {'task_id': 'saved'},
+        result = await executor.execute({'tool_name': name, 'arguments': {'job_id': 'saved'},
                                          'call_id': str(index)}, approved=True)
     assert result['status'] == 'not_run'
     assert 'single free alternative' in result['reason']

@@ -5,7 +5,6 @@ from __future__ import annotations
 
 import io
 import json
-import asyncio
 import os
 import re
 import sys
@@ -21,14 +20,8 @@ if str(ROOT) not in sys.path:
 
 def _force_dry_run() -> None:
     os.environ["AWS_S3_BUCKET"] = ""
-    os.environ["BETA_VERIFICATION_DRY_RUN"] = "true"
     os.environ["GEMINI_DRY_RUN"] = "true"
     os.environ['REFERENCE_SHOTS_DRY_RUN'] = 'true'
-    os.environ["FOOTAGE_MEMORY_DRY_RUN"] = "true"
-    os.environ["FOOTAGE_MEMORY_BACKEND"] = "mock"
-    os.environ["KLING_DRY_RUN"] = "true"
-    os.environ["RUNWAY_DRY_RUN"] = "true"
-    os.environ["LUMA_DRY_RUN"] = "true"
     os.environ["SEEDANCE_DRY_RUN"] = "true"
     os.environ["SEEDREAM_DRY_RUN"] = "true"
     os.environ["ELEVENLABS_DRY_RUN"] = "true"
@@ -36,13 +29,7 @@ def _force_dry_run() -> None:
     os.environ["REMOTION_DRY_RUN"] = "true"
     os.environ["FAL_DRY_RUN"] = "true"
     os.environ["OPENAI_IMAGES_DRY_RUN"] = "true"
-    os.environ["HYPERFRAMES_DRY_RUN"] = "true"
-    os.environ["MODELSTUDIO_DRY_RUN"] = "true"
     os.environ["SYNC_DRY_RUN"] = "true"
-    os.environ["HEYGEN_DRY_RUN"] = "true"
-    os.environ["HEYGEN_VOICE_DRY_RUN"] = "true"
-    os.environ["HEYGEN_VOICE_MODEL"] = "heygen-voice-1"
-    os.environ["HEYGEN_VOICE_AB_GATE"] = "off"
     os.environ["TOPAZ_DRY_RUN"] = "true"
     os.environ["MUREKA_DRY_RUN"] = "true"
     os.environ["FFMPEG_DRY_RUN"] = "true"
@@ -136,16 +123,9 @@ def check_routing_inventory() -> None:
         assert set(metadata["include_tools"].split()) <= DISPATCH_TARGETS.keys(), path
         assert all(TOOL_MAP[alias]["status"] != "retired" for alias in metadata["routing_tools"].split()), path
     cases = json.loads((ROOT / "tests/fixtures/skill_routing.json").read_text())
-    assert sum(bool(case["skip_reason"]) for case in cases) == 6
+    assert sum(bool(case["skip_reason"]) for case in cases) == 0
     ids = [case["test_id"] for case in cases if case.get("test_id")]
     assert len(ids) == len(set(ids)), "Routing fixture IDs must be unique."
-    from agent.deep_agent.continuity_qc_vlm import EVAL_PATH, default_vlm_enabled
-
-    if POLICY["continuity_qc"]["vlm_eval_gate"]["result_sha256"]:
-        import subprocess
-
-        subprocess.run(["git", "ls-files", "--error-unmatch", str(EVAL_PATH.relative_to(ROOT))], check=True, capture_output=True)
-        assert default_vlm_enabled(), "Committed VLM evidence does not qualify for promotion."
     print("ok routing inventory " + ", ".join(f"{v} {k.replace('_', ' ')}" for k, v in counts.items()))
 
 
@@ -206,27 +186,13 @@ def check_dry_run_dispatch() -> None:
             assert result["status"] == "dry_run"
             continue
         mureka_jobs = {}
-        heygen_job_id = None
-        heygen_voice_id = None
         topaz_job_id = None
         gemini_job_id = None
-        sync_transcription_id = None
-        sync_dialogue_id = None
         for schema in load_committed_schemas(spec):
             name = schema["name"]
             arguments = dummy_arguments(schema)
             if spec.id == 'reference_shots':
                 arguments = {'op': 'measure', 'job_id': 'ci-smoke', 'input_path': 'reference.mp4'}
-            if spec.id == "footage_memory":
-                arguments = {"project_id": "ci-project", "workspace_id": "ci-workspace"}
-                if name == "footage_memory_query":
-                    arguments.update(query="Offline childhood fixture")
-                elif name == "footage_clip_extract":
-                    arguments.update(job_id="ci-smoke", windows=[{"clip_id": "missing-asset", "t0_s": 0.0, "t1_s": 1.0}])
-                else:
-                    arguments.update(job_id="ci-smoke", path="missing.mp4")
-                    if name == "footage_watch_answer":
-                        arguments.update(question="What appears in this window?")
             if spec.id == "ffmpeg":
                 arguments = {"op": "probe", "job_id": "ci-smoke", "input_path": "master.mp4", "params": {}}
                 for op, params in {
@@ -282,24 +248,6 @@ def check_dry_run_dispatch() -> None:
             if spec.id == "topaz" and name == "get_video_task":
                 assert topaz_job_id, "Topaz poll must reuse a submitted dry-run handle"
                 arguments["job_id"] = topaz_job_id
-            if spec.id == "heygen" and name in {"voice_clone", "voice_tts", "get_voice_status"}:
-                arguments = {"account_id": "ci-user", "workspace_id": "ci-workspace", "project_id": "ci-project"}
-                if name == "voice_clone":
-                    arguments.update(reference_audio_url="https://example.com/ci.wav", reference_duration_seconds=60.0,
-                                     reference_size_bytes=1024, reference_format="wav", name="CI voice", subjects="CI owner",
-                                     consent_confirmed=True, consent_record_id="ci-consent")
-                else:
-                    assert heygen_voice_id, "Speech and poll must reuse the scoped dry clone"
-                    arguments["voice_id"] = heygen_voice_id
-                    if name == "voice_tts":
-                        arguments.update(text="CI dry-run placeholder", language="en")
-            if spec.id == "heygen" and name == "create_avatar_video":
-                arguments.update(avatar_id="lk_ci", voice_id="voice_ci", script="Offline presenter preview",
-                                 duration_seconds=90.0, subjects="Authorized test presenter and voice",
-                                 consent_confirmed=True, consent_record_id="ci-consent")
-            if spec.id == "heygen" and name == "get_video_status":
-                assert heygen_job_id, "HeyGen poll must reuse the created dry-run handle"
-                arguments["job_id"] = heygen_job_id
             if spec.id == "sync" and name == "lipsync_video":
                 arguments.update(video_url="https://example.test/source.mp4",
                                  audio_url="https://example.test/voice.wav",
@@ -308,49 +256,12 @@ def check_dry_run_dispatch() -> None:
                                  consent_confirmed=True)
             if spec.id == "sync" and name == "get_video_task":
                 arguments["job_id"] = "sync:dry:00000000000000000000000000000000"
-            if spec.id == "sync" and name in {"transcribe_video", "create_dialogue_edit", "create_dialogue_video"}:
-                arguments = {"source_video_url": "https://assets.sync.so/ci-source.mp4",
-                             "source_duration_seconds": 5.0, "speaker_count": 1,
-                             "subjects": "Authorized synthetic test speaker and source voice", "consent_confirmed": True}
-                if name == "create_dialogue_edit":
-                    assert sync_transcription_id, "Preview must reuse the dry transcription handle"
-                    arguments.update(transcription_id=sync_transcription_id, action_id="ci-dialogue-preview",
-                                     edits=[{"kind": "change", "wordId": "dry-word-1", "replacement": "Offline"}])
-                if name == "create_dialogue_video":
-                    assert sync_dialogue_id, "Video must reuse the dry preview handle"
-                    arguments.update(dialogue_edit_id=sync_dialogue_id, source_fps=25.0,
-                                     preview_duration_seconds=5.0, preview_reviewed=True,
-                                     idempotency_key="ci-dialogue-video")
-            if spec.id == "sync" and name == "get_transcription":
-                assert sync_transcription_id
-                arguments = {"transcription_id": sync_transcription_id}
-            if spec.id == "sync" and name == "get_dialogue_edit":
-                assert sync_dialogue_id
-                arguments = {"dialogue_edit_id": sync_dialogue_id}
             if spec.id == "seedance" and name in {"text_to_video", "image_to_video", "reference_to_video", "edit_video", "extend_video"}:
                 arguments["model"] = "dreamina-seedance-2-5-260628"
             if spec.id == "seedance" and name in {"edit_video", "extend_video"}:
                 arguments.update({"video_url": "https://example.test/source.mp4",
                                   "source_duration_seconds": 5, "source_fps": 24,
                                   "source_aspect_ratio": "16:9"})
-            if spec.id == "kling":
-                if name == "image_to_video":
-                    arguments["image_path_or_url"] = "https://example.test/frame.png"
-                elif name == "get_video_task":
-                    arguments["job_id"] = "current:text_to_video:ci-smoke"
-            if spec.id == "runway":
-                if name == "act_two":
-                    arguments = {"character_uri": "https://example.com/character.png",
-                                 "performance_uri": "https://example.com/performance.mp4",
-                                 "performance_duration_seconds": 5, "subjects": "Authorized performer",
-                                 "consent_confirmed": True}
-                for field in ("image_path_or_url", "video_path_or_url"):
-                    if field in arguments:
-                        arguments[field] = "https://example.com/source.mp4" if field.startswith("video") else "https://example.com/source.png"
-                if "video_duration_seconds" in arguments:
-                    arguments["video_duration_seconds"] = 2.0
-                if name == "get_runway_task":
-                    arguments["job_id"] = "00000000-0000-4000-8000-000000000000"
             if spec.id == "fal":
                 if name == "pixelcut_looping_video":
                     arguments = {"image_url": "https://example.test/product.png"}
@@ -369,12 +280,6 @@ def check_dry_run_dispatch() -> None:
                     arguments["start_image_url" if name == "generate_wan3_i2v" else "image_url"] = "https://example.test/frame.png"
                 elif name == "video_to_video":
                     arguments["prompt"] = "A small offline smoke test"
-            if spec.id == "alibaba_modelstudio":
-                if name == "get_task":
-                    arguments["job_id"] = "00000000-0000-4000-8000-000000000000"
-                else:
-                    arguments.update({"video_url": "https://example.test/source.mp4",
-                                      "source_duration_seconds": 5, "source_fps": 24})
             if spec.id == "remotion" and name == "prepare_conversational_edit":
                 arguments = {
                     "title": "Offline interview cut", "plan_summary": "Keep the greeting with subtitles.",
@@ -389,10 +294,6 @@ def check_dry_run_dispatch() -> None:
                 arguments['visuals'] = [{'kind': 'image', 'url': 'https://example.test/ci.png',
                                          'duration_seconds': 1}]
             result = dispatch(spec.id, name, arguments)
-            if spec.id == "sync" and name == "transcribe_video":
-                sync_transcription_id = result["transcription_id"]
-            if spec.id == "sync" and name == "create_dialogue_edit":
-                sync_dialogue_id = result["dialogue_edit_id"]
             if spec.id == "remotion" and name == "render_ad_variants":
                 assert result.get("status") == "blocked", "CI matrix must refuse missing local job media"
                 assert "local" in str(result).lower() or "job" in str(result).lower(), result
@@ -413,42 +314,11 @@ def check_dry_run_dispatch() -> None:
             if spec.id == "mureka" and name.startswith("generate_"):
                 mureka_jobs[name] = result["job_id"]
             assert isinstance(result, dict), f"{spec.id}.{name} did not return a dict"
-            if spec.id == "heygen" and name == "voice_clone":
-                heygen_voice_id = result["voice_id"]
-            if spec.id == "heygen" and name == "create_avatar_video":
-                heygen_job_id = result["job_id"]
             if spec.id == "topaz" and name in {"upscale_video", "interpolate_video"}:
                 topaz_job_id = result["job_id"]
             if "error" in result and result.get("error_type"):
                 raise AssertionError(f"{spec.id}.{name} dispatch error: {result}")
             print(f"ok dry-run {spec.id}.{name} status={result.get('status', 'ok')}")
-
-
-def check_hyperframes_preview() -> None:
-    import subprocess
-
-    from agent.hyperframes import HYPERFRAMES_TOOL, HyperFramesServer
-
-    server = HyperFramesServer()
-    os.environ["HYPERFRAMES_ENABLED"] = "false"
-    assert asyncio.run(server.list_tools()) == []
-    os.environ["HYPERFRAMES_ENABLED"] = "true"
-    try:
-        tools = asyncio.run(server.list_tools())
-        assert [tool.name for tool in tools] == [HYPERFRAMES_TOOL.name]
-        result = asyncio.run(server.call_tool(HYPERFRAMES_TOOL.name, {
-            "html": "<!doctype html><html><body>Offline title</body></html>",
-            "duration_seconds": 2, "width": 1280, "height": 720, "fps": 30,
-        }))
-        assert result["status"] == "dry_run"
-        assert not {"url", "output_path", "job_id", "render_id"} & result.keys()
-    finally:
-        os.environ["HYPERFRAMES_ENABLED"] = "false"
-    subprocess.run([
-        sys.executable, "-m", "unittest", "discover", "-s", str(ROOT / "tests"),
-        "-p", "test_hyperframes_packs.py", "-q",
-    ], cwd=ROOT, check=True)
-    print("ok local HyperFrames schema and dry-run composition preview")
 
 
 def check_imports() -> None:
@@ -481,21 +351,16 @@ def check_beta_inventory() -> None:
 
     assert DEFAULT_ENV["BETA_CREDITS_ENABLED"] == "false"
     assert DEFAULT_ENV["BETA_GLOBAL_CAP_CENTS"] == "50000"
-    assert DEFAULT_ENV["BETA_WAVE_SIZE"] == "50"
-    assert DEFAULT_ENV["BETA_VERIFICATION_DRY_RUN"] == "true"
     assert BetaSettings().enabled is False
-    expected = {("/api/beta/status", "GET"), ("/api/beta/claim", "POST"),
-                ("/api/beta/waitlist", "POST"), ("/api/admin/beta/next-wave", "POST"),
-                ("/api/beta/wave", "GET"), ("/api/beta/hold", "POST"), ("/api/studio/demo-project", "POST"), ("/api/studio/projects/{project_id}/export", "GET")}
-    expected.update((f"/api/beta/verify/{kind}/{action}", "POST")
-                    for kind in ("email", "phone") for action in ("start", "confirm"))
+    expected = {("/api/beta/invite/check", "POST"), ("/api/beta/invite/redeem", "POST"),
+                ("/api/studio/demo-project", "POST"), ("/api/studio/projects/{project_id}/export", "GET")}
     expected.update({("/api/studio/projects/{project_id}/changesets", "GET"),
                      ("/api/studio/changesets/{changeset_id}/changes/{n}/{action}", "POST"),
                      ("/api/studio/changesets/{changeset_id}/restore", "POST")})
     actual = {(path, method.upper()) for path, operations in app.openapi()["paths"].items()
               for method in operations}
     assert expected <= actual, f"missing beta routes: {expected - actual}"
-    print("ok beta/demo/export/changes route inventory and closed defaults (15 routes)")
+    print("ok beta/demo/export/changes route inventory and closed defaults")
 
 
 def check_lambda_zip() -> None:
@@ -541,8 +406,6 @@ def validate_lambda_zip(zip_bytes: bytes) -> None:
     assert "providers/shot_recipes/index.json" in names, "lambda zip is missing the shot recipe index"
     for notice in ('LICENSE', 'NOTICE.md', 'ATTRIBUTION.md'):
         assert 'providers/shot_recipes/' + notice in names, 'lambda zip is missing shot recipe ' + notice
-    for resource in ('sql/001_core.sql', 'sql/002_segment_edit.sql', 'fixtures.json', 'NOTICE.md'):
-        assert 'providers/footage_memory/' + resource in names, 'lambda zip is missing footage memory ' + resource
     assert len([name for name in names if re.fullmatch(
         r"providers/shot_recipes/cards/[^/]+/[^/]+\.md", name
     )]) == 157, "lambda zip must contain all 157 shot recipe cards"
@@ -563,7 +426,6 @@ def main() -> int:
     check_beta_inventory()
     check_orchestration_billing()
     check_dry_run_dispatch()
-    check_hyperframes_preview()
     check_lambda_zip()
     print("ci_check passed")
     return 0

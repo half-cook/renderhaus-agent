@@ -127,10 +127,8 @@ Fully managed infra is still the target for v0 — no servers to operate. The on
 
 Note the split this diagram makes explicit: the **track/arrangement UI** (drag, trim, split, reorder clips — the editing chrome) is custom Canvas 2D, already spiked in `spikes/timeline-render/` and now live in `web/src/components/editor/timeline/`. The **preview pane** (what the edit actually looks like, frame-accurate, at the current playhead) and the **final render/export** are both Remotion, rendering the *same* composition definition in two modes — interactive (`Player`, in-browser, `[BUILT]`) and headless (Node renderer / Lambda, server-side, `[PLANNED]`). See §10.1 and §13.6 for why this replaces a separate third-party render-API vendor entirely.
 
-**Deployment target, illustrated.** The block diagram above is deliberately vendor-agnostic (it's the timeline/orchestrator shape, true regardless of where it runs). The diagram below is the concrete candidate from §10.2 — Cloudflare for the app/edge/queue/storage/transcode-worker, AWS for Postgres only, connected via Hyperdrive:
-
-![Renderhaus candidate deployment: Cloudflare app, edge, queue, storage, and transcode Container; AWS RDS/Aurora Postgres reached via Hyperdrive](../docs/assets/architecture-diagram.png)
-
+The deployment candidate in §10.2 uses Cloudflare for the app, edge, queue, storage, and
+transcode worker, with AWS Postgres connected through Hyperdrive.
 ---
 
 ## 6. Frontend Architecture

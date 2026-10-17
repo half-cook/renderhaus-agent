@@ -78,38 +78,6 @@ const CREATIVE_TOOLS: ToolDefinition[] = [
     defaults: { model: "Apollo", H264_output: true },
   },
   {
-    id: "video.heygen.presenter",
-    displayName: "Studio Avatar · presenter",
-    description: "Use chat to approve a presenter video with recorded face and voice consent",
-    category: "video",
-    providerId: "heygen",
-    toolName: "create_avatar_video",
-    inputPorts: [{ id: "script", label: "Script", dataType: "text", targetField: "script" }],
-    outputPorts: [{ id: "video", label: "Video", dataType: "video" }],
-    primaryFields: ["avatar_id", "voice_id", "script", "audio_url", "language", "duration_seconds",
-      "subjects", "consent_confirmed", "consent_record_id", "resolution", "aspect_ratio"],
-    pollTool: "get_video_status",
-    pollIntervalMs: 10000,
-    defaults: { model: "avatar_v", resolution: "1080p", aspect_ratio: "16:9" },
-  },
-  {
-    id: "runway.performance.transfer",
-    displayName: "Act-Two performance",
-    category: "video",
-    providerId: "runway",
-    toolName: "act_two",
-    inputPorts: [
-      { id: "character", label: "Character", dataType: "image", targetField: "character_uri", required: true },
-      { id: "performance", label: "Performance", dataType: "video", targetField: "performance_uri", required: true },
-    ],
-    outputPorts: [{ id: "video", label: "Video", dataType: "video" }],
-    primaryFields: ["character_uri", "character_type", "performance_uri", "performance_duration_seconds",
-      "subjects", "consent_confirmed", "body_control", "expression_intensity", "ratio"],
-    pollTool: "get_runway_task",
-    pollIntervalMs: 5000,
-    defaults: { character_type: "image", ratio: "1280:720", body_control: true, expression_intensity: 3 },
-  },
-  {
     id: "fal.performance.motion",
     displayName: "Studio Video · motion control",
     category: "video",
@@ -125,85 +93,6 @@ const CREATIVE_TOOLS: ToolDefinition[] = [
     pollTool: "get_video_task",
     pollIntervalMs: 5000,
     defaults: { character_orientation: "video", keep_original_sound: true },
-  },
-  {
-    id: "runway.video.generate",
-    displayName: "Studio Video · Cinematic",
-    category: "video",
-    providerId: "runway",
-    toolName: "text_to_video",
-    inputPorts: [
-      { id: "prompt", label: "Prompt", dataType: "text", targetField: "prompt", required: true },
-    ],
-    outputPorts: [{ id: "video", label: "Video", dataType: "video" }],
-    primaryFields: ["prompt", "model", "ratio", "duration_seconds"],
-    pollTool: "get_runway_task",
-    pollIntervalMs: 5000,
-    defaults: {"model": "gen4.5", "ratio": "1280:720", "duration_seconds": 5},
-  },
-  {
-    id: "runway.video.fromImage",
-    displayName: "Studio Video · Cinematic from a still",
-    category: "video",
-    providerId: "runway",
-    toolName: "image_to_video",
-    inputPorts: [
-      { id: "image", label: "Image", dataType: "image", targetField: "image_path_or_url", required: true },
-      { id: "prompt", label: "Prompt", dataType: "text", targetField: "prompt", required: true },
-    ],
-    outputPorts: [{ id: "video", label: "Video", dataType: "video" }],
-    primaryFields: ["prompt", "model", "ratio", "duration_seconds", "image_path_or_url"],
-    pollTool: "get_runway_task",
-    pollIntervalMs: 5000,
-    defaults: {"model": "gen4.5", "ratio": "1280:720", "duration_seconds": 5},
-  },
-  {
-    id: "runway.video.edit",
-    displayName: "Studio Video · Cinematic edit",
-    category: "video",
-    providerId: "runway",
-    toolName: "video_to_video",
-    inputPorts: [
-      { id: "video", label: "Video", dataType: "video", targetField: "video_path_or_url", required: true },
-      { id: "prompt", label: "Prompt", dataType: "text", targetField: "prompt", required: true },
-      { id: "reference", label: "Guidance image", dataType: "image", targetField: "reference_image_path_or_url" },
-    ],
-    outputPorts: [{ id: "video", label: "Video", dataType: "video" }],
-    primaryFields: ["prompt", "model", "video_path_or_url", "video_duration_seconds", "reference_image_path_or_url", "reference_seconds"],
-    pollTool: "get_runway_task",
-    pollIntervalMs: 5000,
-    defaults: {"model": "aleph2"},
-  },
-  {
-    id: "runway.image.generate",
-    displayName: "Studio Image · Cinematic",
-    category: "image",
-    providerId: "runway",
-    toolName: "text_to_image",
-    inputPorts: [
-      { id: "prompt", label: "Prompt", dataType: "text", targetField: "prompt", required: true },
-    ],
-    outputPorts: [{ id: "image", label: "Image", dataType: "image" }],
-    primaryFields: ["prompt", "model", "ratio"],
-    pollTool: "get_runway_task",
-    pollIntervalMs: 5000,
-    defaults: {"model": "gen4_image", "ratio": "1280:720"},
-  },
-  {
-    id: "runway.image.edit",
-    displayName: "Studio Image · Cinematic from references",
-    category: "image",
-    providerId: "runway",
-    toolName: "image_to_image",
-    inputPorts: [
-      { id: "image", label: "Image", dataType: "image", targetField: "image_path_or_url", required: true },
-      { id: "prompt", label: "Prompt", dataType: "text", targetField: "prompt", required: true },
-    ],
-    outputPorts: [{ id: "image", label: "Image", dataType: "image" }],
-    primaryFields: ["prompt", "model", "ratio", "image_path_or_url"],
-    pollTool: "get_runway_task",
-    pollIntervalMs: 5000,
-    defaults: {"model": "gen4_image", "ratio": "1280:720"},
   },
   {
     id: "video.falGenerate",
@@ -259,92 +148,6 @@ const CREATIVE_TOOLS: ToolDefinition[] = [
     primaryFields: ["prompt", "reference_image_urls", "reference_video_urls", "reference_audio_urls", "duration", "resolution", "audio", "real_face_refs", "likeness_consent"],
     pollTool: "get_video_task",
     defaults: { resolution: "1080p", aspect_ratio: "adaptive", duration: 5, audio: true },
-  },
-  {
-    id: "video.wan3.edit",
-    displayName: "Studio Video · edit footage",
-    description: "Edit existing footage with Studio Video",
-    category: "video",
-    providerId: "alibaba_modelstudio",
-    toolName: "edit_wan3_video",
-    inputPorts: [
-      { id: "video", label: "Source video", dataType: "video", targetField: "video_url", required: true },
-      { id: "prompt", label: "Edit instruction", dataType: "text", targetField: "prompt", required: true },
-    ],
-    outputPorts: [{ id: "video", label: "Video", dataType: "video" }],
-    primaryFields: ["prompt", "video_url", "source_duration_seconds", "source_fps", "duration", "resolution", "audio", "real_face_refs", "likeness_consent"],
-    pollTool: "get_task",
-    pollIntervalMs: 15000,
-    defaults: { resolution: "1080p", aspect_ratio: "adaptive", duration: -1, audio: true },
-  },
-  {
-    id: "video.wan3.extend",
-    displayName: "Studio Video · extend footage",
-    description: "Continue existing footage with Studio Video",
-    category: "video",
-    providerId: "alibaba_modelstudio",
-    toolName: "extend_wan3_video",
-    inputPorts: [
-      { id: "video", label: "Source video", dataType: "video", targetField: "video_url", required: true },
-      { id: "prompt", label: "Continuation", dataType: "text", targetField: "prompt", required: true },
-    ],
-    outputPorts: [{ id: "video", label: "Video", dataType: "video" }],
-    primaryFields: ["prompt", "video_url", "source_duration_seconds", "source_fps", "duration", "direction", "resolution", "audio", "real_face_refs", "likeness_consent"],
-    pollTool: "get_task",
-    pollIntervalMs: 15000,
-    defaults: { resolution: "1080p", aspect_ratio: "adaptive", duration: -1, audio: true, direction: "forward" },
-  },
-  {
-    id: "video.luma.generate",
-    displayName: "Studio Video · Cinematic Plus",
-    description: "Generate a Ray 3.2 clip from a prompt",
-    category: "video",
-    providerId: "luma",
-    toolName: "text_to_video",
-    inputPorts: [{ id: "prompt", label: "Prompt", dataType: "text", targetField: "prompt", required: true }],
-    outputPorts: [{ id: "video", label: "Video", dataType: "video" }],
-    primaryFields: ["prompt", "model", "aspect_ratio", "duration_seconds", "resolution"],
-    pollTool: "get_video_task",
-  },
-  {
-    id: "video.luma.fromImage",
-    displayName: "Studio Video · Cinematic Plus from a still",
-    category: "video",
-    providerId: "luma",
-    toolName: "image_to_video",
-    inputPorts: [
-      { id: "image", label: "Start image", dataType: "image", targetField: "image_path_or_url" },
-      { id: "endImage", label: "End image", dataType: "image", targetField: "last_frame_path_or_url" },
-      { id: "prompt", label: "Prompt", dataType: "text", targetField: "prompt", required: true },
-    ],
-    outputPorts: [{ id: "video", label: "Video", dataType: "video" }],
-    primaryFields: ["prompt", "model", "aspect_ratio", "resolution", "image_path_or_url", "last_frame_path_or_url"],
-    pollTool: "get_video_task",
-  },
-  {
-    id: "video.luma.modify",
-    displayName: "Studio Video · modify clip",
-    category: "video",
-    providerId: "luma",
-    toolName: "modify_video",
-    inputPorts: [
-      { id: "video", label: "Source video", dataType: "video", targetField: "video_path_or_url" },
-      { id: "prompt", label: "Prompt", dataType: "text", targetField: "prompt", required: true },
-    ],
-    outputPorts: [{ id: "video", label: "Video", dataType: "video" }],
-    primaryFields: ["prompt", "model", "video_path_or_url", "source_generation_id", "source_duration_seconds", "resolution", "strength"],
-    pollTool: "get_video_task",
-  },
-  {
-    id: "video.luma.extend",
-    displayName: "Studio Video · extend clip",
-    category: "video",
-    providerId: "luma",
-    toolName: "extend_video",
-    inputPorts: [{ id: "prompt", label: "Prompt", dataType: "text", targetField: "prompt", required: true }],
-    outputPorts: [{ id: "video", label: "Video", dataType: "video" }],
-    primaryFields: ["prompt", "model", "generation_id", "direction", "resolution"],
-    pollTool: "get_video_task",
   },
   {
     id: "openai.image.generate",
@@ -561,21 +364,18 @@ export function toolForAgentArtifact(
   // agent used an input asset or a composition tool, placing the result must
   // not create an invisible dependency on another artifact in the run.
   const provider = `${event?.provider || ""} ${event?.name || ""} ${event?.providerJobId || ""}`.toLowerCase();
+  if (/runway|heygen|luma|modelstudio|footage.?memory/.test(provider)) return undefined;
   if (provider.includes('reference_shots') || provider.includes('reference___')) return undefined;
   if (provider.includes("logo") || provider.includes("remotion") || provider.includes("ffmpeg") || provider.includes("footage_memory") || provider.includes("footagememory") || provider.includes("lottie")) return undefined;
   if (provider.includes("pixelcut") || provider.includes("pixverse")) return undefined;
-  const runway = provider.includes("runway");
   if (kind === "image") {
     if (provider.includes("ideogram")) return toolById("image.ideogram.edit");
     if (provider.includes("recraft")) return toolById("image.recraft.vector");
-    return toolById(runway ? "runway.image.generate" : provider.includes("seedream") ? "image.generate" : "openai.image.generate");
+    return toolById(provider.includes("seedream") ? "image.generate" : "openai.image.generate");
   }
   if (kind === "video") {
     return toolById(
-      provider.includes("heygen") ? "video.heygen.presenter"
-        : runway ? "runway.video.generate"
-        : provider.includes("luma") ? "video.luma.generate"
-        : provider.includes("generate_wan3") ? "video.wan3.generate"
+      provider.includes("generate_wan3") ? "video.wan3.generate"
         : provider.includes("fal") ? "video.falGenerate"
         : provider.includes("seedance") ? "video.generate"
         : "video.wan3.generate",

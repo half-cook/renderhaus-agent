@@ -306,7 +306,7 @@ class StudioCodexTests(unittest.IsolatedAsyncioTestCase):
             mcp_servers=[gateway],
         )
         self.assertEqual(gateway.calls, [])
-        self.assertEqual([r["status"] for r in harness.results], ["failed", "failed"])
+        self.assertEqual([r["status"] for r in harness.results], ["not_run", "failed"])
 
     async def test_gateway_search_unlocks_only_returned_tools(self):
         server = GatewayMCPServer({"url": "https://gateway.example"}, name="gateway")

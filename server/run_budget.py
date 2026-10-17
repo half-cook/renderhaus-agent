@@ -391,14 +391,8 @@ def work_reserved_cents(connection: sqlite3.Connection, run_id: str) -> int:
 
 
 def spendable_cents(connection: sqlite3.Connection, user_id: str, today: str) -> int:
-    """Daily allowance remaining plus wallet balance (what charge_usage can draw on)."""
-    sub = connection.execute("SELECT * FROM subscriptions WHERE user_id = ?", (user_id,)).fetchone()
-    daily = 0
-    if sub and sub["status"] == "active":
-        used = sub["daily_allowance_used_cents"] if sub["daily_allowance_reset_date"] == today else 0
-        daily = max(0, sub["daily_allowance_cents"] - used)
     row = connection.execute("SELECT balance_cents FROM accounts WHERE user_id = ?", (user_id,)).fetchone()
-    return daily + (int(row[0]) if row else 0)
+    return int(row[0]) if row else 0
 
 
 def reserved_cents(connection: sqlite3.Connection, user_id: str, *, exclude_run: str | None = None) -> int:
@@ -527,23 +521,18 @@ def insufficient_credit_payload(
     floor_cents: int | None = None,
 ) -> dict[str, Any]:
     """floor_cents: lowest acceptable cap when it is below the estimate (an up-to step stops at its cap)."""
-    from server.launch_flags import topups_enabled
-
     extra_needed = max(0, estimate_cents - held_cents)
     can_lower = available_cents + held_cents
-    topups = topups_enabled()
     return {
         "type": "insufficient_credit",
         "reason": "insufficient_credit",
         "approve_enabled": False,
-        "message": "Not enough credit for this cap." if topups else "You've used your beta credit. Top-ups are coming soon.",
+        "message": "Not enough credit for this cap.",
         "balance_cents": available_cents,
         "estimate_cents": estimate_cents,
         "cap_cents": cap_cents,
         "lower_cap_option_cents": can_lower if can_lower >= (estimate_cents if floor_cents is None else floor_cents)
                                   and can_lower < cap_cents else None,
-        "add_credit": topups,
-        "topups_available": topups,
         "shortfall_cents": max(0, cap_cents - held_cents - available_cents),
         "minimum_needed_cents": extra_needed,
     }

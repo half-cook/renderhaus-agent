@@ -47,16 +47,6 @@ class DropPyAVPackageTests(unittest.TestCase):
     def test_clean_lambda_package_passes(self) -> None:
         ci_check.validate_lambda_zip(package())
 
-    def test_footage_data_cannot_be_omitted_from_lambda_package(self) -> None:
-        for resource in ('sql/001_core.sql', 'sql/002_segment_edit.sql', 'fixtures.json', 'NOTICE.md'):
-            with self.subTest(resource=resource):
-                output = io.BytesIO()
-                with zipfile.ZipFile(io.BytesIO(package())) as source, zipfile.ZipFile(output, 'w') as target:
-                    for item in source.infolist():
-                        if item.filename != 'providers/footage_memory/' + resource:
-                            target.writestr(item, source.read(item))
-                with self.assertRaisesRegex(AssertionError, 'missing footage memory'):
-                    ci_check.validate_lambda_zip(output.getvalue())
 
     def test_delivery_presets_cannot_be_omitted_from_the_lambda_package(self) -> None:
         output = io.BytesIO()

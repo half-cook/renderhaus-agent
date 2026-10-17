@@ -105,14 +105,11 @@ class ViduRoutingTests(unittest.TestCase):
 
     def test_q4_provenance_never_enters_training(self):
         from agent.deep_agent.outcomes import OutcomeStore
-        from agent.deep_agent.continuity_qc import training_loop_hook
 
         for model in (I2V_MODEL, R2V_MODEL):
             asset = {"provider": "fal", "model": model, "status": "succeeded",
                      "training_eligible": True, "weights_license": "Apache-2.0", "version_id": "owned"}
             self.assertFalse(routing.training_eligible(asset))
-            with self.assertRaises(ValueError):
-                training_loop_hook([asset], lambda _: self.fail("Training consumer called"))
             with tempfile.TemporaryDirectory() as directory:
                 row = OutcomeStore(Path(directory)).record(event_id="q4", provider="fal", model=model,
                     job_type="i2v", outcome="accepted", stage="review", asset=asset)

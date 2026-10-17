@@ -6,14 +6,10 @@
     "review_drama_outline",
     "validate_drama_episode",
     "get_video_task",
-    "get_runway_task",
     "get_render_progress",
     "query_music_task",
     "get_music_task",
-    "list_kling_models",
-    "list_runway_models",
     "list_fal_models",
-    "list_luma_models",
     "list_seedance_models",
     "list_seedream_models",
     "list_voices",
@@ -21,23 +17,14 @@
     "export_nle_timeline",
     "prepare_conversational_edit",
     "get_task",
-    "get_video_status",
-    "list_avatars",
     "list_topaz_models",
     "list_mureka_models",
     "import_nle_timeline",
     "ffmpeg_tool",
     "deliver_render",
     "qc_deliverable",
-    "get_voice_status",
-    "transcribe_video",
-    "get_transcription",
-    "get_dialogue_edit",
     "motion_carry_probe",
     "shot_recipe_search",
-    "footage_memory_status",
-    "footage_memory_query",
-    "footage_clip_extract",
     "lottie_author",
     "lottie_validate",
     "lottie_preview_render",
@@ -45,113 +32,6 @@
     "shot_breakdown"
   ],
   "providers": {
-    "kling": {
-      "enabled": true,
-      "license": "service-terms",
-      "allowed_regions": [],
-      "training_eligible": false,
-      "models": [
-        "kling-3.0",
-        "kling-3.0-turbo",
-        "kling-3.0-omni"
-      ],
-      "default_models": {
-        "text_to_video": "kling-3.0",
-        "image_to_video": "kling-3.0",
-        "omni_video": "kling-3.0-omni"
-      },
-      "model_env": "KLING_MODEL",
-      "model_policies": {
-        "kling-3.0": {
-          "license": "service-terms",
-          "training_eligible": false,
-          "allowed_regions": [],
-          "explicit_only": true
-        },
-        "kling-3.0-turbo": {
-          "license": "service-terms",
-          "training_eligible": false,
-          "allowed_regions": [],
-          "explicit_only": true
-        },
-        "kling-3.0-omni": {
-          "license": "service-terms",
-          "training_eligible": false,
-          "allowed_regions": [],
-          "explicit_only": true
-        }
-      },
-      "explicit_only": true,
-      "host": "Kling direct",
-      "us_available": "unclear",
-      "availability_source": "https://app.klingai.com/global/docs",
-      "availability_note": "Direct region eligibility unverified; pending motion exception uses fal.",
-      "read_date": "2026-10-08"
-    },
-    "runway": {
-      "enabled": true,
-      "license": "service-terms",
-      "allowed_regions": [],
-      "training_eligible": false,
-      "models": [
-        "gen4.5",
-        "aleph2",
-        "gen4_image",
-        "gen4_image_turbo",
-        "act_two"
-      ],
-      "default_models": {
-        "text_to_video": "gen4.5",
-        "image_to_video": "gen4.5",
-        "video_to_video": "aleph2",
-        "text_to_image": "gen4_image",
-        "image_to_image": "gen4_image",
-        "act_two": "act_two"
-      },
-      "model_policies": {
-        "gen4.5": {
-          "license": "service-terms",
-          "training_eligible": false,
-          "allowed_regions": [],
-          "explicit_only": true
-        },
-        "aleph2": {
-          "license": "service-terms",
-          "training_eligible": false,
-          "allowed_regions": [],
-          "explicit_only": true
-        },
-        "gen4_image": {
-          "license": "service-terms",
-          "training_eligible": false,
-          "allowed_regions": [],
-          "explicit_only": true
-        },
-        "gen4_image_turbo": {
-          "license": "service-terms",
-          "training_eligible": false,
-          "allowed_regions": [],
-          "explicit_only": true
-        },
-        "act_two": {
-          "license": "service-terms",
-          "license_source": "https://runway.com/terms-of-use",
-          "training_eligible": false,
-          "training_reason": "Runway Terms section 5(viii) restricts using outputs to train similar or competitive products.",
-          "commercial_status": "commercial API; input rights and likeness consent required",
-          "read_date": "2026-10-09",
-          "consent_requirements": "subjects and consent_confirmed=true for every face, voice and body",
-          "weights_license": "closed-weights",
-          "enabled": true
-        }
-      },
-      "explicit_only": true,
-      "host": "Runway direct",
-      "us_available": "yes",
-      "availability_source": "https://runway.com/terms-of-use",
-      "availability_note": "Services offered from US facilities.",
-      "read_date": "2026-10-08"
-    },
     "seedance": {
       "enabled": true,
       "license": "service-terms",
@@ -635,94 +515,6 @@
       "availability_note": "US access inferred from service terms; model-specific guarantee not published.",
       "read_date": "2026-10-08"
     },
-    "minimax_h3": {
-      "enabled": false,
-      "license": "review-required",
-      "allowed_regions": [],
-      "blocked_regions": [
-        "US"
-      ],
-      "training_eligible": false
-    },
-    "hunyuan": {
-      "enabled": false,
-      "license": "review-required",
-      "allowed_regions": [],
-      "blocked_regions": [
-        "US"
-      ],
-      "training_eligible": false
-    },
-    "luma": {
-      "enabled": true,
-      "license": "service-terms",
-      "allowed_regions": [],
-      "training_eligible": false,
-      "models": [
-        "ray-3.2"
-      ],
-      "default_model": "ray-3.2",
-      "model_policies": {
-        "ray-3.2": {
-          "license": "service-terms",
-          "training_eligible": false,
-          "allowed_regions": [],
-          "explicit_only": true
-        }
-      },
-      "explicit_only": true
-    },
-    "veo": {
-      "enabled": false,
-      "license": "review-required",
-      "allowed_regions": [],
-      "blocked_regions": [
-        "US"
-      ],
-      "training_eligible": false
-    },
-    "hyperframes": {
-      "enabled": true,
-      "license": "Apache-2.0",
-      "allowed_regions": [],
-      "training_eligible": false
-    },
-    "alibaba_modelstudio": {
-      "enabled": true,
-      "explicit_only": true,
-      "license": "service-terms",
-      "allowed_regions": [],
-      "training_eligible": false,
-      "models": [
-        "wan3.0-video"
-      ],
-      "model_env": "DASHSCOPE_MODEL",
-      "default_model": "wan3.0-video",
-      "default_models": {
-        "edit_wan3_video": "wan3.0-video",
-        "extend_wan3_video": "wan3.0-video"
-      },
-      "model_policies": {
-        "wan3.0-video": {
-          "enabled": true,
-          "explicit_only": true,
-          "license": "service-terms",
-          "weights_license": "closed-weights",
-          "license_source": "https://www.alibabacloud.com/help/en/legal/latest/alibaba-cloud-international-website-product-terms-of-service-v-3-8-0",
-          "license_read_date": "2026-10-09",
-          "commercial_use": "blocked: preview terms 1.1 allow only internal testing, research and evaluation",
-          "training_eligible": false,
-          "training_reason": "Output use for competing model training is restricted; no clear permission for Renderhaus continuity training.",
-          "consent_required": true,
-          "consent_source": "https://www.alibabacloud.com/help/en/legal/latest/alibaba-cloud-international-website-product-terms-of-service-v-3-8-0",
-          "verification": "Official US workspace video API verified; legacy US synthesis POST UNVERIFIED.",
-          "preview_terms_source": "https://www.alibabacloud.com/help/en/legal/latest/alibaba-cloud-international-website-beta-testing-terms",
-          "preview_terms_read_date": "2026-10-09",
-          "live_enabled": false,
-          "live_block_reason": "Preview licence does not permit customer production use; additional commercial rights unverified."
-        }
-      }
-    },
     "openai_images": {
       "enabled": true,
       "license": "service-terms",
@@ -776,9 +568,7 @@
       "default_model": "sync-3",
       "model_env": "SYNC_MODEL",
       "default_models": {
-        "lipsync_video": "sync-3",
-        "create_dialogue_video": "sync-3",
-        "create_dialogue_edit": "sync-3"
+        "lipsync_video": "sync-3"
       },
       "model_policies": {
         "sync-3": {
@@ -786,69 +576,15 @@
           "weights_license": "closed-weights",
           "training_eligible": false,
           "enabled": true,
-          "commercial_status": "fal commercial API; direct requires express written permission for competitor/customer integration restrictions",
+          "commercial_status": "fal commercial hosted API; source rights and face/voice consent required.",
           "license_source": "https://fal.ai/legal/api-services",
           "consent_requirements": "Required subjects and consent_confirmed=true for every real face and voice.",
           "consent_source": "https://sync.so/terms",
           "training_reason": "No clear output-training grant; fal competing-model restriction. Sync upload-use grant includes service improvement.",
-          "read_date": "2026-10-09",
-          "dialogue_license_source": "https://sync.so/terms",
-          "dialogue_read_date": "2026-10-10",
-          "dialogue_commercial_status": "Direct Sync only; express written authorization required for competitor/customer integration restrictions"
+          "read_date": "2026-10-09"
         }
       },
       "explicit_only": false
-    },
-    "heygen": {
-      "enabled": true,
-      "license": "service-terms",
-      "training_eligible": false,
-      "allowed_regions": [],
-      "models": [
-        "avatar_v",
-        "heygen-voice-1"
-      ],
-      "default_model": "avatar_v",
-      "model_env": "HEYGEN_MODEL",
-      "default_models": {
-        "create_avatar_video": "avatar_v"
-      },
-      "model_policies": {
-        "avatar_v": {
-          "license": "service-terms",
-          "weights_license": "closed-weights",
-          "license_source": "https://www.heygen.com/terms",
-          "enabled": true,
-          "training_eligible": false,
-          "training_reason": "Renderhaus continuity training only accepts approved Apache Wan assets. No model-specific training grant is relied on.",
-          "commercial_status": "Paid API account required; Free Plan outputs are non-commercial and blocked live.",
-          "consent_requirements": "subjects, consent_confirmed=true and opaque consent_record_id required for every face and voice. Live digital-twin group must have accepted HeyGen recorded consent.",
-          "consent_source": "https://developers.heygen.com/docs/avatar-consent",
-          "vendor_trains_on_uploads": "Non-enterprise may train unless opted out; enterprise data excluded per trust-and-safety.",
-          "training_source": "https://www.heygen.com/privacy",
-          "read_date": "2026-10-09"
-        },
-        "heygen-voice-1": {
-          "license": "service-terms",
-          "weights_license": "closed-weights",
-          "license_source": "https://www.heygen.com/terms",
-          "enabled": true,
-          "training_eligible": false,
-          "training_reason": "No model-specific grant for Renderhaus training verified.",
-          "commercial_status": "Paid API terms permit commercial outputs; free-plan use blocked. Live Voice activation remains blocked.",
-          "consent_requirements": "Named subjects, consent_confirmed=true and consent_record_id required before cloning. Handles scoped to authenticated account and project.",
-          "vendor_trains_on_uploads": "Terms permit training on uploaded content. Voice-specific no-training agreement UNVERIFIED.",
-          "training_source": "https://www.heygen.com/privacy",
-          "read_date": "2026-10-09",
-          "live_blocked": true
-        }
-      },
-      "explicit_only": false,
-      "host": "HeyGen direct",
-      "us_available": "yes",
-      "availability_source": "https://www.heygen.com/terms",
-      "availability_note": "US-hosted company; no US exclusion in published service terms. Account access not tested.",
-      "read_date": "2026-10-09"
     },
     "topaz": {
       "enabled": true,
@@ -1035,32 +771,6 @@
         }
       }
     },
-    "footage_memory": {
-      "license": "service-terms",
-      "license_id": "proprietary-api-terms",
-      "license_source": "https://ai.google.dev/gemini-api/terms",
-      "read_date": "2026-10-10",
-      "training_eligible": false,
-      "training_reason": "Retrieval and source footage do not grant media training rights. Hosted model terms do not clearly allow competing-model training.",
-      "commercial_status": "Offline memory tools; all understanding backends mocked on this branch. No live service or weights added.",
-      "enabled": true,
-      "allowed_regions": [],
-      "default_model": "footage-memory-dry",
-      "models": [
-        "footage-memory-dry"
-      ],
-      "model_policies": {
-        "footage-memory-dry": {
-          "license": "service-terms",
-          "license_id": "proprietary-api-terms",
-          "license_source": "https://ai.google.dev/gemini-api/terms",
-          "read_date": "2026-10-10",
-          "training_eligible": false,
-          "training_reason": "Retrieval and source footage do not grant media training rights. Hosted model terms do not clearly allow competing-model training.",
-          "commercial_status": "Offline memory tools; all understanding backends mocked on this branch. No live service or weights added."
-        }
-      }
-    },
     "lottie": {
       "license": "MIT pattern attribution; in-house local tools",
       "license_id": "MIT",
@@ -1156,30 +866,6 @@
     }
   },
   "tools": {
-    "kling_t2v": {
-      "gateway_tool": "Kling___text_to_video",
-      "skill": "t2v",
-      "status": "ready",
-      "explicit_only": true
-    },
-    "kling_i2v": {
-      "gateway_tool": "Kling___image_to_video",
-      "skill": "i2v",
-      "status": "ready",
-      "explicit_only": true
-    },
-    "runway_gen45_t2v": {
-      "gateway_tool": "Runway___text_to_video",
-      "skill": "t2v",
-      "status": "ready",
-      "explicit_only": true
-    },
-    "runway_aleph_edit": {
-      "gateway_tool": "Runway___video_to_video",
-      "skill": "edit-v2v",
-      "status": "ready",
-      "explicit_only": true
-    },
     "wan_t2v": {
       "gateway_tool": "Fal___text_to_video",
       "skill": "t2v",
@@ -1267,87 +953,6 @@
       "skill": "resolve-handoff",
       "status": "ready"
     },
-    "local_qc": {
-      "gateway_tool": null,
-      "skill": "continuity-qc",
-      "status": "ready",
-      "host": "existing RunPod worker / local",
-      "us_available": "yes",
-      "availability_source": "https://github.com/facebookresearch/dinov2/blob/main/LICENSE",
-      "read_date": "2026-10-08",
-      "training_eligible": false,
-      "license": "Apache-2.0 weights/model metadata, DINOv2 Apache-2.0 code",
-      "license_source": "https://huggingface.co/facebook/dinov2-base",
-      "training_reason": "Retain existing QC policy; model licence alone does not authorize training on user source media.",
-      "source": "https://huggingface.co/google/siglip-so400m-patch14-384",
-      "price_source": "https://huggingface.co/facebook/dinov2-base",
-      "verification": "official upstream model families verified; deployed config unchanged"
-    },
-    "runway_act_two": {
-      "gateway_tool": "Runway___act_two",
-      "status": "ready",
-      "provider": "runway",
-      "reason": "Built performance transfer; dry-run by default",
-      "verification": "Official endpoint and schema verified; live account/API and browser behavior unverified",
-      "training_eligible": false,
-      "model": "act_two",
-      "host": "Runway direct",
-      "us_available": "yes",
-      "availability_source": "https://runway.com/terms-of-use",
-      "read_date": "2026-10-09",
-      "license": "Runway Terms proprietary API; commercial use allowed; competing product training restricted.",
-      "license_source": "https://runway.com/terms-of-use",
-      "training_reason": "Runway Terms section 5(viii) restricts using outputs to train similar or competitive products.",
-      "source": "https://docs.dev.runwayml.com/api/",
-      "price_source": "https://docs.dev.runwayml.com/guides/pricing/",
-      "dry_run": true,
-      "consent_requirements": "subjects and consent_confirmed=true for every face, voice and body"
-    },
-    "luma_ray3_t2v": {
-      "gateway_tool": "Luma___text_to_video",
-      "skill": "t2v",
-      "status": "ready",
-      "explicit_only": true
-    },
-    "luma_ray3_modify": {
-      "gateway_tool": "Luma___modify_video",
-      "skill": "edit-v2v",
-      "status": "ready",
-      "explicit_only": true
-    },
-    "hedra_character3": {
-      "gateway_tool": null,
-      "status": "retired",
-      "reason": "retired: hedra_character3; not adopted by quality-first capability map"
-    },
-    "latentsync_lipsync": {
-      "gateway_tool": null,
-      "status": "retired",
-      "reason": "retired: latentsync_lipsync; non-commercial InsightFace dependency",
-      "license_source": "https://github.com/deepinsight/insightface",
-      "read_date": "2026-10-09",
-      "training_eligible": false
-    },
-    "liveportrait_lipsync": {
-      "gateway_tool": null,
-      "status": "retired",
-      "reason": "retired: liveportrait_lipsync; non-commercial InsightFace dependency"
-    },
-    "infinitetalk_lipsync": {
-      "gateway_tool": null,
-      "status": "retired",
-      "reason": "retired: infinitetalk_lipsync; not adopted by quality-first capability map"
-    },
-    "seedvr2_upscale": {
-      "gateway_tool": null,
-      "status": "retired",
-      "reason": "retired: seedvr2_upscale; not adopted by quality-first capability map"
-    },
-    "rife_interpolate": {
-      "gateway_tool": null,
-      "status": "retired",
-      "reason": "retired: rife_interpolate; not adopted by quality-first capability map"
-    },
     "topaz_upscale": {
       "gateway_tool": "Topaz___upscale_video",
       "status": "ready",
@@ -1368,77 +973,6 @@
       "dry_run": true,
       "endpoint": "topaz/upscale/video/generative"
     },
-    "mmaudio_sfx": {
-      "gateway_tool": null,
-      "status": "retired",
-      "reason": "retired: mmaudio_sfx; CC-BY-NC weights block commercial use"
-    },
-    "ace_step_music": {
-      "gateway_tool": null,
-      "status": "retired",
-      "reason": "retired: ace_step_music; not adopted by quality-first capability map"
-    },
-    "veo_t2v": {
-      "gateway_tool": null,
-      "status": "retired",
-      "reason": "retired: veo_t2v; not adopted by quality-first capability map"
-    },
-    "veo_i2v": {
-      "gateway_tool": null,
-      "status": "retired",
-      "reason": "retired: veo_i2v; not adopted by quality-first capability map"
-    },
-    "veo_extend": {
-      "gateway_tool": null,
-      "status": "retired",
-      "reason": "retired: veo_extend; not adopted by quality-first capability map"
-    },
-    "ideogram_t2i": {
-      "gateway_tool": null,
-      "status": "retired",
-      "reason": "retired: use gpt_image25_t2i",
-      "replacement": "gpt_image25_t2i"
-    },
-    "recraft_t2i": {
-      "gateway_tool": null,
-      "status": "retired",
-      "reason": "retired: use recraft_v41_vector",
-      "replacement": "recraft_v41_vector"
-    },
-    "runway_gen4_t2i": {
-      "gateway_tool": "Runway___text_to_image",
-      "skill": "product-images",
-      "status": "ready",
-      "explicit_only": true
-    },
-    "runway_i2v": {
-      "gateway_tool": "Runway___image_to_video",
-      "skill": "i2v",
-      "status": "ready",
-      "explicit_only": true
-    },
-    "minimax_h3_t2v": {
-      "gateway_tool": null,
-      "status": "blocked",
-      "reason": "Provider MiniMax H3 is blocked by default in routing_policy.json."
-    },
-    "hunyuan_t2v": {
-      "gateway_tool": null,
-      "status": "blocked",
-      "reason": "Provider Hunyuan is blocked by default in routing_policy.json."
-    },
-    "luma_ray3_i2v": {
-      "gateway_tool": "Luma___image_to_video",
-      "skill": "i2v",
-      "status": "ready",
-      "explicit_only": true
-    },
-    "luma_ray3_extend": {
-      "gateway_tool": "Luma___extend_video",
-      "skill": "t2v",
-      "status": "ready",
-      "explicit_only": true
-    },
     "vidu_q4_i2v": {
       "gateway_tool": "Fal___vidu_q4_i2v",
       "skill": "named-provider",
@@ -1455,27 +989,6 @@
       "gateway_tool": "Remotion___prepare_conversational_edit",
       "skill": "conversational-edit",
       "status": "ready"
-    },
-    "hyperframes_render": {
-      "gateway_tool": "HyperFrames___render_composition",
-      "skill": "hyperframes",
-      "status": "ready",
-      "host": "local dry-run renderer",
-      "us_available": "yes",
-      "availability_source": "https://github.com/heygen-com/hyperframes/blob/main/LICENSE",
-      "read_date": "2026-10-08",
-      "training_eligible": false,
-      "license": "Apache-2.0 code",
-      "license_source": "https://github.com/heygen-com/hyperframes/blob/main/LICENSE",
-      "training_reason": "Code licence does not blanket-authorize source media use.",
-      "source": "https://github.com/heygen-com/hyperframes/blob/main/LICENSE",
-      "price_source": "https://developers.heygen.com/llms.txt",
-      "verification": "built, flag-gated explicit-only"
-    },
-    "conversational_hyperframes_overlay": {
-      "gateway_tool": null,
-      "status": "pending",
-      "reason": "provider pending: HyperFrames overlays (feat/hyperframes-overlays)"
     },
     "wan3_t2v": {
       "gateway_tool": "Fal___generate_wan3_t2v",
@@ -1542,50 +1055,6 @@
       "consent_requirements": "Real-person likeness references require explicit likeness_consent acknowledgement.",
       "consent_source": "https://fal.ai/legal/terms-of-service",
       "consent_verification": "fal terms 6(d) require input rights and consents. Alibaba-specific real-face consent flow UNVERIFIED."
-    },
-    "wan3_edit": {
-      "gateway_tool": "ModelStudio___edit_wan3_video",
-      "status": "ready",
-      "explicit_only": true,
-      "provider": "alibaba_modelstudio",
-      "reason": "Built explicit-only direct adapter; MODELSTUDIO_DRY_RUN defaults true.",
-      "verification": "Official US workspace API verified; legacy dashscope-us synthesis POST UNVERIFIED and blocked live.",
-      "training_eligible": false,
-      "model": "wan3.0-video",
-      "host": "Alibaba Model Studio, US Virginia or Singapore",
-      "us_available": "yes",
-      "availability_source": "https://www.alibabacloud.com/help/en/model-studio/wan3-video-generation-api-reference",
-      "read_date": "2026-10-09",
-      "license": "service-terms",
-      "license_source": "https://www.alibabacloud.com/help/en/legal/latest/alibaba-cloud-international-website-product-terms-of-service-v-3-8-0",
-      "training_reason": "Closed API output training is restricted under service terms.",
-      "source": "https://www.alibabacloud.com/help/en/model-studio/wan3-video-generation-api-reference",
-      "price_source": "https://www.alibabacloud.com/help/en/model-studio/wan3-0-video",
-      "dry_run": true,
-      "live_enabled": false,
-      "live_block_reason": "Preview licence does not permit customer production use; additional commercial rights unverified."
-    },
-    "wan3_extend": {
-      "gateway_tool": "ModelStudio___extend_wan3_video",
-      "status": "ready",
-      "explicit_only": true,
-      "provider": "alibaba_modelstudio",
-      "reason": "Built explicit-only direct adapter; MODELSTUDIO_DRY_RUN defaults true.",
-      "verification": "Official US workspace API verified; legacy dashscope-us synthesis POST UNVERIFIED and blocked live.",
-      "training_eligible": false,
-      "model": "wan3.0-video",
-      "host": "Alibaba Model Studio, US Virginia or Singapore",
-      "us_available": "yes",
-      "availability_source": "https://www.alibabacloud.com/help/en/model-studio/wan3-video-generation-api-reference",
-      "read_date": "2026-10-09",
-      "license": "service-terms",
-      "license_source": "https://www.alibabacloud.com/help/en/legal/latest/alibaba-cloud-international-website-product-terms-of-service-v-3-8-0",
-      "training_reason": "Closed API output training is restricted under service terms.",
-      "source": "https://www.alibabacloud.com/help/en/model-studio/wan3-video-generation-api-reference",
-      "price_source": "https://www.alibabacloud.com/help/en/model-studio/wan3-0-video",
-      "dry_run": true,
-      "live_enabled": false,
-      "live_block_reason": "Preview licence does not permit customer production use; additional commercial rights unverified."
     },
     "seedance25_t2v": {
       "gateway_tool": "Seedance___text_to_video",
@@ -1733,32 +1202,6 @@
         "Sync___create_dialogue_video"
       ]
     },
-    "heygen_avatar_v": {
-      "gateway_tool": "HeyGen___create_avatar_video",
-      "status": "ready",
-      "provider": "heygen",
-      "reason": "Long presenter or digital-twin exception; explicit requests take precedence.",
-      "verification": "Official v3 engine and self-serve $0.12/s verified 2026-10-09; enterprise price unknown; live untested.",
-      "model": "avatar_v",
-      "host": "HeyGen direct",
-      "us_available": "yes",
-      "availability_source": "https://www.heygen.com/terms",
-      "source": "https://developers.heygen.com/avatar-v",
-      "price_source": "https://help.heygen.com/en/articles/10060327-heygen-api-pricing-explained",
-      "dry_run": true,
-      "license": "service-terms",
-      "weights_license": "closed-weights",
-      "license_source": "https://www.heygen.com/terms",
-      "enabled": true,
-      "training_eligible": false,
-      "training_reason": "Renderhaus continuity training only accepts approved Apache Wan assets. No model-specific training grant is relied on.",
-      "commercial_status": "Paid API account required; Free Plan outputs are non-commercial and blocked live.",
-      "consent_requirements": "subjects, consent_confirmed=true and opaque consent_record_id required for every face and voice. Live digital-twin group must have accepted HeyGen recorded consent.",
-      "consent_source": "https://developers.heygen.com/docs/avatar-consent",
-      "vendor_trains_on_uploads": "Non-enterprise may train unless opted out; enterprise data excluded per trust-and-safety.",
-      "training_source": "https://www.heygen.com/privacy",
-      "read_date": "2026-10-09"
-    },
     "kling_motion_control": {
       "gateway_tool": "Fal___kling_motion_control",
       "status": "ready",
@@ -1777,7 +1220,8 @@
       "source": "https://fal.ai/models/fal-ai/kling-video/v3/pro/motion-control/api",
       "price_source": "https://fal.ai/models/fal-ai/kling-video/v3/pro/motion-control",
       "dry_run": true,
-      "consent_requirements": "subjects and consent_confirmed=true for every face, voice and body"
+      "consent_requirements": "subjects and consent_confirmed=true for every face, voice and body",
+      "skill": "named-provider"
     },
     "mureka_v95": {
       "gateway_tool": "Mureka___generate_song",
@@ -1920,15 +1364,7 @@
       "source": "https://ai.google.dev/gemini-api/docs/models/gemini-3.8-flash",
       "price_source": "https://ai.google.dev/gemini-api/docs/pricing",
       "dry_run": true,
-      "skill": "continuity-qc"
-    },
-    "cutaway_record": {
-      "gateway_tool": null,
-      "status": "pending",
-      "provider": "cutaway",
-      "reason": "provider pending: cutaway_record (feat/product-demo-capture)",
-      "verification": "UNVERIFIED: adapter, request schema, endpoint and price must be verified on its provider branch",
-      "training_eligible": false
+      "skill": "named-provider"
     },
     "nle_import": {
       "gateway_tool": "Remotion___import_nle_timeline",
@@ -2038,54 +1474,8 @@
       "price_source": "https://www.remotion.dev/docs/license",
       "verification": "built, not model APIs"
     },
-    "kandinsky6_t2v": {
-      "gateway_tool": null,
-      "status": "retired",
-      "reason": "retired: kandinsky6_t2v; not adopted by quality-first capability map"
-    },
-    "kandinsky6_i2v": {
-      "gateway_tool": null,
-      "status": "retired",
-      "reason": "retired: kandinsky6_i2v; not adopted by quality-first capability map"
-    },
-    "heygen_video_t2v": {
-      "gateway_tool": null,
-      "status": "retired",
-      "reason": "retired: heygen_video_t2v; not adopted by quality-first capability map"
-    },
-    "heygen_video_i2v": {
-      "gateway_tool": null,
-      "status": "retired",
-      "reason": "retired: heygen_video_i2v; not adopted by quality-first capability map"
-    },
-    "fframes_render": {
-      "gateway_tool": null,
-      "status": "retired",
-      "reason": "retired: fframes_render; not adopted by quality-first capability map"
-    },
-    "grok_imagine_t2v": {
-      "gateway_tool": null,
-      "status": "retired",
-      "reason": "retired: grok_imagine_t2v; not adopted by quality-first capability map"
-    },
-    "grok_imagine_i2v": {
-      "gateway_tool": null,
-      "status": "retired",
-      "reason": "retired: grok_imagine_i2v; not adopted by quality-first capability map"
-    },
     "wan_reference": {
       "gateway_tool": "Fal___reference_to_video",
-      "status": "ready",
-      "explicit_only": true
-    },
-    "runway_gen4_edit": {
-      "gateway_tool": "Runway___image_to_image",
-      "status": "ready",
-      "explicit_only": true
-    },
-    "kling_omni": {
-      "gateway_tool": "Kling___omni_video",
-      "skill": "named-provider",
       "status": "ready",
       "explicit_only": true
     },
@@ -2193,62 +1583,6 @@
       "price_source": "https://ffmpeg.org/legal.html",
       "verification": "Fixed local finishing/QC ops. Offline routing tests do not prove file semantics or browser validation."
     },
-    "heygen_voice_clone": {
-      "gateway_tool": "HeyGen___voice_clone",
-      "status": "ready",
-      "skill": "audio-bed",
-      "provider": "heygen",
-      "model": "heygen-voice-1",
-      "host": "HeyGen direct",
-      "verification": "Instant clone endpoint/schema and TTS model verified. Pricing, comparative-use permission and model-specific US availability UNVERIFIED; dry-run only.",
-      "source": "https://developers.heygen.com/docs/voices/heygen-voice-instant-clone",
-      "price_source": "https://www.heygen.com/api-pricing",
-      "us_available": "UNVERIFIED model-specific account access; no US exclusion found",
-      "availability_source": "https://www.heygen.com/terms",
-      "explicit_only": true,
-      "internal_gate": "HEYGEN_VOICE_AB_GATE=internal and trusted user allowlist",
-      "dry_run": true,
-      "license": "service-terms",
-      "weights_license": "closed-weights",
-      "license_source": "https://www.heygen.com/terms",
-      "enabled": true,
-      "training_eligible": false,
-      "training_reason": "No model-specific grant for Renderhaus training verified.",
-      "commercial_status": "Paid API terms permit commercial outputs; free-plan use blocked. Live Voice activation remains blocked.",
-      "consent_requirements": "Named subjects, consent_confirmed=true and consent_record_id required before cloning. Handles scoped to authenticated account and project.",
-      "vendor_trains_on_uploads": "Terms permit training on uploaded content. Voice-specific no-training agreement UNVERIFIED.",
-      "training_source": "https://www.heygen.com/privacy",
-      "read_date": "2026-10-09",
-      "live_blocked": true
-    },
-    "heygen_voice_tts": {
-      "gateway_tool": "HeyGen___voice_tts",
-      "status": "ready",
-      "skill": "audio-bed",
-      "provider": "heygen",
-      "model": "heygen-voice-1",
-      "host": "HeyGen direct",
-      "verification": "Instant clone endpoint/schema and TTS model verified. Pricing, comparative-use permission and model-specific US availability UNVERIFIED; dry-run only.",
-      "source": "https://developers.heygen.com/docs/voices/heygen-voice-speech",
-      "price_source": "https://www.heygen.com/api-pricing",
-      "us_available": "UNVERIFIED model-specific account access; no US exclusion found",
-      "availability_source": "https://www.heygen.com/terms",
-      "explicit_only": true,
-      "internal_gate": "HEYGEN_VOICE_AB_GATE=internal and trusted user allowlist",
-      "dry_run": true,
-      "license": "service-terms",
-      "weights_license": "closed-weights",
-      "license_source": "https://www.heygen.com/terms",
-      "enabled": true,
-      "training_eligible": false,
-      "training_reason": "No model-specific grant for Renderhaus training verified.",
-      "commercial_status": "Paid API terms permit commercial outputs; free-plan use blocked. Live Voice activation remains blocked.",
-      "consent_requirements": "Named subjects, consent_confirmed=true and consent_record_id required before cloning. Handles scoped to authenticated account and project.",
-      "vendor_trains_on_uploads": "Terms permit training on uploaded content. Voice-specific no-training agreement UNVERIFIED.",
-      "training_source": "https://www.heygen.com/privacy",
-      "read_date": "2026-10-09",
-      "live_blocked": true
-    },
     "pixelcut_looping_video": {
       "gateway_tool": "Fal___pixelcut_looping_video",
       "skill": "named-provider",
@@ -2328,106 +1662,6 @@
       "source": "docs/CINEMATIC_PRODUCT_PROMO.md",
       "price_source": "docs/CINEMATIC_PRODUCT_PROMO.md",
       "verification": "Pure local lexical search and storyboard validation; no network or model calls."
-    },
-    "footage_memory_status": {
-      "license": "service-terms",
-      "license_id": "proprietary-api-terms",
-      "license_source": "https://ai.google.dev/gemini-api/terms",
-      "read_date": "2026-10-10",
-      "training_eligible": false,
-      "training_reason": "Retrieval and source footage do not grant media training rights. Hosted model terms do not clearly allow competing-model training.",
-      "commercial_status": "Offline memory tools; all understanding backends mocked on this branch. No live service or weights added.",
-      "gateway_tool": "FootageMemory___footage_memory_status",
-      "provider": "footage_memory",
-      "model": "footage-memory-dry",
-      "skill": "footage-memory",
-      "status": "ready",
-      "host": "local project storage; mocked understanding",
-      "us_available": "yes (offline only)",
-      "availability_source": "docs/FOOTAGE_MEMORY.md",
-      "source": "docs/FOOTAGE_MEMORY.md",
-      "price_source": "https://ai.google.dev/gemini-api/docs/pricing",
-      "verification": "Offline only. Per-call estimate is configured, default unknown and UNVERIFIED. No live calls or backend promotion."
-    },
-    "footage_memory_build": {
-      "license": "service-terms",
-      "license_id": "proprietary-api-terms",
-      "license_source": "https://ai.google.dev/gemini-api/terms",
-      "read_date": "2026-10-10",
-      "training_eligible": false,
-      "training_reason": "Retrieval and source footage do not grant media training rights. Hosted model terms do not clearly allow competing-model training.",
-      "commercial_status": "Offline memory tools; all understanding backends mocked on this branch. No live service or weights added.",
-      "gateway_tool": "FootageMemory___footage_memory_build",
-      "provider": "footage_memory",
-      "model": "footage-memory-dry",
-      "skill": "footage-memory",
-      "status": "ready",
-      "host": "local project storage; mocked understanding",
-      "us_available": "yes (offline only)",
-      "availability_source": "docs/FOOTAGE_MEMORY.md",
-      "source": "docs/FOOTAGE_MEMORY.md",
-      "price_source": "https://ai.google.dev/gemini-api/docs/pricing",
-      "verification": "Offline only. Per-call estimate is configured, default unknown and UNVERIFIED. No live calls or backend promotion."
-    },
-    "footage_memory_query": {
-      "license": "service-terms",
-      "license_id": "proprietary-api-terms",
-      "license_source": "https://ai.google.dev/gemini-api/terms",
-      "read_date": "2026-10-10",
-      "training_eligible": false,
-      "training_reason": "Retrieval and source footage do not grant media training rights. Hosted model terms do not clearly allow competing-model training.",
-      "commercial_status": "Offline memory tools; all understanding backends mocked on this branch. No live service or weights added.",
-      "gateway_tool": "FootageMemory___footage_memory_query",
-      "provider": "footage_memory",
-      "model": "footage-memory-dry",
-      "skill": "footage-memory",
-      "status": "ready",
-      "host": "local project storage; mocked understanding",
-      "us_available": "yes (offline only)",
-      "availability_source": "docs/FOOTAGE_MEMORY.md",
-      "source": "docs/FOOTAGE_MEMORY.md",
-      "price_source": "https://ai.google.dev/gemini-api/docs/pricing",
-      "verification": "Offline only. Per-call estimate is configured, default unknown and UNVERIFIED. No live calls or backend promotion."
-    },
-    "footage_watch_answer": {
-      "license": "service-terms",
-      "license_id": "proprietary-api-terms",
-      "license_source": "https://ai.google.dev/gemini-api/terms",
-      "read_date": "2026-10-10",
-      "training_eligible": false,
-      "training_reason": "Retrieval and source footage do not grant media training rights. Hosted model terms do not clearly allow competing-model training.",
-      "commercial_status": "Offline memory tools; all understanding backends mocked on this branch. No live service or weights added.",
-      "gateway_tool": "FootageMemory___footage_watch_answer",
-      "provider": "footage_memory",
-      "model": "footage-memory-dry",
-      "skill": "footage-memory",
-      "status": "ready",
-      "host": "local project storage; mocked understanding",
-      "us_available": "yes (offline only)",
-      "availability_source": "docs/FOOTAGE_MEMORY.md",
-      "source": "docs/FOOTAGE_MEMORY.md",
-      "price_source": "https://ai.google.dev/gemini-api/docs/pricing",
-      "verification": "Offline only. Per-call estimate is configured, default unknown and UNVERIFIED. No live calls or backend promotion."
-    },
-    "footage_clip_extract": {
-      "license": "service-terms",
-      "license_id": "proprietary-api-terms",
-      "license_source": "https://ai.google.dev/gemini-api/terms",
-      "read_date": "2026-10-10",
-      "training_eligible": false,
-      "training_reason": "Retrieval and source footage do not grant media training rights. Hosted model terms do not clearly allow competing-model training.",
-      "commercial_status": "Offline memory tools; all understanding backends mocked on this branch. No live service or weights added.",
-      "gateway_tool": "FootageMemory___footage_clip_extract",
-      "provider": "footage_memory",
-      "model": "footage-memory-dry",
-      "skill": "footage-memory",
-      "status": "ready",
-      "host": "local project storage; mocked understanding",
-      "us_available": "yes (offline only)",
-      "availability_source": "docs/FOOTAGE_MEMORY.md",
-      "source": "docs/FOOTAGE_MEMORY.md",
-      "price_source": "https://ai.google.dev/gemini-api/docs/pricing",
-      "verification": "Offline only. Per-call estimate is configured, default unknown and UNVERIFIED. No live calls or backend promotion."
     },
     "elevenlabs_stt": {
       "gateway_tool": "ElevenLabs___speech_to_text_convert",
@@ -2569,6 +1803,17 @@
   },
   "rules": [
     {
+      "skill": "named-provider",
+      "pattern": "\\b(?:gemini|vlm)\\b.*\\b(?:judge|continuity)\\b",
+      "abstract_tool": "gemini_vlm_judge"
+    },
+    {
+      "pattern": "performance capture|acting take|act.two|facial acting|full.body|whole.body|driving video|\\bdance\\b|copy.*motion|motion.control|upper.body.*acting",
+      "skill": "named-provider",
+      "abstract_tool": "kling_motion_control",
+      "capability": "performance_transfer"
+    },
+    {
       "skill": "series-video-planner",
       "pattern": "\\bseries[ -]video[ -]planner\\b|(?=[^.;!?\\n]*\\b(?:non[ -]?fiction|explainers?|educational|science|course|articles?|topics?|tutorials?|documentary|lessons?)\\b)\\b(?:plan|draft|outline|design|develop|split|divide|break|turn|convert|make|create|produce|generate|build)\\b[^.;!?\\n]{0,180}\\b(?:multi[ -]episode|episodic|(?:[2-9]|[1-9]\\d+)[ -](?:parts?|episodes?)|(?:two|three|four|five|six|seven|eight|nine|ten)[ -](?:parts?|episodes?)|series|playlist|anthology|episodes)\\b|(?=[\\s\\S]*(?:\u79d1\u666e|\u77e5\u8bc6|\u8bfe\u7a0b|\u957f\u6587|\u4e07\u5b57|\u4e3b\u9898))(?:\u628a|\u62c6|\u5206\u6210|\u89c4\u5212|\u5236\u4f5c|\u505a|\u521b\u5efa)[^\u3002\uff01\uff1f\\n]{0,180}(?:\u7cfb\u5217|\u5408\u96c6|\u5206\u96c6|\u591a\u96c6|[\u4e8c\u4e09\u56db\u4e94\u516d\u4e03\u516b\u4e5d\u5341]+\u96c6)",
       "exclude_pattern": "\\b(?:short[ -]drama|micro[ -]?dramas?|drama|fiction(?:al)?|novels?)\\b|\u77ed\u5267|\u6f2b\u5267|\u5c0f\u8bf4|\u865a\u6784",
@@ -2632,21 +1877,10 @@
       "abstract_tool": "transcript_edit"
     },
     {
-      "pattern": "\\bfootage[ -]memory\\b|\\bfolder\\b.*\\b(?:clips?|videos?|footage)\\b|\\bfind\\b.*\\b(?:moments?|where|shots?)\\b|\\b(?:what|who|when|where)\\b.*\\b(?:written|whiteboard|speaker|laugh|happens)\\b|\\b(?:several|multiple|many|two|three)\\s+questions?\\b",
-      "skill": "footage-memory",
-      "abstract_tool": "footage_memory_status"
-    },
-    {
       "pattern": "\\bmotion[ -]carry(?:[ -]qc)?\\b|\\bmotion_carry_probe\\b|^(?!.*\\b(?:ai[ -]generated|generative|drone|continuity)\\b).*?(?:\\b(?:slideshow|powerpoint)\\b|\\b(?:no rhythm|jarring transitions)\\b|\\b(?:qc|check|review)\\b.*\\b(?:beats? (?:flow|carry)|carry|rhythm|beat[ -]to[ -]beat)\\b)|^(?!.*\\b(?:ai[ -]generated|generative|drone|continuity)\\b).*?\\b(?:qc|check|review)\\b.*\\b(?:motion[ -]graphics|product[ -]demo|knowledge[ -]explainer|hyperframes)\\b",
       "skill": "motion-carry-qc",
       "abstract_tool": "motion_carry_probe",
       "capability": "motion_carry_qc"
-    },
-    {
-      "pattern": "\\b(?:check|qc|review)\\b.*\\bcontinuity\\b.*\\b(?:shots?|clips?)\\b",
-      "skill": "continuity-qc",
-      "abstract_tool": "local_qc",
-      "capability": "continuity_qc"
     },
     {
       "pattern": "\\bpixverse\\b|\\bvibemv\\b",
@@ -2661,12 +1895,6 @@
       "abstract_tool": "pixelcut_looping_video",
       "capability": "i2v",
       "named_model": "pixelcut"
-    },
-    {
-      "skill": "dialogue-edit",
-      "pattern": "\\bdialogue[ -]edit(?:ing)?\\b|\\b(?:change|replace|swap|remove|cut|correct|fix)\\b.*\\b(?:spoken (?:word|phrase)|flubbed word)\\b|\\b(?:word[ -]level|re[ -]?voic).*\\b(?:edit|fix|correction)\\b",
-      "abstract_tool": "sync3_lipsync",
-      "capability": "lipsync"
     },
     {
       "pattern": "\\bplan[ -]to[ -]video\\b|\\bplan[ -]explainer\\b|\\bplan[ -]review[ -](?:video|reel)\\b|\\b(?:review|turn|convert|render)\\b[^!?;\\n]{0,140}\\bplan(?:\\.md|[ -]mode)?\\b[^!?;\\n]{0,120}\\b(?:video|review[ -]reel|narrated[ -]walkthrough)\\b",
@@ -2734,12 +1962,6 @@
       "capability": "motion_graphics"
     },
     {
-      "pattern": "\\bcheck\\b.*\\b(?:person|character|identity)\\b.*\\b(?:same|consistent)\\b.*\\bacross shots\\b",
-      "skill": "continuity-qc",
-      "abstract_tool": "local_qc",
-      "capability": "continuity_qc"
-    },
-    {
       "pattern": "\\boutpaint(?:ing)?\\b|\\b(?:extend|fill|generate)\\b.*\\b(?:sides|missing background|missing pixels)\\b",
       "skill": "edit-v2v",
       "abstract_tool": "seedance25_edit",
@@ -2786,11 +2008,6 @@
       "abstract_tool": "transcript_edit"
     },
     {
-      "pattern": "(?:conversational[ -]edit|transcript[ -](?:driven|based)|cut filler|remove filler|cut.*\\bums\\b).*hyperframes|hyperframes.*(?:conversational[ -]edit|transcript[ -](?:driven|based))",
-      "skill": "conversational-edit",
-      "abstract_tool": "conversational_hyperframes_overlay"
-    },
-    {
       "pattern": "\\bart[ -]style[ -]motion\\b|(?=[\\s\\S]*\\b(?:animat\\w*|videos?|shorts?|explainer|move|moving|motion)\\b)(?=[\\s\\S]*(?:\\b(?:van[ -]?gogh|monet|bauhaus|ukiyo[ -]?e|8[ -]?bit|impressionis[mt]|post[ -]?impressionis[mt]|seurat|matisse|haring|rembrandt|klimt|munch|dunhuang|kusama|constructivis[mt]|dal[i\u00ed]|hopper|ghibli|vaporwave|kirby|shinkai|picasso|mucha|art[ -]?nouveau|cubis[mt]|pop[ -]?art|rubber[ -]?hose|shadow[ -]?puppet|cave[ -]?(?:art|painting)|egyptian|greek[ -]?pottery|roman[ -]?mosaic|gothic|renaissance|chinese[ -]?ink|early[ -]?(?:ray[ -]?traced[ -]?)?cgi|contemporary[ -]flat[ -]animation|kurzgesagt|vox|3blue1brown|3b1b|kinetic[ -]?(?:type|typography)|storytime|illustrated[ -]presenter|whiteboard|keynote|finance[ -]?chart)(?:[ -]+\\w+){0,3}[ -]+(?:style|grammar|inspired)\\b|\\b(?:van[ -]?gogh|monet|bauhaus|ukiyo[ -]?e|8[ -]?bit|impressionis[mt]|post[ -]?impressionis[mt]|seurat|matisse|haring|rembrandt|klimt|munch|dunhuang|kusama|constructivis[mt]|dal[i\u00ed]|hopper|ghibli|vaporwave|kirby|shinkai|picasso|mucha|art[ -]?nouveau|cubis[mt]|pop[ -]?art|rubber[ -]?hose|shadow[ -]?puppet|cave[ -]?(?:art|painting)|egyptian|greek[ -]?pottery|roman[ -]?mosaic|gothic|renaissance|chinese[ -]?ink|early[ -]?(?:ray[ -]?traced[ -]?)?cgi|contemporary[ -]flat[ -]animation|kurzgesagt|vox|3blue1brown|3b1b|kinetic[ -]?(?:type|typography)|storytime|illustrated[ -]presenter|whiteboard|keynote|finance[ -]?chart)[ -]+(?:art|paintings?|pond|mural|mosaic|pottery|animation|animated)\\b|\\b(?:style of|inspired by)\\s+(?:van[ -]?gogh|monet|bauhaus|ukiyo[ -]?e|8[ -]?bit|impressionis[mt]|post[ -]?impressionis[mt]|seurat|matisse|haring|rembrandt|klimt|munch|dunhuang|kusama|constructivis[mt]|dal[i\u00ed]|hopper|ghibli|vaporwave|kirby|shinkai|picasso|mucha|art[ -]?nouveau|cubis[mt]|pop[ -]?art|rubber[ -]?hose|shadow[ -]?puppet|cave[ -]?(?:art|painting)|egyptian|greek[ -]?pottery|roman[ -]?mosaic|gothic|renaissance|chinese[ -]?ink|early[ -]?(?:ray[ -]?traced[ -]?)?cgi|contemporary[ -]flat[ -]animation|kurzgesagt|vox|3blue1brown|3b1b|kinetic[ -]?(?:type|typography)|storytime|illustrated[ -]presenter|whiteboard|keynote|finance[ -]?chart)\\b|\\b(?:kurzgesagt|vox|3blue1brown|3b1b|kinetic[ -]?(?:type|typography)|storytime|illustrated[ -]presenter)[ -]+(?:explainer|animation|video|grammar|style)\\b|\\bcontemporary[ -]flat[ -]animation\\b))[\\s\\S]+|\\bcharacter\\b.*\\bwalk\\w*\\b.*\\b(?:series|worlds|eras)\\b.*\\bpaintings?\\b|\\b(?:papercut|paper[ -](?:cut|cutout)|cut[ -]paper|papercraft)[ -]+(?:inspired[ -]+)?(?:stop[ -]motion[ -]+)?(?:explainer|animation|animated[ -](?:short|video)|video|short|reel)\\b|\\bpaper[ -]collage[ -]+(?:inspired[ -]+)?(?:stop[ -]motion[ -]+)?(?:explainer|animation|animated[ -](?:short|video))\\b",
       "skill": "art-style-motion",
       "abstract_tool": "remotion_render",
@@ -2804,12 +2021,6 @@
       "capability": "motion_graphics"
     },
     {
-      "pattern": "\\bhyperframes\\b.*\\belevenlabs\\b|\\belevenlabs\\b.*\\bhyperframes\\b",
-      "skill": "hyperframes",
-      "abstract_tool": "eleven_v4_turbo",
-      "capability": "tts"
-    },
-    {
       "pattern": "whiteboard.*(?:voice[ -]?over|narrat)",
       "skill": "whiteboard-explainer",
       "abstract_tool": "eleven_v4_turbo",
@@ -2819,12 +2030,6 @@
       "pattern": "whiteboard|draw and explain",
       "skill": "whiteboard-explainer",
       "abstract_tool": "remotion_render",
-      "capability": "motion_graphics"
-    },
-    {
-      "pattern": "\\bhyperframes\\b",
-      "skill": "hyperframes",
-      "abstract_tool": "hyperframes_render",
       "capability": "motion_graphics"
     },
     {
@@ -2847,27 +2052,6 @@
       "abstract_tool": "transcript_edit"
     },
     {
-      "pattern": "\\bqc\\b|consistency|continuity|face drift|reject.*training",
-      "skill": "continuity-qc",
-      "abstract_tool": "local_qc",
-      "capability": "continuity_qc"
-    },
-    {
-      "pattern": "\\bvlm\\b.*judge|judge.*keyframes",
-      "skill": "continuity-qc",
-      "abstract_tool": "gemini_vlm_judge"
-    },
-    {
-      "pattern": "mini.?max(?:\\s*h3)?",
-      "skill": "t2v",
-      "abstract_tool": "minimax_h3_t2v"
-    },
-    {
-      "pattern": "\\bhunyuan\\b",
-      "skill": "t2v",
-      "abstract_tool": "hunyuan_t2v"
-    },
-    {
       "pattern": "import.*(?:fcpxml|otio)|roundtrip|fcpxml.*back",
       "skill": "resolve-handoff",
       "abstract_tool": "nle_import",
@@ -2878,12 +2062,6 @@
       "skill": "resolve-handoff",
       "abstract_tool": "Remotion___export_nle_timeline",
       "capability": "nle_handoff"
-    },
-    {
-      "pattern": "performance capture|acting take|act.two|facial acting|full.body|whole.body|driving video|\\bdance\\b|copy.*motion|motion.control|upper.body.*acting",
-      "skill": "act-two",
-      "abstract_tool": "runway_act_two",
-      "capability": "performance_transfer"
     },
     {
       "pattern": "lipsync|lip.sync|talking head|talking avatar|spokesperson|avatar.*(?:say|script|presenter)|presenter|digital twin|dub.*(?:interview|clip|footage|video)|hedra|infinitetalk|re[ -]?voic|replace.*(?:voice|dialogue).*(?:footage|video|clip)|sync[ -]?3|sync\\.so|heygen\\s+avatar\\s+v|\\bavatar[ -]v\\b",
@@ -2944,11 +2122,6 @@
       "skill": "upscale",
       "abstract_tool": "topaz_upscale",
       "capability": "upscale"
-    },
-    {
-      "pattern": "record.*demo|repo.*launch.*video|ui demo|\\bproduct\\s+demo\\b|\\b(?:record|capture)\\b.*\\bwalkthrough\\b.*\\b(?:dashboard|app|product|ui)\\b|\\b(?:record|capture)\\b.*\\b(?:dashboard|app|product|ui)\\b.*\\bwalkthrough\\b",
-      "skill": "product-demo-video",
-      "abstract_tool": "cutaway_record"
     },
     {
       "pattern": "lock character.*i2v",
@@ -3042,18 +2215,6 @@
     }
   ],
   "pending_skills": {},
-  "continuity_qc": {
-    "dinov3_enabled": false,
-    "vlm_prefilter_threshold": 0.1,
-    "vlm_eval_gate": {
-      "result_path": "agent/deep_agent/continuity_qc_vlm_eval.json",
-      "result_sha256": null,
-      "required_pairs": 420,
-      "minimum_accuracy_exclusive": 0.85,
-      "manifest_sha256": "26232ff4bfd314025fc5355f9dcc8e828e95c1d6395aba48b8b9ca17e1577311",
-      "inputs_sha256": "4f0d731ffd01450dfef03c3bf74fa804d6307e144b9fdeaffdb82009c1f5a091"
-    }
-  },
   "capabilities": [
     {
       "provider": "fal",
@@ -3568,627 +2729,6 @@
       "explicit_only": true
     },
     {
-      "provider": "kling",
-      "model": "kling-3.0",
-      "label": "Kling 3.0",
-      "tools": {
-        "t2v": "Kling___text_to_video",
-        "i2v": "Kling___image_to_video"
-      },
-      "jobs": {
-        "t2v": true,
-        "i2v": true,
-        "start_end_frame": true,
-        "native_audio": true,
-        "multi_shot": true,
-        "v2v_edit": false,
-        "reference_elements": true,
-        "lipsync": false,
-        "upscale": false,
-        "image": false,
-        "max_resolution": 2160,
-        "4k": true
-      },
-      "resolutions": [
-        720,
-        1080,
-        2160
-      ],
-      "speed_class": "standard",
-      "policy_ref": "kling",
-      "price": {
-        "unit": "second",
-        "source": "server.billing_rates._kling_cost"
-      },
-      "notes": "Elements require existing provider library IDs. No video-to-video, lipsync or upscale tool. Elements only on i2v or Omni.",
-      "controls": {
-        "t2v": [
-          "prompt",
-          "duration_seconds",
-          "aspect_ratio",
-          "resolution",
-          "model",
-          "generate_audio",
-          "multi_shot",
-          "shots"
-        ],
-        "i2v": [
-          "image_path_or_url",
-          "prompt",
-          "duration_seconds",
-          "resolution",
-          "model",
-          "end_image_path_or_url",
-          "generate_audio",
-          "multi_shot",
-          "shots",
-          "elements"
-        ]
-      },
-      "durations": {
-        "t2v": [
-          3,
-          15
-        ],
-        "i2v": [
-          3,
-          15
-        ]
-      },
-      "explicit_only": true
-    },
-    {
-      "provider": "kling",
-      "model": "kling-3.0-turbo",
-      "label": "Kling 3.0 Turbo",
-      "tools": {
-        "t2v": "Kling___text_to_video",
-        "i2v": "Kling___image_to_video"
-      },
-      "jobs": {
-        "t2v": true,
-        "i2v": true,
-        "start_end_frame": false,
-        "native_audio": false,
-        "multi_shot": true,
-        "v2v_edit": false,
-        "reference_elements": false,
-        "lipsync": false,
-        "upscale": false,
-        "image": false,
-        "max_resolution": 1080,
-        "4k": false
-      },
-      "resolutions": [
-        720,
-        1080
-      ],
-      "speed_class": "fast",
-      "policy_ref": "kling",
-      "price": "unknown",
-      "notes": "Turbo has no audio/end-frame/elements/4K controls and unconfirmed pricing.",
-      "controls": {
-        "t2v": [
-          "prompt",
-          "duration_seconds",
-          "aspect_ratio",
-          "resolution",
-          "model",
-          "generate_audio",
-          "multi_shot",
-          "shots"
-        ],
-        "i2v": [
-          "image_path_or_url",
-          "prompt",
-          "duration_seconds",
-          "resolution",
-          "model",
-          "end_image_path_or_url",
-          "generate_audio",
-          "multi_shot",
-          "shots",
-          "elements"
-        ]
-      },
-      "durations": {
-        "t2v": [
-          3,
-          15
-        ],
-        "i2v": [
-          3,
-          15
-        ]
-      },
-      "explicit_only": true
-    },
-    {
-      "provider": "kling",
-      "model": "kling-3.0-omni",
-      "label": "Kling 3.0 Omni",
-      "tools": {
-        "t2v": "Kling___omni_video",
-        "i2v": "Kling___omni_video",
-        "reference": "Kling___omni_video"
-      },
-      "jobs": {
-        "t2v": true,
-        "i2v": true,
-        "start_end_frame": true,
-        "native_audio": true,
-        "multi_shot": true,
-        "v2v_edit": false,
-        "reference_elements": true,
-        "lipsync": false,
-        "upscale": false,
-        "image": false,
-        "max_resolution": 2160,
-        "4k": true
-      },
-      "resolutions": [
-        720,
-        1080,
-        2160
-      ],
-      "speed_class": "standard",
-      "policy_ref": "kling",
-      "price": {
-        "unit": "second",
-        "source": "server.billing_rates._kling_cost"
-      },
-      "notes": "Elements require existing provider library IDs. No video-to-video, lipsync or upscale tool. Elements only on i2v or Omni.",
-      "controls": {
-        "t2v": [
-          "prompt",
-          "reference_images",
-          "elements",
-          "image_path_or_url",
-          "end_image_path_or_url",
-          "duration_seconds",
-          "aspect_ratio",
-          "resolution",
-          "generate_audio",
-          "multi_shot",
-          "shots"
-        ],
-        "i2v": [
-          "prompt",
-          "reference_images",
-          "elements",
-          "image_path_or_url",
-          "end_image_path_or_url",
-          "duration_seconds",
-          "aspect_ratio",
-          "resolution",
-          "generate_audio",
-          "multi_shot",
-          "shots"
-        ],
-        "reference": [
-          "prompt",
-          "reference_images",
-          "elements",
-          "image_path_or_url",
-          "end_image_path_or_url",
-          "duration_seconds",
-          "aspect_ratio",
-          "resolution",
-          "generate_audio",
-          "multi_shot",
-          "shots"
-        ]
-      },
-      "durations": {
-        "t2v": [
-          3,
-          15
-        ],
-        "i2v": [
-          3,
-          15
-        ],
-        "reference": [
-          3,
-          15
-        ]
-      },
-      "explicit_only": true
-    },
-    {
-      "provider": "runway",
-      "model": "gen4.5",
-      "label": "Runway Gen-4.5",
-      "tools": {
-        "t2v": "Runway___text_to_video",
-        "i2v": "Runway___image_to_video"
-      },
-      "jobs": {
-        "t2v": true,
-        "i2v": true,
-        "start_end_frame": false,
-        "native_audio": false,
-        "multi_shot": false,
-        "v2v_edit": false,
-        "reference_elements": false,
-        "lipsync": false,
-        "upscale": false,
-        "image": false,
-        "max_resolution": 720,
-        "4k": false
-      },
-      "resolutions": [
-        720
-      ],
-      "speed_class": "standard",
-      "policy_ref": "runway",
-      "price": {
-        "unit": "second",
-        "source": "server.billing_rates._runway_cost"
-      },
-      "notes": "Built ratios are 720-class only. No audio/end frame/multi-shot/elements controls.",
-      "controls": {
-        "t2v": [
-          "prompt",
-          "duration_seconds",
-          "ratio",
-          "model",
-          "seed"
-        ],
-        "i2v": [
-          "image_path_or_url",
-          "prompt",
-          "duration_seconds",
-          "ratio",
-          "model",
-          "seed"
-        ]
-      },
-      "durations": {
-        "t2v": [
-          2,
-          10
-        ],
-        "i2v": [
-          2,
-          10
-        ]
-      },
-      "explicit_only": true
-    },
-    {
-      "provider": "runway",
-      "model": "aleph2",
-      "label": "Runway Aleph",
-      "tools": {
-        "v2v_edit": "Runway___video_to_video"
-      },
-      "jobs": {
-        "t2v": false,
-        "i2v": false,
-        "start_end_frame": false,
-        "native_audio": false,
-        "multi_shot": false,
-        "v2v_edit": true,
-        "reference_elements": false,
-        "lipsync": false,
-        "upscale": false,
-        "image": false,
-        "max_resolution": 0,
-        "4k": false
-      },
-      "resolutions": [],
-      "speed_class": "slow",
-      "policy_ref": "runway",
-      "price": {
-        "unit": "source second",
-        "source": "server.billing_rates._runway_cost",
-        "unknown": [
-          "fractional duration"
-        ]
-      },
-      "notes": "Faithful and multi-shot plate edits are routing preferences, not a native multi_shot control. Input max 1080p; output resolution is unspecified, so max_resolution=0. Single reference image, not element library.",
-      "controls": {
-        "v2v_edit": [
-          "video_path_or_url",
-          "prompt",
-          "video_duration_seconds",
-          "reference_image_path_or_url",
-          "reference_seconds",
-          "model",
-          "seed"
-        ]
-      },
-      "durations": {
-        "v2v_edit": [
-          2,
-          30
-        ]
-      },
-      "explicit_only": true
-    },
-    {
-      "provider": "runway",
-      "model": "gen4_image",
-      "label": "Runway Gen-4 Image",
-      "tools": {
-        "image_edit": "Runway___image_to_image",
-        "image": "Runway___text_to_image"
-      },
-      "jobs": {
-        "t2v": false,
-        "i2v": false,
-        "start_end_frame": false,
-        "native_audio": false,
-        "multi_shot": false,
-        "v2v_edit": false,
-        "reference_elements": false,
-        "lipsync": false,
-        "upscale": false,
-        "image": true,
-        "max_resolution": 1080,
-        "4k": false
-      },
-      "resolutions": [
-        720,
-        1080
-      ],
-      "speed_class": "fast",
-      "policy_ref": "runway",
-      "price": {
-        "unit": "image",
-        "source": "server.billing_rates._runway_cost"
-      },
-      "notes": "Turbo requires a source image. Reference image tags are not element library IDs.",
-      "controls": {
-        "image_edit": [
-          "image_path_or_url",
-          "prompt",
-          "ratio",
-          "model",
-          "reference_images",
-          "seed"
-        ],
-        "image": [
-          "prompt",
-          "ratio",
-          "model",
-          "seed"
-        ]
-      },
-      "durations": {},
-      "explicit_only": true
-    },
-    {
-      "provider": "runway",
-      "model": "gen4_image_turbo",
-      "label": "Runway Gen-4 Image Turbo",
-      "tools": {
-        "image_edit": "Runway___image_to_image"
-      },
-      "jobs": {
-        "t2v": false,
-        "i2v": false,
-        "start_end_frame": false,
-        "native_audio": false,
-        "multi_shot": false,
-        "v2v_edit": false,
-        "reference_elements": false,
-        "lipsync": false,
-        "upscale": false,
-        "image": true,
-        "max_resolution": 1080,
-        "4k": false
-      },
-      "resolutions": [
-        720,
-        1080
-      ],
-      "speed_class": "fast",
-      "policy_ref": "runway",
-      "price": {
-        "unit": "image",
-        "source": "server.billing_rates._runway_cost"
-      },
-      "notes": "Turbo requires a source image. Reference image tags are not element library IDs.",
-      "controls": {
-        "image_edit": [
-          "image_path_or_url",
-          "prompt",
-          "ratio",
-          "model",
-          "reference_images",
-          "seed"
-        ]
-      },
-      "durations": {},
-      "explicit_only": true
-    },
-    {
-      "provider": "luma",
-      "model": "ray-3.2",
-      "label": "Luma Ray 3.2",
-      "tools": {
-        "t2v": "Luma___text_to_video",
-        "i2v": "Luma___image_to_video",
-        "v2v_edit": "Luma___modify_video",
-        "extend": "Luma___extend_video"
-      },
-      "jobs": {
-        "t2v": true,
-        "i2v": true,
-        "start_end_frame": true,
-        "native_audio": false,
-        "multi_shot": false,
-        "v2v_edit": true,
-        "reference_elements": false,
-        "lipsync": false,
-        "upscale": false,
-        "image": false,
-        "max_resolution": 1080,
-        "4k": false
-      },
-      "resolutions": [
-        360,
-        540,
-        720,
-        1080
-      ],
-      "speed_class": "standard",
-      "policy_ref": "luma",
-      "price": {
-        "unit": "published 5s/10s clip or extend unit",
-        "source": "server.billing_rates._luma_cost",
-        "unknown": [
-          "360p extend",
-          "other modify source durations"
-        ]
-      },
-      "notes": "Explicit-request-only Ray 3.2 generation, modification and extension. i2v exactly 5s; no native audio, multi-shot or elements. Outputs excluded from training.",
-      "controls": {
-        "t2v": [
-          "prompt",
-          "duration_seconds",
-          "aspect_ratio",
-          "resolution",
-          "model"
-        ],
-        "i2v": [
-          "prompt",
-          "image_path_or_url",
-          "last_frame_path_or_url",
-          "duration_seconds",
-          "aspect_ratio",
-          "resolution",
-          "model"
-        ],
-        "v2v_edit": [
-          "prompt",
-          "source_duration_seconds",
-          "video_path_or_url",
-          "source_generation_id",
-          "resolution",
-          "strength",
-          "model"
-        ],
-        "extend": [
-          "prompt",
-          "generation_id",
-          "direction",
-          "resolution",
-          "model"
-        ]
-      },
-      "durations": {
-        "t2v": [
-          5,
-          10
-        ],
-        "i2v": [
-          5,
-          5
-        ],
-        "v2v_edit": [
-          5,
-          10
-        ]
-      },
-      "duration_values": {
-        "t2v": [
-          5,
-          10
-        ],
-        "i2v": [
-          5
-        ]
-      },
-      "explicit_only": true
-    },
-    {
-      "provider": "veo",
-      "model": "pending",
-      "label": "Veo",
-      "tools": {},
-      "jobs": {
-        "t2v": false,
-        "i2v": false,
-        "start_end_frame": false,
-        "native_audio": false,
-        "multi_shot": false,
-        "v2v_edit": false,
-        "reference_elements": false,
-        "lipsync": false,
-        "upscale": false,
-        "image": false,
-        "max_resolution": 0,
-        "4k": false
-      },
-      "resolutions": [],
-      "speed_class": "unknown",
-      "policy_ref": "veo",
-      "price": "unknown",
-      "notes": "Unavailable/pending provider. All capabilities false until built schema and policy approval exist.",
-      "controls": {},
-      "durations": {},
-      "explicit_only": true
-    },
-    {
-      "provider": "minimax_h3",
-      "model": "pending",
-      "label": "MiniMax H3",
-      "tools": {},
-      "jobs": {
-        "t2v": false,
-        "i2v": false,
-        "start_end_frame": false,
-        "native_audio": false,
-        "multi_shot": false,
-        "v2v_edit": false,
-        "reference_elements": false,
-        "lipsync": false,
-        "upscale": false,
-        "image": false,
-        "max_resolution": 0,
-        "4k": false
-      },
-      "resolutions": [],
-      "speed_class": "unknown",
-      "policy_ref": "minimax_h3",
-      "price": "unknown",
-      "notes": "Unavailable/pending provider. All capabilities false until built schema and policy approval exist.",
-      "controls": {},
-      "durations": {},
-      "explicit_only": true
-    },
-    {
-      "provider": "hunyuan",
-      "model": "pending",
-      "label": "Hunyuan",
-      "tools": {},
-      "jobs": {
-        "t2v": false,
-        "i2v": false,
-        "start_end_frame": false,
-        "native_audio": false,
-        "multi_shot": false,
-        "v2v_edit": false,
-        "reference_elements": false,
-        "lipsync": false,
-        "upscale": false,
-        "image": false,
-        "max_resolution": 0,
-        "4k": false
-      },
-      "resolutions": [],
-      "speed_class": "unknown",
-      "policy_ref": "hunyuan",
-      "price": "unknown",
-      "notes": "Unavailable/pending provider. All capabilities false until built schema and policy approval exist.",
-      "controls": {},
-      "durations": {},
-      "explicit_only": true
-    },
-    {
       "provider": "fal",
       "model": "alibaba/wan-3.0/text-to-video",
       "label": "Wan 3.0 text to video",
@@ -4411,101 +2951,6 @@
         "minimum_video_fps": 16
       },
       "multi_shot_field": null
-    },
-    {
-      "provider": "alibaba_modelstudio",
-      "model": "wan3.0-video",
-      "label": "Wan 3.0 Model Studio",
-      "explicit_only": true,
-      "policy_ref": "alibaba_modelstudio",
-      "tools": {
-        "v2v_edit": "ModelStudio___edit_wan3_video",
-        "extend": "ModelStudio___extend_wan3_video"
-      },
-      "jobs": {
-        "v2v_edit": true,
-        "extend": true,
-        "native_audio": true,
-        "multi_shot": false,
-        "start_end_frame": false,
-        "reference_elements": true,
-        "voice_references": true,
-        "max_resolution": 1080
-      },
-      "resolutions": [
-        480,
-        720,
-        1080
-      ],
-      "resolution_labels": {
-        "480": "480p",
-        "720": "720p",
-        "1080": "1080p"
-      },
-      "resolution_default": "1080p",
-      "native_audio_field": "audio",
-      "native_audio_default": true,
-      "duration_field": "duration",
-      "multi_shot_field": null,
-      "durations": {},
-      "controls": {
-        "v2v_edit": [
-          "video_url",
-          "prompt",
-          "source_duration_seconds",
-          "source_fps",
-          "duration",
-          "resolution",
-          "aspect_ratio",
-          "audio",
-          "prompt_extend",
-          "watermark",
-          "seed",
-          "reference_image_urls",
-          "reference_audio_urls",
-          "reference_audio_durations",
-          "real_face_refs",
-          "likeness_consent"
-        ],
-        "extend": [
-          "video_url",
-          "prompt",
-          "source_duration_seconds",
-          "source_fps",
-          "duration",
-          "resolution",
-          "aspect_ratio",
-          "audio",
-          "prompt_extend",
-          "watermark",
-          "seed",
-          "reference_image_urls",
-          "reference_audio_urls",
-          "reference_audio_durations",
-          "real_face_refs",
-          "likeness_consent",
-          "direction"
-        ]
-      },
-      "price": {
-        "unit": "input plus total output video seconds",
-        "source": "server.billing_rates.modelstudio_price_cents",
-        "url": "https://www.alibabacloud.com/help/en/model-studio/wan3-0-video",
-        "read_date": "2026-10-09",
-        "unknown": [
-          "smart duration -1",
-          "unverified configured model"
-        ]
-      },
-      "reference_limits": {
-        "videos": 1,
-        "video_seconds_total": 15,
-        "minimum_video_fps": 16,
-        "images": 10,
-        "audio": 5,
-        "audio_seconds_total": 15
-      },
-      "notes": "Explicit-only edit and extend provider. Extension duration is total output length. Live legacy US host and smart duration blocked until verified; documented workspace host configurable."
     },
     {
       "provider": "seedance",
@@ -5336,151 +3781,6 @@
       "native_audio_default": true
     },
     {
-      "provider": "sync",
-      "policy_ref": "sync",
-      "model": "sync-3",
-      "label": "sync-3 word-level dialogue edit",
-      "tools": {
-        "lipsync": "Sync___create_dialogue_video"
-      },
-      "jobs": {
-        "native_audio": true,
-        "max_resolution": 2160
-      },
-      "controls": {
-        "lipsync": [
-          "source_video_url",
-          "dialogue_edit_id",
-          "source_duration_seconds",
-          "preview_duration_seconds",
-          "source_fps",
-          "speaker_count",
-          "subjects",
-          "consent_confirmed",
-          "preview_reviewed",
-          "idempotency_key",
-          "accept_partial",
-          "source_width",
-          "source_height"
-        ]
-      },
-      "durations": {
-        "lipsync": [
-          0.001,
-          600
-        ]
-      },
-      "resolutions": [
-        480,
-        720,
-        1080,
-        2160
-      ],
-      "price": {
-        "source": "https://sync.so/pricing",
-        "checked_at": "2026-10-10",
-        "preview": "TODO unknown; optional operator-confirmed quote"
-      },
-      "native_audio_field": null,
-      "native_audio_default": true
-    },
-    {
-      "provider": "heygen",
-      "policy_ref": "heygen",
-      "model": "avatar_v",
-      "label": "HeyGen Avatar V",
-      "tools": {
-        "lipsync": "HeyGen___create_avatar_video"
-      },
-      "jobs": {
-        "native_audio": true,
-        "max_resolution": 1080
-      },
-      "controls": {
-        "lipsync": [
-          "avatar_id",
-          "voice_id",
-          "script",
-          "audio_url",
-          "duration_seconds",
-          "subjects",
-          "consent_confirmed",
-          "consent_record_id",
-          "language",
-          "resolution",
-          "aspect_ratio",
-          "motion_prompt",
-          "model"
-        ]
-      },
-      "durations": {
-        "lipsync": [
-          0.001,
-          1800
-        ]
-      },
-      "resolutions": [
-        720,
-        1080
-      ],
-      "price": {
-        "source": "https://help.heygen.com/en/articles/10060327-heygen-api-pricing-explained",
-        "checked_at": "2026-10-09",
-        "verification": "Verified self-serve $0.12/s; enterprise unknown"
-      },
-      "native_audio_field": null,
-      "native_audio_default": true
-    },
-    {
-      "provider": "heygen",
-      "policy_ref": "heygen",
-      "model": "heygen-voice-1",
-      "label": "HeyGen Voice internal clone candidate",
-      "tools": {
-        "voice_clone": "HeyGen___voice_clone",
-        "cloned_tts": "HeyGen___voice_tts"
-      },
-      "jobs": {},
-      "controls": {
-        "voice_clone": [
-          "reference_audio_url",
-          "reference_duration_seconds",
-          "reference_size_bytes",
-          "reference_format",
-          "name",
-          "subjects",
-          "consent_confirmed",
-          "consent_record_id",
-          "account_id",
-          "workspace_id",
-          "project_id",
-          "mode",
-          "language",
-          "similarity",
-          "remove_background_noise",
-          "model"
-        ],
-        "cloned_tts": [
-          "voice_id",
-          "text",
-          "language",
-          "account_id",
-          "workspace_id",
-          "project_id",
-          "model",
-          "expressiveness_boost"
-        ]
-      },
-      "durations": {},
-      "resolutions": [],
-      "price": {
-        "source": "https://www.heygen.com/api-pricing",
-        "checked_at": "2026-10-09",
-        "verification": "UNVERIFIED non-promo instant clone and character prices; dry-run only"
-      },
-      "native_audio_field": null
-    },
-    {
       "provider": "topaz",
       "policy_ref": "topaz",
       "model": "Starlight Precise 2.6",
@@ -5670,54 +3970,6 @@
         "checked_at": "2026-10-09"
       },
       "native_audio_field": null
-    },
-    {
-      "provider": "runway",
-      "model": "act_two",
-      "label": "Runway Act-Two",
-      "tools": {
-        "performance_transfer": "Runway___act_two"
-      },
-      "jobs": {
-        "performance_transfer": true,
-        "max_resolution": 960
-      },
-      "resolutions": [
-        672,
-        720,
-        832,
-        960
-      ],
-      "policy_ref": "runway",
-      "price": {
-        "unit": "driving second",
-        "source": "https://docs.dev.runwayml.com/guides/pricing/",
-        "read_date": "2026-10-09"
-      },
-      "controls": {
-        "performance_transfer": [
-          "character_uri",
-          "performance_uri",
-          "performance_duration_seconds",
-          "subjects",
-          "consent_confirmed",
-          "character_type",
-          "ratio",
-          "body_control",
-          "expression_intensity",
-          "source_duration_seconds",
-          "performance_start_seconds",
-          "boundary_kind",
-          "seed"
-        ]
-      },
-      "durations": {
-        "performance_transfer": [
-          3,
-          30
-        ]
-      },
-      "notes": "Measured 3-30s driving clips; gestures require character images. Consent required. No training eligibility."
     },
     {
       "provider": "fal",
@@ -6303,9 +4555,7 @@
         }
       ],
       "interim": null,
-      "ab_candidates": [
-        "gemini_omni_11_flash"
-      ]
+      "ab_candidates": []
     },
     "i2v": {
       "default": "wan3_i2v",
@@ -6318,7 +4568,6 @@
       ],
       "interim": null,
       "ab_candidates": [
-        "gemini_omni_11_flash",
         "vidu_q4_i2v"
       ]
     },
@@ -6372,27 +4621,13 @@
     },
     "lipsync": {
       "default": "sync3_lipsync",
-      "exceptions": [
-        {
-          "when": "duration_over_30s && presenter",
-          "tool": "heygen_avatar_v",
-          "reason": "long presenter or digital twin"
-        }
-      ],
+      "exceptions": [],
       "interim": null,
-      "ab_candidates": [
-        "heygen_avatar_v"
-      ]
+      "ab_candidates": []
     },
     "performance_transfer": {
-      "default": "runway_act_two",
-      "exceptions": [
-        {
-          "when": "full_body_motion",
-          "tool": "kling_motion_control",
-          "reason": "full-body motion or dance"
-        }
-      ],
+      "default": "kling_motion_control",
+      "exceptions": [],
       "interim": null,
       "ab_candidates": [
         "kling_motion_control"
@@ -6406,17 +4641,9 @@
     },
     "voice_clone": {
       "default": "voices_ivc_create",
-      "exceptions": [
-        {
-          "when": "heygen_voice_ab && !voice_text_needs_normalisation",
-          "tool": "heygen_voice_clone",
-          "reason": "Internal HeyGen Voice A/B candidate for consented instant clones"
-        }
-      ],
+      "exceptions": [],
       "interim": null,
-      "ab_candidates": [
-        "heygen_voice_clone"
-      ]
+      "ab_candidates": []
     },
     "music": {
       "default": "mureka_v95",
@@ -6458,13 +4685,7 @@
     },
     "motion_graphics": {
       "default": "remotion_render",
-      "exceptions": [
-        {
-          "when": "explicit_hyperframes",
-          "tool": "hyperframes_render",
-          "reason": "explicit HyperFrames request"
-        }
-      ],
+      "exceptions": [],
       "interim": null,
       "ab_candidates": []
     },
@@ -6473,14 +4694,6 @@
       "exceptions": [],
       "interim": null,
       "ab_candidates": []
-    },
-    "continuity_qc": {
-      "default": "local_qc",
-      "exceptions": [],
-      "interim": null,
-      "ab_candidates": [
-        "gemini_vlm_judge"
-      ]
     },
     "lyrics_video": {
       "default": "mureka_lyrics_video",
@@ -6526,17 +4739,9 @@
     },
     "cloned_tts": {
       "default": "eleven_v4_turbo",
-      "exceptions": [
-        {
-          "when": "heygen_voice_ab && !voice_text_needs_normalisation",
-          "tool": "heygen_voice_tts",
-          "reason": "Internal HeyGen Voice cloned-speech A/B candidate"
-        }
-      ],
+      "exceptions": [],
       "interim": null,
-      "ab_candidates": [
-        "heygen_voice_tts"
-      ]
+      "ab_candidates": []
     },
     "motion_carry_qc": {
       "default": "motion_carry_probe",
@@ -6591,24 +4796,12 @@
     "Fal___video_to_video",
     "Fal___vidu_q4_i2v",
     "Fal___vidu_q4_r2v",
-    "Kling___image_to_video",
-    "Kling___omni_video",
-    "Kling___text_to_video",
-    "Luma___extend_video",
-    "Luma___image_to_video",
-    "Luma___modify_video",
-    "Luma___text_to_video",
     "Remotion___render_timeline",
-    "Runway___image_to_video",
-    "Runway___text_to_video",
-    "Runway___video_to_video",
     "Seedance___image_to_video",
     "Seedance___text_to_video",
-    "heygen_avatar_v",
     "kling_motion_control",
     "mirelo_v2a",
     "mureka_lyrics_video",
-    "runway_act_two",
     "seedance25_i2v",
     "seedance25_r2v",
     "seedance25_t2v",
@@ -6620,47 +4813,24 @@
     "wan3_i2v",
     "wan3_r2v",
     "wan3_t2v",
-    "ModelStudio___edit_wan3_video",
-    "ModelStudio___extend_wan3_video",
     "Seedance___reference_to_video",
     "Seedance___edit_video",
     "Seedance___extend_video",
     "Sync___lipsync_video",
-    "HeyGen___create_avatar_video",
     "Topaz___upscale_video",
     "Topaz___interpolate_video",
     "Mureka___generate_lyrics_video",
-    "Runway___act_two",
     "Fal___kling_motion_control",
     "Fal___mirelo_v2a",
     "Remotion___render_ad_variants",
     "Fal___pixelcut_looping_video",
     "pixelcut_looping_video",
     "Fal___pixverse_vibemv",
-    "pixverse_vibemv",
-    "Sync___create_dialogue_video",
-    "Sync___create_dialogue_edit"
+    "pixverse_vibemv"
   ],
   "explicit_routes": {
     "kling": {
-      "t2v": "kling_t2v",
-      "i2v": "kling_i2v",
-      "reference_video": "kling_omni",
       "performance_transfer": "kling_motion_control"
-    },
-    "runway": {
-      "t2v": "runway_gen45_t2v",
-      "i2v": "runway_i2v",
-      "still_image": "runway_gen4_t2i",
-      "image_edit": "runway_gen4_edit",
-      "v2v_edit": "runway_aleph_edit",
-      "performance_transfer": "runway_act_two"
-    },
-    "luma": {
-      "t2v": "luma_ray3_t2v",
-      "i2v": "luma_ray3_i2v",
-      "extend": "luma_ray3_extend",
-      "v2v_edit": "luma_ray3_modify"
     },
     "fal": {
       "t2v": "wan3_t2v",
@@ -6693,21 +4863,12 @@
       "music": "elevenlabs_music",
       "cloned_tts": "eleven_v4_turbo"
     },
-    "alibaba_modelstudio": {
-      "v2v_edit": "wan3_edit",
-      "extend": "wan3_extend"
-    },
     "openai_images": {
       "still_image": "gpt_image25_t2i",
       "image_edit": "gpt_image25_edit"
     },
     "sync": {
       "lipsync": "sync3_lipsync"
-    },
-    "heygen": {
-      "lipsync": "heygen_avatar_v",
-      "voice_clone": "heygen_voice_clone",
-      "cloned_tts": "heygen_voice_tts"
     },
     "topaz": {
       "upscale": "topaz_upscale",
@@ -6762,9 +4923,7 @@
       "aliases": {
         "t2v": "wan3_t2v",
         "i2v": "wan3_i2v",
-        "reference_video": "wan3_r2v",
-        "v2v_edit": "wan3_edit",
-        "extend": "wan3_extend"
+        "reference_video": "wan3_r2v"
       }
     },
     "seedance25": {
@@ -6784,12 +4943,6 @@
         "image_edit": "gpt_image25_edit"
       }
     },
-    "act_two": {
-      "pattern": "act[ -]?two",
-      "aliases": {
-        "performance_transfer": "runway_act_two"
-      }
-    },
     "kling_motion": {
       "pattern": "kling.*motion[ -]control",
       "aliases": {
@@ -6800,12 +4953,6 @@
       "pattern": "sync[ -]?3|sync\\.so",
       "aliases": {
         "lipsync": "sync3_lipsync"
-      }
-    },
-    "heygen_avatar": {
-      "pattern": "heygen.*avatar(?:[ -]?v)?|\\bavatar[ -]v\\b",
-      "aliases": {
-        "lipsync": "heygen_avatar_v"
       }
     },
     "mureka": {
@@ -6862,14 +5009,14 @@
     }
   },
   "retired_requests": {
-    "\\b(?:use|using|via)\\s+latent[ -]?sync\\b": "latentsync_lipsync",
-    "\\b(?:use|using|via)\\s+live[ -]?portrait\\b": "liveportrait_lipsync",
-    "\\bveo\\b": "veo_t2v",
-    "\\bkandinsky\\b": "kandinsky6_t2v",
-    "\\bfframes\\b": "fframes_render",
-    "heygen.*generative": "heygen_video_t2v",
-    "\\bseedvr[ -]?2\\b": "seedvr2_upscale",
-    "\\brife\\b": "rife_interpolate"
+    "\\b(?:use|using|via)\\s+latent[ -]?sync\\b": "This integration is not supported.",
+    "\\b(?:use|using|via)\\s+live[ -]?portrait\\b": "This integration is not supported.",
+    "\\bveo\\b": "This integration is not supported.",
+    "\\bkandinsky\\b": "This integration is not supported.",
+    "\\bfframes\\b": "This integration is not supported.",
+    "heygen.*generative": "This integration is not supported.",
+    "\\bseedvr[ -]?2\\b": "This integration is not supported.",
+    "\\brife\\b": "This integration is not supported."
   },
   "provider_hosts": [
     {
@@ -6878,14 +5025,6 @@
       "us_available": "yes",
       "availability_source": "https://fal.ai/legal/terms-of-service",
       "availability_note": "Inferred from US customer provisions, US-based fal and commercial model listing; model-specific geographic guarantee not published.",
-      "read_date": "2026-10-08"
-    },
-    {
-      "provider": "Alibaba Wan 3.0",
-      "host": "Alibaba Model Studio, US Virginia or Singapore",
-      "us_available": "yes",
-      "availability_source": "https://www.alibabacloud.com/help/en/model-studio/wan3-video-generation-api-reference",
-      "availability_note": "Official Virginia endpoint and same-reference edit/extension examples verified. Workspace, model and API key must share region.",
       "read_date": "2026-10-08"
     },
     {
@@ -6929,43 +5068,11 @@
       "read_date": "2026-10-08"
     },
     {
-      "provider": "sync-3",
-      "host": "sync.so",
-      "us_available": "unclear",
-      "availability_source": "https://sync.so/terms",
-      "availability_note": "Public docs expose API; no explicit country eligibility list located. Do not equate US governing law with guaranteed access.",
-      "read_date": "2026-10-08"
-    },
-    {
-      "provider": "HeyGen Avatar V",
-      "host": "HeyGen direct",
-      "us_available": "unclear",
-      "availability_source": "https://help.heygen.com/en/articles/11187873-heygen-privacy-and-security-standards",
-      "availability_note": "Official help confirms US AWS hosting; no explicit customer-country eligibility table verified.",
-      "read_date": "2026-10-08"
-    },
-    {
-      "provider": "Runway Act-Two",
-      "host": "Runway direct",
-      "us_available": "yes",
-      "availability_source": "https://runway.com/terms-of-use",
-      "availability_note": "Section15 says services controlled and offered from US facilities.",
-      "read_date": "2026-10-08"
-    },
-    {
-      "provider": "Kling 3.0 Motion Control Pro",
-      "host": "fal; direct Kling optional",
+      "provider": "Mureka V9.5",
+      "host": "fal",
       "us_available": "yes",
       "availability_source": "https://fal.ai/legal/terms-of-service",
-      "availability_note": "US fal eligibility inferred from terms. Direct Kling US eligibility unclear.",
-      "read_date": "2026-10-08"
-    },
-    {
-      "provider": "Mureka V9.5",
-      "host": "Mureka direct",
-      "us_available": "yes",
-      "availability_source": "https://platform.mureka.ai/privacy_policy.pdf",
-      "availability_note": "Inferred from explicit US-user privacy provisions; no API-specific region guarantee located.",
+      "availability_note": "Hosted through the configured fal integration.",
       "read_date": "2026-10-08"
     },
     {
@@ -6994,7 +5101,7 @@
     },
     {
       "provider": "Topaz Starlight Precise2.6, Apollo, Chronos",
-      "host": "fal default; Topaz direct optional",
+      "host": "fal",
       "us_available": "yes",
       "availability_source": "https://fal.ai/legal/terms-of-service",
       "availability_note": "US fal eligibility inferred. Direct Topaz customer-region guarantee not located.",
@@ -7017,14 +5124,6 @@
       "read_date": "2026-10-08"
     },
     {
-      "provider": "HyperFrames",
-      "host": "local dry-run renderer",
-      "us_available": "yes",
-      "availability_source": "https://github.com/heygen-com/hyperframes/blob/main/LICENSE",
-      "availability_note": "Apache code licence has no US exclusion; local operation.",
-      "read_date": "2026-10-08"
-    },
-    {
       "provider": "ElevenLabs Instant Voice Cloning",
       "host": "ElevenLabs direct",
       "us_available": "yes",
@@ -7033,19 +5132,11 @@
       "read_date": "2026-10-08"
     },
     {
-      "provider": "SigLIP and DINOv2 continuity embeddings",
-      "host": "existing RunPod worker / local",
-      "us_available": "yes",
-      "availability_source": "https://github.com/facebookresearch/dinov2/blob/main/LICENSE",
-      "availability_note": "Worldwide Apache licence for customer-controlled execution; specific RunPod account/region availability not verified.",
-      "read_date": "2026-10-08"
-    },
-    {
       "provider": "sync-3",
-      "host": "fal (primary), sync.so (authorized direct optional)",
+      "host": "fal",
       "us_available": "yes",
       "availability_source": "https://fal.ai/legal/api-services",
-      "availability_note": "fal customer integration licence is worldwide; direct Sync competitor permission required.",
+      "availability_note": "fal customer integration service; source rights and face/voice consent required.",
       "read_date": "2026-10-09"
     },
     {
@@ -7096,34 +5187,6 @@
       "allowed_regions": [],
       "read_date": "2026-10-09",
       "consent_verification": "fal terms 6(d) require input rights and consents. Alibaba-specific real-face consent flow UNVERIFIED."
-    },
-    "wan3_edit": {
-      "license": "service-terms",
-      "license_source": "https://www.alibabacloud.com/help/en/legal/latest/alibaba-cloud-international-website-product-terms-of-service-v-3-8-0",
-      "training_eligible": false,
-      "training_reason": "Product terms 4.48 restrict output use for competing models; no clear continuity-training grant.",
-      "commercial_status": "blocked: preview terms 1.1 allow only internal testing, research and evaluation",
-      "read_date": "2026-10-09",
-      "weights_license": "closed-weights",
-      "consent_requirements": "Rights and consent for real likeness or voice references; explicit likeness_consent acknowledgement required.",
-      "consent_source": "https://www.alibabacloud.com/help/en/legal/latest/alibaba-cloud-international-website-product-terms-of-service-v-3-8-0",
-      "verification": "Official regional workspace API verified; legacy US synthesis POST UNVERIFIED and blocked live.",
-      "preview_terms_source": "https://www.alibabacloud.com/help/en/legal/latest/alibaba-cloud-international-website-beta-testing-terms",
-      "live_enabled": false
-    },
-    "wan3_extend": {
-      "license": "service-terms",
-      "license_source": "https://www.alibabacloud.com/help/en/legal/latest/alibaba-cloud-international-website-product-terms-of-service-v-3-8-0",
-      "training_eligible": false,
-      "training_reason": "Product terms 4.48 restrict output use for competing models; no clear continuity-training grant.",
-      "commercial_status": "blocked: preview terms 1.1 allow only internal testing, research and evaluation",
-      "read_date": "2026-10-09",
-      "weights_license": "closed-weights",
-      "consent_requirements": "Rights and consent for real likeness or voice references; explicit likeness_consent acknowledgement required.",
-      "consent_source": "https://www.alibabacloud.com/help/en/legal/latest/alibaba-cloud-international-website-product-terms-of-service-v-3-8-0",
-      "verification": "Official regional workspace API verified; legacy US synthesis POST UNVERIFIED and blocked live.",
-      "preview_terms_source": "https://www.alibabacloud.com/help/en/legal/latest/alibaba-cloud-international-website-beta-testing-terms",
-      "live_enabled": false
     },
     "seedance25_t2v": {
       "license": "service-terms",
@@ -7215,35 +5278,7 @@
       "consent_requirements": "Required subjects and consent_confirmed=true for every real face and voice.",
       "consent_source": "https://sync.so/terms",
       "training_reason": "No clear output-training grant; fal competing-model restriction. Sync upload-use grant includes service improvement.",
-      "read_date": "2026-10-09",
-      "dialogue_license_source": "https://sync.so/terms",
-      "dialogue_read_date": "2026-10-10",
-      "dialogue_commercial_status": "Direct Sync dialogue edits require express written competitor/customer integration authorization"
-    },
-    "heygen_avatar_v": {
-      "license": "service-terms",
-      "weights_license": "closed-weights",
-      "license_source": "https://www.heygen.com/terms",
-      "enabled": true,
-      "training_eligible": false,
-      "training_reason": "Renderhaus continuity training only accepts approved Apache Wan assets. No model-specific training grant is relied on.",
-      "commercial_status": "Paid API account required; Free Plan outputs are non-commercial and blocked live.",
-      "consent_requirements": "subjects, consent_confirmed=true and opaque consent_record_id required for every face and voice. Live digital-twin group must have accepted HeyGen recorded consent.",
-      "consent_source": "https://developers.heygen.com/docs/avatar-consent",
-      "vendor_trains_on_uploads": "Non-enterprise may train unless opted out; enterprise data excluded per trust-and-safety.",
-      "training_source": "https://www.heygen.com/privacy",
       "read_date": "2026-10-09"
-    },
-    "runway_act_two": {
-      "license": "service-terms",
-      "license_source": "https://runway.com/terms-of-use",
-      "training_eligible": false,
-      "training_reason": "Runway Terms section 5(viii) restricts using outputs to train similar or competitive products.",
-      "commercial_status": "commercial API; input rights and likeness consent required",
-      "read_date": "2026-10-09",
-      "consent_requirements": "subjects and consent_confirmed=true for every face, voice and body",
-      "weights_license": "closed-weights",
-      "enabled": true
     },
     "kling_motion_control": {
       "license": "service-terms",
@@ -7366,22 +5401,6 @@
       "commercial_status": "commercial service or permissive code; source media rights still required",
       "read_date": "2026-10-08"
     },
-    "remotion_nle_export": {
-      "license": "Remotion commercial licence; in-house exporter repo licence",
-      "license_source": "https://www.remotion.dev/docs/license",
-      "training_eligible": false,
-      "training_reason": "No generated model-output training policy needed; retain existing repo policy.",
-      "commercial_status": "commercial service or permissive code; source media rights still required",
-      "read_date": "2026-10-08"
-    },
-    "hyperframes_render": {
-      "license": "Apache-2.0 code",
-      "license_source": "https://github.com/heygen-com/hyperframes/blob/main/LICENSE",
-      "training_eligible": false,
-      "training_reason": "Code licence does not blanket-authorize source media use.",
-      "commercial_status": "commercial service or permissive code; source media rights still required",
-      "read_date": "2026-10-08"
-    },
     "voices_ivc_create": {
       "license": "paid commercial API; explicit rights and consent required for source voice",
       "license_source": "https://elevenlabs.io/docs/eleven-creative/voices/voice-cloning/instant-voice-cloning",
@@ -7390,14 +5409,6 @@
       "commercial_status": "commercial service or permissive code; source media rights still required",
       "read_date": "2026-10-08",
       "consent_requirements": "Source subject rights/consent required; vendor-specific flow must be verified before activation."
-    },
-    "local_qc": {
-      "license": "Apache-2.0 weights/model metadata, DINOv2 Apache-2.0 code",
-      "license_source": "https://huggingface.co/facebook/dinov2-base",
-      "training_eligible": false,
-      "training_reason": "Retain existing QC policy; model licence alone does not authorize training on user source media.",
-      "commercial_status": "commercial service or permissive code; source media rights still required",
-      "read_date": "2026-10-08"
     },
     "seedance25_edit": {
       "license": "service-terms",
@@ -7418,14 +5429,6 @@
       "read_date": "2026-10-09",
       "weights_license": "closed-weights",
       "consent_requirements": "Real-face photo/video references are prohibited; consent does not override this restriction."
-    },
-    "remotion_nle_import": {
-      "license": "In-house code and Apache-2.0 OpenTimelineIO; no model or weights",
-      "license_source": "https://github.com/AcademySoftwareFoundation/OpenTimelineIO/blob/v0.18.1/LICENSE.txt",
-      "training_eligible": false,
-      "training_reason": "No generated output; source media rights are unchanged.",
-      "commercial_status": "Local interchange code; source media rights required.",
-      "read_date": "2026-10-09"
     },
     "ffmpeg_tool": {
       "license": "installed FFmpeg LGPL/GPL by build; in-house wrapper",
@@ -7485,61 +5488,6 @@
       "training_eligible": false,
       "training_reason": "Local text recipe data, no model or generated media. Card provenance does not grant source-media training rights.",
       "commercial_status": "Imported Apache-2.0 text cards and separate in-house derivative metadata; no audio, preview media or upstream code."
-    },
-    "footage_memory_status": {
-      "enabled": true,
-      "license": "service-terms",
-      "weights_license": "no-weights-added",
-      "training_eligible": false,
-      "license_source": "https://ai.google.dev/gemini-api/terms",
-      "read_date": "2026-10-10",
-      "training_reason": "Retrieval and source footage do not grant media training rights. Hosted model terms do not clearly allow competing-model training.",
-      "commercial_status": "Offline memory tools; all understanding backends mocked on this branch. No live service or weights added.",
-      "consent_requirements": "Source media rights and applicable personal-data permissions required; no live upload on this branch."
-    },
-    "footage_memory_build": {
-      "enabled": true,
-      "license": "service-terms",
-      "weights_license": "no-weights-added",
-      "training_eligible": false,
-      "license_source": "https://ai.google.dev/gemini-api/terms",
-      "read_date": "2026-10-10",
-      "training_reason": "Retrieval and source footage do not grant media training rights. Hosted model terms do not clearly allow competing-model training.",
-      "commercial_status": "Offline memory tools; all understanding backends mocked on this branch. No live service or weights added.",
-      "consent_requirements": "Source media rights and applicable personal-data permissions required; no live upload on this branch."
-    },
-    "footage_memory_query": {
-      "enabled": true,
-      "license": "service-terms",
-      "weights_license": "no-weights-added",
-      "training_eligible": false,
-      "license_source": "https://ai.google.dev/gemini-api/terms",
-      "read_date": "2026-10-10",
-      "training_reason": "Retrieval and source footage do not grant media training rights. Hosted model terms do not clearly allow competing-model training.",
-      "commercial_status": "Offline memory tools; all understanding backends mocked on this branch. No live service or weights added.",
-      "consent_requirements": "Source media rights and applicable personal-data permissions required; no live upload on this branch."
-    },
-    "footage_watch_answer": {
-      "enabled": true,
-      "license": "service-terms",
-      "weights_license": "no-weights-added",
-      "training_eligible": false,
-      "license_source": "https://ai.google.dev/gemini-api/terms",
-      "read_date": "2026-10-10",
-      "training_reason": "Retrieval and source footage do not grant media training rights. Hosted model terms do not clearly allow competing-model training.",
-      "commercial_status": "Offline memory tools; all understanding backends mocked on this branch. No live service or weights added.",
-      "consent_requirements": "Source media rights and applicable personal-data permissions required; no live upload on this branch."
-    },
-    "footage_clip_extract": {
-      "enabled": true,
-      "license": "service-terms",
-      "weights_license": "no-weights-added",
-      "training_eligible": false,
-      "license_source": "https://ai.google.dev/gemini-api/terms",
-      "read_date": "2026-10-10",
-      "training_reason": "Retrieval and source footage do not grant media training rights. Hosted model terms do not clearly allow competing-model training.",
-      "commercial_status": "Offline memory tools; all understanding backends mocked on this branch. No live service or weights added.",
-      "consent_requirements": "Source media rights and applicable personal-data permissions required; no live upload on this branch."
     },
     "elevenlabs_stt": {
       "model_id": "scribe_v2",
@@ -7613,6 +5561,11 @@
     }
   },
   "editing_refusals": [
+    {
+      "pattern": "^(?![\\s\\S]*\\b(?:gemini|vlm)\\b)[\\s\\S]*(?:\\b(?:check|qc|review|judge|assess)\\b[\\s\\S]*\\b(?:continuity|consistency|face drift)\\b|\\bcheck\\b[\\s\\S]*\\b(?:person|character|identity)\\b[\\s\\S]*\\b(?:same|consistent)\\b[\\s\\S]*\\bacross shots\\b)",
+      "skill": null,
+      "reason": "Native visual continuity QC is unavailable. No media was generated. Explicit Gemini review is available with its own cost approval; it is not a validated delivery or training gate."
+    },
     {
       "pattern": "\\bffmpegOverride\\b",
       "skill": "remotion-delivery-render",
@@ -7753,35 +5706,5 @@
         }
       ]
     }
-  ],
-  "footage_memory_ab": {
-    "status": "candidate-with-gate",
-    "promoted_default": null,
-    "dry_run_backend": "gemini",
-    "candidates": {
-      "gemini": {
-        "model_config": "GEMINI_VLM_MODEL",
-        "model_default": "gemini-3.8-flash",
-        "license": "service-terms",
-        "license_source": "https://ai.google.dev/gemini-api/terms",
-        "training_eligible": false,
-        "read_date": "2026-10-10"
-      },
-      "qwen_omni": {
-        "enabled": false,
-        "license": "UNVERIFIED hosted API terms",
-        "license_source": "https://www.alibabacloud.com/help/en/model-studio/terms-of-service",
-        "training_eligible": false,
-        "us_available": "UNVERIFIED",
-        "reason": "International terms for US/Canada require review; US-region-only DASHSCOPE key must not be used.",
-        "read_date": "2026-10-10"
-      }
-    },
-    "gate": {
-      "fixture_set": "providers/footage_memory/fixtures.json",
-      "timestamp_tolerance_s": 2,
-      "precision": "Report held-out timestamp precision and recall per backend; offline mocks cannot promote a default. A future live comparison and reviewed evidence are required.",
-      "result_sha256": null
-    }
-  }
+  ]
 }

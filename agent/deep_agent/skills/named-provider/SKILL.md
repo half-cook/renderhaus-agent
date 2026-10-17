@@ -1,20 +1,20 @@
 ---
 name: named-provider
-description: Honor explicit provider requests, including Pixelcut loops, PixVerse VibeMV and preview-blocked Wan edits, with disclosure.
+description: Honor explicit provider requests, including Pixelcut loops, PixVerse VibeMV, with disclosure.
 metadata:
   include_tools: call_media_tool call_audio_tool
-  routing_tools: pixverse_vibemv pixelcut_looping_video voices_ivc_create eleven_v4_turbo wan3_edit wan3_extend kling_t2v kling_i2v runway_gen45_t2v runway_aleph_edit luma_ray3_t2v luma_ray3_modify vidu_q4_i2v vidu_q4_r2v seedream_t2i fish_audio_tts wan_vace_edit
-  gateway_tools: Fal___pixverse_vibemv Fal___pixelcut_looping_video ElevenLabs___voices_ivc_create ElevenLabs___text_to_speech_convert ModelStudio___edit_wan3_video ModelStudio___extend_wan3_video ModelStudio___get_task ElevenLabs___music_compose Fal___get_video_task Fal___image_to_video Fal___list_fal_models Fal___reference_to_video Fal___text_to_video Fal___video_to_video Fal___vidu_q4_i2v Fal___vidu_q4_r2v FishAudio___generate_speech Kling___get_video_task Kling___image_to_video Kling___list_kling_models Kling___omni_video Kling___text_to_video Luma___extend_video Luma___get_video_task Luma___image_to_video Luma___list_luma_models Luma___modify_video Luma___text_to_video Runway___get_runway_task Runway___image_to_image Runway___image_to_video Runway___list_runway_models Runway___text_to_image Runway___text_to_video Runway___video_to_video Seedream___image_to_image Seedream___text_to_image
+  routing_tools: gemini_vlm_judge kling_motion_control pixverse_vibemv pixelcut_looping_video voices_ivc_create eleven_v4_turbo vidu_q4_i2v vidu_q4_r2v seedream_t2i fish_audio_tts wan_vace_edit
+  gateway_tools: Gemini___judge_continuity Gemini___get_task Fal___kling_motion_control Fal___pixverse_vibemv Fal___pixelcut_looping_video ElevenLabs___voices_ivc_create ElevenLabs___text_to_speech_convert ElevenLabs___music_compose Fal___get_video_task Fal___image_to_video Fal___list_fal_models Fal___reference_to_video Fal___text_to_video Fal___video_to_video Fal___vidu_q4_i2v Fal___vidu_q4_r2v FishAudio___generate_speech Seedream___image_to_image Seedream___text_to_image
 ---
 
 # Named provider
 
-These built providers remain available through explicit requests. Their generation/edit/image tools
-are `explicit_only`; unnamed requests follow the capability map. Disclose
-`explicit request; not the default for <capability>` with provider, model and estimate.
-An exception's name, such as Runway Act-Two or Kling Motion Control, stays in its specialist skill.
-Wan 3.0 generation uses the generation defaults. Wan 3.0 edit/extend or Model Studio naming
-uses the preview adapter below. Wan 2.x VACE naming means the legacy tools.
+Explicit Gemini/VLM continuity review uses `Gemini___judge_continuity` with authorized
+keyframe inputs, then `Gemini___get_task` for the saved job. `GOOGLE_API_KEY` supplies access;
+`GEMINI_DRY_RUN` defaults true. Use exact discovered schemas. A dry-run or skipped response
+contains no verdict. Require the host's cost approval and preserve unknown estimates.
+This experimental review is not a validated delivery or training gate. It never grants
+training rights. Native visual continuity QC is unavailable.
 
 Explicit "use Pixelcut looping video" selects `Fal___pixelcut_looping_video` on fal.
 Supply `image_url` (JPEG/PNG/WebP); optional `prompt` is at most 4000 characters.
@@ -43,55 +43,6 @@ Pixelcut's loop seam or VibeMV's music/lyrics alignment, and preserve actual out
 Queue acceptance is incomplete media. These outputs never enter the training flywheel.
 See docs/providers/named-fal-video.md for verified sources and current validation limits.
 
-Explicit "use Wan to edit this clip", "Wan 3.0 edit", "Model Studio edit" or named extension
-requests use `wan3_edit` or `wan3_extend`, mapped to `ModelStudio___edit_wan3_video` and
-`ModelStudio___extend_wan3_video`. Warn that Alibaba preview terms permit internal testing
-only until GA; live customer use remains preview-blocked, even with spending approval.
-Disclose that Seedance 2.5 is the permanent edit/extend default. Wan is never a capability
-exception, interim or automatic fallback. A future licence change does not restore default routing.
-
-Keep the original asset version. Supply its `video_url` or Studio asset handle, a `prompt`,
-measured `source_duration_seconds` from 1 through 15 and measured `source_fps` of at least 16.
-Do not invent source measurements. The adapter supports one source video and optional
-`reference_image_urls` and `reference_audio_urls`; each audio needs its matching measured
-`reference_audio_durations`. References containing real faces or voices need
-`real_face_refs=true` and `likeness_consent=true` for permission to use each likeness.
-
-Resolution defaults to `1080p`, audio to true, and aspect ratio to `adaptive`.
-Edit `duration=-1` requests source-length preservation. Extend `duration` is the TOTAL target
-output length, not the added portion. For a 5-second source extended by 2 seconds, use
-`duration=7`, billed as 5 input plus 7 output seconds. Use `direction` forward, backward or
-both; it becomes prompt intent, not a vendor request field. Extension requires adaptive ratio.
-Input plus output duration cannot exceed 30 seconds. Split longer inputs before submission.
-Smart `duration=-1` has an unknown quote and stays dry-run until billing reconciliation exists.
-Any future permitted live call requires an explicit integer output duration; extension must
-exceed source length. Current preview licensing blocks all live customer use, including
-workspace hosts. Explain the internal-evaluation restriction and stop; spending approval
-and disabling dry-run cannot override it.
-
-The host defaults to US Virginia prices. `DASHSCOPE_BASE_URL` defaults to the legacy US host,
-whose synthesis POST is UNVERIFIED and blocked live. The documented US workspace host can
-be configured by the operator. Never alter flags or host settings to bypass a blocked request.
-Approval shows input plus total output cost, including the platform fee, even in autonomous runs.
-
-Submit once, save the returned `job_id`, and poll `ModelStudio___get_task` with `download=true`
-at least 15 seconds apart. A failed/expired/unknown task is a blocker, not authority to resubmit.
-Download the actual MP4 before its 24-hour URL expires and inspect the edit and preserved motion.
-Keep continuity-qc on `local_qc`. The model has closed weights, evaluation-only preview licensing and
-`training_eligible=false`; customer visual acceptance does not grant training rights.
-
-Preserve the requested operation. Kling text/image tools use `duration_seconds`, `aspect_ratio`,
-`resolution` and `generate_audio`. Omni references require real existing element IDs, not inferred
-IDs. Runway Gen-4.5 uses `model="gen4.5"`, integer 2-10 second durations and `ratio`.
-Aleph uses `Runway___video_to_video`, `model="aleph2"`, `video_path_or_url`, `prompt` and measured
-`video_duration_seconds` for a 2-30 second source. Do not send an output duration or deprecated ratio.
-Runway images use `gen4_image`; image Turbo requires a source and `gen4_image_turbo` on the reference
-operation. Poll `Runway___get_runway_task` at least five seconds apart and retain required attribution.
-
-Luma generation uses `ray-3.2`. Modify accepts a measured 5/10 second source with exactly one input.
-Extend needs a completed Luma generation UUID, not an arbitrary clip. See docs/providers/luma.md.
-Luma outputs remain ineligible for training/evaluation datasets.
-
 Vidu single-frame animation maps to `Fal___vidu_q4_i2v` with `image_url` and optional `prompt`.
 Vidu reference/voice identity maps to `Fal___vidu_q4_r2v` with `prompt`, up to 12
 `reference_image_urls` and up to 3 `reference_audio_urls`. Use `audio=true` when R2V needs audio;
@@ -111,10 +62,6 @@ exposes that conditional target; otherwise report the absent target. API access 
 Speech weight licence. An explicit ElevenLabs music request uses `ElevenLabs___music_compose`.
 All paid video still pauses in autonomous runs. Poll the selected provider's saved job once submitted.
 
-Veo, Hedra, LivePortrait, InfiniteTalk, SeedVR2, RIFE, MMAudio, ACE-Step, Kandinsky generative video,
-HeyGen generative video and fframes are retired. Explain retirement and offer the mapped replacement.
-Do not pretend a replacement fulfills the named vendor request. MiniMax H3 and Hunyuan remain blocked.
-
 Follow `read_studio_context.intent_route`. Selection uses the explicit requested provider/model,
 then a named exception, then the capability default. Cost estimates support approval and disclosure;
 they never select a provider. Pending defaults use only the policy's declared interim tool.
@@ -130,6 +77,11 @@ A queued job or dry-run is incomplete media. Open/play the actual saved artifact
 Record explicit customer visual acceptance/rejection with `record_media_outcome` and the saved call ID.
 A spending approval is not visual acceptance. Training eligibility follows provenance and the existing
 Wan training hook; these routing instructions cannot grant training rights.
+## Performance transfer
 
-Explicit ElevenLabs clone-and-read requests use `voices_ivc_create` then `eleven_v4_turbo`,
-including when the internal HeyGen Voice A/B gate is on. Require voice-owner consent.
+Use `Fal___kling_motion_control` for an image plus driving performance video.
+Require named subjects and `consent_confirmed=true` separately from cost approval.
+The driving clip is 3–30 seconds; image orientation permits at most 10 seconds.
+Poll the saved job with `Fal___get_video_task`; never blindly resubmit accepted work.
+
+Explicit Gemini/VLM continuity review is experimental. It is not the default or a delivery-QC pass. Require the existing cost approval, poll the accepted job, and keep unknown estimates unknown.

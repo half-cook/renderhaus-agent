@@ -15,11 +15,10 @@ CASES = json.loads((ROOT / "tests/fixtures/skill_routing.json").read_text())
 
 
 def gateway_names():
-    from agent.hyperframes import HYPERFRAMES_TOOL
     from providers.catalog import PROVIDERS
 
     targets = {p.id: p.target_name for p in PROVIDERS} | {"fish_audio": "FishAudio"}
-    return {HYPERFRAMES_TOOL.name} | {
+    return {
         f"{targets[p.name.removesuffix('.tools.json')]}___{t['name']}"
         for p in (ROOT / "configs/gateway").glob("*.tools.json")
         for t in json.loads(p.read_text())
@@ -181,13 +180,13 @@ class SkillContracts(unittest.TestCase):
                 self.assertTrue(
                     any(name.split("___")[0] in DISPATCH_TARGETS[d] for d in dispatch), name
                 )
-        self.assertEqual(len(names), 44)
+        self.assertEqual(len(names), 39)
         self.assertTrue(
             {
                 "t2v", "i2v", "edit-v2v", "still-then-video", "image-gen", "named-provider", "lottie-animation", "logo-animation",
-                "podcast-audiogram", "audio-bed", "motion-graphics", "hyperframes", "continuity-qc", "resolve-handoff", "footage-memory",
+                "podcast-audiogram", "audio-bed", "motion-graphics", "resolve-handoff",
                 "video-short", "product-images", "storyboard-shots", "audio", "final-assembly",
-                "refinement", "conversational-edit", "act-two", "lipsync", "dialogue-edit", "upscale",
+                "refinement", "conversational-edit", "lipsync", "upscale",
                 "lyrics-video", "product-demo-video", "cinematic-product-promo", "whiteboard-explainer", "knowledge-explainer", "plan-to-video", "remotion-ad-variant-matrix", "remotion-aspect-ratio-variants",
                 "remotion-delivery-render", "remotion-loudness-qc", "remotion-deliverable-qc", "chat-story-video", "codebase-video", "series-video-planner",
             } <= names
@@ -201,8 +200,8 @@ class SkillContracts(unittest.TestCase):
         self.assertEqual(len(ids), len(set(ids)), "Routing fixture IDs must be unique.")
         # Exact row totals live nowhere: every feature adds rows, and a literal
         # total made every pair of feature branches conflict. Skips stay pinned.
-        self.assertEqual(sum(bool(c["skip_reason"]) for c in CASES), 6)
-        self.assertEqual(sum(not c["skip_reason"] for c in CASES), len(CASES) - 6)
+        self.assertEqual(sum(bool(c["skip_reason"]) for c in CASES), 0)
+        self.assertEqual(sum(not c["skip_reason"] for c in CASES), len(CASES))
         self.assertTrue(all(c.get("source_status") != "archived" for c in CASES))
         self.assertTrue(all("[project.confidential=true]" not in c["prompt"] for c in CASES))
         self.assertTrue(all(c["expected_skill"] != "confidential-route" for c in CASES))
@@ -231,7 +230,6 @@ class SkillContracts(unittest.TestCase):
         from agent.deep_agent.routing import route_intent
 
         for prompt, alias in [
-            ("Act-Two performance capture onto character image", "runway_act_two"),
             ("make this character do my full-body dance", "kling_motion_control"),
         ]:
             with self.subTest(prompt=prompt):
@@ -250,15 +248,10 @@ class SkillContracts(unittest.TestCase):
         for prompt in ["use Veo 3.1 for this shot", "make a HeyGen generative video clip"]:
             with self.subTest(prompt=prompt):
                 route = route_intent(prompt)
-                self.assertEqual(route.status, "retired")
+                self.assertIn(route.status, {"retired", "blocked"})
                 self.assertIsNone(route.tool)
-                self.assertIn("retired", route.reason)
+                self.assertIn("not supported", route.reason)
 
-    def test_explicit_runway_modality_is_preserved(self):
-        from agent.deep_agent.routing import route_intent
-
-        self.assertEqual(route_intent("Runway Gen-4 image of a product").tool, "Runway___text_to_image")
-        self.assertEqual(route_intent("runway image to video").tool, "Runway___image_to_video")
 
     def test_pending_and_retired_aliases_are_not_gateway_tools(self):
         from agent.deep_agent.routing import TOOL_MAP
@@ -273,10 +266,10 @@ class SkillContracts(unittest.TestCase):
                 else:
                     self.assertIn(entry["gateway_tool"], known)
         required_aliases = {
-            "wan3_t2v", "wan3_i2v", "wan3_r2v", "wan3_edit", "wan3_extend",
+            "wan3_t2v", "wan3_i2v", "wan3_r2v",
             "seedance25_t2v", "seedance25_i2v", "seedance25_r2v",
             "gpt_image25_t2i", "gpt_image25_edit", "recraft_v41_vector", "ideogram45_edit",
-            "gemini_vlm_judge", "sync3_lipsync", "heygen_avatar_v", "runway_act_two",
+            "gemini_vlm_judge", "sync3_lipsync",
             "kling_motion_control", "mureka_v95", "mureka_lyrics_video", "mirelo_v2a",
             "elevenlabs_sfx_v2", "eleven_v4_turbo", "topaz_upscale", "topaz_interpolate",
             "shot_recipe_search",
@@ -295,7 +288,7 @@ class RoutingRunnerHelpers(unittest.TestCase):
         self.assertEqual(parse_max_calls("seedance25_extend: 0 billable submissions"), {"seedance25_extend": 0})
         self.assertEqual(parse_max_calls("wan3_t2v: 1; eleven_v4_turbo: 1"), {"wan3_t2v": 1, "eleven_v4_turbo": 1})
         self.assertEqual(parse_max_calls(None), {})
-        self.assertEqual({c["test_id"] for c in CASES if c.get("max_calls")}, {"RT-169", "RT-170"})
+        self.assertEqual({c["test_id"] for c in CASES if c.get("max_calls")}, {"RT-169"})
 
     def test_rt_169_ambiguous_extend_is_refused_without_a_billable_route(self):
         from agent.deep_agent.routing import route_intent
@@ -305,4 +298,4 @@ class RoutingRunnerHelpers(unittest.TestCase):
             route = route_intent(case["prompt"], arguments=case["arguments"])
         self.assertEqual(route.status, "blocked")
         self.assertIsNone(route.tool)
-        self.assertFalse({s.alias for s in route.steps} & {"seedance25_extend", "wan3_extend", "wan3_edit", "seedance25_edit"})
+        self.assertFalse({s.alias for s in route.steps} & {"seedance25_extend",   "seedance25_edit"})

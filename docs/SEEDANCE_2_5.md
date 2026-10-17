@@ -131,7 +131,6 @@ Five active fixture rows make the new routes observable. Inventory is 20 provide
 Browser E2E is pending because no Comet control is available; access was requested.
 The ignored receipt is `.renderhaus/e2e/seedance-prompt-diagnostics.json`.
 No mock check is presented as browser or video-quality evidence.
-See [the decisions](seedance-prompt-diagnostics-decisions.tsv).
 
 ## Transport and credentials
 
@@ -244,6 +243,4 @@ recorded through `scripts/browser_e2e_hook.py` under the ignored evidence direct
 No browser action, generated artifact or live provider access is claimed. Remaining verification
 requires the real Studio/Comet session and separately authorized provider generation.
 
-See [the permanent-default decisions](seedance-edit-extend-default-decisions.tsv) for current
-evidence and unresolved limits. The [earlier adapter decisions](seedance-2-5-decisions.tsv)
 retain history; their interim/flag-restoration decisions are superseded.

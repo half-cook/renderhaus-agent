@@ -21,22 +21,16 @@ on:
           - all
           - openai_images
           - sync
-          - heygen
           - topaz
           - mureka
           - gemini
-          - runway
           - fal
-          - luma
-          - alibaba_modelstudio
           - seedance
-          - kling
           - seedream
           - elevenlabs
           - remotion
           - ffmpeg
           - shot_recipes
-          - footage_memory
         default: all
       region:
         description: AWS region
@@ -115,18 +109,12 @@ jobs:
                   PROVIDER=all
                 else
                   SELECTED=()
-                  echo "$CHANGED" | grep -E '^providers/footage_memory/|^configs/gateway/footage_memory\.tools\.json' >/dev/null && SELECTED+=(footage_memory)
                   echo "$CHANGED" | grep -E '^providers/gemini/|^configs/gateway/gemini\.tools\.json' >/dev/null && SELECTED+=(gemini)
                   echo "$CHANGED" | grep -E '^providers/sync/|^configs/gateway/sync\.tools\.json' >/dev/null && SELECTED+=(sync)
-                  echo "$CHANGED" | grep -E '^providers/heygen/|^configs/gateway/heygen\.tools\.json' >/dev/null && SELECTED+=(heygen)
                   echo "$CHANGED" | grep -E '^providers/mureka/|^configs/gateway/mureka\.tools\.json' >/dev/null && SELECTED+=(mureka)
                   echo "$CHANGED" | grep -E '^providers/topaz/|^configs/gateway/topaz\.tools\.json' >/dev/null && SELECTED+=(topaz)
                   echo "$CHANGED" | grep -E '^providers/openai_images/|^configs/gateway/openai_images\.tools\.json' >/dev/null && SELECTED+=(openai_images)
-                  echo "$CHANGED" | grep -E '^providers/kling/|^configs/gateway/kling\.tools\.json' >/dev/null && SELECTED+=(kling)
-                  echo "$CHANGED" | grep -E '^providers/runway/|^configs/gateway/runway\.tools\.json' >/dev/null && SELECTED+=(runway)
                   echo "$CHANGED" | grep -E '^providers/fal/|^configs/gateway/fal\.tools\.json' >/dev/null && SELECTED+=(fal)
-                  echo "$CHANGED" | grep -E '^providers/luma/|^configs/gateway/luma\.tools\.json' >/dev/null && SELECTED+=(luma)
-                  echo "$CHANGED" | grep -E '^providers/alibaba_modelstudio/|^configs/gateway/alibaba_modelstudio\.tools\.json' >/dev/null && SELECTED+=(alibaba_modelstudio)
                   echo "$CHANGED" | grep -E '^providers/seedance/|^lambdas/seedance/|^configs/gateway/seedance\.tools\.json' >/dev/null && SELECTED+=(seedance)
                   echo "$CHANGED" | grep -E '^providers/seedream/|^lambdas/seedream/' >/dev/null && SELECTED+=(seedream)
                   echo "$CHANGED" | grep -E '^providers/elevenlabs/|^configs/gateway/elevenlabs\.tools\.json' >/dev/null && SELECTED+=(elevenlabs)
@@ -141,7 +129,7 @@ jobs:
                   fi
                 fi
               fi
-              if echo "$CHANGED" | grep -E '^(agent/|providers/shot_recipes/|providers/footage_memory/|providers/reference_shots/|Dockerfile\.agentcore|scripts/deploy_agentcore\.py|pyproject\.toml|server/billing_rates\.py)' >/dev/null; then
+              if echo "$CHANGED" | grep -E '^(agent/|providers/shot_recipes/|providers/reference_shots/|Dockerfile\.agentcore|scripts/deploy_agentcore\.py|pyproject\.toml|server/billing_rates\.py)' >/dev/null; then
                 RT=true
               fi
             fi

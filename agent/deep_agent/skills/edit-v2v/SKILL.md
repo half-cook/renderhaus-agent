@@ -9,15 +9,6 @@ metadata:
 
 # Edit existing video
 
-Seedance 2.5 is the permanent edit and extend default, chosen by Satya on 2026-10-09.
-Use `seedance25_edit` or `seedance25_extend`, mapped to `Seedance___edit_video` and
-`Seedance___extend_video` through fal US. There are no edit or extend exceptions or interims.
-Disclose the default, host, model and estimated cost before approval.
-All paid video pauses even in autonomous runs. Cost and tier never select a provider.
-Explicit Wan 3.0, Model Studio, Aleph, Luma or Wan VACE requests use
-[named provider](../named-provider/SKILL.md).
-Trims, titles, captions, soundtrack and ordering use final-assembly.
-
 For Seedance, supply `video_url`, `prompt`, measured `source_duration_seconds`, `source_fps`,
 and `source_aspect_ratio`. Editing accepts sources from 4 through 30 seconds and preserves
 approximately their duration. The vendor can shorten an edit by about 0.4 seconds.

@@ -5,17 +5,11 @@ metadata:
   remotion_backend: configured
   remotion_features: clip_timing transitions fit_position scale motion titles captions audio_mix canvas encoding
   include_tools: call_editor_tool
-  routing_tools: cutaway_record remotion_render hyperframes_render motion_carry_probe
-  gateway_tools: HyperFrames___render_composition Remotion___get_render_progress Remotion___render_timeline Remotion___motion_carry_probe
+  routing_tools: remotion_render motion_carry_probe
+  gateway_tools: Remotion___get_render_progress Remotion___render_timeline Remotion___motion_carry_probe
 ---
 
 # Product demo
-
-Capture uses the unchanged `cutaway_record` alias. It is a pending utility with no built Gateway
-target; report that dependency. Do not fabricate screenshots, a Playwright capture or an MP4.
-If real captured footage is supplied, assemble it through the motion-graphics/final-assembly skills
-using Remotion by default. HyperFrames is an explicit HTML-template exception and remains dry-run.
-Narration uses audio-bed. No AGPL code from OpenMontage or guizang may be copied or vendored.
 
 Follow `read_studio_context.intent_route`. Selection uses the explicit requested provider/model,
 then a named exception, then the capability default. Cost estimates support approval and disclosure;

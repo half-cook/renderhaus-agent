@@ -13,11 +13,6 @@ The harness finish rubric uses this skill for relevant deliverables. Run `inspec
 the current local file and view sampled frames with `read_file`. A rubric verdict cannot
 replace the saved QC report, matching output checksums, or required visual review.
 
-Use `deliverable_qc`, mapped to `Remotion___qc_deliverable`, through `call_editor_tool`.
-Read `read_studio_context`, discover the Gateway schema, and inspect the actual saved file.
-This tool reads local artifacts. It never generates, renders, uploads or changes a backend.
-Identity consistency belongs to [continuity QC](../continuity-qc/SKILL.md).
-
 The arguments are `job_id`, `input_path`, `manifest_path`, `preset` and `spec`. Use one
 job-relative file or an approved matrix manifest. The maintained preset table is
 `providers/remotion/delivery_presets.json`; read [delivery render](../remotion-delivery-render/SKILL.md)

@@ -25,10 +25,6 @@ class CapabilitySelectionEdges(unittest.TestCase):
             self.assertEqual(route.model, "fal-ai/wan-22-vace-fun-a14b")
             self.assertEqual(route.skill, "named-provider")
 
-    def test_omni_explicit_request_selects_omni_tool(self):
-        route = routing.route_intent("use Kling Omni for a multi-reference video")
-        self.assertEqual(route.tool, "Kling___omni_video")
-        self.assertIn("explicit request", route.disclosure)
 
     def test_bare_fish_name_is_explicit(self):
         route = routing.route_intent("use Fish to narrate this text")
@@ -38,10 +34,6 @@ class CapabilitySelectionEdges(unittest.TestCase):
         route = routing.select_provider("motion_graphics")
         self.assertEqual(route.tool, "Remotion___render_timeline")
 
-    def test_local_qc_is_ready_without_a_gateway_or_paid_provider(self):
-        route = routing.route_intent("continuity QC these clips")
-        self.assertEqual((route.alias, route.status, route.tool), ("local_qc", "ready", None))
-        self.assertIsNone(route.dispatch_tool)
 
     def test_real_face_evidence_cannot_be_erased_by_tool_arguments(self):
         route = routing.route_intent('my CEO photo attached says "hi"', arguments={"real_face_refs": False})

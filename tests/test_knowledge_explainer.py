@@ -33,22 +33,6 @@ class KnowledgeExplainerRoutingTests(unittest.TestCase):
                                  ("knowledge-explainer", "remotion_render", "Remotion___render_timeline", "ready"))
                 self.assertFalse(route.steps)
 
-    def test_explicit_hyperframes_keeps_knowledge_skill_and_feature_gate(self):
-        prompt = "HyperFrames silent science explainer with event foley only"
-        with patch.dict(os.environ, {"HYPERFRAMES_ENABLED": "true", "HYPERFRAMES_DRY_RUN": "true"}):
-            route = route_intent(prompt)
-            self.assertEqual((route.skill, route.alias, route.tool),
-                             ("knowledge-explainer", "hyperframes_render", "HyperFrames___render_composition"))
-            self.assertIn("explicit HyperFrames request", route.disclosure)
-        with patch.dict(os.environ, {"HYPERFRAMES_ENABLED": "false"}):
-            route = route_intent(prompt)
-            self.assertEqual((route.skill, route.status, route.tool), ("knowledge-explainer", "blocked", None))
-            self.assertIn("disabled", route.reason)
-
-    def test_missing_requested_renderer_is_blocked_without_substitution(self):
-        with patch.dict(os.environ, {"HYPERFRAMES_ENABLED": "true"}):
-            route = route_intent("HyperFrames silent science explainer", available_tools={"Remotion___render_timeline"})
-        self.assertEqual((route.skill, route.status, route.tool), ("knowledge-explainer", "blocked", None))
 
     def test_whiteboard_voiceover_remains_a_narrated_whiteboard_workflow(self):
         for prompt in ["whiteboard explainer with voiceover narration",
@@ -124,33 +108,6 @@ class KnowledgeExplainerRoutingTests(unittest.TestCase):
                 route = route_intent(prompt, arguments=arguments)
                 self.assertEqual((route.skill, route.alias, route.tool), ("audio-bed", alias, tool))
 
-    def test_explicit_video_provider_is_preserved_with_disclosure_and_no_speech(self):
-        from agent.gateway_executor import GatewayExecutor
-        from agent.studio_agent_next import StudioAgentRequest, _context_from_request
-
-        for provider, alias, tool in [
-            ("Kling", "kling_t2v", "Kling___text_to_video"),
-            ("Runway", "runway_gen45_t2v", "Runway___text_to_video"),
-            ("Luma", "luma_ray3_t2v", "Luma___text_to_video"),
-        ]:
-            for ending in ["video", "with sound effects synced to events",
-                           "with sound effects synchronized to on-screen events"]:
-                with self.subTest(provider=provider, ending=ending):
-                    prompt = f"use {provider} to make a silent knowledge explainer {ending}"
-                    route = route_intent(prompt)
-                    self.assertEqual((route.skill, route.alias, route.tool), ("named-provider", alias, tool))
-                    self.assertIn("explicit request", route.basis)
-                    self.assertTrue(route.disclosure)
-                    self.assertEqual(filter_request_tools(prompt, {"ElevenLabs___text_to_speech_convert"}), set())
-                    executor = GatewayExecutor(_context_from_request(StudioAgentRequest(prompt=prompt)), [])
-                    generation = executor.media_selection(tool, {"prompt": "A graphic diagram"})
-                    self.assertEqual((generation.status, generation.alias), ("ready", alias))
-                    picture_sfx = executor.media_selection("Fal___mirelo_v2a", {
-                        "video_url": "https://example.invalid/silent.mp4", "duration": 8, "num_samples": 1})
-                    self.assertEqual((picture_sfx.status, picture_sfx.alias), ("ready", "mirelo_v2a"))
-                    text_sfx = executor.media_selection("ElevenLabs___text_to_sound_effects_convert", {
-                        "text": "A soft single pop", "duration_seconds": 0.5})
-                    self.assertEqual((text_sfx.status, text_sfx.alias), ("ready", "elevenlabs_sfx_v2"))
 
     def test_confidential_metadata_and_price_words_do_not_change_renderer(self):
         for tier in [None, "draft", "premium"]:

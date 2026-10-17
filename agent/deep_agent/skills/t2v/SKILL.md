@@ -49,12 +49,6 @@ Gemini Omni is an A/B candidate only.
 Split a request over 30 seconds into separate shots or refuse a single-shot request with that limit.
 The explicitly selected BytePlus 1.5 model accepts only 4-12 seconds.
 
-For Kling, Runway, Luma, Vidu or Wan VACE by name, read [named provider](../named-provider/SKILL.md).
-Retired Veo and HeyGen generative-video requests disclose retirement and offer the default.
-Use native Seedance `prompt`, `duration_seconds`, `aspect_ratio` and `resolution` controls only when
-its schema accepts them. Poll `Seedance___get_video_task` using the saved ID and `download=true`.
-For a final assembled MP4, read [final assembly](../final-assembly/SKILL.md).
-
 Follow `read_studio_context.intent_route`. Selection uses the explicit requested provider/model,
 then a named exception, then the capability default. Cost estimates support approval and disclosure;
 they never select a provider. Pending or commercially blocked defaults use only the policy's declared interim tool.

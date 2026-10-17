@@ -92,11 +92,6 @@ feature, dragging a slider or opening a result. A decorative pointer is insuffic
   when a handoff explains the product; distinguish ownership without adding brand copy.
 - For a loop, inspect the cursor's location, pressed state and velocity across the seam.
 
-Use actual supplied footage or a supplied animated shot. Live product capture remains
-pending on `cutaway_record`; these cards add no browser-control or recording tool.
-An illustrative UI must use approved content and be disclosed as a demonstration.
-Do not present invented interactions, analytics or marketing claims as real product use.
-
 Inspect the click at frame resolution and play each drag through release. Reject a
 cursor that misses its control, a result that appears before its trigger, a value jump
 at release, or a camera move that separates pointer and target.

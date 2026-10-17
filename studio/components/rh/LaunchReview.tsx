@@ -5,7 +5,7 @@ import { InviteSignup } from "@/components/beta/InviteSignup";
 import { ApprovalCard } from "@/components/rh/ApprovalCard";
 import { LaunchReviewV4 } from "@/components/rh/LaunchReviewV4";
 import { UploadRow } from "@/components/rh/UploadRow";
-import { OUT_OF_CREDIT_FULL, TOPUPS_COMING_SOON } from "@/lib/launch";
+import { OUT_OF_CREDIT_FULL } from "@/lib/launch";
 import type { ApprovalCardModel } from "@/lib/rh/billing";
 
 const LINES: ApprovalCardModel["lines"] = [
@@ -41,7 +41,7 @@ export function LaunchReview() {
         <div className="rh-betacard-head"><span className="rh-eyebrow">Beta credit</span><span className="rh-chip rh-chip-mono">Invite</span></div>
         <p className="rh-betacard-amt"><b className="rh-mono rh-num">$0.00</b> <span className="rh-fg3">of $10.00</span></p>
         <div className="rh-bar rh-bar-acc"><b style={{ width: "0%" }} /></div>
-        <p className="rh-betacard-note">{TOPUPS_COMING_SOON}</p>
+        <p className="rh-betacard-note">{OUT_OF_CREDIT_FULL}</p>
       </section>
       <div className="rh-card" style={{ padding: 18, marginTop: 16 }}>
         <p style={{ margin: 0 }}>{OUT_OF_CREDIT_FULL}</p>

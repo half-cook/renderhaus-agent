@@ -17,7 +17,7 @@ from server.billing_rates import cost_for
 from test_deep_agent import ScriptedModel, Gateway, call, final
 
 PREMIUM = Tool(
-    name="Kling___text_to_video",
+    name="Fal___generate_wan3_t2v",
     inputSchema={
         "type": "object",
         "properties": {"prompt": {"type": "string"}},
@@ -37,7 +37,7 @@ def generate(name=PREMIUM.name, call_id="video"):
 class IntentGraphTests(unittest.IsolatedAsyncioTestCase):
     def request(self, **kwargs):
         return StudioAgentRequest(
-            prompt="make a 5 second cinematic drone shot with Kling",
+            prompt="make a 5 second cinematic drone shot with Wan",
             autonomous=True,
             workspace_id="workspace",
             project_id="project",
@@ -57,11 +57,11 @@ class IntentGraphTests(unittest.IsolatedAsyncioTestCase):
 
     async def test_autonomous_premium_pauses_with_real_billing_estimate_and_route(self):
         with patch.dict(
-            os.environ, {"KLING_DRY_RUN": "false", "RENDERHAUS_AUTONOMOUS_RUN_CAP_CENTS": ""}
+            os.environ, {"FAL_DRY_RUN": "false", "RENDERHAUS_AUTONOMOUS_RUN_CAP_CENTS": ""}
         ):
             studio, paused = await self.pause(self.request(), Gateway([PREMIUM]))
             approval = paused.approvals[0]
-            cents = cost_for("kling", "text_to_video", {"prompt": "forest"}).total_cents
+            cents = cost_for("fal", "generate_wan3_t2v", {"prompt": "forest"}).total_cents
             self.assertEqual(approval.estimated_cost["total_cents"], cents)
             self.assertIn(f"${cents / 100:.2f}", approval.label)
             self.assertNotIn("fee", approval.description)

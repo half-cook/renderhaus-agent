@@ -171,15 +171,6 @@ native render, audio parity and output have been verified. Local technical check
 accept framing, captions or legal/price copy. Browser E2E in Comet is blocked because this
 environment cannot control Comet; local binary checks are supporting evidence only.
 
-RT-180 and RT-181 are active. Six added negatives protect talking-head edits, per-market
-ad matrices, lower thirds and unrelated briefs mentioning text messages. The fixture has
-289 combined rows with podcast-audiogram: 283 active and six unchanged dependency skips. Selection stays explicit request,
-exception predicate, default, without tiers or confidentiality-based routing. Existing
-demoted providers remain available under their existing policies.
-The skips are four capture/cutaway-record rows (`feat/product-demo-capture` pending), one
-HyperFrames-overlay row (`feat/hyperframes-overlays` pending) and RT-E043 (exact end-card
-OCR comparison unavailable). RT-176 is one of the four capture rows.
-
 ## Local verification
 
 The real local sample exercised generic chrome, verbatim emoji/RTL copy, read receipts,
@@ -242,5 +233,4 @@ These software/font licences do not confer model training rights. No AGPL or non
 code/weights were added. Installed Deep Agents 0.7.23 signatures govern host integration;
 no new graph, middleware, external eval provider or approval mechanism was introduced.
 
-See [decisions](chat-story-video-decisions.tsv), [skill](../agent/deep_agent/skills/chat-story-video/SKILL.md),
 [Remotion editing](REMOTION_EDITING.md) and [browser verification](BROWSER_E2E.md).

@@ -9,22 +9,6 @@ It has no narration or TTS step. A whiteboard request with voiceover retains
 
 No provider or Gateway tool is added. The skill reuses these discovered tools:
 
-| Routing ID | Gateway tool | Key arguments |
-| --- | --- | --- |
-| `remotion_render` | `Remotion___render_timeline` | `title`, `visuals`; optional `text_overlays`, `audio_tracks`, `subtitles`, `aspect_ratio`, `fps`, `output_resolution` |
-| Renderer poll | `Remotion___get_render_progress` | Returned `render_id`, `bucket_name`; `download=true` |
-| `hyperframes_render` | `HyperFrames___render_composition` | `html`, `duration_seconds`, `width`, `height`, `fps` |
-| `mirelo_v2a` | `Fal___mirelo_v2a` | `video_url`, optional `text_prompt`, measured `duration`, `num_samples=1`, optional `seed` |
-| Mirelo poll | `Fal___get_video_task` | Returned `job_id`, `download=true` |
-| `elevenlabs_sfx_v2` | `ElevenLabs___text_to_sound_effects_convert` | `text`, optional `duration_seconds`, `loop`, `prompt_influence`, `output_format`, `model_id=eleven_text_to_sound_v2` |
-
-Selection remains explicit request, matching exception, then capability default. Remotion
-renders by default. HyperFrames requires its name and enabled local discovery. Its current
-adapter only previews composition metadata and refuses live rendering without an isolated
-worker. It cannot deliver an MP4 here. An explicitly named video-generation provider retains
-its named route and disclosure; graphic assembly still uses Remotion. Confidential metadata
-and price-tier words do not change selection.
-
 The packaged JSON separates its event plan from renderer arguments. Each beat records an
 ID, onset, duration, graphic action, on-screen text, source and optional SFX cue. Discover
 schemas before dispatch and send only native arguments. Text-described one-shots use
@@ -51,14 +35,6 @@ skill provides enhancement with its existing approval gate.
 
 ## Official source checks, 2026-10-09
 
-| Component | Verified API or licence | Price and training decision |
-| --- | --- | --- |
-| Mirelo SFX 1.6 on fal | [Official API](https://fal.ai/models/mirelo-ai/sfx1.6/video-to-video/api): `mirelo-ai/sfx1.6/video-to-video`, video input and muxed-video output. Closed weights, commercial hosted service under [fal terms](https://fal.ai/legal/terms-of-service). | [Official model pricing](https://fal.ai/models/mirelo-ai/sfx1.6/video-to-video): $0.01/generated second for one sample. Samples 2–4 remain UNVERIFIED and dry-run-only. Existing `training_eligible=false`: competing-model restrictions and no verified general training grant. |
-| ElevenLabs Sound Effects V2 | [Official API](https://elevenlabs.io/docs/api-reference/text-to-sound-effects/convert): `/v1/sound-generation`, `eleven_text_to_sound_v2`, optional 0.5–30 seconds. Proprietary hosted service; [terms](https://elevenlabs.io/terms-of-use) allow commercial use on paid plans; free-plan outputs are non-commercial and unsuitable here. | [Official API pricing](https://elevenlabs.io/pricing/api) lists $0.12/minute but also describes generation-based metering. TODO: exact per-call quote remains `unknown` unless an operator supplies `ELEVENLABS_TOOL_COST_CENTS_JSON`. Existing `training_eligible=false`: no verified output-training grant. |
-| Remotion renderer | [Official submit](https://www.remotion.dev/docs/lambda/rendermediaonlambda) and [poll](https://www.remotion.dev/docs/lambda/getrenderprogress) APIs. [Licence](https://github.com/remotion-dev/remotion/blob/main/LICENSE.md): free for individuals, nonprofits and companies with at most three employees; other companies need a commercial licence. | No flat Lambda quote verified; estimate `unknown`. The existing eight-cent billing placeholder is not a verified price. Local provider charge is zero, excluding operator compute. No model is added; renderer use grants no training rights to input assets. |
-| HyperFrames renderer | [Apache-2.0 licence](https://github.com/heygen-com/hyperframes/blob/main/LICENSE). Existing optional adapter, preview only. | Live worker and compute quote unavailable. No model or training permission added. |
-| Pattern source | [LuZhong-Li/vibe-knowledge-video-skill](https://github.com/LuZhong-Li/vibe-knowledge-video-skill), [MIT licence](https://github.com/LuZhong-Li/vibe-knowledge-video-skill/blob/main/LICENSE). | Patterns only: beat planning, on-screen explanation and event Foley. No upstream code, text or dependency copied. |
-
 The existing billing system adds the Renderhaus fee. Do not present raw provider rates as a
 guaranteed customer total. Existing paid-video cost approval, autonomous premium-video gate,
 approval exemptions and spend cap remain in force. Rejection must not resubmit. Speech-producing
@@ -66,22 +42,10 @@ endpoints cannot dispatch for the silent workflow, including through an approved
 
 ## Routing and validation
 
-Two exact seed rows are added and active: the no-narration control-illusion short selects
-Remotion, and the explicitly named HyperFrames silent science explainer selects its gated
-preview. Searching the full capability-map CSV found only those two knowledge-explainer rows.
-The related third row is the existing whiteboard-with-voiceover case; its source expectation
-is retained, with actual workflow ownership corrected to `whiteboard-explainer`.
-
-Inventory is 16 providers, 115 cataloged Gateway tools, 26 packaged skills and 220 fixture
-rows: 215 active, 5 skipped. The later Remotion delivery branch activates its editing rows; this skill adds no provider.
-The retained skips are 29 delivery/loudness/QC, 10 subject-aware aspect/reframe, three Cutaway
-capture, two unverified LUT/multicam semantics and one HyperFrames footage-overlay case.
-
 Offline tests exercise routing, speech rejection before approval/provider access, native
 timeline cue placement, packaged skill loading and Deep Agents 0.7.23 autonomous
 Mirelo approval/rejection/resume with fake Gateway transports. They establish plan and policy
 behavior, not rendered media quality. Full check results are in
-[the decisions file](knowledge-explainer-decisions.tsv).
 
 The required full suite exposed a pre-existing intermittent Studio charging failure under
 concurrent allowance use. The fix reserves the SQLite write transaction before reading

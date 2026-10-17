@@ -15,7 +15,7 @@ for plain linear-motion FPS conversion, or when explicitly requested. An explici
 overrides the linear-motion exception. The fal model names are `Starlight Precise 2.6`, `Apollo`,
 and `Chronos`. Direct API identifiers `slp-2.6`, `apo-8`, and `chr-2` normalize to those names.
 A larger new generation does not upscale the supplied asset. SeedVR2 and RIFE remain retired.
-Run continuity-QC on the input before any paid finishing job. Evidence is vendor-only; A/B is pending.
+Inspect the source before paid finishing. Provider quality claims require the preview comparison below.
 
 Use the current `renderhaus-asset://` version handle. Supply measured duration, FPS, width,
 and height when available. Native preparation measures missing values locally. Never guess

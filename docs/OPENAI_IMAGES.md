@@ -104,4 +104,3 @@ The eight GPT readiness rows are active. Current inventory and routing totals ar
 Comet browser E2E is **blocked**: Comet cannot be controlled in this environment and the task
 prohibits live provider calls. This is not a browser pass or evidence of live output. The ignored
 `.renderhaus/e2e/openai-images-browser.json` report records the blocker through the project hook.
-See [the decisions file](openai-images-decisions.tsv) for remaining TODOs.

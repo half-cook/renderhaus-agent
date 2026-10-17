@@ -45,11 +45,6 @@ commercial service-terms APIs and training_eligible=false. Require input rights/
 Log Ideogram text-edit outcomes with ab_arm=ideogram45_edit. Compare against GPT edits
 only with separately authorized work; do not generate a second paid image automatically.
 
-A named Ideogram request without an existing image to edit uses the GPT generation default,
-including posters and typography. It cannot create a text-only edit input from nothing.
-A supplied existing Ideogram asset for Remotion rendering does not request image generation.
-Explicit Seedream or Runway image requests belong in named-provider with disclosure.
-
 Require rights to supplied media and review real-person likeness consent before dispatch.
 Nonconsensual uses that confuse authenticity are prohibited by the vendor.
 Reuse immutable references. Discover the selected schema. Explicit image editing uses its native source field; do not generate a replacement for an approved reference without review.

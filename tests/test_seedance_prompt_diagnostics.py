@@ -21,7 +21,7 @@ from test_deep_agent import Gateway, ScriptedModel, call, final
 ROOT = Path(__file__).resolve().parents[1]
 REFERENCE = ROOT / 'agent/deep_agent/skills/t2v/references/seedance-prompts.md'
 TOOL = 'Seedance___text_to_video'
-ENV = {'SEEDANCE_DRY_RUN': 'true', 'SEEDANCE_TRANSPORT': 'fal', 'SEEDANCE_FAL_REGION': 'us',
+ENV = {'SEEDANCE_MODEL': 'dreamina-seedance-2-5-260628', 'SEEDANCE_DRY_RUN': 'true', 'SEEDANCE_TRANSPORT': 'fal', 'SEEDANCE_FAL_REGION': 'us',
        'FAL_DRY_RUN': 'true', 'LANGSMITH_TRACING': 'false', 'LANGCHAIN_TRACING_V2': 'false'}
 FAILURES = {
     'identity_drift': "the character's face changed between shots",
@@ -150,7 +150,6 @@ class DiagnosisRoutingTests(unittest.TestCase):
             ('edit this Seedance clip', 'seedance25_edit'),
             ('extend this Seedance clip', 'seedance25_extend'),
             ('My Seedance clip drifted; use Wan 3 for a new shot', 'wan3_t2v'),
-            ('Use Kling to make a car commercial shot', 'kling_t2v'),
             ('Generate a clip titled "Seedance render ignored the dolly-in"', 'seedance25_t2v'),
             ('my Wan video ignored the dolly-in, fix the prompt', 'wan3_t2v'),
             ('Generate a Seedance video with no identity drift', 'seedance25_t2v'),
@@ -186,7 +185,7 @@ class DiagnosisRoutingTests(unittest.TestCase):
     def test_prompt_review_filters_paid_tools_and_keeps_saved_job_polling(self):
         prompt = 'My Seedance render ignored the dolly-in; fix the prompt'
         for name in [TOOL, 'Fal___generate_wan3_t2v', 'Seedream___text_to_image',
-                     'Remotion___render_timeline', 'Sync___create_dialogue_edit',
+                     'Remotion___render_timeline',
                      'ElevenLabs___speech_to_speech_convert', 'ElevenLabs___text_to_voice_design',
                      'ElevenLabs___dubbing_create']:
             self.assertIn('fresh approval', routing.request_tool_blocker(prompt, name))

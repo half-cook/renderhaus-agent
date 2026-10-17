@@ -27,11 +27,6 @@ const QUICK_ADD: Array<{ label: string; kind: CreativeNodeKind; toolId?: string 
   { label: "Studio Video · animate a still", kind: "video", toolId: "video.wan3.animate" },
   { label: "Studio Video · from references", kind: "video", toolId: "video.wan3.reference" },
   { label: "Studio Video · Pro", kind: "video", toolId: "video.generate" },
-  { label: "Studio Video · Cinematic", kind: "video", toolId: "runway.video.generate" },
-  { label: "Studio Video · Cinematic from a still", kind: "video", toolId: "runway.video.fromImage" },
-  { label: "Studio Video · Cinematic edit", kind: "video", toolId: "runway.video.edit" },
-  { label: "Studio Image · Cinematic", kind: "image", toolId: "runway.image.generate" },
-  { label: "Studio Image · Cinematic from references", kind: "image", toolId: "runway.image.edit" },
   { label: "Music", kind: "audio", toolId: "music.generate" },
   { label: "Voiceover", kind: "audio", toolId: "voice.generate" },
   { label: "Storyboard", kind: "storyboard" },
@@ -79,6 +74,7 @@ export function StudioCanvas() {
   const { screenToFlowPosition } = useReactFlow();
   const [menu, setMenu] = useState<MenuState>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const hostRef = useRef<HTMLDivElement>(null);
 
   const isValidConnection = useCallback(
     (connection: Connection | Edge) => isCompatibleConnection(connection, useCanvasStore.getState().nodes).ok,
@@ -109,7 +105,7 @@ export function StudioCanvas() {
   };
 
   return (
-    <div className="flow-host" data-tool={activeTool}>
+    <div className="flow-host" data-tool={activeTool} ref={hostRef}>
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -124,7 +120,8 @@ export function StudioCanvas() {
         onNodeDragStop={() => persist()}
         onPaneClick={(event) => {
           if (event.detail === 2) {
-            const bounds = (event.currentTarget as HTMLElement).getBoundingClientRect();
+            const bounds = hostRef.current?.getBoundingClientRect();
+            if (!bounds) return;
             const flow = screenToFlowPosition({ x: event.clientX, y: event.clientY });
             setMenu({
               x: event.clientX - bounds.left,
@@ -138,7 +135,8 @@ export function StudioCanvas() {
         }}
         onPaneContextMenu={(event) => {
           event.preventDefault();
-          const bounds = (event.currentTarget as HTMLElement).getBoundingClientRect();
+          const bounds = hostRef.current?.getBoundingClientRect();
+          if (!bounds) return;
           const flow = screenToFlowPosition({ x: event.clientX, y: event.clientY });
           setMenu({
             x: event.clientX - bounds.left,

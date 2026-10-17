@@ -24,7 +24,7 @@ class InviteFixture:
         self.addCleanup(self.directory.cleanup)
         path = Path(self.directory.name)
         self.repo = StudioRepository(path / "state.sqlite3", path / "media")
-        self.settings = BetaSettings(enabled=True, global_cap_cents=50_000, wave_size=50,
+        self.settings = BetaSettings(enabled=True, global_cap_cents=50_000,
                                      identity_salt="test-only-identity-salt")
         self.invites = BetaInvites(self.repo, self.settings)
 
@@ -130,26 +130,17 @@ class InviteApiTests(InviteFixture, unittest.TestCase):
     def setUp(self):
         super().setUp()
         from server import beta as api
-        from server.billing import router as billing_router
 
         env = mock.patch.dict(os.environ, {"BETA_INVITE_ONLY": "true", "BETA_CREDITS_ENABLED": "true"})
         env.start()
         self.addCleanup(env.stop)
         app = FastAPI()
         app.include_router(api.router)
-        app.include_router(billing_router)
         app.dependency_overrides[api.get_beta_invites] = lambda: self.invites
         app.dependency_overrides[require_auth] = lambda: SimpleNamespace(payload={"sub": "acct-1", "email": "a@example.com"})
         self.app = app
         self.client = TestClient(app)
 
-    def test_status_reports_invite_only_without_spot_copy(self):
-        from server import beta as api
-        from server.beta_credits import BetaCredits
-        self.app.dependency_overrides[api.get_beta_credits] = lambda: BetaCredits(self.repo, self.settings)
-        body = self.client.get("/api/beta/status").json()
-        self.assertTrue(body["invite_only"])
-        self.assertEqual(body["message"], "Invite only · $10 credit to start")
 
     def test_check_then_redeem(self):
         code = self.invites.mint()[0]
@@ -178,15 +169,7 @@ class InviteApiTests(InviteFixture, unittest.TestCase):
                            ("/api/beta/claim", {}), ("/api/beta/hold", {}),
                            ("/api/beta/waitlist", {"email": "a@example.com"})):
             response = self.client.post(path, json=body)
-            self.assertEqual(response.status_code, 403, path)
-
-    def test_topups_blocked_server_side(self):
-        for method, path in (("get", "/api/studio/billing/packs"), ("get", "/api/studio/billing/plans"),
-                             ("post", "/api/studio/billing/checkout"), ("post", "/api/studio/billing/subscribe"),
-                             ("post", "/api/studio/billing/portal"), ("post", "/api/studio/billing/webhook")):
-            kwargs = {} if method == "get" else {"json": {"pack_id": "starter", "plan_id": "basic"}}
-            response = getattr(self.client, method)(path, **kwargs)
-            self.assertEqual((response.status_code, response.json()["detail"]), (403, "Top-ups are coming soon."), path)
+            self.assertEqual(response.status_code, 404, path)
 
 
 class InviteCliTests(InviteFixture, unittest.TestCase):

@@ -17,7 +17,7 @@ from urllib.parse import urlsplit
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
 
 from providers.contracts import ArgumentRule
-from providers.runway.contracts import validate_https_url
+from providers.fal.validation import validate_https_url
 
 
 ENDPOINT_ID = "mirelo-ai/sfx2.0/video-to-audio"

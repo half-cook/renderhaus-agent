@@ -1,10 +1,5 @@
 # Topaz finishing
 
-Topaz finishes existing video through fal. The capability IDs are `topaz_upscale` and
-`topaz_interpolate`. Source media must exist before finishing. This adapter does not generate
-replacement footage. Evidence for visual quality is thin and vendor supplied. A/B testing on
-Renderhaus footage remains pending. `local_qc` remains the continuity-QC default.
-
 Studio now requires a short processed sample and native visual-review approval before
 full finishing. Preview and full processing each retain their separate cost approval.
 See [Preview a finishing pass](TOPAZ_PREVIEW_COMPARE.md) for the workflow, sources, and
@@ -125,7 +120,6 @@ including 42 passing Topaz contract, lifecycle and wiring tests. Ruff, `scripts/
 (all providers forced dry-run), and the Studio TypeScript typecheck pass. The temporary
 Studio dependency symlink was removed. Logs are under ignored `.renderhaus/e2e/topaz-*`.
 The [capability map](CAPABILITY_MAP.md#skills-and-routing-fixtures) lists current skip reasons.
-The [decision record](topaz-decisions.tsv) records sources, read dates and limitations.
 
 Comet browser E2E is blocked because Comet control is unavailable in this environment. No UI
 flow or live artifact was observed, and mocks do not establish browser success. The requested

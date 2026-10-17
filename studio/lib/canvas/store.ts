@@ -57,7 +57,6 @@ const HISTORY_LIMIT = 50;
 const PREFERRED: Record<string, Record<string, string | number>> = {
   openai_images: { model: "gpt-image-2.5-sunburst", aspect_ratio: "1:1", size: "2K", quality: "high", n: 1 },
   fal: { num_frames: 81, frames_per_second: 16, aspect_ratio: "16:9", resolution: "720p" },
-  luma: { model: "ray-3.2", resolution: "720p" },
   seedance: { duration_seconds: 5, aspect_ratio: "16:9", resolution: "720p" },
   seedream: { aspect_ratio: "1:1", size: "2K", response_format: "url" },
   fish_audio: { voice: "Energetic Male", output_format: "mp3", model: "s2.1-pro-free" },
@@ -190,7 +189,7 @@ function cloneGraph(nodes: CanvasNode[], edges: CanvasEdge[]): Snapshot {
 }
 
 function defaultsFor(tool: ToolDefinition, fieldOptions: FieldOptions): Record<string, unknown> {
-  if ((tool.providerId === "fal" && tool.toolName.startsWith("generate_wan3_")) || tool.providerId === "alibaba_modelstudio") {
+  if ((tool.providerId === "fal" && tool.toolName.startsWith("generate_wan3_"))) {
     return { ...tool.defaults };
   }
   const preferred = PREFERRED[tool.providerId] || {};
@@ -206,10 +205,6 @@ function defaultsFor(tool: ToolDefinition, fieldOptions: FieldOptions): Record<s
     args.model = catalog.model[0];
   }
   if (tool.id === "music.generate") args.model_id = "music_v2_5";
-  if (tool.providerId === "luma" && ["text_to_video", "image_to_video"].includes(tool.toolName)) {
-    args.duration_seconds = 5;
-    args.aspect_ratio = "16:9";
-  }
   return { ...args, ...tool.defaults };
 }
 
@@ -231,15 +226,6 @@ function configForAgentArtifact(
       ([name, value]) => allowedFields.has(name) && value !== undefined && value !== null,
     ),
   );
-  if (tool.providerId === "runway") {
-    for (const [name, value] of Object.entries(config)) {
-      const description = schema?.inputSchema.properties?.[name]?.description || "";
-      const declared = /Allowed values: (.+?)\.(?:\s|$)/.exec(description);
-      if (declared && !declared[1].split(",").some((choice) => choice.trim() === String(value))) {
-        delete config[name];
-      }
-    }
-  }
   const promptField = tool.id === "voice.generate" ? "text" : "prompt";
   if (!String(config[promptField] || "").trim() && fallbackPrompt?.trim()) {
     config[promptField] = fallbackPrompt.trim();

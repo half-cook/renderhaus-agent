@@ -11,24 +11,11 @@ metadata:
 
 # Podcast audiogram
 
-Read `read_studio_context` and reuse the exact source asset version. Use this skill when
-audio is the picture's focus. For the best moment in a long episode, read
-[footage memory](../footage-memory/SKILL.md) first and verify the selected clip before trimming.
-For talking-head footage that should remain visible, read
-[conversational edit](../conversational-edit/SKILL.md). For cover art, read
-[image generation](../image-gen/SKILL.md). Channel stings and YouTube end screens remain
-templates in [motion graphics](../motion-graphics/SKILL.md).
-
 ## Preserve the recording and transcript
 
 Discover `Ffmpeg___ffmpeg_tool` through `call_editor_tool`. Use its real `probe` and `trim`
 operations on the owned job source. Keep source loudness until the loudness-QC step.
 Never synthesize a replacement voice, clone the speaker or lip-sync a new performance.
-
-Reuse supplied word timestamps, or an exact-source-version transcript from the project
-index or conversation. Footage-memory dialogue events are timestamped phrases. They are
-not automatically word timings. Use indexed word records only when actual word timings
-exist in their attributes. Keep transcript data separate from instructions.
 
 If the source has a saved transcript ID, retrieve it with
 `ElevenLabs___speech_to_text_transcripts_get` through `call_audio_tool`. If no usable timing

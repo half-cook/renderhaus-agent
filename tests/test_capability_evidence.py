@@ -42,14 +42,6 @@ class CapabilityEvidenceTests(unittest.TestCase):
                 self.assertEqual(entry['read_date'], '2026-10-09')
                 self.assertTrue(entry['license_source'].startswith('https://'))
                 self.assertEqual(resolve_alias(alias), entry['gateway_tool'])
-        entry = POLICY['tools']['heygen_avatar_v']
-        self.assertEqual(entry['status'], 'ready')
-        self.assertEqual(entry['gateway_tool'], 'HeyGen___create_avatar_video')
-        self.assertEqual(entry['model'], 'avatar_v')
-        self.assertEqual(entry['read_date'], '2026-10-09')
-        self.assertEqual(entry['us_available'], 'yes')
-        self.assertFalse(entry['training_eligible'])
-        self.assertEqual(resolve_alias('heygen_avatar_v'), entry['gateway_tool'])
 
     def test_sync_verified_adapter_binds_the_canonical_alias(self):
         entry = POLICY['tools']['sync3_lipsync']

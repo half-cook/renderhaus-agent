@@ -42,7 +42,7 @@ class GeminiApprovalTests(unittest.IsolatedAsyncioTestCase):
                                           "reason": "Gemini dry-run enabled.", "training_eligible": False})
                 with self.assertRaises(StudioAgentApprovalRequired) as paused:
                     await run_with_servers(request, studio, [gateway], model=ScriptedModel([
-                        call("read_file", {"file_path": "/skills/continuity-qc/SKILL.md"}, "skill"),
+                        call("read_file", {"file_path": "/skills/named-provider/SKILL.md"}, "skill"),
                         call("call_media_tool", {"tool_name": "Gemini___judge_continuity", "arguments": args}, "judge")]))
                 approval = paused.exception.approvals[0]
                 self.assertIn("unknown", approval.description.lower())
@@ -57,7 +57,7 @@ class GeminiApprovalTests(unittest.IsolatedAsyncioTestCase):
                 else:
                     gateway.call_tool.assert_not_awaited()
                 rows = [json.loads(line) for line in (Path(directory) / "outcomes.jsonl").read_text().splitlines()]
-                self.assertEqual(rows[-1]["ab_arm"], "gemini_vlm_judge")
+                self.assertEqual(rows[-1]["provider"], "gemini")
 
     async def test_autonomous_cap_blocks_unknown_quote_before_submission(self):
         from mcp import Tool

@@ -73,4 +73,3 @@ Sources read 2026-10-10 are [FFmpeg filters](https://ffmpeg.org/ffmpeg-filters.h
 
 Comet Studio E2E is blocked because this environment has no Comet control. Real binary
 tests validate local artifacts but do not establish browser playback, editorial acceptance
-or deployed Lambda behavior. See [decisions](../remotion-resolve-gap-misc-decisions.tsv).

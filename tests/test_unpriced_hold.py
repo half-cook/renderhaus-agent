@@ -16,7 +16,7 @@ from test_deep_agent import image, read_skill
 class WorstCaseHoldTable(FlowFixture):
     def test_constants_cover_video_image_and_audio_and_are_conservative(self):
         self.assertEqual(run_billing.WORST_CASE_HOLD_CENTS, {"video": 400, "image": 50, "audio": 50})
-        self.assertEqual(run_billing.worst_case_hold_cents("Kling___image_to_video"), 400)
+        self.assertEqual(run_billing.worst_case_hold_cents("Fal___generate_wan3_i2v"), 400)
         self.assertEqual(run_billing.worst_case_hold_cents("Seedream___text_to_image"), 50)
         self.assertEqual(run_billing.worst_case_hold_cents("ElevenLabs___text_to_speech_v3"), 50)
         self.assertIsNone(run_billing.worst_case_hold_cents("Mystery___do_something"))

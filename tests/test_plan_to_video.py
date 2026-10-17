@@ -31,37 +31,6 @@ class PlanReviewRoutingTests(unittest.TestCase):
                                  ("plan-to-video", "remotion_render", "Remotion___render_timeline", "ready"))
                 self.assertFalse(route.steps)
 
-    def test_hyperframes_is_explicit_and_keeps_the_plan_skill(self):
-        with patch.dict(os.environ, {"HYPERFRAMES_ENABLED": "true", "HYPERFRAMES_DRY_RUN": "true"}):
-            route = route_intent("HyperFrames plan review video with ElevenLabs narration")
-        self.assertEqual((route.skill, route.alias, route.tool),
-                         ("plan-to-video", "hyperframes_render", "HyperFrames___render_composition"))
-        self.assertIn("explicit HyperFrames", route.disclosure)
-
-    def test_negated_renderer_names_do_not_select_hyperframes(self):
-        for prompt in ["review this plan as a video with Remotion, not HyperFrames",
-                       "review this plan as a video without HyperFrames",
-                       "review this plan as a video; do not use HyperFrames",
-                       "review this plan as a video; do not use any HyperFrames",
-                       "Do not use HyperFrames, turn this plan.md into a narrated review video.",
-                       "Do not use any HyperFrames, turn this plan.md into a narrated review video.",
-                       "Do not use HyperFrames when you turn this plan.md into a narrated review video.",
-                       "Avoid fancy transitions when you turn this plan.md into a narrated review video.",
-                       "Avoid using HyperFrames for this plan review video."]:
-            with self.subTest(prompt=prompt), patch.dict(os.environ, {"HYPERFRAMES_ENABLED": "false"}):
-                route = route_intent(prompt)
-                self.assertEqual((route.skill, route.alias, route.status),
-                                 ("plan-to-video", "remotion_render", "ready"))
-
-    def test_disabled_or_missing_requested_renderer_never_substitutes(self):
-        with patch.dict(os.environ, {"HYPERFRAMES_ENABLED": "false"}):
-            route = route_intent("HyperFrames plan review video")
-        self.assertEqual((route.skill, route.status, route.tool), ("plan-to-video", "blocked", None))
-        self.assertIn("disabled", route.reason)
-        with patch.dict(os.environ, {"HYPERFRAMES_ENABLED": "true"}):
-            route = route_intent("HyperFrames plan review video", available_tools={"Remotion___render_timeline"})
-        self.assertEqual((route.skill, route.status, route.tool), ("plan-to-video", "blocked", None))
-        self.assertIn("unavailable", route.reason)
 
     def test_missing_default_renderer_is_blocked(self):
         route = route_intent("review this plan as a video", available_tools=set())

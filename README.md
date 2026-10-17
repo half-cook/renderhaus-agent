@@ -1,298 +1,108 @@
 # Renderhaus
 
-An AI-native video production canvas: a Next.js node-canvas app (`studio/`) in front of a Python
-generation/agent backend (`server/`, `agent/`, `providers/`).
+AI video production Studio: a Next.js canvas backed by FastAPI, durable agent runs,
+media providers, approvals, and asset storage.
 
-## Structure
+## Run locally
 
-- **`studio/`** — Next.js canvas frontend. Node-based scene graph, generation/inspector UI,
-  Clerk-authenticated. The only frontend in this repo.
-- **`server/`** — FastAPI backend: Clerk auth, canvas/asset persistence (`server/studio_state.py`),
-  generation job endpoints. Talked to over HTTP by `studio/`, proxied at `/api/*` in dev
-  (see `studio/next.config.ts`).
-- **`agent/`** — Deep Agents manager with skills, subagents, and durable approvals; runs locally or on Amazon Bedrock
-  AgentCore Runtime.
-- **`providers/`** — Seedance, Seedream, ElevenLabs, and Remotion implementations.
-  AgentCore Gateway Lambdas call these; the Runtime agent never hosts them locally.
-- **`docs/`** — the long-video production-agent program (below).
-- **`design/`** — planning/status docs for how `studio/` and `server/` came to live in one repo:
-  [design/MERGE_STATUS.md](design/MERGE_STATUS.md) (start here — current state, what's verified,
-  known gaps), [design/MERGE_PLAN.md](design/MERGE_PLAN.md) (git mechanics),
-  [design/PRODUCTION_READINESS.md](design/PRODUCTION_READINESS.md) (scale/architecture audit),
-  [design/ARCHITECTURE.md](design/ARCHITECTURE.md) (product vision).
+Requires Python 3.11+, Node.js 20+, and ffmpeg/ffprobe for local media processing.
 
-The Studio's workspace, canvas, immutable asset-version, provenance, and durable execution model is
-documented in [docs/STUDIO_STATE.md](docs/STUDIO_STATE.md). The end-to-end Studio manager, media
-playback, Remotion, UI, and operations guide is [docs/STUDIO_AGENT.md](docs/STUDIO_AGENT.md).
-The UI foundation and manual design captures are documented in
-[docs/UI_REVAMP_STACK.md](docs/UI_REVAMP_STACK.md).
+1. Install the backend and Studio dependencies:
 
-The default backend, skills, persistence, approvals, and verification are documented in
-[docs/DEEP_AGENT.md](docs/DEEP_AGENT.md). The selectable Codex fallback is documented in
-[docs/CODEX_HARNESS.md](docs/CODEX_HARNESS.md).
+   ```bash
+   make setup
+   npm ci --prefix studio
+   ```
 
-Closed-beta free grants, verification mocks, admission caps, and wave operations are documented
-in [docs/BETA_CREDITS.md](docs/BETA_CREDITS.md). New deployments keep grants disabled.
+2. Configure the backend in `.env.local` or the existing AWS Secrets Manager secret
+   (`renderhaus/app` by default). `server/config.py` defines defaults;
+   `scripts/sync_secrets.py` syncs an existing local configuration. Keep secrets out of Git.
 
-## Long-video program
+   - Agent: `OPENAI_API_KEY` and `AGENTCORE_GATEWAY_URL`. Codex is the default harness;
+     `AGENT_MODEL` defaults to `gpt-5.6-luna`. [Harness configuration](docs/CODEX_HARNESS.md).
+   - Authentication: run `make setup-clerk` to link Studio to the shared Clerk application.
+     Set matching `CLERK_PUBLISHABLE_KEY` and `CLERK_SECRET_KEY` on the backend.
+     `CLERK_AUTHORIZED_PARTIES` must include the exact Studio origin, normally
+     `http://localhost:5174`. Authenticated deployments require matching frontend/backend keys.
+   - Assets: `AWS_REGION`, `AWS_S3_BUCKET`, and `AWS_DYNAMODB_ASSETS_TABLE`
+     (default `renderhaus-assets`), with AWS credentials available to the process.
+     Media bytes use S3; asset metadata uses DynamoDB. Studio project state uses SQLite.
 
-The evidence-backed product, architecture, continuity, evaluation, and six-sprint delivery package
-for evolving Renderhaus into a durable 60–180 second video-production agent starts at
-[docs/README.md](docs/README.md).
+3. Start the two services in separate terminals:
 
-## Local retail ad variants
+   ```bash
+   make backend  # FastAPI on :8000
+   ```
 
-A brief and a table of SKUs, prices, CTAs and logos produce aspect-specific review renders
-through Remotion. The matrix plans first, pauses for sample-render approval, then requires
-explicit sample review before a batch. Free ffmpeg inspection uses fixed operations in the
-local job directory. [Remotion editing](docs/REMOTION_EDITING.md) documents the real local
-demo, backend limits, licence allowance and final-file loudness/QC checks.
-Static centre/safe-zone crops and blurred-pad fallback produce `9:16`, `1:1`, `4:5`,
-`16:9` and `2.39:1` candidates with per-aspect contact sheets. Optional planner-supplied
-boxes choose crop centres; no detector runs. Use `scripts/run_ad_demo.py --mode reframe`
-for a flat master. `deliver` normalizes to the selected loudness target and writes named,
-versioned MP4s; `qc` rechecks their actual files and manifest checksums. Technical QC keeps
-visual/editorial review pending. Current inventory is 16 providers, 117 Gateway tools,
-30 skills and 220 routing rows (215 active, 5 deferred).
+   ```bash
+   make studio   # Next.js on localhost:5174
+   ```
 
-## Development workflow
+Open [localhost:5174](http://localhost:5174). Studio proxies `/api/*` to FastAPI.
+Keep the configured `localhost` hostname when starting Next.js.
 
-Day-to-day local + CI/CD map: [docs/development.md](docs/development.md).
+Provider dry-run flags default to true. A dry-run produces no generated media.
+Live calls need the provider's configured credentials and existing spending approval.
+For local assembly and the optional local Gateway, see [local assembly](docs/LOCAL_ASSEMBLY.md).
+Deep Agents is opt-in with `RENDERHAUS_AGENT_BACKEND=deepagents`; its model and role
+settings are documented in [Deep Agents](docs/DEEP_AGENT.md).
+
+## Check changes
+
+The setup script installs the application. Install test tools once:
 
 ```bash
-make setup    # once
-make check    # before push
-make backend  # backend API only (see "Run the app" below for the full two-process setup)
-make gateway  # deploy provider Lambdas + Gateway
-make runtime  # deploy AgentCore Runtime
-```
-
-## Run the app
-
-Two processes: the FastAPI backend and the Next.js frontend.
-
-```bash
-# backend — installs the Python project, starts the API on :8000
-bash scripts/setup_agent.sh
-.venv/bin/python -m server.app
+.venv/bin/python -m pip install ruff pytest pytest-asyncio 'moto[s3]>=5'
 ```
 
 ```bash
-# frontend — installs and starts the Next.js dev server on :5174,
-# proxying /api/* to the backend above
+make lint
+RENDERHAUS_SECRETS_NAME='' .venv/bin/python -m pytest -q
+RENDERHAUS_SECRETS_NAME='' make check
 cd studio
-npm install
-npm run dev
+node --test tests/*.test.cjs
+node lib/canvas/agent-review.check.cjs
+./node_modules/.bin/tsc --noEmit -p .
 ```
 
-Then open [http://localhost:5174](http://localhost:5174). The backend alone (`:8000`) serves JSON
-only — `studio/` is the UI.
+`make check` verifies schemas, routing, imports, dry-run dispatch, and Lambda packaging.
+It may download build dependencies. These checks make no paid provider calls.
+App behavior changes also require [real browser verification](docs/BROWSER_E2E.md)
+through Comet with the real backend.
 
-### Secrets (AWS Secrets Manager)
+## Repository map
 
-Application secrets live in Secrets Manager (`renderhaus/app` by default). Sync from a local
-env file, then keep only bootstrap keys locally:
+| Directory | Purpose |
+| --- | --- |
+| `studio/` | Next.js canvas, agent workspace, timeline, and design capture tests |
+| `server/` | FastAPI, authentication, billing, uploads, and project persistence |
+| `agent/` | Codex harness, optional Deep Agents backend, skills, and shared execution policy |
+| `providers/` | Typed media integrations, rendering, inspection, and export |
+| `remotion/` | Shared compositions and Lambda render site |
+| `configs/`, `lambdas/`, `agentcore/`, `infra/` | Gateway schemas and deployment infrastructure |
+| `tests/`, `scripts/` | Regression tests, local tooling, and deployment commands |
+| `docs/` | [Current guides and provider references](docs/README.md) |
+
+## Deploy
+
+Deploy commands require configured AWS credentials and deployment access:
 
 ```bash
-.venv/bin/python scripts/sync_secrets.py --rewrite-bootstrap
+make gateway      # Provider Lambdas and Gateway targets
+make runtime      # AgentCore Runtime
+make smoke        # Runtime smoke test
 ```
 
-`load_local_env()` reads `.env.local` for bootstrap (`AWS_REGION`, `RENDERHAUS_SECRETS_NAME`),
-then loads the JSON secret into the process environment. AgentCore Runtime uses the same secret
-via its execution role.
+`AGENTCORE_RUNTIME_ARN` selects the remote agent runtime. With it unset, the agent runs
+in the backend process. Both paths use the configured Gateway.
 
-Deep Agents defaults to `anthropic:claude-opus-5-5` with
-`RENDERHAUS_AGENT_EFFORT=high`. Add `ANTHROPIC_API_KEY` to that application secret before using
-the default. Keep credentials out of runtime bootstrap and Docker configuration.
-`RENDERHAUS_AGENT_MODEL=openai:gpt-5.6-luna` selects the previous model with `OPENAI_API_KEY`.
-An explicitly stored legacy `AGENT_MODEL` remains a fallback, so set the new model variable
-to override it. Studio and AgentCore must use matching settings; provider Gateway Lambdas
-need no Anthropic key for planning. See [model selection and pricing](docs/DEEP_AGENT.md#configuration).
-
-### AgentCore (cloud agent + MCPs)
-
-The Deep Agents backend runs inside Amazon Bedrock AgentCore Runtime. Generation tools
-(Seedance, Seedream, ElevenLabs, and Remotion) remain behind AgentCore Gateway. The backend stays local (or on its own host) and calls the
-runtime when `AGENTCORE_RUNTIME_ARN` is set.
-
-```bash
-# Requires Docker Desktop + AWS credentials with deploy access
-.venv/bin/python scripts/sync_secrets.py --rewrite-bootstrap
-.venv/bin/python scripts/deploy_agentcore.py --region us-east-1
-.venv/bin/python scripts/smoke_agentcore.py
-.venv/bin/python -m server.app
-```
-
-With `AGENTCORE_RUNTIME_ARN` set (from Secrets Manager or bootstrap), generation/poll calls go to
-AgentCore. Leave it unset to keep the local in-process agent. Tools still require
-`AGENTCORE_GATEWAY_URL`.
-
-The backend exposes generation and refinement requests through a video-only agent boundary,
-persists local job state under `.renderhaus/web-jobs/`, and serves completed MP4s through
-job-scoped media URLs.
-
-`SEEDANCE_DRY_RUN=true` keeps the full flow in preview mode without creating a paid video task.
-Seedance 2.5 defaults to fal US. Both `SEEDANCE_DRY_RUN` and `FAL_DRY_RUN` gate that transport.
-The optional non-US BytePlus route requires written platform authorization. See
-[Seedance configuration and pricing](docs/SEEDANCE_2_5.md).
-
-### Remotion Lambda renders
-
-The Codex canvas agent calls Gateway's `Remotion___render_timeline` and
-`Remotion___get_render_progress` to assemble images, videos, captions, voiceovers, and music
-into one downloadable MP4. The source is in `remotion/`; it renders through Remotion Lambda
-and an S3 site (`REMOTION_APP_SERVE_URL`).
-
-```bash
-# Renders the first successful multi-tool artifact set as an end-to-end smoke test.
-make smoke-remotion
-```
-
-The composition and Lambda SDK use the same pinned Remotion version. Visual tracks determine
-the export length; long music is trimmed to the edit with configurable source offsets and fades.
+Remotion composition changes need a matching site deployment:
 
 ```bash
 npm ci --prefix remotion
 npm run typecheck --prefix remotion
-# Deploy a versioned site and update the existing Remotion/ElevenLabs Lambda targets and schemas.
 .venv/bin/python scripts/deploy_media_updates.py
 ```
 
-The deployment script preserves existing credentials and records the previous site URL under
-ignored `.renderhaus/remotion/`. See [media timing and recovery](docs/MEDIA_RENDERING.md).
-
-## Setup
-
-Populate `.env.local`, then run:
-
-```bash
-bash scripts/setup_agent.sh
-```
-
-### Clerk authentication
-
-Each developer with access to the shared Clerk application can configure the Studio checkout
-without exchanging keys:
-
-```bash
-make setup-clerk
-```
-
-This signs the developer into Clerk, links `studio/` to the application associated with this
-repository, writes frontend credentials to the ignored `studio/.env.local`, and runs Clerk's
-diagnostic check. A Clerk administrator must invite developers who do not yet have application
-access. Never commit either `.env.local` file.
-
-The backend uses the same Clerk application to verify sessions. Add its keys from the
-[Clerk API keys](https://dashboard.clerk.com/last-active?path=api-keys) page to the root
-`.env.local`, or provide them through AWS Secrets Manager:
-
-```env
-# Either name works for the publishable key
-CLERK_PUBLISHABLE_KEY=pk_test_...
-# NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_...
-CLERK_SECRET_KEY=sk_test_...
-CLERK_AUTHORIZED_PARTIES=http://localhost:3000,http://127.0.0.1:3000,http://localhost:5174,http://127.0.0.1:5174,http://localhost:8000,http://127.0.0.1:8000
-# Optional: PEM public key for networkless JWT verification (newlines as \n)
-CLERK_JWT_KEY=
-```
-
-`localhost:5174` is the Studio origin; its `127.0.0.1` variant covers opening it through that
-hostname instead. The `:8000` entries cover hitting the backend directly (docs, scripts, tests).
-Clerk compares this allowlist against the session token's exact `azp` origin, including the port.
-
-When both a publishable key and `CLERK_SECRET_KEY` are set, generation/upload APIs require a
-signed-in session. Leave them empty to keep the local UI open during setup.
-
-### Artifact storage
-
-Generated media and reference uploads are owned by the signed-in Clerk user (or `local` when
-Clerk is off).
-
-- **Bytes:** Amazon S3 (`AWS_S3_BUCKET`), keys like `users/{user_id}/assets/{asset_id}/...`
-- **Metadata:** DynamoDB table `AWS_DYNAMODB_ASSETS_TABLE` (default `renderhaus-assets`)
-- **Playback:** job `media_url` is an opaque app URL that redirects to a short-lived S3
-  presigned GET (`/api/assets/{id}/content?exp=...&sig=...`)
-
-```env
-AWS_ACCESS_KEY_ID=...
-AWS_SECRET_ACCESS_KEY=...
-AWS_REGION=us-east-1
-AWS_S3_BUCKET=your-unique-bucket-name
-AWS_DYNAMODB_ASSETS_TABLE=renderhaus-assets
-# Optional HMAC secret for the opaque media URL
-ASSET_SIGNING_SECRET=
-```
-
-On startup the app creates the DynamoDB table (and bucket, if missing) when credentials allow.
-Reference images used by the agent are cached under `.renderhaus/cache/`.
-
-## Check Secrets
-
-```bash
-.venv/bin/python -m agent.main --check-env
-```
-
-This only prints `set` or `empty`, never secret values.
-
-## List MCP Tools
-
-```bash
-make tools
-```
-
-## Provider tools via AgentCore Gateway
-
-Seedance, Seedream, ElevenLabs, and Remotion are Lambda targets behind one Amazon Bedrock
-AgentCore Gateway. The Runtime agent is an MCP client of that URL. There is no local MCP process.
-
-```bash
-.venv/bin/python scripts/deploy_gateway.py --region us-east-1
-# Writes .env.agentcore.gateway with AGENTCORE_GATEWAY_URL
-# Sync that URL into Secrets Manager, then:
-.venv/bin/python scripts/deploy_agentcore.py --region us-east-1
-```
-
-`AGENTCORE_GATEWAY_URL` is required. The agent does not spawn provider MCP servers.
-The URL must use HTTPS; redirects and embedded URL credentials are rejected. For a local
-MCP development server only, set `AGENTCORE_GATEWAY_ALLOW_LOOPBACK_HTTP=true` to allow HTTP
-on `localhost`, `127.0.0.1`, or `[::1]`. That mode requires an unset
-`AGENTCORE_GATEWAY_AUTH_TOKEN` and a URL without query parameters.
-Loopback development connections ignore environment proxy settings.
-
-## Supervisor (Director + Executor)
-
-Multi-shot flow: Director plans → you approve → Executor runs modality workers.
-
-```bash
-make supervise ARGS='30s product teaser with calm piano BGM'
-make supervise ARGS='30s product teaser with calm piano BGM' EXECUTE=1
-```
-
-API: `POST /api/productions`, `POST /api/productions/{id}/commands/approve-plan`.
-
-The Director emits a typed plan only; the Executor deterministically calls modality workers. This is
-not an LLM swarm over paid tools.
-
-## Run A Prompt
-
-```bash
-.venv/bin/python -m agent.main "List the generation tools you can use and propose a 10 second product-video workflow."
-```
-
-## Headless Generation Runner
-
-```bash
-.venv/bin/python -m agent.generate models
-.venv/bin/python -m agent.generate video "simple abstract blue and white AI video editor timeline animation"
-```
-
-Generation job records are written under `.renderhaus/jobs/`.
-
-Seedance video generation requires its transport and authorization gates to permit live use; Fish Audio TTS is live when
-`FISH_AUDIO_DRY_RUN=false`.
-
-### ElevenLabs setup
-
-Only 41 media feature and supporting lookup/retrieval operations are exposed through AgentCore Gateway; management APIs are excluded. See
-[ElevenLabs configuration, API key location, routing and limits](docs/ELEVENLABS.md).
+See [media rendering and recovery](docs/MEDIA_RENDERING.md),
+[third-party notices](THIRD_PARTY_NOTICES) before operating a deployment.

@@ -54,34 +54,11 @@ the core data model.
 
 ## System map
 
-```text
-Studio Next.js (:5174), Clerk session
-             |
-FastAPI Studio router (:8000)
-  |          |                         |
-canvas       agent execution           playback tickets
-  |          |                         |
-SQLite       Deep Agents graph          managed asset bytes
-ledger       (checkpointed model loop)
-             |
-Python Gateway execution policy
-(discovery, schema validation, approvals, billing, asset handles)
-             |
-Gateway MCP client -- HTTPS --> AgentCore Gateway
-                                | Seedream image generation/editing
-                                | Seedance text/image-to-video
-                                | Runway Gen-4.5, Aleph 2.0, and Gen-4 images
-                                | fal Wan VACE generation/editing
-                                | ElevenLabs audio
-                                | Fish Audio speech
-                                ` Remotion Lambda --> S3 MP4
-```
-
 ### Main implementation boundaries
 
 The `Fal` Gateway target adds Wan VACE text, image, reference, and video editing
 tools with async submit/poll behavior. See [the provider contracts and pricing](FAL_WAN_VACE.md)
-and [the future Deep Agents skill draft](skills-drafts/fal-wan-vace.md).
+and the installed [named-provider skill](../agent/deep_agent/skills/named-provider/SKILL.md).
 `FAL_DRY_RUN` defaults to true; `FAL_KEY` stays in the server-side secret path.
 Wan results carry explicit Apache-2.0 weight licensing and training eligibility.
 The current manager's final-video check still requires a Remotion export.
@@ -225,17 +202,6 @@ Deep Agents sees `report_progress`, `read_studio_context`, and Gateway semantic 
 Reading the relevant skill discloses media, audio, or editor dispatch tools. Search returns actual
 Gateway tool names and schemas. Python accepts only discovered tools and validates each call
 against that schema before dispatch. The Codex fallback retains its Code Mode interface.
-
-| Gateway capability | Examples of discovered tools | Output |
-| --- | --- | --- |
-| Seedream | `Seedream___text_to_image`, `Seedream___image_to_image` | Immutable image versions |
-| Seedance | `Seedance___text_to_video`, `Seedance___image_to_video`, `Seedance___get_video_task` | Provider job, then video versions |
-| Kling | `Kling___text_to_video`, `Kling___image_to_video`, `Kling___omni_video`, `Kling___get_video_task`, `Kling___list_kling_models` | Official API job, then video versions. See [Kling provider reference](KLING.md). |
-| Runway | `Runway___text_to_video`, `Runway___image_to_video`, `Runway___video_to_video`, `Runway___text_to_image`, `Runway___image_to_image`, `Runway___get_runway_task`, `Runway___list_runway_models` | Provider job, then immutable image/video versions |
-| Luma | `Luma___text_to_video`, `Luma___image_to_video`, `Luma___extend_video`, `Luma___modify_video`, `Luma___get_video_task`, `Luma___list_luma_models` | Ray 3.2 job, then non-training-eligible video versions |
-| ElevenLabs | Full HTTP catalog with semantic descriptions | Audio/files or provider-specific jobs |
-| Fish Audio, when deployed | Discovered speech generation tools | Audio versions |
-| Remotion | `Remotion___render_timeline`, `Remotion___get_render_progress` | Render identifiers, then a completed MP4 |
 
 Names and input options come from the deployed Gateway schemas. The old manager's fixed
 `generate_image`, `generate_music`, and `render_remotion_video` wrappers are not the current
@@ -479,7 +445,6 @@ uses the Gateway's approval and billing gates.
 | `BYTEPLUS_API_KEY`, `ARK_API_KEY` | Optional non-US BytePlus route; BYTEPLUS_API_KEY takes precedence. Sync through Secrets Manager. |
 | `SEEDANCE_BYTEPLUS_PLATFORM_AUTHORIZED` | Default false; optional direct live use requires written platform authorization. US access remains blocked. |
 | `SEEDREAM_DRY_RUN`, `SEEDANCE_DRY_RUN`, `KLING_DRY_RUN`, `ELEVENLABS_DRY_RUN`, `FISH_AUDIO_DRY_RUN` | Keep individual providers from creating paid media when true. Kling defaults to dry-run. |
-| `LUMA_API_KEY`, `LUMA_DRY_RUN` | Current official Luma bearer key and default-true dry-run flag. Only false enables traffic. See [Luma provider reference](providers/luma.md). |
 | `REMOTION_APP_*` | Four required Remotion deployment settings listed above. |
 | `REMOTION_RENDER_TIMEOUT_SECONDS`, `REMOTION_POLL_INTERVAL_SECONDS`, `REMOTION_FRAMES_PER_LAMBDA`, `REMOTION_LAMBDA_TIMEOUT_SECONDS` | Remotion runtime and deployed-function tuning. Long source-video timelines default to 100 frames per renderer chunk and a 600-second Lambda timeout. |
 
@@ -550,12 +515,3 @@ multi-user deployment. Before treating it as production-complete, prioritize:
 
 Those additions build on the current model; they do not require returning to URL-based assets or a
 monolithic Agent Result card.
-
-## Runway generation and editing
-
-See [Runway provider reference](RUNWAY.md) for official API sources, tool arguments,
-input limits, prices, output storage, and configuration. Runway defaults to dry-run.
-All generation tools submit asynchronous jobs. Canvas Runway nodes and Gateway
-agent tools poll `get_runway_task` and register finished bytes through the existing
-asset path. No new agent backend is introduced. The intended future Deep Agents
-routing guidance lives in [the Runway skill draft](skills-drafts/runway.md).

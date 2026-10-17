@@ -1,7 +1,7 @@
 # Studio UI revamp foundation
 
 The existing screens keep their design. The foundation adds semantic Tailwind
-v4 tokens, an opt-in dark beta palette, five Radix adapters, a Sonner wrapper,
+v4 tokens, an opt-in dark beta palette, a Radix dialog adapter, a Sonner wrapper,
 a lean MotionProvider, and a manual screenshot kit. The
 [design system](../studio/design/DESIGN_SYSTEM.md) remains the source of truth.
 
@@ -48,9 +48,8 @@ Screenshots are mock design evidence, not the Comet E2E required by AGENTS.md.
    Add `nodrag nopan` to triggers inside canvas nodes.
 6. Run the Node contracts, TypeScript, production build, and affected captures.
 
-Toaster and MotionProvider are intentionally unmounted. Mount Toaster once in
-the root when a feature uses it. Wrap Motion `m` components in MotionProvider.
-No animation is added to existing screens. `tw-animate-css` is omitted because
+Toaster and MotionProvider are mounted once in the root layout.
+Wrap Motion `m` components in MotionProvider. `tw-animate-css` is omitted because
 these adapters use no animate-in/out classes. No components.json is added.
 
 ## Keep these constraints
@@ -85,4 +84,3 @@ text and `title`/`aria-label`/`alt`/`placeholder` on every screen and fails on a
 leak (`SHOT_STRICT_COPY=0` only writes `out/copy-leaks/**` reports). A node test
 keeps new files clean and ratchets the legacy files that still carry
 vendor-named labels (see `tests/copy-rules.test.cjs`); the revamp removes them.
-

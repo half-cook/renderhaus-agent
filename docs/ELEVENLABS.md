@@ -73,7 +73,7 @@ unavailable through Renderhaus, including in autonomous mode.
   still apply. Secret/token fields in responses are redacted from agent output.
 - Gateway `renderhaus-media-gateway` uses IAM/SigV4 for AWS callers. AWS does not allow changing
   an existing gateway's authentication type, so the three other media targets were copied from
-  the old public gateway. Renderhaus now uses the new URL; Mureka is removed from both catalogs.
+  the old public gateway. Renderhaus uses the configured Gateway URL.
   Existing JWT auth is preserved by deployment. The runtime role needs
   `bedrock-agentcore:InvokeGateway` on this gateway.
 
@@ -82,7 +82,7 @@ Music uses exactly one of `prompt` or `composition_plan_json`. With a prompt, se
 composition returns completed audio; it is not a Mureka-style asynchronous job to poll.
 Dubbing has its own returned IDs and status/retrieval operations.
 
-With Stripe disabled, provider charges go directly to the configured ElevenLabs account.
+Provider requests charge the configured ElevenLabs account; Renderhaus tracks customer wallet usage separately.
 TTS approvals now estimate characters from the [official API price page](https://elevenlabs.io/pricing/api),
 read 2026-10-09. The v4 list rate is $0.08 per 1,000 characters. The Turbo multiplier is 0.5,
 so its list rate is $0.04. The promotion is $0.022 for v4 and $0.011 for Turbo through
@@ -90,11 +90,10 @@ so its list rate is $0.04. The promotion is $0.022 for v4 and $0.011 for Turbo t
 to integer cents before the existing platform fee. The priced TTS allowlist contains only
 `eleven_v4_turbo` and `eleven_v4`; this fix adds no models or rates. Unrelated operations
 keep an unknown estimate unless an operator quote exists.
-When Stripe billing is enabled, write operations require explicit per-tool integer-cent quotes
-in `ELEVENLABS_TOOL_COST_CENTS_JSON`; there is no invented blanket generation price. Read-only
-lookups do not debit the Renderhaus wallet. Quotes are operator-controlled fixed per-call prices,
-not invoice reconciliation; set them for the allowed workload before enabling customer billing.
-Missing Stripe quotes fail TTS dispatch before approval; the billing requirement remains in force.
+Other write operations require explicit per-tool integer-cent quotes in
+`ELEVENLABS_TOOL_COST_CENTS_JSON` when customer billing is active. Read-only lookups do not
+debit the wallet. Unknown charges fail before dispatch; fixed operator quotes are estimates,
+not invoice reconciliation.
 
 All four TTS Gateway tools expose the same priced choices. They require `voice_id` and `text`;
 `model_id` is optional. An explicit allowed ID takes precedence over `ELEVENLABS_TTS_MODEL`.
@@ -109,7 +108,6 @@ AgentCore's schema dialect cannot store JSON Schema `enum`, so the generated mod
 contains the allowed values. `providers/elevenlabs/catalog.py` overrides the upstream TTS model
 description and default before projecting the schema. Regenerating Gateway schemas retains the pin.
 The pinned upstream OpenAPI remains an intact vendor reference and is not agent-facing discovery.
-See [the decisions record](fix-tts-model-pin-decisions.tsv) for evidence and validation limits.
 
 `ELEVENLABS_DRY_RUN` defaults to `true` and alone controls whether the dispatcher sends HTTP
 requests. The operator's 2026-10-09 run confirmed `eleven_v4_turbo` supports HTTP TTS.

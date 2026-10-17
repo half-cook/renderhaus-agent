@@ -27,9 +27,8 @@ def billing_applies(repo: Any, user_id: str | None) -> bool:
     if not user_id:
         return False
     from server.beta_credits import beta_billing_enabled
-    from server.billing import stripe_enabled
 
-    return bool(stripe_enabled() or beta_billing_enabled(repo, user_id))
+    return bool(beta_billing_enabled(repo, user_id))
 
 
 # --------------------------------------------------------------------------- run lifecycle (server side)
@@ -99,7 +98,7 @@ def end_run(repo: Any, run_id: str, *, execution_status: str, error_type: str | 
 # * audio (speech, voice, music, sound effects): dearest quoted track is under $0.40; held at $0.50.
 # Anything that matches none of these has no hold, so it cannot be approved at all.
 WORST_CASE_HOLD_CENTS = {"video": 400, "image": 50, "audio": 50}
-_VIDEO_WORDS = ("video", "lipsync", "lip_sync", "avatar", "dialogue", "upscale", "extend", "motion", "act_two", "aleph", "reframe", "v2a")
+_VIDEO_WORDS = ("t2v", "i2v", "r2v", "v2v", "video", "lipsync", "lip_sync", "avatar", "dialogue", "upscale", "extend", "motion", "act_two", "aleph", "reframe", "v2a")
 _IMAGE_WORDS = ("image", "still", "vector", "rmbg", "background", "logo")
 _AUDIO_WORDS = ("speech", "tts", "voice", "music", "sfx", "sound", "audio", "song")
 UNPRICEABLE_MESSAGE = "This step can’t be priced, so it can’t be approved. Nothing was charged."
@@ -289,13 +288,6 @@ def public_approvals(
             entry.update({"approve_enabled": False, "unpriceable": True, "unpriceable_message": UNPRICEABLE_MESSAGE})
         if isinstance(item.get("message"), str):
             entry["message"] = rb.scrub_client_text(item["message"], "Review this step before it runs.")
-        if item.get("tool_name") in {"HeyGen___voice_clone", "HeyGen___voice_tts"}:
-            _, marker, notice = str(item.get("description") or "").partition("Voice owner:")
-            if marker:
-                estimate = item.get("estimated_cost") or {}
-                cents = estimate.get("total_cents")
-                cost = f"Estimated cost ${cents / 100:.2f} USD." if isinstance(cents, (int, float)) else "Estimated cost unknown."
-                entry["message"] = f"Voice owner:{notice} {cost}"
         if plan and status in {"pending", "approved", "running"}:
             entry.update({
                 "estimate_cents": plan.estimate_cents,

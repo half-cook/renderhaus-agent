@@ -68,8 +68,8 @@ def _live_guard(settings: GeminiSettings) -> None:
         raise GeminiError(
             "UNVERIFIED Gemini model; live judge use is blocked and cost estimate unknown."
         )
-    if not os.getenv("GEMINI_API_KEY"):
-        raise GeminiError("GEMINI_API_KEY is required for live Gemini evaluation.")
+    if not os.getenv("GOOGLE_API_KEY"):
+        raise GeminiError("GOOGLE_API_KEY is required for live Gemini evaluation.")
 
 
 def _request(
@@ -101,7 +101,7 @@ def _request(
 def _read(method: str, url: str, body: dict | None, timeout: float, deadline: float) -> tuple[int, bytes]:
     outcomes: queue.Queue[tuple[int, bytes] | Exception] = queue.Queue(maxsize=1)
     client_factory = httpx.Client
-    key = os.environ["GEMINI_API_KEY"]
+    key = os.environ["GOOGLE_API_KEY"]
 
     def read_response():
         try:

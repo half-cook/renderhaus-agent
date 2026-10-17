@@ -49,11 +49,6 @@ is submitted. `Gemini___get_task` reuses the asynchronous Interactions poll with
 `rubric="reference_shots"` and the measured ordered IDs. Its default rubric remains
 `continuity`, preserving existing calls.
 
-The canonical `gemini_vlm_judge` routing ID already names the fixed continuity tool.
-It remains unchanged. Auxiliary ID `gemini_shot_labels` names the separate shot-label
-rubric on the same model/transport. `local_qc` remains the continuity default. Neither
-project confidentiality nor stored quality tiers changes these selections.
-
 `GEMINI_DRY_RUN` defaults true. Dry-run and failed reviews return `skipped` without labels.
 Live submissions use existing normal non-video approval and autonomous spending caps.
 All video-generation approval rules and `APPROVAL_EXEMPT_TOOLS` remain unchanged.
@@ -89,5 +84,4 @@ Comet Studio browser E2E is pending access in this environment. The task receipt
 ignored `.renderhaus/e2e/` records the concrete blocker. Supporting tests are not browser E2E.
 
 Workflow inspiration is attributed in the skill's NOTICE. No AGPL or non-commercial
-source or weights are added. [The decision trail](reference-shot-breakdown-decisions.tsv)
 records design choices, evidence and verification limits.

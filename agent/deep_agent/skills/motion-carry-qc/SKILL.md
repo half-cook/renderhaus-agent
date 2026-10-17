@@ -1,12 +1,12 @@
 ---
 name: motion-carry-qc
-description: Check rendered motion graphics, product demos, knowledge explainers and explicitly requested HyperFrames films for slideshow cuts, missing carry and rhythm faults before human review. Generative shot continuity stays on continuity-qc.
+description: Check rendered motion graphics, product demos, knowledge explainers for slideshow cuts, missing carry and rhythm faults before human review. This local probe does not assess generative shot identity.
 metadata:
   remotion_backend: configured
   remotion_features: clip_timing transitions fit_position scale motion titles captions audio_mix canvas encoding
   include_tools: call_editor_tool
-  routing_tools: motion_carry_probe remotion_render hyperframes_render
-  gateway_tools: Remotion___motion_carry_probe Remotion___render_timeline Remotion___get_render_progress HyperFrames___render_composition
+  routing_tools: motion_carry_probe remotion_render
+  gateway_tools: Remotion___motion_carry_probe Remotion___render_timeline Remotion___get_render_progress
 ---
 
 # Motion carry QC
@@ -14,12 +14,6 @@ metadata:
 The harness finish rubric uses this skill for relevant renders. Run `inspect_media` on the
 current local file and view sampled frames with `read_file`. These harness tools supplement
 the saved motion probe. A rubric verdict cannot override a failing or stale probe report.
-
-Run this after a completed motion-graphics, product-demo-video,
-knowledge-explainer or explicit HyperFrames MP4 render. Also use it when a
-customer says a motion video feels like a slideshow or PowerPoint, has no
-rhythm, or has jarring transitions. For AI-generated shot continuity, use
-[continuity-qc](../continuity-qc/SKILL.md) and its `local_qc` default.
 
 Discover `Remotion___motion_carry_probe` and call it through `call_editor_tool`.
 The canonical routing ID is `motion_carry_probe`. Supply the current Studio
@@ -43,15 +37,6 @@ The probe is free, local and has no model, network, approval or secret.
 `MOTION_CARRY_QC_DRY_RUN` defaults true. A dry-run or skipped report is
 incomplete QC. Infrastructure faults fail softly and preserve the render.
 Thresholds are PROVISIONAL and were fitted only on our synthetic films.
-
-Read the saved JSON report. Surface each failure verbatim, its evidence
-timestamps, per-boundary carry and proposed fixes before offering the film
-for review. A completed failed probe gates the deliverable. Offer a re-render
-with `remotion_render` through `Remotion___render_timeline` after the fixes.
-Use `hyperframes_render` through `HyperFrames___render_composition` only if
-the user explicitly requested HyperFrames. Respect its current renderer
-blocker and all existing rendering cost and approval controls. Do not submit
-a new render merely because QC failed. Re-probe the new MP4 after rendering.
 
 Selection remains explicit user request, then named exception, then default.
 This skill makes no paid calls. Its re-render offer does not authorize a paid

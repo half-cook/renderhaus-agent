@@ -21,7 +21,6 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 DEFAULT_MODEL = "sync-3"
 FAL_ENDPOINT = "fal-ai/sync-lipsync/v3"
 FAL_TERMS_URL = "https://fal.ai/legal/terms-of-service"
-DIRECT_TERMS_URL = "https://sync.so/terms"
 SYNC_MODES = ("cut_off", "loop", "bounce", "silence", "remap")
 GENERATING_TOOLS = ("lipsync_video",)
 TRAINING_METADATA = {
@@ -36,7 +35,7 @@ FIELD_DESCRIPTIONS = {
     "audio_url": "Existing HTTPS speech audio or renderhaus-asset:// version handle. No new voice is generated.",
     "source_duration_seconds": "Measured positive finite duration of the source video in seconds. Used to validate chunking and quote cost.",
     "audio_duration_seconds": "Measured positive finite duration of the speech audio in seconds. Sync mode determines output length.",
-    "source_fps": "Measured positive finite video frame rate. Direct legacy-base pricing scales by frame count; fal pricing does not.",
+    "source_fps": "Measured positive finite video frame rate.",
     "source_width": "Optional measured input width in positive pixels, paired with source_height. No provider resolution setting is sent; single jobs inherit input dimensions and the current chunk concatenator produces 720p.",
     "source_height": "Optional measured input height in positive pixels, paired with source_width. Required with width to assess an explicitly requested output resolution.",
     "subjects": "Nonblank declaration identifying everyone who appears and whose voice is used. An explicit synthetic-subject and synthetic-voice declaration is allowed.",
@@ -58,13 +57,6 @@ class Endpoint:
 ENDPOINTS = {FAL_ENDPOINT: Endpoint(FAL_ENDPOINT, DEFAULT_MODEL)}
 
 
-def configured_transport() -> str:
-    transport = os.getenv("SYNC_TRANSPORT", "fal").strip().lower()
-    if transport not in {"fal", "direct"}:
-        raise ValueError("SYNC_TRANSPORT must be fal or direct.")
-    return transport
-
-
 def configured_model(arguments: dict[str, Any] | None = None) -> str:
     return (arguments or {}).get("model") or os.getenv("SYNC_MODEL") or DEFAULT_MODEL
 
@@ -82,21 +74,11 @@ def max_chunk_seconds() -> float:
 def live_blocker(arguments: dict[str, Any], *, transport: str | None = None) -> str | None:
     if configured_model(arguments) != DEFAULT_MODEL:
         return "UNVERIFIED Sync model identifier; only dry-run previews are allowed."
-    selected = transport or configured_transport()
-    if selected == "direct":
-        if os.getenv("SYNC_DIRECT_AUTHORIZED", "false").lower() != "true":
-            return (
-                "Direct Sync live calls require express written permission under Sync's "
-                "competitor terms. SYNC_DIRECT_AUTHORIZED=true declares that the operator holds it."
-            )
-        if os.getenv("SYNC_BILLING_PLAN", "legacy_base") != "legacy_base":
-            return "UNVERIFIED direct Sync billing plan; only dry-run previews are allowed."
     return None
 
 
 def training_metadata(transport: str) -> dict[str, Any]:
-    terms = DIRECT_TERMS_URL if transport == "direct" else FAL_TERMS_URL
-    return {**TRAINING_METADATA, "license_source": terms, "hosted_terms_url": terms}
+    return dict(TRAINING_METADATA)
 
 
 def validate_media_reference(value: str, *, allow_asset: bool = True) -> None:
@@ -181,9 +163,6 @@ def request_for(arguments: dict[str, Any]) -> SyncRequest:
 
 
 def validate_arguments(tool: str, arguments: dict[str, Any]) -> None:
-    from providers.sync.dialogue_contracts import validate_arguments as validate_dialogue_arguments
-
-    validate_dialogue_arguments(tool, arguments)
     if tool == "lipsync_video":
         request_for(arguments)
     elif tool == "get_video_task":
@@ -191,17 +170,4 @@ def validate_arguments(tool: str, arguments: dict[str, Any]) -> None:
 
 
 def request_body(request: SyncRequest, transport: str) -> dict[str, Any]:
-    if transport == "fal":
-        return {
-            "video_url": request.video_url,
-            "audio_url": request.audio_url,
-            "sync_mode": request.sync_mode,
-        }
-    return {
-        "model": request.model,
-        "input": [
-            {"type": "video", "url": request.video_url},
-            {"type": "audio", "url": request.audio_url},
-        ],
-        "options": {"sync_mode": request.sync_mode},
-    }
+    return {"video_url": request.video_url, "audio_url": request.audio_url, "sync_mode": request.sync_mode}

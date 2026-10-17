@@ -40,9 +40,6 @@ class SyncWiringTests(unittest.TestCase):
     def test_generated_talking_shots_keep_seedance_and_long_presenters_use_heygen(self):
         self.assertEqual(routing.route_intent("generate a cartoon talking shot").alias, "seedance25_t2v")
         self.assertEqual(routing.route_intent("talking avatar from a cartoon image and audio").alias, "seedance25_i2v")
-        long = routing.route_intent("90 second multilingual avatar presenter")
-        self.assertEqual(long.alias, "heygen_avatar_v")
-        self.assertEqual(long.status, "ready")
         self.assertEqual(routing.route_intent("use sync-3 to dub a 90 second presenter video").alias,
                          "sync3_lipsync")
 
@@ -60,7 +57,7 @@ class SyncWiringTests(unittest.TestCase):
                 route = routing.route_intent(f"use {provider} to lipsync this existing video")
                 self.assertEqual(route.status, "retired")
                 self.assertIsNone(route.tool)
-                self.assertIn("non-commercial InsightFace", route.reason)
+                self.assertIn("not supported", route.reason)
 
     def test_quotes_use_host_rate_duration_mode_and_fps(self):
         from server.billing_rates import cost_for
@@ -70,10 +67,6 @@ class SyncWiringTests(unittest.TestCase):
             self.assertEqual(cost.provider_cents, 107)
             self.assertEqual(routing.estimate_cost("Sync___lipsync_video", ARGS).total_cents, cost.total_cents)
             self.assertEqual(cost_for("sync", "lipsync_video", {**ARGS, "sync_mode": "silence"}).provider_cents, 134)
-        with patch.dict(os.environ, {"SYNC_TRANSPORT": "direct", "SYNC_BILLING_PLAN": "legacy_base"}):
-            self.assertEqual(cost_for("sync", "lipsync_video", {**ARGS, "source_fps": 50.0}).provider_cents, 213)
-        with patch.dict(os.environ, {"SYNC_TRANSPORT": "direct", "SYNC_BILLING_PLAN": "credits"}):
-            self.assertIsNone(routing.estimate_cost("Sync___lipsync_video", ARGS).total_cents)
         self.assertIsNone(routing.estimate_cost("Sync___lipsync_video", {}).total_cents)
 
     def test_consent_cannot_be_inferred_from_spending_approval(self):

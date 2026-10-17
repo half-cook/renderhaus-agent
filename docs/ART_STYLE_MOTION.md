@@ -7,13 +7,6 @@ new provider adapters, Gateway tools, secrets, dry-run flags or Studio model lab
 
 ## Cut-paper explainers
 
-Papercut, paper-collage and paper-cutout animation requests select the existing skill and
-its neutral Document Evidence grammar. The existing Vox input alias uses the same grammar.
-Static paper artwork, footage restyling, style exclusions and topic or title mentions retain
-their existing routes. Generic collage assembly retains `motion-graphics`. An explicit
-provider or HyperFrames request keeps its precedence
-and availability gates. No catalog treatment is added to the 141-entry descriptive index.
-
 The [cut-paper recipe](../agent/deep_agent/skills/art-style-motion/references/grammar-cards.md#cut-paper-explainer)
 covers layered shading, consistent shadows, muted backgrounds, takeaway banners, measured
 speech cues or silent holds, smooth camera motion and subtle stepped labels. It distinguishes
@@ -35,27 +28,8 @@ fonts, dependencies, AGPL code or non-commercial weights are imported.
 This extension adds no model ID, endpoint, request schema, price, licence policy or training
 grant. Existing capability selection, paid-video cost approval and spending caps apply.
 The upstream vertical canvas is a design reference; output geometry follows the existing
-source-resolution policy. See [decisions and verification](papercut-explainer-decisions.tsv).
 
 ## Selection and tool contracts
-
-Explicit requests win, then a matching exception, then the quality-first default. Named art
-or grammar briefs select this skill. A supported explicit generated-video provider keeps
-its existing path and disclosure, including explicit-only Kling, Runway and Luma. Cost,
-tier and project confidentiality do not select a model. Local continuity QC is unchanged.
-
-| Routing ID | Existing Gateway tool | Key arguments |
-|---|---|---|
-| `remotion_render` | `Remotion___render_timeline` | `title`, `visuals` with asset kind/URL/duration; optional `audio_tracks`, `text_overlays`, `subtitles`, `aspect_ratio`, output settings |
-| `hyperframes_render` | `HyperFrames___render_composition` | `html`, `duration_seconds`, `width`, `height`, `fps`; named HyperFrames only, gated dry-run-only preview |
-| `gpt_image25_t2i` | `OpenAI___generate_image` | `prompt`; optional `size`, `quality`, `background`, `n`, `model=gpt-image-2.5-sunburst` |
-| `eleven_v4_turbo` | `ElevenLabs___text_to_speech_convert` | `voice_id`, `text`, `model_id=eleven_v4_turbo`; optional output/voice settings |
-| `elevenlabs_sfx_v2` | `ElevenLabs___text_to_sound_effects_convert` | `text`, `model_id=eleven_text_to_sound_v2`, `duration_seconds` (0.5–30); optional `loop`, `prompt_influence` |
-
-Rendering defaults to Remotion; generic HTML is not the HyperFrames exception. Character
-frames remain available even when a style brief includes narration. An explicit audio
-provider is scoped to audio, so it cannot force the character-image provider. Supplied
-voiceover is reused, silent work excludes speech, and music is not inferred.
 
 The existing schemas and typed provider contracts validate before submission. Image and
 audio calls retain non-autonomous approval and the autonomous spend cap. Paid video retains
@@ -80,54 +54,15 @@ No Python renderer, runtime dependency, fonts, stroke data, character artwork, s
 demo media were ported. The upstream README excludes its character/demo assets from MIT
 and labels them demo-only. No AGPL or non-commercial code/weights are added.
 
-The current render tool composes assets with supported simple motion and overlays. It
-does not execute arbitrary JSX, a style card, procedural brushwork, mathematical morphs,
-marker paths, sprite rigs or continuous world scrolling. These require rights-cleared
-authored clips or a future renderer/template implementation. Missing motion stays blocked;
-a still pan is not a completed animated-painting treatment. HyperFrames remains validation
-only. No rendered media or visual quality result is claimed by this offline implementation.
-
 ## Official verification and pricing
 
 The relevant public pages were re-read **2026-10-10**. Existing billing entries retain their
 original 2026-10-08/09 source dates; the new decision file records the actual re-read date.
 No source date is backdated and no billing rates are changed in this skill-only addition.
 
-| Component | Official ID/schema evidence | Price used or unresolved quote |
-|---|---|---|
-| GPT Image 2.5 | [Model](https://developers.openai.com/api/docs/models/gpt-image-2.5-sunburst), [generation guide](https://developers.openai.com/api/docs/guides/image-generation), [Images generate API](https://developers.openai.com/api/reference/resources/images/methods/generate): `gpt-image-2.5-sunburst`, snapshot `gpt-image-2.5-sunburst-2026-09-08`, JSON Images generation | Official token rates: $5/M text input, $8/M image input, $30/M image output. Existing $0.20/image approval estimate is product-directed, **not an official flat tariff**; actual usage determines cost. Operator quote can override it. |
-| Eleven v4 Turbo | [Models](https://elevenlabs.io/docs/overview/models), [TTS convert](https://elevenlabs.io/docs/api-reference/text-to-speech/convert): `eleven_v4_turbo`, POST `/v1/text-to-speech/{voice_id}` | [API pricing](https://elevenlabs.io/pricing/api): regular Turbo $0.04/1,000 characters; promotional $0.011/1,000 through 2026-10-12. Existing expiry logic and platform fee retained. |
-| ElevenLabs SFX v2 | [SFX convert](https://elevenlabs.io/docs/api-reference/text-to-sound-effects/convert): `eleven_text_to_sound_v2`, POST `/v1/sound-generation` | [API pricing](https://elevenlabs.io/pricing/api) publishes SFX from $0.12/minute; this does not establish the per-call metered quote. Existing estimate stays **unknown** pending operator configuration. |
-| Remotion | Existing repo timeline schema; [licence](https://www.remotion.dev/docs/license), [licence FAQ](https://www.remotion.dev/docs/license/faq) | The applicable Automators licence lists $0.01/render with a $100 monthly minimum for teams requiring that licence. It is not an AWS compute quote. Existing render estimate remains **unknown/TODO**. |
-| HyperFrames | Existing local tool; [Apache-2.0 licence](https://github.com/heygen-com/hyperframes/blob/main/LICENSE) | No live render implementation or paid price is introduced. Dry-run only. |
-
 ## Licence and training policy
 
-| Model/component | Licence/source | Existing `training_eligible` decision |
-|---|---|---|
-| GPT Image 2.5 and snapshot | Closed weights; commercial API [Services Agreement](https://openai.com/policies/services-agreement/), input rights and applicable [usage policy](https://openai.com/policies/usage-policies/) | `false`: agreement 3.3(e) restricts competing AI training; no accepted continuity-training grant. Output ownership does not establish such a grant. |
-| Eleven v4 Turbo | Closed commercial service under [ElevenLabs terms](https://elevenlabs.io/terms-of-use); paid-plan commercial use and authorized voice rights | `false`: no clear model-training permission verified. No voice cloning is added. |
-| ElevenLabs SFX v2 | Commercial service under [ElevenLabs terms](https://elevenlabs.io/terms-of-use) and [API pricing](https://elevenlabs.io/pricing/api) | `false`: no explicit model-training grant verified. |
-| Remotion render | [Remotion custom/commercial licence](https://www.remotion.dev/docs/license) plus existing in-house exporter policy | `false`: code/render permission does not grant rights over source media or model training. |
-| HyperFrames | [Apache-2.0 code](https://github.com/heygen-com/hyperframes/blob/main/LICENSE) | `false`: code licence does not grant source-media rights. |
-| huashu method/cards | MIT at the pinned revision above | Not a model; no routing training eligibility is added or changed. Demo assets are excluded. |
-
 ## Routing coverage and remaining checks
-
-The packaged inventory is 40 skills, 20 providers and 138 Gateway tools. The routing fixture
-has 327 retained rows, 321 active and six unchanged skips. RT-160 and RT-161 cover named art
-and grammar routing. RT-162 asserts that a silent explainer without a named style stays in
-knowledge-explainer. The input CSV has 148 data rows, no test IDs and no art-style cases;
-these three prompts are task/draft reconstructions and are labeled as such in the fixture.
-Exact workbook provenance remains pending the missing export. The unchanged skips are
-one HyperFrames-overlay case (`feat/hyperframes-overlays`), four `cutaway_record` demo
-cases (`feat/product-demo-capture`), and RT-E043's exact end-card OCR comparison
-(`feat/remotion-ocr-verification`). No pending provider row was falsely activated.
-
-Offline tests cover native loading of the skill/cards, explicit provider precedence,
-quoted/negated style boundaries, static art, existing-footage editing, audio postprocessing,
-supporting image/audio selection, HyperFrames gates and autonomous render rejection/resume.
-These are deterministic routing/graph checks using fakes, not a scored model eval or live E2E.
 
 Comet is unavailable in this environment. Browser E2E is **blocked**, including Studio
 selection/disclosure, visible approval/rejection and artifact playback. Evidence belongs in
@@ -137,7 +72,6 @@ verification does not validate provider responses or animation quality.
 No new environment variables or secrets are required. Existing provider credentials and
 cost-quote configuration remain operator responsibilities for a separately authorized live
 run. Keep every dry-run flag enabled. See
-[decisions](art-style-motion-decisions.tsv) for provenance and open production dependencies.
 
 ## Descriptive catalog
 
@@ -203,11 +137,6 @@ above remain false for training eligibility. Unknown media estimates remain unkn
 and existing approvals remain required. This catalog adds planning text, not a generative
 video model or a procedural animation renderer.
 
-RT-160 through RT-162 remain unchanged. RT-CAT-001 through RT-CAT-012 add six catalog or
-legacy-selection cases and six negative boundaries. No dependency skip is activated.
-The six retained skips are one HyperFrames overlay, four demo-capture cases, and exact
-end-card OCR verification. See [decisions](art-style-catalog-decisions.tsv).
-
 Browser E2E is blocked because Comet is unavailable. Native graph tests use scripted
 models and mocked Gateway services; they do not prove Studio UX or media quality.
 No live calls or rendered-media claims are made.
@@ -224,11 +153,6 @@ The catalog rebuild has no drift. Every neutral catalog name selects its own car
 The built wheel matches the current lookup, routing, safe index, and licence bytes.
 It excludes internal catalog source and scan data. Native review reproductions pass.
 These checks are offline contracts and artifact checks, not a scored model eval.
-
-Six fixture skips remain for one HyperFrames overlay, four `cutaway_record` cases,
-and exact end-card OCR. Two other tests remain skipped for optional GPU dependencies
-and unverified existing Seedance extension-output semantics. Procedural animation
-still needs supported authored assets; this feature does not add a renderer.
 
 Comet E2E is blocked, including Studio browsing/selection, visible approval/rejection,
 and actual media playback. No live provider calls or generated media were evaluated.

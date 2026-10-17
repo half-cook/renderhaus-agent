@@ -5,8 +5,8 @@ metadata:
   remotion_backend: configured
   remotion_features: clip_timing transitions fit_position scale motion titles captions audio_mix canvas encoding grade source_audio transcript_edit
   include_tools: call_editor_tool call_audio_tool
-  gateway_tools: Remotion___prepare_conversational_edit Remotion___render_timeline Remotion___get_render_progress Remotion___export_nle_timeline ElevenLabs___speech_to_text_convert ElevenLabs___speech_to_text_transcripts_get HyperFrames___render_composition
-  routing_tools: remotion_render hyperframes_render
+  gateway_tools: Remotion___prepare_conversational_edit Remotion___render_timeline Remotion___get_render_progress Remotion___export_nle_timeline ElevenLabs___speech_to_text_convert ElevenLabs___speech_to_text_transcripts_get
+  routing_tools: remotion_render
 ---
 
 # Conversational edit
@@ -78,14 +78,6 @@ auditory inspection or measured loudness without that evidence. This branch has 
 Gateway endpoint. If host inspection is unavailable, report QC as incomplete. A dry-run
 plan cannot pass artifact or loudness checks. Correct and recheck at most three times before
 reporting unresolved issues. Deliver only after the actual MP4 opens and plays.
-
-For an optional NLE finish, use `Remotion___export_nle_timeline` after reading Resolve handoff.
-Enrich the pinned snapshot with real source version IDs, checksums, provenance, whole-source
-durations, reel names, source timecodes and audio presence. Bake effects, audio fades, overlays
-and subtitles before exporting; the exporter supports cuts and gaps. Its ZIP is not an MP4.
-An explicit HyperFrames overlay request selects its optional dry-run composition preview through
-`HyperFrames___render_composition`; read the HyperFrames skill. That preview cannot composite
-existing footage or replace a completed Remotion edit. fframes is retired.
 
 Do not submit transcripts, plans or edits as training data. Source lineage retains the
 existing host eligibility policy. Only accepted, registered, successful, non-dry-run Apache

@@ -5,8 +5,8 @@ metadata:
   remotion_backend: configured
   remotion_features: clip_timing transitions fit_position scale motion titles captions audio_mix canvas encoding
   include_tools: call_editor_tool call_media_tool call_audio_tool
-  routing_tools: remotion_render hyperframes_render gpt_image25_t2i eleven_v4_turbo elevenlabs_sfx_v2
-  gateway_tools: Remotion___render_timeline Remotion___get_render_progress HyperFrames___render_composition OpenAI___generate_image ElevenLabs___text_to_speech_convert ElevenLabs___text_to_sound_effects_convert
+  routing_tools: remotion_render gpt_image25_t2i eleven_v4_turbo elevenlabs_sfx_v2
+  gateway_tools: Remotion___render_timeline Remotion___get_render_progress OpenAI___generate_image ElevenLabs___text_to_speech_convert ElevenLabs___text_to_sound_effects_convert
 ---
 
 # Art style motion
@@ -78,22 +78,6 @@ must stay descriptive of style.
    geometry to project files. Keep this design separate from the executable tool arguments.
 
 ## Render within the actual contract
-
-Follow `read_studio_context.intent_route`: explicit request, then exception, then default.
-Use `remotion_render` through `Remotion___render_timeline` by default. Only a named HyperFrames
-request selects `hyperframes_render` through `HyperFrames___render_composition`; generic HTML
-does not. Respect its feature flag, availability and current dry-run-only implementation.
-An explicit generated-video provider request takes precedence and uses the appropriate existing skill.
-Price, tier and `project.confidential` do not choose the renderer or models.
-
-Discover the exact Gateway schema before dispatch. The current Remotion tool accepts supplied
-image/video assets, supported simple motion, text/caption overlays, audio tracks and output settings.
-It does **not** accept arbitrary JSX, procedural scene code, upstream `draw`/`cast`/`cues`, or a
-style/grammar card as executable input. HyperFrames is not a fallback for that limitation.
-For brush-flow animation, geometric morphs, marker strokes, sprites or continuous world scrolling,
-use a rights-cleared authored clip that already contains the required motion. If none is available,
-record the missing animation/template as blocked and report an incomplete storyboard or preview.
-Do not call a still-image pan an implementation of those effects.
 
 Generate original character/key frames through `OpenAI___generate_image` (`gpt_image25_t2i`),
 with `prompt`, `size`, `quality` and `background` from its schema. Request transparent background

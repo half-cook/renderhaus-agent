@@ -9,11 +9,6 @@ metadata:
 
 # Reference shot breakdown
 
-Use this skill for a shot-by-shot breakdown of an existing finished reference, a pacing
-analysis, or cuts per minute. Find moments in long raw footage with
-[footage-memory](../footage-memory/SKILL.md). Compare generated shots with
-[continuity-qc](../continuity-qc/SKILL.md). Neither task establishes a reference shot list.
-
 ## Measure the reference
 
 Read `read_studio_context` and discover the exact tool schemas. Identify the current owned

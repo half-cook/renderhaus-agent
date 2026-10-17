@@ -166,11 +166,11 @@ def test_decimal_cuts_sum_to_the_exact_integer_video_duration():
 
 
 def test_unbound_specialist_video_tools_cannot_bypass_segment_limits():
-    from test_performance_transfer import ACT_ARGS
+    from test_performance_transfer import MOTION_ARGS
 
     gate, document = prepared_gate()
-    result = gate.prepare(document, [{"id": "long", "tool_name": "Runway___act_two",
-        "arguments": {**ACT_ARGS, "performance_duration_seconds": 30}}])
+    result = gate.prepare(document, [{"id": "long", "tool_name": "Fal___kling_motion_control",
+        "arguments": {**MOTION_ARGS, "performance_duration_seconds": 30}}])
     assert not result["ok"]
     assert any("no supported job contract" in issue for issue in result["errors"])
 

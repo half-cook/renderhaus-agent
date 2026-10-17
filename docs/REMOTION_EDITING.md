@@ -455,7 +455,6 @@ local grade/rotation, a title and inline SRT captions. The saved MP4 decoded vid
 and its extracted frame was inspected. It is a test fixture at 320x180 with
 `source_resolution=320x180`, no upscale and no resolution warnings; it is not a QC-certified
 customer deliverable or a browser playback check. Lambda parity captures the full mocked
-SDK invoke request only. See [decisions](remotion-local-lambda-parity-decisions.tsv).
 
 ## Run the real local customer demo
 

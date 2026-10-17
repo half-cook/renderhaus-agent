@@ -45,26 +45,9 @@ host-enforced answer ledger.
 No provider, Gateway tool, secret, or environment variable is added. The existing
 typed contracts validate each dispatch before provider access.
 
-| Routing ID | Real tool | Key arguments and result |
-| --- | --- | --- |
-| `eleven_v4_turbo` | `ElevenLabs___text_to_speech_convert` | Authorized `voice_id`, `text`; omit `model_id` to honor `ELEVENLABS_TTS_MODEL`. Save completed `output_path` or asset handle. |
-| `remotion_render` | `Remotion___render_timeline` | `title`, ordered `visuals`, measured `audio_tracks`, timed `text_overlays`, requested `aspect_ratio`. |
-| Render polling | `Remotion___get_render_progress` | Reuse returned `render_id`, `bucket_name`, and `output_key` unchanged. |
-| `hyperframes_render` | `HyperFrames___render_composition` | Exact discovered composition schema, only for an explicit HyperFrames request. Current implementation validates inputs only. |
-| `ffmpeg_tool` | `Ffmpeg___ffmpeg_tool` | `op=probe`, existing `job_id`, accessible relative `input_path`. Fixed free inspection; no arbitrary shell command. |
-| `deliverable_qc` | `Remotion___qc_deliverable` | Exact discovered final-file QC schema with existing job-local media and declared expected specifications. |
-
 Speech uses `call_audio_tool`. Rendering, polling, and local inspection use
 `call_editor_tool`. Gateway names never appear in `include_tools`; that field
 contains the real dispatch wrappers. `gateway_tools` lists only real tools.
-
-Remotion is the default. Routing masks quoted text, fenced and indented Markdown
-code, and blockquote lines before selecting a plan-review renderer or voice.
-Unmarked prose requires the agent to distinguish source content from instructions;
-inline formatting can still name an explicitly requested provider. Disabled or
-undiscovered HyperFrames returns a blocker without
-switching renderers. Named voice requests remain scoped to narration. Cost,
-quality tiers, and `project.confidential` do not select providers.
 
 The template uses only native images, overlays, and timed audio. Its separate
 chapter/question records are not Gateway arguments. It contains original embedded
@@ -86,11 +69,6 @@ runs when `premium_video_approval` is enabled. Exempt tools and spend limits are
 unchanged. Paid generative inserts are outside this default workflow and require
 their normal video skill and separate cost approval if requested.
 
-Rejected spending stops that action until the customer asks again. Preserve
-completed narration and saved render identifiers on retry. A failed status check
-does not authorize starting a replacement render. A dry-run, accepted job, or
-HyperFrames preview remains an incomplete export.
-
 Open and play the saved MP4 before delivery. Inspect spoken chapter timing,
 question readability, silent holds, and summary completeness. The saved final QC
 report must pass and still match every output checksum. Otherwise return each
@@ -107,13 +85,6 @@ using the measured source size. Actual enhancement uses the existing Topaz
 
 Official pages below were read on **2026-10-09**. Existing billing entries and
 provider routing remain unchanged.
-
-| Component | Price evidence | Licence and training decision |
-| --- | --- | --- |
-| ElevenLabs v4 Turbo | [Official API pricing](https://elevenlabs.io/pricing/api) lists $0.011 per 1,000 characters through October 12 and $0.04 list thereafter. Existing billing applies its promotion expiry and Renderhaus fee. | Proprietary commercial service. [Terms](https://elevenlabs.io/terms-of-use) permit paid-user commercial use and require rights to supplied voices. `training_eligible=false`; no clear competing-model training grant has been verified. |
-| Remotion | [Official licence pricing](https://www.remotion.dev/docs/license/pricing) lists Automators at $0.01 per render with $100/month minimum for applicable Company licences. [AWS Lambda pricing](https://aws.amazon.com/lambda/pricing/) depends on compute and requests; storage and transfer are additional. The ordinary Lambda timeline quote is **TODO / unknown**, not the eight-cent billing placeholder. Local provider compute is zero, excluding operator compute and licence costs. | Commercial Remotion licence, free eligibility for organizations of up to three; Company licence from four. Follow the deployed version's [licence and terms](https://www.remotion.dev/docs/license). This workflow grants no new training rights and keeps renderer `training_eligible=false`. |
-| Explicit HyperFrames | Rendering/mixing/export is pending here; estimate remains unknown where no operator quote exists. | Existing runtime is [Apache-2.0](https://github.com/heygen-com/hyperframes/blob/main/LICENSE). No hosted HeyGen video API is called. `training_eligible=false` remains unchanged. |
-| Original plan-review template | No new model or tariff. | Original repo work; no external code or weights. The [reelplanner pattern URL](https://github.com/ncrispino/reelplanner) was unavailable during this read. Its Apache-2.0 claim is **UNVERIFIED** here; nothing was copied or installed. |
 
 The [official speech conversion schema](https://elevenlabs.io/docs/api-reference/text-to-speech/convert)
 verifies `POST /v1/text-to-speech/{voice_id}`, required `text`, and configurable
@@ -144,21 +115,9 @@ Studio `tsc --noEmit -p .` passed. CI built the Lambda package from cached wheel
 with `PIP_NO_INDEX=true`. The temporary Studio dependency link was removed.
 Provider checks used dry-run flags and `RENDERHAUS_SECRETS_NAME=""`.
 
-The supplied capability-map CSV has no `plan-to-video` rows. New local routing
-cases extend the fixture; the existing capture, HyperFrames-overlay, and OCR
-dependency skips stay skipped. The research map is read-only and is not copied
-into this repository.
-
-There are ten new local routing cases, making 230 retained rows with 225 active
-and five skips. No previously skipped row was activated. The unchanged skips are
-one HyperFrames-overlay case, three `cutaway_record` cases, and RT-E043's missing
-exact OCR comparison. The packaged inventory is 31 skills, 16 providers and 117
-Gateway tools.
-
 Comet browser E2E is **blocked** because no controllable Comet session is available
 and the task prohibits live provider calls. No alternative browser or mock E2E is
 reported as a pass. The ignored receipt is recorded with
 `scripts/browser_e2e_hook.py` under `.renderhaus/e2e/`.
 
-See [the decisions record](plan-to-video-decisions.tsv) for implementation and
 verification evidence.

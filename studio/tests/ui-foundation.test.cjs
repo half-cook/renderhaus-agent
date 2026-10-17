@@ -6,7 +6,7 @@ const ts = require('typescript');
 
 const studio = path.resolve(__dirname, '..');
 const pkg = JSON.parse(fs.readFileSync(path.join(studio, 'package.json'), 'utf8'));
-const files = ['dialog', 'popover', 'tooltip', 'tabs', 'dropdown-menu', 'sonner'];
+const files = ['dialog', 'sonner'];
 
 test('the stack pins compatible Next, React and Tailwind without competing UI frameworks', () => {
   const all = { ...pkg.dependencies, ...pkg.devDependencies };
@@ -16,14 +16,14 @@ test('the stack pins compatible Next, React and Tailwind without competing UI fr
   assert.equal(pkg.dependencies['react-dom'], pkg.dependencies.react);
   assert.match(pkg.devDependencies.tailwindcss, /^4\.3\.\d+$/);
   assert.equal(pkg.devDependencies['@tailwindcss/postcss'], pkg.devDependencies.tailwindcss);
-  for (const name of ['radix-ui', 'class-variance-authority', 'clsx', 'tailwind-merge', 'sonner', 'motion']) assert.match(pkg.dependencies[name] ?? '', /^\d+\.\d+\.\d+$/, name);
+  for (const name of ['radix-ui', 'clsx', 'tailwind-merge', 'sonner', 'motion']) assert.match(pkg.dependencies[name] ?? '', /^\d+\.\d+\.\d+$/, name);
   for (const name of ['@playwright/test', '@axe-core/playwright', 'pixelmatch', 'pngjs']) {
     assert.match(pkg.devDependencies[name] ?? '', /^\d+\.\d+\.\d+$/, name);
     assert.ok(!pkg.dependencies[name]);
   }
 });
 
-test('the six copy-in UI files stay square, flat, semantic and limited to their approved imports', () => {
+test('the retained UI adapters stay square, flat, semantic and limited to their approved imports', () => {
   const ui = path.join(studio, 'components/ui');
   assert.ok(fs.existsSync(ui), 'copy-in components are required');
   assert.deepEqual(fs.readdirSync(ui).sort(), files.map((name) => `${name}.tsx`).sort());

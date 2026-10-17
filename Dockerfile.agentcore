@@ -15,7 +15,6 @@ COPY agent ./agent
 COPY providers ./providers
 COPY configs ./configs
 COPY tests/fixtures/skill_routing.json ./tests/fixtures/
-COPY docs/continuity_qc_benchmark_scores.json ./docs/
 COPY server ./server
 COPY third_party ./third_party
 

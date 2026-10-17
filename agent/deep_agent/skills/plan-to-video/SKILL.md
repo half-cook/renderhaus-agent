@@ -1,12 +1,12 @@
 ---
 name: plan-to-video
-description: Turn an existing implementation plan or plan-mode Markdown into a narrated review video with chapter cards and open questions. Remotion is the default; use HyperFrames only when named.
+description: Turn an existing implementation plan or plan-mode Markdown into a narrated review video with chapter cards and open questions. Use Remotion.
 metadata:
   remotion_backend: configured
   remotion_features: clip_timing transitions fit_position scale motion titles captions audio_mix canvas encoding
   include_tools: call_editor_tool call_audio_tool
-  routing_tools: remotion_render hyperframes_render eleven_v4_turbo fish_audio_tts ffmpeg_tool deliverable_qc
-  gateway_tools: Remotion___render_timeline Remotion___get_render_progress HyperFrames___render_composition ElevenLabs___text_to_speech_convert FishAudio___generate_speech Ffmpeg___ffmpeg_tool Remotion___qc_deliverable
+  routing_tools: remotion_render eleven_v4_turbo fish_audio_tts ffmpeg_tool deliverable_qc
+  gateway_tools: Remotion___render_timeline Remotion___get_render_progress ElevenLabs___text_to_speech_convert FishAudio___generate_speech Ffmpeg___ffmpeg_tool Remotion___qc_deliverable
 ---
 
 # Plan review video
@@ -94,13 +94,6 @@ images and timed overlays. The Gateway accepts no arbitrary JSX, HTML, or
 chapter/question API. Leave FPS and `output_resolution` unset unless the customer
 requests them, preserving the renderer's source resolution behavior.
 
-When the human explicitly names HyperFrames outside the source plan, keep this
-plan review workflow and read [hyperframes](../hyperframes/SKILL.md). Use only
-`HyperFrames___render_composition` with its discovered schema. Disabled or missing
-HyperFrames tools block the requested route. Do not substitute Remotion. The
-current HyperFrames tool validates composition inputs only. Its preview does not
-render narration or export an MP4.
-
 Disclose the selected provider, model, route basis, and host cost estimate before
 each paid call. Cost never selects the renderer or voice provider. Honor the
 existing non-autonomous audio approval, autonomous spending cap, and paid-video
@@ -143,15 +136,6 @@ size. Link [Topaz upscale](../upscale/SKILL.md) for actual enhancement with its
 existing approval. Technical QC does not accept copy, framing, or human decisions.
 
 ## Sources
-
-This original Renderhaus workflow uses the plan-review pattern associated with
-[reelplanner](https://github.com/ncrispino/reelplanner). The upstream page was
-unavailable during the 2026-10-09 read; its Apache-2.0 claim is UNVERIFIED here.
-No upstream code or CLI was copied. Remotion, HyperFrames, and voice APIs keep
-their existing licences, rights, configuration, and training eligibility.
-The exact public `eleven_v4_turbo` ID is also UNVERIFIED in this session. The
-starting adapter records operator TTS evidence and defaults to dry-run; this
-workflow changes no HTTP guard. See [pricing, evidence and limits](../../../../docs/PLAN_TO_VIDEO.md).
 
 The configured Remotion backend must support every requested feature. Unsupported features refuse before media I/O
 or AWS submission. Crop/pad reframing requires local/worker; fitted font/box overlays require

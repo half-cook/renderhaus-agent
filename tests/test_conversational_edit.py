@@ -52,13 +52,11 @@ class ConversationalRoutingTests(unittest.TestCase):
         rows = [case for case in cases if case["suite"] == "conversational-edit"]
         self.assertEqual([(row["prompt"], row["expected_tool"]) for row in rows], [
             ("cut filler ums and burn bold captions on this interview", "remotion_render"),
-            ("conversational edit talking head with HyperFrames overlays", "hyperframes_render"),
             ("export the edit to OTIO after agent cut", "Remotion___export_nle_timeline"),
         ])
         self.assertEqual(rows[0]["expected_routed_alias"], "transcript_edit")
         self.assertFalse(rows[0]["skip_reason"])
-        self.assertTrue(rows[1]["skip_reason"])
-        self.assertFalse(rows[2]["skip_reason"])
+        self.assertFalse(rows[1]["skip_reason"])
 
     def test_editorial_intents_do_not_select_generation_or_lipsync(self):
         for prompt in [
@@ -77,15 +75,10 @@ class ConversationalRoutingTests(unittest.TestCase):
         self.assertEqual((route.skill, route.tool),
                          ("conversational-edit", "Remotion___export_nle_timeline"))
         self.assertEqual(route_intent("export timeline to Resolve").skill, "resolve-handoff")
-        self.assertEqual(route_intent("restyle this footage keep motion Aleph").skill, "named-provider")
+        self.assertEqual(route_intent("restyle this footage keep motion Aleph").status, "blocked")
         self.assertEqual(route_intent("edit multi-shot footage faithfully").skill, "edit-v2v")
         self.assertEqual(route_intent("TTS then talking head").skill, "audio-bed")
 
-    def test_hyperframes_request_is_explicitly_pending(self):
-        route = route_intent("conversational edit talking head with HyperFrames overlays")
-        self.assertEqual((route.skill, route.status), ("conversational-edit", "pending"))
-        self.assertIsNone(route.tool)
-        self.assertIn("HyperFrames", route.reason)
 
     def test_free_preparation_has_a_separate_plan_gate(self):
         from server.billing_rates import cost_for
@@ -354,7 +347,6 @@ class ConversationalStudioTests(unittest.IsolatedAsyncioTestCase):
                 patch("server.studio.repository", repository),
                 patch("server.studio.current_workspace_id", return_value="workspace"),
                 patch("server.studio.current_user_id", return_value="user"),
-                patch("server.studio.stripe_enabled", return_value=False),
                 patch("server.studio.publish_provider_input_url", side_effect=AssertionError("No publishing")),
                 patch.object(repository, "register_source", side_effect=AssertionError("No media ingestion")),
                 patch("server.studio.dispatch", return_value=preview) as dispatch,

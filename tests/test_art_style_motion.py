@@ -60,19 +60,6 @@ class ArtStyleMotionRoutingTests(unittest.TestCase):
             with self.subTest(prompt=prompt):
                 self.assertEqual(route_intent(prompt, arguments=arguments).skill, skill)
 
-    def test_papercut_explicit_provider_and_renderer_requests_win(self):
-        route = route_intent('Use Kling to make a papercut explainer')
-        self.assertEqual((route.skill, route.tool), ('named-provider', 'Kling___text_to_video'))
-        self.assertIn('explicit request', route.disclosure)
-        prompt = 'Make a paper-collage explainer animation with HyperFrames'
-        with patch.dict(os.environ, {'HYPERFRAMES_ENABLED': 'false'}):
-            self.assertEqual(route_intent(prompt).status, 'blocked')
-        with patch.dict(os.environ, {'HYPERFRAMES_ENABLED': 'true', 'HYPERFRAMES_DRY_RUN': 'true'}):
-            route = route_intent(prompt)
-            self.assertEqual((route.skill, route.tool),
-                             ('art-style-motion', 'HyperFrames___render_composition'))
-        self.assertEqual(route_intent('Make a papercut explainer with an HTML template').alias,
-                         'remotion_render')
 
     def test_published_card_titles_can_be_requested_by_name(self):
         for filename in ['style-cards.md', 'grammar-cards.md']:
@@ -151,37 +138,10 @@ class ArtStyleMotionRoutingTests(unittest.TestCase):
         ]:
             with self.subTest(prompt=prompt):
                 self.assertEqual(route_intent(prompt, arguments=arguments).skill, skill)
-        for provider, tool in [('Kling', 'Kling___text_to_video'), ('Runway', 'Runway___text_to_video'),
-                               ('Luma', 'Luma___text_to_video')]:
-            route = route_intent(f'Use {provider} to make a Bauhaus-style video')
-            self.assertEqual((route.skill, route.tool), ('named-provider', tool))
-            self.assertIn('explicit request', route.disclosure)
         route = route_intent('Use Kling to make a Vox-style video with voiceover')
-        self.assertEqual(route.steps[0].tool, 'Kling___text_to_video')
-        self.assertEqual(route.steps[-1].tool, 'Remotion___render_timeline')
-        for provider, tool in [('Runway', 'Runway___text_to_video'), ('Luma', 'Luma___text_to_video')]:
-            prompt = f'Make a Vox-style video using OpenAI character frames and {provider} for video'
-            route = route_intent(prompt)
-            self.assertEqual((route.skill, route.tool), ('named-provider', tool))
-            self.assertIn('explicit request', route.disclosure)
-            voiced = route_intent(prompt + ' with voiceover')
-            self.assertEqual(voiced.steps[0].tool, tool)
+        self.assertEqual(route.status, 'blocked')
+        self.assertFalse(route.steps)
 
-    def test_explicit_hyperframes_uses_same_skill_with_feature_and_availability_gates(self):
-        prompt = 'Make a Vox-style explainer animation with HyperFrames'
-        with patch.dict(os.environ, {'HYPERFRAMES_ENABLED': 'true', 'HYPERFRAMES_DRY_RUN': 'true'}):
-            route = route_intent(prompt)
-            self.assertEqual((route.skill, route.alias, route.tool, route.status),
-                             ('art-style-motion', 'hyperframes_render', 'HyperFrames___render_composition', 'ready'))
-            self.assertIn('explicit HyperFrames request', route.disclosure)
-            missing = route_intent(prompt, available_tools={'Remotion___render_timeline'})
-            self.assertEqual((missing.skill, missing.status, missing.tool), ('art-style-motion', 'blocked', None))
-        with patch.dict(os.environ, {'HYPERFRAMES_ENABLED': 'false'}):
-            route = route_intent(prompt)
-            self.assertEqual((route.skill, route.status, route.tool), ('art-style-motion', 'blocked', None))
-            self.assertIn('disabled', route.reason)
-        html = route_intent('Make a Vox-style explainer animation using an HTML template')
-        self.assertEqual(html.alias, 'remotion_render')
 
     def test_confidential_tier_and_price_words_do_not_choose_renderer(self):
         for tier in [None, 'draft', 'premium']:
@@ -221,7 +181,7 @@ class ArtStyleMotionRoutingTests(unittest.TestCase):
                 self.assertEqual(route_intent(prompt).skill, 'art-style-motion')
                 self.assertEqual(filter_request_tools(prompt, allowed | {'ElevenLabs___text_to_speech_convert'}), allowed)
         prompt = 'Make a silent Bauhaus animation with no speech'
-        self.assertNotIn('HeyGen___voice_tts', filter_request_tools(prompt, {'HeyGen___voice_tts'}))
+        self.assertNotIn('HeyGen___voice_tts', filter_request_tools(prompt, {}))
 
 
 class ArtStyleMotionSkillTests(unittest.TestCase):
@@ -244,7 +204,7 @@ class ArtStyleMotionSkillTests(unittest.TestCase):
         self.assertIsNotNone(_parse_skill_metadata(body, str(path), 'art-style-motion'))
         meta = yaml.safe_load(body.split('---', 2)[1])['metadata']
         self.assertEqual(set(meta['routing_tools'].split()),
-                         {'remotion_render', 'hyperframes_render', 'gpt_image25_t2i', 'eleven_v4_turbo', 'elevenlabs_sfx_v2'})
+                         {'remotion_render',  'gpt_image25_t2i', 'eleven_v4_turbo', 'elevenlabs_sfx_v2'})
         paths = [path, *SKILL.glob('references/*.md')]
         self.assertEqual({p.name for p in paths},
                          {'SKILL.md', 'method.md', 'style-cards.md', 'grammar-cards.md'})

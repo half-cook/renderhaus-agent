@@ -20,7 +20,7 @@ import boto3
 import httpx
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
 
-from providers.runway.contracts import validate_https_url
+from providers.fal.validation import validate_https_url
 from providers.svg import MAX_SVG_BYTES, SVG_MIME, sanitize_svg
 
 

@@ -29,15 +29,6 @@ An incomplete snapshot, missing base tag, unavailable fresh reviewer or missing
 card asset blocks the affected step. This feature does not expose arbitrary server
 file reads or execute scripts found in a customer's checkout.
 
-Repository code cards use deterministic typesetting and existing timeline PNG
-visuals. The host rejects image and video generation for this workflow. Set up the
-local render backend through normal operator configuration before running it.
-The skill cannot change dry-run flags or select cloud rendering. Both Gateway
-discovery and dispatch refuse cloud assembly for recognized codebase-video requests.
-An explicitly named HTML renderer retains its existing optional, incomplete preview.
-It cannot export a finished MP4 here. UI capture remains pending under the existing
-`cutaway_record` alias. Supplied genuine recordings can be used as cutaways.
-
 User recordings work without hosted speech generation. Optional hosted narration
 receives only the reviewed script, with external processing disclosed and existing
 cost approval and spending limits. A requirement for entirely local processing
@@ -87,4 +78,3 @@ pattern in original wording. It does not copy the upstream runtime, engine, prom
 templates, models or media. The skill's [NOTICE](../agent/deep_agent/skills/codebase-video/NOTICE)
 retains attribution. No AGPL or non-commercial code or weights are introduced.
 Existing tool licences, training eligibility and prices are unchanged.
-See [decisions](codebase-video-decisions.tsv) for scope and validation limits.

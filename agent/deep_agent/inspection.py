@@ -109,7 +109,7 @@ class MediaInspection:
 
 
 def qc_rubric(skills_root: Path) -> str:
-    names = ('continuity-qc', 'motion-carry-qc', 'remotion-deliverable-qc')
+    names = ('motion-carry-qc', 'remotion-deliverable-qc')
     rules = '\n\n'.join((skills_root / name / 'SKILL.md').read_text() for name in names)
     return ('Apply only the QC skills relevant to the requested deliverable. '
             'A truthful blocker or incomplete result may finish with its remaining issues stated. '

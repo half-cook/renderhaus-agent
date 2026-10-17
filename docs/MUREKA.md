@@ -128,7 +128,6 @@ Browser E2E is **blocked**: Comet is unavailable in this environment, as specifi
 the user. Real Studio approval, live song playback and lyric-video timing/playback
 were not exercised. No paid/live API was called. Offline HTTP, routing, native
 approval/resume, artifact-validation and inventory checks are supporting evidence.
-See [decisions](mureka-decisions.tsv) and ignored `.renderhaus/e2e/` evidence.
 
 ## Routing fixture changes
 

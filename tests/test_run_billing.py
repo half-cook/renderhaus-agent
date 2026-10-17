@@ -5,7 +5,6 @@ import os
 import re
 import tempfile
 import unittest
-from unittest import mock
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from unittest.mock import patch
@@ -204,16 +203,6 @@ class HoldTests(Fixture, unittest.TestCase):
             row = connection.execute("SELECT reason, run_id, wallet_cents FROM usage_events WHERE reason = 'orchestration'").fetchone()
         self.assertEqual((row["reason"], row["run_id"], row["wallet_cents"]), ("orchestration", "run-1", 40))
 
-    def test_daily_allowance_is_spent_before_wallet_inside_a_run(self):
-        with self.repo._connect() as connection:
-            connection.execute(
-                "INSERT INTO subscriptions(user_id, plan_id, status, monthly_budget_cents, daily_allowance_cents, "
-                "daily_allowance_used_cents, daily_allowance_reset_date, current_period_end, created_at, updated_at) "
-                "VALUES (?, 'p', 'active', 0, 50, 0, ?, 0, 0, 0)", (USER, rb.time.strftime("%Y-%m-%d", rb.time.gmtime())))
-        self.repo.hold_run(USER, "run-1", 200)
-        charge = self.repo.charge_usage(USER, 80, "generation", run_id="run-1", line_kind="media", line_label="Image")
-        self.assertEqual((charge.daily_cents, charge.wallet_cents), (50, 30))
-
 
 class MeterTests(Fixture, unittest.TestCase):
     def meter(self, cap=125):
@@ -389,12 +378,9 @@ class PayloadTests(Fixture, unittest.TestCase):
         info = card["insufficient_credit"]
         self.assertEqual(info["type"], "insufficient_credit")
         self.assertEqual(info["balance_cents"], 150)
-        self.assertFalse(info["add_credit"])  # top-ups are off for the invite-only beta
-        self.assertEqual(info["message"], "You've used your beta credit. Top-ups are coming soon.")
+        self.assertNotIn("add_credit", info)
+        self.assertEqual(info["message"], "Not enough credit for this cap.")
         self.assertIsNone(info["lower_cap_option_cents"])  # below the estimate: only add credit
-        with mock.patch.dict(os.environ, {"TOPUPS_ENABLED": "true"}):
-            info = self.view(self.sample())[0]["insufficient_credit"]
-        self.assertTrue(info["add_credit"])
 
     def test_lowering_the_cap_is_offered_when_balance_covers_the_estimate(self):
         self.repo.adjust_balance(USER, -700, "test_spend")  # 300 left; estimate 233, cap 350

@@ -19,13 +19,13 @@ class CapabilityMapTests(unittest.TestCase):
         expected = {"t2v": "wan3_t2v", "i2v": "wan3_i2v", "reference_video": "wan3_r2v",
                     "v2v_edit": "seedance25_edit", "extend": "seedance25_extend", "still_image": "gpt_image25_t2i",
                     "image_edit": "gpt_image25_edit", "lipsync": "sync3_lipsync",
-                    "performance_transfer": "runway_act_two", "tts": "eleven_v4_turbo",
+                    "performance_transfer": "kling_motion_control", "tts": "eleven_v4_turbo",
                     "voice_clone": "voices_ivc_create", "cloned_tts": "eleven_v4_turbo",
                     "music": "mureka_v95", "sfx": "mirelo_v2a",
                     "upscale": "topaz_upscale", "interpolate": "topaz_interpolate",
                     "motion_graphics": "remotion_render", "nle_handoff": "Remotion___export_nle_timeline",
                     "nle_import": "nle_import",
-                    "continuity_qc": "local_qc", "motion_carry_qc": "motion_carry_probe", "lyrics_video": "mureka_lyrics_video",
+                    "motion_carry_qc": "motion_carry_probe", "lyrics_video": "mureka_lyrics_video",
                     "ad_variant_matrix": "ad_variant_matrix", "media_inspection": "ffmpeg_tool",
                     "delivery_render": "delivery_render", "deliverable_qc": "deliverable_qc",
                     "loudness_qc": "ffmpeg_tool", "local_finishing": "ffmpeg_tool",
@@ -41,22 +41,6 @@ class CapabilityMapTests(unittest.TestCase):
             self.assertEqual(route.alias, "wan3_t2v")
             self.assertNotIn("interim default until", route.disclosure)
 
-    def test_wan_edit_and_extend_are_explicit_only_and_absent_from_automatic_choices(self):
-        wan_aliases = {"wan3_edit", "wan3_extend"}
-        for choice in routing.POLICY["capability_map"].values():
-            automatic = {choice["default"], choice.get("interim"), *choice["ab_candidates"],
-                         *(exception["tool"] for exception in choice["exceptions"])}
-            self.assertFalse(wan_aliases & automatic)
-        for alias in wan_aliases:
-            self.assertTrue(routing.TOOL_MAP[alias]["explicit_only"])
-            self.assertEqual(routing.TOOL_MAP[alias]["status"], "ready")
-        policy = routing.POLICY["providers"]["alibaba_modelstudio"]
-        self.assertTrue(policy["enabled"])
-        self.assertTrue(policy["explicit_only"])
-        self.assertTrue(policy["model_policies"]["wan3.0-video"]["explicit_only"])
-        capability = next(row for row in routing.capability_table() if row["provider"] == "alibaba_modelstudio")
-        self.assertTrue(capability["enabled"])
-        self.assertTrue(capability["explicit_only"])
 
     def test_plain_video_never_automatically_chooses_demoted_providers(self):
         for prompt in ["generate a video", "cheapest video preview", "highest quality video", "draft video"]:
@@ -67,12 +51,6 @@ class CapabilityMapTests(unittest.TestCase):
             self.assertEqual(route.status, "blocked")
             self.assertIsNone(route.tool)
 
-    def test_explicit_request_precedes_exception_and_discloses_demotion(self):
-        for provider, target in [("Kling", "Kling"), ("Runway", "Runway"), ("Luma", "Luma")]:
-            route = routing.route_intent(f'use {provider} for a robot that says "hello"')
-            self.assertEqual(route.tool, f"{target}___text_to_video")
-            self.assertIn("explicit request; not the default for t2v", route.disclosure)
-        self.assertEqual(routing.route_intent("use Runway Aleph to relight this clip").tool, "Runway___video_to_video")
 
     def test_predicates_are_deterministic_and_negation_is_respected(self):
         cases = [('robot says "hello"', "dialogue"), ("cartoons talking", "dialogue"),
@@ -90,13 +68,12 @@ class CapabilityMapTests(unittest.TestCase):
                  ('animate a mascot image speaking "hi"', "seedance25_i2v"),
                  ("synthetic characters from refs talking", "seedance25_r2v"),
                  ("editable SVG logo", "recraft_v41_vector"), ("fix the typo in this banner", "ideogram45_edit"),
-                 ("90 second multilingual avatar presenter", "heygen_avatar_v"),
                  ("copy whole-body dance", "kling_motion_control"), ("whoosh sound effect", "elevenlabs_sfx_v2")]
         for prompt, alias in cases:
             with self.subTest(prompt=prompt):
                 route = routing.route_intent(prompt)
                 self.assertEqual(route.alias, alias)
-                self.assertIn("exception:", route.disclosure)
+                self.assertIn("default" if alias == "kling_motion_control" else "exception:", route.disclosure)
         self.assertEqual(routing.route_intent("generate an Ideogram poster").alias, "gpt_image25_t2i")
         self.assertEqual(routing.route_intent("convert 24fps to 60fps simple pan").alias, "topaz_interpolate")
 
@@ -161,7 +138,7 @@ class CapabilityMapTests(unittest.TestCase):
 
     def test_retired_aliases_cannot_dispatch(self):
         for alias in ["veo_t2v", "hedra_character3", "liveportrait_lipsync", "mmaudio_sfx", "ace_step_music"]:
-            self.assertEqual(routing.TOOL_MAP[alias]["status"], "retired")
+            self.assertNotIn(alias, routing.TOOL_MAP)
             self.assertIsNone(routing.resolve_alias(alias))
 
 
@@ -357,21 +334,21 @@ class LadderGraphTests(unittest.IsolatedAsyncioTestCase):
     async def test_premium_interrupt_has_cost_disclosure_and_reject_logs_without_dispatch(self):
         from agent.deep_agent.runner import run_with_servers
         from mcp import Tool
-        request = StudioAgentRequest(prompt="Kling video with multi-shot", autonomous=True,
+        request = StudioAgentRequest(prompt="Wan video with audio", autonomous=True,
                                      job_id="test", project_id="project", workspace_id="workspace")
         studio = _context_from_request(request)
-        tools = json.loads(Path("configs/gateway/kling.tools.json").read_text())
-        gateway = Gateway([Tool(name="Kling___" + t["name"], description=t["description"],
+        tools = json.loads(Path("configs/gateway/fal.tools.json").read_text())
+        gateway = Gateway([Tool(name="Fal___" + t["name"], description=t["description"],
                                 inputSchema=t["inputSchema"]) for t in tools])
-        step = call("call_media_tool", {"tool_name": "Kling___text_to_video", "arguments": {
-            "prompt": "A car", "multi_shot": True}}, "video")
+        step = call("call_media_tool", {"tool_name": "Fal___generate_wan3_t2v", "arguments": {
+            "prompt": "A car", "audio": True}}, "video")
         with tempfile.TemporaryDirectory() as directory, patch.dict(os.environ, {"RENDERHAUS_OUTCOME_DIR": directory}):
             with self.assertRaises(StudioAgentApprovalRequired) as paused:
                 await run_with_servers(request, studio, [gateway], model=ScriptedModel([
                     call("read_file", {"file_path": "/skills/t2v/SKILL.md"}, "skill"), step]))
             approval = paused.exception.approvals[0]
             self.assertIn("Estimated cost", approval.description)
-            self.assertTrue(any("kling-3.0" in event.message and "explicit request" in event.message
+            self.assertTrue(any("wan" in event.message.lower() and "explicit request" in event.message
                                 for event in studio.progress_events))
             gateway.call_tool.assert_not_awaited()
             resumed = request.model_copy(update={"session_items": studio.session_items,
@@ -381,8 +358,7 @@ class LadderGraphTests(unittest.IsolatedAsyncioTestCase):
             gateway.call_tool.assert_not_awaited()
             rows = [json.loads(line) for line in (Path(directory) / "outcomes.jsonl").read_text().splitlines()]
             self.assertEqual((rows[-1]["provider"], rows[-1]["outcome"], rows[-1]["stage"]),
-                             ("kling", "rejected", "approval"))
-
+                             ("fal", "rejected", "approval"))
 
 
 class ProjectPolicyTests(unittest.TestCase):
@@ -400,7 +376,7 @@ class ProjectPolicyTests(unittest.TestCase):
                 self.assertTrue(_context_from_request(request).confidential)
                 with self.assertRaises(KeyError):
                     studio._studio_agent_request("video", [], workspace_id="other", project_id="private")
-                self.assertEqual(routing.route_intent(request.prompt + " video", confidential=request.confidential).provider, "runway")
+                self.assertEqual(routing.route_intent(request.prompt + " video", confidential=request.confidential).status, "blocked")
             restored = StudioRepository(repo.database_path, repo.media_root)
             self.assertTrue(restored.project_provider_policy("workspace", "private")["confidential"])
 

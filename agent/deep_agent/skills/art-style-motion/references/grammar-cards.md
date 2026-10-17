@@ -91,13 +91,6 @@ recording and legibility. These are design examples, not measured Renderhaus per
 
 ### Authoring and review boundary
 
-The existing timeline tool composes finished assets and supported motion presets. It cannot
-run the upstream JSX recipes, custom paper filters, layered camera rigs, cutout acting,
-stepped label boil or word-pop tags. For these effects, use a rights-cleared authored clip.
-If that clip is missing, record the missing effect and return an incomplete storyboard or
-preview. A still with a pan is not the completed paper animation. HyperFrames retains its
-explicit-request gate and dry-run limitation.
-
 If a separate authorized Remotion authoring task supplies those clips, derive animation from
 the current frame and fps, use seeded randomness and measured audio cues, and keep persistent
 captions and banners on the intended global timeline. CSS animation and wall-clock timers

@@ -6,16 +6,8 @@ from copy import deepcopy
 from typing import Any
 
 from providers.fish_audio.api import MODELS, VOICES
-from providers.runway.contracts import I2V_RATIOS, IMAGE_RATIOS
 from providers.fal.wan import ASPECT_RATIOS, EDIT_MODES, MODELS as FAL_MODELS, RESOLUTIONS
 from providers.fal import wan3, mirelo, images, named_video
-from providers.luma.catalog import (
-    ASPECT_RATIOS as LUMA_ASPECT_RATIOS,
-    DURATIONS as LUMA_DURATIONS,
-    EDIT_STRENGTHS as LUMA_EDIT_STRENGTHS,
-    MODEL_IDS as LUMA_MODEL_IDS,
-    RESOLUTIONS as LUMA_RESOLUTIONS,
-)
 from providers.seedance.api import MAX_DURATION_SECONDS, MIN_DURATION_SECONDS
 from providers.openai_images import contracts as openai_images
 
@@ -36,11 +28,6 @@ STATIC_FIELD_OPTIONS: dict[str, dict[str, list[str | int]]] = {
         "model": ["Starlight Precise 2.6", "Apollo", "Chronos"],
         "target_resolution": ["1080p", "4K"],
     },
-    "heygen": {
-        "model": ["avatar_v", "heygen-voice-1"], "mode": ["instant"],
-        "reference_format": ["mp3", "wav", "ogg"], "similarity": ["medium", "high", "extra_high", "max"], "resolution": ["720p", "1080p"],
-        "aspect_ratio": ["16:9", "9:16", "4:5", "5:4", "1:1", "auto"],
-    },
     "sync": {
         "model": ["sync-3"],
         "sync_mode": ["cut_off", "loop", "bounce", "silence", "remap"],
@@ -51,18 +38,6 @@ STATIC_FIELD_OPTIONS: dict[str, dict[str, list[str | int]]] = {
         "background": ["auto", "opaque", "transparent"],
         "output_format": list(openai_images.FORMAT), "moderation": ["auto", "low"],
         "n": list(range(1, 11)),
-    },
-    "kling": {
-        "aspect_ratio": ["16:9", "9:16", "1:1"],
-        "resolution": ["720p", "1080p", "4k"],
-        "duration_seconds": list(range(3, 16)),
-        "model": ["kling-3.0", "kling-3.0-turbo", "kling-3.0-omni"],
-    },
-    "runway": {
-        "model": ["gen4.5", "aleph2", "gen4_image", "gen4_image_turbo", "act_two"],
-        "character_type": ["image", "video"], "boundary_kind": ["shot", "silence"],
-        "ratio": list(dict.fromkeys(I2V_RATIOS + IMAGE_RATIOS)),
-        "duration_seconds": list(range(2, 11)),
     },
     "fal": {
         "character_orientation": ["video", "image"],
@@ -77,21 +52,6 @@ STATIC_FIELD_OPTIONS: dict[str, dict[str, list[str | int]]] = {
         "duration": list(range(2, 31)),
         "edit_mode": list(EDIT_MODES),
         "task": list(EDIT_MODES[1:]),
-    },
-    "luma": {
-        "model": list(LUMA_MODEL_IDS),
-        "aspect_ratio": list(LUMA_ASPECT_RATIOS),
-        "resolution": list(LUMA_RESOLUTIONS),
-        "duration_seconds": list(LUMA_DURATIONS),
-        "source_duration_seconds": list(LUMA_DURATIONS),
-        "direction": ["forward", "backward"],
-        "strength": list(LUMA_EDIT_STRENGTHS),
-    },
-    "alibaba_modelstudio": {
-        "aspect_ratio": ["adaptive", "21:9", "16:9", "4:3", "1:1", "3:4", "9:16"],
-        "resolution": ["480p", "720p", "1080p"],
-        "duration": [-1, *range(2, 31)],
-        "direction": ["forward", "backward", "both"],
     },
     "seedance": {
         "aspect_ratio": list(SEEDANCE_RATIOS),
@@ -114,11 +74,7 @@ STATIC_FIELD_OPTIONS: dict[str, dict[str, list[str | int]]] = {
 }
 
 LIVE_CHOICE_TOOLS: tuple[tuple[str, str, str], ...] = (
-    ("heygen", "list_avatars", "avatar_id"),
-    ("heygen", "list_voices", "voice_id"),
-    ("kling", "list_kling_models", "model"),
     ("fal", "list_fal_models", "model"),
-    ("luma", "list_luma_models", "model"),
     ("seedance", "list_seedance_models", "model"),
     ("seedream", "list_seedream_models", "model"),
     ("elevenlabs", "voices_search", "voice_id"),

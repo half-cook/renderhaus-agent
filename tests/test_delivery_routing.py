@@ -38,10 +38,10 @@ class VideoVoiceoverTests(unittest.TestCase):
         self.assertEqual([step.alias for step in route.steps], ['wan3_t2v', 'eleven_v4_turbo', 'remotion_render'])
         self.assertEqual(route.expected_output, 'assembled MP4')
         self.assertNotIn('forbidden_tools', route.public())
-        for request in ['Use Wan 3.0 to make a 5-second clip with voiceover', 'Use Kling to make a 5-second clip with voiceover']:
+        for request in ['Use Wan 3.0 to make a 5-second clip with voiceover']:
             with self.subTest(request=request):
                 self.assertEqual(routing.route_intent(request).status, 'ready')
-        for tool in ['Seedream___text_to_image', 'Seedream___image_to_image', 'Runway___text_to_image']:
+        for tool in ['Seedream___text_to_image', 'Seedream___image_to_image']:
             with self.subTest(tool=tool):
                 constraints = routing.intent_constraints(prompt)
                 self.assertEqual(routing.select_provider(routing.job_type(tool), **constraints).status, 'blocked')
@@ -72,7 +72,6 @@ class MultiStepModalityTests(unittest.TestCase):
             ('Make a 5-second clip from this start frame with a calm voiceover', 'wan3_i2v'),
             ('Make a 5-second clip from multi-ref images with a calm voiceover', 'wan3_r2v'),
             ('Use Wan 3.0 to make a 5-second clip with voiceover', 'wan3_t2v'),
-            ('Use Kling to make a 5-second clip with voiceover', 'kling_t2v'),
         ]
         for prompt, alias in cases:
             with self.subTest(prompt=prompt):

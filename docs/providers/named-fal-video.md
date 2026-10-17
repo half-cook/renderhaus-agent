@@ -91,13 +91,6 @@ endpoints. Actual account access, region availability and live artifact quality 
 
 ## Routing evidence and remaining work
 
-Two active fixtures were added: “use Pixelcut looping video…” and “PixVerse VibeMV…”. No
-matching provider-pending row existed to activate. Inventory is 16 providers, 119 Gateway
-tools, 31 skills and 238 routing rows: 233 active, 5 still skipped. The skips retain their
-dependency reasons: one HyperFrames overlay, three product-demo capture and one exact
-end-card OCR case. Unnamed, quoted and negated requests are covered separately by regression
-tests. Wan retry cannot replace an explicitly requested Pixelcut model after visual rejection.
-
 Offline tests cover fake submit/poll/download, typed failures before HTTP, known and unknown
 quotes, dry-run persistence, named-only enforcement and native deepagents 0.7.23 approval
 pause/resume for both approve/reject decisions. The final full suite passed 2,030 tests (2,023 passed, 7 skipped), including 18 new focused
@@ -112,4 +105,3 @@ The ignored `.renderhaus/e2e/named-fal-video.json` records the blocker through t
 TODO: authorized Comet validation with a real backend, recorded cost approval/rejection,
 saved artifact playback, measured dimensions and visual/music quality review. Model IDs,
 schemas and listed prices are verified; model-specific consent APIs and live account/region
-availability remain unverified. See [decisions](../named-provider-pixelcut-pixverse-decisions.tsv).

@@ -53,9 +53,6 @@ class FinishingRoutingTests(unittest.TestCase):
             ("Generate a video ad with subtitles", "wan3_t2v"),
             ("Generate a cinematic video ad, then burn subtitles into it", "wan3_t2v"),
             ("Generate a 10-second video and burn subtitles into it", "wan3_t2v"),
-            ("Use Kling to generate a video with subtitles", "kling_t2v"),
-            ("Use Kling to generate a cinematic video and burn subtitles into it", "kling_t2v"),
-            ("Use Aleph to remove a logo from this video, preserving the dialogue", "runway_aleph_edit"),
             ("Export a review proxy of the cut for the client, small.", "delivery_render"),
             ("Make a 540p proxy of all clips.", "delivery_render"),
         ]

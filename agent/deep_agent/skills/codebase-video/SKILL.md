@@ -5,8 +5,8 @@ metadata:
   remotion_backend: local
   remotion_features: clip_timing titles captions audio_mix canvas encoding
   include_tools: call_editor_tool call_audio_tool
-  routing_tools: remotion_render eleven_v4_turbo cutaway_record hyperframes_render ffmpeg_tool deliverable_qc
-  gateway_tools: Remotion___render_timeline Remotion___get_render_progress ElevenLabs___text_to_speech_convert HyperFrames___render_composition Ffmpeg___ffmpeg_tool Remotion___qc_deliverable
+  routing_tools: remotion_render eleven_v4_turbo ffmpeg_tool deliverable_qc
+  gateway_tools: Remotion___render_timeline Remotion___get_render_progress ElevenLabs___text_to_speech_convert Ffmpeg___ffmpeg_tool Remotion___qc_deliverable
 ---
 
 # Codebase video
@@ -89,15 +89,6 @@ Parallel builders may own separate chapters after the shared ledger passes. Give
 each builder the frozen ledger, exact excerpt and chapter path. A fresh planner
 audits their combined script and visuals before rendering.
 
-Typeset cards with a trusted local drawing facility or use already supplied PNGs.
-The existing timeline accepts local PNG visuals, text overlays and captions.
-It cannot execute JSX, arbitrary components or shell commands. It has no code-card
-generator. If literal typesetting or approved local card assets are unavailable,
-report that blocker. Never substitute an image model or generative video for code.
-Do not call `wan3_*`, `seedance25_*` or any image generation tool for repository cards.
-For real app UI cutaways, `cutaway_record` remains pending. Use supplied recordings
-or report missing capture access. Never fabricate a screenshot or a capture result.
-
 Use the customer's recording when supplied. Otherwise read
 [audio-bed](../audio-bed/SKILL.md) for `eleven_v4_turbo` narration through
 `ElevenLabs___text_to_speech_convert`. Send only the reviewed narration, never raw
@@ -115,16 +106,6 @@ those measurements. A dry-run or text-length estimate is not measured speech.
 Timed silent holds may invite the viewer to pause. An MP4 cannot wait for an answer.
 
 ## Render and deliver
-
-Discover `Remotion___render_timeline` and use `call_editor_tool` with the exact
-schema. Require the configured local backend before sending card assets. Never
-change host flags or fall back to cloud rendering. Pass actual in-job PNG paths
-as `visuals` with measured timing and owned narration as `audio_tracks`.
-Keep citation records outside the Gateway arguments. Read
-[final-assembly](../final-assembly/SKILL.md) for supported timeline fields and polling.
-Explicit HyperFrames requests use only its existing optional preview tool. Its
-dry-run composition is not an MP4 and cannot complete this workflow. Do not switch
-the requested renderer silently.
 
 Preserve the returned render ID and poll `Remotion___get_render_progress`. A
 successful result must reference a real saved MP4. Open and play it. Inspect the

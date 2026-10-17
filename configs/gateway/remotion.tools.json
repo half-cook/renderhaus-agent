@@ -1,7 +1,7 @@
 [
   {
     "name": "motion_carry_probe",
-    "description": "Free local post-render motion carry and rhythm QC for motion graphics, product demos, knowledge explainers and explicit HyperFrames films. Requires owned job_id and in-job MP4 input_path, optional exact timeline. No network or model calls. Default MOTION_CARRY_QC_DRY_RUN=true. Reports per-boundary scores, cadence, rests, audio peaks, sharp fast moves and possible subject exits with timestamps/fixes. A failed report gates delivery and requires an offered re-render. PROVISIONAL calibration; human visual review stays pending. Generative continuity uses local_qc instead.",
+    "description": "Free local post-render motion carry and rhythm QC for motion graphics, product demos, knowledge explainers and whiteboard explainers. Requires owned job_id and in-job MP4 input_path, optional exact timeline. No network or model calls. Default MOTION_CARRY_QC_DRY_RUN=true. Reports per-boundary scores, cadence, rests, audio peaks, sharp fast moves and possible subject exits with timestamps/fixes. A failed report gates delivery and requires an offered re-render. PROVISIONAL calibration; human visual review stays pending. This probe does not assess generative shot identity.",
     "inputSchema": {
       "type": "object",
       "properties": {

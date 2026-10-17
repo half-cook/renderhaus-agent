@@ -1,48 +1,8 @@
 #!/usr/bin/env python3
-"""Sync non-empty application secrets and config, including ANTHROPIC_API_KEY,
-GEMINI_API_KEY, GEMINI_DRY_RUN=true, GEMINI_VLM_MODEL=gemini-3.8-flash,
-GEMINI_VLM_TIMEOUT_SECONDS, GEMINI_VLM_MAX_RETRIES and GEMINI_TOOL_COST_CENTS_JSON.
-Reference analysis adds REFERENCE_SHOTS_DRY_RUN=true and no new secret.
-Its separate judge_shots operation reuses GEMINI_API_KEY and the same token pricing/quote config.
-OPENAI_API_KEY (shared by planning and Images), OPENAI_IMAGES_MODEL,
-OPENAI_IMAGES_DRY_RUN and optional OPENAI_IMAGES_TOOL_COST_CENTS_JSON,
-RENDERHAUS_AGENT_MODEL (Sonnet 5.5 default), RENDERHAUS_AGENT_EFFORT, their per-role overrides, ELEVENLABS_TTS_MODEL,
-and the existing FAL_KEY/FAL_DRY_RUN settings shared by Wan 3, VACE and Vidu.
-Mureka uses MUREKA_DRY_RUN=true, MUREKA_MODEL=mureka-9.5 and the existing FAL_KEY/FAL_DRY_RUN.
-No direct MUREKA_API_KEY is needed by this fal-only transport.
-Dialogue edits reuse SYNC_API_KEY/SYNC_DRY_RUN/SYNC_DIRECT_AUTHORIZED and optional
-SYNC_DIALOGUE_PREVIEW_COST_CENTS (operator-confirmed quote; unpublished official rate).
-Act-Two reuses RUNWAYML_API_SECRET/RUNWAY_DRY_RUN and REMOTION_LOCAL_MEDIA_HOSTS for chunks.
-Kling Motion Control uses the existing FAL_KEY/FAL_DRY_RUN; no direct Kling secret is required.
-Mirelo SFX 2.0 (audio/video) and legacy 1.6 reuse FAL_KEY/FAL_DRY_RUN, default true.
-The Ideogram/Recraft image specialists reuse the same keys. No new Mirelo secrets or flags.
-Named-only Pixelcut and PixVerse VibeMV also reuse FAL_KEY/FAL_DRY_RUN, with no new secrets or flags.
-Fal images in Lambda require existing AWS_S3_BUCKET or REMOTION_APP_BUCKET_NAME for sanitized durable outputs.
-No additional image secret or dry-run flag is needed.
-NLE import reuses REMOTION_DRY_RUN and needs no new secret or media credentials.
-Topaz finishing uses TOPAZ_DRY_RUN=true and the existing FAL_KEY/FAL_DRY_RUN.
-Sync uses SYNC_API_KEY (optional authorized direct), SYNC_DRY_RUN, SYNC_MODEL,
-SYNC_TRANSPORT=fal, SYNC_DIRECT_AUTHORIZED, SYNC_MAX_CHUNK_SECONDS and SYNC_BILLING_PLAN.
-The fal transport reuses FAL_KEY/FAL_DRY_RUN. Chunking uses AWS_S3_BUCKET and
-REMOTION_LOCAL_MEDIA_HOSTS. All settings are synced without printing values.
-HeyGen uses HEYGEN_API_KEY, HEYGEN_DRY_RUN=true, HEYGEN_MODEL=avatar_v and
-HEYGEN_API_PLAN=unknown (paid_self_serve or enterprise for commercial live use).
-Voice candidate uses separate HEYGEN_VOICE_DRY_RUN=true, HEYGEN_VOICE_MODEL=heygen-voice-1,
-HEYGEN_VOICE_AB_GATE=off and HEYGEN_VOICE_AB_USERS (comma-separated internal user ids).
-The candidate reuses HEYGEN_API_KEY only after a future verified live activation; this branch reads no key.
-Hosted HeyGen jobs reuse AWS_S3_BUCKET for durable consent and job manifests.
-Model Studio uses DASHSCOPE_API_KEY, DASHSCOPE_REGION, DASHSCOPE_BASE_URL,
-DASHSCOPE_WORKSPACE_ID, DASHSCOPE_MODEL and MODELSTUDIO_DRY_RUN.
-Seedance 2.5 defaults to FAL_KEY with SEEDANCE_TRANSPORT=fal and SEEDANCE_FAL_REGION=us.
-The optional authorized non-US route uses BYTEPLUS_API_KEY, with ARK_API_KEY as fallback,
-and SEEDANCE_BYTEPLUS_PLATFORM_AUTHORIZED. SEEDANCE_DRY_RUN remains true by default.
-Beta credits sync BETA_CREDITS_ENABLED, BETA_GRANT_CENTS, BETA_GLOBAL_CAP_CENTS,
-BETA_WAVE_SIZE, BETA_WAVE_INDEX, BETA_DAILY_GRANT_LIMIT, BETA_VERIFICATION_DRY_RUN,
-BETA_IDENTITY_SALT and BETA_ADMIN_TOKEN through the existing application-secret mapping.
-Verification defaults to dry run and registers no email or SMS vendor.
-Footage memory adds no secrets. FOOTAGE_MEMORY_DRY_RUN=true, FOOTAGE_MEMORY_BACKEND=gemini,
-FOOTAGE_MEMORY_CALL_CENTS (optional unverified estimate) and RENDERHAUS_VIDEO_INDEX_ROOT
-are configuration only. It reuses GEMINI_VLM_MODEL without reading GEMINI_API_KEY or DASHSCOPE_API_KEY.
+"""Sync non-empty application secrets and config without printing values.
+
+Provider keys and settings follow providers/catalog.py. Existing fal credentials
+serve media integrations; GOOGLE_API_KEY serves Gemini review.
 """
 
 from __future__ import annotations

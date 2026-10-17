@@ -40,14 +40,6 @@ class PodcastRoutingTests(unittest.TestCase):
                 self.assertFalse(any(step.alias == "elevenlabs_stt" for step in route.steps))
                 self.assertTrue(route.required["reuse_transcript"])
 
-    def test_long_episode_selects_start_with_footage_memory(self):
-        for prompt in ["Find the best 60-second moment from this 90-minute podcast episode for an audiogram",
-                       "From this 90-minute podcast episode, pick the best 60-second moment for an audiogram"]:
-            with self.subTest(prompt=prompt):
-                route = route_intent(prompt)
-                self.assertEqual(route.skill, "footage-memory")
-                self.assertEqual(route.alias, "footage_memory_status")
-                self.assertEqual(route.required["duration_s"], 5400)
 
     def test_channel_templates_remain_motion_graphics(self):
         for prompt, name in [
@@ -96,9 +88,7 @@ class PodcastRoutingTests(unittest.TestCase):
         self.assertIn("unknown", message.lower())
 
     def test_audiogram_excludes_replacement_speech_and_keeps_transcription(self):
-        for tool in ["ElevenLabs___text_to_speech_convert", "ElevenLabs___speech_to_speech_convert",
-                     "ElevenLabs___voices_ivc_create", "FishAudio___generate_speech", "HeyGen___voice_tts",
-                     "Sync___lipsync_video", "Sync___create_dialogue_video"]:
+        for tool in ["ElevenLabs___text_to_speech_convert", "ElevenLabs___speech_to_speech_convert", "Sync___lipsync_video"]:
             with self.subTest(tool=tool):
                 reason = request_tool_blocker("Make an audiogram from this podcast clip", tool)
                 self.assertIsNotNone(reason)
@@ -146,16 +136,6 @@ class PodcastRoutingTests(unittest.TestCase):
         with patch.dict(os.environ, {"ELEVENLABS_TOOL_COST_CENTS_JSON": '{"speech_to_text_convert": 10}', "STRIPE_SECRET_KEY": ""}):
             quote = estimate_cost("ElevenLabs___speech_to_text_convert", {"model_id": "scribe_v2"})
         self.assertIsNotNone(quote.total_cents)
-
-
-    def test_explicit_renderer_does_not_silently_select_remotion_template(self):
-        with patch.dict(os.environ, {"HYPERFRAMES_ENABLED": "true"}):
-            route = route_intent("Use HyperFrames to create this waveform video with captions")
-        self.assertEqual(route.skill, "podcast-audiogram")
-        self.assertEqual(route.status, "blocked")
-        self.assertIsNone(route.tool)
-        self.assertIn("explicit", route.reason.lower())
-        self.assertIn("Remotion", route.reason)
 
 
     def test_template_style_selection_does_not_index_episode(self):

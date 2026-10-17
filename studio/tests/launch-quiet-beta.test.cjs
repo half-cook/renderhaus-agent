@@ -29,19 +29,16 @@ test("the invite is burned only after the email code is confirmed", () => {
   assert.doesNotMatch(signup.slice(0, confirmAt), /redeemInvite\(/);
 });
 
-test("top-up UI is gated by the build flag and replaced by neutral copy", () => {
-  assert.match(read("lib/launch.ts"), /NEXT_PUBLIC_TOPUPS_ENABLED === "true"/);
-  const balance = read("components/canvas/AccountBalance.tsx");
-  assert.match(balance, /topupsEnabled\(\) \?/);
-  assert.match(balance, /TOPUPS_COMING_SOON/);
-  const card = read("components/rh/BetaCreditCard.tsx");
-  assert.match(card, /low && topupsEnabled\(\)/);
-  assert.match(card, />Invite</);
+test("credit UI exposes balances and no unavailable purchasing flow", () => {
+  for (const file of ["lib/launch.ts", "components/canvas/AccountBalance.tsx", "components/rh/BetaCreditCard.tsx"]) {
+    assert.doesNotMatch(read(file), /topupsEnabled|TOPUPS_COMING_SOON|createCheckout|createSubscription/);
+  }
+  assert.match(read("components/canvas/AccountBalance.tsx"), /Held for running steps/);
 });
 
 test("over-credit approval card keeps Approve disabled and offers only an option that fits", () => {
   const card = read("components/rh/ApprovalCard.tsx");
-  assert.match(card, /Approve is off because this step.s hard cap is more than your credit\. Top-ups are coming soon\./);
+  assert.match(card, /Approve is off because this step.s hard cap is more than your credit\./);
   assert.match(card, /cheaperOption\.capCents <= balance/);
   assert.match(card, /<Lock[^/]*\/>Approve/);
   assert.match(card, />Use this/);

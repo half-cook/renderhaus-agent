@@ -17,7 +17,6 @@ available and the stdlib-only ISO-BMFF parser otherwise, including Python Gatewa
 Lambda. The fallback supports unfragmented MP4/MOV, including video and audio
 tracks. WebM/MKV requires ffprobe or caller-supplied measured `source_fps`;
 measured `source_bitrate` is optional. Fragmented MP4 is unsupported by the
-fallback. [DROP_PYAV.md](DROP_PYAV.md) records the parser limits.
 Trusted HTTPS video is measured automatically before submitting a render:
 `fal.media` and its subdomains, configured S3 bucket hosts, and existing
 `REMOTION_LOCAL_MEDIA_HOSTS` overrides. Downloads reject redirects/private DNS,
@@ -159,7 +158,6 @@ Lambda's 50 MiB direct-upload
 limit, and check that the existing `AWS_S3_BUCKET` or `REMOTION_APP_BUCKET_NAME`
 is in the function's region. CI checks the remaining arm64 modules, a 50 MiB
 compressed limit, the 250 MiB expanded limit and the absence of PyAV and
-FFmpeg shared libraries. [DROP_PYAV.md](DROP_PYAV.md) records package measurements.
 No deployment was performed here.
 
 Official references read 2026-10-09: [FFmpeg filters](https://ffmpeg.org/ffmpeg-filters.html),

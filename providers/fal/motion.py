@@ -13,7 +13,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
 
-from providers.runway.contracts import validate_https_url
+from providers.fal.validation import validate_https_url
 
 
 ENDPOINT_ID = "fal-ai/kling-video/v3/pro/motion-control"
