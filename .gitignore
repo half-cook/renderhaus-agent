@@ -8,6 +8,7 @@ __pycache__/
 *.py[cod]
 .next/
 .next-design-shots/
+.next-mvp-dev/
 *.tsbuildinfo
 dist/
 build/

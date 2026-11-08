@@ -226,7 +226,7 @@ function configForAgentArtifact(
       ([name, value]) => allowedFields.has(name) && value !== undefined && value !== null,
     ),
   );
-  const promptField = tool.id === "voice.generate" ? "text" : "prompt";
+  const promptField = tool.inputPorts.some((port) => port.targetField === "text") ? "text" : "prompt";
   if (!String(config[promptField] || "").trim() && fallbackPrompt?.trim()) {
     config[promptField] = fallbackPrompt.trim();
   }
@@ -1010,7 +1010,7 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
     if (!source) {
       return;
     }
-    const fromImage = toolById("video.wan3.animate");
+    const fromImage = toolById("video.fromImage");
     const id = get().addCreativeNode({
       kind: "video",
       position: { x: source.position.x + 440, y: source.position.y },

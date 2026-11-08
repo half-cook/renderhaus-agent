@@ -50,9 +50,9 @@ class FinishingRoutingTests(unittest.TestCase):
 
     def test_generation_and_existing_delivery_routes_keep_their_tools(self):
         cases = [
-            ("Generate a video ad with subtitles", "wan3_t2v"),
-            ("Generate a cinematic video ad, then burn subtitles into it", "wan3_t2v"),
-            ("Generate a 10-second video and burn subtitles into it", "wan3_t2v"),
+            ("Generate a video ad with subtitles", "seedance25_t2v"),
+            ("Generate a cinematic video ad, then burn subtitles into it", "seedance25_t2v"),
+            ("Generate a 10-second video and burn subtitles into it", "seedance25_t2v"),
             ("Export a review proxy of the cut for the client, small.", "delivery_render"),
             ("Make a 540p proxy of all clips.", "delivery_render"),
         ]
@@ -66,7 +66,7 @@ class FinishingRoutingTests(unittest.TestCase):
 
     def test_quoted_and_negated_finishing_words_do_not_dispatch(self):
         for prompt, alias in (
-            ('Read this narration: "Burn subtitles into the video"', "eleven_v4_turbo"),
+            ('Read this narration: "Burn subtitles into the video"', "fish_audio_tts"),
             ('Create an image with the text "audio_cleanup"', "gpt_image25_t2i"),
         ):
             with self.subTest(prompt=prompt):

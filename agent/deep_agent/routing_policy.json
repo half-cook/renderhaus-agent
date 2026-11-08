@@ -1,7 +1,7 @@
 {
   "selection_mode": "ranked_suggestions",
   "premium_video_approval": true,
-  "default_video_tool": "wan3_t2v",
+  "default_video_tool": "seedance25_t2v",
   "free_tools": [
     "review_drama_outline",
     "validate_drama_episode",
@@ -914,8 +914,7 @@
     "fish_audio_tts": {
       "gateway_tool": "FishAudio___generate_speech",
       "skill": "audio-bed",
-      "status": "ready",
-      "explicit_only": true
+      "status": "ready"
     },
     "remotion_render": {
       "gateway_tool": "Remotion___render_timeline",
@@ -2023,7 +2022,7 @@
     {
       "pattern": "whiteboard.*(?:voice[ -]?over|narrat)",
       "skill": "whiteboard-explainer",
-      "abstract_tool": "eleven_v4_turbo",
+      "abstract_tool": "fish_audio_tts",
       "capability": "tts"
     },
     {
@@ -2072,7 +2071,7 @@
     {
       "pattern": "\\bfish\\b|narrat|\\btts\\b|\\bvo\\b|voiceover|elevenlabs(?!.*(?:music|sound effect|foley|sfx|ambience))",
       "skill": "audio-bed",
-      "abstract_tool": "eleven_v4_turbo",
+      "abstract_tool": "fish_audio_tts",
       "capability": "tts"
     },
     {
@@ -2108,7 +2107,7 @@
     {
       "pattern": "(?:cartoon|synthetic|fictional|foxes|mascot|illustrated).*(?:talk|say|dialogue|speak)(?!.*(?:existing footage|dub|revoice))",
       "skill": "t2v",
-      "abstract_tool": "wan3_t2v",
+      "abstract_tool": "seedance25_t2v",
       "capability": "t2v"
     },
     {
@@ -2126,7 +2125,7 @@
     {
       "pattern": "lock character.*i2v",
       "skill": "still-then-video",
-      "abstract_tool": "wan3_i2v",
+      "abstract_tool": "seedance25_i2v",
       "capability": "i2v"
     },
     {
@@ -2168,7 +2167,7 @@
     {
       "pattern": "animat.*(?:image|photo|still|mascot)|(?:image|photo|still).*animat",
       "skill": "i2v",
-      "abstract_tool": "wan3_i2v",
+      "abstract_tool": "seedance25_i2v",
       "capability": "i2v"
     },
     {
@@ -2198,19 +2197,19 @@
     {
       "pattern": "animat|image to video|\\bi2v\\b|first.*last frame|start frame|end frame|photo attached|image speaking",
       "skill": "i2v",
-      "abstract_tool": "wan3_i2v",
+      "abstract_tool": "seedance25_i2v",
       "capability": "i2v"
     },
     {
       "pattern": "video|\\bt2v\\b|(?:make|create|generate).*clip|cinematic|drone shot|seedance|kling|runway|luma|ray.?3|veo|\\bdialogue\\b|\\bsays?\\b|\\btalking\\b|prompt adherence|make it with|(?:make|create|generate).*shot",
       "skill": "t2v",
-      "abstract_tool": "wan3_t2v",
+      "abstract_tool": "seedance25_t2v",
       "capability": "t2v"
     },
     {
       "pattern": "vidu",
       "skill": "i2v",
-      "abstract_tool": "wan3_i2v",
+      "abstract_tool": "seedance25_i2v",
       "capability": "i2v"
     }
   ],
@@ -4546,26 +4545,14 @@
   "image_default_size": "2K",
   "capability_map": {
     "t2v": {
-      "default": "wan3_t2v",
-      "exceptions": [
-        {
-          "when": "dialogue && !real_face_refs",
-          "tool": "seedance25_t2v",
-          "reason": "synthetic dialogue"
-        }
-      ],
+      "default": "seedance25_t2v",
+      "exceptions": [],
       "interim": null,
       "ab_candidates": []
     },
     "i2v": {
-      "default": "wan3_i2v",
-      "exceptions": [
-        {
-          "when": "dialogue && !real_face_refs",
-          "tool": "seedance25_i2v",
-          "reason": "synthetic dialogue"
-        }
-      ],
+      "default": "seedance25_i2v",
+      "exceptions": [],
       "interim": null,
       "ab_candidates": [
         "vidu_q4_i2v"
@@ -4634,7 +4621,7 @@
       ]
     },
     "tts": {
-      "default": "eleven_v4_turbo",
+      "default": "fish_audio_tts",
       "exceptions": [],
       "interim": null,
       "ab_candidates": []

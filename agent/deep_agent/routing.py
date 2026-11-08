@@ -959,7 +959,10 @@ def route_intent(prompt: str, *, region: str | None = None, tier: str | None = N
                 route = replace(route, required={**route.required, "op": rule["op"]})
             if rule.get("template_name"):
                 route = replace(route, required={**route.required, "template_name": rule["template_name"]})
-            if capability not in _FINISHING_CAPABILITIES | {"performance_transfer"} and (route.provider in {   "seedream", "fish_audio"} or (
+            if capability not in _FINISHING_CAPABILITIES | {"performance_transfer"} and (
+                route.provider == "seedream" or (
+                    route.provider == "fish_audio" and route.basis.startswith("explicit request")
+                ) or (
                 constraints["provider"] == "fal" and re.search(r"vidu|vace", prompt, re.I)
             ) or constraints["named_model"] == "wan3" and capability in {"v2v_edit", "extend"}):
                 skill = "named-provider"
@@ -1000,7 +1003,7 @@ def job_type(name: str | None) -> str | None:
     for capability, choice in POLICY["capability_map"].items():
         aliases = [choice["default"], choice.get("interim")] + [ex["tool"] for ex in choice["exceptions"]]
         if any(alias and name in [TOOL_MAP.get(alias, {}).get("gateway_tool"), *TOOL_MAP.get(alias, {}).get("gateway_variants", [])] for alias in aliases):
-            return capability
+            return "tts" if capability == "cloned_tts" else capability
     if name == "FishAudio___generate_speech":
         return "tts"
     for routes in POLICY["explicit_routes"].values():
@@ -1421,7 +1424,8 @@ def select_provider(job: str, *, tier: str | None = None, required: dict | None 
         alias = {"t2v": "wan_t2v", "i2v": "wan_i2v", "v2v_edit": "wan_vace_edit", "reference_video": "wan_reference"}[capability]
         model, basis = POLICY["providers"]["fal"]["default_model"], "training retry after artifact rejection"
     elif predicates["real_face_refs"] and capability in {"t2v", "i2v", "reference_video"} and named_model != "pixelcut":
-        alias, basis = choice["default"], "default; real-face references require Wan; Seedance and Omni blocked"
+        alias = {"t2v": "wan3_t2v", "i2v": "wan3_i2v", "reference_video": "wan3_r2v"}[capability]
+        basis = "exception: real-face references require Wan; Seedance and Omni blocked"
     elif named_model:
         alias = POLICY["named_models"][named_model]["aliases"].get(capability)
         if not alias:

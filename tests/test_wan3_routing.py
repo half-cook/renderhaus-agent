@@ -27,11 +27,11 @@ TOOLS = [Tool(name="Fal___" + entry["name"], description=entry["description"], i
 
 
 class Wan3RoutingTests(unittest.TestCase):
-    def test_defaults_are_ready_without_seedance_interim(self):
+    def test_named_wan_routes_are_ready_without_interim(self):
         for capability, alias, tool in [("t2v", "wan3_t2v", T2V), ("i2v", "wan3_i2v", I2V),
                                         ("reference_video", "wan3_r2v", R2V)]:
             with self.subTest(capability=capability):
-                route = routing.select_provider(capability)
+                route = routing.select_provider(capability, provider="fal")
                 self.assertEqual((route.alias, route.tool, route.provider, route.status),
                                  (alias, tool, "fal", "ready"))
                 self.assertNotIn("interim", route.disclosure)
@@ -66,7 +66,7 @@ class Wan3RoutingTests(unittest.TestCase):
         for tool in (T2V, I2V, R2V):
             self.assertTrue(tool_needs_approval(tool, autonomous=True))
             self.assertTrue(tool_needs_approval(tool, autonomous=False))
-        route = routing.select_provider("t2v", available_tools={"Seedance___text_to_video"})
+        route = routing.select_provider("t2v", provider="fal", available_tools={"Seedance___text_to_video"})
         self.assertEqual(route.status, "blocked")
         self.assertIsNone(route.tool)
 
@@ -74,7 +74,7 @@ class Wan3RoutingTests(unittest.TestCase):
         from server.billing_rates import _with_fee
         with patch.dict(os.environ, {"FAL_DRY_RUN": "true"}):
             for resolution, rate in [("480p", 5), ("720p", 10), ("1080p", 20)]:
-                route = routing.select_provider("t2v", arguments={"duration": 5, "resolution": resolution})
+                route = routing.select_provider("t2v", provider="fal", arguments={"duration": 5, "resolution": resolution})
                 self.assertEqual(route.estimated_cost["total_cents"], _with_fee(5 * rate).total_cents)
             quote = routing.estimate_cost(R2V, {"duration": 5, "resolution": "720p",
                 "reference_video_urls": ["https://example.invalid/ref.mp4"],
@@ -119,7 +119,7 @@ class Wan3GatewayTests(unittest.IsolatedAsyncioTestCase):
         gateway.call_tool.assert_awaited_once()
 
     async def test_explicitly_disabled_native_audio_cannot_dispatch(self):
-        request = StudioAgentRequest(prompt="generate a video with native audio", autonomous=True, job_id="silent")
+        request = StudioAgentRequest(prompt="generate a video with Wan 3 and native audio", autonomous=True, job_id="silent")
         gateway = Gateway(TOOLS)
         result = await GatewayExecutor(_context_from_request(request), [gateway]).execute({
             "tool_name": T2V, "arguments": {"prompt": "A scene", "audio": False}, "call_id": "silent"}, approved=True)
@@ -144,7 +144,7 @@ class Wan3GatewayTests(unittest.IsolatedAsyncioTestCase):
             with self.subTest(decision=decision), tempfile.TemporaryDirectory() as directory, patch.dict(
                 os.environ, {"FAL_DRY_RUN": "true", "RENDERHAUS_OUTCOME_DIR": directory},
             ):
-                request = StudioAgentRequest(prompt="generate a 5 second cinematic shot", autonomous=True,
+                request = StudioAgentRequest(prompt="generate a 5 second cinematic shot with Wan 3", autonomous=True,
                     workspace_id="workspace", project_id="project", job_id="wan3-" + decision)
                 studio = _context_from_request(request)
                 gateway = Gateway(TOOLS, {"status": "queued", "job_id": "wan3-job"})

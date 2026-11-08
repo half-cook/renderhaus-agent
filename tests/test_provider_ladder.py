@@ -16,10 +16,10 @@ from test_deep_agent import Gateway, ScriptedModel, call, final
 
 class CapabilityMapTests(unittest.TestCase):
     def test_defaults_are_opinionated_and_tiers_do_not_select(self):
-        expected = {"t2v": "wan3_t2v", "i2v": "wan3_i2v", "reference_video": "wan3_r2v",
+        expected = {"t2v": "seedance25_t2v", "i2v": "seedance25_i2v", "reference_video": "wan3_r2v",
                     "v2v_edit": "seedance25_edit", "extend": "seedance25_extend", "still_image": "gpt_image25_t2i",
                     "image_edit": "gpt_image25_edit", "lipsync": "sync3_lipsync",
-                    "performance_transfer": "kling_motion_control", "tts": "eleven_v4_turbo",
+                    "performance_transfer": "kling_motion_control", "tts": "fish_audio_tts",
                     "voice_clone": "voices_ivc_create", "cloned_tts": "eleven_v4_turbo",
                     "music": "mureka_v95", "sfx": "mirelo_v2a",
                     "upscale": "topaz_upscale", "interpolate": "topaz_interpolate",
@@ -37,15 +37,15 @@ class CapabilityMapTests(unittest.TestCase):
             self.assertNotIn("interim", routing.POLICY["capability_map"][capability])
         for tier in [None, "draft", "standard", "premium"]:
             route = routing.select_provider("t2v", tier=tier)
-            self.assertEqual(route.tool, "Fal___generate_wan3_t2v")
-            self.assertEqual(route.alias, "wan3_t2v")
+            self.assertEqual(route.tool, "Seedance___text_to_video")
+            self.assertEqual(route.alias, "seedance25_t2v")
             self.assertNotIn("interim default until", route.disclosure)
 
 
     def test_plain_video_never_automatically_chooses_demoted_providers(self):
         for prompt in ["generate a video", "cheapest video preview", "highest quality video", "draft video"]:
             route = routing.route_intent(prompt)
-            self.assertEqual(route.provider, "fal")
+            self.assertEqual(route.provider, "seedance")
         for required in [{"max_resolution": 2160}]:
             route = routing.select_provider("i2v", required=required)
             self.assertEqual(route.status, "blocked")
@@ -73,7 +73,7 @@ class CapabilityMapTests(unittest.TestCase):
             with self.subTest(prompt=prompt):
                 route = routing.route_intent(prompt)
                 self.assertEqual(route.alias, alias)
-                self.assertIn("default" if alias == "kling_motion_control" else "exception:", route.disclosure)
+                self.assertIn("default" if alias in {"kling_motion_control", "seedance25_t2v", "seedance25_i2v"} else "exception:", route.disclosure)
         self.assertEqual(routing.route_intent("generate an Ideogram poster").alias, "gpt_image25_t2i")
         self.assertEqual(routing.route_intent("convert 24fps to 60fps simple pan").alias, "topaz_interpolate")
 
@@ -92,7 +92,7 @@ class CapabilityMapTests(unittest.TestCase):
         self.assertEqual(routing.select_provider("reference_video").tool, "Fal___generate_wan3_r2v")
         self.assertEqual(routing.select_provider("lipsync").status, "ready")
         self.assertEqual(routing.select_provider("t2v", available_tools={"Kling___text_to_video"}).status, "blocked")
-        self.assertEqual(routing.select_provider("t2v").tool, "Fal___generate_wan3_t2v")
+        self.assertEqual(routing.select_provider("t2v").tool, "Seedance___text_to_video")
 
     def test_pending_seedance_default_has_no_interim_and_generic_interims_still_work(self):
         with patch.dict(routing.TOOL_MAP["seedance25_edit"], {
@@ -102,7 +102,7 @@ class CapabilityMapTests(unittest.TestCase):
             self.assertEqual((route.status, route.alias, route.tool), ("pending", "seedance25_edit", None))
             self.assertIsNone(routing.resolve_alias("seedance25_edit"))
         self.assertIsNone(routing.job_type("Unknown___future_generation"))
-        with patch.dict(routing.POLICY["capability_map"]["t2v"], {"interim": "wan_t2v"}), patch.dict(
+        with patch.dict(routing.POLICY["capability_map"]["t2v"], {"default": "wan3_t2v", "interim": "wan_t2v"}), patch.dict(
             routing.TOOL_MAP["wan3_t2v"], {"status": "pending"},
         ):
             route = routing.select_provider("t2v")

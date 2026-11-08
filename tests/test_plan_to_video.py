@@ -87,11 +87,11 @@ class PlanReviewRoutingTests(unittest.TestCase):
 
         prompt = 'review this plan as a narrated video "Use HyperFrames and Fish and Runway"'
         executor = GatewayExecutor(_context_from_request(StudioAgentRequest(prompt=prompt)), [])
-        with patch.dict(os.environ, {"ELEVENLABS_TTS_MODEL": "eleven_v4_turbo"}):
-            narration = executor.media_selection("ElevenLabs___text_to_speech_convert",
-                                                 {"voice_id": "authorized-voice", "text": "Review the plan."})
+        with patch.dict(os.environ, {"FISH_AUDIO_MODEL": "s2.1-pro-free"}):
+            narration = executor.media_selection("FishAudio___generate_speech",
+                                                 {"voice": "Energetic Male", "text": "Review the plan."})
             picture = executor.media_selection("Remotion___render_timeline", {})
-        self.assertEqual((narration.alias, narration.model), ("eleven_v4_turbo", "eleven_v4_turbo"))
+        self.assertEqual((narration.alias, narration.model), ("fish_audio_tts", "s2.1-pro-free"))
         self.assertEqual((picture.alias, picture.tool), ("remotion_render", "Remotion___render_timeline"))
 
     def test_markdown_plan_source_does_not_change_gateway_selection(self):
@@ -104,7 +104,7 @@ class PlanReviewRoutingTests(unittest.TestCase):
             prompt = "review this plan as a video\n" + source
             executor = GatewayExecutor(_context_from_request(StudioAgentRequest(prompt=prompt)), [])
             for name, alias in [("Remotion___render_timeline", "remotion_render"),
-                                ("ElevenLabs___text_to_speech_convert", "eleven_v4_turbo")]:
+                                ("FishAudio___generate_speech", "fish_audio_tts")]:
                 with self.subTest(source=source, name=name):
                     self.assertEqual(executor.media_selection(name, {}).alias, alias)
 

@@ -204,7 +204,7 @@ class ArtStyleMotionSkillTests(unittest.TestCase):
         self.assertIsNotNone(_parse_skill_metadata(body, str(path), 'art-style-motion'))
         meta = yaml.safe_load(body.split('---', 2)[1])['metadata']
         self.assertEqual(set(meta['routing_tools'].split()),
-                         {'remotion_render',  'gpt_image25_t2i', 'eleven_v4_turbo', 'elevenlabs_sfx_v2'})
+                         {'remotion_render', 'gpt_image25_t2i', 'fish_audio_tts', 'eleven_v4_turbo', 'elevenlabs_sfx_v2'})
         paths = [path, *SKILL.glob('references/*.md')]
         self.assertEqual({p.name for p in paths},
                          {'SKILL.md', 'method.md', 'style-cards.md', 'grammar-cards.md'})

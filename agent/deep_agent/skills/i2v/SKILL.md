@@ -1,6 +1,6 @@
 ---
 name: i2v
-description: Animate a supplied start frame or reference set with Wan 3.0; use Seedance for synthetic dialogue.
+description: Animate a supplied start frame with Seedance through fal; preserve reference-set and real-person safeguards.
 metadata:
   include_tools: call_media_tool
   routing_tools: wan3_i2v wan3_r2v seedance25_i2v seedance25_r2v
@@ -9,8 +9,8 @@ metadata:
 
 # Image to video
 
-Use `wan3_i2v` for a start frame and `wan3_r2v` for a reference set. Use the matching
-`seedance25_i2v` or `seedance25_r2v` exception for dialogue without real-person references.
+Use `seedance25_i2v` for a start frame and `wan3_r2v` for a reference set. Use
+`seedance25_r2v` for synthetic dialogue references or an explicit Seedance reference request.
 A supplied photo/video of a real person forces Wan and blocks both Seedance and Omni.
 Set `real_face_refs=true` for real likeness and obtain `likeness_consent=true` before dispatch.
 Preserve the approved immutable asset version. Spending approval cannot replace likeness consent.
@@ -28,7 +28,7 @@ Common native controls include `prompt`, `resolution`, `aspect_ratio`, `duration
 Defaults are 1080p, adaptive aspect ratio, five seconds and audio enabled. Duration is 2-30 seconds.
 Use prompt instructions for multi-shot generation; no multi_shot boolean is accepted.
 Poll `Fal___get_video_task` with the saved job ID and `download=true`.
-Synthetic-dialogue i2v uses `Seedance___image_to_video`; reference sets use
+Default i2v uses `Seedance___image_to_video`; Seedance reference sets use
 `Seedance___reference_to_video`. Both run Seedance 2.5 through fal US by default.
 The image tool accepts `image_path_or_url` and optional `end_image_path_or_url`.
 For references, supply `reference_image_urls`, `reference_video_urls`, `reference_audio_urls`,

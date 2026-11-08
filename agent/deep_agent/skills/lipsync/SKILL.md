@@ -3,14 +3,14 @@ name: lipsync
 description: Revoice supplied footage with consented sync-3 through fal.
 metadata:
   include_tools: call_media_tool call_audio_tool
-  routing_tools: sync3_lipsync eleven_v4_turbo
-  gateway_tools: Sync___lipsync_video Sync___get_video_task ElevenLabs___text_to_speech_convert
+  routing_tools: sync3_lipsync fish_audio_tts eleven_v4_turbo
+  gateway_tools: Sync___lipsync_video Sync___get_video_task FishAudio___generate_speech ElevenLabs___text_to_speech_convert
 ---
 
 # Lip sync
 
 For sync-3, require footage before attempting lip sync. When the customer supplies only a script,
-prepare authorized speech using `ElevenLabs___text_to_speech_convert` through `call_audio_tool`,
+prepare authorized speech using the audio-bed default `FishAudio___generate_speech` through `call_audio_tool`,
 then use the resulting audio with the customer's footage through `call_media_tool`.
 Discover exact schemas first. Obtain speaker/likeness permission before TTS or voice cloning;
 never infer consent from a spending approval. Speech alone cannot animate a face.

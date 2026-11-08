@@ -95,7 +95,10 @@ class RemotionQualityTests(unittest.TestCase):
         self.assertEqual(params.input_props["renderConfig"]["fps"], 24)
         self.assertEqual(params.input_props["renderConfig"]["durationInFrames"], 72)
         self.assertEqual(params.force_fps, 24)
-        self.assertGreaterEqual(params.video_bitrate, int(self.probe(source)["bit_rate"]))
+        expected_bps = params.input_props["renderConfig"]["videoBitrate"]
+        self.assertIsInstance(expected_bps, int)
+        self.assertEqual(params.serialize_params()["videoBitrate"], f"{(expected_bps + 999) // 1000}K")
+        self.assertGreaterEqual(int(params.video_bitrate[:-1]) * 1000, int(self.probe(source)["bit_rate"]))
         self.assertIsNone(params.crf)
 
     def test_remote_video_metadata_and_bitrate_are_validated_before_submission(self) -> None:
@@ -121,6 +124,26 @@ class RemotionQualityTests(unittest.TestCase):
             "source_fps": 24, "source_bitrate": 1_000_000}], video_bitrate=100_000)
         self.assertEqual(props["renderConfig"]["fps"], 24)
         self.assertEqual(props["renderConfig"]["videoBitrate"], 1_250_000)
+
+    def test_lambda_bitrate_units_round_up_and_unknown_bitrate_keeps_crf(self) -> None:
+        client = Mock()
+        client.render_media_on_lambda.return_value = Mock(render_id="render", bucket_name="bucket")
+        with patch.object(api, "load_remotion_settings", return_value=api.RemotionSettings(
+                region="us-east-1", function_name="function", serve_url="https://example/site",
+                bucket_name="bucket")), patch.object(api.boto3, "Session"), \
+                patch.object(api, "_prepare_input_props", side_effect=lambda props, **_: props), \
+                patch.object(api, "RemotionClient", return_value=client):
+            for bitrate, expected in ((None, None), (1, "1K"), (1000, "1K"),
+                                      (1001, "2K"), (3269290, "3270K")):
+                with self.subTest(bitrate=bitrate):
+                    props = api.build_timeline_props("Bitrate contract", [{"kind": "image",
+                        "url": "https://example/still.png", "duration_seconds": 1}],
+                        video_bitrate=bitrate)
+                    api._start_lambda_render(props, output_filename="bitrate.mp4")
+                    params = client.render_media_on_lambda.call_args.args[0]
+                    self.assertEqual(params.serialize_params()["videoBitrate"], expected)
+                    self.assertEqual(params.crf, 18 if bitrate is None else None)
+                    self.assertEqual(props["renderConfig"]["videoBitrate"], bitrate)
 
     def test_gateway_lambda_measures_remote_video_without_ffprobe(self) -> None:
         source = self.sources[30]
@@ -148,7 +171,8 @@ class RemotionQualityTests(unittest.TestCase):
         params = client.render_media_on_lambda.call_args.args[0]
         self.assertEqual(params.force_fps, 30)
         self.assertEqual(params.input_props["renderConfig"]["durationInFrames"], 90)
-        self.assertGreaterEqual(params.video_bitrate, int(local._probe(source)["format"]["bit_rate"]))
+        self.assertRegex(params.video_bitrate, r"^[1-9]\d*K$")
+        self.assertGreaterEqual(int(params.video_bitrate[:-1]) * 1000, int(local._probe(source)["format"]["bit_rate"]))
 
     def test_remote_probe_failures_never_submit_a_render(self) -> None:
         http_client = httpx.Client

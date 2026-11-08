@@ -60,7 +60,7 @@ class LighthouseSafetyTests(unittest.IsolatedAsyncioTestCase):
         }), patch("scripts.local_gateway.dispatch", return_value={"status": "succeeded"}) as provider, \
                 patch("scripts.e2e_lighthouse.probe_artifact", return_value={}):
             out = Path(directory) / "out"
-            summary = await run_lighthouse(LighthouseOptions(out=out, live=True), agent_run=agent)
+            summary = await run_lighthouse(LighthouseOptions(out=out, live=True, prompt="Use Wan 3 for a 5-second lighthouse video with ElevenLabs voiceover"), agent_run=agent)
             rows = [json.loads(line) for line in (out / "agent_events.jsonl").read_text().splitlines()]
         self.assertEqual(summary["status"], "completed", summary)
         approvals = [row for row in rows if row["kind"] == "approval"]
@@ -123,7 +123,7 @@ class LighthouseSafetyTests(unittest.IsolatedAsyncioTestCase):
         }), patch("scripts.local_gateway.dispatch", return_value={"status": "queued", "job_id": "offline-job"}) as provider, \
                 patch("scripts.e2e_lighthouse.probe_artifact", return_value={}):
             out = Path(directory) / "out"
-            summary = await run_lighthouse(LighthouseOptions(out=out, live=True), agent_run=agent)
+            summary = await run_lighthouse(LighthouseOptions(out=out, live=True, prompt="Use Wan 3 for a 5-second lighthouse video with ElevenLabs voiceover"), agent_run=agent)
             rows = [json.loads(line) for line in (out / "agent_events.jsonl").read_text().splitlines()]
             ledger = [json.loads(line) for line in (out / "gateway_ledger.jsonl").read_text().splitlines()]
         self.assertEqual(summary["status"], "completed", {"native_failures": failures, "summary": summary})

@@ -5,8 +5,8 @@ metadata:
   remotion_backend: configured
   remotion_features: clip_timing transitions fit_position scale motion titles captions audio_mix canvas encoding
   include_tools: call_editor_tool call_audio_tool
-  routing_tools: remotion_render eleven_v4_turbo
-  gateway_tools: Remotion___get_render_progress Remotion___render_timeline ElevenLabs___text_to_speech_convert
+  routing_tools: remotion_render fish_audio_tts eleven_v4_turbo
+  gateway_tools: Remotion___get_render_progress Remotion___render_timeline FishAudio___generate_speech ElevenLabs___text_to_speech_convert
 ---
 
 # Whiteboard explainer

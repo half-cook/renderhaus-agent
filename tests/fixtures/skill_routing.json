@@ -2,7 +2,7 @@
   {
     "prompt": "make a 5 second cinematic drone shot",
     "expected_skill": "t2v",
-    "expected_tool": "wan3_t2v",
+    "expected_tool": "seedance25_t2v",
     "suite": "t2v",
     "skip_reason": "",
     "note": "default",
@@ -11,7 +11,7 @@
   {
     "prompt": "cheapest text to video preview",
     "expected_skill": "t2v",
-    "expected_tool": "wan3_t2v",
+    "expected_tool": "seedance25_t2v",
     "suite": "t2v",
     "skip_reason": "",
     "note": "cheapest tiers dropped; default",
@@ -20,16 +20,16 @@
   {
     "prompt": "highest quality prompt adherence with audio",
     "expected_skill": "t2v",
-    "expected_tool": "wan3_t2v",
+    "expected_tool": "seedance25_t2v",
     "suite": "t2v",
     "skip_reason": "",
-    "note": "Veo retired; Wan 3.0 native audio",
+    "note": "Veo retired; Seedance native audio",
     "source_status": "updated"
   },
   {
     "prompt": "animate this product photo",
     "expected_skill": "i2v",
-    "expected_tool": "wan3_i2v",
+    "expected_tool": "seedance25_i2v",
     "suite": "i2v",
     "skip_reason": "",
     "note": "default",
@@ -77,7 +77,7 @@
   {
     "prompt": "lock character then i2v",
     "expected_skill": "still-then-video",
-    "expected_tool": "wan3_i2v",
+    "expected_tool": "seedance25_i2v",
     "suite": "still-then-video",
     "skip_reason": "",
     "note": "default video",
@@ -115,7 +115,7 @@
   {
     "prompt": "TTS then talking head",
     "expected_skill": "audio-bed",
-    "expected_tool": "eleven_v4_turbo",
+    "expected_tool": "fish_audio_tts",
     "suite": "lipsync",
     "skip_reason": "",
     "note": "TTS step first",
@@ -464,7 +464,7 @@
   {
     "prompt": "lyrics video with TTS narration track first",
     "expected_skill": "audio-bed",
-    "expected_tool": "eleven_v4_turbo",
+    "expected_tool": "fish_audio_tts",
     "suite": "lyrics-video",
     "skip_reason": "",
     "note": "TTS step first",
@@ -491,7 +491,7 @@
   {
     "prompt": "whiteboard explainer with voiceover narration",
     "expected_skill": "audio-bed",
-    "expected_tool": "eleven_v4_turbo",
+    "expected_tool": "fish_audio_tts",
     "suite": "whiteboard-explainer",
     "skip_reason": "",
     "note": "VO step; narrated workflow belongs to whiteboard-explainer",
@@ -615,7 +615,7 @@
   {
     "prompt": "generate a 45 second single shot",
     "expected_skill": "t2v",
-    "expected_tool": "wan3_t2v",
+    "expected_tool": "seedance25_t2v",
     "suite": "t2v",
     "skip_reason": "",
     "note": "duration > 30 s → split or refuse",
@@ -820,7 +820,7 @@
   {
     "prompt": "generate a quality-first default video for this shot",
     "expected_skill": "t2v",
-    "expected_tool": "wan3_t2v",
+    "expected_tool": "seedance25_t2v",
     "suite": "t2v",
     "skip_reason": "",
     "note": "Veo retired: disclose, offer default",
@@ -830,7 +830,7 @@
   {
     "prompt": "make a generative video clip with the quality-first default",
     "expected_skill": "t2v",
-    "expected_tool": "wan3_t2v",
+    "expected_tool": "seedance25_t2v",
     "suite": "t2v",
     "skip_reason": "",
     "note": "HeyGen generative retired: disclose, offer default",
@@ -858,7 +858,7 @@
   {
     "prompt": "text to video of a product rotating on a turntable",
     "expected_skill": "t2v",
-    "expected_tool": "wan3_t2v",
+    "expected_tool": "seedance25_t2v",
     "suite": "t2v",
     "skip_reason": "",
     "note": "default (added 23:10 ET)",
@@ -2150,7 +2150,7 @@
     "category": "candidate",
     "prompt": "Add a voiceover in a warm female voice.",
     "expected_skill": "audio-bed",
-    "expected_tool": "eleven_v4_turbo",
+    "expected_tool": "fish_audio_tts",
     "skip_reason": "",
     "negative": false,
     "expected_behaviour": "Existing skill; paid generation approval.",
@@ -2717,7 +2717,7 @@
     "suite": "chat-story-video",
     "prompt": "Make a video of a mountain sunrise; the brief mentions text message.",
     "expected_skill": "t2v",
-    "expected_tool": "wan3_t2v",
+    "expected_tool": "seedance25_t2v",
     "forbidden_skills": [
       "chat-story-video"
     ],
@@ -3075,7 +3075,7 @@
     "test_id": "RT-L007",
     "prompt": "animate our logo",
     "expected_skill": "i2v",
-    "expected_tool": "wan3_i2v",
+    "expected_tool": "seedance25_i2v",
     "suite": "lottie-animation",
     "skip_reason": "",
     "source_status": "active",
@@ -3087,7 +3087,7 @@
     "test_id": "RT-L008",
     "prompt": "Animate our logo for a video",
     "expected_skill": "i2v",
-    "expected_tool": "wan3_i2v",
+    "expected_tool": "seedance25_i2v",
     "suite": "lottie-animation",
     "skip_reason": "",
     "source_status": "active",
@@ -3168,7 +3168,7 @@
     "test_id": "SD-004",
     "prompt": "generate a video of a forest at sunrise",
     "expected_skill": "t2v",
-    "expected_tool": "wan3_t2v",
+    "expected_tool": "seedance25_t2v",
     "suite": "seedance-prompt-diagnostics",
     "skip_reason": "",
     "source_status": "new",
@@ -3233,7 +3233,7 @@
     "test_id": "DRAMA-11",
     "prompt": "Do not make a microdrama. Generate a video of a forest",
     "expected_skill": "t2v",
-    "expected_tool": "wan3_t2v",
+    "expected_tool": "seedance25_t2v",
     "suite": "short-drama-series",
     "skip_reason": "",
     "note": "Episodic fiction routing boundary.",

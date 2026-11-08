@@ -5,8 +5,8 @@ metadata:
   remotion_backend: configured
   remotion_features: clip_timing transitions fit_position scale motion titles captions audio_mix canvas encoding
   include_tools: call_editor_tool call_audio_tool
-  routing_tools: shot_recipe_search remotion_render eleven_v4_turbo mureka_v95 ffmpeg_tool delivery_render deliverable_qc motion_carry_probe
-  gateway_tools: ShotRecipes___shot_recipe_search Remotion___render_timeline Remotion___get_render_progress ElevenLabs___text_to_speech_convert Mureka___generate_instrumental Mureka___generate_song Mureka___get_music_task Ffmpeg___ffmpeg_tool Remotion___deliver_render Remotion___qc_deliverable Remotion___motion_carry_probe
+  routing_tools: shot_recipe_search remotion_render fish_audio_tts eleven_v4_turbo mureka_v95 ffmpeg_tool delivery_render deliverable_qc motion_carry_probe
+  gateway_tools: ShotRecipes___shot_recipe_search Remotion___render_timeline Remotion___get_render_progress FishAudio___generate_speech ElevenLabs___text_to_speech_convert Mureka___generate_instrumental Mureka___generate_song Mureka___get_music_task Ffmpeg___ffmpeg_tool Remotion___deliver_render Remotion___qc_deliverable Remotion___motion_carry_probe
 ---
 
 # Cinematic product promo
@@ -103,7 +103,7 @@ Do not claim that card selection proves the animation was rendered.
 For a supplied continuous morph or cursor shot, keep its state changes inside one visual
 clip with `motion: none`. Avoid an extra camera move or transition that obscures the action.
 
-Voiceover uses the existing `eleven_v4_turbo` route with the approved script and voice.
+Voiceover uses the existing `fish_audio_tts` route with the approved script and voice.
 Music uses `mureka_v95` or a user track. Paid steps retain their usual approval and cost
 estimates. A recipe search or storyboard approval grants no permission for paid generation
 or rendering. Keep all existing autonomous spending and paid-video approval controls.

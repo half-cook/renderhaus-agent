@@ -204,7 +204,7 @@ class NamedFalRoutingTests(unittest.TestCase):
             self.assertTrue(all(step.tool not in names for step in route.steps), prompt)
             for name in names:
                 self.assertIsNotNone(routing.request_tool_blocker(prompt, name), prompt)
-        self.assertEqual(routing.route_intent("animate this product photo").alias, "wan3_i2v")
+        self.assertEqual(routing.route_intent("animate this product photo").alias, "seedance25_i2v")
         self.assertEqual(routing.route_intent("make a karaoke lyrics video from this song").alias, "mureka_lyrics_video")
 
     def test_explicit_unavailable_or_unsupported_control_has_no_fallback(self):

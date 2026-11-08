@@ -1,5 +1,7 @@
 # Renderhaus
 
+For the Seedance/fal, Fish Audio and Remotion MVP, see [the run guide and branch comparison](docs/MVP.md).
+
 AI video production Studio: a Next.js canvas backed by FastAPI, durable agent runs,
 media providers, approvals, and asset storage.
 

@@ -264,10 +264,15 @@ class RealParityTests(unittest.TestCase):
                     asset['url'] = 'https://media.invalid/' + Path(asset['url']).name
                 self.assertEqual(json.loads(payload['inputProps']['payload']), expected)
                 wire = json.loads((Path(__file__).parent / 'fixtures/remotion-lambda-request.json').read_text())
+                bitrate = props['renderConfig']['videoBitrate']
                 wire.update(inputProps={'type': 'payload', 'payload': json.dumps(expected, separators=(',', ':'))},
-                            forceFps=props['renderConfig']['fps'], videoBitrate=props['renderConfig']['videoBitrate'],
+                            forceFps=props['renderConfig']['fps'],
+                            videoBitrate=f'{(bitrate + 999) // 1000}K' if bitrate else None,
                             crf=props['renderConfig']['crf'])
                 self.assertEqual(payload, wire)
+                if bitrate:
+                    self.assertIsInstance(bitrate, int)
+                    self.assertGreaterEqual(int(payload['videoBitrate'][:-1]) * 1000, bitrate)
                 self.assertEqual(payload['codec'], 'h264')
                 self.assertEqual(payload['forceFps'], props['renderConfig']['fps'])
         self.assertTrue({'identity', 'clip_timing', 'speed', 'source_metadata', 'transitions', 'fit_position',

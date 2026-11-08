@@ -4,7 +4,7 @@ description: Make timed lyric/karaoke video from supplied music, or generate the
 metadata:
   include_tools: call_audio_tool call_editor_tool
   routing_tools: mureka_lyrics_video mureka_v95
-  gateway_tools: Mureka___generate_song Mureka___generate_instrumental Mureka___get_music_task Mureka___generate_lyrics_video Mureka___get_video_task Mureka___list_mureka_models ElevenLabs___text_to_speech_convert ElevenLabs___music_compose
+  gateway_tools: Mureka___generate_song Mureka___generate_instrumental Mureka___get_music_task Mureka___generate_lyrics_video Mureka___get_video_task Mureka___list_mureka_models FishAudio___generate_speech ElevenLabs___text_to_speech_convert ElevenLabs___music_compose
 ---
 
 # Lyrics video

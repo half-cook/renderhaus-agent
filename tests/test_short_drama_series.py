@@ -288,6 +288,8 @@ class DramaNativeApprovals(unittest.IsolatedAsyncioTestCase):
                 paused, studio = await self.outline_pause(gateway)
                 request = self.request(session_items=studio.session_items, resume_state=paused.state,
                     approval_decisions=[StudioApprovalDecision(call_id=paused.approvals[0].call_id, decision="approve")])
+                if provider == "elevenlabs":
+                    request = request.model_copy(update={"prompt": request.prompt + " Use ElevenLabs for speech."})
 
                 def prepare(messages, tools):
                     document = episode()

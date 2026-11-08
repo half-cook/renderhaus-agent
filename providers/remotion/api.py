@@ -680,6 +680,7 @@ def _start_lambda_render(
     )
     safe_name = _safe_output_name(output_filename)
     output_key = f"renderhaus-outputs/{uuid.uuid4().hex}/{safe_name}"
+    bitrate = prepared["renderConfig"].get("videoBitrate")
     response = client.render_media_on_lambda(
         RenderMediaParams(
             composition=COMPOSITION_ID,
@@ -695,9 +696,9 @@ def _start_lambda_render(
             max_retries=1,
             x264_preset="veryfast",
             force_fps=prepared["renderConfig"].get("fps"),
-            video_bitrate=prepared["renderConfig"].get("videoBitrate"),
-            crf=(None if prepared["renderConfig"].get("videoBitrate")
-                 else prepared["renderConfig"].get("crf", 18)),
+            # The Python SDK annotates int, but Lambda requires FFmpeg K/M strings.
+            video_bitrate=f"{(bitrate + 999) // 1000}K" if bitrate else None,
+            crf=None if bitrate else prepared["renderConfig"].get("crf", 18),
             jpeg_quality=100,
         )
     )

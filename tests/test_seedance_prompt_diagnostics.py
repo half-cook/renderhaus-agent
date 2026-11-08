@@ -143,7 +143,7 @@ class DiagnosisRoutingTests(unittest.TestCase):
 
     def test_generation_edit_extend_and_named_requests_keep_their_routes(self):
         for prompt, alias in [
-            ('generate a video of a forest', 'wan3_t2v'),
+            ('generate a video of a forest', 'seedance25_t2v'),
             ('a robot says "hello" to camera', 'seedance25_t2v'),
             ('Use Wan 3 to generate a robot dialogue video', 'wan3_t2v'),
             ('Generate a Seedance shot of a robot with a changing face', 'seedance25_t2v'),

@@ -31,11 +31,11 @@ class VideoVoiceoverTests(unittest.TestCase):
     def test_shot_voiceover_routes_ordered_steps_and_blocks_image_tools(self):
         for plain in ['Make a 5-second shot', 'Make a 5s clip']:
             with self.subTest(plain=plain):
-                self.assertEqual(routing.route_intent(plain).alias, 'wan3_t2v')
+                self.assertEqual(routing.route_intent(plain).alias, 'seedance25_t2v')
         prompt = 'Make a 5-second cinematic shot with a voiceover: "Keep the light."'
         route = routing.route_intent(prompt)
-        self.assertEqual(route.alias, 'wan3_t2v')
-        self.assertEqual([step.alias for step in route.steps], ['wan3_t2v', 'eleven_v4_turbo', 'remotion_render'])
+        self.assertEqual(route.alias, 'seedance25_t2v')
+        self.assertEqual([step.alias for step in route.steps], ['seedance25_t2v', 'fish_audio_tts', 'remotion_render'])
         self.assertEqual(route.expected_output, 'assembled MP4')
         self.assertNotIn('forbidden_tools', route.public())
         for request in ['Use Wan 3.0 to make a 5-second clip with voiceover']:
@@ -50,7 +50,7 @@ class VideoVoiceoverTests(unittest.TestCase):
 
     def test_mp4_export_routes_assembly_while_nle_export_is_handoff(self):
         route = routing.route_intent('Add the voiceover to the referenced 5-second clip, starting around 1.0 s. Then assemble and export the final MP4.')
-        self.assertEqual([step.alias for step in route.steps], ['eleven_v4_turbo', 'remotion_render'])
+        self.assertEqual([step.alias for step in route.steps], ['fish_audio_tts', 'remotion_render'])
         self.assertEqual(routing.route_intent('assemble and export final MP4').skill, 'final-assembly')
         self.assertEqual(routing.route_intent('export an OTIO timeline').skill, 'resolve-handoff')
 
@@ -69,7 +69,7 @@ class MultiStepModalityTests(unittest.TestCase):
         from agent.studio_agent_next import StudioAgentRequest, _context_from_request
 
         cases = [
-            ('Make a 5-second clip from this start frame with a calm voiceover', 'wan3_i2v'),
+            ('Make a 5-second clip from this start frame with a calm voiceover', 'seedance25_i2v'),
             ('Make a 5-second clip from multi-ref images with a calm voiceover', 'wan3_r2v'),
             ('Use Wan 3.0 to make a 5-second clip with voiceover', 'wan3_t2v'),
         ]
@@ -78,7 +78,7 @@ class MultiStepModalityTests(unittest.TestCase):
                 route = routing.route_intent(prompt)
                 self.assertEqual(route.steps[0].alias, alias)
                 executor = GatewayExecutor(_context_from_request(StudioAgentRequest(prompt=prompt)), [])
-                args = {'text': 'Hello', 'voice_id': 'test'}
-                audio = executor.media_selection('ElevenLabs___text_to_speech_convert', args)
+                args = {'text': 'Hello', 'voice': 'Energetic Male'}
+                audio = executor.media_selection('FishAudio___generate_speech', args)
                 self.assertEqual(audio.status, 'ready')
-                self.assertIsNone(executor.selection_blocker('ElevenLabs___text_to_speech_convert', args, audio))
+                self.assertIsNone(executor.selection_blocker('FishAudio___generate_speech', args, audio))

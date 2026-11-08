@@ -5,8 +5,8 @@ metadata:
   remotion_backend: configured
   remotion_features: clip_timing transitions fit_position scale motion titles captions audio_mix canvas encoding
   include_tools: call_editor_tool call_media_tool call_audio_tool
-  routing_tools: remotion_render gpt_image25_t2i eleven_v4_turbo elevenlabs_sfx_v2
-  gateway_tools: Remotion___render_timeline Remotion___get_render_progress OpenAI___generate_image ElevenLabs___text_to_speech_convert ElevenLabs___text_to_sound_effects_convert
+  routing_tools: remotion_render gpt_image25_t2i fish_audio_tts eleven_v4_turbo elevenlabs_sfx_v2
+  gateway_tools: Remotion___render_timeline Remotion___get_render_progress OpenAI___generate_image FishAudio___generate_speech ElevenLabs___text_to_speech_convert ElevenLabs___text_to_sound_effects_convert
 ---
 
 # Art style motion
@@ -85,8 +85,8 @@ when appropriate. The image model supplies the character; do not claim code drew
 Maintain foot/eye anchors, scale, outfit and palette across poses. A flat pose cut may be supported;
 character acting or lip sync requires an authored asset or a separately requested performance skill.
 
-Requested new voiceover uses `ElevenLabs___text_to_speech_convert` (`eleven_v4_turbo`): `text`,
-an authorized `voice_id` and `model_id=eleven_v4_turbo`. Text-described event effects use
+Requested new voiceover uses `FishAudio___generate_speech` (`fish_audio_tts`): `text`
+and an authorized `voice`. Preserve an explicit supported provider request. Text-described event effects use
 `ElevenLabs___text_to_sound_effects_convert` (`elevenlabs_sfx_v2`): `text`, `duration_seconds`,
 `model_id=eleven_text_to_sound_v2` and optional `loop`/`prompt_influence`. Place each asset at its
 visual event time. Do not generate music unless requested. For picture-conditioned audio or voice

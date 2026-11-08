@@ -23,12 +23,11 @@ type MenuState = { x: number; y: number; flowX: number; flowY: number } | null;
 const QUICK_ADD: Array<{ label: string; kind: CreativeNodeKind; toolId?: string }> = [
   { label: "Text", kind: "text" },
   { label: "Scene", kind: "image", toolId: "image.generate" },
-  { label: "Video", kind: "video", toolId: "video.wan3.generate" },
-  { label: "Studio Video · animate a still", kind: "video", toolId: "video.wan3.animate" },
-  { label: "Studio Video · from references", kind: "video", toolId: "video.wan3.reference" },
-  { label: "Studio Video · Pro", kind: "video", toolId: "video.generate" },
+  { label: "Video", kind: "video", toolId: "video.generate" },
+  { label: "Studio Video · animate a still", kind: "video", toolId: "video.fromImage" },
+  { label: "Studio Video · from references", kind: "video", toolId: "video.seedance.reference" },
   { label: "Music", kind: "audio", toolId: "music.generate" },
-  { label: "Voiceover", kind: "audio", toolId: "voice.generate" },
+  { label: "Voiceover", kind: "audio", toolId: "voice.fish.generate" },
   { label: "Storyboard", kind: "storyboard" },
 ];
 

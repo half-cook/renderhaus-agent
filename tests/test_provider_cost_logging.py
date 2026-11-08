@@ -15,7 +15,7 @@ class ProviderCostLoggingTests(unittest.IsolatedAsyncioTestCase):
         name = 'ElevenLabs___text_to_speech_convert'
         gateway = Gateway([Tool(name=name, inputSchema={'type': 'object'})])
         gateway.call_tool.return_value = {'status': 'succeeded', 'result': {'output_path': '/tmp/voice.mp3'}}
-        studio = _context_from_request(StudioAgentRequest(prompt='Narrate this line', job_id='cost-log', autonomous=True))
+        studio = _context_from_request(StudioAgentRequest(prompt='Narrate this line with ElevenLabs', job_id='cost-log', autonomous=True))
         executor = GatewayExecutor(studio, [gateway])
         with patch.dict(os.environ, {'STRIPE_SECRET_KEY': '', 'ELEVENLABS_TOOL_COST_CENTS_JSON': '{}'}, clear=True):
             with self.assertLogs('renderhaus.gateway_executor', level='INFO') as logs:

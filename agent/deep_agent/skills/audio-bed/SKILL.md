@@ -3,13 +3,19 @@ name: audio-bed
 description: Create narration, voice clones, music or SFX with capability defaults and text-only SFX exceptions.
 metadata:
   include_tools: call_audio_tool call_media_tool
-  routing_tools: eleven_v4_turbo voices_ivc_create mureka_v95 mirelo_v2a elevenlabs_sfx_v2
-  gateway_tools: Fal___mirelo_v2a Fal___get_video_task Mureka___generate_song Mureka___generate_instrumental Mureka___get_music_task Mureka___list_mureka_models ElevenLabs___music_compose ElevenLabs___text_to_sound_effects_convert ElevenLabs___text_to_speech_convert ElevenLabs___voices_ivc_create
+  routing_tools: fish_audio_tts eleven_v4_turbo voices_ivc_create mureka_v95 mirelo_v2a elevenlabs_sfx_v2
+  gateway_tools: FishAudio___generate_speech FishAudio___list_voices Fal___mirelo_v2a Fal___get_video_task Mureka___generate_song Mureka___generate_instrumental Mureka___get_music_task Mureka___list_mureka_models ElevenLabs___music_compose ElevenLabs___text_to_sound_effects_convert ElevenLabs___text_to_speech_convert ElevenLabs___voices_ivc_create
 ---
 
 # Audio bed
 
-Narration defaults to `eleven_v4_turbo`, mapped to `ElevenLabs___text_to_speech_convert`.
+Narration defaults to `fish_audio_tts`, mapped to `FishAudio___generate_speech`.
+Discover its schema and voices. Supply `text`, an authorized starter voice name or Fish voice ID
+as `voice`, and `output_format` (mp3 or wav). Omit `model` to retain the configured
+`FISH_AUDIO_MODEL`; the default is `s2.1-pro-free`. `FISH_AUDIO_DRY_RUN` previews inputs
+without audio. Preserve the completed local audio artifact for final assembly.
+
+An explicit ElevenLabs request uses `ElevenLabs___text_to_speech_convert`.
 TTS accepts only priced `model_id` values `eleven_v4_turbo` and `eleven_v4` across conversion,
 timestamps and HTTP streaming. Prefer `eleven_v4_turbo`; omit `model_id` to use the configured
 `ELEVENLABS_TTS_MODEL` default, which is `eleven_v4_turbo` when unset. An unpriced model returns
@@ -27,7 +33,7 @@ a blocking video status check. Only final assembly waits for both completed arti
 Voice cloning defaults to `voices_ivc_create`, mapped to `ElevenLabs___voices_ivc_create`.
 Require speaker consent and rights to all samples; do not imply the IVC tool provides PVC.
 
-Fish Audio is named-only. MMAudio is retired because its weights are non-commercial; ACE-Step is
+Explicit provider requests retain their selected provider. MMAudio is retired because its weights are non-commercial; ACE-Step is
 retired from the quality-first map. Do not install or load their weights as a workaround.
 Create a short speech sample before a long recording. Match approved audio to picture and preserve
 successful handles. Use final-assembly for fades/timing/mixing instead of paid regeneration.

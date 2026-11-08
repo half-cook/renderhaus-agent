@@ -42,7 +42,7 @@ class KnowledgeExplainerRoutingTests(unittest.TestCase):
             with self.subTest(prompt=prompt):
                 route = route_intent(prompt)
                 self.assertEqual((route.skill, route.alias, route.tool),
-                                 ("whiteboard-explainer", "eleven_v4_turbo", "ElevenLabs___text_to_speech_convert"))
+                                 ("whiteboard-explainer", "fish_audio_tts", "FishAudio___generate_speech"))
 
     def test_silent_whiteboard_is_knowledge_and_plain_whiteboard_is_preserved(self):
         self.assertEqual(route_intent("whiteboard explainer with no narration and event foley only").skill,

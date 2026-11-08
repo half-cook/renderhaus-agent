@@ -110,15 +110,15 @@ def test_repository_subject_does_not_select_the_narration_provider(subject):
     prompt = f"Make an onboarding video of this repo explaining how {subject} flow through the gateway."
     route = select_provider("tts", **capability_constraints(intent_constraints(prompt), "tts"))
     assert route.status == "ready"
-    assert route.alias == "eleven_v4_turbo"
-    assert route.tool == "ElevenLabs___text_to_speech_convert"
+    assert route.alias == "fish_audio_tts"
+    assert route.tool == "FishAudio___generate_speech"
 
 
 def test_explicit_skill_invocation_is_not_a_narration_provider_selection():
     prompt = "Use codebase-video to teach how OpenAI requests flow through this repo."
     route = select_provider("tts", **capability_constraints(intent_constraints(prompt), "tts"))
     assert route.status == "ready"
-    assert route.alias == "eleven_v4_turbo"
+    assert route.alias == "fish_audio_tts"
 
 
 def test_radar_rows_are_present_and_active():
@@ -131,4 +131,4 @@ def test_radar_rows_are_present_and_active():
         assert not row["skip_reason"]
         assert row["expected_skill"] == "codebase-video"
         assert row["expected_tool"] == "remotion_render"
-        assert "wan3_t2v" in row["forbidden_tools"]
+        assert "seedance25_t2v" in row["forbidden_tools"]

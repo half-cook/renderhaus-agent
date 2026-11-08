@@ -4,6 +4,26 @@ from agent.deep_agent import routing
 
 
 class CapabilitySelectionEdges(unittest.TestCase):
+    def test_primary_defaults_and_missing_provider_do_not_fallback(self):
+        for prompt, skill, tool in [
+            ("Make a 5-second shot", "t2v", "Seedance___text_to_video"),
+            ("Animate this product image", "i2v", "Seedance___image_to_video"),
+            ("Read this narration", "audio-bed", "FishAudio___generate_speech"),
+        ]:
+            with self.subTest(prompt=prompt):
+                route = routing.route_intent(prompt)
+                self.assertEqual((route.status, route.skill, route.tool), ("ready", skill, tool))
+                self.assertEqual(routing.route_intent(prompt, available_tools=set()).status, "blocked")
+
+    def test_real_person_routes_keep_wan_and_consent_with_seedance_defaults(self):
+        for capability, alias in [("t2v", "wan3_t2v"), ("i2v", "wan3_i2v"),
+                                  ("reference_video", "wan3_r2v")]:
+            with self.subTest(capability=capability):
+                route = routing.select_provider(capability, arguments={"real_face_refs": True})
+                self.assertEqual((route.alias, route.status), (alias, "ready"))
+                self.assertTrue(route.required["real_face_refs"])
+                self.assertIn("consent required", route.disclosure)
+
     def test_named_gpt_image_uses_built_adapter(self):
         route = routing.route_intent("generate with GPT Image 2.5")
         self.assertEqual((route.alias, route.status, route.tool), ("gpt_image25_t2i", "ready", "OpenAI___generate_image"))
@@ -57,10 +77,10 @@ class CapabilitySelectionEdges(unittest.TestCase):
                                  ('ElevenLabs___music_compose_detailed', 'music')]:
             with self.subTest(name=name):
                 self.assertEqual(routing.job_type(name), capability)
-                route = routing.select_provider(capability, provider='elevenlabs' if capability == 'music' else None,
+                route = routing.select_provider(capability, provider='elevenlabs',
                                                 tool_variant=routing.tool_variant(name))
                 self.assertEqual(route.tool, name)
-                self.assertIn('explicit' if capability == 'music' else 'default', route.disclosure)
+                self.assertIn('explicit', route.disclosure)
         name = 'ElevenLabs___text_to_dialogue_convert'
         route = routing.select_provider('tts', provider='fish_audio', tool_variant=routing.tool_variant(name))
         self.assertEqual(route.tool, 'FishAudio___generate_speech')

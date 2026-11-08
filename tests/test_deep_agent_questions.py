@@ -78,7 +78,7 @@ class DeepAgentQuestionTests(unittest.IsolatedAsyncioTestCase):
             gateway.call_tool.assert_not_awaited()
 
     async def test_parallel_question_and_paid_approval_resume_independently(self):
-        request = StudioAgentRequest(prompt="Revise the cut and make a clip.", workspace_id="workspace",
+        request = StudioAgentRequest(prompt="Revise the cut and make a clip with Wan 3.", workspace_id="workspace",
                                      project_id="project", conversation_id="parallel", job_id="parallel")
         gateway = Gateway([VIDEO])
         tasks = AIMessage(content="", tool_calls=[
@@ -110,7 +110,7 @@ class DeepAgentQuestionTests(unittest.IsolatedAsyncioTestCase):
             gateway.call_tool.assert_not_awaited()
 
     async def test_answer_does_not_approve_a_subsequent_paid_call(self):
-        request = StudioAgentRequest(prompt="Revise the cut.", workspace_id="workspace", project_id="project",
+        request = StudioAgentRequest(prompt="Revise the cut and use Wan 3 for any new clip.", workspace_id="workspace", project_id="project",
                                      conversation_id="then-paid", job_id="then-paid")
         gateway = Gateway([VIDEO])
         with tempfile.TemporaryDirectory() as directory, patch.dict("os.environ", {"RENDERHAUS_OUTCOME_DIR": directory}):

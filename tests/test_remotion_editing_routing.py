@@ -235,10 +235,10 @@ class RemotionEditingRoutingTests(unittest.TestCase):
 
     def test_delivery_keywords_do_not_capture_generation_audio_or_canvas_requests(self):
         for prompt, skill, alias in [
-            ("Generate a video ad for TikTok.", "t2v", "wan3_t2v"),
-            ("Create a warm voiceover for TikTok.", "audio-bed", "eleven_v4_turbo"),
-            ("Create a warm voiceover for TikTok at -14 LUFS.", "audio-bed", "eleven_v4_turbo"),
-            ("Generate a video ad for TikTok with no black frames.", "t2v", "wan3_t2v"),
+            ("Generate a video ad for TikTok.", "t2v", "seedance25_t2v"),
+            ("Create a warm voiceover for TikTok.", "audio-bed", "fish_audio_tts"),
+            ("Create a warm voiceover for TikTok at -14 LUFS.", "audio-bed", "fish_audio_tts"),
+            ("Generate a video ad for TikTok with no black frames.", "t2v", "seedance25_t2v"),
             ("Generate a podcast music bed.", "audio-bed", "mureka_v95"),
             ("Generate product images for social-feed.", "image-gen", "gpt_image25_t2i"),
             ("Render a Remotion timeline at 1080p.", "motion-graphics", "remotion_render"),
@@ -262,7 +262,7 @@ class RemotionEditingRoutingTests(unittest.TestCase):
                 route = route_intent("generate a video of a forest")
             except ValueError as exc:
                 self.fail(f"An invalid matrix quote broke unrelated video selection: {exc}")
-        self.assertEqual(route.tool, "Fal___generate_wan3_t2v")
+        self.assertEqual(route.tool, "Seedance___text_to_video")
 
     def test_retained_editing_cases_have_traceable_expectations(self):
         cases = json.loads((ROOT / "tests/fixtures/skill_routing.json").read_text())

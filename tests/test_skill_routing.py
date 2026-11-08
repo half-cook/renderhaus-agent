@@ -218,12 +218,12 @@ class SkillContracts(unittest.TestCase):
         from agent.deep_agent.routing import route_intent
 
         video = route_intent("generate a video of a forest")
-        self.assertEqual(video.alias, "wan3_t2v")
-        self.assertEqual(video.tool, "Fal___generate_wan3_t2v")
+        self.assertEqual(video.alias, "seedance25_t2v")
+        self.assertEqual(video.tool, "Seedance___text_to_video")
         self.assertNotIn("interim default", video.disclosure)
         image = route_intent("animate an image")
-        self.assertEqual(image.alias, "wan3_i2v")
-        self.assertEqual(image.tool, "Fal___generate_wan3_i2v")
+        self.assertEqual(image.alias, "seedance25_i2v")
+        self.assertEqual(image.tool, "Seedance___image_to_video")
         self.assertEqual(route_intent("tell me a joke").status, "unrouted")
 
     def test_built_performance_specialists_never_dispatch_generation_tools(self):

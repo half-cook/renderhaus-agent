@@ -29,7 +29,8 @@ LIVE_CALLS = [
 
 
 def _executor(prompt=LIVE_PROMPT):
-    return GatewayExecutor(_context_from_request(StudioAgentRequest(prompt=prompt, job_id="live-e2e")), [])
+    return GatewayExecutor(_context_from_request(StudioAgentRequest(
+        prompt=prompt + " Use Wan 3 for the video shots.", job_id="live-e2e")), [])
 
 
 @pytest.mark.parametrize("arguments", LIVE_CALLS)

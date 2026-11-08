@@ -179,7 +179,7 @@ class DeepAgentExecutionTests(unittest.IsolatedAsyncioTestCase):
         self.fail("The scripted run did not finish after approval resumes.")
 
     def request(self):
-        return StudioAgentRequest(prompt="Make a 5-second lighthouse shot with a one-line voiceover.",
+        return StudioAgentRequest(prompt="Make a 5-second lighthouse shot using Wan 3 with an ElevenLabs one-line voiceover.",
                                   workspace_id="workspace", project_id="project", conversation_id="conversation",
                                   job_id="lighthouse", autonomous=False)
 

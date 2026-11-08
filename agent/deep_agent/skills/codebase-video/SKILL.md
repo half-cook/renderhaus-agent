@@ -5,8 +5,8 @@ metadata:
   remotion_backend: local
   remotion_features: clip_timing titles captions audio_mix canvas encoding
   include_tools: call_editor_tool call_audio_tool
-  routing_tools: remotion_render eleven_v4_turbo ffmpeg_tool deliverable_qc
-  gateway_tools: Remotion___render_timeline Remotion___get_render_progress ElevenLabs___text_to_speech_convert Ffmpeg___ffmpeg_tool Remotion___qc_deliverable
+  routing_tools: remotion_render fish_audio_tts eleven_v4_turbo ffmpeg_tool deliverable_qc
+  gateway_tools: Remotion___render_timeline Remotion___get_render_progress FishAudio___generate_speech ElevenLabs___text_to_speech_convert Ffmpeg___ffmpeg_tool Remotion___qc_deliverable
 ---
 
 # Codebase video
@@ -90,8 +90,8 @@ each builder the frozen ledger, exact excerpt and chapter path. A fresh planner
 audits their combined script and visuals before rendering.
 
 Use the customer's recording when supplied. Otherwise read
-[audio-bed](../audio-bed/SKILL.md) for `eleven_v4_turbo` narration through
-`ElevenLabs___text_to_speech_convert`. Send only the reviewed narration, never raw
+[audio-bed](../audio-bed/SKILL.md) for `fish_audio_tts` narration through
+`FishAudio___generate_speech`. Send only the reviewed narration, never raw
 repository files or credentials. Disclose that narration text leaves the machine
 before requesting that external operation. If the request forbids any external
 processing, require a local or user recording and leave hosted narration unused.

@@ -59,8 +59,8 @@ asset or a real provider-returned local media path. Report a missing compatible
 source as a blocker.
 
 Read [audio-bed](../audio-bed/SKILL.md) for narration and its existing approvals.
-Default to `eleven_v4_turbo` through `ElevenLabs___text_to_speech_convert`. Omit
-`model_id` to honor `ELEVENLABS_TTS_MODEL`. Preserve an explicit supported voice
+Default to `fish_audio_tts` through `FishAudio___generate_speech`. Omit
+`model` to honor `FISH_AUDIO_MODEL`. Preserve an explicit supported voice
 provider or model. Use an authorized voice ID and the discovered exact schema.
 Make one completed narration asset per chapter. A dry-run creates no audio.
 

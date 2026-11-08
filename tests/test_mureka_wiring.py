@@ -94,15 +94,15 @@ class MurekaWiringTests(unittest.TestCase):
     def test_multi_step_provider_names_are_scoped_without_substituting_unsupported_requests(self):
         prompt = "Mureka lyrics video with TTS narration track first"
         route = routing.route_intent(prompt)
-        self.assertEqual([step.alias for step in route.steps], ["eleven_v4_turbo", "mureka_lyrics_video"])
+        self.assertEqual([step.alias for step in route.steps], ["fish_audio_tts", "mureka_lyrics_video"])
         executor = GatewayExecutor(_context_from_request(StudioAgentRequest(prompt=prompt)), [])
-        self.assertEqual(executor.media_selection("ElevenLabs___text_to_speech_convert", {}).status, "ready")
+        self.assertEqual(executor.media_selection("FishAudio___generate_speech", {}).status, "ready")
         self.assertEqual(routing.route_intent("use Kling for a lyrics video from my song").status, "blocked")
 
     def test_tts_first_then_lyrics_video_retains_speech_default(self):
         route = routing.route_intent("lyrics video with TTS narration track first")
         self.assertEqual([(s.skill, s.alias) for s in route.steps], [
-            ("audio-bed", "eleven_v4_turbo"), ("lyrics-video", "mureka_lyrics_video"),
+            ("audio-bed", "fish_audio_tts"), ("lyrics-video", "mureka_lyrics_video"),
         ])
 
     def test_audio_and_video_approval_rules_remain_distinct(self):

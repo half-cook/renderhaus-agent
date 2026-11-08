@@ -318,8 +318,19 @@ const CREATIVE_TOOLS: ToolDefinition[] = [
     defaults: { layout: "layout_1", aspect_ratio: "9:16" },
   },
   {
-    id: "voice.generate",
+    id: "voice.fish.generate",
     displayName: "Voiceover",
+    description: "Read text as speech",
+    category: "audio",
+    providerId: "fish_audio",
+    toolName: "generate_speech",
+    inputPorts: [{ id: "text", label: "Script", dataType: "text", targetField: "text", required: true }],
+    outputPorts: [{ id: "audio", label: "Audio", dataType: "audio" }],
+    primaryFields: ["text", "voice", "model", "output_format"],
+  },
+  {
+    id: "voice.generate",
+    displayName: "Alternative voiceover",
     description: "Read text as speech",
     category: "audio",
     providerId: "elevenlabs",
@@ -344,11 +355,11 @@ export function defaultToolForRail(
     case "image":
       return toolById("openai.image.generate");
     case "video":
-      return toolById("video.wan3.generate");
+      return toolById("video.generate");
     case "audio":
       return toolById("music.generate");
     case "voice":
-      return toolById("voice.generate");
+      return toolById("voice.fish.generate");
     default: {
       const exhaustive: never = rail;
       return exhaustive;
@@ -376,15 +387,15 @@ export function toolForAgentArtifact(
   if (kind === "video") {
     return toolById(
       provider.includes("generate_wan3") ? "video.wan3.generate"
-        : provider.includes("fal") ? "video.falGenerate"
         : provider.includes("seedance") ? "video.generate"
-        : "video.wan3.generate",
+        : provider.includes("fal") ? "video.falGenerate"
+        : "video.generate",
     );
   }
   const source = `${event?.provider || ""} ${event?.name || ""}`.toLowerCase();
   return toolById(
-    source.includes("fish_audio") || source.includes("speech") || source.includes("voice")
-      ? "voice.generate"
+    /fish.?audio/.test(source) ? "voice.fish.generate"
+      : source.includes("speech") || source.includes("voice") ? "voice.generate"
       : "music.generate",
   );
 }

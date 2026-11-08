@@ -1,6 +1,6 @@
 ---
 name: t2v
-description: Generate text-to-video shots using Wan 3.0 by default, or write and diagnose Seedance prompts for synthetic dialogue and explicit Seedance requests.
+description: Generate text-to-video shots using Seedance through fal by default; preserve explicit providers and real-person reference safeguards.
 metadata:
   include_tools: call_media_tool
   routing_tools: wan3_t2v seedance25_t2v
@@ -17,11 +17,11 @@ Return a bounded explanation and, if requested, a revised prompt. Do not dispatc
 record an artifact rejection as part of diagnosis. A request to retry immediately cannot
 supply fresh approval or waive the new cost estimate and approval card.
 
-Use `wan3_t2v` by default. Use `seedance25_t2v` only for dialogue without real-person references.
+Use `seedance25_t2v` by default. Use Wan for real-person references or explicit Wan requests.
 Dialogue means on-camera speech by a character. Off-screen voiceover, even when quoted, does not
-activate the dialogue exception. A silent/no-dialogue request is not the exception.
-For a plain shot or clip with voiceover, follow the ordered intent_route.steps. Generate the Wan
-video directly, use audio-bed for ElevenLabs narration, then final-assembly to render the MP4.
+change the video provider. Silent and dialogue shots both use the configured video default.
+For a plain shot or clip with voiceover, follow the ordered intent_route.steps. Generate the Seedance
+video directly, use audio-bed for Fish Audio narration, then final-assembly to render the MP4.
 Image tools are excluded from this flow. Do not insert a still/keyframe generation step.
 Wan 3.0 uses `Fal___generate_wan3_t2v`. Discover its schema before dispatch. Native controls include
 `prompt`, `resolution`, `aspect_ratio`, `duration`, `audio`, `seed`, `enable_thinking`,
